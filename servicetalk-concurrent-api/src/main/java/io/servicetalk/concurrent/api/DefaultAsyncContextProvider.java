@@ -111,7 +111,7 @@ final class DefaultAsyncContextProvider implements AsyncContextProvider {
 
     @Override
     public <T> CompletableFuture<T> wrap(final CompletableFuture<T> future, AsyncContextMap current) {
-        return ContextPreservingCompletableFuture.newInstance(future, current);
+        return ContextPreservingCompletableFuture.newContextPreservingFuture(future, current);
     }
 
     @Override

@@ -39,10 +39,10 @@ final class CancelPropagatingCompletableFuture<T> extends CompletableFuture<T> {
         this.cancellable = cancellable;
     }
 
-    static <T> CompletableFuture<T> newInstance(CompletableFuture<T> delegate, Cancellable cancellable) {
+    static <T> CompletableFuture<T> newCancelPropagatingFuture(CompletableFuture<T> delegate, Cancellable cancellable) {
         CancelPropagatingCompletableFuture<T> future = new CancelPropagatingCompletableFuture<>(delegate,
                 cancellable);
-        wrap(delegate, future);
+        cascadeTermination(delegate, future);
         return future;
     }
 
@@ -57,7 +57,7 @@ final class CancelPropagatingCompletableFuture<T> extends CompletableFuture<T> {
      * @param outer The {@link CompletableFuture} that is doing the delegating.
      * @param <T> The type of {@link CompletableFuture}.
      */
-    static <T> void wrap(CompletableFuture<T> delegate, CompletableFuture<T> outer) {
+    static <T> void cascadeTermination(CompletableFuture<T> delegate, CompletableFuture<T> outer) {
         // This is necessary because CompletableFuture may use internal methods to set the result in the event of
         // an unexpected exception from user callbacks. In this case our methods won't be executed.
         delegate.whenComplete((value, throwable) -> {
@@ -74,81 +74,81 @@ final class CancelPropagatingCompletableFuture<T> extends CompletableFuture<T> {
     // CompletionStage begin
     @Override
     public <U> CompletableFuture<U> thenApply(Function<? super T, ? extends U> fn) {
-        return newInstance(delegate.thenApply(fn), cancellable);
+        return newCancelPropagatingFuture(delegate.thenApply(fn), cancellable);
     }
 
     @Override
     public <U> CompletableFuture<U> thenApplyAsync(Function<? super T, ? extends U> fn) {
-        return newInstance(delegate.thenApplyAsync(fn), cancellable);
+        return newCancelPropagatingFuture(delegate.thenApplyAsync(fn), cancellable);
     }
 
     @Override
     public <U> CompletableFuture<U> thenApplyAsync(Function<? super T, ? extends U> fn,
                                                    java.util.concurrent.Executor executor) {
-        return newInstance(delegate.thenApplyAsync(fn, executor), cancellable);
+        return newCancelPropagatingFuture(delegate.thenApplyAsync(fn, executor), cancellable);
     }
 
     @Override
     public CompletableFuture<Void> thenAccept(Consumer<? super T> action) {
-        return newInstance(delegate.thenAccept(action), cancellable);
+        return newCancelPropagatingFuture(delegate.thenAccept(action), cancellable);
     }
 
     @Override
     public CompletableFuture<Void> thenAcceptAsync(Consumer<? super T> action) {
-        return newInstance(delegate.thenAcceptAsync(action), cancellable);
+        return newCancelPropagatingFuture(delegate.thenAcceptAsync(action), cancellable);
     }
 
     @Override
     public CompletableFuture<Void> thenAcceptAsync(Consumer<? super T> action, java.util.concurrent.Executor executor) {
-        return newInstance(delegate.thenAcceptAsync(action, executor),
+        return newCancelPropagatingFuture(delegate.thenAcceptAsync(action, executor),
                 cancellable);
     }
 
     @Override
     public CompletableFuture<Void> thenRun(Runnable action) {
-        return newInstance(delegate.thenRun(action), cancellable);
+        return newCancelPropagatingFuture(delegate.thenRun(action), cancellable);
     }
 
     @Override
     public CompletableFuture<Void> thenRunAsync(Runnable action) {
-        return newInstance(delegate.thenRunAsync(action), cancellable);
+        return newCancelPropagatingFuture(delegate.thenRunAsync(action), cancellable);
     }
 
     @Override
     public CompletableFuture<Void> thenRunAsync(Runnable action, java.util.concurrent.Executor executor) {
-        return newInstance(delegate.thenRunAsync(action, executor), cancellable);
+        return newCancelPropagatingFuture(delegate.thenRunAsync(action, executor), cancellable);
     }
 
     @Override
     public <U, V> CompletableFuture<V> thenCombine(CompletionStage<? extends U> other,
                                                    BiFunction<? super T, ? super U, ? extends V> fn) {
-        return newInstance(delegate.thenCombine(other, fn), cancellable);
+        return newCancelPropagatingFuture(delegate.thenCombine(other, fn), cancellable);
     }
 
     @Override
     public <U, V> CompletableFuture<V> thenCombineAsync(CompletionStage<? extends U> other,
                                                         BiFunction<? super T, ? super U, ? extends V> fn) {
-        return newInstance(delegate.thenCombineAsync(other, fn), cancellable);
+        return newCancelPropagatingFuture(delegate.thenCombineAsync(other, fn), cancellable);
     }
 
     @Override
     public <U, V> CompletableFuture<V> thenCombineAsync(CompletionStage<? extends U> other,
                                                         BiFunction<? super T, ? super U, ? extends V> fn,
                                                         java.util.concurrent.Executor executor) {
-        return newInstance(delegate.thenCombineAsync(other, fn, executor),
+        return newCancelPropagatingFuture(delegate.thenCombineAsync(other, fn, executor),
                 cancellable);
     }
 
     @Override
     public <U> CompletableFuture<Void> thenAcceptBoth(CompletionStage<? extends U> other,
                                                       BiConsumer<? super T, ? super U> action) {
-        return newInstance(delegate.thenAcceptBoth(other, action), cancellable);
+        return newCancelPropagatingFuture(delegate.thenAcceptBoth(other, action), cancellable);
     }
 
     @Override
     public <U> CompletableFuture<Void> thenAcceptBothAsync(CompletionStage<? extends U> other,
                                                            BiConsumer<? super T, ? super U> action) {
-        return newInstance(delegate.thenAcceptBothAsync(other, action),
+        return newCancelPropagatingFuture(delegate.thenAcceptBothAsync(other, action),
                 cancellable);
     }
 
@@ -156,136 +156,136 @@ final class CancelPropagatingCompletableFuture<T> extends CompletableFuture<T> {
     public <U> CompletableFuture<Void> thenAcceptBothAsync(CompletionStage<? extends U> other,
                                                            BiConsumer<? super T, ? super U> action,
                                                            java.util.concurrent.Executor executor) {
-        return newInstance(delegate.thenAcceptBothAsync(other, action, executor),
+        return newCancelPropagatingFuture(delegate.thenAcceptBothAsync(other, action, executor),
                 cancellable);
     }
 
     @Override
     public CompletableFuture<Void> runAfterBoth(CompletionStage<?> other, Runnable action) {
-        return newInstance(delegate.runAfterBoth(other, action), cancellable);
+        return newCancelPropagatingFuture(delegate.runAfterBoth(other, action), cancellable);
     }
 
     @Override
     public CompletableFuture<Void> runAfterBothAsync(CompletionStage<?> other, Runnable action) {
-        return newInstance(delegate.runAfterBothAsync(other, action),
+        return newCancelPropagatingFuture(delegate.runAfterBothAsync(other, action),
                 cancellable);
     }
 
     @Override
     public CompletableFuture<Void> runAfterBothAsync(CompletionStage<?> other, Runnable action,
                                                      java.util.concurrent.Executor executor) {
-        return newInstance(delegate.runAfterBothAsync(other, action, executor),
+        return newCancelPropagatingFuture(delegate.runAfterBothAsync(other, action, executor),
                 cancellable);
     }
 
     @Override
     public <U> CompletableFuture<U> applyToEither(CompletionStage<? extends T> other, Function<? super T, U> fn) {
-        return newInstance(delegate.applyToEither(other, fn), cancellable);
+        return newCancelPropagatingFuture(delegate.applyToEither(other, fn), cancellable);
     }
 
     @Override
     public <U> CompletableFuture<U> applyToEitherAsync(CompletionStage<? extends T> other,
                                                        Function<? super T, U> fn) {
-        return newInstance(delegate.applyToEitherAsync(other, fn), cancellable);
+        return newCancelPropagatingFuture(delegate.applyToEitherAsync(other, fn), cancellable);
     }
 
     @Override
     public <U> CompletableFuture<U> applyToEitherAsync(CompletionStage<? extends T> other,
                                                        Function<? super T, U> fn,
                                                        java.util.concurrent.Executor executor) {
-        return newInstance(delegate.applyToEitherAsync(other, fn, executor),
+        return newCancelPropagatingFuture(delegate.applyToEitherAsync(other, fn, executor),
                 cancellable);
     }
 
     @Override
     public CompletableFuture<Void> acceptEither(CompletionStage<? extends T> other, Consumer<? super T> action) {
-        return newInstance(delegate.acceptEither(other, action), cancellable);
+        return newCancelPropagatingFuture(delegate.acceptEither(other, action), cancellable);
     }
 
     @Override
     public CompletableFuture<Void> acceptEitherAsync(CompletionStage<? extends T> other,
                                                      Consumer<? super T> action) {
-        return newInstance(delegate.acceptEitherAsync(other, action),
+        return newCancelPropagatingFuture(delegate.acceptEitherAsync(other, action),
                 cancellable);
     }
 
     @Override
     public CompletableFuture<Void> acceptEitherAsync(CompletionStage<? extends T> other, Consumer<? super T> action,
                                                      java.util.concurrent.Executor executor) {
-        return newInstance(delegate.acceptEitherAsync(other, action, executor),
+        return newCancelPropagatingFuture(delegate.acceptEitherAsync(other, action, executor),
                 cancellable);
     }
 
     @Override
     public CompletableFuture<Void> runAfterEither(CompletionStage<?> other, Runnable action) {
-        return newInstance(delegate.runAfterEither(other, action), cancellable);
+        return newCancelPropagatingFuture(delegate.runAfterEither(other, action), cancellable);
     }
 
     @Override
     public CompletableFuture<Void> runAfterEitherAsync(CompletionStage<?> other, Runnable action) {
-        return newInstance(delegate.runAfterEitherAsync(other, action),
+        return newCancelPropagatingFuture(delegate.runAfterEitherAsync(other, action),
                 cancellable);
     }
 
     @Override
     public CompletableFuture<Void> runAfterEitherAsync(CompletionStage<?> other, Runnable action,
                                                        java.util.concurrent.Executor executor) {
-        return newInstance(delegate.runAfterEitherAsync(other, action, executor),
+        return newCancelPropagatingFuture(delegate.runAfterEitherAsync(other, action, executor),
                 cancellable);
     }
 
     @Override
     public <U> CompletableFuture<U> thenCompose(Function<? super T, ? extends CompletionStage<U>> fn) {
-        return newInstance(delegate.thenCompose(fn), cancellable);
+        return newCancelPropagatingFuture(delegate.thenCompose(fn), cancellable);
     }
 
     @Override
     public <U> CompletableFuture<U> thenComposeAsync(Function<? super T, ? extends CompletionStage<U>> fn) {
-        return newInstance(delegate.thenComposeAsync(fn), cancellable);
+        return newCancelPropagatingFuture(delegate.thenComposeAsync(fn), cancellable);
     }
 
     @Override
     public <U> CompletableFuture<U> thenComposeAsync(Function<? super T, ? extends CompletionStage<U>> fn,
                                                      java.util.concurrent.Executor executor) {
-        return newInstance(delegate.thenComposeAsync(fn, executor), cancellable);
+        return newCancelPropagatingFuture(delegate.thenComposeAsync(fn, executor), cancellable);
     }
 
     @Override
     public CompletableFuture<T> exceptionally(Function<Throwable, ? extends T> fn) {
-        return newInstance(delegate.exceptionally(fn), cancellable);
+        return newCancelPropagatingFuture(delegate.exceptionally(fn), cancellable);
     }
 
     @Override
     public CompletableFuture<T> whenComplete(BiConsumer<? super T, ? super Throwable> action) {
-        return newInstance(delegate.whenComplete(action), cancellable);
+        return newCancelPropagatingFuture(delegate.whenComplete(action), cancellable);
     }
 
     @Override
     public CompletableFuture<T> whenCompleteAsync(BiConsumer<? super T, ? super Throwable> action) {
-        return newInstance(delegate.whenCompleteAsync(action), cancellable);
+        return newCancelPropagatingFuture(delegate.whenCompleteAsync(action), cancellable);
     }
 
     @Override
     public CompletableFuture<T> whenCompleteAsync(BiConsumer<? super T, ? super Throwable> action,
                                                   java.util.concurrent.Executor executor) {
-        return newInstance(delegate.whenCompleteAsync(action, executor),
+        return newCancelPropagatingFuture(delegate.whenCompleteAsync(action, executor),
                 cancellable);
     }
 
     @Override
     public <U> CompletableFuture<U> handle(BiFunction<? super T, Throwable, ? extends U> fn) {
-        return newInstance(delegate.handle(fn), cancellable);
+        return newCancelPropagatingFuture(delegate.handle(fn), cancellable);
     }
 
     @Override
     public <U> CompletableFuture<U> handleAsync(BiFunction<? super T, Throwable, ? extends U> fn) {
-        return newInstance(delegate.handleAsync(fn), cancellable);
+        return newCancelPropagatingFuture(delegate.handleAsync(fn), cancellable);
     }
 
     @Override
     public <U> CompletableFuture<U> handleAsync(BiFunction<? super T, Throwable, ? extends U> fn,
                                                 Executor executor) {
-        return newInstance(delegate.handleAsync(fn, executor), cancellable);
+        return newCancelPropagatingFuture(delegate.handleAsync(fn, executor), cancellable);
     }
     // CompletionStage end
 
