@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,10 @@
 package io.servicetalk.http.router.jersey;
 
 import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.ExecutorRule;
+import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.DefaultHttpHeadersFactory;
 import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
@@ -39,14 +41,16 @@ import org.mockito.junit.MockitoJUnit;
 import org.mockito.junit.MockitoRule;
 
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import javax.annotation.Nullable;
 import javax.ws.rs.core.Application;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Publisher.just;
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.ServiceTalkTestTimeout.DEFAULT_TIMEOUT_SECONDS;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
@@ -60,6 +64,7 @@ import static java.util.Collections.singleton;
 import static java.util.Collections.singletonMap;
 import static java.util.concurrent.TimeUnit.DAYS;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static java.util.function.Function.identity;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertThat;
@@ -134,7 +139,7 @@ public class CancellationTest {
         final TestCancellable cancellable = new TestCancellable();
         when(exec.schedule(any(Runnable.class), eq(7L), eq(DAYS))).thenReturn(cancellable);
 
-        testCancelResponseSingle(get("/suspended"));
+        testCancelResponseSingle(get("/suspended"), false);
         assertThat(cancellable.cancelled, is(true));
     }
 
@@ -180,13 +185,15 @@ public class CancellationTest {
     }
 
     private void testCancelResponsePayload(final StreamingHttpRequest req) throws Exception {
-        final CompletableFuture<StreamingHttpResponse> futureResponse = new CompletableFuture<>();
+        // The handler method uses OutputStream APIs which are blocking. So we need to call handle and subscribe on
+        // different threads because the write operation will block on the Subscriber creating requestN demand.
+        Single<StreamingHttpResponse> respSingle = EXEC.executor().submit(() ->
+                    jerseyRouter.handle(ctx, req, HTTP_REQ_RES_FACTORY))
+                .flatMap(identity());
+        Future<StreamingHttpResponse> respFuture = respSingle.toFuture();
 
-        jerseyRouter.handle(ctx, req, HTTP_REQ_RES_FACTORY)
-                .subscribe(futureResponse::complete)
-                .cancel(); // This is a no-op because when subscribe returns the response single has been realized
-
-        StreamingHttpResponse res = futureResponse.get();
+        StreamingHttpResponse res = respFuture.get();
+        respFuture.cancel(true); // This is a no-op because when subscribe returns the response single has been realized
         assertThat(res.status(), is(OK));
 
         final AtomicReference<Throwable> errorRef = new AtomicReference<>();
@@ -203,13 +210,51 @@ public class CancellationTest {
     }
 
     private void testCancelResponseSingle(final StreamingHttpRequest req) throws Exception {
+        testCancelResponseSingle(req, true);
+    }
+
+    private void testCancelResponseSingle(final StreamingHttpRequest req,
+                                          boolean enableOffload) throws Exception {
         final AtomicReference<Throwable> errorRef = new AtomicReference<>();
         final CountDownLatch cancelledLatch = new CountDownLatch(1);
 
-        jerseyRouter.handle(ctx, req, HTTP_REQ_RES_FACTORY)
-                .doBeforeError(errorRef::set)
-                .doAfterCancel(cancelledLatch::countDown)
-                .ignoreResult().subscribe().cancel();
+        // The handler method uses OutputStream APIs which are blocking. So we need to call handle and subscribe on
+        // different threads because the write operation will block on the Subscriber creating requestN demand.
+        if (enableOffload) {
+            Single<StreamingHttpResponse> respSingle = EXEC.executor().submit(() ->
+                    jerseyRouter.handle(ctx, req, HTTP_REQ_RES_FACTORY)
+            ).flatMap(identity())
+             .doBeforeError(errorRef::set)
+             .doAfterCancel(cancelledLatch::countDown);
+
+            toSource(respSingle).subscribe(new SingleSource.Subscriber<StreamingHttpResponse>() {
+                @Override
+                public void onSubscribe(final Cancellable cancellable) {
+                    cancellable.cancel();
+                }
+
+                @Override
+                public void onSuccess(@Nullable final StreamingHttpResponse result) {
+                    if (result == null) {
+                        errorRef.compareAndSet(null, new NullPointerException("result == null not expected."));
+                        cancelledLatch.countDown();
+                    } else {
+                        result.payloadBody().ignoreElements().doAfterFinally(cancelledLatch::countDown).subscribe();
+                    }
+                }
+
+                @Override
+                public void onError(final Throwable t) {
+                    errorRef.compareAndSet(null, t);
+                    cancelledLatch.countDown();
+                }
+            });
+        } else {
+            jerseyRouter.handle(ctx, req, HTTP_REQ_RES_FACTORY)
+                    .doBeforeError(errorRef::set)
+                    .doAfterCancel(cancelledLatch::countDown)
+                    .ignoreResult().subscribe().cancel();
+        }
 
         cancelledLatch.await();
 

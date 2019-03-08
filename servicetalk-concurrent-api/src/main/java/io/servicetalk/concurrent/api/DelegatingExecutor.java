@@ -26,7 +26,7 @@ import java.util.function.Supplier;
 /**
  * An {@link Executor} that simply delegates all calls to another {@link Executor}.
  */
-abstract class DelegatingExecutor implements Executor {
+public abstract class DelegatingExecutor implements Executor {
 
     final Executor delegate;
 
@@ -35,7 +35,7 @@ abstract class DelegatingExecutor implements Executor {
      *
      * @param delegate {@link Executor} to delegate all calls to.
      */
-    DelegatingExecutor(final Executor delegate) {
+    public DelegatingExecutor(final Executor delegate) {
         this.delegate = delegate;
     }
 

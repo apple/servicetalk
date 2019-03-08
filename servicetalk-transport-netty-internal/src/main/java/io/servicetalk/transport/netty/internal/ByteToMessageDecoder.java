@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,7 +45,7 @@ import javax.annotation.Nullable;
 
 import static io.netty.buffer.Unpooled.EMPTY_BUFFER;
 import static io.netty.handler.codec.ByteToMessageDecoder.MERGE_CUMULATOR;
-import static java.util.Objects.requireNonNull;
+import static java.lang.Math.min;
 
 /**
  * {@link ChannelInboundHandlerAdapter} which decodes bytes in a stream-like fashion from one {@link ByteBuf} to an
@@ -92,13 +92,13 @@ public abstract class ByteToMessageDecoder extends ChannelInboundHandlerAdapter 
     private static final byte STATE_INIT = 0;
     private static final byte STATE_CALLING_CHILD_DECODE = 1;
     private static final byte STATE_HANDLER_REMOVED_PENDING = 2;
+    private static final int INTEGER_MAX_DOUBLEABLE_VALUE = Integer.MAX_VALUE >>> 1;
 
     @Nullable
     private ByteBuf cumulation;
     private Cumulator cumulator = MERGE_CUMULATOR;
     private final CtxWrapper ctxWrapper = new CtxWrapper();
     private boolean decodeWasNull;
-    private boolean first;
     /**
      * A bitmask where the bits are defined as
      * <ul>
@@ -116,13 +116,6 @@ public abstract class ByteToMessageDecoder extends ChannelInboundHandlerAdapter 
      */
     protected ByteToMessageDecoder() {
         ensureNotSharable();
-    }
-
-    /**
-     * Set the {@link Cumulator} to use for cumulate the received {@link ByteBuf}s.
-     */
-    final void setCumulator(Cumulator cumulator) {
-        this.cumulator = requireNonNull(cumulator);
     }
 
     /**
@@ -183,8 +176,7 @@ public abstract class ByteToMessageDecoder extends ChannelInboundHandlerAdapter 
             final int firedChannelReadCount = ctxWrapper.getFireChannelReadCount();
             try {
                 ByteBuf data = (ByteBuf) msg;
-                first = cumulation == null;
-                if (first) {
+                if (cumulation == null) {
                     cumulation = data;
                 } else {
                     cumulation = cumulator.cumulate(ctx.alloc(), cumulation, data);
@@ -202,7 +194,7 @@ public abstract class ByteToMessageDecoder extends ChannelInboundHandlerAdapter 
                     // We did enough reads already try to discard some bytes so we not risk to see a OOME.
                     // See https://github.com/netty/netty/issues/4275
                     numReads = 0;
-                    tryDiscardSomeReadBytes();
+                    tryDiscardSomeReadBytes(ctx.alloc());
                 }
                 decodeWasNull = firedChannelReadCount == ctxWrapper.getFireChannelReadCount();
                 ctxWrapper.resetFireChannelReadCount();
@@ -215,7 +207,7 @@ public abstract class ByteToMessageDecoder extends ChannelInboundHandlerAdapter 
     @Override
     public void channelReadComplete(ChannelHandlerContext ctx) {
         numReads = 0;
-        tryDiscardSomeReadBytes();
+        tryDiscardSomeReadBytes(ctx.alloc());
         if (decodeWasNull) {
             decodeWasNull = false;
             if (!ctx.channel().config().isAutoRead()) {
@@ -225,36 +217,40 @@ public abstract class ByteToMessageDecoder extends ChannelInboundHandlerAdapter 
         ctx.fireChannelReadComplete();
     }
 
-    private void tryDiscardSomeReadBytes() {
-        if (cumulation != null && !first && cumulation.refCnt() == 1) {
-            // discard some bytes if possible to make more room in the
-            // buffer but only if the refCnt == 1 as otherwise the user may have
-            // used slice().retain() or duplicate().retain().
-            //
-            // See:
-            // - https://github.com/netty/netty/issues/2327
-            // - https://github.com/netty/netty/issues/1764
-            discardSomeReadBytes();
+    private void tryDiscardSomeReadBytes(ByteBufAllocator allocator) {
+        // Avoid using discardSomeReadBytes because this will modify the underlying storage of the ByteBuf.
+        // Modifying the underlying storage of the ByteBuf means that any slices or views on this data will become
+        // corrupted. This is particularly a problem when offloading user code to a non-EventLoop thread to avoid
+        // blocking the EventLoop. In this case the users code will be executed asynchronously, which maybe a slice
+        // of this cumulation, and if we use discardSomeReadBytes the user code will see corrupted data.
+        if (cumulation != null && cumulation.readerIndex() >= cumulation.capacity() >>> 1) {
+            cumulation = swapCumulation(cumulation, allocator);
         }
     }
 
     /**
-     * May discard some, all, or none of read bytes depending on its internal implementation to reduce overall memory
-     * bandwidth consumption at the cost of potentially additional memory consumption.
-     */
-    protected void discardSomeReadBytes() {
-        assert cumulation != null;
-        cumulation.discardSomeReadBytes();
-    }
-
-    /**
-     * Returns cumulation reader index.
+     * Swap the existing {@code cumulation} {@link ByteBuf} for a new {@link ByteBuf}. This method is called when a
+     * heuristic determines the amount of unused bytes is sufficiently high that a resize / defragmentation of the
+     * bytes from {@code cumulation} is beneficial.
+     * <p>
+     * {@link ByteBuf#discardReadBytes()} is generally avoided in this method because it changes the underlying data
+     * structure. If others have slices of this {@link ByteBuf} their view on the data will become corrupted. This is
+     * commonly a problem when processing data asynchronously to avoid blocking the EventLoop thread.
      *
-     * @return reader index of cumulation.
+     * @param cumulation The {@link ByteBuf} that accumulates across socket read operations.
+     * @param allocator Used to allocate a new {@link ByteBuf} if necessary.
+     * @return the {@link ByteBuf} that is responsible for accumulated socket reads.
      */
-    protected final int cumulationReaderIndex() {
-        assert cumulation != null;
-        return cumulation.readerIndex();
+    protected ByteBuf swapCumulation(ByteBuf cumulation, ByteBufAllocator allocator) {
+        try {
+            ByteBuf newCumulation = allocator.buffer(allocator.calculateNewCapacity(cumulation.capacity(),
+                    min(INTEGER_MAX_DOUBLEABLE_VALUE, cumulation.capacity()) << 1));
+            newCumulation.writeBytes(cumulation);
+            return newCumulation;
+        } finally {
+            cumulation.release();
+            // no need to call cumulationReset, folks can override this method instead.
+        }
     }
 
     /**
