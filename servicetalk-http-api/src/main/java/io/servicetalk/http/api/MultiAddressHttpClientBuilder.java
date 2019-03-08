@@ -41,17 +41,12 @@ import static java.util.Objects.requireNonNull;
  * @see <a href="https://tools.ietf.org/html/rfc7230#section-5.3.2">absolute-form rfc7230#section-5.3.2</a>
  */
 public abstract class MultiAddressHttpClientBuilder<U, R>
-        implements HttpClientBuilder<U, R, ServiceDiscovererEvent<R>> {
-    private HttpExecutionStrategy strategy = DEFAULT_BUILDER_STRATEGY;
-
+        extends HttpClientBuilder<U, R, ServiceDiscovererEvent<R>> {
     @Override
     public abstract MultiAddressHttpClientBuilder<U, R> ioExecutor(IoExecutor ioExecutor);
 
     @Override
-    public final MultiAddressHttpClientBuilder<U, R> executionStrategy(HttpExecutionStrategy strategy) {
-        this.strategy = strategy;
-        return this;
-    }
+    public abstract MultiAddressHttpClientBuilder<U, R> executionStrategy(HttpExecutionStrategy strategy);
 
     @Override
     public abstract MultiAddressHttpClientBuilder<U, R> bufferAllocator(BufferAllocator allocator);
@@ -89,7 +84,7 @@ public abstract class MultiAddressHttpClientBuilder<U, R>
     @Override
     public MultiAddressHttpClientBuilder<U, R> appendConnectionFilter(Predicate<StreamingHttpRequest> predicate,
                                                                       HttpConnectionFilterFactory factory) {
-        return (MultiAddressHttpClientBuilder<U, R>) HttpClientBuilder.super.appendConnectionFilter(predicate, factory);
+        return (MultiAddressHttpClientBuilder<U, R>) super.appendConnectionFilter(predicate, factory);
     }
 
     @Override
@@ -189,13 +184,4 @@ public abstract class MultiAddressHttpClientBuilder<U, R>
      * @return {@code this}.
      */
     public abstract MultiAddressHttpClientBuilder<U, R> maxRedirects(int maxRedirects);
-
-    /**
-     * Returns the {@link HttpExecutionStrategy} used by this {@link MultiAddressHttpClientBuilder}.
-     *
-     * @return {@link HttpExecutionStrategy} used by this {@link MultiAddressHttpClientBuilder}.
-     */
-    protected HttpExecutionStrategy executionStrategy() {
-        return strategy;
-    }
 }

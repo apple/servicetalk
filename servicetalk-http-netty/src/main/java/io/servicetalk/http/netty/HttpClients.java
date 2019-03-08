@@ -149,7 +149,7 @@ public final class HttpClients {
             final ServiceDiscoverer<U, R, ? extends PartitionedServiceDiscovererEvent<R>> serviceDiscoverer,
             final U address,
             final Function<HttpRequestMetaData, PartitionAttributesBuilder> partitionAttributesBuilderFactory) {
-        return new DefaultPartitionedHttpClientBuilder<>(address,
+        return new DefaultPartitionedHttpClientBuilder<>(
                 new DefaultSingleAddressHttpClientBuilder<>(address, serviceDiscoverer),
                 partitionAttributesBuilderFactory);
     }

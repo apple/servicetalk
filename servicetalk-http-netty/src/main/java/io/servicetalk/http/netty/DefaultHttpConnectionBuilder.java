@@ -25,7 +25,6 @@ import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.StreamingHttpClient;
-import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpConnectionFilter;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
@@ -46,6 +45,7 @@ import io.servicetalk.transport.netty.internal.NettyConnection.TerminalPredicate
 import java.io.InputStream;
 import java.net.InetSocketAddress;
 import java.net.SocketOption;
+import java.util.function.BiFunction;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
@@ -85,7 +85,9 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> extends HttpCon
     }
 
     @Override
-    public Single<StreamingHttpConnection> buildStreaming(final ResolvedAddress resolvedAddress) {
+    protected <T> Single<T> buildFilterChain(
+            final ResolvedAddress resolvedAddress,
+            final BiFunction<StreamingHttpConnectionFilter, HttpExecutionStrategy, T> assembler) {
         ReadOnlyHttpClientConfig roConfig = config.asReadOnly();
         HttpExecutionStrategy strategy = executionStrategy();
         Executor executor = strategy.executor();
@@ -112,8 +114,7 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> extends HttpCon
         return (roConfig.maxPipelinedRequests() == 1 ?
                 buildForNonPipelined(executionContext, resolvedAddress, roConfig, filterFactory, reqRespFactory) :
                 buildForPipelined(executionContext, resolvedAddress, roConfig, filterFactory, reqRespFactory))
-                    .map(filterChain ->
-                        StreamingHttpConnection.newStreamingConnectionWorkAroundToBeFixed(filterChain, strategy));
+                .map(filter -> assembler.apply(filter, strategy));
     }
 
     static <ResolvedAddress> Single<StreamingHttpConnectionFilter> buildForPipelined(
