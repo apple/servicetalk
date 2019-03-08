@@ -145,7 +145,7 @@ public class NettyHttpServerConnectionTest {
         String payloadBodyString = "foo";
         TestSubscription testSubscription1 = new TestSubscription();
         responsePublisher.onSubscribe(testSubscription1);
-        testSubscription1.waitUntilRequested(1);
+        testSubscription1.awaitRequestNUninterruptibly(1);
         responsePublisher.onNext(DEFAULT_ALLOCATOR.fromAscii(payloadBodyString));
         responsePublisher.onComplete();
         customFlushSender.flush();

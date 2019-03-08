@@ -23,21 +23,13 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * A {@link Subscription} that tracks requests and cancellation.
  */
-public final class TestSubscription implements Subscription {
+public final class TestSubscription extends TestCancellable implements Subscription {
 
     private final AtomicLong requested = new AtomicLong();
-    private final Object waitingLock = new Object();
-    private volatile boolean cancelled;
 
     @Override
     public void request(final long n) {
         requested.accumulateAndGet(n, FlowControlUtil::addWithOverflowProtection);
-        wakeupWaiters();
-    }
-
-    @Override
-    public void cancel() {
-        cancelled = true;
         wakeupWaiters();
     }
 
@@ -51,20 +43,26 @@ public final class TestSubscription implements Subscription {
     }
 
     /**
-     * Returns {@code true} if {@link #cancel()} has been called, {@code false} otherwise.
-     *
-     * @return {@code true} if {@link #cancel()} has been called, {@code false} otherwise.
-     */
-    public boolean isCancelled() {
-        return cancelled;
-    }
-
-    /**
      * Wait until the {@link Subscription#request(long)} amount exceeds {@code amount}.
      *
      * @param amount the amount to wait for.
+     * @throws InterruptedException If this thread is interrupted while waiting.
      */
-    public void waitUntilRequested(long amount) {
+    public void awaitRequestN(long amount) throws InterruptedException {
+        synchronized (waitingLock) {
+            while (requested.get() < amount) {
+                waitingLock.wait();
+            }
+        }
+    }
+
+    /**
+     * Wait until the {@link Subscription#request(long)} amount exceeds {@code amount} without being interrupted. This
+     * method catches an {@link InterruptedException} and discards it silently.
+     *
+     * @param amount the amount to wait for.
+     */
+    public void awaitRequestNUninterruptibly(long amount) {
         boolean interrupted = false;
         synchronized (waitingLock) {
             while (requested.get() < amount) {
@@ -78,32 +76,6 @@ public final class TestSubscription implements Subscription {
 
         if (interrupted) {
             Thread.currentThread().interrupt();
-        }
-    }
-
-    /**
-     * Wait until {@link #cancel()} is called.
-     */
-    public void waitUntilCancelled() {
-        boolean interrupted = false;
-        synchronized (waitingLock) {
-            while (!cancelled) {
-                try {
-                    waitingLock.wait();
-                } catch (InterruptedException e) {
-                    interrupted = true;
-                }
-            }
-        }
-
-        if (interrupted) {
-            Thread.currentThread().interrupt();
-        }
-    }
-
-    private void wakeupWaiters() {
-        synchronized (waitingLock) {
-            waitingLock.notifyAll();
         }
     }
 }
