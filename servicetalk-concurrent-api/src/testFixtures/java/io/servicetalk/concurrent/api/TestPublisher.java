@@ -109,7 +109,7 @@ public final class TestPublisher<T> extends Publisher<T> implements PublisherSou
      * @param subscription the {@link Subscription}
      */
     public void onSubscribe(final Subscription subscription) {
-        final Subscriber<? super T> subscriber = checkSubscriberAndExceptions("onSubscribe");
+        final Subscriber<? super T> subscriber = checkSubscriberAndExceptions();
         subscriber.onSubscribe(subscription);
     }
 
@@ -121,7 +121,7 @@ public final class TestPublisher<T> extends Publisher<T> implements PublisherSou
      */
     @SafeVarargs
     public final void onNext(@Nullable final T... items) {
-        final Subscriber<? super T> subscriber = checkSubscriberAndExceptions("onNext");
+        final Subscriber<? super T> subscriber = checkSubscriberAndExceptions();
         if (items == null) {
             subscriber.onNext(null);
         } else {
@@ -137,7 +137,7 @@ public final class TestPublisher<T> extends Publisher<T> implements PublisherSou
      * @see Subscriber#onComplete()
      */
     public void onComplete() {
-        final Subscriber<? super T> subscriber = checkSubscriberAndExceptions("onComplete");
+        final Subscriber<? super T> subscriber = checkSubscriberAndExceptions();
         subscriber.onComplete();
     }
 
@@ -148,11 +148,11 @@ public final class TestPublisher<T> extends Publisher<T> implements PublisherSou
      * @see Subscriber#onError(Throwable)
      */
     public void onError(final Throwable t) {
-        final Subscriber<? super T> subscriber = checkSubscriberAndExceptions("onError");
+        final Subscriber<? super T> subscriber = checkSubscriberAndExceptions();
         subscriber.onError(t);
     }
 
-    private Subscriber<? super T> checkSubscriberAndExceptions(final String signal) {
+    private Subscriber<? super T> checkSubscriberAndExceptions() {
         if (!exceptions.isEmpty()) {
             final RuntimeException exception = new RuntimeException("Unexpected exception(s) encountered",
                     exceptions.get(0));
