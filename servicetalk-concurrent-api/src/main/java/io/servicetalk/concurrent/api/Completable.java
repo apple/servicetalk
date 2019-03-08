@@ -101,7 +101,7 @@ public abstract class Completable {
      * @param nextFactory Returns the next {@link Completable}, if this {@link Completable} emits an error.
      * @return The new {@link Completable}.
      */
-    public final Completable onErrorResume(Function<? super Throwable, Completable> nextFactory) {
+    public final Completable onErrorResume(Function<Throwable, ? extends Completable> nextFactory) {
         return new ResumeCompletable(this, nextFactory, executor);
     }
 
@@ -433,7 +433,7 @@ public abstract class Completable {
      *
      * @see <a href="http://reactivex.io/documentation/operators/merge.html">ReactiveX merge operator.</a>
      */
-    public final <T> Publisher<T> merge(Publisher<T> mergeWith) {
+    public final <T> Publisher<T> merge(Publisher<? extends T> mergeWith) {
         return new CompletableMergeWithPublisher<>(this, mergeWith, executor);
     }
 
@@ -591,7 +591,7 @@ public abstract class Completable {
      *
      * @see <a href="http://reactivex.io/documentation/operators/retry.html">ReactiveX retry operator.</a>
      */
-    public final Completable retryWhen(BiIntFunction<Throwable, Completable> retryWhen) {
+    public final Completable retryWhen(BiIntFunction<Throwable, ? extends Completable> retryWhen) {
         return toSingle().retryWhen(retryWhen).ignoreResult();
     }
 
@@ -617,8 +617,8 @@ public abstract class Completable {
      *
      * @see <a href="http://reactivex.io/documentation/operators/repeat.html">ReactiveX repeat operator.</a>
      */
-    public final <T> Publisher<T> repeat(IntPredicate shouldRepeat, Supplier<T> valueSupplier) {
-        return toSingle().map(__ -> valueSupplier.get()).repeat(shouldRepeat);
+    public final <T> Publisher<T> repeat(IntPredicate shouldRepeat, Supplier<? extends T> valueSupplier) {
+        return toSingle().<T>map(__ -> valueSupplier.get()).repeat(shouldRepeat);
     }
 
     /**
@@ -650,8 +650,9 @@ public abstract class Completable {
      *
      * @see <a href="http://reactivex.io/documentation/operators/retry.html">ReactiveX retry operator.</a>
      */
-    public final <T> Publisher<T> repeatWhen(IntFunction<Completable> repeatWhen, Supplier<T> valueSupplier) {
-        return toSingle().map(__ -> valueSupplier.get()).repeatWhen(repeatWhen);
+    public final <T> Publisher<T> repeatWhen(IntFunction<? extends Completable> repeatWhen,
+                                             Supplier<? extends T> valueSupplier) {
+        return toSingle().<T>map(__ -> valueSupplier.get()).repeatWhen(repeatWhen);
     }
 
     /**
@@ -761,7 +762,7 @@ public abstract class Completable {
      * {@link Subscriber} methods <strong>MUST NOT</strong> throw.
      * @return The new {@link Completable}.
      */
-    public final Completable doBeforeSubscriber(Supplier<Subscriber> subscriberSupplier) {
+    public final Completable doBeforeSubscriber(Supplier<? extends Subscriber> subscriberSupplier) {
         return new DoBeforeSubscriberCompletable(this, subscriberSupplier, executor);
     }
 
@@ -874,7 +875,7 @@ public abstract class Completable {
      * {@link Subscriber} methods <strong>MUST NOT</strong> throw.
      * @return The new {@link Completable}.
      */
-    public final Completable doAfterSubscriber(Supplier<Subscriber> subscriberSupplier) {
+    public final Completable doAfterSubscriber(Supplier<? extends Subscriber> subscriberSupplier) {
         return new DoAfterSubscriberCompletable(this, subscriberSupplier, executor);
     }
 
@@ -1265,7 +1266,7 @@ public abstract class Completable {
      * @return A new {@link Completable} that terminates successfully if all the provided {@link Completable}s have
      * terminated successfully or any one of them has terminated with a failure.
      */
-    public static Completable collect(Iterable<Completable> completables) {
+    public static Completable collect(Iterable<? extends Completable> completables) {
         return Publisher.from(completables).flatMapCompletable(identity());
     }
 

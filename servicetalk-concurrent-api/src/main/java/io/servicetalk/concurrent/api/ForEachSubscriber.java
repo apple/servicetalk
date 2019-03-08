@@ -32,9 +32,9 @@ final class ForEachSubscriber<T> extends SequentialCancellable implements Subscr
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ForEachSubscriber.class);
 
-    private final Consumer<T> forEach;
+    private final Consumer<? super T> forEach;
 
-    ForEachSubscriber(Consumer<T> forEach) {
+    ForEachSubscriber(Consumer<? super T> forEach) {
         this.forEach = requireNonNull(forEach);
     }
 

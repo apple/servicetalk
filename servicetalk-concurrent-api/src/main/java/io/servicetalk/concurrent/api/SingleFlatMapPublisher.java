@@ -29,9 +29,9 @@ import static java.util.Objects.requireNonNull;
  */
 final class SingleFlatMapPublisher<T, R> extends AbstractNoHandleSubscribePublisher<R> {
     private final Single<T> original;
-    private final Function<? super T, Publisher<? extends R>> nextFactory;
+    private final Function<? super T, ? extends Publisher<? extends R>> nextFactory;
 
-    SingleFlatMapPublisher(Single<T> original, Function<? super T, Publisher<? extends R>> nextFactory,
+    SingleFlatMapPublisher(Single<T> original, Function<? super T, ? extends Publisher<? extends R>> nextFactory,
                            Executor executor) {
         super(executor);
         this.original = requireNonNull(original);
@@ -47,14 +47,15 @@ final class SingleFlatMapPublisher<T, R> extends AbstractNoHandleSubscribePublis
 
     private static final class SubscriberImpl<T, R> implements SingleSource.Subscriber<T>, Subscriber<R> {
         private final Subscriber<? super R> subscriber;
-        private final Function<? super T, Publisher<? extends R>> nextFactory;
+        private final Function<? super T, ? extends Publisher<? extends R>> nextFactory;
         private final SignalOffloader signalOffloader;
         private final AsyncContextMap contextMap;
         private final AsyncContextProvider contextProvider;
         @Nullable
         private volatile SequentialSubscription sequentialSubscription;
 
-        SubscriberImpl(Subscriber<? super R> subscriber, Function<? super T, Publisher<? extends R>> nextFactory,
+        SubscriberImpl(Subscriber<? super R> subscriber,
+                       Function<? super T, ? extends Publisher<? extends R>> nextFactory,
                        final SignalOffloader signalOffloader, final AsyncContextMap contextMap,
                        final AsyncContextProvider contextProvider) {
             this.subscriber = subscriber;

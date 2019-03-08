@@ -30,9 +30,9 @@ import static java.util.Objects.requireNonNull;
 final class ResumePublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
 
     private final Publisher<T> original;
-    private final Function<? super Throwable, Publisher<? extends T>> nextFactory;
+    private final Function<Throwable, ? extends Publisher<? extends T>> nextFactory;
 
-    ResumePublisher(Publisher<T> original, Function<? super Throwable, Publisher<? extends T>> nextFactory,
+    ResumePublisher(Publisher<T> original, Function<Throwable, ? extends Publisher<? extends T>> nextFactory,
                     Executor executor) {
         super(executor);
         this.original = original;
@@ -49,7 +49,7 @@ final class ResumePublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
     private static final class ResumeSubscriber<T> implements Subscriber<T> {
         private final Subscriber<? super T> subscriber;
         @Nullable
-        private volatile Function<? super Throwable, Publisher<? extends T>> nextFactory;
+        private volatile Function<Throwable, ? extends Publisher<? extends T>> nextFactory;
         private final SignalOffloader signalOffloader;
         private final AsyncContextMap contextMap;
         private final AsyncContextProvider contextProvider;
@@ -57,7 +57,7 @@ final class ResumePublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
         private volatile SequentialSubscription sequentialSubscription;
 
         ResumeSubscriber(Subscriber<? super T> subscriber,
-                         Function<? super Throwable, Publisher<? extends T>> nextFactory,
+                         Function<Throwable, ? extends Publisher<? extends T>> nextFactory,
                          SignalOffloader signalOffloader, AsyncContextMap contextMap,
                          AsyncContextProvider contextProvider) {
             this.subscriber = subscriber;
@@ -90,7 +90,7 @@ final class ResumePublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
 
         @Override
         public void onError(Throwable t) {
-            final Function<? super Throwable, Publisher<? extends T>> nextFactory = this.nextFactory;
+            final Function<Throwable, ? extends Publisher<? extends T>> nextFactory = this.nextFactory;
             if (nextFactory == null) {
                 subscriber.onError(t);
                 return;

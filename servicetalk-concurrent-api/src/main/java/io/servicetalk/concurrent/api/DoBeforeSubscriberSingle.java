@@ -16,16 +16,15 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
-import io.servicetalk.concurrent.SingleSource.Subscriber;
 
 import java.util.function.Supplier;
 
 import static java.util.Objects.requireNonNull;
 
 final class DoBeforeSubscriberSingle<T> extends AbstractSynchronousSingleOperator<T, T> {
-    private final Supplier<Subscriber<? super T>> subscriberSupplier;
+    private final Supplier<? extends Subscriber<? super T>> subscriberSupplier;
 
-    DoBeforeSubscriberSingle(Single<T> original, Supplier<Subscriber<? super T>> subscriberSupplier,
+    DoBeforeSubscriberSingle(Single<T> original, Supplier<? extends Subscriber<? super T>> subscriberSupplier,
                              Executor executor) {
         super(original, executor);
         this.subscriberSupplier = requireNonNull(subscriberSupplier);

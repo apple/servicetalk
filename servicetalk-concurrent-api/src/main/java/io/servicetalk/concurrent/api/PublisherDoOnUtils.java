@@ -29,7 +29,7 @@ final class PublisherDoOnUtils {
         // no instances
     }
 
-    static <X> Supplier<Subscriber<? super X>> doOnSubscribeSupplier(Consumer<Subscription> onSubscribe) {
+    static <X> Supplier<Subscriber<? super X>> doOnSubscribeSupplier(Consumer<? super Subscription> onSubscribe) {
         requireNonNull(onSubscribe);
         Subscriber<X> subscriber = new Subscriber<X>() {
             @Override

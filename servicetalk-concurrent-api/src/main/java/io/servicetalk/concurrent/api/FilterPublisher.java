@@ -29,9 +29,9 @@ import static java.util.Objects.requireNonNull;
  * @param <T> Type of items emitted by source {@link Publisher}
  */
 final class FilterPublisher<T> extends AbstractSynchronousPublisherOperator<T, T> {
-    private final Predicate<T> predicate;
+    private final Predicate<? super T> predicate;
 
-    FilterPublisher(Publisher<T> source, Predicate<T> predicate, Executor executor) {
+    FilterPublisher(Publisher<T> source, Predicate<? super T> predicate, Executor executor) {
         super(source, executor);
         this.predicate = requireNonNull(predicate);
     }
