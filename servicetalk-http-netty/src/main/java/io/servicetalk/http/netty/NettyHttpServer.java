@@ -66,7 +66,6 @@ import javax.net.ssl.SSLSession;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.AsyncCloseables.toListenableAsyncCloseable;
 import static io.servicetalk.concurrent.api.Completable.completed;
-import static io.servicetalk.concurrent.api.Completable.error;
 import static io.servicetalk.concurrent.api.Single.success;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderValues.ZERO;
@@ -252,9 +251,9 @@ final class NettyHttpServer {
 
                 if (drainRequestPayloadBody) {
                     objectPublisher = objectPublisher.concatWith(request2.payloadBody().ignoreElements()
-                            // Ignore error about duplicate subscriptions, we are forcing a subscription here
-                            // and the user may also subscribe, so it is OK to see RejectedSubscribeError here.
-                            .onErrorResume(t -> t instanceof RejectedSubscribeError ? completed() : error(t)));
+                            // Discarding the request payload body is an operation which should not impact the state of
+                            // request/response processing. It's appropriate to recover from any error here.
+                            .onErrorResume(t -> completed()));
                 }
 
                 return objectPublisher.concatWith(processor);
