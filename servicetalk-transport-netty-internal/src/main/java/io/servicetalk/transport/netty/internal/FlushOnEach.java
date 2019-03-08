@@ -25,7 +25,7 @@ final class FlushOnEach implements FlushStrategy {
 
     @Override
     public WriteEventsListener apply(final FlushSender sender) {
-        return new WriteEventsListenerAdapter() {
+        return new NoopWriteEventsListener() {
             @Override
             public void itemWritten() {
                 sender.flush();

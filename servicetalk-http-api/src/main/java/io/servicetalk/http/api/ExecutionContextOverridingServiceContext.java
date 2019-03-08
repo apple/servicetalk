@@ -16,15 +16,15 @@
 package io.servicetalk.http.api;
 
 import io.servicetalk.concurrent.api.Executor;
+import io.servicetalk.transport.api.DelegatingExecutionContext;
 import io.servicetalk.transport.api.ExecutionContext;
-import io.servicetalk.transport.api.ExecutionContextAdapter;
 
-final class ExecutionContextOverridingServiceContext extends HttpServiceContextAdapter {
+final class ExecutionContextOverridingServiceContext extends DelegatingHttpServiceContext {
     private final ExecutionContext context;
 
     ExecutionContextOverridingServiceContext(final HttpServiceContext ctx, final Executor e) {
         super(ctx);
-        context = new ExecutionContextAdapter(ctx.executionContext()) {
+        context = new DelegatingExecutionContext(ctx.executionContext()) {
             @Override
             public Executor executor() {
                 return e;

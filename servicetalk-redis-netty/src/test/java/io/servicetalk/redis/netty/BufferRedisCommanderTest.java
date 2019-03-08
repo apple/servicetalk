@@ -23,13 +23,18 @@ import io.servicetalk.redis.api.PubSubBufferRedisConnection;
 import io.servicetalk.redis.api.PubSubRedisMessage;
 import io.servicetalk.redis.api.PubSubRedisMessage.ChannelPubSubRedisMessage;
 import io.servicetalk.redis.api.PubSubRedisMessage.PatternPubSubRedisMessage;
-import io.servicetalk.redis.api.RedisProtocolSupport;
 import io.servicetalk.redis.api.RedisProtocolSupport.BitfieldOperations.Get;
 import io.servicetalk.redis.api.RedisProtocolSupport.BitfieldOperations.Incrby;
 import io.servicetalk.redis.api.RedisProtocolSupport.BitfieldOperations.Overflow;
 import io.servicetalk.redis.api.RedisProtocolSupport.BitfieldOperations.Set;
+import io.servicetalk.redis.api.RedisProtocolSupport.BufferFieldValue;
+import io.servicetalk.redis.api.RedisProtocolSupport.BufferKeyValue;
 import io.servicetalk.redis.api.RedisProtocolSupport.BufferLongitudeLatitudeMember;
 import io.servicetalk.redis.api.RedisProtocolSupport.ExpireDuration;
+import io.servicetalk.redis.api.RedisProtocolSupport.GeoradiusOrder;
+import io.servicetalk.redis.api.RedisProtocolSupport.OffsetCount;
+import io.servicetalk.redis.api.RedisProtocolSupport.SortOrder;
+import io.servicetalk.redis.api.RedisProtocolSupport.SortSorting;
 import io.servicetalk.redis.api.RedisServerException;
 import io.servicetalk.redis.api.TransactedBufferRedisCommander;
 import io.servicetalk.redis.api.TransactionAbortedException;
@@ -55,7 +60,6 @@ import static io.servicetalk.concurrent.api.BlockingTestUtils.awaitIndefinitelyU
 import static io.servicetalk.concurrent.internal.ServiceTalkTestTimeout.DEFAULT_TIMEOUT_SECONDS;
 import static io.servicetalk.redis.api.RedisProtocolSupport.BitfieldOverflow.FAIL;
 import static io.servicetalk.redis.api.RedisProtocolSupport.BitfieldOverflow.SAT;
-import static io.servicetalk.redis.api.RedisProtocolSupport.GeoradiusOrder.ASC;
 import static io.servicetalk.redis.api.RedisProtocolSupport.GeoradiusUnit.KM;
 import static io.servicetalk.redis.api.RedisProtocolSupport.GeoradiusWithcoord.WITHCOORD;
 import static io.servicetalk.redis.api.RedisProtocolSupport.GeoradiusWithdist.WITHDIST;
@@ -156,8 +160,8 @@ public class BufferRedisCommanderTest extends BaseRedisClientTest {
         assertThat(awaitIndefinitely(commandClient.mset(key("key0"), buf("val0"))), is("OK"));
         assertThat(awaitIndefinitely(commandClient.mset(key("key1"), buf("val1"), key("key2"), buf("val2"), key("key3"), buf("val3"))), is("OK"));
 
-        final List<RedisProtocolSupport.BufferKeyValue> keyValues = IntStream.range(4, 10)
-                .mapToObj(i -> new RedisProtocolSupport.BufferKeyValue(key("key" + i), buf("val" + i)))
+        final List<BufferKeyValue> keyValues = IntStream.range(4, 10)
+                .mapToObj(i -> new BufferKeyValue(key("key" + i), buf("val" + i)))
                 .collect(toList());
         assertThat(awaitIndefinitely(commandClient.mset(keyValues)), is("OK"));
 
@@ -242,7 +246,7 @@ public class BufferRedisCommanderTest extends BaseRedisClientTest {
         final List<Buffer> georadiusBuffers = awaitIndefinitely(commandClient.georadius(key("Sicily"), 15d, 37d, 200d, KM));
         assertThat(georadiusBuffers, contains(buf("Palermo"), buf("Catania")));
 
-        final List<?> georadiusMixedList = awaitIndefinitely(commandClient.georadius(key("Sicily"), 15d, 37d, 200d, KM, WITHCOORD, WITHDIST, null, 5L, ASC, null, null));
+        final List<?> georadiusMixedList = awaitIndefinitely(commandClient.georadius(key("Sicily"), 15d, 37d, 200d, KM, WITHCOORD, WITHDIST, null, 5L, GeoradiusOrder.ASC, null, null));
         final Matcher georadiusResponseMatcher = contains(
                 contains(is(buf("Catania")), bufStartingWith(buf("56.")), contains(bufStartingWith(buf("15.")), bufStartingWith(buf("37.")))),
                 contains(is(buf("Palermo")), bufStartingWith(buf("190.")), contains(bufStartingWith(buf("13.")), bufStartingWith(buf("38.")))));
@@ -273,10 +277,10 @@ public class BufferRedisCommanderTest extends BaseRedisClientTest {
     public void testHGetAll() throws Exception {
         String testKey = "key";
         commandClient.del(buf(testKey)).toFuture().get();
-        List<RedisProtocolSupport.BufferFieldValue> fields = new ArrayList<>(3);
-        fields.add(new RedisProtocolSupport.BufferFieldValue(buf("f"), buf("v")));
-        fields.add(new RedisProtocolSupport.BufferFieldValue(buf("f1"), buf("v1")));
-        fields.add(new RedisProtocolSupport.BufferFieldValue(buf("f2"), buf("v2")));
+        List<BufferFieldValue> fields = new ArrayList<>(3);
+        fields.add(new BufferFieldValue(buf("f"), buf("v")));
+        fields.add(new BufferFieldValue(buf("f1"), buf("v1")));
+        fields.add(new BufferFieldValue(buf("f2"), buf("v2")));
         awaitIndefinitelyNonNull(commandClient.hmset(buf(testKey), fields));
         final List<Buffer> result = awaitIndefinitelyNonNull(commandClient.hgetall(buf(testKey)));
         assertThat(new HashSet<>(toBufferFieldValues(result)), is(new HashSet<>(fields)));
@@ -288,18 +292,18 @@ public class BufferRedisCommanderTest extends BaseRedisClientTest {
     public void testHMGet() throws Exception {
         String testKey = "key";
         commandClient.del(buf(testKey)).toFuture().get();
-        List<RedisProtocolSupport.BufferFieldValue> fields = new ArrayList<>(11);
-        fields.add(new RedisProtocolSupport.BufferFieldValue(buf("f"), buf("v")));
-        fields.add(new RedisProtocolSupport.BufferFieldValue(buf("f1"), buf("v1")));
-        fields.add(new RedisProtocolSupport.BufferFieldValue(buf("f2"), buf("v2")));
-        fields.add(new RedisProtocolSupport.BufferFieldValue(buf("f3"), buf("v3")));
-        fields.add(new RedisProtocolSupport.BufferFieldValue(buf("f4"), buf("v4")));
-        fields.add(new RedisProtocolSupport.BufferFieldValue(buf("f5"), buf("v5")));
-        fields.add(new RedisProtocolSupport.BufferFieldValue(buf("f6"), buf("v6")));
-        fields.add(new RedisProtocolSupport.BufferFieldValue(buf("f7"), buf("v7")));
-        fields.add(new RedisProtocolSupport.BufferFieldValue(buf("f8"), buf("v8")));
-        fields.add(new RedisProtocolSupport.BufferFieldValue(buf("f9"), buf("v9")));
-        fields.add(new RedisProtocolSupport.BufferFieldValue(buf("f10"), buf("v10")));
+        List<BufferFieldValue> fields = new ArrayList<>(11);
+        fields.add(new BufferFieldValue(buf("f"), buf("v")));
+        fields.add(new BufferFieldValue(buf("f1"), buf("v1")));
+        fields.add(new BufferFieldValue(buf("f2"), buf("v2")));
+        fields.add(new BufferFieldValue(buf("f3"), buf("v3")));
+        fields.add(new BufferFieldValue(buf("f4"), buf("v4")));
+        fields.add(new BufferFieldValue(buf("f5"), buf("v5")));
+        fields.add(new BufferFieldValue(buf("f6"), buf("v6")));
+        fields.add(new BufferFieldValue(buf("f7"), buf("v7")));
+        fields.add(new BufferFieldValue(buf("f8"), buf("v8")));
+        fields.add(new BufferFieldValue(buf("f9"), buf("v9")));
+        fields.add(new BufferFieldValue(buf("f10"), buf("v10")));
         awaitIndefinitelyNonNull(commandClient.hmset(buf(testKey), fields));
         final List<Buffer> values = awaitIndefinitelyNonNull(commandClient.hmget(buf(testKey), asList(buf("f"), buf("f1"), buf("f2"), buf("f3"), buf("f4"), buf("f5"), buf("f6"), buf("f7"), buf("f8"), buf("f9"), buf("f10"))));
         assertThat(values, is(fields.stream().map(fv -> fv.value).collect(toList())));
@@ -313,13 +317,13 @@ public class BufferRedisCommanderTest extends BaseRedisClientTest {
         awaitIndefinitelyNonNull(commandClient.set(buf("1-score"), buf("1")));
         awaitIndefinitelyNonNull(commandClient.set(buf("1-ᕈгø⨯у"), buf("proxy")));
 
-        assertThat(awaitIndefinitelyNonNull(commandClient.sort(buf(testKey), buf("*-score"), new RedisProtocolSupport.OffsetCount(0, 1), singletonList(buf("*-ᕈгø⨯у")), RedisProtocolSupport.SortOrder.ASC, RedisProtocolSupport.SortSorting.ALPHA)),
+        assertThat(awaitIndefinitelyNonNull(commandClient.sort(buf(testKey), buf("*-score"), new OffsetCount(0, 1), singletonList(buf("*-ᕈгø⨯у")), SortOrder.ASC, SortSorting.ALPHA)),
                 is(singletonList(buf("proxy"))));
-        assertThat(awaitIndefinitelyNonNull(commandClient.sort(buf(testKey), null, new RedisProtocolSupport.OffsetCount(0, 1), singletonList(buf("*-ᕈгø⨯у")), RedisProtocolSupport.SortOrder.ASC, RedisProtocolSupport.SortSorting.ALPHA)),
+        assertThat(awaitIndefinitelyNonNull(commandClient.sort(buf(testKey), null, new OffsetCount(0, 1), singletonList(buf("*-ᕈгø⨯у")), SortOrder.ASC, SortSorting.ALPHA)),
                 is(singletonList(buf("proxy"))));
-        assertThat(awaitIndefinitelyNonNull(commandClient.sort(buf(testKey), null, null, singletonList(buf("*-ᕈгø⨯у")), RedisProtocolSupport.SortOrder.ASC, RedisProtocolSupport.SortSorting.ALPHA)),
+        assertThat(awaitIndefinitelyNonNull(commandClient.sort(buf(testKey), null, null, singletonList(buf("*-ᕈгø⨯у")), SortOrder.ASC, SortSorting.ALPHA)),
                 is(singletonList(buf("proxy"))));
-        assertThat(awaitIndefinitelyNonNull(commandClient.sort(buf(testKey), null, null, singletonList(buf("*-ᕈгø⨯у")), null, RedisProtocolSupport.SortSorting.ALPHA)),
+        assertThat(awaitIndefinitelyNonNull(commandClient.sort(buf(testKey), null, null, singletonList(buf("*-ᕈгø⨯у")), null, SortSorting.ALPHA)),
                 is(singletonList(buf("proxy"))));
         assertThat(awaitIndefinitelyNonNull(commandClient.sort(buf(testKey), null, null, singletonList(buf("*-ᕈгø⨯у")), null, null)),
                 is(singletonList(buf("proxy"))));

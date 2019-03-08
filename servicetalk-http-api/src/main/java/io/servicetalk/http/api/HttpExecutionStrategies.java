@@ -162,8 +162,8 @@ public final class HttpExecutionStrategies {
                     new DefaultHttpExecutionStrategy(executor, offloads, threadAffinity);
         }
 
-        private static HttpExecutionStrategyAdapter noOffloadsStrategyWithExecutor(final Executor executor) {
-            return new HttpExecutionStrategyAdapter(NO_OFFLOADS) {
+        private static DelegatingHttpExecutionStrategy noOffloadsStrategyWithExecutor(final Executor executor) {
+            return new DelegatingHttpExecutionStrategy(NO_OFFLOADS) {
                 @Override
                 public Executor executor() {
                     return executor;

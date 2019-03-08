@@ -190,7 +190,7 @@ public class DefaultNettyPipelinedConnectionTest {
         toSource(requester.request(writePublisher2)).subscribe(secondReadSubscriber);
         secondReadSubscriber.request(1);
         readSubscriber.cancel();
-        testSubscription.waitUntilCancelled();
+        testSubscription.awaitCancelledUninterruptibly();
         assertTrue(writePublisher2.isSubscribed());
         writePublisher2.onNext(1);
         writePublisher2.onComplete();

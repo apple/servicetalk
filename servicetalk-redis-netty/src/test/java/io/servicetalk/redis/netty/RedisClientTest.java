@@ -24,12 +24,14 @@ import io.servicetalk.redis.api.RedisClient;
 import io.servicetalk.redis.api.RedisClient.ReservedRedisConnection;
 import io.servicetalk.redis.api.RedisCommander;
 import io.servicetalk.redis.api.RedisData;
+import io.servicetalk.redis.api.RedisData.Array;
 import io.servicetalk.redis.api.RedisData.ArraySize;
 import io.servicetalk.redis.api.RedisData.CompleteBulkString;
 import io.servicetalk.redis.api.RedisData.DefaultBulkStringChunk;
 import io.servicetalk.redis.api.RedisData.DefaultFirstBulkStringChunk;
 import io.servicetalk.redis.api.RedisData.FirstBulkStringChunk;
 import io.servicetalk.redis.api.RedisData.RequestRedisData;
+import io.servicetalk.redis.api.RedisData.SimpleString;
 import io.servicetalk.redis.api.RedisExecutionStrategy;
 import io.servicetalk.redis.api.RedisProtocolSupport.Command;
 import io.servicetalk.redis.api.RedisRequest;
@@ -132,7 +134,7 @@ public class RedisClientTest extends BaseRedisClientTest {
                         NX)))),
                 contains(anyOf(redisNull(), redisSimpleString("OK"))));
 
-        assertThat(awaitIndefinitely(getEnv().client.request(newRequest(new RedisData.Array<>(PING,
+        assertThat(awaitIndefinitely(getEnv().client.request(newRequest(new Array<>(PING,
                         new CompleteBulkString(buf("my-pong")))))),
                 contains(redisCompleteBulkString(buf("my-pong"))));
     }
@@ -196,7 +198,7 @@ public class RedisClientTest extends BaseRedisClientTest {
         final RedisRequest setRequest = newRequest(SET, Publisher.from(args));
 
         final Collection<RedisData> setResponse = getEnv().client.request(setRequest).toFuture().get();
-        assertEquals(Collections.singletonList(new RedisData.SimpleString("OK")), setResponse);
+        assertEquals(Collections.singletonList(new SimpleString("OK")), setResponse);
 
         final RedisRequest getRequest = newRequest(SET, Publisher.from(new ArraySize(2L), GET,
                 new CompleteBulkString(buf("key"))));

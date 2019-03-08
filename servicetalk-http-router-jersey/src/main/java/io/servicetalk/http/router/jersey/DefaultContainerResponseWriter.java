@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,6 +35,7 @@ import org.glassfish.jersey.server.spi.ContainerResponseWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -54,6 +55,7 @@ import static io.servicetalk.http.router.jersey.CharSequenceUtils.asCharSequence
 import static io.servicetalk.http.router.jersey.internal.RequestProperties.getRequestCancellable;
 import static io.servicetalk.http.router.jersey.internal.RequestProperties.getResponseBufferPublisher;
 import static io.servicetalk.http.router.jersey.internal.RequestProperties.getResponseExecutionStrategy;
+import static java.lang.System.arraycopy;
 import static java.util.Arrays.stream;
 import static java.util.Collections.unmodifiableMap;
 import static java.util.Objects.requireNonNull;
@@ -126,11 +128,11 @@ final class DefaultContainerResponseWriter implements ContainerResponseWriter {
             return null;
         } else {
             // Explicitly ask this ConnectableOutputStream to be closed if its associated byte[] publisher is cancelled
-            final ConnectableOutputStream os = new ConnectableOutputStream(true);
+            final ConnectableOutputStream os = new ConnectableOutputStream();
             sendResponse(contentLength, os.connect().map(bytes ->
                             serviceCtx.executionContext().bufferAllocator().wrap(bytes)),
                     responseContext);
-            return os;
+            return new CopyingOutputStream(os);
         }
     }
 
@@ -274,5 +276,48 @@ final class DefaultContainerResponseWriter implements ContainerResponseWriter {
 
     private boolean isHeadRequest() {
         return HEAD.equals(request.getMethod());
+    }
+
+    /**
+     * This class will make sure all byte arrays are copying before writing to a delegate {@link OutputStream}.
+     * This is necessary for jersey as it attempts to share a common buffer and reuse it, but we may process this buffer
+     * asynchronously and observe the modified content.
+     * All other methods will just be a pass through to a delegate {@link OutputStream}.
+     */
+    private static final class CopyingOutputStream extends OutputStream {
+        private final OutputStream delegate;
+
+        CopyingOutputStream(OutputStream delegate) {
+            this.delegate = requireNonNull(delegate);
+        }
+
+        @Override
+        public void write(final int b) throws IOException {
+            delegate.write(b);
+        }
+
+        @Override
+        public void write(final byte[] b) throws IOException {
+            final byte[] result = new byte[b.length];
+            arraycopy(b, 0, result, 0, result.length);
+            delegate.write(result);
+        }
+
+        @Override
+        public void write(final byte[] b, final int off, final int len) throws IOException {
+            final byte[] result = new byte[len];
+            arraycopy(b, off, result, 0, result.length);
+            delegate.write(result);
+        }
+
+        @Override
+        public void flush() throws IOException {
+            delegate.flush();
+        }
+
+        @Override
+        public void close() throws IOException {
+            delegate.close();
+        }
     }
 }

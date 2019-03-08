@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,6 @@
  */
 package io.servicetalk.http.netty;
 
-import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
@@ -49,7 +48,7 @@ import io.servicetalk.transport.netty.internal.FlushStrategy;
 import io.servicetalk.transport.netty.internal.NettyConnection;
 import io.servicetalk.transport.netty.internal.NettyConnection.TerminalPredicate;
 import io.servicetalk.transport.netty.internal.NettyConnectionContext;
-import io.servicetalk.transport.netty.internal.WriteEventsListenerAdapter;
+import io.servicetalk.transport.netty.internal.NoopWriteEventsListener;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -206,17 +205,17 @@ final class NettyHttpServer {
                 // we may attempt to do duplicate subscribe on NettyChannelPublisher, which will result in a connection
                 // closure.
                 CompletableProcessor processor = new CompletableProcessor();
-                StreamingHttpRequest request2 = request.transformPayloadBody(
+                StreamingHttpRequest request2 = request.transformRawPayloadBody(
                         // Cancellation is assumed to close the connection, or be ignored if this Subscriber has already
                         // terminated. That means we don't need to trigger the processor as completed because we don't
                         // care about processing more requests.
-                        payload -> payload.doAfterSubscriber(() -> new Subscriber<Buffer>() {
+                        payload -> payload.doAfterSubscriber(() -> new Subscriber<Object>() {
                             @Override
                             public void onSubscribe(final Subscription s) {
                             }
 
                             @Override
-                            public void onNext(final Buffer buffer) {
+                            public void onNext(final Object obj) {
                             }
 
                             @Override
@@ -366,9 +365,9 @@ final class NettyHttpServer {
          */
         private static final class CompositeFlushStrategy implements FlushStrategy, FlushStrategy.WriteEventsListener {
 
-            private static final WriteEventsListener INIT = new WriteEventsListenerAdapter() { };
-            private static final WriteEventsListener CANCELLED = new WriteEventsListenerAdapter() { };
-            private static final WriteEventsListener TERMINATED = new WriteEventsListenerAdapter() { };
+            private static final WriteEventsListener INIT = new NoopWriteEventsListener() { };
+            private static final WriteEventsListener CANCELLED = new NoopWriteEventsListener() { };
+            private static final WriteEventsListener TERMINATED = new NoopWriteEventsListener() { };
 
             private static final AtomicReferenceFieldUpdater<CompositeFlushStrategy, FlushStrategy>
                     flushStrategyUpdater = newUpdater(CompositeFlushStrategy.class, FlushStrategy.class,

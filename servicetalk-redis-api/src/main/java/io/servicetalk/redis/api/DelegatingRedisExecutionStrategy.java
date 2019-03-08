@@ -27,7 +27,7 @@ import static java.util.Objects.requireNonNull;
 /**
  * An {@link RedisExecutionStrategy} that delegates all method calls to another {@link RedisExecutionStrategy}.
  */
-public class RedisExecutionStrategyAdapter implements RedisExecutionStrategy {
+public class DelegatingRedisExecutionStrategy implements RedisExecutionStrategy {
 
     private final RedisExecutionStrategy delegate;
 
@@ -36,7 +36,7 @@ public class RedisExecutionStrategyAdapter implements RedisExecutionStrategy {
      *
      * @param delegate {@link RedisExecutionStrategy} to which all method calls will be delegated.
      */
-    public RedisExecutionStrategyAdapter(final RedisExecutionStrategy delegate) {
+    public DelegatingRedisExecutionStrategy(final RedisExecutionStrategy delegate) {
         this.delegate = requireNonNull(delegate);
     }
 

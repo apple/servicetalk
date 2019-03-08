@@ -28,7 +28,7 @@ import static java.util.Objects.requireNonNull;
 /**
  * An {@link HttpExecutionStrategy} that delegates all method calls to another {@link HttpExecutionStrategy}.
  */
-public class HttpExecutionStrategyAdapter implements HttpExecutionStrategy {
+public class DelegatingHttpExecutionStrategy implements HttpExecutionStrategy {
 
     private final HttpExecutionStrategy delegate;
 
@@ -37,7 +37,7 @@ public class HttpExecutionStrategyAdapter implements HttpExecutionStrategy {
      *
      * @param delegate {@link HttpExecutionStrategy} to which all method calls will be delegated.
      */
-    public HttpExecutionStrategyAdapter(final HttpExecutionStrategy delegate) {
+    public DelegatingHttpExecutionStrategy(final HttpExecutionStrategy delegate) {
         this.delegate = requireNonNull(delegate);
     }
 
@@ -121,7 +121,7 @@ public class HttpExecutionStrategyAdapter implements HttpExecutionStrategy {
             return false;
         }
 
-        final HttpExecutionStrategyAdapter that = (HttpExecutionStrategyAdapter) o;
+        final DelegatingHttpExecutionStrategy that = (DelegatingHttpExecutionStrategy) o;
 
         return delegate.equals(that.delegate);
     }

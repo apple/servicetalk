@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,23 +13,5 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.transport.netty.internal;
-
-final class FlushOnEnd implements FlushStrategy {
-
-    static final FlushOnEnd FLUSH_ON_END = new FlushOnEnd();
-
-    private FlushOnEnd() {
-        // No instances.
-    }
-
-    @Override
-    public WriteEventsListener apply(final FlushSender sender) {
-        return new NoopWriteEventsListener() {
-            @Override
-            public void writeTerminated() {
-                sender.flush();
-            }
-        };
-    }
-}
+enableFeaturePreview("IMPROVED_POM_SUPPORT")
+rootProject.name = "servicetalk-oio-api"

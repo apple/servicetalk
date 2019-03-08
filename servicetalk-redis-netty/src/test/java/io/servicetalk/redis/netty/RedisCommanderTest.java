@@ -21,14 +21,17 @@ import io.servicetalk.redis.api.PubSubRedisConnection;
 import io.servicetalk.redis.api.PubSubRedisMessage;
 import io.servicetalk.redis.api.PubSubRedisMessage.ChannelPubSubRedisMessage;
 import io.servicetalk.redis.api.RedisCommander;
-import io.servicetalk.redis.api.RedisProtocolSupport;
 import io.servicetalk.redis.api.RedisProtocolSupport.BitfieldOperations.Get;
 import io.servicetalk.redis.api.RedisProtocolSupport.BitfieldOperations.Incrby;
 import io.servicetalk.redis.api.RedisProtocolSupport.BitfieldOperations.Overflow;
 import io.servicetalk.redis.api.RedisProtocolSupport.BitfieldOperations.Set;
 import io.servicetalk.redis.api.RedisProtocolSupport.ExpireDuration;
 import io.servicetalk.redis.api.RedisProtocolSupport.FieldValue;
+import io.servicetalk.redis.api.RedisProtocolSupport.KeyValue;
 import io.servicetalk.redis.api.RedisProtocolSupport.LongitudeLatitudeMember;
+import io.servicetalk.redis.api.RedisProtocolSupport.OffsetCount;
+import io.servicetalk.redis.api.RedisProtocolSupport.SortOrder;
+import io.servicetalk.redis.api.RedisProtocolSupport.SortSorting;
 import io.servicetalk.redis.api.RedisServerException;
 import io.servicetalk.redis.api.TransactedRedisCommander;
 import io.servicetalk.redis.api.TransactionAbortedException;
@@ -154,8 +157,8 @@ public class RedisCommanderTest extends BaseRedisClientTest {
         assertThat(awaitIndefinitely(commandClient.mset(key("key0"), "val0")), is("OK"));
         assertThat(awaitIndefinitely(commandClient.mset(key("key1"), "val1", key("key2"), "val2", key("key3"), "val3")), is("OK"));
 
-        final List<RedisProtocolSupport.KeyValue> keyValues = IntStream.range(4, 10)
-                .mapToObj(i -> new RedisProtocolSupport.KeyValue(key("key" + i), "val" + i))
+        final List<KeyValue> keyValues = IntStream.range(4, 10)
+                .mapToObj(i -> new KeyValue(key("key" + i), "val" + i))
                 .collect(toList());
         assertThat(awaitIndefinitely(commandClient.mset(keyValues)), is("OK"));
 
@@ -311,13 +314,13 @@ public class RedisCommanderTest extends BaseRedisClientTest {
         awaitIndefinitelyNonNull(commandClient.set("1-score", "1"));
         awaitIndefinitelyNonNull(commandClient.set("1-ᕈгø⨯у", "proxy"));
 
-        assertThat(awaitIndefinitelyNonNull(commandClient.sort(testKey, "*-score", new RedisProtocolSupport.OffsetCount(0, 1), singletonList("*-ᕈгø⨯у"), RedisProtocolSupport.SortOrder.ASC, RedisProtocolSupport.SortSorting.ALPHA)),
+        assertThat(awaitIndefinitelyNonNull(commandClient.sort(testKey, "*-score", new OffsetCount(0, 1), singletonList("*-ᕈгø⨯у"), SortOrder.ASC, SortSorting.ALPHA)),
                 is(singletonList("proxy")));
-        assertThat(awaitIndefinitelyNonNull(commandClient.sort(testKey, null, new RedisProtocolSupport.OffsetCount(0, 1), singletonList("*-ᕈгø⨯у"), RedisProtocolSupport.SortOrder.ASC, RedisProtocolSupport.SortSorting.ALPHA)),
+        assertThat(awaitIndefinitelyNonNull(commandClient.sort(testKey, null, new OffsetCount(0, 1), singletonList("*-ᕈгø⨯у"), SortOrder.ASC, SortSorting.ALPHA)),
                 is(singletonList("proxy")));
-        assertThat(awaitIndefinitelyNonNull(commandClient.sort(testKey, null, null, singletonList("*-ᕈгø⨯у"), RedisProtocolSupport.SortOrder.ASC, RedisProtocolSupport.SortSorting.ALPHA)),
+        assertThat(awaitIndefinitelyNonNull(commandClient.sort(testKey, null, null, singletonList("*-ᕈгø⨯у"), SortOrder.ASC, SortSorting.ALPHA)),
                 is(singletonList("proxy")));
-        assertThat(awaitIndefinitelyNonNull(commandClient.sort(testKey, null, null, singletonList("*-ᕈгø⨯у"), null, RedisProtocolSupport.SortSorting.ALPHA)),
+        assertThat(awaitIndefinitelyNonNull(commandClient.sort(testKey, null, null, singletonList("*-ᕈгø⨯у"), null, SortSorting.ALPHA)),
                 is(singletonList("proxy")));
         assertThat(awaitIndefinitelyNonNull(commandClient.sort(testKey, null, null, singletonList("*-ᕈгø⨯у"), null, null)),
                 is(singletonList("proxy")));

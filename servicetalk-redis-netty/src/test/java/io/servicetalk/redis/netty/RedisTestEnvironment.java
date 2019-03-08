@@ -18,7 +18,8 @@ package io.servicetalk.redis.netty;
 import io.servicetalk.concurrent.api.DefaultThreadFactory;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.redis.api.RedisClient;
-import io.servicetalk.redis.api.RedisData;
+import io.servicetalk.redis.api.RedisData.BulkStringChunk;
+import io.servicetalk.redis.api.RedisData.CompleteBulkString;
 import io.servicetalk.redis.utils.RetryingRedisRequesterFilter;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.IoExecutor;
@@ -78,8 +79,8 @@ final class RedisTestEnvironment implements AutoCloseable {
                 .build();
 
         final String serverInfo = awaitIndefinitelyNonNull(
-                client.request(newRequest(INFO, new RedisData.CompleteBulkString(DEFAULT_ALLOCATOR.fromUtf8("SERVER"))))
-                        .filter(d -> d instanceof RedisData.BulkStringChunk)
+                client.request(newRequest(INFO, new CompleteBulkString(DEFAULT_ALLOCATOR.fromUtf8("SERVER"))))
+                        .filter(d -> d instanceof BulkStringChunk)
                         .reduce(StringBuilder::new, (sb, d) -> sb.append(d.bufferValue().toString(US_ASCII))))
                 .toString();
 

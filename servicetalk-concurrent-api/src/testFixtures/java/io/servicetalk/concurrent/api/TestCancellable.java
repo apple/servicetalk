@@ -20,13 +20,15 @@ import io.servicetalk.concurrent.Cancellable;
 /**
  * A {@link Cancellable} that tracks cancellation.
  */
-public final class TestCancellable implements Cancellable {
+public class TestCancellable implements Cancellable {
 
     private volatile boolean cancelled;
+    final Object waitingLock = new Object();
 
     @Override
-    public void cancel() {
+    public final void cancel() {
         cancelled = true;
+        wakeupWaiters();
     }
 
     /**
@@ -34,7 +36,47 @@ public final class TestCancellable implements Cancellable {
      *
      * @return {@code true} if {@link #cancel()} has been called, {@code false} otherwise.
      */
-    public boolean isCancelled() {
+    public final boolean isCancelled() {
         return cancelled;
+    }
+
+    /**
+     * Wait until {@link #cancel()} is called.
+     *
+     * @throws InterruptedException If this thread is interrupted while waiting.
+     */
+    public final void awaitCancelled() throws InterruptedException {
+        synchronized (waitingLock) {
+            while (!cancelled) {
+                waitingLock.wait();
+            }
+        }
+    }
+
+    /**
+     * Wait until {@link #cancel()} is called without being interrupted. This method catches an
+     * {@link InterruptedException} and discards it silently.
+     */
+    public final void awaitCancelledUninterruptibly() {
+        boolean interrupted = false;
+        synchronized (waitingLock) {
+            while (!cancelled) {
+                try {
+                    waitingLock.wait();
+                } catch (InterruptedException e) {
+                    interrupted = true;
+                }
+            }
+        }
+
+        if (interrupted) {
+            Thread.currentThread().interrupt();
+        }
+    }
+
+    final void wakeupWaiters() {
+        synchronized (waitingLock) {
+            waitingLock.notifyAll();
+        }
     }
 }

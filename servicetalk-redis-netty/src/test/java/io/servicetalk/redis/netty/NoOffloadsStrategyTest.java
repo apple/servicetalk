@@ -16,9 +16,9 @@
 package io.servicetalk.redis.netty;
 
 import io.servicetalk.concurrent.api.Executor;
+import io.servicetalk.redis.api.DelegatingRedisExecutionStrategy;
 import io.servicetalk.redis.api.RedisClient;
 import io.servicetalk.redis.api.RedisClientBuilder;
-import io.servicetalk.redis.api.RedisExecutionStrategyAdapter;
 import io.servicetalk.transport.api.HostAndPort;
 
 import org.junit.After;
@@ -64,7 +64,7 @@ public class NoOffloadsStrategyTest {
     @Test
     public void turnOffAllExecutors() throws Exception {
         String testThread = currentThread().getName();
-        client = builder.executionStrategy(new RedisExecutionStrategyAdapter(noOffloadsStrategy()) {
+        client = builder.executionStrategy(new DelegatingRedisExecutionStrategy(noOffloadsStrategy()) {
             @Override
             public Executor executor() {
                 return immediate();

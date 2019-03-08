@@ -19,34 +19,18 @@ import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.internal.FlowControlUtil;
 
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.concurrent.locks.LockSupport;
 
 /**
  * A {@link Subscription} that tracks requests and cancellation.
  */
-public final class TestSubscription implements Subscription {
+public final class TestSubscription extends TestCancellable implements Subscription {
 
     private final AtomicLong requested = new AtomicLong();
-    private final AtomicReference<Thread> waitingThreadRef = new AtomicReference<>();
-    private volatile boolean cancelled;
 
     @Override
     public void request(final long n) {
         requested.accumulateAndGet(n, FlowControlUtil::addWithOverflowProtection);
-        Thread waitingThread = waitingThreadRef.get();
-        if (waitingThread != null) {
-            LockSupport.unpark(waitingThread);
-        }
-    }
-
-    @Override
-    public void cancel() {
-        cancelled = true;
-        Thread waitingThread = waitingThreadRef.get();
-        if (waitingThread != null) {
-            LockSupport.unpark(waitingThread);
-        }
+        wakeupWaiters();
     }
 
     /**
@@ -59,45 +43,39 @@ public final class TestSubscription implements Subscription {
     }
 
     /**
-     * Returns {@code true} if {@link #cancel()} has been called, {@code false} otherwise.
-     *
-     * @return {@code true} if {@link #cancel()} has been called, {@code false} otherwise.
-     */
-    public boolean isCancelled() {
-        return cancelled;
-    }
-
-    /**
      * Wait until the {@link Subscription#request(long)} amount exceeds {@code amount}.
      *
      * @param amount the amount to wait for.
+     * @throws InterruptedException If this thread is interrupted while waiting.
      */
-    public void waitUntilRequested(long amount) {
-        if (!waitingThreadRef.compareAndSet(null, Thread.currentThread())) {
-            throw new IllegalStateException("only a single waiter thread at a time is supported");
+    public void awaitRequestN(long amount) throws InterruptedException {
+        synchronized (waitingLock) {
+            while (requested.get() < amount) {
+                waitingLock.wait();
+            }
         }
-
-        // Before we park we must check the condition to avoid deadlock, so no do/while.
-        while (requested.get() < amount) {
-            LockSupport.park();
-        }
-
-        waitingThreadRef.set(null);
     }
 
     /**
-     * Wait until {@link #cancel()} is called.
+     * Wait until the {@link Subscription#request(long)} amount exceeds {@code amount} without being interrupted. This
+     * method catches an {@link InterruptedException} and discards it silently.
+     *
+     * @param amount the amount to wait for.
      */
-    public void waitUntilCancelled() {
-        if (!waitingThreadRef.compareAndSet(null, Thread.currentThread())) {
-            throw new IllegalStateException("only a single waiter thread at a time is supported");
+    public void awaitRequestNUninterruptibly(long amount) {
+        boolean interrupted = false;
+        synchronized (waitingLock) {
+            while (requested.get() < amount) {
+                try {
+                    waitingLock.wait();
+                } catch (InterruptedException e) {
+                    interrupted = true;
+                }
+            }
         }
 
-        // Before we park we must check the condition to avoid deadlock, so no do/while.
-        while (!cancelled) {
-            LockSupport.park();
+        if (interrupted) {
+            Thread.currentThread().interrupt();
         }
-
-        waitingThreadRef.set(null);
     }
 }

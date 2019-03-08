@@ -19,7 +19,7 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.internal.SubscribablePublisher;
 import io.servicetalk.redis.api.RedisData;
-import io.servicetalk.redis.api.RedisProtocolSupport;
+import io.servicetalk.redis.api.RedisProtocolSupport.Command;
 import io.servicetalk.redis.api.RedisRequest;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ExecutionContext;
@@ -68,7 +68,7 @@ final class PipelinedRedisConnection extends AbstractRedisConnection {
      Since, Write guarantees sequential access and visibility, we do not need this field to be volatile/atomic.
      */
     @Nullable
-    private RedisProtocolSupport.Command potentiallyConflictingCommand;
+    private Command potentiallyConflictingCommand;
 
     /**
      In case we are running a long running command like MONITOR, (P)SUBSCRIBE, issuing QUIT may never complete
@@ -137,7 +137,7 @@ final class PipelinedRedisConnection extends AbstractRedisConnection {
         return new SubscribablePublisher<RedisData>() {
             @Override
             protected void handleSubscribe(Subscriber<? super RedisData> subscriber) {
-                final RedisProtocolSupport.Command cmd = request.command();
+                final Command cmd = request.command();
                 boolean flaggedSkipQuit = cmd == MONITOR || cmd == SUBSCRIBE || cmd == PSUBSCRIBE;
                 if (flaggedSkipQuit) {
                     skipQuitWhenClosedUpdater.incrementAndGet(PipelinedRedisConnection.this);

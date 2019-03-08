@@ -18,10 +18,12 @@ package io.servicetalk.http.api;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.api.ConnectionContext;
 
+import org.junit.Test;
+
 import static org.mockito.Mockito.mock;
 
 public class ConditionalHttpConnectionFilterTest extends AbstractConditionalHttpFilterTest {
-    private static final StreamingHttpConnection TEST_CONNECTION =
+    private final StreamingHttpConnection testConnection =
             new TestStreamingHttpConnection(REQ_RES_FACTORY, TEST_CTX, mock(ConnectionContext.class)) {
                 @Override
                 public Single<StreamingHttpResponse> request(final HttpExecutionStrategy __,
@@ -30,19 +32,39 @@ public class ConditionalHttpConnectionFilterTest extends AbstractConditionalHttp
                 }
             };
 
-    private static final StreamingHttpConnectionFilter FILTER =
+    private final StreamingHttpConnectionFilter filter =
             new ConditionalHttpConnectionFilter(TEST_REQ_PREDICATE,
-                    new StreamingHttpConnectionFilter(TEST_CONNECTION) {
+                    new StreamingHttpConnectionFilter(testConnection) {
                         @Override
                         public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
                                                                      final StreamingHttpRequest req) {
                             return super.request(strategy, markFiltered(req));
                         }
                     },
-                    TEST_CONNECTION);
+                    testConnection);
 
     @Override
     protected Single<StreamingHttpResponse> sendTestRequest(final StreamingHttpRequest req) {
-        return FILTER.request(req);
+        return filter.request(req);
+    }
+
+    @Test
+    public void closeAsyncImpactsBoth() throws Exception {
+        StreamingHttpConnection predicateConnection =
+                new TestStreamingHttpConnection(REQ_RES_FACTORY, TEST_CTX, mock(ConnectionContext.class));
+        new ConditionalHttpConnectionFilter(req -> true, predicateConnection, testConnection)
+                .closeAsync().toFuture().get();
+        testConnection.onClose().toFuture().get();
+        predicateConnection.onClose().toFuture().get();
+    }
+
+    @Test
+    public void closeAsyncGracefullyImpactsBoth() throws Exception {
+        StreamingHttpConnection predicateConnection =
+                new TestStreamingHttpConnection(REQ_RES_FACTORY, TEST_CTX, mock(ConnectionContext.class));
+        new ConditionalHttpConnectionFilter(req -> true, predicateConnection, testConnection)
+                .closeAsyncGracefully().toFuture().get();
+        testConnection.onClose().toFuture().get();
+        predicateConnection.onClose().toFuture().get();
     }
 }

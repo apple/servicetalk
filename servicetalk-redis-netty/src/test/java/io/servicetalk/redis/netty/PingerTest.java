@@ -23,7 +23,7 @@ import io.servicetalk.redis.api.PubSubRedisConnection;
 import io.servicetalk.redis.api.PubSubRedisMessage;
 import io.servicetalk.redis.api.RedisConnection;
 import io.servicetalk.redis.api.RedisData;
-import io.servicetalk.redis.api.RedisProtocolSupport;
+import io.servicetalk.redis.api.RedisProtocolSupport.Command;
 import io.servicetalk.redis.api.TransactedRedisCommander;
 import io.servicetalk.tcp.netty.internal.ReadOnlyTcpClientConfig;
 import io.servicetalk.tcp.netty.internal.TcpClientChannelInitializer;
@@ -217,7 +217,7 @@ public class PingerTest {
                         public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
                             if (msg instanceof ByteBuf) {
                                 String cmd = ((ByteBuf) msg).toString(StandardCharsets.UTF_8);
-                                RedisProtocolSupport.Command command = null;
+                                Command command = null;
                                 if (cmd.contains("PING")) {
                                     command = PING;
                                 } else if (cmd.contains("MULTI")) {

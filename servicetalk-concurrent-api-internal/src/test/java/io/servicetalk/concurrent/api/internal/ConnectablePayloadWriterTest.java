@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.http.api;
+package io.servicetalk.concurrent.api.internal;
 
 import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.api.Publisher;
@@ -64,7 +64,7 @@ public class ConnectablePayloadWriterTest {
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
     @Rule
-    public final ExpectedException exception = ExpectedException.none();
+    public final ExpectedException expectedException = ExpectedException.none();
     public final TestPublisherSubscriber<String> subscriber = new TestPublisherSubscriber<>();
     private ConnectablePayloadWriter<String> cpw;
     private ExecutorService executorService;
@@ -87,11 +87,19 @@ public class ConnectablePayloadWriterTest {
             cpw.flush();
             cpw.close();
         }));
+
         toSource(cpw.connect()).subscribe(subscriber);
         subscriber.request(1);
         f.get();
         assertThat(subscriber.takeItems(), contains("foo"));
         assertThat(subscriber.takeTerminal(), is(complete()));
+        cpw.close(); // should be idempotent
+    }
+
+    @Test
+    public void closeShouldBeIdempotentWhenNotSubscribed() throws IOException {
+        cpw.connect();
+        cpw.close();
         cpw.close(); // should be idempotent
     }
 
@@ -401,8 +409,8 @@ public class ConnectablePayloadWriterTest {
         assertThat(subscriber.takeItems(), is(empty()));
         subscriber.cancel();
         Future<?> f = executorService.submit(toRunnable(() -> cpw.write("foo")));
-        exception.expect(ExecutionException.class);
-        exception.expectCause(is(instanceOf(RuntimeException.class)));
+        expectedException.expect(ExecutionException.class);
+        expectedException.expectCause(is(instanceOf(RuntimeException.class)));
         f.get();
     }
 
@@ -419,7 +427,7 @@ public class ConnectablePayloadWriterTest {
         assertThat(subscriber.takeItems(), contains("foo"));
 
         subscriber.cancel();
-        exception.expect(is(instanceOf(IOException.class)));
+        expectedException.expect(is(instanceOf(IOException.class)));
         cpw.write("foo");
     }
 
@@ -572,7 +580,7 @@ public class ConnectablePayloadWriterTest {
         assertArrayEquals(data, received); // assertThat() times out
     }
 
-    private static Runnable toRunnable(CheckedRunnable runnable) {
+    static Runnable toRunnable(CheckedRunnable runnable) {
         return () -> {
             try {
                 runnable.doWork();
@@ -583,7 +591,7 @@ public class ConnectablePayloadWriterTest {
     }
 
     @FunctionalInterface
-    private interface CheckedRunnable {
+    interface CheckedRunnable {
         void doWork() throws Exception;
     }
 }

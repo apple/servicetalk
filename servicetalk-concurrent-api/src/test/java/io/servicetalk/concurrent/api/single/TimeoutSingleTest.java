@@ -17,16 +17,15 @@ package io.servicetalk.concurrent.api.single;
 
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.SingleSource.Subscriber;
-import io.servicetalk.concurrent.api.LegacyMockedSingleListenerRule;
+import io.servicetalk.concurrent.api.DelegatingExecutor;
+import io.servicetalk.concurrent.api.ExecutorRule;
 import io.servicetalk.concurrent.api.LegacyTestSingle;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.concurrent.api.TimeoutTestUtils.AbstractTestExecutor;
-import io.servicetalk.concurrent.api.TimeoutTestUtils.ScheduleEvent;
-import io.servicetalk.concurrent.api.TimeoutTestUtils.ScheduleQueueTestExecutor;
+import io.servicetalk.concurrent.api.TestCancellable;
+import io.servicetalk.concurrent.api.TestExecutor;
+import io.servicetalk.concurrent.api.TestSingleSubscriber;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
@@ -35,122 +34,121 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.Matchers.sameInstance;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 public class TimeoutSingleTest {
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
     @Rule
-    public final LegacyMockedSingleListenerRule<Integer> subscriberRule = new LegacyMockedSingleListenerRule<>();
+    public final ExecutorRule<TestExecutor> executorRule = ExecutorRule.withTestExecutor();
 
-    private LegacyTestSingle<Integer> source;
-    private final ScheduleQueueTestExecutor testExecutor = new ScheduleQueueTestExecutor();
-    private java.util.concurrent.ExecutorService timerSimulator;
-
-    @Before
-    public void setUp() throws Exception {
-        timerSimulator = java.util.concurrent.Executors.newFixedThreadPool(1);
-        source = new LegacyTestSingle<>(false, false);
-    }
-
-    @After
-    public void teardown() {
-        timerSimulator.shutdown();
-    }
+    private LegacyTestSingle<Integer> source = new LegacyTestSingle<>(false, false);
+    public final TestSingleSubscriber<Integer> subscriber = new TestSingleSubscriber<>();
+    private final TestExecutor testExecutor = executorRule.executor();
 
     @Test
     public void executorScheduleThrows() {
-        subscriberRule.listen(source.timeout(1, NANOSECONDS, new AbstractTestExecutor() {
+        toSource(source.timeout(1, NANOSECONDS, new DelegatingExecutor(testExecutor) {
             @Override
             public Cancellable schedule(final Runnable task, final long delay, final TimeUnit unit) {
                 throw DELIBERATE_EXCEPTION;
             }
-        }));
+        })).subscribe(subscriber);
 
-        subscriberRule.verifyFailure(DELIBERATE_EXCEPTION);
-        source.verifyCancelled();
+        assertThat(subscriber.takeError(), sameInstance(DELIBERATE_EXCEPTION));
+        TestCancellable cancellable = new TestCancellable();
+        source.onSubscribe(cancellable);
+        assertTrue(cancellable.isCancelled());
     }
 
     @Test
     public void noDataOnCompletionNoTimeout() {
-        ScheduleEvent event = initSubscriber();
+        init();
 
-        subscriberRule.verifyNoEmissions();
+        assertFalse(subscriber.hasResult());
+        assertThat(subscriber.error(), nullValue());
         source.onSuccess(1);
+        assertThat(subscriber.takeResult(), is(1));
 
-        subscriberRule.verifySuccess(1);
-        verify(event.cancellable).cancel();
+        assertThat(testExecutor.scheduledTasksPending(), is(0));
+        assertThat(testExecutor.scheduledTasksExecuted(), is(0));
     }
 
     @Test
     public void noDataOnErrorNoTimeout() {
-        ScheduleEvent event = initSubscriber();
+        init();
 
-        subscriberRule.verifyNoEmissions();
+        assertFalse(subscriber.hasResult());
+        assertThat(subscriber.error(), nullValue());
         source.onError(DELIBERATE_EXCEPTION);
+        assertThat(subscriber.takeError(), is(DELIBERATE_EXCEPTION));
 
-        subscriberRule.verifyFailure(DELIBERATE_EXCEPTION);
-        verify(event.cancellable).cancel();
+        assertThat(testExecutor.scheduledTasksPending(), is(0));
+        assertThat(testExecutor.scheduledTasksExecuted(), is(0));
     }
 
     @Test
     public void subscriptionCancelAlsoCancelsTimer() {
-        ScheduleEvent event = initSubscriber();
+        init();
 
-        subscriberRule.cancel();
-        verify(event.cancellable).cancel();
+        subscriber.cancel();
+
+        assertThat(testExecutor.scheduledTasksPending(), is(0));
+        assertThat(testExecutor.scheduledTasksExecuted(), is(0));
     }
 
     @Test
-    public void noDataAndTimeout() throws Exception {
-        ScheduleEvent event = initSubscriber();
+    public void noDataAndTimeout() {
+        init();
 
         // Sleep for at least as much time as the expiration time, because we just subscribed data.
-        Thread.sleep(1);
-        timerSimulator.submit(event.runnable).get();
-        subscriberRule.verifyFailure(TimeoutException.class);
-        assertTrue(event.delayEquals(1, NANOSECONDS));
-        verify(event.cancellable, never()).cancel();
-        assertTrue(testExecutor.events.isEmpty());
+        testExecutor.advanceTimeBy(1, NANOSECONDS);
+        assertThat(subscriber.takeError(), instanceOf(TimeoutException.class));
+
+        assertThat(testExecutor.scheduledTasksPending(), is(0));
+        assertThat(testExecutor.scheduledTasksExecuted(), is(1));
     }
 
     @Test
-    public void justSubscribeTimeout() throws Exception {
+    public void justSubscribeTimeout() {
         DelayedOnSubscribeSingle<Integer> delayedSingle = new DelayedOnSubscribeSingle<>();
 
-        ScheduleEvent event = initSubscriber(delayedSingle, false);
-        // Sleep for at least as much time as the expiration time, because we just subscribed data.
-        Thread.sleep(1);
-        timerSimulator.submit(event.runnable).get();
+        init(delayedSingle, false);
+
+        testExecutor.advanceTimeBy(1, NANOSECONDS);
+        assertThat(testExecutor.scheduledTasksPending(), is(0));
+        assertThat(testExecutor.scheduledTasksExecuted(), is(1));
+
         Cancellable mockCancellable = mock(Cancellable.class);
         Subscriber<? super Integer> subscriber = delayedSingle.subscriber;
         assertNotNull(subscriber);
         subscriber.onSubscribe(mockCancellable);
         verify(mockCancellable).cancel();
-        subscriberRule.verifyFailure(TimeoutException.class);
-        assertTrue(event.delayEquals(1, NANOSECONDS));
-        verify(event.cancellable, never()).cancel();
-        assertTrue(testExecutor.events.isEmpty());
+        assertThat(this.subscriber.takeError(), instanceOf(TimeoutException.class));
     }
 
-    private ScheduleEvent initSubscriber() {
-        return initSubscriber(source, true);
+    private void init() {
+        init(source, true);
     }
 
-    private ScheduleEvent initSubscriber(Single<Integer> single, boolean expectOnSubscribe) {
-        subscriberRule.listen(single.timeout(1, NANOSECONDS, testExecutor));
-        ScheduleEvent event = testExecutor.events.poll();
-        assertNotNull(event);
+    private void init(final Single<Integer> source, final boolean expectOnSubscribe) {
+        toSource(source.timeout(1, NANOSECONDS, testExecutor)).subscribe(subscriber);
+        assertThat(testExecutor.scheduledTasksPending(), is(1));
         if (expectOnSubscribe) {
-            subscriberRule.verifyNoEmissions();
+            assertTrue(subscriber.cancellableReceived());
         }
-        return event;
     }
 
     private static final class DelayedOnSubscribeSingle<T> extends Single<T> {

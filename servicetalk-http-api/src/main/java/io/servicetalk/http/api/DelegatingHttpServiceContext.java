@@ -26,7 +26,7 @@ import javax.net.ssl.SSLSession;
  * An implementation of {@link HttpServiceContext} that delegates all calls to a provided {@link HttpServiceContext}.
  * Any method can be overridden to change this default behavior.
  */
-public class HttpServiceContextAdapter extends HttpServiceContext {
+public class DelegatingHttpServiceContext extends HttpServiceContext {
 
     private final HttpServiceContext delegate;
 
@@ -35,7 +35,7 @@ public class HttpServiceContextAdapter extends HttpServiceContext {
      *
      * @param other {@link HttpServiceContext} to delegate all calls.
      */
-    public HttpServiceContextAdapter(final HttpServiceContext other) {
+    public DelegatingHttpServiceContext(final HttpServiceContext other) {
         super(other);
         this.delegate = other;
     }
