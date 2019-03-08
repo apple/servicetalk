@@ -26,6 +26,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static io.servicetalk.log4j2.mdc.internal.LoggerStringWriter.assertContainsMdcPair;
+import static io.servicetalk.log4j2.mdc.internal.LoggerStringWriter.stableAccumulated;
 import static io.servicetalk.opentracing.asynccontext.AsyncContextInMemoryScopeManager.SCOPE_MANAGER;
 import static org.junit.Assert.assertNotNull;
 
@@ -38,7 +39,7 @@ public class ServiceTalkTracingThreadContextMapTest {
     }
 
     @Test
-    public void tracingInfoDisplayedPresentInLogsViaMDC() throws InterruptedException {
+    public void tracingInfoDisplayedPresentInLogsViaMDC() throws Exception {
         DefaultInMemoryTracer tracer = new DefaultInMemoryTracer.Builder(SCOPE_MANAGER).build();
         try (InMemoryScope scope = tracer.buildSpan("test").startActive(true)) {
             assertNotNull(scope);
@@ -46,7 +47,7 @@ public class ServiceTalkTracingThreadContextMapTest {
             assertNotNull(span);
 
             LOGGER.debug("testing logging and MDC");
-            String v = LoggerStringWriter.stableAccumulated(10);
+            String v = stableAccumulated(1000);
             assertContainsMdcPair(v, "traceId=", span.traceIdHex());
             assertContainsMdcPair(v, "spanId=", span.spanIdHex());
             assertContainsMdcPair(v, "parentSpanId=", span.nonnullParentSpanIdHex());

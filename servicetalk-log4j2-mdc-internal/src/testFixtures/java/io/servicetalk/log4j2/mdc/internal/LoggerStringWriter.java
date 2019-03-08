@@ -28,8 +28,13 @@ import org.slf4j.LoggerFactory;
 import java.io.StringWriter;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeoutException;
 import javax.annotation.Nullable;
 
+import static java.lang.System.nanoTime;
+import static java.lang.Thread.currentThread;
+import static java.lang.Thread.sleep;
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.apache.logging.log4j.Level.DEBUG;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -63,11 +68,30 @@ public final class LoggerStringWriter {
     /**
      * Wait for the {@link #accumulated()} content to remain unchanged for {@code delayMillis} milliseconds.
      *
-     * @param delayMillis The amount of milliseconds to wait for the {@link #accumulated()} content to stabilize.
+     * @param totalWaitTimeMillis The amount of milliseconds to wait for the {@link #accumulated()} content to
+     * stabilize.
      * @return The accumulated content that has been logged.
      * @throws InterruptedException If interrupted while waiting for log content to stabilize.
+     * @throws TimeoutException If the {@code totalWaitTimeMillis} duration has been exceeded and the
+     * {@link #accumulated()} has not yet stabilize.
      */
-    public static String stableAccumulated(int delayMillis) throws InterruptedException {
+    public static String stableAccumulated(int totalWaitTimeMillis) throws InterruptedException, TimeoutException {
+        return stableAccumulated(totalWaitTimeMillis, 10);
+    }
+
+    /**
+     * Wait for the {@link #accumulated()} content to remain unchanged for {@code sleepDurationMs} milliseconds.
+     *
+     * @param totalWaitTimeMillis The total amount of milliseconds to wait.
+     * @param sleepDurationMs The amount of milliseconds to wait between checking if {@link #accumulated()} has
+     * stabilize.
+     * @return The accumulated content that has been logged.
+     * @throws InterruptedException If interrupted while waiting for log content to stabilize.
+     * @throws TimeoutException If the {@code totalWaitTimeMillis} duration has been exceeded and the
+     * {@link #accumulated()} has not yet stabilize.
+     */
+    public static String stableAccumulated(int totalWaitTimeMillis, final long sleepDurationMs)
+            throws InterruptedException, TimeoutException {
         // We force a unique log entry, and wait for it to ensure the content from the local thread has been flushed.
         String forcedLogEntry = "forced log entry to help for flush on current thread " +
                 ThreadLocalRandom.current().nextLong();
@@ -76,9 +100,19 @@ public final class LoggerStringWriter {
         String logContent = accumulated();
         String newLogContent = logContent;
 
+        long nanoTimeA = nanoTime();
+        long nanoTimeB;
+
         // Wait for this thread's content to be flushed to the log.
         while (!logContent.contains(forcedLogEntry)) {
-            Thread.sleep(delayMillis);
+            if (totalWaitTimeMillis <= 0) {
+                throw new TimeoutException("timed out waiting for thread: " + currentThread());
+            }
+            sleep(sleepDurationMs);
+            nanoTimeB = nanoTime();
+            totalWaitTimeMillis -= NANOSECONDS.toMillis(nanoTimeB - nanoTimeA);
+            nanoTimeA = nanoTimeB;
+
             newLogContent = accumulated();
             logContent = newLogContent;
         }
@@ -86,7 +120,15 @@ public final class LoggerStringWriter {
         // Give some time for other threads to be flushed to logs.
         do {
             logContent = newLogContent;
-            Thread.sleep(delayMillis);
+
+            if (totalWaitTimeMillis <= 0) {
+                throw new TimeoutException("timed out waiting for thread: " + currentThread());
+            }
+            sleep(sleepDurationMs);
+            nanoTimeB = nanoTime();
+            totalWaitTimeMillis -= NANOSECONDS.toMillis(nanoTimeB - nanoTimeA);
+            nanoTimeA = nanoTimeB;
+
             newLogContent = accumulated();
         } while (!newLogContent.equals(logContent));
 
