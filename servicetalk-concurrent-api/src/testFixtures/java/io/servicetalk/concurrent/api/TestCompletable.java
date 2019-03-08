@@ -82,7 +82,6 @@ public final class TestCompletable extends Completable implements CompletableSou
                 Subscriber currSubscriber = this.subscriber;
                 if (subscriberUpdater.compareAndSet(this, currSubscriber, newSubscriber)) {
                     if (currSubscriber instanceof WaitingSubscriber) {
-                        @SuppressWarnings("unchecked")
                         final WaitingSubscriber waiter = (WaitingSubscriber) currSubscriber;
                         waiter.realSubscriber(newSubscriber);
                     }
@@ -316,24 +315,24 @@ public final class TestCompletable extends Completable implements CompletableSou
 
         @Override
         public void onSubscribe(final Cancellable cancellable) {
-            waitForSubscription().onSubscribe(cancellable);
+            waitForSubscriber().onSubscribe(cancellable);
         }
 
         @Override
         public void onComplete() {
-            waitForSubscription().onComplete();
+            waitForSubscriber().onComplete();
         }
 
         @Override
         public void onError(final Throwable t) {
-            waitForSubscription().onError(t);
+            waitForSubscriber().onError(t);
         }
 
         void realSubscriber(Subscriber subscriber) {
             realSubscriberSingle.onSuccess(subscriber);
         }
 
-        private Subscriber waitForSubscription() {
+        private Subscriber waitForSubscriber() {
             try {
                 return realSubscriberSingle.toFuture().get();
             } catch (InterruptedException | ExecutionException e) {
