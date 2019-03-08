@@ -154,7 +154,7 @@ public class InsufficientlySizedExecutorHttpTest {
     private void initWhenServerUnderProvisioned(boolean addConnectionAcceptor) throws Exception {
         executor = getExecutorForCapacity(capacity, !threadBased);
         final HttpExecutionStrategy strategy = newStrategy();
-        HttpServerBuilder serverBuilder = forAddress(localAddress(0));
+        HttpServerBuilder serverBuilder = forAddress(localAddress(0)).enableWireLogging("servicetalk-tests-server-wire-logger");
         if (addConnectionAcceptor) {
             serverBuilder.appendConnectionAcceptorFilter(identity());
         }

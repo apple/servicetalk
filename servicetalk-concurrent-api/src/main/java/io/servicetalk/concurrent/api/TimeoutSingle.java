@@ -56,7 +56,7 @@ final class TimeoutSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
     @Override
     protected void handleSubscribe(final Subscriber<? super T> subscriber, final SignalOffloader offloader,
                                    final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
-        original.subscribeWithOffloaderAndContext(
+        original.delegateSubscribe(
                 TimeoutSubscriber.newInstance(this, subscriber, offloader, contextMap, contextProvider),
                 offloader, contextMap, contextProvider);
     }

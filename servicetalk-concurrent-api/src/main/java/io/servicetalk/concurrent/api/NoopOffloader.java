@@ -30,17 +30,15 @@ final class NoopOffloader implements SignalOffloader {
         // No instances
     }
 
-    @SuppressWarnings("unchecked")
     @Override
-    public <T> Subscriber<T> offloadSubscriber(final Subscriber<? super T> subscriber) {
-        return (Subscriber<T>) subscriber;
+    public <T> Subscriber<? super T> offloadSubscriber(final Subscriber<? super T> subscriber) {
+        return subscriber;
     }
 
-    @SuppressWarnings("unchecked")
     @Override
-    public <T> SingleSource.Subscriber<T> offloadSubscriber(
+    public <T> SingleSource.Subscriber<? super T> offloadSubscriber(
             final SingleSource.Subscriber<? super T> subscriber) {
-        return (SingleSource.Subscriber<T>) subscriber;
+        return subscriber;
     }
 
     @Override
@@ -66,14 +64,14 @@ final class NoopOffloader implements SignalOffloader {
     }
 
     @Override
-    public <T> void offloadSubscribe(final Subscriber<T> subscriber,
-                                     final Consumer<Subscriber<T>> handleSubscribe) {
+    public <T> void offloadSubscribe(final Subscriber<? super T> subscriber,
+                                     final Consumer<Subscriber<? super T>> handleSubscribe) {
         handleSubscribe.accept(subscriber);
     }
 
     @Override
-    public <T> void offloadSubscribe(final SingleSource.Subscriber<T> subscriber,
-                                     final Consumer<SingleSource.Subscriber<T>> handleSubscribe) {
+    public <T> void offloadSubscribe(final SingleSource.Subscriber<? super T> subscriber,
+                                     final Consumer<SingleSource.Subscriber<? super T>> handleSubscribe) {
         handleSubscribe.accept(subscriber);
     }
 

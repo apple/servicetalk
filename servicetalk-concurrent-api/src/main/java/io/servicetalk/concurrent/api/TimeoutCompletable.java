@@ -56,7 +56,7 @@ final class TimeoutCompletable extends AbstractNoHandleSubscribeCompletable {
     @Override
     protected void handleSubscribe(final Subscriber subscriber, final SignalOffloader offloader,
                                    final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
-        original.subscribeWithOffloaderAndContext(
+        original.delegateSubscribe(
                 TimeoutSubscriber.newInstance(this, subscriber, offloader, contextMap, contextProvider),
                 offloader, contextMap, contextProvider);
     }

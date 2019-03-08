@@ -38,13 +38,13 @@ public class SignalOffloaderAdapter implements SignalOffloader {
     }
 
     @Override
-    public <T> PublisherSource.Subscriber<T> offloadSubscriber(
+    public <T> PublisherSource.Subscriber<? super T> offloadSubscriber(
             final PublisherSource.Subscriber<? super T> subscriber) {
         return delegate.offloadSubscriber(subscriber);
     }
 
     @Override
-    public <T> SingleSource.Subscriber<T> offloadSubscriber(
+    public <T> SingleSource.Subscriber<? super T> offloadSubscriber(
             final SingleSource.Subscriber<? super T> subscriber) {
         return delegate.offloadSubscriber(subscriber);
     }
@@ -55,13 +55,13 @@ public class SignalOffloaderAdapter implements SignalOffloader {
     }
 
     @Override
-    public <T> PublisherSource.Subscriber<T> offloadSubscription(
+    public <T> PublisherSource.Subscriber<? super T> offloadSubscription(
             final PublisherSource.Subscriber<? super T> subscriber) {
         return delegate.offloadSubscription(subscriber);
     }
 
     @Override
-    public <T> SingleSource.Subscriber<T> offloadCancellable(
+    public <T> SingleSource.Subscriber<? super T> offloadCancellable(
             final SingleSource.Subscriber<? super T> subscriber) {
         return delegate.offloadCancellable(subscriber);
     }
@@ -72,14 +72,14 @@ public class SignalOffloaderAdapter implements SignalOffloader {
     }
 
     @Override
-    public <T> void offloadSubscribe(final PublisherSource.Subscriber<T> subscriber,
-                                     final Consumer<PublisherSource.Subscriber<T>> handleSubscribe) {
+    public <T> void offloadSubscribe(final PublisherSource.Subscriber<? super T> subscriber,
+                                     final Consumer<PublisherSource.Subscriber<? super T>> handleSubscribe) {
         delegate.offloadSubscribe(subscriber, handleSubscribe);
     }
 
     @Override
-    public <T> void offloadSubscribe(final SingleSource.Subscriber<T> subscriber,
-                                     final Consumer<SingleSource.Subscriber<T>> handleSubscribe) {
+    public <T> void offloadSubscribe(final SingleSource.Subscriber<? super T> subscriber,
+                                     final Consumer<SingleSource.Subscriber<? super T>> handleSubscribe) {
         delegate.offloadSubscribe(subscriber, handleSubscribe);
     }
 

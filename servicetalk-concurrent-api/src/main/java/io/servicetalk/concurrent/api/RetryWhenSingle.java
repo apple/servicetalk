@@ -46,7 +46,7 @@ final class RetryWhenSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
                          final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
         // For the current subscribe operation we want to use contextMap directly, but in the event a re-subscribe
         // operation occurs we want to restore the original state of the AsyncContext map, so we save a copy upfront.
-        original.subscribeWithOffloaderAndContext(new RetrySubscriber<>(new SequentialCancellable(), 0, subscriber,
+        original.delegateSubscribe(new RetrySubscriber<>(new SequentialCancellable(), 0, subscriber,
                 contextMap, contextProvider, this, signalOffloader), signalOffloader, contextMap, contextProvider);
     }
 
@@ -96,7 +96,7 @@ final class RetryWhenSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
                 return;
             }
 
-            retryDecider.subscribeWithOffloaderAndContext(new CompletableSource.Subscriber() {
+            retryDecider.subscribeInternal(new CompletableSource.Subscriber() {
                 @Override
                 public void onSubscribe(Cancellable completableCancellable) {
                     retrySignalCancellable.nextCancellable(completableCancellable);
@@ -107,7 +107,7 @@ final class RetryWhenSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
                     // For the current subscribe operation we want to use contextMap directly, but in the event a
                     // re-subscribe operation occurs we want to restore the original state of the AsyncContext map, so
                     // we save a copy upfront.
-                    retrySingle.original.subscribeWithOffloaderAndContext(new RetrySubscriber<>(sequentialCancellable,
+                    retrySingle.original.delegateSubscribe(new RetrySubscriber<>(sequentialCancellable,
                             retryCount + 1, target, contextMap.copy(), contextProvider, retrySingle, signalOffloader),
                             signalOffloader, contextMap, contextProvider);
                 }
@@ -116,7 +116,7 @@ final class RetryWhenSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
                 public void onError(Throwable t) {
                     target.onError(t);
                 }
-            }, signalOffloader, contextMap.copy(), contextProvider);
+            });
         }
     }
 }

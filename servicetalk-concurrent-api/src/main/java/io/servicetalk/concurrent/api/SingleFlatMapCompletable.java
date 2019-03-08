@@ -41,7 +41,7 @@ final class SingleFlatMapCompletable<T> extends AbstractNoHandleSubscribeComplet
     @Override
     void handleSubscribe(final Subscriber subscriber, final SignalOffloader signalOffloader,
                          final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
-        original.subscribeWithOffloaderAndContext(new SubscriberImpl<>(subscriber, nextFactory, signalOffloader,
+        original.delegateSubscribe(new SubscriberImpl<>(subscriber, nextFactory, signalOffloader,
                         contextMap, contextProvider), signalOffloader, contextMap, contextProvider);
     }
 

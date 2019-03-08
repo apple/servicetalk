@@ -60,12 +60,12 @@ final class MergedOffloadSubscribeExecutor extends DelegatingExecutor implements
         }
 
         @Override
-        public <T> Subscriber<T> offloadSubscriber(final Subscriber<? super T> subscriber) {
+        public <T> Subscriber<? super T> offloadSubscriber(final Subscriber<? super T> subscriber) {
             return fallback.offloadSubscriber(subscriber);
         }
 
         @Override
-        public <T> SingleSource.Subscriber<T> offloadSubscriber(
+        public <T> SingleSource.Subscriber<? super T> offloadSubscriber(
                 final SingleSource.Subscriber<? super T> subscriber) {
             return fallback.offloadSubscriber(subscriber);
         }
@@ -77,12 +77,12 @@ final class MergedOffloadSubscribeExecutor extends DelegatingExecutor implements
         }
 
         @Override
-        public <T> Subscriber<T> offloadSubscription(final Subscriber<? super T> subscriber) {
+        public <T> Subscriber<? super T> offloadSubscription(final Subscriber<? super T> subscriber) {
             return offloader.offloadSubscription(subscriber);
         }
 
         @Override
-        public <T> SingleSource.Subscriber<T> offloadCancellable(
+        public <T> SingleSource.Subscriber<? super T> offloadCancellable(
                 final SingleSource.Subscriber<? super T> subscriber) {
             return offloader.offloadCancellable(subscriber);
         }
@@ -94,14 +94,14 @@ final class MergedOffloadSubscribeExecutor extends DelegatingExecutor implements
         }
 
         @Override
-        public <T> void offloadSubscribe(final Subscriber<T> subscriber,
-                                         final Consumer<Subscriber<T>> handleSubscribe) {
+        public <T> void offloadSubscribe(final Subscriber<? super T> subscriber,
+                                         final Consumer<Subscriber<? super T>> handleSubscribe) {
             offloader.offloadSubscribe(subscriber, handleSubscribe);
         }
 
         @Override
-        public <T> void offloadSubscribe(final SingleSource.Subscriber<T> subscriber,
-                                         final Consumer<SingleSource.Subscriber<T>> handleSubscribe) {
+        public <T> void offloadSubscribe(final SingleSource.Subscriber<? super T> subscriber,
+                                         final Consumer<SingleSource.Subscriber<? super T>> handleSubscribe) {
             offloader.offloadSubscribe(subscriber, handleSubscribe);
         }
 

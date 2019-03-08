@@ -19,6 +19,7 @@ import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.internal.OffloaderAwareExecutor;
 
 import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.concurrent.ExecutionException;
@@ -67,26 +68,26 @@ public class TaskBasedSignalOffloaderExecutorRejectionTests {
         });
     }
 
-    @Ignore("subscribeOn is currently broken; it does not offload handleSubscribe")
     @Test
     public void publisherSubscribeRejects() throws Exception {
         rejectNextTask.set(true);
+        expectRejection();
         just(1).subscribeOn(executor).toFuture().get();
         verifyRejectedTasks(1, 1);
     }
 
-    @Ignore("subscribeOn is currently broken; it does not offload handleSubscribe")
     @Test
     public void singleSubscribeRejects() throws Exception {
         rejectNextTask.set(true);
+        expectRejection();
         success(1).subscribeOn(executor).toFuture().get();
         verifyRejectedTasks(1, 1);
     }
 
-    @Ignore("subscribeOn is currently broken; it does not offload handleSubscribe")
     @Test
     public void completableSubscribeRejects() throws Exception {
         rejectNextTask.set(true);
+        expectRejection();
         completed().subscribeOn(executor).toFuture().get();
         verifyRejectedTasks(1, 1);
     }

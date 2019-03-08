@@ -49,7 +49,7 @@ public abstract class AbstractHandleSubscribeOffloadedTest {
     @Rule
     public final ExecutorRule executorForTimerRule =
             withExecutor(newCachedThreadExecutor(new DefaultThreadFactory(TIMER_THREAD_NAME_PREFIX)));
-    //@Rule
+    @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
     protected final AtomicReference<Thread> handleSubscribeInvokerRef = new AtomicReference<>();
     protected final AtomicInteger offloadPublisherSubscribeCalled = new AtomicInteger();
@@ -65,15 +65,17 @@ public abstract class AbstractHandleSubscribeOffloadedTest {
                 signalOffloaderCreated.incrementAndGet();
                 return new SignalOffloaderAdapter(super.newSignalOffloader(executor)) {
                     @Override
-                    public <T> void offloadSubscribe(final PublisherSource.Subscriber<T> subscriber,
-                                                     final Consumer<PublisherSource.Subscriber<T>> handleSubscribe) {
+                    public <T> void offloadSubscribe(
+                            final PublisherSource.Subscriber<? super T> subscriber,
+                            final Consumer<PublisherSource.Subscriber<? super T>> handleSubscribe) {
                         offloadPublisherSubscribeCalled.incrementAndGet();
                         super.offloadSubscribe(subscriber, handleSubscribe);
                     }
 
                     @Override
-                    public <T> void offloadSubscribe(final SingleSource.Subscriber<T> subscriber,
-                                                     final Consumer<SingleSource.Subscriber<T>> handleSubscribe) {
+                    public <T> void offloadSubscribe(
+                            final SingleSource.Subscriber<? super T> subscriber,
+                            final Consumer<SingleSource.Subscriber<? super T>> handleSubscribe) {
                         offloadSingleSubscribeCalled.incrementAndGet();
                         super.offloadSubscribe(subscriber, handleSubscribe);
                     }

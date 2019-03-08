@@ -45,6 +45,6 @@ abstract class AbstractSynchronousPublisherOperator<T, R> extends AbstractNoHand
     @Override
     final void handleSubscribe(Subscriber<? super R> subscriber, SignalOffloader signalOffloader,
                                AsyncContextMap contextMap, AsyncContextProvider contextProvider) {
-        original.subscribeWithOffloaderAndContext(apply(subscriber), signalOffloader, contextMap, contextProvider);
+        original.delegateSubscribe(apply(subscriber), signalOffloader, contextMap, contextProvider);
     }
 }

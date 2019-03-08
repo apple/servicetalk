@@ -46,7 +46,7 @@ abstract class AbstractPubToSingle<T> extends AbstractNoHandleSubscribeSingle<T>
         // Since this is converting a Publisher to a Single, we should try to use the same SignalOffloader for
         // subscribing to the original Publisher to avoid thread hop. Since, it is the same source, just viewed as a
         // Single, there is no additional risk of deadlock.
-        source.subscribeWithOffloaderAndContext(offloadedSubscription, signalOffloader, contextMap, contextProvider);
+        source.delegateSubscribe(offloadedSubscription, signalOffloader, contextMap, contextProvider);
     }
 
     abstract PublisherSource.Subscriber<T> newSubscriber(Subscriber<? super T> original);

@@ -104,12 +104,12 @@ final class ThreadBasedSignalOffloader implements SignalOffloader, Runnable {
     }
 
     @Override
-    public <T> Subscriber<T> offloadSubscriber(Subscriber<? super T> subscriber) {
+    public <T> Subscriber<? super T> offloadSubscriber(Subscriber<? super T> subscriber) {
         return addOffloadedEntity(new OffloadedSubscriber<>(this, subscriber));
     }
 
     @Override
-    public <T> SingleSource.Subscriber<T> offloadSubscriber(SingleSource.Subscriber<? super T> subscriber) {
+    public <T> SingleSource.Subscriber<? super T> offloadSubscriber(SingleSource.Subscriber<? super T> subscriber) {
         return addOffloadedEntity(new OffloadedSingleSubscriber<>(this, subscriber));
     }
 
@@ -119,12 +119,12 @@ final class ThreadBasedSignalOffloader implements SignalOffloader, Runnable {
     }
 
     @Override
-    public <T> Subscriber<T> offloadSubscription(Subscriber<? super T> subscriber) {
+    public <T> Subscriber<? super T> offloadSubscription(Subscriber<? super T> subscriber) {
         return addOffloadedEntity(new OffloadedSubscription<>(this, subscriber));
     }
 
     @Override
-    public <T> SingleSource.Subscriber<T> offloadCancellable(SingleSource.Subscriber<? super T> subscriber) {
+    public <T> SingleSource.Subscriber<? super T> offloadCancellable(SingleSource.Subscriber<? super T> subscriber) {
         return addOffloadedEntity(new OffloadedSingleCancellable<>(this, subscriber));
     }
 
@@ -134,7 +134,7 @@ final class ThreadBasedSignalOffloader implements SignalOffloader, Runnable {
     }
 
     @Override
-    public <T> void offloadSubscribe(Subscriber<T> subscriber, Consumer<Subscriber<T>> handleSubscribe) {
+    public <T> void offloadSubscribe(Subscriber<? super T> subscriber, Consumer<Subscriber<? super T>> handleSubscribe) {
         try {
             addOffloadedEntity(new OffloadedSignalEntity<>(handleSubscribe, subscriber), true);
         } catch (EnqueueForOffloadingFailed e) {
@@ -146,8 +146,8 @@ final class ThreadBasedSignalOffloader implements SignalOffloader, Runnable {
     }
 
     @Override
-    public <T> void offloadSubscribe(SingleSource.Subscriber<T> subscriber,
-                                     Consumer<SingleSource.Subscriber<T>> handleSubscribe) {
+    public <T> void offloadSubscribe(SingleSource.Subscriber<? super T> subscriber,
+                                     Consumer<SingleSource.Subscriber<? super T>> handleSubscribe) {
         try {
             addOffloadedEntity(new OffloadedSignalEntity<>(handleSubscribe, subscriber), true);
         } catch (EnqueueForOffloadingFailed e) {
