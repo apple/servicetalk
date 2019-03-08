@@ -27,35 +27,13 @@
     <Bug pattern="NM_SAME_SIMPLE_NAME_AS_INTERFACE"/>
   </Match>
 
-  <!-- We set the value before the synchronized block which does a signal, but this should be visible
-       in the thread doing the await because of the JMM -->
   <Match>
-    <Class name="io.servicetalk.concurrent.api.ExecutorCompletionStage$GetListener"/>
     <Or>
-      <Method name="onError"/>
-      <Method name="onSuccess"/>
+      <Class name="io.servicetalk.concurrent.api.ContextPreservingCompletableFuture"/>
+      <Class name="io.servicetalk.concurrent.api.CancelPropagatingCompletableFuture"/>
     </Or>
-  </Match>
-
-  <!-- Synchronized is used for blocking wait/notify code, and we are relying upon the JMM to provide visibility on
-       the result variable before/after the synchornized block. -->
-  <Match>
-    <Class name="io.servicetalk.concurrent.api.ExecutorCompletionStage$GetListener"/>
-    <Bug pattern="IS2_INCONSISTENT_SYNC"/>
-  </Match>
-
-  <Match>
-    <Class name="io.servicetalk.concurrent.api.ContextPreservingCompletableFuture"/>
     <Or>
       <Method name="getNow"/>
-      <Method name="obtrudeValue"/>
-    </Or>
-    <Bug pattern="NP_PARAMETER_MUST_BE_NONNULL_BUT_MARKED_AS_NULLABLE"/>
-  </Match>
-
-  <Match>
-    <Class name="io.servicetalk.concurrent.api.ExecutorCompletionStageToCompletableFuture"/>
-    <Or>
       <Method name="obtrudeValue"/>
     </Or>
     <Bug pattern="NP_PARAMETER_MUST_BE_NONNULL_BUT_MARKED_AS_NULLABLE"/>

@@ -53,11 +53,6 @@ final class ContextPreservingStExecutor implements Executor {
                 new ContextPreservingStExecutor(delegate);
     }
 
-    static Executor unwrap(Executor delegate) {
-        return delegate instanceof ContextPreservingStExecutor ?
-                ((ContextPreservingStExecutor) delegate).delegate : delegate;
-    }
-
     static io.servicetalk.concurrent.Executor unwrap(io.servicetalk.concurrent.Executor delegate) {
         return delegate instanceof ContextPreservingStExecutor ?
                 ((ContextPreservingStExecutor) delegate).delegate : delegate;

@@ -20,7 +20,7 @@ import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.SingleSource;
 
 import java.util.Map;
-import java.util.concurrent.CompletionStage;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
@@ -45,11 +45,6 @@ final class NoopAsyncContextProvider implements AsyncContextProvider {
 
     @Override
     public void contextMap(final AsyncContextMap newContextMap) {
-    }
-
-    @Override
-    public AsyncContextMap newContextMap() {
-        return NoopAsyncContextMap.INSTANCE;
     }
 
     @Override
@@ -112,18 +107,13 @@ final class NoopAsyncContextProvider implements AsyncContextProvider {
     }
 
     @Override
-    public io.servicetalk.concurrent.api.Executor unwrap(final io.servicetalk.concurrent.api.Executor executor) {
-        return executor;
-    }
-
-    @Override
     public io.servicetalk.concurrent.Executor unwrap(final io.servicetalk.concurrent.Executor executor) {
         return executor;
     }
 
     @Override
-    public <T> CompletionStage<T> wrap(final CompletionStage<T> stage, final AsyncContextMap contextMap) {
-        return stage;
+    public <T> CompletableFuture<T> wrap(final CompletableFuture<T> future, final AsyncContextMap contextMap) {
+        return future;
     }
 
     @Override
