@@ -38,7 +38,7 @@ public class ServiceTalkTracingThreadContextMapTest {
     }
 
     @Test
-    public void tracingInfoDisplayedPresentInLogsViaMDC() {
+    public void tracingInfoDisplayedPresentInLogsViaMDC() throws InterruptedException {
         DefaultInMemoryTracer tracer = new DefaultInMemoryTracer.Builder(SCOPE_MANAGER).build();
         try (InMemoryScope scope = tracer.buildSpan("test").startActive(true)) {
             assertNotNull(scope);
@@ -46,7 +46,7 @@ public class ServiceTalkTracingThreadContextMapTest {
             assertNotNull(span);
 
             LOGGER.debug("testing logging and MDC");
-            String v = LoggerStringWriter.getAccumulated();
+            String v = LoggerStringWriter.stableAccumulated(10);
             assertContainsMdcPair(v, "traceId=", span.traceIdHex());
             assertContainsMdcPair(v, "spanId=", span.spanIdHex());
             assertContainsMdcPair(v, "parentSpanId=", span.nonnullParentSpanIdHex());

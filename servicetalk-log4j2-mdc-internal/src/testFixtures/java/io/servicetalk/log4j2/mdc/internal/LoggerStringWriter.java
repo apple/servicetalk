@@ -22,9 +22,12 @@ import org.apache.logging.log4j.core.LoggerContext;
 import org.apache.logging.log4j.core.StringLayout;
 import org.apache.logging.log4j.core.appender.WriterAppender;
 import org.apache.logging.log4j.core.config.Configuration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.StringWriter;
 import java.util.Map;
+import java.util.concurrent.ThreadLocalRandom;
 import javax.annotation.Nullable;
 
 import static org.apache.logging.log4j.Level.DEBUG;
@@ -33,6 +36,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 
 public final class LoggerStringWriter {
+    private static final Logger LOGGER = LoggerFactory.getLogger(LoggerStringWriter.class);
     @Nullable
     private static StringWriter logStringWriter;
 
@@ -40,14 +44,62 @@ public final class LoggerStringWriter {
         // no instances.
     }
 
+    /**
+     * Clear the content of the {@link #accumulated()}.
+     */
     public static void reset() {
         getStringWriter().getBuffer().setLength(0);
     }
 
-    public static String getAccumulated() {
+    /**
+     * Get the accumulated content that has been logged.
+     *
+     * @return the accumulated content that has been logged.
+     */
+    public static String accumulated() {
         return getStringWriter().toString();
     }
 
+    /**
+     * Wait for the {@link #accumulated()} content to remain unchanged for {@code delayMillis} milliseconds.
+     *
+     * @param delayMillis The amount of milliseconds to wait for the {@link #accumulated()} content to stabilize.
+     * @return The accumulated content that has been logged.
+     * @throws InterruptedException If interrupted while waiting for log content to stabilize.
+     */
+    public static String stableAccumulated(int delayMillis) throws InterruptedException {
+        // We force a unique log entry, and wait for it to ensure the content from the local thread has been flushed.
+        String forcedLogEntry = "forced log entry to help for flush on current thread " +
+                ThreadLocalRandom.current().nextLong();
+        LOGGER.error(forcedLogEntry);
+
+        String logContent = accumulated();
+        String newLogContent = logContent;
+
+        // Wait for this thread's content to be flushed to the log.
+        while (!logContent.contains(forcedLogEntry)) {
+            Thread.sleep(delayMillis);
+            newLogContent = accumulated();
+            logContent = newLogContent;
+        }
+
+        // Give some time for other threads to be flushed to logs.
+        do {
+            logContent = newLogContent;
+            Thread.sleep(delayMillis);
+            newLogContent = accumulated();
+        } while (!newLogContent.equals(logContent));
+
+        return logContent;
+    }
+
+    /**
+     * Verify that an MDC {@code expectedLabel=expectedValue} pair is present in {@code value}.
+     *
+     * @param value The log line.
+     * @param expectedLabel The MDC key.
+     * @param expectedValue The MDC value.
+     */
     public static void assertContainsMdcPair(String value, String expectedLabel, String expectedValue) {
         int x = value.indexOf(expectedLabel);
         assertThat("couldn't find expectedLabel: " + expectedLabel, x, is(greaterThanOrEqualTo(0)));
