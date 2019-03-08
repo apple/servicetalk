@@ -617,8 +617,8 @@ public abstract class Completable {
      *
      * @see <a href="http://reactivex.io/documentation/operators/repeat.html">ReactiveX repeat operator.</a>
      */
-    public final <T> Publisher<T> repeat(IntPredicate shouldRepeat, Supplier<T> valueSupplier) {
-        return toSingle().map(__ -> valueSupplier.get()).repeat(shouldRepeat);
+    public final <T> Publisher<T> repeat(IntPredicate shouldRepeat, Supplier<? extends T> valueSupplier) {
+        return toSingle().<T>map(__ -> valueSupplier.get()).repeat(shouldRepeat);
     }
 
     /**
