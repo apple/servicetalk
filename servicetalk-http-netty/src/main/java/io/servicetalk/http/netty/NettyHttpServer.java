@@ -24,7 +24,6 @@ import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.concurrent.internal.RejectedSubscribeError;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.HttpProtocolVersion;
@@ -224,11 +223,7 @@ final class NettyHttpServer {
 
                             @Override
                             public void onError(final Throwable t) {
-                                // Multiple subscriptions to the request payload will produce RejectedSubscribeError
-                                // but this doesn't mean the original subscription is terminated.
-                                if (!(t instanceof RejectedSubscribeError)) {
-                                    processor.onComplete();
-                                }
+                                processor.onComplete();
                             }
 
                             @Override
