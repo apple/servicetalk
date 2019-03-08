@@ -27,9 +27,9 @@ import static java.util.Objects.requireNonNull;
 final class TakeWhilePublisher<T> extends AbstractSynchronousPublisherOperator<T, T> {
     private static final Subscription CANCELLED = new EmptySubscription();
 
-    private final Predicate<T> predicate;
+    private final Predicate<? super T> predicate;
 
-    TakeWhilePublisher(Publisher<T> original, Predicate<T> predicate, Executor executor) {
+    TakeWhilePublisher(Publisher<T> original, Predicate<? super T> predicate, Executor executor) {
         super(original, executor);
         this.predicate = requireNonNull(predicate);
     }
@@ -42,12 +42,12 @@ final class TakeWhilePublisher<T> extends AbstractSynchronousPublisherOperator<T
     private static final class TakeWhileSubscriber<T> implements Subscriber<T> {
 
         private final Subscriber<? super T> subscriber;
-        private final Predicate<T> predicate;
+        private final Predicate<? super T> predicate;
 
         @Nullable
         private Subscription subscription;
 
-        TakeWhileSubscriber(Subscriber<? super T> subscriber, Predicate<T> predicate) {
+        TakeWhileSubscriber(Subscriber<? super T> subscriber, Predicate<? super T> predicate) {
             this.subscriber = subscriber;
             this.predicate = predicate;
         }

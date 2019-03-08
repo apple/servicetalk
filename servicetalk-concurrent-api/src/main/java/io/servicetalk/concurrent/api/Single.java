@@ -101,7 +101,7 @@ public abstract class Single<T> {
      * @param <R>    Type of the returned {@code Single}.
      * @return A new {@link Single} that will now have the result of type {@link R}.
      */
-    public final <R> Single<R> map(Function<T, R> mapper) {
+    public final <R> Single<R> map(Function<? super T, ? extends R> mapper) {
         return new MapSingle<>(this, mapper, executor);
     }
 
@@ -123,7 +123,7 @@ public abstract class Single<T> {
      * @return A {@link Single} that ignores error from this {@code Single} and resume with the {@link Single} produced
      * by {@code nextFactory}.
      */
-    public final Single<T> onErrorResume(Function<? super Throwable, Single<? extends T>> nextFactory) {
+    public final Single<T> onErrorResume(Function<Throwable, ? extends Single<? extends T>> nextFactory) {
         return new ResumeSingle<>(this, nextFactory, executor);
     }
 
@@ -142,7 +142,7 @@ public abstract class Single<T> {
      * @return New {@link Single} that switches to the {@link Single} returned by {@code next} after this {@link Single}
      * completes successfully.
      */
-    public final <R> Single<R> flatMap(Function<T, Single<R>> next) {
+    public final <R> Single<R> flatMap(Function<? super T, ? extends Single<? extends R>> next) {
         return new SingleFlatMapSingle<>(this, next, executor);
     }
 
@@ -160,7 +160,7 @@ public abstract class Single<T> {
      * @return New {@link Completable} that switches to the {@link Completable} returned by {@code next} after this
      * {@link Single} completes successfully.
      */
-    public final Completable flatMapCompletable(Function<T, Completable> next) {
+    public final Completable flatMapCompletable(Function<? super T, ? extends Completable> next) {
         return new SingleFlatMapCompletable<>(this, next, executor);
     }
 
@@ -182,7 +182,7 @@ public abstract class Single<T> {
      * @return New {@link Publisher} that switches to the {@link Publisher} returned by {@code next} after this
      * {@link Single} completes successfully.
      */
-    public final <R> Publisher<R> flatMapPublisher(Function<? super T, Publisher<? extends R>> next) {
+    public final <R> Publisher<R> flatMapPublisher(Function<? super T, ? extends Publisher<? extends R>> next) {
         return new SingleFlatMapPublisher<>(this, next, executor);
     }
 
@@ -207,7 +207,7 @@ public abstract class Single<T> {
      * @see #doBeforeSuccess(Consumer)
      * @see #doAfterSuccess(Consumer)
      */
-    public final Single<T> doOnSuccess(Consumer<T> onSuccess) {
+    public final Single<T> doOnSuccess(Consumer<? super T> onSuccess) {
         return doAfterSuccess(onSuccess);
     }
 
@@ -501,7 +501,7 @@ public abstract class Single<T> {
      *
      * @see <a href="http://reactivex.io/documentation/operators/retry.html">ReactiveX retry operator.</a>
      */
-    public final Single<T> retryWhen(BiIntFunction<Throwable, Completable> retryWhen) {
+    public final Single<T> retryWhen(BiIntFunction<Throwable, ? extends Completable> retryWhen) {
         return new RetryWhenSingle<>(this, retryWhen, executor);
     }
 
@@ -557,7 +557,7 @@ public abstract class Single<T> {
      *
      * @see <a href="http://reactivex.io/documentation/operators/retry.html">ReactiveX retry operator.</a>
      */
-    public final Publisher<T> repeatWhen(IntFunction<Completable> repeatWhen) {
+    public final Publisher<T> repeatWhen(IntFunction<? extends Completable> repeatWhen) {
         return toPublisher().repeatWhen(repeatWhen);
     }
 
@@ -587,7 +587,7 @@ public abstract class Single<T> {
      * {@link Subscriber}s of the returned {@link Single}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Single}.
      */
-    public final Single<T> doBeforeSuccess(Consumer<T> onSuccess) {
+    public final Single<T> doBeforeSuccess(Consumer<? super T> onSuccess) {
         return doBeforeSubscriber(doOnSuccessSupplier(onSuccess));
     }
 
@@ -666,7 +666,7 @@ public abstract class Single<T> {
      * {@link Subscriber} methods <strong>MUST NOT</strong> throw.
      * @return The new {@link Single}.
      */
-    public final Single<T> doBeforeSubscriber(Supplier<Subscriber<? super T>> subscriberSupplier) {
+    public final Single<T> doBeforeSubscriber(Supplier<? extends Subscriber<? super T>> subscriberSupplier) {
         return new DoBeforeSubscriberSingle<>(this, subscriberSupplier, executor);
     }
 
@@ -696,7 +696,7 @@ public abstract class Single<T> {
      * {@link Subscriber}s of the returned {@link Single}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Single}.
      */
-    public final Single<T> doAfterSuccess(Consumer<T> onSuccess) {
+    public final Single<T> doAfterSuccess(Consumer<? super T> onSuccess) {
         return doAfterSubscriber(doOnSuccessSupplier(onSuccess));
     }
 
@@ -775,7 +775,7 @@ public abstract class Single<T> {
      * {@link Subscriber} methods <strong>MUST NOT</strong> throw.
      * @return The new {@link Single}.
      */
-    public final Single<T> doAfterSubscriber(Supplier<Subscriber<? super T>> subscriberSupplier) {
+    public final Single<T> doAfterSubscriber(Supplier<? extends Subscriber<? super T>> subscriberSupplier) {
         return new DoAfterSubscriberSingle<>(this, subscriberSupplier, executor);
     }
 
@@ -1109,7 +1109,7 @@ public abstract class Single<T> {
      * it is subscribed and forwards all items and terminal events from the newly created {@link Single} to its
      * {@link Subscriber}.
      */
-    public static <T> Single<T> defer(Supplier<? extends Single<T>> singleSupplier) {
+    public static <T> Single<T> defer(Supplier<? extends Single<? extends T>> singleSupplier) {
         return new SingleDefer<>(singleSupplier);
     }
 
@@ -1126,7 +1126,7 @@ public abstract class Single<T> {
      * @return A {@link Single} that derives results from {@link Future}.
      * @see #timeout(long, TimeUnit)
      */
-    public static <T> Single<T> fromFuture(Future<T> future) {
+    public static <T> Single<T> fromFuture(Future<? extends T> future) {
         return new FutureToSingle<>(future);
     }
 
@@ -1155,7 +1155,7 @@ public abstract class Single<T> {
      * There is no guarantee of the order of the values in the produced {@link Collection} as compared to the order of
      * {@link Single}s passed to this method.
      */
-    public static <T> Single<Collection<T>> collect(Iterable<? extends Single<T>> singles) {
+    public static <T> Single<Collection<T>> collect(Iterable<? extends Single<? extends T>> singles) {
         return Publisher.from(singles).flatMapSingle(identity()).reduce(ArrayList::new, (ts, t) -> {
             ts.add(t);
             return ts;
@@ -1187,7 +1187,7 @@ public abstract class Single<T> {
      * {@link Single}s passed to this method.
      */
     @SafeVarargs
-    public static <T> Single<Collection<T>> collect(Single<T>... singles) {
+    public static <T> Single<Collection<T>> collect(Single<? extends T>... singles) {
         return Publisher.from(singles).flatMapSingle(identity()).reduce(() -> new ArrayList<>(singles.length),
                 (ts, t) -> {
                     ts.add(t);
@@ -1219,7 +1219,8 @@ public abstract class Single<T> {
      * There is no guarantee of the order of the values in the produced {@link Collection} as compared to the order of
      * {@link Single}s passed to this method.
      */
-    public static <T> Single<Collection<T>> collect(Iterable<? extends Single<T>> singles, int maxConcurrency) {
+    public static <T> Single<Collection<T>> collect(Iterable<? extends Single<? extends T>> singles,
+                                                    int maxConcurrency) {
         return Publisher.from(singles).flatMapSingle(identity(), maxConcurrency).reduce(ArrayList::new, (ts, t) -> {
             ts.add(t);
             return ts;
@@ -1250,7 +1251,7 @@ public abstract class Single<T> {
      * {@link Single}s passed to this method.
      */
     @SafeVarargs
-    public static <T> Single<Collection<T>> collect(int maxConcurrency, Single<T>... singles) {
+    public static <T> Single<Collection<T>> collect(int maxConcurrency, Single<? extends T>... singles) {
         return Publisher.from(singles).flatMapSingle(identity(), maxConcurrency)
                 .reduce(() -> new ArrayList<>(singles.length), (ts, t) -> {
                     ts.add(t);
@@ -1291,7 +1292,7 @@ public abstract class Single<T> {
      * There is no guarantee of the order of the values in the produced {@link Collection} as compared to the order of
      * {@link Single}s passed to this method.
      */
-    public static <T> Single<Collection<T>> collectDelayError(Iterable<? extends Single<T>> singles) {
+    public static <T> Single<Collection<T>> collectDelayError(Iterable<? extends Single<? extends T>> singles) {
         return Publisher.from(singles).flatMapSingleDelayError(identity()).reduce(ArrayList::new, (ts, t) -> {
             ts.add(t);
             return ts;
@@ -1331,7 +1332,7 @@ public abstract class Single<T> {
      * {@link Single}s passed to this method.
      */
     @SafeVarargs
-    public static <T> Single<Collection<T>> collectDelayError(Single<T>... singles) {
+    public static <T> Single<Collection<T>> collectDelayError(Single<? extends T>... singles) {
         return Publisher.from(singles).flatMapSingleDelayError(identity())
                 .reduce(() -> new ArrayList<>(singles.length), (ts, t) -> {
                     ts.add(t);
@@ -1371,7 +1372,7 @@ public abstract class Single<T> {
      * There is no guarantee of the order of the values in the produced {@link Collection} as compared to the order of
      * {@link Single}s passed to this method.
      */
-    public static <T> Single<Collection<T>> collectDelayError(Iterable<? extends Single<T>> singles,
+    public static <T> Single<Collection<T>> collectDelayError(Iterable<? extends Single<? extends T>> singles,
                                                               int maxConcurrency) {
         return Publisher.from(singles).flatMapSingleDelayError(identity(), maxConcurrency)
                 .reduce(ArrayList::new, (ts, t) -> {
@@ -1412,7 +1413,7 @@ public abstract class Single<T> {
      * {@link Single}s passed to this method.
      */
     @SafeVarargs
-    public static <T> Single<Collection<T>> collectDelayError(int maxConcurrency, Single<T>... singles) {
+    public static <T> Single<Collection<T>> collectDelayError(int maxConcurrency, Single<? extends T>... singles) {
         return Publisher.from(singles).flatMapSingleDelayError(identity(), maxConcurrency)
                 .reduce(() -> new ArrayList<>(singles.length), (ts, t) -> {
                     ts.add(t);
@@ -1431,7 +1432,7 @@ public abstract class Single<T> {
      * @param <T> The data type the {@link CompletionStage} provides when complete.
      * @return A {@link Single} that derives results from {@link CompletionStage}.
      */
-    public static <T> Single<T> fromStage(CompletionStage<T> stage) {
+    public static <T> Single<T> fromStage(CompletionStage<? extends T> stage) {
         return new CompletionStageToSingle<>(stage);
     }
 

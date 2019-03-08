@@ -26,16 +26,17 @@ import static java.util.Objects.requireNonNull;
  * @param <T> Type of elements emitted by the {@link GroupedPublisher}s emitted by this {@link Publisher}.
  */
 final class PublisherGroupBy<Key, T> extends AbstractPublisherGroupBy<Key, T> {
-    private final Function<T, Key> keySelector;
+    private final Function<? super T, ? extends Key> keySelector;
     private final Executor executor;
 
-    PublisherGroupBy(Publisher<T> original, Function<T, Key> keySelector, int groupQueueSize, Executor executor) {
+    PublisherGroupBy(Publisher<T> original, Function<? super T, ? extends Key> keySelector, int groupQueueSize,
+                     Executor executor) {
         super(original, groupQueueSize, executor);
         this.keySelector = requireNonNull(keySelector);
         this.executor = executor;
     }
 
-    PublisherGroupBy(Publisher<T> original, Function<T, Key> keySelector, int groupQueueSize,
+    PublisherGroupBy(Publisher<T> original, Function<? super T, ? extends Key> keySelector, int groupQueueSize,
                      int expectedGroupCountHint, Executor executor) {
         super(original, groupQueueSize, expectedGroupCountHint, executor);
         this.keySelector = requireNonNull(keySelector);

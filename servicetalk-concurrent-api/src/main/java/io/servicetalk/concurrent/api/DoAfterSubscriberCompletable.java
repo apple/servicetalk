@@ -16,16 +16,15 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
-import io.servicetalk.concurrent.CompletableSource.Subscriber;
 
 import java.util.function.Supplier;
 
 import static java.util.Objects.requireNonNull;
 
 final class DoAfterSubscriberCompletable extends AbstractSynchronousCompletableOperator {
-    private final Supplier<Subscriber> subscriberSupplier;
+    private final Supplier<? extends Subscriber> subscriberSupplier;
 
-    DoAfterSubscriberCompletable(final Completable original, final Supplier<Subscriber> subscriberSupplier,
+    DoAfterSubscriberCompletable(final Completable original, final Supplier<? extends Subscriber> subscriberSupplier,
                                  Executor executor) {
         super(original, executor);
         this.subscriberSupplier = requireNonNull(subscriberSupplier);

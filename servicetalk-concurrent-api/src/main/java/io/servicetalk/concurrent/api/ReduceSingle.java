@@ -17,7 +17,6 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
-import io.servicetalk.concurrent.SingleSource.Subscriber;
 import io.servicetalk.concurrent.internal.ConcurrentSubscription;
 import io.servicetalk.concurrent.internal.SignalOffloader;
 
@@ -37,8 +36,8 @@ import static java.util.Objects.requireNonNull;
  */
 final class ReduceSingle<R, T> extends AbstractNoHandleSubscribeSingle<R> {
     private final Publisher<T> source;
-    private final Supplier<R> resultFactory;
-    private final BiFunction<R, ? super T, R> reducer;
+    private final Supplier<? extends R> resultFactory;
+    private final BiFunction<? super R, ? super T, R> reducer;
 
     /**
      * New instance.
@@ -49,7 +48,7 @@ final class ReduceSingle<R, T> extends AbstractNoHandleSubscribeSingle<R> {
      * @param reducer Invoked for every item emitted by the {@code source} and returns the same or altered
      * {@code result} object.
      */
-    ReduceSingle(Publisher<T> source, Supplier<R> resultFactory, BiFunction<R, ? super T, R> reducer) {
+    ReduceSingle(Publisher<T> source, Supplier<? extends R> resultFactory, BiFunction<? super R, ? super T, R> reducer) {
         super(source.executor());
         this.source = requireNonNull(source);
         this.resultFactory = requireNonNull(resultFactory);
@@ -78,12 +77,12 @@ final class ReduceSingle<R, T> extends AbstractNoHandleSubscribeSingle<R> {
 
     private static final class ReduceSubscriber<R, T> implements PublisherSource.Subscriber<T> {
 
-        private final BiFunction<R, ? super T, R> reducer;
+        private final BiFunction<? super R, ? super T, R> reducer;
         private final Subscriber<? super R> subscriber;
         @Nullable
         private R result;
 
-        ReduceSubscriber(@Nullable R result, BiFunction<R, ? super T, R> reducer, Subscriber<? super R> subscriber) {
+        ReduceSubscriber(@Nullable R result, BiFunction<? super R, ? super T, R> reducer, Subscriber<? super R> subscriber) {
             this.result = result;
             this.reducer = reducer;
             this.subscriber = subscriber;

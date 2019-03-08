@@ -30,7 +30,7 @@ import static java.util.Objects.requireNonNull;
 final class ResumeSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
 
     private final Single<T> original;
-    private final Function<? super Throwable, Single<? extends T>> nextFactory;
+    private final Function<Throwable, ? extends Single<? extends T>> nextFactory;
 
     /**
      * New instance.
@@ -38,7 +38,8 @@ final class ResumeSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
      * @param original Source.
      * @param nextFactory For creating the next {@link Single}.
      */
-    ResumeSingle(Single<T> original, Function<? super Throwable, Single<? extends T>> nextFactory, Executor executor) {
+    ResumeSingle(Single<T> original, Function<Throwable, ? extends Single<? extends T>> nextFactory,
+                 Executor executor) {
         super(executor);
         this.original = original;
         this.nextFactory = requireNonNull(nextFactory);
@@ -54,14 +55,15 @@ final class ResumeSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
     private static final class ResumeSubscriber<T> implements Subscriber<T> {
         private final Subscriber<? super T> subscriber;
         @Nullable
-        private volatile Function<? super Throwable, Single<? extends T>> nextFactory;
+        private volatile Function<Throwable, ? extends Single<? extends T>> nextFactory;
         private final SignalOffloader signalOffloader;
         private final AsyncContextMap contextMap;
         private final AsyncContextProvider contextProvider;
         @Nullable
         private volatile SequentialCancellable sequentialCancellable;
 
-        ResumeSubscriber(Subscriber<? super T> subscriber, Function<? super Throwable, Single<? extends T>> nextFactory,
+        ResumeSubscriber(Subscriber<? super T> subscriber,
+                         Function<Throwable, ? extends Single<? extends T>> nextFactory,
                          SignalOffloader signalOffloader, AsyncContextMap contextMap,
                          AsyncContextProvider contextProvider) {
             this.subscriber = subscriber;
@@ -91,7 +93,7 @@ final class ResumeSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
 
         @Override
         public void onError(Throwable throwable) {
-            final Function<? super Throwable, Single<? extends T>> nextFactory = this.nextFactory;
+            final Function<Throwable, ? extends Single<? extends T>> nextFactory = this.nextFactory;
             if (nextFactory == null) {
                 subscriber.onError(throwable);
                 return;

@@ -26,9 +26,9 @@ import static java.util.Objects.requireNonNull;
 
 final class FutureToSingle<T> extends Single<T> implements SingleSource<T> {
     private static final Logger LOGGER = LoggerFactory.getLogger(FutureToSingle.class);
-    private final Future<T> future;
+    private final Future<? extends T> future;
 
-    FutureToSingle(Future<T> future) {
+    FutureToSingle(Future<? extends T> future) {
         this.future = requireNonNull(future);
     }
 

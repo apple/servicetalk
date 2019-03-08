@@ -29,9 +29,9 @@ import static java.util.Objects.requireNonNull;
  */
 final class ResumeCompletable extends AbstractNoHandleSubscribeCompletable {
     private final Completable original;
-    private final Function<? super Throwable, Completable> nextFactory;
+    private final Function<Throwable, ? extends Completable> nextFactory;
 
-    ResumeCompletable(Completable original, Function<? super Throwable, Completable> nextFactory,
+    ResumeCompletable(Completable original, Function<Throwable, ? extends Completable> nextFactory,
                       Executor executor) {
         super(executor);
         this.original = original;
@@ -48,14 +48,14 @@ final class ResumeCompletable extends AbstractNoHandleSubscribeCompletable {
     private static final class ResumeSubscriber implements Subscriber {
         private final Subscriber subscriber;
         @Nullable
-        private volatile Function<? super Throwable, Completable> nextFactory;
+        private volatile Function<Throwable, ? extends Completable> nextFactory;
         private final SignalOffloader signalOffloader;
         private final AsyncContextMap contextMap;
         private final AsyncContextProvider contextProvider;
         @Nullable
         private volatile SequentialCancellable sequentialCancellable;
 
-        ResumeSubscriber(Subscriber subscriber, Function<? super Throwable, Completable> nextFactory,
+        ResumeSubscriber(Subscriber subscriber, Function<Throwable, ? extends Completable> nextFactory,
                          SignalOffloader signalOffloader, AsyncContextMap contextMap,
                          AsyncContextProvider contextProvider) {
             this.subscriber = subscriber;
@@ -85,7 +85,7 @@ final class ResumeCompletable extends AbstractNoHandleSubscribeCompletable {
 
         @Override
         public void onError(Throwable throwable) {
-            final Function<? super Throwable, Completable> nextFactory = this.nextFactory;
+            final Function<Throwable, ? extends Completable> nextFactory = this.nextFactory;
             if (nextFactory == null) {
                 subscriber.onError(throwable);
                 return;

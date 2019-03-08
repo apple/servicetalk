@@ -30,9 +30,9 @@ import static java.util.Objects.requireNonNull;
 
 final class CompletionStageToSingle<T> extends Single<T> implements SingleSource<T> {
     private static final Logger LOGGER = LoggerFactory.getLogger(CompletionStageToSingle.class);
-    private final CompletionStage<T> stage;
+    private final CompletionStage<? extends T> stage;
 
-    CompletionStageToSingle(CompletionStage<T> stage) {
+    CompletionStageToSingle(CompletionStage<? extends T> stage) {
         this.stage = requireNonNull(stage);
     }
 
@@ -45,7 +45,7 @@ final class CompletionStageToSingle<T> extends Single<T> implements SingleSource
                 LOGGER.debug("Ignoring exception from onSubscribe of Subscriber {}.", subscriber, t);
             }
         } else {
-            CompletableFuture<T> future = toCompletableFuture();
+            CompletableFuture<? extends T> future = toCompletableFuture();
             if (future != null) {
                 try {
                     subscriber.onSubscribe(() -> future.cancel(true));
@@ -79,7 +79,7 @@ final class CompletionStageToSingle<T> extends Single<T> implements SingleSource
     }
 
     @Nullable
-    private CompletableFuture<T> toCompletableFuture() {
+    private CompletableFuture<? extends T> toCompletableFuture() {
         try {
             return stage.toCompletableFuture();
         } catch (Throwable cause) {

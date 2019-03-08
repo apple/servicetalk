@@ -16,7 +16,6 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
-import io.servicetalk.concurrent.SingleSource.Subscriber;
 
 import java.util.function.Function;
 import javax.annotation.Nullable;
@@ -25,9 +24,9 @@ import static java.util.Objects.requireNonNull;
 
 final class MapSingle<T, R> extends AbstractSynchronousSingleOperator<T, R> {
 
-    private final Function<T, R> mapper;
+    private final Function<? super T, ? extends R> mapper;
 
-    MapSingle(Single<T> source, Function<T, R> mapper, Executor executor) {
+    MapSingle(Single<T> source, Function<? super T, ? extends R> mapper, Executor executor) {
         super(source, executor);
         this.mapper = requireNonNull(mapper);
     }

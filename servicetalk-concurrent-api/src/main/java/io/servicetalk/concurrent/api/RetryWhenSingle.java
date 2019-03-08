@@ -17,7 +17,6 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.CompletableSource;
-import io.servicetalk.concurrent.SingleSource.Subscriber;
 import io.servicetalk.concurrent.internal.SequentialCancellable;
 import io.servicetalk.concurrent.internal.SignalOffloader;
 
@@ -33,9 +32,10 @@ import static java.util.Objects.requireNonNull;
 final class RetryWhenSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
 
     private final Single<T> original;
-    private final BiIntFunction<Throwable, Completable> shouldRetry;
+    private final BiIntFunction<Throwable, ? extends Completable> shouldRetry;
 
-    RetryWhenSingle(Single<T> original, BiIntFunction<Throwable, Completable> shouldRetry, Executor executor) {
+    RetryWhenSingle(Single<T> original, BiIntFunction<Throwable, ? extends Completable> shouldRetry,
+                    Executor executor) {
         super(executor);
         this.original = original;
         this.shouldRetry = shouldRetry;

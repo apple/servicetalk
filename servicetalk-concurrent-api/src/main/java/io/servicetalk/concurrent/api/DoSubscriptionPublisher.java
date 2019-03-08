@@ -21,10 +21,11 @@ import static java.util.Objects.requireNonNull;
 
 final class DoSubscriptionPublisher<T> extends AbstractSynchronousPublisherOperator<T, T> {
 
-    private final Supplier<Subscription> subscriptionSupplier;
+    private final Supplier<? extends Subscription> subscriptionSupplier;
     private final boolean before;
 
-    DoSubscriptionPublisher(Publisher<T> original, Supplier<Subscription> subscriptionSupplier, boolean before, Executor executor) {
+    DoSubscriptionPublisher(Publisher<T> original, Supplier<? extends Subscription> subscriptionSupplier,
+                            boolean before, Executor executor) {
         super(original, executor);
         this.subscriptionSupplier = requireNonNull(subscriptionSupplier);
         this.before = before;
