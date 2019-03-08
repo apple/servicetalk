@@ -320,24 +320,24 @@ public final class TestSingle<T> extends Single<T> implements SingleSource<T> {
 
         @Override
         public void onSubscribe(final Cancellable cancellable) {
-            waitForSubscription().onSubscribe(cancellable);
+            waitForSubscriber().onSubscribe(cancellable);
         }
 
         @Override
         public void onSuccess(@Nullable final T t) {
-            waitForSubscription().onSuccess(t);
+            waitForSubscriber().onSuccess(t);
         }
 
         @Override
         public void onError(final Throwable t) {
-            waitForSubscription().onError(t);
+            waitForSubscriber().onError(t);
         }
 
         void realSubscriber(Subscriber<? super T> subscriber) {
             realSubscriberSingle.onSuccess(subscriber);
         }
 
-        private Subscriber<? super T> waitForSubscription() {
+        private Subscriber<? super T> waitForSubscriber() {
             try {
                 return realSubscriberSingle.toFuture().get();
             } catch (InterruptedException | ExecutionException e) {

@@ -373,29 +373,29 @@ public final class TestPublisher<T> extends Publisher<T> implements PublisherSou
 
         @Override
         public void onSubscribe(final Subscription subscription) {
-            waitForSubscription().onSubscribe(subscription);
+            waitForSubscriber().onSubscribe(subscription);
         }
 
         @Override
         public void onNext(@Nullable final T t) {
-            waitForSubscription().onNext(t);
+            waitForSubscriber().onNext(t);
         }
 
         @Override
         public void onError(final Throwable t) {
-            waitForSubscription().onError(t);
+            waitForSubscriber().onError(t);
         }
 
         @Override
         public void onComplete() {
-            waitForSubscription().onComplete();
+            waitForSubscriber().onComplete();
         }
 
         void realSubscriber(Subscriber<? super T> subscriber) {
             realSubscriberSingle.onSuccess(subscriber);
         }
 
-        private Subscriber<? super T> waitForSubscription() {
+        private Subscriber<? super T> waitForSubscriber() {
             try {
                 return realSubscriberSingle.toFuture().get();
             } catch (InterruptedException | ExecutionException e) {
