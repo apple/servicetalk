@@ -165,13 +165,40 @@ public abstract class HttpServerBuilder {
      * of a {@link StreamingHttpRequest} in case some {@link StreamingHttpService} endpoints are not interested in
      * the request payload body.
      * <p>
-     * This logic could be disabled when all endpoints and filters use aggregated API of {@link HttpRequest} or
-     * consume/discard the {@link StreamingHttpRequest#payloadBody() payload body} of incoming requests.
+     * For <a href="https://tools.ietf.org/html/rfc7230#section-6.3">persistent HTTP connections</a> it is required to
+     * eventually consume the entire request payload to enable reading of the next request. This is required because
+     * requests are pipelined for HTTP/1.1, so if the previous request is not completely read, next request can not be
+     * read from the socket. For cases when there is a possibility that user may forget to consume request payload,
+     * ServiceTalk automatically consumes request payload body. This automatic consumption behavior may create some
+     * overhead and can be disabled using this method when it is guaranteed that all request paths consumes all request
+     * payloads eventually. An example of guaranteed consumption are {@link HttpRequest non-streaming APIs}.
      *
      * @return {@code this}.
      */
     public final HttpServerBuilder disableDrainingRequestPayloadBody() {
         this.drainRequestPayloadBody = false;
+        return this;
+    }
+
+    /**
+     * Enables the logic that tries to drain and discard the {@link StreamingHttpRequest#payloadBody() payload body}
+     * of a {@link StreamingHttpRequest} in case some {@link StreamingHttpService} endpoints are not interested in
+     * the request payload body.
+     * <p>
+     * For <a href="https://tools.ietf.org/html/rfc7230#section-6.3">persistent HTTP connections</a> it is required to
+     * eventually consume the entire request payload to enable reading of the next request. This is required because
+     * requests are pipelined for HTTP/1.1, so if the previous request is not completely read, next request can not be
+     * read from the socket. For cases when there is a possibility that user may forget to consume request payload,
+     * ServiceTalk automatically consumes request payload body. This automatic consumption behavior may create some
+     * overhead and {@link #disableDrainingRequestPayloadBody() can be disabled} when it is guaranteed that all request
+     * paths consumes all request payloads eventually. An example of guaranteed consumption are
+     * {@link HttpRequest non-streaming APIs}.
+     *
+     * @return {@code this}.
+     * @see #disableDrainingRequestPayloadBody()
+     */
+    public final HttpServerBuilder enableDrainingRequestPayloadBody() {
+        this.drainRequestPayloadBody = true;
         return this;
     }
 
