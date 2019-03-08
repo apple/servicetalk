@@ -29,7 +29,7 @@ import static io.servicetalk.concurrent.api.Single.error;
 final class ConditionalHttpClientFilter extends StreamingHttpClientFilter {
     private final Predicate<StreamingHttpRequest> predicate;
     private final StreamingHttpClient predicatedClient;
-    private final ListenableAsyncCloseable closable;
+    private final ListenableAsyncCloseable closeable;
 
     ConditionalHttpClientFilter(final Predicate<StreamingHttpRequest> predicate,
                                 final StreamingHttpClient predicatedClient,
@@ -40,7 +40,7 @@ final class ConditionalHttpClientFilter extends StreamingHttpClientFilter {
         CompositeCloseable compositeCloseable = newCompositeCloseable();
         compositeCloseable.append(predicatedClient);
         compositeCloseable.append(client);
-        closable = toListenableAsyncCloseable(compositeCloseable);
+        closeable = toListenableAsyncCloseable(compositeCloseable);
     }
 
     @Override
@@ -63,16 +63,16 @@ final class ConditionalHttpClientFilter extends StreamingHttpClientFilter {
 
     @Override
     public Completable closeAsync() {
-        return closable.closeAsync();
+        return closeable.closeAsync();
     }
 
     @Override
     public Completable closeAsyncGracefully() {
-        return closable.closeAsyncGracefully();
+        return closeable.closeAsyncGracefully();
     }
 
     @Override
     public Completable onClose() {
-        return closable.onClose();
+        return closeable.onClose();
     }
 }
