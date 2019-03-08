@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -69,7 +69,7 @@ final class DefaultHttpExecutionStrategy implements HttpExecutionStrategy {
             resp = resp.publishOn(e);
         }
         if (offloaded(OFFLOAD_RECEIVE_DATA)) {
-            resp = resp.map(response -> response.transformPayloadBody(payload -> payload.publishOn(e)));
+            resp = resp.map(response -> response.transformRawPayloadBody(payload -> payload.publishOn(e)));
         }
         return resp;
     }
@@ -81,7 +81,7 @@ final class DefaultHttpExecutionStrategy implements HttpExecutionStrategy {
             final BiFunction<Throwable, Executor, Single<StreamingHttpResponse>> errorHandler) {
         final Executor e = executor(fallback);
         if (offloaded(OFFLOAD_RECEIVE_DATA)) {
-            request = request.transformPayloadBody(payload -> payload.publishOn(e));
+            request = request.transformRawPayloadBody(payload -> payload.publishOn(e));
         }
         final Single<StreamingHttpResponse> responseSingle;
         if (offloaded(OFFLOAD_RECEIVE_META)) {
@@ -113,7 +113,7 @@ final class DefaultHttpExecutionStrategy implements HttpExecutionStrategy {
                                                         final StreamingHttpResponseFactory responseFactory) {
                 HttpServiceContext wrappedCtx = new ExecutionContextOverridingServiceContext(ctx, e);
                 if (offloaded(OFFLOAD_RECEIVE_DATA)) {
-                    request = request.transformPayloadBody(p -> p.publishOn(e));
+                    request = request.transformRawPayloadBody(p -> p.publishOn(e));
                 }
                 final Single<StreamingHttpResponse> resp;
                 if (offloaded(OFFLOAD_RECEIVE_META)) {
@@ -128,7 +128,7 @@ final class DefaultHttpExecutionStrategy implements HttpExecutionStrategy {
                         // This is different as compared to invokeService() where we just offload once on the
                         // flattened (meta + data) stream. In this case, we need to preserve the service contract and
                         // hence have to offload both meta and data separately.
-                        resp.map(r -> r.transformPayloadBody(p -> p.subscribeOn(e))).subscribeOn(e) : resp;
+                        resp.map(r -> r.transformRawPayloadBody(p -> p.subscribeOn(e))).subscribeOn(e) : resp;
             }
 
             @Override

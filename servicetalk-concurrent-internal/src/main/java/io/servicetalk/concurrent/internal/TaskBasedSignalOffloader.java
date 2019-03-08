@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -180,7 +180,7 @@ final class TaskBasedSignalOffloader implements SignalOffloader {
         }
 
         private void enqueueTaskIfRequired(boolean forRequestN) {
-            int oldState = stateUpdater.getAndSet(this, STATE_ENQUEUED);
+            final int oldState = stateUpdater.getAndSet(this, STATE_ENQUEUED);
             if (oldState == STATE_IDLE) {
                 try {
                     executor.execute(this);
@@ -210,55 +210,65 @@ final class TaskBasedSignalOffloader implements SignalOffloader {
 
         @Override
         public void run() {
-            boolean isDone;
-            do {
-                stateUpdater.getAndSet(this, STATE_EXECUTING);
+            state = STATE_EXECUTING;
+            for (;;) {
                 long r = requestedUpdater.getAndSet(this, 0);
-                try {
-                    if (r > 0) {
-                        try {
-                            target.request(r);
-                            continue;
-                        } catch (Throwable t) {
-                            // Cancel since request-n threw.
-                            requested = r = CANCELLED;
-                            LOGGER.error("Unexpected exception from request(). Subscription {}.", target, t);
-                        }
+                if (r > 0) {
+                    try {
+                        target.request(r);
+                        continue;
+                    } catch (Throwable t) {
+                        // Cancel since request-n threw.
+                        requested = r = CANCELLED;
+                        LOGGER.error("Unexpected exception from request(). Subscription {}.", target, t);
                     }
-
-                    if (r == CANCELLED) {
-                        requested = TERMINATED;
-                        try {
-                            target.cancel();
-                        } catch (Throwable t) {
-                            LOGGER.error("Ignoring unexpected exception from cancel(). Subscription {}.", target, t);
-                        }
-                        return; // No more signals are required to be sent.
-                    } else if (r == TERMINATED) {
-                        return; // we want to hard return to avoid resetting state in the finally block.
-                    } else if (r != 0) {
-                        // Invalid request-n
-                        //
-                        // As per spec (Rule 3.9) a request-n with n <= 0 MUST signal an onError hence terminating the
-                        // Subscription. Since, we can not store negative values in requested and keep going without
-                        // requesting more invalid values, we assume spec compliance (no more data can be requested) and
-                        // terminate.
-                        requested = TERMINATED;
-                        try {
-                            target.request(r);
-                        } catch (IllegalArgumentException iae) {
-                            // Expected
-                        } catch (Throwable t) {
-                            LOGGER.error("Ignoring unexpected exception from request(). Subscription {}.", target, t);
-                        }
-                    }
-                    // We store a request(0) as Long.MIN_VALUE so if we see r == 0 here, it means we are re-entering
-                    // the loop because we saw the STATE_ENQUEUED but we have already read from requested.
-                } finally {
-                    // r < 0 is used to avoid resetting the state if we have terminated above.
-                    isDone = r < 0 || stateUpdater.getAndSet(this, STATE_IDLE) != STATE_ENQUEUED;
                 }
-            } while (!isDone);
+
+                if (r == CANCELLED) {
+                    requested = TERMINATED;
+                    try {
+                        target.cancel();
+                    } catch (Throwable t) {
+                        LOGGER.error("Ignoring unexpected exception from cancel(). Subscription {}.", target, t);
+                    }
+                    return; // No more signals are required to be sent.
+                } else if (r == TERMINATED) {
+                    return; // we want to hard return to avoid resetting state.
+                } else if (r != 0) {
+                    // Invalid request-n
+                    //
+                    // As per spec (Rule 3.9) a request-n with n <= 0 MUST signal an onError hence terminating the
+                    // Subscription. Since, we can not store negative values in requested and keep going without
+                    // requesting more invalid values, we assume spec compliance (no more data can be requested) and
+                    // terminate.
+                    requested = TERMINATED;
+                    try {
+                        target.request(r);
+                    } catch (IllegalArgumentException iae) {
+                        // Expected
+                    } catch (Throwable t) {
+                        LOGGER.error("Ignoring unexpected exception from request(). Subscription {}.", target, t);
+                    }
+                    return;
+                }
+                // We store a request(0) as Long.MIN_VALUE so if we see r == 0 here, it means we are re-entering
+                // the loop because we saw the STATE_ENQUEUED but we have already read from requested.
+
+                for (;;) {
+                    final int cState = state;
+                    if (cState == STATE_EXECUTING) {
+                        if (stateUpdater.compareAndSet(this, STATE_EXECUTING, STATE_IDLE)) {
+                            return;
+                        }
+                    } else if (cState == STATE_ENQUEUED) {
+                        if (stateUpdater.compareAndSet(this, STATE_ENQUEUED, STATE_EXECUTING)) {
+                            break;
+                        }
+                    } else {
+                        return;
+                    }
+                }
+            }
         }
     }
 
@@ -314,65 +324,68 @@ final class TaskBasedSignalOffloader implements SignalOffloader {
 
         @Override
         public void run() {
-            boolean isDone;
-            do {
-                stateUpdater.getAndSet(this, STATE_EXECUTING);
-                try {
-                    Object signal;
-                    while ((signal = signals.poll()) != null) {
-                        if (signal instanceof Subscription) {
-                            Subscription subscription = (Subscription) signal;
-                            try {
-                                target.onSubscribe(subscription);
-                            } catch (Throwable t) {
-                                clearSignalsFromExecutorThread();
-                                LOGGER.error("Ignored unexpected exception from onSubscribe. Subscriber: {}, " +
-                                        "Subscription: {}.", target, subscription, t);
-                                subscription.cancel();
-                                return; // We can't interact with the queue any more because we terminated, so bail.
-                            }
-                        } else if (signal instanceof TerminalNotification) {
-                            state = STATE_TERMINATED;
-                            try {
-                                ((TerminalNotification) signal).terminate(target);
-                            } catch (Throwable t) {
-                                LOGGER.error("Ignored unexpected exception from {}. Subscriber: {}",
-                                        ((TerminalNotification) signal).cause() == null ? "onComplete()" :
-                                                "onError()", target, t);
-                            }
+            state = STATE_EXECUTING;
+            for (;;) {
+                Object signal;
+                while ((signal = signals.poll()) != null) {
+                    if (signal instanceof Subscription) {
+                        Subscription subscription = (Subscription) signal;
+                        try {
+                            target.onSubscribe(subscription);
+                        } catch (Throwable t) {
+                            clearSignalsFromExecutorThread();
+                            LOGGER.error("Ignored unexpected exception from onSubscribe. Subscriber: {}, " +
+                                    "Subscription: {}.", target, subscription, t);
+                            subscription.cancel();
                             return; // We can't interact with the queue any more because we terminated, so bail.
-                        } else {
-                            @SuppressWarnings("unchecked")
-                            T t = signal == NULL_WRAPPER ? null : (T) signal;
+                        }
+                    } else if (signal instanceof TerminalNotification) {
+                        state = STATE_TERMINATED;
+                        try {
+                            ((TerminalNotification) signal).terminate(target);
+                        } catch (Throwable t) {
+                            LOGGER.error("Ignored unexpected exception from {}. Subscriber: {}",
+                                    ((TerminalNotification) signal).cause() == null ? "onComplete()" :
+                                            "onError()", target, t);
+                        }
+                        return; // We can't interact with the queue any more because we terminated, so bail.
+                    } else {
+                        @SuppressWarnings("unchecked")
+                        T t = signal == NULL_WRAPPER ? null : (T) signal;
+                        try {
+                            target.onNext(t);
+                        } catch (Throwable th) {
+                            clearSignalsFromExecutorThread();
                             try {
-                                target.onNext(t);
-                            } catch (Throwable th) {
-                                clearSignalsFromExecutorThread();
                                 assert subscription != null;
                                 subscription.cancel();
+                            } finally {
                                 try {
                                     target.onError(th);
                                 } catch (Throwable throwable) {
                                     LOGGER.error("Ignored unexpected exception from onError(). Subscriber: {}",
                                             target, t);
                                 }
-                                return; // We can't interact with the queue any more because we terminated, so bail.
                             }
-                        }
-                    }
-                } finally {
-                    for (;;) {
-                        final int cState = state;
-                        if (cState == STATE_TERMINATED) {
-                            isDone = true;
-                            break;
-                        } else if (stateUpdater.compareAndSet(this, cState, STATE_IDLE)) {
-                            isDone = cState != STATE_ENQUEUED;
-                            break;
+                            return; // We can't interact with the queue any more because we terminated, so bail.
                         }
                     }
                 }
-            } while (!isDone);
+                for (;;) {
+                    final int cState = state;
+                    if (cState == STATE_EXECUTING) {
+                        if (stateUpdater.compareAndSet(this, STATE_EXECUTING, STATE_IDLE)) {
+                            return;
+                        }
+                    } else if (cState == STATE_ENQUEUED) {
+                        if (stateUpdater.compareAndSet(this, STATE_ENQUEUED, STATE_EXECUTING)) {
+                            break;
+                        }
+                    } else {
+                        return;
+                    }
+                }
+            }
         }
 
         private void clearSignalsFromExecutorThread() {

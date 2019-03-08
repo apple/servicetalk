@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,6 @@
  */
 package io.servicetalk.http.netty;
 
-import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
@@ -206,17 +205,17 @@ final class NettyHttpServer {
                 // we may attempt to do duplicate subscribe on NettyChannelPublisher, which will result in a connection
                 // closure.
                 CompletableProcessor processor = new CompletableProcessor();
-                StreamingHttpRequest request2 = request.transformPayloadBody(
+                StreamingHttpRequest request2 = request.transformRawPayloadBody(
                         // Cancellation is assumed to close the connection, or be ignored if this Subscriber has already
                         // terminated. That means we don't need to trigger the processor as completed because we don't
                         // care about processing more requests.
-                        payload -> payload.doAfterSubscriber(() -> new Subscriber<Buffer>() {
+                        payload -> payload.doAfterSubscriber(() -> new Subscriber<Object>() {
                             @Override
                             public void onSubscribe(final Subscription s) {
                             }
 
                             @Override
-                            public void onNext(final Buffer buffer) {
+                            public void onNext(final Object obj) {
                             }
 
                             @Override
