@@ -24,6 +24,7 @@ import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.concurrent.internal.RejectedSubscribeError;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.HttpProtocolVersion;
@@ -223,7 +224,13 @@ final class NettyHttpServer {
 
                             @Override
                             public void onError(final Throwable t) {
-                                processor.onComplete();
+                                // After the response payload has terminated, we may attempt to subscribe to the request
+                                // payload and drain/discard the content (in case the user forgets to consume the
+                                // stream). However this means we may introduce a duplicate subscribe and this doesn't
+                                // mean the request content has not terminated.
+                                if (!drainRequestPayloadBody || !(t instanceof RejectedSubscribeError)) {
+                                    processor.onComplete();
+                                }
                             }
 
                             @Override
@@ -248,6 +255,7 @@ final class NettyHttpServer {
                     objectPublisher = objectPublisher.concatWith(request2.payloadBody().ignoreElements()
                             // Discarding the request payload body is an operation which should not impact the state of
                             // request/response processing. It's appropriate to recover from any error here.
+                            // ST may introduce RejectedSubscribeError if user already consumed the request payload body
                             .onErrorResume(t -> completed()));
                 }
 
