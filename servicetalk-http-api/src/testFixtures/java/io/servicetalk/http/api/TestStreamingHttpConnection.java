@@ -16,17 +16,20 @@
 package io.servicetalk.http.api;
 
 import io.servicetalk.concurrent.api.Completable;
+import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ExecutionContext;
 
+import static io.servicetalk.concurrent.api.AsyncCloseables.emptyAsyncCloseable;
 import static io.servicetalk.concurrent.api.Single.error;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 
-public abstract class TestStreamingHttpConnection extends StreamingHttpConnection {
+public class TestStreamingHttpConnection extends StreamingHttpConnection {
     private final ExecutionContext executionContext;
     private final ConnectionContext connectionContext;
+    private final ListenableAsyncCloseable closeable;
 
     public TestStreamingHttpConnection(StreamingHttpRequestResponseFactory reqRespFactory,
                                        ExecutionContext executionContext,
@@ -34,20 +37,32 @@ public abstract class TestStreamingHttpConnection extends StreamingHttpConnectio
         super(reqRespFactory, defaultStrategy());
         this.executionContext = executionContext;
         this.connectionContext = connectionContext;
+        closeable = emptyAsyncCloseable();
     }
 
     @Override
     public Completable closeAsync() {
-        return Completable.completed();
+        return closeable.closeAsync();
+    }
+
+    @Override
+    public Completable closeAsyncGracefully() {
+        return closeable.closeAsyncGracefully();
     }
 
     @Override
     public Completable onClose() {
-        return Completable.completed();
+        return closeable.onClose();
     }
 
     @Override
     public final Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
+        return error(new UnsupportedOperationException());
+    }
+
+    @Override
+    public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
+                                                 final StreamingHttpRequest request) {
         return error(new UnsupportedOperationException());
     }
 

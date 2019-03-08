@@ -16,29 +16,38 @@
 package io.servicetalk.http.api;
 
 import io.servicetalk.concurrent.api.Completable;
+import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.api.ExecutionContext;
 
+import static io.servicetalk.concurrent.api.AsyncCloseables.emptyAsyncCloseable;
 import static io.servicetalk.concurrent.api.Single.error;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 
 public class TestStreamingHttpClient extends StreamingHttpClient {
     private final ExecutionContext executionContext;
+    private final ListenableAsyncCloseable closeable;
 
     public TestStreamingHttpClient(StreamingHttpRequestResponseFactory reqRespFactory,
                                    ExecutionContext executionContext) {
         super(reqRespFactory, defaultStrategy());
         this.executionContext = executionContext;
+        closeable = emptyAsyncCloseable();
     }
 
     @Override
     public Completable closeAsync() {
-        return Completable.completed();
+        return closeable.closeAsync();
+    }
+
+    @Override
+    public Completable closeAsyncGracefully() {
+        return closeable.closeAsyncGracefully();
     }
 
     @Override
     public Completable onClose() {
-        return Completable.completed();
+        return closeable.onClose();
     }
 
     @Override

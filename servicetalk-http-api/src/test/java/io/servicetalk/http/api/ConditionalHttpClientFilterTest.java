@@ -17,8 +17,10 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.concurrent.api.Single;
 
+import org.junit.Test;
+
 public class ConditionalHttpClientFilterTest extends AbstractConditionalHttpFilterTest {
-    private static final StreamingHttpClient TEST_CLIENT = new TestStreamingHttpClient(REQ_RES_FACTORY, TEST_CTX) {
+    private final StreamingHttpClient testClient = new TestStreamingHttpClient(REQ_RES_FACTORY, TEST_CTX) {
         @Override
         public Single<StreamingHttpResponse> request(final HttpExecutionStrategy __,
                                                      final StreamingHttpRequest req) {
@@ -26,19 +28,36 @@ public class ConditionalHttpClientFilterTest extends AbstractConditionalHttpFilt
         }
     };
 
-    private static final StreamingHttpClientFilter FILTER =
+    private final StreamingHttpClientFilter filter =
             new ConditionalHttpClientFilter(TEST_REQ_PREDICATE,
-                    new StreamingHttpClientFilter(TEST_CLIENT) {
+                    new StreamingHttpClientFilter(testClient) {
                         @Override
                         protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                                         final HttpExecutionStrategy strategy,
                                                                         final StreamingHttpRequest request) {
                             return delegate.request(strategy, markFiltered(request));
                         }
-                    }, TEST_CLIENT);
+                    }, testClient);
 
     @Override
     protected Single<StreamingHttpResponse> sendTestRequest(final StreamingHttpRequest req) {
-        return FILTER.request(req);
+        return filter.request(req);
+    }
+
+    @Test
+    public void closeAsyncImpactsBoth() throws Exception {
+        StreamingHttpClient predicateClient = new TestStreamingHttpClient(REQ_RES_FACTORY, TEST_CTX);
+        new ConditionalHttpClientFilter(req -> true, predicateClient, testClient).closeAsync().toFuture().get();
+        testClient.onClose().toFuture().get();
+        predicateClient.onClose().toFuture().get();
+    }
+
+    @Test
+    public void closeAsyncGracefullyImpactsBoth() throws Exception {
+        StreamingHttpClient predicateClient = new TestStreamingHttpClient(REQ_RES_FACTORY, TEST_CTX);
+        new ConditionalHttpClientFilter(req -> true, predicateClient, testClient)
+                .closeAsyncGracefully().toFuture().get();
+        testClient.onClose().toFuture().get();
+        predicateClient.onClose().toFuture().get();
     }
 }

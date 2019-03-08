@@ -15,15 +15,21 @@
  */
 package io.servicetalk.http.api;
 
+import io.servicetalk.concurrent.api.Completable;
+import io.servicetalk.concurrent.api.CompositeCloseable;
+import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Single;
 
 import java.util.function.Predicate;
 
+import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
+import static io.servicetalk.concurrent.api.AsyncCloseables.toListenableAsyncCloseable;
 import static io.servicetalk.concurrent.api.Single.error;
 
 final class ConditionalHttpClientFilter extends StreamingHttpClientFilter {
     private final Predicate<StreamingHttpRequest> predicate;
     private final StreamingHttpClient predicatedClient;
+    private final ListenableAsyncCloseable closeable;
 
     ConditionalHttpClientFilter(final Predicate<StreamingHttpRequest> predicate,
                                 final StreamingHttpClient predicatedClient,
@@ -31,6 +37,10 @@ final class ConditionalHttpClientFilter extends StreamingHttpClientFilter {
         super(client);
         this.predicate = predicate;
         this.predicatedClient = predicatedClient;
+        CompositeCloseable compositeCloseable = newCompositeCloseable();
+        compositeCloseable.append(predicatedClient);
+        compositeCloseable.append(client);
+        closeable = toListenableAsyncCloseable(compositeCloseable);
     }
 
     @Override
@@ -49,5 +59,20 @@ final class ConditionalHttpClientFilter extends StreamingHttpClientFilter {
         }
 
         return delegate.request(strategy, request);
+    }
+
+    @Override
+    public Completable closeAsync() {
+        return closeable.closeAsync();
+    }
+
+    @Override
+    public Completable closeAsyncGracefully() {
+        return closeable.closeAsyncGracefully();
+    }
+
+    @Override
+    public Completable onClose() {
+        return closeable.onClose();
     }
 }
