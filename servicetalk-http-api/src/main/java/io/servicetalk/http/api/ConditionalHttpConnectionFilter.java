@@ -15,22 +15,32 @@
  */
 package io.servicetalk.http.api;
 
+import io.servicetalk.concurrent.api.Completable;
+import io.servicetalk.concurrent.api.CompositeCloseable;
+import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Single;
 
 import java.util.function.Predicate;
 
+import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
+import static io.servicetalk.concurrent.api.AsyncCloseables.toListenableAsyncCloseable;
 import static io.servicetalk.concurrent.api.Single.error;
 
 final class ConditionalHttpConnectionFilter extends StreamingHttpConnectionFilter {
     private final Predicate<StreamingHttpRequest> predicate;
-    private final StreamingHttpConnectionFilter predicatedFilter;
+    private final StreamingHttpConnection predicatedConnection;
+    private final ListenableAsyncCloseable closable;
 
     ConditionalHttpConnectionFilter(final Predicate<StreamingHttpRequest> predicate,
-                                    final StreamingHttpConnectionFilter predicatedFilter,
+                                    final StreamingHttpConnection predicatedConnection,
                                     final StreamingHttpConnection connection) {
         super(connection);
         this.predicate = predicate;
-        this.predicatedFilter = predicatedFilter;
+        this.predicatedConnection = predicatedConnection;
+        CompositeCloseable compositeCloseable = newCompositeCloseable();
+        compositeCloseable.append(predicatedConnection);
+        compositeCloseable.append(connection);
+        closable = toListenableAsyncCloseable(compositeCloseable);
     }
 
     @Override
@@ -43,9 +53,24 @@ final class ConditionalHttpConnectionFilter extends StreamingHttpConnectionFilte
         }
 
         if (b) {
-            return predicatedFilter.request(strategy, req);
+            return predicatedConnection.request(strategy, req);
         }
 
         return delegate().request(strategy, req);
+    }
+
+    @Override
+    public Completable closeAsync() {
+        return closable.closeAsync();
+    }
+
+    @Override
+    public Completable closeAsyncGracefully() {
+        return closable.closeAsyncGracefully();
+    }
+
+    @Override
+    public Completable onClose() {
+        return closable.onClose();
     }
 }

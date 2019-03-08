@@ -15,33 +15,73 @@
  */
 package io.servicetalk.http.api;
 
+import io.servicetalk.concurrent.api.Completable;
+import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Single;
 
+import org.junit.Test;
+
+import static io.servicetalk.concurrent.api.AsyncCloseables.emptyAsyncCloseable;
 import static org.mockito.Mockito.mock;
 
 public class ConditionalHttpServiceFilterTest extends AbstractConditionalHttpFilterTest {
-    private static final StreamingHttpService TEST_SERVICE = new StreamingHttpService() {
-        @Override
-        public Single<StreamingHttpResponse> handle(final HttpServiceContext __,
-                                                    final StreamingHttpRequest req,
-                                                    final StreamingHttpResponseFactory resFactory) {
-            return TEST_REQ_HANDLER.apply(req, resFactory);
-        }
-    };
+    private final TestStreamingHttpService testService = new TestStreamingHttpService();
 
-    private static final StreamingHttpServiceFilter FILTER =
+    private final StreamingHttpServiceFilter filter =
             new ConditionalHttpServiceFilter(TEST_REQ_PREDICATE,
-                    new StreamingHttpServiceFilter(TEST_SERVICE) {
+                    new StreamingHttpServiceFilter(testService) {
                         @Override
                         public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
                                                                     final StreamingHttpRequest req,
                                                                     final StreamingHttpResponseFactory resFactory) {
                             return super.handle(ctx, markFiltered(req), resFactory);
                         }
-                    }, TEST_SERVICE);
+                    }, testService);
 
     @Override
     protected Single<StreamingHttpResponse> sendTestRequest(final StreamingHttpRequest req) {
-        return FILTER.handle(mock(HttpServiceContext.class), req, REQ_RES_FACTORY);
+        return filter.handle(mock(HttpServiceContext.class), req, REQ_RES_FACTORY);
+    }
+
+    @Test
+    public void closeAsyncImpactsBoth() throws Exception {
+        final TestStreamingHttpService predicateService = new TestStreamingHttpService();
+        new ConditionalHttpServiceFilter(req -> true, predicateService, testService).closeAsync().toFuture().get();
+        testService.onClose().toFuture().get();
+        predicateService.onClose().toFuture().get();
+    }
+
+    @Test
+    public void closeAsyncGracefullyImpactsBoth() throws Exception {
+        final TestStreamingHttpService predicateService = new TestStreamingHttpService();
+        new ConditionalHttpServiceFilter(req -> true, predicateService, testService)
+                .closeAsyncGracefully().toFuture().get();
+        testService.onClose().toFuture().get();
+        predicateService.onClose().toFuture().get();
+    }
+
+    private static final class TestStreamingHttpService extends StreamingHttpService {
+        private final ListenableAsyncCloseable closeable = emptyAsyncCloseable();
+
+        @Override
+        public Single<StreamingHttpResponse> handle(final HttpServiceContext __,
+                                                    final StreamingHttpRequest req,
+                                                    final StreamingHttpResponseFactory resFactory) {
+            return TEST_REQ_HANDLER.apply(req, resFactory);
+        }
+
+        @Override
+        public Completable closeAsync() {
+            return closeable.closeAsync();
+        }
+
+        @Override
+        public Completable closeAsyncGracefully() {
+            return closeable.closeAsyncGracefully();
+        }
+
+        Completable onClose() {
+            return closeable.onClose();
+        }
     }
 }
