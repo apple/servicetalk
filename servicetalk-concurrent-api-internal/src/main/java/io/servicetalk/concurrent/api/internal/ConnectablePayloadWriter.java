@@ -82,16 +82,20 @@ public final class ConnectablePayloadWriter<T> implements PayloadWriter<T> {
 
     @Override
     public void write(final T t) throws IOException {
-        // We don't need to call verifyOpen here because it is checked in both wait* methods.
         for (;;) {
             final long requested = this.requested;
             if (requested > 0) {
                 if (requestedUpdater.compareAndSet(this, requested, requested - 1)) {
                     break;
                 }
-            } else {
+            } else if (requested >= 0) {
                 waitForRequestNDemand();
                 break;
+            } else {
+                // In the event that we have been terminated don't bother trying to wait. More importantly we don't
+                // want to reset the requested state to REQUESTN_ABOUT_TO_PARK because it may have been set to
+                // REQUESTN_TERMINATED.
+                processClosed();
             }
         }
 
@@ -100,6 +104,7 @@ public final class ConnectablePayloadWriter<T> implements PayloadWriter<T> {
             s.onNext(t);
         } catch (final Throwable cause) {
             closed = TerminalNotification.error(cause);
+            requested = REQUESTN_TERMINATED;
             state = State.TERMINATED;
             s.onError(cause);
             throw cause;
@@ -117,16 +122,18 @@ public final class ConnectablePayloadWriter<T> implements PayloadWriter<T> {
         // Set closed before state, because the Subscriber thread depends upon this ordering in the event it needs to
         // terminate the Subscriber.
         if (closedUpdater.compareAndSet(this, null, TerminalNotification.complete())) {
+            // We need to terminate requested or else we may block indefinitely on subsequent calls to write in
+            // waitForRequestNDemand.
+            requested = REQUESTN_TERMINATED;
             for (;;) {
                 final Object currState = state;
-                if (currState == State.TERMINATED || currState == State.CONNECTED) {
-                    break;
-                } else if (currState instanceof Subscriber) {
+                if (currState instanceof Subscriber) {
                     if (stateUpdater.compareAndSet(this, currState, State.TERMINATED)) {
                         ((Subscriber) currState).onComplete();
                         break;
                     }
-                } else if (stateUpdater.compareAndSet(this, currState, State.TERMINATING)) {
+                } else if (currState == State.TERMINATED ||
+                        stateUpdater.compareAndSet(this, currState, State.TERMINATING)) {
                     assert currState != State.WAITING_FOR_CONNECTED;
                     break;
                 }
@@ -273,10 +280,16 @@ public final class ConnectablePayloadWriter<T> implements PayloadWriter<T> {
                                             addWithOverflowProtection(requested, n))) {
                                         break;
                                     }
-                                } else {
-                                    if (requested == REQUESTN_ABOUT_TO_PARK) {
-                                        wakeupWriterThread(n);
+                                } else if (requested == REQUESTN_ABOUT_TO_PARK) {
+                                    // It is possible the writer thread did a GaS to make REQUESTN_ABOUT_TO_PARK visible
+                                    // but if the Get returned some positive demand it will write something and
+                                    // atomically decrement the demand. So we should do a CaS here to be sure we don't
+                                    // overwrite this value and lose demand.
+                                    if (requestedUpdater.compareAndSet(outer, REQUESTN_ABOUT_TO_PARK, n)) {
+                                        tryWakeupWriterThread();
+                                        break;
                                     }
+                                } else {
                                     break;
                                 }
                             }
@@ -324,22 +337,15 @@ public final class ConnectablePayloadWriter<T> implements PayloadWriter<T> {
         }
 
         private void terminateRequestN() {
-            for (;;) {
-                final long requested = outer.requested;
-                if (requested == REQUESTN_ABOUT_TO_PARK) {
-                    wakeupWriterThread(REQUESTN_TERMINATED);
-                    break;
-                } else if (requestedUpdater.compareAndSet(outer, requested, REQUESTN_TERMINATED)) {
-                    break;
-                }
-            }
+            outer.requested = REQUESTN_TERMINATED;
+            tryWakeupWriterThread();
         }
 
-        private void wakeupWriterThread(long requestN) {
+        private void tryWakeupWriterThread() {
             final Thread writerThread = outer.writerThread;
-            assert writerThread != null;
-            outer.requested = requestN; // make the requestN visible to writerThread, before unpark.
-            LockSupport.unpark(writerThread);
+            if (writerThread != null) {
+                LockSupport.unpark(writerThread);
+            }
         }
     }
 

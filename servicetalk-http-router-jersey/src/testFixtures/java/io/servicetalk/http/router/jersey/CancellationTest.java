@@ -33,7 +33,6 @@ import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.IoExecutor;
 
 import org.junit.Before;
-import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.Mock;
@@ -51,7 +50,6 @@ import javax.ws.rs.core.Application;
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Publisher.just;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
-import static io.servicetalk.concurrent.internal.ServiceTalkTestTimeout.DEFAULT_TIMEOUT_SECONDS;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
 import static io.servicetalk.http.api.HttpHeaderValues.TEXT_PLAIN;
@@ -63,7 +61,6 @@ import static java.net.InetSocketAddress.createUnresolved;
 import static java.util.Collections.singleton;
 import static java.util.Collections.singletonMap;
 import static java.util.concurrent.TimeUnit.DAYS;
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.function.Function.identity;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
@@ -92,8 +89,8 @@ public class CancellationTest {
 
     private static final CharSequence TEST_DATA = newLargePayload();
 
-    @ClassRule
-    public static final ExecutorRule EXEC = ExecutorRule.newRule();
+    @Rule
+    public final ExecutorRule execRule = ExecutorRule.newRule();
 
     @Rule
     public final MockitoRule rule = MockitoJUnit.rule();
@@ -105,7 +102,7 @@ public class CancellationTest {
     private HttpServiceContext ctx;
 
     @Mock
-    private Executor exec;
+    private Executor execMock;
 
     private CancellableResources cancellableResources;
     private StreamingHttpService jerseyRouter;
@@ -116,14 +113,14 @@ public class CancellationTest {
         when(ctx.executionContext()).thenReturn(execCtx);
         when(ctx.localAddress()).thenReturn(createUnresolved("localhost", 8080));
         when(execCtx.bufferAllocator()).thenReturn(DEFAULT_ALLOCATOR);
-        when(execCtx.executor()).thenReturn(exec);
+        when(execCtx.executor()).thenReturn(execMock);
         when(execCtx.ioExecutor()).thenReturn(mock(IoExecutor.class));
 
         cancellableResources = new CancellableResources();
 
         jerseyRouter = new HttpJerseyRouterBuilder()
                 .routeExecutionStrategyFactory(asFactory(
-                        singletonMap("test", defaultStrategy(EXEC.executor()))))
+                        singletonMap("test", defaultStrategy(execRule.executor()))))
                 .build(new Application() {
                     @Override
                     public Set<Object> getSingletons() {
@@ -137,7 +134,7 @@ public class CancellationTest {
     @Test
     public void cancelSuspended() throws Exception {
         final TestCancellable cancellable = new TestCancellable();
-        when(exec.schedule(any(Runnable.class), eq(7L), eq(DAYS))).thenReturn(cancellable);
+        when(execMock.schedule(any(Runnable.class), eq(7L), eq(DAYS))).thenReturn(cancellable);
 
         testCancelResponseSingle(get("/suspended"), false);
         assertThat(cancellable.cancelled, is(true));
@@ -174,20 +171,20 @@ public class CancellationTest {
     public void cancelSse() throws Exception {
         doAnswer(invocation -> {
             Object[] args = invocation.getArguments();
-            return EXEC.executor().schedule((Runnable) args[0], (long) args[1], (TimeUnit) args[2]);
-        }).when(exec).schedule(any(Runnable.class), anyLong(), any(TimeUnit.class));
+            return execRule.executor().schedule((Runnable) args[0], (long) args[1], (TimeUnit) args[2]);
+        }).when(execMock).schedule(any(Runnable.class), anyLong(), any(TimeUnit.class));
 
         // Initial SSE request succeeds
         testCancelResponsePayload(get("/sse"));
 
         // Payload cancellation closes the SSE sink
-        assertThat(cancellableResources.sseSinkClosedLatch.await(DEFAULT_TIMEOUT_SECONDS, SECONDS), is(true));
+        cancellableResources.sseSinkClosedLatch.await();
     }
 
     private void testCancelResponsePayload(final StreamingHttpRequest req) throws Exception {
         // The handler method uses OutputStream APIs which are blocking. So we need to call handle and subscribe on
         // different threads because the write operation will block on the Subscriber creating requestN demand.
-        Single<StreamingHttpResponse> respSingle = EXEC.executor().submit(() ->
+        Single<StreamingHttpResponse> respSingle = execRule.executor().submit(() ->
                     jerseyRouter.handle(ctx, req, HTTP_REQ_RES_FACTORY))
                 .flatMap(identity());
         Future<StreamingHttpResponse> respFuture = respSingle.toFuture();
@@ -221,7 +218,7 @@ public class CancellationTest {
         // The handler method uses OutputStream APIs which are blocking. So we need to call handle and subscribe on
         // different threads because the write operation will block on the Subscriber creating requestN demand.
         if (enableOffload) {
-            Single<StreamingHttpResponse> respSingle = EXEC.executor().submit(() ->
+            Single<StreamingHttpResponse> respSingle = execRule.executor().submit(() ->
                     jerseyRouter.handle(ctx, req, HTTP_REQ_RES_FACTORY)
             ).flatMap(identity())
              .doBeforeError(errorRef::set)

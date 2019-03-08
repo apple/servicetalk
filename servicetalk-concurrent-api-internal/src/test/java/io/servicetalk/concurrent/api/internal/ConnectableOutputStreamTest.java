@@ -33,6 +33,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.Random;
+import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ExecutionException;
@@ -44,6 +45,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.api.internal.ConnectablePayloadWriterTest.toRunnable;
+import static io.servicetalk.concurrent.api.internal.ConnectablePayloadWriterTest.verifyCheckedRunnableException;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 import static java.lang.Math.max;
@@ -57,6 +59,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.fail;
@@ -64,7 +67,6 @@ import static org.junit.rules.ExpectedException.none;
 
 public class ConnectableOutputStreamTest {
     private static final Logger LOGGER = LoggerFactory.getLogger(ConnectableOutputStreamTest.class);
-
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
     @Rule
@@ -83,6 +85,176 @@ public class ConnectableOutputStreamTest {
     @After
     public void teardown() {
         executorService.shutdown();
+    }
+
+    @Test
+    public void subscribeDeliverDataSynchronously() throws Exception {
+        AtomicReference<Future<?>> futureRef = new AtomicReference<>();
+        toSource(cos.connect().doAfterSubscribe(subscription -> {
+            subscriber.request(1); // request from the TestPublisherSubscriber!
+            // We want to increase the chance that the writer thread has to wait for the Subscriber to become
+            // available, instead of waiting for the requestN demand.
+            CyclicBarrier barrier = new CyclicBarrier(2);
+            futureRef.compareAndSet(null, executorService.submit(toRunnable(() -> {
+                barrier.await();
+                cos.write(1);
+                cos.flush();
+                cos.close();
+            })));
+            try {
+                barrier.await();
+            } catch (InterruptedException | BrokenBarrierException e) {
+                throw new RuntimeException(e);
+            }
+        })).subscribe(subscriber);
+
+        Future<?> f = futureRef.get();
+        assertNotNull(f);
+        f.get();
+        assertThat(subscriber.takeItems(), contains(new byte[]{1}));
+        assertThat(subscriber.takeTerminal(), is(complete()));
+    }
+
+    @Test
+    public void subscribeCloseSynchronously() throws Exception {
+        AtomicReference<Future<?>> futureRef = new AtomicReference<>();
+        toSource(cos.connect().doAfterSubscribe(subscription -> {
+            // We want to increase the chance that the writer thread has to wait for the Subscriber to become
+            // available, instead of waiting for the requestN demand.
+            CyclicBarrier barrier = new CyclicBarrier(2);
+            futureRef.compareAndSet(null, executorService.submit(toRunnable(() -> {
+                barrier.await();
+                cos.close();
+            })));
+            try {
+                barrier.await();
+            } catch (InterruptedException | BrokenBarrierException e) {
+                throw new RuntimeException(e);
+            }
+        })).subscribe(subscriber);
+
+        Future<?> f = futureRef.get();
+        assertNotNull(f);
+        f.get();
+        assertThat(subscriber.takeTerminal(), is(complete()));
+    }
+
+    @Test
+    public void writeAfterCloseShouldThrow() throws IOException {
+        cos.close();
+        expectedException.expect(IOException.class);
+        cos.write(1);
+
+        // Make sure the Subscription thread isn't blocked.
+        subscriber.request(1);
+        subscriber.cancel();
+    }
+
+    @Test
+    public void multipleWriteAfterCloseShouldThrow() throws Exception {
+        Future<?> f = executorService.submit(toRunnable(() -> {
+            cos.write(1);
+            cos.flush();
+            cos.close();
+            cos.write(2);
+            cos.flush();
+        }));
+
+        toSource(cos.connect()).subscribe(subscriber);
+        subscriber.request(2);
+        try {
+            f.get();
+            fail();
+        } catch (ExecutionException e) {
+            verifyCheckedRunnableException(e, IOException.class);
+        }
+
+        assertThat(subscriber.takeItems(), contains(new byte[]{1}));
+        assertThat(subscriber.takeTerminal(), is(complete()));
+
+        // Make sure the Subscription thread isn't blocked.
+        subscriber.request(1);
+        subscriber.cancel();
+    }
+
+    @Test
+    public void connectMultipleWriteAfterCloseShouldThrow() throws Exception {
+        toSource(cos.connect()).subscribe(subscriber);
+        subscriber.request(2);
+        Future<?> f = executorService.submit(toRunnable(() -> {
+            cos.write(1);
+            cos.flush();
+            cos.close();
+            cos.write(2);
+            cos.flush();
+        }));
+
+        try {
+            f.get();
+            fail();
+        } catch (ExecutionException e) {
+            verifyCheckedRunnableException(e, IOException.class);
+        }
+
+        assertThat(subscriber.takeItems(), contains(new byte[]{1}));
+        assertThat(subscriber.takeTerminal(), is(complete()));
+
+        // Make sure the Subscription thread isn't blocked.
+        subscriber.request(1);
+        subscriber.cancel();
+    }
+
+    @Test
+    public void cancelUnblocksWrite() throws Exception {
+        CyclicBarrier afterFlushBarrier = new CyclicBarrier(2);
+        Future<?> f = executorService.submit(toRunnable(() -> {
+            cos.write(1);
+            cos.flush();
+            afterFlushBarrier.await();
+            cos.write(2);
+            cos.flush();
+        }));
+
+        toSource(cos.connect()).subscribe(subscriber);
+        subscriber.request(1);
+        afterFlushBarrier.await();
+        subscriber.cancel();
+        try {
+            f.get();
+            fail();
+        } catch (ExecutionException e) {
+            verifyCheckedRunnableException(e, IOException.class);
+        }
+
+        assertThat(subscriber.takeItems(), contains(new byte[]{1}));
+        assertThat(subscriber.takeTerminal(), is(complete()));
+        cos.close(); // should be idempotent
+
+        // Make sure the Subscription thread isn't blocked.
+        subscriber.request(1);
+        subscriber.cancel();
+    }
+
+    @Test
+    public void connectCancelUnblocksWrite() throws Exception {
+        toSource(cos.connect()).subscribe(subscriber);
+        subscriber.cancel();
+        Future<?> f = executorService.submit(toRunnable(() -> cos.write(1)));
+
+        try {
+            f.get();
+            fail();
+        } catch (ExecutionException e) {
+            verifyCheckedRunnableException(e, IOException.class);
+        }
+
+        assertThat(subscriber.takeItems(), is(empty()));
+        assertThat(subscriber.takeTerminal(), is(complete()));
+        cos.close(); // should be idempotent
+
+        // Make sure the Subscription thread isn't blocked.
+        subscriber.request(1);
+        subscriber.cancel();
     }
 
     @Test
@@ -348,7 +520,7 @@ public class ConnectableOutputStreamTest {
     @Test
     public void invalidRequestN() throws IOException {
         AtomicReference<Throwable> failure = new AtomicReference<>();
-        toSource(cos.connect()).subscribe(new PublisherSource.Subscriber<byte[]>() {
+        toSource(cos.connect()).subscribe(new Subscriber<byte[]>() {
             @Override
             public void onSubscribe(final PublisherSource.Subscription s) {
                 s.request(-1);
@@ -377,7 +549,7 @@ public class ConnectableOutputStreamTest {
     @Test
     public void onNextThrows() throws IOException {
         AtomicReference<Throwable> failure = new AtomicReference<>();
-        toSource(cos.connect()).subscribe(new PublisherSource.Subscriber<byte[]>() {
+        toSource(cos.connect()).subscribe(new Subscriber<byte[]>() {
             @Override
             public void onSubscribe(final PublisherSource.Subscription s) {
                 s.request(1);
@@ -449,8 +621,7 @@ public class ConnectableOutputStreamTest {
             f.get();
             fail();
         } catch (ExecutionException e) {
-            assertThat(e.getCause(), is(instanceOf(RuntimeException.class)));
-            assertThat(e.getCause().getCause(), is(instanceOf(IOException.class)));
+            verifyCheckedRunnableException(e, IOException.class);
         }
         assertThat(subscriber.takeError(), is(instanceOf(IllegalArgumentException.class)));
     }
@@ -471,8 +642,7 @@ public class ConnectableOutputStreamTest {
             f.get();
             fail();
         } catch (ExecutionException e) {
-            assertThat(e.getCause(), is(instanceOf(RuntimeException.class)));
-            assertThat(e.getCause().getCause(), is(instanceOf(IOException.class)));
+            verifyCheckedRunnableException(e, IOException.class);
         }
         assertThat(subscriber.takeError(), is(instanceOf(IllegalArgumentException.class)));
     }
