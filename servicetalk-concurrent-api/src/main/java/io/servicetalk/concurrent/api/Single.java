@@ -1155,7 +1155,7 @@ public abstract class Single<T> {
      * There is no guarantee of the order of the values in the produced {@link Collection} as compared to the order of
      * {@link Single}s passed to this method.
      */
-    public static <T> Single<? extends Collection<T>> collect(Iterable<? extends Single<? extends T>> singles) {
+    public static <T> Single<Collection<T>> collect(Iterable<? extends Single<? extends T>> singles) {
         return Publisher.from(singles).flatMapSingle(identity()).reduce(ArrayList::new, (ts, t) -> {
             ts.add(t);
             return ts;
@@ -1187,7 +1187,7 @@ public abstract class Single<T> {
      * {@link Single}s passed to this method.
      */
     @SafeVarargs
-    public static <T> Single<? extends Collection<T>> collect(Single<? extends T>... singles) {
+    public static <T> Single<Collection<T>> collect(Single<? extends T>... singles) {
         return Publisher.from(singles).flatMapSingle(identity()).reduce(() -> new ArrayList<>(singles.length),
                 (ts, t) -> {
                     ts.add(t);
@@ -1219,8 +1219,8 @@ public abstract class Single<T> {
      * There is no guarantee of the order of the values in the produced {@link Collection} as compared to the order of
      * {@link Single}s passed to this method.
      */
-    public static <T> Single<? extends Collection<T>> collect(Iterable<? extends Single<? extends T>> singles,
-                                                              int maxConcurrency) {
+    public static <T> Single<Collection<T>> collect(Iterable<? extends Single<? extends T>> singles,
+                                                    int maxConcurrency) {
         return Publisher.from(singles).flatMapSingle(identity(), maxConcurrency).reduce(ArrayList::new, (ts, t) -> {
             ts.add(t);
             return ts;
@@ -1251,7 +1251,7 @@ public abstract class Single<T> {
      * {@link Single}s passed to this method.
      */
     @SafeVarargs
-    public static <T> Single<? extends Collection<T>> collect(int maxConcurrency, Single<? extends T>... singles) {
+    public static <T> Single<Collection<T>> collect(int maxConcurrency, Single<? extends T>... singles) {
         return Publisher.from(singles).flatMapSingle(identity(), maxConcurrency)
                 .reduce(() -> new ArrayList<>(singles.length), (ts, t) -> {
                     ts.add(t);
@@ -1292,8 +1292,7 @@ public abstract class Single<T> {
      * There is no guarantee of the order of the values in the produced {@link Collection} as compared to the order of
      * {@link Single}s passed to this method.
      */
-    public static <T> Single<? extends Collection<T>> collectDelayError(
-            Iterable<? extends Single<? extends T>> singles) {
+    public static <T> Single<Collection<T>> collectDelayError(Iterable<? extends Single<? extends T>> singles) {
         return Publisher.from(singles).flatMapSingleDelayError(identity()).reduce(ArrayList::new, (ts, t) -> {
             ts.add(t);
             return ts;
@@ -1333,7 +1332,7 @@ public abstract class Single<T> {
      * {@link Single}s passed to this method.
      */
     @SafeVarargs
-    public static <T> Single<? extends Collection<T>> collectDelayError(Single<? extends T>... singles) {
+    public static <T> Single<Collection<T>> collectDelayError(Single<? extends T>... singles) {
         return Publisher.from(singles).flatMapSingleDelayError(identity())
                 .reduce(() -> new ArrayList<>(singles.length), (ts, t) -> {
                     ts.add(t);
@@ -1373,7 +1372,7 @@ public abstract class Single<T> {
      * There is no guarantee of the order of the values in the produced {@link Collection} as compared to the order of
      * {@link Single}s passed to this method.
      */
-    public static <T> Single<? extends Collection<T>> collectDelayError(Iterable<? extends Single<? extends T>> singles,
+    public static <T> Single<Collection<T>> collectDelayError(Iterable<? extends Single<? extends T>> singles,
                                                               int maxConcurrency) {
         return Publisher.from(singles).flatMapSingleDelayError(identity(), maxConcurrency)
                 .reduce(ArrayList::new, (ts, t) -> {
@@ -1414,8 +1413,7 @@ public abstract class Single<T> {
      * {@link Single}s passed to this method.
      */
     @SafeVarargs
-    public static <T> Single<? extends Collection<T>> collectDelayError(int maxConcurrency,
-                                                                        Single<? extends T>... singles) {
+    public static <T> Single<Collection<T>> collectDelayError(int maxConcurrency, Single<? extends T>... singles) {
         return Publisher.from(singles).flatMapSingleDelayError(identity(), maxConcurrency)
                 .reduce(() -> new ArrayList<>(singles.length), (ts, t) -> {
                     ts.add(t);

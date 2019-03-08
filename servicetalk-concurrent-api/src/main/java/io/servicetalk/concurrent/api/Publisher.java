@@ -2004,7 +2004,7 @@ public abstract class Publisher<T> {
      * successful termination.
      * @see #toFuture(Supplier, BiFunction)
      */
-    public final Future<? extends Collection<T>> toFuture() {
+    public final Future<Collection<T>> toFuture() {
         return toFuture(ArrayList::new, (list, next) -> {
             list.add(next);
             return list;
@@ -2035,7 +2035,7 @@ public abstract class Publisher<T> {
      * upon successful termination.
      * @see #toCompletionStage(Supplier, BiFunction)
      */
-    public final CompletionStage<? extends Collection<T>> toCompletionStage() {
+    public final CompletionStage<Collection<T>> toCompletionStage() {
         return toCompletionStage(ArrayList::new, (list, next) -> {
             list.add(next);
             return list;
