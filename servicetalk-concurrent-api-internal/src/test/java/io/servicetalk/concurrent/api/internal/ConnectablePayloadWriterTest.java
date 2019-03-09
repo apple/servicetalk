@@ -15,7 +15,8 @@
  */
 package io.servicetalk.concurrent.api.internal;
 
-import io.servicetalk.concurrent.PublisherSource;
+import io.servicetalk.concurrent.PublisherSource.Subscriber;
+import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.TestPublisherSubscriber;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
@@ -31,6 +32,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.Random;
+import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ExecutionException;
@@ -55,6 +57,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.fail;
@@ -65,7 +68,8 @@ public class ConnectablePayloadWriterTest {
     public final Timeout timeout = new ServiceTalkTestTimeout();
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
-    public final TestPublisherSubscriber<String> subscriber = new TestPublisherSubscriber<>();
+
+    private final TestPublisherSubscriber<String> subscriber = new TestPublisherSubscriber<>();
     private ConnectablePayloadWriter<String> cpw;
     private ExecutorService executorService;
 
@@ -78,6 +82,176 @@ public class ConnectablePayloadWriterTest {
     @After
     public void teardown() {
         executorService.shutdown();
+    }
+
+    @Test
+    public void subscribeDeliverDataSynchronously() throws Exception {
+        AtomicReference<Future<?>> futureRef = new AtomicReference<>();
+        toSource(cpw.connect().doAfterSubscribe(subscription -> {
+            subscriber.request(1); // request from the TestPublisherSubscriber!
+            // We want to increase the chance that the writer thread has to wait for the Subscriber to become
+            // available, instead of waiting for the requestN demand.
+            CyclicBarrier barrier = new CyclicBarrier(2);
+            futureRef.compareAndSet(null, executorService.submit(toRunnable(() -> {
+                barrier.await();
+                cpw.write("foo");
+                cpw.flush();
+                cpw.close();
+            })));
+            try {
+                barrier.await();
+            } catch (InterruptedException | BrokenBarrierException e) {
+                throw new RuntimeException(e);
+            }
+        })).subscribe(subscriber);
+
+        Future<?> f = futureRef.get();
+        assertNotNull(f);
+        f.get();
+        assertThat(subscriber.takeItems(), contains("foo"));
+        assertThat(subscriber.takeTerminal(), is(complete()));
+    }
+
+    @Test
+    public void subscribeCloseSynchronously() throws Exception {
+        AtomicReference<Future<?>> futureRef = new AtomicReference<>();
+        toSource(cpw.connect().doAfterSubscribe(subscription -> {
+            // We want to increase the chance that the writer thread has to wait for the Subscriber to become
+            // available, instead of waiting for the requestN demand.
+            CyclicBarrier barrier = new CyclicBarrier(2);
+            futureRef.compareAndSet(null, executorService.submit(toRunnable(() -> {
+                barrier.await();
+                cpw.close();
+            })));
+            try {
+                barrier.await();
+            } catch (InterruptedException | BrokenBarrierException e) {
+                throw new RuntimeException(e);
+            }
+        })).subscribe(subscriber);
+
+        Future<?> f = futureRef.get();
+        assertNotNull(f);
+        f.get();
+        assertThat(subscriber.takeTerminal(), is(complete()));
+    }
+
+    @Test
+    public void writeAfterCloseShouldThrow() throws IOException {
+        cpw.close();
+        expectedException.expect(IOException.class);
+        cpw.write("foo");
+
+        // Make sure the Subscription thread isn't blocked.
+        subscriber.request(1);
+        subscriber.cancel();
+    }
+
+    @Test
+    public void multipleWriteAfterCloseShouldThrow() throws Exception {
+        Future<?> f = executorService.submit(toRunnable(() -> {
+            cpw.write("foo");
+            cpw.flush();
+            cpw.close();
+            cpw.write("bar");
+            cpw.flush();
+        }));
+
+        toSource(cpw.connect()).subscribe(subscriber);
+        subscriber.request(2);
+        try {
+            f.get();
+            fail();
+        } catch (ExecutionException e) {
+            verifyCheckedRunnableException(e, IOException.class);
+        }
+
+        assertThat(subscriber.takeItems(), contains("foo"));
+        assertThat(subscriber.takeTerminal(), is(complete()));
+
+        // Make sure the Subscription thread isn't blocked.
+        subscriber.request(1);
+        subscriber.cancel();
+    }
+
+    @Test
+    public void connectMultipleWriteAfterCloseShouldThrow() throws Exception {
+        toSource(cpw.connect()).subscribe(subscriber);
+        subscriber.request(2);
+        Future<?> f = executorService.submit(toRunnable(() -> {
+            cpw.write("foo");
+            cpw.flush();
+            cpw.close();
+            cpw.write("bar");
+            cpw.flush();
+        }));
+
+        try {
+            f.get();
+            fail();
+        } catch (ExecutionException e) {
+            verifyCheckedRunnableException(e, IOException.class);
+        }
+
+        assertThat(subscriber.takeItems(), contains("foo"));
+        assertThat(subscriber.takeTerminal(), is(complete()));
+
+        // Make sure the Subscription thread isn't blocked.
+        subscriber.request(1);
+        subscriber.cancel();
+    }
+
+    @Test
+    public void cancelUnblocksWrite() throws Exception {
+        CyclicBarrier afterFlushBarrier = new CyclicBarrier(2);
+        Future<?> f = executorService.submit(toRunnable(() -> {
+            cpw.write("foo");
+            cpw.flush();
+            afterFlushBarrier.await();
+            cpw.write("bar");
+            cpw.flush();
+        }));
+
+        toSource(cpw.connect()).subscribe(subscriber);
+        subscriber.request(1);
+        afterFlushBarrier.await();
+        subscriber.cancel();
+        try {
+            f.get();
+            fail();
+        } catch (ExecutionException e) {
+            verifyCheckedRunnableException(e, IOException.class);
+        }
+
+        assertThat(subscriber.takeItems(), contains("foo"));
+        assertThat(subscriber.takeTerminal(), is(complete()));
+        cpw.close(); // should be idempotent
+
+        // Make sure the Subscription thread isn't blocked.
+        subscriber.request(1);
+        subscriber.cancel();
+    }
+
+    @Test
+    public void connectCancelUnblocksWrite() throws Exception {
+        toSource(cpw.connect()).subscribe(subscriber);
+        subscriber.cancel();
+        Future<?> f = executorService.submit(toRunnable(() -> cpw.write("foo")));
+
+        try {
+            f.get();
+            fail();
+        } catch (ExecutionException e) {
+            verifyCheckedRunnableException(e, IOException.class);
+        }
+
+        assertThat(subscriber.takeItems(), is(empty()));
+        assertThat(subscriber.takeTerminal(), is(complete()));
+        cpw.close(); // should be idempotent
+
+        // Make sure the Subscription thread isn't blocked.
+        subscriber.request(1);
+        subscriber.cancel();
     }
 
     @Test
@@ -108,9 +282,9 @@ public class ConnectablePayloadWriterTest {
         CountDownLatch onSubscribe = new CountDownLatch(1);
         CountDownLatch onComplete = new CountDownLatch(1);
         AtomicReference<Throwable> errorRef = new AtomicReference<>();
-        toSource(cpw.connect()).subscribe(new PublisherSource.Subscriber<String>() {
+        toSource(cpw.connect()).subscribe(new Subscriber<String>() {
             @Override
-            public void onSubscribe(final PublisherSource.Subscription s) {
+            public void onSubscribe(final Subscription s) {
                 s.request(-1);
                 onSubscribe.countDown();
             }
@@ -141,9 +315,9 @@ public class ConnectablePayloadWriterTest {
     public void multipleConnectWhileEmittingShouldFailConnect() throws Exception {
         CountDownLatch onNext = new CountDownLatch(1);
         CountDownLatch onComplete = new CountDownLatch(1);
-        toSource(cpw.connect()).subscribe(new PublisherSource.Subscriber<String>() {
+        toSource(cpw.connect()).subscribe(new Subscriber<String>() {
             @Override
-            public void onSubscribe(final PublisherSource.Subscription s) {
+            public void onSubscribe(final Subscription s) {
                 s.request(1);
             }
 
@@ -174,9 +348,9 @@ public class ConnectablePayloadWriterTest {
     public void multipleConnectWhileSubscribedShouldFailConnect() throws Exception {
         CountDownLatch onSubscribe = new CountDownLatch(1);
         CountDownLatch onComplete = new CountDownLatch(1);
-        toSource(cpw.connect()).subscribe(new PublisherSource.Subscriber<String>() {
+        toSource(cpw.connect()).subscribe(new Subscriber<String>() {
             @Override
-            public void onSubscribe(final PublisherSource.Subscription s) {
+            public void onSubscribe(final Subscription s) {
                 onSubscribe.countDown();
             }
 
@@ -204,9 +378,9 @@ public class ConnectablePayloadWriterTest {
     public void multipleConnectWhileSubscriberFailedShouldFailConnect() throws Exception {
         CountDownLatch onError = new CountDownLatch(1);
         CountDownLatch onComplete = new CountDownLatch(1);
-        toSource(cpw.connect()).subscribe(new PublisherSource.Subscriber<String>() {
+        toSource(cpw.connect()).subscribe(new Subscriber<String>() {
             @Override
-            public void onSubscribe(final PublisherSource.Subscription s) {
+            public void onSubscribe(final Subscription s) {
                 s.request(1);
             }
 
@@ -343,9 +517,9 @@ public class ConnectablePayloadWriterTest {
     @Test
     public void invalidRequestN() throws IOException {
         AtomicReference<Throwable> failure = new AtomicReference<>();
-        toSource(cpw.connect()).subscribe(new PublisherSource.Subscriber<String>() {
+        toSource(cpw.connect()).subscribe(new Subscriber<String>() {
             @Override
-            public void onSubscribe(final PublisherSource.Subscription s) {
+            public void onSubscribe(final Subscription s) {
                 s.request(-1);
             }
 
@@ -372,9 +546,9 @@ public class ConnectablePayloadWriterTest {
     @Test
     public void onNextThrows() throws IOException {
         AtomicReference<Throwable> failure = new AtomicReference<>();
-        toSource(cpw.connect()).subscribe(new PublisherSource.Subscriber<String>() {
+        toSource(cpw.connect()).subscribe(new Subscriber<String>() {
             @Override
-            public void onSubscribe(final PublisherSource.Subscription s) {
+            public void onSubscribe(final Subscription s) {
                 s.request(1);
             }
 
@@ -444,8 +618,7 @@ public class ConnectablePayloadWriterTest {
             f.get();
             fail();
         } catch (ExecutionException e) {
-            assertThat(e.getCause(), is(instanceOf(RuntimeException.class)));
-            assertThat(e.getCause().getCause(), is(instanceOf(IOException.class)));
+            verifyCheckedRunnableException(e, IOException.class);
         }
         assertThat(subscriber.takeError(), is(instanceOf(IllegalArgumentException.class)));
     }
@@ -466,8 +639,7 @@ public class ConnectablePayloadWriterTest {
             f.get();
             fail();
         } catch (ExecutionException e) {
-            assertThat(e.getCause(), is(instanceOf(RuntimeException.class)));
-            assertThat(e.getCause().getCause(), is(instanceOf(IOException.class)));
+            verifyCheckedRunnableException(e, IOException.class);
         }
         assertThat(subscriber.takeError(), is(instanceOf(IllegalArgumentException.class)));
     }
@@ -532,13 +704,13 @@ public class ConnectablePayloadWriterTest {
         final Thread consumerThread = new Thread(() -> {
             try {
                 final CountDownLatch consumerDone = new CountDownLatch(1);
-                toSource(pub).subscribe(new PublisherSource.Subscriber<String>() {
+                toSource(pub).subscribe(new Subscriber<String>() {
                     @Nullable
-                    private PublisherSource.Subscription sub;
+                    private Subscription sub;
                     private int writeIndex;
 
                     @Override
-                    public void onSubscribe(final PublisherSource.Subscription s) {
+                    public void onSubscribe(final Subscription s) {
                         sub = s;
                         sub.request(1);
                     }
@@ -593,5 +765,10 @@ public class ConnectablePayloadWriterTest {
     @FunctionalInterface
     interface CheckedRunnable {
         void doWork() throws Exception;
+    }
+
+    static void verifyCheckedRunnableException(ExecutionException e, Class<? extends Throwable> clazz) {
+        assertThat(e.getCause(), is(instanceOf(RuntimeException.class))); // this is from toRunnable
+        assertThat(e.getCause().getCause(), is(instanceOf(clazz)));
     }
 }
