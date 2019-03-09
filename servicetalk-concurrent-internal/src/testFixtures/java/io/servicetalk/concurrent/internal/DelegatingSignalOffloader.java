@@ -24,7 +24,7 @@ import java.util.function.Consumer;
 /**
  * A {@link SignalOffloader} that delegates all calls to another {@link SignalOffloader}.
  */
-public class SignalOffloaderAdapter implements SignalOffloader {
+public class DelegatingSignalOffloader implements SignalOffloader {
 
     private final SignalOffloader delegate;
 
@@ -33,7 +33,7 @@ public class SignalOffloaderAdapter implements SignalOffloader {
      *
      * @param delegate {@link SignalOffloader} to delegate all calls.
      */
-    public SignalOffloaderAdapter(final SignalOffloader delegate) {
+    public DelegatingSignalOffloader(final SignalOffloader delegate) {
         this.delegate = delegate;
     }
 

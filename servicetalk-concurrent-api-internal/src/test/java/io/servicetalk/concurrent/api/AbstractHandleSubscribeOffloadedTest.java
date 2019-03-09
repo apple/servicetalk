@@ -19,11 +19,11 @@ import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.api.internal.OffloaderAwareExecutor;
+import io.servicetalk.concurrent.internal.DelegatingSignalOffloader;
+import io.servicetalk.concurrent.internal.DelegatingSignalOffloaderFactory;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.concurrent.internal.SignalOffloader;
-import io.servicetalk.concurrent.internal.SignalOffloaderAdapter;
 import io.servicetalk.concurrent.internal.SignalOffloaderFactory;
-import io.servicetalk.concurrent.internal.SignalOffloaderFactoryAdapter;
 
 import org.junit.Rule;
 import org.junit.rules.Timeout;
@@ -59,11 +59,11 @@ public abstract class AbstractHandleSubscribeOffloadedTest {
     protected final SignalOffloaderFactory factory;
 
     protected AbstractHandleSubscribeOffloadedTest() {
-        factory = new SignalOffloaderFactoryAdapter(defaultOffloaderFactory()) {
+        factory = new DelegatingSignalOffloaderFactory(defaultOffloaderFactory()) {
             @Override
             public SignalOffloader newSignalOffloader(final io.servicetalk.concurrent.Executor executor) {
                 signalOffloaderCreated.incrementAndGet();
-                return new SignalOffloaderAdapter(super.newSignalOffloader(executor)) {
+                return new DelegatingSignalOffloader(super.newSignalOffloader(executor)) {
                     @Override
                     public <T> void offloadSubscribe(
                             final PublisherSource.Subscriber<? super T> subscriber,

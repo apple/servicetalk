@@ -20,7 +20,7 @@ import io.servicetalk.concurrent.Executor;
 /**
  * A {@link SignalOffloaderFactory} that delegates all calls to another {@link SignalOffloaderFactory}.
  */
-public class SignalOffloaderFactoryAdapter implements SignalOffloaderFactory {
+public class DelegatingSignalOffloaderFactory implements SignalOffloaderFactory {
 
     private final SignalOffloaderFactory deleagte;
 
@@ -29,7 +29,7 @@ public class SignalOffloaderFactoryAdapter implements SignalOffloaderFactory {
      *
      * @param delegate {@link SignalOffloaderFactory} to delegate all calls.
      */
-    public SignalOffloaderFactoryAdapter(final SignalOffloaderFactory delegate) {
+    public DelegatingSignalOffloaderFactory(final SignalOffloaderFactory delegate) {
         this.deleagte = delegate;
     }
 
