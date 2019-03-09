@@ -127,10 +127,9 @@ final class DefaultContainerResponseWriter implements ContainerResponseWriter {
             return null;
         } else {
             // Explicitly ask this ConnectableOutputStream to be closed if its associated byte[] publisher is cancelled
-            final ConnectableOutputStream os = new ConnectableOutputStream();
-            sendResponse(contentLength, os.connect().map(bytes ->
-                            serviceCtx.executionContext().bufferAllocator().wrap(bytes)),
-                    responseContext);
+            final ConnectableOutputStream os = new ConnectableOutputStream(
+                    serviceCtx.executionContext().bufferAllocator());
+            sendResponse(contentLength, os.connect(), responseContext);
             return new CopyingOutputStream(os);
         }
     }

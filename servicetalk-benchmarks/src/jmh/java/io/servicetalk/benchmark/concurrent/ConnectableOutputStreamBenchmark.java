@@ -15,6 +15,7 @@
  */
 package io.servicetalk.benchmark.concurrent;
 
+import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.api.Publisher;
@@ -37,6 +38,7 @@ import org.openjdk.jmh.annotations.Warmup;
 import java.io.IOException;
 import java.util.Random;
 
+import static io.servicetalk.buffer.netty.BufferAllocators.PREFER_HEAP_ALLOCATOR;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 
 /**
@@ -106,13 +108,13 @@ public class ConnectableOutputStreamBenchmark {
     final Random r = new Random();
     byte[] data;
     ConnectableOutputStream cos;
-    Publisher<byte[]> publisher;
+    Publisher<Buffer> publisher;
     Subscription subscription;
 
     @Setup(Level.Iteration)
     public void setup() {
         data = new byte[dataSize];
-        cos = new ConnectableOutputStream();
+        cos = new ConnectableOutputStream(PREFER_HEAP_ALLOCATOR);
         publisher = cos.connect();
         // Don't remove this, JMH somehow provides a default which break everything
         subscription = null;
@@ -159,15 +161,15 @@ public class ConnectableOutputStreamBenchmark {
     @Group
     public void requestN(ConsumerCounter counter) {
         if (subscription == null) {
-            toSource(publisher).subscribe(new Subscriber<byte[]>() {
+            toSource(publisher).subscribe(new Subscriber<Buffer>() {
                 @Override
                 public void onSubscribe(final Subscription s) {
                     subscription = s;
                 }
 
                 @Override
-                public void onNext(final byte[] bytes) {
-                    counter.consumedBytes += bytes.length;
+                public void onNext(final Buffer buffer) {
+                    counter.consumedBytes += buffer.readableBytes();
                     ++counter.onNext;
                 }
 
