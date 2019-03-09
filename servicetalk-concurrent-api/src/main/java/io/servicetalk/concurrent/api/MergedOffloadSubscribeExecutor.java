@@ -94,14 +94,14 @@ final class MergedOffloadSubscribeExecutor extends DelegatingExecutor implements
         }
 
         @Override
-        public <T> void offloadSubscribe(final Subscriber<T> subscriber,
-                                         final Consumer<Subscriber<T>> handleSubscribe) {
+        public <T> void offloadSubscribe(final Subscriber<? super T> subscriber,
+                                         final Consumer<Subscriber<? super T>> handleSubscribe) {
             offloader.offloadSubscribe(subscriber, handleSubscribe);
         }
 
         @Override
-        public <T> void offloadSubscribe(final SingleSource.Subscriber<T> subscriber,
-                                         final Consumer<SingleSource.Subscriber<T>> handleSubscribe) {
+        public <T> void offloadSubscribe(final SingleSource.Subscriber<? super T> subscriber,
+                                         final Consumer<SingleSource.Subscriber<? super T>> handleSubscribe) {
             offloader.offloadSubscribe(subscriber, handleSubscribe);
         }
 

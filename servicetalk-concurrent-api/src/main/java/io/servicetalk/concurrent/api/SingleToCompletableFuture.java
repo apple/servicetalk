@@ -37,12 +37,16 @@ final class SingleToCompletableFuture<T> extends CompletableFuture<T> implements
         cancellable = new DelayedCancellable();
     }
 
-    static <X> SingleToCompletableFuture<X> createAndSubscribe(Single<X> original,
-                                                               AsyncContextProvider provider,
-                                                               AsyncContextMap contextMap) {
-        SingleToCompletableFuture<X> stage = new SingleToCompletableFuture<>();
-        original.subscribeWithContext(stage, contextMap, provider);
-        return stage;
+    static <X> CompletableFuture<X> createAndSubscribe(Single<X> original) {
+        SingleToCompletableFuture<X> future = new SingleToCompletableFuture<>();
+        AsyncContextProvider provider = AsyncContext.provider();
+        return provider.wrap((CompletableFuture<X>) future, original.subscribeAndReturnContext(future, provider));
+    }
+
+    static <X> CompletableFuture<X> createForFutureAndSubscribe(Single<X> original) {
+        SingleToCompletableFuture<X> future = new SingleToCompletableFuture<>();
+        original.subscribeInternal(future);
+        return future;
     }
 
     // Subscriber begin

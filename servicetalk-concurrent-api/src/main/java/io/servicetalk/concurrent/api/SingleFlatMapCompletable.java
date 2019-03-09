@@ -41,7 +41,7 @@ final class SingleFlatMapCompletable<T> extends AbstractNoHandleSubscribeComplet
     @Override
     void handleSubscribe(final Subscriber subscriber, final SignalOffloader signalOffloader,
                          final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
-        original.subscribeWithOffloaderAndContext(new SubscriberImpl<>(subscriber, nextFactory, signalOffloader,
+        original.delegateSubscribe(new SubscriberImpl<>(subscriber, nextFactory, signalOffloader,
                         contextMap, contextProvider), signalOffloader, contextMap, contextProvider);
     }
 
@@ -97,8 +97,8 @@ final class SingleFlatMapCompletable<T> extends AbstractNoHandleSubscribeComplet
             // The static AsyncContext should be the same as the original contextMap at this point because we are
             // being notified in the Subscriber path, but we make sure that it is restored after the asynchronous
             // boundary and use an isolated copy to subscribe to the new source.
-            next.subscribeWithContext(signalOffloader.offloadSubscriber(
-                    contextProvider.wrap((Subscriber) this, contextMap)), contextMap.copy(), contextProvider);
+            next.subscribeInternal(signalOffloader.offloadSubscriber(contextProvider.wrap((Subscriber) this,
+                    contextMap)));
         }
 
         @Override

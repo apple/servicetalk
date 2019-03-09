@@ -128,7 +128,7 @@ final class MulticastPublisher<T> extends AbstractNoHandleSubscribePublisher<T> 
                 if (subscriberCount == subscribers.length() - 1) {
                     // This operator has special behavior where it chooses to use the AsyncContext and signal offloader
                     // from the last subscribe operation.
-                    original.subscribeWithOffloaderAndContext(this, signalOffloader, contextMap, contextProvider);
+                    original.delegateSubscribe(this, signalOffloader, contextMap, contextProvider);
                 }
                 break;
             }

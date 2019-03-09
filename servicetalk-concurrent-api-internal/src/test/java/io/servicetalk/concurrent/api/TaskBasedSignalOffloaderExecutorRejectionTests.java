@@ -18,10 +18,10 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.internal.OffloaderAwareExecutor;
 
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -67,70 +67,40 @@ public class TaskBasedSignalOffloaderExecutorRejectionTests {
         });
     }
 
-    @Ignore("subscribeOn is currently broken; it does not offload handleSubscribe")
     @Test
     public void publisherSubscribeRejects() throws Exception {
         rejectNextTask.set(true);
-        just(1).subscribeOn(executor).toFuture().get();
-        verifyRejectedTasks(1, 1);
+        expectFailureAndVerify(just(1).subscribeOn(executor).toFuture());
     }
 
-    @Ignore("subscribeOn is currently broken; it does not offload handleSubscribe")
     @Test
     public void singleSubscribeRejects() throws Exception {
         rejectNextTask.set(true);
-        success(1).subscribeOn(executor).toFuture().get();
-        verifyRejectedTasks(1, 1);
+        expectFailureAndVerify(success(1).subscribeOn(executor).toFuture());
     }
 
-    @Ignore("subscribeOn is currently broken; it does not offload handleSubscribe")
     @Test
     public void completableSubscribeRejects() throws Exception {
         rejectNextTask.set(true);
-        completed().subscribeOn(executor).toFuture().get();
-        verifyRejectedTasks(1, 1);
+        expectFailureAndVerify(completed().subscribeOn(executor).toFuture());
     }
 
     @Test
     public void publisherOnSubscribeRejects() throws Exception {
         rejectNextTask.set(true);
-        try {
-            Publisher.never().publishOn(executor).toFuture().get();
-            fail();
-        } catch (ExecutionException e) {
-            assertThat("Unexpected rejection cause.", e.getCause(), is(notNullValue()));
-            assertThat("Unexpected rejection cause.", e.getCause().getCause(),
-                    sameInstance(DELIBERATE_EXCEPTION));
-        }
-        verifyRejectedTasks(1, 1);
+        expectFailureAndVerify(Publisher.never().publishOn(executor).toFuture());
     }
 
     @Test
     public void singleOnSubscribeRejects() throws Exception {
         rejectNextTask.set(true);
-        try {
-            Single.never().publishOn(executor).toFuture().get();
-            fail();
-        } catch (ExecutionException e) {
-            assertThat("Unexpected rejection cause.", e.getCause(), is(notNullValue()));
-            assertThat("Unexpected rejection cause.", e.getCause().getCause(),
-                    sameInstance(DELIBERATE_EXCEPTION));
-        }
-        verifyRejectedTasks(1, 1);
+        expectFailureAndVerify(Single.never().publishOn(executor).toFuture());
     }
 
     @Test
     public void completableOnSubscribeRejects() throws Exception {
         rejectNextTask.set(true);
-        try {
-            Completable.never().publishOn(executor).toFuture().get();
-            fail();
-        } catch (ExecutionException e) {
-            assertThat("Unexpected rejection cause.", e.getCause(), is(notNullValue()));
-            assertThat("Unexpected rejection cause.", e.getCause().getCause(),
-                    sameInstance(DELIBERATE_EXCEPTION));
-        }
-        verifyRejectedTasks(1, 1);
+        expectFailureAndVerify(Completable.never().publishOn(executor).toFuture());
     }
 
     @Test
@@ -191,7 +161,7 @@ public class TaskBasedSignalOffloaderExecutorRejectionTests {
         rejectNextTask.set(true);
         subscriber.cancel();
         assertThat("Unexpected cancelled state.", cancellable.isCancelled(), is(true));
-        verifyRejectedTasks(1 /*handleSubscribe isn't offloaded due to a bug, else this should be 2*/, 1);
+        verifyRejectedTasks(2, 1);
     }
 
     @Test
@@ -205,7 +175,7 @@ public class TaskBasedSignalOffloaderExecutorRejectionTests {
         rejectNextTask.set(true);
         subscriber.cancel();
         assertThat("Unexpected cancelled state.", cancellable.isCancelled(), is(true));
-        verifyRejectedTasks(1 /*handleSubscribe isn't offloaded due to a bug, else this should be 2*/, 1);
+        verifyRejectedTasks(2, 1);
     }
 
     private TestSubscription subscriptionRejects(final Consumer<TestPublisherSubscriber> invokeMethodThatRejects) {
@@ -219,7 +189,7 @@ public class TaskBasedSignalOffloaderExecutorRejectionTests {
 
         invokeMethodThatRejects.accept(subscriber);
 
-        verifyRejectedTasks(1 /*handleSubscribe isn't offloaded due to a bug, else this should be 2*/, 1);
+        verifyRejectedTasks(2, 1);
         return subscription;
     }
 
@@ -255,6 +225,18 @@ public class TaskBasedSignalOffloaderExecutorRejectionTests {
         invokeMethodThatRejects.accept(completable);
         assertThat("Unexpected failure.", subscriber.takeError(), instanceOf(RejectedExecutionException.class));
         verifyRejectedTasks(2, 1);
+    }
+
+    private void expectFailureAndVerify(final Future<?> result) throws InterruptedException {
+        try {
+            result.get();
+            fail();
+        } catch (ExecutionException e) {
+            assertThat("Unexpected rejection cause.", e.getCause(), is(notNullValue()));
+            assertThat("Unexpected rejection cause.", e.getCause().getCause(),
+                    sameInstance(DELIBERATE_EXCEPTION));
+        }
+        verifyRejectedTasks(1, 1);
     }
 
     private void verifyRejectedTasks(final int submitCount, final int rejectionCount) {

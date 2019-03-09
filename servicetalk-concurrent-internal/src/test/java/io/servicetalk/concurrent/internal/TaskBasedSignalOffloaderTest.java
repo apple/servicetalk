@@ -54,7 +54,7 @@ public class TaskBasedSignalOffloaderTest {
     private Subscription subscription;
     private SingleSource.Subscriber<Integer> singleSub;
     private CompletableSource.Subscriber completableSub;
-    private Subscriber<Integer> pubSub;
+    private Subscriber<? super Integer> pubSub;
 
     @Before
     public void setUp() throws Exception {
@@ -69,7 +69,7 @@ public class TaskBasedSignalOffloaderTest {
 
     @Test
     public void offloadSubscribePublisher() {
-        Consumer<Subscriber<Integer>> handleSubscribe = uncheckedMock(Consumer.class);
+        Consumer<Subscriber<? super Integer>> handleSubscribe = uncheckedMock(Consumer.class);
         offloader.offloadSubscribe(pubSub, handleSubscribe);
         verify(executor.mock).execute(any());
         verifyZeroInteractions(pubSub);
@@ -80,7 +80,7 @@ public class TaskBasedSignalOffloaderTest {
 
     @Test
     public void offloadSubscribeSingle() {
-        Consumer<SingleSource.Subscriber<Integer>> handleSubscribe = uncheckedMock(Consumer.class);
+        Consumer<SingleSource.Subscriber<? super Integer>> handleSubscribe = uncheckedMock(Consumer.class);
         offloader.offloadSubscribe(singleSub, handleSubscribe);
         verify(executor.mock).execute(any());
         verifyZeroInteractions(singleSub);

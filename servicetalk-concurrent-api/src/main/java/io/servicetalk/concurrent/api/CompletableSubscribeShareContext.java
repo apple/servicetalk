@@ -15,14 +15,13 @@
  */
 package io.servicetalk.concurrent.api;
 
-import io.servicetalk.concurrent.CompletableSource.Subscriber;
 import io.servicetalk.concurrent.internal.SignalOffloader;
 
 final class CompletableSubscribeShareContext extends AbstractNoHandleSubscribeCompletable {
     private final Completable original;
 
     CompletableSubscribeShareContext(final Completable original) {
-        super(original.executor());
+        super(original.executor(), true);
         this.original = original;
     }
 
@@ -33,11 +32,5 @@ final class CompletableSubscribeShareContext extends AbstractNoHandleSubscribeCo
         // AsyncContextMap now it is possible that operators downstream in the subscribe call stack may have modified
         // the AsyncContextMap and we don't want to discard those changes by using a different AsyncContextMap.
         original.handleSubscribe(subscriber, signalOffloader, contextMap, contextProvider);
-    }
-
-    @Override
-    void subscribeCaptureContext(Subscriber subscriber, AsyncContextProvider provider) {
-        // Instead of making a copy, we want to share the AsyncContext.
-        subscribeWithContext(subscriber, provider.contextMap(), provider);
     }
 }

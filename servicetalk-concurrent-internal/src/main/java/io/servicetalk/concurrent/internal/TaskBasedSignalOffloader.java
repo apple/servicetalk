@@ -98,7 +98,8 @@ final class TaskBasedSignalOffloader implements SignalOffloader {
     }
 
     @Override
-    public <T> void offloadSubscribe(final Subscriber<T> subscriber, final Consumer<Subscriber<T>> handleSubscribe) {
+    public <T> void offloadSubscribe(final Subscriber<? super T> subscriber,
+                                     final Consumer<Subscriber<? super T>> handleSubscribe) {
         try {
             executor.execute(() -> handleSubscribe.accept(subscriber));
         } catch (Throwable throwable) {
@@ -109,8 +110,8 @@ final class TaskBasedSignalOffloader implements SignalOffloader {
     }
 
     @Override
-    public <T> void offloadSubscribe(final SingleSource.Subscriber<T> subscriber,
-                                     final Consumer<SingleSource.Subscriber<T>> handleSubscribe) {
+    public <T> void offloadSubscribe(final SingleSource.Subscriber<? super T> subscriber,
+                                     final Consumer<SingleSource.Subscriber<? super T>> handleSubscribe) {
         try {
             executor.execute(() -> handleSubscribe.accept(subscriber));
         } catch (Throwable throwable) {
