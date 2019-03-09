@@ -203,7 +203,8 @@ final class TaskBasedSignalOffloader implements SignalOffloader {
                                 executor, target, t);
                         target.cancel();
                     }
-                    throw t;
+                    // We swallow the error here as we are forwarding the actual call and throwing from here will
+                    // interrupt the control flow.
                 }
             }
         }
@@ -719,7 +720,8 @@ final class TaskBasedSignalOffloader implements SignalOffloader {
                 // As a policy, we call the target in the calling thread when the executor is inadequately
                 // provisioned. In the future we could make this configurable.
                 cancellable.cancel();
-                throw t;
+                // We swallow the error here as we are forwarding the actual call and throwing from here will
+                // interrupt the control flow.
             }
         }
     }
