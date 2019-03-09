@@ -161,9 +161,8 @@ public abstract class HttpServerBuilder {
     public abstract HttpServerBuilder disableWireLogging();
 
     /**
-     * Disables the logic that tries to drain and discard the {@link StreamingHttpRequest#payloadBody() payload body}
-     * of a {@link StreamingHttpRequest} in case some {@link StreamingHttpService} endpoints are not interested in
-     * the request payload body.
+     * Disables automatic consumption of request {@link StreamingHttpRequest#payloadBody() payload body} when it is not
+     * consumed by the service.
      * <p>
      * For <a href="https://tools.ietf.org/html/rfc7230#section-6.3">persistent HTTP connections</a> it is required to
      * eventually consume the entire request payload to enable reading of the next request. This is required because
@@ -181,9 +180,8 @@ public abstract class HttpServerBuilder {
     }
 
     /**
-     * Enables the logic that tries to drain and discard the {@link StreamingHttpRequest#payloadBody() payload body}
-     * of a {@link StreamingHttpRequest} in case some {@link StreamingHttpService} endpoints are not interested in
-     * the request payload body.
+     * Enables automatic consumption of request {@link StreamingHttpRequest#payloadBody() payload body} when it is not
+     * consumed by the service.
      * <p>
      * For <a href="https://tools.ietf.org/html/rfc7230#section-6.3">persistent HTTP connections</a> it is required to
      * eventually consume the entire request payload to enable reading of the next request. This is required because
