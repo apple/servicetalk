@@ -162,7 +162,7 @@ public class SingleToCompletionStageTest {
 
         String expected2 = "one two";
         CompletionStage<String> stage2 = stage1.thenApply(in -> {
-            verifyInJUnitThread();
+            verifyInStOrJUnitThread();
             return in + " two";
         });
         assertEquals(expected2, stage2.toCompletableFuture().get());
@@ -341,13 +341,13 @@ public class SingleToCompletionStageTest {
     @Test
     public void thenCombine() throws Exception {
         CompletableFuture<Double> other = new CompletableFuture<>();
-        thenCombine(other, source.toCompletionStage().thenCombine(other, strLenDoubleStThread()), "foo", 123);
+        thenCombine(other, source.toCompletionStage().thenCombine(other, strLenDoubleStOrJdkThread()), "foo", 123);
     }
 
     @Test
     public void thenCombineNull() throws Exception {
         CompletableFuture<Double> other = new CompletableFuture<>();
-        thenCombine(other, source.toCompletionStage().thenCombine(other, strLenDoubleStThread()), null, 1236);
+        thenCombine(other, source.toCompletionStage().thenCombine(other, strLenDoubleStOrJdkThread()), null, 1236);
     }
 
     @Test
@@ -378,7 +378,7 @@ public class SingleToCompletionStageTest {
         AtomicReference<Long> lngRef = new AtomicReference<>();
         CompletableFuture<Long> other = new CompletableFuture<>();
         thenAcceptBoth(other, source.toCompletionStage().thenAcceptBoth(other, (str, lng) -> {
-            verifyInStExecutorThread();
+            verifyInStOrJdkThread();
             strRef.set(str);
             lngRef.set(lng);
         }), "foo", 134L, strRef, lngRef);
@@ -390,7 +390,7 @@ public class SingleToCompletionStageTest {
         AtomicReference<Long> lngRef = new AtomicReference<>();
         CompletableFuture<Long> other = new CompletableFuture<>();
         thenAcceptBoth(other, source.toCompletionStage().thenAcceptBoth(other, (str, lng) -> {
-            verifyInStExecutorThread();
+            verifyInStOrJdkThread();
             strRef.set(str);
             lngRef.set(lng);
         }), null, 134L, strRef, lngRef);
@@ -436,14 +436,14 @@ public class SingleToCompletionStageTest {
     public void runAfterBoth() throws Exception {
         CompletableFuture<Long> other = new CompletableFuture<>();
         runAfterBoth(other, source.toCompletionStage().runAfterBoth(other,
-                SingleToCompletionStageTest::verifyInStExecutorThread), "foo", 123L);
+                SingleToCompletionStageTest::verifyInStOrJdkThread), "foo", 123L);
     }
 
     @Test
     public void runAfterBothNull() throws Exception {
         CompletableFuture<Long> other = new CompletableFuture<>();
         runAfterBoth(other, source.toCompletionStage().runAfterBoth(other,
-                SingleToCompletionStageTest::verifyInStExecutorThread), null, 1223L);
+                SingleToCompletionStageTest::verifyInStOrJdkThread), null, 1223L);
     }
 
     @Test
@@ -473,14 +473,14 @@ public class SingleToCompletionStageTest {
     public void applyToEither() throws Exception {
         CompletableFuture<String> other = new CompletableFuture<>();
         applyToEither(other, source.toCompletionStage().applyToEither(other,
-                SingleToCompletionStageTest::strLenJdkThread), "foo", "bar");
+                SingleToCompletionStageTest::strLenStOrJdkThread), "foo", "bar");
     }
 
     @Test
     public void applyToEitherNull() throws Exception {
         CompletableFuture<String> other = new CompletableFuture<>();
         applyToEither(other, source.toCompletionStage().applyToEither(other,
-                SingleToCompletionStageTest::strLenJdkThread), null, null);
+                SingleToCompletionStageTest::strLenStOrJdkThread), null, null);
     }
 
     @Test
@@ -510,14 +510,15 @@ public class SingleToCompletionStageTest {
     public void acceptEither() throws Exception {
         CompletableFuture<String> other = new CompletableFuture<>();
         AtomicReference<String> strRef = new AtomicReference<>();
-        acceptEither(other, source.toCompletionStage().acceptEither(other, jdkThread(strRef)), strRef, "foo", "bar");
+        acceptEither(other, source.toCompletionStage().acceptEither(other, stOrJdkThread(strRef)), strRef, "foo",
+                "bar");
     }
 
     @Test
     public void acceptEitherNull() throws Exception {
         CompletableFuture<String> other = new CompletableFuture<>();
         AtomicReference<String> strRef = new AtomicReference<>();
-        acceptEither(other, source.toCompletionStage().acceptEither(other, jdkThread(strRef)), strRef, null, null);
+        acceptEither(other, source.toCompletionStage().acceptEither(other, stOrJdkThread(strRef)), strRef, null, null);
     }
 
     @Test
@@ -551,14 +552,14 @@ public class SingleToCompletionStageTest {
     public void runAfterEither() throws Exception {
         CompletableFuture<String> other = new CompletableFuture<>();
         runAfterEither(other, source.toCompletionStage().runAfterEither(other,
-                SingleToCompletionStageTest::verifyInJdkExecutorThread), "foo", "bar");
+                SingleToCompletionStageTest::verifyInStOrJdkThread), "foo", "bar");
     }
 
     @Test
     public void runAfterEitherNull() throws Exception {
         CompletableFuture<String> other = new CompletableFuture<>();
         runAfterEither(other, source.toCompletionStage().runAfterEither(other,
-                SingleToCompletionStageTest::verifyInJdkExecutorThread), null, null);
+                SingleToCompletionStageTest::verifyInStOrJdkThread), null, null);
     }
 
     @Test
@@ -589,7 +590,7 @@ public class SingleToCompletionStageTest {
         CompletableFuture<Integer> other = new CompletableFuture<>();
         AtomicReference<String> strRef = new AtomicReference<>();
         thenCompose(other, source.toCompletionStage().thenCompose(str -> {
-            verifyInStExecutorThread();
+            verifyInStOrJdkThread();
             strRef.set(str);
             return other;
         }), strRef, "foo", 10);
@@ -600,7 +601,7 @@ public class SingleToCompletionStageTest {
         CompletableFuture<Integer> other = new CompletableFuture<>();
         AtomicReference<String> strRef = new AtomicReference<>();
         thenCompose(other, source.toCompletionStage().thenCompose(str -> {
-            verifyInStExecutorThread();
+            verifyInStOrJdkThread();
             strRef.set(str);
             return other;
         }), strRef, null, null);
@@ -1013,6 +1014,20 @@ public class SingleToCompletionStageTest {
         }
     }
 
+    private static void verifyInStOrJdkThread() {
+        if (!currentThread().getName().startsWith(ST_THREAD_PREFIX_NAME) &&
+                !currentThread().getName().startsWith(JDK_THREAD_NAME_PREFIX)) {
+            throw new IllegalStateException("unexpected thread: " + currentThread());
+        }
+    }
+
+    private static void verifyInStOrJUnitThread() {
+        if (!currentThread().getName().startsWith(ST_THREAD_PREFIX_NAME) &&
+                !currentThread().getName().startsWith(ServiceTalkTestTimeout.THREAD_PREFIX)) {
+            throw new IllegalStateException("unexpected thread: " + currentThread());
+        }
+    }
+
     private static int strLen(@Nullable String str) {
         return str == null ? -1 : str.length();
     }
@@ -1034,6 +1049,11 @@ public class SingleToCompletionStageTest {
 
     private static int strLenJUnitThread(@Nullable String str) {
         verifyInJUnitThread();
+        return strLen(str);
+    }
+
+    private static int strLenStOrJdkThread(@Nullable String str) {
+        verifyInStOrJdkThread();
         return strLen(str);
     }
 
@@ -1061,6 +1081,13 @@ public class SingleToCompletionStageTest {
     private static Consumer<? super String> junitThread(AtomicReference<String> ref) {
         return val -> {
             verifyInJUnitThread();
+            ref.set(val);
+        };
+    }
+
+    private static Consumer<? super String> stOrJdkThread(AtomicReference<String> ref) {
+        return val -> {
+            verifyInJdkExecutorThread();
             ref.set(val);
         };
     }
@@ -1096,6 +1123,13 @@ public class SingleToCompletionStageTest {
     private static BiFunction<? super String, ? super Double, ? extends Integer> strLenDoubleStThread() {
         return (str, dbl) -> {
             verifyInStExecutorThread();
+            return (int) (strLen(str) + dbl);
+        };
+    }
+
+    private static BiFunction<? super String, ? super Double, ? extends Integer> strLenDoubleStOrJdkThread() {
+        return (str, dbl) -> {
+            verifyInStOrJdkThread();
             return (int) (strLen(str) + dbl);
         };
     }
