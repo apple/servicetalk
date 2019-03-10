@@ -24,6 +24,6 @@ final class AsyncContextExecutorPlugin implements ExecutorPlugin {
 
     @Override
     public Executor wrapExecutor(final Executor executor) {
-        return AsyncContext.wrap(executor);
+        return AsyncContext.wrapExecutor(executor);
     }
 }

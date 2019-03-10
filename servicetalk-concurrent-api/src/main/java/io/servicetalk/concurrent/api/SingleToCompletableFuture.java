@@ -40,7 +40,7 @@ final class SingleToCompletableFuture<T> extends CompletableFuture<T> implements
     static <X> CompletableFuture<X> createAndSubscribe(Single<X> original) {
         SingleToCompletableFuture<X> future = new SingleToCompletableFuture<>();
         AsyncContextProvider provider = AsyncContext.provider();
-        return provider.wrap((CompletableFuture<X>) future, original.subscribeAndReturnContext(future, provider));
+        return provider.wrapCompletableFuture(future, original.subscribeAndReturnContext(future, provider));
     }
 
     static <X> CompletableFuture<X> createForFutureAndSubscribe(Single<X> original) {

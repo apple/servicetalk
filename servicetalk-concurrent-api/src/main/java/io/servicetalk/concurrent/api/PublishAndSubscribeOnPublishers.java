@@ -35,7 +35,7 @@ final class PublishAndSubscribeOnPublishers {
     static <T> void deliverOnSubscribeAndOnError(Subscriber<? super T> subscriber, SignalOffloader signalOffloader,
                                                  AsyncContextMap contextMap, AsyncContextProvider contextProvider,
                                                  Throwable cause) {
-        subscriber = signalOffloader.offloadSubscriber(contextProvider.wrap(subscriber, contextMap));
+        subscriber = signalOffloader.offloadSubscriber(contextProvider.wrapPublisherSubscriber(subscriber, contextMap));
         subscriber.onSubscribe(EMPTY_SUBSCRIPTION);
         subscriber.onError(cause);
     }
@@ -86,7 +86,7 @@ final class PublishAndSubscribeOnPublishers {
             // chain. If there is already an Executor defined for original, it will be used to offload signals until
             // they hit this operator.
             original.subscribeWithSharedContext(
-                    signalOffloader.offloadSubscriber(contextProvider.wrap(subscriber, contextMap)));
+                    signalOffloader.offloadSubscriber(contextProvider.wrapPublisherSubscriber(subscriber, contextMap)));
         }
     }
 
@@ -130,7 +130,7 @@ final class PublishAndSubscribeOnPublishers {
             // chain. If there is already an Executor defined for original, it will be used to offload signals until
             // they hit this operator.
             original.subscribeWithSharedContext(
-                    signalOffloader.offloadSubscriber(contextProvider.wrap(subscriber, contextMap)));
+                    signalOffloader.offloadSubscriber(contextProvider.wrapPublisherSubscriber(subscriber, contextMap)));
         }
     }
 

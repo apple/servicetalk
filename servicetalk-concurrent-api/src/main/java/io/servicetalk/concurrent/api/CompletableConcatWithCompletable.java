@@ -56,7 +56,8 @@ final class CompletableConcatWithCompletable extends AbstractNoHandleSubscribeCo
         // eventloop. Important thing to note is that once the next Completable is subscribed we never touch the
         // Cancellable of the original Completable. So, we do not need to do anything special there.
         // In order to cover for this case ((2) above) we always offload the passed Subscriber here.
-        Subscriber offloadSubscriber = offloader.offloadSubscriber(contextProvider.wrap(subscriber, contextMap));
+        Subscriber offloadSubscriber = offloader.offloadSubscriber(
+                contextProvider.wrapCompletableSubscriber(subscriber, contextMap));
         original.delegateSubscribe(new ConcatWithSubscriber(offloadSubscriber, next), offloader,
                 contextMap, contextProvider);
     }

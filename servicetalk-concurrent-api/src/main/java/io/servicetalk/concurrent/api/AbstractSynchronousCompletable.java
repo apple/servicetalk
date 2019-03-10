@@ -15,7 +15,6 @@
  */
 package io.servicetalk.concurrent.api;
 
-import io.servicetalk.concurrent.CompletableSource.Subscriber;
 import io.servicetalk.concurrent.internal.SignalOffloader;
 
 /**
@@ -33,7 +32,8 @@ abstract class AbstractSynchronousCompletable extends AbstractNoHandleSubscribeC
         //
         // We need to wrap the Subscriber to save/restore the AsyncContext on each operation or else the AsyncContext
         // may leak from another thread.
-        doSubscribe(signalOffloader.offloadSubscriber(contextProvider.wrap(subscriber, contextMap)));
+        doSubscribe(signalOffloader.offloadSubscriber(
+                contextProvider.wrapCompletableSubscriber(subscriber, contextMap)));
     }
 
     /**

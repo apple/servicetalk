@@ -72,15 +72,6 @@ public final class AsyncContext {
     }
 
     /**
-     * Restores a previously saved {@link AsyncContextMap}.
-     *
-     * @param contextMap the {@link AsyncContextMap} to use.
-     */
-    public static void replace(AsyncContextMap contextMap) {
-        provider().contextMap(contextMap);
-    }
-
-    /**
      * Convenience method for adding a value to the current context.
      *
      * @param key   the key used to index {@code value}. Cannot be {@code null}.
@@ -185,8 +176,8 @@ public final class AsyncContext {
      * @param executor The executor to wrap.
      * @return The wrapped executor.
      */
-    public static java.util.concurrent.Executor wrap(java.util.concurrent.Executor executor) {
-        return provider().wrap(executor);
+    public static java.util.concurrent.Executor wrapJdkExecutor(java.util.concurrent.Executor executor) {
+        return provider().wrapJdkExecutor(executor);
     }
 
     /**
@@ -195,8 +186,8 @@ public final class AsyncContext {
      * @param executor The executor to wrap.
      * @return The wrapped executor.
      */
-    public static Executor wrap(Executor executor) {
-        return provider().wrap(executor);
+    public static Executor wrapExecutor(Executor executor) {
+        return provider().wrapExecutor(executor);
     }
 
     /**
@@ -204,8 +195,8 @@ public final class AsyncContext {
      * @param executor The executor to wrap.
      * @return The wrapped executor.
      */
-    public static ExecutorService wrap(ExecutorService executor) {
-        return provider().wrap(executor);
+    public static ExecutorService wrapJdkExecutorService(ExecutorService executor) {
+        return provider().wrapJdkExecutorService(executor);
     }
 
     /**
@@ -213,8 +204,8 @@ public final class AsyncContext {
      * @param executor The executor to wrap.
      * @return The wrapped executor.
      */
-    public static ScheduledExecutorService wrap(ScheduledExecutorService executor) {
-        return provider().wrap(executor);
+    public static ScheduledExecutorService wrapJdkScheduledExecutorService(ScheduledExecutorService executor) {
+        return provider().wrapJdkScheduledExecutorService(executor);
     }
 
     /**
@@ -222,9 +213,9 @@ public final class AsyncContext {
      * @param runnable The runnable to wrap.
      * @return The wrapped {@link Runnable}.
      */
-    public static Runnable wrap(Runnable runnable) {
+    public static Runnable wrapRunnable(Runnable runnable) {
         AsyncContextProvider provider = provider();
-        return provider.wrap(runnable, provider.contextMap());
+        return provider.wrapRunnable(runnable, provider.contextMap());
     }
 
     /**
@@ -233,9 +224,9 @@ public final class AsyncContext {
      * @param <T> The type of data consumed by {@code consumer}.
      * @return The wrapped {@link Consumer}.
      */
-    public static <T> Consumer<T> wrap(Consumer<T> consumer) {
+    public static <T> Consumer<T> wrapConsumer(Consumer<T> consumer) {
         AsyncContextProvider provider = provider();
-        return provider.wrap(consumer, provider.contextMap());
+        return provider.wrapConsumer(consumer, provider.contextMap());
     }
 
     /**
@@ -245,9 +236,9 @@ public final class AsyncContext {
      * @param <U> The type of data returned by {@code func}.
      * @return The wrapped {@link Function}.
      */
-    public static <T, U> Function<T, U> wrap(Function<T, U> func) {
+    public static <T, U> Function<T, U> wrapFunction(Function<T, U> func) {
         AsyncContextProvider provider = provider();
-        return provider.wrap(func, provider.contextMap());
+        return provider.wrapFunction(func, provider.contextMap());
     }
 
     /**
@@ -257,9 +248,9 @@ public final class AsyncContext {
      * @param <U> The type of data consumed by {@code func}.
      * @return The wrapped {@link BiConsumer}.
      */
-    public static <T, U> BiConsumer<T, U> wrap(BiConsumer<T, U> consumer) {
+    public static <T, U> BiConsumer<T, U> wrapBiConsume(BiConsumer<T, U> consumer) {
         AsyncContextProvider provider = provider();
-        return provider.wrap(consumer, provider.contextMap());
+        return provider.wrapBiConsumer(consumer, provider.contextMap());
     }
 
     /**
@@ -270,9 +261,9 @@ public final class AsyncContext {
      * @param <V> The type of data returned by {@code func}.
      * @return The wrapped {@link BiFunction}.
      */
-    public static <T, U, V> BiFunction<T, U, V> wrap(BiFunction<T, U, V> func) {
+    public static <T, U, V> BiFunction<T, U, V> wrapBiFunction(BiFunction<T, U, V> func) {
         AsyncContextProvider provider = provider();
-        return provider.wrap(func, provider.contextMap());
+        return provider.wrapBiFunction(func, provider.contextMap());
     }
 
     /**

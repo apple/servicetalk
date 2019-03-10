@@ -373,19 +373,19 @@ public class DefaultAsyncContextProviderTest {
         };
 
         new ContextCaptureRunnable()
-                .runAndWait(INSTANCE.wrap((Executor) executor))
+                .runAndWait(INSTANCE.wrapJdkExecutor(executor))
                 .verifyContext(verifier);
 
         new ContextCaptureRunnable()
-                .runAndWait(INSTANCE.wrap((ExecutorService) executor))
+                .runAndWait(INSTANCE.wrapJdkExecutorService(executor))
                 .verifyContext(verifier);
 
         new ContextCaptureCallable<String>()
-                .runAndWait(INSTANCE.wrap((ExecutorService) executor))
+                .runAndWait(INSTANCE.wrapJdkExecutorService(executor))
                 .verifyContext(verifier);
 
         new ContextCaptureCallable<String>()
-                .scheduleAndWait(INSTANCE.wrap(executor))
+                .scheduleAndWait(INSTANCE.wrapJdkScheduledExecutorService(executor))
                 .verifyContext(verifier);
     }
 
@@ -399,7 +399,7 @@ public class DefaultAsyncContextProviderTest {
 
         new ContextCapturer()
                 .runAndWait(collector -> {
-                    Function<Void, Void> f = INSTANCE.wrap(v -> {
+                    Function<Void, Void> f = INSTANCE.wrapFunction(v -> {
                         collector.complete(AsyncContext.current());
                         return v;
                     }, AsyncContext.current());
@@ -409,14 +409,14 @@ public class DefaultAsyncContextProviderTest {
 
         new ContextCapturer()
                 .runAndWait(collector -> {
-                    Consumer<Void> c = INSTANCE.wrap((Consumer<Void>) v -> collector.complete(AsyncContext.current()));
+                    Consumer<Void> c = INSTANCE.wrapConsumer(v -> collector.complete(AsyncContext.current()));
                     executor.execute(() -> c.accept(null));
                 })
                 .verifyContext(verifier);
 
         new ContextCapturer()
                 .runAndWait(collector -> {
-                    BiFunction<Void, Void, Void> bf = INSTANCE.wrap((v1, v2) -> {
+                    BiFunction<Void, Void, Void> bf = INSTANCE.wrapBiFunction((v1, v2) -> {
                         collector.complete(AsyncContext.current());
                         return v1;
                     }, AsyncContext.current());
@@ -426,7 +426,7 @@ public class DefaultAsyncContextProviderTest {
 
         new ContextCapturer()
                 .runAndWait(collector -> {
-                    BiConsumer<Void, Void> bc = INSTANCE.wrap((v1, v2) -> {
+                    BiConsumer<Void, Void> bc = INSTANCE.wrapBiConsumer((v1, v2) -> {
                         collector.complete(AsyncContext.current());
                     }, AsyncContext.current());
                     executor.execute(() -> bc.accept(null, null));

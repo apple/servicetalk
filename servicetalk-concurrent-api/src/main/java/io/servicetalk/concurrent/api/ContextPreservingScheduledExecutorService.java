@@ -50,9 +50,4 @@ final class ContextPreservingScheduledExecutorService extends ContextPreservingE
         return executor instanceof ContextPreservingScheduledExecutorService ? executor :
                 new ContextPreservingScheduledExecutorService(executor);
     }
-
-    static ScheduledExecutorService unwrap(ScheduledExecutorService executor) {
-        return executor instanceof ContextPreservingScheduledExecutorService ?
-                ((ContextPreservingScheduledExecutorService) executor).delegate : executor;
-    }
 }

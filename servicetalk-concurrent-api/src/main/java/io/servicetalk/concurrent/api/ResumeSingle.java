@@ -112,7 +112,7 @@ final class ResumeSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
             // the new Single. This is the reason we use the original offloader now to offload signals which
             // originate from this new Single.
             final Subscriber<? super T> offloadedSubscriber = signalOffloader.offloadSubscriber(
-                    contextProvider.wrap(this, contextMap));
+                    contextProvider.wrapSingleSubscriber(this, contextMap));
             next.subscribeInternal(offloadedSubscriber);
         }
     }

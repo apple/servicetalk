@@ -51,7 +51,7 @@ abstract class AbstractAsynchronousSingleOperator<T, R> extends AbstractNoHandle
         // with the original contextMap. Otherwise some other context may leak into this subscriber chain from the other
         // side of the asynchronous boundary.
         final Subscriber<? super R> operatorSubscriber = signalOffloader.offloadSubscriber(
-                contextProvider.wrap(subscriber, contextMap));
+                contextProvider.wrapSingleSubscriber(subscriber, contextMap));
         // Subscriber to use to subscribe to the original source. Since this is an asynchronous operator, it may call
         // Cancellable method from EventLoop (if the asynchronous source created/obtained inside this operator uses
         // EventLoop) which may execute blocking code on EventLoop, eg: doBeforeCancel(). So, we should offload

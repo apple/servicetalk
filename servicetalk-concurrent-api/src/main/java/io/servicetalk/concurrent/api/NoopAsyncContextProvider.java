@@ -54,8 +54,8 @@ final class NoopAsyncContextProvider implements AsyncContextProvider {
     }
 
     @Override
-    public CompletableSource.Subscriber wrap(final CompletableSource.Subscriber subscriber,
-                                             final AsyncContextMap current) {
+    public CompletableSource.Subscriber wrapCompletableSubscriber(final CompletableSource.Subscriber subscriber,
+                                                                  final AsyncContextMap current) {
         return subscriber;
     }
 
@@ -66,8 +66,8 @@ final class NoopAsyncContextProvider implements AsyncContextProvider {
     }
 
     @Override
-    public <T> SingleSource.Subscriber<T> wrap(final SingleSource.Subscriber<T> subscriber,
-                                               final AsyncContextMap current) {
+    public <T> SingleSource.Subscriber<T> wrapSingleSubscriber(final SingleSource.Subscriber<T> subscriber,
+                                                               final AsyncContextMap current) {
         return subscriber;
     }
 
@@ -77,77 +77,59 @@ final class NoopAsyncContextProvider implements AsyncContextProvider {
     }
 
     @Override
-    public <T> Subscriber<T> wrap(final Subscriber<T> subscriber, final AsyncContextMap current) {
+    public <T> Subscriber<T> wrapPublisherSubscriber(final Subscriber<T> subscriber, final AsyncContextMap current) {
         return subscriber;
     }
 
     @Override
-    public Executor wrap(final Executor executor) {
+    public Executor wrapJdkExecutor(final Executor executor) {
         return executor;
     }
 
     @Override
-    public Executor unwrap(final Executor executor) {
+    public ExecutorService wrapJdkExecutorService(final ExecutorService executor) {
         return executor;
     }
 
     @Override
-    public ExecutorService wrap(final ExecutorService executor) {
+    public io.servicetalk.concurrent.api.Executor wrapExecutor(final io.servicetalk.concurrent.api.Executor executor) {
         return executor;
     }
 
     @Override
-    public ExecutorService unwrap(final ExecutorService executor) {
-        return executor;
-    }
-
-    @Override
-    public io.servicetalk.concurrent.api.Executor wrap(final io.servicetalk.concurrent.api.Executor executor) {
-        return executor;
-    }
-
-    @Override
-    public io.servicetalk.concurrent.Executor unwrap(final io.servicetalk.concurrent.Executor executor) {
-        return executor;
-    }
-
-    @Override
-    public <T> CompletableFuture<T> wrap(final CompletableFuture<T> future, final AsyncContextMap contextMap) {
+    public <T> CompletableFuture<T> wrapCompletableFuture(final CompletableFuture<T> future,
+                                                          final AsyncContextMap contextMap) {
         return future;
     }
 
     @Override
-    public ScheduledExecutorService wrap(final ScheduledExecutorService executor) {
+    public ScheduledExecutorService wrapJdkScheduledExecutorService(final ScheduledExecutorService executor) {
         return executor;
     }
 
     @Override
-    public ScheduledExecutorService unwrap(final ScheduledExecutorService executor) {
-        return executor;
-    }
-
-    @Override
-    public Runnable wrap(final Runnable runnable, final AsyncContextMap contextMap) {
+    public Runnable wrapRunnable(final Runnable runnable, final AsyncContextMap contextMap) {
         return runnable;
     }
 
     @Override
-    public <T> Consumer<T> wrap(final Consumer<T> consumer, final AsyncContextMap contextMap) {
+    public <T> Consumer<T> wrapConsumer(final Consumer<T> consumer, final AsyncContextMap contextMap) {
         return consumer;
     }
 
     @Override
-    public <T, U> Function<T, U> wrap(final Function<T, U> func, final AsyncContextMap contextMap) {
+    public <T, U> Function<T, U> wrapFunction(final Function<T, U> func, final AsyncContextMap contextMap) {
         return func;
     }
 
     @Override
-    public <T, U> BiConsumer<T, U> wrap(final BiConsumer<T, U> consumer, final AsyncContextMap contextMap) {
+    public <T, U> BiConsumer<T, U> wrapBiConsumer(final BiConsumer<T, U> consumer, final AsyncContextMap contextMap) {
         return consumer;
     }
 
     @Override
-    public <T, U, V> BiFunction<T, U, V> wrap(final BiFunction<T, U, V> func, final AsyncContextMap contextMap) {
+    public <T, U, V> BiFunction<T, U, V> wrapBiFunction(final BiFunction<T, U, V> func,
+                                                        final AsyncContextMap contextMap) {
         return func;
     }
 

@@ -35,7 +35,8 @@ final class PublishAndSubscribeOnCompletables {
     static void deliverOnSubscribeAndOnError(Subscriber subscriber, SignalOffloader signalOffloader,
                                              AsyncContextMap contextMap, AsyncContextProvider contextProvider,
                                              Throwable cause) {
-        subscriber = signalOffloader.offloadSubscriber(contextProvider.wrap(subscriber, contextMap));
+        subscriber = signalOffloader.offloadSubscriber(
+                contextProvider.wrapCompletableSubscriber(subscriber, contextMap));
         subscriber.onSubscribe(IGNORE_CANCEL);
         subscriber.onError(cause);
     }
@@ -86,7 +87,8 @@ final class PublishAndSubscribeOnCompletables {
             // chain. If there is already an Executor defined for original, it will be used to offload signals until
             // they hit this operator.
             original.subscribeWithSharedContext(
-                    signalOffloader.offloadSubscriber(contextProvider.wrap(subscriber, contextMap)), contextProvider);
+                    signalOffloader.offloadSubscriber(
+                            contextProvider.wrapCompletableSubscriber(subscriber, contextMap)), contextProvider);
         }
     }
 
@@ -129,7 +131,8 @@ final class PublishAndSubscribeOnCompletables {
             // chain. If there is already an Executor defined for original, it will be used to offload signals until
             // they hit this operator.
             original.subscribeWithSharedContext(
-                    signalOffloader.offloadSubscriber(contextProvider.wrap(subscriber, contextMap)), contextProvider);
+                    signalOffloader.offloadSubscriber(
+                            contextProvider.wrapCompletableSubscriber(subscriber, contextMap)), contextProvider);
         }
     }
 

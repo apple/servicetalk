@@ -77,7 +77,7 @@ final class CompletableMergeWithPublisher<T> extends AbstractNoHandleSubscribePu
                AsyncContextProvider contextProvider) {
             // The CompletableSubscriber and offloadedSubscriber may interact with the subscriber, so we need to wrap it
             // and make sure the expected context is restored.
-            subscriber = contextProvider.wrap(subscriber, contextMap);
+            subscriber = contextProvider.wrapPublisherSubscriber(subscriber, contextMap);
 
             completableSubscriber = new CompletableSubscriber(subscriber);
             // This is used only to deliver signals that originate from the mergeWith Publisher. Since, we need to

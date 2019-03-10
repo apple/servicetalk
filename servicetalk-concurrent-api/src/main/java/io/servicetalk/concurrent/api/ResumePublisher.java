@@ -111,7 +111,7 @@ final class ResumePublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
             // the new Publisher. This is the reason we use the original offloader now to offload signals which
             // originate from this new Publisher.
             final Subscriber<? super T> offloadedSubscriber = signalOffloader.offloadSubscriber(
-                    contextProvider.wrap(this, contextMap));
+                    contextProvider.wrapPublisherSubscriber(this, contextMap));
             next.subscribeInternal(offloadedSubscriber);
         }
 
