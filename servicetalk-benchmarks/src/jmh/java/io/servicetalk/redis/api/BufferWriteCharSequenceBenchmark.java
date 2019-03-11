@@ -38,27 +38,27 @@ import static java.nio.charset.StandardCharsets.UTF_8;
  * This benchmark compares various ways of writing a string to a buffer using ST2 APIs, including an internal API
  * leveraging a netty utility.
  *
- * Benchmark                                                 (stringLength)   Mode  Cnt         Score        Error  Units
- * BufferWriteCharSequenceBenchmark.reserveAndWriteUtf8                  10  thrpt    5  28042722.141 ± 652816.060  ops/s
- * BufferWriteCharSequenceBenchmark.reserveAndWriteUtf8                 100  thrpt    5  13794592.473 ± 564785.778  ops/s
- * BufferWriteCharSequenceBenchmark.reserveAndWriteUtf8                1000  thrpt    5   2216999.490 ±  56981.883  ops/s
- * BufferWriteCharSequenceBenchmark.reserveAndWriteUtf8               10000  thrpt    5    237674.222 ±   9971.538  ops/s
- * BufferWriteCharSequenceBenchmark.reserveAndWriteUtf8              100000  thrpt    5     24026.400 ±    692.330  ops/s
- * BufferWriteCharSequenceBenchmark.writeUtf8EnsureCapacity              10  thrpt    5  27398387.639 ± 943934.624  ops/s
- * BufferWriteCharSequenceBenchmark.writeUtf8EnsureCapacity             100  thrpt    5  13662801.224 ± 227767.862  ops/s
- * BufferWriteCharSequenceBenchmark.writeUtf8EnsureCapacity            1000  thrpt    5   2221771.326 ±  21379.371  ops/s
- * BufferWriteCharSequenceBenchmark.writeUtf8EnsureCapacity           10000  thrpt    5    240068.021 ±   4688.891  ops/s
- * BufferWriteCharSequenceBenchmark.writeUtf8EnsureCapacity          100000  thrpt    5     23950.991 ±    855.289  ops/s
- * BufferWriteCharSequenceBenchmark.writeUtf8                            10  thrpt    5  16538842.822 ± 298610.303  ops/s
- * BufferWriteCharSequenceBenchmark.writeUtf8                           100  thrpt    5   8331989.708 ± 341024.752  ops/s
- * BufferWriteCharSequenceBenchmark.writeUtf8                          1000  thrpt    5    851633.554 ±  21709.505  ops/s
- * BufferWriteCharSequenceBenchmark.writeUtf8                         10000  thrpt    5     98150.506 ±   2920.327  ops/s
- * BufferWriteCharSequenceBenchmark.writeUtf8                        100000  thrpt    5      8403.067 ±    217.107  ops/s
- * BufferWriteCharSequenceBenchmark.writeBytes                           10  thrpt    5  12152668.695 ± 348644.599  ops/s
- * BufferWriteCharSequenceBenchmark.writeBytes                          100  thrpt    5   7786008.326 ± 177859.506  ops/s
- * BufferWriteCharSequenceBenchmark.writeBytes                         1000  thrpt    5    813298.026 ±  25889.524  ops/s
- * BufferWriteCharSequenceBenchmark.writeBytes                        10000  thrpt    5     98679.543 ±   2177.489  ops/s
- * BufferWriteCharSequenceBenchmark.writeBytes                       100000  thrpt    5     10226.726 ±    304.920  ops/s
+ * Benchmark                (stringLength)   Mode  Cnt         Score        Error  Units
+ * reserveAndWriteUtf8                  10  thrpt    5  28042722.141 ± 652816.060  ops/s
+ * reserveAndWriteUtf8                 100  thrpt    5  13794592.473 ± 564785.778  ops/s
+ * reserveAndWriteUtf8                1000  thrpt    5   2216999.490 ±  56981.883  ops/s
+ * reserveAndWriteUtf8               10000  thrpt    5    237674.222 ±   9971.538  ops/s
+ * reserveAndWriteUtf8              100000  thrpt    5     24026.400 ±    692.330  ops/s
+ * writeUtf8EnsureCapacity              10  thrpt    5  27398387.639 ± 943934.624  ops/s
+ * writeUtf8EnsureCapacity             100  thrpt    5  13662801.224 ± 227767.862  ops/s
+ * writeUtf8EnsureCapacity            1000  thrpt    5   2221771.326 ±  21379.371  ops/s
+ * writeUtf8EnsureCapacity           10000  thrpt    5    240068.021 ±   4688.891  ops/s
+ * writeUtf8EnsureCapacity          100000  thrpt    5     23950.991 ±    855.289  ops/s
+ * writeUtf8                            10  thrpt    5  16538842.822 ± 298610.303  ops/s
+ * writeUtf8                           100  thrpt    5   8331989.708 ± 341024.752  ops/s
+ * writeUtf8                          1000  thrpt    5    851633.554 ±  21709.505  ops/s
+ * writeUtf8                         10000  thrpt    5     98150.506 ±   2920.327  ops/s
+ * writeUtf8                        100000  thrpt    5      8403.067 ±    217.107  ops/s
+ * writeBytes                           10  thrpt    5  12152668.695 ± 348644.599  ops/s
+ * writeBytes                          100  thrpt    5   7786008.326 ± 177859.506  ops/s
+ * writeBytes                         1000  thrpt    5    813298.026 ±  25889.524  ops/s
+ * writeBytes                        10000  thrpt    5     98679.543 ±   2177.489  ops/s
+ * writeBytes                       100000  thrpt    5     10226.726 ±    304.920  ops/s
  */
 @Fork(value = 1)
 @State(Scope.Benchmark)
