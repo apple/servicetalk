@@ -16,21 +16,16 @@
 package io.servicetalk.examples.http.service.composition;
 
 import io.servicetalk.concurrent.api.CompositeCloseable;
-import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.data.jackson.JacksonSerializationProvider;
 import io.servicetalk.http.api.HttpClient;
-import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpSerializationProvider;
 import io.servicetalk.http.api.StreamingHttpClient;
-import io.servicetalk.http.api.StreamingHttpClientFilter;
-import io.servicetalk.http.api.StreamingHttpRequest;
-import io.servicetalk.http.api.StreamingHttpRequester;
-import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.netty.HttpClients;
 import io.servicetalk.http.netty.HttpServers;
 import io.servicetalk.http.router.predicate.HttpPredicateRouterBuilder;
 import io.servicetalk.http.utils.RetryingHttpRequesterFilter;
+import io.servicetalk.http.utils.TimeoutHttpRequesterFilter;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.ServerContext;
@@ -122,18 +117,10 @@ public final class GatewayServer {
                         // Set retry and timeout filters for all clients.
                         .appendClientFilter(new RetryingHttpRequesterFilter.Builder()
                                 .maxRetries(3)
-                                .buildWithExponentialBackoffAndJitter(ofMillis(100), null))
+                                .buildWithExponentialBackoffAndJitter(ofMillis(100)))
                         // Apply a timeout filter for the client to guard against latent clients.
-                        .appendClientFilter((client, __) -> new StreamingHttpClientFilter(client) {
-                            @Override
-                            protected Single<StreamingHttpResponse> request(
-                                    final StreamingHttpRequester delegate,
-                                    final HttpExecutionStrategy strategy,
-                                    final StreamingHttpRequest request) {
-                                return delegate.request(strategy, request).timeout(ofMillis(500),
-                                        client.executionContext().executor());
-                            }
-                        })
+                        .appendClientFilter(new TimeoutHttpRequesterFilter.Builder()
+                                .buildWithTimeout(ofMillis(500)))
                         .ioExecutor(ioExecutor)
                         .buildStreaming());
     }
