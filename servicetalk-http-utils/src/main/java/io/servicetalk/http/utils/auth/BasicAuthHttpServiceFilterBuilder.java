@@ -22,6 +22,8 @@ import io.servicetalk.concurrent.api.AsyncContextMap.Key;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpHeaderNames;
+import io.servicetalk.http.api.HttpHeaders;
+import io.servicetalk.http.api.HttpMetaData;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpRequest;
@@ -316,13 +318,14 @@ public final class BasicAuthHttpServiceFilterBuilder<UserInfo> {
             return closeable.closeAsyncGracefully();
         }
 
-        private Single<StreamingHttpResponse> onAccessDenied(final StreamingHttpRequest request,
+        private Single<StreamingHttpResponse> onAccessDenied(final HttpMetaData requestMetaData,
                                                              final StreamingHttpResponseFactory factory) {
-            return success(factory.newResponse(proxy ? PROXY_AUTHENTICATION_REQUIRED : UNAUTHORIZED)
-                    .version(request.version())
-                    .setHeader(proxy ? PROXY_AUTHENTICATE : WWW_AUTHENTICATE, authenticateHeader)
-                    .setHeader(CONTENT_LENGTH, ZERO))
-                    .concatWith(request.payloadBody().ignoreElements());
+            final StreamingHttpResponse response = factory.newResponse(
+                    proxy ? PROXY_AUTHENTICATION_REQUIRED : UNAUTHORIZED).version(requestMetaData.version());
+            HttpHeaders headers = response.headers();
+            headers.set(proxy ? PROXY_AUTHENTICATE : WWW_AUTHENTICATE, authenticateHeader);
+            headers.set(CONTENT_LENGTH, ZERO);
+            return success(response);
         }
 
         private Single<StreamingHttpResponse> onAuthenticated(final HttpServiceContext ctx,

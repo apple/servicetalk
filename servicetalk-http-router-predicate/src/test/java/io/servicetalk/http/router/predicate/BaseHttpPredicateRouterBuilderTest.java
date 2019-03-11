@@ -45,7 +45,6 @@ import java.util.Spliterator;
 
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Executors.immediate;
-import static io.servicetalk.concurrent.api.Publisher.empty;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static java.util.Arrays.asList;
 import static org.mockito.ArgumentMatchers.any;
@@ -87,7 +86,6 @@ public abstract class BaseHttpPredicateRouterBuilderTest {
         when(executionCtx.executor()).thenReturn(immediate());
         when(request.version()).thenReturn(HTTP_1_1);
         when(request.headers()).thenReturn(headers);
-        when(request.payloadBody()).thenReturn(empty());
         when(factory.newResponse(any(HttpResponseStatus.class))).thenAnswer((Answer<StreamingHttpResponse>) invocation -> {
             HttpResponseStatus status = invocation.getArgument(0);
             return reqRespFactory.newResponse(status);

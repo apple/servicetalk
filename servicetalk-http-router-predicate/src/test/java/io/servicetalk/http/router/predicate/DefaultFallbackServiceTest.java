@@ -35,8 +35,9 @@ import org.mockito.junit.MockitoJUnit;
 import org.mockito.junit.MockitoRule;
 
 import static io.servicetalk.concurrent.api.Executors.immediate;
-import static io.servicetalk.concurrent.api.Publisher.empty;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
+import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
+import static io.servicetalk.http.api.HttpHeaderValues.TEXT_PLAIN;
 import static io.servicetalk.http.api.HttpHeaderValues.ZERO;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpResponseStatus.NOT_FOUND;
@@ -61,7 +62,6 @@ public class DefaultFallbackServiceTest {
     @Before
     public void setUp() {
         when(request.version()).thenReturn(HTTP_1_1);
-        when(request.payloadBody()).thenReturn(empty());
         when(ctx.executionContext()).thenReturn(executionCtx);
         when(executionCtx.executor()).thenReturn(immediate());
     }
@@ -77,5 +77,6 @@ public class DefaultFallbackServiceTest {
         assertEquals(HTTP_1_1, response.version());
         assertEquals(NOT_FOUND, response.status());
         assertEquals(ZERO, response.headers().get(CONTENT_LENGTH));
+        assertEquals(TEXT_PLAIN, response.headers().get(CONTENT_TYPE));
     }
 }
