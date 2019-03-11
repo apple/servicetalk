@@ -36,7 +36,8 @@ public interface CompositeBuffer extends Buffer {
      * Add the given {@link Buffer} to this buffer.
      *
      * @param buffer the buffer to add.
-     * @param incrementWriterIndex if {@code true} the writerIndex will be increment by the number of readableBytes of the given buffer.
+     * @param incrementWriterIndex if {@code true} the writerIndex will be increment by the number of readableBytes of
+     * the given buffer.
      * @return self.
      */
     CompositeBuffer addBuffer(Buffer buffer, boolean incrementWriterIndex);

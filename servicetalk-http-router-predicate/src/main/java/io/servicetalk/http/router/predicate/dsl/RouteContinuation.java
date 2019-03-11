@@ -137,7 +137,8 @@ public interface RouteContinuation {
     RouteContinuation andIsNotSsl();
 
     /**
-     * Extends the current route such that it matches {@link StreamingHttpRequest}s with a user-specified {@code predicate}.
+     * Extends the current route such that it matches {@link StreamingHttpRequest}s with a user-specified
+     * {@code predicate}.
      *
      * @param predicate the predicate to evaluate against requests.
      * @return {@link RouteContinuation} for the next steps of building a route.
@@ -187,8 +188,9 @@ public interface RouteContinuation {
     }
 
     /**
-     * Completes the route by specifying the {@link BlockingStreamingHttpService} to route requests to that match the previously
-     * specified criteria. Each call to {@code thenRouteTo} resets the criteria, prior to building the next route.
+     * Completes the route by specifying the {@link BlockingStreamingHttpService} to route requests to that match the
+     * previously specified criteria. Each call to {@code thenRouteTo} resets the criteria, prior to building the next
+     * route.
      *
      * @param handler the {@link BlockingStreamingHttpRequestHandler} to route requests to.
      * @return {@link RouteStarter} for building another route.

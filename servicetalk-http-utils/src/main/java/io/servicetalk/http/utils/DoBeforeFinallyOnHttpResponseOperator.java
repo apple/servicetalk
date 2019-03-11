@@ -39,10 +39,10 @@ import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 /**
  * Helper operator for signaling the end of an HTTP Request/Response cycle.
  *
- * <p>{@link StreamingHttpRequest} and {@link StreamingHttpResponse} are nested sources ({@link SingleSource} of meta-data
- * containing a payload {@link Publisher}), which makes it non-trivial to get a single signal at the end of this
- * Request/Response cycle. One needs to consider and coordinate between the multitude of outcomes: cancel/success/error
- * across both sources.</p>
+ * <p>{@link StreamingHttpRequest} and {@link StreamingHttpResponse} are nested sources ({@link SingleSource} of
+ * meta-data containing a payload {@link Publisher}), which makes it non-trivial to get a single signal at the end of
+ * this Request/Response cycle. One needs to consider and coordinate between the multitude of outcomes:
+ * cancel/success/error, across both sources.</p>
  * <p>This operator ensures that the provided callback is triggered just once whenever the sources reach a terminal
  * state across both sources.</p>
  *

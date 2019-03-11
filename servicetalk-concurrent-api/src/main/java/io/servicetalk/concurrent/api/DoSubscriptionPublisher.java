@@ -48,7 +48,8 @@ final class DoSubscriptionPublisher<T> extends AbstractSynchronousPublisherOpera
         @Override
         public void onSubscribe(Subscription s) {
             Subscription subscription = parent.subscriptionSupplier.get();
-            original.onSubscribe(parent.before ? new BeforeSubscription(subscription, s) : new BeforeSubscription(s, subscription));
+            original.onSubscribe(parent.before ? new BeforeSubscription(subscription, s) :
+                    new BeforeSubscription(s, subscription));
         }
 
         @Override

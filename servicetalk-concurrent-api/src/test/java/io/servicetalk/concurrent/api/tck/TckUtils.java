@@ -46,7 +46,8 @@ final class TckUtils {
     }
 
     static int requestNToInt(long n) {
-        assert n <= Integer.MAX_VALUE : "Must be <= Integer.MAX_VALUE as we enforced this via maxElementsFromPublisher()";
+        assert n <= Integer.MAX_VALUE :
+                "Must be <= Integer.MAX_VALUE as we enforced this via maxElementsFromPublisher()";
         return (int) n;
     }
 

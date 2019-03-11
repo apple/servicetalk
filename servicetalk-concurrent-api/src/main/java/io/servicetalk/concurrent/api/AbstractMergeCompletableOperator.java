@@ -16,7 +16,6 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
-import io.servicetalk.concurrent.CompletableSource.Subscriber;
 import io.servicetalk.concurrent.internal.SignalOffloader;
 
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
@@ -57,7 +56,7 @@ abstract class AbstractMergeCompletableOperator extends AbstractNoHandleSubscrib
         // and restore the AsyncContext before/after the asynchronous boundary.
         final Subscriber upstreamSubscriber = signalOffloader.offloadCancellable(
                 contextProvider.wrapCancellable(mergeSubscriber, contextMap));
-        original.subscribeWithOffloaderAndContext(upstreamSubscriber, signalOffloader, contextMap, contextProvider);
+        original.delegateSubscribe(upstreamSubscriber, signalOffloader, contextMap, contextProvider);
         doMerge(mergeSubscriber);
     }
 

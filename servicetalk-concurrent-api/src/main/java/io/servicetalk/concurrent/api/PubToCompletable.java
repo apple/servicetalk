@@ -15,7 +15,6 @@
  */
 package io.servicetalk.concurrent.api;
 
-import io.servicetalk.concurrent.CompletableSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.internal.ConcurrentSubscription;
@@ -52,7 +51,7 @@ final class PubToCompletable<T> extends AbstractNoHandleSubscribeCompletable {
         // Since this is converting a Publisher to a Completable, we should try to use the same SignalOffloader for
         // subscribing to the original Publisher to avoid thread hop. Since, it is the same source, just viewed as a
         // Completable, there is no additional risk of deadlock.
-        source.subscribeWithOffloaderAndContext(offloadedSubscription, signalOffloader, contextMap, contextProvider);
+        source.delegateSubscribe(offloadedSubscription, signalOffloader, contextMap, contextProvider);
     }
 
     private static final class PubToCompletableSubscriber<T> implements PublisherSource.Subscriber<T> {

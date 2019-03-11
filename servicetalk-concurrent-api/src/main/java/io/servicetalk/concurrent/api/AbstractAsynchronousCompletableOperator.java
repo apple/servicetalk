@@ -15,7 +15,6 @@
  */
 package io.servicetalk.concurrent.api;
 
-import io.servicetalk.concurrent.CompletableSource.Subscriber;
 import io.servicetalk.concurrent.internal.SignalOffloader;
 
 import static java.util.Objects.requireNonNull;
@@ -59,6 +58,6 @@ abstract class AbstractAsynchronousCompletableOperator extends AbstractNoHandleS
         // and restore the AsyncContext before/after the asynchronous boundary.
         final Subscriber upstreamSubscriber = signalOffloader.offloadCancellable(
                 contextProvider.wrapCancellable(apply(operatorSubscriber), contextMap));
-        original.subscribeWithOffloaderAndContext(upstreamSubscriber, signalOffloader, contextMap, contextProvider);
+        original.delegateSubscribe(upstreamSubscriber, signalOffloader, contextMap, contextProvider);
     }
 }

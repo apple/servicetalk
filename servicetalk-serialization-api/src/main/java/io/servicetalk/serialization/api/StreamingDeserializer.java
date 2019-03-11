@@ -113,7 +113,8 @@ public interface StreamingDeserializer<T> extends AutoCloseable {
      * this method should throw an {@link SerializationException} to indicate that there is more data that is going to
      * be disposed.
      *
-     * @throws SerializationException If there is some over data left but not consumed as returned by {@link #hasData()}.
+     * @throws SerializationException If there is some over data left but not consumed as returned by
+     * {@link #hasData()}.
      */
     @Override
     void close();

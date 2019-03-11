@@ -387,8 +387,8 @@ class NettyBuffer<T extends ByteBuf> implements Buffer {
                 break;
             }
             i += result;
-            // The setBytes method does not update any indexes on the buffer. So with each successive call we must ensure
-            // there is enough space to accommodate more data.
+            // The setBytes method does not update any indexes on the buffer. So with each successive call we must
+            // ensure there is enough space to accommodate more data.
             writableBytes += chunkSize;
         }
         return i - index;

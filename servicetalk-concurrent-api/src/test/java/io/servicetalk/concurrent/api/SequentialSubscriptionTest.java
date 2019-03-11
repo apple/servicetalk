@@ -151,7 +151,8 @@ public final class SequentialSubscriptionTest {
     private void testConcurrentRequestEmitAndSwitch(int totalItems, int switchEvery) throws Exception {
         final AtomicReference<RuntimeException> errorFromSubscription = new AtomicReference<>();
         final AtomicLong requestedReceived = new AtomicLong();
-        SequentialSubscription subscription = new SequentialSubscription(newMockSubscription(requestedReceived, errorFromSubscription));
+        SequentialSubscription subscription = new SequentialSubscription(newMockSubscription(requestedReceived,
+                errorFromSubscription));
         final CyclicBarrier allStarted = new CyclicBarrier(3);
         final AtomicInteger requested = new AtomicInteger();
         final AtomicInteger sent = new AtomicInteger();
@@ -203,7 +204,8 @@ public final class SequentialSubscriptionTest {
         assertThat("Unexpected sent count.", sent.get(), equalTo(totalItems));
     }
 
-    private static Subscription newMockSubscription(AtomicLong requestedReceived, AtomicReference<RuntimeException> errorFromSubscription) {
+    private static Subscription newMockSubscription(AtomicLong requestedReceived,
+                                                    AtomicReference<RuntimeException> errorFromSubscription) {
         return new Subscription() {
             @Override
             public void request(long n) {

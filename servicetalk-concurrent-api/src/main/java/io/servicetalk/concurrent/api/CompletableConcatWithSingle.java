@@ -61,7 +61,7 @@ final class CompletableConcatWithSingle<T> extends AbstractNoHandleSubscribeSing
         // In order to cover for this case ((2) above) we always offload the passed Subscriber here.
         Subscriber<? super T> offloadSubscriber = offloader.offloadSubscriber(
                 contextProvider.wrap(subscriber, contextMap));
-        original.subscribeWithOffloaderAndContext(new ConcatWithSubscriber<>(offloadSubscriber, next), offloader,
+        original.delegateSubscribe(new ConcatWithSubscriber<>(offloadSubscriber, next), offloader,
                 contextMap, contextProvider);
     }
 

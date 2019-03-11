@@ -24,7 +24,8 @@ import java.util.function.Function;
  *
  * @param <T> Type of items received by the {@code Subscriber}.
  */
-public final class DemandCheckingSubscriberFunction<T> implements Function<Subscriber<? super T>, Subscriber<? super T>> {
+public final class DemandCheckingSubscriberFunction<T>
+        implements Function<Subscriber<? super T>, Subscriber<? super T>> {
 
     @Override
     public Subscriber<? super T> apply(final Subscriber<? super T> subscriber) {

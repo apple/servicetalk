@@ -45,9 +45,11 @@ import static java.util.Objects.requireNonNull;
  * <li>Multi value lookup - some use cases require multi value associative array like storage</li>
  * <li>Consistent iteration for a given key - the iteration order for a multi value lookup {@link #getValues(Object)}
  * should reflect the insertion order for each key</li>
- * <li>Avoid copy/resize operations - headers can be created frequently and cause GC pressure, so we should try to minimize intermediate GC.</li>
+ * <li>Avoid copy/resize operations - headers can be created frequently and cause GC pressure, so we should try to
+ * minimize intermediate GC.</li>
  * </ul>
- * These requirements make using a Map&lt;K, List&lt;V&gt;&gt; structure prohibitive due to extra allocation and resize operations.
+ * These requirements make using a Map&lt;K, List&lt;V&gt;&gt; structure prohibitive due to extra allocation and resize
+ * operations.
  *
  * @param <K> The type of key.
  * @param <V> The type of value.
@@ -100,10 +102,12 @@ abstract class MultiMap<K, V> {
     protected abstract boolean equals(K key1, K key2);
 
     /**
-     * Determine if the {@link #hashCode(Object)} and {@link #equals(Object, Object)} strategy are compatible with {@code multiMap}.
+     * Determine if the {@link #hashCode(Object)} and {@link #equals(Object, Object)} strategy are compatible with
+     * {@code multiMap}.
      *
      * @param multiMap the {@link MultiMap} to compare.
-     * @return {@code true} if the {@link #hashCode(Object)} and {@link #equals(Object, Object)} strategy are compatible with {@code multiMap}.
+     * @return {@code true} if the {@link #hashCode(Object)} and {@link #equals(Object, Object)} strategy are compatible
+     * with {@code multiMap}.
      */
     protected abstract boolean isKeyEqualityCompatible(MultiMap<? extends K, ? extends V> multiMap);
 
@@ -404,8 +408,8 @@ abstract class MultiMap<K, V> {
                     bucketHead.nextBucketHead.prevBucketHead = bucketHead.prevBucketHead;
                 }
             } else {
-                // The next entry will now be the bucket head. We need to point it's bucketLastOrPrevious to the last entry,
-                // and remove its next links.
+                // The next entry will now be the bucket head. We need to point it's bucketLastOrPrevious to the last
+                // entry, and remove its next links.
                 bucketHead.entry.bucketNext.bucketLastOrPrevious = bucketHead.entry.bucketLastOrPrevious;
                 bucketHead.entry = bucketHead.entry.bucketNext;
             }
@@ -476,7 +480,8 @@ abstract class MultiMap<K, V> {
         return true;
     }
 
-    private BucketHead<K, V> putEntry(@Nullable BucketHead<K, V> bucketHead, final int keyHash, final int bucketIndex, final K key, final V value) {
+    private BucketHead<K, V> putEntry(@Nullable BucketHead<K, V> bucketHead, final int keyHash, final int bucketIndex,
+                                      final K key, final V value) {
         final MultiMapEntry<K, V> newEntry = newEntry(key, value, keyHash);
         if (bucketHead == null) {
             bucketHead = new BucketHead<>(lastBucketHead, newEntry);

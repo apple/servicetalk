@@ -47,11 +47,12 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
  * <p>
  * A {@link RedisConnection} is considered idle only if:
  * <ul>
- * <li>It has no active request. Consequently, subscribed connections are not considered idle because {@code SUBSCRIBE} requests don't complete.</li>
+ * <li>It has no active request. Consequently, subscribed connections are not considered idle because {@code SUBSCRIBE}
+ * requests don't complete.</li>
  * <li>No request has started or finished within the provided timeout.</li>
  * </ul>
- * Note that the timeouts are enforced on a best effort basis, i.e. if the {@link IoExecutor} used to schedule checks is overwhelmed,
- * the interval between checks may increase.
+ * Note that the timeouts are enforced on a best effort basis, i.e. if the {@link IoExecutor} used to schedule checks is
+ * overwhelmed, the interval between checks may increase.
  */
 final class RedisIdleConnectionReaper implements UnaryOperator<RedisConnection> {
     private static final Logger LOGGER = LoggerFactory.getLogger(RedisIdleConnectionReaper.class);
@@ -66,7 +67,8 @@ final class RedisIdleConnectionReaper implements UnaryOperator<RedisConnection> 
      */
     RedisIdleConnectionReaper(final Duration idleTimeout) {
         if (idleTimeout.compareTo(MINIMUM_IDLE_TIMEOUT) < 0) {
-            throw new IllegalArgumentException("idleTimeout: " + idleTimeout + " (expected >=" + MINIMUM_IDLE_TIMEOUT + ')');
+            throw new IllegalArgumentException("idleTimeout: " + idleTimeout + " (expected >=" +
+                    MINIMUM_IDLE_TIMEOUT + ')');
         }
         idleTimeoutNanos = idleTimeout.toNanos();
 

@@ -24,7 +24,8 @@ import static io.servicetalk.redis.api.RedisConnection.SettingKey.MAX_CONCURRENC
 import static io.servicetalk.redis.netty.DefaultRedisConnectionBuilder.buildForPipelined;
 import static java.util.Objects.requireNonNull;
 
-final class PipelinedLBRedisConnectionFactory<ResolvedAddress> extends AbstractLBRedisConnectionFactory<ResolvedAddress> {
+final class PipelinedLBRedisConnectionFactory<ResolvedAddress>
+        extends AbstractLBRedisConnectionFactory<ResolvedAddress> {
     private final ReadOnlyRedisClientConfig config;
     private final ExecutionContext executionContext;
 

@@ -20,7 +20,8 @@ import io.servicetalk.transport.netty.internal.NettyConnection.RequestNSupplier;
 import static io.servicetalk.transport.netty.internal.OverlappingCapacityAwareSupplier.SizeEstimator.defaultEstimator;
 
 /**
- * An implementation of {@link RequestNSupplier} that considers maximum size recorded via {@link #recordSize(Object, long)} in a sliding window
+ * An implementation of {@link RequestNSupplier} that considers maximum size recorded via
+ * {@link #recordSize(Object, long)} in a sliding window
  * to calculate the number of items required to fill a given write buffer capacity.
  */
 final class MaxSizeBasedRequestNSupplier extends OverlappingCapacityAwareSupplier {
@@ -82,7 +83,8 @@ final class MaxSizeBasedRequestNSupplier extends OverlappingCapacityAwareSupplie
         currentMaxSizeIndex = 0;
         int i = 1; // if currentMaxSizeIndex is reset to 0, then this can start at 1
         for (; i < ringBufferIndex; ++i) {
-            // Any size before and closest to ringBufferIndex will be overwritten last hence look for greater or equal max size now.
+            // Any size before and closest to ringBufferIndex will be overwritten last hence look for greater or equal
+            // max size now.
             if (sizesRingBuffer[i] >= sizesRingBuffer[currentMaxSizeIndex]) {
                 currentMaxSizeIndex = i;
             }

@@ -289,16 +289,16 @@ public class HttpServiceAsyncContextTest {
     }
 
     @Test
-    public void connectionContextFilterContextDoesNotLeakImmediate() throws Exception {
-        connectionContextFilterContextDoesNotLeak(true);
+    public void connectionAcceptorContextDoesNotLeakImmediate() throws Exception {
+        connectionAcceptorContextDoesNotLeak(true);
     }
 
     @Test
-    public void connectionContextFilterContextDoesNotLeakOffload() throws Exception {
-        connectionContextFilterContextDoesNotLeak(false);
+    public void connectionAcceptorContextDoesNotLeakOffload() throws Exception {
+        connectionAcceptorContextDoesNotLeak(false);
     }
 
-    private void connectionContextFilterContextDoesNotLeak(boolean serverUseImmediate) throws Exception {
+    private void connectionAcceptorContextDoesNotLeak(boolean serverUseImmediate) throws Exception {
         StreamingHttpService service = newEmptyAsyncContextService(serverUseImmediate);
         CompositeCloseable compositeCloseable = AsyncCloseables.newCompositeCloseable();
         ServerContext ctx = compositeCloseable.append(HttpServers.forAddress(localAddress(0))
@@ -337,8 +337,8 @@ public class HttpServiceAsyncContextTest {
         }
     }
 
-    private static StreamingHttpService newEmptyAsyncContextService(final boolean useImmediate) {
-        HttpExecutionStrategy strategy = useImmediate ? noOffloadsStrategy() : defaultStrategy();
+    private static StreamingHttpService newEmptyAsyncContextService(final boolean noOffloads) {
+        HttpExecutionStrategy strategy = noOffloads ? noOffloadsStrategy() : defaultStrategy();
         return new StreamingHttpService() {
             @Override
             public Single<StreamingHttpResponse> handle(

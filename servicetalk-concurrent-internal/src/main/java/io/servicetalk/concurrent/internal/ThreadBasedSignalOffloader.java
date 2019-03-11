@@ -134,7 +134,7 @@ final class ThreadBasedSignalOffloader implements SignalOffloader, Runnable {
     }
 
     @Override
-    public <T> void offloadSubscribe(Subscriber<T> subscriber, Consumer<Subscriber<T>> handleSubscribe) {
+    public <T> void offloadSubscribe(Subscriber<? super T> subscriber, Consumer<Subscriber<? super T>> handleSubscribe) {
         try {
             addOffloadedEntity(new OffloadedSignalEntity<>(handleSubscribe, subscriber), true);
         } catch (EnqueueForOffloadingFailed e) {
@@ -146,8 +146,8 @@ final class ThreadBasedSignalOffloader implements SignalOffloader, Runnable {
     }
 
     @Override
-    public <T> void offloadSubscribe(SingleSource.Subscriber<T> subscriber,
-                                     Consumer<SingleSource.Subscriber<T>> handleSubscribe) {
+    public <T> void offloadSubscribe(SingleSource.Subscriber<? super T> subscriber,
+                                     Consumer<SingleSource.Subscriber<? super T>> handleSubscribe) {
         try {
             addOffloadedEntity(new OffloadedSignalEntity<>(handleSubscribe, subscriber), true);
         } catch (EnqueueForOffloadingFailed e) {
@@ -159,7 +159,8 @@ final class ThreadBasedSignalOffloader implements SignalOffloader, Runnable {
     }
 
     @Override
-    public void offloadSubscribe(CompletableSource.Subscriber subscriber, Consumer<CompletableSource.Subscriber> handleSubscribe) {
+    public void offloadSubscribe(CompletableSource.Subscriber subscriber,
+                                 Consumer<CompletableSource.Subscriber> handleSubscribe) {
         try {
             addOffloadedEntity(new OffloadedSignalEntity<>(handleSubscribe, subscriber), true);
         } catch (EnqueueForOffloadingFailed e) {
@@ -941,7 +942,8 @@ final class ThreadBasedSignalOffloader implements SignalOffloader, Runnable {
 
         private final SingleSource.Subscriber<? super T> original;
 
-        private OffloadedSingleCancellable(ThreadBasedSignalOffloader offloader, SingleSource.Subscriber<? super T> original) {
+        private OffloadedSingleCancellable(ThreadBasedSignalOffloader offloader,
+                                           SingleSource.Subscriber<? super T> original) {
             super(offloader);
             this.original = original;
         }

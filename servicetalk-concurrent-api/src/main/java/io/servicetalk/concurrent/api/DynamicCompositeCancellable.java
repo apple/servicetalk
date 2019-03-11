@@ -40,7 +40,8 @@ interface DynamicCompositeCancellable extends Cancellable {
     boolean add(Cancellable toAdd);
 
     /**
-     * Remove a {@link Cancellable} such that it will no longer be cancelled when this object's {@link #cancel()} method is called.
+     * Remove a {@link Cancellable} such that it will no longer be cancelled when this object's {@link #cancel()} method
+     * is called.
      * <p>
      * If this collection doesn't filter out duplicates in {@link #add(Cancellable)}, and duplicates maybe added,
      * this method should be called until it returns {@code false} to remove each duplicate instance.

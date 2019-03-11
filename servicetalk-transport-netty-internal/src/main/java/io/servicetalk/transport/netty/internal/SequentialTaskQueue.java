@@ -22,8 +22,9 @@ import static io.servicetalk.concurrent.internal.PlatformDependent.newMpscQueue;
 import static io.servicetalk.concurrent.internal.PlatformDependent.newUnboundedMpscQueue;
 
 /**
- * A task queue that executes <em>asynchronous</em> tasks sequentially. Since the tasks executed by this queue are potentially
- * asynchronous, it is required for the tasks to call {@link #postTaskTermination()} after they are done either successfully or with a failure.
+ * A task queue that executes <em>asynchronous</em> tasks sequentially. Since the tasks executed by this queue are
+ * potentially asynchronous, it is required for the tasks to call {@link #postTaskTermination()} after they are done
+ * either successfully or with a failure.
  *
  * @param <T> Type of tasks executed by this queue.
  */
@@ -72,7 +73,8 @@ public abstract class SequentialTaskQueue<T> {
     }
 
     /**
-     * Callback to inform this queue that one of the task executed by this queue has terminated either successfully or with a failure.
+     * Callback to inform this queue that one of the task executed by this queue has terminated either successfully or
+     * with a failure.
      */
     public final void postTaskTermination() {
         if (lockUpdater.compareAndSet(this, 1, 0)) {
@@ -85,7 +87,8 @@ public abstract class SequentialTaskQueue<T> {
     }
 
     /**
-     * Executes the passed task and call {@link #postTaskTermination()} when the task has finished execution, synchronously or asynchronously.
+     * Executes the passed task and call {@link #postTaskTermination()} when the task has finished execution,
+     * synchronously or asynchronously.
      *
      * @param toExecute Task to execute.
      */

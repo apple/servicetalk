@@ -24,7 +24,8 @@ import org.testng.annotations.Test;
  * Abstract base class for testing operators provided by {@link Single} for compliance with the
  * <a href="https://github.com/reactive-streams/reactive-streams-jvm/tree/v1.0.1/tck">Reactive Streams TCK</a>.
  * <p>
- * If you need the flexibility to create the {@link Single} by yourself you may need to extend {@link AbstractSingleTckTest} directly.
+ * If you need the flexibility to create the {@link Single} by yourself you may need to extend
+ * {@link AbstractSingleTckTest} directly.
  */
 @Test
 public abstract class AbstractSingleOperatorTckTest<T> extends AbstractSingleTckTest<T> {

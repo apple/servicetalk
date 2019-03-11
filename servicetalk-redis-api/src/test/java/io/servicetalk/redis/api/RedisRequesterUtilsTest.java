@@ -123,7 +123,8 @@ public class RedisRequesterUtilsTest {
     }
 
     private void testToListForCompleteBulkStrings(final Object expectedObject, final CharSequence chunk,
-                                                  final boolean coerceBuffersToCharSequences, final boolean resizableBuffer) {
+                                                  final boolean coerceBuffersToCharSequences,
+                                                  final boolean resizableBuffer) {
 
         ToListSingle<List<Object>> aggregator = new ToListSingle<>(noOffloadsStrategy(), requester, request,
                 coerceBuffersToCharSequences);
@@ -149,7 +150,8 @@ public class RedisRequesterUtilsTest {
             @FromDataPoints("COERCE_BUFFERS_TO_CHAR_SEQUENCES_VALUES") final boolean coerceBuffersToCharSequences,
             @FromDataPoints("RESIZABLE_BUFFER_VALUES") final boolean resizableBuffer) {
 
-        testToListForChunkedBulkStrings(singletonList(singletonList("last-chunk")), coerceBuffersToCharSequences, resizableBuffer);
+        testToListForChunkedBulkStrings(singletonList(singletonList("last-chunk")), coerceBuffersToCharSequences,
+                resizableBuffer);
     }
 
     @Theory
@@ -175,12 +177,14 @@ public class RedisRequesterUtilsTest {
             @FromDataPoints("COERCE_BUFFERS_TO_CHAR_SEQUENCES_VALUES") final boolean coerceBuffersToCharSequences,
             @FromDataPoints("RESIZABLE_BUFFER_VALUES") final boolean resizableBuffer) {
 
-        final List<List<? extends CharSequence>> chunkedItems = asList(asList("1-chunk|", "1-last"), asList("2-chunk|", "2-last"));
+        final List<List<? extends CharSequence>> chunkedItems = asList(asList("1-chunk|", "1-last"),
+                asList("2-chunk|", "2-last"));
         testToListForChunkedBulkStrings(chunkedItems, coerceBuffersToCharSequences, resizableBuffer);
     }
 
     private void testToListForChunkedBulkStrings(final List<List<? extends CharSequence>> chunkedItems,
-                                                 final boolean coerceBuffersToCharSequences, final boolean resizableBuffer) {
+                                                 final boolean coerceBuffersToCharSequences,
+                                                 final boolean resizableBuffer) {
 
         final List<Object> expectedResult = new ArrayList<>(chunkedItems.size());
 

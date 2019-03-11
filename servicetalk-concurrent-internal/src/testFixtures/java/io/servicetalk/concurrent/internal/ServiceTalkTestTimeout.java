@@ -50,6 +50,7 @@ import static java.util.Objects.requireNonNull;
  */
 public final class ServiceTalkTestTimeout extends Timeout {
     public static final int DEFAULT_TIMEOUT_SECONDS = parseBoolean(System.getenv("CI")) ? 90 : 10;
+    public static final String THREAD_PREFIX = "Time-limited test";
     private final Runnable onTimeout;
 
     public ServiceTalkTestTimeout() {
@@ -116,7 +117,7 @@ public final class ServiceTalkTestTimeout extends Timeout {
         public void evaluate() throws Throwable {
             CallableStatement callable = new CallableStatement();
             FutureTask<Throwable> task = new FutureTask<>(callable);
-            Thread thread = new Thread(task, "Time-limited test");
+            Thread thread = new Thread(task, THREAD_PREFIX);
             thread.setDaemon(true);
             thread.start();
             callable.awaitStarted();
@@ -194,7 +195,8 @@ public final class ServiceTalkTestTimeout extends Timeout {
                     sb.append(" on ").append(info.getLockName());
                 }
                 if (info.getLockOwnerName() != null) {
-                    sb.append(" owned by \"").append(info.getLockOwnerName()).append("\" #").append(info.getLockOwnerId());
+                    sb.append(" owned by \"").append(info.getLockOwnerName()).append("\" #")
+                            .append(info.getLockOwnerId());
                 }
                 if (info.isSuspended()) {
                     sb.append(" (suspended)");

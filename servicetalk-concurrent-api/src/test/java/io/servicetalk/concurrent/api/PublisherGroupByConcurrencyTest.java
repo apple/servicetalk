@@ -131,7 +131,8 @@ public final class PublisherGroupByConcurrencyTest {
         return source;
     }
 
-    private Task drainGroupSubscribers(Queue<GroupSubscriber> subscribers, Predicate<GroupSubscriber> shouldRemoveSubscriber) {
+    private Task drainGroupSubscribers(Queue<GroupSubscriber> subscribers,
+                                       Predicate<GroupSubscriber> shouldRemoveSubscriber) {
         return runThis(() -> {
 
             for (;;) {

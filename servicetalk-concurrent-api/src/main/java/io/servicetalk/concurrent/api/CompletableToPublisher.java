@@ -89,8 +89,7 @@ final class CompletableToPublisher<T> extends AbstractNoHandleSubscribePublisher
                     // parent is a Completable but we always drive the Cancellable from this Subscription.
                     // So, even though we are using the subscribe method that does not offload Cancellable, we do not
                     // need to explicitly add the offload here.
-                    parent.original.subscribeWithOffloaderAndContext(this, signalOffloader, contextMap,
-                            contextProvider);
+                    parent.original.delegateSubscribe(this, signalOffloader, contextMap, contextProvider);
                 } else {
                     subscriber.onError(newExceptionForInvalidRequestN(n));
                 }

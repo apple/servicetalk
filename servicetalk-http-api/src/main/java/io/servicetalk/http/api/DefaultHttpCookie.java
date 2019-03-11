@@ -60,7 +60,8 @@ final class DefaultHttpCookie implements HttpCookie {
 
     DefaultHttpCookie(final CharSequence name, final CharSequence value, @Nullable final CharSequence path,
                       @Nullable final CharSequence domain, @Nullable final CharSequence expires,
-                      @Nullable final Long maxAge, final boolean wrapped, final boolean secure, final boolean httpOnly) {
+                      @Nullable final Long maxAge, final boolean wrapped, final boolean secure,
+                      final boolean httpOnly) {
         this.name = requireNonNull(name);
         this.value = requireNonNull(value);
         this.path = path;

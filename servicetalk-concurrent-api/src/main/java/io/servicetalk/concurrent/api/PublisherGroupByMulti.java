@@ -30,15 +30,15 @@ final class PublisherGroupByMulti<Key, T> extends AbstractPublisherGroupBy<Key, 
     private final Function<? super T, ? extends Iterator<? extends Key>> keySelector;
     private final Executor executor;
 
-    PublisherGroupByMulti(Publisher<T> original, Function<? super T, ? extends Iterator<? extends Key>> keySelector, int groupQueueSize,
-                          Executor executor) {
+    PublisherGroupByMulti(Publisher<T> original, Function<? super T, ? extends Iterator<? extends Key>> keySelector,
+                          int groupQueueSize, Executor executor) {
         super(original, groupQueueSize, executor);
         this.keySelector = requireNonNull(keySelector);
         this.executor = executor;
     }
 
-    PublisherGroupByMulti(Publisher<T> original, Function<? super T, ? extends Iterator<? extends Key>> keySelector, int groupQueueSize,
-                          int expectedGroupCountHint, Executor executor) {
+    PublisherGroupByMulti(Publisher<T> original, Function<? super T, ? extends Iterator<? extends Key>> keySelector,
+                          int groupQueueSize, int expectedGroupCountHint, Executor executor) {
         super(original, groupQueueSize, expectedGroupCountHint, executor);
         this.keySelector = requireNonNull(keySelector);
         this.executor = executor;

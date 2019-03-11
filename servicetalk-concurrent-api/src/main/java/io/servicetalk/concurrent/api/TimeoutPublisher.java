@@ -85,8 +85,9 @@ final class TimeoutPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
     @Override
     void handleSubscribe(Subscriber<? super T> subscriber, SignalOffloader signalOffloader,
                          AsyncContextMap contextMap, AsyncContextProvider contextProvider) {
-        original.subscribeWithOffloaderAndContext(TimeoutSubscriber.newInstance(this, subscriber, signalOffloader,
-                contextMap, contextProvider), signalOffloader, contextMap, contextProvider);
+        original.delegateSubscribe(
+                TimeoutSubscriber.newInstance(this, subscriber, signalOffloader, contextMap, contextProvider),
+                signalOffloader, contextMap, contextProvider);
     }
 
     private static final class TimeoutSubscriber<X> implements Subscriber<X>, Subscription, Runnable {

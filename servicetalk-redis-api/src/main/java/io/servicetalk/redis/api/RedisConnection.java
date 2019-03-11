@@ -33,8 +33,8 @@ public abstract class RedisConnection extends RedisRequester {
     public abstract ConnectionContext connectionContext();
 
     /**
-     * Returns a {@link Publisher} that gives the current value of the setting as well as subsequent changes to the setting
-     * value as long as the {@link Subscriber} has expressed enough demand.
+     * Returns a {@link Publisher} that gives the current value of the setting as well as subsequent changes to the
+     * setting value as long as the {@link Subscriber} has expressed enough demand.
      *
      * @param settingKey Name of the setting to fetch.
      * @param <T> Type of the setting value.

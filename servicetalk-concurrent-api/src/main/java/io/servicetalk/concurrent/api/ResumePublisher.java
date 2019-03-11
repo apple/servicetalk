@@ -42,8 +42,9 @@ final class ResumePublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
     @Override
     void handleSubscribe(final Subscriber<? super T> subscriber, final SignalOffloader signalOffloader,
                          final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
-        original.subscribeWithOffloaderAndContext(new ResumeSubscriber<>(subscriber, nextFactory, signalOffloader,
-                        contextMap, contextProvider), signalOffloader, contextMap, contextProvider);
+        original.delegateSubscribe(
+                new ResumeSubscriber<>(subscriber, nextFactory, signalOffloader, contextMap, contextProvider),
+                signalOffloader, contextMap, contextProvider);
     }
 
     private static final class ResumeSubscriber<T> implements Subscriber<T> {

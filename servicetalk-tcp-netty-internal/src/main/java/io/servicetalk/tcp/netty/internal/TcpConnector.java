@@ -88,8 +88,8 @@ public final class TcpConnector {
         subscriber.onSubscribe(cancellable);
 
         try {
-            // Create the handler here and ensure in connectWithBootstrap / initFileDescriptorBasedChannel it is added to
-            // the ChannelPipeline after registration is complete as otherwise we may miss channelActive events.
+            // Create the handler here and ensure in connectWithBootstrap / initFileDescriptorBasedChannel it is added
+            // to the ChannelPipeline after registration is complete as otherwise we may miss channelActive events.
             ChannelHandler handler = new io.netty.channel.ChannelInitializer<Channel>() {
                 @Override
                 protected void initChannel(Channel channel) {

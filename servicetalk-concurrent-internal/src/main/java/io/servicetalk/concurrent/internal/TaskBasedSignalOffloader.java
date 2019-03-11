@@ -73,7 +73,8 @@ final class TaskBasedSignalOffloader implements SignalOffloader {
     }
 
     @Override
-    public <T> SingleSource.Subscriber<? super T> offloadSubscriber(final SingleSource.Subscriber<? super T> subscriber) {
+    public <T> SingleSource.Subscriber<? super T> offloadSubscriber(
+            final SingleSource.Subscriber<? super T> subscriber) {
         return new OffloadedSingleSubscriber<>(executor, subscriber);
     }
 
@@ -88,7 +89,8 @@ final class TaskBasedSignalOffloader implements SignalOffloader {
     }
 
     @Override
-    public <T> SingleSource.Subscriber<? super T> offloadCancellable(final SingleSource.Subscriber<? super T> subscriber) {
+    public <T> SingleSource.Subscriber<? super T> offloadCancellable(
+            final SingleSource.Subscriber<? super T> subscriber) {
         return new OffloadedCancellableSingleSubscriber<>(subscriber, executor);
     }
 
@@ -98,7 +100,8 @@ final class TaskBasedSignalOffloader implements SignalOffloader {
     }
 
     @Override
-    public <T> void offloadSubscribe(final Subscriber<T> subscriber, final Consumer<Subscriber<T>> handleSubscribe) {
+    public <T> void offloadSubscribe(final Subscriber<? super T> subscriber,
+                                     final Consumer<Subscriber<? super T>> handleSubscribe) {
         try {
             executor.execute(() -> handleSubscribe.accept(subscriber));
         } catch (Throwable throwable) {
@@ -109,8 +112,8 @@ final class TaskBasedSignalOffloader implements SignalOffloader {
     }
 
     @Override
-    public <T> void offloadSubscribe(final SingleSource.Subscriber<T> subscriber,
-                                     final Consumer<SingleSource.Subscriber<T>> handleSubscribe) {
+    public <T> void offloadSubscribe(final SingleSource.Subscriber<? super T> subscriber,
+                                     final Consumer<SingleSource.Subscriber<? super T>> handleSubscribe) {
         try {
             executor.execute(() -> handleSubscribe.accept(subscriber));
         } catch (Throwable throwable) {
@@ -203,7 +206,8 @@ final class TaskBasedSignalOffloader implements SignalOffloader {
                                 executor, target, t);
                         target.cancel();
                     }
-                    throw t;
+                    // We swallow the error here as we are forwarding the actual call and throwing from here will
+                    // interrupt the control flow.
                 }
             }
         }
@@ -719,7 +723,8 @@ final class TaskBasedSignalOffloader implements SignalOffloader {
                 // As a policy, we call the target in the calling thread when the executor is inadequately
                 // provisioned. In the future we could make this configurable.
                 cancellable.cancel();
-                throw t;
+                // We swallow the error here as we are forwarding the actual call and throwing from here will
+                // interrupt the control flow.
             }
         }
     }

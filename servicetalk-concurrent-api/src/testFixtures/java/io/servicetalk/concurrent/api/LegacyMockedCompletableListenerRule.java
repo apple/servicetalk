@@ -122,7 +122,8 @@ public class LegacyMockedCompletableListenerRule implements TestRule {
         return this;
     }
 
-    public LegacyMockedCompletableListenerRule verifySuppressedFailure(Throwable originalCause, Throwable suppressedCause) {
+    public LegacyMockedCompletableListenerRule verifySuppressedFailure(Throwable originalCause,
+                                                                       Throwable suppressedCause) {
         final InOrder verifier = inOrderVerifier();
         ArgumentCaptor<Throwable> throwableCaptor = ArgumentCaptor.forClass(Throwable.class);
         verifier.verify(subscriber).onError(throwableCaptor.capture());
@@ -132,7 +133,8 @@ public class LegacyMockedCompletableListenerRule implements TestRule {
         return this;
     }
 
-    public LegacyMockedCompletableListenerRule verifySuppressedFailure(Class<? extends Throwable> orginalCause, Class<? extends Throwable> suppressedCause) {
+    public LegacyMockedCompletableListenerRule verifySuppressedFailure(Class<? extends Throwable> orginalCause,
+                                                                       Class<? extends Throwable> suppressedCause) {
         final InOrder verifier = inOrderVerifier();
         ArgumentCaptor<Throwable> throwableCaptor = ArgumentCaptor.forClass(Throwable.class);
         verifier.verify(subscriber).onError(throwableCaptor.capture());

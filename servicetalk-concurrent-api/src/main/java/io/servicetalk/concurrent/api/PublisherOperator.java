@@ -21,17 +21,17 @@ import java.util.function.Function;
 
 /**
  * An operator contract for a {@link Publisher}.
- * Logically an operator sits between a {@link Publisher} and a {@link Subscriber} and hence it has two responsibilities:
- *
+ * Logically an operator sits between a {@link Publisher} and a {@link Subscriber} and hence it has two
+ * responsibilities:
  * <ul>
  *     <li>Subscribe to the {@link Publisher} on which this operator is applied.</li>
  *     <li>Accept a {@link Subscriber} that subscribes to this operator.</li>
  * </ul>
  *
- * So, an operator can be defined as a {@link Function} that takes a {@link Subscriber} and returns a {@link Subscriber}.
- * The {@link Subscriber} that is passed to this {@link Function} is the one that has subscribed to this operator.
- * The {@link Subscriber} that is returned by this {@link Function} is the one that should be used to subscribe to the
- * {@link Publisher} on which this operator is applied.
+ * So, an operator can be defined as a {@link Function} that takes a {@link Subscriber} and returns a
+ * {@link Subscriber}. The {@link Subscriber} that is passed to this {@link Function} is the one that has subscribed to
+ * this operator. The {@link Subscriber} that is returned by this {@link Function} is the one that should be used to
+ * subscribe to the {@link Publisher} on which this operator is applied.
  *
  * @param <T> Type of items emitted by the {@link Publisher} this operator is applied.
  * @param <R> Type of items emitted by this operator.

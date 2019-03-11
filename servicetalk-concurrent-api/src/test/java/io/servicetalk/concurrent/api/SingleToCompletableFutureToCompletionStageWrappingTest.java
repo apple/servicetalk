@@ -29,7 +29,7 @@ import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 
-public class ExecutorCompletionStageToCompletableFutureTest {
+public class SingleToCompletableFutureToCompletionStageWrappingTest {
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
 

@@ -43,7 +43,8 @@ final class DefaultRedisRequest implements RedisRequest {
     }
 
     @Override
-    public RedisRequest transformContent(final Function<Publisher<RequestRedisData>, Publisher<RequestRedisData>> transformer) {
+    public RedisRequest transformContent(
+            final Function<Publisher<RequestRedisData>, Publisher<RequestRedisData>> transformer) {
         return new DefaultRedisRequest(command, transformer.apply(content));
     }
 

@@ -223,8 +223,8 @@ public final class SubscriberUtils {
     }
 
     /**
-     * Attempts to increment {@code sourceRequestedUpdater} in order to make it the same as {@code requestNUpdater} while
-     * not exceeding the {@code limit}.
+     * Attempts to increment {@code sourceRequestedUpdater} in order to make it the same as {@code requestNUpdater}
+     * while not exceeding the {@code limit}.
      * @param requestNUpdater The total number which has been requested (typically from
      * {@link Subscription#request(long)}).
      * @param sourceRequestedUpdater The total number which has actually been passed to

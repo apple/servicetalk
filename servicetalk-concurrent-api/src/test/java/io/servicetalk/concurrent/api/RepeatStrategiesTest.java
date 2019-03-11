@@ -74,7 +74,8 @@ public class RepeatStrategiesTest extends RedoStrategiesTest {
     @Test
     public void testExpBackoffWithJitter() throws Exception {
         Duration initialDelay = ofSeconds(1);
-        RepeatStrategy strategy = new RepeatStrategy(repeatWithExponentialBackoffAndJitter(2, initialDelay, timerExecutor));
+        RepeatStrategy strategy = new RepeatStrategy(repeatWithExponentialBackoffAndJitter(2, initialDelay,
+                timerExecutor));
         LegacyMockedCompletableListenerRule signalListener = strategy.invokeAndListen();
         verifyDelayWithJitter(initialDelay.toNanos(), 1);
 
@@ -101,7 +102,8 @@ public class RepeatStrategiesTest extends RedoStrategiesTest {
         testMaxRepeats(actualStrategy, () -> verify(timerExecutor).timer(backoff.toNanos(), NANOSECONDS));
     }
 
-    private void testMaxRepeats(IntFunction<Completable> actualStrategy, Runnable verifyTimerProvider) throws Exception {
+    private void testMaxRepeats(IntFunction<Completable> actualStrategy, Runnable verifyTimerProvider)
+            throws Exception {
         RepeatStrategy strategy = new RepeatStrategy(actualStrategy);
         LegacyMockedCompletableListenerRule signalListener = strategy.invokeAndListen();
         verifyTimerProvider.run();

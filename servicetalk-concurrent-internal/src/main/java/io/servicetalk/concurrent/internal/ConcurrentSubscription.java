@@ -29,13 +29,14 @@ import static java.util.Objects.requireNonNull;
  * Wraps another {@link Subscription} and guards against multiple calls of {@link Subscription#cancel()}.
  * <p>
  * This class exists to enforce the
- * <a href="https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.1/README.md#2.7">Reactive Streams, 2.7</a> rule.
- * It also allows a custom {@link Cancellable} to be used in the event that there maybe multiple cancel operations which
- * are linked, but we still need to prevent concurrent invocation of the {@link Subscription#cancel()} and
- * {@link Subscription#cancel()} methods.
+ * <a href="https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.1/README.md#2.7">Reactive Streams, 2.7
+ * </a> rule. It also allows a custom {@link Cancellable} to be used in the event that there maybe multiple cancel
+ * operations which are linked, but we still need to prevent concurrent invocation of the {@link Subscription#cancel()}
+ * and {@link Subscription#cancel()} methods.
  * <p>
- * Be aware with invalid input to {@link #request(long)} we don't attempt to enforce concurrency and rely upon the subscription
- * to enforce the specification <a href="https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.1/README.md#3.9">3.9</a> rule.
+ * Be aware with invalid input to {@link #request(long)} we don't attempt to enforce concurrency and rely upon the
+ * subscription to enforce the specification
+ * <a href="https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.1/README.md#3.9">3.9</a> rule.
  */
 public class ConcurrentSubscription implements Subscription {
     private static final AtomicLongFieldUpdater<ConcurrentSubscription> subscriptionRequestQueueUpdater =
@@ -63,7 +64,8 @@ public class ConcurrentSubscription implements Subscription {
      * @return A {@link Subscription} that will enforce the threading constraints in a concurrent environment.
      */
     public static ConcurrentSubscription wrap(Subscription subscription) {
-        return subscription instanceof ConcurrentSubscription ? (ConcurrentSubscription) subscription : new ConcurrentSubscription(subscription);
+        return subscription instanceof ConcurrentSubscription ? (ConcurrentSubscription) subscription :
+                new ConcurrentSubscription(subscription);
     }
 
     @Override
@@ -77,18 +79,20 @@ public class ConcurrentSubscription implements Subscription {
         }
         final Thread currentThread = Thread.currentThread();
         if (currentThread == subscriptionLockOwner) {
-            subscriptionRequestQueueUpdater.accumulateAndGet(this, n, FlowControlUtil::addWithOverflowProtectionIfNotNegative);
+            subscriptionRequestQueueUpdater.accumulateAndGet(this, n,
+                    FlowControlUtil::addWithOverflowProtectionIfNotNegative);
             return;
         }
         do {
             if (!subscriptionLockOwnerUpdater.compareAndSet(this, null, currentThread)) {
                 // It is possible that we picked up a negative value from the queue on the previous iteration because
-                // we have been cancelled in another thread, and in this case we don't want to increment the queue and instead
-                // we just set to MIN_VALUE again and try to re-acquire the lock in case we raced again.
+                // we have been cancelled in another thread, and in this case we don't want to increment the queue and
+                // instead we just set to MIN_VALUE again and try to re-acquire the lock in case we raced again.
                 if (n < 0) {
                     subscriptionRequestQueueUpdater.set(this, Long.MIN_VALUE);
                 } else {
-                    subscriptionRequestQueueUpdater.accumulateAndGet(this, n, FlowControlUtil::addWithOverflowProtectionIfNotNegative);
+                    subscriptionRequestQueueUpdater.accumulateAndGet(this, n,
+                            FlowControlUtil::addWithOverflowProtectionIfNotNegative);
                 }
                 if (!subscriptionLockOwnerUpdater.compareAndSet(this, null, currentThread)) {
                     return;
@@ -99,8 +103,8 @@ public class ConcurrentSubscription implements Subscription {
                 if (n == 0) {
                     // It is possible that the previous consumer has released the lock, and drained the queue before we
                     // acquired the lock and drained the queue. This means we have acquired the lock, but the queue has
-                    // already been drained to 0. We should release the lock, try to drain the queue again, and then loop
-                    // to acquire the lock if there are elements to drain.
+                    // already been drained to 0. We should release the lock, try to drain the queue again, and then
+                    // loop to acquire the lock if there are elements to drain.
                     subscriptionLockOwner = null;
                     n = subscriptionRequestQueueUpdater.getAndSet(this, 0);
                     if (n == 0) {
@@ -132,7 +136,8 @@ public class ConcurrentSubscription implements Subscription {
 
         final Thread currentThread = Thread.currentThread();
         final Thread subscriptionLockOwner = this.subscriptionLockOwner;
-        if (subscriptionLockOwner == currentThread || subscriptionLockOwnerUpdater.compareAndSet(this, null, currentThread)) {
+        if (subscriptionLockOwner == currentThread || subscriptionLockOwnerUpdater.compareAndSet(this, null,
+                currentThread)) {
             subscription.cancel();
         }
     }

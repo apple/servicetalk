@@ -46,8 +46,8 @@ import static io.servicetalk.http.router.predicate.Predicates.regex;
 import static java.util.Objects.requireNonNull;
 
 /**
- * Builds an {@link StreamingHttpService} which routes requests to a number of other {@link StreamingHttpService}s based on user
- * specified criteria.
+ * Builds an {@link StreamingHttpService} which routes requests to a number of other {@link StreamingHttpService}s based
+ * on user specified criteria.
  *
  * eg.
  * <pre>{@code

@@ -27,7 +27,8 @@ public interface IoExecutor extends ListenableAsyncCloseable {
     /**
      * Determine if <a href="https://en.wikipedia.org/wiki/Unix_domain_socket">Unix Domain Sockets</a> are supported.
      *
-     * @return {@code true} if <a href="https://en.wikipedia.org/wiki/Unix_domain_socket">Unix Domain Sockets</a> are supported.
+     * @return {@code true} if <a href="https://en.wikipedia.org/wiki/Unix_domain_socket">Unix Domain Sockets</a> are
+     * supported.
      */
     boolean isUnixDomainSocketSupported();
 

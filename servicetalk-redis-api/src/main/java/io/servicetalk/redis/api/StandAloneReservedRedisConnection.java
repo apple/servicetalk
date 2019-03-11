@@ -45,7 +45,8 @@ final class StandAloneReservedRedisConnection extends RedisClient.ReservedRedisC
                 if (releasedUpdater.compareAndSet(StandAloneReservedRedisConnection.this, 0, 1)) {
                     subscriber.onComplete();
                 } else {
-                    subscriber.onError(new IllegalStateException("Connection " + StandAloneReservedRedisConnection.this + " already released."));
+                    subscriber.onError(new IllegalStateException("Connection " +
+                            StandAloneReservedRedisConnection.this + " already released."));
                 }
             }
         };
