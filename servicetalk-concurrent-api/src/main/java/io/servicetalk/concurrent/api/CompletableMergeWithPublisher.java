@@ -25,6 +25,7 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.internal.ConcurrentSubscription.wrap;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.checkTerminationValidWithConcurrentOnNextCheck;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.sendOnNextWithConcurrentTerminationCheck;
 import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
@@ -35,7 +36,6 @@ import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
  * @param <T> Type of data returned from the {@link Publisher}
  */
 final class CompletableMergeWithPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
-
     private final Completable original;
     private final Publisher<? extends T> mergeWith;
 
@@ -75,20 +75,19 @@ final class CompletableMergeWithPublisher<T> extends AbstractNoHandleSubscribePu
 
         Merger(Subscriber<? super T> subscriber, SignalOffloader signalOffloader, AsyncContextMap contextMap,
                AsyncContextProvider contextProvider) {
-            // The CompletableSubscriber and offloadedSubscriber may interact with the subscriber, so we need to wrap it
-            // and make sure the expected context is restored.
-            subscriber = contextProvider.wrapPublisherSubscriber(subscriber, contextMap);
-
-            completableSubscriber = new CompletableSubscriber(subscriber);
             // This is used only to deliver signals that originate from the mergeWith Publisher. Since, we need to
             // preserve the threading semantics of the original Completable, we offload the subscriber so that we do not
             // invoke it from the mergeWith Publisher Executor thread.
-            this.offloadedSubscriber = signalOffloader.offloadSubscriber(subscriber);
+            this.offloadedSubscriber = signalOffloader.offloadSubscriber(
+                    contextProvider.wrapPublisherSubscriber(subscriber, contextMap));
+
+            completableSubscriber = new CompletableSubscriber();
         }
 
         void merge(Completable original, Publisher<? extends T> mergeWith, SignalOffloader signalOffloader,
                    AsyncContextMap contextMap, AsyncContextProvider contextProvider) {
-            offloadedSubscriber.onSubscribe(new MergedCancellableWithSubscription(subscription, completableSubscriber));
+            offloadedSubscriber.onSubscribe(
+                    new MergedCancellableWithSubscription(subscription, completableSubscriber));
             original.delegateSubscribe(completableSubscriber, signalOffloader, contextMap,
                     contextProvider);
             // SignalOffloader is associated with the original Completable. Since mergeWith Publisher is provided by
@@ -102,7 +101,9 @@ final class CompletableMergeWithPublisher<T> extends AbstractNoHandleSubscribePu
 
         @Override
         public void onSubscribe(Subscription targetSubscription) {
-            subscription.delayedSubscription(targetSubscription);
+            // We may cancel from multiple threads and DelayedSubscription will atomically swap if a cancel occurs but
+            // it will not prevent concurrent access between request(n) and cancel() on the targetSubscription.
+            subscription.delayedSubscription(wrap(targetSubscription));
         }
 
         @Override
@@ -144,13 +145,6 @@ final class CompletableMergeWithPublisher<T> extends AbstractNoHandleSubscribePu
         }
 
         private final class CompletableSubscriber extends DelayedCancellable implements CompletableSource.Subscriber {
-
-            private final Subscriber<? super T> subscriber;
-
-            CompletableSubscriber(final Subscriber<? super T> subscriber) {
-                this.subscriber = subscriber;
-            }
-
             @Override
             public void onSubscribe(Cancellable cancellable) {
                 delayedCancellable(cancellable);
@@ -161,7 +155,9 @@ final class CompletableMergeWithPublisher<T> extends AbstractNoHandleSubscribePu
                 if (completionCountUpdater.incrementAndGet(Merger.this) == 2 &&
                         checkTerminationValidWithConcurrentOnNextCheck(null, complete(),
                                 subscriberStateUpdater, terminalNotificationUpdater, Merger.this)) {
-                    subscriber.onComplete();
+                    // This CompletableSource.Subscriber will be notified on the correct Executor, but we need to use
+                    // the same offloaded Subscriber as the Publisher to ensure that all events are sequenced properly.
+                    offloadedSubscriber.onComplete();
                 }
             }
 
@@ -170,7 +166,9 @@ final class CompletableMergeWithPublisher<T> extends AbstractNoHandleSubscribePu
                 subscription.cancel();
                 if (checkTerminationValidWithConcurrentOnNextCheck(null, t,
                         subscriberStateUpdater, terminalNotificationUpdater, Merger.this)) {
-                    subscriber.onError(t);
+                    // This CompletableSource.Subscriber will be notified on the correct Executor, but we need to use
+                    // the same offloaded Subscriber as the Publisher to ensure that all events are sequenced properly.
+                    offloadedSubscriber.onError(t);
                 }
             }
         }
