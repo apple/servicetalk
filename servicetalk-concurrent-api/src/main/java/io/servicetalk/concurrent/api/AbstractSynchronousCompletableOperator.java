@@ -15,7 +15,6 @@
  */
 package io.servicetalk.concurrent.api;
 
-import io.servicetalk.concurrent.CompletableSource.Subscriber;
 import io.servicetalk.concurrent.internal.SignalOffloader;
 
 import static java.util.Objects.requireNonNull;
@@ -44,6 +43,6 @@ abstract class AbstractSynchronousCompletableOperator extends AbstractNoHandleSu
     @Override
     final void handleSubscribe(Subscriber subscriber, SignalOffloader signalOffloader,
                                AsyncContextMap contextMap, AsyncContextProvider contextProvider) {
-        original.subscribeWithOffloaderAndContext(apply(subscriber), signalOffloader, contextMap, contextProvider);
+        original.delegateSubscribe(apply(subscriber), signalOffloader, contextMap, contextProvider);
     }
 }

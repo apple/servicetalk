@@ -73,7 +73,7 @@ final class ReduceSingle<R, T> extends AbstractNoHandleSubscribeSingle<R> {
                 contextProvider.wrapSubscription(new ReduceSubscriber<>(r, reducer, singleSubscriber), contextMap));
         // Since we are not creating any new sources by reducing, we should use the same offloader to subscribe to the
         // original Publisher.
-        source.subscribeWithOffloaderAndContext(offloadedSubscription, signalOffloader, contextMap, contextProvider);
+        source.delegateSubscribe(offloadedSubscription, signalOffloader, contextMap, contextProvider);
     }
 
     private static final class ReduceSubscriber<R, T> implements PublisherSource.Subscriber<T> {

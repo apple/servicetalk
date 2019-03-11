@@ -200,16 +200,6 @@ public final class AsyncContext {
     }
 
     /**
-     * Make a best effort to unwrap a {@link Executor} so that it no longer tracks
-     * {@link AsyncContext}.
-     * @param executor The executor to unwrap.
-     * @return The result of the unwrap attempt.
-     */
-    public static Executor unwrap(Executor executor) {
-        return provider().unwrap(executor);
-    }
-
-    /**
      * Wrap an {@link ExecutorService} to ensure it is able to track {@link AsyncContext} correctly.
      * @param executor The executor to wrap.
      * @return The wrapped executor.

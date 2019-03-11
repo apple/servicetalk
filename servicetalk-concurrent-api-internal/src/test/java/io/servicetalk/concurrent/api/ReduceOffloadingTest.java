@@ -46,5 +46,7 @@ public class ReduceOffloadingTest {
                 .reduce(() -> 0, (cumulative, integer) -> cumulative + integer).toFuture().get();
         assertThat("Unexpected sum.", sum, is(10));
         assertThat("Unexpected tasks submitted.", taskCount.get(), is(1));
+        wrapped.closeAsync().toFuture().get();
+        executor.closeAsync().toFuture().get();
     }
 }

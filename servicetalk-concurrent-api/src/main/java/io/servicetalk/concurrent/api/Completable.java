@@ -60,6 +60,7 @@ public abstract class Completable {
     private static final Logger LOGGER = LoggerFactory.getLogger(Completable.class);
 
     private final Executor executor;
+    private final boolean shareContextOnSubscribe;
 
     static {
         AsyncContext.autoEnable();
@@ -78,7 +79,19 @@ public abstract class Completable {
      * @param executor {@link Executor} to use for this {@link Completable}.
      */
     Completable(final Executor executor) {
+        this(executor, false);
+    }
+
+    /**
+     * New instance.
+     *
+     * @param executor {@link Executor} to use for this {@link Completable}.
+     * @param shareContextOnSubscribe When subscribed, a copy of the {@link AsyncContextMap} will not be made. This will
+     * result in sharing {@link AsyncContext} between sources.
+     */
+    Completable(Executor executor, boolean shareContextOnSubscribe) {
         this.executor = requireNonNull(executor);
+        this.shareContextOnSubscribe = shareContextOnSubscribe;
     }
 
     //
@@ -609,16 +622,14 @@ public abstract class Completable {
      *
      * @param shouldRepeat {@link IntPredicate} that given the repeat count determines if the operation should be
      * repeated
-     * @param valueSupplier {@link Supplier} that is called every time this {@link Completable} completes. The value
-     * returned is emitted from the returned {@link Publisher}
      * @param <T> Type of items provided by the passed {@link Supplier} and emitted by the returned {@link Publisher}.
      * @return A {@link Publisher} that emits the value returned by the passed {@link Supplier} everytime this
      * {@link Completable} completes.
      *
      * @see <a href="http://reactivex.io/documentation/operators/repeat.html">ReactiveX repeat operator.</a>
      */
-    public final <T> Publisher<T> repeat(IntPredicate shouldRepeat, Supplier<? extends T> valueSupplier) {
-        return toSingle().<T>map(__ -> valueSupplier.get()).repeat(shouldRepeat);
+    public final <T> Publisher<T> repeat(IntPredicate shouldRepeat) {
+        return this.<T>toSingle().repeat(shouldRepeat);
     }
 
     /**
@@ -643,16 +654,13 @@ public abstract class Completable {
      * @param repeatWhen {@link IntFunction} that given the repeat count returns a {@link Completable}.
      * If this {@link Completable} emits an error repeat is terminated, otherwise, original {@link Completable} is
      * re-subscribed when this {@link Completable} completes.
-     * @param valueSupplier {@link Supplier} that is called every time this {@link Completable} completes. The value
-     * returned is emitted from the returned {@link Publisher}
      * @param <T> Type of items provided by the passed {@link Supplier} and emitted by the returned {@link Publisher}.
      * @return A {@link Completable} that completes after all re-subscriptions completes.
      *
      * @see <a href="http://reactivex.io/documentation/operators/retry.html">ReactiveX retry operator.</a>
      */
-    public final <T> Publisher<T> repeatWhen(IntFunction<? extends Completable> repeatWhen,
-                                             Supplier<? extends T> valueSupplier) {
-        return toSingle().<T>map(__ -> valueSupplier.get()).repeatWhen(repeatWhen);
+    public final <T> Publisher<T> repeatWhen(IntFunction<? extends Completable> repeatWhen) {
+        return this.<T>toSingle().repeatWhen(repeatWhen);
     }
 
     /**
@@ -1130,7 +1138,9 @@ public abstract class Completable {
      * @param subscriber {@link Subscriber} to subscribe for the result.
      */
     protected final void subscribeInternal(Subscriber subscriber) {
-        subscribeCaptureContext(subscriber, AsyncContext.provider());
+        AsyncContextProvider provider = AsyncContext.provider();
+        subscribeWithContext(subscriber, provider,
+                shareContextOnSubscribe ? provider.contextMap() : provider.contextMap().copy());
     }
 
     /**
@@ -1491,51 +1501,18 @@ public abstract class Completable {
     //
 
     /**
-     * Replicating a call to {@link #subscribeInternal(CompletableSource.Subscriber)} but allows an override of the
-     * {@link AsyncContextMap}.
+     * Subscribes to this {@link Completable} and shares the current context.
      *
      * @param subscriber the subscriber.
-     * @param provider the {@link AsyncContextProvider} used to wrap any objects to preserve
-     * {@link AsyncContextMap}.
+     * @param provider {@link AsyncContextProvider} to use.
      */
-    void subscribeCaptureContext(Subscriber subscriber, AsyncContextProvider provider) {
-        // Each Subscriber chain should have an isolated AsyncContext due to a new asynchronous scope starting. This is
-        // why we copy the AsyncContext upon external user facing subscribe operations.
-        subscribeWithContext(subscriber, provider.contextMap().copy(), provider);
+    final void subscribeWithSharedContext(Subscriber subscriber, AsyncContextProvider provider) {
+        subscribeWithContext(subscriber, provider, provider.contextMap());
     }
 
     /**
-     * Replicating a call to {@link #subscribeInternal(CompletableSource.Subscriber)} but with a materialized
-     * {@link AsyncContextMap}.
-     *
-     * @param subscriber the subscriber.
-     * @param contextMap the {@link AsyncContextMap} to use for this {@link Subscriber}.
-     * @param contextProvider the {@link AsyncContextProvider} used to wrap any objects to preserve
-     * {@link AsyncContextMap}.
-     */
-    final void subscribeWithContext(Subscriber subscriber, AsyncContextMap contextMap,
-                                    AsyncContextProvider contextProvider) {
-        requireNonNull(subscriber);
-        final SignalOffloader signalOffloader;
-        final Subscriber offloadedSubscriber;
-        try {
-            // This is a user-driven subscribe i.e. there is no SignalOffloader override, so create a new
-            // SignalOffloader to use.
-            signalOffloader = newOffloaderFor(executor);
-            // Since this is a user-driven subscribe (end of the execution chain), offload Cancellable
-            offloadedSubscriber = signalOffloader.offloadCancellable(
-                    contextProvider.wrapCancellable(subscriber, contextMap));
-        } catch (Throwable t) {
-            subscriber.onSubscribe(IGNORE_CANCEL);
-            subscriber.onError(t);
-            return;
-        }
-        subscribeWithOffloaderAndContext(offloadedSubscriber, signalOffloader, contextMap, contextProvider);
-    }
-
-    /**
-     * Replicating a call to {@link #subscribeInternal(CompletableSource.Subscriber)} but with a materialized
-     * {@link SignalOffloader} and {@link AsyncContextMap}.
+     * Delegate subscribe calls in an operator chain. This method is used by operators to subscribe to the upstream
+     * source.
      *
      * @param subscriber the subscriber.
      * @param signalOffloader {@link SignalOffloader} to use for this {@link Subscriber}.
@@ -1543,17 +1520,30 @@ public abstract class Completable {
      * @param contextProvider the {@link AsyncContextProvider} used to wrap any objects to preserve
      * {@link AsyncContextMap}.
      */
-    final void subscribeWithOffloaderAndContext(Subscriber subscriber, SignalOffloader signalOffloader,
-                                                AsyncContextMap contextMap, AsyncContextProvider contextProvider) {
-        // In the event that user code is called synchronously from handleSubscribe (e.g. in overriden method for an
-        // operator implementation) we need to make sure the static AsyncContext is set correctly.
-        AsyncContextMap currentContext = contextProvider.contextMap();
+    final void delegateSubscribe(Subscriber subscriber, SignalOffloader signalOffloader,
+                                 AsyncContextMap contextMap, AsyncContextProvider contextProvider) {
+        handleSubscribe(subscriber, signalOffloader, contextMap, contextProvider);
+    }
+
+    private void subscribeWithContext(Subscriber subscriber, AsyncContextProvider provider,
+                                      AsyncContextMap contextMap) {
+        requireNonNull(subscriber);
+        final SignalOffloader signalOffloader;
+        final Subscriber offloadedSubscriber;
         try {
-            contextProvider.contextMap(contextMap);
-            handleSubscribe(subscriber, signalOffloader, contextMap, contextProvider);
-        } finally {
-            contextProvider.contextMap(currentContext);
+            // This is a user-driven subscribe i.e. there is no SignalOffloader override, so create a new
+            // SignalOffloader to use.
+            signalOffloader = newOffloaderFor(executor);
+            // Since this is a user-driven subscribe (end of the execution chain), offload subscription methods
+            // We also want to make sure the AsyncContext is saved/restored for all interactions with the Subscription.
+            offloadedSubscriber = signalOffloader.offloadCancellable(provider.wrapCancellable(subscriber, contextMap));
+        } catch (Throwable t) {
+            subscriber.onSubscribe(IGNORE_CANCEL);
+            subscriber.onError(t);
+            return;
         }
+        signalOffloader.offloadSubscribe(offloadedSubscriber, provider.wrap((Consumer<Subscriber>)
+                s -> handleSubscribe(s, signalOffloader, contextMap, provider), contextMap));
     }
 
     /**
@@ -1573,17 +1563,9 @@ public abstract class Completable {
      */
     void handleSubscribe(Subscriber subscriber, SignalOffloader signalOffloader, AsyncContextMap contextMap,
                          AsyncContextProvider contextProvider) {
-        Subscriber offloaded = signalOffloader.offloadSubscriber(
-                contextProvider.wrap(subscriber, contextMap));
-        // TODO(scott): we have to wrap this method to preserve AsyncContext, and we also have to wrap the
-        // safeHandleSubscribe method in the event the offloader calls the safeHandleSubscribe method on another thread.
-        // However if the offloader executes the method synchronously the safeHandleSubscribe wrapping is unnecessary.
-        signalOffloader.offloadSubscribe(offloaded, contextProvider.wrap(this::safeHandleSubscribe, contextMap));
-    }
-
-    private void safeHandleSubscribe(Subscriber subscriber) {
         try {
-            handleSubscribe(subscriber);
+            Subscriber offloaded = signalOffloader.offloadSubscriber(contextProvider.wrap(subscriber, contextMap));
+            handleSubscribe(offloaded);
         } catch (Throwable t) {
             LOGGER.warn("Unexpected exception from subscribe(), assuming no interaction with the Subscriber.", t);
             // At this point we are unsure if any signal was sent to the Subscriber and if it is safe to invoke the

@@ -43,7 +43,8 @@ import static io.servicetalk.concurrent.api.NeverSingle.neverSingle;
 import static io.servicetalk.concurrent.api.SingleDoOnUtils.doOnErrorSupplier;
 import static io.servicetalk.concurrent.api.SingleDoOnUtils.doOnSubscribeSupplier;
 import static io.servicetalk.concurrent.api.SingleDoOnUtils.doOnSuccessSupplier;
-import static io.servicetalk.concurrent.api.SingleToCompletionStage.createAndSubscribe;
+import static io.servicetalk.concurrent.api.SingleToCompletableFuture.createAndSubscribe;
+import static io.servicetalk.concurrent.api.SingleToCompletableFuture.createForFutureAndSubscribe;
 import static io.servicetalk.concurrent.internal.SignalOffloaders.newOffloaderFor;
 import static java.util.Objects.requireNonNull;
 import static java.util.function.Function.identity;
@@ -53,7 +54,7 @@ import static java.util.function.Function.identity;
  *
  * <h2>How to subscribe?</h2>
  *
- * This class does not provide a way to subscribe using a {@link SingleSource.Subscriber} as such calls are
+ * This class does not provide a way to subscribe using a {@link Subscriber} as such calls are
  * ambiguous about the intent whether the subscribe is part of the same source (a.k.a an operator) or it is a terminal
  * subscribe. If it is required to subscribe to a source, then a {@link SourceAdapters source adapter} can be used to
  * convert to a {@link SingleSource}.
@@ -64,6 +65,7 @@ public abstract class Single<T> {
     private static final Logger LOGGER = LoggerFactory.getLogger(Single.class);
 
     private final Executor executor;
+    private final boolean shareContextOnSubscribe;
 
     static {
         AsyncContext.autoEnable();
@@ -82,7 +84,19 @@ public abstract class Single<T> {
      * @param executor {@link Executor} to use for this {@link Single}.
      */
     Single(Executor executor) {
+        this(executor, false);
+    }
+
+    /**
+     * New instance.
+     *
+     * @param executor {@link Executor} to use for this {@link Single}.
+     * @param shareContextOnSubscribe When subscribed, a copy of the {@link AsyncContextMap} will not be made. This will
+     * result in sharing {@link AsyncContext} between sources.
+     */
+    Single(Executor executor, boolean shareContextOnSubscribe) {
         this.executor = requireNonNull(executor);
+        this.shareContextOnSubscribe = shareContextOnSubscribe;
     }
 
     //
@@ -1007,11 +1021,7 @@ public abstract class Single<T> {
      * @return A {@link CompletionStage} that mirrors the terminal signal from this {@link Single}.
      */
     public final CompletionStage<T> toCompletionStage() {
-        AsyncContextProvider provider = AsyncContext.provider();
-        AsyncContextMap contextMap = provider.contextMap().copy();
-        return provider.wrap(
-                (CompletionStage<T>) createAndSubscribe(this, provider.unwrap(executor), provider, contextMap),
-                contextMap);
+        return createAndSubscribe(this);
     }
 
     /**
@@ -1020,9 +1030,7 @@ public abstract class Single<T> {
      * @return A {@link Future} that mirrors the terminal signal from this {@link Single}.
      */
     public final Future<T> toFuture() {
-        AsyncContextProvider provider = AsyncContext.provider();
-        AsyncContextMap contextMap = provider.contextMap().copy();
-        return createAndSubscribe(this, executor, provider, contextMap);
+        return createForFutureAndSubscribe(this);
     }
 
     //
@@ -1036,7 +1044,7 @@ public abstract class Single<T> {
      * @param subscriber {@link Subscriber} to subscribe for the result.
      */
     protected final void subscribeInternal(Subscriber<? super T> subscriber) {
-        subscribeCaptureContext(subscriber, AsyncContext.provider());
+        subscribeAndReturnContext(subscriber, AsyncContext.provider());
     }
 
     /**
@@ -1445,28 +1453,47 @@ public abstract class Single<T> {
     //
 
     /**
-     * Replicating a call to {@link #subscribeInternal(SingleSource.Subscriber)} but allows an override of the
-     * {@link AsyncContextMap}.
+     * Subscribes to this {@link Single} and returns the {@link AsyncContextMap} associated for this subscribe
+     * operation.
+     *
      * @param subscriber the subscriber.
-     * @param provider the {@link AsyncContextProvider} used to wrap any objects to preserve
-     * {@link AsyncContextMap}.
+     * @param provider {@link AsyncContextProvider} to use.
+     * @return {@link AsyncContextMap} for this subscribe operation.
      */
-    void subscribeCaptureContext(Subscriber<? super T> subscriber, AsyncContextProvider provider) {
-        // Each Subscriber chain should have an isolated AsyncContext due to a new asynchronous scope starting. This is
-        // why we copy the AsyncContext upon external user facing subscribe operations.
-        subscribeWithContext(subscriber, provider.contextMap().copy(), provider);
+    final AsyncContextMap subscribeAndReturnContext(Subscriber<? super T> subscriber, AsyncContextProvider provider) {
+        final AsyncContextMap contextMap = shareContextOnSubscribe ? provider.contextMap() :
+                provider.contextMap().copy();
+        subscribeWithContext(subscriber, provider, contextMap);
+        return contextMap;
     }
 
     /**
-     * Replicating a call to {@link #subscribeInternal(SingleSource.Subscriber)} but with a materialized
-     * {@link AsyncContextMap}.
+     * Subscribes to this {@link Single} and shares the current context.
+     *
      * @param subscriber the subscriber.
-     * @param contextMap the {@link AsyncContextMap} to use for this {@link Subscriber}.
+     * @param provider {@link AsyncContextProvider} to use.
+     */
+    final void subscribeWithSharedContext(Subscriber<? super T> subscriber, AsyncContextProvider provider) {
+        subscribeWithContext(subscriber, provider, provider.contextMap());
+    }
+
+    /**
+     * Delegate subscribe calls in an operator chain. This method is used by operators to subscribe to the upstream
+     * source.
+     *
+     * @param subscriber the subscriber.
+     * @param signalOffloader {@link SignalOffloader} to use for this {@link SingleSource.Subscriber}.
+     * @param contextMap the {@link AsyncContextMap} to use for this {@link SingleSource.Subscriber}.
      * @param contextProvider the {@link AsyncContextProvider} used to wrap any objects to preserve
      * {@link AsyncContextMap}.
      */
-    final void subscribeWithContext(Subscriber<? super T> subscriber, AsyncContextMap contextMap,
-                                    AsyncContextProvider contextProvider) {
+    final void delegateSubscribe(Subscriber<? super T> subscriber, SignalOffloader signalOffloader,
+                                 AsyncContextMap contextMap, AsyncContextProvider contextProvider) {
+        handleSubscribe(subscriber, signalOffloader, contextMap, contextProvider);
+    }
+
+    private void subscribeWithContext(Subscriber<? super T> subscriber, AsyncContextProvider provider,
+                                      AsyncContextMap contextMap) {
         requireNonNull(subscriber);
         final SignalOffloader signalOffloader;
         final Subscriber<? super T> offloadedSubscriber;
@@ -1474,37 +1501,16 @@ public abstract class Single<T> {
             // This is a user-driven subscribe i.e. there is no SignalOffloader override, so create a new
             // SignalOffloader to use.
             signalOffloader = newOffloaderFor(executor);
-            // Since this is a user-driven subscribe (end of the execution chain), offload Cancellable
-            offloadedSubscriber = signalOffloader.offloadCancellable(
-                    contextProvider.wrapCancellable(subscriber, contextMap));
+            // Since this is a user-driven subscribe (end of the execution chain), offload subscription methods
+            // We also want to make sure the AsyncContext is saved/restored for all interactions with the Subscription.
+            offloadedSubscriber = signalOffloader.offloadCancellable(provider.wrapCancellable(subscriber, contextMap));
         } catch (Throwable t) {
             subscriber.onSubscribe(IGNORE_CANCEL);
             subscriber.onError(t);
             return;
         }
-        subscribeWithOffloaderAndContext(offloadedSubscriber, signalOffloader, contextMap, contextProvider);
-    }
-
-    /**
-     * Replicating a call to {@link #subscribeInternal(SingleSource.Subscriber)} but with a materialized
-     * {@link SignalOffloader} and {@link AsyncContextMap}.
-     * @param subscriber the subscriber.
-     * @param signalOffloader {@link SignalOffloader} to use for this {@link SingleSource.Subscriber}.
-     * @param contextMap the {@link AsyncContextMap} to use for this {@link SingleSource.Subscriber}.
-     * @param contextProvider the {@link AsyncContextProvider} used to wrap any objects to preserve
-     * {@link AsyncContextMap}.
-     */
-    final void subscribeWithOffloaderAndContext(Subscriber<? super T> subscriber, SignalOffloader signalOffloader,
-                                                AsyncContextMap contextMap, AsyncContextProvider contextProvider) {
-        // In the event that user code is called synchronously from handleSubscribe (e.g. in overriden method for an
-        // operator implementation) we need to make sure the static AsyncContext is set correctly.
-        AsyncContextMap currentContext = contextProvider.contextMap();
-        try {
-            contextProvider.contextMap(contextMap);
-            handleSubscribe(subscriber, signalOffloader, contextMap, contextProvider);
-        } finally {
-            contextProvider.contextMap(currentContext);
-        }
+        signalOffloader.offloadSubscribe(offloadedSubscriber, provider.wrap((Consumer<Subscriber<? super T>>)
+                s -> handleSubscribe(s, signalOffloader, contextMap, provider), contextMap));
     }
 
     /**
@@ -1525,17 +1531,10 @@ public abstract class Single<T> {
      */
     void handleSubscribe(Subscriber<? super T> subscriber, SignalOffloader signalOffloader, AsyncContextMap contextMap,
                          AsyncContextProvider contextProvider) {
-        Subscriber<? super T> offloaded = signalOffloader.offloadSubscriber(
-                contextProvider.wrap(subscriber, contextMap));
-        // TODO(scott): we have to wrap this method to preserve AsyncContext, and we also have to wrap the
-        // safeHandleSubscribe method in the event the offloader calls the safeHandleSubscribe method on another thread.
-        // However if the offloader executes the method synchronously the safeHandleSubscribe wrapping is unnecessary.
-        signalOffloader.offloadSubscribe(offloaded, contextProvider.wrap(this::safeHandleSubscribe, contextMap));
-    }
-
-    private void safeHandleSubscribe(Subscriber<? super T> subscriber) {
         try {
-            handleSubscribe(subscriber);
+            Subscriber<? super T> offloaded =
+                    signalOffloader.offloadSubscriber(contextProvider.wrap(subscriber, contextMap));
+            handleSubscribe(offloaded);
         } catch (Throwable t) {
             LOGGER.warn("Unexpected exception from subscribe(), assuming no interaction with the Subscriber.", t);
             // At this point we are unsure if any signal was sent to the Subscriber and if it is safe to invoke the

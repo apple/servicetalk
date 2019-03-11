@@ -85,8 +85,8 @@ final class PublishAndSubscribeOnCompletables {
             // This operator acts as a boundary that changes the Executor from original to the rest of the execution
             // chain. If there is already an Executor defined for original, it will be used to offload signals until
             // they hit this operator.
-            original.subscribeWithContext(signalOffloader.offloadSubscriber(
-                    contextProvider.wrap(subscriber, contextMap)), contextMap, contextProvider);
+            original.subscribeWithSharedContext(
+                    signalOffloader.offloadSubscriber(contextProvider.wrap(subscriber, contextMap)), contextProvider);
         }
     }
 
@@ -128,8 +128,8 @@ final class PublishAndSubscribeOnCompletables {
             // This operator acts as a boundary that changes the Executor from original to the rest of the execution
             // chain. If there is already an Executor defined for original, it will be used to offload signals until
             // they hit this operator.
-            original.subscribeWithContext(signalOffloader.offloadSubscriber(
-                    contextProvider.wrap(subscriber, contextMap)), contextMap, contextProvider);
+            original.subscribeWithSharedContext(
+                    signalOffloader.offloadSubscriber(contextProvider.wrap(subscriber, contextMap)), contextProvider);
         }
     }
 
@@ -174,7 +174,7 @@ final class PublishAndSubscribeOnCompletables {
             // This operator acts as a boundary that changes the Executor from original to the rest of the execution
             // chain. If there is already an Executor defined for original, it will be used to offload signals until
             // they hit this operator.
-            original.subscribeWithContext(subscriber, contextMap, contextProvider);
+            original.subscribeWithSharedContext(subscriber, contextProvider);
         }
     }
 

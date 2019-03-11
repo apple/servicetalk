@@ -118,20 +118,20 @@ public class InsufficientlySizedExecutorHttpTest {
     @Test
     public void insufficientServerCapacityStreaming() throws Exception {
         initWhenServerUnderProvisioned(false);
-        insufficientServerCapacityStreaming0(threadBased && capacity == 0);
+        insufficientServerCapacityStreaming0();
     }
 
     @Test
     public void insufficientServerCapacityStreamingWithConnectionAcceptor() throws Exception {
         initWhenServerUnderProvisioned(true);
-        insufficientServerCapacityStreaming0(capacity == 0);
+        insufficientServerCapacityStreaming0();
     }
 
-    private void insufficientServerCapacityStreaming0(boolean expectChannelClose) throws Exception {
+    private void insufficientServerCapacityStreaming0() throws Exception {
         assert client != null;
         // For task based, we use a queue for the executor
         final HttpResponseStatus expectedResponseStatus = !threadBased && capacity > 0 ? OK : SERVICE_UNAVAILABLE;
-        if (expectChannelClose) {
+        if (capacity == 0) {
             // If there are no threads, we can not start processing.
             // If there is a single thread, it is used by the connection to listen for close events.
             expectedException.expect(instanceOf(ExecutionException.class));

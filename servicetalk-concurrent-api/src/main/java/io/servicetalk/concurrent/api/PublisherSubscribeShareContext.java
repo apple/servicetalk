@@ -21,6 +21,7 @@ final class PublisherSubscribeShareContext<T> extends AbstractNoHandleSubscribeP
     private final Publisher<T> original;
 
     PublisherSubscribeShareContext(final Publisher<T> original) {
+        super(original.executor(), true);
         this.original = original;
     }
 
@@ -31,11 +32,5 @@ final class PublisherSubscribeShareContext<T> extends AbstractNoHandleSubscribeP
         // AsyncContextMap now it is possible that operators downstream in the subscribe call stack may have modified
         // the AsyncContextMap and we don't want to discard those changes by using a different AsyncContextMap.
         original.handleSubscribe(singleSubscriber, signalOffloader, contextMap, contextProvider);
-    }
-
-    @Override
-    void subscribeCaptureContext(Subscriber<? super T> subscriber, AsyncContextProvider provider) {
-        // Instead of making a copy, we want to share the AsyncContext.
-        subscribeWithContext(subscriber, provider.contextMap(), provider);
     }
 }

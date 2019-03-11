@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,75 +13,84 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.concurrent.api;
+package io.servicetalk.concurrent.internal;
 
 import io.servicetalk.concurrent.CompletableSource;
-import io.servicetalk.concurrent.PublisherSource.Subscriber;
+import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.SingleSource;
-import io.servicetalk.concurrent.internal.SignalOffloader;
 
 import java.util.function.Consumer;
 
-final class NoopOffloader implements SignalOffloader {
+/**
+ * A {@link SignalOffloader} that delegates all calls to another {@link SignalOffloader}.
+ */
+public class DelegatingSignalOffloader implements SignalOffloader {
 
-    static final SignalOffloader NOOP_OFFLOADER = new NoopOffloader();
+    private final SignalOffloader delegate;
 
-    private NoopOffloader() {
-        // No instances
+    /**
+     * Create a new instance.
+     *
+     * @param delegate {@link SignalOffloader} to delegate all calls.
+     */
+    public DelegatingSignalOffloader(final SignalOffloader delegate) {
+        this.delegate = delegate;
     }
 
     @Override
-    public <T> Subscriber<? super T> offloadSubscriber(final Subscriber<? super T> subscriber) {
-        return subscriber;
+    public <T> PublisherSource.Subscriber<? super T> offloadSubscriber(
+            final PublisherSource.Subscriber<? super T> subscriber) {
+        return delegate.offloadSubscriber(subscriber);
     }
 
     @Override
     public <T> SingleSource.Subscriber<? super T> offloadSubscriber(
             final SingleSource.Subscriber<? super T> subscriber) {
-        return subscriber;
+        return delegate.offloadSubscriber(subscriber);
     }
 
     @Override
     public CompletableSource.Subscriber offloadSubscriber(final CompletableSource.Subscriber subscriber) {
-        return subscriber;
+        return delegate.offloadSubscriber(subscriber);
     }
 
     @Override
-    public <T> Subscriber<? super T> offloadSubscription(final Subscriber<? super T> subscriber) {
-        return subscriber;
+    public <T> PublisherSource.Subscriber<? super T> offloadSubscription(
+            final PublisherSource.Subscriber<? super T> subscriber) {
+        return delegate.offloadSubscription(subscriber);
     }
 
     @Override
     public <T> SingleSource.Subscriber<? super T> offloadCancellable(
             final SingleSource.Subscriber<? super T> subscriber) {
-        return subscriber;
+        return delegate.offloadCancellable(subscriber);
     }
 
     @Override
     public CompletableSource.Subscriber offloadCancellable(final CompletableSource.Subscriber subscriber) {
-        return subscriber;
+        return delegate.offloadCancellable(subscriber);
     }
 
     @Override
-    public <T> void offloadSubscribe(final Subscriber<? super T> subscriber,
-                                     final Consumer<Subscriber<? super T>> handleSubscribe) {
-        handleSubscribe.accept(subscriber);
+    public <T> void offloadSubscribe(final PublisherSource.Subscriber<? super T> subscriber,
+                                     final Consumer<PublisherSource.Subscriber<? super T>> handleSubscribe) {
+        delegate.offloadSubscribe(subscriber, handleSubscribe);
     }
 
     @Override
     public <T> void offloadSubscribe(final SingleSource.Subscriber<? super T> subscriber,
                                      final Consumer<SingleSource.Subscriber<? super T>> handleSubscribe) {
-        handleSubscribe.accept(subscriber);
+        delegate.offloadSubscribe(subscriber, handleSubscribe);
     }
 
     @Override
     public void offloadSubscribe(final CompletableSource.Subscriber subscriber,
                                  final Consumer<CompletableSource.Subscriber> handleSubscribe) {
-        handleSubscribe.accept(subscriber);
+        delegate.offloadSubscribe(subscriber, handleSubscribe);
     }
 
     @Override
     public <T> void offloadSignal(final T signal, final Consumer<T> signalConsumer) {
-        signalConsumer.accept(signal);
+        delegate.offloadSignal(signal, signalConsumer);
     }
 }

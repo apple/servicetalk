@@ -61,6 +61,6 @@ abstract class AbstractAsynchronousPublisherOperator<T, R> extends AbstractNoHan
         // and restore the AsyncContext before/after the asynchronous boundary.
         final Subscriber<? super T> upstreamSubscriber = signalOffloader.offloadSubscription(
                 contextProvider.wrapSubscription(apply(operatorSubscriber), contextMap));
-        original.subscribeWithOffloaderAndContext(upstreamSubscriber, signalOffloader, contextMap, contextProvider);
+        original.delegateSubscribe(upstreamSubscriber, signalOffloader, contextMap, contextProvider);
     }
 }
