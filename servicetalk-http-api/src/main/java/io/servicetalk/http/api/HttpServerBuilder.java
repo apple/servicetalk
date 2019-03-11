@@ -44,6 +44,7 @@ public abstract class HttpServerBuilder {
     @Nullable
     private ConnectionAcceptorFactory connectionAcceptorFactory;
     private HttpServiceFilterFactory serviceFilter = identity();
+    private boolean drainRequestPayloadBody = true;
 
     /**
      * Sets the {@link HttpHeadersFactory} to be used for creating {@link HttpHeaders} when decoding requests.
@@ -158,6 +159,46 @@ public abstract class HttpServerBuilder {
      * @see #enableWireLogging(String)
      */
     public abstract HttpServerBuilder disableWireLogging();
+
+    /**
+     * Disables automatic consumption of request {@link StreamingHttpRequest#payloadBody() payload body} when it is not
+     * consumed by the service.
+     * <p>
+     * For <a href="https://tools.ietf.org/html/rfc7230#section-6.3">persistent HTTP connections</a> it is required to
+     * eventually consume the entire request payload to enable reading of the next request. This is required because
+     * requests are pipelined for HTTP/1.1, so if the previous request is not completely read, next request can not be
+     * read from the socket. For cases when there is a possibility that user may forget to consume request payload,
+     * ServiceTalk automatically consumes request payload body. This automatic consumption behavior may create some
+     * overhead and can be disabled using this method when it is guaranteed that all request paths consumes all request
+     * payloads eventually. An example of guaranteed consumption are {@link HttpRequest non-streaming APIs}.
+     *
+     * @return {@code this}.
+     */
+    public final HttpServerBuilder disableDrainingRequestPayloadBody() {
+        this.drainRequestPayloadBody = false;
+        return this;
+    }
+
+    /**
+     * Enables automatic consumption of request {@link StreamingHttpRequest#payloadBody() payload body} when it is not
+     * consumed by the service.
+     * <p>
+     * For <a href="https://tools.ietf.org/html/rfc7230#section-6.3">persistent HTTP connections</a> it is required to
+     * eventually consume the entire request payload to enable reading of the next request. This is required because
+     * requests are pipelined for HTTP/1.1, so if the previous request is not completely read, next request can not be
+     * read from the socket. For cases when there is a possibility that user may forget to consume request payload,
+     * ServiceTalk automatically consumes request payload body. This automatic consumption behavior may create some
+     * overhead and {@link #disableDrainingRequestPayloadBody() can be disabled} when it is guaranteed that all request
+     * paths consumes all request payloads eventually. An example of guaranteed consumption are
+     * {@link HttpRequest non-streaming APIs}.
+     *
+     * @return {@code this}.
+     * @see #disableDrainingRequestPayloadBody()
+     */
+    public final HttpServerBuilder enableDrainingRequestPayloadBody() {
+        this.drainRequestPayloadBody = true;
+        return this;
+    }
 
     /**
      * Append the filter to the chain of filters used to decorate the {@link ConnectionAcceptor} used by this builder.
@@ -411,7 +452,7 @@ public abstract class HttpServerBuilder {
         StreamingHttpServiceFilter filterChain = serviceFilter.create(svc);
         HttpExecutionStrategy effectiveStrategy = filterChain.effectiveExecutionStrategy(strategy);
         StreamingHttpServiceFilter finalService = new StreamingHttpServiceFilter(filterChain, effectiveStrategy);
-        return doListen(connectionAcceptor, finalService);
+        return doListen(connectionAcceptor, finalService, drainRequestPayloadBody);
     }
 
     /**
@@ -449,9 +490,12 @@ public abstract class HttpServerBuilder {
      *
      * @param connectionAcceptor {@link ConnectionAcceptor} to use for the server.
      * @param service {@link StreamingHttpService} to use for the server.
+     * @param drainRequestPayloadBody if {@code true} the server implementation should automatically subscribe and
+     * ignore the {@link StreamingHttpRequest#payloadBody() payload body} of incoming requests.
      * @return A {@link Single} that completes when the server is successfully started or terminates with an error if
      * the server could not be started.
      */
     protected abstract Single<ServerContext> doListen(@Nullable ConnectionAcceptor connectionAcceptor,
-                                                      StreamingHttpService service);
+                                                      StreamingHttpService service,
+                                                      boolean drainRequestPayloadBody);
 }
