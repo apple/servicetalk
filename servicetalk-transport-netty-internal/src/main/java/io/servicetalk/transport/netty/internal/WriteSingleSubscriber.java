@@ -75,8 +75,8 @@ final class WriteSingleSubscriber implements SingleSource.Subscriber<Object>, De
 
     @Override
     public void channelClosed(Throwable closedException) {
-        // Because the subscriber is terminated "out of band" make sure we cancel any work which may (at some later time)
-        // invoke a write associated with this subscriber.
+        // Because the subscriber is terminated "out of band" make sure we cancel any work which may (at some later
+        // time) invoke a write associated with this subscriber.
         sequentialCancellable.cancel();
         notifyError(closedException);
     }

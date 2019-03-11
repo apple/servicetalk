@@ -73,7 +73,8 @@ final class TaskBasedSignalOffloader implements SignalOffloader {
     }
 
     @Override
-    public <T> SingleSource.Subscriber<? super T> offloadSubscriber(final SingleSource.Subscriber<? super T> subscriber) {
+    public <T> SingleSource.Subscriber<? super T> offloadSubscriber(
+            final SingleSource.Subscriber<? super T> subscriber) {
         return new OffloadedSingleSubscriber<>(executor, subscriber);
     }
 
@@ -88,7 +89,8 @@ final class TaskBasedSignalOffloader implements SignalOffloader {
     }
 
     @Override
-    public <T> SingleSource.Subscriber<? super T> offloadCancellable(final SingleSource.Subscriber<? super T> subscriber) {
+    public <T> SingleSource.Subscriber<? super T> offloadCancellable(
+            final SingleSource.Subscriber<? super T> subscriber) {
         return new OffloadedCancellableSingleSubscriber<>(subscriber, executor);
     }
 

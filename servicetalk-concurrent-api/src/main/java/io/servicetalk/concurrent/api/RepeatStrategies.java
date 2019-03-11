@@ -56,7 +56,8 @@ public final class RepeatStrategies {
      * @param timerExecutor {@link Executor} to be used to schedule timers for backoff.
      *
      * @return An {@link IntFunction} to be used for repeats which given a repeat count returns a {@link Completable}
-     * that terminates successfully when the source has to be repeated or terminates with error if the source should not be repeated.
+     * that terminates successfully when the source has to be repeated or terminates with error if the source should not
+     * be repeated.
      */
     public static IntFunction<Completable> repeatWithConstantBackoff(final int maxRepeats, final Duration backoff,
                                                                      final Executor timerExecutor) {
@@ -71,18 +72,19 @@ public final class RepeatStrategies {
     }
 
     /**
-     * Creates a new repeat function that adds a delay between repeats. For first repeat, the delay is {@code initialDelay}
-     * which is increased exponentially for subsequent repeats. <p>
-     *     This method may not attempt to check for overflow if the repeat count is high enough that an exponential delay
-     *     causes {@link Long} overflow.
+     * Creates a new repeat function that adds a delay between repeats. For first repeat, the delay is
+     * {@code initialDelay} which is increased exponentially for subsequent repeats. <p>
+     * This method may not attempt to check for overflow if the repeat count is high enough that an exponential
+     * delay causes {@link Long} overflow.
      *
      * @param maxRepeats Maximum number of allowed repeats, after which the returned {@link IntFunction} will return
-     *                   a failed {@link Completable} with {@link TerminateRepeatException} as the cause.
+     * a failed {@link Completable} with {@link TerminateRepeatException} as the cause.
      * @param initialDelay Delay {@link Duration} for the first repeat and increased exponentially with each repeat.
      * @param timerExecutor {@link Executor} to be used to schedule timers for backoff.
      *
      * @return An {@link IntFunction} to be used for repeats which given a repeat count returns a {@link Completable}
-     * that terminates successfully when the source has to be repeated or terminates with error if the source should not be repeated.
+     * that terminates successfully when the source has to be repeated or terminates with error if the source should not
+     * be repeated.
      */
     public static IntFunction<Completable> repeatWithExponentialBackoff(final int maxRepeats,
                                                                         final Duration initialDelay,
@@ -98,11 +100,12 @@ public final class RepeatStrategies {
     }
 
     /**
-     * Creates a new repeat function that adds a delay between repeats. For first repeat, the delay is {@code initialDelay}
-     * which is increased exponentially for subsequent repeats.
-     * This additionally adds a "Full Jitter" for the backoff as described <a href="https://aws.amazon.com/blogs/architecture/exponential-backoff-and-jitter/">here</a>.<p>
-     *     This method may not attempt to check for overflow if the repeat count is high enough that an exponential delay
-     *     causes {@link Long} overflow.
+     * Creates a new repeat function that adds a delay between repeats. For first repeat, the delay is
+     * {@code initialDelay} which is increased exponentially for subsequent repeats.
+     * This additionally adds a "Full Jitter" for the backoff as described
+     * <a href="https://aws.amazon.com/blogs/architecture/exponential-backoff-and-jitter/">here</a>.<p>
+     * This method may not attempt to check for overflow if the repeat count is high enough that an exponential delay
+     * causes {@link Long} overflow.
      *
      * @param maxRepeats Maximum number of allowed repeats, after which the returned {@link IntFunction} will return
      *                   a failed {@link Completable} with {@link TerminateRepeatException} as the cause.
@@ -110,7 +113,8 @@ public final class RepeatStrategies {
      * @param timerExecutor {@link Executor} to be used to schedule timers for backoff.
      *
      * @return An {@link IntFunction} to be used for repeats which given a repeat count returns a {@link Completable}
-     * that terminates successfully when the source has to be repeated or terminates with error if the source should not be repeated.
+     * that terminates successfully when the source has to be repeated or terminates with error if the source should not
+     * be repeated.
      */
     public static IntFunction<Completable> repeatWithExponentialBackoffAndJitter(final int maxRepeats,
                                                                                  final Duration initialDelay,

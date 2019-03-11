@@ -36,8 +36,8 @@ public interface DnsServerAddressStream {
     /**
      * Duplicate this object. The result of this should be able to be independently iterated over via {@link #next()}.
      * <p>
-     * Note that {@link Object#clone()} isn't used because it may make sense for some implementations to have the following
-     * relationship {@code x.duplicate() == x}.
+     * Note that {@link Object#clone()} isn't used because it may make sense for some implementations to have the
+     * following relationship {@code x.duplicate() == x}.
      * @return A duplicate of this object.
      */
     DnsServerAddressStream duplicate();

@@ -268,8 +268,9 @@ final class SubscribedChannelReadStream
             assert data != null : "Data can not be null.";
             if (data instanceof SimpleString && aggregationState == STATE_IDLE) {
                 // Simple strings received when not aggregating are passed through.
-                // This can happen when using one of the commands allowed in InternalSubscribedRedisConnection#request before sending the SUBSCRIBE request.
-                // For example, a +OK response is received when sending AUTH right after creating the InternalSubscribedRedisConnection.
+                // This can happen when using one of the commands allowed in InternalSubscribedRedisConnection#request
+                // before sending the SUBSCRIBE request. For example, a +OK response is received when sending AUTH right
+                // after creating the InternalSubscribedRedisConnection.
                 target.onNext(new PubSubChannelMessage(SimpleString, (SimpleString) data));
                 return;
             }
@@ -288,7 +289,8 @@ final class SubscribedChannelReadStream
 
             if (aggregationState <= STATE_IDLE) {
                 // If this is not an array size data then we should be parsing one of the fields.
-                throw new IllegalStateException("Unexpected data type: " + data.getClass().getName() + ". Current State: " + aggregationState);
+                throw new IllegalStateException("Unexpected data type: " + data.getClass().getName() +
+                        ". Current State: " + aggregationState);
             }
 
             if (data instanceof FirstBulkStringChunk && !(data instanceof CompleteBulkString)) {
@@ -298,7 +300,8 @@ final class SubscribedChannelReadStream
 
             if (data instanceof CompleteRedisData) {
                 if (currentDataBuffer != null && currentDataBuffer.readableBytes() > 0) {
-                    throw new IllegalStateException("Incomplete buffer exists " + currentDataBuffer.toString(defaultCharset())
+                    throw new IllegalStateException("Incomplete buffer exists " +
+                            currentDataBuffer.toString(defaultCharset())
                             + " but got " + data.getClass().getSimpleName() + ", current state: " + aggregationState);
                 }
                 storeCompletedMessage((CompleteRedisData) data);
@@ -317,8 +320,8 @@ final class SubscribedChannelReadStream
                     subscription.request(1);
                 }
             } else {
-                throw new IllegalStateException("Unknown data type while aggregation: " + data.getClass().getSimpleName()
-                        + ", current state: " + aggregationState);
+                throw new IllegalStateException("Unknown data type while aggregation: " +
+                        data.getClass().getSimpleName() + ", current state: " + aggregationState);
             }
         }
 
@@ -390,7 +393,8 @@ final class SubscribedChannelReadStream
                     } else {
                         assert currentKeyType == Pattern;
                         assert currentChannelName != null && currentPatternName != null;
-                        msg = new PubSubChannelMessage(currentMessageType, currentPatternName, currentChannelName, currentMessageData);
+                        msg = new PubSubChannelMessage(currentMessageType, currentPatternName, currentChannelName,
+                                currentMessageData);
                     }
                     currentPatternName = null;
                     currentChannelName = null;
@@ -415,7 +419,8 @@ final class SubscribedChannelReadStream
         public void onComplete() {
             // Sanity check
             if (aggregationState != STATE_IDLE) {
-                target.onError(new IllegalStateException("Aggregation not completed but stream completed. Current state: " + aggregationState));
+                target.onError(new IllegalStateException(
+                        "Aggregation not completed but stream completed. Current state: " + aggregationState));
             } else {
                 target.onComplete();
             }

@@ -141,8 +141,8 @@ final class TimeoutCompletable extends AbstractNoHandleSubscribeCompletable {
                 try {
                     stopTimer();
                 } finally {
-                    // oldCancellable can't be null here, because we don't give out this object to onSubscribe unless the
-                    // cancellable is set.
+                    // oldCancellable can't be null here, because we don't give out this object to onSubscribe unless
+                    // the cancellable is set.
                     oldCancellable.cancel();
                 }
             }

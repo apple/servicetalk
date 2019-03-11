@@ -38,9 +38,11 @@ public interface EventLoopAwareNettyIoExecutor extends NettyIoExecutor {
     EventLoopGroup eventLoopGroup();
 
     /**
-     * Returns a {@link EventLoopAwareNettyIoExecutor} that is tied to a single {@link EventLoop} and not a {@link EventLoopGroup}.
+     * Returns a {@link EventLoopAwareNettyIoExecutor} that is tied to a single {@link EventLoop} and not a
+     * {@link EventLoopGroup}.
      *
-     * @return {@link EventLoopAwareNettyIoExecutor} that is tied to a single {@link EventLoop} and not a {@link EventLoopGroup}.
+     * @return {@link EventLoopAwareNettyIoExecutor} that is tied to a single {@link EventLoop} and not a
+     * {@link EventLoopGroup}.
      */
     EventLoopAwareNettyIoExecutor next();
 }

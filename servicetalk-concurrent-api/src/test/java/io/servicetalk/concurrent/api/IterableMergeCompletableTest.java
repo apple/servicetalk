@@ -24,7 +24,8 @@ import static java.util.Arrays.asList;
 
 public class IterableMergeCompletableTest {
     @Rule
-    public final MergeCompletableTest.CompletableHolder collectionHolder = new MergeCompletableTest.CompletableHolder() {
+    public final MergeCompletableTest.CompletableHolder collectionHolder =
+            new MergeCompletableTest.CompletableHolder() {
         @Override
         protected Completable createCompletable(Completable[] completables) {
             return new IterableMergeCompletable(false, completables[0],

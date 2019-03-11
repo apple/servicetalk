@@ -21,4 +21,31 @@
 <suppressions>
   <suppress id="CopyrightHeader" files="io/servicetalk/redis/api/StringByteSizeUtil.java"/>
   <suppress checks="ModifiedControlVariable" files="io/servicetalk/redis/api/StringByteSizeUtil.java"/>
+  <suppress checks="LineLength" files="io/servicetalk/redis/api/BlockingBufferRedisCommander.java"/>
+  <suppress checks="LineLength" files="io/servicetalk/redis/api/BlockingBufferRedisCommanderToBufferRedisCommander.java"/>
+  <suppress checks="LineLength" files="io/servicetalk/redis/api/BlockingPartitionedBufferRedisCommanderToPartitionedBufferRedisCommander.java"/>
+  <suppress checks="LineLength" files="io/servicetalk/redis/api/BlockingPartitionedRedisCommanderToPartitionedRedisCommander.java"/>
+  <suppress checks="LineLength" files="io/servicetalk/redis/api/BlockingRedisCommander.java"/>
+  <suppress checks="LineLength" files="io/servicetalk/redis/api/BlockingRedisCommanderToRedisCommander.java"/>
+  <suppress checks="LineLength" files="io/servicetalk/redis/api/BlockingTransactedBufferRedisCommander.java"/>
+  <suppress checks="LineLength" files="io/servicetalk/redis/api/BlockingTransactedBufferRedisCommanderToTransactedBufferRedisCommander.java"/>
+  <suppress checks="LineLength" files="io/servicetalk/redis/api/BlockingTransactedRedisCommander.java"/>
+  <suppress checks="LineLength" files="io/servicetalk/redis/api/BlockingTransactedRedisCommanderToTransactedRedisCommander.java"/>
+  <suppress checks="LineLength" files="io/servicetalk/redis/api/BufferRedisCommander.java"/>
+  <suppress checks="LineLength" files="io/servicetalk/redis/api/BufferRedisCommanderToBlockingBufferRedisCommander.java"/>
+  <suppress checks="LineLength" files="io/servicetalk/redis/api/DefaultBufferRedisCommander.java"/>
+  <suppress checks="LineLength" files="io/servicetalk/redis/api/DefaultPartitionedBufferRedisCommander.java"/>
+  <suppress checks="LineLength" files="io/servicetalk/redis/api/DefaultPartitionedRedisCommander.java"/>
+  <suppress checks="LineLength" files="io/servicetalk/redis/api/DefaultRedisCommander.java"/>
+  <suppress checks="LineLength" files="io/servicetalk/redis/api/DefaultTransactedBufferRedisCommander.java"/>
+  <suppress checks="LineLength" files="io/servicetalk/redis/api/DefaultTransactedRedisCommander.java"/>
+  <suppress checks="LineLength" files="io/servicetalk/redis/api/PartitionedBufferRedisCommanderToBlockingPartitionedBufferRedisCommander.java"/>
+  <suppress checks="LineLength" files="io/servicetalk/redis/api/PartitionedRedisCommanderToBlockingPartitionedRedisCommander.java"/>
+  <suppress checks="LineLength" files="io/servicetalk/redis/api/PubSubBufferRedisConnectionToBlockingPubSubBufferRedisConnection.java"/>
+  <suppress checks="LineLength" files="io/servicetalk/redis/api/RedisCommander.java"/>
+  <suppress checks="LineLength" files="io/servicetalk/redis/api/RedisCommanderToBlockingRedisCommander.java"/>
+  <suppress checks="LineLength" files="io/servicetalk/redis/api/TransactedBufferRedisCommander.java"/>
+  <suppress checks="LineLength" files="io/servicetalk/redis/api/TransactedBufferRedisCommanderToBlockingTransactedBufferRedisCommander.java"/>
+  <suppress checks="LineLength" files="io/servicetalk/redis/api/TransactedRedisCommander.java"/>
+  <suppress checks="LineLength" files="io/servicetalk/redis/api/TransactedRedisCommanderToBlockingTransactedRedisCommander.java"/>
 </suppressions>

@@ -60,7 +60,8 @@ public final class FlowControlUtil {
      * If {@code x} is negative then {@code x} is returned.
      * @param x first value (may be negative).
      * @param y second value (should be positive).
-     * @return The result of {@code x+y} or {@link Long#MAX_VALUE} if overflow occurs, or {@code x} if {@code x} is negative.
+     * @return The result of {@code x+y} or {@link Long#MAX_VALUE} if overflow occurs, or {@code x} if {@code x} is
+     * negative.
      */
     public static long addWithOverflowProtectionIfNotNegative(long x, long y) {
         return x < 0 ? x : addWithOverflowProtection(x, y);
@@ -71,7 +72,8 @@ public final class FlowControlUtil {
      * If {@code x} is negative then {@code x} is returned.
      * @param x first value (may be negative).
      * @param y second value (should be positive).
-     * @return The result of {@code x+y} or {@link Integer#MAX_VALUE} if overflow occurs, or {@code x} if {@code x} is negative.
+     * @return The result of {@code x+y} or {@link Integer#MAX_VALUE} if overflow occurs, or {@code x} if {@code x} is
+     * negative.
      */
     public static int addWithOverflowProtectionIfNotNegative(int x, int y) {
         return x < 0 ? x : addWithOverflowProtection(x, y);
@@ -82,7 +84,8 @@ public final class FlowControlUtil {
      * If {@code x} is negative or zero then {@code x} is returned.
      * @param x first value (may be negative).
      * @param y second value (should be positive).
-     * @return The result of {@code x+y} or {@link Integer#MAX_VALUE} if overflow occurs, or {@code x} if {@code x} is negative.
+     * @return The result of {@code x+y} or {@link Integer#MAX_VALUE} if overflow occurs, or {@code x} if {@code x} is
+     * negative.
      */
     public static int addWithOverflowProtectionIfPositive(int x, int y) {
         return x <= 0 ? x : addWithOverflowProtection(x, y);
@@ -93,7 +96,8 @@ public final class FlowControlUtil {
      * If {@code x} is negative or zero then {@code x} is returned.
      * @param x first value (may be negative).
      * @param y second value (should be positive).
-     * @return The result of {@code x+y} or {@link Long#MAX_VALUE} if overflow occurs, or {@code x} if {@code x} is negative.
+     * @return The result of {@code x+y} or {@link Long#MAX_VALUE} if overflow occurs, or {@code x} if {@code x} is
+     * negative.
      */
     public static long addWithOverflowProtectionIfPositive(long x, long y) {
         return x <= 0 ? x : addWithOverflowProtection(x, y);

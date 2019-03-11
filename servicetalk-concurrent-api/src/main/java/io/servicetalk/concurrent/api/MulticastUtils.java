@@ -93,25 +93,30 @@ final class MulticastUtils {
             drainPendingFromSource(subscriberQueue, target);
         }
 
-        private void drainPendingFromSource(SpscQueue<T> subscriberQueue, @Nullable Subscriber<? super T> groupSinkTarget) {
+        private void drainPendingFromSource(SpscQueue<T> subscriberQueue,
+                                            @Nullable Subscriber<? super T> groupSinkTarget) {
             if (groupSinkTarget == null) {
                 return;
             }
-            final long drainCount = drainToSubscriber(subscriberQueue, groupSinkTarget, subscriberStateUpdater, () -> requested - sourceEmitted,
-                    terminalNotification -> { }, this::cancelSourceFromSource, this::drainPendingHandleEmitted, this);
+            final long drainCount = drainToSubscriber(subscriberQueue, groupSinkTarget, subscriberStateUpdater,
+                    () -> requested - sourceEmitted, terminalNotification -> { }, this::cancelSourceFromSource,
+                    this::drainPendingHandleEmitted, this);
             if (drainCount > 0) {
                 updateRequestN(drainCount);
             }
         }
 
         final void drainPendingFromExternal(SpscQueue<T> subscriberQueue, Subscriber<? super T> groupSinkTarget) {
-            // When draining from external source we should always call updateRequestN, because we have increased the requestedUpdater.
-            updateRequestN(drainToSubscriber(subscriberQueue, groupSinkTarget, subscriberStateUpdater, () -> requested - sourceEmitted,
-                    terminalNotification -> { }, this::cancelSourceFromExternal, this::drainPendingHandleEmitted, this));
+            // When draining from external source we should always call updateRequestN, because we have increased the
+            // requestedUpdater.
+            updateRequestN(drainToSubscriber(subscriberQueue, groupSinkTarget, subscriberStateUpdater,
+                    () -> requested - sourceEmitted, terminalNotification -> { }, this::cancelSourceFromExternal,
+                    this::drainPendingHandleEmitted, this));
         }
 
         private void drainPendingHandleEmitted(int onNextCount) {
-            // We ignore overflow here because once we get to this extreme, we won't be able to account for more data anyways.
+            // We ignore overflow here because once we get to this extreme, we won't be able to account for more data
+            // anyways.
             sourceEmittedUpdater.addAndGet(this, onNextCount);
         }
 
@@ -121,26 +126,30 @@ final class MulticastUtils {
             cancelSourceFromSource(true, cause, target, subscriberQueue);
         }
 
-        private void cancelSourceFromSource(boolean subscriberLockAcquired, Throwable cause, @Nullable Subscriber<? super T> groupSinkTarget, @Nullable SpscQueue<T> groupSinkQueue) {
+        private void cancelSourceFromSource(boolean subscriberLockAcquired, Throwable cause,
+                                            @Nullable Subscriber<? super T> groupSinkTarget,
+                                            @Nullable SpscQueue<T> groupSinkQueue) {
             terminatedPrematurely = true;
             cancelSourceFromSource(subscriberLockAcquired, cause);
             if (groupSinkTarget == null) {
                 assert groupSinkQueue != null;
-                // If there is no target it is likely this object will just be GC'ed, but it is possible someone could subscribe in
-                // a racy fashion and eventually get the data.
+                // If there is no target it is likely this object will just be GC'ed, but it is possible someone could
+                // subscribe in a racy fashion and eventually get the data.
                 groupSinkQueue.addTerminal(TerminalNotification.error(cause));
                 drainPendingFromSource(groupSinkQueue);
             } else if (groupSinkQueue == null || groupSinkQueue.isEmpty()) {
-                if (subscriberLockAcquired || subscriberStateUpdater.compareAndSet(this, SUBSCRIBER_STATE_IDLE, SUBSCRIBER_STATE_ON_NEXT)) {
+                if (subscriberLockAcquired || subscriberStateUpdater.compareAndSet(this, SUBSCRIBER_STATE_IDLE,
+                        SUBSCRIBER_STATE_ON_NEXT)) {
                     try {
                         groupSinkTarget.onError(cause);
                     } catch (Throwable onErrorError) {
-                        LOGGER.error("Subscriber {} threw from onError for exception {}", groupSinkTarget, cause, onErrorError);
+                        LOGGER.error("Subscriber {} threw from onError for exception {}", groupSinkTarget, cause,
+                                onErrorError);
                     } finally {
                         if (!subscriberLockAcquired) {
                             subscriberState = SUBSCRIBER_STATE_IDLE;
-                            // No need to drain the queue because we are in the Subscriber's thread and nothing else will be queued
-                            // because the Subscriber is the only producer for the queue.
+                            // No need to drain the queue because we are in the Subscriber's thread and nothing else
+                            // will be queued because the Subscriber is the only producer for the queue.
                         }
                     }
                 }
@@ -167,33 +176,40 @@ final class MulticastUtils {
                     this.subscriberQueue = subscriberQueue = new SpscQueue<>(maxQueueSize);
                 }
                 if (!subscriberQueue.offerNext(next)) {
-                    cancelSourceFromSource(false, new QueueFullException(queueIdentifier(), maxQueueSize), this.target, subscriberQueue);
+                    cancelSourceFromSource(false, new QueueFullException(queueIdentifier(), maxQueueSize), this.target,
+                            subscriberQueue);
                 }
                 drainPendingFromSource(subscriberQueue);
             } else if (subscriberQueue != null && !subscriberQueue.isEmpty()) {
                 // The queue is not empty. We have to go through the queue to ensure ordering is preserved.
                 if (!subscriberQueue.offerNext(next)) {
-                    cancelSourceFromSource(false, new QueueFullException(queueIdentifier(), maxQueueSize), this.target, subscriberQueue);
+                    cancelSourceFromSource(false, new QueueFullException(queueIdentifier(), maxQueueSize), this.target,
+                            subscriberQueue);
                 }
                 drainPendingFromSource(subscriberQueue, target);
             } else if (subscriberStateUpdater.compareAndSet(this, SUBSCRIBER_STATE_IDLE, SUBSCRIBER_STATE_ON_NEXT)) {
-                // The queue is empty, and we acquired the lock so we can try to directly deliver to target (assuming there is request(n) demand).
+                // The queue is empty, and we acquired the lock so we can try to directly deliver to target (assuming
+                // there is request(n) demand).
                 if (sourceEmitted != requested) {
                     try {
-                        // We ignore overflow here because once we get to this extreme, we won't be able to account for more data anyways.
+                        // We ignore overflow here because once we get to this extreme, we won't be able to account for
+                        // more data anyways.
                         sourceEmittedUpdater.incrementAndGet(this);
                         target.onNext(next);
-                        // This may deliver more data. It must be called after data is delivered to ensure ordering is preserved.
-                        // Re-entry is OK because the lock will fail to be acquired, and the item will be added to the queue and processed below.
+                        // This may deliver more data. It must be called after data is delivered to ensure ordering is
+                        // preserved. Re-entry is OK because the lock will fail to be acquired, and the item will be
+                        // added to the queue and processed below.
                         updateRequestN(1);
                     } catch (Throwable cause) {
                         cancelSourceFromSource(true, new IllegalStateException(
-                                "Unexpected exception thrown from onNext for identifier " + queueIdentifier(), cause), target, this.subscriberQueue);
+                                        "Unexpected exception thrown from onNext for identifier " + queueIdentifier(),
+                                        cause),
+                                target, this.subscriberQueue);
                     } finally {
                         this.subscriberState = SUBSCRIBER_STATE_IDLE;
                     }
-                    // It is possible that re-entry condition resulted in creating a queue and appending data, so we should
-                    // re-read the subscriberQueue member variable just in case.
+                    // It is possible that re-entry condition resulted in creating a queue and appending data, so we
+                    // should re-read the subscriberQueue member variable just in case.
                     if (subscriberQueue == null) {
                         subscriberQueue = this.subscriberQueue;
                     }
@@ -203,7 +219,8 @@ final class MulticastUtils {
                         this.subscriberQueue = subscriberQueue = new SpscQueue<>(maxQueueSize);
                     }
                     if (!subscriberQueue.offerNext(next)) {
-                        cancelSourceFromSource(true, new QueueFullException(queueIdentifier(), maxQueueSize), this.target, subscriberQueue);
+                        cancelSourceFromSource(true, new QueueFullException(queueIdentifier(), maxQueueSize),
+                                this.target, subscriberQueue);
                     }
                 }
                 if (subscriberQueue != null && !subscriberQueue.isEmpty()) {
@@ -212,12 +229,14 @@ final class MulticastUtils {
                     drainPendingFromSource(subscriberQueue, target);
                 }
             } else {
-                // If we failed to acquired the lock there is concurrency with request(n) and we have to go through the queue.
+                // If we failed to acquired the lock there is concurrency with request(n) and we have to go through the
+                // queue.
                 if (subscriberQueue == null) {
                     this.subscriberQueue = subscriberQueue = new SpscQueue<>(maxQueueSize);
                 }
                 if (!subscriberQueue.offerNext(next)) {
-                    cancelSourceFromSource(false, new QueueFullException(queueIdentifier(), maxQueueSize), this.target, subscriberQueue);
+                    cancelSourceFromSource(false, new QueueFullException(queueIdentifier(), maxQueueSize), this.target,
+                            subscriberQueue);
                 }
                 drainPendingFromSource(subscriberQueue, target);
             }
@@ -249,14 +268,16 @@ final class MulticastUtils {
                 subscriberQueue.addTerminal(terminalNotification);
                 drainPendingFromSource(subscriberQueue);
             } else if (subscriberStateUpdater.compareAndSet(this, SUBSCRIBER_STATE_IDLE, SUBSCRIBER_STATE_ON_NEXT)) {
-                // If there is no queue then we can not be emitting as we only create a queue from on* methods which are never concurrent.
+                // If there is no queue then we can not be emitting as we only create a queue from on* methods which are
+                // never concurrent.
                 try {
                     terminalNotification.terminate(target);
                 } catch (Throwable onErrorError) {
                     LOGGER.error("Subscriber {} threw for terminal {}", target, terminalNotification, onErrorError);
                 }
             } else {
-                // If we failed to acquired the lock there is concurrency with request(n) and we have to go through the queue.
+                // If we failed to acquired the lock there is concurrency with request(n) and we have to go through the
+                // queue.
                 if (subscriberQueue == null) {
                     this.subscriberQueue = subscriberQueue = new SpscQueue<>(maxQueueSize);
                 }
@@ -270,7 +291,8 @@ final class MulticastUtils {
          * @param drainedCount the number of elements that have been delivered to {@link #target}.
          */
         private void updateRequestN(long drainedCount) {
-            int actualSourceRequestN = calculateSourceRequested(requestedUpdater, sourceRequestedUpdater, sourceEmittedUpdater, maxQueueSize, this);
+            int actualSourceRequestN = calculateSourceRequested(requestedUpdater, sourceRequestedUpdater,
+                    sourceEmittedUpdater, maxQueueSize, this);
             if (actualSourceRequestN > drainedCount) {
                 requestFromSource(actualSourceRequestN - (int) drainedCount);
             }
@@ -298,8 +320,8 @@ final class MulticastUtils {
             }
             requestedUpdater.accumulateAndGet(this, n, FlowControlUtil::addWithOverflowProtection);
 
-            // We have to load the queue variable after we increment the request count in case the queue becomes non-null
-            // after we increment the request count and we need to drain the queue.
+            // We have to load the queue variable after we increment the request count in case the queue becomes
+            // non-null after we increment the request count and we need to drain the queue.
             final SpscQueue<T> subscriberQueue = this.subscriberQueue;
             final Subscriber<? super T> target;
             if (subscriberQueue != null && (target = this.target) != null) {
@@ -311,7 +333,8 @@ final class MulticastUtils {
     }
 
     static final class SpscQueue<T> {
-        private static final AtomicIntegerFieldUpdater<SpscQueue> sizeUpdater = AtomicIntegerFieldUpdater.newUpdater(SpscQueue.class, "size");
+        private static final AtomicIntegerFieldUpdater<SpscQueue> sizeUpdater =
+                AtomicIntegerFieldUpdater.newUpdater(SpscQueue.class, "size");
 
         private final int maxCapacity;
         private final Queue<Object> unboundedSpsc;
@@ -352,26 +375,33 @@ final class MulticastUtils {
     }
 
     /**
-     * Drains the {@code toDrain} {@link Queue} to the {@code target} {@link Subscriber}. <p>
-     *     This will only drain as many items found in the queue to match {@link Subscriber}s demand as reflected by {@code requestedUpdater}.
-     *     If a {@link TerminalNotification} is found in the queue (while draining), draining is terminated.
-     *     This also means that if we have satisfied {@link Subscriber}s demand ({@code requestedUpdater} set to {@code 0}) and the next item available in the {@link Queue} is a {@link TerminalNotification},
-     *     we will terminate the {@link Subscriber}, without waiting for more demand.
+     * Drains the {@code toDrain} {@link Queue} to the {@code target} {@link Subscriber}.
      * <p>
-     * <b>Any error thrown from {@link Subscriber#onNext(Object)} will call {@code nonTerminalErrorConsumer} and terminate the drain loop.</b>
+     * This will only drain as many items found in the queue to match {@link Subscriber}s demand as reflected by
+     * {@code requestedUpdater}.
+     * If a {@link TerminalNotification} is found in the queue (while draining), draining is terminated.
+     * This also means that if we have satisfied {@link Subscriber}s demand ({@code requestedUpdater} set to {@code 0})
+     * and the next item available in the {@link Queue} is a {@link TerminalNotification},
+     * we will terminate the {@link Subscriber}, without waiting for more demand.
+     * <p>
+     * <b>Any error thrown from {@link Subscriber#onNext(Object)} will call {@code nonTerminalErrorConsumer} and
+     * terminate the drain loop.</b>
      *
-     * @param toDrain {@link SpscQueue} that could contain objects (of type {@link T}) or an optional {@link TerminalNotification}.
-     *                Any objects other than {@link TerminalNotification} are sent as {@link Subscriber#onNext(Object)}.
-     * @param target {@link Subscriber} that receives {@link Subscriber#onNext(Object)} signal for each object other than {@link TerminalNotification} found in the queue.
-     *               It receives at most one {@link TerminalNotification} if found in the queue.
+     * @param toDrain {@link SpscQueue} that could contain objects (of type {@link T}) or an optional
+     * {@link TerminalNotification}. Any objects other than {@link TerminalNotification} are sent as
+     * {@link Subscriber#onNext(Object)}.
+     * @param target {@link Subscriber} that receives {@link Subscriber#onNext(Object)} signal for each object other
+     * than {@link TerminalNotification} found in the queue. It receives at most one {@link TerminalNotification} if
+     * found in the queue.
      * @param subscriberStateUpdater An {@link AtomicIntegerFieldUpdater} for updating {@link Subscriber} state.
      * @param requestedSupplier Provides the current outstanding demand from the {@link Subscriber}.
-     * @param terminalConsumer A {@link Consumer} that is called while the lock is acquired and a {@link TerminalNotification} is popped from the queue.
-     *                         Invoked after {@code target} has been terminated.
-     * @param nonTerminalErrorConsumer Called when an exception is thrown from methods other than {@link Subscriber#onError(Throwable)} or {@link Subscriber#onComplete()}.
-     *                             Will be invoked before the consuming lock is released and the return value is the state of the lock.
-     * @param onNextCountConsumer The number of times {@link Subscriber#onNext(Object)} is called. This may be invoked multiple times
-     *                            because this method has a loop for concurrency reasons. The value will always be {@code >0}.
+     * @param terminalConsumer A {@link Consumer} that is called while the lock is acquired and a
+     * {@link TerminalNotification} is popped from the queue. Invoked after {@code target} has been terminated.
+     * @param nonTerminalErrorConsumer Called when an exception is thrown from methods other than
+     * {@link Subscriber#onError(Throwable)} or {@link Subscriber#onComplete()}. Will be invoked before the consuming
+     * lock is released and the return value is the state of the lock.
+     * @param onNextCountConsumer The number of times {@link Subscriber#onNext(Object)} is called. This may be invoked
+     * multiple times because this method has a loop for concurrency reasons. The value will always be {@code >0}.
      * @param flagOwner Holding instance for {@code requestedUpdater}.
      * @param <T> Type of items stored in the {@link Queue}.
      * @param <R> Type of the object holding {@code subscriberStateUpdater} and {@code requestedUpdater}.
@@ -397,7 +427,8 @@ final class MulticastUtils {
                 while (i < requestCount) {
                     final Object next = toDrain.unboundedSpsc.poll();
                     if (next == null) {
-                        // Items can be added to the queue after we polled, so release-lock, acquire and run the loop again.
+                        // Items can be added to the queue after we polled, so release-lock, acquire and run the loop
+                        // again.
                         break;
                     }
 

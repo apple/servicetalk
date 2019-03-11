@@ -910,7 +910,8 @@ public interface Buffer {
      *
      * @param index absolute (@code index) in this buffer.
      * @param src the source InputStream.
-     * @param length the maximum number of bytes to transfer. The buffer may be resized to accommodate this amount of data.
+     * @param length the maximum number of bytes to transfer. The buffer may be resized to accommodate this amount of
+     * data.
      * @return the actual number of bytes read in from {@code src}.
      *         {@code -1} if the specified channel is closed.
      * @throws IndexOutOfBoundsException
@@ -933,7 +934,7 @@ public interface Buffer {
      * @param src the source InputStream.
      * @param chunkSize chunkSize the amount of data that will be read from {@code src} on each read attempt.
      * @return the actual total number of bytes read in from {@code src}.
-     *         {@code -1} if no bytes were read because the specified InputStream was closed when this method was called.
+     * {@code -1} if no bytes were read because the specified InputStream was closed when this method was called.
      * @throws IndexOutOfBoundsException
      *         if the specified {@code index} is less than {@code 0} or
      *         if {@code index + src.remaining()} is greater than
@@ -1737,8 +1738,8 @@ public interface Buffer {
     Buffer duplicate();
 
     /**
-     * Returns the maximum number of NIO {@link ByteBuffer}s that consist this buffer.  Note that {@link #toNioBuffers()}
-     * or {@link #toNioBuffers(int, int)} might return a less number of {@link ByteBuffer}s.
+     * Returns the maximum number of NIO {@link ByteBuffer}s that consist this buffer.  Note that
+     * {@link #toNioBuffers()} or {@link #toNioBuffers(int, int)} might return a less number of {@link ByteBuffer}s.
      *
      * @return {@code -1} if this buffer has no underlying {@link ByteBuffer}.
      *         the number of the underlying {@link ByteBuffer}s if this buffer has at least one underlying

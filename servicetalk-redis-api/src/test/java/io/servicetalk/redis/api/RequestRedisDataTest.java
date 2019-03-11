@@ -342,7 +342,8 @@ public class RequestRedisDataTest {
 
     @Test
     public void testBufferGroupConsumer() {
-        assertWritten(new BufferGroupConsumer(BUFFER_ABCDE, BUFFER_FGHIJ), "$5\r\nGROUP\r\n$5\r\nabcde\r\n$5\r\nfghij\r\n");
+        assertWritten(new BufferGroupConsumer(BUFFER_ABCDE, BUFFER_FGHIJ),
+                "$5\r\nGROUP\r\n$5\r\nabcde\r\n$5\r\nfghij\r\n");
     }
 
     @Test
@@ -362,12 +363,14 @@ public class RequestRedisDataTest {
 
     @Test
     public void testBufferLongitudeLatitudeMember() {
-        assertWritten(new BufferLongitudeLatitudeMember(-123.1, 49.25, BUFFER_ABCDE), "$6\r\n-123.1\r\n$5\r\n49.25\r\n$5\r\nabcde\r\n");
+        assertWritten(new BufferLongitudeLatitudeMember(-123.1, 49.25, BUFFER_ABCDE),
+                "$6\r\n-123.1\r\n$5\r\n49.25\r\n$5\r\nabcde\r\n");
     }
 
     @Test
     public void testLongitudeLatitudeMember() {
-        assertWritten(new LongitudeLatitudeMember(-123.1, 49.25, "abcde"), "$6\r\n-123.1\r\n$5\r\n49.25\r\n$5\r\nabcde\r\n");
+        assertWritten(new LongitudeLatitudeMember(-123.1, 49.25, "abcde"),
+                "$6\r\n-123.1\r\n$5\r\n49.25\r\n$5\r\nabcde\r\n");
     }
 
     @Test
@@ -392,12 +395,14 @@ public class RequestRedisDataTest {
 
     @Test
     public void testBitfieldOperationsIncrby() {
-        assertWritten(new BitfieldOperations.Incrby(IntegerType.U42, 12345, 678), "$6\r\nINCRBY\r\n$3\r\nu42\r\n$5\r\n12345\r\n$3\r\n678\r\n");
+        assertWritten(new BitfieldOperations.Incrby(IntegerType.U42, 12345, 678),
+                "$6\r\nINCRBY\r\n$3\r\nu42\r\n$5\r\n12345\r\n$3\r\n678\r\n");
     }
 
     @Test
     public void testBitfieldOperationsSet() {
-        assertWritten(new BitfieldOperations.Set(IntegerType.U42, 12345, 678), "$3\r\nSET\r\n$3\r\nu42\r\n$5\r\n12345\r\n$3\r\n678\r\n");
+        assertWritten(new BitfieldOperations.Set(IntegerType.U42, 12345, 678),
+                "$3\r\nSET\r\n$3\r\nu42\r\n$5\r\n12345\r\n$3\r\n678\r\n");
     }
 
     @Test
@@ -410,7 +415,8 @@ public class RequestRedisDataTest {
         data.encodeTo(buffer);
         assertThat(buffer.toString(UTF_8), equalTo(expected));
         int expectedLength = expected.length();
-        assertThat("encodedByteCount() did not calculate correct length", data.encodedByteCount(), equalTo(expectedLength));
+        assertThat("encodedByteCount() did not calculate correct length", data.encodedByteCount(),
+                equalTo(expectedLength));
         assertThat("buffer.readableBytes() was not as expected", buffer.readableBytes(), equalTo(expectedLength));
         assertThat("buffer capacity was not as expected", buffer.capacity(), equalTo(expectedLength));
     }

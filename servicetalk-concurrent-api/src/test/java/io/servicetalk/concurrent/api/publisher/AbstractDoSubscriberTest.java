@@ -59,5 +59,6 @@ public abstract class AbstractDoSubscriberTest {
         assertThat(subscriber.takeError(), sameInstance(DELIBERATE_EXCEPTION));
     }
 
-    protected abstract <T> Publisher<T> doSubscriber(Publisher<T> publisher, Supplier<Subscriber<? super T>> subscriberSupplier);
+    protected abstract <T> Publisher<T> doSubscriber(Publisher<T> publisher,
+                                                     Supplier<Subscriber<? super T>> subscriberSupplier);
 }

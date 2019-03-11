@@ -82,7 +82,8 @@ public final class DefaultExecutorTest {
     private final boolean supportsCancellation;
     private final int size;
 
-    public DefaultExecutorTest(Supplier<Executor> executorSupplier, String name, boolean supportsCancellation, int size) {
+    public DefaultExecutorTest(Supplier<Executor> executorSupplier, String name, boolean supportsCancellation,
+                               int size) {
         // Use new executor for each test per parameter.
         executor = executorSupplier.get();
         this.name = name;

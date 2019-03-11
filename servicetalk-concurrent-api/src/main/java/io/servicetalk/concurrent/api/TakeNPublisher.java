@@ -98,7 +98,8 @@ final class TakeNPublisher<T> extends AbstractSynchronousPublisherOperator<T, T>
             if (++receivedElements >= numElements || receivedElements <= 0) {
                 this.subscription = CANCELLED;
 
-                // This is guarded in our Subscription implementation with a CAS operation as we extend ConcurrentSubscription.
+                // This is guarded in our Subscription implementation with a CAS operation as we extend
+                // ConcurrentSubscription.
                 subscription.cancel();
                 subscriber.onComplete();
             }

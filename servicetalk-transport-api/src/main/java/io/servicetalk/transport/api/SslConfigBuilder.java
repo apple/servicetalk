@@ -143,17 +143,20 @@ public final class SslConfigBuilder {
      * If this is not the desired behavior then wrap the {@link InputStream} and override {@link InputStream#close()}.
      * @return a new {@link SslConfigBuilder} for servers.
      */
-    public static SslConfigBuilder forServer(Supplier<InputStream> keyCertChainSupplier, Supplier<InputStream> keySupplier) {
+    public static SslConfigBuilder forServer(Supplier<InputStream> keyCertChainSupplier,
+                                             Supplier<InputStream> keySupplier) {
         return new SslConfigBuilder(true).keyManager(keyCertChainSupplier, keySupplier);
     }
 
     /**
      * Creates a builder for new server-side {@link SslConfig}.
      **
-     * @param keyCertChainSupplier an {@link Supplier} that will provide an input stream for a X.509 certificate chain in PEM format.
+     * @param keyCertChainSupplier an {@link Supplier} that will provide an input stream for a X.509 certificate chain
+     * in PEM format.
      * <p>
-     * The responsibility to call {@link InputStream#close()} is transferred to callers of the returned {@link Supplier}.
-     * If this is not the desired behavior then wrap the {@link InputStream} and override {@link InputStream#close()}.
+     * The responsibility to call {@link InputStream#close()} is transferred to callers of the returned
+     * {@link Supplier}. If this is not the desired behavior then wrap the {@link InputStream} and override
+     * {@link InputStream#close()}.
      * @param keySupplier an {@link Supplier} that will provide an input stream for a KCS#8 private key in PEM format.
      * <p>
      * The responsibility to call {@link InputStream#close()} is transferred to callers of the {@link Supplier}.
@@ -183,8 +186,9 @@ public final class SslConfigBuilder {
      *
      * @param trustCertChainSupplier a supplier for the certificate chain input stream.
      * <p>
-     * The responsibility to call {@link InputStream#close()} is transferred to callers of the returned {@link Supplier}.
-     * If this is not the desired behavior then wrap the {@link InputStream} and override {@link InputStream#close()}.
+     * The responsibility to call {@link InputStream#close()} is transferred to callers of the returned
+     * {@link Supplier}. If this is not the desired behavior then wrap the {@link InputStream} and override
+     * {@link InputStream#close()}.
      * @return self.
      */
     public SslConfigBuilder trustManager(Supplier<InputStream> trustCertChainSupplier) {
@@ -226,7 +230,8 @@ public final class SslConfigBuilder {
      * Identifying certificate for this host. {@code keyCertChainInputStream} and {@code keyInputStream} may
      * be {@code null} for client contexts, which disables mutual authentication.
      *
-     * @param keyCertChainSupplier an {@link Supplier} that will provide an input stream for a X.509 certificate chain in PEM format.
+     * @param keyCertChainSupplier an {@link Supplier} that will provide an input stream for a X.509 certificate chain
+     * in PEM format.
      * <p>
      * The responsibility to call {@link InputStream#close()} is transferred to callers of the {@link Supplier}.
      * If this is not the desired behavior then wrap the {@link InputStream} and override {@link InputStream#close()}.
@@ -244,7 +249,8 @@ public final class SslConfigBuilder {
      * Identifying certificate for this host. {@code keyCertChainInputStream} and {@code keyInputStream} may
      * be {@code null} for client contexts, which disables mutual authentication.
      *
-     * @param keyCertChainSupplier an {@link Supplier} that will provide an input stream for a X.509 certificate chain in PEM format.
+     * @param keyCertChainSupplier an {@link Supplier} that will provide an input stream for a X.509 certificate chain
+     * in PEM format.
      * <p>
      * The responsibility to call {@link InputStream#close()} is transferred to callers of the {@link Supplier}.
      * If this is not the desired behavior then wrap the {@link InputStream} and override {@link InputStream#close()}.

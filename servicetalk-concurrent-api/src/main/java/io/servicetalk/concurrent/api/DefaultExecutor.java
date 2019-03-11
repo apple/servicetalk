@@ -40,22 +40,25 @@ import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
- * An implementation of {@link Executor} that uses an implementation of {@link java.util.concurrent.Executor} to execute tasks.
+ * An implementation of {@link Executor} that uses an implementation of {@link java.util.concurrent.Executor} to execute
+ * tasks.
  */
 final class DefaultExecutor extends AbstractOffloaderAwareExecutor implements Consumer<Runnable> {
 
     private static final long DEFAULT_KEEP_ALIVE_TIME_SECONDS = 60;
     /**
      * We do not execute user code (potentially blocking/long running) on the scheduler thread and hence using a single
-     * scheduler thread is usually ok. In cases, when it is not, one can always override the executor with a custom scheduler.
+     * scheduler thread is usually ok. In cases, when it is not, one can always override the executor with a custom
+     * scheduler.
      */
     private static final ScheduledExecutorService SINGLE_THREADED_SCHEDULER =
             newSingleThreadScheduledExecutor(new DefaultThreadFactory("servicetalk-global-scheduler-",
                     true, NORM_PRIORITY));
     /**
      * Schedulers are only used to generate a tick and do not execute any user code. This means they will never run any
-     * blocking code and hence it does not matter whether we use the interruptOnCancel as sent by the user upon creation in the scheduler.
-     * User code (completion of Completable on tick) will be executed on the configured executor and not the Scheduler thread.
+     * blocking code and hence it does not matter whether we use the interruptOnCancel as sent by the user upon creation
+     * in the scheduler. User code (completion of Completable on tick) will be executed on the configured executor and
+     * not the Scheduler thread.
      */
     private static final InternalScheduler GLOBAL_SINGLE_THREADED_SCHEDULER = new InternalScheduler() {
         @Override
@@ -177,7 +180,8 @@ final class DefaultExecutor extends AbstractOffloaderAwareExecutor implements Co
         }
     }
 
-    private static InternalExecutor newInternalExecutor(java.util.concurrent.Executor jdkExecutor, boolean interruptOnCancel) {
+    private static InternalExecutor newInternalExecutor(java.util.concurrent.Executor jdkExecutor,
+                                                        boolean interruptOnCancel) {
         if (jdkExecutor instanceof ExecutorService) {
             return new InternalExecutor() {
                 private final ExecutorService service = (ExecutorService) jdkExecutor;

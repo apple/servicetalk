@@ -38,6 +38,7 @@ public final class AsyncCloseables {
     /**
      * Invokes {@link AsyncCloseable#closeAsyncGracefully()} on the {@code closable}, applies a timeout, and if the
      * timeout fires forces a call to {@link AsyncCloseable#closeAsync()}.
+     *
      * @param closable The {@link AsyncCloseable} to initiate {@link AsyncCloseable#closeAsyncGracefully()} on.
      * @param timeout The timeout duration to wait for {@link AsyncCloseable#closeAsyncGracefully()} to complete.
      * @param timeoutUnit The time unit applied to {@code timeout}.
@@ -51,7 +52,8 @@ public final class AsyncCloseables {
 
     /**
      * Creates an empty {@link ListenableAsyncCloseable} that does nothing when
-     * {@link ListenableAsyncCloseable#closeAsync()} apart from completing the {@link ListenableAsyncCloseable#onClose()}.
+     * {@link ListenableAsyncCloseable#closeAsync()} apart from completing the
+     * {@link ListenableAsyncCloseable#onClose()}.
      *
      * @return A new {@link ListenableAsyncCloseable}.
      */

@@ -40,11 +40,14 @@ public abstract class RedisRequester implements ListenableAsyncCloseable {
     private static final AtomicReferenceFieldUpdater<RedisRequester, RedisCommander> redisCommanderUpdater =
             AtomicReferenceFieldUpdater.newUpdater(RedisRequester.class, RedisCommander.class, "redisCommander");
     private static final AtomicReferenceFieldUpdater<RedisRequester, BufferRedisCommander> redisBufferCommanderUpdater =
-            AtomicReferenceFieldUpdater.newUpdater(RedisRequester.class, BufferRedisCommander.class, "redisBufferCommander");
-    private static final AtomicReferenceFieldUpdater<RedisRequester, BlockingRedisCommander> blockingRedisCommanderUpdater =
-            AtomicReferenceFieldUpdater.newUpdater(RedisRequester.class, BlockingRedisCommander.class, "blockingRedisCommander");
-    private static final AtomicReferenceFieldUpdater<RedisRequester, BlockingBufferRedisCommander> blockingRedisBufferCommanderUpdater =
-            AtomicReferenceFieldUpdater.newUpdater(RedisRequester.class, BlockingBufferRedisCommander.class, "blockingRedisBufferCommander");
+            AtomicReferenceFieldUpdater.newUpdater(RedisRequester.class, BufferRedisCommander.class,
+                    "redisBufferCommander");
+    private static final AtomicReferenceFieldUpdater<RedisRequester, BlockingRedisCommander>
+            blockingRedisCommanderUpdater = AtomicReferenceFieldUpdater.newUpdater(RedisRequester.class,
+            BlockingRedisCommander.class, "blockingRedisCommander");
+    private static final AtomicReferenceFieldUpdater<RedisRequester, BlockingBufferRedisCommander>
+            blockingRedisBufferCommanderUpdater = AtomicReferenceFieldUpdater.newUpdater(RedisRequester.class,
+            BlockingBufferRedisCommander.class, "blockingRedisBufferCommander");
 
     @SuppressWarnings("unused")
     @Nullable

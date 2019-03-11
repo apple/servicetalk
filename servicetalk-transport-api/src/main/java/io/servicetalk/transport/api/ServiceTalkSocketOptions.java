@@ -27,12 +27,14 @@ public final class ServiceTalkSocketOptions {
     /**
      * The connect timeout in milliseconds.
      */
-    public static final SocketOption<Integer> CONNECT_TIMEOUT = new ServiceTalkSocketOption<>("CONNECTION_TIMEOUT", Integer.class);
+    public static final SocketOption<Integer> CONNECT_TIMEOUT =
+            new ServiceTalkSocketOption<>("CONNECTION_TIMEOUT", Integer.class);
 
     /**
      * The threshold after which the the Endpoint is not writable anymore.
      */
-    public static final SocketOption<Integer> WRITE_BUFFER_THRESHOLD = new ServiceTalkSocketOption<>("WRITE_BUFFER_THRESHOLD", Integer.class);
+    public static final SocketOption<Integer> WRITE_BUFFER_THRESHOLD =
+            new ServiceTalkSocketOption<>("WRITE_BUFFER_THRESHOLD", Integer.class);
 
     /**
      * Allow to idle timeout in milli seconds after which the connection is closed.

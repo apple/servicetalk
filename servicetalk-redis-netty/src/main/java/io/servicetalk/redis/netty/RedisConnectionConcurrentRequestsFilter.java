@@ -84,7 +84,8 @@ final class RedisConnectionConcurrentRequestsFilter extends RedisConnectionFilte
                                     "Connection Closed: " + RedisConnectionConcurrentRequestsFilter.this);
                         } else {
                             reportedError = new ConnectionClosedException(
-                                    "Connection Closed: " + RedisConnectionConcurrentRequestsFilter.this, reportedError);
+                                    "Connection Closed: " + RedisConnectionConcurrentRequestsFilter.this,
+                                    reportedError);
                         }
                         break;
                     default:

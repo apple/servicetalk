@@ -33,8 +33,8 @@ import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toList;
 
 /**
- * An {@link StreamingHttpService} implementation which routes requests to a number of other {@link StreamingHttpService}s based on
- * predicates.
+ * An {@link StreamingHttpService} implementation which routes requests to a number of other
+ * {@link StreamingHttpService}s based on predicates.
  * <p>
  * The predicates from the specified {@link PredicateServicePair}s are evaluated in order, and the service from the
  * first one which returns {@code true} is used to handle the request. If no predicates match, the fallback service

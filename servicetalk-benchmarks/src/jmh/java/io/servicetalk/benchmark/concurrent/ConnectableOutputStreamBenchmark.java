@@ -46,49 +46,49 @@ import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
  * <pre>
  * Sample run comparing throughput of minimum vs double on resize strategy and flush on each vs 30% of writes.
  *
- * Benchmark                                             (dataSize)  (flushOnEach)   Mode  Cnt            Score            Error  Units
- * ConnectableOutputStreamBenchmark.group                      1000           true  thrpt    3     14420531.924 ±    1643793.333  ops/s
- * ConnectableOutputStreamBenchmark.group:consumedBytes        1000           true  thrpt    3   2283217869.979 ±  166557144.957  ops/s
- * ConnectableOutputStreamBenchmark.group:flush                1000           true  thrpt    3      2283210.042 ±     166445.653  ops/s
- * ConnectableOutputStreamBenchmark.group:onNext               1000           true  thrpt    3      2282745.343 ±     167246.663  ops/s
- * ConnectableOutputStreamBenchmark.group:producedBytes        1000           true  thrpt    3   2283210041.849 ±  166445652.838  ops/s
- * ConnectableOutputStreamBenchmark.group:requestN             1000           true  thrpt    3     12137336.948 ±    1507746.502  ops/s
- * ConnectableOutputStreamBenchmark.group:write                1000           true  thrpt    3      2283194.976 ±     166158.336  ops/s
- * ConnectableOutputStreamBenchmark.group                      1000          false  thrpt    3     49706282.158 ±    8563620.180  ops/s
- * ConnectableOutputStreamBenchmark.group:consumedBytes        1000          false  thrpt    3   2002143421.593 ±  757039466.941  ops/s
- * ConnectableOutputStreamBenchmark.group:flush                1000          false  thrpt    3       600502.218 ±     228788.285  ops/s
- * ConnectableOutputStreamBenchmark.group:onNext               1000          false  thrpt    3       600439.140 ±     228961.389  ops/s
- * ConnectableOutputStreamBenchmark.group:producedBytes        1000          false  thrpt    3   2002142728.565 ±  757003892.414  ops/s
- * ConnectableOutputStreamBenchmark.group:requestN             1000          false  thrpt    3     47704143.828 ±    7812104.236  ops/s
- * ConnectableOutputStreamBenchmark.group:write                1000          false  thrpt    3      2002138.330 ±     756940.582  ops/s
- * ConnectableOutputStreamBenchmark.group                    100000           true  thrpt    3     97975038.177 ±   18791096.475  ops/s
- * ConnectableOutputStreamBenchmark.group:consumedBytes      100000           true  thrpt    3  12542736164.169 ± 3003674779.827  ops/s
- * ConnectableOutputStreamBenchmark.group:flush              100000           true  thrpt    3       125427.106 ±      30033.759  ops/s
- * ConnectableOutputStreamBenchmark.group:onNext             100000           true  thrpt    3       125425.828 ±      30018.489  ops/s
- * ConnectableOutputStreamBenchmark.group:producedBytes      100000           true  thrpt    3  12542710616.019 ± 3003375884.451  ops/s
- * ConnectableOutputStreamBenchmark.group:requestN           100000           true  thrpt    3     97849611.270 ±   18761968.538  ops/s
- * ConnectableOutputStreamBenchmark.group:write              100000           true  thrpt    3       125426.906 ±      30033.758  ops/s
- * ConnectableOutputStreamBenchmark.group                    100000          false  thrpt    3    103361261.892 ±   18055706.399  ops/s
- * ConnectableOutputStreamBenchmark.group:consumedBytes      100000          false  thrpt    3   3271179635.437 ±  360722125.720  ops/s
- * ConnectableOutputStreamBenchmark.group:flush              100000          false  thrpt    3         9807.664 ±        484.184  ops/s
- * ConnectableOutputStreamBenchmark.group:onNext             100000          false  thrpt    3         9807.717 ±        485.220  ops/s
- * ConnectableOutputStreamBenchmark.group:producedBytes      100000          false  thrpt    3   3271302081.604 ±  360223642.512  ops/s
- * ConnectableOutputStreamBenchmark.group:requestN           100000          false  thrpt    3    103328549.071 ±   18052205.808  ops/s
- * ConnectableOutputStreamBenchmark.group:write              100000          false  thrpt    3        32712.821 ±       3603.743  ops/s
- * ConnectableOutputStreamBenchmark.group                   1000000           true  thrpt    3     98910550.896 ±   21466300.054  ops/s
- * ConnectableOutputStreamBenchmark.group:consumedBytes     1000000           true  thrpt    3   7885392958.202 ± 1236140367.226  ops/s
- * ConnectableOutputStreamBenchmark.group:flush             1000000           true  thrpt    3         7885.269 ±       1231.961  ops/s
- * ConnectableOutputStreamBenchmark.group:onNext            1000000           true  thrpt    3         7885.393 ±       1236.140  ops/s
- * ConnectableOutputStreamBenchmark.group:producedBytes     1000000           true  thrpt    3   7885268807.291 ± 1231961205.779  ops/s
- * ConnectableOutputStreamBenchmark.group:requestN          1000000           true  thrpt    3     98902665.693 ±   21466216.610  ops/s
- * ConnectableOutputStreamBenchmark.group:write             1000000           true  thrpt    3         7885.202 ±       1233.901  ops/s
- * ConnectableOutputStreamBenchmark.group                   1000000          false  thrpt    3     93467865.623 ±   24681285.758  ops/s
- * ConnectableOutputStreamBenchmark.group:consumedBytes     1000000          false  thrpt    3   1674200698.407 ± 1191352568.112  ops/s
- * ConnectableOutputStreamBenchmark.group:flush             1000000          false  thrpt    3          503.387 ±        437.377  ops/s
- * ConnectableOutputStreamBenchmark.group:onNext            1000000          false  thrpt    3          503.433 ±        438.518  ops/s
- * ConnectableOutputStreamBenchmark.group:producedBytes     1000000          false  thrpt    3   1675515746.200 ± 1184491875.465  ops/s
- * ConnectableOutputStreamBenchmark.group:requestN          1000000          false  thrpt    3     93466190.240 ±   24680358.208  ops/s
- * ConnectableOutputStreamBenchmark.group:write             1000000          false  thrpt    3         1675.382 ±       1185.913  ops/s * </pre>
+ * Benchmark            (dataSize)  (flushOnEach)   Mode  Cnt            Score            Error  Units
+ * group                      1000           true  thrpt    3     14420531.924 ±    1643793.333  ops/s
+ * group:consumedBytes        1000           true  thrpt    3   2283217869.979 ±  166557144.957  ops/s
+ * group:flush                1000           true  thrpt    3      2283210.042 ±     166445.653  ops/s
+ * group:onNext               1000           true  thrpt    3      2282745.343 ±     167246.663  ops/s
+ * group:producedBytes        1000           true  thrpt    3   2283210041.849 ±  166445652.838  ops/s
+ * group:requestN             1000           true  thrpt    3     12137336.948 ±    1507746.502  ops/s
+ * group:write                1000           true  thrpt    3      2283194.976 ±     166158.336  ops/s
+ * group                      1000          false  thrpt    3     49706282.158 ±    8563620.180  ops/s
+ * group:consumedBytes        1000          false  thrpt    3   2002143421.593 ±  757039466.941  ops/s
+ * group:flush                1000          false  thrpt    3       600502.218 ±     228788.285  ops/s
+ * group:onNext               1000          false  thrpt    3       600439.140 ±     228961.389  ops/s
+ * group:producedBytes        1000          false  thrpt    3   2002142728.565 ±  757003892.414  ops/s
+ * group:requestN             1000          false  thrpt    3     47704143.828 ±    7812104.236  ops/s
+ * group:write                1000          false  thrpt    3      2002138.330 ±     756940.582  ops/s
+ * group                    100000           true  thrpt    3     97975038.177 ±   18791096.475  ops/s
+ * group:consumedBytes      100000           true  thrpt    3  12542736164.169 ± 3003674779.827  ops/s
+ * group:flush              100000           true  thrpt    3       125427.106 ±      30033.759  ops/s
+ * group:onNext             100000           true  thrpt    3       125425.828 ±      30018.489  ops/s
+ * group:producedBytes      100000           true  thrpt    3  12542710616.019 ± 3003375884.451  ops/s
+ * group:requestN           100000           true  thrpt    3     97849611.270 ±   18761968.538  ops/s
+ * group:write              100000           true  thrpt    3       125426.906 ±      30033.758  ops/s
+ * group                    100000          false  thrpt    3    103361261.892 ±   18055706.399  ops/s
+ * group:consumedBytes      100000          false  thrpt    3   3271179635.437 ±  360722125.720  ops/s
+ * group:flush              100000          false  thrpt    3         9807.664 ±        484.184  ops/s
+ * group:onNext             100000          false  thrpt    3         9807.717 ±        485.220  ops/s
+ * group:producedBytes      100000          false  thrpt    3   3271302081.604 ±  360223642.512  ops/s
+ * group:requestN           100000          false  thrpt    3    103328549.071 ±   18052205.808  ops/s
+ * group:write              100000          false  thrpt    3        32712.821 ±       3603.743  ops/s
+ * group                   1000000           true  thrpt    3     98910550.896 ±   21466300.054  ops/s
+ * group:consumedBytes     1000000           true  thrpt    3   7885392958.202 ± 1236140367.226  ops/s
+ * group:flush             1000000           true  thrpt    3         7885.269 ±       1231.961  ops/s
+ * group:onNext            1000000           true  thrpt    3         7885.393 ±       1236.140  ops/s
+ * group:producedBytes     1000000           true  thrpt    3   7885268807.291 ± 1231961205.779  ops/s
+ * group:requestN          1000000           true  thrpt    3     98902665.693 ±   21466216.610  ops/s
+ * group:write             1000000           true  thrpt    3         7885.202 ±       1233.901  ops/s
+ * group                   1000000          false  thrpt    3     93467865.623 ±   24681285.758  ops/s
+ * group:consumedBytes     1000000          false  thrpt    3   1674200698.407 ± 1191352568.112  ops/s
+ * group:flush             1000000          false  thrpt    3          503.387 ±        437.377  ops/s
+ * group:onNext            1000000          false  thrpt    3          503.433 ±        438.518  ops/s
+ * group:producedBytes     1000000          false  thrpt    3   1675515746.200 ± 1184491875.465  ops/s
+ * group:requestN          1000000          false  thrpt    3     93466190.240 ±   24680358.208  ops/s
+ * group:write             1000000          false  thrpt    3         1675.382 ±       1185.913  ops/s * </pre>
  */
 @Fork(value = 1)
 @State(Scope.Benchmark)

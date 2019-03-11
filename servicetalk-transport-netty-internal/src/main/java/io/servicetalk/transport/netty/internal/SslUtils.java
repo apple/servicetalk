@@ -47,7 +47,7 @@ public final class SslUtils {
      * @param context the {@link SslContext} which will be used to create the {@link SslHandler}
      * @param allocator the {@link ByteBufAllocator} which will be used
      * @param hostnameVerificationAlgorithm see {@link SSLParameters#setEndpointIdentificationAlgorithm(String)}.
-     *                                      If this is {@code null} or empty then you will be vulnerable to a MITM attack.
+     * If this is {@code null} or empty then you will be vulnerable to a MITM attack.
      * @param hostnameVerificationHost the non-authoritative name of the host.
      * @param hostnameVerificationPort the non-authoritative port.
      * @return a {@link SslHandler}
@@ -97,7 +97,8 @@ public final class SslUtils {
      * @param config the config to convert.
      * @return the new config.
      */
-    public static ApplicationProtocolConfig toNettyApplicationProtocol(io.servicetalk.transport.api.ApplicationProtocolConfig config) {
+    public static ApplicationProtocolConfig toNettyApplicationProtocol(
+            io.servicetalk.transport.api.ApplicationProtocolConfig config) {
         if (config == io.servicetalk.transport.api.ApplicationProtocolConfig.DISABLED) {
             return ApplicationProtocolConfig.DISABLED;
         }
@@ -126,7 +127,8 @@ public final class SslUtils {
                 selectedListenerFailureBehavior = ApplicationProtocolConfig.SelectedListenerFailureBehavior.ACCEPT;
                 break;
             case CHOOSE_MY_LAST_PROTOCOL:
-                selectedListenerFailureBehavior = ApplicationProtocolConfig.SelectedListenerFailureBehavior.CHOOSE_MY_LAST_PROTOCOL;
+                selectedListenerFailureBehavior =
+                        ApplicationProtocolConfig.SelectedListenerFailureBehavior.CHOOSE_MY_LAST_PROTOCOL;
                 break;
             case FATAL_ALERT:
                 selectedListenerFailureBehavior = ApplicationProtocolConfig.SelectedListenerFailureBehavior.FATAL_ALERT;
@@ -149,7 +151,8 @@ public final class SslUtils {
             default:
                 throw new Error();
         }
-        return new ApplicationProtocolConfig(protocol, selectorFailureBehavior, selectedListenerFailureBehavior, config.supportedProtocols());
+        return new ApplicationProtocolConfig(protocol, selectorFailureBehavior, selectedListenerFailureBehavior,
+                config.supportedProtocols());
     }
 
     /**

@@ -1228,8 +1228,9 @@ public abstract class Completable {
      * Convert from a {@link Future} to a {@link Completable} via {@link Future#get()}.
      * <p>
      * Note that because {@link Future} only presents blocking APIs to extract the result, so the process of getting the
-     * results will block. The caller of {@link #subscribeInternal(CompletableSource.Subscriber)} is responsible for offloading
-     * if necessary, and also offloading if {@link Cancellable#cancel()} will be called if this operation may block.
+     * results will block. The caller of {@link #subscribeInternal(CompletableSource.Subscriber)} is responsible for
+     * offloading if necessary, and also offloading if {@link Cancellable#cancel()} will be called if this operation may
+     * block.
      * <p>
      * To apply a timeout see {@link #timeout(long, TimeUnit)} and related methods.
      * @param future The {@link Future} to convert.

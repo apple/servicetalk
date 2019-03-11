@@ -227,8 +227,8 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> extends HttpCon
     /**
      * Set the maximum total size of HTTP headers, which could be send be created {@link StreamingHttpClient}.
      *
-     * @param maxHeaderSize The {@link StreamingHttpClient} will throw TooLongFrameException if the total size of all HTTP
-     * headers exceeds this length.
+     * @param maxHeaderSize The {@link StreamingHttpClient} will throw TooLongFrameException if the total size of all
+     * HTTP headers exceeds this length.
      * @return {@code this}.
      */
     public DefaultHttpConnectionBuilder<ResolvedAddress> maxHeaderSize(final int maxHeaderSize) {

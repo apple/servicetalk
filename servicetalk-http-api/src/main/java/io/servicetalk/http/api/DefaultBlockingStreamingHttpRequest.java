@@ -211,9 +211,9 @@ class DefaultBlockingStreamingHttpRequest<P> extends DefaultHttpRequestMetaData 
     }
 
     @Override
-    public final <T> BlockingStreamingHttpRequest transform(final Supplier<T> stateSupplier,
-                                                            final BiFunction<Buffer, T, Buffer> transformer,
-                                                            final BiFunction<T, HttpHeaders, HttpHeaders> trailersTrans) {
+    public final <T> BlockingStreamingHttpRequest transform(
+            final Supplier<T> stateSupplier, final BiFunction<Buffer, T, Buffer> transformer,
+            final BiFunction<T, HttpHeaders, HttpHeaders> trailersTrans) {
         final SingleProcessor<HttpHeaders> outTrailersSingle = new SingleProcessor<>();
         return new BufferBlockingStreamingHttpRequest(this, allocator,
                 new HttpBuffersAndTrailersIterable<>(payloadBody(), stateSupplier,

@@ -138,8 +138,10 @@ public interface SslConfig {
     /**
      * Return the supplier for the key cert chain.
      * <p>
-     * The responsibility to call {@link InputStream#close()} is transferred to callers of the returned {@link Supplier}.
-     * If this is not the desired behavior then wrap the {@link InputStream} and override {@link InputStream#close()}.
+     * The responsibility to call {@link InputStream#close()} is transferred to callers of the returned
+     * {@link Supplier}. If this is not the desired behavior then wrap the {@link InputStream} and override
+     * {@link InputStream#close()}.
+     *
      * @return supplier.
      */
     Supplier<InputStream> keyCertChainSupplier();
@@ -147,8 +149,10 @@ public interface SslConfig {
     /**
      * Return the supplier for private key.
      * <p>
-     * The responsibility to call {@link InputStream#close()} is transferred to callers of the returned {@link Supplier}.
-     * If this is not the desired behavior then wrap the {@link InputStream} and override {@link InputStream#close()}.
+     * The responsibility to call {@link InputStream#close()} is transferred to callers of the returned
+     * {@link Supplier}. If this is not the desired behavior then wrap the {@link InputStream} and override
+     * {@link InputStream#close()}.
+     *
      * @return supplier.
      */
     Supplier<InputStream> keySupplier();

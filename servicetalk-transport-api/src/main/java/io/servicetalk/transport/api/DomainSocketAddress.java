@@ -21,7 +21,8 @@ import java.net.SocketAddress;
 import static java.util.Objects.requireNonNull;
 
 /**
- * An address which represents a socket belonging to the <a href="http://man7.org/linux/man-pages/man7/unix.7.html">AF_UNIX socket family</a>.
+ * An address which represents a socket belonging to the
+ * <a href="http://man7.org/linux/man-pages/man7/unix.7.html">AF_UNIX socket family</a>.
  */
 public final class DomainSocketAddress extends SocketAddress {
     private static final long serialVersionUID = 7522601114230727837L;

@@ -252,10 +252,11 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
                         ctx.fireChannelRead(message);
                         return;
                     default:
-                        // <a href="https://tools.ietf.org/html/rfc7230#section-3.3.3">RFC 7230, 3.3.3</a> states that if a
-                        // request does not have either a transfer-encoding or a content-length header then the message body
-                        // length is 0. However for a response the body length is the number of octets received prior to the
-                        // server closing the connection. So we treat this as variable length chunked encoding.
+                        // <a href="https://tools.ietf.org/html/rfc7230#section-3.3.3">RFC 7230, 3.3.3</a> states that
+                        // if a request does not have either a transfer-encoding or a content-length header then the
+                        // message body length is 0. However for a response the body length is the number of octets
+                        // received prior to the server closing the connection. So we treat this as variable length
+                        // chunked encoding.
                         long contentLength = contentLength();
                         if (contentLength == 0 || contentLength == -1 && isDecodingRequest()) {
                             ctx.fireChannelRead(message);
@@ -271,7 +272,8 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
                         ctx.fireChannelRead(message);
 
                         if (nextState == State.READ_FIXED_LENGTH_CONTENT) {
-                            // chunkSize will be decreased as the READ_FIXED_LENGTH_CONTENT state reads data chunk by chunk.
+                            // chunkSize will be decreased as the READ_FIXED_LENGTH_CONTENT state reads data chunk by
+                            // chunk.
                             chunkSize = contentLength;
                         }
 
@@ -428,7 +430,8 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
             if (currentState == State.READ_HEADER) {
                 // If we are still in the state of reading headers we need to create a new invalid message that
                 // signals that the connection was closed before we received the headers.
-                ctx.fireExceptionCaught(new PrematureChannelClosureException("Connection closed before received headers"));
+                ctx.fireExceptionCaught(
+                        new PrematureChannelClosureException("Connection closed before received headers"));
                 resetNow();
                 return;
             }
@@ -507,7 +510,8 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
         if (cumulationIndex < 0) {
             cumulationIndex = buffer.readerIndex();
         }
-        int i = buffer.forEachByte(cumulationIndex, buffer.writerIndex() - cumulationIndex, SKIP_CONTROL_CHARS_PROCESSOR);
+        int i = buffer.forEachByte(cumulationIndex, buffer.writerIndex() - cumulationIndex,
+                SKIP_CONTROL_CHARS_PROCESSOR);
         if (i < 0) {
             cumulationIndex = buffer.writerIndex();
             return false;

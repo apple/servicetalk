@@ -30,10 +30,13 @@ import static io.servicetalk.redis.api.RedisData.OK;
 import static java.util.Objects.requireNonNull;
 
 /**
- * Create a {@link ConnectionFactory} which will issue a <a href="https://redis.io/commands/auth">AUTH</a> command to initialize.
+ * Create a {@link ConnectionFactory} which will issue a <a href="https://redis.io/commands/auth">AUTH</a> command to
+ * initialize.
+ *
  * @param <ResolvedAddress> The type of resolved address.
  */
-public class RedisAuthConnectionFactory<ResolvedAddress> implements ConnectionFactory<ResolvedAddress, RedisConnection> {
+public class RedisAuthConnectionFactory<ResolvedAddress>
+        implements ConnectionFactory<ResolvedAddress, RedisConnection> {
     private final ConnectionFactory<ResolvedAddress, ? extends RedisConnection> delegate;
     private final Function<ConnectionContext, Buffer> addressToPassword;
 
@@ -42,7 +45,8 @@ public class RedisAuthConnectionFactory<ResolvedAddress> implements ConnectionFa
      * @param delegate The {@link ConnectionFactory} to delegate connection events to.
      *                 <p>
      *                 {@link #closeAsync()} ownership will be transferred to the callee.
-     * @param addressToPassword A {@link Function} which provides the password for the <a href="https://redis.io/commands/auth">AUTH</a> request.
+     * @param addressToPassword A {@link Function} which provides the password for the
+     * <a href="https://redis.io/commands/auth">AUTH</a> request.
      */
     public RedisAuthConnectionFactory(ConnectionFactory<ResolvedAddress, ? extends RedisConnection> delegate,
                                       Function<ConnectionContext, Buffer> addressToPassword) {
@@ -56,14 +60,16 @@ public class RedisAuthConnectionFactory<ResolvedAddress> implements ConnectionFa
                 .flatMap(cnx -> cnx.asBufferCommander().auth(addressToPassword.apply(cnx.connectionContext()))
                         .onErrorResume(cause -> {
                             cnx.closeAsync().subscribe();
-                            return error(new RedisAuthorizationException("Failed to authenticate on connection " + cnx + " to address " + resolvedAddress, cause));
+                            return error(new RedisAuthorizationException("Failed to authenticate on connection " + cnx +
+                                    " to address " + resolvedAddress, cause));
                         })
                         .flatMap(response -> {
                             if (response.contentEquals(OK.charSequenceValue())) {
                                 return success(cnx);
                             }
                             cnx.closeAsync().subscribe();
-                            return error(new RedisAuthorizationException("Failed to authenticate on connection " + cnx + " to address " + resolvedAddress + ". Response: " + response));
+                            return error(new RedisAuthorizationException("Failed to authenticate on connection " + cnx +
+                                    " to address " + resolvedAddress + ". Response: " + response));
                         })
                 );
     }

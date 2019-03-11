@@ -54,7 +54,8 @@ final class TakeUntilPublisher<T> extends AbstractSynchronousPublisherOperator<T
         private static final AtomicReferenceFieldUpdater<TakeUntilSubscriber, Object> terminalNotificationUpdater =
                 AtomicReferenceFieldUpdater.newUpdater(TakeUntilSubscriber.class, Object.class, "terminalNotification");
         private static final AtomicReferenceFieldUpdater<TakeUntilSubscriber, Cancellable> untilCancellableUpdater =
-                AtomicReferenceFieldUpdater.newUpdater(TakeUntilSubscriber.class, Cancellable.class, "untilCancellable");
+                AtomicReferenceFieldUpdater.newUpdater(TakeUntilSubscriber.class, Cancellable.class,
+                        "untilCancellable");
 
         @SuppressWarnings("unused")
         private volatile int subscriberState;

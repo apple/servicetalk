@@ -29,7 +29,8 @@ import java.util.function.Function;
  *
  * @param <T> Type of items received by the {@code Subscriber}.
  */
-public final class ConcurrentPublisherSubscriberFunction<T> implements Function<Subscriber<? super T>, Subscriber<? super T>> {
+public final class ConcurrentPublisherSubscriberFunction<T>
+        implements Function<Subscriber<? super T>, Subscriber<? super T>> {
 
     private final List<Subscriber<? super T>> subscribers = new CopyOnWriteArrayList<>();
     private final Subscriber<T> listSubscriber = new Subscriber<T>() {

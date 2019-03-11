@@ -48,7 +48,8 @@ final class ReduceSingle<R, T> extends AbstractNoHandleSubscribeSingle<R> {
      * @param reducer Invoked for every item emitted by the {@code source} and returns the same or altered
      * {@code result} object.
      */
-    ReduceSingle(Publisher<T> source, Supplier<? extends R> resultFactory, BiFunction<? super R, ? super T, R> reducer) {
+    ReduceSingle(Publisher<T> source, Supplier<? extends R> resultFactory,
+                 BiFunction<? super R, ? super T, R> reducer) {
         super(source.executor());
         this.source = requireNonNull(source);
         this.resultFactory = requireNonNull(resultFactory);
@@ -82,7 +83,8 @@ final class ReduceSingle<R, T> extends AbstractNoHandleSubscribeSingle<R> {
         @Nullable
         private R result;
 
-        ReduceSubscriber(@Nullable R result, BiFunction<? super R, ? super T, R> reducer, Subscriber<? super R> subscriber) {
+        ReduceSubscriber(@Nullable R result, BiFunction<? super R, ? super T, R> reducer,
+                         Subscriber<? super R> subscriber) {
             this.result = result;
             this.reducer = reducer;
             this.subscriber = subscriber;

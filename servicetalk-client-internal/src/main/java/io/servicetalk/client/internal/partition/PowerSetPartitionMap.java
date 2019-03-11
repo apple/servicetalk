@@ -40,8 +40,8 @@ import static java.util.Collections.emptyMap;
 import static java.util.Objects.requireNonNull;
 
 /**
- * A {@link PartitionMap} that creates the full power set using the individual attributes in {@link PartitionAttributes}es
- * to create partitions for each {@link #add(PartitionAttributes)}.
+ * A {@link PartitionMap} that creates the full power set using the individual attributes in
+ * {@link PartitionAttributes}es to create partitions for each {@link #add(PartitionAttributes)}.
  * @param <T> The partition type.
  */
 public final class PowerSetPartitionMap<T extends AsyncCloseable> implements PartitionMap<T> {
@@ -66,8 +66,8 @@ public final class PowerSetPartitionMap<T extends AsyncCloseable> implements Par
      * Key = Wild Card Attribute.
      * Value = Object associated with the wildcard attributes.
      *
-     * <p>This map contains all combinations of the attributes of each absolute Attribute to provide a fast lookup when given
-     * a Wild Card Attributes.
+     * <p>This map contains all combinations of the attributes of each absolute Attribute to provide a fast lookup when
+     * given a Wild Card Attributes.
      * <p>This map and the values contained within are unmodifiable and modifications are treated as copy on write.
      * This approach allows the {@link #get(PartitionAttributes)} method which reads from this map and is expected to be
      * called much more frequently than other methods which modify to the map can function with minimal synchronization.
@@ -91,12 +91,13 @@ public final class PowerSetPartitionMap<T extends AsyncCloseable> implements Par
     /**
      * Create a new instance.
      * @param valueFactory Generates values for new partitions.
-     * @param partitionAttributesBuilderFunc Generates new {@link PartitionAttributes} objects, this factory must be consistent with the factory
-     *                                    used to build the {@link PartitionAttributes} objects for {@link #add(PartitionAttributes)}
-     *                                    and {@link #remove(PartitionAttributes)} to ensure {@link #hashCode()} and {@link #equals(Object)}
-     *                                    are consistent.
+     * @param partitionAttributesBuilderFunc Generates new {@link PartitionAttributes} objects, this factory must be
+     * consistent with the factory used to build the {@link PartitionAttributes} objects for
+     * {@link #add(PartitionAttributes)} and {@link #remove(PartitionAttributes)} to ensure {@link #hashCode()} and
+     * {@link #equals(Object)} are consistent.
      */
-    public PowerSetPartitionMap(Function<PartitionAttributes, T> valueFactory, IntFunction<PartitionAttributesBuilder> partitionAttributesBuilderFunc) {
+    public PowerSetPartitionMap(Function<PartitionAttributes, T> valueFactory,
+                                IntFunction<PartitionAttributesBuilder> partitionAttributesBuilderFunc) {
         this.valueFactory = requireNonNull(valueFactory);
         this.partitionAttributesBuilderFunc = requireNonNull(partitionAttributesBuilderFunc);
         absoluteToWildCardIndexMap = new HashMap<>();
@@ -113,7 +114,8 @@ public final class PowerSetPartitionMap<T extends AsyncCloseable> implements Par
     public List<T> add(final PartitionAttributes partition) {
         final int partitionSize = partition.size();
         if (partitionSize <= 0 || partitionSize > MAX_PARTITION_ATTRIBUTE_SIZE) {
-            throw new IllegalArgumentException("attribute size: " + partitionSize + " must be in the range [0," + MAX_PARTITION_ATTRIBUTE_SIZE + ")");
+            throw new IllegalArgumentException("attribute size: " + partitionSize + " must be in the range [0," +
+                    MAX_PARTITION_ATTRIBUTE_SIZE + ")");
         }
 
         // Make a copy of the current wildCardToValueMap because we will copy/swap
@@ -137,7 +139,8 @@ public final class PowerSetPartitionMap<T extends AsyncCloseable> implements Par
             do {
                 int entriesIndex = numberOfTrailingZeros(remainingBits);
                 remainingBits &= ~(1 << entriesIndex);
-                wildCardAttributesBuilder.add((PartitionAttributes.Key) entries.get(entriesIndex << 1), entries.get((entriesIndex << 1) + 1));
+                wildCardAttributesBuilder.add((PartitionAttributes.Key) entries.get(entriesIndex << 1),
+                        entries.get((entriesIndex << 1) + 1));
             } while (remainingBits != 0);
 
             PartitionAttributes wildCardAttributes = wildCardAttributesBuilder.build();
@@ -151,7 +154,8 @@ public final class PowerSetPartitionMap<T extends AsyncCloseable> implements Par
                 newWildCardToAttributes.put(wildCardAttributes, valueHolder);
             }
             // Update the absolute to wild card index ... this makes removal/replacement of entries easier later.
-            absoluteToWildCardIndexMap.computeIfAbsent(partition, attributes -> new HashSet<>(2)).add(wildCardAttributes);
+            absoluteToWildCardIndexMap.computeIfAbsent(partition,
+                    attributes -> new HashSet<>(2)).add(wildCardAttributes);
             effectedPartitions.add(valueHolder.value);
         }
 
