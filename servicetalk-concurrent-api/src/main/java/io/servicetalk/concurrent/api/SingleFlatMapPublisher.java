@@ -112,7 +112,7 @@ final class SingleFlatMapPublisher<T, R> extends AbstractNoHandleSubscribePublis
             // being notified in the Subscriber path, but we make sure that it is restored after the asynchronous
             // boundary and explicitly use it to subscribe.
             next.subscribeInternal((Subscriber<? super R>)
-                    signalOffloader.offloadSubscriber(contextProvider.wrap((Subscriber<R>) this, contextMap)));
+                    signalOffloader.offloadSubscriber(contextProvider.wrapPublisherSubscriber(this, contextMap)));
         }
 
         @Override

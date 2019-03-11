@@ -104,7 +104,7 @@ final class ResumeCompletable extends AbstractNoHandleSubscribeCompletable {
             // the new Completable. This is the reason we use the original offloader now to offload signals which
             // originate from this new Completable.
             final Subscriber offloadedSubscriber = signalOffloader.offloadSubscriber(
-                    contextProvider.wrap(this, contextMap));
+                    contextProvider.wrapCompletableSubscriber(this, contextMap));
             next.subscribeInternal(offloadedSubscriber);
         }
     }

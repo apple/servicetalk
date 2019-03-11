@@ -105,9 +105,4 @@ class ContextPreservingExecutorService<X extends ExecutorService> implements Exe
         return executor instanceof ContextPreservingExecutorService ? executor :
                 new ContextPreservingExecutorService<>(executor);
     }
-
-    static ExecutorService unwrap(ExecutorService executor) {
-        return executor instanceof ContextPreservingExecutorService ?
-                ((ContextPreservingExecutorService) executor).delegate : executor;
-    }
 }

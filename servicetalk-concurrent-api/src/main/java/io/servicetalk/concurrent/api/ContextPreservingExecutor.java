@@ -35,9 +35,4 @@ final class ContextPreservingExecutor implements Executor {
         return executor instanceof ContextPreservingExecutor ? (ContextPreservingExecutor) executor :
                 new ContextPreservingExecutor(executor);
     }
-
-    static Executor unwrap(Executor executor) {
-        return executor instanceof ContextPreservingExecutor ? ((ContextPreservingExecutor) executor).delegate :
-                executor;
-    }
 }

@@ -1542,7 +1542,7 @@ public abstract class Completable {
             subscriber.onError(t);
             return;
         }
-        signalOffloader.offloadSubscribe(offloadedSubscriber, provider.wrap((Consumer<Subscriber>)
+        signalOffloader.offloadSubscribe(offloadedSubscriber, provider.wrapConsumer(
                 s -> handleSubscribe(s, signalOffloader, contextMap, provider), contextMap));
     }
 
@@ -1564,7 +1564,8 @@ public abstract class Completable {
     void handleSubscribe(Subscriber subscriber, SignalOffloader signalOffloader, AsyncContextMap contextMap,
                          AsyncContextProvider contextProvider) {
         try {
-            Subscriber offloaded = signalOffloader.offloadSubscriber(contextProvider.wrap(subscriber, contextMap));
+            Subscriber offloaded = signalOffloader.offloadSubscriber(
+                    contextProvider.wrapCompletableSubscriber(subscriber, contextMap));
             handleSubscribe(offloaded);
         } catch (Throwable t) {
             LOGGER.warn("Unexpected exception from subscribe(), assuming no interaction with the Subscriber.", t);

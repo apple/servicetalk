@@ -1509,7 +1509,7 @@ public abstract class Single<T> {
             subscriber.onError(t);
             return;
         }
-        signalOffloader.offloadSubscribe(offloadedSubscriber, provider.wrap((Consumer<Subscriber<? super T>>)
+        signalOffloader.offloadSubscribe(offloadedSubscriber, provider.wrapConsumer(
                 s -> handleSubscribe(s, signalOffloader, contextMap, provider), contextMap));
     }
 
@@ -1533,7 +1533,7 @@ public abstract class Single<T> {
                          AsyncContextProvider contextProvider) {
         try {
             Subscriber<? super T> offloaded =
-                    signalOffloader.offloadSubscriber(contextProvider.wrap(subscriber, contextMap));
+                    signalOffloader.offloadSubscriber(contextProvider.wrapSingleSubscriber(subscriber, contextMap));
             handleSubscribe(offloaded);
         } catch (Throwable t) {
             LOGGER.warn("Unexpected exception from subscribe(), assuming no interaction with the Subscriber.", t);

@@ -65,7 +65,8 @@ interface AsyncContextProvider {
      * @param current The current {@link AsyncContextMap}.
      * @return The wrapped subscriber.
      */
-    CompletableSource.Subscriber wrap(CompletableSource.Subscriber subscriber, AsyncContextMap current);
+    CompletableSource.Subscriber wrapCompletableSubscriber(CompletableSource.Subscriber subscriber,
+                                                           AsyncContextMap current);
 
     /**
      * Wrap the {@link Cancellable} to ensure it is able to track
@@ -85,7 +86,7 @@ interface AsyncContextProvider {
      * @param <T> Type of the {@link Single}.
      * @return The wrapped subscriber.
      */
-    <T> SingleSource.Subscriber<T> wrap(SingleSource.Subscriber<T> subscriber, AsyncContextMap current);
+    <T> SingleSource.Subscriber<T> wrapSingleSubscriber(SingleSource.Subscriber<T> subscriber, AsyncContextMap current);
 
     /**
      * Wrap an {@link Subscription} to ensure it is able to track {@link AsyncContext} correctly.
@@ -104,35 +105,22 @@ interface AsyncContextProvider {
      * @param <T> the type of element signaled to the {@link Subscriber}.
      * @return The wrapped subscriber.
      */
-    <T> PublisherSource.Subscriber<T> wrap(PublisherSource.Subscriber<T> subscriber, AsyncContextMap current);
+    <T> PublisherSource.Subscriber<T> wrapPublisherSubscriber(PublisherSource.Subscriber<T> subscriber,
+                                                              AsyncContextMap current);
 
     /**
      * Wrap an {@link Executor} to ensure it is able to track {@link AsyncContext} correctly.
      * @param executor The executor to wrap.
      * @return The wrapped executor.
      */
-    java.util.concurrent.Executor wrap(java.util.concurrent.Executor executor);
-
-    /**
-     * Make a best effort to unwrap a {@link Executor} so that it no longer tracks {@link AsyncContext}.
-     * @param executor The {@link Executor} to unwrap.
-     * @return The result of the unwrap attempt.
-     */
-    java.util.concurrent.Executor unwrap(java.util.concurrent.Executor executor);
+    java.util.concurrent.Executor wrapJdkExecutor(java.util.concurrent.Executor executor);
 
     /**
      * Wrap an {@link ExecutorService} to ensure it is able to track {@link AsyncContext} correctly.
      * @param executor The executor to wrap.
      * @return The wrapped executor.
      */
-    ExecutorService wrap(ExecutorService executor);
-
-    /**
-     * Make a best effort to unwrap a {@link ExecutorService} so that it no longer tracks {@link AsyncContext}.
-     * @param executor The {@link ExecutorService} to unwrap.
-     * @return The result of the unwrap attempt.
-     */
-    ExecutorService unwrap(ExecutorService executor);
+    ExecutorService wrapJdkExecutorService(ExecutorService executor);
 
     /**
      * Wrap an {@link Executor} to ensure it is able to track {@link AsyncContext}
@@ -140,15 +128,7 @@ interface AsyncContextProvider {
      * @param executor The executor to wrap.
      * @return The wrapped executor.
      */
-    Executor wrap(Executor executor);
-
-    /**
-     * Make a best effort to unwrap a {@link Executor} so that it no longer tracks
-     * {@link AsyncContext}.
-     * @param executor The executor to unwrap.
-     * @return The result of the unwrap attempt.
-     */
-    io.servicetalk.concurrent.Executor unwrap(io.servicetalk.concurrent.Executor executor);
+    Executor wrapExecutor(Executor executor);
 
     /**
      * Wrap a {@link CompletableFuture} so that {@link AsyncContext} is preserved from listener methods.
@@ -156,21 +136,14 @@ interface AsyncContextProvider {
      * @param <T> The type of data for {@link CompletableFuture}.
      * @return the wrapped {@link CompletableFuture}.
      */
-    <T> CompletableFuture<T> wrap(CompletableFuture<T> future, AsyncContextMap current);
+    <T> CompletableFuture<T> wrapCompletableFuture(CompletableFuture<T> future, AsyncContextMap current);
 
     /**
      * Wrap a {@link ScheduledExecutorService} to ensure it is able to track {@link AsyncContext} correctly.
      * @param executor The executor to wrap.
      * @return The wrapped executor.
      */
-    ScheduledExecutorService wrap(ScheduledExecutorService executor);
-
-    /**
-     * Make a best effort to unwrap a {@link ScheduledExecutorService} so that it no longer tracks {@link AsyncContext}.
-     * @param executor The {@link ScheduledExecutorService} to wrap.
-     * @return The result of the unwrap attempt.
-     */
-    ScheduledExecutorService unwrap(ScheduledExecutorService executor);
+    ScheduledExecutorService wrapJdkScheduledExecutorService(ScheduledExecutorService executor);
 
     /**
      * Wrap a {@link Runnable} to ensure it is able to track {@link AsyncContext} correctly.
@@ -178,7 +151,7 @@ interface AsyncContextProvider {
      * @param contextMap The {@link AsyncContext}.
      * @return The wrapped {@link Runnable}.
      */
-    Runnable wrap(Runnable runnable, AsyncContextMap contextMap);
+    Runnable wrapRunnable(Runnable runnable, AsyncContextMap contextMap);
 
     /**
      * Wrap a {@link Consumer} to ensure it is able to track {@link AsyncContext} correctly.
@@ -187,7 +160,7 @@ interface AsyncContextProvider {
      * @param <T> The type of data consumed by {@code consumer}.
      * @return The wrapped {@link Consumer}.
      */
-    <T> Consumer<T> wrap(Consumer<T> consumer, AsyncContextMap contextMap);
+    <T> Consumer<T> wrapConsumer(Consumer<T> consumer, AsyncContextMap contextMap);
 
     /**
      * Wrap a {@link Consumer} to ensure it is able to track {@link AsyncContext} correctly.
@@ -195,8 +168,8 @@ interface AsyncContextProvider {
      * @param <T> The type of data consumed by {@code consumer}.
      * @return The wrapped {@link Consumer}.
      */
-    default <T> Consumer<T> wrap(Consumer<T> consumer) {
-        return wrap(consumer, contextMap());
+    default <T> Consumer<T> wrapConsumer(Consumer<T> consumer) {
+        return wrapConsumer(consumer, contextMap());
     }
 
     /**
@@ -207,7 +180,7 @@ interface AsyncContextProvider {
      * @param <U> The type of data returned by {@code func}.
      * @return The wrapped {@link Function}.
      */
-    <T, U> Function<T, U> wrap(Function<T, U> func, AsyncContextMap contextMap);
+    <T, U> Function<T, U> wrapFunction(Function<T, U> func, AsyncContextMap contextMap);
 
     /**
      * Wrap a {@link BiFunction} to ensure it is able to track {@link AsyncContext} correctly.
@@ -217,7 +190,7 @@ interface AsyncContextProvider {
      * @param <U> The type of data consumed by {@code func}.
      * @return The wrapped {@link BiConsumer}.
      */
-    <T, U> BiConsumer<T, U> wrap(BiConsumer<T, U> consumer, AsyncContextMap contextMap);
+    <T, U> BiConsumer<T, U> wrapBiConsumer(BiConsumer<T, U> consumer, AsyncContextMap contextMap);
 
     /**
      * Wrap a {@link BiFunction} to ensure it is able to track {@link AsyncContext} correctly.
@@ -228,5 +201,5 @@ interface AsyncContextProvider {
      * @param <V> The type of data returned by {@code func}.
      * @return The wrapped {@link BiFunction}.
      */
-    <T, U, V> BiFunction<T, U, V> wrap(BiFunction<T, U, V> func, AsyncContextMap contextMap);
+    <T, U, V> BiFunction<T, U, V> wrapBiFunction(BiFunction<T, U, V> func, AsyncContextMap contextMap);
 }

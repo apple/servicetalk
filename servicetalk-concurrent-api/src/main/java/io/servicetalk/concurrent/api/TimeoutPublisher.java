@@ -291,7 +291,7 @@ final class TimeoutPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
         }
 
         private void offloadTimeout(Throwable cause) {
-            signalOffloader.offloadSignal(cause, contextProvider.wrap(this::processTimeout));
+            signalOffloader.offloadSignal(cause, contextProvider.wrapConsumer(this::processTimeout));
         }
 
         private void processTimeout(Throwable cause) {
