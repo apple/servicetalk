@@ -41,7 +41,6 @@ import javax.ws.rs.ext.ExceptionMapper;
 import static io.servicetalk.buffer.api.EmptyBuffer.EMPTY_BUFFER;
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Single.success;
-import static io.servicetalk.http.api.HttpResponseStatus.getResponseStatus;
 import static io.servicetalk.http.router.jersey.ExceptionMapperTest.ExceptionResponseType.BUF;
 import static io.servicetalk.http.router.jersey.ExceptionMapperTest.ExceptionResponseType.MAP;
 import static io.servicetalk.http.router.jersey.ExceptionMapperTest.ExceptionResponseType.SBUF;
@@ -60,7 +59,7 @@ import static org.junit.Assume.assumeThat;
 
 public class ExceptionMapperTest extends AbstractJerseyStreamingHttpServiceTest {
     private static final String EXCEPTION_RESPONSE_TYPE_HEADER = "X-EXCEPTION-RESPONSE-TYPE";
-    private static final HttpResponseStatus STATUS_555 = getResponseStatus(555, EMPTY_BUFFER);
+    private static final HttpResponseStatus STATUS_555 = HttpResponseStatus.of(555, EMPTY_BUFFER);
 
     enum ExceptionResponseType {
         STR {

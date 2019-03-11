@@ -68,7 +68,6 @@ import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.HttpResponseStatus.PERMANENT_REDIRECT;
 import static io.servicetalk.http.api.HttpResponseStatus.SEE_OTHER;
 import static io.servicetalk.http.api.HttpResponseStatus.UNAUTHORIZED;
-import static io.servicetalk.http.api.HttpResponseStatus.getResponseStatus;
 import static io.servicetalk.transport.netty.internal.AddressUtils.hostHeader;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
@@ -127,7 +126,8 @@ public class MultiAddressUrlHttpClientTest {
                     return success(resp);
                 }
                 try {
-                    HttpResponseStatus status = getResponseStatus(parseInt(request.path().substring(1)), EMPTY_BUFFER);
+                    HttpResponseStatus status = HttpResponseStatus.of(parseInt(request.path().substring(1)),
+                            EMPTY_BUFFER);
                     StreamingHttpResponse response = factory.newResponse(status);
                     response.headers().set(httpHeaders);
                     final CharSequence locationHeader = request.headers().get(X_REQUESTED_LOCATION);

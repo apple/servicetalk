@@ -391,7 +391,7 @@ public final class HttpResponseStatus {
      * @return a {@link HttpResponseStatus}
      * @throws IllegalArgumentException if {@code statusCode} is not a 3-digit integer
      */
-    public static HttpResponseStatus getResponseStatus(final int statusCode, final Buffer reasonPhrase) {
+    public static HttpResponseStatus of(final int statusCode, final Buffer reasonPhrase) {
         final HttpResponseStatus cached = valueOf(statusCode);
         if (cached != null && (reasonPhrase.readableBytes() == 0 || cached.reasonPhrase.equals(reasonPhrase))) {
             return cached;

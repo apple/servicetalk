@@ -92,7 +92,7 @@ public final class HttpProtocolVersion {
      * @return a cached or new {@link HttpProtocolVersion}
      * @throws IllegalArgumentException if {@code major} or {@code minor} is not a 1-digit integer
      */
-    public static HttpProtocolVersion getProtocolVersion(final int major, final int minor) {
+    public static HttpProtocolVersion of(final int major, final int minor) {
         if (major == 1) {
             if (minor == 1) {
                 return HTTP_1_1;
@@ -113,7 +113,7 @@ public final class HttpProtocolVersion {
      * @return a new {@link HttpProtocolVersion}
      * @throws IllegalArgumentException if {@code httpVersion} format is not {@code HTTP/DIGIT.DIGIT}
      */
-    public static HttpProtocolVersion newProtocolVersion(final Buffer httpVersion) {
+    public static HttpProtocolVersion of(final Buffer httpVersion) {
         return new HttpProtocolVersion(httpVersion);
     }
 

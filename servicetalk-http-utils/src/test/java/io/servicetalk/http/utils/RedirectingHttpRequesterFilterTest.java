@@ -63,7 +63,6 @@ import static io.servicetalk.http.api.HttpResponseStatus.PERMANENT_REDIRECT;
 import static io.servicetalk.http.api.HttpResponseStatus.SEE_OTHER;
 import static io.servicetalk.http.api.HttpResponseStatus.TEMPORARY_REDIRECT;
 import static io.servicetalk.http.api.HttpResponseStatus.USE_PROXY;
-import static io.servicetalk.http.api.HttpResponseStatus.getResponseStatus;
 import static io.servicetalk.http.api.TestStreamingHttpClient.from;
 import static java.lang.Integer.parseUnsignedInt;
 import static org.hamcrest.Matchers.equalTo;
@@ -99,7 +98,7 @@ public class RedirectingHttpRequesterFilterTest {
                 StreamingHttpRequest request = a.getArgument(1);
                 CharSequence statusHeader = request.headers().get(REQUESTED_STATUS);
                 HttpResponseStatus status = statusHeader == null ? OK
-                        : getResponseStatus(parseUnsignedInt(statusHeader.toString()), EMPTY_BUFFER);
+                        : HttpResponseStatus.of(parseUnsignedInt(statusHeader.toString()), EMPTY_BUFFER);
                 StreamingHttpResponse response = reqRespFactory.newResponse(status);
                 CharSequence redirectLocation = request.headers().get(REQUESTED_LOCATION);
                 response.headers().set(LOCATION, redirectLocation);
@@ -151,12 +150,12 @@ public class RedirectingHttpRequesterFilterTest {
 
     @Test
     public void requestWith306Status() throws Exception {
-        testNoRedirectWasDone(MAX_REDIRECTS, GET, getResponseStatus(306, EMPTY_BUFFER), "/new-location");
+        testNoRedirectWasDone(MAX_REDIRECTS, GET, HttpResponseStatus.of(306, EMPTY_BUFFER), "/new-location");
     }
 
     @Test
     public void requestWith309Status() throws Exception {
-        testNoRedirectWasDone(MAX_REDIRECTS, GET, getResponseStatus(309, EMPTY_BUFFER), "/new-location");
+        testNoRedirectWasDone(MAX_REDIRECTS, GET, HttpResponseStatus.of(309, EMPTY_BUFFER), "/new-location");
     }
 
     @Test

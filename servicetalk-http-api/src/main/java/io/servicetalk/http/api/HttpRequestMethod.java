@@ -107,7 +107,7 @@ public final class HttpRequestMethod {
      * @param properties <a href="https://tools.ietf.org/html/rfc7231#section-4.2">Common HTTP Method Properties</a>
      * @return a new {@link HttpRequestMethod}
      */
-    public static HttpRequestMethod newRequestMethod(final Buffer name, final Properties properties) {
+    public static HttpRequestMethod of(final Buffer name, final Properties properties) {
         return new HttpRequestMethod(name, properties);
     }
 

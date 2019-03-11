@@ -24,6 +24,7 @@ import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.DefaultHttpHeadersFactory;
 import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.HttpHeaders;
+import io.servicetalk.http.api.HttpProtocolVersion;
 import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.StreamingHttpResponse;
@@ -42,7 +43,6 @@ import static io.servicetalk.concurrent.api.Completable.never;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_0;
-import static io.servicetalk.http.api.HttpProtocolVersion.getProtocolVersion;
 import static io.servicetalk.transport.netty.internal.ExecutionContextRule.immediate;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertFalse;
@@ -103,7 +103,7 @@ public class PipelinedHttpConnectionTest {
     @Test
     public void http09RequestShouldReturnOnError() {
         Single<StreamingHttpResponse> request = pipe.request(
-                reqRespFactory.get("/Foo").version(getProtocolVersion(0, 9)));
+                reqRespFactory.get("/Foo").version(HttpProtocolVersion.of(0, 9)));
         toSource(request).subscribe(dataSubscriber1);
         assertThat(dataSubscriber1.takeError(), instanceOf(IllegalArgumentException.class));
     }
