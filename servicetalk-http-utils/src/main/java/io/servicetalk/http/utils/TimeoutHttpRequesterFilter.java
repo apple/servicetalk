@@ -92,6 +92,20 @@ public final class TimeoutHttpRequesterFilter implements HttpClientFilterFactory
      * A builder for {@link TimeoutHttpRequesterFilter}.
      */
     public static final class Builder {
+        @Nullable
+        private Executor timeoutExecutor;
+
+        /**
+         * Specifies the {@link Executor} to use for managing the timer notifications.
+         *
+         * @param timeoutExecutor the {@link Executor} to use for managing the timer notifications.
+         * @return {@code this}
+         */
+        public Builder timeoutExecutor(final Executor timeoutExecutor) {
+            this.timeoutExecutor = requireNonNull(timeoutExecutor);
+            return this;
+        }
+
         /**
          * Creates a new {@link TimeoutHttpRequesterFilter} which adds the provided {@link Duration} as the timeout
          * for requests.
@@ -100,19 +114,7 @@ public final class TimeoutHttpRequesterFilter implements HttpClientFilterFactory
          * @return a new {@link TimeoutHttpRequesterFilter}
          */
         public TimeoutHttpRequesterFilter buildWithTimeout(Duration duration) {
-            return new TimeoutHttpRequesterFilter(requireNonNull(duration), null);
-        }
-
-        /**
-         * Creates a new {@link TimeoutHttpRequesterFilter} which adds the provided {@link Duration} as the timeout
-         * for requests.
-         *
-         * @param duration the timeout {@link Duration}
-         * @param timeoutExecutor The {@link Executor} to use for managing the timer notifications.
-         * @return a new {@link TimeoutHttpRequesterFilter}
-         */
-        public TimeoutHttpRequesterFilter buildWithTimeout(Duration duration, Executor timeoutExecutor) {
-            return new TimeoutHttpRequesterFilter(requireNonNull(duration), requireNonNull(timeoutExecutor));
+            return new TimeoutHttpRequesterFilter(requireNonNull(duration), timeoutExecutor);
         }
     }
 }
