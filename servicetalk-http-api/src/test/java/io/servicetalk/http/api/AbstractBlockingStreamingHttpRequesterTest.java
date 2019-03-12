@@ -21,6 +21,7 @@ import io.servicetalk.concurrent.BlockingIterable;
 import io.servicetalk.concurrent.BlockingIterator;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
+import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.api.TestSubscription;
@@ -41,12 +42,15 @@ import java.util.function.BiFunction;
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Publisher.just;
+import static io.servicetalk.concurrent.api.Single.error;
 import static io.servicetalk.concurrent.api.Single.success;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
+import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.util.Collections.singleton;
+import static java.util.Objects.requireNonNull;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -74,21 +78,112 @@ public abstract class AbstractBlockingStreamingHttpRequesterTest {
     private final BlockingStreamingHttpRequestResponseFactory blkReqRespFactory =
             new StreamingHttpRequestResponseFactoryToBlockingStreamingHttpRequestResponseFactory(reqRespFactory);
 
-    protected abstract <T extends StreamingHttpRequester & TestHttpRequester>
-        T newAsyncRequester(StreamingHttpRequestResponseFactory factory, ExecutionContext executionContext,
-                            BiFunction<HttpExecutionStrategy, StreamingHttpRequest, Single<StreamingHttpResponse>> doRequest);
+    protected abstract TestStreamingHttpRequester newAsyncRequester(
+            StreamingHttpRequestResponseFactory factory, ExecutionContext executionContext,
+            BiFunction<HttpExecutionStrategy, StreamingHttpRequest, Single<StreamingHttpResponse>> doRequest);
 
-    protected abstract <T extends BlockingStreamingHttpRequester & TestHttpRequester>
-        T newBlockingRequester(BlockingStreamingHttpRequestResponseFactory factory, ExecutionContext executionContext,
-                               BiFunction<HttpExecutionStrategy, BlockingStreamingHttpRequest,
-                                       BlockingStreamingHttpResponse> doRequest);
+    protected abstract TestBlockingStreamingHttpRequester newBlockingRequester(
+            BlockingStreamingHttpRequestResponseFactory factory, ExecutionContext executionContext,
+            BiFunction<HttpExecutionStrategy, BlockingStreamingHttpRequest, BlockingStreamingHttpResponse> doRequest);
 
-    protected abstract BlockingStreamingHttpRequester toBlockingStreamingRequester(StreamingHttpRequester requester);
+    protected abstract static class TestStreamingHttpRequester extends StreamingHttpRequester {
 
-    protected abstract StreamingHttpRequester toStreamingRequester(BlockingStreamingHttpRequester requester);
+        protected TestStreamingHttpRequester(final StreamingHttpRequestResponseFactory reqRespFactory,
+                                             final HttpExecutionStrategy strategy) {
+            super(reqRespFactory, strategy);
+        }
 
-    protected interface TestHttpRequester {
-        boolean isClosed();
+        public abstract boolean isClosed();
+
+        public abstract BlockingStreamingHttpRequester asBlockingStreaming();
+    }
+
+    protected abstract static class TestBlockingStreamingHttpRequester extends BlockingStreamingHttpRequester {
+
+        protected TestBlockingStreamingHttpRequester(final BlockingStreamingHttpRequestResponseFactory reqRespFactory,
+                                                     final HttpExecutionStrategy strategy) {
+            super(reqRespFactory, requireNonNull(strategy));
+        }
+
+        public abstract boolean isClosed();
+
+        public abstract StreamingHttpRequester asStreaming();
+    }
+
+    // TODO(jayv) should be converted to BlockingStreamingHttp(Client|Connection)Filter when that API exists
+    protected static final class BlockingFilter
+            implements HttpClientFilterFactory, HttpConnectionFilterFactory {
+
+        final BiFunction<HttpExecutionStrategy, BlockingStreamingHttpRequest,
+                BlockingStreamingHttpResponse> doRequest;
+
+        protected BlockingFilter(final BiFunction<HttpExecutionStrategy, BlockingStreamingHttpRequest,
+                BlockingStreamingHttpResponse> doRequest) {
+            this.doRequest = doRequest;
+        }
+
+        @Override
+        public StreamingHttpClientFilter create(final StreamingHttpClientFilter client,
+                                                final Publisher<Object> lbEvents) {
+            return new StreamingHttpClientFilter(client) {
+                @Override
+                protected Single<StreamingHttpResponse> request(final StreamingHttpRequestFunction delegate,
+                                                                final HttpExecutionStrategy strategy,
+                                                                final StreamingHttpRequest request) {
+                    return BlockingUtils.request(asBlockingRequester(doRequest, reqRespFactory),
+                            strategy, request);
+                }
+
+                @Override
+                protected Single<ReservedStreamingHttpConnectionFilter> reserveConnection(
+                        final StreamingHttpClientFilter delegate,
+                        final HttpExecutionStrategy strategy,
+                        final HttpRequestMetaData metaData) {
+                    return error(new UnsupportedOperationException());
+                }
+            };
+        }
+
+        @Override
+        public StreamingHttpConnectionFilter create(final StreamingHttpConnectionFilter connection) {
+            return new StreamingHttpConnectionFilter(connection) {
+                @Override
+                protected Single<StreamingHttpResponse> request(final StreamingHttpConnectionFilter delegate,
+                                                                final HttpExecutionStrategy strategy,
+                                                                final StreamingHttpRequest request) {
+                    return BlockingUtils.request(asBlockingRequester(doRequest, reqRespFactory),
+                            strategy, request);
+                }
+            };
+        }
+
+        // This converts a blocking request() to streaming request() for use in a StreamingHttpC*Filter
+        private static BlockingStreamingHttpRequester asBlockingRequester(
+                final BiFunction<HttpExecutionStrategy, BlockingStreamingHttpRequest,
+                        BlockingStreamingHttpResponse> doRequest,
+                final StreamingHttpRequestResponseFactory reqRespFactory) {
+            return new BlockingStreamingHttpRequester(
+                    new StreamingHttpRequestResponseFactoryToBlockingStreamingHttpRequestResponseFactory(
+                            reqRespFactory), noOffloadsStrategy()) {
+
+                @Override
+                public BlockingStreamingHttpResponse request(final HttpExecutionStrategy strategy,
+                                                             final BlockingStreamingHttpRequest request)
+                                                             throws Exception {
+                    return doRequest.apply(strategy, request);
+                }
+
+                @Override
+                public ExecutionContext executionContext() {
+                    throw new UnsupportedOperationException();
+                }
+
+                @Override
+                public void close() throws Exception {
+                    throw new UnsupportedOperationException();
+                }
+            };
+        }
     }
 
     @Before
@@ -101,9 +196,9 @@ public abstract class AbstractBlockingStreamingHttpRequesterTest {
 
     @Test
     public void asyncToSyncNoPayload() throws Exception {
-        StreamingHttpRequester asyncRequester = newAsyncRequester(reqRespFactory, mockExecutionCtx,
+        TestStreamingHttpRequester asyncRequester = newAsyncRequester(reqRespFactory, mockExecutionCtx,
                 (strategy, req) -> success(reqRespFactory.ok()));
-        BlockingStreamingHttpRequester syncRequester = toBlockingStreamingRequester(asyncRequester);
+        BlockingStreamingHttpRequester syncRequester = asyncRequester.asBlockingStreaming();
         BlockingStreamingHttpResponse syncResponse = syncRequester.request(
                 syncRequester.get("/"));
         assertEquals(HTTP_1_1, syncResponse.version());
@@ -112,9 +207,9 @@ public abstract class AbstractBlockingStreamingHttpRequesterTest {
 
     @Test
     public void asyncToSyncWithPayload() throws Exception {
-        StreamingHttpRequester asyncRequester = newAsyncRequester(reqRespFactory, mockExecutionCtx,
+        TestStreamingHttpRequester asyncRequester = newAsyncRequester(reqRespFactory, mockExecutionCtx,
                 (strategy, req) -> success(reqRespFactory.ok().payloadBody(just(allocator.fromAscii("hello")))));
-        BlockingStreamingHttpRequester syncRequester = toBlockingStreamingRequester(asyncRequester);
+        BlockingStreamingHttpRequester syncRequester = asyncRequester.asBlockingStreaming();
         BlockingStreamingHttpResponse syncResponse = syncRequester.request(
                 syncRequester.get("/"));
         assertEquals(HTTP_1_1, syncResponse.version());
@@ -129,9 +224,9 @@ public abstract class AbstractBlockingStreamingHttpRequesterTest {
     public void asyncToSyncWithPayloadInputStream() throws Exception {
         String expectedPayload = "hello";
         byte[] expectedPayloadBytes = expectedPayload.getBytes(US_ASCII);
-        StreamingHttpRequester asyncRequester = newAsyncRequester(reqRespFactory, mockExecutionCtx,
+        TestStreamingHttpRequester asyncRequester = newAsyncRequester(reqRespFactory, mockExecutionCtx,
                 (strategy, req) -> success(reqRespFactory.ok().payloadBody(just(allocator.fromAscii(expectedPayload)))));
-        BlockingStreamingHttpRequester syncRequester = toBlockingStreamingRequester(asyncRequester);
+        BlockingStreamingHttpRequester syncRequester = asyncRequester.asBlockingStreaming();
         BlockingStreamingHttpResponse syncResponse = syncRequester.request(
                 syncRequester.get("/"));
         assertEquals(HTTP_1_1, syncResponse.version());
@@ -145,19 +240,19 @@ public abstract class AbstractBlockingStreamingHttpRequesterTest {
 
     @Test
     public void asyncToSyncClose() throws Exception {
-        StreamingHttpRequester asyncRequester = newAsyncRequester(reqRespFactory, mockExecutionCtx,
-                (strategy, req) -> Single.error(new IllegalStateException("shouldn't be called!")));
-        BlockingStreamingHttpRequester syncRequester = toBlockingStreamingRequester(asyncRequester);
+        TestStreamingHttpRequester asyncRequester = newAsyncRequester(reqRespFactory, mockExecutionCtx,
+                (strategy, req) -> error(new IllegalStateException("shouldn't be called!")));
+        BlockingStreamingHttpRequester syncRequester = asyncRequester.asBlockingStreaming();
         syncRequester.close();
-        assertTrue(((TestHttpRequester) asyncRequester).isClosed());
+        assertTrue(asyncRequester.isClosed());
     }
 
     @Test
     public void asyncToSyncCancelPropagated() throws Exception {
-        StreamingHttpRequester asyncRequester = newAsyncRequester(reqRespFactory, mockExecutionCtx,
+        TestStreamingHttpRequester asyncRequester = newAsyncRequester(reqRespFactory, mockExecutionCtx,
                 (strategy, req) -> success(reqRespFactory.ok().payloadBody(publisher)));
         TestSubscription subscription = new TestSubscription();
-        BlockingStreamingHttpRequester syncRequester = toBlockingStreamingRequester(asyncRequester);
+        BlockingStreamingHttpRequester syncRequester = asyncRequester.asBlockingStreaming();
         BlockingStreamingHttpResponse syncResponse = syncRequester.request(
                 syncRequester.get("/"));
         assertEquals(HTTP_1_1, syncResponse.version());
@@ -172,9 +267,9 @@ public abstract class AbstractBlockingStreamingHttpRequesterTest {
 
     @Test
     public void syncToAsyncNoPayload() throws Exception {
-        BlockingStreamingHttpRequester syncRequester = newBlockingRequester(blkReqRespFactory, mockExecutionCtx,
+        TestBlockingStreamingHttpRequester syncRequester = newBlockingRequester(blkReqRespFactory, mockExecutionCtx,
                 (strategy, req) -> blkReqRespFactory.ok());
-        StreamingHttpRequester asyncRequester = toStreamingRequester(syncRequester);
+        StreamingHttpRequester asyncRequester = syncRequester.asStreaming();
         StreamingHttpResponse asyncResponse = asyncRequester.request(asyncRequester.get("/")).toFuture().get();
         assertNotNull(asyncResponse);
         assertEquals(HTTP_1_1, asyncResponse.version());
@@ -183,9 +278,9 @@ public abstract class AbstractBlockingStreamingHttpRequesterTest {
 
     @Test
     public void syncToAsyncWithPayload() throws Exception {
-        BlockingStreamingHttpRequester syncRequester = newBlockingRequester(blkReqRespFactory, mockExecutionCtx,
+        TestBlockingStreamingHttpRequester syncRequester = newBlockingRequester(blkReqRespFactory, mockExecutionCtx,
                 (strategy, req) -> blkReqRespFactory.ok().payloadBody(singleton(allocator.fromAscii("hello"))));
-        StreamingHttpRequester asyncRequester = toStreamingRequester(syncRequester);
+        StreamingHttpRequester asyncRequester = syncRequester.asStreaming();
         StreamingHttpResponse asyncResponse = asyncRequester.request(asyncRequester.get("/")).toFuture().get();
         assertNotNull(asyncResponse);
         assertEquals(HTTP_1_1, asyncResponse.version());
@@ -196,20 +291,20 @@ public abstract class AbstractBlockingStreamingHttpRequesterTest {
 
     @Test
     public void syncToAsyncClose() throws Exception {
-        BlockingStreamingHttpRequester syncRequester = newBlockingRequester(blkReqRespFactory,
+        TestBlockingStreamingHttpRequester syncRequester = newBlockingRequester(blkReqRespFactory,
                 mockExecutionCtx, (strategy, req) -> {
             throw new IllegalStateException("shouldn't be called!");
         });
-        StreamingHttpRequester asyncRequester = toStreamingRequester(syncRequester);
+        StreamingHttpRequester asyncRequester = syncRequester.asStreaming();
         asyncRequester.closeAsync().toFuture().get();
-        assertTrue(((TestHttpRequester) syncRequester).isClosed());
+        assertTrue(syncRequester.isClosed());
     }
 
     @Test
     public void syncToAsyncCancelPropagated() throws Exception {
-        BlockingStreamingHttpRequester syncRequester = newBlockingRequester(blkReqRespFactory, mockExecutionCtx,
+        TestBlockingStreamingHttpRequester syncRequester = newBlockingRequester(blkReqRespFactory, mockExecutionCtx,
                 (strategy, req) -> blkReqRespFactory.ok().payloadBody(mockIterable));
-        StreamingHttpRequester asyncRequester = toStreamingRequester(syncRequester);
+        StreamingHttpRequester asyncRequester = syncRequester.asStreaming();
         StreamingHttpResponse asyncResponse = asyncRequester.request(asyncRequester.get("/")).toFuture().get();
         assertNotNull(asyncResponse);
         CountDownLatch latch = new CountDownLatch(1);

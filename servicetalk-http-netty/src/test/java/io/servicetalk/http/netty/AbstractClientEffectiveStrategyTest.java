@@ -23,7 +23,7 @@ import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpClientFilter;
 import io.servicetalk.http.api.StreamingHttpRequest;
-import io.servicetalk.http.api.StreamingHttpRequester;
+import io.servicetalk.http.api.StreamingHttpRequestFunction;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.IoExecutor;
@@ -66,25 +66,26 @@ public class AbstractClientEffectiveStrategyTest {
         SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builder =
                 HttpClients.forSingleAddress(serverHostAndPort(context)).ioExecutor(ioExecutor);
         builder.appendClientFilter((c, __) -> new StreamingHttpClientFilter(c) {
-                    @Override
-                    protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
-                                                                    final HttpExecutionStrategy strategy,
-                                                                    final StreamingHttpRequest request) {
-                        return delegate.request(strategy,
-                                request.transformPayloadBody(payload ->
-                                        payload.doBeforeRequest(__ ->
-                                                recordThread(ClientOffloadPoint.RequestPayloadSubscription))))
-                                .doBeforeSuccess(__ -> recordThread(ClientOffloadPoint.ResponseMeta))
-                                .map(resp -> resp.transformPayloadBody(payload ->
-                                        payload.doBeforeNext(__ -> recordThread(ClientOffloadPoint.ResponseData))));
-                    }
 
-                    @Override
-                    protected HttpExecutionStrategy mergeForEffectiveStrategy(final HttpExecutionStrategy mergeWith) {
-                        // Don't modify the effective strategy calculation
-                        return mergeWith;
-                    }
-                });
+            @Override
+            protected Single<StreamingHttpResponse> request(final StreamingHttpRequestFunction delegate,
+                                                            final HttpExecutionStrategy strategy,
+                                                            final StreamingHttpRequest request) {
+                return delegate.request(strategy,
+                        request.transformPayloadBody(payload ->
+                                payload.doBeforeRequest(__ ->
+                                        recordThread(ClientOffloadPoint.RequestPayloadSubscription))))
+                        .doBeforeSuccess(__ -> recordThread(ClientOffloadPoint.ResponseMeta))
+                        .map(resp -> resp.transformPayloadBody(payload ->
+                                payload.doBeforeNext(__ -> recordThread(ClientOffloadPoint.ResponseData))));
+            }
+
+            @Override
+            protected HttpExecutionStrategy mergeForEffectiveStrategy(final HttpExecutionStrategy mergeWith) {
+                // Don't modify the effective strategy calculation
+                return mergeWith;
+            }
+        });
         if (addBlockingFilter) {
             // Here since we do not override mergeForEffectiveStrategy, it will default to offload-all.
             builder.appendClientFilter((client, __) -> new StreamingHttpClientFilter(client));

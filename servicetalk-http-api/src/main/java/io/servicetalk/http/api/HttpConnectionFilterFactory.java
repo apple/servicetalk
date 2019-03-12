@@ -29,7 +29,7 @@ public interface HttpConnectionFilterFactory {
      * @param connection {@link StreamingHttpConnection} to filter
      * @return {@link StreamingHttpConnectionFilter} using the provided {@link StreamingHttpConnection}.
      */
-    StreamingHttpConnectionFilter create(StreamingHttpConnection connection);
+    StreamingHttpConnectionFilter create(StreamingHttpConnectionFilter connection);
 
     /**
      * Returns a composed function that first applies the {@code before} function to its input, and then applies
@@ -59,12 +59,6 @@ public interface HttpConnectionFilterFactory {
      * @return a function that always returns its input {@link StreamingHttpConnection}.
      */
     static HttpConnectionFilterFactory identity() {
-        return connection -> new StreamingHttpConnectionFilter(connection) {
-            @Override
-            protected HttpExecutionStrategy mergeForEffectiveStrategy(final HttpExecutionStrategy mergeWith) {
-                // Since this filter does not have any blocking code, we do not need to alter the effective strategy.
-                return mergeWith;
-            }
-        };
+        return connection -> connection;
     }
 }

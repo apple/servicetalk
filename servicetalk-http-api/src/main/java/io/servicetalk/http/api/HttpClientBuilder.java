@@ -223,7 +223,7 @@ interface HttpClientBuilder<U, R, SDE extends ServiceDiscovererEvent<R>> {
      * @return {@code this}
      */
     HttpClientBuilder<U, R, SDE> appendConnectionFactoryFilter(
-            ConnectionFactoryFilter<R, StreamingHttpConnection> factory);
+            ConnectionFactoryFilter<R, StreamingHttpConnectionFilter> factory);
 
     /**
      * Append the filter to the chain of filters used to decorate the {@link HttpClient} created by this
@@ -311,7 +311,7 @@ interface HttpClientBuilder<U, R, SDE extends ServiceDiscovererEvent<R>> {
      * @return {@code this}.
      */
     HttpClientBuilder<U, R, SDE> loadBalancerFactory(
-            LoadBalancerFactory<R, StreamingHttpConnection> loadBalancerFactory);
+            LoadBalancerFactory<R, StreamingHttpConnectionFilter> loadBalancerFactory);
 
     /**
      * Build a new {@link StreamingHttpClient}, using a default {@link ExecutionContext}.

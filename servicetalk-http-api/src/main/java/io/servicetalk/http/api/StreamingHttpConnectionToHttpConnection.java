@@ -69,14 +69,13 @@ final class StreamingHttpConnectionToHttpConnection extends HttpConnection {
     }
 
     @Override
-    StreamingHttpConnection asStreamingConnectionInternal() {
+    public StreamingHttpConnection asStreamingConnection() {
         return connection;
     }
 
-    static HttpConnection transform(StreamingHttpConnection conn) {
-        final HttpExecutionStrategy defaultStrategy = conn instanceof StreamingHttpConnectionFilter ?
-                ((StreamingHttpConnectionFilter) conn).effectiveExecutionStrategy(OFFLOAD_RECEIVE_META_STRATEGY) :
-                OFFLOAD_RECEIVE_META_STRATEGY;
-        return new StreamingHttpConnectionToHttpConnection(conn, defaultStrategy);
+    static HttpConnection transform(StreamingHttpConnection connection) {
+        final HttpExecutionStrategy defaultStrategy = connection.filterChain
+                .effectiveExecutionStrategy(OFFLOAD_RECEIVE_META_STRATEGY);
+        return new StreamingHttpConnectionToHttpConnection(connection, defaultStrategy);
     }
 }

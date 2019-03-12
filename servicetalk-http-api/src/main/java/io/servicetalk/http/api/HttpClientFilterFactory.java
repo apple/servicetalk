@@ -27,13 +27,13 @@ import static java.util.Objects.requireNonNull;
 public interface HttpClientFilterFactory {
 
     /**
-     * Creates a {@link StreamingHttpClientFilter} using the provided {@link StreamingHttpClient}.
+     * Creates a {@link StreamingHttpClientFilter} using the provided {@link StreamingHttpClientFilter}.
      *
      * @param client {@link StreamingHttpClient} to filter
      * @param lbEvents the {@link LoadBalancer} events stream
-     * @return {@link StreamingHttpClientFilter} using the provided {@link StreamingHttpClient}.
+     * @return {@link StreamingHttpClientFilter} using the provided {@link StreamingHttpClientFilter}.
      */
-    StreamingHttpClientFilter create(StreamingHttpClient client, Publisher<Object> lbEvents);
+    StreamingHttpClientFilter create(StreamingHttpClientFilter client, Publisher<Object> lbEvents);
 
     /**
      * Returns a composed function that first applies the {@code before} function to its input, and then applies
@@ -78,12 +78,6 @@ public interface HttpClientFilterFactory {
      * @return a function that always returns its input {@link StreamingHttpClient}.
      */
     static HttpClientFilterFactory identity() {
-        return (client, lbEvents) -> new StreamingHttpClientFilter(client) {
-            @Override
-            protected HttpExecutionStrategy mergeForEffectiveStrategy(final HttpExecutionStrategy mergeWith) {
-                // Since this filter does not have any blocking code, we do not need to alter the effective strategy.
-                return mergeWith;
-            }
-        };
+        return (client, __) -> client;
     }
 }

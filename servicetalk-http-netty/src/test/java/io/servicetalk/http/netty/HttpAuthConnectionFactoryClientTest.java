@@ -22,7 +22,7 @@ import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpClient;
-import io.servicetalk.http.api.StreamingHttpConnection;
+import io.servicetalk.http.api.StreamingHttpConnectionFilter;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequestFactory;
 import io.servicetalk.http.api.StreamingHttpResponse;
@@ -41,6 +41,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Single.error;
 import static io.servicetalk.concurrent.api.Single.success;
+import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderValues.ZERO;
@@ -102,20 +103,20 @@ public class HttpAuthConnectionFactoryClientTest {
     }
 
     private static final class TestHttpAuthConnectionFactory<ResolvedAddress> implements
-                              ConnectionFactory<ResolvedAddress, StreamingHttpConnection> {
+                              ConnectionFactory<ResolvedAddress, StreamingHttpConnectionFilter> {
         private final ConnectionFactory<ResolvedAddress,
-                ? extends StreamingHttpConnection> delegate;
+                ? extends StreamingHttpConnectionFilter> delegate;
 
         TestHttpAuthConnectionFactory(final ConnectionFactory<ResolvedAddress,
-                ? extends StreamingHttpConnection> delegate) {
+                ? extends StreamingHttpConnectionFilter> delegate) {
             this.delegate = requireNonNull(delegate);
         }
 
         @Override
-        public Single<StreamingHttpConnection> newConnection(
+        public Single<StreamingHttpConnectionFilter> newConnection(
                 final ResolvedAddress resolvedAddress) {
             return delegate.newConnection(resolvedAddress).flatMap(cnx ->
-                    cnx.request(newTestRequest(cnx, "/auth"))
+                    cnx.request(defaultStrategy(), newTestRequest(cnx, "/auth"))
                             .onErrorResume(cause -> {
                                 cnx.closeAsync().subscribe();
                                 return error(new IllegalStateException("failed auth"));

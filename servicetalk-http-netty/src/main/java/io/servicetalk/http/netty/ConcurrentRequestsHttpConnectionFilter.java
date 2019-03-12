@@ -21,8 +21,8 @@ import io.servicetalk.client.internal.RequestConcurrencyController;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.internal.SubscribableSingle;
 import io.servicetalk.concurrent.internal.LatestValueSubscriber;
+import io.servicetalk.http.api.HttpConnectionFilterFactory;
 import io.servicetalk.http.api.HttpExecutionStrategy;
-import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpConnectionFilter;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
@@ -35,69 +35,87 @@ import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.http.api.StreamingHttpConnection.SettingKey.MAX_CONCURRENCY;
 
-final class ConcurrentRequestsHttpConnectionFilter extends StreamingHttpConnectionFilter {
-    private static final Throwable NONE = new Throwable();
+final class ConcurrentRequestsHttpConnectionFilter implements HttpConnectionFilterFactory {
 
-    private final RequestConcurrencyController limiter;
-    private final LatestValueSubscriber<Throwable> transportError = new LatestValueSubscriber<>();
+    private final int defaultMaxPipelinedRequests;
 
-    ConcurrentRequestsHttpConnectionFilter(final StreamingHttpConnection next, final int defaultMaxPipelinedRequests) {
-        super(next);
+    ConcurrentRequestsHttpConnectionFilter(final int defaultMaxPipelinedRequests) {
+        this.defaultMaxPipelinedRequests = defaultMaxPipelinedRequests;
+    }
 
-        if (next.connectionContext() instanceof NettyConnectionContext) {
-            toSource(((NettyConnectionContext) next.connectionContext())
-                    .transportError().toPublisher()).subscribe(transportError);
+    @Override
+    public StreamingHttpConnectionFilter create(final StreamingHttpConnectionFilter connection) {
+        return new ConcurrentRequestsFilter(connection, defaultMaxPipelinedRequests);
+    }
+
+    private static final class ConcurrentRequestsFilter extends StreamingHttpConnectionFilter {
+
+        private final RequestConcurrencyController limiter;
+        private static final Throwable NONE = new Throwable();
+
+        private final LatestValueSubscriber<Throwable> transportError = new LatestValueSubscriber<>();
+
+        private ConcurrentRequestsFilter(final StreamingHttpConnectionFilter next,
+                                         final int defaultMaxPipelinedRequests) {
+            super(next);
+
+            if (next.connectionContext() instanceof NettyConnectionContext) {
+                toSource(((NettyConnectionContext) next.connectionContext())
+                        .transportError().toPublisher()).subscribe(transportError);
+            }
+
+            limiter = defaultMaxPipelinedRequests == 1 ?
+                    newSingleController(next.settingStream(MAX_CONCURRENCY), next.onClose()) :
+                    newController(next.settingStream(MAX_CONCURRENCY), next.onClose(), defaultMaxPipelinedRequests);
         }
 
-        limiter = defaultMaxPipelinedRequests == 1 ?
-                newSingleController(next.settingStream(MAX_CONCURRENCY), next.onClose()) :
-                newController(next.settingStream(MAX_CONCURRENCY), next.onClose(), defaultMaxPipelinedRequests);
-    }
-
-    @Override
-    public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
-                                                 final StreamingHttpRequest request) {
-        return new SubscribableSingle<StreamingHttpResponse>() {
-            @Override
-            protected void handleSubscribe(final Subscriber<? super StreamingHttpResponse> subscriber) {
-                RequestConcurrencyController.Result result = limiter.tryRequest();
-                Throwable reportedError;
-                switch (result) {
-                    case Accepted:
-                        toSource(delegate().request(strategy, request)
-                                .liftSynchronous(new DoBeforeFinallyOnHttpResponseOperator(limiter::requestFinished)))
-                                .subscribe(subscriber);
-                        return;
-                    case RejectedTemporary:
-                        reportedError = new MaxRequestLimitExceededRejectedSubscribeException(
-                                        "Max concurrent requests saturated for: " +
-                                                ConcurrentRequestsHttpConnectionFilter.this);
-                        break;
-                    case RejectedPermanently:
-                        reportedError = ConcurrentRequestsHttpConnectionFilter.this.transportError.lastSeenValue(NONE);
-                        if (reportedError == NONE) {
-                            reportedError = new ConnectionClosedException(
-                                    "Connection Closed: " + ConcurrentRequestsHttpConnectionFilter.this);
-                        } else {
-                            reportedError = new ConnectionClosedException(
-                                    "Connection Closed: " + ConcurrentRequestsHttpConnectionFilter.this, reportedError);
-                        }
-                        break;
-                    default:
-                        reportedError = new AssertionError("Unexpected result: " + result +
-                                " determining concurrency limit for the connection " +
-                                ConcurrentRequestsHttpConnectionFilter.this);
-                        break;
+        @Override
+        protected Single<StreamingHttpResponse> request(final StreamingHttpConnectionFilter delegate,
+                                                        final HttpExecutionStrategy strategy,
+                                                        final StreamingHttpRequest request) {
+            return new SubscribableSingle<StreamingHttpResponse>() {
+                @Override
+                protected void handleSubscribe(final Subscriber<? super StreamingHttpResponse> subscriber) {
+                    RequestConcurrencyController.Result result = limiter.tryRequest();
+                    Throwable reportedError;
+                    switch (result) {
+                        case Accepted:
+                            toSource(delegate.request(strategy, request)
+                                    .liftSynchronous(new DoBeforeFinallyOnHttpResponseOperator(
+                                            limiter::requestFinished)))
+                                    .subscribe(subscriber);
+                            return;
+                        case RejectedTemporary:
+                            reportedError = new MaxRequestLimitExceededRejectedSubscribeException(
+                                    "Max concurrent requests saturated for: " +
+                                            ConcurrentRequestsFilter.this);
+                            break;
+                        case RejectedPermanently:
+                            reportedError = ConcurrentRequestsFilter.this.transportError.lastSeenValue(NONE);
+                            if (reportedError == NONE) {
+                                reportedError = new ConnectionClosedException(
+                                        "Connection Closed: " + ConcurrentRequestsFilter.this);
+                            } else {
+                                reportedError = new ConnectionClosedException(
+                                        "Connection Closed: " + ConcurrentRequestsFilter.this, reportedError);
+                            }
+                            break;
+                        default:
+                            reportedError = new AssertionError("Unexpected result: " + result +
+                                    " determining concurrency limit for the connection " +
+                                    ConcurrentRequestsFilter.this);
+                            break;
+                    }
+                    subscriber.onSubscribe(IGNORE_CANCEL);
+                    subscriber.onError(reportedError);
                 }
-                subscriber.onSubscribe(IGNORE_CANCEL);
-                subscriber.onError(reportedError);
-            }
-        };
-    }
+            };
+        }
 
-    @Override
-    protected HttpExecutionStrategy mergeForEffectiveStrategy(final HttpExecutionStrategy mergeWith) {
-        // Since this filter does not have any blocking code, we do not need to alter the effective strategy.
-        return mergeWith;
+        @Override
+        protected HttpExecutionStrategy mergeForEffectiveStrategy(final HttpExecutionStrategy mergeWith) {
+            // Since this filter does not have any blocking code, we do not need to alter the effective strategy.
+            return mergeWith;
+        }
     }
 }

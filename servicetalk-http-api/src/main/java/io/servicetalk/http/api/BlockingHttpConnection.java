@@ -29,7 +29,7 @@ public abstract class BlockingHttpConnection extends BlockingHttpRequester {
      * Create a new instance.
      *
      * @param reqRespFactory The {@link HttpRequestResponseFactory} used to
-     * {@link #newRequest(HttpRequestMethod, String) create new requests} and {@link #httpResponseFactory()}.
+     * {@link #newRequest(HttpRequestMethod, String) create new requests}.
      * @param strategy Default {@link HttpExecutionStrategy} to use.
      */
     BlockingHttpConnection(final HttpRequestResponseFactory reqRespFactory, final HttpExecutionStrategy strategy) {
@@ -61,9 +61,7 @@ public abstract class BlockingHttpConnection extends BlockingHttpRequester {
      *
      * @return a {@link StreamingHttpConnection} representation of this {@link BlockingHttpConnection}.
      */
-    public final StreamingHttpConnection asStreamingConnection() {
-        return asStreamingConnectionInternal();
-    }
+    public abstract StreamingHttpConnection asStreamingConnection();
 
     /**
      * Convert this {@link BlockingHttpConnection} to the {@link HttpConnection} API.
@@ -73,8 +71,10 @@ public abstract class BlockingHttpConnection extends BlockingHttpRequester {
      *
      * @return a {@link HttpConnection} representation of this {@link BlockingHttpConnection}.
      */
-    public final HttpConnection asConnection() {
-        return asConnectionInternal();
+    // We don't want the user to be able to override but it cannot be final because we need to override the type.
+    // However the constructor of this class is package private so the user will not be able to override this method.
+    public /* final */ HttpConnection asConnection() {
+        return asStreamingConnection().asConnection();
     }
 
     /**
@@ -85,15 +85,9 @@ public abstract class BlockingHttpConnection extends BlockingHttpRequester {
      *
      * @return a {@link BlockingStreamingHttpConnection} representation of this {@link BlockingHttpConnection}.
      */
-    public final BlockingStreamingHttpConnection asBlockingStreamingConnection() {
+    // We don't want the user to be able to override but it cannot be final because we need to override the type.
+    // However the constructor of this class is package private so the user will not be able to override this method.
+    public /* final */ BlockingStreamingHttpConnection asBlockingStreamingConnection() {
         return asStreamingConnection().asBlockingStreamingConnection();
-    }
-
-    StreamingHttpConnection asStreamingConnectionInternal() {
-        return BlockingHttpConnectionToStreamingHttpConnection.transform(this);
-    }
-
-    HttpConnection asConnectionInternal() {
-        return BlockingHttpConnectionToHttpConnection.transform(this);
     }
 }

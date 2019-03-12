@@ -154,6 +154,7 @@ final class BlockingUtils {
         }
     }
 
+    @SuppressWarnings("unchecked")
     private static <T> T uncheckedCast() {
         return (T) DUMMY;
     }

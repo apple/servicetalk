@@ -26,12 +26,10 @@ import io.servicetalk.http.api.HttpClientFilterFactory;
 import io.servicetalk.http.api.HttpConnectionFilterFactory;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpRequestMetaData;
-import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpClientFilter;
-import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpConnectionFilter;
 import io.servicetalk.http.api.StreamingHttpRequest;
-import io.servicetalk.http.api.StreamingHttpRequester;
+import io.servicetalk.http.api.StreamingHttpRequestFunction;
 import io.servicetalk.http.api.StreamingHttpResponse;
 
 import java.io.IOException;
@@ -52,7 +50,7 @@ public final class RetryingHttpRequesterFilter implements HttpClientFilterFactor
         this.settings = settings;
     }
 
-    private Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
+    private Single<StreamingHttpResponse> request(final StreamingHttpRequestFunction delegate,
                                                   final HttpExecutionStrategy strategy,
                                                   final StreamingHttpRequest request,
                                                   final BiIntFunction<Throwable, Completable> retryStrategy) {
@@ -65,14 +63,14 @@ public final class RetryingHttpRequesterFilter implements HttpClientFilterFactor
     }
 
     @Override
-    public StreamingHttpClientFilter create(final StreamingHttpClient client, final Publisher<Object> lbEvents) {
+    public StreamingHttpClientFilter create(final StreamingHttpClientFilter client, final Publisher<Object> lbEvents) {
         return new StreamingHttpClientFilter(client) {
 
             private final BiIntFunction<Throwable, Completable> retryStrategy =
                     settings.newStrategy(client.executionContext().executor());
 
             @Override
-            protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
+            protected Single<StreamingHttpResponse> request(final StreamingHttpRequestFunction delegate,
                                                             final HttpExecutionStrategy strategy,
                                                             final StreamingHttpRequest request) {
                 return RetryingHttpRequesterFilter.this.request(delegate, strategy, request, retryStrategy);
@@ -87,16 +85,17 @@ public final class RetryingHttpRequesterFilter implements HttpClientFilterFactor
     }
 
     @Override
-    public StreamingHttpConnectionFilter create(final StreamingHttpConnection connection) {
+    public StreamingHttpConnectionFilter create(final StreamingHttpConnectionFilter connection) {
         return new StreamingHttpConnectionFilter(connection) {
 
             private final BiIntFunction<Throwable, Completable> retryStrategy =
                     settings.newStrategy(connection.executionContext().executor());
 
             @Override
-            public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
-                                                         final StreamingHttpRequest request) {
-                return RetryingHttpRequesterFilter.this.request(delegate(), strategy, request, retryStrategy);
+            protected Single<StreamingHttpResponse> request(final StreamingHttpConnectionFilter delegate,
+                                                            final HttpExecutionStrategy strategy,
+                                                            final StreamingHttpRequest request) {
+                return RetryingHttpRequesterFilter.this.request(delegate, strategy, request, retryStrategy);
             }
 
             @Override

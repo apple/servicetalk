@@ -15,12 +15,12 @@
  */
 package io.servicetalk.http.api;
 
-import io.servicetalk.concurrent.BlockingIterable;
-import io.servicetalk.concurrent.CompletableSource.Subscriber;
+import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompletableProcessor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.http.api.StreamingHttpConnection.SettingKey;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ExecutionContext;
 
@@ -34,136 +34,169 @@ import static org.mockito.Mockito.when;
 
 public class BlockingStreamingHttpConnectionTest extends AbstractBlockingStreamingHttpRequesterTest {
 
-    @SuppressWarnings("unchecked")
     @Override
-    protected <T extends StreamingHttpRequester & TestHttpRequester> T newAsyncRequester(
-            StreamingHttpRequestResponseFactory factory,
+    protected TestStreamingHttpRequester newAsyncRequester(
+            StreamingHttpRequestResponseFactory reqRespFactory,
             final ExecutionContext ctx,
             final BiFunction<HttpExecutionStrategy, StreamingHttpRequest, Single<StreamingHttpResponse>> doRequest) {
-        return (T) new TestStreamingHttpConnection(factory, ctx) {
-            @Override
-            public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
-                                                         final StreamingHttpRequest request) {
-                return doRequest.apply(strategy, request);
-            }
-        };
-    }
-
-    @SuppressWarnings("unchecked")
-    @Override
-    protected <T extends BlockingStreamingHttpRequester & TestHttpRequester> T newBlockingRequester(
-            BlockingStreamingHttpRequestResponseFactory factory,
-            final ExecutionContext ctx,
-            final BiFunction<HttpExecutionStrategy, BlockingStreamingHttpRequest, BlockingStreamingHttpResponse> doRequest) {
-        return (T) new TestBlockingStreamingHttpConnection(factory, ctx) {
-            @Override
-            public BlockingStreamingHttpResponse request(final HttpExecutionStrategy strategy,
-                                                         final BlockingStreamingHttpRequest request) {
-                return doRequest.apply(strategy, request);
-            }
-        };
-    }
-
-    @Override
-    protected BlockingStreamingHttpRequester toBlockingStreamingRequester(final StreamingHttpRequester requester) {
-        return ((StreamingHttpConnection) requester).asBlockingStreamingConnection();
-    }
-
-    @Override
-    protected StreamingHttpRequester toStreamingRequester(final BlockingStreamingHttpRequester requester) {
-        return ((BlockingStreamingHttpConnection) requester).asStreamingConnection();
-    }
-
-    private abstract static class TestStreamingHttpConnection extends StreamingHttpConnection implements TestHttpRequester {
-        private final AtomicBoolean closed = new AtomicBoolean();
-        private final CompletableProcessor onClose = new CompletableProcessor();
-        private final ExecutionContext executionContext;
-        private final ConnectionContext connectionContext;
-
-        TestStreamingHttpConnection(StreamingHttpRequestResponseFactory factory,
-                                    ExecutionContext executionContext) {
-            super(factory, defaultStrategy());
-            this.executionContext = executionContext;
-            this.connectionContext = mock(ConnectionContext.class);
-            when(connectionContext.executionContext()).thenReturn(executionContext);
-        }
-
-        @Override
-        public final ConnectionContext connectionContext() {
-            return connectionContext;
-        }
-
-        @Override
-        public final <T> Publisher<T> settingStream(final SettingKey<T> settingKey) {
-            return Publisher.error(new IllegalStateException("unsupported"));
-        }
-
-        @Override
-        public final Completable onClose() {
-            return onClose;
-        }
-
-        @Override
-        public final Completable closeAsync() {
-            return new Completable() {
-                @Override
-                protected void handleSubscribe(final Subscriber subscriber) {
-                    if (closed.compareAndSet(false, true)) {
-                        onClose.onComplete();
+        return new TestStreamingHttpConnection(ctx, reqRespFactory, connection ->
+                new StreamingHttpConnectionFilter(connection) {
+                    @Override
+                    protected Single<StreamingHttpResponse> request(final StreamingHttpConnectionFilter delegate,
+                                                                    final HttpExecutionStrategy strategy,
+                                                                    final StreamingHttpRequest request) {
+                        return doRequest.apply(strategy, request);
                     }
-                    toSource(onClose).subscribe(subscriber);
-                }
-            };
+                });
+    }
+
+    @Override
+    protected TestBlockingStreamingHttpRequester newBlockingRequester(
+            BlockingStreamingHttpRequestResponseFactory reqRespFactory,
+            final ExecutionContext ctx,
+            final BiFunction<HttpExecutionStrategy, BlockingStreamingHttpRequest,
+                    BlockingStreamingHttpResponse> doRequest) {
+        return new TestBlockingStreamingHttpConnection(ctx, reqRespFactory, doRequest);
+    }
+
+    private static final class TestStreamingHttpConnection extends TestStreamingHttpRequester {
+        private final AtomicBoolean closed = new AtomicBoolean();
+        private final StreamingHttpConnection conn;
+
+        private TestStreamingHttpConnection(final ExecutionContext executionContext,
+                                    final StreamingHttpRequestResponseFactory reqRespFactory,
+                                    final HttpConnectionFilterFactory factory) {
+            super(reqRespFactory, defaultStrategy());
+            conn = new StreamingHttpConnection(factory.create(
+                    new TestConnectionTransport(reqRespFactory, executionContext)), defaultStrategy());
+        }
+
+        @Override
+        public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
+                                                     final StreamingHttpRequest request) {
+            return conn.request(strategy, request);
         }
 
         @Override
         public ExecutionContext executionContext() {
-            return executionContext;
+            return conn.executionContext();
         }
 
         @Override
-        public final boolean isClosed() {
+        public Completable onClose() {
+            return conn.onClose();
+        }
+
+        @Override
+        public Completable closeAsync() {
+            return conn.closeAsync();
+        }
+
+        @Override
+        public Completable closeAsyncGracefully() {
+            return conn.closeAsyncGracefully();
+        }
+
+        @Override
+        public boolean isClosed() {
             return closed.get();
+        }
+
+        @Override
+        public BlockingStreamingHttpRequester asBlockingStreaming() {
+            return conn.asBlockingStreamingConnection();
+        }
+
+        private final class TestConnectionTransport extends StreamingHttpConnectionFilter {
+            private final CompletableProcessor onClose = new CompletableProcessor();
+            private final ExecutionContext executionContext;
+            private final ConnectionContext connectionContext;
+
+            private TestConnectionTransport(final StreamingHttpRequestResponseFactory reqRespFactory,
+                                    final ExecutionContext executionContext) {
+                super(terminal(reqRespFactory));
+                this.executionContext = executionContext;
+                this.connectionContext = mock(ConnectionContext.class);
+                when(connectionContext.executionContext()).thenReturn(executionContext);
+            }
+
+            @Override
+            public ConnectionContext connectionContext() {
+                return connectionContext;
+            }
+
+            @Override
+            public <T> Publisher<T> settingStream(final SettingKey<T> settingKey) {
+                return Publisher.error(new IllegalStateException("unsupported"));
+            }
+
+            @Override
+            public Completable onClose() {
+                return onClose;
+            }
+
+            @Override
+            public Completable closeAsync() {
+                return new Completable() {
+                    @Override
+                    protected void handleSubscribe(final CompletableSource.Subscriber subscriber) {
+                        if (closed.compareAndSet(false, true)) {
+                            onClose.onComplete();
+                        }
+                        toSource(onClose).subscribe(subscriber);
+                    }
+                };
+            }
+
+            @Override
+            public ExecutionContext executionContext() {
+                return executionContext;
+            }
         }
     }
 
-    private abstract static class TestBlockingStreamingHttpConnection extends BlockingStreamingHttpConnection
-            implements TestHttpRequester {
-        private final AtomicBoolean closed = new AtomicBoolean();
-        private final ExecutionContext executionContext;
-        private final ConnectionContext connectionContext;
+    private static final class TestBlockingStreamingHttpConnection extends TestBlockingStreamingHttpRequester {
 
-        TestBlockingStreamingHttpConnection(BlockingStreamingHttpRequestResponseFactory factory,
-                                            ExecutionContext executionContext) {
-            super(factory, defaultStrategy());
-            this.executionContext = executionContext;
-            this.connectionContext = mock(ConnectionContext.class);
-            when(connectionContext.executionContext()).thenReturn(executionContext);
+        private final TestStreamingHttpConnection streamingConnection;
+        private final BlockingStreamingHttpRequester conn;
+
+        TestBlockingStreamingHttpConnection(final ExecutionContext executionContext,
+                                            final BlockingStreamingHttpRequestResponseFactory reqRespFactory,
+                                            final BiFunction<HttpExecutionStrategy, BlockingStreamingHttpRequest,
+                                                    BlockingStreamingHttpResponse> doRequest) {
+            super(reqRespFactory, defaultStrategy());
+            StreamingHttpRequestResponseFactory blkReqRespFactory =
+                    new BlockingStreamingHttpRequestResponseFactoryToStreamingHttpRequestResponseFactory(
+                            reqRespFactory);
+            streamingConnection = new TestStreamingHttpConnection(executionContext,
+                    blkReqRespFactory, new BlockingFilter(doRequest));
+            conn = streamingConnection.asBlockingStreaming();
         }
 
         @Override
-        public ConnectionContext connectionContext() {
-            return connectionContext;
+        public BlockingStreamingHttpResponse request(final HttpExecutionStrategy strategy,
+                                                     final BlockingStreamingHttpRequest request) throws Exception {
+            return conn.request(strategy, request);
+        }
+
+        @Override
+        public void close() throws Exception {
+            conn.close();
+        }
+
+        @Override
+        public boolean isClosed() {
+            return streamingConnection.isClosed();
+        }
+
+        @Override
+        public StreamingHttpRequester asStreaming() {
+            return streamingConnection;
         }
 
         @Override
         public ExecutionContext executionContext() {
-            return executionContext;
-        }
-
-        @Override
-        public <T> BlockingIterable<T> settingIterable(final StreamingHttpConnection.SettingKey<T> settingKey) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public void close() {
-            closed.set(true);
-        }
-
-        @Override
-        public final boolean isClosed() {
-            return closed.get();
+            return conn.executionContext();
         }
     }
 }

@@ -16,7 +16,6 @@
 package io.servicetalk.http.api;
 
 import io.servicetalk.concurrent.BlockingIterable;
-import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ExecutionContext;
 
@@ -59,18 +58,13 @@ final class StreamingHttpConnectionToBlockingHttpConnection extends BlockingHttp
     }
 
     @Override
-    StreamingHttpConnection asStreamingConnectionInternal() {
+    public StreamingHttpConnection asStreamingConnection() {
         return connection;
     }
 
-    Completable onClose() {
-        return connection.onClose();
-    }
-
-    static BlockingHttpConnection transform(StreamingHttpConnection conn) {
-        final HttpExecutionStrategy defaultStrategy = conn instanceof StreamingHttpConnectionFilter ?
-                ((StreamingHttpConnectionFilter) conn).effectiveExecutionStrategy(OFFLOAD_NONE_STRATEGY) :
-                OFFLOAD_NONE_STRATEGY;
-        return new StreamingHttpConnectionToBlockingHttpConnection(conn, defaultStrategy);
+    static BlockingHttpConnection transform(StreamingHttpConnection connection) {
+        final HttpExecutionStrategy defaultStrategy =
+                connection.filterChain.effectiveExecutionStrategy(OFFLOAD_NONE_STRATEGY);
+        return new StreamingHttpConnectionToBlockingHttpConnection(connection, defaultStrategy);
     }
 }

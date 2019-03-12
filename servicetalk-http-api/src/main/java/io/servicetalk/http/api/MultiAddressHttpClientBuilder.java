@@ -94,7 +94,7 @@ public abstract class MultiAddressHttpClientBuilder<U, R>
 
     @Override
     public abstract MultiAddressHttpClientBuilder<U, R> appendConnectionFactoryFilter(
-            ConnectionFactoryFilter<R, StreamingHttpConnection> factory);
+            ConnectionFactoryFilter<R, StreamingHttpConnectionFilter> factory);
 
     @Override
     public abstract MultiAddressHttpClientBuilder<U, R> disableHostHeaderFallback();
@@ -108,7 +108,7 @@ public abstract class MultiAddressHttpClientBuilder<U, R>
 
     @Override
     public abstract MultiAddressHttpClientBuilder<U, R> loadBalancerFactory(
-            LoadBalancerFactory<R, StreamingHttpConnection> loadBalancerFactory);
+            LoadBalancerFactory<R, StreamingHttpConnectionFilter> loadBalancerFactory);
 
     /**
      * Automatically set the provided {@link HttpHeaderNames#HOST} on {@link StreamingHttpRequest}s when it's missing.

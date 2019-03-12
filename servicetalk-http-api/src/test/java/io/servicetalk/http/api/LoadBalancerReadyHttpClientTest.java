@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,12 +17,9 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.client.api.NoAvailableHostException;
-import io.servicetalk.concurrent.Cancellable;
-import io.servicetalk.concurrent.SingleSource.Subscriber;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
-import io.servicetalk.http.api.StreamingHttpClient.ReservedStreamingHttpConnection;
 import io.servicetalk.transport.api.ExecutionContext;
 
 import org.junit.Before;
@@ -35,24 +32,20 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import javax.annotation.Nullable;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.client.api.LoadBalancerReadyEvent.LOAD_BALANCER_READY_EVENT;
 import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.concurrent.api.Single.error;
 import static io.servicetalk.concurrent.api.Single.success;
-import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.http.api.DefaultHttpHeadersFactory.INSTANCE;
-import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
+import static io.servicetalk.http.api.ReservedStreamingHttpConnectionFilter.terminal;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.withSettings;
 import static org.mockito.MockitoAnnotations.initMocks;
 
 public class LoadBalancerReadyHttpClientTest {
@@ -61,31 +54,35 @@ public class LoadBalancerReadyHttpClientTest {
             allocator, INSTANCE);
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
-    @Mock
-    private ExecutionContext mockExecutionCtx;
 
     private final TestPublisher<Object> loadBalancerPublisher = new TestPublisher<>();
 
-    private StreamingHttpClient client = new TestStreamingHttpClient(reqRespFactory, mockExecutionCtx) {
+    @Mock
+    private ExecutionContext mockExecutionCtx;
+
+    private final HttpClientFilterFactory testHandler = (client, __) -> new StreamingHttpClientFilter(client) {
+
         @Override
-        public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
-                                                     final StreamingHttpRequest request) {
+        protected Single<StreamingHttpResponse> request(final StreamingHttpRequestFunction delegate,
+                                                        final HttpExecutionStrategy strategy,
+                                                        final StreamingHttpRequest request) {
             return defer(new DeferredSuccessSupplier<>(newOkResponse()));
         }
 
         @Override
-        public Single<ReservedStreamingHttpConnection> reserveConnection(final HttpExecutionStrategy strategy,
-                                                                         final HttpRequestMetaData metaData) {
+        protected Single<ReservedStreamingHttpConnectionFilter> reserveConnection(
+                final StreamingHttpClientFilter delegate,
+                final HttpExecutionStrategy strategy,
+                final HttpRequestMetaData metaData) {
             return defer(new DeferredSuccessSupplier<>(mockReservedConnection));
         }
     };
 
-    private ReservedStreamingHttpConnection mockReservedConnection;
+    private final ReservedStreamingHttpConnectionFilter mockReservedConnection =
+            new ReservedStreamingHttpConnectionFilter(terminal(reqRespFactory)) { };
 
     @Before
     public void setup() {
-        mockReservedConnection = mock(ReservedStreamingHttpConnection.class,
-                withSettings().useConstructor(reqRespFactory, defaultStrategy()));
         initMocks(this);
     }
 
@@ -109,30 +106,24 @@ public class LoadBalancerReadyHttpClientTest {
         verifyOnInitializedFailedFailsAction(filter -> filter.reserveConnection(filter.get("/noop")));
     }
 
-    private void verifyOnInitializedFailedFailsAction(Function<StreamingHttpClient,
-            Single<?>> action) throws InterruptedException {
+    private void verifyOnInitializedFailedFailsAction(
+            Function<StreamingHttpClient, Single<?>> action) throws InterruptedException {
         TestPublisher<Object> loadBalancerPublisher = new TestPublisher<>();
-        LoadBalancerReadyStreamingHttpClient filter =
-                new LoadBalancerReadyStreamingHttpClient(1, loadBalancerPublisher, client);
-        CountDownLatch latch = new CountDownLatch(2);
+
+        HttpClientFilterFactory filterFactory = (next, __) ->
+                new LoadBalancerReadyStreamingHttpClientFilter(1, loadBalancerPublisher, next);
+
+        StreamingHttpClient client = TestStreamingHttpClient.from(reqRespFactory, mockExecutionCtx,
+                filterFactory.append(testHandler));
+
+        CountDownLatch latch = new CountDownLatch(1);
         AtomicReference<Throwable> causeRef = new AtomicReference<>();
-        toSource(action.apply(filter)).subscribe(new Subscriber<Object>() {
-            @Override
-            public void onSubscribe(final Cancellable cancellable) {
-                latch.countDown();
-            }
 
-            @Override
-            public void onSuccess(@Nullable final Object result) {
-                latch.countDown();
-            }
-
-            @Override
-            public void onError(final Throwable t) {
-                causeRef.set(t);
-                latch.countDown();
-            }
-        });
+        action.apply(client)
+                .doOnError(causeRef::set)
+                .doAfterFinally(latch::countDown)
+                .toCompletable()
+                .subscribe();
 
         // We don't expect the request to complete until onInitialized completes.
         assertThat(latch.await(100, MILLISECONDS), is(false));
@@ -145,10 +136,15 @@ public class LoadBalancerReadyHttpClientTest {
 
     private void verifyActionIsDelayedUntilAfterInitialized(Function<StreamingHttpClient, Single<?>> action)
             throws InterruptedException {
-        LoadBalancerReadyStreamingHttpClient filter =
-                new LoadBalancerReadyStreamingHttpClient(1, loadBalancerPublisher, client);
+
+        HttpClientFilterFactory filterFactory = (next, __) -> new LoadBalancerReadyStreamingHttpClientFilter(
+                1, loadBalancerPublisher, next);
+
+        StreamingHttpClient client = TestStreamingHttpClient.from(reqRespFactory, mockExecutionCtx,
+                filterFactory.append(testHandler));
+
         CountDownLatch latch = new CountDownLatch(1);
-        action.apply(filter).subscribe(resp -> latch.countDown());
+        action.apply(client).subscribe(resp -> latch.countDown());
 
         // We don't expect the request to complete until onInitialized completes.
         assertThat(latch.await(100, MILLISECONDS), is(false));
