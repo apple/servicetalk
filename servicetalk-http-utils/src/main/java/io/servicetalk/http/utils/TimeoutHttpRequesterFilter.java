@@ -98,7 +98,7 @@ public final class TimeoutHttpRequesterFilter implements HttpClientFilterFactory
         /**
          * Specifies the {@link Executor} to use for managing the timer notifications.
          *
-         * @param timeoutExecutor the {@link Executor} to use for managing the timer notifications.
+         * @param timeoutExecutor the {@link Executor} to use for managing the timer notifications
          * @return {@code this}
          */
         public Builder timeoutExecutor(final Executor timeoutExecutor) {
