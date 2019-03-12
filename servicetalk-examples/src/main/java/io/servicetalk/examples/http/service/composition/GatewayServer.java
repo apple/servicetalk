@@ -119,8 +119,7 @@ public final class GatewayServer {
                                 .maxRetries(3)
                                 .buildWithExponentialBackoffAndJitter(ofMillis(100)))
                         // Apply a timeout filter for the client to guard against latent clients.
-                        .appendClientFilter(new TimeoutHttpRequesterFilter.Builder()
-                                .buildWithTimeout(ofMillis(500)))
+                        .appendClientFilter(new TimeoutHttpRequesterFilter(ofMillis(500)))
                         .ioExecutor(ioExecutor)
                         .buildStreaming());
     }
