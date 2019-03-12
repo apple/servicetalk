@@ -26,6 +26,7 @@ import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpConnection;
+import io.servicetalk.http.api.StreamingHttpConnectionFilter;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.tcp.netty.internal.ReadOnlyTcpClientConfig;
@@ -97,7 +98,7 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> extends HttpCon
                         roConfig.headersFactory());
 
         // Make a best effort to infer HOST header for HttpConnection
-        final HttpConnectionFilterFactory filterFactory;
+        HttpConnectionFilterFactory filterFactory;
         if (resolvedAddress instanceof InetSocketAddress) {
             InetSocketAddress inetSocketAddress = (InetSocketAddress) resolvedAddress;
             filterFactory = connectionFilterFunction.append(
@@ -105,34 +106,32 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> extends HttpCon
         } else {
             filterFactory = connectionFilterFunction;
         }
+        filterFactory = filterFactory.append(
+                new ConcurrentRequestsHttpConnectionFilter(roConfig.maxPipelinedRequests()));
 
         return (roConfig.maxPipelinedRequests() == 1 ?
-                buildForNonPipelined(executionContext, resolvedAddress, roConfig, filterFactory,
-                        reqRespFactory, strategy)
-                : buildForPipelined(executionContext, resolvedAddress, roConfig, filterFactory,
-                reqRespFactory, strategy))
-                    .map(filteredConnection -> new ConcurrentRequestsHttpConnectionFilter(filteredConnection,
-                            roConfig.maxPipelinedRequests()));
+                buildForNonPipelined(executionContext, resolvedAddress, roConfig, filterFactory, reqRespFactory) :
+                buildForPipelined(executionContext, resolvedAddress, roConfig, filterFactory, reqRespFactory))
+                    .map(filterChain ->
+                        StreamingHttpConnection.newStreamingConnectionWorkAroundToBeFixed(filterChain, strategy));
     }
 
-    static <ResolvedAddress> Single<StreamingHttpConnection> buildForPipelined(
+    static <ResolvedAddress> Single<StreamingHttpConnectionFilter> buildForPipelined(
             final ExecutionContext executionContext, ResolvedAddress resolvedAddress, ReadOnlyHttpClientConfig roConfig,
             final HttpConnectionFilterFactory connectionFilterFunction,
-            final StreamingHttpRequestResponseFactory reqRespFactory, final HttpExecutionStrategy strategy) {
+            final StreamingHttpRequestResponseFactory reqRespFactory) {
         return buildStreaming(executionContext, resolvedAddress, roConfig).map(conn ->
                 connectionFilterFunction.create(
-                        new PipelinedStreamingHttpConnection(conn, roConfig, executionContext, reqRespFactory,
-                                strategy)));
+                        new PipelinedStreamingHttpConnectionFilter(conn, roConfig, executionContext, reqRespFactory)));
     }
 
-    static <ResolvedAddress> Single<StreamingHttpConnection> buildForNonPipelined(
+    static <ResolvedAddress> Single<StreamingHttpConnectionFilter> buildForNonPipelined(
             final ExecutionContext executionContext, ResolvedAddress resolvedAddress, ReadOnlyHttpClientConfig roConfig,
             final HttpConnectionFilterFactory connectionFilterFunction,
-            final StreamingHttpRequestResponseFactory reqRespFactory, final HttpExecutionStrategy strategy) {
+            final StreamingHttpRequestResponseFactory reqRespFactory) {
         return buildStreaming(executionContext, resolvedAddress, roConfig).map(conn ->
                 connectionFilterFunction.create(
-                        new NonPipelinedStreamingHttpConnection(conn, roConfig, executionContext, reqRespFactory,
-                                strategy)));
+                    new NonPipelinedStreamingHttpConnectionFilter(conn, roConfig, executionContext, reqRespFactory)));
     }
 
     private static <ResolvedAddress> Single<? extends NettyConnection<Object, Object>> buildStreaming(

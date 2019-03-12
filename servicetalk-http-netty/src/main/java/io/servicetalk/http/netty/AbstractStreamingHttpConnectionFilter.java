@@ -20,7 +20,8 @@ import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpResponseMetaData;
-import io.servicetalk.http.api.StreamingHttpConnection;
+import io.servicetalk.http.api.StreamingHttpConnection.SettingKey;
+import io.servicetalk.http.api.StreamingHttpConnectionFilter;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.StreamingHttpResponse;
@@ -35,17 +36,17 @@ import static io.servicetalk.http.api.StreamingHttpResponses.newResponseWithTrai
 import static io.servicetalk.http.netty.HeaderUtils.addRequestTransferEncodingIfNecessary;
 import static java.util.Objects.requireNonNull;
 
-abstract class AbstractStreamingHttpConnection<CC extends ConnectionContext> extends StreamingHttpConnection
+abstract class AbstractStreamingHttpConnectionFilter<CC extends ConnectionContext> extends StreamingHttpConnectionFilter
         implements Function<Publisher<Object>, Single<StreamingHttpResponse>> {
 
     protected final CC connection;
     protected final ExecutionContext executionContext;
     private final Publisher<Integer> maxConcurrencySetting;
 
-    protected AbstractStreamingHttpConnection(
+    protected AbstractStreamingHttpConnectionFilter(
             CC conn, ReadOnlyHttpClientConfig config, ExecutionContext executionContext,
-            StreamingHttpRequestResponseFactory reqRespFactory, HttpExecutionStrategy strategy) {
-        super(reqRespFactory, strategy);
+            StreamingHttpRequestResponseFactory reqRespFactory) {
+        super(terminal(reqRespFactory));
         this.connection = requireNonNull(conn);
         this.executionContext = requireNonNull(executionContext);
         // TODO(jayv) we should concat with NettyConnectionContext.onClosing() once it's exposed such that both
@@ -74,9 +75,18 @@ abstract class AbstractStreamingHttpConnection<CC extends ConnectionContext> ext
     }
 
     @Override
-    public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy, StreamingHttpRequest request) {
+    protected Single<StreamingHttpResponse> request(final StreamingHttpConnectionFilter terminalDelegate,
+                                                    final HttpExecutionStrategy strategy,
+                                                    final StreamingHttpRequest request) {
         addRequestTransferEncodingIfNecessary(request); // See https://tools.ietf.org/html/rfc7230#section-3.3.3
+        // Don't call the terminal delegate!
         return strategy.invokeClient(executionContext.executor(), request, this);
+    }
+
+    @Override
+    protected HttpExecutionStrategy mergeForEffectiveStrategy(final HttpExecutionStrategy mergeWith) {
+        // Since this filter does not have any blocking code, we do not need to alter the effective strategy.
+        return mergeWith;
     }
 
     @Override

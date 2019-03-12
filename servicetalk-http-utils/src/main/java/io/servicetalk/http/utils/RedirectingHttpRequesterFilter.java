@@ -27,9 +27,9 @@ import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.ReservedStreamingHttpConnectionFilter;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpClientFilter;
-import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpConnectionFilter;
 import io.servicetalk.http.api.StreamingHttpRequest;
+import io.servicetalk.http.api.StreamingHttpRequestFunction;
 import io.servicetalk.http.api.StreamingHttpRequester;
 import io.servicetalk.http.api.StreamingHttpResponse;
 
@@ -125,25 +125,28 @@ public final class RedirectingHttpRequesterFilter implements HttpClientFilterFac
     }
 
     @Override
-    public StreamingHttpClientFilter create(final StreamingHttpClient client, final Publisher<Object> lbEvents) {
+    public StreamingHttpClientFilter create(final StreamingHttpClientFilter client, final Publisher<Object> lbEvents) {
         return new StreamingHttpClientFilter(client) {
+
             @Override
-            protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
+            protected Single<StreamingHttpResponse> request(final StreamingHttpRequestFunction delegate,
                                                             final HttpExecutionStrategy strategy,
                                                             final StreamingHttpRequest request) {
                 return RedirectingHttpRequesterFilter.this.request(delegate, strategy, request, onlyRelativeClient);
             }
 
             @Override
-            protected Single<ReservedStreamingHttpConnection> reserveConnection(
-                    final StreamingHttpClient delegate,
+            protected Single<ReservedStreamingHttpConnectionFilter> reserveConnection(
+                    final StreamingHttpClientFilter delegate,
                     final HttpExecutionStrategy strategy,
                     final HttpRequestMetaData metaData) {
                 return delegate.reserveConnection(strategy, metaData)
                         .map(r -> new ReservedStreamingHttpConnectionFilter(r) {
                             @Override
-                            public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
-                                                                         final StreamingHttpRequest request) {
+                            protected Single<StreamingHttpResponse> request(
+                                    final StreamingHttpConnectionFilter delegate,
+                                    final HttpExecutionStrategy strategy,
+                                    final StreamingHttpRequest request) {
                                 return RedirectingHttpRequesterFilter.this.request(delegate, strategy, request,
                                         onlyRelativeConnection);
                             }
@@ -164,18 +167,18 @@ public final class RedirectingHttpRequesterFilter implements HttpClientFilterFac
      * @param client {@link StreamingHttpClient} to filter
      * @return {@link StreamingHttpClientFilter} using the provided {@link StreamingHttpClient}.
      */
-    public StreamingHttpClientFilter create(final StreamingHttpClient client) {
+    public StreamingHttpClientFilter create(final StreamingHttpClientFilter client) {
         return create(client, empty());
     }
 
     @Override
-    public StreamingHttpConnectionFilter create(final StreamingHttpConnection connection) {
+    public StreamingHttpConnectionFilter create(final StreamingHttpConnectionFilter connection) {
         return new StreamingHttpConnectionFilter(connection) {
             @Override
-            public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
-                                                         final StreamingHttpRequest request) {
-                return RedirectingHttpRequesterFilter.this.request(delegate(), strategy, request,
-                        onlyRelativeConnection);
+            protected Single<StreamingHttpResponse> request(final StreamingHttpConnectionFilter delegate,
+                                                            final HttpExecutionStrategy strategy,
+                                                            final StreamingHttpRequest request) {
+                return RedirectingHttpRequesterFilter.this.request(delegate, strategy, request, onlyRelativeConnection);
             }
 
             @Override
@@ -186,7 +189,7 @@ public final class RedirectingHttpRequesterFilter implements HttpClientFilterFac
         };
     }
 
-    private Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
+    private Single<StreamingHttpResponse> request(final StreamingHttpRequestFunction delegate,
                                                   final HttpExecutionStrategy strategy,
                                                   final StreamingHttpRequest request,
                                                   final boolean onlyRelative) {

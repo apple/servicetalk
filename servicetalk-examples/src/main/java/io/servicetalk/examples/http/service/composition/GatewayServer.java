@@ -24,7 +24,7 @@ import io.servicetalk.http.api.HttpSerializationProvider;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpClientFilter;
 import io.servicetalk.http.api.StreamingHttpRequest;
-import io.servicetalk.http.api.StreamingHttpRequester;
+import io.servicetalk.http.api.StreamingHttpRequestFunction;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.netty.HttpClients;
@@ -125,11 +125,11 @@ public final class GatewayServer {
                                 .buildWithExponentialBackoffAndJitter(ofMillis(100), null))
                         // Apply a timeout filter for the client to guard against latent clients.
                         .appendClientFilter((client, __) -> new StreamingHttpClientFilter(client) {
+
                             @Override
-                            protected Single<StreamingHttpResponse> request(
-                                    final StreamingHttpRequester delegate,
-                                    final HttpExecutionStrategy strategy,
-                                    final StreamingHttpRequest request) {
+                            protected Single<StreamingHttpResponse> request(final StreamingHttpRequestFunction delegate,
+                                                                            final HttpExecutionStrategy strategy,
+                                                                            final StreamingHttpRequest request) {
                                 return delegate.request(strategy, request).timeout(ofMillis(500),
                                         client.executionContext().executor());
                             }

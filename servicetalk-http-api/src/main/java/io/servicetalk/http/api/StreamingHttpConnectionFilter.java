@@ -15,61 +15,90 @@
  */
 package io.servicetalk.http.api;
 
+import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.api.Completable;
+import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.http.api.StreamingHttpConnection.SettingKey;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ExecutionContext;
 
+import javax.annotation.Nullable;
+
 import static io.servicetalk.http.api.HttpExecutionStrategies.OFFLOAD_ALL_STRATEGY;
-import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static java.util.Objects.requireNonNull;
 
 /**
- * A {@link StreamingHttpConnection} that delegates all methods to a different {@link StreamingHttpConnection}.
+ * A {@link StreamingHttpConnectionFilter} that delegates all methods to a different {@link
+ * StreamingHttpConnectionFilter}.
  */
-public class StreamingHttpConnectionFilter extends StreamingHttpConnection {
-    private final StreamingHttpConnection delegate;
-    private final HttpExecutionStrategy defaultStrategy;
+public class StreamingHttpConnectionFilter implements StreamingHttpRequestFactory,
+                                                      StreamingHttpRequestFunction,
+                                                      ListenableAsyncCloseable {
+
+    @Nullable
+    private final StreamingHttpConnectionFilter delegate;
+    final StreamingHttpRequestResponseFactory reqRespFactory;
 
     /**
      * Create a new instance.
      *
      * @param delegate The {@link StreamingHttpConnection} to delegate all calls to.
      */
-    public StreamingHttpConnectionFilter(final StreamingHttpConnection delegate) {
-        super(delegate.reqRespFactory, defaultStrategy());
+    public StreamingHttpConnectionFilter(final StreamingHttpConnectionFilter delegate) {
         this.delegate = requireNonNull(delegate);
-        this.defaultStrategy = defaultStrategy();
+        this.reqRespFactory = delegate.reqRespFactory;
+    }
+
+    // This is only for FilterChainTerminal which overrides all methods
+    private StreamingHttpConnectionFilter(final StreamingHttpRequestResponseFactory reqRespFactory) {
+        this.reqRespFactory = requireNonNull(reqRespFactory);
+        this.delegate = null; // won't be de-referenced
     }
 
     /**
-     * Get the {@link StreamingHttpConnection} that this class delegates to.
+     * Get the {@link ConnectionContext}.
      *
-     * @return the {@link StreamingHttpConnection} that this class delegates to.
+     * @return the {@link ConnectionContext}.
      */
-    protected final StreamingHttpConnection delegate() {
-        return delegate;
-    }
-
-    @Override
     public ConnectionContext connectionContext() {
+        assert delegate != null;
         return delegate.connectionContext();
     }
 
-    @Override
+    /**
+     * Returns a {@link Publisher} that gives the current value of the setting as well as subsequent changes to
+     * the setting value as long as the {@link PublisherSource.Subscriber} has expressed enough demand.
+     *
+     * @param settingKey Name of the setting to fetch.
+     * @param <T> Type of the setting value.
+     * @return {@link Publisher} for the setting values.
+     */
     public <T> Publisher<T> settingStream(final SettingKey<T> settingKey) {
+        assert delegate != null;
         return delegate.settingStream(settingKey);
     }
 
     @Override
-    public final Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
-        return request(defaultStrategy, request);
+    public final Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
+                                                       final StreamingHttpRequest request) {
+        assert delegate != null;
+        return request(delegate, strategy, request);
     }
 
-    @Override
-    public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
-                                                 final StreamingHttpRequest request) {
+    /**
+     * Called when the filter needs to delegate the request using the provided {@link StreamingHttpConnectionFilter} on
+     * which to call {@link StreamingHttpConnectionFilter#request(HttpExecutionStrategy, StreamingHttpRequest)}.
+     *
+     * @param delegate The {@link StreamingHttpRequestFunction} to delegate requests to.
+     * @param strategy The {@link HttpExecutionStrategy} to use for executing the request.
+     * @param request The request to delegate.
+     * @return the response.
+     */
+    protected Single<StreamingHttpResponse> request(final StreamingHttpConnectionFilter delegate,
+                                                    final HttpExecutionStrategy strategy,
+                                                    final StreamingHttpRequest request) {
         return delegate.request(strategy, request);
     }
 
@@ -81,14 +110,13 @@ public class StreamingHttpConnectionFilter extends StreamingHttpConnection {
      * @return Effective {@link HttpExecutionStrategy}.
      */
     final HttpExecutionStrategy effectiveExecutionStrategy(HttpExecutionStrategy strategy) {
-        // Since the next connection is a filter, we are still in filter chain, so propagate the call
-        if (delegate instanceof StreamingHttpConnectionFilter) {
+        if (delegate != null) { // can't avoid runtime check for FilterChainTerminal - we want to keep this final
+            // Since the next connection is a filter, we are still in filter chain, so propagate the call
             // A streaming filter will offload all paths by default. Implementations can override the behavior and do
             // something sophisticated if required.
-            return ((StreamingHttpConnectionFilter) delegate).effectiveExecutionStrategy(
-                    mergeForEffectiveStrategy(strategy));
+            return delegate.effectiveExecutionStrategy(mergeForEffectiveStrategy(strategy));
         }
-        return delegate.executionStrategy().merge(strategy);
+        return strategy;
     }
 
     /**
@@ -104,28 +132,114 @@ public class StreamingHttpConnectionFilter extends StreamingHttpConnection {
         return mergeWith.merge(OFFLOAD_ALL_STRATEGY);
     }
 
-    @Override
+    /**
+     * Get the {@link ExecutionContext} used during construction of this object.
+     * <p>
+     * Note that the {@link ExecutionContext#ioExecutor()} will not necessarily be associated with a specific thread
+     * unless that was how this object was built.
+     *
+     * @return the {@link ExecutionContext} used during construction of this object.
+     */
     public ExecutionContext executionContext() {
+        assert delegate != null;
         return delegate.executionContext();
     }
 
     @Override
     public Completable onClose() {
+        assert delegate != null;
         return delegate.onClose();
     }
 
     @Override
     public Completable closeAsync() {
+        assert delegate != null;
         return delegate.closeAsync();
     }
 
     @Override
     public Completable closeAsyncGracefully() {
+        assert delegate != null;
         return delegate.closeAsyncGracefully();
     }
 
     @Override
     public String toString() {
         return getClass().getName() + '(' + delegate + ')';
+    }
+
+    @Override
+    public final StreamingHttpResponseFactory httpResponseFactory() {
+        return reqRespFactory;
+    }
+
+    @Override
+    public final StreamingHttpRequest newRequest(final HttpRequestMethod method, final String requestTarget) {
+        return reqRespFactory.newRequest(method, requestTarget);
+    }
+
+    /**
+     * Creates a terminal delegate for a {@link StreamingHttpConnectionFilter} to indicate the end of a filter chain.
+     *
+     * <p>All methods of this terminal will throw so the {@link StreamingHttpConnectionFilter} using this terminal as
+     * its delegate NEEDS to override all non-final methods of the {@link StreamingHttpConnectionFilter} contract.
+     *
+     * @param reqRespFactory The {@link StreamingHttpRequestResponseFactory} used to {@link
+     * #newRequest(HttpRequestMethod, String) create new requests}.
+     * @return a terminal delegate for a {@link StreamingHttpConnectionFilter}.
+     */
+    public static StreamingHttpConnectionFilter terminal(final StreamingHttpRequestResponseFactory reqRespFactory) {
+       return new FilterChainTerminal(reqRespFactory);
+    }
+
+    // This filter is the terminal of the filter chain, the intended use is as delegate for transport implementations
+    private static final class FilterChainTerminal extends StreamingHttpConnectionFilter {
+        private static final String FILTER_CHAIN_TERMINAL = "FilterChain Terminal";
+
+        private FilterChainTerminal(final StreamingHttpRequestResponseFactory reqRespFactory) {
+            super(reqRespFactory);
+        }
+
+        @Override
+        public ConnectionContext connectionContext() {
+            throw new UnsupportedOperationException(FILTER_CHAIN_TERMINAL);
+        }
+
+        @Override
+        public <T> Publisher<T> settingStream(final SettingKey<T> settingKey) {
+            throw new UnsupportedOperationException(FILTER_CHAIN_TERMINAL);
+        }
+
+        @Override
+        protected Single<StreamingHttpResponse> request(final StreamingHttpConnectionFilter delegate,
+                                                        final HttpExecutionStrategy strategy,
+                                                        final StreamingHttpRequest request) {
+            throw new UnsupportedOperationException(FILTER_CHAIN_TERMINAL);
+        }
+
+        @Override
+        protected HttpExecutionStrategy mergeForEffectiveStrategy(final HttpExecutionStrategy mergeWith) {
+            return mergeWith;
+        }
+
+        @Override
+        public ExecutionContext executionContext() {
+            throw new UnsupportedOperationException(FILTER_CHAIN_TERMINAL);
+        }
+
+        @Override
+        public Completable onClose() {
+            throw new UnsupportedOperationException(FILTER_CHAIN_TERMINAL);
+        }
+
+        @Override
+        public Completable closeAsync() {
+            throw new UnsupportedOperationException(FILTER_CHAIN_TERMINAL);
+        }
+
+        @Override
+        public Completable closeAsyncGracefully() {
+            throw new UnsupportedOperationException(FILTER_CHAIN_TERMINAL);
+        }
     }
 }

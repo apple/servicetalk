@@ -20,6 +20,7 @@ import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.StreamingHttpConnection;
+import io.servicetalk.http.api.StreamingHttpConnection.SettingKey;
 import io.servicetalk.http.api.StreamingHttpConnectionFilter;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
@@ -61,16 +62,17 @@ public class DefaultHttpConnectionBuilderTest extends AbstractEchoServerBasedHtt
 
     private static final class DummyFanoutFilter extends StreamingHttpConnectionFilter {
 
-        private DummyFanoutFilter(final StreamingHttpConnection connection) {
+        private DummyFanoutFilter(final StreamingHttpConnectionFilter connection) {
             super(connection);
         }
 
         @Override
-        public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
-                                                     final StreamingHttpRequest request) {
+        protected Single<StreamingHttpResponse> request(final StreamingHttpConnectionFilter delegate,
+                                                        final HttpExecutionStrategy strategy,
+                                                        final StreamingHttpRequest request) {
             // fanout - simulates followup request on response
-            return delegate().request(strategy, request).flatMap(resp ->
-                    resp.payloadBody().ignoreElements().concatWith(delegate().request(request)));
+            return delegate.request(strategy, request).flatMap(resp ->
+                    resp.payloadBody().ignoreElements().concatWith(delegate.request(strategy, request)));
         }
 
         @Override
@@ -78,23 +80,23 @@ public class DefaultHttpConnectionBuilderTest extends AbstractEchoServerBasedHtt
         public <T> Publisher<T> settingStream(final SettingKey<T> settingKey) {
             if (settingKey == MAX_CONCURRENCY) {
                 // Compensate for the extra request
-                return (Publisher<T>) delegate().settingStream(MAX_CONCURRENCY).map(i -> i - 1);
+                return (Publisher<T>) super.settingStream(MAX_CONCURRENCY).map(i -> i - 1);
             }
-            return delegate().settingStream(settingKey);
+            return super.settingStream(settingKey);
         }
     }
 
     @Test
     public void requestFromConnectionFactoryWithFilter() throws Exception {
 
-        Single<DummyFanoutFilter> connectionSingle = prepareBuilder(10)
+        Single<StreamingHttpConnection> connectionSingle = prepareBuilder(10)
                 .ioExecutor(CTX.ioExecutor())
                 .executionStrategy(defaultStrategy(CTX.executor()))
+                .appendConnectionFilter(DummyFanoutFilter::new)
                 .asConnectionFactory()
-                .newConnection(serverContext.listenAddress())
-                .map(DummyFanoutFilter::new);
+                .newConnection(serverContext.listenAddress());
 
-        DummyFanoutFilter connection = awaitIndefinitelyNonNull(connectionSingle);
+        StreamingHttpConnection connection = awaitIndefinitelyNonNull(connectionSingle);
 
         Integer maxConcurrent = connection.settingStream(MAX_CONCURRENCY).first().toFuture().get();
         assertThat(maxConcurrent, equalTo(9));

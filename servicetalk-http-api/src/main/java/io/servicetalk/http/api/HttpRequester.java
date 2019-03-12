@@ -33,7 +33,7 @@ public abstract class HttpRequester implements HttpRequestFactory, ListenableAsy
      * Create a new instance.
      *
      * @param reqRespFactory The {@link HttpRequestResponseFactory} used to
-     * {@link #newRequest(HttpRequestMethod, String) create new requests} and {@link #httpResponseFactory()}.
+     * {@link #newRequest(HttpRequestMethod, String) create new requests}.
      * @param strategy {@link HttpExecutionStrategy} to use for executing the request.
      */
     HttpRequester(final HttpRequestResponseFactory reqRespFactory, final HttpExecutionStrategy strategy) {
@@ -47,7 +47,7 @@ public abstract class HttpRequester implements HttpRequestFactory, ListenableAsy
      * @param request the request to send.
      * @return The response.
      */
-    public Single<HttpResponse> request(HttpRequest request) {
+    public final Single<HttpResponse> request(HttpRequest request) {
         return request(executionStrategy(), request);
     }
 
@@ -73,14 +73,6 @@ public abstract class HttpRequester implements HttpRequestFactory, ListenableAsy
     @Override
     public final HttpRequest newRequest(HttpRequestMethod method, String requestTarget) {
         return reqRespFactory.newRequest(method, requestTarget);
-    }
-
-    /**
-     * Get a {@link HttpResponseFactory}.
-     * @return a {@link HttpResponseFactory}.
-     */
-    public final HttpResponseFactory httpResponseFactory() {
-        return reqRespFactory;
     }
 
     @Override

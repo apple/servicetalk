@@ -16,10 +16,8 @@
 package io.servicetalk.http.api;
 
 import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.StreamingHttpClient.ReservedStreamingHttpConnection;
-import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ExecutionContext;
 
 import static io.servicetalk.http.api.HttpExecutionStrategies.OFFLOAD_RECEIVE_META_STRATEGY;
@@ -66,14 +64,13 @@ final class StreamingHttpClientToHttpClient extends HttpClient {
     }
 
     @Override
-    StreamingHttpClient asStreamingClientInternal() {
+    public StreamingHttpClient asStreamingClient() {
         return client;
     }
 
     static HttpClient transform(StreamingHttpClient client) {
-        final HttpExecutionStrategy defaultStrategy = client instanceof StreamingHttpClientFilter ?
-                ((StreamingHttpClientFilter) client).effectiveExecutionStrategy(OFFLOAD_RECEIVE_META_STRATEGY) :
-                OFFLOAD_RECEIVE_META_STRATEGY;
+        final HttpExecutionStrategy defaultStrategy =
+                client.filterChain.effectiveExecutionStrategy(OFFLOAD_RECEIVE_META_STRATEGY);
         return new StreamingHttpClientToHttpClient(client, defaultStrategy);
     }
 
@@ -85,21 +82,6 @@ final class StreamingHttpClientToHttpClient extends HttpClient {
             super(new StreamingHttpRequestResponseFactoryToHttpRequestResponseFactory(
                     reservedConnection.reqRespFactory), strategy);
             this.reservedConnection = requireNonNull(reservedConnection);
-        }
-
-        @Override
-        public Completable releaseAsync() {
-            return reservedConnection.releaseAsync();
-        }
-
-        @Override
-        public ConnectionContext connectionContext() {
-            return reservedConnection.connectionContext();
-        }
-
-        @Override
-        public <T> Publisher<T> settingStream(final StreamingHttpConnection.SettingKey<T> settingKey) {
-            return reservedConnection.settingStream(settingKey);
         }
 
         @Override
@@ -129,15 +111,13 @@ final class StreamingHttpClientToHttpClient extends HttpClient {
         }
 
         @Override
-        ReservedStreamingHttpConnection asStreamingConnectionInternal() {
+        public ReservedStreamingHttpConnection asStreamingConnection() {
             return reservedConnection;
         }
 
         static ReservedHttpConnection transform(ReservedStreamingHttpConnection conn) {
-            final HttpExecutionStrategy defaultStrategy = conn instanceof ReservedStreamingHttpConnectionFilter ?
-                    ((ReservedStreamingHttpConnectionFilter) conn)
-                            .effectiveExecutionStrategy(OFFLOAD_RECEIVE_META_STRATEGY) :
-                    OFFLOAD_RECEIVE_META_STRATEGY;
+            final HttpExecutionStrategy defaultStrategy =
+                    conn.filterChain.effectiveExecutionStrategy(OFFLOAD_RECEIVE_META_STRATEGY);
             return new ReservedStreamingHttpConnectionToReservedHttpConnection(conn, defaultStrategy);
         }
     }

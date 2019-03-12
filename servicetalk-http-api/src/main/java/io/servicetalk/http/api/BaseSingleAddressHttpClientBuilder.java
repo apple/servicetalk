@@ -81,7 +81,7 @@ interface BaseSingleAddressHttpClientBuilder<U, R, SDE extends ServiceDiscoverer
 
     @Override
     BaseSingleAddressHttpClientBuilder<U, R, SDE> appendConnectionFactoryFilter(
-            ConnectionFactoryFilter<R, StreamingHttpConnection> factory);
+            ConnectionFactoryFilter<R, StreamingHttpConnectionFilter> factory);
 
     @Override
     BaseSingleAddressHttpClientBuilder<U, R, SDE> disableHostHeaderFallback();
@@ -95,7 +95,7 @@ interface BaseSingleAddressHttpClientBuilder<U, R, SDE extends ServiceDiscoverer
 
     @Override
     BaseSingleAddressHttpClientBuilder<U, R, SDE> loadBalancerFactory(
-            LoadBalancerFactory<R, StreamingHttpConnection> loadBalancerFactory);
+            LoadBalancerFactory<R, StreamingHttpConnectionFilter> loadBalancerFactory);
 
     /**
      * Automatically set the provided {@link HttpHeaderNames#HOST} on {@link StreamingHttpRequest}s when it's missing.

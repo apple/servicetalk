@@ -21,12 +21,10 @@ import io.servicetalk.http.api.HttpClientFilterFactory;
 import io.servicetalk.http.api.HttpConnectionFilterFactory;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpHeaderNames;
-import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpClientFilter;
-import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpConnectionFilter;
 import io.servicetalk.http.api.StreamingHttpRequest;
-import io.servicetalk.http.api.StreamingHttpRequester;
+import io.servicetalk.http.api.StreamingHttpRequestFunction;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.transport.api.HostAndPort;
 
@@ -72,10 +70,11 @@ final class HostHeaderHttpRequesterFilter implements HttpClientFilterFactory,
     }
 
     @Override
-    public StreamingHttpClientFilter create(final StreamingHttpClient client, final Publisher<Object> lbEvents) {
+    public StreamingHttpClientFilter create(final StreamingHttpClientFilter client, final Publisher<Object> lbEvents) {
         return new StreamingHttpClientFilter(client) {
+
             @Override
-            protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
+            protected Single<StreamingHttpResponse> request(final StreamingHttpRequestFunction delegate,
                                                             final HttpExecutionStrategy strategy,
                                                             final StreamingHttpRequest request) {
                 return HostHeaderHttpRequesterFilter.this.request(delegate, strategy, request);
@@ -90,12 +89,13 @@ final class HostHeaderHttpRequesterFilter implements HttpClientFilterFactory,
     }
 
     @Override
-    public StreamingHttpConnectionFilter create(final StreamingHttpConnection connection) {
+    public StreamingHttpConnectionFilter create(final StreamingHttpConnectionFilter connection) {
         return new StreamingHttpConnectionFilter(connection) {
             @Override
-            public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
-                                                         final StreamingHttpRequest request) {
-                return HostHeaderHttpRequesterFilter.this.request(delegate(), strategy, request);
+            protected Single<StreamingHttpResponse> request(final StreamingHttpConnectionFilter delegate,
+                                                            final HttpExecutionStrategy strategy,
+                                                            final StreamingHttpRequest request) {
+                return HostHeaderHttpRequesterFilter.this.request(delegate, strategy, request);
             }
 
             @Override
@@ -106,7 +106,7 @@ final class HostHeaderHttpRequesterFilter implements HttpClientFilterFactory,
         };
     }
 
-    private Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
+    private Single<StreamingHttpResponse> request(final StreamingHttpRequestFunction delegate,
                                                   final HttpExecutionStrategy strategy,
                                                   final StreamingHttpRequest request) {
         if (HTTP_1_1.equals(request.version()) && !request.headers().contains(HOST)) {

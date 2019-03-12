@@ -15,13 +15,14 @@
  */
 package io.servicetalk.http.api;
 
+import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.api.Completable;
+import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.BlockingHttpClient.ReservedBlockingHttpConnection;
 import io.servicetalk.http.api.BlockingStreamingHttpClient.ReservedBlockingStreamingHttpConnection;
-import io.servicetalk.http.api.HttpClientToBlockingHttpClient.ReservedHttpConnectionToReservedBlockingHttpConnection;
-import io.servicetalk.http.api.HttpClientToStreamingHttpClient.ReservedHttpConnectionToReservedStreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpClient.ReservedStreamingHttpConnection;
+import io.servicetalk.transport.api.ConnectionContext;
 
 /**
  * Provides a means to issue requests against HTTP service. The implementation is free to maintain a collection of
@@ -33,7 +34,7 @@ public abstract class HttpClient extends HttpRequester {
      * Create a new instance.
      *
      * @param reqRespFactory The {@link HttpRequestResponseFactory} used to
-     * {@link #newRequest(HttpRequestMethod, String) create new requests} and {@link #httpResponseFactory()}.
+     * {@link #newRequest(HttpRequestMethod, String) create new requests}.
      * @param strategy Default {@link HttpExecutionStrategy} to use.
      */
     HttpClient(final HttpRequestResponseFactory reqRespFactory, final HttpExecutionStrategy strategy) {
@@ -69,9 +70,7 @@ public abstract class HttpClient extends HttpRequester {
      *
      * @return a {@link StreamingHttpClient} representation of this {@link HttpClient}.
      */
-    public final StreamingHttpClient asStreamingClient() {
-        return asStreamingClientInternal();
-    }
+    public abstract StreamingHttpClient asStreamingClient();
 
     /**
      * Convert this {@link HttpClient} to the {@link BlockingStreamingHttpClient} API.
@@ -88,15 +87,7 @@ public abstract class HttpClient extends HttpRequester {
      * @return a {@link BlockingHttpClient} representation of this {@link HttpClient}.
      */
     public final BlockingHttpClient asBlockingClient() {
-        return asBlockingClientInternal();
-    }
-
-    StreamingHttpClient asStreamingClientInternal() {
-        return HttpClientToStreamingHttpClient.transform(this);
-    }
-
-    BlockingHttpClient asBlockingClientInternal() {
-        return HttpClientToBlockingHttpClient.transform(this);
+        return asStreamingClient().asBlockingClient();
     }
 
     /**
@@ -110,11 +101,35 @@ public abstract class HttpClient extends HttpRequester {
          * Create a new instance.
          *
          * @param reqRespFactory The {@link HttpRequestResponseFactory} used to
-         * {@link #newRequest(HttpRequestMethod, String) create new requests} and {@link #httpResponseFactory()}.
+         * {@link #newRequest(HttpRequestMethod, String) create new requests}.
          * @param strategy Default {@link HttpExecutionStrategy} to use.
          */
-        ReservedHttpConnection(final HttpRequestResponseFactory reqRespFactory, final HttpExecutionStrategy strategy) {
+        ReservedHttpConnection(final HttpRequestResponseFactory reqRespFactory,
+                               final HttpExecutionStrategy strategy) {
             super(reqRespFactory, strategy);
+        }
+
+        /**
+         * Get the {@link ConnectionContext}.
+         *
+         * @return the {@link ConnectionContext}.
+         */
+        @Override
+        public final ConnectionContext connectionContext() {
+            return asStreamingConnection().connectionContext();
+        }
+
+        /**
+         * Returns a {@link Publisher} that gives the current value of the setting as well as subsequent changes to
+         * the setting value as long as the {@link PublisherSource.Subscriber} has expressed enough demand.
+         *
+         * @param settingKey Name of the setting to fetch.
+         * @param <T> Type of the setting value.
+         * @return {@link Publisher} for the setting values.
+         */
+        @Override
+        public final <T> Publisher<T> settingStream(StreamingHttpConnection.SettingKey<T> settingKey) {
+            return asStreamingConnection().settingStream(settingKey);
         }
 
         /**
@@ -123,16 +138,17 @@ public abstract class HttpClient extends HttpRequester {
          *
          * @return the {@code Completable} that is notified on releaseAsync.
          */
-        public abstract Completable releaseAsync();
+        public final Completable releaseAsync() {
+            return asStreamingConnection().releaseAsync();
+        }
 
         /**
          * Convert this {@link ReservedHttpConnection} to the {@link ReservedStreamingHttpConnection} API.
          *
          * @return a {@link ReservedStreamingHttpConnection} representation of this {@link ReservedHttpConnection}.
          */
-        public final ReservedStreamingHttpConnection asReservedStreamingConnection() {
-            return asStreamingConnectionInternal();
-        }
+        @Override
+        public abstract ReservedStreamingHttpConnection asStreamingConnection();
 
         /**
          * Convert this {@link ReservedHttpConnection} to the {@link ReservedBlockingStreamingHttpConnection} API.
@@ -140,8 +156,9 @@ public abstract class HttpClient extends HttpRequester {
          * @return a {@link ReservedBlockingStreamingHttpConnection} representation of this
          * {@link ReservedHttpConnection}.
          */
-        public final ReservedBlockingStreamingHttpConnection asReservedBlockingStreamingConnection() {
-            return asReservedStreamingConnection().asReservedBlockingStreamingConnection();
+        @Override
+        public final ReservedBlockingStreamingHttpConnection asBlockingStreamingConnection() {
+            return asStreamingConnection().asBlockingStreamingConnection();
         }
 
         /**
@@ -151,18 +168,9 @@ public abstract class HttpClient extends HttpRequester {
          * @return a {@link ReservedBlockingHttpConnection} representation of this
          * {@link ReservedHttpConnection}.
          */
-        public final ReservedBlockingHttpConnection asReservedBlockingConnection() {
-            return asBlockingConnectionInternal();
-        }
-
         @Override
-        ReservedStreamingHttpConnection asStreamingConnectionInternal() {
-            return ReservedHttpConnectionToReservedStreamingHttpConnection.transform(this);
-        }
-
-        @Override
-        ReservedBlockingHttpConnection asBlockingConnectionInternal() {
-            return ReservedHttpConnectionToReservedBlockingHttpConnection.transform(this);
+        public final ReservedBlockingHttpConnection asBlockingConnection() {
+            return asStreamingConnection().asBlockingConnection();
         }
     }
 }

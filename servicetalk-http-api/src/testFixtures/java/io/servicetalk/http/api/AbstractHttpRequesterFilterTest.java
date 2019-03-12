@@ -21,7 +21,6 @@ import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
-import io.servicetalk.http.api.StreamingHttpClient.ReservedStreamingHttpConnection;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ExecutionContext;
 
@@ -41,14 +40,14 @@ import java.util.Collection;
 import javax.net.ssl.SSLSession;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
-import static io.servicetalk.concurrent.api.Single.error;
 import static io.servicetalk.concurrent.api.Single.success;
+import static io.servicetalk.http.api.AbstractHttpRequesterFilterTest.RequestWithContextHandler.ok;
 import static io.servicetalk.http.api.AbstractHttpRequesterFilterTest.RequesterType.Client;
 import static io.servicetalk.http.api.AbstractHttpRequesterFilterTest.RequesterType.Connection;
 import static io.servicetalk.http.api.AbstractHttpRequesterFilterTest.RequesterType.ReservedConnection;
 import static io.servicetalk.http.api.AbstractHttpRequesterFilterTest.SecurityType.Insecure;
 import static io.servicetalk.http.api.AbstractHttpRequesterFilterTest.SecurityType.Secure;
-import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
+import static io.servicetalk.http.api.HttpConnectionFilterFactory.identity;
 import static java.util.Arrays.asList;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -150,7 +149,7 @@ public abstract class AbstractHttpRequesterFilterTest {
      */
     protected final <FF extends HttpClientFilterFactory & HttpConnectionFilterFactory> StreamingHttpRequester
     createFilter(FF filterFactory) {
-        return createFilter(RequestHandler.ok(), RequestWithContextHandler.ok(), filterFactory);
+        return createFilter(RequestHandler.ok(), ok(), filterFactory);
     }
 
     /**
@@ -179,13 +178,13 @@ public abstract class AbstractHttpRequesterFilterTest {
     createFilter(RequestHandler rh, RequestWithContextHandler rwch, FF filterFactory) {
         switch (type) {
             case Client:
-                return closeables.prepend(filterFactory.create(newClient(rh, rwch), loadbalancerEvents()));
+                return closeables.prepend(newClient(rh, rwch, filterFactory));
             case Connection:
-                return closeables.prepend(filterFactory.create(newConnection(rwch)));
+                return closeables.prepend(newConnection(rwch, filterFactory));
             case ReservedConnection:
                 try {
-                    return closeables.prepend(filterFactory.create(newClient(rh, rwch), loadbalancerEvents())
-                            .reserveConnection(REQ_RES_FACTORY.get("")).toFuture().get());
+                    return closeables.prepend(newClient(rh, rwch, filterFactory))
+                            .reserveConnection(REQ_RES_FACTORY.get("")).toFuture().get();
                 } catch (Exception e) {
                     throw new IllegalStateException(e);
                 }
@@ -262,19 +261,10 @@ public abstract class AbstractHttpRequesterFilterTest {
         }
     }
 
-    private StreamingHttpConnection newConnection(RequestWithContextHandler rwch) {
-        return new StreamingHttpConnectionFilter(new NoopConnection()) {
-            @Override
-            public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
-                                                         final StreamingHttpRequest request) {
-                return rwch.request(AbstractHttpRequesterFilterTest.REQ_RES_FACTORY, connectionContext(), request);
-            }
-        };
-    }
-
-    private ReservedStreamingHttpConnection newReservedConnection(RequestWithContextHandler rwch) {
-        StreamingHttpConnection connection = newConnection(rwch);
-        return new ReservedStreamingHttpConnection(connection.reqRespFactory, defaultStrategy()) {
+    private ReservedStreamingHttpConnectionFilter newReservedConnection() {
+        final StreamingHttpConnection connection = newConnection(ok(), identity());
+        return new ReservedStreamingHttpConnectionFilter(ReservedStreamingHttpConnectionFilter.terminal(
+                connection.reqRespFactory)) {
 
             @Override
             public Completable closeAsync() {
@@ -287,8 +277,9 @@ public abstract class AbstractHttpRequesterFilterTest {
             }
 
             @Override
-            public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
-                                                         final StreamingHttpRequest request) {
+            protected Single<StreamingHttpResponse> request(final StreamingHttpConnectionFilter delegate,
+                                                            final HttpExecutionStrategy strategy,
+                                                            final StreamingHttpRequest request) {
                 return connection.request(strategy, request);
             }
 
@@ -303,54 +294,57 @@ public abstract class AbstractHttpRequesterFilterTest {
             }
 
             @Override
-            public <T> Publisher<T> settingStream(final SettingKey<T> settingKey) {
-                return connection.settingStream(settingKey);
-            }
-
-            @Override
             public Completable releaseAsync() {
                 return Completable.completed();
             }
         };
     }
 
-    private StreamingHttpClient newClient(RequestHandler rh, RequestWithContextHandler rwch) {
-        return new StreamingHttpClientFilter(new NoopClient()) {
+    private StreamingHttpConnection newConnection(final RequestWithContextHandler rwch,
+                                                  final HttpConnectionFilterFactory filterFactory) {
+        final HttpConnectionFilterFactory handlerFilter = conn -> new StreamingHttpConnectionFilter(conn) {
             @Override
-            protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
+            protected Single<StreamingHttpResponse> request(final StreamingHttpConnectionFilter delegate,
                                                             final HttpExecutionStrategy strategy,
                                                             final StreamingHttpRequest request) {
-                return rh.request(AbstractHttpRequesterFilterTest.REQ_RES_FACTORY, request);
-            }
-
-            @Override
-            protected Single<ReservedStreamingHttpConnection> reserveConnection(
-                    final StreamingHttpClient delegate,
-                    final HttpExecutionStrategy strategy,
-                    final HttpRequestMetaData metaData) {
-                return success(AbstractHttpRequesterFilterTest.this.newReservedConnection(rwch));
+                return rwch.request(AbstractHttpRequesterFilterTest.REQ_RES_FACTORY, connectionContext(), request);
             }
         };
+
+        return TestStreamingHttpConnection.from(AbstractHttpRequesterFilterTest.REQ_RES_FACTORY, mockExecutionContext,
+                mockConnectionContext, filterFactory.append(handlerFilter));
     }
 
-    private final class NoopConnection extends TestStreamingHttpConnection {
-        NoopConnection() {
-            super(AbstractHttpRequesterFilterTest.REQ_RES_FACTORY,
-                    AbstractHttpRequesterFilterTest.this.mockExecutionContext,
-                    AbstractHttpRequesterFilterTest.this.mockConnectionContext);
-        }
+    private <FF extends HttpClientFilterFactory & HttpConnectionFilterFactory> StreamingHttpClient newClient(
+            final RequestHandler rh, final RequestWithContextHandler rwch, final FF filterFactory) {
+        HttpClientFilterFactory handlerFilter = (client, __) -> new StreamingHttpClientFilter(client) {
 
-        @Override
-        public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
-                                                     final StreamingHttpRequest request) {
-            return error(new UnsupportedOperationException());
-        }
-    }
+                    @Override
+                    protected Single<StreamingHttpResponse> request(final StreamingHttpRequestFunction delegate,
+                                                                    final HttpExecutionStrategy strategy,
+                                                                    final StreamingHttpRequest request) {
+                        return rh.request(AbstractHttpRequesterFilterTest.REQ_RES_FACTORY, request);
+                    }
 
-    private final class NoopClient extends TestStreamingHttpClient {
-        NoopClient() {
-            super(AbstractHttpRequesterFilterTest.REQ_RES_FACTORY,
-                    AbstractHttpRequesterFilterTest.this.mockExecutionContext);
-        }
+                    @Override
+                    protected Single<ReservedStreamingHttpConnectionFilter> reserveConnection(
+                            final StreamingHttpClientFilter delegate,
+                            final HttpExecutionStrategy strategy,
+                            final HttpRequestMetaData metaData) {
+                        return success(newReservedConnection()).map(rc ->
+                                new ReservedStreamingHttpConnectionFilter(rc) {
+                                    @Override
+                                    protected Single<StreamingHttpResponse> request(
+                                            final StreamingHttpConnectionFilter delegate,
+                                            final HttpExecutionStrategy strategy,
+                                            final StreamingHttpRequest request) {
+                                        return rwch.request(
+                                                delegate.httpResponseFactory(), connectionContext(), request);
+                                    }
+                                });
+                    }
+                };
+
+        return TestStreamingHttpClient.from(REQ_RES_FACTORY, mockExecutionContext, filterFactory.append(handlerFilter));
     }
 }

@@ -30,11 +30,14 @@ import io.servicetalk.http.api.DefaultHttpHeadersFactory;
 import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.DelegatingHttpExecutionStrategy;
 import io.servicetalk.http.api.HttpConnection;
+import io.servicetalk.http.api.HttpConnectionFilterFactory;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpHeaderNames;
 import io.servicetalk.http.api.HttpRequester;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.StreamingHttpConnection;
+import io.servicetalk.http.api.StreamingHttpConnection.SettingKey;
+import io.servicetalk.http.api.StreamingHttpConnectionFilter;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.StreamingHttpRequester;
@@ -107,35 +110,41 @@ public class ConcurrentRequestsHttpConnectionFilterTest {
 
     @Test
     public void decrementWaitsUntilResponsePayloadIsComplete() throws Exception {
-        StreamingHttpConnection mockConnection = new TestStreamingHttpConnection(reqRespFactory, executionContext,
-                connectionContext) {
-            private final AtomicInteger reqCount = new AtomicInteger(0);
+        HttpConnectionFilterFactory mockConnection = new HttpConnectionFilterFactory() {
             @Override
-            public <T> Publisher<T> settingStream(final SettingKey<T> settingKey) {
-                return settingKey == MAX_CONCURRENCY ? (Publisher<T>) just(2) : super.settingStream(settingKey);
-            }
+            public StreamingHttpConnectionFilter create(final StreamingHttpConnectionFilter connection) {
+                return new StreamingHttpConnectionFilter(connection) {
+                    private final AtomicInteger reqCount = new AtomicInteger(0);
 
-            @Override
-            public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
-                                                         final StreamingHttpRequest request) {
-                switch (reqCount.incrementAndGet()) {
-                    case 1:
-                        return success(reqRespFactory.ok().payloadBody(response1Publisher));
-                    case 2:
-                        return success(reqRespFactory.ok().payloadBody(response2Publisher));
-                    case 3:
-                        return success(reqRespFactory.ok().payloadBody(response3Publisher));
-                    default: return error(new UnsupportedOperationException());
-                }
-            }
+                    @Override
+                    @SuppressWarnings("unchecked")
+                    public <T> Publisher<T> settingStream(final SettingKey<T> settingKey) {
+                        return settingKey == MAX_CONCURRENCY ? (Publisher<T>) just(2) : super.settingStream(settingKey);
+                    }
 
-            @Override
-            public Completable onClose() {
-                return Completable.never();
+                    @Override
+                    protected Single<StreamingHttpResponse> request(final StreamingHttpConnectionFilter delegate,
+                                                                    final HttpExecutionStrategy strategy,
+                                                                    final StreamingHttpRequest request) {
+                        switch (reqCount.incrementAndGet()) {
+                            case 1: return success(reqRespFactory.ok().payloadBody(response1Publisher));
+                            case 2: return success(reqRespFactory.ok().payloadBody(response2Publisher));
+                            case 3: return success(reqRespFactory.ok().payloadBody(response3Publisher));
+                            default: return error(new UnsupportedOperationException());
+                        }
+                    }
+
+                    @Override
+                    public Completable onClose() {
+                        return Completable.never();
+                    }
+                };
             }
         };
-        StreamingHttpConnection limitedConnection =
-                new ConcurrentRequestsHttpConnectionFilter(mockConnection, 2);
+
+        StreamingHttpConnection limitedConnection = TestStreamingHttpConnection.from(reqRespFactory, executionContext,
+                connectionContext, new ConcurrentRequestsHttpConnectionFilter(2).append(mockConnection));
+
         StreamingHttpResponse resp1 = awaitIndefinitelyNonNull(
                 limitedConnection.request(limitedConnection.get("/foo")));
         awaitIndefinitelyNonNull(limitedConnection.request(limitedConnection.get("/bar")));

@@ -19,6 +19,7 @@ import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpProtocolVersion;
+import io.servicetalk.http.api.StreamingHttpConnectionFilter;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.StreamingHttpResponse;
@@ -29,26 +30,27 @@ import io.servicetalk.transport.netty.internal.NettyConnection;
 import static io.servicetalk.concurrent.api.Single.error;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 
-final class PipelinedStreamingHttpConnection
-        extends AbstractStreamingHttpConnection<DefaultNettyPipelinedConnection<Object, Object>> {
+final class PipelinedStreamingHttpConnectionFilter
+        extends AbstractStreamingHttpConnectionFilter<DefaultNettyPipelinedConnection<Object, Object>> {
 
-    PipelinedStreamingHttpConnection(final NettyConnection<Object, Object> connection,
-                                     final ReadOnlyHttpClientConfig config,
-                                     final ExecutionContext executionContext,
-                                     final StreamingHttpRequestResponseFactory reqRespFactory,
-                                     final HttpExecutionStrategy strategy) {
+    PipelinedStreamingHttpConnectionFilter(final NettyConnection<Object, Object> connection,
+                                           final ReadOnlyHttpClientConfig config,
+                                           final ExecutionContext executionContext,
+                                           final StreamingHttpRequestResponseFactory reqRespFactory) {
         super(new DefaultNettyPipelinedConnection<>(connection, config.maxPipelinedRequests()),
-                config, executionContext, reqRespFactory, strategy);
+                config, executionContext, reqRespFactory);
     }
 
     @Override
-    public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy, StreamingHttpRequest request) {
+    protected Single<StreamingHttpResponse> request(final StreamingHttpConnectionFilter terminalDelegate,
+                                                    final HttpExecutionStrategy strategy,
+                                                    final StreamingHttpRequest request) {
         HttpProtocolVersion version = request.version();
         if (!HTTP_1_1.equals(version)) {
             return error(new IllegalArgumentException(
                     "Pipelining unsupported in protocol version: " + request.version()));
         }
-        return super.request(strategy, request);
+        return super.request(terminalDelegate, strategy, request);
     }
 
     @Override

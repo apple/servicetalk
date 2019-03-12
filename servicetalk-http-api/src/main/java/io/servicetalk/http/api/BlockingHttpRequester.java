@@ -29,7 +29,7 @@ public abstract class BlockingHttpRequester implements HttpRequestFactory, AutoC
     /**
      * Create a new instance.
      * @param reqRespFactory The {@link HttpRequestResponseFactory} used to
-     * {@link #newRequest(HttpRequestMethod, String) create new requests} and {@link #httpResponseFactory()}.
+     * {@link #newRequest(HttpRequestMethod, String) create new requests}.
      * @param strategy Default {@link HttpExecutionStrategy} to use.
      */
     BlockingHttpRequester(final HttpRequestResponseFactory reqRespFactory, HttpExecutionStrategy strategy) {
@@ -44,7 +44,7 @@ public abstract class BlockingHttpRequester implements HttpRequestFactory, AutoC
      * @return The response.
      * @throws Exception if an exception occurs during the request processing.
      */
-    public HttpResponse request(HttpRequest request) throws Exception {
+    public final HttpResponse request(HttpRequest request) throws Exception {
         return request(executionStrategy(), request);
     }
 
@@ -71,14 +71,6 @@ public abstract class BlockingHttpRequester implements HttpRequestFactory, AutoC
     @Override
     public final HttpRequest newRequest(HttpRequestMethod method, String requestTarget) {
         return reqRespFactory.newRequest(method, requestTarget);
-    }
-
-    /**
-     * Get a {@link HttpResponseFactory}.
-     * @return a {@link HttpResponseFactory}.
-     */
-    public final HttpResponseFactory httpResponseFactory() {
-        return reqRespFactory;
     }
 
     /**

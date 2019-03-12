@@ -43,13 +43,11 @@ final class PipelinedLBHttpConnectionFactory<ResolvedAddress> extends AbstractLB
     }
 
     @Override
-    Single<LoadBalancedStreamingHttpConnection> newConnection(
-            final ResolvedAddress resolvedAddress, final HttpConnectionFilterFactory connectionFilterFunction) {
-        return buildForPipelined(executionContext, resolvedAddress, config, connectionFilterFunction, reqRespFactory,
-                defaultStrategy)
-                .map(filteredConnection -> new LoadBalancedStreamingHttpConnection(reqRespFactory, filteredConnection,
+    Single<LoadBalancedStreamingHttpConnectionFilter> newConnection(
+            final ResolvedAddress resolvedAddress, final HttpConnectionFilterFactory connFilterFunction) {
+        return buildForPipelined(executionContext, resolvedAddress, config, connFilterFunction, reqRespFactory)
+                .map(filteredConnection -> new LoadBalancedStreamingHttpConnectionFilter(filteredConnection,
                         newController(filteredConnection.settingStream(MAX_CONCURRENCY),
-                                   filteredConnection.onClose(),
-                                   config.maxPipelinedRequests()), defaultStrategy));
+                                   filteredConnection.onClose(), config.maxPipelinedRequests())));
     }
 }

@@ -26,16 +26,16 @@ import static java.util.Objects.requireNonNull;
  * The equivalent of {@link HttpRequester} but that accepts {@link StreamingHttpRequest} and returns
  * {@link StreamingHttpResponse}.
  */
-public abstract class StreamingHttpRequester implements
-                                             StreamingHttpRequestFactory, ListenableAsyncCloseable, AutoCloseable {
+public abstract class StreamingHttpRequester
+        implements StreamingHttpRequestFactory, ListenableAsyncCloseable, AutoCloseable {
     final StreamingHttpRequestResponseFactory reqRespFactory;
-    final HttpExecutionStrategy strategy;
+    private final HttpExecutionStrategy strategy;
 
     /**
      * Create a new instance.
      *
      * @param reqRespFactory The {@link StreamingHttpRequestResponseFactory} used to
-     * {@link #newRequest(HttpRequestMethod, String) create new requests} and {@link #httpResponseFactory()}.
+     * {@link #newRequest(HttpRequestMethod, String) create new requests}.
      * @param strategy Default {@link HttpExecutionStrategy} to use.
      */
     protected StreamingHttpRequester(final StreamingHttpRequestResponseFactory reqRespFactory,
@@ -50,7 +50,7 @@ public abstract class StreamingHttpRequester implements
      * @param request the request to send.
      * @return The response.
      */
-    public Single<StreamingHttpResponse> request(StreamingHttpRequest request) {
+    public final Single<StreamingHttpResponse> request(StreamingHttpRequest request) {
         return request(strategy, request);
     }
 
@@ -73,6 +73,14 @@ public abstract class StreamingHttpRequester implements
      */
     public abstract ExecutionContext executionContext();
 
+    /**
+     * Get the {@link ExecutionContext} used during construction of this object.
+     * <p>
+     * Note that the {@link ExecutionContext#ioExecutor()} will not necessarily be associated with a specific thread
+     * unless that was how this object was built.
+     *
+     * @return the {@link ExecutionContext} used during construction of this object.
+     */
     final HttpExecutionStrategy executionStrategy() {
         return strategy;
     }
@@ -80,15 +88,6 @@ public abstract class StreamingHttpRequester implements
     @Override
     public final StreamingHttpRequest newRequest(HttpRequestMethod method, String requestTarget) {
         return reqRespFactory.newRequest(method, requestTarget);
-    }
-
-    /**
-     * Get a {@link StreamingHttpResponseFactory}.
-     *
-     * @return a {@link StreamingHttpResponseFactory}.
-     */
-    public final StreamingHttpResponseFactory httpResponseFactory() {
-        return reqRespFactory;
     }
 
     @Override

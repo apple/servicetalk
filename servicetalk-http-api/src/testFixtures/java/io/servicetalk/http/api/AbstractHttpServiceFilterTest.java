@@ -124,6 +124,7 @@ public abstract class AbstractHttpServiceFilterTest {
         });
 
         return new StreamingHttpRequester(REQ_RES_FACTORY, defaultStrategy()) {
+
             @Override
             public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
                                                          final StreamingHttpRequest request) {
