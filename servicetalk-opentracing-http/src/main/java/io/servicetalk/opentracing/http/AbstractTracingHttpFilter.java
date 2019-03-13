@@ -174,6 +174,7 @@ abstract class AbstractTracingHttpFilter {
             try {
                 responseSingle = scopeTracker.prepareScopeAndRequest();
             } catch (Throwable throwable) {
+                scopeTracker.failed(throwable);
                 return Single.error(throwable);
             }
             return responseSingle
