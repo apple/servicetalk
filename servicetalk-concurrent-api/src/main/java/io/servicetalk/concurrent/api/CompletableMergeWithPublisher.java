@@ -17,6 +17,7 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.CompletableSource;
+import io.servicetalk.concurrent.internal.ConcurrentSubscription;
 import io.servicetalk.concurrent.internal.DelayedCancellable;
 import io.servicetalk.concurrent.internal.DelayedSubscription;
 import io.servicetalk.concurrent.internal.SignalOffloader;
@@ -25,7 +26,6 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.internal.ConcurrentSubscription.wrap;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.checkTerminationValidWithConcurrentOnNextCheck;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.sendOnNextWithConcurrentTerminationCheck;
 import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
@@ -103,7 +103,7 @@ final class CompletableMergeWithPublisher<T> extends AbstractNoHandleSubscribePu
         public void onSubscribe(Subscription targetSubscription) {
             // We may cancel from multiple threads and DelayedSubscription will atomically swap if a cancel occurs but
             // it will not prevent concurrent access between request(n) and cancel() on the targetSubscription.
-            subscription.delayedSubscription(wrap(targetSubscription));
+            subscription.delayedSubscription(ConcurrentSubscription.wrap(targetSubscription));
         }
 
         @Override
