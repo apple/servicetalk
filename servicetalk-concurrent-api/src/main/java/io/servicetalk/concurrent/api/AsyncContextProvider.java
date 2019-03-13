@@ -163,16 +163,6 @@ interface AsyncContextProvider {
     <T> Consumer<T> wrapConsumer(Consumer<T> consumer, AsyncContextMap contextMap);
 
     /**
-     * Wrap a {@link Consumer} to ensure it is able to track {@link AsyncContext} correctly.
-     * @param consumer The consumer to wrap.
-     * @param <T> The type of data consumed by {@code consumer}.
-     * @return The wrapped {@link Consumer}.
-     */
-    default <T> Consumer<T> wrapConsumer(Consumer<T> consumer) {
-        return wrapConsumer(consumer, contextMap());
-    }
-
-    /**
      * Wrap a {@link Function} to ensure it is able to track {@link AsyncContext} correctly.
      * @param func The function to wrap.
      * @param contextMap The {@link AsyncContext}.
