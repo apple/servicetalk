@@ -1087,7 +1087,7 @@ public class SingleToCompletionStageTest {
 
     private static Consumer<? super String> stOrJdkThread(AtomicReference<String> ref) {
         return val -> {
-            verifyInJdkExecutorThread();
+            verifyInStOrJdkThread();
             ref.set(val);
         };
     }
@@ -1117,13 +1117,6 @@ public class SingleToCompletionStageTest {
         return () -> {
             verifyInJUnitThread();
             ref.set(true);
-        };
-    }
-
-    private static BiFunction<? super String, ? super Double, ? extends Integer> strLenDoubleStThread() {
-        return (str, dbl) -> {
-            verifyInStExecutorThread();
-            return (int) (strLen(str) + dbl);
         };
     }
 
