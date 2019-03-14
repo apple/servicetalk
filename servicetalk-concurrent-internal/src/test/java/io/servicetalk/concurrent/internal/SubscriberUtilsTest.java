@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.Random;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -121,40 +120,39 @@ public class SubscriberUtilsTest {
 
     @Test
     public void calculateSourceRequestedConcurrentA() throws Exception {
-        calculateSourceRequestedConcurrentLoop(1000, 1, 3, 10, 10);
+        calculateSourceRequestedConcurrentLoop(333, 1, 3, 10, 10);
     }
 
     @Test
     public void calculateSourceRequestedConcurrentB() throws Exception {
-        calculateSourceRequestedConcurrentLoop(100, 10, 6, 100, 123456);
+        calculateSourceRequestedConcurrentLoop(50, 5, 6, 100, 123456);
     }
 
     @Test
     public void calculateSourceRequestedConcurrentC() throws Exception {
-        calculateSourceRequestedConcurrentLoop(20, 1, 3, 2, 900103);
+        calculateSourceRequestedConcurrentLoop(10, 1, 3, 2, 900103);
     }
 
     @Test
     public void calculateSourceRequestedConcurrentD() throws Exception {
-        calculateSourceRequestedConcurrentLoop(1000, 1, 5635, 483, 800026);
+        calculateSourceRequestedConcurrentLoop(123, 1, 5635, 483, 800026);
     }
 
     @Test
     public void calculateSourceRequestedConcurrentE() throws Exception {
-        calculateSourceRequestedConcurrentLoop(1000, 7, 512, Integer.MAX_VALUE, 1000001);
+        calculateSourceRequestedConcurrentLoop(222, 6, 512, Integer.MAX_VALUE, 1000001);
     }
 
     private void calculateSourceRequestedConcurrentLoop(
             final int iterations, final int consumerThreads, final int limit, final int maxRequest,
-            final int totalExpectedCount) throws ExecutionException, InterruptedException, BrokenBarrierException {
+            final int totalExpectedCount) throws Exception {
         for (int i = 0; i < iterations; ++i) {
             calculateSourceRequestedConcurrent(consumerThreads, limit, maxRequest, totalExpectedCount);
         }
     }
 
     private void calculateSourceRequestedConcurrent(final int consumerThreads, final int limit, final int maxRequest,
-                                                    final int totalExpectedCount)
-            throws ExecutionException, InterruptedException, BrokenBarrierException {
+                                                    final int totalExpectedCount) throws Exception {
         assert consumerThreads > 0;
         requestN = 0;
         sourceRequested = 0;
