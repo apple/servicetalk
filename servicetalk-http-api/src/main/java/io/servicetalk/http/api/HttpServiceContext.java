@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,18 +23,24 @@ import static java.util.Objects.requireNonNull;
  * A {@link ConnectionContext} for use in the {@link HttpService} context.
  */
 public abstract class HttpServiceContext implements ConnectionContext {
+    private final HttpHeadersFactory headersFactory;
     private final HttpResponseFactory factory;
     private final StreamingHttpResponseFactory streamingFactory;
     private final BlockingStreamingHttpResponseFactory blockingFactory;
 
     /**
      * Create a new instance.
-     * @param factory The {@link HttpResponseFactory} used for API conversions.
-     * @param streamingFactory The {@link StreamingHttpResponseFactory} used for API conversions.
-     * @param blockingFactory The {@link BlockingStreamingHttpResponseFactory} used for API conversions.
+     *
+     * @param headersFactory The {@link HttpHeadersFactory} used for API conversions
+     * @param factory The {@link HttpResponseFactory} used for API conversions
+     * @param streamingFactory The {@link StreamingHttpResponseFactory} used for API conversions
+     * @param blockingFactory The {@link BlockingStreamingHttpResponseFactory} used for API conversions
      */
-    protected HttpServiceContext(HttpResponseFactory factory, StreamingHttpResponseFactory streamingFactory,
-                                 BlockingStreamingHttpResponseFactory blockingFactory) {
+    protected HttpServiceContext(final HttpHeadersFactory headersFactory,
+                                 final HttpResponseFactory factory,
+                                 final StreamingHttpResponseFactory streamingFactory,
+                                 final BlockingStreamingHttpResponseFactory blockingFactory) {
+        this.headersFactory = requireNonNull(headersFactory);
         this.factory = requireNonNull(factory);
         this.streamingFactory = requireNonNull(streamingFactory);
         this.blockingFactory = requireNonNull(blockingFactory);
@@ -46,7 +52,16 @@ public abstract class HttpServiceContext implements ConnectionContext {
      * @param other {@link HttpServiceContext} to copy from.
      */
     protected HttpServiceContext(HttpServiceContext other) {
-        this(other.factory, other.streamingFactory, other.blockingFactory);
+        this(other.headersFactory, other.factory, other.streamingFactory, other.blockingFactory);
+    }
+
+    /**
+     * Returns the {@link HttpHeadersFactory} associated with this {@link HttpServiceContext}.
+     *
+     * @return {@link HttpHeadersFactory} associated with this {@link HttpServiceContext}.
+     */
+    protected final HttpHeadersFactory headersFactory() {
+        return headersFactory;
     }
 
     /**

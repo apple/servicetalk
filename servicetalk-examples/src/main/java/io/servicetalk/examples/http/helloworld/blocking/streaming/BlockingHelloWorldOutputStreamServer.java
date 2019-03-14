@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,21 +15,22 @@
  */
 package io.servicetalk.examples.http.helloworld.blocking.streaming;
 
-import io.servicetalk.buffer.api.Buffer;
-import io.servicetalk.http.api.HttpPayloadWriter;
 import io.servicetalk.http.netty.HttpServers;
 
-public final class BlockingHelloWorldStreamingServer {
+import java.io.OutputStream;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
+
+public final class BlockingHelloWorldOutputStreamServer {
+
+    private static final byte[] HELLO = "Hello\n".getBytes(UTF_8);
+    private static final byte[] WORLD = "World\n".getBytes(UTF_8);
 
     public static void main(String[] args) throws Exception {
         HttpServers.forPort(8080).listenBlockingStreamingAndAwait((ctx, request, response) -> {
-            try (HttpPayloadWriter<Buffer> payloadWriter = response.sendMetaData()) {
-                payloadWriter.write(ctx.executionContext().bufferAllocator().fromAscii("Hello"));
-                payloadWriter.write(ctx.executionContext().bufferAllocator().fromAscii("World"));
-                payloadWriter.flush();
-
-                payloadWriter.write(ctx.executionContext().bufferAllocator().fromAscii("From"));
-                payloadWriter.write(ctx.executionContext().bufferAllocator().fromAscii("ServiceTalk"));
+            try (OutputStream os = response.sendMetaDataOutputStream()) {
+                os.write(HELLO);
+                os.write(WORLD);
             }
         }).awaitShutdown();
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,11 +15,18 @@
  */
 package io.servicetalk.http.api;
 
+import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.SingleSource.Subscriber;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.concurrent.api.SingleProcessor;
+import io.servicetalk.concurrent.internal.ThreadInterruptingCancellable;
+
+import javax.annotation.Nullable;
 
 import static io.servicetalk.http.api.BlockingUtils.blockingToCompletable;
-import static io.servicetalk.http.api.BlockingUtils.blockingToSingle;
+import static io.servicetalk.http.api.HttpResponseStatus.OK;
+import static java.lang.Thread.currentThread;
 import static java.util.Objects.requireNonNull;
 
 final class BlockingStreamingHttpServiceToStreamingHttpService extends StreamingHttpService {
@@ -36,18 +43,52 @@ final class BlockingStreamingHttpServiceToStreamingHttpService extends Streaming
     public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
                                                 final StreamingHttpRequest request,
                                                 final StreamingHttpResponseFactory responseFactory) {
-        return blockingToSingle(() -> service.handle(ctx, request.toBlockingStreamingRequest(),
-                ctx.streamingBlockingResponseFactory())).map(BlockingStreamingHttpResponse::toStreamingResponse);
+
+        return new Single<StreamingHttpResponse>() {
+            @Override
+            protected void handleSubscribe(final Subscriber<? super StreamingHttpResponse> subscriber) {
+                final ThreadInterruptingCancellable tiCancellable = new ThreadInterruptingCancellable(currentThread());
+
+                final SingleProcessor<StreamingHttpResponse> responseProcessor = new SingleProcessor<>();
+                responseProcessor.subscribe(new Subscriber<StreamingHttpResponse>() {
+                    @Override
+                    public void onSubscribe(final Cancellable cancellable) {
+                        subscriber.onSubscribe(() -> {
+                            try {
+                                cancellable.cancel();
+                            } finally {
+                                tiCancellable.cancel();
+                            }
+                        });
+                    }
+
+                    @Override
+                    public void onSuccess(@Nullable final StreamingHttpResponse result) {
+                        subscriber.onSuccess(result);
+                    }
+
+                    @Override
+                    public void onError(final Throwable t) {
+                        subscriber.onError(t);
+                    }
+                });
+                try {
+                    final BlockingStreamingHttpServerResponse response = new DefaultBlockingStreamingHttpServerResponse(
+                            OK, request.version(),
+                            ctx.headersFactory().newHeaders(), ctx.headersFactory().newTrailers(),
+                            ctx.executionContext().bufferAllocator(), responseProcessor, tiCancellable);
+                    service.handle(ctx, request.toBlockingStreamingRequest(), response);
+                } catch (Throwable cause) {
+                    tiCancellable.setDone(cause);
+                    subscriber.onError(cause);
+                }
+            }
+        };
     }
 
     @Override
     public Completable closeAsync() {
         return blockingToCompletable(service::close);
-    }
-
-    @Override
-    BlockingStreamingHttpService asBlockingStreamingServiceInternal() {
-        return service;
     }
 
     @Override
@@ -61,7 +102,6 @@ final class BlockingStreamingHttpServiceToStreamingHttpService extends Streaming
         // here as the intermediate transitions take care of returning the original StreamingHttpService.
         // If we are here, it is for a user implemented BlockingStreamingHttpService, so we assume the strategy provided
         // by the passed service is the effective strategy.
-        return new BlockingStreamingHttpServiceToStreamingHttpService(service,
-                service.executionStrategy());
+        return new BlockingStreamingHttpServiceToStreamingHttpService(service, service.executionStrategy());
     }
 }

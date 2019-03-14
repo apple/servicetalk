@@ -21,6 +21,7 @@ import io.servicetalk.concurrent.BlockingIterable;
 import io.servicetalk.concurrent.BlockingIterator;
 import io.servicetalk.concurrent.api.Publisher;
 
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.nio.charset.Charset;
@@ -101,6 +102,19 @@ final class FormUrlEncodedHttpSerializer implements HttpSerializer<Map<String, L
                                        final BufferAllocator allocator) {
         addContentType.accept(headers);
         return parameters.map(values -> serialize(values, allocator));
+    }
+
+    @Override
+    public HttpPayloadWriter<Map<String, List<String>>> serialize(final BlockingStreamingHttpServerResponse response,
+                                                                  final BufferAllocator allocator) {
+        addContentType.accept(response.headers());
+        return new DelegatingToBufferHttpPayloadWriter<Map<String, List<String>>>(response.sendMetaData()) {
+            @SuppressWarnings("ConstantConditions")
+            @Override
+            public void write(final Map<String, List<String>> object) throws IOException {
+                delegate.write(serialize(object, allocator));
+            }
+        };
     }
 
     @Nullable

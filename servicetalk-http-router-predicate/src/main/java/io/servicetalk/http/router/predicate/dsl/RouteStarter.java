@@ -16,7 +16,6 @@
 package io.servicetalk.http.router.predicate.dsl;
 
 import io.servicetalk.http.api.BlockingHttpService;
-import io.servicetalk.http.api.BlockingStreamingHttpService;
 import io.servicetalk.http.api.HttpCookie;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpRequestMethod;
@@ -178,14 +177,5 @@ public interface RouteStarter {
      */
     default BlockingHttpService buildBlocking() {
         return buildStreaming().asBlockingService();
-    }
-
-    /**
-     * Builds the {@link BlockingStreamingHttpService} that performs the configured routing.
-     *
-     * @return the router {@link BlockingStreamingHttpService}.
-     */
-    default BlockingStreamingHttpService buildBlockingStreaming() {
-        return buildStreaming().asBlockingStreamingService();
     }
 }

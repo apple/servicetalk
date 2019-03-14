@@ -57,18 +57,6 @@ public abstract class BlockingHttpService implements AutoCloseable, BlockingHttp
     }
 
     /**
-     * Convert this {@link BlockingHttpService} to the {@link BlockingStreamingHttpService} API.
-     * <p>
-     * This API is provided for convenience for a more familiar sequential programming model. It is recommended that
-     * filters are implemented using the {@link StreamingHttpService} asynchronous API for maximum portability.
-     *
-     * @return a {@link BlockingStreamingHttpService} representation of this {@link BlockingHttpService}.
-     */
-    public final BlockingStreamingHttpService asBlockingStreamingService() {
-        return asStreamingService().asBlockingStreamingService();
-    }
-
-    /**
      * Returns the {@link HttpExecutionStrategy} for this {@link BlockingHttpService}.
      *
      * @return The {@link HttpExecutionStrategy} for this {@link BlockingHttpService}.

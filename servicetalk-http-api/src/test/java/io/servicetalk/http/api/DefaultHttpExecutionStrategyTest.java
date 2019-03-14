@@ -183,7 +183,7 @@ public class DefaultHttpExecutionStrategyTest {
         StreamingHttpRequest req = analyzer.createNewRequest();
         DefaultStreamingHttpRequestResponseFactory respFactory =
                 new DefaultStreamingHttpRequestResponseFactory(DEFAULT_ALLOCATOR, INSTANCE);
-        TestHttpServiceContext ctx = new TestHttpServiceContext(respFactory, contextRule);
+        TestHttpServiceContext ctx = new TestHttpServiceContext(INSTANCE, respFactory, contextRule);
         analyzer.instrumentedResponseForServer(svc.handle(ctx, req, ctx.streamingResponseFactory()))
                 .flatMapPublisher(StreamingHttpResponse::payloadBody)
                 .toFuture().get();

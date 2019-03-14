@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,25 +28,24 @@ public interface BlockingStreamingHttpRequestHandler {
      *
      * @param ctx Context of the service.
      * @param request to handle.
-     * @param responseFactory used to create {@link BlockingStreamingHttpResponse} objects.
-     * @return a {@link BlockingStreamingHttpResponse} which represents the HTTP response.
+     * @param response to send to the client.
      * @throws Exception If an exception occurs during request processing.
      */
-    BlockingStreamingHttpResponse handle(HttpServiceContext ctx, BlockingStreamingHttpRequest request,
-                                         BlockingStreamingHttpResponseFactory responseFactory) throws Exception;
+    void handle(HttpServiceContext ctx, BlockingStreamingHttpRequest request,
+                BlockingStreamingHttpServerResponse response) throws Exception;
 
     /**
      * Convert this {@link BlockingStreamingHttpRequestHandler} to a {@link BlockingStreamingHttpService}.
+     *
      * @return a {@link BlockingStreamingHttpService}.
      */
     default BlockingStreamingHttpService asBlockingStreamingService() {
         return new BlockingStreamingHttpService() {
             @Override
-            public BlockingStreamingHttpResponse handle(final HttpServiceContext ctx,
-                                                        final BlockingStreamingHttpRequest request,
-                                                        final BlockingStreamingHttpResponseFactory responseFactory)
-                    throws Exception {
-                return BlockingStreamingHttpRequestHandler.this.handle(ctx, request, responseFactory);
+            public void handle(final HttpServiceContext ctx,
+                               final BlockingStreamingHttpRequest request,
+                               final BlockingStreamingHttpServerResponse response) throws Exception {
+                BlockingStreamingHttpRequestHandler.this.handle(ctx, request, response);
             }
         };
     }

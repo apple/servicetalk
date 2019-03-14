@@ -22,12 +22,14 @@ import io.servicetalk.concurrent.api.Publisher;
 
 /**
  * A factory to address serialization concerns for HTTP request/response payload bodies.
+ *
  * @param <T> The type of objects to serialize.
  */
 public interface HttpSerializer<T> {
     /**
      * Serialize an object of type {@link T} into a {@link Buffer}. If necessary the {@link HttpHeaders} should be
      * updated to indicate the <a href="https://tools.ietf.org/html/rfc7231#section-3.1.1.5">content-type</a>.
+     *
      * @param headers The {@link HttpHeaders} associated with the serialization operation.
      * @param value The object to serialize.
      * @param allocator The {@link BufferAllocator} used to create the returned {@link Buffer}.
@@ -39,6 +41,7 @@ public interface HttpSerializer<T> {
      * Serialize an {@link BlockingIterable} of type {@link T} into an {@link BlockingIterable} of type
      * {@link Buffer}. If necessary the {@link HttpHeaders} should be updated to indicate the
      * <a href="https://tools.ietf.org/html/rfc7231#section-3.1.1.5">content-type</a>.
+     *
      * @param headers The {@link HttpHeaders} associated with the serialization operation.
      * @param value The objects to serialize.
      * @param allocator The {@link BufferAllocator} used to create the resulting {@link Buffer}s.
@@ -50,10 +53,22 @@ public interface HttpSerializer<T> {
      * Serialize a {@link Publisher} of type {@link T} into a {@link Publisher} of type {@link Buffer}. If necessary the
      * {@link HttpHeaders} should be updated to indicate the
      * <a href="https://tools.ietf.org/html/rfc7231#section-3.1.1.5">content-type</a>.
+     *
      * @param headers The {@link HttpHeaders} associated with the serialization operation.
      * @param value The objects to serialize.
      * @param allocator The {@link BufferAllocator} used to create the resulting {@link Buffer}s.
      * @return The result of the serialization operation.
      */
     Publisher<Buffer> serialize(HttpHeaders headers, Publisher<T> value, BufferAllocator allocator);
+
+    /**
+     * Serialize a payload body of {@link BlockingStreamingHttpServerResponse} into a {@link Buffer}. If necessary the
+     * {@link BlockingStreamingHttpServerResponse#headers()} should be updated to indicate the
+     * <a href="https://tools.ietf.org/html/rfc7231#section-3.1.1.5">content-type</a>.
+     *
+     * @param response The {@link BlockingStreamingHttpServerResponse} which payload body should be serialized.
+     * @param allocator The {@link BufferAllocator} used to create the resulting {@link Buffer}s.
+     * @return The {@link HttpPayloadWriter} of type {@link T} with embedded serialization.
+     */
+    HttpPayloadWriter<T> serialize(BlockingStreamingHttpServerResponse response, BufferAllocator allocator);
 }

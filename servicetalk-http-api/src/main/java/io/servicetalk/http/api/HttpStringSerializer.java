@@ -21,6 +21,7 @@ import io.servicetalk.concurrent.BlockingIterable;
 import io.servicetalk.concurrent.BlockingIterator;
 import io.servicetalk.concurrent.api.Publisher;
 
+import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -93,6 +94,18 @@ final class HttpStringSerializer implements HttpSerializer<String> {
                                        final BufferAllocator allocator) {
         addContentType.accept(headers);
         return value.map(str -> toBuffer(str, allocator));
+    }
+
+    @Override
+    public HttpPayloadWriter<String> serialize(final BlockingStreamingHttpServerResponse response,
+                                               final BufferAllocator allocator) {
+        addContentType.accept(response.headers());
+        return new DelegatingToBufferHttpPayloadWriter<String>(response.sendMetaData()) {
+            @Override
+            public void write(final String object) throws IOException {
+                delegate.write(toBuffer(object, allocator));
+            }
+        };
     }
 
     @Nullable

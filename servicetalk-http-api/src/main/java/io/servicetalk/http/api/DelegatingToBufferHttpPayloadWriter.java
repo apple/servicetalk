@@ -13,25 +13,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.oio.api;
+package io.servicetalk.http.api;
 
-import java.io.Closeable;
-import java.io.Flushable;
+import io.servicetalk.buffer.api.Buffer;
+
 import java.io.IOException;
-import java.io.OutputStream;
 
-/**
- * An interface which mimics behavior like {@link OutputStream}, but allows for writing of objects of type
- * {@link T}.
- *
- * @param <T> the type of objects to write
- */
-public interface PayloadWriter<T> extends Closeable, Flushable {
-    /**
-     * Write an object of type {@link T}.
-     *
-     * @param object the object to write
-     * @throws IOException if an I/O error occur sor this {@link PayloadWriter} is closed
-     */
-    void write(T object) throws IOException;
+abstract class DelegatingToBufferHttpPayloadWriter<T> implements HttpPayloadWriter<T> {
+
+    protected final HttpPayloadWriter<Buffer> delegate;
+
+    protected DelegatingToBufferHttpPayloadWriter(final HttpPayloadWriter<Buffer> delegate) {
+        this.delegate = delegate;
+    }
+
+    @Override
+    public void flush() throws IOException {
+        delegate.flush();
+    }
+
+    @Override
+    public void close() throws IOException {
+        delegate.close();
+    }
+
+    @Override
+    public HttpHeaders trailers() {
+        return delegate.trailers();
+    }
 }

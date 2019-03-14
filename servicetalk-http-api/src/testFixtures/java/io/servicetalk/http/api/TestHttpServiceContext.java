@@ -29,9 +29,11 @@ public class TestHttpServiceContext extends HttpServiceContext {
     private final SocketAddress localAddress;
     private final SocketAddress remoteAddress;
 
-    public TestHttpServiceContext(StreamingHttpRequestResponseFactory reqRespFactory,
-                                  ExecutionContext executionContext) {
-        super(new StreamingHttpRequestResponseFactoryToHttpRequestResponseFactory(reqRespFactory),
+    public TestHttpServiceContext(final HttpHeadersFactory headersFactory,
+                                  final StreamingHttpRequestResponseFactory reqRespFactory,
+                                  final ExecutionContext executionContext) {
+        super(headersFactory,
+                new StreamingHttpRequestResponseFactoryToHttpRequestResponseFactory(reqRespFactory),
                 reqRespFactory,
                 new StreamingHttpRequestResponseFactoryToBlockingStreamingHttpRequestResponseFactory(reqRespFactory));
         this.executionContext = executionContext;
