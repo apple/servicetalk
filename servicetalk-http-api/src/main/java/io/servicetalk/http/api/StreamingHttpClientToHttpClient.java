@@ -17,7 +17,6 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.http.api.StreamingHttpClient.ReservedStreamingHttpConnection;
 import io.servicetalk.transport.api.ExecutionContext;
 
 import static io.servicetalk.http.api.HttpExecutionStrategies.OFFLOAD_RECEIVE_META_STRATEGY;
@@ -35,7 +34,7 @@ final class StreamingHttpClientToHttpClient extends HttpClient {
     public Single<ReservedHttpConnection> reserveConnection(final HttpExecutionStrategy strategy,
                                                             final HttpRequestMetaData metaData) {
         return client.reserveConnection(strategy, metaData)
-                .map(c -> new ReservedStreamingHttpConnectionToReservedHttpConnection(c, executionStrategy()));
+                .map(c -> new ReservedHttpConnection(c, executionStrategy()));
     }
 
     @Override
@@ -72,53 +71,5 @@ final class StreamingHttpClientToHttpClient extends HttpClient {
         final HttpExecutionStrategy defaultStrategy =
                 client.filterChain.effectiveExecutionStrategy(OFFLOAD_RECEIVE_META_STRATEGY);
         return new StreamingHttpClientToHttpClient(client, defaultStrategy);
-    }
-
-    static final class ReservedStreamingHttpConnectionToReservedHttpConnection extends ReservedHttpConnection {
-        private final ReservedStreamingHttpConnection reservedConnection;
-
-        private ReservedStreamingHttpConnectionToReservedHttpConnection(
-                ReservedStreamingHttpConnection reservedConnection, HttpExecutionStrategy strategy) {
-            super(new StreamingHttpRequestResponseFactoryToHttpRequestResponseFactory(
-                    reservedConnection.reqRespFactory), strategy);
-            this.reservedConnection = requireNonNull(reservedConnection);
-        }
-
-        @Override
-        public Single<HttpResponse> request(final HttpExecutionStrategy strategy, final HttpRequest request) {
-            return reservedConnection.request(strategy, request.toStreamingRequest())
-                    .flatMap(StreamingHttpResponse::toResponse);
-        }
-
-        @Override
-        public ExecutionContext executionContext() {
-            return reservedConnection.executionContext();
-        }
-
-        @Override
-        public Completable onClose() {
-            return reservedConnection.onClose();
-        }
-
-        @Override
-        public Completable closeAsync() {
-            return reservedConnection.closeAsync();
-        }
-
-        @Override
-        public Completable closeAsyncGracefully() {
-            return reservedConnection.closeAsyncGracefully();
-        }
-
-        @Override
-        public ReservedStreamingHttpConnection asStreamingConnection() {
-            return reservedConnection;
-        }
-
-        static ReservedHttpConnection transform(ReservedStreamingHttpConnection conn) {
-            final HttpExecutionStrategy defaultStrategy =
-                    conn.filterChain.effectiveExecutionStrategy(OFFLOAD_RECEIVE_META_STRATEGY);
-            return new ReservedStreamingHttpConnectionToReservedHttpConnection(conn, defaultStrategy);
-        }
     }
 }

@@ -22,6 +22,9 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ExecutionContext;
 
+import static io.servicetalk.http.api.HttpExecutionStrategies.OFFLOAD_NONE_STRATEGY;
+import static io.servicetalk.http.api.HttpExecutionStrategies.OFFLOAD_RECEIVE_META_STRATEGY;
+import static io.servicetalk.http.api.HttpExecutionStrategies.OFFLOAD_SEND_STRATEGY;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -85,7 +88,8 @@ public class StreamingHttpConnection extends StreamingHttpRequester {
     // We don't want the user to be able to override but it cannot be final because we need to override the type.
     // However the constructor of this class is package private so the user will not be able to override this method.
     public /* final */ HttpConnection asConnection() {
-        return StreamingHttpConnectionToHttpConnection.transform(this);
+        return new HttpConnection(this, filterChain
+                .effectiveExecutionStrategy(OFFLOAD_RECEIVE_META_STRATEGY));
     }
 
     /**
@@ -98,7 +102,8 @@ public class StreamingHttpConnection extends StreamingHttpRequester {
     // We don't want the user to be able to override but it cannot be final because we need to override the type.
     // However the constructor of this class is package private so the user will not be able to override this method.
     public /* final */ BlockingStreamingHttpConnection asBlockingStreamingConnection() {
-        return StreamingHttpConnectionToBlockingStreamingHttpConnection.transform(this);
+        return new BlockingStreamingHttpConnection(this,
+                filterChain.effectiveExecutionStrategy(OFFLOAD_SEND_STRATEGY));
     }
 
     /**
@@ -111,7 +116,7 @@ public class StreamingHttpConnection extends StreamingHttpRequester {
     // We don't want the user to be able to override but it cannot be final because we need to override the type.
     // However the constructor of this class is package private so the user will not be able to override this method.
     public /* final */ BlockingHttpConnection asBlockingConnection() {
-        return StreamingHttpConnectionToBlockingHttpConnection.transform(this);
+        return new BlockingHttpConnection(this, filterChain.effectiveExecutionStrategy(OFFLOAD_NONE_STRATEGY));
     }
 
     @Override

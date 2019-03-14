@@ -16,24 +16,30 @@
 package io.servicetalk.http.api;
 
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
+import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.StreamingHttpConnection.SettingKey;
 import io.servicetalk.transport.api.ConnectionContext;
+import io.servicetalk.transport.api.ExecutionContext;
 
 /**
  * Represents a single fixed connection to a HTTP server.
  */
-public abstract class HttpConnection extends HttpRequester {
+public class HttpConnection extends HttpRequester {
+
+    private final StreamingHttpConnection connection;
 
     /**
      * Create a new instance.
      *
-     * @param reqRespFactory The {@link HttpRequestResponseFactory} used to
-     * {@link #newRequest(HttpRequestMethod, String) create new requests}.
+     * @param connection {@link StreamingHttpConnection} to convert from.
      * @param strategy Default {@link HttpExecutionStrategy} to use.
      */
-    HttpConnection(final HttpRequestResponseFactory reqRespFactory, final HttpExecutionStrategy strategy) {
-        super(reqRespFactory, strategy);
+    HttpConnection(final StreamingHttpConnection connection,
+                   final HttpExecutionStrategy strategy) {
+        super(new StreamingHttpRequestResponseFactoryToHttpRequestResponseFactory(connection.reqRespFactory), strategy);
+        this.connection = connection;
     }
 
     /**
@@ -41,7 +47,14 @@ public abstract class HttpConnection extends HttpRequester {
      *
      * @return the {@link ConnectionContext}.
      */
-    public abstract ConnectionContext connectionContext();
+    public final ConnectionContext connectionContext() {
+        return connection.connectionContext();
+    }
+
+    @Override
+    public Single<HttpResponse> request(final HttpExecutionStrategy strategy, final HttpRequest request) {
+        return connection.request(strategy, request.toStreamingRequest()).flatMap(StreamingHttpResponse::toResponse);
+    }
 
     /**
      * Returns a {@link Publisher} that gives the current value of the setting as well as subsequent changes to
@@ -51,14 +64,20 @@ public abstract class HttpConnection extends HttpRequester {
      * @param <T> Type of the setting value.
      * @return {@link Publisher} for the setting values.
      */
-    public abstract <T> Publisher<T> settingStream(SettingKey<T> settingKey);
+    public final <T> Publisher<T> settingStream(SettingKey<T> settingKey) {
+        return connection.settingStream(settingKey);
+    }
 
     /**
      * Convert this {@link HttpConnection} to the {@link StreamingHttpConnection} API.
      *
      * @return a {@link StreamingHttpConnection} representation of this {@link HttpConnection}.
      */
-    public abstract StreamingHttpConnection asStreamingConnection();
+    // We don't want the user to be able to override but it cannot be final because we need to override the type.
+    // However the constructor of this class is package private so the user will not be able to override this method.
+    public /* final */ StreamingHttpConnection asStreamingConnection() {
+        return connection;
+    }
 
     /**
      * Convert this {@link HttpConnection} to the {@link BlockingStreamingHttpConnection} API.
@@ -80,5 +99,25 @@ public abstract class HttpConnection extends HttpRequester {
     // However the constructor of this class is package private so the user will not be able to override this method.
     public /* final */ BlockingHttpConnection asBlockingConnection() {
         return asStreamingConnection().asBlockingConnection();
+    }
+
+    @Override
+    public ExecutionContext executionContext() {
+        return connection.executionContext();
+    }
+
+    @Override
+    public Completable onClose() {
+        return connection.onClose();
+    }
+
+    @Override
+    public Completable closeAsync() {
+        return connection.closeAsync();
+    }
+
+    @Override
+    public Completable closeAsyncGracefully() {
+        return connection.closeAsyncGracefully();
     }
 }

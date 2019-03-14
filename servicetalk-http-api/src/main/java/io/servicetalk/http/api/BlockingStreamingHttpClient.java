@@ -19,6 +19,8 @@ import io.servicetalk.http.api.BlockingHttpClient.ReservedBlockingHttpConnection
 import io.servicetalk.http.api.HttpClient.ReservedHttpConnection;
 import io.servicetalk.http.api.StreamingHttpClient.ReservedStreamingHttpConnection;
 
+import static io.servicetalk.http.api.BlockingUtils.blockingInvocation;
+
 /**
  * The equivalent of {@link StreamingHttpClient} but with synchronous/blocking APIs instead of asynchronous APIs.
  */
@@ -101,18 +103,21 @@ public abstract class BlockingStreamingHttpClient extends BlockingStreamingHttpR
      * {@link #reserveConnection(HttpRequestMetaData)} and
      * {@link #reserveConnection(HttpExecutionStrategy, HttpRequestMetaData)}.
      */
-    public abstract static class ReservedBlockingStreamingHttpConnection extends BlockingStreamingHttpConnection {
+    public static final class ReservedBlockingStreamingHttpConnection extends BlockingStreamingHttpConnection {
+
+        private final ReservedStreamingHttpConnection connection;
 
         /**
          * Create a new instance.
          *
-         * @param reqRespFactory The {@link BlockingStreamingHttpRequestResponseFactory} used to
+         * @param connection {@link StreamingHttpConnection} to convert from.
          * {@link #newRequest(HttpRequestMethod, String) create new requests}.
          * @param strategy Default {@link HttpExecutionStrategy} to use.
          */
-        ReservedBlockingStreamingHttpConnection(final BlockingStreamingHttpRequestResponseFactory reqRespFactory,
+        ReservedBlockingStreamingHttpConnection(final ReservedStreamingHttpConnection connection,
                                                 final HttpExecutionStrategy strategy) {
-            super(reqRespFactory, strategy);
+            super(connection, strategy);
+            this.connection = connection;
         }
 
         /**
@@ -121,7 +126,9 @@ public abstract class BlockingStreamingHttpClient extends BlockingStreamingHttpR
          *
          * @throws Exception if any exception occurs during releasing.
          */
-        public abstract void release() throws Exception;
+        public void release() throws Exception {
+            blockingInvocation(connection.releaseAsync());
+        }
 
         /**
          * Convert this {@link ReservedBlockingStreamingHttpConnection} to the {@link ReservedStreamingHttpConnection}
@@ -134,7 +141,9 @@ public abstract class BlockingStreamingHttpClient extends BlockingStreamingHttpR
          * {@link ReservedBlockingStreamingHttpConnection}.
          */
         @Override
-        public abstract ReservedStreamingHttpConnection asStreamingConnection();
+        public ReservedStreamingHttpConnection asStreamingConnection() {
+            return connection;
+        }
 
         /**
          * Convert this {@link ReservedBlockingStreamingHttpConnection} to the {@link ReservedHttpConnection} API.
@@ -146,7 +155,7 @@ public abstract class BlockingStreamingHttpClient extends BlockingStreamingHttpR
          * {@link ReservedBlockingStreamingHttpConnection}.
          */
         @Override
-        public final ReservedHttpConnection asConnection() {
+        public ReservedHttpConnection asConnection() {
             return asStreamingConnection().asConnection();
         }
 
@@ -161,7 +170,7 @@ public abstract class BlockingStreamingHttpClient extends BlockingStreamingHttpR
          * {@link ReservedBlockingStreamingHttpConnection}.
          */
         @Override
-        public final ReservedBlockingHttpConnection asBlockingConnection() {
+        public ReservedBlockingHttpConnection asBlockingConnection() {
             return asStreamingConnection().asBlockingConnection();
         }
     }

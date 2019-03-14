@@ -15,10 +15,6 @@
  */
 package io.servicetalk.http.api;
 
-import io.servicetalk.concurrent.BlockingIterable;
-import io.servicetalk.http.api.StreamingHttpClient.ReservedStreamingHttpConnection;
-import io.servicetalk.http.api.StreamingHttpConnection.SettingKey;
-import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ExecutionContext;
 
 import static io.servicetalk.http.api.BlockingUtils.blockingInvocation;
@@ -38,7 +34,7 @@ final class StreamingHttpClientToBlockingHttpClient extends BlockingHttpClient {
     public ReservedBlockingHttpConnection reserveConnection(final HttpExecutionStrategy strategy,
                                                             final HttpRequestMetaData metaData) throws Exception {
         return blockingInvocation(client.reserveConnection(strategy, metaData)
-                .map(c -> new ReservedStreamingHttpConnectionToBlocking(c, executionStrategy())));
+                .map(c -> new ReservedBlockingHttpConnection(c, executionStrategy())));
     }
 
     @Override
@@ -65,58 +61,5 @@ final class StreamingHttpClientToBlockingHttpClient extends BlockingHttpClient {
     @Override
     public StreamingHttpClient asStreamingClient() {
         return client;
-    }
-
-    static final class ReservedStreamingHttpConnectionToBlocking extends ReservedBlockingHttpConnection {
-        private final ReservedStreamingHttpConnection connection;
-
-        private ReservedStreamingHttpConnectionToBlocking(ReservedStreamingHttpConnection connection,
-                                                          HttpExecutionStrategy strategy) {
-            super(new StreamingHttpRequestResponseFactoryToHttpRequestResponseFactory(connection.reqRespFactory),
-                    strategy);
-            this.connection = requireNonNull(connection);
-        }
-
-        @Override
-        public void release() throws Exception {
-            blockingInvocation(connection.releaseAsync());
-        }
-
-        @Override
-        public ConnectionContext connectionContext() {
-            return connection.connectionContext();
-        }
-
-        @Override
-        public <T> BlockingIterable<T> settingIterable(final SettingKey<T> settingKey) {
-            return connection.settingStream(settingKey).toIterable();
-        }
-
-        @Override
-        public HttpResponse request(final HttpExecutionStrategy strategy, final HttpRequest request) throws Exception {
-            return blockingInvocation(connection.request(strategy, request.toStreamingRequest())
-                    .flatMap(StreamingHttpResponse::toResponse));
-        }
-
-        @Override
-        public ExecutionContext executionContext() {
-            return connection.executionContext();
-        }
-
-        @Override
-        public void close() throws Exception {
-            blockingInvocation(connection.closeAsync());
-        }
-
-        @Override
-        public ReservedStreamingHttpConnection asStreamingConnection() {
-            return connection;
-        }
-
-        static ReservedBlockingHttpConnection transform(ReservedStreamingHttpConnection conn) {
-            final HttpExecutionStrategy defaultStrategy =
-                    conn.filterChain.effectiveExecutionStrategy(OFFLOAD_NONE_STRATEGY);
-            return new ReservedStreamingHttpConnectionToBlocking(conn, defaultStrategy);
-        }
     }
 }

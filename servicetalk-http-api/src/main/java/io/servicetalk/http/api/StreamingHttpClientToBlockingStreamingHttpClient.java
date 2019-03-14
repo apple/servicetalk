@@ -15,9 +15,6 @@
  */
 package io.servicetalk.http.api;
 
-import io.servicetalk.concurrent.BlockingIterable;
-import io.servicetalk.http.api.StreamingHttpClient.ReservedStreamingHttpConnection;
-import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ExecutionContext;
 
 import static io.servicetalk.http.api.BlockingUtils.blockingInvocation;
@@ -51,7 +48,7 @@ final class StreamingHttpClientToBlockingStreamingHttpClient extends BlockingStr
             throws Exception {
         // It is assumed that users will always apply timeouts at the StreamingHttpService layer (e.g. via filter).
         // So we don't apply any explicit timeout here and just wait forever.
-        return new ReservedStreamingHttpConnectionToBlockingStreaming(
+        return new ReservedBlockingStreamingHttpConnection(
                 blockingInvocation(client.reserveConnection(strategy, metaData)), executionStrategy());
     }
 
@@ -69,60 +66,5 @@ final class StreamingHttpClientToBlockingStreamingHttpClient extends BlockingStr
         final HttpExecutionStrategy defaultStrategy =
                 client.filterChain.effectiveExecutionStrategy(OFFLOAD_SEND_STRATEGY);
         return new StreamingHttpClientToBlockingStreamingHttpClient(client, defaultStrategy);
-    }
-
-    static final class ReservedStreamingHttpConnectionToBlockingStreaming extends
-                                                                          ReservedBlockingStreamingHttpConnection {
-        private final ReservedStreamingHttpConnection connection;
-
-        private ReservedStreamingHttpConnectionToBlockingStreaming(final ReservedStreamingHttpConnection connection,
-                                                                   final HttpExecutionStrategy strategy) {
-            super(new StreamingHttpRequestResponseFactoryToBlockingStreamingHttpRequestResponseFactory(
-                    connection.reqRespFactory), strategy);
-            this.connection = requireNonNull(connection);
-        }
-
-        @Override
-        public void release() throws Exception {
-            blockingInvocation(connection.releaseAsync());
-        }
-
-        @Override
-        public ConnectionContext connectionContext() {
-            return connection.connectionContext();
-        }
-
-        @Override
-        public <T> BlockingIterable<T> settingIterable(final StreamingHttpConnection.SettingKey<T> settingKey) {
-            return connection.settingStream(settingKey).toIterable();
-        }
-
-        @Override
-        public BlockingStreamingHttpResponse request(final HttpExecutionStrategy strategy,
-                                                     final BlockingStreamingHttpRequest request) throws Exception {
-            return blockingInvocation(connection.request(strategy, request.toStreamingRequest()))
-                    .toBlockingStreamingResponse();
-        }
-
-        @Override
-        public ExecutionContext executionContext() {
-            return connection.executionContext();
-        }
-
-        @Override
-        public void close() throws Exception {
-            blockingInvocation(connection.closeAsync());
-        }
-
-        @Override
-        public ReservedStreamingHttpConnection asStreamingConnection() {
-            return connection;
-        }
-
-        static ReservedBlockingStreamingHttpConnection transform(ReservedStreamingHttpConnection conn) {
-            final HttpExecutionStrategy defaultStrategy =
-                    conn.filterChain.effectiveExecutionStrategy(OFFLOAD_SEND_STRATEGY);
-            return new ReservedStreamingHttpConnectionToBlockingStreaming(conn, defaultStrategy);
-        }
     }
 }

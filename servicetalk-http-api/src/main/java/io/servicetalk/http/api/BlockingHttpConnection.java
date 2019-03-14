@@ -19,21 +19,28 @@ import io.servicetalk.concurrent.BlockingIterable;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.http.api.StreamingHttpConnection.SettingKey;
 import io.servicetalk.transport.api.ConnectionContext;
+import io.servicetalk.transport.api.ExecutionContext;
+
+import static io.servicetalk.http.api.BlockingUtils.blockingInvocation;
 
 /**
  * The equivalent of {@link HttpConnection} but with synchronous/blocking APIs instead of asynchronous APIs.
  */
-public abstract class BlockingHttpConnection extends BlockingHttpRequester {
+public class BlockingHttpConnection extends BlockingHttpRequester {
+
+    private final StreamingHttpConnection connection;
 
     /**
      * Create a new instance.
      *
-     * @param reqRespFactory The {@link HttpRequestResponseFactory} used to
-     * {@link #newRequest(HttpRequestMethod, String) create new requests}.
+     * @param connection {@link StreamingHttpConnection} to convert from.
      * @param strategy Default {@link HttpExecutionStrategy} to use.
      */
-    BlockingHttpConnection(final HttpRequestResponseFactory reqRespFactory, final HttpExecutionStrategy strategy) {
-        super(reqRespFactory, strategy);
+    BlockingHttpConnection(final StreamingHttpConnection connection,
+                           final HttpExecutionStrategy strategy) {
+        super(new StreamingHttpRequestResponseFactoryToHttpRequestResponseFactory(
+                connection.reqRespFactory), strategy);
+        this.connection = connection;
     }
 
     /**
@@ -41,7 +48,15 @@ public abstract class BlockingHttpConnection extends BlockingHttpRequester {
      *
      * @return the {@link ConnectionContext}.
      */
-    public abstract ConnectionContext connectionContext();
+    public final ConnectionContext connectionContext() {
+        return connection.connectionContext();
+    }
+
+    @Override
+    public final HttpResponse request(final HttpExecutionStrategy strategy,
+                                final HttpRequest request) throws Exception {
+        return BlockingUtils.request(connection, strategy, request);
+    }
 
     /**
      * Returns a {@link BlockingIterable} that gives the current value of the setting as well as subsequent changes to
@@ -51,7 +66,9 @@ public abstract class BlockingHttpConnection extends BlockingHttpRequester {
      * @param <T> Type of the setting value.
      * @return {@link BlockingIterable} for the setting values.
      */
-    public abstract <T> BlockingIterable<T> settingIterable(SettingKey<T> settingKey);
+    public final <T> BlockingIterable<T> settingIterable(SettingKey<T> settingKey) {
+        return connection.settingStream(settingKey).toIterable();
+    }
 
     /**
      * Convert this {@link BlockingHttpConnection} to the {@link StreamingHttpConnection} API.
@@ -61,7 +78,11 @@ public abstract class BlockingHttpConnection extends BlockingHttpRequester {
      *
      * @return a {@link StreamingHttpConnection} representation of this {@link BlockingHttpConnection}.
      */
-    public abstract StreamingHttpConnection asStreamingConnection();
+    // We don't want the user to be able to override but it cannot be final because we need to override the type.
+    // However the constructor of this class is package private so the user will not be able to override this method.
+    public /* final */ StreamingHttpConnection asStreamingConnection() {
+        return connection;
+    }
 
     /**
      * Convert this {@link BlockingHttpConnection} to the {@link HttpConnection} API.
@@ -89,5 +110,15 @@ public abstract class BlockingHttpConnection extends BlockingHttpRequester {
     // However the constructor of this class is package private so the user will not be able to override this method.
     public /* final */ BlockingStreamingHttpConnection asBlockingStreamingConnection() {
         return asStreamingConnection().asBlockingStreamingConnection();
+    }
+
+    @Override
+    public final ExecutionContext executionContext() {
+        return connection.executionContext();
+    }
+
+    @Override
+    public final void close() throws Exception {
+        blockingInvocation(connection.closeAsync());
     }
 }
