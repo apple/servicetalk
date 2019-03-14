@@ -111,7 +111,7 @@ abstract class AbstractTracingHttpFilter {
 
         protected abstract Scope newScope();
 
-        protected Single<StreamingHttpResponse> prepareScopeAndRequest() {
+        protected Single<StreamingHttpResponse> prepareScopeAndRequestOrFailEarly() {
             try {
                 currentScope = newScope();
                 return requireNonNull(singleSupplier.get());
@@ -172,9 +172,8 @@ abstract class AbstractTracingHttpFilter {
             final ScopeTracker scopeTracker = newTracker(request, singleSupplier);
             final Single<StreamingHttpResponse> responseSingle;
             try {
-                responseSingle = scopeTracker.prepareScopeAndRequest();
+                responseSingle = scopeTracker.prepareScopeAndRequestOrFailEarly();
             } catch (Throwable throwable) {
-                scopeTracker.failed(throwable);
                 return Single.error(throwable);
             }
             return responseSingle
