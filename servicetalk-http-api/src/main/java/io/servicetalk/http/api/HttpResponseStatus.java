@@ -380,15 +380,14 @@ public final class HttpResponseStatus {
     }
 
     /**
-     * Get a {@link HttpResponseStatus} for the specified {@code statusCode} and {@code reasonPhrase}. If the
-     * {@code statusCode} and {@code reasonPhrase} match those of an existing constant, the constant will be returned,
-     * otherwise a new instance will be returned.
+     * Returns an {@link HttpResponseStatus} for the specified {@code statusCode} and {@code reasonPhrase}.
+     * Generally, the constants in {@link HttpResponseStatus} should be used.
      *
      * @param statusCode the three digit <a href="https://tools.ietf.org/html/rfc7231#section-6">status-code</a>
      * indicating status of the response
      * @param reasonPhrase the <a href="https://tools.ietf.org/html/rfc7230.html#section-3.1.2">reason-phrase</a>
      * portion of the response
-     * @return a {@link HttpResponseStatus}
+     * @return an {@link HttpResponseStatus}
      * @throws IllegalArgumentException if {@code statusCode} is not a 3-digit integer
      */
     public static HttpResponseStatus of(final int statusCode, final Buffer reasonPhrase) {

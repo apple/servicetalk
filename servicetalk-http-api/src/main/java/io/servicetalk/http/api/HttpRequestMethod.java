@@ -99,13 +99,13 @@ public final class HttpRequestMethod {
     }
 
     /**
-     * Create a new {@link HttpRequestMethod} for the specified {@link Buffer} representation of
+     * Returns an {@link HttpRequestMethod} for the specified {@link Buffer} representation of
      * <a href="https://tools.ietf.org/html/rfc7231#section-4.1">method name</a> and {@link Properties}.
      * Generally, the constants in {@link HttpRequestMethod} should be used.
      *
      * @param name a <a href="https://tools.ietf.org/html/rfc7231#section-4.1">method name</a>
      * @param properties <a href="https://tools.ietf.org/html/rfc7231#section-4.2">Common HTTP Method Properties</a>
-     * @return a new {@link HttpRequestMethod}
+     * @return an {@link HttpRequestMethod}
      */
     public static HttpRequestMethod of(final Buffer name, final Properties properties) {
         return new HttpRequestMethod(name, properties);

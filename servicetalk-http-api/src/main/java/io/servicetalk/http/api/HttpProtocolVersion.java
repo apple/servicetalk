@@ -83,13 +83,14 @@ public final class HttpProtocolVersion {
     }
 
     /**
-     * Return an {@link HttpProtocolVersion} for the specified {@code major} and {@code minor}.
+     * Returns an {@link HttpProtocolVersion} for the specified {@code major} and {@code minor}.
+     * Generally, the constants in {@link HttpProtocolVersion} should be used.
      *
      * @param major the <strong>&lt;major&gt;</strong> portion of the
      * <a href="https://tools.ietf.org/html/rfc7230.html#section-2.6">HTTP protocol version</a>
      * @param minor the <strong>&lt;minor&gt;</strong> portion of the
      * <a href="https://tools.ietf.org/html/rfc7230.html#section-2.6">HTTP protocol version</a>
-     * @return a cached or new {@link HttpProtocolVersion}
+     * @return an {@link HttpProtocolVersion}
      * @throws IllegalArgumentException if {@code major} or {@code minor} is not a 1-digit integer
      */
     public static HttpProtocolVersion of(final int major, final int minor) {
@@ -105,12 +106,12 @@ public final class HttpProtocolVersion {
     }
 
     /**
-     * Create a new {@link HttpProtocolVersion} from its {@link Buffer} representation. The passed {@link Buffer} will
+     * Returns an {@link HttpProtocolVersion} from its {@link Buffer} representation. The passed {@link Buffer} will
      * be parsed to extract {@code major} and {@code minor} components of the version.
      *
      * @param httpVersion a {@link Buffer} representation of the
      * <a href="https://tools.ietf.org/html/rfc7230.html#section-2.6">HTTP protocol version</a>
-     * @return a new {@link HttpProtocolVersion}
+     * @return an {@link HttpProtocolVersion}
      * @throws IllegalArgumentException if {@code httpVersion} format is not {@code HTTP/DIGIT.DIGIT}
      */
     public static HttpProtocolVersion of(final Buffer httpVersion) {
