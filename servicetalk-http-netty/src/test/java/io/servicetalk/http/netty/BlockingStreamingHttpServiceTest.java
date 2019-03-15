@@ -260,11 +260,6 @@ public class BlockingStreamingHttpServiceTest {
     }
 
     private static void assertResponse(BlockingStreamingHttpResponse response,
-                                       String expectedPayloadBody) throws Exception {
-        assertResponse(response, expectedPayloadBody, false);
-    }
-
-    private static void assertResponse(BlockingStreamingHttpResponse response,
                                        String expectedPayloadBody,
                                        boolean useDeserializer) throws Exception {
         assertResponse(response);
