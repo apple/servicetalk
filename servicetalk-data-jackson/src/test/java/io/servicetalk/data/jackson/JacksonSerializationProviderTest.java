@@ -56,7 +56,8 @@ public class JacksonSerializationProviderTest {
 
         final Buffer serialized = DEFAULT_ALLOCATOR.newBuffer();
         serializationProvider.getSerializer(TestPojo.class).serialize(expected, serialized);
-        final Iterator<TestPojo> iterator = serializationProvider.getDeserializer(TestPojo.class).deserialize(serialized).iterator();
+        final Iterator<TestPojo> iterator = serializationProvider.getDeserializer(TestPojo.class)
+                .deserialize(serialized).iterator();
         assertTrue(iterator.hasNext());
         assertEquals(expected, iterator.next());
         assertFalse(iterator.hasNext());
@@ -73,7 +74,8 @@ public class JacksonSerializationProviderTest {
 
         final Buffer serialized = DEFAULT_ALLOCATOR.newBuffer();
         serializationProvider.getSerializer(listTypeHolder).serialize(pojos, serialized);
-        final Iterator<List<TestPojo>> iterator = serializationProvider.getDeserializer(listTypeHolder).deserialize(serialized).iterator();
+        final Iterator<List<TestPojo>> iterator = serializationProvider.getDeserializer(listTypeHolder)
+                .deserialize(serialized).iterator();
         assertTrue(iterator.hasNext());
         assertEquals(pojos, iterator.next());
         assertFalse(iterator.hasNext());

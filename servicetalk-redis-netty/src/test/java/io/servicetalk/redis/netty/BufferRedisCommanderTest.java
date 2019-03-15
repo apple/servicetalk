@@ -114,12 +114,15 @@ public class BufferRedisCommanderTest extends BaseRedisClientTest {
         assertThat(awaitIndefinitely(commandClient.get(buf("missing-key"))), is(nullValue()));
         assertThat(awaitIndefinitely(commandClient.set(key("a-key"), buf("a-value1"))), is("OK"));
         assertThat(awaitIndefinitely(commandClient.get(key("a-key"))), is(buf("a-value1")));
-        assertThat(awaitIndefinitely(commandClient.set(key("a-key"), buf("a-value2"), new ExpireDuration(EX, 10L), null)), is("OK"));
+        assertThat(awaitIndefinitely(commandClient.set(key("a-key"), buf("a-value2"),
+                new ExpireDuration(EX, 10L), null)), is("OK"));
         assertThat(awaitIndefinitely(commandClient.get(key("a-key"))), is(buf("a-value2")));
 
-        assertThat(awaitIndefinitely(commandClient.set(key("exp-key"), buf("exp-value"), null, NX)), is(anyOf(nullValue(), equalTo("OK"))));
+        assertThat(awaitIndefinitely(commandClient.set(key("exp-key"), buf("exp-value"), null, NX)),
+                is(anyOf(nullValue(), equalTo("OK"))));
 
-        assertThat(awaitIndefinitely(commandClient.zadd(key("a-zset"), null, null, 1, buf("one"))), is(either(equalTo(0L)).or(equalTo(1L))));
+        assertThat(awaitIndefinitely(commandClient.zadd(key("a-zset"), null, null, 1, buf("one"))),
+                is(either(equalTo(0L)).or(equalTo(1L))));
         assertThat(awaitIndefinitely(commandClient.zrank(key("a-zset"), buf("one"))), is(0L));
         assertThat(awaitIndefinitely(commandClient.zrank(key("missing"), buf("missing-member"))), is(nullValue()));
         if (getEnv().serverVersion[0] >= 3) {
@@ -134,8 +137,10 @@ public class BufferRedisCommanderTest extends BaseRedisClientTest {
         assertThat(awaitIndefinitely(commandClient.sadd(key("a-set-1"), buf("a"), buf("b"), buf("c"))
                         .concatWith(commandClient.sadd(key("a-set-2"), buf("c"), buf("d"), buf("e")))),
                 contains(greaterThanOrEqualTo(0L), greaterThanOrEqualTo(0L)));
-        assertThat(awaitIndefinitely(commandClient.sdiff(key("a-set-1"), key("a-set-2"), buf("missing-key"))), containsInAnyOrder(buf("a"), buf("b")));
-        assertThat(awaitIndefinitely(commandClient.sdiffstore(key("diff"), key("a-set-1"), key("a-set-2"), buf("missing-key"))), is(2L));
+        assertThat(awaitIndefinitely(commandClient.sdiff(key("a-set-1"), key("a-set-2"), buf("missing-key"))),
+                containsInAnyOrder(buf("a"), buf("b")));
+        assertThat(awaitIndefinitely(commandClient.sdiffstore(key("diff"), key("a-set-1"), key("a-set-2"),
+                buf("missing-key"))), is(2L));
     }
 
     @Test
@@ -158,7 +163,8 @@ public class BufferRedisCommanderTest extends BaseRedisClientTest {
     @Test
     public void argumentVariants() throws Exception {
         assertThat(awaitIndefinitely(commandClient.mset(key("key0"), buf("val0"))), is("OK"));
-        assertThat(awaitIndefinitely(commandClient.mset(key("key1"), buf("val1"), key("key2"), buf("val2"), key("key3"), buf("val3"))), is("OK"));
+        assertThat(awaitIndefinitely(commandClient.mset(key("key1"), buf("val1"), key("key2"), buf("val2"), key("key3"),
+                buf("val3"))), is("OK"));
 
         final List<BufferKeyValue> keyValues = IntStream.range(4, 10)
                 .mapToObj(i -> new BufferKeyValue(key("key" + i), buf("val" + i)))
@@ -166,7 +172,8 @@ public class BufferRedisCommanderTest extends BaseRedisClientTest {
         assertThat(awaitIndefinitely(commandClient.mset(keyValues)), is("OK"));
 
         assertThat(awaitIndefinitely(commandClient.mget(key("key0"))), contains(buf("val0")));
-        assertThat(awaitIndefinitely(commandClient.mget(key("key1"), key("key2"), key("key3"))), contains(buf("val1"), buf("val2"), buf("val3")));
+        assertThat(awaitIndefinitely(commandClient.mget(key("key1"), key("key2"), key("key3"))), contains(buf("val1"),
+                buf("val2"), buf("val3")));
 
         final List<Buffer> keys = keyValues.stream().map(kv -> kv.key).collect(toList());
         final List<Buffer> expectedValues = keyValues.stream().map(kv -> kv.value).collect(toList());
@@ -186,7 +193,8 @@ public class BufferRedisCommanderTest extends BaseRedisClientTest {
 
         awaitIndefinitely(commandClient.del(key("bf")));
 
-        List<Long> results = awaitIndefinitely(commandClient.bitfield(key("bf"), asList(new Incrby(I05, 100L, 1L), new Get(U04, 0L))));
+        List<Long> results = awaitIndefinitely(commandClient.bitfield(key("bf"), asList(new Incrby(I05, 100L, 1L),
+                new Get(U04, 0L))));
         assertThat(results, contains(1L, 0L));
 
         results.clear();
@@ -198,7 +206,8 @@ public class BufferRedisCommanderTest extends BaseRedisClientTest {
         }
         assertThat(results, contains(1L, 1L, 2L, 2L, 3L, 3L, 0L, 3L));
 
-        results = awaitIndefinitely(commandClient.bitfield(key("bf"), asList(new Overflow(FAIL), new Incrby(U02, 102L, 1L))));
+        results = awaitIndefinitely(commandClient.bitfield(key("bf"), asList(new Overflow(FAIL),
+                new Incrby(U02, 102L, 1L))));
         assertThat(results, contains(nullValue()));
 
         awaitIndefinitely(commandClient.del(key("bf")));
@@ -236,29 +245,37 @@ public class BufferRedisCommanderTest extends BaseRedisClientTest {
         // Disable these tests for Redis 2 and below
         assumeThat(getEnv().serverVersion[0], is(greaterThanOrEqualTo(3)));
 
-        assertThat(awaitIndefinitely(commandClient.zrem(key("Sicily"), asList(buf("Palermo"), buf("Catania")))), is(lessThanOrEqualTo(2L)));
+        assertThat(awaitIndefinitely(commandClient.zrem(key("Sicily"), asList(buf("Palermo"), buf("Catania")))),
+                is(lessThanOrEqualTo(2L)));
 
         final Long geoaddLong = awaitIndefinitely(commandClient.geoadd(key("Sicily"),
                 asList(new BufferLongitudeLatitudeMember(13.361389d, 38.115556d, buf("Palermo")),
                         new BufferLongitudeLatitudeMember(15.087269d, 37.502669d, buf("Catania")))));
         assertThat(geoaddLong, is(2L));
 
-        final List<Buffer> georadiusBuffers = awaitIndefinitely(commandClient.georadius(key("Sicily"), 15d, 37d, 200d, KM));
+        final List<Buffer> georadiusBuffers = awaitIndefinitely(commandClient.georadius(key("Sicily"), 15d, 37d, 200d,
+                KM));
         assertThat(georadiusBuffers, contains(buf("Palermo"), buf("Catania")));
 
-        final List<?> georadiusMixedList = awaitIndefinitely(commandClient.georadius(key("Sicily"), 15d, 37d, 200d, KM, WITHCOORD, WITHDIST, null, 5L, GeoradiusOrder.ASC, null, null));
+        final List<?> georadiusMixedList = awaitIndefinitely(commandClient.georadius(key("Sicily"), 15d, 37d, 200d, KM,
+                WITHCOORD, WITHDIST, null, 5L, GeoradiusOrder.ASC, null, null));
         final Matcher georadiusResponseMatcher = contains(
-                contains(is(buf("Catania")), bufStartingWith(buf("56.")), contains(bufStartingWith(buf("15.")), bufStartingWith(buf("37.")))),
-                contains(is(buf("Palermo")), bufStartingWith(buf("190.")), contains(bufStartingWith(buf("13.")), bufStartingWith(buf("38.")))));
+                contains(is(buf("Catania")), bufStartingWith(buf("56.")), contains(bufStartingWith(buf("15.")),
+                        bufStartingWith(buf("37.")))),
+                contains(is(buf("Palermo")), bufStartingWith(buf("190.")), contains(bufStartingWith(buf("13.")),
+                        bufStartingWith(buf("38.")))));
         assertThat(georadiusMixedList, georadiusResponseMatcher);
 
-        assertThat(awaitIndefinitely(commandClient.geodist(key("Sicily"), buf("Palermo"), buf("Catania"))), is(greaterThan(0d)));
+        assertThat(awaitIndefinitely(commandClient.geodist(key("Sicily"), buf("Palermo"), buf("Catania"))),
+                is(greaterThan(0d)));
         assertThat(awaitIndefinitely(commandClient.geodist(key("Sicily"), buf("foo"), buf("bar"))), is(nullValue()));
 
-        assertThat(awaitIndefinitely(commandClient.geopos(key("Sicily"), buf("Palermo"), buf("NonExisting"), buf("Catania"))), contains(
-                contains(bufStartingWith(buf("13.")), bufStartingWith(buf("38."))), is(nullValue()), contains(bufStartingWith(buf("15.")), bufStartingWith(buf("37.")))));
+        assertThat(awaitIndefinitely(commandClient.geopos(key("Sicily"), buf("Palermo"), buf("NonExisting"),
+                buf("Catania"))), contains(contains(bufStartingWith(buf("13.")), bufStartingWith(buf("38."))),
+                is(nullValue()), contains(bufStartingWith(buf("15.")), bufStartingWith(buf("37.")))));
 
-        final List<Buffer> evalBuffers = awaitIndefinitely(commandClient.evalList(buf("return {KEYS[1],KEYS[2],ARGV[1],ARGV[2]}"),
+        final List<Buffer> evalBuffers = awaitIndefinitely(commandClient.evalList(
+                buf("return {KEYS[1],KEYS[2],ARGV[1],ARGV[2]}"),
                 2L, asList(buf("key1"), buf("key2")), asList(buf("first"), buf("second"))));
         assertThat(evalBuffers, contains(buf("key1"), buf("key2"), buf("first"), buf("second")));
 
@@ -269,7 +286,8 @@ public class BufferRedisCommanderTest extends BaseRedisClientTest {
         final Long evalLong = awaitIndefinitely(commandClient.evalLong(buf("return 10"), 0L, emptyList(), emptyList()));
         assertThat(evalLong, is(10L));
 
-        final List<?> evalMixedList = awaitIndefinitely(commandClient.evalList(buf("return {1,2,{3,'four'}}"), 0L, emptyList(), emptyList()));
+        final List<?> evalMixedList = awaitIndefinitely(commandClient.evalList(buf("return {1,2,{3,'four'}}"), 0L,
+                emptyList(), emptyList()));
         assertThat(evalMixedList, contains(1L, 2L, asList(3L, buf("four"))));
     }
 
@@ -284,7 +302,8 @@ public class BufferRedisCommanderTest extends BaseRedisClientTest {
         awaitIndefinitelyNonNull(commandClient.hmset(buf(testKey), fields));
         final List<Buffer> result = awaitIndefinitelyNonNull(commandClient.hgetall(buf(testKey)));
         assertThat(new HashSet<>(toBufferFieldValues(result)), is(new HashSet<>(fields)));
-        final List<Buffer> values = awaitIndefinitelyNonNull(commandClient.hmget(buf(testKey), buf("f"), buf("f1"), buf("f2")));
+        final List<Buffer> values = awaitIndefinitelyNonNull(commandClient.hmget(buf(testKey), buf("f"), buf("f1"),
+                buf("f2")));
         assertThat(values, is(asList(buf("v"), buf("v1"), buf("v2"))));
     }
 
@@ -305,7 +324,9 @@ public class BufferRedisCommanderTest extends BaseRedisClientTest {
         fields.add(new BufferFieldValue(buf("f9"), buf("v9")));
         fields.add(new BufferFieldValue(buf("f10"), buf("v10")));
         awaitIndefinitelyNonNull(commandClient.hmset(buf(testKey), fields));
-        final List<Buffer> values = awaitIndefinitelyNonNull(commandClient.hmget(buf(testKey), asList(buf("f"), buf("f1"), buf("f2"), buf("f3"), buf("f4"), buf("f5"), buf("f6"), buf("f7"), buf("f8"), buf("f9"), buf("f10"))));
+        final List<Buffer> values = awaitIndefinitelyNonNull(commandClient.hmget(buf(testKey), asList(buf("f"),
+                buf("f1"), buf("f2"), buf("f3"), buf("f4"), buf("f5"), buf("f6"), buf("f7"), buf("f8"), buf("f9"),
+                buf("f10"))));
         assertThat(values, is(fields.stream().map(fv -> fv.value).collect(toList())));
     }
 
@@ -317,16 +338,16 @@ public class BufferRedisCommanderTest extends BaseRedisClientTest {
         awaitIndefinitelyNonNull(commandClient.set(buf("1-score"), buf("1")));
         awaitIndefinitelyNonNull(commandClient.set(buf("1-ᕈгø⨯у"), buf("proxy")));
 
-        assertThat(awaitIndefinitelyNonNull(commandClient.sort(buf(testKey), buf("*-score"), new OffsetCount(0, 1), singletonList(buf("*-ᕈгø⨯у")), SortOrder.ASC, SortSorting.ALPHA)),
-                is(singletonList(buf("proxy"))));
-        assertThat(awaitIndefinitelyNonNull(commandClient.sort(buf(testKey), null, new OffsetCount(0, 1), singletonList(buf("*-ᕈгø⨯у")), SortOrder.ASC, SortSorting.ALPHA)),
-                is(singletonList(buf("proxy"))));
-        assertThat(awaitIndefinitelyNonNull(commandClient.sort(buf(testKey), null, null, singletonList(buf("*-ᕈгø⨯у")), SortOrder.ASC, SortSorting.ALPHA)),
-                is(singletonList(buf("proxy"))));
-        assertThat(awaitIndefinitelyNonNull(commandClient.sort(buf(testKey), null, null, singletonList(buf("*-ᕈгø⨯у")), null, SortSorting.ALPHA)),
-                is(singletonList(buf("proxy"))));
-        assertThat(awaitIndefinitelyNonNull(commandClient.sort(buf(testKey), null, null, singletonList(buf("*-ᕈгø⨯у")), null, null)),
-                is(singletonList(buf("proxy"))));
+        assertThat(awaitIndefinitelyNonNull(commandClient.sort(buf(testKey), buf("*-score"), new OffsetCount(0, 1),
+                singletonList(buf("*-ᕈгø⨯у")), SortOrder.ASC, SortSorting.ALPHA)), is(singletonList(buf("proxy"))));
+        assertThat(awaitIndefinitelyNonNull(commandClient.sort(buf(testKey), null, new OffsetCount(0, 1),
+                singletonList(buf("*-ᕈгø⨯у")), SortOrder.ASC, SortSorting.ALPHA)), is(singletonList(buf("proxy"))));
+        assertThat(awaitIndefinitelyNonNull(commandClient.sort(buf(testKey), null, null, singletonList(buf("*-ᕈгø⨯у")),
+                SortOrder.ASC, SortSorting.ALPHA)), is(singletonList(buf("proxy"))));
+        assertThat(awaitIndefinitelyNonNull(commandClient.sort(buf(testKey), null, null, singletonList(buf("*-ᕈгø⨯у")),
+                null, SortSorting.ALPHA)), is(singletonList(buf("proxy"))));
+        assertThat(awaitIndefinitelyNonNull(commandClient.sort(buf(testKey), null, null, singletonList(buf("*-ᕈгø⨯у")),
+                null, null)), is(singletonList(buf("proxy"))));
     }
 
     @Test
@@ -520,12 +541,14 @@ public class BufferRedisCommanderTest extends BaseRedisClientTest {
         assertThat(awaitIndefinitely(pubSubClient1.ping()).bufferValue(), is(EMPTY_BUFFER));
 
         // Subscribe to a pattern on the same connection
-        final PubSubBufferRedisConnection pubSubClient2 = awaitIndefinitely(pubSubClient1.psubscribe(key("channel-2*")));
+        final PubSubBufferRedisConnection pubSubClient2 = awaitIndefinitely(pubSubClient1.psubscribe(
+                key("channel-2*")));
         final AccumulatingSubscriber<PubSubRedisMessage> subscriber2 = new AccumulatingSubscriber<>();
         subscriber2.subscribe(pubSubClient2.messages());
 
         // Let's throw a wrench and psubscribe a second time to the same pattern
-        final PubSubBufferRedisConnection pubSubClient3 = awaitIndefinitely(pubSubClient1.psubscribe(key("channel-2*")));
+        final PubSubBufferRedisConnection pubSubClient3 = awaitIndefinitely(pubSubClient1.psubscribe(
+                key("channel-2*")));
         final AccumulatingSubscriber<PubSubRedisMessage> subscriber3 =
                 new AccumulatingSubscriber<PubSubRedisMessage>().subscribe(pubSubClient3.messages());
         assertThat(subscriber3.awaitTerminal(DEFAULT_TIMEOUT_SECONDS, SECONDS), is(true));

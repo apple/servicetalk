@@ -23,8 +23,6 @@ import org.junit.Test;
 import static io.servicetalk.buffer.api.ReadOnlyBufferAllocators.DEFAULT_RO_ALLOCATOR;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_0;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
-import static io.servicetalk.http.api.HttpProtocolVersion.getProtocolVersion;
-import static io.servicetalk.http.api.HttpProtocolVersion.newProtocolVersion;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertSame;
@@ -49,24 +47,24 @@ public class HttpProtocolVersionTest {
 
     @Test
     public void testFromMajorAndMinorReturnsConstants() {
-        assertSame(HTTP_1_1, getProtocolVersion(1, 1));
-        assertSame(HTTP_1_0, getProtocolVersion(1, 0));
+        assertSame(HTTP_1_1, HttpProtocolVersion.of(1, 1));
+        assertSame(HTTP_1_0, HttpProtocolVersion.of(1, 0));
     }
 
     @Test
     public void testFromBufferAlwaysCreateNewObject() {
-        final HttpProtocolVersion new11 = newProtocolVersion(DEFAULT_RO_ALLOCATOR.fromAscii("HTTP/1.1"));
+        final HttpProtocolVersion new11 = HttpProtocolVersion.of(DEFAULT_RO_ALLOCATOR.fromAscii("HTTP/1.1"));
         assertNotSame(HTTP_1_1, new11);
         assertEquals(HTTP_1_1, new11);
 
-        final HttpProtocolVersion new10 = newProtocolVersion(DEFAULT_RO_ALLOCATOR.fromAscii("HTTP/1.0"));
+        final HttpProtocolVersion new10 = HttpProtocolVersion.of(DEFAULT_RO_ALLOCATOR.fromAscii("HTTP/1.0"));
         assertNotSame(HTTP_1_0, new10);
         assertEquals(HTTP_1_0, new10);
     }
 
     @Test
     public void testCreateNewProtocolVersionFromMajorAndMinor() {
-        HttpProtocolVersion version98 = getProtocolVersion(9, 8);
+        HttpProtocolVersion version98 = HttpProtocolVersion.of(9, 8);
         assertEquals(9, version98.major());
         assertEquals(8, version98.minor());
         assertEquals("HTTP/9.8", version98.toString());
@@ -75,7 +73,7 @@ public class HttpProtocolVersionTest {
 
     @Test
     public void testCreateNewProtocolVersionFromBuffer() {
-        HttpProtocolVersion version98 = newProtocolVersion(DEFAULT_RO_ALLOCATOR.fromAscii("HTTP/9.8"));
+        HttpProtocolVersion version98 = HttpProtocolVersion.of(DEFAULT_RO_ALLOCATOR.fromAscii("HTTP/9.8"));
         assertEquals(9, version98.major());
         assertEquals(8, version98.minor());
         assertEquals("HTTP/9.8", version98.toString());
@@ -84,8 +82,8 @@ public class HttpProtocolVersionTest {
 
     @Test
     public void testFromMajorAndMinorAndFromBufferReturnEquals() {
-        HttpProtocolVersion fromMajorAndMinor = getProtocolVersion(7, 6);
-        HttpProtocolVersion fromBuffer = newProtocolVersion(DEFAULT_RO_ALLOCATOR.fromAscii("HTTP/7.6"));
+        HttpProtocolVersion fromMajorAndMinor = HttpProtocolVersion.of(7, 6);
+        HttpProtocolVersion fromBuffer = HttpProtocolVersion.of(DEFAULT_RO_ALLOCATOR.fromAscii("HTTP/7.6"));
 
         assertEquals(fromMajorAndMinor, fromBuffer);
         assertEquals(fromMajorAndMinor.hashCode(), fromBuffer.hashCode());
@@ -106,41 +104,41 @@ public class HttpProtocolVersionTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void testVersionIsTooSmall() {
-        newProtocolVersion(DEFAULT_RO_ALLOCATOR.fromAscii("1.0"));
+        HttpProtocolVersion.of(DEFAULT_RO_ALLOCATOR.fromAscii("1.0"));
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void testInvalidCharacterFound() {
-        newProtocolVersion(DEFAULT_RO_ALLOCATOR.fromAscii("HTTP/11.0"));
+        HttpProtocolVersion.of(DEFAULT_RO_ALLOCATOR.fromAscii("HTTP/11.0"));
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void testIllegalMajorVersion() {
-        newProtocolVersion(DEFAULT_RO_ALLOCATOR.fromAscii("HTTP/X.0"));
+        HttpProtocolVersion.of(DEFAULT_RO_ALLOCATOR.fromAscii("HTTP/X.0"));
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void testIllegalMinorVersion() {
-        newProtocolVersion(DEFAULT_RO_ALLOCATOR.fromAscii("HTTP/1.X"));
+        HttpProtocolVersion.of(DEFAULT_RO_ALLOCATOR.fromAscii("HTTP/1.X"));
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void testIllegalMajorVersionLT0() {
-        getProtocolVersion(-1, 0);
+        HttpProtocolVersion.of(-1, 0);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void testIllegalMajorVersionGT9() {
-        getProtocolVersion(10, 0);
+        HttpProtocolVersion.of(10, 0);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void testIllegalMinorVersionLT0() {
-        getProtocolVersion(1, -1);
+        HttpProtocolVersion.of(1, -1);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void testIllegalMinorVersionGT9() {
-        getProtocolVersion(1, 10);
+        HttpProtocolVersion.of(1, 10);
     }
 }

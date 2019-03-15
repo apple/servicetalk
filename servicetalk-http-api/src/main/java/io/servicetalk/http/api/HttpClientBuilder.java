@@ -303,7 +303,8 @@ abstract class HttpClientBuilder<U, R, SDE extends ServiceDiscovererEvent<R>> {
      * this {@link ServiceDiscoverer} is no longer needed.
      * @return {@code this}.
      */
-    public abstract HttpClientBuilder<U, R, SDE> serviceDiscoverer(ServiceDiscoverer<U, R, ? extends SDE> serviceDiscoverer);
+    public abstract HttpClientBuilder<U, R, SDE> serviceDiscoverer(
+            ServiceDiscoverer<U, R, ? extends SDE> serviceDiscoverer);
 
     /**
      * Set a {@link LoadBalancerFactory} to generate {@link LoadBalancer} objects.

@@ -92,7 +92,8 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
     @Rule
     public final ExpectedException thrown = ExpectedException.none();
     @Rule
-    public final LegacyMockedCompletableListenerRule completableListenerRule = new LegacyMockedCompletableListenerRule();
+    public final LegacyMockedCompletableListenerRule completableListenerRule =
+            new LegacyMockedCompletableListenerRule();
     private final StreamingHttpRequestResponseFactory reqRespFactory =
             new DefaultStreamingHttpRequestResponseFactory(DEFAULT_ALLOCATOR, INSTANCE);
 

@@ -97,9 +97,10 @@ class DefaultPartitionedHttpClientBuilder<U, R> extends PartitionedHttpClientBui
         final Publisher<? extends PartitionedServiceDiscovererEvent<R>> psdEvents =
                 (Publisher<? extends PartitionedServiceDiscovererEvent<R>>) buildContext.discover();
 
-        return assembler.apply(new DefaultPartitionedStreamingHttpClientFilter<>(psdEvents, serviceDiscoveryMaxQueueSize,
-                clientFactory, partitionAttributesBuilderFactory, buildContext.reqRespFactory,
-                buildContext.executionContext, partitionMapFactory), buildContext.executionStrategy());
+        return assembler.apply(new DefaultPartitionedStreamingHttpClientFilter<>(psdEvents,
+                serviceDiscoveryMaxQueueSize, clientFactory, partitionAttributesBuilderFactory,
+                buildContext.reqRespFactory, buildContext.executionContext, partitionMapFactory),
+                buildContext.executionStrategy());
     }
 
     private static final class DefaultPartitionedStreamingHttpClientFilter<U, R> extends StreamingHttpClientFilter {

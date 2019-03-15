@@ -15,22 +15,30 @@
  */
 package io.servicetalk.concurrent.api;
 
+import org.junit.Rule;
 import org.junit.Test;
 
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ThreadLocalRandom;
+
+import static io.servicetalk.concurrent.api.ExecutorRule.newRule;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
+import static java.util.Arrays.asList;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 public class CompletableMergeWithPublisherTest {
-
+    @Rule
+    public final ExecutorRule<Executor> executorRule = newRule();
     private final TestSubscription subscription = new TestSubscription();
     private final TestPublisher<String> publisher = new TestPublisher.Builder<String>()
             .disableAutoOnSubscribe().build();
@@ -201,5 +209,40 @@ public class CompletableMergeWithPublisherTest {
         publisher.onError(DELIBERATE_EXCEPTION);
         assertThat(subscriber.takeItems(), contains("one", "two"));
         assertThat(subscriber.takeError(), sameInstance(DELIBERATE_EXCEPTION));
+    }
+
+    @Test
+    public void offloadingWaitsForPublisherSignalsEvenIfCompletableTerminates() throws Exception {
+        TestCompletable completable = new TestCompletable.Builder().disableAutoOnSubscribe().build();
+        TestCancellable testCancellable = new TestCancellable();
+        CountDownLatch latch = new CountDownLatch(1);
+        toSource(completable.publishOn(executorRule.executor())
+                .merge(publisher.publishOn(executorRule.executor())).doAfterNext(item -> {
+            // The goal of this test is to have the Completable terminate, but have onNext signals from the Publisher be
+            // delayed on the Executor. Even in this case the merge operator should correctly sequence the onComplete to
+            // the downstream subscriber until after all the onNext events have completed.
+            try {
+                Thread.sleep(10);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }).doOnComplete(latch::countDown)).subscribe(subscriber);
+
+        publisher.onSubscribe(subscription);
+        final String[] values = new String[20];
+        for (int i = 0; i < values.length; ++i) {
+            values[i] = i + " " + ThreadLocalRandom.current().nextLong();
+        }
+        subscriber.request(values.length);
+        subscription.awaitRequestN(values.length);
+        publisher.onNext(values);
+        publisher.onComplete();
+
+        completable.onSubscribe(testCancellable);
+        completable.onComplete();
+
+        latch.await();
+        assertEquals(asList(values), subscriber.takeItems());
+        assertThat(subscriber.takeTerminal(), is(complete()));
     }
 }

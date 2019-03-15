@@ -36,7 +36,6 @@ import static io.servicetalk.http.api.HttpResponseStatus.NOT_MODIFIED;
 import static io.servicetalk.http.api.HttpResponseStatus.NO_CONTENT;
 import static io.servicetalk.http.api.HttpResponseStatus.SWITCHING_PROTOCOLS;
 import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.INFORMATIONAL_1XX;
-import static io.servicetalk.http.api.HttpResponseStatus.getResponseStatus;
 import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
 import static java.lang.Integer.parseInt;
 import static java.nio.charset.StandardCharsets.US_ASCII;
@@ -103,13 +102,13 @@ final class HttpResponseDecoder extends HttpObjectDecoder<HttpResponseMetaData> 
         // to integer and avoid String conversion and generic parseInt.
         if (statusCode.readableBytes() == 3) {
             final int medium = statusCode.getUnsignedMedium(statusCode.readerIndex());
-            return getResponseStatus(
+            return HttpResponseStatus.of(
                     toDecimal((medium & 0xff0000) >> 16) * 100 +
                             toDecimal((medium & 0xff00) >> 8) * 10 +
                             toDecimal(medium & 0xff),
                     newBufferFrom(reasonPhrase));
         } else {
-            return getResponseStatus(parseInt(statusCode.toString(US_ASCII)), newBufferFrom(reasonPhrase));
+            return HttpResponseStatus.of(parseInt(statusCode.toString(US_ASCII)), newBufferFrom(reasonPhrase));
         }
     }
 

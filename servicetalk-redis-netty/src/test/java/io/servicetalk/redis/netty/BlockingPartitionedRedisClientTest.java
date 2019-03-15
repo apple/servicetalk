@@ -148,7 +148,8 @@ public class BlockingPartitionedRedisClientTest extends AbstractPartitionedRedis
             @Override
             public Completable closeAsync() {
                 closedLatch.countDown();
-                // Don't actually close the client connection for this unit test ... because it is used in a static fashion.
+                // Don't actually close the client connection for this unit test ... because it is used in a static
+                // fashion.
                 return delegate.onClose();
             }
         };

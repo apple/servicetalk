@@ -26,7 +26,6 @@ import static io.servicetalk.http.api.HttpResponseStatus.NO_CONTENT;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.SERVER_ERROR_5XX;
 import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.SUCCESSFUL_2XX;
-import static io.servicetalk.http.api.HttpResponseStatus.getResponseStatus;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertSame;
@@ -35,14 +34,14 @@ public class HttpResponseStatusTest {
 
     @Test
     public void testGetResponseStatusReturnsConstant() {
-        assertSame(OK, getResponseStatus(200, DEFAULT_RO_ALLOCATOR.fromAscii("OK")));
-        assertSame(OK, getResponseStatus(200, EMPTY_BUFFER));
+        assertSame(OK, HttpResponseStatus.of(200, DEFAULT_RO_ALLOCATOR.fromAscii("OK")));
+        assertSame(OK, HttpResponseStatus.of(200, EMPTY_BUFFER));
     }
 
     @Test
     public void testGetResponseStatusReturnsNewInstance() {
         final HttpResponseStatus newStatusObject =
-                getResponseStatus(200, DEFAULT_RO_ALLOCATOR.fromAscii("YES"));
+                HttpResponseStatus.of(200, DEFAULT_RO_ALLOCATOR.fromAscii("YES"));
         assertNotSame(OK, newStatusObject);
         assertEquals(OK, newStatusObject);    // reasonPhrase is ignored according to RFC
     }
@@ -60,7 +59,8 @@ public class HttpResponseStatusTest {
 
     @Test
     public void testNewObject() {
-        final HttpResponseStatus status = getResponseStatus(590, DEFAULT_RO_ALLOCATOR.fromAscii("My Own Status Code"));
+        final HttpResponseStatus status = HttpResponseStatus.of(590, DEFAULT_RO_ALLOCATOR.fromAscii(
+                "My Own Status Code"));
 
         assertEquals(590, status.code());
         assertWriteCodeToBuffer(590, status);
@@ -83,11 +83,11 @@ public class HttpResponseStatusTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void test2DigitStatusCodeIsNotAllowed() {
-        getResponseStatus(99, DEFAULT_RO_ALLOCATOR.fromAscii("My Own Status Code"));
+        HttpResponseStatus.of(99, DEFAULT_RO_ALLOCATOR.fromAscii("My Own Status Code"));
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void test4DigitStatusCodeIsNotAllowed() {
-        getResponseStatus(1000, DEFAULT_RO_ALLOCATOR.fromAscii("My Own Status Code"));
+        HttpResponseStatus.of(1000, DEFAULT_RO_ALLOCATOR.fromAscii("My Own Status Code"));
     }
 }

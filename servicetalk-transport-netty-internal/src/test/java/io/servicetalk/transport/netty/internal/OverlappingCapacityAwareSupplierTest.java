@@ -149,13 +149,15 @@ public class OverlappingCapacityAwareSupplierTest {
         verifyNoMoreInteractions(supplier);
     }
 
-    private static void requestNAndVerify(OverlappingCapacityAwareSupplier supplier, int writeBufferCapacityInBytes, long expectedRequestN) {
+    private static void requestNAndVerify(OverlappingCapacityAwareSupplier supplier, int writeBufferCapacityInBytes,
+                                          long expectedRequestN) {
         long requestN = supplier.requestNFor(writeBufferCapacityInBytes);
         assertThat("Unexpected requestN", requestN, is(expectedRequestN));
     }
 
     private static OverlappingCapacityAwareSupplier newSupplier(LongSupplier requestNSupplier) {
-        OverlappingCapacityAwareSupplier mock = mock(OverlappingCapacityAwareSupplier.class, withSettings().useConstructor());
+        OverlappingCapacityAwareSupplier mock = mock(OverlappingCapacityAwareSupplier.class,
+                withSettings().useConstructor());
         when(mock.getRequestNForCapacity(anyLong())).thenAnswer(invocation -> requestNSupplier.getAsLong());
         return mock;
     }

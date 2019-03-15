@@ -57,16 +57,19 @@ abstract class BaseSingleAddressHttpClientBuilder<U, R, SDE extends ServiceDisco
     public abstract BaseSingleAddressHttpClientBuilder<U, R, SDE> maxHeaderSize(int maxHeaderSize);
 
     @Override
-    public abstract BaseSingleAddressHttpClientBuilder<U, R, SDE> headersEncodedSizeEstimate(int headersEncodedSizeEstimate);
+    public abstract BaseSingleAddressHttpClientBuilder<U, R, SDE> headersEncodedSizeEstimate(
+            int headersEncodedSizeEstimate);
 
     @Override
-    public abstract BaseSingleAddressHttpClientBuilder<U, R, SDE> trailersEncodedSizeEstimate(int trailersEncodedSizeEstimate);
+    public abstract BaseSingleAddressHttpClientBuilder<U, R, SDE> trailersEncodedSizeEstimate(
+            int trailersEncodedSizeEstimate);
 
     @Override
     public abstract BaseSingleAddressHttpClientBuilder<U, R, SDE> maxPipelinedRequests(int maxPipelinedRequests);
 
     @Override
-    public abstract BaseSingleAddressHttpClientBuilder<U, R, SDE> appendConnectionFilter(HttpConnectionFilterFactory factory);
+    public abstract BaseSingleAddressHttpClientBuilder<U, R, SDE> appendConnectionFilter(
+            HttpConnectionFilterFactory factory);
 
     @Override
     public BaseSingleAddressHttpClientBuilder<U, R, SDE> appendConnectionFilter(

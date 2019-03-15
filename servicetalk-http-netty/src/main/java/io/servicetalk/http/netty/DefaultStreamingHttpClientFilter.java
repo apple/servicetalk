@@ -45,7 +45,8 @@ final class DefaultStreamingHttpClientFilter extends StreamingHttpClientFilter {
     private final ExecutionContext executionContext;
     private final LoadBalancer<LoadBalancedStreamingHttpConnectionFilter> loadBalancer;
 
-    DefaultStreamingHttpClientFilter(final ExecutionContext executionContext, final HttpExecutionStrategy executionStrategy,
+    DefaultStreamingHttpClientFilter(final ExecutionContext executionContext,
+                                     final HttpExecutionStrategy executionStrategy,
                                      final LoadBalancer<LoadBalancedStreamingHttpConnectionFilter> loadBalancer,
                                      final StreamingHttpRequestResponseFactory reqRespFactory) {
         super(terminal(reqRespFactory));

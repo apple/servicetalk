@@ -112,12 +112,15 @@ public class RedisCommanderTest extends BaseRedisClientTest {
         assertThat(awaitIndefinitely(commandClient.get("missing-key")), is(nullValue()));
         assertThat(awaitIndefinitely(commandClient.set(key("a-key"), "a-value1")), is("OK"));
         assertThat(awaitIndefinitely(commandClient.get(key("a-key"))), is("a-value1"));
-        assertThat(awaitIndefinitely(commandClient.set(key("a-key"), "a-value2", new ExpireDuration(EX, 10L), null)), is("OK"));
+        assertThat(awaitIndefinitely(commandClient.set(key("a-key"), "a-value2", new ExpireDuration(EX, 10L), null)),
+                is("OK"));
         assertThat(awaitIndefinitely(commandClient.get(key("a-key"))), is("a-value2"));
 
-        assertThat(awaitIndefinitely(commandClient.set(key("exp-key"), "exp-value", null, NX)), is(anyOf(nullValue(), equalTo("OK"))));
+        assertThat(awaitIndefinitely(commandClient.set(key("exp-key"), "exp-value", null, NX)), is(anyOf(nullValue(),
+                equalTo("OK"))));
 
-        assertThat(awaitIndefinitely(commandClient.zadd(key("a-zset"), null, null, 1, "one")), is(either(equalTo(0L)).or(equalTo(1L))));
+        assertThat(awaitIndefinitely(commandClient.zadd(key("a-zset"), null, null, 1, "one")),
+                is(either(equalTo(0L)).or(equalTo(1L))));
         assertThat(awaitIndefinitely(commandClient.zrank(key("a-zset"), "one")), is(0L));
         assertThat(awaitIndefinitely(commandClient.zrank("missing-key", "missing-member")), is(nullValue()));
         if (getEnv().serverVersion[0] >= 3) {
@@ -129,10 +132,12 @@ public class RedisCommanderTest extends BaseRedisClientTest {
 
         assertThat(awaitIndefinitely(commandClient.blpop(singletonList("missing-key"), 1)), is(nullValue()));
 
-        assertThat(awaitIndefinitely(commandClient.sadd(key("a-set-1"), "a", "b", "c").concatWith(commandClient.sadd(key("a-set-2"), "c", "d", "e"))),
-                contains(greaterThanOrEqualTo(0L), greaterThanOrEqualTo(0L)));
-        assertThat(awaitIndefinitely(commandClient.sdiff(key("a-set-1"), key("a-set-2"), "missing-key")), containsInAnyOrder("a", "b"));
-        assertThat(awaitIndefinitely(commandClient.sdiffstore(key("diff"), key("a-set-1"), key("a-set-2"), "missing-key")), is(2L));
+        assertThat(awaitIndefinitely(commandClient.sadd(key("a-set-1"), "a", "b", "c").concatWith(commandClient.sadd(
+                key("a-set-2"), "c", "d", "e"))), contains(greaterThanOrEqualTo(0L), greaterThanOrEqualTo(0L)));
+        assertThat(awaitIndefinitely(commandClient.sdiff(key("a-set-1"), key("a-set-2"), "missing-key")),
+                containsInAnyOrder("a", "b"));
+        assertThat(awaitIndefinitely(commandClient.sdiffstore(key("diff"), key("a-set-1"), key("a-set-2"),
+                "missing-key")), is(2L));
     }
 
     @Test
@@ -155,7 +160,8 @@ public class RedisCommanderTest extends BaseRedisClientTest {
     @Test
     public void argumentVariants() throws Exception {
         assertThat(awaitIndefinitely(commandClient.mset(key("key0"), "val0")), is("OK"));
-        assertThat(awaitIndefinitely(commandClient.mset(key("key1"), "val1", key("key2"), "val2", key("key3"), "val3")), is("OK"));
+        assertThat(awaitIndefinitely(commandClient.mset(key("key1"), "val1", key("key2"), "val2", key("key3"), "val3")),
+                is("OK"));
 
         final List<KeyValue> keyValues = IntStream.range(4, 10)
                 .mapToObj(i -> new KeyValue(key("key" + i), "val" + i))
@@ -163,7 +169,8 @@ public class RedisCommanderTest extends BaseRedisClientTest {
         assertThat(awaitIndefinitely(commandClient.mset(keyValues)), is("OK"));
 
         assertThat(awaitIndefinitely(commandClient.mget(key("key0"))), contains("val0"));
-        assertThat(awaitIndefinitely(commandClient.mget(key("key1"), key("key2"), key("key3"))), contains("val1", "val2", "val3"));
+        assertThat(awaitIndefinitely(commandClient.mget(key("key1"), key("key2"), key("key3"))),
+                contains("val1", "val2", "val3"));
 
         final List<String> keys = keyValues.stream().map(kv -> kv.key.toString()).collect(toList());
         final List<String> expectedValues = keyValues.stream().map(kv -> kv.value.toString()).collect(toList());
@@ -183,7 +190,8 @@ public class RedisCommanderTest extends BaseRedisClientTest {
 
         awaitIndefinitely(commandClient.del(key("bf")));
 
-        List<Long> results = awaitIndefinitely(commandClient.bitfield(key("bf"), asList(new Incrby(I05, 100L, 1L), new Get(U04, 0L))));
+        List<Long> results = awaitIndefinitely(commandClient.bitfield(key("bf"), asList(new Incrby(I05, 100L, 1L),
+                new Get(U04, 0L))));
         assertThat(results, contains(1L, 0L));
 
         results.clear();
@@ -195,7 +203,8 @@ public class RedisCommanderTest extends BaseRedisClientTest {
         }
         assertThat(results, contains(1L, 1L, 2L, 2L, 3L, 3L, 0L, 3L));
 
-        results = awaitIndefinitely(commandClient.bitfield(key("bf"), asList(new Overflow(FAIL), new Incrby(U02, 102L, 1L))));
+        results = awaitIndefinitely(commandClient.bitfield(key("bf"), asList(new Overflow(FAIL),
+                new Incrby(U02, 102L, 1L))));
         assertThat(results, contains(nullValue()));
 
         awaitIndefinitely(commandClient.del(key("bf")));
@@ -233,17 +242,20 @@ public class RedisCommanderTest extends BaseRedisClientTest {
         // Disable these tests for Redis 2 and below
         assumeThat(getEnv().serverVersion[0], is(greaterThanOrEqualTo(3)));
 
-        assertThat(awaitIndefinitely(commandClient.zrem(key("Sicily"), asList("Palermo", "Catania"))), is(lessThanOrEqualTo(2L)));
+        assertThat(awaitIndefinitely(commandClient.zrem(key("Sicily"), asList("Palermo", "Catania"))),
+                is(lessThanOrEqualTo(2L)));
 
         final Long geoaddLong = awaitIndefinitely(commandClient.geoadd(key("Sicily"),
                 asList(new LongitudeLatitudeMember(13.361389d, 38.115556d, "Palermo"),
                         new LongitudeLatitudeMember(15.087269d, 37.502669d, "Catania"))));
         assertThat(geoaddLong, is(2L));
 
-        final List<String> georadiusBuffers = awaitIndefinitely(commandClient.georadius(key("Sicily"), 15d, 37d, 200d, KM));
+        final List<String> georadiusBuffers = awaitIndefinitely(commandClient.georadius(key("Sicily"), 15d, 37d, 200d,
+                KM));
         assertThat(georadiusBuffers, contains("Palermo", "Catania"));
 
-        final List georadiusMixedList = awaitIndefinitely(commandClient.georadius(key("Sicily"), 15d, 37d, 200d, KM, WITHCOORD, WITHDIST, null, 5L, ASC, null, null));
+        final List georadiusMixedList = awaitIndefinitely(commandClient.georadius(key("Sicily"), 15d, 37d, 200d, KM,
+                WITHCOORD, WITHDIST, null, 5L, ASC, null, null));
         final Matcher georadiusResponseMatcher = contains(
                 contains(is("Catania"), startsWith("56."), contains(startsWith("15."), startsWith("37."))),
                 contains(is("Palermo"), startsWith("190."), contains(startsWith("13."), startsWith("38."))));
@@ -252,11 +264,12 @@ public class RedisCommanderTest extends BaseRedisClientTest {
         assertThat(awaitIndefinitely(commandClient.geodist(key("Sicily"), "Palermo", "Catania")), is(greaterThan(0d)));
         assertThat(awaitIndefinitely(commandClient.geodist(key("Sicily"), "foo", "bar")), is(nullValue()));
 
-        assertThat(awaitIndefinitely(commandClient.geopos(key("Sicily"), "Palermo", "NonExisting", "Catania")), contains(
-                contains(startsWith("13."), startsWith("38.")), is(nullValue()), contains(startsWith("15."), startsWith("37."))));
+        assertThat(awaitIndefinitely(commandClient.geopos(key("Sicily"), "Palermo", "NonExisting", "Catania")),
+                contains(contains(startsWith("13."), startsWith("38.")), is(nullValue()), contains(startsWith("15."),
+                        startsWith("37."))));
 
-        final List<String> evalBuffers = awaitIndefinitely(commandClient.evalList("return {KEYS[1],KEYS[2],ARGV[1],ARGV[2]}",
-                2L, asList("key1", "key2"), asList("first", "second")));
+        final List<String> evalBuffers = awaitIndefinitely(commandClient.evalList(
+                "return {KEYS[1],KEYS[2],ARGV[1],ARGV[2]}", 2L, asList("key1", "key2"), asList("first", "second")));
         assertThat(evalBuffers, contains("key1", "key2", "first", "second"));
 
         final String evalChars = awaitIndefinitely(commandClient.eval("return redis.call('set','foo','bar')",
@@ -266,7 +279,8 @@ public class RedisCommanderTest extends BaseRedisClientTest {
         final Long evalLong = awaitIndefinitely(commandClient.evalLong("return 10", 0L, emptyList(), emptyList()));
         assertThat(evalLong, is(10L));
 
-        final List<?> evalMixedList = awaitIndefinitely(commandClient.evalList("return {1,2,{3,'four'}}", 0L, emptyList(), emptyList()));
+        final List<?> evalMixedList = awaitIndefinitely(commandClient.evalList("return {1,2,{3,'four'}}", 0L,
+                emptyList(), emptyList()));
         assertThat(evalMixedList, contains(1L, 2L, asList(3L, "four")));
     }
 
@@ -302,7 +316,8 @@ public class RedisCommanderTest extends BaseRedisClientTest {
         fields.add(new FieldValue("f9", "v9"));
         fields.add(new FieldValue("f10", "v10"));
         awaitIndefinitelyNonNull(commandClient.hmset(testKey, fields));
-        final List<String> values = awaitIndefinitelyNonNull(commandClient.hmget(testKey, asList("f", "f1", "f2", "f3", "f4", "f5", "f6", "f7", "f8", "f9", "f10")));
+        final List<String> values = awaitIndefinitelyNonNull(commandClient.hmget(testKey, asList("f", "f1", "f2", "f3",
+                "f4", "f5", "f6", "f7", "f8", "f9", "f10")));
         assertThat(values, is(fields.stream().map(fv -> fv.value).collect(toList())));
     }
 
@@ -314,16 +329,16 @@ public class RedisCommanderTest extends BaseRedisClientTest {
         awaitIndefinitelyNonNull(commandClient.set("1-score", "1"));
         awaitIndefinitelyNonNull(commandClient.set("1-ᕈгø⨯у", "proxy"));
 
-        assertThat(awaitIndefinitelyNonNull(commandClient.sort(testKey, "*-score", new OffsetCount(0, 1), singletonList("*-ᕈгø⨯у"), SortOrder.ASC, SortSorting.ALPHA)),
-                is(singletonList("proxy")));
-        assertThat(awaitIndefinitelyNonNull(commandClient.sort(testKey, null, new OffsetCount(0, 1), singletonList("*-ᕈгø⨯у"), SortOrder.ASC, SortSorting.ALPHA)),
-                is(singletonList("proxy")));
-        assertThat(awaitIndefinitelyNonNull(commandClient.sort(testKey, null, null, singletonList("*-ᕈгø⨯у"), SortOrder.ASC, SortSorting.ALPHA)),
-                is(singletonList("proxy")));
-        assertThat(awaitIndefinitelyNonNull(commandClient.sort(testKey, null, null, singletonList("*-ᕈгø⨯у"), null, SortSorting.ALPHA)),
-                is(singletonList("proxy")));
-        assertThat(awaitIndefinitelyNonNull(commandClient.sort(testKey, null, null, singletonList("*-ᕈгø⨯у"), null, null)),
-                is(singletonList("proxy")));
+        assertThat(awaitIndefinitelyNonNull(commandClient.sort(testKey, "*-score", new OffsetCount(0, 1),
+                singletonList("*-ᕈгø⨯у"), SortOrder.ASC, SortSorting.ALPHA)), is(singletonList("proxy")));
+        assertThat(awaitIndefinitelyNonNull(commandClient.sort(testKey, null, new OffsetCount(0, 1),
+                singletonList("*-ᕈгø⨯у"), SortOrder.ASC, SortSorting.ALPHA)), is(singletonList("proxy")));
+        assertThat(awaitIndefinitelyNonNull(commandClient.sort(testKey, null, null, singletonList("*-ᕈгø⨯у"),
+                SortOrder.ASC, SortSorting.ALPHA)), is(singletonList("proxy")));
+        assertThat(awaitIndefinitelyNonNull(commandClient.sort(testKey, null, null, singletonList("*-ᕈгø⨯у"),
+                null, SortSorting.ALPHA)), is(singletonList("proxy")));
+        assertThat(awaitIndefinitelyNonNull(commandClient.sort(testKey, null, null, singletonList("*-ᕈгø⨯у"),
+                null, null)), is(singletonList("proxy")));
     }
 
     @Test
@@ -543,7 +558,8 @@ public class RedisCommanderTest extends BaseRedisClientTest {
         assertThat(subscriber2.awaitUntilAtLeastNReceived(1, DEFAULT_TIMEOUT_SECONDS, SECONDS), is(true));
         final PubSubRedisMessage next2 = subscriber2.received().poll();
         assertThat(next2, instanceOf(PubSubRedisMessage.PatternPubSubRedisMessage.class));
-        final PubSubRedisMessage.PatternPubSubRedisMessage patternMessage = (PubSubRedisMessage.PatternPubSubRedisMessage) next2;
+        final PubSubRedisMessage.PatternPubSubRedisMessage patternMessage =
+                (PubSubRedisMessage.PatternPubSubRedisMessage) next2;
         assertThat(patternMessage.channel(), equalTo(key("channel-202")));
         assertThat(patternMessage.pattern(), equalTo(key("channel-2*")));
         assertThat(patternMessage.charSequenceValue(), equalTo("test-message"));

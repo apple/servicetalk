@@ -91,7 +91,8 @@ public class HttpPredicateRouterBuilderQueryTest extends BaseHttpPredicateRouter
     @Test
     public void testWhenQueryParamFirstValueMatchesPattern() {
         final StreamingHttpService service = new HttpPredicateRouterBuilder()
-                .whenQueryParam("page").firstValueMatches(Pattern.compile("sign.*", CASE_INSENSITIVE)).thenRouteTo(serviceA)
+                .whenQueryParam("page").firstValueMatches(Pattern.compile("sign.*", CASE_INSENSITIVE))
+                .thenRouteTo(serviceA)
                 .when((ctx, req) -> true).thenRouteTo(fallbackService)
                 .buildStreaming();
 
