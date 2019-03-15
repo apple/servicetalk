@@ -45,7 +45,8 @@ public abstract class BlockingStreamingHttpClient extends BlockingStreamingHttpR
      * @return a {@link ReservedBlockingStreamingHttpConnection}.
      * @throws Exception if a exception occurs during the reservation process.
      */
-    public final ReservedBlockingStreamingHttpConnection reserveConnection(HttpRequestMetaData metaData) throws Exception {
+    public final ReservedBlockingStreamingHttpConnection reserveConnection(HttpRequestMetaData metaData)
+            throws Exception {
         return reserveConnection(executionStrategy(), metaData);
     }
 

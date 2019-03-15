@@ -172,8 +172,8 @@ public class DefaultSerializerSerializationTest {
 
     @Test
     public void applySerializationForIterableWithTypeAndEstimator() {
-        final Iterable<Buffer> buffers = factory.serialize(asList("Hello1", "Hello2"), allocator, String.class, sizeEstimator
-        );
+        final Iterable<Buffer> buffers = factory.serialize(asList("Hello1", "Hello2"), allocator, String.class,
+                sizeEstimator);
         verify(provider).getSerializer(String.class);
         assertThat("Unexpected created buffers.", createdBuffers, hasSize(2));
         verify(serializer).serialize("Hello1", createdBuffers.get(0));

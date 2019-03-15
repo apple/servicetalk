@@ -91,7 +91,8 @@ public class HttpPredicateRouterBuilderHeaderTest extends BaseHttpPredicateRoute
     @Test
     public void testWhenHeaderFirstValueMatchesPattern() {
         final StreamingHttpService service = new HttpPredicateRouterBuilder()
-                .whenHeader("host").firstValueMatches(Pattern.compile("127\\..*", CASE_INSENSITIVE)).thenRouteTo(serviceA)
+                .whenHeader("host").firstValueMatches(Pattern.compile("127\\..*", CASE_INSENSITIVE))
+                .thenRouteTo(serviceA)
                 .when((ctx, req) -> true).thenRouteTo(fallbackService)
                 .buildStreaming();
 

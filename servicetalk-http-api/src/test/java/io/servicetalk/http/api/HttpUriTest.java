@@ -741,7 +741,8 @@ public class HttpUriTest {
         new HttpUri("/path?param=value", () -> ":8080");
     }
 
-    private static void verifyAppleString(final HttpUri hp, final boolean isSsl, final int port, @Nullable final String userInfo) {
+    private static void verifyAppleString(final HttpUri hp, final boolean isSsl, final int port,
+                                          @Nullable final String userInfo) {
         assertEquals(isSsl ? HTTPS_SCHEME : HTTP_SCHEME, hp.scheme());
         assertEquals(userInfo, hp.userInfo());
         assertEquals("apple.com:8080", hp.hostHeader());

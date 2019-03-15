@@ -464,7 +464,8 @@ public class DefaultNettyConnectionTest {
         // Exception should NOT be of type CloseEventObservedException
         assertThat(exCaptor.getValue(), instanceOf(ClosedChannelException.class));
         assertThat(exCaptor.getValue().getCause(), nullValue());
-        assertThat(exCaptor.getValue().getStackTrace()[0].getClassName(), equalTo(DefaultNettyConnection.class.getName()));
+        assertThat(exCaptor.getValue().getStackTrace()[0].getClassName(),
+                equalTo(DefaultNettyConnection.class.getName()));
     }
 
     @Test

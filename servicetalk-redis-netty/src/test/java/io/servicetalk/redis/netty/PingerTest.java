@@ -214,7 +214,8 @@ public class PingerTest {
                 .andThen((channel, context) -> {
                     channel.pipeline().addFirst(new ChannelOutboundHandlerAdapter() {
                         @Override
-                        public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
+                        public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise)
+                                throws Exception {
                             if (msg instanceof ByteBuf) {
                                 String cmd = ((ByteBuf) msg).toString(StandardCharsets.UTF_8);
                                 Command command = null;

@@ -45,8 +45,8 @@ final class RedoPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
                          AsyncContextProvider contextProvider) {
         // For the current subscribe operation we want to use contextMap directly, but in the event a re-subscribe
         // operation occurs we want to restore the original state of the AsyncContext map, so we save a copy upfront.
-        original.delegateSubscribe(new RedoSubscriber<>(new SequentialSubscription(), 0, subscriber,
-                contextMap.copy(), contextProvider, this, signalOffloader), signalOffloader, contextMap, contextProvider);
+        original.delegateSubscribe(new RedoSubscriber<>(new SequentialSubscription(), 0, subscriber, contextMap.copy(),
+                contextProvider, this, signalOffloader), signalOffloader, contextMap, contextProvider);
     }
 
     abstract static class AbstractRedoSubscriber<T> implements Subscriber<T> {

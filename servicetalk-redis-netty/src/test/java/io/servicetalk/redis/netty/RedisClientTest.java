@@ -253,7 +253,8 @@ public class RedisClientTest extends BaseRedisClientTest {
         Buffer reqBuf = getEnv().client.executionContext().bufferAllocator().newBuffer(33);
         reqBuf.writeAscii("*2\r\n$6\r\nFOOBAR\r\n$12\r\nbufreq-pong1\r\n");
 
-        // We use PING to build the request object, which doesn't matter here: FOOBAR is the actual command sent on the wire
+        // We use PING to build the request object, which doesn't matter here: FOOBAR is the actual command sent on the
+        // wire
         assertThat(awaitIndefinitely(getEnv().client.request(newRequest(PING, reqBuf)).firstOrError()),
                 is(redisError(startsWith("ERR"))));
     }
