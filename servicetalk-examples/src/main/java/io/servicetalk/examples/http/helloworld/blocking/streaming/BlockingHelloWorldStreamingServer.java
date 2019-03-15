@@ -15,21 +15,20 @@
  */
 package io.servicetalk.examples.http.helloworld.blocking.streaming;
 
-import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.http.api.HttpPayloadWriter;
 import io.servicetalk.http.netty.HttpServers;
+
+import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
 
 public final class BlockingHelloWorldStreamingServer {
 
     public static void main(String[] args) throws Exception {
         HttpServers.forPort(8080).listenBlockingStreamingAndAwait((ctx, request, response) -> {
-            try (HttpPayloadWriter<Buffer> payloadWriter = response.sendMetaData()) {
-                payloadWriter.write(ctx.executionContext().bufferAllocator().fromAscii("Hello"));
-                payloadWriter.write(ctx.executionContext().bufferAllocator().fromAscii("World"));
-                payloadWriter.flush();
-
-                payloadWriter.write(ctx.executionContext().bufferAllocator().fromAscii("From"));
-                payloadWriter.write(ctx.executionContext().bufferAllocator().fromAscii("ServiceTalk"));
+            try (HttpPayloadWriter<String> payloadWriter = response.sendMetaData(textSerializer())) {
+                payloadWriter.write("Hello\n");
+                payloadWriter.write("World\n");
+                payloadWriter.write("From\n");
+                payloadWriter.write("ServiceTalk\n");
             }
         }).awaitShutdown();
     }

@@ -16,7 +16,6 @@
 package io.servicetalk.examples.http.serialization.blocking.streaming;
 
 import io.servicetalk.concurrent.BlockingIterable;
-import io.servicetalk.concurrent.BlockingIterator;
 import io.servicetalk.data.jackson.JacksonSerializationProvider;
 import io.servicetalk.examples.http.serialization.CreatePojoRequest;
 import io.servicetalk.examples.http.serialization.PojoResponse;
@@ -28,12 +27,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static io.servicetalk.http.api.HttpHeaderNames.ALLOW;
 import static io.servicetalk.http.api.HttpRequestMethod.POST;
-import static io.servicetalk.http.api.HttpResponseStatus.BAD_REQUEST;
 import static io.servicetalk.http.api.HttpResponseStatus.CREATED;
 import static io.servicetalk.http.api.HttpResponseStatus.METHOD_NOT_ALLOWED;
 import static io.servicetalk.http.api.HttpResponseStatus.NOT_FOUND;
 import static io.servicetalk.http.api.HttpSerializationProviders.jsonSerializer;
-import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
 
 public final class BlockingPojoStreamingServer {
 
@@ -60,29 +57,13 @@ public final class BlockingPojoStreamingServer {
                     BlockingIterable<CreatePojoRequest> values = request
                             .payloadBody(serializer.deserializerFor(CreatePojoRequest.class));
 
-                    HttpPayloadWriter<PojoResponse> writer = null;
+                    response.status(CREATED);
+                    try (HttpPayloadWriter<PojoResponse> writer = response.sendMetaData(
+                            serializer.serializerFor(PojoResponse.class))) {
 
-                    try (BlockingIterator<CreatePojoRequest> iterator = values.iterator()) {
-                        while (iterator.hasNext()) {
-                            CreatePojoRequest req = iterator.next();
-                            if (req != null) {
-                                if (writer == null) {
-                                    writer = response.status(CREATED)
-                                            .sendMetaData(serializer.serializerFor(PojoResponse.class));
-                                }
-                                writer.write(new PojoResponse(ID_GENERATOR.getAndIncrement(), req.getValue()));
-                            }
+                        for (CreatePojoRequest req : values) {
+                            writer.write(new PojoResponse(ID_GENERATOR.getAndIncrement(), req.getValue()));
                         }
-                    }
-
-                    if (writer == null) {
-                        HttpPayloadWriter<String> badRequestWriter = response.status(BAD_REQUEST)
-                                .sendMetaData(textSerializer());
-
-                        badRequestWriter.write("Non-empty request expected");
-                        badRequestWriter.close();
-                    } else {
-                        writer.close();
                     }
                 })
                 .awaitShutdown();

@@ -21,10 +21,8 @@ import io.servicetalk.concurrent.api.CompletableProcessor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.SingleProcessor;
 import io.servicetalk.concurrent.api.internal.ConnectablePayloadWriter;
-import io.servicetalk.concurrent.internal.ThreadInterruptingCancellable;
 
 import java.io.IOException;
-import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 import static io.servicetalk.concurrent.api.Single.success;
 import static io.servicetalk.http.api.StreamingHttpResponses.newResponseWithTrailers;
@@ -32,27 +30,20 @@ import static java.util.Objects.requireNonNull;
 
 final class DefaultBlockingStreamingHttpServerResponse extends BlockingStreamingHttpServerResponse {
 
-    private static final AtomicIntegerFieldUpdater<DefaultBlockingStreamingHttpServerResponse> sentUpdater =
-            AtomicIntegerFieldUpdater.newUpdater(DefaultBlockingStreamingHttpServerResponse.class, "sent");
-
-    @SuppressWarnings("unused")
-    private volatile int sent;
+    private boolean sent;
     private final HttpHeaders trailers;
     private final BufferAllocator allocator;
     private final SingleProcessor<StreamingHttpResponse> responseProcessor;
-    private final ThreadInterruptingCancellable tiCancellable;
     private final CompletableProcessor payloadProcessor = new CompletableProcessor();
 
     DefaultBlockingStreamingHttpServerResponse(final HttpResponseStatus status, final HttpProtocolVersion version,
                                                final HttpHeaders headers, final HttpHeaders trailers,
                                                final BufferAllocator allocator,
-                                               final SingleProcessor<StreamingHttpResponse> responseProcessor,
-                                               final ThreadInterruptingCancellable tiCancellable) {
+                                               final SingleProcessor<StreamingHttpResponse> responseProcessor) {
         super(status, version, headers, allocator);
         this.trailers = requireNonNull(trailers);
         this.allocator = requireNonNull(allocator);
         this.responseProcessor = requireNonNull(responseProcessor);
-        this.tiCancellable = requireNonNull(tiCancellable);
     }
 
     @Override
@@ -116,7 +107,7 @@ final class DefaultBlockingStreamingHttpServerResponse extends BlockingStreaming
     }
 
     private void checkSent() {
-        if (sent != 0) {
+        if (sent) {
             throwSent();
         }
     }
@@ -129,7 +120,7 @@ final class DefaultBlockingStreamingHttpServerResponse extends BlockingStreaming
 
     @Override
     public HttpPayloadWriter<Buffer> sendMetaData() {
-        if (!sentUpdater.compareAndSet(this, 0, 1)) {
+        if (sent) {
             throwSent();
         }
 
@@ -140,8 +131,8 @@ final class DefaultBlockingStreamingHttpServerResponse extends BlockingStreaming
 
         final StreamingHttpResponse response = newResponseWithTrailers(status(), version(), headers(), allocator,
                 payloadBodyAndTrailers);
-        tiCancellable.setDone();
         responseProcessor.onSuccess(response);
+        sent = true;
         return pw;
     }
 
@@ -168,8 +159,11 @@ final class DefaultBlockingStreamingHttpServerResponse extends BlockingStreaming
 
         @Override
         public void close() throws IOException {
-            payloadWriter.close();
-            payloadProcessor.onComplete();
+            try {
+                payloadWriter.close();
+            } finally {
+                payloadProcessor.onComplete();
+            }
         }
 
         @Override

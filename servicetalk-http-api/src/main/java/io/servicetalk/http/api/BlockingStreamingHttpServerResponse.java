@@ -18,7 +18,6 @@ package io.servicetalk.http.api;
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
 
-import java.io.IOException;
 import java.io.OutputStream;
 
 import static java.util.Objects.requireNonNull;
@@ -40,23 +39,19 @@ public abstract class BlockingStreamingHttpServerResponse extends DefaultHttpRes
      * @param headers an {@link HttpHeaders} object for headers
      * @param allocator a {@link BufferAllocator} to use for {@link #sendMetaData(HttpSerializer)}
      */
-    protected BlockingStreamingHttpServerResponse(final HttpResponseStatus status,
-                                                  final HttpProtocolVersion version,
-                                                  final HttpHeaders headers,
-                                                  final BufferAllocator allocator) {
+    BlockingStreamingHttpServerResponse(final HttpResponseStatus status,
+                                        final HttpProtocolVersion version,
+                                        final HttpHeaders headers,
+                                        final BufferAllocator allocator) {
         super(status, version, headers);
         this.allocator = requireNonNull(allocator);
     }
 
     /**
      * Sends the {@link HttpResponseMetaData} to the client and returns an {@link HttpPayloadWriter} to continue writing
-     * a payload body.
+     * the payload body.
      * <p>
-     * Either this method or {@link #sendMetaData(HttpSerializer)}, or {@link #sendMetaDataOutputStream()} may be called
-     * to write the body, not both.
-     * <p>
-     * <b>Note:</b> calling this method will not allow you to change {@link HttpResponseMetaData} of this response
-     * object. Invocation of any {@link HttpResponseMetaData} methods will throw {@link IllegalStateException}.
+     * <b>Note:</b> calling any other method on this class after calling this method is not allowed.
      *
      * @return {@link HttpPayloadWriter} to write a payload body
      * @throws IllegalStateException if one of the {@code sendMetaData*} methods has been called on this response
@@ -67,11 +62,7 @@ public abstract class BlockingStreamingHttpServerResponse extends DefaultHttpRes
      * Sends the {@link HttpResponseMetaData} to the client and returns an {@link HttpPayloadWriter} of type {@link T}
      * to continue writing a payload body. Each element will be serialized using provided {@code serializer}.
      * <p>
-     * Either this method or {@link #sendMetaData()}, or {@link #sendMetaDataOutputStream()} may be called
-     * to write the body, not both.
-     * <p>
-     * <b>Note:</b> calling this method will not allow you to change {@link HttpResponseMetaData} of this response
-     * object. Invocation of any {@link HttpResponseMetaData} methods will throw {@link IllegalStateException}.
+     * <b>Note:</b> calling any other method on this class after calling this method is not allowed.
      *
      * @param serializer used to serialize the payload elements
      * @param <T> the type of objects to write
@@ -86,11 +77,7 @@ public abstract class BlockingStreamingHttpServerResponse extends DefaultHttpRes
      * Sends the {@link HttpResponseMetaData} to the client and returns an {@link OutputStream} to continue writing a
      * payload body.
      * <p>
-     * Either this method or {@link #sendMetaData()}, or {@link #sendMetaData(HttpSerializer)} may be called
-     * to write the body, not both.
-     * <p>
-     * <b>Note:</b> calling this method will not allow you to change {@link HttpResponseMetaData} of this response
-     * object. Invocation of any {@link HttpResponseMetaData} methods will throw {@link IllegalStateException}.
+     * <b>Note:</b> calling any other method on this class after calling this method is not allowed.
      *
      * @return {@link HttpOutputStream} to write a payload body
      * @throws IllegalStateException if one of the {@code sendMetaData*} methods has been called on this response
@@ -157,54 +144,5 @@ public abstract class BlockingStreamingHttpServerResponse extends DefaultHttpRes
     public BlockingStreamingHttpServerResponse addSetCookie(final CharSequence name, final CharSequence value) {
         super.addSetCookie(name, value);
         return this;
-    }
-
-    private static final class HttpPayloadWriterToHttpOutputStream extends HttpOutputStream {
-
-        private final HttpPayloadWriter<Buffer> writer;
-        private final BufferAllocator allocator;
-
-        HttpPayloadWriterToHttpOutputStream(final HttpPayloadWriter<Buffer> writer, final BufferAllocator allocator) {
-            this.writer = writer;
-            this.allocator = allocator;
-        }
-
-        @Override
-        public void write(final int b) throws IOException {
-            writer.write(allocator.newBuffer(1).writeByte(b));
-        }
-
-        @Override
-        public void write(final byte[] b) throws IOException {
-            writer.write(allocator.wrap(b));
-        }
-
-        @Override
-        public void write(final byte[] b, final int off, final int len) throws IOException {
-            if (off < 0 || len < 0 || len > b.length - off) {
-                throw new IndexOutOfBoundsException("Unexpected offset " + off + " (expected > 0) or length " + len
-                        + " (expected >= 0 and should fit in the source array). Source array length " + b.length);
-            }
-            if (len == 0) {
-                return;
-            }
-
-            writer.write(allocator.wrap(b, off, len));
-        }
-
-        @Override
-        public void flush() throws IOException {
-            writer.flush();
-        }
-
-        @Override
-        public void close() throws IOException {
-            writer.close();
-        }
-
-        @Override
-        public HttpHeaders trailers() {
-            return writer.trailers();
-        }
     }
 }

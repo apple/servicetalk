@@ -64,11 +64,13 @@ final class BlockingStreamingHttpServiceToStreamingHttpService extends Streaming
 
                     @Override
                     public void onSuccess(@Nullable final StreamingHttpResponse result) {
+                        tiCancellable.setDone();
                         subscriber.onSuccess(result);
                     }
 
                     @Override
                     public void onError(final Throwable t) {
+                        tiCancellable.setDone(t);
                         subscriber.onError(t);
                     }
                 });
@@ -76,10 +78,11 @@ final class BlockingStreamingHttpServiceToStreamingHttpService extends Streaming
                     final BlockingStreamingHttpServerResponse response = new DefaultBlockingStreamingHttpServerResponse(
                             OK, request.version(),
                             ctx.headersFactory().newHeaders(), ctx.headersFactory().newTrailers(),
-                            ctx.executionContext().bufferAllocator(), responseProcessor, tiCancellable);
+                            ctx.executionContext().bufferAllocator(), responseProcessor);
                     service.handle(ctx, request.toBlockingStreamingRequest(), response);
                 } catch (Throwable cause) {
-                    tiCancellable.setDone(cause);
+                    // We may have already completed the subscriber in DefaultBlockingStreamingHttpServerResponse.
+                    // However, the current implementation of SingleProcessor protects against multiple terminal events.
                     subscriber.onError(cause);
                 }
             }
