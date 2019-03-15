@@ -50,7 +50,6 @@ import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderNames.TRANSFER_ENCODING;
 import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
 import static io.servicetalk.http.api.HttpHeaderValues.ZERO;
-import static io.servicetalk.http.api.HttpResponseStatus.getResponseStatus;
 import static io.servicetalk.http.router.jersey.CharSequenceUtils.asCharSequence;
 import static io.servicetalk.http.router.jersey.internal.RequestProperties.getRequestCancellable;
 import static io.servicetalk.http.router.jersey.internal.RequestProperties.getResponseBufferPublisher;
@@ -70,7 +69,7 @@ final class DefaultContainerResponseWriter implements ContainerResponseWriter {
     private static final Map<Status, HttpResponseStatus> RESPONSE_STATUSES =
             unmodifiableMap(stream(Status.values())
                     .collect(toMap(identity(),
-                            s -> getResponseStatus(s.getStatusCode(),
+                            s -> HttpResponseStatus.of(s.getStatusCode(),
                                     PREFER_DIRECT_RO_ALLOCATOR.fromAscii(s.getReasonPhrase())))));
 
     private static final int UNKNOWN_RESPONSE_LENGTH = -1;
@@ -270,7 +269,7 @@ final class DefaultContainerResponseWriter implements ContainerResponseWriter {
     private HttpResponseStatus getStatus(final ContainerResponse containerResponse) {
         final StatusType statusInfo = containerResponse.getStatusInfo();
         return statusInfo instanceof Status ? RESPONSE_STATUSES.get(statusInfo) :
-                getResponseStatus(statusInfo.getStatusCode(), serviceCtx.executionContext()
+                HttpResponseStatus.of(statusInfo.getStatusCode(), serviceCtx.executionContext()
                         .bufferAllocator().fromAscii(statusInfo.getReasonPhrase()));
     }
 

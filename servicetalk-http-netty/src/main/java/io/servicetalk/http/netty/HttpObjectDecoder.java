@@ -69,7 +69,6 @@ import static io.servicetalk.http.api.HttpHeaderNames.SEC_WEBSOCKET_ORIGIN;
 import static io.servicetalk.http.api.HttpHeaderNames.UPGRADE;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_0;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
-import static io.servicetalk.http.api.HttpProtocolVersion.newProtocolVersion;
 import static io.servicetalk.http.api.HttpRequestMethod.GET;
 import static io.servicetalk.http.api.HttpResponseStatus.SWITCHING_PROTOCOLS;
 import static io.servicetalk.http.netty.HeaderUtils.isTransferEncodingChunked;
@@ -765,6 +764,6 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
         // The HTTP-version ABNF production has been clarified to be case-sensitive
         return buffer.equals(HTTP_1_1_BUF) ? HTTP_1_1 :
                 buffer.equals(HTTP_1_0_BUF) ? HTTP_1_0 :
-                        newProtocolVersion(newBufferFrom(buffer.retain()));
+                        HttpProtocolVersion.of(newBufferFrom(buffer.retain()));
     }
 }
