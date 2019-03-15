@@ -44,7 +44,7 @@ import static io.servicetalk.concurrent.api.Completable.never;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_0;
 import static io.servicetalk.transport.netty.internal.ExecutionContextRule.immediate;
-import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -101,18 +101,18 @@ public class PipelinedHttpConnectionTest {
     }
 
     @Test
-    public void http09RequestShouldReturnOnError() {
+    public void http09RequestShouldNotReturnError() {
         Single<StreamingHttpResponse> request = pipe.request(
                 reqRespFactory.get("/Foo").version(HttpProtocolVersion.of(0, 9)));
         toSource(request).subscribe(dataSubscriber1);
-        assertThat(dataSubscriber1.takeError(), instanceOf(IllegalArgumentException.class));
+        assertThat(dataSubscriber1.takeError(), nullValue());
     }
 
     @Test
-    public void http10RequestShouldReturnOnError() {
+    public void http10RequestShouldNotReturnError() {
         Single<StreamingHttpResponse> request = pipe.request(reqRespFactory.get("/Foo").version(HTTP_1_0));
         toSource(request).subscribe(dataSubscriber1);
-        assertThat(dataSubscriber1.takeError(), instanceOf(IllegalArgumentException.class));
+        assertThat(dataSubscriber1.takeError(), nullValue());
     }
 
     @SuppressWarnings("unchecked")

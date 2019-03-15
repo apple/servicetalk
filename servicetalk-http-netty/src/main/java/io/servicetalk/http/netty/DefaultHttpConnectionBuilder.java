@@ -110,10 +110,15 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> extends HttpCon
         filterFactory = filterFactory.append(
                 new ConcurrentRequestsHttpConnectionFilter(roConfig.maxPipelinedRequests()));
 
-        return (roConfig.maxPipelinedRequests() == 1 ?
+        return (isPipelineDisabled(roConfig) ?
                 buildForNonPipelined(executionContext, resolvedAddress, roConfig, filterFactory, reqRespFactory) :
                 buildForPipelined(executionContext, resolvedAddress, roConfig, filterFactory, reqRespFactory))
                 .map(filter -> assembler.apply(filter, strategy));
+    }
+
+    // TODO(derek): Temporary, so we can re-enable the ability to create non-pipelined connections for perf testing.
+    static boolean isPipelineDisabled(final ReadOnlyHttpClientConfig roConfig) {
+        return false;
     }
 
     static <ResolvedAddress> Single<StreamingHttpConnectionFilter> buildForPipelined(
@@ -130,8 +135,8 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> extends HttpCon
             final HttpConnectionFilterFactory connectionFilterFunction,
             final StreamingHttpRequestResponseFactory reqRespFactory) {
         return buildStreaming(executionContext, resolvedAddress, roConfig).map(conn ->
-                connectionFilterFunction.create(
-                    new NonPipelinedStreamingHttpConnectionFilter(conn, roConfig, executionContext, reqRespFactory)));
+                connectionFilterFunction.create(new NonPipelinedStreamingHttpConnectionFilter(conn, roConfig,
+                        executionContext, reqRespFactory)));
     }
 
     private static <ResolvedAddress> Single<? extends NettyConnection<Object, Object>> buildStreaming(

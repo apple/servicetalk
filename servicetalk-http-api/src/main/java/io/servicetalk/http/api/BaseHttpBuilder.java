@@ -132,6 +132,8 @@ abstract class BaseHttpBuilder<ResolvedAddress> {
      * 1 means pipelining is disabled and requests and responses are processed sequentially.
      * <p>
      * Request pipelining requires HTTP 1.1.
+     * <p>
+     * <b>Note:</b> {@link HttpClient#reserveConnection reserved connections} will not be restricted by this setting.
      *
      * @param maxPipelinedRequests number of pipelined requests to queue up
      * @return {@code this}.
