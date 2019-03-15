@@ -50,6 +50,7 @@ import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 
 public class ConsumeRequestPayloadOnResponsePathTest {
@@ -174,7 +175,10 @@ public class ConsumeRequestPayloadOnResponsePathTest {
             assertThat(receivedPayload.toString(UTF_8), is(EXPECTED_REQUEST_PAYLOAD));
             assertThat(response.headers().contains(TRAILER, X_TOTAL_LENGTH), is(true));
             assertThat(response.trailers().contains(X_TOTAL_LENGTH), is(true));
-            assertThat(response.trailers().get(X_TOTAL_LENGTH).toString(),
+            CharSequence trailerLength = response.trailers().get(X_TOTAL_LENGTH);
+            assertNotNull(trailerLength);
+            assertThat("Unexpected response payload: '" + response.payloadBody().toString(UTF_8) + "'",
+                    trailerLength.toString(),
                     is(Integer.toString(response.payloadBody().readableBytes())));
         }
     }

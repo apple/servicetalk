@@ -24,6 +24,7 @@ import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.DefaultHttpHeadersFactory;
 import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.HttpHeaders;
+import io.servicetalk.http.api.HttpProtocolVersion;
 import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.StreamingHttpResponse;
@@ -42,7 +43,6 @@ import static io.servicetalk.concurrent.api.Completable.never;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_0;
-import static io.servicetalk.http.api.HttpProtocolVersion.getProtocolVersion;
 import static io.servicetalk.transport.netty.internal.ExecutionContextRule.immediate;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertFalse;
@@ -96,14 +96,15 @@ public class PipelinedHttpConnectionTest {
             return publisher.ignoreElements(); // simulate write consuming all
         });
         when(connection.read()).thenReturn(readPublisher1, readPublisher2);
-        pipe = StreamingHttpConnection.newStreamingConnectionWorkAroundToBeFixed(new PipelinedStreamingHttpConnectionFilter(
-                connection, config.asReadOnly(), ctx, reqRespFactory), defaultStrategy());
+        pipe = StreamingHttpConnection.newStreamingConnectionWorkAroundToBeFixed(
+                new PipelinedStreamingHttpConnectionFilter(connection, config.asReadOnly(), ctx, reqRespFactory),
+                defaultStrategy());
     }
 
     @Test
     public void http09RequestShouldReturnOnError() {
         Single<StreamingHttpResponse> request = pipe.request(
-                reqRespFactory.get("/Foo").version(getProtocolVersion(0, 9)));
+                reqRespFactory.get("/Foo").version(HttpProtocolVersion.of(0, 9)));
         toSource(request).subscribe(dataSubscriber1);
         assertThat(dataSubscriber1.takeError(), instanceOf(IllegalArgumentException.class));
     }
@@ -141,10 +142,12 @@ public class PipelinedHttpConnectionTest {
         assertFalse(writePublisher2.isSubscribed());
 
         writePublisher1.onComplete();
-        assertTrue(readPublisher1.isSubscribed()); // read after write completes, pipelining will be full-duplex in follow-up PR
+        // read after write completes, pipelining will be full-duplex in follow-up PR
+        assertTrue(readPublisher1.isSubscribed());
         readPublisher1.onNext(mockResp);
 
-        assertTrue(writePublisher2.isSubscribed()); // pipelining in action – 2nd req writing while 1st req still reading
+        // pipelining in action – 2nd req writing while 1st req still reading
+        assertTrue(writePublisher2.isSubscribed());
         writePublisher2.onComplete();
 
         readPublisher1.onComplete();

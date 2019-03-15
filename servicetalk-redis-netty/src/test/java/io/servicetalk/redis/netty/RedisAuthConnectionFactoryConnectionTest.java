@@ -86,7 +86,7 @@ public class RedisAuthConnectionFactoryConnectionTest {
     }
 
     @Test
-    public void correctPasswordConnectionBuilder() throws Exception {
+    public void correctPasswordConnectionBuilder() {
         authTestConnection(System.getenv("REDIS_AUTH_PORT"), CORRECT_PASSWORD, connectionSingle -> {
             try {
                 RedisCommander commandClient = connectionSingle.toFuture().get().asCommander();
@@ -98,7 +98,7 @@ public class RedisAuthConnectionFactoryConnectionTest {
     }
 
     @Test
-    public void invalidPasswordConnectionBuilder() throws Exception {
+    public void invalidPasswordConnectionBuilder() {
         authTestConnection(System.getenv("REDIS_AUTH_PORT"), CORRECT_PASSWORD + "foo", connectionSingle -> {
             try {
                 RedisCommander commandClient = connectionSingle.toFuture().get().asCommander();
@@ -110,7 +110,8 @@ public class RedisAuthConnectionFactoryConnectionTest {
         });
     }
 
-    private void authTestConnection(String tmpRedisPort, String password, Consumer<Single<RedisConnection>> connectionConsumer) throws Exception {
+    private void authTestConnection(String tmpRedisPort, String password,
+                                    Consumer<Single<RedisConnection>> connectionConsumer) {
         int redisPort;
         String redisHost;
         assumeThat(tmpRedisPort, not(isEmptyOrNullString()));

@@ -405,7 +405,8 @@ public class DefaultDnsServiceDiscovererTest {
         ServiceDiscoverer<String, InetAddress, ServiceDiscovererEvent<InetAddress>> discoverer =
                 serviceDiscovererBuilder()
                         .queryTimeout(Duration.ofMillis(100))
-                        .appendFilter(client -> new ServiceDiscovererFilter<String, InetAddress, ServiceDiscovererEvent<InetAddress>>(client) {
+                        .appendFilter(client -> new ServiceDiscovererFilter<String, InetAddress,
+                                ServiceDiscovererEvent<InetAddress>>(client) {
                             @Override
                             public Publisher<ServiceDiscovererEvent<InetAddress>> discover(final String s) {
                                 return super.discover(s).doOnError(t -> {

@@ -225,7 +225,8 @@ public abstract class AbstractBlockingStreamingHttpRequesterTest {
         String expectedPayload = "hello";
         byte[] expectedPayloadBytes = expectedPayload.getBytes(US_ASCII);
         TestStreamingHttpRequester asyncRequester = newAsyncRequester(reqRespFactory, mockExecutionCtx,
-                (strategy, req) -> success(reqRespFactory.ok().payloadBody(just(allocator.fromAscii(expectedPayload)))));
+                (strategy, req) -> success(reqRespFactory.ok().payloadBody(
+                        just(allocator.fromAscii(expectedPayload)))));
         BlockingStreamingHttpRequester syncRequester = asyncRequester.asBlockingStreaming();
         BlockingStreamingHttpResponse syncResponse = syncRequester.request(
                 syncRequester.get("/"));

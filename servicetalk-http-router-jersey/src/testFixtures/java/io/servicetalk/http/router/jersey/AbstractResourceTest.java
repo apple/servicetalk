@@ -15,6 +15,7 @@
  */
 package io.servicetalk.http.router.jersey;
 
+import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.router.jersey.resources.AsynchronousResources;
 import io.servicetalk.http.router.jersey.resources.SynchronousResources;
@@ -48,7 +49,6 @@ import static io.servicetalk.http.api.HttpResponseStatus.NON_AUTHORITATIVE_INFOR
 import static io.servicetalk.http.api.HttpResponseStatus.NOT_FOUND;
 import static io.servicetalk.http.api.HttpResponseStatus.NO_CONTENT;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
-import static io.servicetalk.http.api.HttpResponseStatus.getResponseStatus;
 import static io.servicetalk.http.router.jersey.TestUtils.newLargePayload;
 import static java.util.Arrays.asList;
 import static javax.ws.rs.core.HttpHeaders.ALLOW;
@@ -197,7 +197,7 @@ public abstract class AbstractResourceTest extends AbstractJerseyStreamingHttpSe
         assertThat(res.headers().get("X-Foo-Prop"), is(newAsciiString("barProp")));
 
         res = sendAndAssertNoResponse(withHeader(post("/filtered", "foo2", TEXT_PLAIN), "X-Abort-With-Status", "451"),
-                getResponseStatus(451, EMPTY_BUFFER));
+                HttpResponseStatus.of(451, EMPTY_BUFFER));
         assertThat(res.headers().get("X-Foo-Prop"), is(newAsciiString("barProp")));
     }
 

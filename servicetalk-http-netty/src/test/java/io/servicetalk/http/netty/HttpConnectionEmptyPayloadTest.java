@@ -70,13 +70,14 @@ public class HttpConnectionEmptyPayloadTest {
                     .listenStreamingAndAwait(
                             new StreamingHttpService() {
                                 @Override
-                                public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
-                                                                            final StreamingHttpRequest req,
-                                                                            final StreamingHttpResponseFactory factory) {
+                                public Single<StreamingHttpResponse> handle(
+                                        final HttpServiceContext ctx, final StreamingHttpRequest req,
+                                        final StreamingHttpResponseFactory factory) {
                                     StreamingHttpResponse resp = factory.ok().payloadBody(just(
                                             HEAD.equals(req.method()) ? EMPTY_BUFFER :
                                                     ctx.executionContext().bufferAllocator()
-                                                    .newBuffer(expectedContentLength).writeBytes(expectedPayload)));
+                                                            .newBuffer(expectedContentLength)
+                                                            .writeBytes(expectedPayload)));
                                     resp.addHeader(CONTENT_LENGTH, String.valueOf(expectedContentLength));
                                     return success(resp);
                                 }
@@ -87,11 +88,12 @@ public class HttpConnectionEmptyPayloadTest {
                                 }
                             }));
 
-            StreamingHttpConnection connection = closeable.merge(awaitIndefinitelyNonNull(new DefaultHttpConnectionBuilder<>()
-                    .ioExecutor(executionContextRule.ioExecutor())
-                    .maxPipelinedRequests(3)
-                    .executionStrategy(defaultStrategy(executionContextRule.executor()))
-                    .buildStreaming(serverContext.listenAddress())));
+            StreamingHttpConnection connection = closeable.merge(awaitIndefinitelyNonNull(
+                    new DefaultHttpConnectionBuilder<>()
+                            .ioExecutor(executionContextRule.ioExecutor())
+                            .maxPipelinedRequests(3)
+                            .executionStrategy(defaultStrategy(executionContextRule.executor()))
+                            .buildStreaming(serverContext.listenAddress())));
 
             // Request HEAD, GET, HEAD to verify that we can keep reading data despite a HEAD request providing a hint
             // about content-length (and not actually providing the content).
