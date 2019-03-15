@@ -84,7 +84,8 @@ public final class AbstractHttpConnectionTest {
     private final StreamingHttpRequestResponseFactory reqRespFactory =
             new DefaultStreamingHttpRequestResponseFactory(allocator, headersFactory);
 
-    private class MockStreamingHttpConnectionFilter extends AbstractStreamingHttpConnectionFilter<NettyConnection<Object, Object>> {
+    private class MockStreamingHttpConnectionFilter
+            extends AbstractStreamingHttpConnectionFilter<NettyConnection<Object, Object>> {
         protected MockStreamingHttpConnectionFilter(final NettyConnection<Object, Object> connection,
                                                     final ReadOnlyHttpClientConfig config) {
             super(connection, config, ctx, reqRespFactory);

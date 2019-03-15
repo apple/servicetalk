@@ -95,6 +95,7 @@
     <property name="lineSeparator" value="lf"/>
   </module>
   <module name="UniqueProperties"/>
+
   <module name="TreeWalker">
     <!-- Prohibit calls to print to the console -->
     <module name="RegexpSinglelineJava">
@@ -244,10 +245,9 @@
     <module name="OuterTypeFilename"/>
     <module name="UncommentedMain"/>
     <module name="UpperEll"/>
-    <!-- To be turned on in the future. Uncomment to incrementally improve things. -->
-    <!--<module name="LineLength">-->
-      <!--<property name="max" value="120"/>-->
-    <!--</module>-->
+    <module name="LineLength">
+      <property name="max" value="120"/>
+    </module>
 
     <!-- Coding -->
     <module name="ArrayTrailingComma"/>

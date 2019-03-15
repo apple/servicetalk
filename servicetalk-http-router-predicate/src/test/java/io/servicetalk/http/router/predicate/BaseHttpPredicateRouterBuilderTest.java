@@ -86,10 +86,11 @@ public abstract class BaseHttpPredicateRouterBuilderTest {
         when(executionCtx.executor()).thenReturn(immediate());
         when(request.version()).thenReturn(HTTP_1_1);
         when(request.headers()).thenReturn(headers);
-        when(factory.newResponse(any(HttpResponseStatus.class))).thenAnswer((Answer<StreamingHttpResponse>) invocation -> {
-            HttpResponseStatus status = invocation.getArgument(0);
-            return reqRespFactory.newResponse(status);
-        });
+        when(factory.newResponse(any(HttpResponseStatus.class))).thenAnswer(
+                (Answer<StreamingHttpResponse>) invocation -> {
+                    HttpResponseStatus status = invocation.getArgument(0);
+                    return reqRespFactory.newResponse(status);
+                });
 
         when(strategy.offloadService(any(), any())).then(invocation -> invocation.getArgument(1));
         when(serviceA.executionStrategy()).thenReturn(strategy);

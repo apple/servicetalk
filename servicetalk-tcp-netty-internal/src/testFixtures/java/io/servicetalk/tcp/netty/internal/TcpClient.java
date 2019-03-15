@@ -100,7 +100,8 @@ public final class TcpClient {
      * @throws ExecutionException If connect failed.
      * @throws InterruptedException If interrupted while waiting for connect to complete.
      */
-    public NettyConnection<Buffer, Buffer> connectWithFdBlocking(ExecutionContext executionContext, SocketAddress address)
+    public NettyConnection<Buffer, Buffer> connectWithFdBlocking(ExecutionContext executionContext,
+                                                                 SocketAddress address)
             throws ExecutionException, InterruptedException {
         assumeTrue(executionContext.ioExecutor().isFileDescriptorSocketAddressSupported());
         assumeTrue(Epoll.isAvailable() || KQueue.isAvailable());

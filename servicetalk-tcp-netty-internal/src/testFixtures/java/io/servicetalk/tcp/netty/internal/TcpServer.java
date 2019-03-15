@@ -86,8 +86,8 @@ public class TcpServer {
      *
      * @param executionContext {@link ExecutionContext} to use for incoming connections.
      * @param port Port for the server.
-     * @param connectionAcceptor to use for filtering accepted connections. The returned {@link ServerContext} manages the
-     * lifecycle of the {@code connectionAcceptor}, ensuring it is closed when the {@link ServerContext} is closed.
+     * @param connectionAcceptor to use for filtering accepted connections. The returned {@link ServerContext} manages
+     * the lifecycle of the {@code connectionAcceptor}, ensuring it is closed when the {@link ServerContext} is closed.
      * @param service {@link Function} that is invoked for each accepted connection.
      * @return {@link ServerContext} for the started server.
      * @throws ExecutionException If the server start failed.

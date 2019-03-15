@@ -242,7 +242,8 @@ public class BlockingRedisCommanderTest extends BaseRedisClientTest {
         final List<String> georadiusBuffers = commandClient.georadius(key("Sicily"), 15d, 37d, 200d, KM);
         assertThat(georadiusBuffers, contains("Palermo", "Catania"));
 
-        final List georadiusMixedList = commandClient.georadius(key("Sicily"), 15d, 37d, 200d, KM, WITHCOORD, WITHDIST, null, 5L, ASC, null, null);
+        final List georadiusMixedList = commandClient.georadius(key("Sicily"), 15d, 37d, 200d, KM, WITHCOORD, WITHDIST,
+                null, 5L, ASC, null, null);
         final Matcher georadiusResponseMatcher = contains(
                 contains(is("Catania"), startsWith("56."), contains(startsWith("15."), startsWith("37."))),
                 contains(is("Palermo"), startsWith("190."), contains(startsWith("13."), startsWith("38."))));
@@ -252,7 +253,8 @@ public class BlockingRedisCommanderTest extends BaseRedisClientTest {
         assertThat(commandClient.geodist(key("Sicily"), "foo", "bar"), is(nullValue()));
 
         assertThat(commandClient.geopos(key("Sicily"), "Palermo", "NonExisting", "Catania"), contains(
-                contains(startsWith("13."), startsWith("38.")), is(nullValue()), contains(startsWith("15."), startsWith("37."))));
+                contains(startsWith("13."), startsWith("38.")), is(nullValue()), contains(startsWith("15."),
+                        startsWith("37."))));
 
         final List<String> evalBuffers = commandClient.evalList("return {KEYS[1],KEYS[2],ARGV[1],ARGV[2]}",
                 2L, asList("key1", "key2"), asList("first", "second"));
@@ -301,7 +303,8 @@ public class BlockingRedisCommanderTest extends BaseRedisClientTest {
         fields.add(new FieldValue("f9", "v9"));
         fields.add(new FieldValue("f10", "v10"));
         commandClient.hmset(testKey, fields);
-        final List<String> values = commandClient.hmget(testKey, asList("f", "f1", "f2", "f3", "f4", "f5", "f6", "f7", "f8", "f9", "f10"));
+        final List<String> values = commandClient.hmget(testKey, asList("f", "f1", "f2", "f3", "f4", "f5", "f6", "f7",
+                "f8", "f9", "f10"));
         assertThat(values, is(fields.stream().map(fv -> fv.value).collect(toList())));
     }
 
@@ -313,10 +316,10 @@ public class BlockingRedisCommanderTest extends BaseRedisClientTest {
         commandClient.set("1-score", "1");
         commandClient.set("1-ᕈгø⨯у", "proxy");
 
-        assertThat(commandClient.sort(testKey, "*-score", new OffsetCount(0, 1), singletonList("*-ᕈгø⨯у"), SortOrder.ASC, SortSorting.ALPHA),
-                is(singletonList("proxy")));
-        assertThat(commandClient.sort(testKey, null, new OffsetCount(0, 1), singletonList("*-ᕈгø⨯у"), SortOrder.ASC, SortSorting.ALPHA),
-                is(singletonList("proxy")));
+        assertThat(commandClient.sort(testKey, "*-score", new OffsetCount(0, 1), singletonList("*-ᕈгø⨯у"),
+                SortOrder.ASC, SortSorting.ALPHA), is(singletonList("proxy")));
+        assertThat(commandClient.sort(testKey, null, new OffsetCount(0, 1), singletonList("*-ᕈгø⨯у"), SortOrder.ASC,
+                SortSorting.ALPHA), is(singletonList("proxy")));
         assertThat(commandClient.sort(testKey, null, null, singletonList("*-ᕈгø⨯у"), SortOrder.ASC, SortSorting.ALPHA),
                 is(singletonList("proxy")));
         assertThat(commandClient.sort(testKey, null, null, singletonList("*-ᕈгø⨯у"), null, SortSorting.ALPHA),

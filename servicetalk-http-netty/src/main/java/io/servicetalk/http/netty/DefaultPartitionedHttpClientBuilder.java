@@ -108,7 +108,8 @@ class DefaultPartitionedHttpClientBuilder<U, R> extends PartitionedHttpClientBui
                 new DefaultPartitionedStreamingHttpClient<>(psdEvents, serviceDiscoveryMaxQueueSize, clientFactory,
                         partitionAttributesBuilderFactory, reqRespFactory, exec, partitionMapFactory);
 
-        return StreamingHttpClient.newStreamingClientWorkAroundToBeFixed(partitionedFilterChain, copy.executionStrategy());
+        return StreamingHttpClient.newStreamingClientWorkAroundToBeFixed(partitionedFilterChain,
+                copy.executionStrategy());
     }
 
     private static final class DefaultPartitionedStreamingHttpClient<U, R> extends StreamingHttpClientFilter {

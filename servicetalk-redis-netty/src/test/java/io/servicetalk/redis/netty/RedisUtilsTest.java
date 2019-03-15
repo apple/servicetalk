@@ -101,7 +101,8 @@ public class RedisUtilsTest {
             }
 
             @Override
-            public RedisRequest transformContent(final Function<Publisher<RequestRedisData>, Publisher<RequestRedisData>> transformer) {
+            public RedisRequest transformContent(
+                    final Function<Publisher<RequestRedisData>, Publisher<RequestRedisData>> transformer) {
                 throw new UnsupportedOperationException();
             }
         };

@@ -67,12 +67,14 @@ public class SynchronousResourceTest extends AbstractResourceTest {
 
     @Test
     public void http10Support() {
-        sendAndAssertResponse(get("/text").version(HTTP_1_0), HTTP_1_0, OK, TEXT_PLAIN, is("GOT: null & null"), __ -> 16);
+        sendAndAssertResponse(get("/text").version(HTTP_1_0), HTTP_1_0, OK, TEXT_PLAIN, is("GOT: null & null"),
+                __ -> 16);
     }
 
     @Test
     public void postTextStrInPubOut() {
-        sendAndAssertResponse(post("/text-strin-pubout", "bar2", TEXT_PLAIN), OK, TEXT_PLAIN, is("GOT: bar2"), __ -> null);
+        sendAndAssertResponse(post("/text-strin-pubout", "bar2", TEXT_PLAIN), OK, TEXT_PLAIN, is("GOT: bar2"),
+                __ -> null);
     }
 
     @Test
@@ -82,7 +84,8 @@ public class SynchronousResourceTest extends AbstractResourceTest {
 
     @Test
     public void postTextPubInPubOut() {
-        sendAndAssertResponse(post("/text-pubin-pubout", "bar23", TEXT_PLAIN), OK, TEXT_PLAIN, is("GOT: bar23"), __ -> null);
+        sendAndAssertResponse(post("/text-pubin-pubout", "bar23", TEXT_PLAIN), OK, TEXT_PLAIN, is("GOT: bar23"),
+                __ -> null);
     }
 
     @Test

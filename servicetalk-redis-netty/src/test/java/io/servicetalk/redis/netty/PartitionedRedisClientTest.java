@@ -151,7 +151,8 @@ public class PartitionedRedisClientTest extends AbstractPartitionedRedisClientTe
             @Override
             public Completable closeAsync() {
                 closeCalled.set(true);
-                // Don't actually close the client connection for this unit test, because it is used in a static fashion.
+                // Don't actually close the client connection for this unit test, because it is used in a static
+                // fashion.
                 return delegate.onClose();
             }
         };
