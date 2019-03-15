@@ -16,9 +16,11 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.buffer.api.Buffer;
+import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.BlockingStreamingHttpClient;
 import io.servicetalk.http.api.BlockingStreamingHttpRequestHandler;
 import io.servicetalk.http.api.BlockingStreamingHttpResponse;
+import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpOutputStream;
 import io.servicetalk.http.api.HttpPayloadWriter;
 import io.servicetalk.http.api.HttpResponse;
@@ -26,11 +28,15 @@ import io.servicetalk.oio.api.PayloadWriter;
 import io.servicetalk.transport.api.ServerContext;
 
 import org.junit.After;
+import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.Timeout;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static io.servicetalk.buffer.api.EmptyBuffer.EMPTY_BUFFER;
@@ -45,6 +51,7 @@ import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.util.Arrays.asList;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
@@ -55,6 +62,9 @@ public class BlockingStreamingHttpServiceTest {
     private static final String X_TOTAL_LENGTH = "x-total-length";
     private static final String HELLO_WORLD = "Hello\nWorld\n";
     private static final String HELLO_WORLD_LENGTH = String.valueOf(HELLO_WORLD.length());
+
+    @Rule
+    public final Timeout timeout = new ServiceTalkTestTimeout();
 
     private ServerContext serverContext;
     private BlockingStreamingHttpClient client;
@@ -247,10 +257,45 @@ public class BlockingStreamingHttpServiceTest {
 
         try {
             BlockingStreamingHttpResponse response = client.request(client.get("/"));
+            assertResponse(response);
             assertThat(response.toResponse().toFuture().get().payloadBody(), is(EMPTY_BUFFER));
             fail("Payload body should complete with an error");
         } catch (Exception e) {
             assertThat(serverException.get(), instanceOf(IllegalStateException.class));
+        }
+    }
+
+    @Ignore("toFuture().get(timeout, unit) doesn't work")
+    @Test
+    public void doNotSendMetaData() throws Exception {
+        BlockingStreamingHttpClient client = context((ctx, request, response) -> {
+            // Noop
+        });
+
+        try {
+            HttpClient asyncClient = client.asClient();
+            asyncClient.request(asyncClient.get("/")).toFuture().get(2, SECONDS);
+            fail("toFuture().get() should fails with TimeoutException");
+        } catch (Exception e) {
+            assertThat(e, instanceOf(TimeoutException.class));
+        }
+    }
+
+    @Ignore("toFuture().get(timeout, unit) doesn't work")
+    @Test
+    public void doNotWriteTheLastChunk() throws Exception {
+        BlockingStreamingHttpClient client = context((ctx, request, response) -> {
+            response.sendMetaData();
+            // Do not close()
+        });
+
+        try {
+            BlockingStreamingHttpResponse response = client.request(client.get("/"));
+            assertResponse(response);
+            assertThat(response.toResponse().toFuture().get(2, SECONDS).payloadBody(), is(EMPTY_BUFFER));
+            fail("toFuture().get() should fails with TimeoutException");
+        } catch (Exception e) {
+            assertThat(e, instanceOf(TimeoutException.class));
         }
     }
 
