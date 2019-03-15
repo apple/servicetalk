@@ -128,8 +128,9 @@ final class DefaultMultiAddressUrlHttpClientBuilder extends MultiAddressHttpClie
             filterChain = maxRedirects <= 0 ? filterChain :
                     new RedirectingHttpRequesterFilter(false, maxRedirects).create(filterChain);
 
-            return StreamingHttpClient.newStreamingClientWorkAroundToBeFixed(new StreamingHttpClientWithDependencies(filterChain,
-                    toListenableAsyncCloseable(closeables)), clientFactory.builderTemplate.executionStrategy());
+            return StreamingHttpClient.newStreamingClientWorkAroundToBeFixed(new StreamingHttpClientWithDependencies(
+                            filterChain, toListenableAsyncCloseable(closeables)),
+                    clientFactory.builderTemplate.executionStrategy());
         } catch (final Throwable t) {
             if (keyFactory != null) {
                 keyFactory.closeAsync().subscribe();

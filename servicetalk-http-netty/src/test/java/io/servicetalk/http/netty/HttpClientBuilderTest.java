@@ -99,7 +99,8 @@ public class HttpClientBuilderTest extends AbstractEchoServerBasedHttpRequesterT
 
     @SuppressWarnings("unchecked")
     private static ConnectionFactory<InetSocketAddress, ? extends StreamingHttpConnectionFilter> newFilter() {
-        ConnectionFactory<InetSocketAddress, ? extends StreamingHttpConnectionFilter> factory = mock(ConnectionFactory.class);
+        ConnectionFactory<InetSocketAddress, ? extends StreamingHttpConnectionFilter> factory =
+                mock(ConnectionFactory.class);
         when(factory.closeAsyncGracefully()).thenReturn(completed());
         when(factory.closeAsync()).thenReturn(completed());
         return factory;

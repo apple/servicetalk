@@ -47,7 +47,8 @@ public class LimitingActiveConnectionFactoryFilterTest {
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
     @Rule
-    public final LegacyMockedSingleListenerRule<ListenableAsyncCloseable> connectlistener = new LegacyMockedSingleListenerRule<>();
+    public final LegacyMockedSingleListenerRule<ListenableAsyncCloseable> connectlistener =
+            new LegacyMockedSingleListenerRule<>();
 
     private ConnectionFactory<String, ListenableAsyncCloseable> original;
     private BlockingQueue<CompletableProcessor> connectionOnClose;

@@ -74,8 +74,8 @@ public class StreamingHttpClientFilter implements StreamingHttpRequestFactory,
     }
 
     /**
-     * Called when the filter needs to delegate the request using the provided {@link StreamingHttpRequestFunction} on which
-     * to call {@link StreamingHttpRequestFunction#request(HttpExecutionStrategy, StreamingHttpRequest)}.
+     * Called when the filter needs to delegate the request using the provided {@link StreamingHttpRequestFunction} on
+     * which to call {@link StreamingHttpRequestFunction#request(HttpExecutionStrategy, StreamingHttpRequest)}.
      *
      * @param delegate The {@link StreamingHttpRequestFunction} to delegate requests to.
      * @param strategy The {@link HttpExecutionStrategy} to use for executing the request.

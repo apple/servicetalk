@@ -69,7 +69,8 @@ public class HttpStreamingClientOverrideOffloadingTest {
     public HttpStreamingClientOverrideOffloadingTest(@SuppressWarnings("unused") final String description,
                                                      final Predicate<Thread> isInvalidThread,
                                                      @Nullable final HttpExecutionStrategy overridingStrategy,
-                                                     @Nullable final HttpExecutionStrategy defaultStrategy) throws Exception {
+                                                     @Nullable final HttpExecutionStrategy defaultStrategy)
+            throws Exception {
         this.ioExecutor = createIoExecutor(new DefaultThreadFactory(IO_EXECUTOR_THREAD_NAME_PREFIX, true,
                 NORM_PRIORITY));
         this.executor = newCachedThreadExecutor();
@@ -89,7 +90,8 @@ public class HttpStreamingClientOverrideOffloadingTest {
         params.add(newParam("Override no offload", th -> !isInClientEventLoop(th), noOffloadsStrategy(), null));
         params.add(newParam("Default no offload", HttpStreamingClientOverrideOffloadingTest::isInClientEventLoop,
                 null, noOffloadsStrategy()));
-        params.add(newParam("Both offloads", HttpStreamingClientOverrideOffloadingTest::isInClientEventLoop, null, null));
+        params.add(newParam("Both offloads", HttpStreamingClientOverrideOffloadingTest::isInClientEventLoop, null,
+                null));
         return params;
     }
 

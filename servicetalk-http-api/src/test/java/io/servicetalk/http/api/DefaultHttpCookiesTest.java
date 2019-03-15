@@ -226,8 +226,8 @@ public class DefaultHttpCookiesTest {
     private static void getCookiesNameDomainPath(final HttpHeaders headers) {
         final Iterator<? extends HttpCookie> cookieItr = headers.getSetCookies("qwerty", "somecompany2.co.uk", "/2");
         assertTrue(cookieItr.hasNext());
-        assertTrue(areCookiesEqual(new TestCookie("qwerty", "abcd", "/2", "somecompany2.co.uk", "Wed, 30 Aug 2019 00:00:00 GMT",
-                null, false, false, false), cookieItr.next()));
+        assertTrue(areCookiesEqual(new TestCookie("qwerty", "abcd", "/2", "somecompany2.co.uk",
+                "Wed, 30 Aug 2019 00:00:00 GMT", null, false, false, false), cookieItr.next()));
         assertFalse(cookieItr.hasNext());
     }
 
@@ -448,8 +448,8 @@ public class DefaultHttpCookiesTest {
         // Encode again
         final Iterator<? extends HttpCookie> cookieItr = headers.getSetCookies("qwerty");
         assertTrue(cookieItr.hasNext());
-        assertTrue(areCookiesEqual(new TestCookie("qwerty", "12345", "/", "somecompany.co.uk", "Wed, 30 Aug 2019 00:00:00 GMT",
-                null, true, false, false), cookieItr.next()));
+        assertTrue(areCookiesEqual(new TestCookie("qwerty", "12345", "/", "somecompany.co.uk",
+                "Wed, 30 Aug 2019 00:00:00 GMT", null, true, false, false), cookieItr.next()));
         assertFalse(cookieItr.hasNext());
 
         final CharSequence value = headers.get("set-cookie");
@@ -493,8 +493,10 @@ public class DefaultHttpCookiesTest {
     public void overallIteratorRemoveFirstAndLast() {
         final HttpHeaders headers = DefaultHttpHeadersFactory.INSTANCE.newHeaders();
         headers.add("set-cookie", "foo=bar");
-        headers.add("set-cookie", "qwerty=12345; Domain=somecompany.co.uk; Path=/; Expires=Wed, 30 Aug 2019 00:00:00 GMT");
-        headers.add("set-cookie", "qwerty=abcd; Domain=somecompany2.co.uk; Path=/2; Expires=Wed, 30 Aug 2019 00:00:00 GMT");
+        headers.add("set-cookie", "qwerty=12345; Domain=somecompany.co.uk; Path=/; " +
+                "Expires=Wed, 30 Aug 2019 00:00:00 GMT");
+        headers.add("set-cookie", "qwerty=abcd; Domain=somecompany2.co.uk; Path=/2; " +
+                "Expires=Wed, 30 Aug 2019 00:00:00 GMT");
         headers.add("set-cookie", "baz=xxx");
 
         // Overall iteration order isn't defined, so track which elements we don't expect to be present after removal.
@@ -584,8 +586,10 @@ public class DefaultHttpCookiesTest {
     public void overallIteratorRemoveAll() {
         final HttpHeaders headers = DefaultHttpHeadersFactory.INSTANCE.newHeaders();
         headers.add("set-cookie", "foo=bar");
-        headers.add("set-cookie", "qwerty=12345; Domain=somecompany.co.uk; Path=/; Expires=Wed, 30 Aug 2019 00:00:00 GMT");
-        headers.add("set-cookie", "qwerty=abcd; Domain=somecompany2.co.uk; Path=/2; Expires=Wed, 30 Aug 2019 00:00:00 GMT");
+        headers.add("set-cookie", "qwerty=12345; Domain=somecompany.co.uk; Path=/; " +
+                "Expires=Wed, 30 Aug 2019 00:00:00 GMT");
+        headers.add("set-cookie", "qwerty=abcd; Domain=somecompany2.co.uk; Path=/2; " +
+                "Expires=Wed, 30 Aug 2019 00:00:00 GMT");
         headers.add("set-cookie", "baz=xxx");
 
         Iterator<Entry<CharSequence, CharSequence>> cookieItr = headers.iterator();
@@ -764,7 +768,8 @@ public class DefaultHttpCookiesTest {
 
         TestCookie(final String name, final String value, @Nullable final String path,
                    @Nullable final String domain, @Nullable final String expires,
-                   @Nullable final Long maxAge, final boolean isWrapped, final boolean isSecure, final boolean isHttpOnly) {
+                   @Nullable final Long maxAge, final boolean isWrapped, final boolean isSecure,
+                   final boolean isHttpOnly) {
             this.name = name;
             this.value = value;
             this.path = path;

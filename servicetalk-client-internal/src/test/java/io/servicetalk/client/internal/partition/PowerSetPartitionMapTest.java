@@ -241,7 +241,8 @@ public class PowerSetPartitionMapTest {
     public void testAddDuplicationPartitions() {
         PowerSetPartitionMap<ListenableAsyncCloseable> map = new PowerSetPartitionMap<>(address -> VALUE);
         assertTrue("New map is not empty.", map.isEmpty());
-        PartitionAttributes partition = new DefaultPartitionAttributesBuilder(1).add(IS_MASTER, true).add(SHARD_ID, 1).build();
+        PartitionAttributes partition = new DefaultPartitionAttributesBuilder(1).add(IS_MASTER, true).add(SHARD_ID, 1)
+                .build();
         List<ListenableAsyncCloseable> added1 = map.add(partition);
         List<ListenableAsyncCloseable> added2 = map.add(partition);
         assertEquals("Added partitions are not equal.", added1, added2);

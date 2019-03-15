@@ -40,7 +40,8 @@ final class RedisDataMatcher extends BaseMatcher<RedisData> {
     private final Class<? extends RedisData> expectedClass;
     private final MatcherHolder matcherHolder;
 
-    private <T> RedisDataMatcher(final Class<? extends RedisData> expectedClass, final Function<RedisData, T> extractor, final Matcher<T> contentMatcher) {
+    private <T> RedisDataMatcher(final Class<? extends RedisData> expectedClass, final Function<RedisData, T> extractor,
+                                 final Matcher<T> contentMatcher) {
         this.expectedClass = requireNonNull(expectedClass);
         this.matcherHolder = new MatcherHolder(contentMatcher, extractor);
     }
@@ -82,7 +83,8 @@ final class RedisDataMatcher extends BaseMatcher<RedisData> {
     }
 
     static RedisDataMatcher redisFirstBulkStringChunkSize(final Matcher<Integer> sizeMatcher) {
-        return new RedisDataMatcher(DefaultFirstBulkStringChunk.class, rd -> rd.bufferValue().readableBytes(), sizeMatcher);
+        return new RedisDataMatcher(DefaultFirstBulkStringChunk.class, rd -> rd.bufferValue().readableBytes(),
+                sizeMatcher);
     }
 
     static RedisDataMatcher redisCompleteBulkString(final Buffer buf) {

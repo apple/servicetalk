@@ -56,7 +56,8 @@ public class PublishAndSubscribeOnTest extends AbstractPublishAndSubscribeOnTest
                 setupAndSubscribe(Publisher::publishOnOverride, executorRule.executor());
 
         assertThat("Unexpected threads for subscription and subscriber for original source.",
-                capturedThreads.get(ORIGINAL_SUBSCRIBER_THREAD), not(capturedThreads.get(ORIGINAL_SUBSCRIPTION_THREAD)));
+                capturedThreads.get(ORIGINAL_SUBSCRIBER_THREAD),
+                not(capturedThreads.get(ORIGINAL_SUBSCRIPTION_THREAD)));
         assertThat("Unexpected threads for subscription and subscriber for offloaded source.",
                 capturedThreads.get(OFFLOADED_SUBSCRIBER_THREAD),
                 not(capturedThreads.get(OFFLOADED_SUBSCRIPTION_THREAD)));

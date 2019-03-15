@@ -91,7 +91,8 @@ public class RoundRobinLoadBalancerTest {
     public final ExpectedException thrown = ExpectedException.none();
 
     @Rule
-    public final LegacyMockedSingleListenerRule<TestLoadBalancedConnection> selectConnectionListener = new LegacyMockedSingleListenerRule<>();
+    public final LegacyMockedSingleListenerRule<TestLoadBalancedConnection> selectConnectionListener =
+            new LegacyMockedSingleListenerRule<>();
 
     private final TestPublisher<ServiceDiscovererEvent<String>> serviceDiscoveryPublisher = new TestPublisher<>();
     private final List<TestLoadBalancedConnection> connectionsCreated = new CopyOnWriteArrayList<>();
@@ -241,7 +242,8 @@ public class RoundRobinLoadBalancerTest {
         testSelectStampede(newSaturableConnectionFilter());
     }
 
-    private void testSelectStampede(final Function<TestLoadBalancedConnection, TestLoadBalancedConnection> selectionFilter) throws Exception {
+    private void testSelectStampede(
+            final Function<TestLoadBalancedConnection, TestLoadBalancedConnection> selectionFilter) throws Exception {
         connectionFactory = new DelegatingConnectionFactory(this::newUnrealizedConnectionSingle);
         lb = newTestLoadBalancer(connectionFactory);
 
@@ -295,7 +297,8 @@ public class RoundRobinLoadBalancerTest {
 
         assertThat(exceptions, is(empty()));
         assertThat(selectedConnections, hasSize(100));
-        assertThat(selectedConnections.stream().map(TestLoadBalancedConnection::address).collect(toSet()), contains("address-1"));
+        assertThat(selectedConnections.stream().map(TestLoadBalancedConnection::address).collect(toSet()),
+                contains("address-1"));
         assertThat(connectionsCreated, hasSize(both(greaterThan(0)).and(lessThanOrEqualTo(100))));
     }
 
