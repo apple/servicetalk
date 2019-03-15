@@ -20,6 +20,7 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpClientFilterFactory;
 import io.servicetalk.http.api.HttpConnectionFilterFactory;
 import io.servicetalk.http.api.HttpExecutionStrategy;
+import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.StreamingHttpClientFilter;
 import io.servicetalk.http.api.StreamingHttpConnectionFilter;
 import io.servicetalk.http.api.StreamingHttpRequest;
@@ -30,8 +31,6 @@ import io.opentracing.Scope;
 import io.opentracing.Span;
 import io.opentracing.Tracer;
 import io.opentracing.Tracer.SpanBuilder;
-
-import java.util.function.Supplier;
 
 import static io.opentracing.tag.Tags.HTTP_METHOD;
 import static io.opentracing.tag.Tags.HTTP_URL;
@@ -69,7 +68,8 @@ public class TracingHttpRequesterFilter extends AbstractTracingHttpFilter implem
     }
 
     @Override
-    public StreamingHttpClientFilter create(final StreamingHttpClientFilter client, final Publisher<Object> lbEvents) {
+    public final StreamingHttpClientFilter create(final StreamingHttpClientFilter client,
+                                                  final Publisher<Object> lbEvents) {
         return new StreamingHttpClientFilter(client) {
 
             @Override
@@ -88,7 +88,7 @@ public class TracingHttpRequesterFilter extends AbstractTracingHttpFilter implem
     }
 
     @Override
-    public StreamingHttpConnectionFilter create(final StreamingHttpConnectionFilter connection) {
+    public final StreamingHttpConnectionFilter create(final StreamingHttpConnectionFilter connection) {
         return new StreamingHttpConnectionFilter(connection) {
 
             @Override
@@ -107,20 +107,14 @@ public class TracingHttpRequesterFilter extends AbstractTracingHttpFilter implem
     }
 
     @Override
-    protected ScopeTracker newTracker(final StreamingHttpRequest request,
-                                      final Supplier<Single<StreamingHttpResponse>> singleSupplier) {
-        return new RequesterScopeTracker(request, singleSupplier);
+    final ScopeTracker newTracker() {
+        return new RequesterScopeTracker();
     }
 
     private final class RequesterScopeTracker extends ScopeTracker {
 
-        private RequesterScopeTracker(final StreamingHttpRequest request,
-                                      final Supplier<Single<StreamingHttpResponse>> singleSupplier) {
-            super(request, singleSupplier);
-        }
-
         @Override
-        protected Scope newScope() {
+        Scope newScope(final HttpRequestMetaData request) {
             SpanBuilder spanBuilder = tracer.buildSpan(componentName)
                     .withTag(SPAN_KIND.getKey(), SPAN_KIND_CLIENT)
                     .withTag(HTTP_METHOD.getKey(), request.method().name())

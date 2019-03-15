@@ -23,13 +23,13 @@ import io.servicetalk.concurrent.SingleSource.Subscriber;
 import io.servicetalk.concurrent.api.LegacyTestSingle;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.SingleOperator;
+import io.servicetalk.concurrent.api.TerminalSignalConsumer;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.DefaultHttpHeadersFactory;
 import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.StreamingHttpResponse;
-import io.servicetalk.http.utils.DoBeforeOnFinallyOnHttpResponseOperator.OnFinally;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -60,7 +60,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 
 @RunWith(MockitoJUnitRunner.class)
-public class DoBeforeOnFinallyOnHttpResponseOperatorTest {
+public class DoBeforeFinallyOnHttpResponseOperatorTest {
     private static final BufferAllocator allocator = DEFAULT_ALLOCATOR;
     private static final StreamingHttpRequestResponseFactory reqRespFactory =
             new DefaultStreamingHttpRequestResponseFactory(allocator, DefaultHttpHeadersFactory.INSTANCE);
@@ -70,13 +70,13 @@ public class DoBeforeOnFinallyOnHttpResponseOperatorTest {
     public final ExpectedException expectedException = ExpectedException.none();
 
     @Mock
-    private OnFinally doBeforeFinally;
+    private TerminalSignalConsumer doBeforeFinally;
 
     private SingleOperator<StreamingHttpResponse, StreamingHttpResponse> operator;
 
     @Before
     public void setUp() {
-        operator = new DoBeforeOnFinallyOnHttpResponseOperator(doBeforeFinally);
+        operator = new DoBeforeFinallyOnHttpResponseOperator(doBeforeFinally);
     }
 
     @Test
@@ -85,7 +85,7 @@ public class DoBeforeOnFinallyOnHttpResponseOperatorTest {
 
         toSource(Single.<StreamingHttpResponse>success(null).liftSynchronous(operator)).subscribe(subscriber);
         assertThat("onSubscribe not called.", subscriber.cancellable, is(notNullValue()));
-        verify(doBeforeFinally).succeeded();
+        verify(doBeforeFinally).onComplete();
 
         subscriber.verifyNullResponseReceived();
         verifyNoMoreInteractions(doBeforeFinally);
@@ -135,7 +135,7 @@ public class DoBeforeOnFinallyOnHttpResponseOperatorTest {
         assertThat("onSubscribe not called.", subscriber.cancellable, is(notNullValue()));
 
         subscriber.cancellable.cancel();
-        verify(doBeforeFinally).canceled();
+        verify(doBeforeFinally).onCancel();
         responseSingle.verifyCancelled();
 
         final StreamingHttpResponse response = reqRespFactory.newResponse(OK);
@@ -156,7 +156,7 @@ public class DoBeforeOnFinallyOnHttpResponseOperatorTest {
         assertThat("onSubscribe not called.", subscriber.cancellable, is(notNullValue()));
 
         subscriber.cancellable.cancel();
-        verify(doBeforeFinally).canceled();
+        verify(doBeforeFinally).onCancel();
         responseSingle.verifyCancelled();
 
         responseSingle.onError(DELIBERATE_EXCEPTION);
@@ -193,7 +193,7 @@ public class DoBeforeOnFinallyOnHttpResponseOperatorTest {
 
         responseSingle.onError(DELIBERATE_EXCEPTION);
 
-        verify(doBeforeFinally).failed(DELIBERATE_EXCEPTION);
+        verify(doBeforeFinally).onError(DELIBERATE_EXCEPTION);
         assertThat("onError not called.", subscriber.error, is(DELIBERATE_EXCEPTION));
 
         subscriber.cancellable.cancel();
@@ -223,7 +223,7 @@ public class DoBeforeOnFinallyOnHttpResponseOperatorTest {
 
         payload.onComplete();
 
-        verify(doBeforeFinally).succeeded();
+        verify(doBeforeFinally).onComplete();
     }
 
     private static final class ResponseSubscriber implements SingleSource.Subscriber<StreamingHttpResponse> {

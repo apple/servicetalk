@@ -30,7 +30,6 @@ import io.opentracing.Scope;
 import io.opentracing.SpanContext;
 import io.opentracing.Tracer;
 
-import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
 import static io.opentracing.Tracer.SpanBuilder;
@@ -67,7 +66,7 @@ public class TracingHttpServiceFilter extends AbstractTracingHttpFilter implemen
     }
 
     @Override
-    public StreamingHttpServiceFilter create(final StreamingHttpService service) {
+    public final StreamingHttpServiceFilter create(final StreamingHttpService service) {
         return new StreamingHttpServiceFilter(service) {
             @Override
             public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
@@ -79,9 +78,8 @@ public class TracingHttpServiceFilter extends AbstractTracingHttpFilter implemen
     }
 
     @Override
-    protected ScopeTracker newTracker(final StreamingHttpRequest request,
-                                      final Supplier<Single<StreamingHttpResponse>> singleSupplier) {
-        return new ServiceScopeTracker(request, singleSupplier);
+    final ScopeTracker newTracker() {
+        return new ServiceScopeTracker();
     }
 
     private final class ServiceScopeTracker extends ScopeTracker {
@@ -89,13 +87,8 @@ public class TracingHttpServiceFilter extends AbstractTracingHttpFilter implemen
         @Nullable
         private SpanContext parentSpanContext;
 
-        private ServiceScopeTracker(final StreamingHttpRequest request,
-                                    final Supplier<Single<StreamingHttpResponse>> singleSupplier) {
-            super(request, singleSupplier);
-        }
-
         @Override
-        protected Scope newScope() {
+        Scope newScope(final HttpRequestMetaData request) {
             SpanBuilder spanBuilder = tracer.buildSpan(getOperationName(componentName, request))
                     .withTag(SPAN_KIND.getKey(), SPAN_KIND_SERVER)
                     .withTag(HTTP_METHOD.getKey(), request.method().name())
@@ -108,9 +101,10 @@ public class TracingHttpServiceFilter extends AbstractTracingHttpFilter implemen
         }
 
         @Override
-        protected void onResponseMeta(final HttpResponseMetaData metaData) {
+        void onResponseMeta(final HttpResponseMetaData metaData) {
             super.onResponseMeta(metaData);
             if (injectSpanContextIntoResponse(parentSpanContext)) {
+                //noinspection ConstantConditions - super.onResponseMeta(metaData); ensures non-null
                 tracer.inject(currentScope().span().context(), formatter, metaData.headers());
             }
         }

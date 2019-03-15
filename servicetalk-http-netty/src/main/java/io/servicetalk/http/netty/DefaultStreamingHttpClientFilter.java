@@ -26,7 +26,7 @@ import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequestFunction;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.StreamingHttpResponse;
-import io.servicetalk.http.utils.DoBeforeOnFinallyOnHttpResponseOperator;
+import io.servicetalk.http.utils.DoBeforeFinallyOnHttpResponseOperator;
 import io.servicetalk.transport.api.ExecutionContext;
 
 import java.util.function.Function;
@@ -65,7 +65,7 @@ final class DefaultStreamingHttpClientFilter extends StreamingHttpClientFilter {
         // correct.
         return loadBalancer.selectConnection(SELECTOR_FOR_REQUEST)
                 .flatMap(c -> c.request(strategy, request)
-                        .liftSynchronous(new DoBeforeOnFinallyOnHttpResponseOperator(c::requestFinished)));
+                        .liftSynchronous(new DoBeforeFinallyOnHttpResponseOperator(c::requestFinished)));
     }
 
     @Override

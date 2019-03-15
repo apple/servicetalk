@@ -16,18 +16,18 @@
 package io.servicetalk.opentracing.http;
 
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.concurrent.api.TerminalSignalConsumer;
 import io.servicetalk.http.api.HttpHeaders;
+import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
-import io.servicetalk.http.utils.DoBeforeOnFinallyOnHttpResponseOperator;
-import io.servicetalk.http.utils.DoBeforeOnFinallyOnHttpResponseOperator.OnFinally;
+import io.servicetalk.http.utils.DoBeforeFinallyOnHttpResponseOperator;
 import io.servicetalk.opentracing.inmemory.api.InMemoryTraceStateFormat;
 
 import io.opentracing.Scope;
 import io.opentracing.Tracer;
 
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
@@ -48,32 +48,14 @@ abstract class AbstractTracingHttpFilter {
      *
      * @param tracer The {@link Tracer}.
      * @param componentName The component name used during building new spans.
-     */
-    protected AbstractTracingHttpFilter(final Tracer tracer,
-                                        final String componentName) {
-        this(tracer, componentName, true);
-    }
-
-    /**
-     * Create a new instance.
-     *
-     * @param tracer The {@link Tracer}.
-     * @param componentName The component name used during building new spans.
      * @param validateTraceKeyFormat {@code true} to validate the contents of the trace ids.
      */
-    protected AbstractTracingHttpFilter(final Tracer tracer,
-                                        final String componentName,
-                                        final boolean validateTraceKeyFormat) {
+    AbstractTracingHttpFilter(final Tracer tracer,
+                              final String componentName,
+                              final boolean validateTraceKeyFormat) {
         this.tracer = requireNonNull(tracer);
         this.componentName = requireNonNull(componentName);
         this.formatter = traceStateFormatter(validateTraceKeyFormat);
-    }
-
-    protected void tagErrorAndClose(final Scope currentScope, final AtomicBoolean scopeClosed) {
-        if (!scopeClosed.getAndSet(true)) {
-            ERROR.set(currentScope.span(), true);
-            currentScope.close();
-        }
     }
 
     /**
@@ -85,51 +67,43 @@ abstract class AbstractTracingHttpFilter {
         return metaData.status().statusClass().equals(SERVER_ERROR_5XX);
     }
 
-    protected abstract ScopeTracker newTracker(StreamingHttpRequest request,
-                                               Supplier<Single<StreamingHttpResponse>> singleSupplier);
+    abstract ScopeTracker newTracker();
 
-    protected abstract class ScopeTracker implements OnFinally {
-
-        protected final StreamingHttpRequest request;
-        private final Supplier<Single<StreamingHttpResponse>> singleSupplier;
+    abstract class ScopeTracker implements TerminalSignalConsumer {
 
         @Nullable
         private Scope currentScope;
         @Nullable
         private HttpResponseMetaData metaData;
 
-        protected ScopeTracker(final StreamingHttpRequest request,
-                               final Supplier<Single<StreamingHttpResponse>> singleSupplier) {
-            this.request = request;
-            this.singleSupplier = singleSupplier;
-        }
-
         @Nullable
-        protected Scope currentScope() {
+        Scope currentScope() {
             return currentScope;
         }
 
-        protected abstract Scope newScope();
+        abstract Scope newScope(HttpRequestMetaData requestMetaData);
 
-        protected Single<StreamingHttpResponse> prepareScopeAndRequestOrFailEarly() {
+        Single<StreamingHttpResponse> prepareScopeAndRequestOrFailEarly(
+                final HttpRequestMetaData requestMetaData,
+                final Supplier<Single<StreamingHttpResponse>> singleSupplier) {
             try {
-                currentScope = newScope();
+                currentScope = newScope(requestMetaData);
                 return requireNonNull(singleSupplier.get());
             } catch (Throwable t) {
                 if (currentScope != null) {
-                    failed(t);
+                    onError(t);
                 }
-                throw t;
+                return Single.error(t);
             }
         }
 
-        protected void onResponseMeta(final HttpResponseMetaData metaData) {
+        void onResponseMeta(final HttpResponseMetaData metaData) {
             assert currentScope != null : "never null after preparation";
             this.metaData = metaData;
         }
 
         @Override
-        public void succeeded() {
+        public void onComplete() {
             assert metaData != null : "can't have succeeded without capturing metadata first";
             assert currentScope != null : "never null after preparation";
             tagStatusCode();
@@ -143,7 +117,7 @@ abstract class AbstractTracingHttpFilter {
         }
 
         @Override
-        public void failed(final Throwable throwable) {
+        public void onError(final Throwable throwable) {
             assert currentScope != null : "never null after preparation";
             tagStatusCode();
             ERROR.set(currentScope.span(), true);
@@ -151,7 +125,7 @@ abstract class AbstractTracingHttpFilter {
         }
 
         @Override
-        public void canceled() {
+        public void onCancel() {
             assert currentScope != null : "never null after preparation";
             tagStatusCode();
             ERROR.set(currentScope.span(), true);
@@ -166,18 +140,14 @@ abstract class AbstractTracingHttpFilter {
         }
     }
 
-    protected Single<StreamingHttpResponse> trackRequest(final StreamingHttpRequest request,
-                                                         final Supplier<Single<StreamingHttpResponse>> singleSupplier) {
+    final Single<StreamingHttpResponse> trackRequest(final StreamingHttpRequest request,
+                                                     final Supplier<Single<StreamingHttpResponse>> singleSupplier) {
         return Single.defer(() -> {
-            final ScopeTracker scopeTracker = newTracker(request, singleSupplier);
-            final Single<StreamingHttpResponse> responseSingle;
-            try {
-                responseSingle = scopeTracker.prepareScopeAndRequestOrFailEarly();
-            } catch (Throwable throwable) {
-                return Single.error(throwable);
-            }
-            return responseSingle
-                    .liftSynchronous(new DoBeforeOnFinallyOnHttpResponseOperator(scopeTracker))
+            final ScopeTracker scopeTracker = newTracker();
+            return scopeTracker.prepareScopeAndRequestOrFailEarly(request, singleSupplier)
+                    .liftSynchronous(new DoBeforeFinallyOnHttpResponseOperator(scopeTracker))
+                    // DoBeforeFinallyOnHttpResponseOperator influences how the nested source will be emitted, hence
+                    // doBeforeSuccess() is applied after to ensure we have a consistent view of the data path
                     .doBeforeSuccess(scopeTracker::onResponseMeta);
         }).subscribeShareContext();
     }
