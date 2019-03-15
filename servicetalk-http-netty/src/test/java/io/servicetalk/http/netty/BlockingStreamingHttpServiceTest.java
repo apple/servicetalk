@@ -19,8 +19,6 @@ import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.http.api.BlockingStreamingHttpClient;
 import io.servicetalk.http.api.BlockingStreamingHttpRequestHandler;
 import io.servicetalk.http.api.BlockingStreamingHttpResponse;
-import io.servicetalk.http.api.DelegatingBlockingStreamingHttpServerResponse;
-import io.servicetalk.http.api.DelegatingHttpPayloadWriter;
 import io.servicetalk.http.api.HttpOutputStream;
 import io.servicetalk.http.api.HttpPayloadWriter;
 import io.servicetalk.http.api.HttpResponse;
@@ -33,7 +31,6 @@ import org.junit.Test;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static io.servicetalk.buffer.api.EmptyBuffer.EMPTY_BUFFER;
@@ -133,9 +130,11 @@ public class BlockingStreamingHttpServiceTest {
     @Test
     public void respondWithPayloadBodyAndTrailersUsingPayloadWriter() throws Exception {
         respondWithPayloadBodyAndTrailers((ctx, request, response) -> {
+            response.setHeader(TRAILER, X_TOTAL_LENGTH);
             try (HttpPayloadWriter<Buffer> pw = response.sendMetaData()) {
                 pw.write(ctx.executionContext().bufferAllocator().fromAscii("Hello\n"));
                 pw.write(ctx.executionContext().bufferAllocator().fromAscii("World\n"));
+                pw.setTrailer(X_TOTAL_LENGTH, String.valueOf("Hello\nWorld\n".length()));
             }
         }, false);
     }
@@ -143,9 +142,11 @@ public class BlockingStreamingHttpServiceTest {
     @Test
     public void respondWithPayloadBodyAndTrailersUsingPayloadWriterWithSerializer() throws Exception {
         respondWithPayloadBodyAndTrailers((ctx, request, response) -> {
+            response.setHeader(TRAILER, X_TOTAL_LENGTH);
             try (HttpPayloadWriter<String> pw = response.sendMetaData(textSerializer())) {
                 pw.write("Hello\n");
                 pw.write("World\n");
+                pw.setTrailer(X_TOTAL_LENGTH, String.valueOf("Hello\nWorld\n".length()));
             }
         }, true);
     }
@@ -153,41 +154,18 @@ public class BlockingStreamingHttpServiceTest {
     @Test
     public void respondWithPayloadBodyAndTrailersUsingOutputStream() throws Exception {
         respondWithPayloadBodyAndTrailers((ctx, request, response) -> {
+            response.setHeader(TRAILER, X_TOTAL_LENGTH);
             try (HttpOutputStream out = response.sendMetaDataOutputStream()) {
                 out.write("Hello\n".getBytes(US_ASCII));
                 out.write("World\n".getBytes(US_ASCII));
+                out.setTrailer(X_TOTAL_LENGTH, String.valueOf("Hello\nWorld\n".length()));
             }
         }, false);
     }
 
-    private void respondWithPayloadBodyAndTrailers(BlockingStreamingHttpRequestHandler delegate,
+    private void respondWithPayloadBodyAndTrailers(BlockingStreamingHttpRequestHandler handler,
                                                    boolean useDeserializer) throws Exception {
-        BlockingStreamingHttpRequestHandler trailersFilter = (ctx, request, response) -> delegate.handle(ctx, request,
-                new DelegatingBlockingStreamingHttpServerResponse(response, ctx.executionContext().bufferAllocator()) {
-            @Override
-            public HttpPayloadWriter<Buffer> sendMetaData() {
-                delegate().setHeader(TRAILER, X_TOTAL_LENGTH);
-
-                return new DelegatingHttpPayloadWriter<Buffer>(delegate().sendMetaData()) {
-
-                    private final AtomicInteger totalLength = new AtomicInteger();
-
-                    @Override
-                    public void write(final Buffer object) throws IOException {
-                        totalLength.addAndGet(object.readableBytes());
-                        delegate().write(object);
-                    }
-
-                    @Override
-                    public void close() throws IOException {
-                        setTrailer(X_TOTAL_LENGTH, totalLength.toString());
-                        delegate().close();
-                    }
-                };
-            }
-        });
-
-        BlockingStreamingHttpClient client = context(trailersFilter);
+        BlockingStreamingHttpClient client = context(handler);
 
         BlockingStreamingHttpResponse response = client.request(client.get("/"));
         assertResponse(response);
@@ -251,65 +229,6 @@ public class BlockingStreamingHttpServiceTest {
         BlockingStreamingHttpResponse response = client.request(client.post("/")
                 .payloadBody(asList("Hello\n", "World\n"), textSerializer()));
         assertResponse(response, HELLO_WORLD, useDeserializer);
-    }
-
-    @Test
-    public void payloadBodyFilteringPayloadWriter() throws Exception {
-        payloadBodyFiltering((ctx, request, response) -> {
-            try (HttpPayloadWriter<Buffer> pw = response.sendMetaData()) {
-                pw.write(ctx.executionContext().bufferAllocator().fromAscii("Hello"));
-                pw.write(ctx.executionContext().bufferAllocator().fromAscii("World"));
-            }
-        });
-    }
-
-    @Test
-    public void payloadBodyFilteringPayloadWriterWithSerializer() throws Exception {
-        payloadBodyFiltering((ctx, request, response) -> {
-            try (HttpPayloadWriter<String> pw = response.sendMetaData(textSerializer())) {
-                pw.write("Hello");
-                pw.write("World");
-            }
-        });
-    }
-
-    @Test
-    public void payloadBodyFilteringOutputStream() throws Exception {
-        payloadBodyFiltering((ctx, request, response) -> {
-            try (HttpOutputStream out = response.sendMetaDataOutputStream()) {
-                out.write("Hello".getBytes(US_ASCII));
-                out.write("World".getBytes(US_ASCII));
-            }
-        });
-    }
-
-    private void payloadBodyFiltering(BlockingStreamingHttpRequestHandler delegate) throws Exception {
-        BlockingStreamingHttpRequestHandler addNewLineFilter = (ctx, request, response) -> delegate.handle(ctx, request,
-                new DelegatingBlockingStreamingHttpServerResponse(response, ctx.executionContext().bufferAllocator()) {
-            @Override
-            public HttpPayloadWriter<Buffer> sendMetaData() {
-                return new DelegatingHttpPayloadWriter<Buffer>(delegate().sendMetaData()) {
-                    @Override
-                    public void write(final Buffer object) throws IOException {
-                        if (object.tryEnsureWritable(1, true)) {
-                            object.writeByte('\n');
-                            delegate().write(object);
-                        } else {
-                            Buffer newBuffer = ctx.executionContext().bufferAllocator()
-                                    .newBuffer(object.readableBytes() + 1);
-                            newBuffer.writeBytes(object);
-                            newBuffer.writeByte('\n');
-                            delegate().write(newBuffer);
-                        }
-                    }
-                };
-            }
-        });
-
-        BlockingStreamingHttpClient client = context(addNewLineFilter);
-
-        BlockingStreamingHttpResponse response = client.request(client.get("/"));
-        assertResponse(response, HELLO_WORLD);
     }
 
     @Test
