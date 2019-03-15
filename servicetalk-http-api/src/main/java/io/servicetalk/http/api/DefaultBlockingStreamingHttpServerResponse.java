@@ -17,33 +17,23 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
-import io.servicetalk.concurrent.api.CompletableProcessor;
-import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.concurrent.api.SingleProcessor;
-import io.servicetalk.concurrent.api.internal.ConnectablePayloadWriter;
 
-import java.io.IOException;
-
-import static io.servicetalk.concurrent.api.Single.success;
-import static io.servicetalk.http.api.StreamingHttpResponses.newResponseWithTrailers;
-import static java.util.Objects.requireNonNull;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Function;
 
 final class DefaultBlockingStreamingHttpServerResponse extends BlockingStreamingHttpServerResponse {
 
-    private boolean sent;
-    private final HttpHeaders trailers;
-    private final BufferAllocator allocator;
-    private final SingleProcessor<StreamingHttpResponse> responseProcessor;
-    private final CompletableProcessor payloadProcessor = new CompletableProcessor();
+    private final Function<BlockingStreamingHttpServerResponse, HttpPayloadWriter<Buffer>> sendMeta;
+    private final AtomicBoolean metaSent;
 
     DefaultBlockingStreamingHttpServerResponse(final HttpResponseStatus status, final HttpProtocolVersion version,
-                                               final HttpHeaders headers, final HttpHeaders trailers,
-                                               final BufferAllocator allocator,
-                                               final SingleProcessor<StreamingHttpResponse> responseProcessor) {
+                                               final HttpHeaders headers, final BufferAllocator allocator,
+                                               final Function<BlockingStreamingHttpServerResponse,
+                                                       HttpPayloadWriter<Buffer>> sendMeta,
+                                               final AtomicBoolean metaSent) {
         super(status, version, headers, allocator);
-        this.trailers = requireNonNull(trailers);
-        this.allocator = requireNonNull(allocator);
-        this.responseProcessor = requireNonNull(responseProcessor);
+        this.sendMeta = sendMeta;
+        this.metaSent = metaSent;
     }
 
     @Override
@@ -107,72 +97,13 @@ final class DefaultBlockingStreamingHttpServerResponse extends BlockingStreaming
     }
 
     private void checkSent() {
-        if (sent) {
-            throwSent();
+        if (metaSent.get()) {
+            throw new IllegalStateException("Response meta-data is already sent");
         }
-    }
-
-    private void throwSent() {
-        final IllegalStateException e = new IllegalStateException("Response meta-data is already sent");
-        payloadProcessor.onError(e);
-        throw e;
     }
 
     @Override
     public HttpPayloadWriter<Buffer> sendMetaData() {
-        if (sent) {
-            throwSent();
-        }
-
-        final BufferHttpPayloadWriter pw = new BufferHttpPayloadWriter(trailers, payloadProcessor);
-        final Publisher<Object> payloadBodyAndTrailers = payloadProcessor.merge(pw.connect()
-                .map(buffer -> (Object) buffer) // down cast to Object
-                .concatWith(success(trailers)));
-
-        final StreamingHttpResponse response = newResponseWithTrailers(status(), version(), headers(), allocator,
-                payloadBodyAndTrailers);
-        responseProcessor.onSuccess(response);
-        sent = true;
-        return pw;
-    }
-
-    private static final class BufferHttpPayloadWriter implements HttpPayloadWriter<Buffer> {
-
-        private final ConnectablePayloadWriter<Buffer> payloadWriter = new ConnectablePayloadWriter<>();
-        private final HttpHeaders trailers;
-        private final CompletableProcessor payloadProcessor;
-
-        BufferHttpPayloadWriter(final HttpHeaders trailers, final CompletableProcessor payloadProcessor) {
-            this.trailers = trailers;
-            this.payloadProcessor = payloadProcessor;
-        }
-
-        @Override
-        public void write(final Buffer object) throws IOException {
-            payloadWriter.write(object);
-        }
-
-        @Override
-        public void flush() throws IOException {
-            payloadWriter.flush();
-        }
-
-        @Override
-        public void close() throws IOException {
-            try {
-                payloadWriter.close();
-            } finally {
-                payloadProcessor.onComplete();
-            }
-        }
-
-        @Override
-        public HttpHeaders trailers() {
-            return trailers;
-        }
-
-        Publisher<Buffer> connect() {
-            return payloadWriter.connect();
-        }
+        return sendMeta.apply(this);
     }
 }

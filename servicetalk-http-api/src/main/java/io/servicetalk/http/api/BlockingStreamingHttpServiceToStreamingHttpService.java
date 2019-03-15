@@ -15,17 +15,22 @@
  */
 package io.servicetalk.http.api;
 
-import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.SingleSource.Subscriber;
 import io.servicetalk.concurrent.api.Completable;
+import io.servicetalk.concurrent.api.CompletableProcessor;
+import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.concurrent.api.SingleProcessor;
+import io.servicetalk.concurrent.api.internal.ConnectablePayloadWriter;
 import io.servicetalk.concurrent.internal.ThreadInterruptingCancellable;
 
-import javax.annotation.Nullable;
+import java.io.IOException;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Function;
 
 import static io.servicetalk.http.api.BlockingUtils.blockingToCompletable;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
+import static io.servicetalk.http.api.StreamingHttpResponses.newResponseWithTrailers;
 import static java.lang.Thread.currentThread;
 import static java.util.Objects.requireNonNull;
 
@@ -48,43 +53,41 @@ final class BlockingStreamingHttpServiceToStreamingHttpService extends Streaming
             @Override
             protected void handleSubscribe(final Subscriber<? super StreamingHttpResponse> subscriber) {
                 final ThreadInterruptingCancellable tiCancellable = new ThreadInterruptingCancellable(currentThread());
+                subscriber.onSubscribe(tiCancellable);
 
-                final SingleProcessor<StreamingHttpResponse> responseProcessor = new SingleProcessor<>();
-                responseProcessor.subscribe(new Subscriber<StreamingHttpResponse>() {
-                    @Override
-                    public void onSubscribe(final Cancellable cancellable) {
-                        subscriber.onSubscribe(() -> {
-                            try {
-                                cancellable.cancel();
-                            } finally {
-                                tiCancellable.cancel();
-                            }
-                        });
+                final AtomicBoolean metaSent = new AtomicBoolean();
+                final CompletableProcessor payloadProcessor = new CompletableProcessor();
+                final Function<BlockingStreamingHttpServerResponse, HttpPayloadWriter<Buffer>> sendMeta = response -> {
+                    if (!metaSent.compareAndSet(false, true)) {
+                        throw new IllegalStateException("Response meta-data is already sent");
                     }
 
-                    @Override
-                    public void onSuccess(@Nullable final StreamingHttpResponse result) {
-                        tiCancellable.setDone();
-                        subscriber.onSuccess(result);
-                    }
+                    final BufferHttpPayloadWriter pw = new BufferHttpPayloadWriter(
+                            ctx.headersFactory().newTrailers(), payloadProcessor);
 
-                    @Override
-                    public void onError(final Throwable t) {
-                        tiCancellable.setDone(t);
-                        subscriber.onError(t);
-                    }
-                });
+                    final Publisher<Object> payloadBodyAndTrailers = payloadProcessor.merge(pw.connect()
+                            .map(buffer -> (Object) buffer) // down cast to Object
+                            .concatWith(success(pw.trailers())));
+
+                    subscriber.onSuccess(newResponseWithTrailers(response.status(), response.version(),
+                            response.headers(), ctx.executionContext().bufferAllocator(), payloadBodyAndTrailers));
+                    return pw;
+                };
                 try {
-                    final BlockingStreamingHttpServerResponse response = new DefaultBlockingStreamingHttpServerResponse(
-                            OK, request.version(),
-                            ctx.headersFactory().newHeaders(), ctx.headersFactory().newTrailers(),
-                            ctx.executionContext().bufferAllocator(), responseProcessor);
-                    service.handle(ctx, request.toBlockingStreamingRequest(), response);
+                    service.handle(ctx, request.toBlockingStreamingRequest(),
+                            new DefaultBlockingStreamingHttpServerResponse(OK, request.version(),
+                            ctx.headersFactory().newHeaders(), ctx.executionContext().bufferAllocator(),
+                                    sendMeta, metaSent));
                 } catch (Throwable cause) {
-                    // We may have already completed the subscriber in DefaultBlockingStreamingHttpServerResponse.
-                    // However, the current implementation of SingleProcessor protects against multiple terminal events.
-                    subscriber.onError(cause);
+                    tiCancellable.setDone(cause);
+                    if (metaSent.compareAndSet(false, true)) {
+                        subscriber.onError(cause);
+                    } else {
+                        payloadProcessor.onError(cause);
+                    }
+                    return;
                 }
+                tiCancellable.setDone();
             }
         };
     }
@@ -106,5 +109,45 @@ final class BlockingStreamingHttpServiceToStreamingHttpService extends Streaming
         // If we are here, it is for a user implemented BlockingStreamingHttpService, so we assume the strategy provided
         // by the passed service is the effective strategy.
         return new BlockingStreamingHttpServiceToStreamingHttpService(service, service.executionStrategy());
+    }
+
+    private static final class BufferHttpPayloadWriter implements HttpPayloadWriter<Buffer> {
+
+        private final ConnectablePayloadWriter<Buffer> payloadWriter = new ConnectablePayloadWriter<>();
+        private final HttpHeaders trailers;
+        private final CompletableProcessor payloadProcessor;
+
+        BufferHttpPayloadWriter(final HttpHeaders trailers, final CompletableProcessor payloadProcessor) {
+            this.trailers = trailers;
+            this.payloadProcessor = payloadProcessor;
+        }
+
+        @Override
+        public void write(final Buffer object) throws IOException {
+            payloadWriter.write(object);
+        }
+
+        @Override
+        public void flush() throws IOException {
+            payloadWriter.flush();
+        }
+
+        @Override
+        public void close() throws IOException {
+            try {
+                payloadWriter.close();
+            } finally {
+                payloadProcessor.onComplete();
+            }
+        }
+
+        @Override
+        public HttpHeaders trailers() {
+            return trailers;
+        }
+
+        Publisher<Buffer> connect() {
+            return payloadWriter.connect();
+        }
     }
 }
