@@ -52,6 +52,7 @@ import static io.servicetalk.concurrent.api.ExecutorRule.newRule;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.error;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
+import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.concurrent.internal.PlatformDependent.throwException;
 import static io.servicetalk.http.api.HttpHeaderNames.TRAILER;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
@@ -394,6 +395,101 @@ public class BlockingStreamingHttpServiceToStreamingHttpServiceTest {
             assertTrue(e.getCause() instanceof IllegalStateException);
             assertEquals("Response meta-data is already sent", e.getCause().getMessage());
         }
+    }
+
+    @Test
+    public void throwBeforeSendMetaData() throws Exception {
+        CountDownLatch onErrorLatch = new CountDownLatch(1);
+        AtomicReference<Throwable> throwableRef = new AtomicReference<>();
+
+        BlockingStreamingHttpService syncService = new BlockingStreamingHttpService() {
+            @Override
+            public void handle(final HttpServiceContext ctx,
+                               final BlockingStreamingHttpRequest request,
+                               final BlockingStreamingHttpServerResponse response) throws Exception {
+                throw DELIBERATE_EXCEPTION;
+            }
+        };
+        StreamingHttpService asyncService = syncService.asStreamingService();
+        toSource(asyncService.handle(mockCtx, reqRespFactory.get("/"), reqRespFactory)
+                .subscribeOn(executorRule.executor()))
+                .subscribe(new SingleSource.Subscriber<StreamingHttpResponse>() {
+
+                    @Override
+                    public void onSubscribe(final Cancellable cancellable) {
+                    }
+
+                    @Override
+                    public void onSuccess(@Nullable final StreamingHttpResponse result) {
+                    }
+
+                    @Override
+                    public void onError(final Throwable t) {
+                        throwableRef.set(t);
+                        onErrorLatch.countDown();
+                    }
+                });
+        onErrorLatch.await();
+        assertEquals(DELIBERATE_EXCEPTION, throwableRef.get());
+    }
+
+    @Test
+    public void throwAfterSendMetaData() throws Exception {
+        CountDownLatch onErrorLatch = new CountDownLatch(1);
+        AtomicReference<Throwable> throwableRef = new AtomicReference<>();
+
+        BlockingStreamingHttpService syncService = new BlockingStreamingHttpService() {
+            @Override
+            public void handle(final HttpServiceContext ctx,
+                               final BlockingStreamingHttpRequest request,
+                               final BlockingStreamingHttpServerResponse response) throws Exception {
+                response.sendMetaData();
+                throw DELIBERATE_EXCEPTION;
+            }
+        };
+        StreamingHttpService asyncService = syncService.asStreamingService();
+        StreamingHttpResponse asyncResponse = asyncService.handle(mockCtx, reqRespFactory.get("/"), reqRespFactory)
+                .subscribeOn(executorRule.executor()).toFuture().get();
+        assertNotNull(asyncResponse);
+        toSource(asyncResponse.payloadBody()).subscribe(new Subscriber<Buffer>() {
+            @Override
+            public void onSubscribe(final Subscription s) {
+            }
+
+            @Override
+            public void onNext(final Buffer s) {
+            }
+
+            @Override
+            public void onError(final Throwable t) {
+                throwableRef.set(t);
+                onErrorLatch.countDown();
+            }
+
+            @Override
+            public void onComplete() {
+            }
+        });
+        onErrorLatch.await();
+        assertEquals(DELIBERATE_EXCEPTION, throwableRef.get());
+    }
+
+    @Test
+    public void throwAfterPayloadWriterClosed() throws Exception {
+        BlockingStreamingHttpService syncService = new BlockingStreamingHttpService() {
+            @Override
+            public void handle(final HttpServiceContext ctx,
+                               final BlockingStreamingHttpRequest request,
+                               final BlockingStreamingHttpServerResponse response) throws Exception {
+                response.sendMetaData().close();
+                throw DELIBERATE_EXCEPTION;
+            }
+        };
+
+        List<Object> response = invokeService(syncService, reqRespFactory.get("/"));
+        assertMetaData(OK, response);
+        assertPayloadBody("", response);
+        assertEmptyTrailers(response);
     }
 
     private List<Object> invokeService(BlockingStreamingHttpService syncService,
