@@ -16,15 +16,19 @@
 package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.Buffer;
+import io.servicetalk.buffer.api.BufferAllocator;
 
 import java.io.IOException;
 
 abstract class DelegatingToBufferHttpPayloadWriter<T> implements HttpPayloadWriter<T> {
 
     protected final HttpPayloadWriter<Buffer> delegate;
+    protected final BufferAllocator allocator;
 
-    protected DelegatingToBufferHttpPayloadWriter(final HttpPayloadWriter<Buffer> delegate) {
+    protected DelegatingToBufferHttpPayloadWriter(final HttpPayloadWriter<Buffer> delegate,
+                                                  final BufferAllocator allocator) {
         this.delegate = delegate;
+        this.allocator = allocator;
     }
 
     @Override

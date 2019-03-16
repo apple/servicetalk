@@ -70,10 +70,10 @@ final class DefaultSizeAwareClassHttpSerializer<T> implements HttpSerializer<T> 
     }
 
     @Override
-    public HttpPayloadWriter<T> serialize(final BlockingStreamingHttpServerResponse response,
+    public HttpPayloadWriter<T> serialize(final HttpHeaders headers, final HttpPayloadWriter<Buffer> payloadWriter,
                                           final BufferAllocator allocator) {
-        addContentType.accept(response.headers());
-        return new DelegatingToBufferHttpPayloadWriter<T>(response.sendMetaData()) {
+        addContentType.accept(headers);
+        return new DelegatingToBufferHttpPayloadWriter<T>(payloadWriter, allocator) {
             @Override
             public void write(final T object) throws IOException {
                 delegate.write(serializer.serialize(object, allocator, bytesEstimator.applyAsInt(0)));

@@ -105,10 +105,11 @@ final class FormUrlEncodedHttpSerializer implements HttpSerializer<Map<String, L
     }
 
     @Override
-    public HttpPayloadWriter<Map<String, List<String>>> serialize(final BlockingStreamingHttpServerResponse response,
+    public HttpPayloadWriter<Map<String, List<String>>> serialize(final HttpHeaders headers,
+                                                                  final HttpPayloadWriter<Buffer> payloadWriter,
                                                                   final BufferAllocator allocator) {
-        addContentType.accept(response.headers());
-        return new DelegatingToBufferHttpPayloadWriter<Map<String, List<String>>>(response.sendMetaData()) {
+        addContentType.accept(headers);
+        return new DelegatingToBufferHttpPayloadWriter<Map<String, List<String>>>(payloadWriter, allocator) {
             @SuppressWarnings("ConstantConditions")
             @Override
             public void write(final Map<String, List<String>> object) throws IOException {

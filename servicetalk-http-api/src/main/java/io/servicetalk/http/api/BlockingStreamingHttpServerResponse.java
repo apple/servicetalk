@@ -17,6 +17,7 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
+import io.servicetalk.http.api.BlockingStreamingHttpServiceToStreamingHttpService.BufferHttpPayloadWriter;
 
 import java.io.OutputStream;
 
@@ -29,6 +30,7 @@ import static java.util.Objects.requireNonNull;
  */
 public abstract class BlockingStreamingHttpServerResponse extends DefaultHttpResponseMetaData {
 
+    private final BufferHttpPayloadWriter payloadWriter;
     private final BufferAllocator allocator;
 
     /**
@@ -42,8 +44,10 @@ public abstract class BlockingStreamingHttpServerResponse extends DefaultHttpRes
     BlockingStreamingHttpServerResponse(final HttpResponseStatus status,
                                         final HttpProtocolVersion version,
                                         final HttpHeaders headers,
+                                        final BufferHttpPayloadWriter payloadWriter,
                                         final BufferAllocator allocator) {
         super(status, version, headers);
+        this.payloadWriter = requireNonNull(payloadWriter);
         this.allocator = requireNonNull(allocator);
     }
 
@@ -70,7 +74,9 @@ public abstract class BlockingStreamingHttpServerResponse extends DefaultHttpRes
      * @throws IllegalStateException if one of the {@code sendMetaData*} methods has been called on this response
      */
     public final <T> HttpPayloadWriter<T> sendMetaData(final HttpSerializer<T> serializer) {
-        return serializer.serialize(this, allocator);
+        final HttpPayloadWriter<T> payloadWriter = serializer.serialize(headers(), this.payloadWriter, allocator);
+        sendMetaData();
+        return payloadWriter;
     }
 
     /**

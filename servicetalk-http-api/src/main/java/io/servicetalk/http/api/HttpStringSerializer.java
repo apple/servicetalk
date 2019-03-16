@@ -97,10 +97,10 @@ final class HttpStringSerializer implements HttpSerializer<String> {
     }
 
     @Override
-    public HttpPayloadWriter<String> serialize(final BlockingStreamingHttpServerResponse response,
+    public HttpPayloadWriter<String> serialize(final HttpHeaders headers, final HttpPayloadWriter<Buffer> payloadWriter,
                                                final BufferAllocator allocator) {
-        addContentType.accept(response.headers());
-        return new DelegatingToBufferHttpPayloadWriter<String>(response.sendMetaData()) {
+        addContentType.accept(headers);
+        return new DelegatingToBufferHttpPayloadWriter<String>(payloadWriter, allocator) {
             @Override
             public void write(final String object) throws IOException {
                 delegate.write(toBuffer(object, allocator));

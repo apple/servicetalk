@@ -26,7 +26,7 @@ import io.servicetalk.concurrent.internal.ThreadInterruptingCancellable;
 
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Function;
+import java.util.function.BiFunction;
 
 import static io.servicetalk.http.api.BlockingUtils.blockingToCompletable;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
@@ -57,26 +57,27 @@ final class BlockingStreamingHttpServiceToStreamingHttpService extends Streaming
 
                 final AtomicBoolean metaSent = new AtomicBoolean();
                 final CompletableProcessor payloadProcessor = new CompletableProcessor();
-                final Function<BlockingStreamingHttpServerResponse, HttpPayloadWriter<Buffer>> sendMeta = response -> {
+
+                final BiFunction<HttpResponseMetaData, BufferHttpPayloadWriter, HttpPayloadWriter<Buffer>> sendMeta =
+                        (metaData, payloadWriter) -> {
                     if (!metaSent.compareAndSet(false, true)) {
                         throw new IllegalStateException("Response meta-data is already sent");
                     }
 
-                    final BufferHttpPayloadWriter pw = new BufferHttpPayloadWriter(
-                            ctx.headersFactory().newTrailers(), payloadProcessor);
-
-                    final Publisher<Object> payloadBodyAndTrailers = payloadProcessor.merge(pw.connect()
+                    final Publisher<Object> payloadBodyAndTrailers = payloadProcessor.merge(payloadWriter.connect()
                             .map(buffer -> (Object) buffer) // down cast to Object
-                            .concatWith(success(pw.trailers())));
+                            .concatWith(success(payloadWriter.trailers())));
 
-                    subscriber.onSuccess(newResponseWithTrailers(response.status(), response.version(),
-                            response.headers(), ctx.executionContext().bufferAllocator(), payloadBodyAndTrailers));
-                    return pw;
+                    subscriber.onSuccess(newResponseWithTrailers(metaData.status(), metaData.version(),
+                            metaData.headers(), ctx.executionContext().bufferAllocator(), payloadBodyAndTrailers));
+                    return payloadWriter;
                 };
                 try {
+                    final BufferHttpPayloadWriter payloadWriter = new BufferHttpPayloadWriter(
+                            ctx.headersFactory().newTrailers(), payloadProcessor);
                     service.handle(ctx, request.toBlockingStreamingRequest(),
                             new DefaultBlockingStreamingHttpServerResponse(OK, request.version(),
-                            ctx.headersFactory().newHeaders(), ctx.executionContext().bufferAllocator(),
+                            ctx.headersFactory().newHeaders(), payloadWriter, ctx.executionContext().bufferAllocator(),
                                     sendMeta, metaSent));
                 } catch (Throwable cause) {
                     tiCancellable.setDone(cause);
@@ -111,7 +112,7 @@ final class BlockingStreamingHttpServiceToStreamingHttpService extends Streaming
         return new BlockingStreamingHttpServiceToStreamingHttpService(service, service.executionStrategy());
     }
 
-    private static final class BufferHttpPayloadWriter implements HttpPayloadWriter<Buffer> {
+    static final class BufferHttpPayloadWriter implements HttpPayloadWriter<Buffer> {
 
         private final ConnectablePayloadWriter<Buffer> payloadWriter = new ConnectablePayloadWriter<>();
         private final HttpHeaders trailers;

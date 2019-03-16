@@ -62,13 +62,16 @@ public interface HttpSerializer<T> {
     Publisher<Buffer> serialize(HttpHeaders headers, Publisher<T> value, BufferAllocator allocator);
 
     /**
-     * Serialize a payload body of {@link BlockingStreamingHttpServerResponse} into a {@link Buffer}. If necessary the
-     * {@link BlockingStreamingHttpServerResponse#headers()} should be updated to indicate the
+     * Returns an {@link HttpPayloadWriter} of type {@link T} which serializes each
+     * {@link HttpPayloadWriter#write(Object) written object} into a {@link Buffer}. If necessary the
+     * {@link HttpHeaders} should be updated to indicate the
      * <a href="https://tools.ietf.org/html/rfc7231#section-3.1.1.5">content-type</a>.
      *
-     * @param response The {@link BlockingStreamingHttpServerResponse} which payload body should be serialized.
+     * @param headers The {@link HttpHeaders} associated with the serialization operation.
+     * @param payloadWriter The {@link HttpPayloadWriter} which writes serialized {@link Buffer}s.
      * @param allocator The {@link BufferAllocator} used to create the resulting {@link Buffer}s.
-     * @return The {@link HttpPayloadWriter} of type {@link T} with embedded serialization.
+     * @return The {@link HttpPayloadWriter} of type {@link T} with embedded serialization into a {@link Buffer}.
      */
-    HttpPayloadWriter<T> serialize(BlockingStreamingHttpServerResponse response, BufferAllocator allocator);
+    HttpPayloadWriter<T> serialize(HttpHeaders headers, HttpPayloadWriter<Buffer> payloadWriter,
+                                   BufferAllocator allocator);
 }
