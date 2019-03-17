@@ -14,4 +14,4 @@
  * limitations under the License.
  */
 enableFeaturePreview("IMPROVED_POM_SUPPORT")
-rootProject.name = "servicetalk-opentracing-log4j"
+rootProject.name = "servicetalk-log4j2-mdc-utils"
