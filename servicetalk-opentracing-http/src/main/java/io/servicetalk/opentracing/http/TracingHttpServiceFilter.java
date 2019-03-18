@@ -72,9 +72,24 @@ public class TracingHttpServiceFilter extends AbstractTracingHttpFilter implemen
             public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
                                                         final StreamingHttpRequest request,
                                                         final StreamingHttpResponseFactory responseFactory) {
-                return newTracker(request).track(delegate().handle(ctx, request, responseFactory));
+                return trackRequest(delegate(), ctx, request, responseFactory);
             }
         };
+    }
+
+    private Single<StreamingHttpResponse> trackRequest(final StreamingHttpService delegate,
+                                                       final HttpServiceContext ctx,
+                                                       final StreamingHttpRequest request,
+                                                       final StreamingHttpResponseFactory responseFactory) {
+        ScopeTracker tracker = newTracker(request);
+        Single<StreamingHttpResponse> response;
+        try {
+            response = delegate.handle(ctx, request, responseFactory);
+        } catch (Throwable t) {
+            tracker.onError(t);
+            return Single.error(t);
+        }
+        return tracker.track(response).subscribeShareContext();
     }
 
     private ScopeTracker newTracker(final StreamingHttpRequest request) {

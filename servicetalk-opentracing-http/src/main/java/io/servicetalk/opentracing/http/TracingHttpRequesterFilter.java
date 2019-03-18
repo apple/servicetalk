@@ -76,8 +76,7 @@ public class TracingHttpRequesterFilter extends AbstractTracingHttpFilter implem
             protected Single<StreamingHttpResponse> request(final StreamingHttpRequestFunction delegate,
                                                             final HttpExecutionStrategy strategy,
                                                             final StreamingHttpRequest request) {
-                return Single.defer(() ->
-                        newTracker(request).track(delegate.request(strategy, request)).subscribeShareContext());
+                return Single.defer(() -> trackRequest(delegate, strategy, request));
             }
 
             @Override
@@ -96,8 +95,7 @@ public class TracingHttpRequesterFilter extends AbstractTracingHttpFilter implem
             protected Single<StreamingHttpResponse> request(final StreamingHttpConnectionFilter delegate,
                                                             final HttpExecutionStrategy strategy,
                                                             final StreamingHttpRequest request) {
-                return Single.defer(() ->
-                        newTracker(request).track(delegate.request(strategy, request)).subscribeShareContext());
+                return Single.defer(() -> trackRequest(delegate, strategy, request));
             }
 
             @Override
@@ -106,6 +104,20 @@ public class TracingHttpRequesterFilter extends AbstractTracingHttpFilter implem
                 return mergeWith;
             }
         };
+    }
+
+    private Single<StreamingHttpResponse> trackRequest(final StreamingHttpRequestFunction delegate,
+                                                       final HttpExecutionStrategy strategy,
+                                                       final StreamingHttpRequest request) {
+        ScopeTracker tracker = newTracker(request);
+        Single<StreamingHttpResponse> response;
+        try {
+            response = delegate.request(strategy, request);
+        } catch (Throwable t) {
+            tracker.onError(t);
+            return Single.error(t);
+        }
+        return tracker.track(response).subscribeShareContext();
     }
 
     private ScopeTracker newTracker(final HttpRequestMetaData request) {
