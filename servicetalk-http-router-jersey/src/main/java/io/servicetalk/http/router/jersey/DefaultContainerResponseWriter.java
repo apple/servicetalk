@@ -126,7 +126,6 @@ final class DefaultContainerResponseWriter implements ContainerResponseWriter {
             sendResponse(contentLength, null, responseContext);
             return null;
         } else {
-            // Explicitly ask this ConnectableBufferOutputStream to be closed if its associated Publisher is cancelled
             final ConnectableBufferOutputStream os = new ConnectableBufferOutputStream(
                     serviceCtx.executionContext().bufferAllocator());
             sendResponse(contentLength, os.connect(), responseContext);
