@@ -16,6 +16,7 @@
 package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.Buffer;
+import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.SingleSource.Subscriber;
 import io.servicetalk.concurrent.api.Completable;
@@ -142,9 +143,9 @@ final class BlockingStreamingHttpServiceToStreamingHttpService extends Streaming
         private volatile int subscriberComplete;
         private final ConnectablePayloadWriter<Buffer> payloadWriter = new ConnectablePayloadWriter<>();
         private final HttpHeaders trailers;
-        private final CompletableProcessor.Subscriber subscriber;
+        private final CompletableSource.Subscriber subscriber;
 
-        BufferHttpPayloadWriter(final HttpHeaders trailers, final CompletableProcessor.Subscriber subscriber) {
+        BufferHttpPayloadWriter(final HttpHeaders trailers, final CompletableSource.Subscriber subscriber) {
             this.trailers = trailers;
             this.subscriber = subscriber;
         }
