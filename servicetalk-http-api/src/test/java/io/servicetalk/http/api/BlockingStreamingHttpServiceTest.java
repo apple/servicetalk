@@ -220,7 +220,8 @@ public class BlockingStreamingHttpServiceTest {
             }
         };
         StreamingHttpService asyncService = syncService.asStreamingService();
-        StreamingHttpResponse asyncResponse = asyncService.handle(mockCtx, reqRespFactory.get("/"), reqRespFactory).toFuture().get();
+        StreamingHttpResponse asyncResponse = asyncService.handle(mockCtx, reqRespFactory.get("/"), reqRespFactory)
+                .toFuture().get();
         assertNotNull(asyncResponse);
         assertEquals(HTTP_1_1, asyncResponse.version());
         assertEquals(OK, asyncResponse.status());

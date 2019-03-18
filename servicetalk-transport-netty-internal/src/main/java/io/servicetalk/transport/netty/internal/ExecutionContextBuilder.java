@@ -41,6 +41,23 @@ public final class ExecutionContextBuilder {
     private BufferAllocator allocator;
 
     /**
+     * New instance.
+     */
+    public ExecutionContextBuilder() {
+    }
+
+    /**
+     * Copy constructor.
+     *
+     * @param other existing {@link ExecutionContextBuilder} to copy the config from.
+     */
+    public ExecutionContextBuilder(ExecutionContextBuilder other) {
+        ioExecutor = other.ioExecutor;
+        executor = other.executor;
+        allocator = other.allocator;
+    }
+
+    /**
      * Sets the {@link IoExecutor} to use.
      *
      * @param ioExecutor {@link IoExecutor} to use.

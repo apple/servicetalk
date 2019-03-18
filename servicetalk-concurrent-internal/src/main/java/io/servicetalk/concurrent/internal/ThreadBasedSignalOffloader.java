@@ -134,7 +134,8 @@ final class ThreadBasedSignalOffloader implements SignalOffloader, Runnable {
     }
 
     @Override
-    public <T> void offloadSubscribe(Subscriber<? super T> subscriber, Consumer<Subscriber<? super T>> handleSubscribe) {
+    public <T> void offloadSubscribe(
+            Subscriber<? super T> subscriber, Consumer<Subscriber<? super T>> handleSubscribe) {
         try {
             addOffloadedEntity(new OffloadedSignalEntity<>(handleSubscribe, subscriber), true);
         } catch (EnqueueForOffloadingFailed e) {

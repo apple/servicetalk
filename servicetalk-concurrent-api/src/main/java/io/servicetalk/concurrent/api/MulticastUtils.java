@@ -32,10 +32,10 @@ import java.util.function.IntConsumer;
 import java.util.function.LongSupplier;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.api.SubscriberApiUtils.NULL_TOKEN;
+import static io.servicetalk.concurrent.api.SubscriberApiUtils.SUBSCRIBER_STATE_IDLE;
+import static io.servicetalk.concurrent.api.SubscriberApiUtils.SUBSCRIBER_STATE_ON_NEXT;
 import static io.servicetalk.concurrent.internal.PlatformDependent.newUnboundedSpscQueue;
-import static io.servicetalk.concurrent.internal.SubscriberUtils.NULL_TOKEN;
-import static io.servicetalk.concurrent.internal.SubscriberUtils.SUBSCRIBER_STATE_IDLE;
-import static io.servicetalk.concurrent.internal.SubscriberUtils.SUBSCRIBER_STATE_ON_NEXT;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.calculateSourceRequested;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid;
 import static java.util.Objects.requireNonNull;

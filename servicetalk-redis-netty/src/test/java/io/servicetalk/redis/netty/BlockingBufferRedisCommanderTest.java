@@ -116,9 +116,11 @@ public class BlockingBufferRedisCommanderTest extends BaseRedisClientTest {
         assertThat(commandClient.set(key("a-key"), buf("a-value2"), new ExpireDuration(EX, 10L), null), is("OK"));
         assertThat(commandClient.get(key("a-key")), is(buf("a-value2")));
 
-        assertThat(commandClient.set(key("exp-key"), buf("exp-value"), null, NX), is(anyOf(nullValue(), equalTo("OK"))));
+        assertThat(commandClient.set(key("exp-key"), buf("exp-value"), null, NX),
+                is(anyOf(nullValue(), equalTo("OK"))));
 
-        assertThat(commandClient.zadd(key("a-zset"), null, null, 1, buf("one")), is(either(equalTo(0L)).or(equalTo(1L))));
+        assertThat(commandClient.zadd(key("a-zset"), null, null, 1, buf("one")),
+                is(either(equalTo(0L)).or(equalTo(1L))));
         assertThat(commandClient.zrank(key("a-zset"), buf("one")), is(0L));
         assertThat(commandClient.zrank(key("missing"), buf("missing-member")), is(nullValue()));
         if (getEnv().serverVersion[0] >= 3) {
@@ -132,7 +134,8 @@ public class BlockingBufferRedisCommanderTest extends BaseRedisClientTest {
 
         assertThat(commandClient.sadd(key("a-set-1"), buf("a"), buf("b"), buf("c")), greaterThanOrEqualTo(0L));
         assertThat(commandClient.sadd(key("a-set-2"), buf("c"), buf("d"), buf("e")), greaterThanOrEqualTo(0L));
-        assertThat(commandClient.sdiff(key("a-set-1"), key("a-set-2"), buf("missing-key")), containsInAnyOrder(buf("a"), buf("b")));
+        assertThat(commandClient.sdiff(key("a-set-1"), key("a-set-2"), buf("missing-key")),
+                containsInAnyOrder(buf("a"), buf("b")));
         assertThat(commandClient.sdiffstore(key("diff"), key("a-set-1"), key("a-set-2"), buf("missing-key")), is(2L));
     }
 
@@ -156,7 +159,8 @@ public class BlockingBufferRedisCommanderTest extends BaseRedisClientTest {
     @Test
     public void argumentVariants() throws Exception {
         assertThat(commandClient.mset(key("key0"), buf("val0")), is("OK"));
-        assertThat(commandClient.mset(key("key1"), buf("val1"), key("key2"), buf("val2"), key("key3"), buf("val3")), is("OK"));
+        assertThat(commandClient.mset(key("key1"), buf("val1"), key("key2"), buf("val2"), key("key3"), buf("val3")),
+                is("OK"));
 
         final List<BufferKeyValue> keyValues = IntStream.range(4, 10)
                 .mapToObj(i -> new BufferKeyValue(key("key" + i), buf("val" + i)))
@@ -164,7 +168,8 @@ public class BlockingBufferRedisCommanderTest extends BaseRedisClientTest {
         assertThat(commandClient.mset(keyValues), is("OK"));
 
         assertThat(commandClient.mget(key("key0")), contains(buf("val0")));
-        assertThat(commandClient.mget(key("key1"), key("key2"), key("key3")), contains(buf("val1"), buf("val2"), buf("val3")));
+        assertThat(commandClient.mget(key("key1"), key("key2"), key("key3")),
+                contains(buf("val1"), buf("val2"), buf("val3")));
 
         final List<Buffer> keys = keyValues.stream().map(kv -> kv.key).collect(toList());
         final List<Buffer> expectedValues = keyValues.stream().map(kv -> kv.value).collect(toList());
@@ -234,7 +239,8 @@ public class BlockingBufferRedisCommanderTest extends BaseRedisClientTest {
         // Disable these tests for Redis 2 and below
         assumeThat(getEnv().serverVersion[0], is(greaterThanOrEqualTo(3)));
 
-        assertThat(commandClient.zrem(key("Sicily"), asList(buf("Palermo"), buf("Catania"))), is(lessThanOrEqualTo(2L)));
+        assertThat(commandClient.zrem(key("Sicily"), asList(buf("Palermo"), buf("Catania"))),
+                is(lessThanOrEqualTo(2L)));
 
         final Long geoaddLong = commandClient.geoadd(key("Sicily"),
                 asList(new BufferLongitudeLatitudeMember(13.361389d, 38.115556d, buf("Palermo")),
@@ -244,17 +250,21 @@ public class BlockingBufferRedisCommanderTest extends BaseRedisClientTest {
         final List<Buffer> georadiusBuffers = commandClient.georadius(key("Sicily"), 15d, 37d, 200d, KM);
         assertThat(georadiusBuffers, contains(buf("Palermo"), buf("Catania")));
 
-        final List<?> georadiusMixedList = commandClient.georadius(key("Sicily"), 15d, 37d, 200d, KM, WITHCOORD, WITHDIST, null, 5L, ASC, null, null);
+        final List<?> georadiusMixedList = commandClient.georadius(key("Sicily"), 15d, 37d, 200d, KM, WITHCOORD,
+                WITHDIST, null, 5L, ASC, null, null);
         final Matcher georadiusResponseMatcher = contains(
-                contains(is(buf("Catania")), bufStartingWith(buf("56.")), contains(bufStartingWith(buf("15.")), bufStartingWith(buf("37.")))),
-                contains(is(buf("Palermo")), bufStartingWith(buf("190.")), contains(bufStartingWith(buf("13.")), bufStartingWith(buf("38.")))));
+                contains(is(buf("Catania")), bufStartingWith(buf("56.")), contains(bufStartingWith(buf("15.")),
+                        bufStartingWith(buf("37.")))),
+                contains(is(buf("Palermo")), bufStartingWith(buf("190.")), contains(bufStartingWith(buf("13.")),
+                        bufStartingWith(buf("38.")))));
         assertThat(georadiusMixedList, georadiusResponseMatcher);
 
         assertThat(commandClient.geodist(key("Sicily"), buf("Palermo"), buf("Catania")), is(greaterThan(0d)));
         assertThat(commandClient.geodist(key("Sicily"), buf("foo"), buf("bar")), is(nullValue()));
 
         assertThat(commandClient.geopos(key("Sicily"), buf("Palermo"), buf("NonExisting"), buf("Catania")), contains(
-                contains(bufStartingWith(buf("13.")), bufStartingWith(buf("38."))), is(nullValue()), contains(bufStartingWith(buf("15.")), bufStartingWith(buf("37.")))));
+                contains(bufStartingWith(buf("13.")), bufStartingWith(buf("38."))), is(nullValue()),
+                contains(bufStartingWith(buf("15.")), bufStartingWith(buf("37.")))));
 
         final List<Buffer> evalBuffers = commandClient.evalList(buf("return {KEYS[1],KEYS[2],ARGV[1],ARGV[2]}"),
                 2L, asList(buf("key1"), buf("key2")), asList(buf("first"), buf("second")));
@@ -267,7 +277,8 @@ public class BlockingBufferRedisCommanderTest extends BaseRedisClientTest {
         final Long evalLong = commandClient.evalLong(buf("return 10"), 0L, emptyList(), emptyList());
         assertThat(evalLong, is(10L));
 
-        final List<?> evalMixedList = commandClient.evalList(buf("return {1,2,{3,'four'}}"), 0L, emptyList(), emptyList());
+        final List<?> evalMixedList = commandClient.evalList(buf("return {1,2,{3,'four'}}"), 0L, emptyList(),
+                emptyList());
         assertThat(evalMixedList, contains(1L, 2L, asList(3L, buf("four"))));
     }
 
@@ -303,7 +314,8 @@ public class BlockingBufferRedisCommanderTest extends BaseRedisClientTest {
         fields.add(new BufferFieldValue(buf("f9"), buf("v9")));
         fields.add(new BufferFieldValue(buf("f10"), buf("v10")));
         commandClient.hmset(buf(testKey), fields);
-        final List<Buffer> values = commandClient.hmget(buf(testKey), asList(buf("f"), buf("f1"), buf("f2"), buf("f3"), buf("f4"), buf("f5"), buf("f6"), buf("f7"), buf("f8"), buf("f9"), buf("f10")));
+        final List<Buffer> values = commandClient.hmget(buf(testKey), asList(buf("f"), buf("f1"), buf("f2"), buf("f3"),
+                buf("f4"), buf("f5"), buf("f6"), buf("f7"), buf("f8"), buf("f9"), buf("f10")));
         assertThat(values, is(fields.stream().map(fv -> fv.value).collect(toList())));
     }
 
@@ -315,12 +327,12 @@ public class BlockingBufferRedisCommanderTest extends BaseRedisClientTest {
         commandClient.set(buf("1-score"), buf("1"));
         commandClient.set(buf("1-ᕈгø⨯у"), buf("proxy"));
 
-        assertThat(commandClient.sort(buf(testKey), buf("*-score"), new OffsetCount(0, 1), singletonList(buf("*-ᕈгø⨯у")), SortOrder.ASC, SortSorting.ALPHA),
-                is(singletonList(buf("proxy"))));
-        assertThat(commandClient.sort(buf(testKey), null, new OffsetCount(0, 1), singletonList(buf("*-ᕈгø⨯у")), SortOrder.ASC, SortSorting.ALPHA),
-                is(singletonList(buf("proxy"))));
-        assertThat(commandClient.sort(buf(testKey), null, null, singletonList(buf("*-ᕈгø⨯у")), SortOrder.ASC, SortSorting.ALPHA),
-                is(singletonList(buf("proxy"))));
+        assertThat(commandClient.sort(buf(testKey), buf("*-score"), new OffsetCount(0, 1),
+                singletonList(buf("*-ᕈгø⨯у")), SortOrder.ASC, SortSorting.ALPHA), is(singletonList(buf("proxy"))));
+        assertThat(commandClient.sort(buf(testKey), null, new OffsetCount(0, 1), singletonList(buf("*-ᕈгø⨯у")),
+                SortOrder.ASC, SortSorting.ALPHA), is(singletonList(buf("proxy"))));
+        assertThat(commandClient.sort(buf(testKey), null, null, singletonList(buf("*-ᕈгø⨯у")), SortOrder.ASC,
+                SortSorting.ALPHA), is(singletonList(buf("proxy"))));
         assertThat(commandClient.sort(buf(testKey), null, null, singletonList(buf("*-ᕈгø⨯у")), null, SortSorting.ALPHA),
                 is(singletonList(buf("proxy"))));
         assertThat(commandClient.sort(buf(testKey), null, null, singletonList(buf("*-ᕈгø⨯у")), null, null),

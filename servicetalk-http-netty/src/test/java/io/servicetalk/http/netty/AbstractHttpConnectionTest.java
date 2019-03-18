@@ -28,6 +28,7 @@ import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.StreamingHttpResponse;
+import io.servicetalk.http.api.TestStreamingHttpConnection;
 import io.servicetalk.tcp.netty.internal.TcpClientConfig;
 import io.servicetalk.transport.netty.internal.ExecutionContextRule;
 import io.servicetalk.transport.netty.internal.NettyConnection;
@@ -45,7 +46,6 @@ import static io.servicetalk.concurrent.api.BlockingTestUtils.awaitIndefinitelyN
 import static io.servicetalk.concurrent.api.Completable.never;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.http.api.DefaultHttpHeadersFactory.INSTANCE;
-import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
 import static io.servicetalk.http.api.HttpHeaderValues.TEXT_PLAIN;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
@@ -84,7 +84,8 @@ public final class AbstractHttpConnectionTest {
     private final StreamingHttpRequestResponseFactory reqRespFactory =
             new DefaultStreamingHttpRequestResponseFactory(allocator, headersFactory);
 
-    private class MockStreamingHttpConnectionFilter extends AbstractStreamingHttpConnectionFilter<NettyConnection<Object, Object>> {
+    private class MockStreamingHttpConnectionFilter
+            extends AbstractStreamingHttpConnectionFilter<NettyConnection<Object, Object>> {
         protected MockStreamingHttpConnectionFilter(final NettyConnection<Object, Object> connection,
                                                     final ReadOnlyHttpClientConfig config) {
             super(connection, config, ctx, reqRespFactory);
@@ -103,8 +104,8 @@ public final class AbstractHttpConnectionTest {
         config.maxPipelinedRequests(101);
         NettyConnection conn = mock(NettyConnection.class);
         when(conn.onClose()).thenReturn(never());
-        http = StreamingHttpConnection.newStreamingConnectionWorkAroundToBeFixed(
-                new MockStreamingHttpConnectionFilter(conn, config.asReadOnly()), defaultStrategy());
+        http = TestStreamingHttpConnection.from(reqRespFactory, ctx, conn, __ ->
+                new MockStreamingHttpConnectionFilter(conn, config.asReadOnly()));
     }
 
     @Test

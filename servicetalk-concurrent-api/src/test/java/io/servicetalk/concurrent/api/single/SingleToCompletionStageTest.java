@@ -243,7 +243,8 @@ public class SingleToCompletionStageTest {
     @Test
     public void thenAcceptAsync() throws Exception {
         AtomicReference<String> stringRef = new AtomicReference<>();
-        thenAccept(source.toCompletionStage().thenAcceptAsync(jdkForkJoinThread(stringRef)), stringRef, "thenAcceptAsync");
+        thenAccept(source.toCompletionStage().thenAcceptAsync(jdkForkJoinThread(stringRef)), stringRef,
+                "thenAcceptAsync");
     }
 
     @Test

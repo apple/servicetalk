@@ -180,7 +180,8 @@ public class FlushStrategyOverrideTest {
         }
 
         @Override
-        public Publisher<ServiceDiscovererEvent<InetSocketAddress>> discover(final InetSocketAddress inetSocketAddress) {
+        public Publisher<ServiceDiscovererEvent<InetSocketAddress>> discover(
+                final InetSocketAddress inetSocketAddress) {
             return from(new ServiceDiscovererEvent<InetSocketAddress>() {
                 @Override
                 public InetSocketAddress address() {

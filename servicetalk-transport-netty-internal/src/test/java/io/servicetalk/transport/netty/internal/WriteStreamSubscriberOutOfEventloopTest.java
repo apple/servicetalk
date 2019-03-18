@@ -93,7 +93,8 @@ public class WriteStreamSubscriberOutOfEventloopTest extends AbstractOutOfEventl
                 if (pendingFlush.contains(1)) {
                     subject.onError(t);
                 } else {
-                    subject.onError(new IllegalStateException("The expected object wasn't written before termination!", t));
+                    subject.onError(
+                            new IllegalStateException("The expected object wasn't written before termination!", t));
                 }
             }
         };

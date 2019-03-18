@@ -39,7 +39,6 @@ import static io.servicetalk.http.api.HttpRequestMethod.POST;
 import static io.servicetalk.http.api.HttpRequestMethod.PUT;
 import static io.servicetalk.http.api.HttpRequestMethod.Properties.NONE;
 import static io.servicetalk.http.api.HttpRequestMethod.TRACE;
-import static io.servicetalk.http.api.HttpRequestMethod.newRequestMethod;
 import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.util.Objects.requireNonNull;
@@ -102,6 +101,6 @@ final class HttpRequestDecoder extends HttpObjectDecoder<HttpRequestMetaData> {
 
     private static HttpRequestMethod nettyBufferToHttpMethod(ByteBuf buf) {
         HttpRequestMethod method = BUF_TO_METHOD_MAP.get(buf);
-        return method != null ? method : newRequestMethod(newBufferFrom(buf.retain()), NONE);
+        return method != null ? method : HttpRequestMethod.of(newBufferFrom(buf.retain()), NONE);
     }
 }

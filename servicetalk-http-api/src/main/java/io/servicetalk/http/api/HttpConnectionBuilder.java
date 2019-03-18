@@ -21,6 +21,7 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.IoExecutor;
 
+import java.util.function.BiFunction;
 import java.util.function.Predicate;
 
 import static io.servicetalk.http.api.BlockingUtils.blockingInvocation;
@@ -67,12 +68,30 @@ public abstract class HttpConnectionBuilder<ResolvedAddress> {
     public abstract HttpConnectionBuilder<ResolvedAddress> bufferAllocator(BufferAllocator allocator);
 
     /**
-     * Create a new {@link StreamingHttpConnection}, using a default {@link ExecutionContext}.
+     * Creates the {@link StreamingHttpConnectionFilter} chain to be used by the {@link StreamingHttpConnection}.
+     *
+     * @param resolvedAddress a resolved address to use when connecting
+     * @param assembler {@link BiFunction} used to compose a {@link StreamingHttpConnectionFilter} chain and {@link
+     * HttpExecutionStrategy} into typically a {@link StreamingHttpConnection} or {@link StreamingHttpConnectionFilter}
+     * for further composition.
+     * @param <T> the type of assembled object, typically a {@link StreamingHttpConnection} or {@link
+     * StreamingHttpConnectionFilter}
+     * @return A single that will complete with the {@link StreamingHttpConnectionFilter} chain to be used by the {@link
+     * StreamingHttpConnection}.
+     */
+    protected abstract <T> Single<T> buildFilterChain(
+            ResolvedAddress resolvedAddress,
+            BiFunction<StreamingHttpConnectionFilter, HttpExecutionStrategy, T> assembler);
+
+    /**
+     * Create a new {@link StreamingHttpConnection}.
      *
      * @param resolvedAddress a resolved address to use when connecting
      * @return A single that will complete with the {@link StreamingHttpConnection}
      */
-    public abstract Single<StreamingHttpConnection> buildStreaming(ResolvedAddress resolvedAddress);
+    public final Single<StreamingHttpConnection> buildStreaming(ResolvedAddress resolvedAddress) {
+        return buildFilterChain(resolvedAddress, StreamingHttpConnection::new);
+    }
 
     /**
      * Create a new {@link HttpConnection}, using a default {@link ExecutionContext}.
@@ -177,7 +196,7 @@ public abstract class HttpConnectionBuilder<ResolvedAddress> {
      *
      * @return {@link HttpExecutionStrategy} used by this {@link HttpConnectionBuilder}.
      */
-    protected HttpExecutionStrategy executionStrategy() {
+    protected final HttpExecutionStrategy executionStrategy() {
         return strategy;
     }
 }

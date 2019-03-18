@@ -15,6 +15,8 @@
  */
 package io.servicetalk.http.router.jersey;
 
+import io.servicetalk.http.api.HttpResponseStatus;
+
 import org.junit.Test;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
@@ -24,7 +26,6 @@ import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_0;
 import static io.servicetalk.http.api.HttpResponseStatus.ACCEPTED;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.HttpResponseStatus.PARTIAL_CONTENT;
-import static io.servicetalk.http.api.HttpResponseStatus.getResponseStatus;
 import static io.servicetalk.http.router.jersey.TestUtils.newLargePayload;
 import static io.servicetalk.http.router.jersey.resources.SynchronousResources.PATH;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
@@ -44,7 +45,8 @@ public class SynchronousResourceTest extends AbstractResourceTest {
 
     @Test
     public void customResponseStatus() {
-        sendAndAssertNoResponse(get("/statuses/444"), getResponseStatus(444, DEFAULT_ALLOCATOR.fromAscii("Three fours!")));
+        sendAndAssertNoResponse(get("/statuses/444"), HttpResponseStatus.of(444, DEFAULT_ALLOCATOR.fromAscii(
+                "Three fours!")));
     }
 
     @Test
@@ -65,12 +67,14 @@ public class SynchronousResourceTest extends AbstractResourceTest {
 
     @Test
     public void http10Support() {
-        sendAndAssertResponse(get("/text").version(HTTP_1_0), HTTP_1_0, OK, TEXT_PLAIN, is("GOT: null & null"), __ -> 16);
+        sendAndAssertResponse(get("/text").version(HTTP_1_0), HTTP_1_0, OK, TEXT_PLAIN, is("GOT: null & null"),
+                __ -> 16);
     }
 
     @Test
     public void postTextStrInPubOut() {
-        sendAndAssertResponse(post("/text-strin-pubout", "bar2", TEXT_PLAIN), OK, TEXT_PLAIN, is("GOT: bar2"), __ -> null);
+        sendAndAssertResponse(post("/text-strin-pubout", "bar2", TEXT_PLAIN), OK, TEXT_PLAIN, is("GOT: bar2"),
+                __ -> null);
     }
 
     @Test
@@ -80,7 +84,8 @@ public class SynchronousResourceTest extends AbstractResourceTest {
 
     @Test
     public void postTextPubInPubOut() {
-        sendAndAssertResponse(post("/text-pubin-pubout", "bar23", TEXT_PLAIN), OK, TEXT_PLAIN, is("GOT: bar23"), __ -> null);
+        sendAndAssertResponse(post("/text-pubin-pubout", "bar23", TEXT_PLAIN), OK, TEXT_PLAIN, is("GOT: bar23"),
+                __ -> null);
     }
 
     @Test

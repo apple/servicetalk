@@ -46,28 +46,6 @@ public final class StreamingHttpClient extends StreamingHttpRequester {
         this.filterChain = filterChain;
     }
 
-    /**
-     * DUMMY.
-     * @param filterChain DUMMY
-     * @param strategy DUMMY
-     * @return DUMMY
-     */
-    // TODO(jayv) break *HttpClientBuilder in buildFilterChain() and implement buildStreaming() as delegate to
-    // pkg-pvt ctor for Client/Connection
-    public static StreamingHttpClient newStreamingClientWorkAroundToBeFixed(final StreamingHttpClientFilter filterChain,
-                                                                            final HttpExecutionStrategy strategy) {
-        return new StreamingHttpClient(filterChain, strategy);
-    }
-
-    /**
-     * DUMMY.
-     * @return DUMMY
-     */
-    // TODO(jayv) remove when DefaultPartitionedHttpClient has Filters factory instead of Clients
-    public StreamingHttpClientFilter chainWorkaroundForNow() {
-        return filterChain;
-    }
-
     @Override
     public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
                                                  final StreamingHttpRequest request) {
