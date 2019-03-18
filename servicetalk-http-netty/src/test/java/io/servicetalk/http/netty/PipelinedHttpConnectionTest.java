@@ -28,6 +28,7 @@ import io.servicetalk.http.api.HttpProtocolVersion;
 import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.StreamingHttpResponse;
+import io.servicetalk.http.api.TestStreamingHttpConnection;
 import io.servicetalk.tcp.netty.internal.TcpClientConfig;
 import io.servicetalk.transport.netty.internal.ExecutionContextRule;
 import io.servicetalk.transport.netty.internal.NettyConnection;
@@ -41,7 +42,6 @@ import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Completable.never;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
-import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_0;
 import static io.servicetalk.transport.netty.internal.ExecutionContextRule.immediate;
 import static org.hamcrest.Matchers.instanceOf;
@@ -96,9 +96,8 @@ public class PipelinedHttpConnectionTest {
             return publisher.ignoreElements(); // simulate write consuming all
         });
         when(connection.read()).thenReturn(readPublisher1, readPublisher2);
-        pipe = StreamingHttpConnection.newStreamingConnectionWorkAroundToBeFixed(
-                new PipelinedStreamingHttpConnectionFilter(connection, config.asReadOnly(), ctx, reqRespFactory),
-                defaultStrategy());
+        pipe = TestStreamingHttpConnection.from(reqRespFactory, ctx, connection, conn ->
+                new PipelinedStreamingHttpConnectionFilter(connection, config.asReadOnly(), ctx, reqRespFactory));
     }
 
     @Test

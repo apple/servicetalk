@@ -26,6 +26,7 @@ import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.IoExecutor;
 
 import java.net.SocketOption;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -39,19 +40,11 @@ import static java.util.Objects.requireNonNull;
  * @param <R> the type of address after resolution (resolved address)
  * @param <SDE> the type of {@link ServiceDiscovererEvent}
  */
-interface HttpClientBuilder<U, R, SDE extends ServiceDiscovererEvent<R>> {
+abstract class HttpClientBuilder<U, R, SDE extends ServiceDiscovererEvent<R>> {
     /**
-     * An {@link HttpExecutionStrategy} to use when there is none specifed on the {@link HttpClientBuilder}.
+     * An {@link HttpExecutionStrategy} to use when there is none specified on the {@link HttpClientBuilder}.
      */
-    HttpExecutionStrategy DEFAULT_BUILDER_STRATEGY = defaultStrategy();
-
-    /**
-     * Sets the {@link IoExecutor} for all clients created from this {@link HttpClientBuilder}.
-     *
-     * @param ioExecutor {@link IoExecutor} to use.
-     * @return {@code this}.
-     */
-    HttpClientBuilder<U, R, SDE> ioExecutor(IoExecutor ioExecutor);
+    static final HttpExecutionStrategy DEFAULT_BUILDER_STRATEGY = defaultStrategy();
 
     /**
      * Sets the {@link HttpExecutionStrategy} for all clients created from this {@link HttpClientBuilder}.
@@ -59,7 +52,15 @@ interface HttpClientBuilder<U, R, SDE extends ServiceDiscovererEvent<R>> {
      * @param strategy {@link HttpExecutionStrategy} to use.
      * @return {@code this}.
      */
-    HttpClientBuilder<U, R, SDE> executionStrategy(HttpExecutionStrategy strategy);
+    public abstract HttpClientBuilder<U, R, SDE> executionStrategy(HttpExecutionStrategy strategy);
+
+    /**
+     * Sets the {@link IoExecutor} for all clients created from this {@link HttpClientBuilder}.
+     *
+     * @param ioExecutor {@link IoExecutor} to use.
+     * @return {@code this}.
+     */
+    public abstract HttpClientBuilder<U, R, SDE> ioExecutor(IoExecutor ioExecutor);
 
     /**
      * Sets the {@link BufferAllocator} for all clients created from this {@link HttpClientBuilder}.
@@ -67,7 +68,7 @@ interface HttpClientBuilder<U, R, SDE extends ServiceDiscovererEvent<R>> {
      * @param allocator {@link BufferAllocator} to use.
      * @return {@code this}.
      */
-    HttpClientBuilder<U, R, SDE> bufferAllocator(BufferAllocator allocator);
+    public abstract HttpClientBuilder<U, R, SDE> bufferAllocator(BufferAllocator allocator);
 
     /**
      * Add a {@link SocketOption} for all connections created by this client.
@@ -77,7 +78,7 @@ interface HttpClientBuilder<U, R, SDE extends ServiceDiscovererEvent<R>> {
      * @param <T> the type of the value.
      * @return {@code this}.
      */
-    <T> HttpClientBuilder<U, R, SDE> socketOption(SocketOption<T> option, T value);
+    public abstract <T> HttpClientBuilder<U, R, SDE> socketOption(SocketOption<T> option, T value);
 
     /**
      * Enable wire-logging for connections created by this builder. All wire events will be logged at trace level.
@@ -85,7 +86,7 @@ interface HttpClientBuilder<U, R, SDE extends ServiceDiscovererEvent<R>> {
      * @param loggerName The name of the logger to log wire events.
      * @return {@code this}.
      */
-    HttpClientBuilder<U, R, SDE> enableWireLogging(String loggerName);
+    public abstract HttpClientBuilder<U, R, SDE> enableWireLogging(String loggerName);
 
     /**
      * Disable previously configured wire-logging for connections created by this builder.
@@ -94,7 +95,7 @@ interface HttpClientBuilder<U, R, SDE extends ServiceDiscovererEvent<R>> {
      * @return {@code this}.
      * @see #enableWireLogging(String)
      */
-    HttpClientBuilder<U, R, SDE> disableWireLogging();
+    public abstract HttpClientBuilder<U, R, SDE> disableWireLogging();
 
     /**
      * Set the {@link HttpHeadersFactory} to be used for creating {@link HttpHeaders} when decoding responses.
@@ -102,7 +103,7 @@ interface HttpClientBuilder<U, R, SDE extends ServiceDiscovererEvent<R>> {
      * @param headersFactory the {@link HttpHeadersFactory} to use.
      * @return {@code this}.
      */
-    HttpClientBuilder<U, R, SDE> headersFactory(HttpHeadersFactory headersFactory);
+    public abstract HttpClientBuilder<U, R, SDE> headersFactory(HttpHeadersFactory headersFactory);
 
     /**
      * Set the maximum size of the initial HTTP line for created {@link StreamingHttpClient}.
@@ -111,7 +112,7 @@ interface HttpClientBuilder<U, R, SDE extends ServiceDiscovererEvent<R>> {
      * line exceeds this length.
      * @return {@code this}.
      */
-    HttpClientBuilder<U, R, SDE> maxInitialLineLength(int maxInitialLineLength);
+    public abstract HttpClientBuilder<U, R, SDE> maxInitialLineLength(int maxInitialLineLength);
 
     /**
      * Set the maximum total size of HTTP headers, which could be send be created {@link StreamingHttpClient}.
@@ -120,7 +121,7 @@ interface HttpClientBuilder<U, R, SDE extends ServiceDiscovererEvent<R>> {
      * HTTP headers exceeds this length.
      * @return {@code this}.
      */
-    HttpClientBuilder<U, R, SDE> maxHeaderSize(int maxHeaderSize);
+    public abstract HttpClientBuilder<U, R, SDE> maxHeaderSize(int maxHeaderSize);
 
     /**
      * Set the value used to calculate an exponential moving average of the encoded size of the initial line and the
@@ -129,7 +130,7 @@ interface HttpClientBuilder<U, R, SDE extends ServiceDiscovererEvent<R>> {
      * @param headersEncodedSizeEstimate An estimated size of encoded initial line and headers.
      * @return {@code this}.
      */
-    HttpClientBuilder<U, R, SDE> headersEncodedSizeEstimate(int headersEncodedSizeEstimate);
+    public abstract HttpClientBuilder<U, R, SDE> headersEncodedSizeEstimate(int headersEncodedSizeEstimate);
 
     /**
      * Set the value used to calculate an exponential moving average of the encoded size of the trailers for a guess for
@@ -138,7 +139,7 @@ interface HttpClientBuilder<U, R, SDE extends ServiceDiscovererEvent<R>> {
      * @param trailersEncodedSizeEstimate An estimated size of encoded trailers.
      * @return {@code this}.
      */
-    HttpClientBuilder<U, R, SDE> trailersEncodedSizeEstimate(int trailersEncodedSizeEstimate);
+    public abstract HttpClientBuilder<U, R, SDE> trailersEncodedSizeEstimate(int trailersEncodedSizeEstimate);
 
     /**
      * Set the maximum number of pipelined HTTP requests to queue up, anything above this will be rejected,
@@ -149,7 +150,7 @@ interface HttpClientBuilder<U, R, SDE extends ServiceDiscovererEvent<R>> {
      * @param maxPipelinedRequests number of pipelined requests to queue up
      * @return {@code this}.
      */
-    HttpClientBuilder<U, R, SDE> maxPipelinedRequests(int maxPipelinedRequests);
+    public abstract HttpClientBuilder<U, R, SDE> maxPipelinedRequests(int maxPipelinedRequests);
 
     /**
      * Append the filter to the chain of filters used to decorate the {@link StreamingHttpConnection} created by this
@@ -171,7 +172,7 @@ interface HttpClientBuilder<U, R, SDE extends ServiceDiscovererEvent<R>> {
      * of filtering.
      * @return {@code this}
      */
-    HttpClientBuilder<U, R, SDE> appendConnectionFilter(HttpConnectionFilterFactory factory);
+    public abstract HttpClientBuilder<U, R, SDE> appendConnectionFilter(HttpConnectionFilterFactory factory);
 
     /**
      * Append the filter to the chain of filters used to decorate the {@link StreamingHttpConnection} created by this
@@ -194,7 +195,7 @@ interface HttpClientBuilder<U, R, SDE extends ServiceDiscovererEvent<R>> {
      * of filtering.
      * @return {@code this}
      */
-    default HttpClientBuilder<U, R, SDE> appendConnectionFilter(Predicate<StreamingHttpRequest> predicate,
+    public HttpClientBuilder<U, R, SDE> appendConnectionFilter(Predicate<StreamingHttpRequest> predicate,
                                                                 HttpConnectionFilterFactory factory) {
         requireNonNull(predicate);
         requireNonNull(factory);
@@ -222,7 +223,7 @@ interface HttpClientBuilder<U, R, SDE extends ServiceDiscovererEvent<R>> {
      * @param factory {@link ConnectionFactoryFilter} to use.
      * @return {@code this}
      */
-    HttpClientBuilder<U, R, SDE> appendConnectionFactoryFilter(
+    public abstract HttpClientBuilder<U, R, SDE> appendConnectionFactoryFilter(
             ConnectionFactoryFilter<R, StreamingHttpConnectionFilter> factory);
 
     /**
@@ -245,7 +246,7 @@ interface HttpClientBuilder<U, R, SDE extends ServiceDiscovererEvent<R>> {
      * filtering.
      * @return {@code this}
      */
-    HttpClientBuilder<U, R, SDE> appendClientFilter(HttpClientFilterFactory factory);
+    public abstract HttpClientBuilder<U, R, SDE> appendClientFilter(HttpClientFilterFactory factory);
 
     /**
      * Append the filter to the chain of filters used to decorate the {@link HttpClient} created by this
@@ -268,7 +269,7 @@ interface HttpClientBuilder<U, R, SDE extends ServiceDiscovererEvent<R>> {
      * filtering.
      * @return {@code this}
      */
-    default HttpClientBuilder<U, R, SDE> appendClientFilter(Predicate<StreamingHttpRequest> predicate,
+    public HttpClientBuilder<U, R, SDE> appendClientFilter(Predicate<StreamingHttpRequest> predicate,
                                                             HttpClientFilterFactory factory) {
         requireNonNull(predicate);
         requireNonNull(factory);
@@ -285,14 +286,14 @@ interface HttpClientBuilder<U, R, SDE extends ServiceDiscovererEvent<R>> {
      * @see SingleAddressHttpClientBuilder#enableHostHeaderFallback(CharSequence)
      * @see MultiAddressHttpClientBuilder#enableHostHeaderFallback(Function)
      */
-    HttpClientBuilder<U, R, SDE> disableHostHeaderFallback();
+    public abstract HttpClientBuilder<U, R, SDE> disableHostHeaderFallback();
 
     /**
      * Disable automatically delaying {@link StreamingHttpRequest}s until the {@link LoadBalancer} is ready.
      *
      * @return {@code this}
      */
-    HttpClientBuilder<U, R, SDE> disableWaitForLoadBalancer();
+    public abstract HttpClientBuilder<U, R, SDE> disableWaitForLoadBalancer();
 
     /**
      * Set a {@link ServiceDiscoverer} to resolve addresses of remote servers to connect to.
@@ -302,7 +303,8 @@ interface HttpClientBuilder<U, R, SDE extends ServiceDiscovererEvent<R>> {
      * this {@link ServiceDiscoverer} is no longer needed.
      * @return {@code this}.
      */
-    HttpClientBuilder<U, R, SDE> serviceDiscoverer(ServiceDiscoverer<U, R, ? extends SDE> serviceDiscoverer);
+    public abstract HttpClientBuilder<U, R, SDE> serviceDiscoverer(
+            ServiceDiscoverer<U, R, ? extends SDE> serviceDiscoverer);
 
     /**
      * Set a {@link LoadBalancerFactory} to generate {@link LoadBalancer} objects.
@@ -310,22 +312,38 @@ interface HttpClientBuilder<U, R, SDE extends ServiceDiscovererEvent<R>> {
      * @param loadBalancerFactory The {@link LoadBalancerFactory} which generates {@link LoadBalancer} objects.
      * @return {@code this}.
      */
-    HttpClientBuilder<U, R, SDE> loadBalancerFactory(
+    public abstract HttpClientBuilder<U, R, SDE> loadBalancerFactory(
             LoadBalancerFactory<R, StreamingHttpConnectionFilter> loadBalancerFactory);
+
+    /**
+     * Creates the {@link StreamingHttpConnectionFilter} chain to be used by the {@link StreamingHttpConnection}.
+     *
+     * @param assembler {@link BiFunction} used to compose a {@link StreamingHttpClientFilter} chain and {@link
+     * HttpExecutionStrategy} into typically a {@link StreamingHttpClient} or {@link StreamingHttpClientFilter} for
+     * further composition.
+     * @param <T> the type of assembled object, typically a {@link StreamingHttpClient} or {@link
+     * StreamingHttpClientFilter}
+     * @return the {@link StreamingHttpConnectionFilter} chain to be used by the {@link
+     * StreamingHttpConnection} when assembled.
+     */
+    protected abstract <T> T buildFilterChain(
+            BiFunction<StreamingHttpClientFilter, HttpExecutionStrategy, T> assembler);
 
     /**
      * Build a new {@link StreamingHttpClient}, using a default {@link ExecutionContext}.
      *
      * @return A new {@link StreamingHttpClient}
      */
-    StreamingHttpClient buildStreaming();
+    public final StreamingHttpClient buildStreaming() {
+        return buildFilterChain(StreamingHttpClient::new);
+    }
 
     /**
      * Build a new {@link HttpClient}, using a default {@link ExecutionContext}.
      *
      * @return A new {@link HttpClient}
      */
-    default HttpClient build() {
+    public final HttpClient build() {
         return buildStreaming().asClient();
     }
 
@@ -334,7 +352,7 @@ interface HttpClientBuilder<U, R, SDE extends ServiceDiscovererEvent<R>> {
      *
      * @return {@link BlockingStreamingHttpClient}
      */
-    default BlockingStreamingHttpClient buildBlockingStreaming() {
+    public final BlockingStreamingHttpClient buildBlockingStreaming() {
         return buildStreaming().asBlockingStreamingClient();
     }
 
@@ -343,7 +361,7 @@ interface HttpClientBuilder<U, R, SDE extends ServiceDiscovererEvent<R>> {
      *
      * @return {@link BlockingHttpClient}
      */
-    default BlockingHttpClient buildBlocking() {
+    public final BlockingHttpClient buildBlocking() {
         return buildStreaming().asBlockingClient();
     }
 }

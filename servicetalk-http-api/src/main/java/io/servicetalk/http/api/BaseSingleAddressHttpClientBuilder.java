@@ -29,72 +29,71 @@ import java.net.SocketOption;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
-interface BaseSingleAddressHttpClientBuilder<U, R, SDE extends ServiceDiscovererEvent<R>>
+abstract class BaseSingleAddressHttpClientBuilder<U, R, SDE extends ServiceDiscovererEvent<R>>
         extends HttpClientBuilder<U, R, SDE> {
 
     @Override
-    BaseSingleAddressHttpClientBuilder<U, R, SDE> ioExecutor(IoExecutor ioExecutor);
+    public abstract BaseSingleAddressHttpClientBuilder<U, R, SDE> ioExecutor(IoExecutor ioExecutor);
 
     @Override
-    BaseSingleAddressHttpClientBuilder<U, R, SDE> executionStrategy(HttpExecutionStrategy strategy);
+    public abstract BaseSingleAddressHttpClientBuilder<U, R, SDE> bufferAllocator(BufferAllocator allocator);
 
     @Override
-    BaseSingleAddressHttpClientBuilder<U, R, SDE> bufferAllocator(BufferAllocator allocator);
+    public abstract <T> BaseSingleAddressHttpClientBuilder<U, R, SDE> socketOption(SocketOption<T> option, T value);
 
     @Override
-    <T> BaseSingleAddressHttpClientBuilder<U, R, SDE> socketOption(SocketOption<T> option, T value);
+    public abstract BaseSingleAddressHttpClientBuilder<U, R, SDE> enableWireLogging(String loggerName);
 
     @Override
-    BaseSingleAddressHttpClientBuilder<U, R, SDE> enableWireLogging(String loggerName);
+    public abstract BaseSingleAddressHttpClientBuilder<U, R, SDE> disableWireLogging();
 
     @Override
-    BaseSingleAddressHttpClientBuilder<U, R, SDE> disableWireLogging();
+    public abstract BaseSingleAddressHttpClientBuilder<U, R, SDE> headersFactory(HttpHeadersFactory headersFactory);
 
     @Override
-    BaseSingleAddressHttpClientBuilder<U, R, SDE> headersFactory(HttpHeadersFactory headersFactory);
+    public abstract BaseSingleAddressHttpClientBuilder<U, R, SDE> maxInitialLineLength(int maxInitialLineLength);
 
     @Override
-    BaseSingleAddressHttpClientBuilder<U, R, SDE> maxInitialLineLength(int maxInitialLineLength);
+    public abstract BaseSingleAddressHttpClientBuilder<U, R, SDE> maxHeaderSize(int maxHeaderSize);
 
     @Override
-    BaseSingleAddressHttpClientBuilder<U, R, SDE> maxHeaderSize(int maxHeaderSize);
+    public abstract BaseSingleAddressHttpClientBuilder<U, R, SDE> headersEncodedSizeEstimate(
+            int headersEncodedSizeEstimate);
 
     @Override
-    BaseSingleAddressHttpClientBuilder<U, R, SDE> headersEncodedSizeEstimate(int headersEncodedSizeEstimate);
+    public abstract BaseSingleAddressHttpClientBuilder<U, R, SDE> trailersEncodedSizeEstimate(
+            int trailersEncodedSizeEstimate);
 
     @Override
-    BaseSingleAddressHttpClientBuilder<U, R, SDE> trailersEncodedSizeEstimate(int trailersEncodedSizeEstimate);
+    public abstract BaseSingleAddressHttpClientBuilder<U, R, SDE> maxPipelinedRequests(int maxPipelinedRequests);
 
     @Override
-    BaseSingleAddressHttpClientBuilder<U, R, SDE> maxPipelinedRequests(int maxPipelinedRequests);
+    public abstract BaseSingleAddressHttpClientBuilder<U, R, SDE> appendConnectionFilter(
+            HttpConnectionFilterFactory factory);
 
     @Override
-    BaseSingleAddressHttpClientBuilder<U, R, SDE> appendConnectionFilter(HttpConnectionFilterFactory factory);
-
-    @Override
-    default BaseSingleAddressHttpClientBuilder<U, R, SDE> appendConnectionFilter(
+    public BaseSingleAddressHttpClientBuilder<U, R, SDE> appendConnectionFilter(
             Predicate<StreamingHttpRequest> predicate,
             HttpConnectionFilterFactory factory) {
-        return (BaseSingleAddressHttpClientBuilder<U, R, SDE>)
-                HttpClientBuilder.super.appendConnectionFilter(predicate, factory);
+        return (BaseSingleAddressHttpClientBuilder<U, R, SDE>) super.appendConnectionFilter(predicate, factory);
     }
 
     @Override
-    BaseSingleAddressHttpClientBuilder<U, R, SDE> appendConnectionFactoryFilter(
+    public abstract BaseSingleAddressHttpClientBuilder<U, R, SDE> appendConnectionFactoryFilter(
             ConnectionFactoryFilter<R, StreamingHttpConnectionFilter> factory);
 
     @Override
-    BaseSingleAddressHttpClientBuilder<U, R, SDE> disableHostHeaderFallback();
+    public abstract BaseSingleAddressHttpClientBuilder<U, R, SDE> disableHostHeaderFallback();
 
     @Override
-    BaseSingleAddressHttpClientBuilder<U, R, SDE> disableWaitForLoadBalancer();
+    public abstract BaseSingleAddressHttpClientBuilder<U, R, SDE> disableWaitForLoadBalancer();
 
     @Override
-    BaseSingleAddressHttpClientBuilder<U, R, SDE> serviceDiscoverer(
+    public abstract BaseSingleAddressHttpClientBuilder<U, R, SDE> serviceDiscoverer(
             ServiceDiscoverer<U, R, ? extends SDE> serviceDiscoverer);
 
     @Override
-    BaseSingleAddressHttpClientBuilder<U, R, SDE> loadBalancerFactory(
+    public abstract BaseSingleAddressHttpClientBuilder<U, R, SDE> loadBalancerFactory(
             LoadBalancerFactory<R, StreamingHttpConnectionFilter> loadBalancerFactory);
 
     /**
@@ -107,7 +106,7 @@ interface BaseSingleAddressHttpClientBuilder<U, R, SDE extends ServiceDiscoverer
      * @param hostHeader the value for the {@link HttpHeaderNames#HOST}
      * @return {@code this}
      */
-    BaseSingleAddressHttpClientBuilder<U, R, SDE> enableHostHeaderFallback(CharSequence hostHeader);
+    public abstract BaseSingleAddressHttpClientBuilder<U, R, SDE> enableHostHeaderFallback(CharSequence hostHeader);
 
     /**
      * Enable SSL/TLS using the provided {@link SslConfig}. To disable it pass in {@code null}.
@@ -118,5 +117,5 @@ interface BaseSingleAddressHttpClientBuilder<U, R, SDE extends ServiceDiscoverer
      * or {@link SslConfig#trustCertChainSupplier()}
      * throws when {@link InputStream#close()} is called.
      */
-    BaseSingleAddressHttpClientBuilder<U, R, SDE> sslConfig(@Nullable SslConfig sslConfig);
+    public abstract BaseSingleAddressHttpClientBuilder<U, R, SDE> sslConfig(@Nullable SslConfig sslConfig);
 }

@@ -37,8 +37,18 @@ import javax.annotation.Nullable;
  * @param <R> the type of address after resolution (resolved address)
  */
 public abstract class SingleAddressHttpClientBuilder<U, R>
-        implements BaseSingleAddressHttpClientBuilder<U, R, ServiceDiscovererEvent<R>> {
+        extends BaseSingleAddressHttpClientBuilder<U, R, ServiceDiscovererEvent<R>> {
+
     private HttpExecutionStrategy strategy = DEFAULT_BUILDER_STRATEGY;
+
+    /**
+     * Returns the {@link HttpExecutionStrategy} used by this {@link SingleAddressHttpClientBuilder}.
+     *
+     * @return {@link HttpExecutionStrategy} used by this {@link SingleAddressHttpClientBuilder}.
+     */
+    protected final HttpExecutionStrategy executionStrategy() {
+        return strategy;
+    }
 
     @Override
     public abstract SingleAddressHttpClientBuilder<U, R> ioExecutor(IoExecutor ioExecutor);
@@ -86,7 +96,7 @@ public abstract class SingleAddressHttpClientBuilder<U, R>
     public SingleAddressHttpClientBuilder<U, R> appendConnectionFilter(Predicate<StreamingHttpRequest> predicate,
                                                                        HttpConnectionFilterFactory factory) {
         return (SingleAddressHttpClientBuilder<U, R>)
-                BaseSingleAddressHttpClientBuilder.super.appendConnectionFilter(predicate, factory);
+                super.appendConnectionFilter(predicate, factory);
     }
 
     @Override
@@ -117,18 +127,9 @@ public abstract class SingleAddressHttpClientBuilder<U, R>
     public SingleAddressHttpClientBuilder<U, R> appendClientFilter(Predicate<StreamingHttpRequest> predicate,
                                                                    HttpClientFilterFactory factory) {
         return (SingleAddressHttpClientBuilder<U, R>)
-                BaseSingleAddressHttpClientBuilder.super.appendClientFilter(predicate, factory);
+                super.appendClientFilter(predicate, factory);
     }
 
     @Override
     public abstract SingleAddressHttpClientBuilder<U, R> sslConfig(@Nullable SslConfig sslConfig);
-
-    /**
-     * Returns the {@link HttpExecutionStrategy} used by this {@link SingleAddressHttpClientBuilder}.
-     *
-     * @return {@link HttpExecutionStrategy} used by this {@link SingleAddressHttpClientBuilder}.
-     */
-    protected HttpExecutionStrategy executionStrategy() {
-        return strategy;
-    }
 }

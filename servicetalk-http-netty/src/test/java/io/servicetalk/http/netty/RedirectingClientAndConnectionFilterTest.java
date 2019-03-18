@@ -62,7 +62,6 @@ import static org.junit.Assert.assertThat;
  * HttpClient} and {@link HttpConnection} builders.
  */
 @RunWith(Parameterized.class)
-// TODO(jayv) should use AbstractHttpRequesterFilterTest
 public final class RedirectingClientAndConnectionFilterTest {
 
     @Rule
