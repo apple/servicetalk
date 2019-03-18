@@ -27,7 +27,6 @@ import io.servicetalk.transport.api.IoExecutor;
 
 import java.net.SocketOption;
 import java.util.function.BiFunction;
-import java.util.function.Function;
 import java.util.function.Predicate;
 
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
@@ -166,14 +165,7 @@ abstract class HttpClientBuilder<U, R, SDE extends ServiceDiscovererEvent<R>> ex
                 new ConditionalHttpClientFilter(predicate, factory.create(client, lbEvents), client));
     }
 
-    /**
-     * Disable automatically setting {@code Host} headers by inferring from the address or {@link StreamingHttpRequest}.
-     * <p>
-     * This setting disables the default filter such that no {@code Host} header will be manipulated.
-     * @return {@code this}
-     * @see SingleAddressHttpClientBuilder#enableHostHeaderFallback(CharSequence)
-     * @see MultiAddressHttpClientBuilder#enableHostHeaderFallback(Function)
-     */
+    @Override
     public abstract HttpClientBuilder<U, R, SDE> disableHostHeaderFallback();
 
     /**

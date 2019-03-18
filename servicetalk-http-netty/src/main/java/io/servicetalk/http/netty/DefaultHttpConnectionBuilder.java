@@ -45,6 +45,7 @@ import java.io.InputStream;
 import java.net.InetSocketAddress;
 import java.net.SocketOption;
 import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
@@ -63,6 +64,8 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> extends HttpCon
     private final HttpClientConfig config;
     private final ExecutionContextBuilder executionContextBuilder = new ExecutionContextBuilder();
     private HttpConnectionFilterFactory connectionFilterFunction = HttpConnectionFilterFactory.identity();
+    private Function<ResolvedAddress, HttpConnectionFilterFactory> hostHeaderFilterFactory =
+            DefaultHttpConnectionBuilder::defaultHostHeaderFilterFactory;
 
     /**
      * Create a new builder.
@@ -99,14 +102,8 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> extends HttpCon
                         roConfig.headersFactory());
 
         // Make a best effort to infer HOST header for HttpConnection
-        HttpConnectionFilterFactory filterFactory;
-        if (resolvedAddress instanceof InetSocketAddress) {
-            InetSocketAddress inetSocketAddress = (InetSocketAddress) resolvedAddress;
-            filterFactory = connectionFilterFunction.append(
-                    new HostHeaderHttpRequesterFilter(HostAndPort.of(inetSocketAddress)));
-        } else {
-            filterFactory = connectionFilterFunction;
-        }
+        HttpConnectionFilterFactory filterFactory = connectionFilterFunction.append(
+                hostHeaderFilterFactory.apply(resolvedAddress));
         filterFactory = filterFactory.append(
                 new ConcurrentRequestsHttpConnectionFilter(roConfig.maxPipelinedRequests()));
 
@@ -221,6 +218,18 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> extends HttpCon
     }
 
     @Override
+    public DefaultHttpConnectionBuilder<ResolvedAddress> disableHostHeaderFallback() {
+        hostHeaderFilterFactory = address -> HttpConnectionFilterFactory.identity();
+        return this;
+    }
+
+    @Override
+    public DefaultHttpConnectionBuilder<ResolvedAddress> enableHostHeaderFallback(final CharSequence hostHeader) {
+        hostHeaderFilterFactory = __ -> new HostHeaderHttpRequesterFilter(hostHeader);
+        return this;
+    }
+
+    @Override
     public DefaultHttpConnectionBuilder<ResolvedAddress> appendConnectionFilter(
             final HttpConnectionFilterFactory function) {
         connectionFilterFunction = connectionFilterFunction.append(requireNonNull(function));
@@ -232,5 +241,12 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> extends HttpCon
             final Predicate<StreamingHttpRequest> predicate, final HttpConnectionFilterFactory factory) {
         super.appendConnectionFilter(predicate, factory);
         return this;
+    }
+
+    private static <R> HostHeaderHttpRequesterFilter defaultHostHeaderFilterFactory(final R address) {
+        if (address instanceof InetSocketAddress) {
+            return new HostHeaderHttpRequesterFilter(HostAndPort.of((InetSocketAddress) address));
+        }
+        throw new IllegalArgumentException("Unsupported host header address type, provide an override");
     }
 }

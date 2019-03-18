@@ -19,6 +19,7 @@ import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.client.api.ConnectionFactory;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.api.ExecutionContext;
+import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.IoExecutor;
 
 import java.net.SocketOption;
@@ -80,6 +81,22 @@ public abstract class HttpConnectionBuilder<ResolvedAddress> extends BaseHttpBui
 
     @Override
     public abstract HttpConnectionBuilder<ResolvedAddress> maxPipelinedRequests(int maxPipelinedRequests);
+
+    @Override
+    public abstract HttpConnectionBuilder<ResolvedAddress> disableHostHeaderFallback();
+
+    /**
+     * Automatically set the provided {@link HttpHeaderNames#HOST} on {@link StreamingHttpRequest}s when it's missing.
+     * <p>
+     * For known address types such as {@link HostAndPort} the {@link HttpHeaderNames#HOST} is inferred and
+     * automatically set by default, if you have a custom address type or want to override the inferred value use this
+     * method. Use {@link #disableHostHeaderFallback()} if you don't want any {@link HttpHeaderNames#HOST} manipulation
+     * at all.
+     *
+     * @param hostHeader the value for the {@link HttpHeaderNames#HOST}
+     * @return {@code this}
+     */
+    public abstract HttpConnectionBuilder<ResolvedAddress> enableHostHeaderFallback(CharSequence hostHeader);
 
     /**
      * Creates the {@link StreamingHttpConnectionFilter} chain to be used by the {@link StreamingHttpConnection}.
