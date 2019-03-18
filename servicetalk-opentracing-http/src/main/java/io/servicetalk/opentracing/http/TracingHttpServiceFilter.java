@@ -72,14 +72,22 @@ public class TracingHttpServiceFilter extends AbstractTracingHttpFilter implemen
             public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
                                                         final StreamingHttpRequest request,
                                                         final StreamingHttpResponseFactory responseFactory) {
-                return trackRequest(request, () -> delegate().handle(ctx, request, responseFactory));
+                return newTracker(request).track(delegate().handle(ctx, request, responseFactory));
             }
         };
     }
 
-    @Override
-    final ScopeTracker newTracker() {
-        return new ServiceScopeTracker();
+    private ScopeTracker newTracker(final StreamingHttpRequest request) {
+        SpanBuilder spanBuilder = tracer.buildSpan(getOperationName(componentName, request))
+                .withTag(SPAN_KIND.getKey(), SPAN_KIND_SERVER)
+                .withTag(HTTP_METHOD.getKey(), request.method().name())
+                .withTag(HTTP_URL.getKey(), request.path());
+        SpanContext parentSpanContext = tracer.extract(formatter, request.headers());
+        if (parentSpanContext != null) {
+            spanBuilder = spanBuilder.asChildOf(parentSpanContext);
+        }
+        Scope scope = spanBuilder.startActive(true);
+        return new ServiceScopeTracker(scope, parentSpanContext);
     }
 
     private final class ServiceScopeTracker extends ScopeTracker {
@@ -87,25 +95,16 @@ public class TracingHttpServiceFilter extends AbstractTracingHttpFilter implemen
         @Nullable
         private SpanContext parentSpanContext;
 
-        @Override
-        Scope newScope(final HttpRequestMetaData request) {
-            SpanBuilder spanBuilder = tracer.buildSpan(getOperationName(componentName, request))
-                    .withTag(SPAN_KIND.getKey(), SPAN_KIND_SERVER)
-                    .withTag(HTTP_METHOD.getKey(), request.method().name())
-                    .withTag(HTTP_URL.getKey(), request.path());
-            parentSpanContext = tracer.extract(formatter, request.headers());
-            if (parentSpanContext != null) {
-                spanBuilder = spanBuilder.asChildOf(parentSpanContext);
-            }
-            return spanBuilder.startActive(true);
+        ServiceScopeTracker(final Scope scope, final SpanContext parentSpanContext) {
+            super(scope);
+            this.parentSpanContext = parentSpanContext;
         }
 
         @Override
         void onResponseMeta(final HttpResponseMetaData metaData) {
             super.onResponseMeta(metaData);
             if (injectSpanContextIntoResponse(parentSpanContext)) {
-                //noinspection ConstantConditions - super.onResponseMeta(metaData); ensures non-null
-                tracer.inject(currentScope().span().context(), formatter, metaData.headers());
+                tracer.inject(currentScope.span().context(), formatter, metaData.headers());
             }
         }
     }

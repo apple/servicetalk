@@ -76,7 +76,8 @@ public class TracingHttpRequesterFilter extends AbstractTracingHttpFilter implem
             protected Single<StreamingHttpResponse> request(final StreamingHttpRequestFunction delegate,
                                                             final HttpExecutionStrategy strategy,
                                                             final StreamingHttpRequest request) {
-                return trackRequest(request, () -> delegate.request(strategy, request));
+                return Single.defer(() ->
+                        newTracker(request).track(delegate.request(strategy, request)).subscribeShareContext());
             }
 
             @Override
@@ -95,7 +96,8 @@ public class TracingHttpRequesterFilter extends AbstractTracingHttpFilter implem
             protected Single<StreamingHttpResponse> request(final StreamingHttpConnectionFilter delegate,
                                                             final HttpExecutionStrategy strategy,
                                                             final StreamingHttpRequest request) {
-                return trackRequest(request, () -> delegate.request(strategy, request));
+                return Single.defer(() ->
+                        newTracker(request).track(delegate.request(strategy, request)).subscribeShareContext());
             }
 
             @Override
@@ -106,26 +108,17 @@ public class TracingHttpRequesterFilter extends AbstractTracingHttpFilter implem
         };
     }
 
-    @Override
-    final ScopeTracker newTracker() {
-        return new RequesterScopeTracker();
-    }
-
-    private final class RequesterScopeTracker extends ScopeTracker {
-
-        @Override
-        Scope newScope(final HttpRequestMetaData request) {
-            SpanBuilder spanBuilder = tracer.buildSpan(componentName)
-                    .withTag(SPAN_KIND.getKey(), SPAN_KIND_CLIENT)
-                    .withTag(HTTP_METHOD.getKey(), request.method().name())
-                    .withTag(HTTP_URL.getKey(), request.path());
-            final Span activeSpan = tracer.activeSpan();
-            if (activeSpan != null) {
-                spanBuilder = spanBuilder.asChildOf(activeSpan);
-            }
-            Scope scope = spanBuilder.startActive(true);
-            tracer.inject(scope.span().context(), formatter, request.headers());
-            return scope;
+    private ScopeTracker newTracker(final HttpRequestMetaData request) {
+        SpanBuilder spanBuilder = tracer.buildSpan(componentName)
+                .withTag(SPAN_KIND.getKey(), SPAN_KIND_CLIENT)
+                .withTag(HTTP_METHOD.getKey(), request.method().name())
+                .withTag(HTTP_URL.getKey(), request.path());
+        final Span activeSpan = tracer.activeSpan();
+        if (activeSpan != null) {
+            spanBuilder = spanBuilder.asChildOf(activeSpan);
         }
+        Scope scope = spanBuilder.startActive(true);
+        tracer.inject(scope.span().context(), formatter, request.headers());
+        return new ScopeTracker(scope);
     }
 }
