@@ -61,9 +61,10 @@ import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.HttpSerializationProviders.textDeserializer;
 import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
 import static java.nio.charset.StandardCharsets.US_ASCII;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.when;
 
@@ -146,7 +147,7 @@ public class BlockingStreamingHttpServiceToStreamingHttpServiceTest {
         assertPayloadBody("", response);
         assertEmptyTrailers(response);
 
-        assertEquals(HELLO_WORLD, receivedPayload.toString());
+        assertThat(receivedPayload.toString(), is(HELLO_WORLD));
     }
 
     @Test
@@ -266,7 +267,7 @@ public class BlockingStreamingHttpServiceToStreamingHttpServiceTest {
         };
         StreamingHttpService asyncService = syncService.asStreamingService();
         asyncService.closeAsync().toFuture().get();
-        assertTrue(closedCalled.get());
+        assertThat(closedCalled.get(), is(true));
     }
 
     @Test
@@ -307,10 +308,10 @@ public class BlockingStreamingHttpServiceToStreamingHttpServiceTest {
                 });
         handleLatch.await();
         Cancellable cancellable = cancellableRef.get();
-        assertNotNull(cancellable);
+        assertThat(cancellable, is(notNullValue()));
         cancellable.cancel();
         onErrorLatch.await();
-        assertTrue(throwableRef.get() instanceof InterruptedException);
+        assertThat(throwableRef.get(), instanceOf(InterruptedException.class));
     }
 
     @Test
@@ -332,7 +333,7 @@ public class BlockingStreamingHttpServiceToStreamingHttpServiceTest {
         StreamingHttpService asyncService = syncService.asStreamingService();
         StreamingHttpResponse asyncResponse = asyncService.handle(mockCtx, reqRespFactory.get("/"), reqRespFactory)
                 .subscribeOn(executorRule.executor()).toFuture().get();
-        assertNotNull(asyncResponse);
+        assertThat(asyncResponse, is(notNullValue()));
         CountDownLatch latch = new CountDownLatch(1);
         toSource(asyncResponse.payloadBody()).subscribe(new Subscriber<Buffer>() {
             @Override
@@ -372,11 +373,11 @@ public class BlockingStreamingHttpServiceToStreamingHttpServiceTest {
         StreamingHttpResponse asyncResponse = asyncService.handle(mockCtx, reqRespFactory.get("/"), reqRespFactory)
                 .subscribeOn(executorRule.executor()).toFuture().get();
         try {
-            assertEquals("", asyncResponse.payloadBody()
-                    .reduce(() -> "", (acc, next) -> acc + next.toString(US_ASCII)).toFuture().get());
+            assertThat(asyncResponse.payloadBody()
+                    .reduce(() -> "", (acc, next) -> acc + next.toString(US_ASCII)).toFuture().get(), is(""));
             fail("Payload body should complete with an error");
         } catch (ExecutionException e) {
-            assertTrue(e.getCause() instanceof IllegalStateException);
+            assertThat(e.getCause(), instanceOf(IllegalStateException.class));
         }
     }
 
@@ -395,12 +396,12 @@ public class BlockingStreamingHttpServiceToStreamingHttpServiceTest {
         StreamingHttpResponse asyncResponse = asyncService.handle(mockCtx, reqRespFactory.get("/"), reqRespFactory)
                 .subscribeOn(executorRule.executor()).toFuture().get();
         try {
-            assertEquals("", asyncResponse.payloadBody()
-                    .reduce(() -> "", (acc, next) -> acc + next.toString(US_ASCII)).toFuture().get());
+            assertThat(asyncResponse.payloadBody()
+                    .reduce(() -> "", (acc, next) -> acc + next.toString(US_ASCII)).toFuture().get(), is(""));
             fail("Payload body should complete with an error");
         } catch (Exception e) {
-            assertTrue(e.getCause() instanceof IllegalStateException);
-            assertEquals("Response meta-data is already sent", e.getCause().getMessage());
+            assertThat(e.getCause(), instanceOf(IllegalStateException.class));
+            assertThat(e.getCause().getMessage(), is("Response meta-data is already sent"));
         }
     }
 
@@ -437,7 +438,7 @@ public class BlockingStreamingHttpServiceToStreamingHttpServiceTest {
                     }
                 });
         onErrorLatch.await();
-        assertEquals(DELIBERATE_EXCEPTION, throwableRef.get());
+        assertThat(throwableRef.get(), is(DELIBERATE_EXCEPTION));
     }
 
     @Test
@@ -457,7 +458,7 @@ public class BlockingStreamingHttpServiceToStreamingHttpServiceTest {
         StreamingHttpService asyncService = syncService.asStreamingService();
         StreamingHttpResponse asyncResponse = asyncService.handle(mockCtx, reqRespFactory.get("/"), reqRespFactory)
                 .subscribeOn(executorRule.executor()).toFuture().get();
-        assertNotNull(asyncResponse);
+        assertThat(asyncResponse, is(notNullValue()));
         toSource(asyncResponse.payloadBody()).subscribe(new Subscriber<Buffer>() {
             @Override
             public void onSubscribe(final Subscription s) {
@@ -478,7 +479,7 @@ public class BlockingStreamingHttpServiceToStreamingHttpServiceTest {
             }
         });
         onErrorLatch.await();
-        assertEquals(DELIBERATE_EXCEPTION, throwableRef.get());
+        assertThat(throwableRef.get(), is(DELIBERATE_EXCEPTION));
     }
 
     @Test
@@ -512,14 +513,14 @@ public class BlockingStreamingHttpServiceToStreamingHttpServiceTest {
 
     private static void assertMetaData(HttpResponseStatus expectedStatus, List<Object> response) {
         HttpResponseMetaData metaData = (HttpResponseMetaData) response.get(0);
-        assertEquals(HTTP_1_1, metaData.version());
-        assertEquals(expectedStatus, metaData.status());
+        assertThat(metaData.version(), is(HTTP_1_1));
+        assertThat(metaData.status(), is(expectedStatus));
     }
 
     private static void assertHeader(CharSequence expectedHeader, CharSequence expectedValue, List<Object> response) {
         HttpResponseMetaData metaData = (HttpResponseMetaData) response.get(0);
-        assertNotNull(metaData);
-        assertTrue(metaData.headers().contains(expectedHeader, expectedValue));
+        assertThat(metaData, is(notNullValue()));
+        assertThat(metaData.headers().contains(expectedHeader, expectedValue), is(true));
     }
 
     private static void assertPayloadBody(String expectedPayloadBody, List<Object> response) {
@@ -527,18 +528,18 @@ public class BlockingStreamingHttpServiceToStreamingHttpServiceTest {
                 .filter(obj -> obj instanceof Buffer)
                 .map(obj -> ((Buffer) obj).toString(US_ASCII))
                 .collect(Collectors.joining());
-        assertEquals(expectedPayloadBody, payloadBody);
+        assertThat(payloadBody, is(expectedPayloadBody));
     }
 
     private static void assertEmptyTrailers(List<Object> response) {
         HttpHeaders trailers = (HttpHeaders) response.get(response.size() - 1);
-        assertNotNull(trailers);
-        assertTrue(trailers.isEmpty());
+        assertThat(trailers, is(notNullValue()));
+        assertThat(trailers.isEmpty(), is(true));
     }
 
     private static void assertTrailer(CharSequence expectedTrailer, CharSequence expectedValue, List<Object> response) {
         HttpHeaders trailers = (HttpHeaders) response.get(response.size() - 1);
-        assertNotNull(trailers);
-        assertTrue(trailers.contains(expectedTrailer, expectedValue));
+        assertThat(trailers, is(notNullValue()));
+        assertThat(trailers.contains(expectedTrailer, expectedValue), is(true));
     }
 }
