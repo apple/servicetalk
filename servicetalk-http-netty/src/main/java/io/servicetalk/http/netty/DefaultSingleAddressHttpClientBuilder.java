@@ -155,18 +155,19 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
         }
 
         <T> T build(final BiFunction<StreamingHttpClientFilter, HttpExecutionStrategy, T> assembler) {
-            return builder.buildFilterChain(this, assembler);
+            return builder.buildFilterChainFromContext(this, assembler);
         }
     }
 
     // This is only to be called by HttpClientBuilder.buildStreaming() - @see #buildContext()
     @Override
     protected <T> T buildFilterChain(final BiFunction<StreamingHttpClientFilter, HttpExecutionStrategy, T> assembler) {
-        return buildContext().build(assembler);
+        return copyBuildCtx().build(assembler);
     }
 
-    private <T> T buildFilterChain(final HttpClientBuildContext<U, R> ctx,
-                                   final BiFunction<StreamingHttpClientFilter, HttpExecutionStrategy, T> assembler) {
+    private <T> T buildFilterChainFromContext(
+            final HttpClientBuildContext<U, R> ctx,
+            final BiFunction<StreamingHttpClientFilter, HttpExecutionStrategy, T> assembler) {
 
         final ReadOnlyHttpClientConfig roConfig = config.asReadOnly();
         // Track resources that potentially need to be closed when an exception is thrown during buildStreaming
@@ -207,14 +208,14 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
     /**
      * Creates a context before building the client, avoid concurrent changes at runtime.
      */
-    HttpClientBuildContext<U, R> buildContext() {
+    HttpClientBuildContext<U, R> copyBuildCtx() {
         return buildContext0(null);
     }
 
     /**
      * Creates a context before building the client with a provided address, avoid concurrent changes at runtime.
      */
-    HttpClientBuildContext<U, R> buildContext(U address) {
+    HttpClientBuildContext<U, R> copyBuildCtx(U address) {
         assert this.address == null : "Not intended to change the address, only to supply lazily";
         return buildContext0(address);
     }

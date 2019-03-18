@@ -83,14 +83,14 @@ class DefaultPartitionedHttpClientBuilder<U, R> extends PartitionedHttpClientBui
 
     @Override
     protected <T> T buildFilterChain(final BiFunction<StreamingHttpClientFilter, HttpExecutionStrategy, T> assembler) {
-        final HttpClientBuildContext<U, R> buildContext = builderTemplate.buildContext();
+        final HttpClientBuildContext<U, R> buildContext = builderTemplate.copyBuildCtx();
 
         final PartitionedClientFactory<U, R, StreamingHttpClientFilter> clientFactory = (pa, sd) -> {
             DefaultSingleAddressHttpClientBuilder<U, R> builder = buildContext.builder;
             builder.serviceDiscoverer(sd);
             clientFilterFunction.apply(pa, builder);
             // build new context, user may have changed anything on the builder from the filter
-            return builder.buildContext().build((filter, __) -> filter);
+            return builder.copyBuildCtx().build((filter, __) -> filter);
         };
 
         @SuppressWarnings("unchecked")

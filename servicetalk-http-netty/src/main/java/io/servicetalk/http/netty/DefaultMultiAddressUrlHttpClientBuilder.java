@@ -109,7 +109,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder extends MultiAddressHttpClie
         final CompositeCloseable closeables = newCompositeCloseable();
         CachingKeyFactory keyFactory = null;
         try {
-            final HttpClientBuildContext<HostAndPort, InetSocketAddress> buildContext = builderTemplate.buildContext();
+            final HttpClientBuildContext<HostAndPort, InetSocketAddress> buildContext = builderTemplate.copyBuildCtx();
 
             final ClientFilterFactory clientFilterFactory = new ClientFilterFactory(buildContext.builder,
                     sslConfigProvider, clientFilterFunction, hostHeaderTransformer);
@@ -251,7 +251,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder extends MultiAddressHttpClie
 
             // Copy existing builder to prevent changes at runtime when concurrently creating clients for new addresses
             final HttpClientBuildContext<HostAndPort, InetSocketAddress> buildContext =
-                    builderTemplate.buildContext(urlKey.hostAndPort);
+                    builderTemplate.copyBuildCtx(urlKey.hostAndPort);
 
             if (hostHeaderTransformer != null) {
                 try {
