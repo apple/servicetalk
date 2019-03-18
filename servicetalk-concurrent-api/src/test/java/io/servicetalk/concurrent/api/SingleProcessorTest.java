@@ -15,12 +15,18 @@
  */
 package io.servicetalk.concurrent.api;
 
+import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.SingleSource;
+
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.lang.ref.ReferenceQueue;
+import java.lang.ref.WeakReference;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static org.junit.Assert.assertEquals;
 
 public class SingleProcessorTest {
     @Rule
@@ -163,5 +169,37 @@ public class SingleProcessorTest {
         processor.onSuccess(expected);
         rule().verifyNoEmissions();
         rule2().verifySuccess(expected);
+    }
+
+    @Test
+    public void synchronousCancelStillAllowsForGC() throws InterruptedException {
+        SingleProcessor<Integer> processor = new SingleProcessor<>();
+        ReferenceQueue<SingleSource.Subscriber<Integer>> queue = new ReferenceQueue<>();
+        WeakReference<SingleSource.Subscriber<Integer>> subscriberRef =
+                synchronousCancelStillAllowsForGCDoSubscribe(processor, queue);
+        System.gc();
+        Thread.sleep(300);
+        assertEquals(subscriberRef, queue.remove(100));
+    }
+
+    private WeakReference<SingleSource.Subscriber<Integer>> synchronousCancelStillAllowsForGCDoSubscribe(
+            SingleProcessor<Integer> processor, ReferenceQueue<SingleSource.Subscriber<Integer>> queue) {
+        SingleSource.Subscriber<Integer> subscriber = new SingleSource.Subscriber<Integer>() {
+            @Override
+            public void onSubscribe(final Cancellable cancellable) {
+                cancellable.cancel();
+            }
+
+            @Override
+            public void onSuccess(@Nullable final Integer result) {
+
+            }
+
+            @Override
+            public void onError(final Throwable t) {
+            }
+        };
+        processor.subscribe(subscriber);
+        return new WeakReference<>(subscriber, queue);
     }
 }

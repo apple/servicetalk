@@ -15,13 +15,19 @@
  */
 package io.servicetalk.concurrent.api.completable;
 
+import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.api.CompletableProcessor;
 import io.servicetalk.concurrent.api.LegacyMockedCompletableListenerRule;
 
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.lang.ref.ReferenceQueue;
+import java.lang.ref.WeakReference;
+
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static org.junit.Assert.assertEquals;
 
 public class CompletableProcessorTest {
 
@@ -85,5 +91,36 @@ public class CompletableProcessorTest {
         processor.onComplete();
         rule.verifyNoEmissions();
         rule2.verifyCompletion();
+    }
+
+    @Test
+    public void synchronousCancelStillAllowsForGC() throws InterruptedException {
+        CompletableProcessor processor = new CompletableProcessor();
+        ReferenceQueue<CompletableSource.Subscriber> queue = new ReferenceQueue<>();
+        WeakReference<CompletableSource.Subscriber> subscriberRef =
+                synchronousCancelStillAllowsForGCDoSubscribe(processor, queue);
+        System.gc();
+        Thread.sleep(300);
+        assertEquals(subscriberRef, queue.remove(100));
+    }
+
+    private WeakReference<CompletableSource.Subscriber> synchronousCancelStillAllowsForGCDoSubscribe(
+            CompletableProcessor processor, ReferenceQueue<CompletableSource.Subscriber> queue) {
+        CompletableSource.Subscriber subscriber = new CompletableSource.Subscriber() {
+            @Override
+            public void onSubscribe(final Cancellable cancellable) {
+                cancellable.cancel();
+            }
+
+            @Override
+            public void onComplete() {
+            }
+
+            @Override
+            public void onError(final Throwable t) {
+            }
+        };
+        processor.subscribe(subscriber);
+        return new WeakReference<>(subscriber, queue);
     }
 }
