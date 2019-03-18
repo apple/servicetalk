@@ -409,7 +409,8 @@ public class DefaultAsyncContextProviderTest {
 
         new ContextCapturer()
                 .runAndWait(collector -> {
-                    Consumer<Void> c = INSTANCE.wrapConsumer(v -> collector.complete(AsyncContext.current()));
+                    Consumer<Void> c = INSTANCE.wrapConsumer(v -> collector.complete(AsyncContext.current()),
+                            AsyncContext.current());
                     executor.execute(() -> c.accept(null));
                 })
                 .verifyContext(verifier);

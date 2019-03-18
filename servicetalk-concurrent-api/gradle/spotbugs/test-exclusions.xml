@@ -42,4 +42,13 @@
     <Method name="multiRequests"/>
     <Bug pattern="VA_PRIMITIVE_ARRAY_PASSED_TO_OBJECT_VARARG"/>
   </Match>
+  <!-- The tests want to verify objects are GCed, so they force a call to System.gc() intentionally -->
+  <Match>
+    <Or>
+      <Class name="io.servicetalk.concurrent.api.completable.CompletableProcessorTest"/>
+      <Class name="io.servicetalk.concurrent.api.SingleProcessorTest"/>
+    </Or>
+    <Method name="synchronousCancelStillAllowsForGC"/>
+    <Bug pattern="DM_GC"/>
+  </Match>
 </FindBugsFilter>

@@ -15,7 +15,7 @@
  */
 package io.servicetalk.log4j2.mdc;
 
-import io.servicetalk.log4j2.mdc.internal.ServiceTalkThreadContextMap;
+import io.servicetalk.log4j2.mdc.utils.ServiceTalkThreadContextMap;
 
 import org.apache.logging.log4j.ThreadContext;
 import org.junit.Test;

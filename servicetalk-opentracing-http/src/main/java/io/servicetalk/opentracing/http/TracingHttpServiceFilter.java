@@ -16,22 +16,20 @@
 package io.servicetalk.opentracing.http;
 
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.http.api.HttpServiceContext;
+import io.servicetalk.http.api.HttpServiceFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequest;
-import io.servicetalk.http.api.StreamingHttpRequestHandler;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpService;
-import io.servicetalk.opentracing.inmemory.api.InMemoryTraceStateFormat;
+import io.servicetalk.http.api.StreamingHttpServiceFilter;
 
 import io.opentracing.Scope;
 import io.opentracing.SpanContext;
 import io.opentracing.Tracer;
 
-import java.util.concurrent.atomic.AtomicBoolean;
 import javax.annotation.Nullable;
 
 import static io.opentracing.Tracer.SpanBuilder;
@@ -39,32 +37,20 @@ import static io.opentracing.tag.Tags.HTTP_METHOD;
 import static io.opentracing.tag.Tags.HTTP_URL;
 import static io.opentracing.tag.Tags.SPAN_KIND;
 import static io.opentracing.tag.Tags.SPAN_KIND_SERVER;
-import static io.servicetalk.concurrent.api.Single.defer;
-import static io.servicetalk.opentracing.http.TracingHttpHeadersFormatter.traceStateFormatter;
-import static io.servicetalk.opentracing.http.TracingUtils.handlePrematureException;
-import static io.servicetalk.opentracing.http.TracingUtils.tagErrorAndClose;
-import static io.servicetalk.opentracing.http.TracingUtils.tracingMapper;
-import static java.util.Objects.requireNonNull;
 
 /**
  * A {@link StreamingHttpService} that supports open tracing.
  */
-public class TracingHttpServiceFilter implements StreamingHttpRequestHandler {
-    private final StreamingHttpRequestHandler next;
-    private final Tracer tracer;
-    private final String componentName;
-    private final InMemoryTraceStateFormat<HttpHeaders> formatter;
+public class TracingHttpServiceFilter extends AbstractTracingHttpFilter implements HttpServiceFilterFactory {
 
     /**
      * Create a new instance.
      * @param tracer The {@link Tracer}.
      * @param componentName The component name used during building new spans.
-     * @param next The next {@link StreamingHttpService} in the filter chain.
      */
     public TracingHttpServiceFilter(Tracer tracer,
-                                    String componentName,
-                                    StreamingHttpRequestHandler next) {
-        this(tracer, componentName, next, true);
+                                    String componentName) {
+        this(tracer, componentName, true);
     }
 
     /**
@@ -72,58 +58,70 @@ public class TracingHttpServiceFilter implements StreamingHttpRequestHandler {
      * @param tracer The {@link Tracer}.
      * @param componentName The component name used during building new spans.
      * @param validateTraceKeyFormat {@code true} to validate the contents of the trace ids.
-     * @param next The next {@link StreamingHttpService} in the filter chain.
      */
     public TracingHttpServiceFilter(Tracer tracer,
                                     String componentName,
-                                    StreamingHttpRequestHandler next,
                                     boolean validateTraceKeyFormat) {
-        this.tracer = requireNonNull(tracer);
-        this.componentName = requireNonNull(componentName);
-        this.next = requireNonNull(next);
-        formatter = traceStateFormatter(validateTraceKeyFormat);
+        super(tracer, componentName, validateTraceKeyFormat);
     }
 
     @Override
-    public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
-                                                final StreamingHttpRequest request,
-                                                final StreamingHttpResponseFactory responseFactory) {
-        return defer(() -> {
-            Scope tempScope = null;
-            // We may interact with the Scope/Span from multiple threads (Subscriber & Subscription), and the
-            // Scope/Span class does not provide thread safe behavior. So we ensure that we only close (and add
-            // trailing meta data) from a single thread at any given time via this atomic variable.
-            AtomicBoolean tempScopeClosed = null;
-            final SpanContext parentSpanContext;
-            final Single<StreamingHttpResponse> responseSingle;
-            try {
-                SpanBuilder spanBuilder = tracer.buildSpan(getOperationName(componentName, request))
-                        .withTag(SPAN_KIND.getKey(), SPAN_KIND_SERVER)
-                        .withTag(HTTP_METHOD.getKey(), request.method().name())
-                        .withTag(HTTP_URL.getKey(), request.path());
-                parentSpanContext = tracer.extract(formatter, request.headers());
-                if (parentSpanContext != null) {
-                    spanBuilder = spanBuilder.asChildOf(parentSpanContext);
-                }
-
-                tempScope = spanBuilder.startActive(true);
-                tempScopeClosed = new AtomicBoolean();
-                responseSingle = requireNonNull(next.handle(ctx, request, responseFactory));
-            } catch (Throwable cause) {
-                handlePrematureException(tempScope, tempScopeClosed);
-                throw cause;
+    public final StreamingHttpServiceFilter create(final StreamingHttpService service) {
+        return new StreamingHttpServiceFilter(service) {
+            @Override
+            public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
+                                                        final StreamingHttpRequest request,
+                                                        final StreamingHttpResponseFactory responseFactory) {
+                return trackRequest(delegate(), ctx, request, responseFactory);
             }
-            final Scope currentScope = tempScope;
-            final AtomicBoolean scopeClosed = tempScopeClosed;
-            return responseSingle.map(resp -> {
-                if (injectSpanContextIntoResponse(parentSpanContext)) {
-                    tracer.inject(currentScope.span().context(), formatter, resp.headers());
-                }
-                return tracingMapper(resp, currentScope, scopeClosed, TracingHttpServiceFilter.this::isError);
-            }).doOnError(cause -> tagErrorAndClose(currentScope, scopeClosed))
-              .doOnCancel(() -> tagErrorAndClose(currentScope, scopeClosed))
-              .subscribeShareContext();
-        });
+        };
+    }
+
+    private Single<StreamingHttpResponse> trackRequest(final StreamingHttpService delegate,
+                                                       final HttpServiceContext ctx,
+                                                       final StreamingHttpRequest request,
+                                                       final StreamingHttpResponseFactory responseFactory) {
+        ScopeTracker tracker = newTracker(request);
+        Single<StreamingHttpResponse> response;
+        try {
+            response = delegate.handle(ctx, request, responseFactory);
+        } catch (Throwable t) {
+            tracker.onError(t);
+            return Single.error(t);
+        }
+        return tracker.track(response).subscribeShareContext();
+    }
+
+    private ScopeTracker newTracker(final StreamingHttpRequest request) {
+        SpanBuilder spanBuilder = tracer.buildSpan(getOperationName(componentName, request))
+                .withTag(SPAN_KIND.getKey(), SPAN_KIND_SERVER)
+                .withTag(HTTP_METHOD.getKey(), request.method().name())
+                .withTag(HTTP_URL.getKey(), request.path());
+        SpanContext parentSpanContext = tracer.extract(formatter, request.headers());
+        if (parentSpanContext != null) {
+            spanBuilder = spanBuilder.asChildOf(parentSpanContext);
+        }
+        Scope scope = spanBuilder.startActive(true);
+        return new ServiceScopeTracker(scope, parentSpanContext);
+    }
+
+    private final class ServiceScopeTracker extends ScopeTracker {
+
+        @Nullable
+        private SpanContext parentSpanContext;
+
+        ServiceScopeTracker(final Scope scope, final SpanContext parentSpanContext) {
+            super(scope);
+            this.parentSpanContext = parentSpanContext;
+        }
+
+        @Override
+        void onResponseMeta(final HttpResponseMetaData metaData) {
+            super.onResponseMeta(metaData);
+            if (injectSpanContextIntoResponse(parentSpanContext)) {
+                tracer.inject(currentScope.span().context(), formatter, metaData.headers());
+            }
+        }
     }
 
     /**
@@ -143,14 +141,5 @@ public class TracingHttpServiceFilter implements StreamingHttpRequestHandler {
      */
     protected boolean injectSpanContextIntoResponse(@Nullable SpanContext parentSpanContext) {
         return parentSpanContext == null;
-    }
-
-    /**
-     * Determine if a {@link HttpResponseMetaData} should be considered an error from a tracing perspective.
-     * @param metaData The {@link HttpResponseMetaData} to test.
-     * @return {@code true} if the {@link HttpResponseMetaData} should be considered an error for tracing.
-     */
-    protected boolean isError(HttpResponseMetaData metaData) {
-        return TracingUtils.isError(metaData);
     }
 }

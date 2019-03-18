@@ -43,7 +43,7 @@ import javax.annotation.Nullable;
  * @param <R> the type of address after resolution (resolved address)
  */
 public abstract class PartitionedHttpClientBuilder<U, R>
-        implements BaseSingleAddressHttpClientBuilder<U, R, PartitionedServiceDiscovererEvent<R>> {
+        extends BaseSingleAddressHttpClientBuilder<U, R, PartitionedServiceDiscovererEvent<R>> {
 
     @Override
     public abstract PartitionedHttpClientBuilder<U, R> ioExecutor(IoExecutor ioExecutor);
@@ -88,7 +88,7 @@ public abstract class PartitionedHttpClientBuilder<U, R>
     public PartitionedHttpClientBuilder<U, R> appendConnectionFilter(Predicate<StreamingHttpRequest> predicate,
                                                                      HttpConnectionFilterFactory factory) {
         return (PartitionedHttpClientBuilder<U, R>)
-                BaseSingleAddressHttpClientBuilder.super.appendConnectionFilter(predicate, factory);
+                super.appendConnectionFilter(predicate, factory);
     }
 
     @Override
@@ -119,7 +119,7 @@ public abstract class PartitionedHttpClientBuilder<U, R>
     public PartitionedHttpClientBuilder<U, R> appendClientFilter(Predicate<StreamingHttpRequest> predicate,
                                                                  HttpClientFilterFactory factory) {
         return (PartitionedHttpClientBuilder<U, R>)
-                BaseSingleAddressHttpClientBuilder.super.appendClientFilter(predicate, factory);
+                super.appendClientFilter(predicate, factory);
     }
 
     @Override

@@ -36,6 +36,7 @@ dependencies {
 
   implementation "com.google.code.findbugs:jsr305"
   implementation "io.servicetalk:servicetalk-annotations:$project.version"
+  implementation "io.servicetalk:servicetalk-http-utils:$project.version"
   implementation "io.servicetalk:servicetalk-opentracing-inmemory:$project.version"
   implementation "io.servicetalk:servicetalk-opentracing-inmemory-api:$project.version"
   implementation "io.servicetalk:servicetalk-opentracing-internal-utils:$project.version"

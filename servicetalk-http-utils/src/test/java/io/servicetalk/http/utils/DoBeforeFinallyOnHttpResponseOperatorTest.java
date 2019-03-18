@@ -23,6 +23,7 @@ import io.servicetalk.concurrent.SingleSource.Subscriber;
 import io.servicetalk.concurrent.api.LegacyTestSingle;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.SingleOperator;
+import io.servicetalk.concurrent.api.TerminalSignalConsumer;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.DefaultHttpHeadersFactory;
@@ -69,7 +70,7 @@ public class DoBeforeFinallyOnHttpResponseOperatorTest {
     public final ExpectedException expectedException = ExpectedException.none();
 
     @Mock
-    private Runnable doBeforeFinally;
+    private TerminalSignalConsumer doBeforeFinally;
 
     private SingleOperator<StreamingHttpResponse, StreamingHttpResponse> operator;
 
@@ -84,7 +85,7 @@ public class DoBeforeFinallyOnHttpResponseOperatorTest {
 
         toSource(Single.<StreamingHttpResponse>success(null).liftSynchronous(operator)).subscribe(subscriber);
         assertThat("onSubscribe not called.", subscriber.cancellable, is(notNullValue()));
-        verify(doBeforeFinally).run();
+        verify(doBeforeFinally).onComplete();
 
         subscriber.verifyNullResponseReceived();
         verifyNoMoreInteractions(doBeforeFinally);
@@ -109,13 +110,21 @@ public class DoBeforeFinallyOnHttpResponseOperatorTest {
 
         final StreamingHttpResponse response = reqRespFactory.newResponse(OK);
         subRef.get().onSuccess(response);
-        subscriber.verifyResponseReceived();
+        final StreamingHttpResponse received = subscriber.verifyResponseReceived();
         verifyZeroInteractions(doBeforeFinally);
 
         final StreamingHttpResponse response2 = reqRespFactory.newResponse(OK);
 
-        expectedException.expect(AssertionError.class);
-        subRef.get().onSuccess(response2);
+        try {
+            subRef.get().onSuccess(response2);
+        } catch (AssertionError e) {
+            // silence assert on dupe success when not canceled
+        }
+
+        final StreamingHttpResponse received2 = subscriber.verifyResponseReceived();
+        // Old response should be preserved.
+        assertThat("Duplicate response received.", received2, is(received));
+        verifyZeroInteractions(doBeforeFinally);
     }
 
     @Test
@@ -126,7 +135,7 @@ public class DoBeforeFinallyOnHttpResponseOperatorTest {
         assertThat("onSubscribe not called.", subscriber.cancellable, is(notNullValue()));
 
         subscriber.cancellable.cancel();
-        verify(doBeforeFinally).run();
+        verify(doBeforeFinally).onCancel();
         responseSingle.verifyCancelled();
 
         final StreamingHttpResponse response = reqRespFactory.newResponse(OK);
@@ -147,7 +156,7 @@ public class DoBeforeFinallyOnHttpResponseOperatorTest {
         assertThat("onSubscribe not called.", subscriber.cancellable, is(notNullValue()));
 
         subscriber.cancellable.cancel();
-        verify(doBeforeFinally).run();
+        verify(doBeforeFinally).onCancel();
         responseSingle.verifyCancelled();
 
         responseSingle.onError(DELIBERATE_EXCEPTION);
@@ -184,7 +193,7 @@ public class DoBeforeFinallyOnHttpResponseOperatorTest {
 
         responseSingle.onError(DELIBERATE_EXCEPTION);
 
-        verify(doBeforeFinally).run();
+        verify(doBeforeFinally).onError(DELIBERATE_EXCEPTION);
         assertThat("onError not called.", subscriber.error, is(DELIBERATE_EXCEPTION));
 
         subscriber.cancellable.cancel();
@@ -214,7 +223,7 @@ public class DoBeforeFinallyOnHttpResponseOperatorTest {
 
         payload.onComplete();
 
-        verify(doBeforeFinally).run();
+        verify(doBeforeFinally).onComplete();
     }
 
     private static final class ResponseSubscriber implements SingleSource.Subscriber<StreamingHttpResponse> {

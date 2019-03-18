@@ -25,10 +25,8 @@ import io.servicetalk.concurrent.SingleSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
-import java.util.function.Consumer;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
@@ -39,150 +37,9 @@ import static io.servicetalk.concurrent.internal.EmptySubscription.EMPTY_SUBSCRI
  */
 public final class SubscriberUtils {
     private static final Logger LOGGER = LoggerFactory.getLogger(SubscriberUtils.class);
-    public static final int SUBSCRIBER_STATE_IDLE = 0;
-    public static final int SUBSCRIBER_STATE_ON_NEXT = 1;
-    public static final int SUBSCRIBER_STATE_TERMINATED = 2;
-    public static final Object NULL_TOKEN = new Object();
 
     private SubscriberUtils() {
         // No instances.
-    }
-
-    /**
-     * There are some scenarios where {@link Subscriber} can be terminated (invoke {@link Subscriber#onError(Throwable)}
-     * or {@link Subscriber#onComplete()}) from different places concurrently but it is guaranteed that
-     * {@link Subscriber#onNext(Object)} would not be invoked concurrently with itself. In such cases, using this method
-     * provides guarantees that we do not violate ReactiveStreams specs w.r.t concurrent invocation of a
-     * {@link Subscriber}.
-     * <p>
-     * <b>It is assumed that the {@link Subscriber} here is terminated using
-     * {@link #checkTerminationValidWithConcurrentOnNextCheck(Object, Object, AtomicIntegerFieldUpdater,
-     * AtomicReferenceFieldUpdater, Object)}.</b>
-     *
-     * @param subscriber {@link Subscriber} to deliver {@code next} to via {@link Subscriber#onNext(Object)}.
-     * @param next The data to deliver via {@link Subscriber#onNext(Object)}.
-     * @param terminator If there was a concurrent termination, {@link Consumer} to do the terminal action.
-     * @param subscriberStateUpdater An {@link AtomicIntegerFieldUpdater} for updating {@link Subscriber} state.
-     * <em>Assumed that this state is not updated from anywhere else but here and in
-     * {@link #checkTerminationValidWithConcurrentOnNextCheck(Object, Object, AtomicIntegerFieldUpdater,
-     * AtomicReferenceFieldUpdater, Object)}.</em>
-     * @param terminalNotificationUpdater An {@link AtomicReferenceFieldUpdater} to store the terminal state.
-     * @param owner Owner of the atomic fields passed here.
-     * @param <T> The data type to deliver to {@code subscriber}.
-     * @param <TERM> Type of terminal notification.
-     * @param <R> Type of the owner of the atomic fields.
-     */
-    public static <T, TERM, R> void sendOnNextWithConcurrentTerminationCheck(
-            Subscriber<? super T> subscriber, @Nullable T next, Consumer<TERM> terminator,
-            AtomicIntegerFieldUpdater<R> subscriberStateUpdater,
-            AtomicReferenceFieldUpdater<R, TERM> terminalNotificationUpdater, R owner) {
-        boolean acquiredSubscriberLock = subscriberStateUpdater.compareAndSet(
-                owner, SUBSCRIBER_STATE_IDLE, SUBSCRIBER_STATE_ON_NEXT);
-        // Allow reentry because we don't want to drop data.
-        if (!acquiredSubscriberLock && subscriberStateUpdater.get(owner) != SUBSCRIBER_STATE_ON_NEXT) {
-            // The only possible state is TERMINATED. We don't have to worry about concurrency for Subscriber#onNext.
-            return;
-        }
-        try {
-            subscriber.onNext(next);
-        } finally {
-            sendOnNextWithConcurrentTerminationCheckFinally(acquiredSubscriberLock, terminator,
-                    subscriberStateUpdater, terminalNotificationUpdater, owner);
-        }
-    }
-
-    /**
-     * There are some scenarios where {@link Subscriber} can be terminated (invoke {@link Subscriber#onError(Throwable)}
-     * or {@link Subscriber#onComplete()}) from different places concurrently but it is guaranteed that
-     * {@link Subscriber#onNext(Object)} would not be invoked concurrently with itself. In such cases, using this method
-     * provides guarantees that we do not violate ReactiveStreams specs w.r.t concurrent invocation of a
-     * {@link Subscriber}.
-     * <p>
-     * <b>It is assumed that the {@link Subscriber} here is terminated using
-     * {@link #checkTerminationValidWithConcurrentOnNextCheck(Object, Object, AtomicIntegerFieldUpdater,
-     * AtomicReferenceFieldUpdater, Object)}.</b>
-     *
-     * @param onNextInvoker {@link Runnable} that should invoke {@link Subscriber#onNext(Object)}.
-     * @param terminator If there was a concurrent termination, {@link Consumer} to do the terminal action.
-     * @param subscriberStateUpdater An {@link AtomicIntegerFieldUpdater} for updating {@link Subscriber} state.
-     * <em>Assumed that this state is not updated from anywhere else but here and in
-     * {@link #checkTerminationValidWithConcurrentOnNextCheck(Object, Object, AtomicIntegerFieldUpdater,
-     * AtomicReferenceFieldUpdater, Object)}.</em>
-     * @param terminalNotificationUpdater An {@link AtomicReferenceFieldUpdater} to store the terminal state.
-     * @param owner Owner of the atomic fields passed here.
-     * @param <TERM> Type of terminal notification.
-     * @param <R> Type of the owner of the atomic fields.
-     */
-    public static <TERM, R> void sendOnNextWithConcurrentTerminationCheck(Runnable onNextInvoker,
-                             Consumer<TERM> terminator, AtomicIntegerFieldUpdater<R> subscriberStateUpdater,
-                             AtomicReferenceFieldUpdater<R, TERM> terminalNotificationUpdater, R owner) {
-        boolean acquiredSubscriberLock = subscriberStateUpdater.compareAndSet(
-                owner, SUBSCRIBER_STATE_IDLE, SUBSCRIBER_STATE_ON_NEXT);
-        // Allow reentry because we don't want to drop data.
-        if (!acquiredSubscriberLock && subscriberStateUpdater.get(owner) != SUBSCRIBER_STATE_ON_NEXT) {
-            // The only possible state is TERMINATED. We don't have to worry about concurrency for Subscriber#onNext.
-            return;
-        }
-        try {
-            onNextInvoker.run();
-        } finally {
-            sendOnNextWithConcurrentTerminationCheckFinally(acquiredSubscriberLock, terminator,
-                    subscriberStateUpdater, terminalNotificationUpdater, owner);
-        }
-    }
-
-    private static <TERM, R> void sendOnNextWithConcurrentTerminationCheckFinally(boolean acquiredSubscriberLock,
-                                Consumer<TERM> terminator, AtomicIntegerFieldUpdater<R> subscriberStateUpdater,
-                                AtomicReferenceFieldUpdater<R, TERM> terminalNotificationUpdater, R owner) {
-        if (acquiredSubscriberLock) {
-            TERM terminalNotification = terminalNotificationUpdater.get(owner);
-            if (terminalNotification == null) {
-                subscriberStateUpdater.set(owner, SUBSCRIBER_STATE_IDLE);
-                terminalNotification = terminalNotificationUpdater.get(owner);
-                if (terminalNotification != null && subscriberStateUpdater.compareAndSet(
-                        owner, SUBSCRIBER_STATE_IDLE, SUBSCRIBER_STATE_TERMINATED)) {
-                    terminator.accept(terminalNotification);
-                }
-            } else {
-                subscriberStateUpdater.set(owner, SUBSCRIBER_STATE_TERMINATED);
-                terminator.accept(terminalNotification);
-            }
-        }
-    }
-
-    /**
-     * There are some scenarios where {@link Subscriber} can be terminated (invoke {@link Subscriber#onError(Throwable)}
-     * or {@link Subscriber#onComplete()} from different places concurrently but it is guaranteed that
-     * {@link Subscriber#onNext(Object)} would not be invoked concurrently with itself.
-     * In such cases, using this method provides guarantees that we do not violate ReactiveStreams specs w.r.t
-     * concurrent invocation of a {@link Subscriber}.
-     * <p>
-     * <b>It is assumed that the {@link Subscriber#onNext(Object)} is invoked using one of the following:</b>
-     * <ul>
-     *     <li>{@link #sendOnNextWithConcurrentTerminationCheck(Runnable, Consumer, AtomicIntegerFieldUpdater,
-     *     AtomicReferenceFieldUpdater, Object)}.</li>
-     *     <li>{@link #sendOnNextWithConcurrentTerminationCheck(PublisherSource.Subscriber, Object, Consumer,
-     *     AtomicIntegerFieldUpdater, AtomicReferenceFieldUpdater, Object)}</li>
-     * </ul>
-     *
-     * @param expect Expected value of the {@code terminalNotificationUpdater}.
-     * @param terminalNotification {@link TerminalNotification} representing the terminal event.
-     * @param subscriberStateUpdater An {@link AtomicIntegerFieldUpdater} for updating {@link Subscriber} state.
-     * <em>Assumed that this state is not updated from anywhere else but here and in
-     * {@link #sendOnNextWithConcurrentTerminationCheck(Runnable, Consumer, AtomicIntegerFieldUpdater,
-     * AtomicReferenceFieldUpdater, Object)}.</em>
-     * @param terminalNotificationUpdater An {@link AtomicReferenceFieldUpdater} to store the terminal state.
-     * @param owner Owner of the atomic fields passed here.
-     * @param <TERM> Type of terminal notification.
-     * @param <R> Type of the owner of the atomic fields.
-     * @return {@code true} if the termination of {@link Subscriber} is valid i.e. it has not already been terminated or
-     * an {@link Subscriber#onNext(Object)} isn't in progress.
-     */
-    public static <TERM, R> boolean checkTerminationValidWithConcurrentOnNextCheck(@Nullable TERM expect,
-                                       TERM terminalNotification, AtomicIntegerFieldUpdater<R> subscriberStateUpdater,
-                                       AtomicReferenceFieldUpdater<R, TERM> terminalNotificationUpdater, R owner) {
-        return terminalNotificationUpdater.compareAndSet(owner, expect, terminalNotification)
-                && subscriberStateUpdater.compareAndSet(owner, SUBSCRIBER_STATE_IDLE, SUBSCRIBER_STATE_TERMINATED);
     }
 
     /**

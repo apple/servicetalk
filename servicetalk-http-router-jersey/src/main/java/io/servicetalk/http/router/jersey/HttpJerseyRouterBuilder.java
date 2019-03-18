@@ -17,7 +17,6 @@ package io.servicetalk.http.router.jersey;
 
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.http.api.HttpExecutionStrategy;
-import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.transport.api.ConnectionContext;
@@ -27,6 +26,7 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import javax.ws.rs.core.Application;
 
+import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.utils.HttpRequestUriUtils.getBaseRequestUri;
 import static java.util.Objects.requireNonNull;
 
@@ -42,7 +42,7 @@ public final class HttpJerseyRouterBuilder {
     private int publisherInputStreamQueueCapacity = 16;
     private BiFunction<ConnectionContext, StreamingHttpRequest, String> baseUriFunction =
             (ctx, req) -> getBaseRequestUri(ctx, req, false);
-    private HttpExecutionStrategy strategy = SingleAddressHttpClientBuilder.DEFAULT_BUILDER_STRATEGY;
+    private HttpExecutionStrategy strategy = defaultStrategy();
     private Function<String, HttpExecutionStrategy> routeStrategyFactory = __ -> null;
 
     /**

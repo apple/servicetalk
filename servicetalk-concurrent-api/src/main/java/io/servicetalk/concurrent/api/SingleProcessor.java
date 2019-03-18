@@ -18,6 +18,7 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.SingleSource.Subscriber;
+import io.servicetalk.concurrent.internal.DelayedCancellable;
 import io.servicetalk.concurrent.internal.QueueFullAndRejectedSubscribeException;
 import io.servicetalk.concurrent.internal.TerminalNotification;
 
@@ -54,30 +55,35 @@ public final class SingleProcessor<T> extends Single<T> implements Subscriber<T>
     protected void handleSubscribe(final Subscriber<? super T> subscriber) {
         // We must subscribe before adding subscriber the the queue. Otherwise it is possible that this
         // Single has been terminated and the subscriber may be notified before onSubscribe is called.
-        subscriber.onSubscribe(() -> {
-            // Cancel in this case will just cleanup references from the queue to ensure we don't prevent GC of these
-            // references.
-            if (!drainingTheQueueUpdater.compareAndSet(this, CONCURRENT_IDLE, CONCURRENT_EMITTING)) {
-                return;
-            }
-            try {
-                subscribers.remove(subscriber);
-            } finally {
-                drainingTheQueueUpdater.set(this, CONCURRENT_IDLE);
-            }
-            // Because we held the lock we need to check if any terminal event has occurred in the mean time,
-            // and if so notify subscribers.
-            Object terminalSignal = this.terminalSignal;
-            if (terminalSignal != TERMINAL_NULL) {
-                notifyListeners(terminalSignal);
-            }
-        });
+        // We used a DelayedCancellable to avoid the case where the Subscriber will synchronously cancel and then
+        // we would add the subscriber to the queue and possibly never (until termination) dereference the subscriber.
+        DelayedCancellable delayedCancellable = new DelayedCancellable();
+        subscriber.onSubscribe(delayedCancellable);
 
         if (subscribers.offer(subscriber)) {
             Object terminalSignal = this.terminalSignal;
             if (terminalSignal != TERMINAL_NULL) {
                 // To ensure subscribers are notified in order we go through the queue to notify subscribers.
                 notifyListeners(terminalSignal);
+            } else {
+                delayedCancellable.delayedCancellable(() -> {
+                    // Cancel in this case will just cleanup references from the queue to ensure we don't prevent GC of
+                    // these references.
+                    if (!drainingTheQueueUpdater.compareAndSet(this, CONCURRENT_IDLE, CONCURRENT_EMITTING)) {
+                        return;
+                    }
+                    try {
+                        subscribers.remove(subscriber);
+                    } finally {
+                        drainingTheQueueUpdater.set(this, CONCURRENT_IDLE);
+                    }
+                    // Because we held the lock we need to check if any terminal event has occurred in the mean time,
+                    // and if so notify subscribers.
+                    Object terminalSignal2 = this.terminalSignal;
+                    if (terminalSignal2 != TERMINAL_NULL) {
+                        notifyListeners(terminalSignal2);
+                    }
+                });
             }
         } else {
             subscriber.onError(new QueueFullAndRejectedSubscribeException("subscribers"));

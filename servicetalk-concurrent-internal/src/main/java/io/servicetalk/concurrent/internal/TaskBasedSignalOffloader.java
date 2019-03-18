@@ -281,8 +281,7 @@ final class TaskBasedSignalOffloader implements SignalOffloader {
         private static final int STATE_ENQUEUED = 1;
         private static final int STATE_EXECUTING = 2;
         private static final int STATE_TERMINATING = 3;
-        private static final int STATE_TERMINATING_INTERRUPTED = 4;
-        private static final int STATE_TERMINATED = 5;
+        private static final int STATE_TERMINATED = 4;
         private static final AtomicIntegerFieldUpdater<OffloadedSubscriber> stateUpdater =
                 newUpdater(OffloadedSubscriber.class, "state");
 
@@ -417,11 +416,10 @@ final class TaskBasedSignalOffloader implements SignalOffloader {
                     signals.clear();
                     return;
                 } else if (cState == STATE_TERMINATING) {
-                    if (!stateUpdater.compareAndSet(this, STATE_TERMINATING, STATE_TERMINATING_INTERRUPTED)) {
+                    if (stateUpdater.getAndSet(this, STATE_TERMINATED) == STATE_TERMINATED) {
                         // If another thread was draining the queue, and is no longer training the queue then the only
                         // state we can be in is STATE_TERMINATED. This means no other thread is consuming from the
                         // queue and we are safe to consume/clear it.
-                        // assert state == STATE_TERMINATED;
                         signals.clear();
                     }
                     return;
