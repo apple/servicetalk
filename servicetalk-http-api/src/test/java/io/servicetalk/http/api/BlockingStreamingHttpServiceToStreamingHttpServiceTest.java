@@ -306,21 +306,27 @@ public class BlockingStreamingHttpServiceToStreamingHttpServiceTest {
                     }
                 });
         handleLatch.await();
-        assertNotNull(cancellableRef.get());
-        cancellableRef.get().cancel();
+        Cancellable cancellable = cancellableRef.get();
+        assertNotNull(cancellable);
+        cancellable.cancel();
         onErrorLatch.await();
         assertTrue(throwableRef.get() instanceof InterruptedException);
     }
 
     @Test
     public void cancelAfterSendMetaDataPropagated() throws Exception {
+        CountDownLatch serviceTerminationLatch = new CountDownLatch(1);
         BlockingStreamingHttpService syncService = new BlockingStreamingHttpService() {
             @Override
             public void handle(final HttpServiceContext ctx,
                                final BlockingStreamingHttpRequest request,
                                final BlockingStreamingHttpServerResponse response) throws Exception {
                 response.sendMetaData();
-                Thread.sleep(10000);
+                try {
+                    Thread.sleep(10000);
+                } finally {
+                    serviceTerminationLatch.countDown();
+                }
             }
         };
         StreamingHttpService asyncService = syncService.asStreamingService();
@@ -348,6 +354,7 @@ public class BlockingStreamingHttpServiceToStreamingHttpServiceTest {
             }
         });
         latch.await();
+        serviceTerminationLatch.await();
     }
 
     @Test
