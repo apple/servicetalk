@@ -53,33 +53,33 @@ public abstract class HttpConnectionBuilder<ResolvedAddress> extends BaseHttpBui
     }
 
     @Override
-    public abstract <T> BaseHttpBuilder<ResolvedAddress> socketOption(SocketOption<T> option, T value);
+    public abstract <T> HttpConnectionBuilder<ResolvedAddress> socketOption(SocketOption<T> option, T value);
 
     @Override
-    public abstract BaseHttpBuilder<ResolvedAddress> enableWireLogging(String loggerName);
+    public abstract HttpConnectionBuilder<ResolvedAddress> enableWireLogging(String loggerName);
 
     @Override
-    public abstract BaseHttpBuilder<ResolvedAddress> disableWireLogging();
+    public abstract HttpConnectionBuilder<ResolvedAddress> disableWireLogging();
 
     @Override
-    public abstract BaseHttpBuilder<ResolvedAddress> headersFactory(HttpHeadersFactory headersFactory);
+    public abstract HttpConnectionBuilder<ResolvedAddress> headersFactory(HttpHeadersFactory headersFactory);
 
     @Override
-    public abstract BaseHttpBuilder<ResolvedAddress> maxInitialLineLength(int maxInitialLineLength);
+    public abstract HttpConnectionBuilder<ResolvedAddress> maxInitialLineLength(int maxInitialLineLength);
 
     @Override
-    public abstract BaseHttpBuilder<ResolvedAddress> maxHeaderSize(int maxHeaderSize);
+    public abstract HttpConnectionBuilder<ResolvedAddress> maxHeaderSize(int maxHeaderSize);
 
     @Override
-    public abstract BaseHttpBuilder<ResolvedAddress> headersEncodedSizeEstimate(
+    public abstract HttpConnectionBuilder<ResolvedAddress> headersEncodedSizeEstimate(
             int headersEncodedSizeEstimate);
 
     @Override
-    public abstract BaseHttpBuilder<ResolvedAddress> trailersEncodedSizeEstimate(
+    public abstract HttpConnectionBuilder<ResolvedAddress> trailersEncodedSizeEstimate(
             int trailersEncodedSizeEstimate);
 
     @Override
-    public abstract BaseHttpBuilder<ResolvedAddress> maxPipelinedRequests(int maxPipelinedRequests);
+    public abstract HttpConnectionBuilder<ResolvedAddress> maxPipelinedRequests(int maxPipelinedRequests);
 
     /**
      * Creates the {@link StreamingHttpConnectionFilter} chain to be used by the {@link StreamingHttpConnection}.
