@@ -18,24 +18,28 @@ package io.servicetalk.http.api;
 import io.servicetalk.http.api.BlockingHttpClient.ReservedBlockingHttpConnection;
 import io.servicetalk.http.api.HttpClient.ReservedHttpConnection;
 import io.servicetalk.http.api.StreamingHttpClient.ReservedStreamingHttpConnection;
+import io.servicetalk.transport.api.ExecutionContext;
 
 import static io.servicetalk.http.api.BlockingUtils.blockingInvocation;
+import static io.servicetalk.http.api.RequestResponseFactories.toBlockingStreaming;
 
 /**
  * The equivalent of {@link StreamingHttpClient} but with synchronous/blocking APIs instead of asynchronous APIs.
  */
-public abstract class BlockingStreamingHttpClient extends BlockingStreamingHttpRequester {
+public final class BlockingStreamingHttpClient extends BlockingStreamingHttpRequester {
+
+    private final StreamingHttpClient client;
 
     /**
      * Create a new instance.
      *
-     * @param reqRespFactory The {@link BlockingStreamingHttpRequestResponseFactory} used to
-     * {@link #newRequest(HttpRequestMethod, String) create new requests}.
+     * @param client {@link StreamingHttpClient} to convert from.
      * @param strategy Default {@link HttpExecutionStrategy} to use.
      */
-    BlockingStreamingHttpClient(final BlockingStreamingHttpRequestResponseFactory reqRespFactory,
+    BlockingStreamingHttpClient(final StreamingHttpClient client,
                                 final HttpExecutionStrategy strategy) {
-        super(reqRespFactory, strategy);
+        super(toBlockingStreaming(client.reqRespFactory), strategy);
+        this.client = client;
     }
 
     /**
@@ -47,8 +51,7 @@ public abstract class BlockingStreamingHttpClient extends BlockingStreamingHttpR
      * @return a {@link ReservedBlockingStreamingHttpConnection}.
      * @throws Exception if a exception occurs during the reservation process.
      */
-    public final ReservedBlockingStreamingHttpConnection reserveConnection(HttpRequestMetaData metaData)
-            throws Exception {
+    public ReservedBlockingStreamingHttpConnection reserveConnection(HttpRequestMetaData metaData) throws Exception {
         return reserveConnection(executionStrategy(), metaData);
     }
 
@@ -62,8 +65,24 @@ public abstract class BlockingStreamingHttpClient extends BlockingStreamingHttpR
      * @return a {@link ReservedBlockingStreamingHttpConnection}.
      * @throws Exception if a exception occurs during the reservation process.
      */
-    public abstract ReservedBlockingStreamingHttpConnection reserveConnection(
-            HttpExecutionStrategy strategy, HttpRequestMetaData metaData) throws Exception;
+    public ReservedBlockingStreamingHttpConnection reserveConnection(
+            HttpExecutionStrategy strategy, HttpRequestMetaData metaData) throws Exception {
+        // It is assumed that users will always apply timeouts at the StreamingHttpService layer (e.g. via filter).
+        // So we don't apply any explicit timeout here and just wait forever.
+        return new ReservedBlockingStreamingHttpConnection(
+                blockingInvocation(client.reserveConnection(strategy, metaData)), executionStrategy());
+    }
+
+    @Override
+    public BlockingStreamingHttpResponse request(final HttpExecutionStrategy strategy,
+                                                 final BlockingStreamingHttpRequest request) throws Exception {
+        return blockingInvocation(client.request(strategy, request.toStreamingRequest())).toBlockingStreamingResponse();
+    }
+
+    @Override
+    public ExecutionContext executionContext() {
+        return client.executionContext();
+    }
 
     /**
      * Convert this {@link BlockingStreamingHttpClient} to the {@link StreamingHttpClient} API.
@@ -73,7 +92,9 @@ public abstract class BlockingStreamingHttpClient extends BlockingStreamingHttpR
      *
      * @return a {@link StreamingHttpClient} representation of this {@link BlockingStreamingHttpClient}.
      */
-    public abstract StreamingHttpClient asStreamingClient();
+    public StreamingHttpClient asStreamingClient() {
+        return client;
+    }
 
     /**
      * Convert this {@link BlockingStreamingHttpClient} to the {@link HttpClient} API.
@@ -83,7 +104,7 @@ public abstract class BlockingStreamingHttpClient extends BlockingStreamingHttpR
      *
      * @return a {@link HttpClient} representation of this {@link BlockingStreamingHttpClient}.
      */
-    public final HttpClient asClient() {
+    public HttpClient asClient() {
         return asStreamingClient().asClient();
     }
 
@@ -95,8 +116,13 @@ public abstract class BlockingStreamingHttpClient extends BlockingStreamingHttpR
      *
      * @return a {@link BlockingHttpClient} representation of this {@link BlockingStreamingHttpClient}.
      */
-    public final BlockingHttpClient asBlockingClient() {
+    public BlockingHttpClient asBlockingClient() {
         return asStreamingClient().asBlockingClient();
+    }
+
+    @Override
+    public void close() throws Exception {
+        blockingInvocation(client.closeAsync());
     }
 
     /**

@@ -21,6 +21,7 @@ import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ExecutionContext;
 
 import static io.servicetalk.http.api.BlockingUtils.blockingInvocation;
+import static io.servicetalk.http.api.RequestResponseFactories.toBlockingStreaming;
 
 /**
  * The equivalent of {@link StreamingHttpConnection} but with synchronous/blocking APIs instead of asynchronous APIs.
@@ -38,8 +39,7 @@ public class BlockingStreamingHttpConnection extends BlockingStreamingHttpReques
      */
     BlockingStreamingHttpConnection(final StreamingHttpConnection connection,
                                     final HttpExecutionStrategy strategy) {
-        super(new StreamingHttpRequestResponseFactoryToBlockingStreamingHttpRequestResponseFactory(
-                connection.reqRespFactory), strategy);
+        super(toBlockingStreaming(connection.reqRespFactory), strategy);
         this.connection = connection;
     }
 

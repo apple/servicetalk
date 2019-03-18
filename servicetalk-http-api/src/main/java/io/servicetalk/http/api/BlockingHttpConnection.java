@@ -38,8 +38,7 @@ public class BlockingHttpConnection extends BlockingHttpRequester {
      */
     BlockingHttpConnection(final StreamingHttpConnection connection,
                            final HttpExecutionStrategy strategy) {
-        super(new StreamingHttpRequestResponseFactoryToHttpRequestResponseFactory(
-                connection.reqRespFactory), strategy);
+        super(RequestResponseFactories.toAggregated(connection.reqRespFactory), strategy);
         this.connection = connection;
     }
 

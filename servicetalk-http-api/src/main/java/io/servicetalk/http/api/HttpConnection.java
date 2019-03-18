@@ -23,6 +23,8 @@ import io.servicetalk.http.api.StreamingHttpConnection.SettingKey;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ExecutionContext;
 
+import static io.servicetalk.http.api.RequestResponseFactories.toAggregated;
+
 /**
  * Represents a single fixed connection to a HTTP server.
  */
@@ -38,7 +40,7 @@ public class HttpConnection extends HttpRequester {
      */
     HttpConnection(final StreamingHttpConnection connection,
                    final HttpExecutionStrategy strategy) {
-        super(new StreamingHttpRequestResponseFactoryToHttpRequestResponseFactory(connection.reqRespFactory), strategy);
+        super(toAggregated(connection.reqRespFactory), strategy);
         this.connection = connection;
     }
 

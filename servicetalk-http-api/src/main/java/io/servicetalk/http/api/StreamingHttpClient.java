@@ -92,7 +92,8 @@ public final class StreamingHttpClient extends StreamingHttpRequester {
      * @return a {@link HttpClient} representation of this {@link StreamingHttpRequester}.
      */
     public HttpClient asClient() {
-        return StreamingHttpClientToHttpClient.transform(this);
+        return new HttpClient(this,
+                filterChain.effectiveExecutionStrategy(OFFLOAD_RECEIVE_META_STRATEGY));
     }
 
     /**
@@ -103,7 +104,8 @@ public final class StreamingHttpClient extends StreamingHttpRequester {
      * @return a {@link BlockingStreamingHttpClient} representation of this {@link StreamingHttpClient}.
      */
     public BlockingStreamingHttpClient asBlockingStreamingClient() {
-        return StreamingHttpClientToBlockingStreamingHttpClient.transform(this);
+        return new BlockingStreamingHttpClient(this,
+                filterChain.effectiveExecutionStrategy(OFFLOAD_SEND_STRATEGY));
     }
 
     /**
@@ -114,7 +116,7 @@ public final class StreamingHttpClient extends StreamingHttpRequester {
      * @return a {@link BlockingHttpClient} representation of this {@link StreamingHttpClient}.
      */
     public BlockingHttpClient asBlockingClient() {
-        return StreamingHttpClientToBlockingHttpClient.transform(this);
+        return new BlockingHttpClient(this, filterChain.effectiveExecutionStrategy(OFFLOAD_NONE_STRATEGY));
     }
 
     @Override

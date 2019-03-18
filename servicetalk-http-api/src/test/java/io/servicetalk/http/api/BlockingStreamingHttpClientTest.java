@@ -29,6 +29,7 @@ import java.util.function.BiFunction;
 import static io.servicetalk.concurrent.api.Single.error;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
+import static io.servicetalk.http.api.RequestResponseFactories.toStreaming;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -164,9 +165,8 @@ public class BlockingStreamingHttpClientTest extends AbstractBlockingStreamingHt
                                         final BiFunction<HttpExecutionStrategy, BlockingStreamingHttpRequest,
                                                 BlockingStreamingHttpResponse> doRequest) {
             super(requestResponseFactory, defaultStrategy());
-            streamingHttpClient = new TestStreamingHttpClient(executionContext,
-                    new BlockingStreamingHttpRequestResponseFactoryToStreamingHttpRequestResponseFactory(
-                            requestResponseFactory), new BlockingFilter(doRequest));
+            streamingHttpClient = new TestStreamingHttpClient(executionContext, toStreaming(requestResponseFactory),
+                    new BlockingFilter(doRequest));
             client = streamingHttpClient.client.asBlockingStreamingClient();
         }
 
