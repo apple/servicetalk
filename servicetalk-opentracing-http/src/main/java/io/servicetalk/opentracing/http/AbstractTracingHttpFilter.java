@@ -77,13 +77,13 @@ abstract class AbstractTracingHttpFilter {
         private HttpResponseMetaData metaData;
 
         @Nullable
-        Scope currentScope() {
+        final Scope currentScope() {
             return currentScope;
         }
 
         abstract Scope newScope(HttpRequestMetaData requestMetaData);
 
-        Single<StreamingHttpResponse> prepareScopeAndRequestOrFailEarly(
+        final Single<StreamingHttpResponse> prepareScopeAndRequestOrFailEarly(
                 final HttpRequestMetaData requestMetaData,
                 final Supplier<Single<StreamingHttpResponse>> singleSupplier) {
             try {
@@ -146,8 +146,10 @@ abstract class AbstractTracingHttpFilter {
             final ScopeTracker scopeTracker = newTracker();
             return scopeTracker.prepareScopeAndRequestOrFailEarly(request, singleSupplier)
                     .liftSynchronous(new DoBeforeFinallyOnHttpResponseOperator(scopeTracker))
-                    // DoBeforeFinallyOnHttpResponseOperator influences how the nested source will be emitted, hence
-                    // doBeforeSuccess() is applied after to ensure we have a consistent view of the data path
+                    // DoBeforeFinallyOnHttpResponseOperator conditionally outputs a Single<Meta> with a failed
+                    // Publisher<Data> instead of the real Publisher<Data> in case a cancel signal is observed before
+                    // completion of Meta. So in order for downstream operators to get a consistent view of the data
+                    // path doBeforeSuccess() needs to be applied last.
                     .doBeforeSuccess(scopeTracker::onResponseMeta);
         }).subscribeShareContext();
     }

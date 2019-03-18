@@ -104,8 +104,9 @@ public class TracingHttpServiceFilter extends AbstractTracingHttpFilter implemen
         void onResponseMeta(final HttpResponseMetaData metaData) {
             super.onResponseMeta(metaData);
             if (injectSpanContextIntoResponse(parentSpanContext)) {
-                //noinspection ConstantConditions - super.onResponseMeta(metaData); ensures non-null
-                tracer.inject(currentScope().span().context(), formatter, metaData.headers());
+                Scope scope = currentScope();
+                assert scope != null; // super.onResponseMeta(metaData);
+                tracer.inject(scope.span().context(), formatter, metaData.headers());
             }
         }
     }

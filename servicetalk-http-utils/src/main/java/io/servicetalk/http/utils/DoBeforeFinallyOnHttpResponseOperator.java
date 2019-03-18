@@ -20,7 +20,6 @@ import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.concurrent.api.PublisherOperator;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.SingleOperator;
 import io.servicetalk.concurrent.api.TerminalSignalConsumer;
@@ -99,9 +98,8 @@ public final class DoBeforeFinallyOnHttpResponseOperator
 
     private static final class ResponseCompletionSubscriber implements SingleSource.Subscriber<StreamingHttpResponse> {
         private static final int IDLE = 0;
-        private static final int CANCELLED = 1;
-        private static final int TERMINATED_META = 2;
-        private static final int TERMINATED_PAYLOAD = 3;
+        private static final int PROCESSING_PAYLOAD = 1;
+        private static final int TERMINATED = 2;
         private static final AtomicIntegerFieldUpdater<ResponseCompletionSubscriber> stateUpdater =
                 newUpdater(ResponseCompletionSubscriber.class, "state");
 
@@ -119,7 +117,7 @@ public final class DoBeforeFinallyOnHttpResponseOperator
         public void onSubscribe(final Cancellable cancellable) {
             subscriber.onSubscribe(() -> {
                 try {
-                    if (stateUpdater.compareAndSet(this, IDLE, CANCELLED)) {
+                    if (stateUpdater.compareAndSet(this, IDLE, TERMINATED)) {
                         doBeforeFinally.onCancel();
                     }
                 } finally {
@@ -133,9 +131,9 @@ public final class DoBeforeFinallyOnHttpResponseOperator
         public void onSuccess(@Nullable final StreamingHttpResponse response) {
             if (response == null) {
                 sendNullResponse();
-            } else if (stateUpdater.compareAndSet(this, IDLE, TERMINATED_META)) {
+            } else if (stateUpdater.compareAndSet(this, IDLE, PROCESSING_PAYLOAD)) {
                 subscriber.onSuccess(response.transformRawPayloadBody(payload ->
-                        payload.liftSynchronous((PublisherOperator<Object, Object>) subscriber ->
+                        payload.liftSynchronous(subscriber ->
                                 new Subscriber<Object>() {
                                     @Override
                                     public void onSubscribe(final Subscription subscription) {
@@ -149,7 +147,7 @@ public final class DoBeforeFinallyOnHttpResponseOperator
                                             public void cancel() {
                                                 try {
                                                     if (stateUpdater.compareAndSet(ResponseCompletionSubscriber.this,
-                                                            TERMINATED_META, TERMINATED_PAYLOAD)) {
+                                                            PROCESSING_PAYLOAD, TERMINATED)) {
                                                         doBeforeFinally.onCancel();
                                                     }
                                                 } finally {
@@ -168,7 +166,7 @@ public final class DoBeforeFinallyOnHttpResponseOperator
                                     public void onError(final Throwable t) {
                                         try {
                                             if (stateUpdater.compareAndSet(ResponseCompletionSubscriber.this,
-                                                    TERMINATED_META, TERMINATED_PAYLOAD)) {
+                                                    PROCESSING_PAYLOAD, TERMINATED)) {
                                                 doBeforeFinally.onError(t);
                                             }
                                         } finally {
@@ -180,7 +178,7 @@ public final class DoBeforeFinallyOnHttpResponseOperator
                                     public void onComplete() {
                                         try {
                                             if (stateUpdater.compareAndSet(ResponseCompletionSubscriber.this,
-                                                    TERMINATED_META, TERMINATED_PAYLOAD)) {
+                                                    PROCESSING_PAYLOAD, TERMINATED)) {
                                                 doBeforeFinally.onComplete();
                                             }
                                         } finally {
@@ -192,7 +190,7 @@ public final class DoBeforeFinallyOnHttpResponseOperator
             } else {
                 // Invoking a terminal method multiple times is not allowed by the RS spec, so we assume we have been
                 // cancelled.
-                assert state == CANCELLED;
+                assert state == TERMINATED;
                 subscriber.onSuccess(response.transformRawPayloadBody(payload -> {
                     // We have been cancelled. Subscribe and cancel the content so that we do not hold up the
                     // connection and indicate that there is no one else that will subscribe.
@@ -205,7 +203,7 @@ public final class DoBeforeFinallyOnHttpResponseOperator
         @Override
         public void onError(final Throwable t) {
             try {
-                if (stateUpdater.compareAndSet(this, IDLE, TERMINATED_META)) {
+                if (stateUpdater.compareAndSet(this, IDLE, TERMINATED)) {
                     doBeforeFinally.onError(t);
                 }
             } finally {
@@ -216,7 +214,7 @@ public final class DoBeforeFinallyOnHttpResponseOperator
         private void sendNullResponse() {
             try {
                 // Since, we are not giving out a response, no subscriber will arrive for the payload Publisher.
-                if (stateUpdater.compareAndSet(this, IDLE, TERMINATED_PAYLOAD)) {
+                if (stateUpdater.compareAndSet(this, IDLE, TERMINATED)) {
                     doBeforeFinally.onComplete();
                 }
             } catch (Throwable cause) {
@@ -262,7 +260,7 @@ public final class DoBeforeFinallyOnHttpResponseOperator
         private final Runnable onFinally;
 
         private RunnableTerminalSignalConsumer(Runnable onFinally) {
-            this.onFinally = onFinally;
+            this.onFinally = requireNonNull(onFinally);
         }
 
         @Override
