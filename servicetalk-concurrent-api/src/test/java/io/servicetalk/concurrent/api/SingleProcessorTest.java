@@ -192,7 +192,6 @@ public class SingleProcessorTest {
 
             @Override
             public void onSuccess(@Nullable final Integer result) {
-
             }
 
             @Override
