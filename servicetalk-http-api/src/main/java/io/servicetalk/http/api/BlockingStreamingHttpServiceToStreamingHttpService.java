@@ -28,6 +28,8 @@ import java.io.IOException;
 import java.util.function.Consumer;
 
 import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
+import static io.servicetalk.concurrent.internal.SubscriberUtils.safeOnError;
+import static io.servicetalk.concurrent.internal.SubscriberUtils.safeOnSuccess;
 import static io.servicetalk.http.api.BlockingUtils.blockingToCompletable;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.StreamingHttpResponses.newResponseWithTrailers;
@@ -66,12 +68,13 @@ final class BlockingStreamingHttpServiceToStreamingHttpService extends Streaming
                     final BufferHttpPayloadWriter payloadWriter = new BufferHttpPayloadWriter(
                             ctx.headersFactory().newTrailers(), payloadProcessor);
 
-                    final Consumer<HttpResponseMetaData> sendMeta = (metaData) ->
-                            subscriber.onSuccess(newResponseWithTrailers(metaData.status(), metaData.version(),
-                                    metaData.headers(), ctx.executionContext().bufferAllocator(),
-                                    payloadProcessor.merge(payloadWriter.connect()
-                                            .map(buffer -> (Object) buffer) // down cast to Object
-                                            .concatWith(success(payloadWriter.trailers())))));
+                    final Consumer<HttpResponseMetaData> sendMeta = (metaData) -> {
+                        safeOnSuccess(subscriber, newResponseWithTrailers(metaData.status(), metaData.version(),
+                                metaData.headers(), ctx.executionContext().bufferAllocator(),
+                                payloadProcessor.merge(payloadWriter.connect()
+                                        .map(buffer -> (Object) buffer) // down cast to Object
+                                        .concatWith(success(payloadWriter.trailers())))));
+                    };
 
                     response = new DefaultBlockingStreamingHttpServerResponse(OK, request.version(),
                                     ctx.headersFactory().newHeaders(), payloadWriter,
@@ -80,7 +83,7 @@ final class BlockingStreamingHttpServiceToStreamingHttpService extends Streaming
                 } catch (Throwable cause) {
                     tiCancellable.setDone(cause);
                     if (response == null || response.markMetaSent()) {
-                        subscriber.onError(cause);
+                        safeOnError(subscriber, cause);
                     } else {
                         payloadProcessor.onError(cause);
                     }
