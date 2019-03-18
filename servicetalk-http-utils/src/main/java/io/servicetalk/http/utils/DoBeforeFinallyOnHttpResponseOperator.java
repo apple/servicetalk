@@ -16,12 +16,13 @@
 package io.servicetalk.http.utils;
 
 import io.servicetalk.concurrent.Cancellable;
-import io.servicetalk.concurrent.PublisherSource;
+import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.SingleSource;
-import io.servicetalk.concurrent.SingleSource.Subscriber;
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.SingleOperator;
+import io.servicetalk.concurrent.api.TerminalSignalConsumer;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
 
@@ -39,59 +40,75 @@ import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 /**
  * Helper operator for signaling the end of an HTTP Request/Response cycle.
  *
- * <p>{@link StreamingHttpRequest} and {@link StreamingHttpResponse} are nested sources ({@link SingleSource} of
- * meta-data containing a payload {@link Publisher}), which makes it non-trivial to get a single signal at the end of
- * this Request/Response cycle. One needs to consider and coordinate between the multitude of outcomes:
- * cancel/success/error, across both sources.</p>
+ * <p>{@link StreamingHttpRequest} and {@link StreamingHttpResponse} are nested sources ({@link Single} of meta-data
+ * containing a payload {@link Publisher}), which makes it non-trivial to get a single signal at the end of this
+ * Request/Response cycle. One needs to consider and coordinate between the multitude of outcomes: cancel/success/error
+ * across both sources.</p>
  * <p>This operator ensures that the provided callback is triggered just once whenever the sources reach a terminal
  * state across both sources.</p>
  *
  * Example usage tracking the begin and end of a request:
  *
  * <pre>{@code
+ *     // coarse grained, any terminal signal calls the provided `Runnable`
  *     return requester.request(strategy, request)
  *                     .doBeforeSubscribe(__ -> tracker.requestStarted())
  *                     .liftSynchronous(new DoBeforeFinallyOnHttpResponseOperator(tracker::requestFinished));
+ *
+ *     // fine grained, `tracker` implements `TerminalSignalConsumer`, terminal signal indicated by the callback method
+ *     return requester.request(strategy, request)
+ *                     .doBeforeSubscribe(__ -> tracker.requestStarted())
+ *                     .liftSynchronous(new DoBeforeFinallyOnHttpResponseOperator(tracker));
  * }</pre>
  */
 public final class DoBeforeFinallyOnHttpResponseOperator
         implements SingleOperator<StreamingHttpResponse, StreamingHttpResponse> {
-    private final Runnable doBeforeFinally;
+
+    private final TerminalSignalConsumer doBeforeFinally;
 
     /**
      * Create a new instance.
      *
-     * @param doBeforeFinally the callback that is executed just once whenever the sources reach a terminal state across
-     * both sources
+     * @param doBeforeFinally the callback which is executed just once whenever the sources reach a terminal state
+     * across both sources.
      */
-    public DoBeforeFinallyOnHttpResponseOperator(final Runnable doBeforeFinally) {
+    public DoBeforeFinallyOnHttpResponseOperator(final TerminalSignalConsumer doBeforeFinally) {
         this.doBeforeFinally = requireNonNull(doBeforeFinally);
     }
 
+    /**
+     * Create a new instance.
+     *
+     * @param doBeforeFinally the callback which is executed just once whenever the sources reach a terminal state
+     * across both sources.
+     */
+    public DoBeforeFinallyOnHttpResponseOperator(final Runnable doBeforeFinally) {
+        this(new RunnableTerminalSignalConsumer(doBeforeFinally));
+    }
+
     @Override
-    public Subscriber<? super StreamingHttpResponse> apply(
-            final Subscriber<? super StreamingHttpResponse> subscriber) {
-        // Here we avoid calling doBeforeFinally.run() when we get a cancel() on the Single after we have handed out
+    public SingleSource.Subscriber<? super StreamingHttpResponse> apply(
+            final SingleSource.Subscriber<? super StreamingHttpResponse> subscriber) {
+        // Here we avoid calling doBeforeFinally#onCancel when we get a cancel() on the Single after we have handed out
         // the StreamingHttpResponse to the subscriber. In case, we do get an StreamingHttpResponse after we got
         // cancel(), we subscribe to the payload Publisher and cancel to indicate to the Connection that there is no
         // other Subscriber that will use the payload Publisher.
         return new ResponseCompletionSubscriber(subscriber, doBeforeFinally);
     }
 
-    private static final class ResponseCompletionSubscriber implements Subscriber<StreamingHttpResponse> {
+    private static final class ResponseCompletionSubscriber implements SingleSource.Subscriber<StreamingHttpResponse> {
         private static final int IDLE = 0;
-        private static final int CANCELLED = 1;
+        private static final int PROCESSING_PAYLOAD = 1;
         private static final int TERMINATED = 2;
         private static final AtomicIntegerFieldUpdater<ResponseCompletionSubscriber> stateUpdater =
                 newUpdater(ResponseCompletionSubscriber.class, "state");
 
-        private final Subscriber<? super StreamingHttpResponse> subscriber;
-        private final Runnable doBeforeFinally;
-        @SuppressWarnings("unused")
+        private final SingleSource.Subscriber<? super StreamingHttpResponse> subscriber;
+        private final TerminalSignalConsumer doBeforeFinally;
         private volatile int state;
 
-        ResponseCompletionSubscriber(final Subscriber<? super StreamingHttpResponse> sub,
-                                     final Runnable doBeforeFinally) {
+        ResponseCompletionSubscriber(final SingleSource.Subscriber<? super StreamingHttpResponse> sub,
+                                     final TerminalSignalConsumer doBeforeFinally) {
             this.subscriber = sub;
             this.doBeforeFinally = doBeforeFinally;
         }
@@ -100,8 +117,8 @@ public final class DoBeforeFinallyOnHttpResponseOperator
         public void onSubscribe(final Cancellable cancellable) {
             subscriber.onSubscribe(() -> {
                 try {
-                    if (stateUpdater.compareAndSet(this, IDLE, CANCELLED)) {
-                        doBeforeFinally.run();
+                    if (stateUpdater.compareAndSet(this, IDLE, TERMINATED)) {
+                        doBeforeFinally.onCancel();
                     }
                 } finally {
                     // Cancel unconditionally, let the original Single handle cancel post termination, if required
@@ -114,13 +131,66 @@ public final class DoBeforeFinallyOnHttpResponseOperator
         public void onSuccess(@Nullable final StreamingHttpResponse response) {
             if (response == null) {
                 sendNullResponse();
-            } else if (stateUpdater.compareAndSet(this, IDLE, TERMINATED)) {
+            } else if (stateUpdater.compareAndSet(this, IDLE, PROCESSING_PAYLOAD)) {
                 subscriber.onSuccess(response.transformRawPayloadBody(payload ->
-                        payload.doBeforeFinally(doBeforeFinally)));
+                        payload.liftSynchronous(subscriber ->
+                                new Subscriber<Object>() {
+                                    @Override
+                                    public void onSubscribe(final Subscription subscription) {
+                                        subscriber.onSubscribe(new Subscription() {
+                                            @Override
+                                            public void request(final long n) {
+                                                subscription.request(n);
+                                            }
+
+                                            @Override
+                                            public void cancel() {
+                                                try {
+                                                    if (stateUpdater.compareAndSet(ResponseCompletionSubscriber.this,
+                                                            PROCESSING_PAYLOAD, TERMINATED)) {
+                                                        doBeforeFinally.onCancel();
+                                                    }
+                                                } finally {
+                                                    subscription.cancel();
+                                                }
+                                            }
+                                        });
+                                    }
+
+                                    @Override
+                                    public void onNext(@Nullable final Object o) {
+                                        subscriber.onNext(o);
+                                    }
+
+                                    @Override
+                                    public void onError(final Throwable t) {
+                                        try {
+                                            if (stateUpdater.compareAndSet(ResponseCompletionSubscriber.this,
+                                                    PROCESSING_PAYLOAD, TERMINATED)) {
+                                                doBeforeFinally.onError(t);
+                                            }
+                                        } finally {
+                                            subscriber.onError(t);
+                                        }
+                                    }
+
+                                    @Override
+                                    public void onComplete() {
+                                        try {
+                                            if (stateUpdater.compareAndSet(ResponseCompletionSubscriber.this,
+                                                    PROCESSING_PAYLOAD, TERMINATED)) {
+                                                doBeforeFinally.onComplete();
+                                            }
+                                        } finally {
+                                            subscriber.onComplete();
+                                        }
+                                    }
+                                })
+                ));
             } else {
                 // Invoking a terminal method multiple times is not allowed by the RS spec, so we assume we have been
                 // cancelled.
-                assert state == CANCELLED;
+                assert state == TERMINATED;
                 subscriber.onSuccess(response.transformRawPayloadBody(payload -> {
                     // We have been cancelled. Subscribe and cancel the content so that we do not hold up the
                     // connection and indicate that there is no one else that will subscribe.
@@ -134,7 +204,7 @@ public final class DoBeforeFinallyOnHttpResponseOperator
         public void onError(final Throwable t) {
             try {
                 if (stateUpdater.compareAndSet(this, IDLE, TERMINATED)) {
-                    doBeforeFinally.run();
+                    doBeforeFinally.onError(t);
                 }
             } finally {
                 subscriber.onError(t);
@@ -145,7 +215,7 @@ public final class DoBeforeFinallyOnHttpResponseOperator
             try {
                 // Since, we are not giving out a response, no subscriber will arrive for the payload Publisher.
                 if (stateUpdater.compareAndSet(this, IDLE, TERMINATED)) {
-                    doBeforeFinally.run();
+                    doBeforeFinally.onComplete();
                 }
             } catch (Throwable cause) {
                 subscriber.onError(cause);
@@ -155,7 +225,7 @@ public final class DoBeforeFinallyOnHttpResponseOperator
         }
     }
 
-    private static final class CancelImmediatelySubscriber implements PublisherSource.Subscriber<Object> {
+    private static final class CancelImmediatelySubscriber implements Subscriber<Object> {
         private static final Logger LOGGER = LoggerFactory.getLogger(CancelImmediatelySubscriber.class);
         static final CancelImmediatelySubscriber INSTANCE = new CancelImmediatelySubscriber();
 
@@ -182,6 +252,30 @@ public final class DoBeforeFinallyOnHttpResponseOperator
         @Override
         public void onComplete() {
             // Ignore.
+        }
+    }
+
+    private static final class RunnableTerminalSignalConsumer implements TerminalSignalConsumer {
+
+        private final Runnable onFinally;
+
+        private RunnableTerminalSignalConsumer(Runnable onFinally) {
+            this.onFinally = requireNonNull(onFinally);
+        }
+
+        @Override
+        public void onComplete() {
+            onFinally.run();
+        }
+
+        @Override
+        public void onError(final Throwable throwable) {
+            onFinally.run();
+        }
+
+        @Override
+        public void onCancel() {
+            onFinally.run();
         }
     }
 }

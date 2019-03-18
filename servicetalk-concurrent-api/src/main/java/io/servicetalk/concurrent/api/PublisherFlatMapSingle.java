@@ -32,9 +32,9 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.api.SubscriberApiUtils.NULL_TOKEN;
 import static io.servicetalk.concurrent.internal.ConcurrentUtils.drainSingleConsumerQueue;
 import static io.servicetalk.concurrent.internal.PlatformDependent.newUnboundedMpscQueue;
-import static io.servicetalk.concurrent.internal.SubscriberUtils.NULL_TOKEN;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.calculateSourceRequested;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.checkDuplicateSubscription;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid;

@@ -27,14 +27,12 @@ import io.servicetalk.client.api.partition.PartitionAttributes;
 public interface PartitionHttpClientBuilderFilterFunction<U, R> {
 
     /**
-     * Function that allows to filter or modify the {@link SingleAddressHttpClientBuilder} for a given set of
+     * Function that allows to modify the {@link SingleAddressHttpClientBuilder} for a given set of
      * {@link PartitionAttributes}.
      * @param attr the {@link PartitionAttributes} for the {@link HttpClient}
      * @param builder the prepared {@link SingleAddressHttpClientBuilder} for the given {@link PartitionAttributes}
-     * @return a filtered or modified {@link SingleAddressHttpClientBuilder}
      */
-    SingleAddressHttpClientBuilder<U, R> apply(PartitionAttributes attr,
-                                               SingleAddressHttpClientBuilder<U, R> builder);
+    void apply(PartitionAttributes attr, SingleAddressHttpClientBuilder<U, R> builder);
 
     /**
      * Returns a composed function that first applies itself to its input, and the applies the {@code after} function to
@@ -45,6 +43,9 @@ public interface PartitionHttpClientBuilderFilterFunction<U, R> {
      */
     default PartitionHttpClientBuilderFilterFunction<U, R> append(
             PartitionHttpClientBuilderFilterFunction<U, R> after) {
-        return (attr, builder) -> after.apply(attr, apply(attr, builder));
+        return (attr, builder) -> {
+            apply(attr, builder);
+            after.apply(attr, builder);
+        };
     }
 }

@@ -21,10 +21,12 @@ import io.servicetalk.concurrent.internal.SignalOffloader;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.PublishAndSubscribeOnSingles.deliverOnSubscribeAndOnError;
+import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverTerminalFromSource;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater;
@@ -66,24 +68,35 @@ final class TimeoutSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
          * Create a local instance because the instance is used as part of the local state machine.
          */
         private static final Cancellable LOCAL_IGNORE_CANCEL = () -> { };
+        private static final int STATE_ON_WAITING_FOR_SUBSCRIBE = 0;
+        private static final int STATE_ON_SUBSCRIBE_DONE = 1;
+        private static final int STATE_TIMED_OUT_ERROR = 2;
         private static final AtomicReferenceFieldUpdater<TimeoutSubscriber, Cancellable>
                 cancellableUpdater = newUpdater(TimeoutSubscriber.class, Cancellable.class, "cancellable");
+        private static final AtomicIntegerFieldUpdater<TimeoutSubscriber> subscriberStateUpdater =
+                AtomicIntegerFieldUpdater.newUpdater(TimeoutSubscriber.class, "subscriberState");
         @Nullable
         private volatile Cancellable cancellable;
+        private volatile int subscriberState;
         private final TimeoutSingle<X> parent;
         private final Subscriber<? super X> target;
+        private final SignalOffloader offloader;
+        private final AsyncContextProvider contextProvider;
         @Nullable
         private Cancellable timerCancellable;
 
-        private TimeoutSubscriber(TimeoutSingle<X> parent, Subscriber<? super X> target) {
+        private TimeoutSubscriber(TimeoutSingle<X> parent, Subscriber<? super X> target, SignalOffloader offloader,
+                                  AsyncContextProvider contextProvider) {
             this.parent = parent;
             this.target = target;
+            this.offloader = offloader;
+            this.contextProvider = contextProvider;
         }
 
         static <X> TimeoutSubscriber<X> newInstance(TimeoutSingle<X> parent, Subscriber<? super X> target,
                                                     SignalOffloader offloader, AsyncContextMap contextMap,
                                                     AsyncContextProvider contextProvider) {
-            TimeoutSubscriber<X> s = new TimeoutSubscriber<>(parent, target);
+            TimeoutSubscriber<X> s = new TimeoutSubscriber<>(parent, target, offloader, contextProvider);
             Cancellable localTimerCancellable;
             try {
                 // We rely upon the timeoutExecutor to save/restore the current context when notifying when the timer
@@ -108,6 +121,13 @@ final class TimeoutSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
         public void onSubscribe(final Cancellable cancellable) {
             if (cancellableUpdater.compareAndSet(this, null, cancellable)) {
                 target.onSubscribe(this);
+
+                if (!subscriberStateUpdater.compareAndSet(this, STATE_ON_WAITING_FOR_SUBSCRIBE,
+                        STATE_ON_SUBSCRIBE_DONE)) {
+                    // subscriberState will be STATE_TIMED_OUT_ERROR, but the timeout occurred while we were invoking
+                    // onSubscribe so terminating the target is handed off to this thread.
+                    target.onError(newTimeoutException());
+                }
             } else {
                 cancellable.cancel();
             }
@@ -153,14 +173,34 @@ final class TimeoutSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
         public void run() {
             Cancellable oldCancellable = cancellableUpdater.getAndSet(this, LOCAL_IGNORE_CANCEL);
             if (oldCancellable != LOCAL_IGNORE_CANCEL) {
+                // The timeout may be running on a different Executor than the original async source. If that is the
+                // case we should offload to the correct Executor.
+                // We rely upon the timeout Executor to save/restore the context. so we just use
+                // contextProvider.contextMap() here.
+                final Subscriber<? super X> offloadedTarget = parent.timeoutExecutor == parent.executor() ? target :
+                        offloader.offloadSubscriber(contextProvider.wrapSingleSubscriber(target,
+                                contextProvider.contextMap()));
                 // The timer is started before onSubscribe so the oldCancellable may actually be null at this time.
                 if (oldCancellable != null) {
                     oldCancellable.cancel();
+
+                    // We already know that this.onSubscribe was called because we have a valid Cancellable. We need to
+                    // know that the call to target.onSubscribe completed so we don't interact with the Subscriber
+                    // concurrently.
+                    if (subscriberStateUpdater.getAndSet(this, STATE_TIMED_OUT_ERROR) == STATE_ON_SUBSCRIBE_DONE) {
+                        offloadedTarget.onError(newTimeoutException());
+                    }
                 } else {
-                    target.onSubscribe(IGNORE_CANCEL);
+                    // If there is no Cancellable, that means this.onSubscribe wasn't called before the timeout. In this
+                    // case there is no risk of concurrent invocation on target because we won't invoke
+                    // target.onSubscribe from this.onSubscribe.
+                    deliverTerminalFromSource(offloadedTarget, newTimeoutException());
                 }
-                target.onError(new TimeoutException("timeout after " + NANOSECONDS.toMillis(parent.durationNs) + "ms"));
             }
+        }
+
+        private TimeoutException newTimeoutException() {
+            return new TimeoutException("timeout after " + NANOSECONDS.toMillis(parent.durationNs) + "ms");
         }
 
         private void stopTimer() {

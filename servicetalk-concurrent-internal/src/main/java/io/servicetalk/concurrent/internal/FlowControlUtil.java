@@ -28,34 +28,6 @@ public final class FlowControlUtil {
     }
 
     /**
-     * Adds two integer and saturate to {@code Integer.MAX_VALUE} / {@code Integer.MIN_VALUE} if overflow happens.
-     * @param x first value
-     * @param y second value
-     * @return sum of two values or {@code Integer.MAX_VALUE} / {@code Integer.MIN_VALUE} if overflow happens.
-     */
-    public static int addSaturated(final int x, final int y) {
-        int r = x + y;
-        if (((x ^ r) & (y ^ r)) < 0) {
-            return x >= 0 ? Integer.MAX_VALUE : Integer.MIN_VALUE;
-        }
-        return r;
-    }
-
-    /**
-     * Adds two longs and saturate to {@code Long.MAX_VALUE} / {@code Long.MIN_VALUE} if overflow happens.
-     * @param x first value
-     * @param y second value
-     * @return sum of two values or {@code Long.MAX_VALUE} / {@code Long.MIN_VALUE} if overflow happens.
-     */
-    public static long addSaturated(final long x, final long y) {
-        long r = x + y;
-        if (((x ^ r) & (y ^ r)) < 0) {
-            return x >= 0 ? Long.MAX_VALUE : Long.MIN_VALUE;
-        }
-        return r;
-    }
-
-    /**
      * If {@code x} is non-negative this method behaves the same as {@link #addWithOverflowProtection(long, long)}.
      * If {@code x} is negative then {@code x} is returned.
      * @param x first value (may be negative).
@@ -101,6 +73,16 @@ public final class FlowControlUtil {
      */
     public static long addWithOverflowProtectionIfPositive(long x, long y) {
         return x <= 0 ? x : addWithOverflowProtection(x, y);
+    }
+
+    /**
+     * Subtract {@code y} from {@code x} if {@code x} is positive.
+     * @param x first value (may be negative).
+     * @param y second value (should be positive).
+     * @return the result of {@code x-y} if {@code x>0}, or {@code x}.
+     */
+    public static long subtractIfPositive(long x, long y) {
+        return x <= 0 ? x : x - y;
     }
 
     /**

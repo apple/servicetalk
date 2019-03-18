@@ -32,7 +32,6 @@ import io.servicetalk.client.internal.partition.PowerSetPartitionMapFactory;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.HttpClientFilterFactory;
 import io.servicetalk.http.api.HttpConnectionFilterFactory;
 import io.servicetalk.http.api.HttpExecutionStrategy;
@@ -43,18 +42,19 @@ import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.http.api.PartitionHttpClientBuilderFilterFunction;
 import io.servicetalk.http.api.PartitionedHttpClientBuilder;
 import io.servicetalk.http.api.ReservedStreamingHttpConnectionFilter;
-import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpClientFilter;
 import io.servicetalk.http.api.StreamingHttpConnectionFilter;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequestFunction;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.StreamingHttpResponse;
+import io.servicetalk.http.netty.DefaultSingleAddressHttpClientBuilder.HttpClientBuildContext;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.SslConfig;
 
 import java.net.SocketOption;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -62,73 +62,62 @@ import javax.annotation.Nullable;
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.concurrent.api.Single.error;
-import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static java.util.Objects.requireNonNull;
 
 class DefaultPartitionedHttpClientBuilder<U, R> extends PartitionedHttpClientBuilder<U, R> {
 
-    private final U address;
     private final Function<HttpRequestMetaData, PartitionAttributesBuilder> partitionAttributesBuilderFactory;
     private final DefaultSingleAddressHttpClientBuilder<U, R> builderTemplate;
-    private PartitionHttpClientBuilderFilterFunction<U, R> clientFilterFunction = (__, builder) -> builder;
+    private PartitionHttpClientBuilderFilterFunction<U, R> clientFilterFunction = (__, ___) -> { };
     private PartitionMapFactory partitionMapFactory = PowerSetPartitionMapFactory.INSTANCE;
     private int serviceDiscoveryMaxQueueSize = 32;
 
     DefaultPartitionedHttpClientBuilder(
-            final U address,
             final DefaultSingleAddressHttpClientBuilder<U, R> builderTemplate,
             final Function<HttpRequestMetaData, PartitionAttributesBuilder> partitionAttributesBuilderFactory) {
-        this.address = address;
         this.builderTemplate = requireNonNull(builderTemplate);
         this.partitionAttributesBuilderFactory = requireNonNull(partitionAttributesBuilderFactory);
     }
 
+    // This is only to be called by HttpClientBuilder.buildStreaming()
+
     @Override
-    public StreamingHttpClient buildStreaming() {
+    protected <T> T buildFilterChain(final BiFunction<StreamingHttpClientFilter, HttpExecutionStrategy, T> assembler) {
+        final HttpClientBuildContext<U, R> buildContext = builderTemplate.copyBuildCtx();
 
-        final DefaultSingleAddressHttpClientBuilder<U, R> copy = builderTemplate.copy();
-
-        final ExecutionContext exec = copy.buildExecutionContext();
-
-        final StreamingHttpRequestResponseFactory reqRespFactory =
-                new DefaultStreamingHttpRequestResponseFactory(exec.bufferAllocator(),
-                        copy.headersFactory());
-
-        final PartitionedClientFactory<U, R, StreamingHttpClient>
-                clientFactory = (pa, sd) ->
-                clientFilterFunction.apply(pa, copy.copy().serviceDiscoverer(sd))
-                        // TODO(jayv) maybe invoke buildFilterChain(), avoid potential conversion or reaching in
-                        .buildStreaming();
+        final PartitionedClientFactory<U, R, StreamingHttpClientFilter> clientFactory = (pa, sd) -> {
+            DefaultSingleAddressHttpClientBuilder<U, R> builder = buildContext.builder;
+            builder.serviceDiscoverer(sd);
+            clientFilterFunction.apply(pa, builder);
+            // build new context, user may have changed anything on the builder from the filter
+            return builder.copyBuildCtx().build((filter, __) -> filter);
+        };
 
         @SuppressWarnings("unchecked")
         final Publisher<? extends PartitionedServiceDiscovererEvent<R>> psdEvents =
-                (Publisher<? extends PartitionedServiceDiscovererEvent<R>>) copy.serviceDiscoverer().discover(address);
+                (Publisher<? extends PartitionedServiceDiscovererEvent<R>>) buildContext.discover();
 
-        final DefaultPartitionedStreamingHttpClient<U, R> partitionedFilterChain =
-                new DefaultPartitionedStreamingHttpClient<>(psdEvents, serviceDiscoveryMaxQueueSize, clientFactory,
-                        partitionAttributesBuilderFactory, reqRespFactory, exec, partitionMapFactory);
-
-        return StreamingHttpClient.newStreamingClientWorkAroundToBeFixed(partitionedFilterChain,
-                copy.executionStrategy());
+        return assembler.apply(new DefaultPartitionedStreamingHttpClientFilter<>(psdEvents,
+                serviceDiscoveryMaxQueueSize, clientFactory, partitionAttributesBuilderFactory,
+                buildContext.reqRespFactory, buildContext.executionContext, partitionMapFactory),
+                buildContext.executionStrategy());
     }
 
-    private static final class DefaultPartitionedStreamingHttpClient<U, R> extends StreamingHttpClientFilter {
+    private static final class DefaultPartitionedStreamingHttpClientFilter<U, R> extends StreamingHttpClientFilter {
 
-        private static final Function<PartitionAttributes, StreamingHttpClient> PARTITION_CLOSED = pa ->
-                StreamingHttpClient.newStreamingClientWorkAroundToBeFixed(new NoopPartitionClient(
-                        new ClosedPartitionException(pa, "Partition closed ")), defaultStrategy());
-        private static final Function<PartitionAttributes, StreamingHttpClient> PARTITION_UNKNOWN = pa ->
-                StreamingHttpClient.newStreamingClientWorkAroundToBeFixed(new NoopPartitionClient(
-                        new UnknownPartitionException(pa, "Partition unknown")), defaultStrategy());
+        private static final Function<PartitionAttributes, StreamingHttpClientFilter> PARTITION_CLOSED = pa ->
+                new NoopPartitionClient(new ClosedPartitionException(pa, "Partition closed "));
+        private static final Function<PartitionAttributes, StreamingHttpClientFilter> PARTITION_UNKNOWN = pa ->
+                new NoopPartitionClient(new UnknownPartitionException(pa, "Partition unknown"));
 
-        private final ClientGroup<PartitionAttributes, StreamingHttpClient> group;
+        private final ClientGroup<PartitionAttributes, StreamingHttpClientFilter> group;
         private final Function<HttpRequestMetaData, PartitionAttributesBuilder> pabf;
         private final ExecutionContext executionContext;
 
-        DefaultPartitionedStreamingHttpClient(
+        DefaultPartitionedStreamingHttpClientFilter(
                 final Publisher<? extends PartitionedServiceDiscovererEvent<R>> psdEvents,
                 final int psdMaxQueueSize,
-                final PartitionedClientFactory<U, R, StreamingHttpClient> clientFactory,
+                final PartitionedClientFactory<U, R, StreamingHttpClientFilter> clientFactory,
                 final Function<HttpRequestMetaData, PartitionAttributesBuilder> pabf,
                 final StreamingHttpRequestResponseFactory reqRespFactory,
                 final ExecutionContext executionContext,
@@ -150,8 +139,7 @@ class DefaultPartitionedHttpClientBuilder<U, R> extends PartitionedHttpClientBui
 
         @Nonnull
         private StreamingHttpClientFilter selectClient(final HttpRequestMetaData metaData) {
-            // TODO(jayv) we can remove conversion if clientFactory produces Filters instead of Clients
-            return group.get(pabf.apply(metaData).build()).chainWorkaroundForNow();
+            return group.get(pabf.apply(metaData).build());
         }
 
         @Override
@@ -231,12 +219,6 @@ class DefaultPartitionedHttpClientBuilder<U, R> extends PartitionedHttpClientBui
     @Override
     public PartitionedHttpClientBuilder<U, R> ioExecutor(final IoExecutor ioExecutor) {
         builderTemplate.ioExecutor(ioExecutor);
-        return this;
-    }
-
-    @Override
-    public PartitionedHttpClientBuilder<U, R> executionStrategy(final HttpExecutionStrategy strategy) {
-        builderTemplate.executionStrategy(strategy);
         return this;
     }
 
@@ -373,6 +355,12 @@ class DefaultPartitionedHttpClientBuilder<U, R> extends PartitionedHttpClientBui
     public PartitionedHttpClientBuilder<U, R> appendClientBuilderFilter(
             final PartitionHttpClientBuilderFilterFunction<U, R> clientFilterFunction) {
         this.clientFilterFunction = this.clientFilterFunction.append(clientFilterFunction);
+        return this;
+    }
+
+    @Override
+    public PartitionedHttpClientBuilder<U, R> executionStrategy(final HttpExecutionStrategy strategy) {
+        this.builderTemplate.executionStrategy(strategy);
         return this;
     }
 }

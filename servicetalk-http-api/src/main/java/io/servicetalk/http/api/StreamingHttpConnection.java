@@ -43,19 +43,6 @@ public class StreamingHttpConnection extends StreamingHttpRequester {
     }
 
     /**
-     * DUMMY.
-     * @param filterChain DUMMY.
-     * @param strategy DUMMY.
-     * @return DUMMY.
-     */
-    // TODO(jayv) break *HttpConnectionBuilder in buildFilterChain() and implement buildStreaming() as delegate to
-    // pkg-pvt ctor for Client/Connection
-    public static StreamingHttpConnection newStreamingConnectionWorkAroundToBeFixed(
-            final StreamingHttpConnectionFilter filterChain, final HttpExecutionStrategy strategy) {
-        return new StreamingHttpConnection(filterChain, strategy);
-    }
-
-    /**
      * Get the {@link ConnectionContext}.
      * @return the {@link ConnectionContext}.
      */
