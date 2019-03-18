@@ -125,7 +125,7 @@ public class BlockingStreamingHttpClientTest extends AbstractBlockingStreamingHt
 
             TestClientTransport(final StreamingHttpRequestResponseFactory reqRespFactory,
                                 final ExecutionContext executionContext) {
-                super(terminal(reqRespFactory));
+                super(terminal(reqRespFactory, defaultStrategy()));
                 this.executionContext = executionContext;
                 this.connectionContext = mock(ConnectionContext.class);
                 when(connectionContext.executionContext()).thenReturn(executionContext);

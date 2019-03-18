@@ -21,14 +21,12 @@ import io.servicetalk.client.api.ConnectionClosedException;
 import io.servicetalk.client.api.MaxRequestLimitExceededException;
 import io.servicetalk.concurrent.CompletableSource.Processor;
 import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.DefaultHttpHeadersFactory;
 import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
-import io.servicetalk.http.api.DelegatingHttpExecutionStrategy;
 import io.servicetalk.http.api.HttpConnection;
 import io.servicetalk.http.api.HttpConnectionFilterFactory;
 import io.servicetalk.http.api.HttpExecutionStrategy;
@@ -72,7 +70,7 @@ import static io.servicetalk.concurrent.api.Publisher.just;
 import static io.servicetalk.concurrent.api.Single.error;
 import static io.servicetalk.concurrent.api.Single.success;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
-import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
+import static io.servicetalk.http.api.HttpExecutionStrategies.customStrategyBuilder;
 import static io.servicetalk.http.api.StreamingHttpConnection.SettingKey.MAX_CONCURRENCY;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static org.hamcrest.Matchers.equalTo;
@@ -103,12 +101,7 @@ public class ConcurrentRequestsHttpConnectionFilterTest {
 
     // TODO(jayv) Temporary workaround until DefaultNettyConnection leverages strategy.offloadReceive()
     private static final HttpExecutionStrategy FULLY_NO_OFFLOAD_STRATEGY =
-            new DelegatingHttpExecutionStrategy(noOffloadsStrategy()) {
-        @Override
-        public Executor executor() {
-            return immediate();
-        }
-    };
+            customStrategyBuilder().executor(immediate()).build();
 
     @Test
     public void decrementWaitsUntilResponsePayloadIsComplete() throws Exception {

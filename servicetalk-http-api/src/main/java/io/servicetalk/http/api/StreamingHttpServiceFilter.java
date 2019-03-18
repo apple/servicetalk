@@ -18,6 +18,7 @@ package io.servicetalk.http.api;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 
+import static io.servicetalk.http.api.HttpExecutionStrategies.OFFLOAD_ALL_STRATEGY;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -27,7 +28,6 @@ import static java.util.Objects.requireNonNull;
 public class StreamingHttpServiceFilter extends StreamingHttpService {
 
     private final StreamingHttpService delegate;
-    private final HttpExecutionStrategy strategy;
 
     /**
      * New instance.
@@ -36,18 +36,6 @@ public class StreamingHttpServiceFilter extends StreamingHttpService {
      */
     public StreamingHttpServiceFilter(final StreamingHttpService delegate) {
         this.delegate = requireNonNull(delegate);
-        this.strategy = super.executionStrategy();
-    }
-
-    /**
-     * New instance.
-     *
-     * @param delegate {@link StreamingHttpService} to delegate all calls.
-     * @param strategy {@link HttpExecutionStrategy} for this {@link StreamingHttpServiceFilter}.
-     */
-    StreamingHttpServiceFilter(final StreamingHttpService delegate, final HttpExecutionStrategy strategy) {
-        this.delegate = requireNonNull(delegate);
-        this.strategy = requireNonNull(strategy);
     }
 
     @Override
@@ -72,7 +60,7 @@ public class StreamingHttpServiceFilter extends StreamingHttpService {
                     mergeForEffectiveStrategy(strategy));
         }
         // End of the filter chain.
-        return mergeForEffectiveStrategy(strategy);
+        return delegate.executionStrategy().merge(mergeForEffectiveStrategy(strategy));
     }
 
     /**
@@ -85,7 +73,7 @@ public class StreamingHttpServiceFilter extends StreamingHttpService {
      * @return Merged {@link HttpExecutionStrategy}.
      */
     protected HttpExecutionStrategy mergeForEffectiveStrategy(HttpExecutionStrategy mergeWith) {
-        return mergeWith.merge(strategy);
+        return mergeWith.merge(OFFLOAD_ALL_STRATEGY);
     }
 
     @Override
@@ -95,7 +83,7 @@ public class StreamingHttpServiceFilter extends StreamingHttpService {
 
     @Override
     public final HttpExecutionStrategy executionStrategy() {
-        return strategy;
+        return delegate.executionStrategy();
     }
 
     @Override

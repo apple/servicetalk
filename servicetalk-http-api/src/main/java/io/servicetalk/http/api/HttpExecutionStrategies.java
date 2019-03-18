@@ -22,7 +22,11 @@ import javax.annotation.Nullable;
 import static io.servicetalk.http.api.DefaultHttpExecutionStrategy.OFFLOAD_RECEIVE_DATA;
 import static io.servicetalk.http.api.DefaultHttpExecutionStrategy.OFFLOAD_RECEIVE_META;
 import static io.servicetalk.http.api.DefaultHttpExecutionStrategy.OFFLOAD_SEND;
-import static io.servicetalk.http.api.NoOffloadsHttpExecutionStrategy.NO_OFFLOADS;
+import static io.servicetalk.http.api.HttpExecutionStrategies.Builder.MergeStrategy.Merge;
+import static io.servicetalk.http.api.HttpExecutionStrategies.Builder.MergeStrategy.ReturnOther;
+import static io.servicetalk.http.api.HttpExecutionStrategies.Builder.MergeStrategy.ReturnSelf;
+import static io.servicetalk.http.api.NoOffloadsHttpExecutionStrategy.NO_OFFLOADS_NO_EXECUTOR;
+import static java.util.Objects.requireNonNull;
 
 /**
  * A factory to create different {@link HttpExecutionStrategy}.
@@ -30,13 +34,15 @@ import static io.servicetalk.http.api.NoOffloadsHttpExecutionStrategy.NO_OFFLOAD
 public final class HttpExecutionStrategies {
 
     // Package private constants to be used across programming model adapters, should not be made public.
-    static final HttpExecutionStrategy OFFLOAD_NONE_STRATEGY = customStrategyBuilder().build();
+    static final HttpExecutionStrategy OFFLOAD_NONE_STRATEGY = customStrategyBuilder().mergeStrategy(Merge).build();
     static final HttpExecutionStrategy OFFLOAD_RECEIVE_META_STRATEGY =
-            customStrategyBuilder().offloadReceiveMetadata().build();
-    static final HttpExecutionStrategy OFFLOAD_ALL_STRATEGY = customStrategyBuilder().offloadAll().build();
+            customStrategyBuilder().offloadReceiveMetadata().mergeStrategy(Merge).build();
+    static final HttpExecutionStrategy OFFLOAD_ALL_STRATEGY = customStrategyBuilder().offloadAll()
+            .mergeStrategy(Merge).build();
     static final HttpExecutionStrategy OFFLOAD_RECEIVE_META_AND_SEND_STRATEGY =
-            customStrategyBuilder().offloadReceiveMetadata().offloadSend().build();
-    static final HttpExecutionStrategy OFFLOAD_SEND_STRATEGY = customStrategyBuilder().offloadSend().build();
+            customStrategyBuilder().offloadReceiveMetadata().offloadSend().mergeStrategy(Merge).build();
+    static final HttpExecutionStrategy OFFLOAD_SEND_STRATEGY = customStrategyBuilder().offloadSend()
+            .mergeStrategy(Merge).build();
 
     private HttpExecutionStrategies() {
         // No instances.
@@ -58,7 +64,7 @@ public final class HttpExecutionStrategies {
      * @return Default {@link HttpExecutionStrategy}.
      */
     public static HttpExecutionStrategy defaultStrategy(Executor executor) {
-        return customStrategyBuilder().offloadAll().executor(executor).build();
+        return customStrategyBuilder().offloadAll().executor(executor).mergeStrategy(ReturnOther).build();
     }
 
     /**
@@ -67,7 +73,7 @@ public final class HttpExecutionStrategies {
      * @return {@link HttpExecutionStrategy} that disables all offloads.
      */
     public static HttpExecutionStrategy noOffloadsStrategy() {
-        return NO_OFFLOADS;
+        return NO_OFFLOADS_NO_EXECUTOR;
     }
 
     /**
@@ -84,12 +90,15 @@ public final class HttpExecutionStrategies {
      */
     public static final class Builder {
 
-        static final HttpExecutionStrategy DEFAULT = new Builder().offloadAll().build();
+        static final HttpExecutionStrategy DEFAULT = new Builder().offloadAll().mergeStrategy(ReturnOther).build();
 
         @Nullable
         private Executor executor;
         private byte offloads;
         private boolean threadAffinity;
+        // User provided strategies will always be used without merging. Any custom behavior will be used at the merged
+        // call site.
+        private MergeStrategy mergeStrategy = ReturnSelf;
 
         private Builder() {
         }
@@ -131,13 +140,23 @@ public final class HttpExecutionStrategies {
         }
 
         /**
+         * Disable all offloads.
+         *
+         * @return {@code this}.
+         */
+        public Builder offloadNone() {
+            offloads = 0;
+            return this;
+        }
+
+        /**
          * Specify an {@link Executor} to use.
          *
          * @param executor {@link Executor} to use.
          * @return {@code this}.
          */
         public Builder executor(Executor executor) {
-            this.executor = executor;
+            this.executor = requireNonNull(executor);
             return this;
         }
 
@@ -153,27 +172,44 @@ public final class HttpExecutionStrategies {
         }
 
         /**
+         * Specify the {@link MergeStrategy} for the {@link HttpExecutionStrategy} built from this {@link Builder}.
+         *
+         * @param mergeStrategy {@link MergeStrategy} to use.
+         * @return {@code this}.
+         */
+        // Intentionally package-private, API is not required to be public for the lack of use cases.
+        Builder mergeStrategy(MergeStrategy mergeStrategy) {
+            this.mergeStrategy = mergeStrategy;
+            return this;
+        }
+
+        /**
          * Builds a new {@link HttpExecutionStrategy}.
          *
          * @return New {@link HttpExecutionStrategy}.
          */
         public HttpExecutionStrategy build() {
-            return offloads == 0 ? executor == null ? NO_OFFLOADS : noOffloadsStrategyWithExecutor(executor) :
-                    new DefaultHttpExecutionStrategy(executor, offloads, threadAffinity);
+            return offloads == 0 ?
+                    executor == null ? NO_OFFLOADS_NO_EXECUTOR : noOffloadsStrategyWithExecutor(executor) :
+                    new DefaultHttpExecutionStrategy(executor, offloads, threadAffinity, mergeStrategy);
         }
 
-        private static DelegatingHttpExecutionStrategy noOffloadsStrategyWithExecutor(final Executor executor) {
-            return new DelegatingHttpExecutionStrategy(NO_OFFLOADS) {
-                @Override
-                public Executor executor() {
-                    return executor;
-                }
-            };
+        private static HttpExecutionStrategy noOffloadsStrategyWithExecutor(final Executor executor) {
+            return new NoOffloadsHttpExecutionStrategy(executor);
         }
 
         private Builder addOffload(byte flag) {
             offloads |= flag;
             return this;
+        }
+
+        /**
+         * A strategy for implementing {@link HttpExecutionStrategy#merge(HttpExecutionStrategy)} method.
+         */
+        enum MergeStrategy {
+            ReturnSelf,
+            ReturnOther,
+            Merge
         }
     }
 }

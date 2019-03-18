@@ -18,7 +18,6 @@ package io.servicetalk.http.api;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 
-import static io.servicetalk.http.api.HttpExecutionStrategies.OFFLOAD_RECEIVE_META_AND_SEND_STRATEGY;
 import static java.util.Objects.requireNonNull;
 
 final class StreamingHttpServiceToHttpService extends HttpService {
@@ -61,8 +60,7 @@ final class StreamingHttpServiceToHttpService extends HttpService {
     static HttpService transform(final StreamingHttpService service) {
         final HttpExecutionStrategy defaultStrategy = service instanceof StreamingHttpServiceFilter ?
                 ((StreamingHttpServiceFilter) service)
-                        .effectiveExecutionStrategy(OFFLOAD_RECEIVE_META_AND_SEND_STRATEGY) :
-                OFFLOAD_RECEIVE_META_AND_SEND_STRATEGY;
+                        .effectiveExecutionStrategy(DEFAULT_SERVICE_STRATEGY) : DEFAULT_SERVICE_STRATEGY;
         return new StreamingHttpServiceToHttpService(service, defaultStrategy);
     }
 }

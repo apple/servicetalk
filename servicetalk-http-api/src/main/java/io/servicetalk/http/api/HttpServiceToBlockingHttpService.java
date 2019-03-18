@@ -50,11 +50,10 @@ final class HttpServiceToBlockingHttpService extends BlockingHttpService {
     }
 
     static BlockingHttpService transform(final HttpService service) {
-        // The recommended approach for filtering is using the filter factories which forces people to use the
-        // StreamingHttpServiceFilter API and use the effective strategy. When that path is used, then we will not get
-        // here as the intermediate transitions take care of returning the original StreamingHttpService.
-        // If we are here, it is for a user implemented BlockingStreamingHttpService, so we assume the strategy provided
-        // by the passed service is the effective strategy.
-        return new HttpServiceToBlockingHttpService(service, service.executionStrategy());
+        // Since we are converting to a different programming model, try altering the strategy for the returned service
+        // to contain an appropriate default. We achieve this by merging the expected strategy with the provided
+        // service strategy.
+        return new HttpServiceToBlockingHttpService(service,
+                service.executionStrategy().merge(HttpService.DEFAULT_SERVICE_STRATEGY));
     }
 }

@@ -83,7 +83,9 @@ public class DelegatingHttpExecutionStrategy implements HttpExecutionStrategy {
 
     @Override
     public HttpExecutionStrategy merge(final HttpExecutionStrategy other) {
-        return delegate.merge(other);
+        // Since any methods can be overridden to change behavior, we leverage the other strategy to also account for
+        // the overridden methods here.
+        return other.merge(this);
     }
 
     @Override

@@ -115,9 +115,11 @@ final class DefaultMultiAddressUrlHttpClientBuilder extends MultiAddressHttpClie
                     sslConfigProvider, clientFilterFunction, hostHeaderTransformer);
 
             keyFactory = closeables.prepend(new CachingKeyFactory(sslConfigProvider));
+            HttpExecutionStrategy strategy = buildContext.executionStrategy();
 
             StreamingHttpClientFilter filterChain = closeables.prepend(
-                    new StreamingUrlHttpClientFilter(buildContext.reqRespFactory, clientFilterFactory, keyFactory));
+                    new StreamingUrlHttpClientFilter(buildContext.reqRespFactory, clientFilterFactory, keyFactory,
+                            strategy));
 
             // Need to wrap the top level client (group) in order for non-relative redirects to work
             filterChain = maxRedirects <= 0 ? filterChain :
@@ -125,7 +127,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder extends MultiAddressHttpClie
 
             filterChain = new StreamingHttpClientWithDependencies(filterChain, toListenableAsyncCloseable(closeables));
 
-            return assembler.apply(filterChain, buildContext.executionStrategy());
+            return assembler.apply(filterChain, strategy);
         } catch (final Throwable t) {
             if (keyFactory != null) {
                 keyFactory.closeAsync().subscribe();
@@ -274,8 +276,8 @@ final class DefaultMultiAddressUrlHttpClientBuilder extends MultiAddressHttpClie
 
         StreamingUrlHttpClientFilter(final StreamingHttpRequestResponseFactory reqRespFactory,
                                      final Function<UrlKey, StreamingHttpClientFilter> clientFactory,
-                                     final CachingKeyFactory keyFactory) {
-            super(terminal(reqRespFactory));
+                                     final CachingKeyFactory keyFactory, final HttpExecutionStrategy strategy) {
+            super(terminal(reqRespFactory, strategy));
             this.group = ClientGroup.from(clientFactory);
             this.keyFactory = keyFactory;
         }

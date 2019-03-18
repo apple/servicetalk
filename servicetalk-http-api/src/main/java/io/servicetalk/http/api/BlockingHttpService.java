@@ -21,6 +21,7 @@ import static io.servicetalk.http.api.HttpExecutionStrategies.OFFLOAD_RECEIVE_ME
  * The equivalent of {@link HttpService} but with synchronous/blocking APIs instead of asynchronous APIs.
  */
 public abstract class BlockingHttpService implements AutoCloseable, BlockingHttpRequestHandler {
+    static final HttpExecutionStrategy DEFAULT_BLOCKING_SERVICE_STRATEGY = OFFLOAD_RECEIVE_META_STRATEGY;
 
     @Override
     public void close() throws Exception {
@@ -62,7 +63,7 @@ public abstract class BlockingHttpService implements AutoCloseable, BlockingHttp
      * @return The {@link HttpExecutionStrategy} for this {@link BlockingHttpService}.
      */
     public HttpExecutionStrategy executionStrategy() {
-        return OFFLOAD_RECEIVE_META_STRATEGY;
+        return DEFAULT_BLOCKING_SERVICE_STRATEGY;
     }
 
     StreamingHttpService asStreamingServiceInternal() {

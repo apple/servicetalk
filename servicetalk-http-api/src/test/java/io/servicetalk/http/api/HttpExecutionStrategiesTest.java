@@ -20,9 +20,6 @@ import io.servicetalk.concurrent.api.Executor;
 import org.junit.Test;
 import org.mockito.Mockito;
 
-import static io.servicetalk.http.api.DefaultHttpExecutionStrategy.OFFLOAD_RECEIVE_DATA;
-import static io.servicetalk.http.api.DefaultHttpExecutionStrategy.OFFLOAD_RECEIVE_META;
-import static io.servicetalk.http.api.DefaultHttpExecutionStrategy.OFFLOAD_SEND;
 import static io.servicetalk.http.api.HttpExecutionStrategies.customStrategyBuilder;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static org.hamcrest.Matchers.is;
@@ -33,10 +30,10 @@ public class HttpExecutionStrategiesTest {
 
     @Test
     public void defaultShouldOffloadAll() {
-        DefaultHttpExecutionStrategy strategy = (DefaultHttpExecutionStrategy) defaultStrategy();
-        assertThat("send not offloaded by default.", strategy.offloaded(OFFLOAD_SEND), is(true));
-        assertThat("receive meta not offloaded by default.", strategy.offloaded(OFFLOAD_RECEIVE_META), is(true));
-        assertThat("receive data not offloaded by default.", strategy.offloaded(OFFLOAD_RECEIVE_DATA), is(true));
+        HttpExecutionStrategy strategy = defaultStrategy();
+        assertThat("send not offloaded by default.", strategy.isSendOffloaded(), is(true));
+        assertThat("receive meta not offloaded by default.", strategy.isMetadataReceiveOffloaded(), is(true));
+        assertThat("receive data not offloaded by default.", strategy.isDataReceiveOffloaded(), is(true));
     }
 
     @Test

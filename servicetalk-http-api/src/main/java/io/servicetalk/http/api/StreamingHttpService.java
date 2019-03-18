@@ -25,6 +25,7 @@ import static io.servicetalk.http.api.HttpExecutionStrategies.OFFLOAD_ALL_STRATE
  * A service contract for the HTTP protocol.
  */
 public abstract class StreamingHttpService implements AsyncCloseable, StreamingHttpRequestHandler {
+    static final HttpExecutionStrategy DEFAULT_STREAMING_SERVICE_STRATEGY = OFFLOAD_ALL_STRATEGY;
     /**
      * Closes this {@link StreamingHttpService} asynchronously.
      *
@@ -66,7 +67,7 @@ public abstract class StreamingHttpService implements AsyncCloseable, StreamingH
      * @return The {@link HttpExecutionStrategy} for this {@link StreamingHttpService}.
      */
     public HttpExecutionStrategy executionStrategy() {
-        return OFFLOAD_ALL_STRATEGY;
+        return DEFAULT_STREAMING_SERVICE_STRATEGY;
     }
 
     HttpService asServiceInternal() {
