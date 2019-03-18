@@ -90,7 +90,7 @@ public class TracingHttpServiceFilterTest {
         DefaultInMemoryTracer tracer = new DefaultInMemoryTracer.Builder(SCOPE_MANAGER)
                 .addListener(spanListener).build();
         return HttpServers.forAddress(localAddress(0))
-                .appendRequestHandlerFilter(handler -> new TracingHttpServiceFilter(tracer, "testServer", handler))
+                .appendServiceFilter(new TracingHttpServiceFilter(tracer, "testServer"))
                 .listenStreamingAndAwait(((StreamingHttpRequestHandler) (ctx, request, responseFactory) -> {
                     InMemorySpan span = tracer.activeSpan();
                     if (span == null) {
@@ -168,7 +168,7 @@ public class TracingHttpServiceFilterTest {
     public void tracerThrowsReturnsErrorResponse() throws Exception {
         when(mockTracer.buildSpan(any())).thenThrow(DELIBERATE_EXCEPTION);
         try (ServerContext context = HttpServers.forAddress(localAddress(0))
-                .appendRequestHandlerFilter(handler -> new TracingHttpServiceFilter(mockTracer, "testServer", handler))
+                .appendServiceFilter(new TracingHttpServiceFilter(mockTracer, "testServer"))
                 .listenStreamingAndAwait(((StreamingHttpRequestHandler) (ctx, request, responseFactory) ->
                                 success(responseFactory.forbidden())).asStreamingService())) {
             try (HttpClient client = forSingleAddress(serverHostAndPort(context)).build()) {
