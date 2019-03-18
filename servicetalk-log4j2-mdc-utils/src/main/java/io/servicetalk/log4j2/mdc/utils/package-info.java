@@ -13,20 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.log4j2.mdc;
+@ElementsAreNonnullByDefault
+package io.servicetalk.log4j2.mdc.utils;
 
-import io.servicetalk.log4j2.mdc.utils.ServiceTalkThreadContextMap;
-
-import org.apache.logging.log4j.ThreadContext;
-import org.junit.Test;
-
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
-
-public class ServiceTalkThreadContextMapLog4jProviderTest {
-    @Test
-    public void testProviderLoadsClass() {
-        assertThat(ThreadContext.getThreadContextMap(), is(instanceOf(ServiceTalkThreadContextMap.class)));
-    }
-}
+import io.servicetalk.annotations.ElementsAreNonnullByDefault;

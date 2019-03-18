@@ -31,10 +31,22 @@ apply plugin: "servicetalk-library"
 dependencies {
   implementation "io.servicetalk:servicetalk-bom-internal:$project.version"
 
+  api "org.apache.logging.log4j:log4j-core"
+
   implementation "com.google.code.findbugs:jsr305"
   implementation "io.servicetalk:servicetalk-annotations:$project.version"
-  implementation "io.servicetalk:servicetalk-log4j2-mdc-utils:$project.version"
+  implementation "io.servicetalk:servicetalk-concurrent-api:$project.version"
+  implementation "io.servicetalk:servicetalk-concurrent-internal:$project.version"
 
+  testImplementation "io.servicetalk:servicetalk-test-resources:$project.version"
   testImplementation "junit:junit"
-  testImplementation "org.hamcrest:hamcrest-library"
+  testImplementation "org.slf4j:slf4j-api"
+
+  testFixturesImplementation "org.apache.logging.log4j:log4j-slf4j-impl"
+  testFixturesImplementation "org.apache.logging.log4j:log4j-core"
+  testFixturesImplementation "org.hamcrest:hamcrest-library"
+}
+
+test {
+  jvmArgs '-Dlog4j2.threadContextMap=io.servicetalk.log4j2.mdc.utils.ServiceTalkThreadContextMap'
 }

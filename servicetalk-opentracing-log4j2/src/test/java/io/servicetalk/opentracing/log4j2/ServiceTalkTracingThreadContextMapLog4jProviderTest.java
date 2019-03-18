@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,20 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.log4j2.mdc;
-
-import io.servicetalk.log4j2.mdc.utils.ServiceTalkThreadContextMap;
+package io.servicetalk.opentracing.log4j2;
 
 import org.apache.logging.log4j.ThreadContext;
 import org.junit.Test;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
 
-public class ServiceTalkThreadContextMapLog4jProviderTest {
+public class ServiceTalkTracingThreadContextMapLog4jProviderTest {
     @Test
     public void testProviderLoadsClass() {
-        assertThat(ThreadContext.getThreadContextMap(), is(instanceOf(ServiceTalkThreadContextMap.class)));
+        assertThat(ThreadContext.getThreadContextMap(), is(instanceOf(ServiceTalkTracingThreadContextMap.class)));
     }
 }
