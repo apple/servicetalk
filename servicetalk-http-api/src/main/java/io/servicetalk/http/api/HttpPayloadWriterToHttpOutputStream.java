@@ -42,14 +42,9 @@ final class HttpPayloadWriterToHttpOutputStream extends HttpOutputStream {
 
     @Override
     public void write(final byte[] b, final int off, final int len) throws IOException {
-        if (off < 0 || len < 0 || len > b.length - off) {
-            throw new IndexOutOfBoundsException("Unexpected offset " + off + " (expected > 0) or length " + len
-                    + " (expected >= 0 and should fit in the source array). Source array length " + b.length);
-        }
         if (len == 0) {
             return;
         }
-
         writer.write(allocator.wrap(b, off, len));
     }
 
