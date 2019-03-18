@@ -288,6 +288,9 @@ public class BlockingStreamingHttpServiceToStreamingHttpServiceTest {
         };
         StreamingHttpService asyncService = syncService.asStreamingService();
         toSource(asyncService.handle(mockCtx, reqRespFactory.get("/"), reqRespFactory)
+                // Use subscribeOn(Executor) instead of HttpExecutionStrategy#invokeService which returns a flatten
+                // Publisher<Object> to verify that the Single<StreamingHttpResponse> of response meta-data terminates
+                // with an error
                 .subscribeOn(executorRule.executor()))
                 .subscribe(new SingleSource.Subscriber<StreamingHttpResponse>() {
 
@@ -318,6 +321,9 @@ public class BlockingStreamingHttpServiceToStreamingHttpServiceTest {
     public void cancelAfterSendMetaDataPropagated() throws Exception {
         CountDownLatch cancelLatch = new CountDownLatch(1);
         CountDownLatch serviceTerminationLatch = new CountDownLatch(1);
+        CountDownLatch onErrorLatch = new CountDownLatch(1);
+        AtomicReference<Throwable> throwableRef = new AtomicReference<>();
+
         BlockingStreamingHttpService syncService = new BlockingStreamingHttpService() {
             @Override
             public void handle(final HttpServiceContext ctx,
@@ -333,8 +339,10 @@ public class BlockingStreamingHttpServiceToStreamingHttpServiceTest {
         };
         StreamingHttpService asyncService = syncService.asStreamingService();
         StreamingHttpResponse asyncResponse = asyncService.handle(mockCtx, reqRespFactory.get("/"), reqRespFactory)
+                // Use subscribeOn(Executor) instead of HttpExecutionStrategy#invokeService which returns a flatten
+                // Publisher<Object> to verify that the Publisher<Buffer> of payload body terminates with an error
                 .subscribeOn(executorRule.executor()).toFuture().get();
-        assertThat(asyncResponse, is(notNullValue()));
+        assertMetaData(OK, asyncResponse);
         toSource(asyncResponse.payloadBody()).subscribe(new Subscriber<Buffer>() {
             @Override
             public void onSubscribe(final Subscription s) {
@@ -348,6 +356,8 @@ public class BlockingStreamingHttpServiceToStreamingHttpServiceTest {
 
             @Override
             public void onError(final Throwable t) {
+                throwableRef.set(t);
+                onErrorLatch.countDown();
             }
 
             @Override
@@ -355,6 +365,8 @@ public class BlockingStreamingHttpServiceToStreamingHttpServiceTest {
             }
         });
         cancelLatch.await();
+        onErrorLatch.await();
+        assertThat(throwableRef.get(), instanceOf(InterruptedException.class));
         serviceTerminationLatch.await();
     }
 
@@ -369,12 +381,9 @@ public class BlockingStreamingHttpServiceToStreamingHttpServiceTest {
                 response.sendMetaData();
             }
         };
-        StreamingHttpService asyncService = syncService.asStreamingService();
-        StreamingHttpResponse asyncResponse = asyncService.handle(mockCtx, reqRespFactory.get("/"), reqRespFactory)
-                .subscribeOn(executorRule.executor()).toFuture().get();
+
         try {
-            assertThat(asyncResponse.payloadBody()
-                    .reduce(() -> "", (acc, next) -> acc + next.toString(US_ASCII)).toFuture().get(), is(""));
+            invokeService(syncService, reqRespFactory.get("/"));
             fail("Payload body should complete with an error");
         } catch (ExecutionException e) {
             assertThat(e.getCause(), instanceOf(IllegalStateException.class));
@@ -392,14 +401,11 @@ public class BlockingStreamingHttpServiceToStreamingHttpServiceTest {
                 response.status(NO_CONTENT);
             }
         };
-        StreamingHttpService asyncService = syncService.asStreamingService();
-        StreamingHttpResponse asyncResponse = asyncService.handle(mockCtx, reqRespFactory.get("/"), reqRespFactory)
-                .subscribeOn(executorRule.executor()).toFuture().get();
+
         try {
-            assertThat(asyncResponse.payloadBody()
-                    .reduce(() -> "", (acc, next) -> acc + next.toString(US_ASCII)).toFuture().get(), is(""));
+            invokeService(syncService, reqRespFactory.get("/"));
             fail("Payload body should complete with an error");
-        } catch (Exception e) {
+        } catch (ExecutionException e) {
             assertThat(e.getCause(), instanceOf(IllegalStateException.class));
             assertThat(e.getCause().getMessage(), is("Response meta-data is already sent"));
         }
@@ -420,6 +426,9 @@ public class BlockingStreamingHttpServiceToStreamingHttpServiceTest {
         };
         StreamingHttpService asyncService = syncService.asStreamingService();
         toSource(asyncService.handle(mockCtx, reqRespFactory.get("/"), reqRespFactory)
+                // Use subscribeOn(Executor) instead of HttpExecutionStrategy#invokeService which returns a flatten
+                // Publisher<Object> to verify that the Single<StreamingHttpResponse> of response meta-data terminates
+                // with an error
                 .subscribeOn(executorRule.executor()))
                 .subscribe(new SingleSource.Subscriber<StreamingHttpResponse>() {
 
@@ -457,8 +466,10 @@ public class BlockingStreamingHttpServiceToStreamingHttpServiceTest {
         };
         StreamingHttpService asyncService = syncService.asStreamingService();
         StreamingHttpResponse asyncResponse = asyncService.handle(mockCtx, reqRespFactory.get("/"), reqRespFactory)
+                // Use subscribeOn(Executor) instead of HttpExecutionStrategy#invokeService which returns a flatten
+                // Publisher<Object> to verify that the Publisher<Buffer> of payload body terminates with an error
                 .subscribeOn(executorRule.executor()).toFuture().get();
-        assertThat(asyncResponse, is(notNullValue()));
+        assertMetaData(OK, asyncResponse);
         toSource(asyncResponse.payloadBody()).subscribe(new Subscriber<Buffer>() {
             @Override
             public void onSubscribe(final Subscription s) {
@@ -509,6 +520,12 @@ public class BlockingStreamingHttpServiceToStreamingHttpServiceTest {
                 .toFuture().get();
 
         return new ArrayList<>(responseCollection);
+    }
+
+    private static void assertMetaData(HttpResponseStatus expectedStatus, HttpResponseMetaData metaData) {
+        assertThat(metaData, is(notNullValue()));
+        assertThat(metaData.version(), is(HTTP_1_1));
+        assertThat(metaData.status(), is(expectedStatus));
     }
 
     private static void assertMetaData(HttpResponseStatus expectedStatus, List<Object> response) {
