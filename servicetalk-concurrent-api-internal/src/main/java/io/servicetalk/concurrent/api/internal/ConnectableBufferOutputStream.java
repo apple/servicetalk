@@ -29,7 +29,7 @@ import static java.util.Objects.requireNonNull;
  * An {@link OutputStream} that can be connected to a sink such that any data written on the {@link OutputStream} is
  * eventually emitted to the connected {@link Publisher} {@link Subscriber}.
  */
-public final class ConnectableOutputStream extends OutputStream {
+public final class ConnectableBufferOutputStream extends OutputStream {
     private final ConnectablePayloadWriter<Buffer> payloadWriter = new ConnectablePayloadWriter<>();
     private final BufferAllocator allocator;
 
@@ -38,7 +38,7 @@ public final class ConnectableOutputStream extends OutputStream {
      *
      * @param allocator {@link BufferAllocator} to convert {code byte[]} to {@link Buffer}
      */
-    public ConnectableOutputStream(final BufferAllocator allocator) {
+    public ConnectableBufferOutputStream(final BufferAllocator allocator) {
         this.allocator = requireNonNull(allocator);
     }
 

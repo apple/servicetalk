@@ -19,7 +19,7 @@ import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.SingleSource.Subscriber;
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.concurrent.api.internal.ConnectableOutputStream;
+import io.servicetalk.concurrent.api.internal.ConnectableBufferOutputStream;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpProtocolVersion;
@@ -126,8 +126,8 @@ final class DefaultContainerResponseWriter implements ContainerResponseWriter {
             sendResponse(contentLength, null, responseContext);
             return null;
         } else {
-            // Explicitly ask this ConnectableOutputStream to be closed if its associated byte[] publisher is cancelled
-            final ConnectableOutputStream os = new ConnectableOutputStream(
+            // Explicitly ask this ConnectableBufferOutputStream to be closed if its associated Publisher is cancelled
+            final ConnectableBufferOutputStream os = new ConnectableBufferOutputStream(
                     serviceCtx.executionContext().bufferAllocator());
             sendResponse(contentLength, os.connect(), responseContext);
             return new CopyingOutputStream(os);
