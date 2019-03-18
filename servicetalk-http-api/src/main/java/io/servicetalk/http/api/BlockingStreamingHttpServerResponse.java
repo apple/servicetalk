@@ -17,7 +17,6 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
-import io.servicetalk.http.api.BlockingStreamingHttpServiceToStreamingHttpService.BufferHttpPayloadWriter;
 
 import java.io.OutputStream;
 
@@ -30,7 +29,7 @@ import static java.util.Objects.requireNonNull;
  */
 public abstract class BlockingStreamingHttpServerResponse extends DefaultHttpResponseMetaData {
 
-    private final BufferHttpPayloadWriter payloadWriter;
+    private final HttpPayloadWriter<Buffer> payloadWriter;
     private final BufferAllocator allocator;
 
     /**
@@ -44,7 +43,7 @@ public abstract class BlockingStreamingHttpServerResponse extends DefaultHttpRes
     BlockingStreamingHttpServerResponse(final HttpResponseStatus status,
                                         final HttpProtocolVersion version,
                                         final HttpHeaders headers,
-                                        final BufferHttpPayloadWriter payloadWriter,
+                                        final HttpPayloadWriter<Buffer> payloadWriter,
                                         final BufferAllocator allocator) {
         super(status, version, headers);
         this.payloadWriter = requireNonNull(payloadWriter);
@@ -150,5 +149,9 @@ public abstract class BlockingStreamingHttpServerResponse extends DefaultHttpRes
     public BlockingStreamingHttpServerResponse addSetCookie(final CharSequence name, final CharSequence value) {
         super.addSetCookie(name, value);
         return this;
+    }
+
+    final HttpPayloadWriter<Buffer> payloadWriter() {
+        return payloadWriter;
     }
 }

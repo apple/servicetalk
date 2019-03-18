@@ -387,4 +387,8 @@ public final class SubscriberUtils {
     public static <T> void handleExceptionFromOnSubscribe(Subscriber<T> subscriber, Throwable cause) {
         LOGGER.warn("Ignoring exception from onSubscribe of Subscriber {}.", subscriber, cause);
     }
+
+    public static <T> void handleExceptionFromOnSubscribe(SingleSource.Subscriber<T> subscriber, Throwable cause) {
+        LOGGER.warn("Ignoring exception from onSubscribe of Subscriber {}.", subscriber, cause);
+    }
 }

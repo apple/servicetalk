@@ -17,29 +17,24 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
-import io.servicetalk.http.api.BlockingStreamingHttpServiceToStreamingHttpService.BufferHttpPayloadWriter;
 
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.BiFunction;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import java.util.function.Consumer;
 
 final class DefaultBlockingStreamingHttpServerResponse extends BlockingStreamingHttpServerResponse {
-
-    private final BufferHttpPayloadWriter payloadWriter;
-    private final BiFunction<HttpResponseMetaData, BufferHttpPayloadWriter, HttpPayloadWriter<Buffer>> sendMeta;
-    private final AtomicBoolean metaSent;
+    private static final AtomicIntegerFieldUpdater<DefaultBlockingStreamingHttpServerResponse> metaSentUpdater =
+            AtomicIntegerFieldUpdater.newUpdater(DefaultBlockingStreamingHttpServerResponse.class, "metaSent");
+    private volatile int metaSent;
+    private final Consumer<HttpResponseMetaData> sendMeta;
 
     DefaultBlockingStreamingHttpServerResponse(final HttpResponseStatus status,
                                                final HttpProtocolVersion version,
                                                final HttpHeaders headers,
-                                               final BufferHttpPayloadWriter payloadWriter,
+                                               final HttpPayloadWriter<Buffer> payloadWriter,
                                                final BufferAllocator allocator,
-                                               final BiFunction<HttpResponseMetaData, BufferHttpPayloadWriter,
-                                                       HttpPayloadWriter<Buffer>> sendMeta,
-                                               final AtomicBoolean metaSent) {
+                                               final Consumer<HttpResponseMetaData> sendMeta) {
         super(status, version, headers, payloadWriter, allocator);
-        this.payloadWriter = payloadWriter;
         this.sendMeta = sendMeta;
-        this.metaSent = metaSent;
     }
 
     @Override
@@ -103,13 +98,25 @@ final class DefaultBlockingStreamingHttpServerResponse extends BlockingStreaming
     }
 
     private void checkSent() {
-        if (metaSent.get()) {
-            throw new IllegalStateException("Response meta-data is already sent");
+        if (metaSent != 0) {
+            throwMetaAlreadySent();
         }
     }
 
     @Override
     public HttpPayloadWriter<Buffer> sendMetaData() {
-        return sendMeta.apply(this, payloadWriter);
+        if (!markMetaSent()) {
+            throwMetaAlreadySent();
+        }
+        sendMeta.accept(this);
+        return payloadWriter();
+    }
+
+    boolean markMetaSent() {
+        return metaSentUpdater.compareAndSet(this, 0, 1);
+    }
+
+    private static void throwMetaAlreadySent() {
+        throw new IllegalStateException("Response meta-data is already sent");
     }
 }
