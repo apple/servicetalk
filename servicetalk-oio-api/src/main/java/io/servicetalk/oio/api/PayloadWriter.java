@@ -31,7 +31,7 @@ public interface PayloadWriter<T> extends Closeable, Flushable {
      * Write an object of type {@link T}.
      *
      * @param object the object to write
-     * @throws IOException if an I/O error occur sor this {@link PayloadWriter} is closed
+     * @throws IOException if an I/O error occur or this {@link PayloadWriter} is closed
      */
     void write(T object) throws IOException;
 }
