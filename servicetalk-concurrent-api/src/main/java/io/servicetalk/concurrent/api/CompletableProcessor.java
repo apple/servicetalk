@@ -101,9 +101,9 @@ public final class CompletableProcessor extends Completable implements Subscribe
     }
 
     /**
-     * Returns {@link true} if the current {@link CompletableProcessor} is terminated.
+     * Returns {@code true} if the current {@link CompletableProcessor} is terminated.
      *
-     * @return {@link true} if the current {@link CompletableProcessor} is terminated
+     * @return {@code true} if the current {@link CompletableProcessor} is terminated
      */
     public boolean isTerminated() {
         return terminalSignal != null;

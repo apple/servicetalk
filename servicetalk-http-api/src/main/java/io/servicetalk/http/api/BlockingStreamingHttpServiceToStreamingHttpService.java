@@ -16,6 +16,7 @@
 package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.Buffer;
+import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.SingleSource.Subscriber;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompletableProcessor;
@@ -80,7 +81,18 @@ final class BlockingStreamingHttpServiceToStreamingHttpService extends Streaming
                                 metaData.headers(), ctx.executionContext().bufferAllocator(),
                                 payloadProcessor.merge(payloadWriter.connect()
                                         .map(buffer -> (Object) buffer) // down cast to Object
-                                        .concatWith(success(payloadWriter.trailers())))));
+                                        .concatWith(success(payloadWriter.trailers())))
+                                        .doBeforeSubscription(() -> new PublisherSource.Subscription() {
+                                            @Override
+                                            public void request(final long n) {
+                                                // Noop
+                                            }
+
+                                            @Override
+                                            public void cancel() {
+                                                tiCancellable.cancel();
+                                            }
+                                        })));
                     };
 
                     response = new DefaultBlockingStreamingHttpServerResponse(OK, request.version(),

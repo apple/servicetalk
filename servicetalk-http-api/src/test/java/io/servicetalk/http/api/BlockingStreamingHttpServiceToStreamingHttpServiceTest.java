@@ -316,6 +316,7 @@ public class BlockingStreamingHttpServiceToStreamingHttpServiceTest {
 
     @Test
     public void cancelAfterSendMetaDataPropagated() throws Exception {
+        CountDownLatch cancelLatch = new CountDownLatch(1);
         CountDownLatch serviceTerminationLatch = new CountDownLatch(1);
         BlockingStreamingHttpService syncService = new BlockingStreamingHttpService() {
             @Override
@@ -334,12 +335,11 @@ public class BlockingStreamingHttpServiceToStreamingHttpServiceTest {
         StreamingHttpResponse asyncResponse = asyncService.handle(mockCtx, reqRespFactory.get("/"), reqRespFactory)
                 .subscribeOn(executorRule.executor()).toFuture().get();
         assertThat(asyncResponse, is(notNullValue()));
-        CountDownLatch latch = new CountDownLatch(1);
         toSource(asyncResponse.payloadBody()).subscribe(new Subscriber<Buffer>() {
             @Override
             public void onSubscribe(final Subscription s) {
                 s.cancel();
-                latch.countDown();
+                cancelLatch.countDown();
             }
 
             @Override
@@ -354,7 +354,7 @@ public class BlockingStreamingHttpServiceToStreamingHttpServiceTest {
             public void onComplete() {
             }
         });
-        latch.await();
+        cancelLatch.await();
         serviceTerminationLatch.await();
     }
 
