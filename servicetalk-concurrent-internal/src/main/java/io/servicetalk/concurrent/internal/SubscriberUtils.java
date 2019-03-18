@@ -400,21 +400,6 @@ public final class SubscriberUtils {
     }
 
     /**
-     * Invokes {@link SingleSource.Subscriber#onSuccess(Object)} ignoring an occurred exception if any.
-     * @param subscriber The {@link SingleSource.Subscriber} that may threw an exception from
-     * {@link SingleSource.Subscriber#onSuccess(Object)}.
-     * @param result The result object for {@link SingleSource.Subscriber#onSuccess(Object)}.
-     * @param <T> The type of {@link SingleSource.Subscriber}.
-     */
-    public static <T> void safeOnSuccess(SingleSource.Subscriber<T> subscriber, T result) {
-        try {
-            subscriber.onSuccess(result);
-        } catch (Throwable t) {
-            LOGGER.debug("Ignoring exception from onSuccess of Subscriber {}.", subscriber, t);
-        }
-    }
-
-    /**
      * Invokes {@link SingleSource.Subscriber#onError(Throwable)} ignoring an occurred exception if any.
      * @param subscriber The {@link SingleSource.Subscriber} that may threw an exception from
      * {@link SingleSource.Subscriber#onError(Throwable)}.

@@ -29,11 +29,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.Consumer;
 
 import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.safeOnError;
-import static io.servicetalk.concurrent.internal.SubscriberUtils.safeOnSuccess;
 import static io.servicetalk.http.api.BlockingUtils.blockingToCompletable;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.StreamingHttpResponses.newResponseWithTrailers;
@@ -72,28 +72,28 @@ final class BlockingStreamingHttpServiceToStreamingHttpService extends Streaming
 
                 final CompletableProcessor payloadProcessor = new CompletableProcessor();
                 DefaultBlockingStreamingHttpServerResponse response = null;
+                BufferHttpPayloadWriter payloadWriterOuter = null;
                 try {
-                    final BufferHttpPayloadWriter payloadWriter = new BufferHttpPayloadWriter(
+                    final BufferHttpPayloadWriter payloadWriter = payloadWriterOuter = new BufferHttpPayloadWriter(
                             ctx.headersFactory().newTrailers(), payloadProcessor);
 
-                    final Consumer<HttpResponseMetaData> sendMeta = (metaData) -> {
-                        safeOnSuccess(subscriber, newResponseWithTrailers(metaData.status(), metaData.version(),
-                                metaData.headers(), ctx.executionContext().bufferAllocator(),
-                                payloadProcessor.merge(payloadWriter.connect()
-                                        .map(buffer -> (Object) buffer) // down cast to Object
-                                        .concatWith(success(payloadWriter.trailers())))
-                                        .doBeforeSubscription(() -> new PublisherSource.Subscription() {
-                                            @Override
-                                            public void request(final long n) {
-                                                // Noop
-                                            }
+                    final Consumer<HttpResponseMetaData> sendMeta = (metaData) ->
+                            subscriber.onSuccess(newResponseWithTrailers(metaData.status(), metaData.version(),
+                                    metaData.headers(), ctx.executionContext().bufferAllocator(),
+                                    payloadProcessor.merge(payloadWriter.connect()
+                                            .map(buffer -> (Object) buffer) // down cast to Object
+                                            .concatWith(success(payloadWriter.trailers())))
+                                            .doBeforeSubscription(() -> new PublisherSource.Subscription() {
+                                                @Override
+                                                public void request(final long n) {
+                                                    // Noop
+                                                }
 
-                                            @Override
-                                            public void cancel() {
-                                                tiCancellable.cancel();
-                                            }
-                                        })));
-                    };
+                                                @Override
+                                                public void cancel() {
+                                                    tiCancellable.cancel();
+                                                }
+                                            })));
 
                     response = new DefaultBlockingStreamingHttpServerResponse(OK, request.version(),
                                     ctx.headersFactory().newHeaders(), payloadWriter,
@@ -103,7 +103,7 @@ final class BlockingStreamingHttpServiceToStreamingHttpService extends Streaming
                     tiCancellable.setDone(cause);
                     if (response == null || response.markMetaSent()) {
                         safeOnError(subscriber, cause);
-                    } else if (!payloadProcessor.isTerminated()) {
+                    } else if (payloadWriterOuter != null && payloadWriterOuter.markSubscriberComplete()) {
                         payloadProcessor.onError(cause);
                     } else {
                         LOGGER.error("An exception occurred after the response was sent", cause);
@@ -136,13 +136,17 @@ final class BlockingStreamingHttpServiceToStreamingHttpService extends Streaming
 
     private static final class BufferHttpPayloadWriter implements HttpPayloadWriter<Buffer> {
 
+        private static final AtomicIntegerFieldUpdater<BufferHttpPayloadWriter> subscriberCompleteUpdater =
+                AtomicIntegerFieldUpdater.newUpdater(BufferHttpPayloadWriter.class, "subscriberComplete");
+        @SuppressWarnings("unused")
+        private volatile int subscriberComplete;
         private final ConnectablePayloadWriter<Buffer> payloadWriter = new ConnectablePayloadWriter<>();
         private final HttpHeaders trailers;
-        private final CompletableProcessor payloadProcessor;
+        private final CompletableProcessor.Subscriber subscriber;
 
-        BufferHttpPayloadWriter(final HttpHeaders trailers, final CompletableProcessor payloadProcessor) {
+        BufferHttpPayloadWriter(final HttpHeaders trailers, final CompletableProcessor.Subscriber subscriber) {
             this.trailers = trailers;
-            this.payloadProcessor = payloadProcessor;
+            this.subscriber = subscriber;
         }
 
         @Override
@@ -160,7 +164,9 @@ final class BlockingStreamingHttpServiceToStreamingHttpService extends Streaming
             try {
                 payloadWriter.close();
             } finally {
-                payloadProcessor.onComplete();
+                if (markSubscriberComplete()) {
+                    subscriber.onComplete();
+                }
             }
         }
 
@@ -171,6 +177,10 @@ final class BlockingStreamingHttpServiceToStreamingHttpService extends Streaming
 
         Publisher<Buffer> connect() {
             return payloadWriter.connect();
+        }
+
+        boolean markSubscriberComplete() {
+            return subscriberCompleteUpdater.compareAndSet(this, 0, 1);
         }
     }
 }

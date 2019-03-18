@@ -100,15 +100,6 @@ public final class CompletableProcessor extends Completable implements Subscribe
         terminate(TerminalNotification.error(t));
     }
 
-    /**
-     * Returns {@code true} if the current {@link CompletableProcessor} is terminated.
-     *
-     * @return {@code true} if the current {@link CompletableProcessor} is terminated
-     */
-    public boolean isTerminated() {
-        return terminalSignal != null;
-    }
-
     private void terminate(TerminalNotification terminalSignal) {
         if (terminalSignalUpdater.compareAndSet(this, null, terminalSignal)) {
             notifyListeners(terminalSignal);
