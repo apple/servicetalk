@@ -14,6 +14,6 @@
  * limitations under the License.
  */
 @ElementsAreNonnullByDefault
-package io.servicetalk.opentracing.log4j;
+package io.servicetalk.opentracing.log4j2;
 
 import io.servicetalk.annotations.ElementsAreNonnullByDefault;

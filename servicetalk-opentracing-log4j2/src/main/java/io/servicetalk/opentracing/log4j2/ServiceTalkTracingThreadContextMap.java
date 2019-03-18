@@ -13,10 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.opentracing.log4j;
+package io.servicetalk.opentracing.log4j2;
 
 import io.servicetalk.concurrent.api.AsyncContext;
-import io.servicetalk.log4j2.mdc.internal.ServiceTalkThreadContextMap;
+import io.servicetalk.log4j2.mdc.utils.ServiceTalkThreadContextMap;
 import io.servicetalk.opentracing.asynccontext.AsyncContextInMemoryScopeManager;
 import io.servicetalk.opentracing.inmemory.api.InMemoryScope;
 import io.servicetalk.opentracing.inmemory.api.InMemorySpan;

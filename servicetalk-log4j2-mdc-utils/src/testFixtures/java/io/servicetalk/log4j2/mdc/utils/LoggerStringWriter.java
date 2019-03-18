@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.log4j2.mdc.internal;
+package io.servicetalk.log4j2.mdc.utils;
 
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;

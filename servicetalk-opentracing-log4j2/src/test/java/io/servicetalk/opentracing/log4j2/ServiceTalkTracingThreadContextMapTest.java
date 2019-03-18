@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.opentracing.log4j;
+package io.servicetalk.opentracing.log4j2;
 
-import io.servicetalk.log4j2.mdc.internal.LoggerStringWriter;
+import io.servicetalk.log4j2.mdc.utils.LoggerStringWriter;
 import io.servicetalk.opentracing.inmemory.DefaultInMemoryTracer;
 import io.servicetalk.opentracing.inmemory.api.InMemoryScope;
 import io.servicetalk.opentracing.inmemory.api.InMemorySpan;
@@ -25,8 +25,8 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static io.servicetalk.log4j2.mdc.internal.LoggerStringWriter.assertContainsMdcPair;
-import static io.servicetalk.log4j2.mdc.internal.LoggerStringWriter.stableAccumulated;
+import static io.servicetalk.log4j2.mdc.utils.LoggerStringWriter.assertContainsMdcPair;
+import static io.servicetalk.log4j2.mdc.utils.LoggerStringWriter.stableAccumulated;
 import static io.servicetalk.opentracing.asynccontext.AsyncContextInMemoryScopeManager.SCOPE_MANAGER;
 import static org.junit.Assert.assertNotNull;
 
