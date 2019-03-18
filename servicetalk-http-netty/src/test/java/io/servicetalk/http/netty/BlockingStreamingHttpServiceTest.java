@@ -266,37 +266,27 @@ public class BlockingStreamingHttpServiceTest {
     }
 
     @Ignore("toFuture().get(timeout, unit) doesn't work")
-    @Test
+    @Test(expected = TimeoutException.class)
     public void doNotSendMetaData() throws Exception {
         BlockingStreamingHttpClient client = context((ctx, request, response) -> {
             // Noop
         });
 
-        try {
-            HttpClient asyncClient = client.asClient();
-            asyncClient.request(asyncClient.get("/")).toFuture().get(2, SECONDS);
-            fail("toFuture().get() should fails with TimeoutException");
-        } catch (Exception e) {
-            assertThat(e, instanceOf(TimeoutException.class));
-        }
+        HttpClient asyncClient = client.asClient();
+        asyncClient.request(asyncClient.get("/")).toFuture().get(2, SECONDS);
     }
 
     @Ignore("toFuture().get(timeout, unit) doesn't work")
-    @Test
+    @Test(expected = TimeoutException.class)
     public void doNotWriteTheLastChunk() throws Exception {
         BlockingStreamingHttpClient client = context((ctx, request, response) -> {
             response.sendMetaData();
             // Do not close()
         });
 
-        try {
-            BlockingStreamingHttpResponse response = client.request(client.get("/"));
-            assertResponse(response);
-            assertThat(response.toResponse().toFuture().get(2, SECONDS).payloadBody(), is(EMPTY_BUFFER));
-            fail("toFuture().get() should fails with TimeoutException");
-        } catch (Exception e) {
-            assertThat(e, instanceOf(TimeoutException.class));
-        }
+        BlockingStreamingHttpResponse response = client.request(client.get("/"));
+        assertResponse(response);
+        assertThat(response.toResponse().toFuture().get(2, SECONDS).payloadBody(), is(EMPTY_BUFFER));
     }
 
     private static void assertResponse(BlockingStreamingHttpResponse response) throws Exception {

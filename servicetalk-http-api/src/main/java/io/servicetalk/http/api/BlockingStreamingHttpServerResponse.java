@@ -35,7 +35,7 @@ public abstract class BlockingStreamingHttpServerResponse extends DefaultHttpRes
     /**
      * Creates a new instance.
      *
-     * @param status a default status for the response
+     * @param status a status for the response
      * @param version a default version for the response
      * @param headers an {@link HttpHeaders} object for headers
      * @param allocator a {@link BufferAllocator} to use for {@link #sendMetaData(HttpSerializer)}
@@ -51,8 +51,8 @@ public abstract class BlockingStreamingHttpServerResponse extends DefaultHttpRes
     }
 
     /**
-     * Sends the {@link HttpResponseMetaData} to the client and returns an {@link HttpPayloadWriter} to continue writing
-     * the payload body.
+     * Sends the {@link HttpResponseMetaData} and returns an {@link HttpPayloadWriter} to continue writing the payload
+     * body.
      * <p>
      * <b>Note:</b> calling any other method on this class after calling this method is not allowed.
      *

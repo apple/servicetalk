@@ -44,25 +44,22 @@ public final class BlockingPojoStreamingServer {
                         response.status(NOT_FOUND)
                                 .sendMetaData()
                                 .close();
-                        return;
-                    }
-                    if (!POST.equals(request.method())) {
+                    } else if (!POST.equals(request.method())) {
                         response.status(METHOD_NOT_ALLOWED)
                                 .addHeader(ALLOW, POST.name())
                                 .sendMetaData()
                                 .close();
-                        return;
-                    }
+                    } else {
+                        BlockingIterable<CreatePojoRequest> values = request
+                                .payloadBody(serializer.deserializerFor(CreatePojoRequest.class));
 
-                    BlockingIterable<CreatePojoRequest> values = request
-                            .payloadBody(serializer.deserializerFor(CreatePojoRequest.class));
+                        response.status(CREATED);
+                        try (HttpPayloadWriter<PojoResponse> writer = response.sendMetaData(
+                                serializer.serializerFor(PojoResponse.class))) {
 
-                    response.status(CREATED);
-                    try (HttpPayloadWriter<PojoResponse> writer = response.sendMetaData(
-                            serializer.serializerFor(PojoResponse.class))) {
-
-                        for (CreatePojoRequest req : values) {
-                            writer.write(new PojoResponse(ID_GENERATOR.getAndIncrement(), req.getValue()));
+                            for (CreatePojoRequest req : values) {
+                                writer.write(new PojoResponse(ID_GENERATOR.getAndIncrement(), req.getValue()));
+                            }
                         }
                     }
                 })
