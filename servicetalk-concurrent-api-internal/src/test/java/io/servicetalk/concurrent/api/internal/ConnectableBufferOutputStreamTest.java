@@ -112,7 +112,7 @@ public class ConnectableBufferOutputStreamTest {
         Future<?> f = futureRef.get();
         assertNotNull(f);
         f.get();
-        assertThat(subscriber.takeItems(), contains(new byte[]{1}));
+        assertThat(subscriber.takeItems(), contains(buf(1)));
         assertThat(subscriber.takeTerminal(), is(complete()));
     }
 
@@ -170,7 +170,7 @@ public class ConnectableBufferOutputStreamTest {
             verifyCheckedRunnableException(e, IOException.class);
         }
 
-        assertThat(subscriber.takeItems(), contains(new byte[]{1}));
+        assertThat(subscriber.takeItems(), contains(buf(1)));
         assertThat(subscriber.takeTerminal(), is(complete()));
 
         // Make sure the Subscription thread isn't blocked.
@@ -197,7 +197,7 @@ public class ConnectableBufferOutputStreamTest {
             verifyCheckedRunnableException(e, IOException.class);
         }
 
-        assertThat(subscriber.takeItems(), contains(new byte[]{1}));
+        assertThat(subscriber.takeItems(), contains(buf(1)));
         assertThat(subscriber.takeTerminal(), is(complete()));
 
         // Make sure the Subscription thread isn't blocked.
@@ -227,7 +227,7 @@ public class ConnectableBufferOutputStreamTest {
             verifyCheckedRunnableException(e, IOException.class);
         }
 
-        assertThat(subscriber.takeItems(), contains(new byte[]{1}));
+        assertThat(subscriber.takeItems(), contains(buf(1)));
         assertThat(subscriber.takeTerminal(), is(complete()));
         cbos.close(); // should be idempotent
 
