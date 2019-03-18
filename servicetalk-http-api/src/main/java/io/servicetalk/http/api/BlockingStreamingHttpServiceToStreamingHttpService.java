@@ -24,6 +24,9 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.internal.ConnectablePayloadWriter;
 import io.servicetalk.concurrent.internal.ThreadInterruptingCancellable;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 import java.util.function.Consumer;
 
@@ -37,6 +40,10 @@ import static java.lang.Thread.currentThread;
 import static java.util.Objects.requireNonNull;
 
 final class BlockingStreamingHttpServiceToStreamingHttpService extends StreamingHttpService {
+
+    private static final Logger LOGGER =
+            LoggerFactory.getLogger(BlockingStreamingHttpServiceToStreamingHttpService.class);
+
     private final BlockingStreamingHttpService service;
     private final HttpExecutionStrategy effectiveStrategy;
 
@@ -84,8 +91,10 @@ final class BlockingStreamingHttpServiceToStreamingHttpService extends Streaming
                     tiCancellable.setDone(cause);
                     if (response == null || response.markMetaSent()) {
                         safeOnError(subscriber, cause);
-                    } else {
+                    } else if (!payloadProcessor.isTerminated()) {
                         payloadProcessor.onError(cause);
+                    } else {
+                        LOGGER.error("An exception occurred after the response was sent", cause);
                     }
                     return;
                 }

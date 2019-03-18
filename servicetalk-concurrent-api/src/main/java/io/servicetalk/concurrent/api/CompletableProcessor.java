@@ -45,7 +45,6 @@ public final class CompletableProcessor extends Completable implements Subscribe
             AtomicIntegerFieldUpdater.newUpdater(CompletableProcessor.class, "drainingTheQueue");
 
     private final Queue<Subscriber> subscribers = newUnboundedLinkedMpscQueue();
-    @SuppressWarnings("unused")
     @Nullable
     private volatile TerminalNotification terminalSignal;
     @SuppressWarnings({"unused", "FieldCanBeLocal"})
@@ -99,6 +98,15 @@ public final class CompletableProcessor extends Completable implements Subscribe
     @Override
     public void onError(Throwable t) {
         terminate(TerminalNotification.error(t));
+    }
+
+    /**
+     * Returns {@link true} if the current {@link CompletableProcessor} is terminated.
+     *
+     * @return {@link true} if the current {@link CompletableProcessor} is terminated
+     */
+    public boolean isTerminated() {
+        return terminalSignal != null;
     }
 
     private void terminate(TerminalNotification terminalSignal) {
