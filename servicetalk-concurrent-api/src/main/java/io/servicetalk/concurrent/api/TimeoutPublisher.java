@@ -17,21 +17,17 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.internal.ConcurrentSubscription;
+import io.servicetalk.concurrent.internal.ConcurrentTerminalSubscriber;
 import io.servicetalk.concurrent.internal.SignalOffloader;
 
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.PublishAndSubscribeOnPublishers.deliverOnSubscribeAndOnError;
 import static io.servicetalk.concurrent.internal.EmptySubscription.EMPTY_SUBSCRIPTION;
-import static io.servicetalk.concurrent.internal.SubscriberUtils.SUBSCRIBER_STATE_TERMINATED;
-import static io.servicetalk.concurrent.internal.SubscriberUtils.checkTerminationValidWithConcurrentOnNextCheck;
-import static io.servicetalk.concurrent.internal.SubscriberUtils.sendOnNextWithConcurrentTerminationCheck;
-import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 import static java.lang.Math.max;
 import static java.lang.System.nanoTime;
 import static java.util.Objects.requireNonNull;
@@ -108,20 +104,12 @@ final class TimeoutPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
                 AtomicReferenceFieldUpdater.newUpdater(TimeoutSubscriber.class, Cancellable.class, "timerCancellable");
         private static final AtomicReferenceFieldUpdater<TimeoutSubscriber, Subscription> subscriptionUpdater =
                 AtomicReferenceFieldUpdater.newUpdater(TimeoutSubscriber.class, Subscription.class, "subscription");
-        private static final AtomicIntegerFieldUpdater<TimeoutSubscriber> subscriberStateUpdater =
-                AtomicIntegerFieldUpdater.newUpdater(TimeoutSubscriber.class, "subscriberState");
-        private static final AtomicReferenceFieldUpdater<TimeoutSubscriber, Object> terminalNotificationUpdater =
-                AtomicReferenceFieldUpdater.newUpdater(TimeoutSubscriber.class, Object.class, "terminalNotification");
         private final TimeoutPublisher<X> parent;
-        private final Subscriber<? super X> target;
+        private final ConcurrentTerminalSubscriber<? super X> target;
         private final SignalOffloader signalOffloader;
         private final AsyncContextProvider contextProvider;
         @Nullable
         private volatile Subscription subscription;
-        private volatile int subscriberState;
-        @SuppressWarnings("unused")
-        @Nullable
-        private volatile Object terminalNotification;
         /**
          * <ul>
          * <li>{@code null} - initialization only seen in the constructor and potentially on the first timer fire</li>
@@ -139,7 +127,7 @@ final class TimeoutPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
                                   SignalOffloader signalOffloader,
                                   AsyncContextProvider contextProvider) {
             this.parent = parent;
-            this.target = target;
+            this.target = new ConcurrentTerminalSubscriber<>(target);
             this.signalOffloader = signalOffloader;
             this.contextProvider = contextProvider;
         }
@@ -181,31 +169,20 @@ final class TimeoutPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
         @Override
         public void onNext(final X x) {
             lastOnNextNs = nanoTime();
-            sendOnNextWithConcurrentTerminationCheck(target, x, this::terminate,
-                    subscriberStateUpdater, terminalNotificationUpdater, this);
+            target.onNext(x);
         }
 
         @Override
         public void onError(final Throwable t) {
-            if (checkTerminationValidWithConcurrentOnNextCheck(null, t,
-                    subscriberStateUpdater, terminalNotificationUpdater, this)) {
-                try {
-                    stopTimer();
-                } finally {
-                    target.onError(t);
-                }
+            if (target.processOnError(t)) {
+                stopTimer();
             }
         }
 
         @Override
         public void onComplete() {
-            if (checkTerminationValidWithConcurrentOnNextCheck(null, complete(),
-                    subscriberStateUpdater, terminalNotificationUpdater, this)) {
-                try {
-                    stopTimer();
-                } finally {
-                    target.onComplete();
-                }
+            if (target.processOnComplete()) {
+                stopTimer();
             }
         }
 
@@ -291,7 +268,14 @@ final class TimeoutPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
         }
 
         private void offloadTimeout(Throwable cause) {
-            signalOffloader.offloadSignal(cause, contextProvider.wrapConsumer(this::processTimeout));
+            if (parent.executor() == parent.timeoutExecutor) {
+                processTimeout(cause);
+            } else {
+                // We rely upon the timeout Executor to save/restore the context. so we just use
+                // contextProvider.contextMap() here.
+                signalOffloader.offloadSignal(cause, contextProvider.wrapConsumer(this::processTimeout,
+                        contextProvider.contextMap()));
+            }
         }
 
         private void processTimeout(Throwable cause) {
@@ -299,27 +283,16 @@ final class TimeoutPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
             // The timer is started before onSubscribe so the subscription may actually be null at this time.
             if (subscription != null) {
                 subscription.cancel();
+                // onErrorFromTimeout will protect against concurrent access on the Subscriber.
             } else {
                 target.onSubscribe(EMPTY_SUBSCRIPTION);
             }
-            onError(cause); // call onError so we don't deliver any more elements to the Subscriber.
+            target.processOnError(cause);
         }
 
         private void stopTimer() {
             // timerCancellable is known not to be null here based upon the current usage of this method.
             timerCancellableUpdater.getAndSet(this, LOCAL_IGNORE_CANCEL).cancel();
-        }
-
-        private void terminate(Object terminalNotification) {
-            try {
-                stopTimer();
-            } finally {
-                if (terminalNotification instanceof Throwable) {
-                    target.onError((Throwable) terminalNotification);
-                } else {
-                    target.onComplete();
-                }
-            }
         }
 
         /**
@@ -331,7 +304,6 @@ final class TimeoutPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
                                                            AsyncContextProvider contextProvider, Throwable cause) {
             // We must set local state so there are no further interactions with Subscriber in the future.
             s.timerCancellable = LOCAL_IGNORE_CANCEL;
-            s.subscriberState = SUBSCRIBER_STATE_TERMINATED;
             s.subscription = EMPTY_SUBSCRIPTION;
             deliverOnSubscribeAndOnError(s.target, offloader, contextMap, contextProvider, cause);
         }

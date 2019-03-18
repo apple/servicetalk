@@ -18,17 +18,13 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.internal.ConcurrentSubscription;
+import io.servicetalk.concurrent.internal.ConcurrentTerminalSubscriber;
 import io.servicetalk.concurrent.internal.DelayedCancellable;
 import io.servicetalk.concurrent.internal.DelayedSubscription;
 import io.servicetalk.concurrent.internal.SignalOffloader;
 
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
-import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import javax.annotation.Nullable;
-
-import static io.servicetalk.concurrent.internal.SubscriberUtils.checkTerminationValidWithConcurrentOnNextCheck;
-import static io.servicetalk.concurrent.internal.SubscriberUtils.sendOnNextWithConcurrentTerminationCheck;
-import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 
 /**
  * {@link Publisher} as returned by {@link Completable#merge(Publisher)}.
@@ -56,18 +52,9 @@ final class CompletableMergeWithPublisher<T> extends AbstractNoHandleSubscribePu
 
         private static final AtomicIntegerFieldUpdater<Merger> completionCountUpdater =
                 AtomicIntegerFieldUpdater.newUpdater(Merger.class, "completionCount");
-        private static final AtomicIntegerFieldUpdater<Merger> subscriberStateUpdater =
-                AtomicIntegerFieldUpdater.newUpdater(Merger.class, "subscriberState");
-        private static final AtomicReferenceFieldUpdater<Merger, Object> terminalNotificationUpdater =
-                AtomicReferenceFieldUpdater.newUpdater(Merger.class, Object.class, "terminalNotification");
 
         @SuppressWarnings("unused")
         private volatile int completionCount;
-        @SuppressWarnings("unused")
-        private volatile int subscriberState;
-        @Nullable
-        @SuppressWarnings("unused")
-        private volatile Object terminalNotification;
 
         private final CompletableSubscriber completableSubscriber;
         private final Subscriber<? super T> offloadedSubscriber;
@@ -78,8 +65,8 @@ final class CompletableMergeWithPublisher<T> extends AbstractNoHandleSubscribePu
             // This is used only to deliver signals that originate from the mergeWith Publisher. Since, we need to
             // preserve the threading semantics of the original Completable, we offload the subscriber so that we do not
             // invoke it from the mergeWith Publisher Executor thread.
-            this.offloadedSubscriber = signalOffloader.offloadSubscriber(
-                    contextProvider.wrapPublisherSubscriber(subscriber, contextMap));
+            this.offloadedSubscriber = new ConcurrentTerminalSubscriber<>(signalOffloader.offloadSubscriber(
+                    contextProvider.wrapPublisherSubscriber(subscriber, contextMap)), false);
 
             completableSubscriber = new CompletableSubscriber();
         }
@@ -108,40 +95,20 @@ final class CompletableMergeWithPublisher<T> extends AbstractNoHandleSubscribePu
 
         @Override
         public void onNext(@Nullable T t) {
-            sendOnNextWithConcurrentTerminationCheck(offloadedSubscriber, t, this::onTerminatedConcurrently,
-                    subscriberStateUpdater, terminalNotificationUpdater, this);
+            offloadedSubscriber.onNext(t);
         }
 
         @Override
         public void onError(Throwable t) {
             completableSubscriber.cancel();
-            if (checkTerminationValidWithConcurrentOnNextCheck(null, t,
-                    subscriberStateUpdater, terminalNotificationUpdater, this)) {
-                offloadedSubscriber.onError(t);
-            }
+            offloadedSubscriber.onError(t);
         }
 
         @Override
         public void onComplete() {
-            if (completionCountUpdater.incrementAndGet(this) == 2 &&
-                    checkTerminationValidWithConcurrentOnNextCheck(null, complete(),
-                            subscriberStateUpdater, terminalNotificationUpdater, this)) {
+            if (completionCountUpdater.incrementAndGet(this) == 2) {
                 offloadedSubscriber.onComplete();
             }
-        }
-
-        /**
-         * Concurrency in this operator wrt the downstream {@link Subscriber} originates from the merged {@link
-         * Completable} when it terminates with an error and needs to terminate the {@link Publisher}.
-         * There is no alternative concurrent path where the {@link Publisher} {@link Subscriber} can be concurrently
-         * terminated due to the {@link #completionCount}, so this method should only ever be called with a {@link
-         * Throwable} argument.
-         *
-         * @param terminalNotification exception thrown from the {@link Completable}
-         */
-        private void onTerminatedConcurrently(Object terminalNotification) {
-            assert terminalNotification instanceof Throwable : "Should never concurrently complete";
-            offloadedSubscriber.onError((Throwable) terminalNotification);
         }
 
         private final class CompletableSubscriber extends DelayedCancellable implements CompletableSource.Subscriber {
@@ -152,9 +119,7 @@ final class CompletableMergeWithPublisher<T> extends AbstractNoHandleSubscribePu
 
             @Override
             public void onComplete() {
-                if (completionCountUpdater.incrementAndGet(Merger.this) == 2 &&
-                        checkTerminationValidWithConcurrentOnNextCheck(null, complete(),
-                                subscriberStateUpdater, terminalNotificationUpdater, Merger.this)) {
+                if (completionCountUpdater.incrementAndGet(Merger.this) == 2) {
                     // This CompletableSource.Subscriber will be notified on the correct Executor, but we need to use
                     // the same offloaded Subscriber as the Publisher to ensure that all events are sequenced properly.
                     offloadedSubscriber.onComplete();
@@ -164,12 +129,9 @@ final class CompletableMergeWithPublisher<T> extends AbstractNoHandleSubscribePu
             @Override
             public void onError(Throwable t) {
                 subscription.cancel();
-                if (checkTerminationValidWithConcurrentOnNextCheck(null, t,
-                        subscriberStateUpdater, terminalNotificationUpdater, Merger.this)) {
-                    // This CompletableSource.Subscriber will be notified on the correct Executor, but we need to use
-                    // the same offloaded Subscriber as the Publisher to ensure that all events are sequenced properly.
-                    offloadedSubscriber.onError(t);
-                }
+                // This CompletableSource.Subscriber will be notified on the correct Executor, but we need to use
+                // the same offloaded Subscriber as the Publisher to ensure that all events are sequenced properly.
+                offloadedSubscriber.onError(t);
             }
         }
     }

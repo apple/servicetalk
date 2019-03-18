@@ -18,18 +18,13 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.internal.ConcurrentSubscription;
+import io.servicetalk.concurrent.internal.ConcurrentTerminalSubscriber;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.checkDuplicateSubscription;
-import static io.servicetalk.concurrent.internal.SubscriberUtils.checkTerminationValidWithConcurrentOnNextCheck;
-import static io.servicetalk.concurrent.internal.SubscriberUtils.sendOnNextWithConcurrentTerminationCheck;
-import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 import static java.util.Objects.requireNonNull;
 
 final class TakeUntilPublisher<T> extends AbstractSynchronousPublisherOperator<T, T> {
@@ -47,53 +42,31 @@ final class TakeUntilPublisher<T> extends AbstractSynchronousPublisherOperator<T
     }
 
     private static final class TakeUntilSubscriber<T> implements Subscriber<T> {
-        private static final Logger LOGGER = LoggerFactory.getLogger(TakeUntilSubscriber.class);
-        private static final Object CANCELLED = new Object();
-        private static final AtomicIntegerFieldUpdater<TakeUntilSubscriber> subscriberStateUpdater =
-                AtomicIntegerFieldUpdater.newUpdater(TakeUntilSubscriber.class, "subscriberState");
-        private static final AtomicReferenceFieldUpdater<TakeUntilSubscriber, Object> terminalNotificationUpdater =
-                AtomicReferenceFieldUpdater.newUpdater(TakeUntilSubscriber.class, Object.class, "terminalNotification");
         private static final AtomicReferenceFieldUpdater<TakeUntilSubscriber, Cancellable> untilCancellableUpdater =
                 AtomicReferenceFieldUpdater.newUpdater(TakeUntilSubscriber.class, Cancellable.class,
                         "untilCancellable");
-
-        @SuppressWarnings("unused")
-        private volatile int subscriberState;
-        @SuppressWarnings("unused")
         @Nullable
-        private volatile Object terminalNotification;
-        @Nullable
-        private volatile Subscription concurrentSubscription;
+        private volatile TakeUntilSubscription downstreamSubscription;
         @SuppressWarnings("unused")
         @Nullable
         private volatile Cancellable untilCancellable;
 
-        private final io.servicetalk.concurrent.PublisherSource.Subscriber<? super T> subscriber;
+        private final ConcurrentTerminalSubscriber<? super T> subscriber;
         private final Completable until;
 
         TakeUntilSubscriber(Subscriber<? super T> subscriber, Completable until) {
-            this.subscriber = subscriber;
+            this.subscriber = new ConcurrentTerminalSubscriber<>(subscriber, false);
             this.until = until;
         }
 
         @Override
         public void onSubscribe(final Subscription s) {
-            if (!checkDuplicateSubscription(concurrentSubscription, s)) {
+            if (!checkDuplicateSubscription(downstreamSubscription, s)) {
                 return;
             }
-            final Subscription concurrentSubscription = new ConcurrentSubscription(s) {
-                @Override
-                public void cancel() {
-                    super.cancel();
-                    Cancellable untilCancellable =
-                            untilCancellableUpdater.getAndSet(TakeUntilSubscriber.this, IGNORE_CANCEL);
-                    if (untilCancellable != null) {
-                        untilCancellable.cancel();
-                    }
-                }
-            };
-            this.concurrentSubscription = concurrentSubscription;
-            subscriber.onSubscribe(concurrentSubscription);
+            final TakeUntilSubscription takeSubscription = new TakeUntilSubscription(s, this::cancelUntil);
+            this.downstreamSubscription = takeSubscription;
+            subscriber.onSubscribe(takeSubscription);
             until.subscribeInternal(new CompletableSource.Subscriber() {
                 @Override
                 public void onSubscribe(Cancellable cancellable) {
@@ -104,70 +77,73 @@ final class TakeUntilPublisher<T> extends AbstractSynchronousPublisherOperator<T
 
                 @Override
                 public void onComplete() {
-                    if (checkTerminationValidWithConcurrentOnNextCheck(null, complete(), subscriberStateUpdater,
-                            terminalNotificationUpdater, TakeUntilSubscriber.this)) {
-                        // Call cancel on the actual Subscription that was passed into onSubscribe(...)
-                        onComplete0();
+                    if (subscriber.processOnComplete()) {
+                        cancelDownstreamSubscription();
                     }
                 }
 
                 @Override
                 public void onError(Throwable t) {
-                    if (checkTerminationValidWithConcurrentOnNextCheck(null, t, subscriberStateUpdater,
-                            terminalNotificationUpdater, TakeUntilSubscriber.this)) {
-                        // Call cancel on the actual Subscription that was passed into onSubscribe(...)
-                        onError0(t);
+                    if (subscriber.processOnError(t)) {
+                        cancelDownstreamSubscription();
                     }
+                }
+
+                private void cancelDownstreamSubscription() {
+                    TakeUntilSubscription s = downstreamSubscription;
+                    assert s != null;
+                    s.superCancel();
                 }
             });
         }
 
         @Override
         public void onNext(T t) {
-            sendOnNextWithConcurrentTerminationCheck(subscriber, t, this::terminate, subscriberStateUpdater,
-                    terminalNotificationUpdater, this);
-        }
-
-        private void terminate(Object terminalNotification) {
-            if (terminalNotification instanceof Throwable) {
-                onError0((Throwable) terminalNotification);
-            } else if (terminalNotification != CANCELLED) {
-                onComplete0();
-            }
+            subscriber.onNext(t);
         }
 
         @Override
         public void onError(Throwable t) {
-            if (checkTerminationValidWithConcurrentOnNextCheck(null, t, subscriberStateUpdater,
-                    terminalNotificationUpdater, this)) {
-                onError0(t);
-            } else {
-                LOGGER.debug("onError ignored as the subscriber {} is already disposed.", this, t);
+            if (subscriber.processOnError(t)) {
+                cancelUntil();
             }
-        }
-
-        void onError0(Throwable t) {
-            invokeCancel();
-            subscriber.onError(t);
         }
 
         @Override
         public void onComplete() {
-            if (checkTerminationValidWithConcurrentOnNextCheck(null, complete(), subscriberStateUpdater,
-                    terminalNotificationUpdater, this)) {
-                onComplete0();
+            if (subscriber.processOnComplete()) {
+                cancelUntil();
             }
         }
 
-        void onComplete0() {
-            invokeCancel();
-            subscriber.onComplete();
+        private void cancelUntil() {
+            Cancellable untilCancellable =
+                    untilCancellableUpdater.getAndSet(TakeUntilSubscriber.this, IGNORE_CANCEL);
+            if (untilCancellable != null) {
+                untilCancellable.cancel();
+            }
+        }
+    }
+
+    private static final class TakeUntilSubscription extends ConcurrentSubscription {
+        private final Cancellable cancellable;
+
+        protected TakeUntilSubscription(final Subscription subscription, Cancellable cancellable) {
+            super(subscription);
+            this.cancellable = cancellable;
         }
 
-        private void invokeCancel() {
-            Subscription concurrentSubscription = this.concurrentSubscription;
-            assert concurrentSubscription != null;
-            concurrentSubscription.cancel();
+        @Override
+        public void cancel() {
+            try {
+                super.cancel();
+            } finally {
+                cancellable.cancel();
+            }
+        }
+
+        void superCancel() {
+            super.cancel();
         }
     }
 }

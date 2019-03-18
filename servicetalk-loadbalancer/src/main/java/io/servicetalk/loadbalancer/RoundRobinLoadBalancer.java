@@ -29,8 +29,7 @@ import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.concurrent.api.internal.SubscribablePublisher;
-import io.servicetalk.concurrent.internal.DuplicateSubscribeException;
+import io.servicetalk.concurrent.api.internal.SpScPublisherProcessor;
 import io.servicetalk.concurrent.internal.SequentialCancellable;
 
 import org.slf4j.Logger;
@@ -58,13 +57,6 @@ import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.concurrent.api.Single.error;
 import static io.servicetalk.concurrent.api.Single.success;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
-import static io.servicetalk.concurrent.internal.EmptySubscription.EMPTY_SUBSCRIPTION;
-import static io.servicetalk.concurrent.internal.SubscriberUtils.SUBSCRIBER_STATE_TERMINATED;
-import static io.servicetalk.concurrent.internal.SubscriberUtils.checkTerminationValidWithConcurrentOnNextCheck;
-import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid;
-import static io.servicetalk.concurrent.internal.SubscriberUtils.newExceptionForInvalidRequestN;
-import static io.servicetalk.concurrent.internal.SubscriberUtils.sendOnNextWithConcurrentTerminationCheck;
-import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 import static io.servicetalk.concurrent.internal.ThrowableUtil.unknownStackTrace;
 import static java.util.Collections.binarySearch;
 import static java.util.Collections.emptyList;
@@ -112,7 +104,7 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends ListenableA
     private volatile int index;
     private volatile List<Host<ResolvedAddress, C>> activeHosts = emptyList();
 
-    private final PublisherProcessorSingle<Object> eventStream = new PublisherProcessorSingle<>();
+    private final SpScPublisherProcessor<Object> eventStream = new SpScPublisherProcessor<>(32);
     private final SequentialCancellable discoveryCancellable = new SequentialCancellable();
     private final ConnectionFactory<ResolvedAddress, ? extends C> connectionFactory;
     private final ListenableAsyncCloseable asyncCloseable;
@@ -190,6 +182,7 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends ListenableA
             @Override
             public void onError(final Throwable t) {
                 List<Host<ResolvedAddress, C>> hosts = activeHosts;
+                eventStream.sendOnError(t);
                 LOGGER.error(
                         "Load balancer {}. Service discoverer {} emitted an error. Last seen addresses (size {}) {}",
                         RoundRobinLoadBalancer.this, eventPublisher, hosts.size(), hosts, t);
@@ -198,6 +191,7 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends ListenableA
             @Override
             public void onComplete() {
                 List<Host<ResolvedAddress, C>> hosts = activeHosts;
+                eventStream.sendOnComplete();
                 LOGGER.error("Load balancer {}. Service discoverer {} completed. Last seen addresses (size {}) {}",
                         RoundRobinLoadBalancer.this, eventPublisher, hosts.size(), hosts);
             }
@@ -387,156 +381,5 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends ListenableA
     private static final class MutableAddressHost<Addr, C extends ListenableAsyncCloseable> extends Host<Addr, C> {
         @Nullable
         Addr mutableAddress;
-    }
-
-    /**
-     * Eventually this will be replaced by a PublisherProcessor which is backed by a queue and allows for
-     * arbitrary events being published.
-     * @param <T> The type of data delivered to {@link Subscriber}s.
-     */
-    private static final class PublisherProcessorSingle<T> extends SubscribablePublisher<T> {
-        private static final AtomicIntegerFieldUpdater<PublisherProcessorSingle> subscriberStateUpdater =
-                newUpdater(PublisherProcessorSingle.class, "subscriberState");
-        private static final AtomicReferenceFieldUpdater<PublisherProcessorSingle, Object> terminalNotificationUpdater =
-                newUpdater(PublisherProcessorSingle.class, Object.class, "terminalNotification");
-        private static final AtomicReferenceFieldUpdater<PublisherProcessorSingle, Object> eventUpdater =
-                newUpdater(PublisherProcessorSingle.class, Object.class, "event");
-        private static final Object REQUESTED = new Object();
-        private static final Object DELIVERED = new Object();
-        private static final Object COMPLETED = new Object();
-        @Nullable
-        private volatile Subscriber<? super T> subscriber;
-        @Nullable
-        private volatile Object event;
-        @SuppressWarnings("unused")
-        private volatile int subscriberState;
-        @SuppressWarnings("unused")
-        @Nullable
-        private volatile Object terminalNotification;
-
-        @Override
-        protected void handleSubscribe(final Subscriber<? super T> subscriber) {
-            Subscriber<? super T> thisSubscriber = this.subscriber;
-            if (thisSubscriber == null) {
-                this.subscriber = subscriber;
-                subscriber.onSubscribe(new Subscription() {
-                    @Override
-                    public void request(final long n) {
-                        if (isRequestNValid(n)) {
-                            for (;;) {
-                                Object event = PublisherProcessorSingle.this.event;
-                                if (event == REQUESTED || event == DELIVERED || event == COMPLETED) {
-                                    break;
-                                } else if (event != null) {
-                                    if (eventUpdater.compareAndSet(PublisherProcessorSingle.this, event, DELIVERED)) {
-                                        @SuppressWarnings("unchecked")
-                                        final T finalT = (T) event;
-                                        deliverOnNext(finalT, subscriber);
-                                        break;
-                                    }
-                                } else if (eventUpdater.compareAndSet(PublisherProcessorSingle.this, null, REQUESTED)) {
-                                    // Check if sendOnComplete was called but the Subscriber was not visible, and then
-                                    // deliver the terminal notification if we change the event to COMPLETED.
-                                    if (subscriberState == SUBSCRIBER_STATE_TERMINATED &&
-                                        eventUpdater.compareAndSet(PublisherProcessorSingle.this, REQUESTED,
-                                                COMPLETED)) {
-                                        subscriber.onComplete();
-                                    }
-                                    break;
-                                }
-                            }
-                        } else {
-                            Throwable cause = newExceptionForInvalidRequestN(n);
-                            if (checkTerminationValidWithConcurrentOnNextCheck(null, cause, subscriberStateUpdater,
-                                    terminalNotificationUpdater, PublisherProcessorSingle.this)) {
-                                for (;;) {
-                                    Object event = PublisherProcessorSingle.this.event;
-                                    if (event == null || event == REQUESTED || event == DELIVERED) {
-                                        if (eventUpdater.compareAndSet(PublisherProcessorSingle.this, event,
-                                                COMPLETED)) {
-                                            subscriber.onError(cause);
-                                            break;
-                                        }
-                                    } else {
-                                        // If there is data pending we will deliver the error after the data.
-                                        break;
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    @Override
-                    public void cancel() {
-                        // This will ensure the event is GCed (if it exists) and will swallow any terminal events which
-                        // also maybe pending.
-                        event = COMPLETED;
-                    }
-                });
-            } else {
-                subscriber.onSubscribe(EMPTY_SUBSCRIPTION);
-                subscriber.onError(new DuplicateSubscribeException(thisSubscriber, subscriber));
-            }
-        }
-
-        void sendOnNext(T next) {
-            for (;;) {
-                Object event = this.event;
-                if (event == null) {
-                    if (eventUpdater.compareAndSet(this, null, next)) {
-                        break;
-                    }
-                } else if (event == REQUESTED) {
-                    if (eventUpdater.compareAndSet(this, REQUESTED, DELIVERED)) {
-                        Subscriber<? super T> subscriber = this.subscriber;
-                        assert subscriber != null;
-                        deliverOnNext(next, subscriber);
-                        break;
-                    }
-                } else {
-                    break;
-                }
-            }
-        }
-
-        void sendOnComplete() {
-            if (checkTerminationValidWithConcurrentOnNextCheck(null, complete(),
-                    subscriberStateUpdater, terminalNotificationUpdater, this)) {
-                Subscriber<? super T> subscriber = this.subscriber;
-                // If the subscriber is not null, deliver the event now, otherwise we deliver in the Subscription.
-                if (subscriber != null) {
-                    // Make a best effort to terminate early, if there is data pending we will let the Subscription
-                    // deliver the terminal event after it delivers the data.
-                    for (;;) {
-                        Object event = this.event;
-                        if (event == null || event == REQUESTED || event == DELIVERED) {
-                            if (eventUpdater.compareAndSet(this, event, COMPLETED)) {
-                                subscriber.onComplete();
-                                break;
-                            }
-                        } else {
-                            // Note that the Subscription may have requested data in the mean time, but we let the
-                            // Subscription handle that.
-                            break;
-                        }
-                    }
-                }
-            }
-        }
-
-        private void deliverOnNext(T next, Subscriber<? super T> subscriber) {
-            sendOnNextWithConcurrentTerminationCheck(subscriber, next, this::terminate,
-                    subscriberStateUpdater, terminalNotificationUpdater, this);
-        }
-
-        private void terminate(Object terminalNotification) {
-            Subscriber<? super T> subscriber = this.subscriber;
-            assert subscriber != null;
-            if (terminalNotification instanceof Throwable) {
-                subscriber.onError((Throwable) terminalNotification);
-            } else {
-                subscriber.onComplete();
-            }
-        }
     }
 }
