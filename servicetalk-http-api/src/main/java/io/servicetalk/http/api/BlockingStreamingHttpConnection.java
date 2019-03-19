@@ -26,7 +26,7 @@ import static io.servicetalk.http.api.RequestResponseFactories.toBlockingStreami
 /**
  * The equivalent of {@link StreamingHttpConnection} but with synchronous/blocking APIs instead of asynchronous APIs.
  */
-public class BlockingStreamingHttpConnection extends BlockingStreamingHttpRequester {
+public /* final */ class BlockingStreamingHttpConnection extends BlockingStreamingHttpRequester {
 
     private final StreamingHttpConnection connection;
 
@@ -80,7 +80,7 @@ public class BlockingStreamingHttpConnection extends BlockingStreamingHttpReques
      */
     // We don't want the user to be able to override but it cannot be final because we need to override the type.
     // However the constructor of this class is package private so the user will not be able to override this method.
-    public /* final */StreamingHttpConnection asStreamingConnection() {
+    public /* final */ StreamingHttpConnection asStreamingConnection() {
         return connection;
     }
 

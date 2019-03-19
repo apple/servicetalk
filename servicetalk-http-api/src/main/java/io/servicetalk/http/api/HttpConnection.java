@@ -104,22 +104,22 @@ public class HttpConnection extends HttpRequester {
     }
 
     @Override
-    public ExecutionContext executionContext() {
+    public final ExecutionContext executionContext() {
         return connection.executionContext();
     }
 
     @Override
-    public Completable onClose() {
+    public final Completable onClose() {
         return connection.onClose();
     }
 
     @Override
-    public Completable closeAsync() {
+    public final Completable closeAsync() {
         return connection.closeAsync();
     }
 
     @Override
-    public Completable closeAsyncGracefully() {
+    public final Completable closeAsyncGracefully() {
         return connection.closeAsyncGracefully();
     }
 }

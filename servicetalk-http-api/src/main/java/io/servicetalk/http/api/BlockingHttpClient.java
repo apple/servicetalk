@@ -64,7 +64,7 @@ public final class BlockingHttpClient extends BlockingHttpRequester {
      * @throws Exception if a exception occurs during the reservation process.
      */
     public ReservedBlockingHttpConnection reserveConnection(HttpExecutionStrategy strategy,
-                                                                     HttpRequestMetaData metaData) throws Exception {
+                                                            HttpRequestMetaData metaData) throws Exception {
         return blockingInvocation(client.reserveConnection(strategy, metaData)
                 .map(c -> new ReservedBlockingHttpConnection(c, executionStrategy())));
     }

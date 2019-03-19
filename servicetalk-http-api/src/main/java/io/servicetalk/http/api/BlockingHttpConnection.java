@@ -22,11 +22,12 @@ import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ExecutionContext;
 
 import static io.servicetalk.http.api.BlockingUtils.blockingInvocation;
+import static io.servicetalk.http.api.RequestResponseFactories.toAggregated;
 
 /**
  * The equivalent of {@link HttpConnection} but with synchronous/blocking APIs instead of asynchronous APIs.
  */
-public class BlockingHttpConnection extends BlockingHttpRequester {
+public /* final */ class BlockingHttpConnection extends BlockingHttpRequester {
 
     private final StreamingHttpConnection connection;
 
@@ -38,7 +39,7 @@ public class BlockingHttpConnection extends BlockingHttpRequester {
      */
     BlockingHttpConnection(final StreamingHttpConnection connection,
                            final HttpExecutionStrategy strategy) {
-        super(RequestResponseFactories.toAggregated(connection.reqRespFactory), strategy);
+        super(toAggregated(connection.reqRespFactory), strategy);
         this.connection = connection;
     }
 
