@@ -15,10 +15,11 @@
  */
 package io.servicetalk.benchmark.concurrent;
 
+import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.concurrent.api.internal.ConnectableOutputStream;
+import io.servicetalk.concurrent.api.internal.ConnectableBufferOutputStream;
 
 import org.openjdk.jmh.annotations.AuxCounters;
 import org.openjdk.jmh.annotations.Benchmark;
@@ -37,10 +38,11 @@ import org.openjdk.jmh.annotations.Warmup;
 import java.io.IOException;
 import java.util.Random;
 
+import static io.servicetalk.buffer.netty.BufferAllocators.PREFER_HEAP_ALLOCATOR;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 
 /**
- * Multi-threaded benchmark of {@link ConnectableOutputStream} with various data sizes and flush strategies which
+ * Multi-threaded benchmark of {@link ConnectableBufferOutputStream} with various data sizes and flush strategies which
  * attempts to simulate some contention on the locks.
  * <p>
  * <pre>
@@ -95,7 +97,7 @@ import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 @Warmup(iterations = 2, time = 3)
 @Measurement(iterations = 3, time = 5)
 @BenchmarkMode(Mode.Throughput)
-public class ConnectableOutputStreamBenchmark {
+public class ConnectableBufferOutputStreamBenchmark {
 
     @Param({"1000", "100000", "1000000"})
     public int dataSize;
@@ -105,15 +107,15 @@ public class ConnectableOutputStreamBenchmark {
 
     final Random r = new Random();
     byte[] data;
-    ConnectableOutputStream cos;
-    Publisher<byte[]> publisher;
+    ConnectableBufferOutputStream cbos;
+    Publisher<Buffer> publisher;
     Subscription subscription;
 
     @Setup(Level.Iteration)
     public void setup() {
         data = new byte[dataSize];
-        cos = new ConnectableOutputStream();
-        publisher = cos.connect();
+        cbos = new ConnectableBufferOutputStream(PREFER_HEAP_ALLOCATOR);
+        publisher = cbos.connect();
         // Don't remove this, JMH somehow provides a default which break everything
         subscription = null;
     }
@@ -147,10 +149,10 @@ public class ConnectableOutputStreamBenchmark {
     @Benchmark
     @Group
     public void write(ProducerCounter counter) throws IOException {
-        cos.write(data);
+        cbos.write(data);
         counter.producedBytes += dataSize;
         if (flushOnEach || r.nextInt(100) < 30) {
-            cos.flush();
+            cbos.flush();
             counter.flush++;
         }
     }
@@ -159,15 +161,15 @@ public class ConnectableOutputStreamBenchmark {
     @Group
     public void requestN(ConsumerCounter counter) {
         if (subscription == null) {
-            toSource(publisher).subscribe(new Subscriber<byte[]>() {
+            toSource(publisher).subscribe(new Subscriber<Buffer>() {
                 @Override
                 public void onSubscribe(final Subscription s) {
                     subscription = s;
                 }
 
                 @Override
-                public void onNext(final byte[] bytes) {
-                    counter.consumedBytes += bytes.length;
+                public void onNext(final Buffer buffer) {
+                    counter.consumedBytes += buffer.readableBytes();
                     ++counter.onNext;
                 }
 

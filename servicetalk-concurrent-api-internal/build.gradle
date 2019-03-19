@@ -42,6 +42,7 @@ dependencies {
   implementation "io.servicetalk:servicetalk-buffer-api:$project.version"
   implementation "org.slf4j:slf4j-api"
 
+  testImplementation "io.servicetalk:servicetalk-buffer-netty:$project.version"
   testImplementation "io.servicetalk:servicetalk-concurrent-api-testFixtures:$project.version"
   testImplementation "io.servicetalk:servicetalk-concurrent-internal-testFixtures:$project.version"
   testImplementation "io.servicetalk:servicetalk-test-resources:$project.version"
