@@ -30,8 +30,8 @@ public abstract class HttpOutputStream extends OutputStream implements TrailersH
     }
 
     @Override
-    public HttpOutputStream addTrailer(final HttpHeaders trailers) {
-        TrailersHolder.super.addTrailer(trailers);
+    public HttpOutputStream addTrailers(final HttpHeaders trailers) {
+        TrailersHolder.super.addTrailers(trailers);
         return this;
     }
 
@@ -42,8 +42,8 @@ public abstract class HttpOutputStream extends OutputStream implements TrailersH
     }
 
     @Override
-    public HttpOutputStream setTrailer(final HttpHeaders trailers) {
-        TrailersHolder.super.setTrailer(trailers);
+    public HttpOutputStream setTrailers(final HttpHeaders trailers) {
+        TrailersHolder.super.setTrailers(trailers);
         return this;
     }
 }

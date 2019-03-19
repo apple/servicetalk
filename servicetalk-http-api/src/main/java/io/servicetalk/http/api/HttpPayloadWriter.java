@@ -34,8 +34,8 @@ public interface HttpPayloadWriter<T> extends PayloadWriter<T>, TrailersHolder {
     }
 
     @Override
-    default HttpPayloadWriter<T> addTrailer(final HttpHeaders trailers) {
-        TrailersHolder.super.addTrailer(trailers);
+    default HttpPayloadWriter<T> addTrailers(final HttpHeaders trailers) {
+        TrailersHolder.super.addTrailers(trailers);
         return this;
     }
 
@@ -46,8 +46,8 @@ public interface HttpPayloadWriter<T> extends PayloadWriter<T>, TrailersHolder {
     }
 
     @Override
-    default HttpPayloadWriter<T> setTrailer(final HttpHeaders trailers) {
-        TrailersHolder.super.setTrailer(trailers);
+    default HttpPayloadWriter<T> setTrailers(final HttpHeaders trailers) {
+        TrailersHolder.super.setTrailers(trailers);
         return this;
     }
 }
