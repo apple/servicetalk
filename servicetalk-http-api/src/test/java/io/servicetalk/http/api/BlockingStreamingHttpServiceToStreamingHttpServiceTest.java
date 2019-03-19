@@ -283,7 +283,7 @@ public class BlockingStreamingHttpServiceToStreamingHttpServiceTest {
                                final BlockingStreamingHttpRequest request,
                                final BlockingStreamingHttpServerResponse response) throws Exception {
                 handleLatch.countDown();
-                Thread.sleep(10000);
+                Thread.sleep(Long.MAX_VALUE);
             }
         };
         StreamingHttpService asyncService = syncService.asStreamingService();
@@ -331,7 +331,7 @@ public class BlockingStreamingHttpServiceToStreamingHttpServiceTest {
                                final BlockingStreamingHttpServerResponse response) throws Exception {
                 response.sendMetaData();
                 try {
-                    Thread.sleep(10000);
+                    Thread.sleep(Long.MAX_VALUE);
                 } finally {
                     serviceTerminationLatch.countDown();
                 }
