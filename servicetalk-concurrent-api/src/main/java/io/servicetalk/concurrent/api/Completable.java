@@ -18,7 +18,6 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.CompletableSource.Subscriber;
-import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.internal.SignalOffloader;
 
 import org.slf4j.Logger;
@@ -622,14 +621,13 @@ public abstract class Completable {
      *
      * @param shouldRepeat {@link IntPredicate} that given the repeat count determines if the operation should be
      * repeated
-     * @param <T> Type of items provided by the passed {@link Supplier} and emitted by the returned {@link Publisher}.
      * @return A {@link Publisher} that emits the value returned by the passed {@link Supplier} everytime this
      * {@link Completable} completes.
      *
      * @see <a href="http://reactivex.io/documentation/operators/repeat.html">ReactiveX repeat operator.</a>
      */
-    public final <T> Publisher<T> repeat(IntPredicate shouldRepeat) {
-        return this.<T>toSingle().repeat(shouldRepeat);
+    public final Publisher<Void> repeat(IntPredicate shouldRepeat) {
+        return toSingle().repeat(shouldRepeat);
     }
 
     /**
@@ -654,13 +652,12 @@ public abstract class Completable {
      * @param repeatWhen {@link IntFunction} that given the repeat count returns a {@link Completable}.
      * If this {@link Completable} emits an error repeat is terminated, otherwise, original {@link Completable} is
      * re-subscribed when this {@link Completable} completes.
-     * @param <T> Type of items provided by the passed {@link Supplier} and emitted by the returned {@link Publisher}.
      * @return A {@link Completable} that completes after all re-subscriptions completes.
      *
      * @see <a href="http://reactivex.io/documentation/operators/retry.html">ReactiveX retry operator.</a>
      */
-    public final <T> Publisher<T> repeatWhen(IntFunction<? extends Completable> repeatWhen) {
-        return this.<T>toSingle().repeatWhen(repeatWhen);
+    public final Publisher<Void> repeatWhen(IntFunction<? extends Completable> repeatWhen) {
+        return toSingle().repeatWhen(repeatWhen);
     }
 
     /**
@@ -1095,36 +1092,29 @@ public abstract class Completable {
 
     /**
      * Converts this {@code Completable} to a {@link Single}.
-     * <p>
-     * The return value's {@link SingleSource.Subscriber#onSuccess(Object)} value is undefined. If you need a specific
-     * value you can also use {@link #concatWith(Single)} with a {@link Single#success(Object)}.
-     * @param <T> The value type of the resulting {@link Single}.
+     *
      * @return A {@link Single} that mirrors the terminal signal from this {@link Completable}.
      */
-    public final <T> Single<T> toSingle() {
+    public final Single<Void> toSingle() {
         return new CompletableToSingle<>(this, executor);
     }
 
     /**
      * Converts this {@code Completable} to a {@link CompletionStage}.
-     * <p>
-     * The {@link CompletionStage}'s value is undefined.
-     * @param <T> The value type of the resulting {@link Single}.
+     *
      * @return A {@link CompletionStage} that mirrors the terminal signal from this {@link Completable}.
      */
-    public final <T> CompletionStage<T> toCompletionStage() {
-        return this.<T>toSingle().toCompletionStage();
+    public final CompletionStage<Void> toCompletionStage() {
+        return toSingle().toCompletionStage();
     }
 
     /**
      * Converts this {@code Completable} to a {@link Future}.
-     * <p>
-     * The {@link Future}'s value is undefined.
-     * @param <T> The value type of the resulting {@link Single}.
+     *
      * @return A {@link Future} that mirrors the terminal signal from this {@link Completable}.
      */
-    public final <T> Future<T> toFuture() {
-        return this.<T>toSingle().toFuture();
+    public final Future<Void> toFuture() {
+        return toSingle().toFuture();
     }
 
     //
