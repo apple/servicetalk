@@ -19,13 +19,15 @@ import io.servicetalk.concurrent.PublisherSource;
 
 import java.util.function.Supplier;
 
+import static java.util.Objects.requireNonNull;
+
 final class PubToSingleFirst<T> extends AbstractPubToSingle<T> {
 
     private final Supplier<T> defaultValueSupplier;
 
     PubToSingleFirst(Publisher<T> source, final Supplier<T> defaultValueSupplier) {
         super(source.executor(), source);
-        this.defaultValueSupplier = defaultValueSupplier;
+        this.defaultValueSupplier = requireNonNull(defaultValueSupplier);
     }
 
     @Override
