@@ -17,10 +17,11 @@ application developers who need service to service communication it presents a f
   - fully asynchronous and requires knowledge of EventLoop threading model
   - back-pressure requires manual association of source of data and sink of data
   - executing CPU intensive or "blocking" code requires manual thread hops
-  - ordering issues when code executes on the EventLoop and off the EventLoop thread
+  - ordering issues when code executes both on and off the EventLoop thread
 - Usability
   - APIs not targeted toward specific protocols
-  - Asynchronous programming paradigm presents a barrier to entry when it isn't currently required for scalability
+  - Asynchronous programming paradigm presents a barrier to entry in scenarios where it isn't currently required for
+  scalability
   - Error propagation follows multiple paths depending on the event and state of Channel
 - Lacking Feature Set
   - Smart Client (e.g. client-side load balancing, service discovery, retry) features missing
@@ -43,7 +44,7 @@ change over time.
 
 ServiceTalk APIs may use the term "blocking" in areas where the APIs may be identified as "synchronous". "blocking" in
 this context is meant to declare that the API "may block" the calling thread. This is done because there is no general
-way to determine if a method will return synchronous or block the calling thread, and "blocking" is the least common
+way to determine if a method will return synchronously or block the calling thread, and "blocking" is the least common
 denominator.
 
 #### [Blocking](#blocking-vs-synchronous) and Aggregated
@@ -141,7 +142,7 @@ provides many operators to define asynchronous and streaming control flow.
 
 ### Design Philosophy
 
-ServiceTalk is designed to provide an extensible core and tailored APIs to networking protocols. ServiceTalk does not
+ServiceTalk is designed to provide an extensible core and APIs tailored to networking protocols. ServiceTalk does not
 intend to provide abstractions for low-level networking primitives (e.g. Channels, EventLoop, TLS, etc...) but instead
 uses these primitives to provide a higher level API in numerous [programming paradigms](#programming-paradigms).
 
