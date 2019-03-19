@@ -21,10 +21,10 @@ import io.servicetalk.concurrent.api.Single;
 import org.testng.annotations.Test;
 
 @Test
-public class SingleFlatMapCompletableTckTest extends AbstractSingleOperatorTckTest<Object> {
+public class SingleFlatMapCompletableTckTest extends AbstractSingleOperatorTckTest<Void> {
 
     @Override
-    protected Single<Object> composeSingle(Single<Integer> single) {
+    protected Single<Void> composeSingle(Single<Integer> single) {
         return single.flatMapCompletable(v -> Completable.completed()).toSingle();
     }
 

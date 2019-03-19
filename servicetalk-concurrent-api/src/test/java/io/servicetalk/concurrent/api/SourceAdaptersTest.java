@@ -207,7 +207,7 @@ public class SourceAdaptersTest {
             s.onError(DELIBERATE_EXCEPTION);
         };
 
-        Future<Integer> future = fromSource(src).toFuture();
+        Future<Void> future = fromSource(src).toFuture();
         expectedException.expect(ExecutionException.class);
         expectedException.expectCause(sameInstance(DELIBERATE_EXCEPTION));
         future.get();

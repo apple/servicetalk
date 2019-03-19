@@ -40,11 +40,11 @@ public class CompletableToSingleTest {
     @Rule
     public final ExecutorRule executorRule = ExecutorRule.newRule();
 
-    private TestSingleSubscriber<String> subscriber = new TestSingleSubscriber<>();
+    private TestSingleSubscriber<Void> subscriber = new TestSingleSubscriber<>();
 
     @Test
     public void noTerminalSucceeds() {
-        toSource(Completable.completed().<String>toSingle()).subscribe(subscriber);
+        toSource(Completable.completed().toSingle()).subscribe(subscriber);
         assertTrue(subscriber.hasResult());
         assertThat(subscriber.takeResult(), nullValue());
     }
