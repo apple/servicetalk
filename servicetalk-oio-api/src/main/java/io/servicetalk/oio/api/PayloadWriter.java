@@ -24,14 +24,15 @@ import java.io.OutputStream;
  * An interface which mimics behavior like {@link OutputStream}, but allows for writing of objects of type
  * {@link T}.
  *
- * @param <T> the type of objects to write
+ * @param <T> The type of Objects to write.
  */
 public interface PayloadWriter<T> extends Closeable, Flushable {
     /**
      * Write an object of type {@link T}.
      *
-     * @param object the object to write
-     * @throws IOException if an I/O error occur or this {@link PayloadWriter} is closed
+     * @param t the object to write.
+     * @throws IOException if an I/O error occurs. In particular, an {@link IOException} may be thrown if this has been
+     * closed.
      */
-    void write(T object) throws IOException;
+    void write(T t) throws IOException;
 }
