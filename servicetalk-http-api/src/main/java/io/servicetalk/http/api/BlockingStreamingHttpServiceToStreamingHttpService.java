@@ -79,7 +79,10 @@ final class BlockingStreamingHttpServiceToStreamingHttpService extends Streaming
                             ctx.headersFactory().newTrailers(), payloadProcessor);
 
                     final Consumer<HttpResponseMetaData> sendMeta = (metaData) ->
-                            subscriber.onSuccess(newResponseWithTrailers(metaData.status(), metaData.version(),
+                    {
+                        final StreamingHttpResponse result;
+                        try {
+                            result = newResponseWithTrailers(metaData.status(), metaData.version(),
                                     metaData.headers(), ctx.executionContext().bufferAllocator(),
                                     payloadProcessor.merge(payloadWriter.connect()
                                             .map(buffer -> (Object) buffer) // down cast to Object
@@ -94,7 +97,13 @@ final class BlockingStreamingHttpServiceToStreamingHttpService extends Streaming
                                                 public void cancel() {
                                                     tiCancellable.cancel();
                                                 }
-                                            })));
+                                            }));
+                        } catch (Throwable t) {
+                            subscriber.onError(t);
+                            throw t;
+                        }
+                        subscriber.onSuccess(result);
+                    };
 
                     response = new DefaultBlockingStreamingHttpServerResponse(OK, request.version(),
                                     ctx.headersFactory().newHeaders(), payloadWriter,
