@@ -22,7 +22,7 @@
   </Match>
   <!-- SpotBugs does not understand that subscription field will be initialized -->
   <Match>
-    <Class name="io.servicetalk.benchmark.concurrent.ConnectableOutputStreamBenchmark"/>
+    <Class name="io.servicetalk.benchmark.concurrent.ConnectableBufferOutputStreamBenchmark"/>
     <Method name="requestN"/>
     <Field name="subscription"/>
     <Bug pattern="NP_NULL_ON_SOME_PATH"/>
