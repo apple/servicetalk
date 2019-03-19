@@ -15,30 +15,32 @@
  */
 package io.servicetalk.http.api;
 
-import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.BlockingHttpClient.ReservedBlockingHttpConnection;
 import io.servicetalk.http.api.BlockingStreamingHttpClient.ReservedBlockingStreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpClient.ReservedStreamingHttpConnection;
-import io.servicetalk.transport.api.ConnectionContext;
+import io.servicetalk.transport.api.ExecutionContext;
+
+import static io.servicetalk.http.api.RequestResponseFactories.toAggregated;
 
 /**
  * Provides a means to issue requests against HTTP service. The implementation is free to maintain a collection of
  * {@link HttpConnection} instances and distribute calls to {@link #request(HttpRequest)} amongst this collection.
  */
-public abstract class HttpClient extends HttpRequester {
+public final class HttpClient extends HttpRequester {
+
+    private final StreamingHttpClient client;
 
     /**
      * Create a new instance.
      *
-     * @param reqRespFactory The {@link HttpRequestResponseFactory} used to
-     * {@link #newRequest(HttpRequestMethod, String) create new requests}.
+     * @param client {@link StreamingHttpClient} to convert from.
      * @param strategy Default {@link HttpExecutionStrategy} to use.
      */
-    HttpClient(final HttpRequestResponseFactory reqRespFactory, final HttpExecutionStrategy strategy) {
-        super(reqRespFactory, strategy);
+    HttpClient(final StreamingHttpClient client, final HttpExecutionStrategy strategy) {
+        super(toAggregated(client.reqRespFactory), strategy);
+        this.client = client;
     }
 
     /**
@@ -62,22 +64,27 @@ public abstract class HttpClient extends HttpRequester {
      * For example this may provide some insight into shard or other info.
      * @return a {@link Single} that provides the {@link ReservedHttpConnection} upon completion.
      */
-    public abstract Single<ReservedHttpConnection> reserveConnection(HttpExecutionStrategy strategy,
-                                                                     HttpRequestMetaData metaData);
+    public Single<ReservedHttpConnection> reserveConnection(final HttpExecutionStrategy strategy,
+                                                            final HttpRequestMetaData metaData) {
+        return client.reserveConnection(strategy, metaData)
+                .map(c -> new ReservedHttpConnection(c, executionStrategy()));
+    }
 
     /**
      * Convert this {@link HttpClient} to the {@link StreamingHttpClient} API.
      *
      * @return a {@link StreamingHttpClient} representation of this {@link HttpClient}.
      */
-    public abstract StreamingHttpClient asStreamingClient();
+    public StreamingHttpClient asStreamingClient() {
+        return client;
+    }
 
     /**
      * Convert this {@link HttpClient} to the {@link BlockingStreamingHttpClient} API.
      *
      * @return a {@link BlockingStreamingHttpClient} representation of this {@link HttpClient}.
      */
-    public final BlockingStreamingHttpClient asBlockingStreamingClient() {
+    public BlockingStreamingHttpClient asBlockingStreamingClient() {
         return asStreamingClient().asBlockingStreamingClient();
     }
 
@@ -86,8 +93,33 @@ public abstract class HttpClient extends HttpRequester {
      *
      * @return a {@link BlockingHttpClient} representation of this {@link HttpClient}.
      */
-    public final BlockingHttpClient asBlockingClient() {
+    public BlockingHttpClient asBlockingClient() {
         return asStreamingClient().asBlockingClient();
+    }
+
+    @Override
+    public Single<HttpResponse> request(final HttpExecutionStrategy strategy, final HttpRequest request) {
+        return client.request(strategy, request.toStreamingRequest()).flatMap(StreamingHttpResponse::toResponse);
+    }
+
+    @Override
+    public ExecutionContext executionContext() {
+        return client.executionContext();
+    }
+
+    @Override
+    public Completable onClose() {
+        return client.onClose();
+    }
+
+    @Override
+    public Completable closeAsync() {
+        return client.closeAsync();
+    }
+
+    @Override
+    public Completable closeAsyncGracefully() {
+        return client.closeAsyncGracefully();
     }
 
     /**
@@ -95,41 +127,20 @@ public abstract class HttpClient extends HttpRequester {
      * {@link #reserveConnection(HttpRequestMetaData)} and
      * {@link #reserveConnection(HttpExecutionStrategy, HttpRequestMetaData)}.
      */
-    public abstract static class ReservedHttpConnection extends HttpConnection {
+    public static final class ReservedHttpConnection extends HttpConnection {
+
+        private final ReservedStreamingHttpConnection connection;
 
         /**
          * Create a new instance.
          *
-         * @param reqRespFactory The {@link HttpRequestResponseFactory} used to
-         * {@link #newRequest(HttpRequestMethod, String) create new requests}.
+         * @param connection {@link ReservedStreamingHttpConnection} to convert from.
          * @param strategy Default {@link HttpExecutionStrategy} to use.
          */
-        ReservedHttpConnection(final HttpRequestResponseFactory reqRespFactory,
+        ReservedHttpConnection(final ReservedStreamingHttpConnection connection,
                                final HttpExecutionStrategy strategy) {
-            super(reqRespFactory, strategy);
-        }
-
-        /**
-         * Get the {@link ConnectionContext}.
-         *
-         * @return the {@link ConnectionContext}.
-         */
-        @Override
-        public final ConnectionContext connectionContext() {
-            return asStreamingConnection().connectionContext();
-        }
-
-        /**
-         * Returns a {@link Publisher} that gives the current value of the setting as well as subsequent changes to
-         * the setting value as long as the {@link PublisherSource.Subscriber} has expressed enough demand.
-         *
-         * @param settingKey Name of the setting to fetch.
-         * @param <T> Type of the setting value.
-         * @return {@link Publisher} for the setting values.
-         */
-        @Override
-        public final <T> Publisher<T> settingStream(StreamingHttpConnection.SettingKey<T> settingKey) {
-            return asStreamingConnection().settingStream(settingKey);
+            super(connection, strategy);
+            this.connection = connection;
         }
 
         /**
@@ -138,7 +149,7 @@ public abstract class HttpClient extends HttpRequester {
          *
          * @return the {@code Completable} that is notified on releaseAsync.
          */
-        public final Completable releaseAsync() {
+        public Completable releaseAsync() {
             return asStreamingConnection().releaseAsync();
         }
 
@@ -148,7 +159,9 @@ public abstract class HttpClient extends HttpRequester {
          * @return a {@link ReservedStreamingHttpConnection} representation of this {@link ReservedHttpConnection}.
          */
         @Override
-        public abstract ReservedStreamingHttpConnection asStreamingConnection();
+        public ReservedStreamingHttpConnection asStreamingConnection() {
+            return connection;
+        }
 
         /**
          * Convert this {@link ReservedHttpConnection} to the {@link ReservedBlockingStreamingHttpConnection} API.
@@ -157,7 +170,7 @@ public abstract class HttpClient extends HttpRequester {
          * {@link ReservedHttpConnection}.
          */
         @Override
-        public final ReservedBlockingStreamingHttpConnection asBlockingStreamingConnection() {
+        public ReservedBlockingStreamingHttpConnection asBlockingStreamingConnection() {
             return asStreamingConnection().asBlockingStreamingConnection();
         }
 
@@ -169,7 +182,7 @@ public abstract class HttpClient extends HttpRequester {
          * {@link ReservedHttpConnection}.
          */
         @Override
-        public final ReservedBlockingHttpConnection asBlockingConnection() {
+        public ReservedBlockingHttpConnection asBlockingConnection() {
             return asStreamingConnection().asBlockingConnection();
         }
     }

@@ -23,6 +23,8 @@ import javax.annotation.Nullable;
 import javax.net.ssl.SSLSession;
 
 import static io.servicetalk.concurrent.api.Completable.completed;
+import static io.servicetalk.http.api.RequestResponseFactories.toAggregated;
+import static io.servicetalk.http.api.RequestResponseFactories.toBlockingStreaming;
 
 public class TestHttpServiceContext extends HttpServiceContext {
     private final ExecutionContext executionContext;
@@ -31,9 +33,7 @@ public class TestHttpServiceContext extends HttpServiceContext {
 
     public TestHttpServiceContext(StreamingHttpRequestResponseFactory reqRespFactory,
                                   ExecutionContext executionContext) {
-        super(new StreamingHttpRequestResponseFactoryToHttpRequestResponseFactory(reqRespFactory),
-                reqRespFactory,
-                new StreamingHttpRequestResponseFactoryToBlockingStreamingHttpRequestResponseFactory(reqRespFactory));
+        super(toAggregated(reqRespFactory), reqRespFactory, toBlockingStreaming(reqRespFactory));
         this.executionContext = executionContext;
         remoteAddress = localAddress = localAddress();
     }

@@ -48,6 +48,7 @@ import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
+import static io.servicetalk.http.api.RequestResponseFactories.toBlockingStreaming;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.util.Collections.singleton;
 import static java.util.Objects.requireNonNull;
@@ -75,8 +76,7 @@ public abstract class AbstractBlockingStreamingHttpRequesterTest {
     private final BufferAllocator allocator = DEFAULT_ALLOCATOR;
     private final StreamingHttpRequestResponseFactory reqRespFactory = new DefaultStreamingHttpRequestResponseFactory(
             allocator, DefaultHttpHeadersFactory.INSTANCE);
-    private final BlockingStreamingHttpRequestResponseFactory blkReqRespFactory =
-            new StreamingHttpRequestResponseFactoryToBlockingStreamingHttpRequestResponseFactory(reqRespFactory);
+    private final BlockingStreamingHttpRequestResponseFactory blkReqRespFactory = toBlockingStreaming(reqRespFactory);
 
     protected abstract TestStreamingHttpRequester newAsyncRequester(
             StreamingHttpRequestResponseFactory factory, ExecutionContext executionContext,
@@ -162,14 +162,11 @@ public abstract class AbstractBlockingStreamingHttpRequesterTest {
                 final BiFunction<HttpExecutionStrategy, BlockingStreamingHttpRequest,
                         BlockingStreamingHttpResponse> doRequest,
                 final StreamingHttpRequestResponseFactory reqRespFactory) {
-            return new BlockingStreamingHttpRequester(
-                    new StreamingHttpRequestResponseFactoryToBlockingStreamingHttpRequestResponseFactory(
-                            reqRespFactory), noOffloadsStrategy()) {
+            return new BlockingStreamingHttpRequester(toBlockingStreaming(reqRespFactory), noOffloadsStrategy()) {
 
                 @Override
                 public BlockingStreamingHttpResponse request(final HttpExecutionStrategy strategy,
-                                                             final BlockingStreamingHttpRequest request)
-                                                             throws Exception {
+                                                             final BlockingStreamingHttpRequest request) {
                     return doRequest.apply(strategy, request);
                 }
 
@@ -179,7 +176,7 @@ public abstract class AbstractBlockingStreamingHttpRequesterTest {
                 }
 
                 @Override
-                public void close() throws Exception {
+                public void close() {
                     throw new UnsupportedOperationException();
                 }
             };
