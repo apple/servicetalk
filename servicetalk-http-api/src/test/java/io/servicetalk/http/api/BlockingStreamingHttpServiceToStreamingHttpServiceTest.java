@@ -283,14 +283,19 @@ public class BlockingStreamingHttpServiceToStreamingHttpServiceTest {
                                final BlockingStreamingHttpRequest request,
                                final BlockingStreamingHttpServerResponse response) throws Exception {
                 handleLatch.countDown();
-                Thread.sleep(Long.MAX_VALUE);
+                try {
+                    Thread.sleep(Long.MAX_VALUE);
+                } catch (Throwable t) {
+                    throwableRef.set(t);
+                    onErrorLatch.countDown();
+                }
             }
         };
         StreamingHttpService asyncService = syncService.asStreamingService();
         toSource(asyncService.handle(mockCtx, reqRespFactory.get("/"), reqRespFactory)
                 // Use subscribeOn(Executor) instead of HttpExecutionStrategy#invokeService which returns a flatten
-                // Publisher<Object> to verify that the Single<StreamingHttpResponse> of response meta-data terminates
-                // with an error
+                // Publisher<Object> to verify that cancellation of Single<StreamingHttpResponse> interrupts the thread
+                // of handle method
                 .subscribeOn(executorRule.executor()))
                 .subscribe(new SingleSource.Subscriber<StreamingHttpResponse>() {
 
@@ -305,8 +310,6 @@ public class BlockingStreamingHttpServiceToStreamingHttpServiceTest {
 
                     @Override
                     public void onError(final Throwable t) {
-                        throwableRef.set(t);
-                        onErrorLatch.countDown();
                     }
                 });
         handleLatch.await();
@@ -332,6 +335,9 @@ public class BlockingStreamingHttpServiceToStreamingHttpServiceTest {
                 response.sendMetaData();
                 try {
                     Thread.sleep(Long.MAX_VALUE);
+                } catch (Throwable t) {
+                    throwableRef.set(t);
+                    onErrorLatch.countDown();
                 } finally {
                     serviceTerminationLatch.countDown();
                 }
@@ -340,7 +346,8 @@ public class BlockingStreamingHttpServiceToStreamingHttpServiceTest {
         StreamingHttpService asyncService = syncService.asStreamingService();
         StreamingHttpResponse asyncResponse = asyncService.handle(mockCtx, reqRespFactory.get("/"), reqRespFactory)
                 // Use subscribeOn(Executor) instead of HttpExecutionStrategy#invokeService which returns a flatten
-                // Publisher<Object> to verify that the Publisher<Buffer> of payload body terminates with an error
+                // Publisher<Object> to verify that cancellation of Publisher<Buffer> interrupts the thread of handle
+                // method
                 .subscribeOn(executorRule.executor()).toFuture().get();
         assertMetaData(OK, asyncResponse);
         toSource(asyncResponse.payloadBody()).subscribe(new Subscriber<Buffer>() {
@@ -356,8 +363,6 @@ public class BlockingStreamingHttpServiceToStreamingHttpServiceTest {
 
             @Override
             public void onError(final Throwable t) {
-                throwableRef.set(t);
-                onErrorLatch.countDown();
             }
 
             @Override
