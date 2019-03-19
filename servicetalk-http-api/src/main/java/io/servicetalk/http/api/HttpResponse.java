@@ -132,8 +132,8 @@ public interface HttpResponse extends HttpResponseMetaData, TrailersHolder {
     }
 
     @Override
-    default HttpResponse addTrailer(final HttpHeaders trailers) {
-        TrailersHolder.super.addTrailer(trailers);
+    default HttpResponse addTrailers(final HttpHeaders trailers) {
+        TrailersHolder.super.addTrailers(trailers);
         return this;
     }
 
@@ -144,8 +144,8 @@ public interface HttpResponse extends HttpResponseMetaData, TrailersHolder {
     }
 
     @Override
-    default HttpResponse setTrailer(final HttpHeaders trailers) {
-        TrailersHolder.super.setTrailer(trailers);
+    default HttpResponse setTrailers(final HttpHeaders trailers) {
+        TrailersHolder.super.setTrailers(trailers);
         return this;
     }
 }
