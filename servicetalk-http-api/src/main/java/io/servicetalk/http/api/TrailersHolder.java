@@ -45,7 +45,7 @@ interface TrailersHolder {
      * @param trailers the trailers to add.
      * @return {@code this}.
      */
-    default TrailersHolder addTrailer(final HttpHeaders trailers) {
+    default TrailersHolder addTrailers(final HttpHeaders trailers) {
         trailers().add(trailers);
         return this;
     }
@@ -69,7 +69,7 @@ interface TrailersHolder {
      * @param trailers the trailers object which contains new values.
      * @return {@code this}.
      */
-    default TrailersHolder setTrailer(final HttpHeaders trailers) {
+    default TrailersHolder setTrailers(final HttpHeaders trailers) {
         trailers().set(trailers);
         return this;
     }
