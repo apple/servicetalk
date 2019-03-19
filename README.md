@@ -5,7 +5,7 @@ HTTP/2.x, etc...) and supports multiple [programming paradigms](#programming-par
 
 It is built on [Netty](https://netty.io) and is designed to provide most of the performance/scalability benefits of
 Netty for common networking protocols used in service to service communication. ServiceTalk provides "smart client" like
-features such as client side load balancing and service discovery integration.
+features such as client-side load balancing and service discovery integration.
 
 ## Conceptual Overview
 
@@ -23,7 +23,7 @@ application developers who need service to service communication it presents a f
   - Asynchronous programming paradigm presents a barrier to entry when it isn't currently required for scalability
   - Error propagation follows multiple paths depending on the event and state of Channel
 - Lacking Feature Set
-  - Smart Client (e.g. client side load balancing, service discovery, retry) features missing
+  - Smart Client (e.g. client-side load balancing, service discovery, retry) features missing
 
 ServiceTalk addresses these challenges and provides a framework that supports multiple
 [programming paradigms](#programming-paradigms). ServiceTalk accomplishes this by building on a fully asynchronous
@@ -32,7 +32,7 @@ non-blocking I/O core and taking care of the threading model complexities intern
 ### Programming paradigms
 
 When developing a new application it may not be clear if the complexity of asynchronous control flow is justified. It
-maybe the case that initially the scale is relatively small, but over time the scale may grow. The scaling or response
+may be the case that initially the scale is relatively small, but over time the scale may grow. The scaling or response
 size characteristics may not be uniform for all APIs offered by the application (e.g. health check vs file server).
 ServiceTalk is designed to evolve with your application so that you can get started quickly and avoid/defer the
 complexity of asynchronous control flow in these cases. This can dramatically lower the bar to entry for ServiceTalk
@@ -83,7 +83,7 @@ The minimum supported JDK version is 1.8.
 ## Compatibility
 
 ServiceTalk follows [SemVer 2.0.0](https://semver.org/#semantic-versioning-200). API/ABI breaking changes will require
-package renaming for that module to avoid runtime class path conflicts. Note that `0.x.y` releases are not stable and
+package renaming for that module to avoid runtime classpath conflicts. Note that `0.x.y` releases are not stable and
 are permitted to break API/ABI.
 
 ## Basic Architecture
@@ -110,7 +110,7 @@ more data via a
 [PublisherSource.Subscription](servicetalk-concurrent/src/main/java/io/servicetalk/concurrent/PublisherSource.java#L116-L129).
 
 Users are generally not expected to `subscribe` to a `PublisherSource`, or even deal directly with a `PublisherSource`.
-Instead most users are expected to use the
+Instead, most users are expected to use the
 [Publisher](servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Publisher.java) API which provides
 many operators to define asynchronous and streaming control flow.
 
@@ -124,7 +124,7 @@ semantics as [Publisher](#publisher), but it either terminates with a
 [single value, or an error](servicetalk-concurrent/src/main/java/io/servicetalk/concurrent/SingleSource.java#L45-L71).
 
 Users are generally not expected to `subscribe` to a `SingleSource`, or even deal directly with a `SingleSource`.
-Instead most users are expected to use the
+Instead, most users are expected to use the
 [Single](servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Single.java) API which provides many
 operators to define asynchronous and streaming control flow.
 
@@ -135,18 +135,17 @@ same semantics as [Publisher](#publisher), but it either terminates
 [successfully, or with an error](servicetalk-concurrent/src/main/java/io/servicetalk/concurrent/CompletableSource.java#L39-63).
 
 Users are generally not expected to `subscribe` to a `CompletableSource`, or even deal directly with a
-`CompletableSource`. Instead most users are expected to use the
+`CompletableSource`. Instead, most users are expected to use the
 [Completable](servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Completable.java) API which
 provides many operators to define asynchronous and streaming control flow.
 
 ### Design Philosophy
 
-ServiceTalk is designed to designed to provide an extensible core and tailored APIs to networking protocols. ServiceTalk
-does not intend to provide abstractions for low level networking primitives (e.g. Channels, EventLoop, TLS, etc...) but
-instead uses these primitives to provide an higher level API in numerous
-[programming paradigms](#programming-paradigms).
+ServiceTalk is designed to provide an extensible core and tailored APIs to networking protocols. ServiceTalk does not
+intend to provide abstractions for low-level networking primitives (e.g. Channels, EventLoop, TLS, etc...) but instead
+uses these primitives to provide a higher level API in numerous [programming paradigms](#programming-paradigms).
 
-The project is divided into many modules to decouple the user facing API from implementation details. This gives users
+The project is divided into many modules to decouple the user-facing API from implementation details. This gives users
 freedom to choose only the functionality they need, and also allows us to evolve each module independently. Note that
 these modules may be divided out into independent repositories to decouple from the core and enable independent
 versioning.  
