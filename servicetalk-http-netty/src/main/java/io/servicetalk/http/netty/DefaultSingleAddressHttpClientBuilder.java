@@ -47,7 +47,6 @@ import java.net.InetSocketAddress;
 import java.net.SocketOption;
 import java.util.function.BiFunction;
 import java.util.function.Function;
-import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;

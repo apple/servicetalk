@@ -29,7 +29,7 @@ import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpService;
-import io.servicetalk.http.utils.auth.BasicAuthHttpServiceFilterBuilder.CredentialsVerifier;
+import io.servicetalk.http.utils.auth.BasicAuthHttpServiceFilter.CredentialsVerifier;
 import io.servicetalk.transport.api.ExecutionContext;
 
 import org.junit.After;
@@ -59,8 +59,6 @@ import static io.servicetalk.http.api.HttpHeaderValues.ZERO;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.HttpResponseStatus.PROXY_AUTHENTICATION_REQUIRED;
 import static io.servicetalk.http.api.HttpResponseStatus.UNAUTHORIZED;
-import static io.servicetalk.http.utils.auth.BasicAuthHttpServiceFilterBuilder.newBasicAuthBuilder;
-import static io.servicetalk.http.utils.auth.BasicAuthHttpServiceFilterBuilder.newBasicAuthBuilderForProxy;
 import static java.nio.charset.StandardCharsets.ISO_8859_1;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Base64.getEncoder;
@@ -71,7 +69,7 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class BasicAuthHttpServiceFilterBuilderTest {
+public class BasicAuthHttpServiceFilterTest {
 
     private static final CharSequence USER_ID_HEADER_NAME = newAsciiString("test-userid");
     private static final Key<BasicUserInfo> USER_INFO_KEY = newKey("basicUserInfo");
@@ -220,8 +218,9 @@ public class BasicAuthHttpServiceFilterBuilderTest {
 
     @Test
     public void authenticatedWithoutUserInfo() throws Exception {
-        StreamingHttpService service = newBasicAuthBuilder(CREDENTIALS_VERIFIER, REALM_VALUE)
-                .build(HELLO_WORLD_SERVICE);
+        StreamingHttpService service = BasicAuthHttpServiceFilter.Builder.forRegular(CREDENTIALS_VERIFIER, REALM_VALUE)
+                .build()
+                .create(HELLO_WORLD_SERVICE);
 
         StreamingHttpRequest request = reqRespFactory.get("/path");
         request.headers().set(AUTHORIZATION, "Basic " + base64("userId:password"));
@@ -307,10 +306,11 @@ public class BasicAuthHttpServiceFilterBuilderTest {
                 return completed();
             }
         };
-        StreamingHttpService service = newBasicAuthBuilder(utf8CredentialsVerifier, REALM_VALUE)
+        StreamingHttpService service = BasicAuthHttpServiceFilter.Builder.forRegular(
+                utf8CredentialsVerifier, REALM_VALUE)
                 .userInfoKey(USER_INFO_KEY)
                 .setCharsetUtf8(true)
-                .build(HELLO_WORLD_SERVICE);
+                .build().create(HELLO_WORLD_SERVICE);
 
         StreamingHttpResponse response =
                 awaitIndefinitelyNonNull(service.handle(CONN_CTX, reqRespFactory.get("/path"), reqRespFactory));
@@ -329,17 +329,18 @@ public class BasicAuthHttpServiceFilterBuilderTest {
         AtomicBoolean credentialsVerifierClosed = new AtomicBoolean();
         AtomicBoolean nextServiceClosed = new AtomicBoolean();
 
-        StreamingHttpService service = newBasicAuthBuilder(new CredentialsVerifier<BasicUserInfo>() {
-            @Override
-            public Single<BasicUserInfo> apply(final String userId, final String password) {
-                return never();
-            }
+        StreamingHttpService service = BasicAuthHttpServiceFilter.Builder.forRegular(
+                new CredentialsVerifier<BasicUserInfo>() {
+                    @Override
+                    public Single<BasicUserInfo> apply(final String userId, final String password) {
+                        return never();
+                    }
 
-            @Override
-            public Completable closeAsync() {
-                return completed().doBeforeComplete(() -> credentialsVerifierClosed.set(true));
-            }
-        }, REALM_VALUE).build(new StreamingHttpService() {
+                    @Override
+                    public Completable closeAsync() {
+                        return completed().doBeforeComplete(() -> credentialsVerifierClosed.set(true));
+                    }
+                }, REALM_VALUE).build().create(new StreamingHttpService() {
             @Override
             public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
                                                         final StreamingHttpRequest request,
@@ -361,8 +362,9 @@ public class BasicAuthHttpServiceFilterBuilderTest {
     }
 
     private static void testUnauthorized(StreamingHttpRequest request) throws Exception {
-        StreamingHttpService service = newBasicAuthBuilder(CREDENTIALS_VERIFIER, REALM_VALUE)
-                .build(HELLO_WORLD_SERVICE);
+        StreamingHttpService service = BasicAuthHttpServiceFilter.Builder.forRegular(CREDENTIALS_VERIFIER, REALM_VALUE)
+                .build()
+                .create(HELLO_WORLD_SERVICE);
 
         StreamingHttpResponse response = awaitIndefinitelyNonNull(service.handle(CONN_CTX, request, reqRespFactory));
         assertEquals(UNAUTHORIZED, response.status());
@@ -372,8 +374,9 @@ public class BasicAuthHttpServiceFilterBuilderTest {
     }
 
     private static void testProxyAuthenticationRequired(StreamingHttpRequest request) throws Exception {
-        StreamingHttpService service = newBasicAuthBuilderForProxy(CREDENTIALS_VERIFIER, REALM_VALUE)
-                .build(HELLO_WORLD_SERVICE);
+        StreamingHttpService service = BasicAuthHttpServiceFilter.Builder.forProxy(CREDENTIALS_VERIFIER, REALM_VALUE)
+                .build()
+                .create(HELLO_WORLD_SERVICE);
 
         StreamingHttpResponse response = awaitIndefinitelyNonNull(service.handle(CONN_CTX, request, reqRespFactory));
         assertEquals(PROXY_AUTHENTICATION_REQUIRED, response.status());
@@ -383,9 +386,10 @@ public class BasicAuthHttpServiceFilterBuilderTest {
     }
 
     private static void testAuthenticated(StreamingHttpRequest request) throws Exception {
-        StreamingHttpService service = newBasicAuthBuilder(CREDENTIALS_VERIFIER, REALM_VALUE)
+        StreamingHttpService service = BasicAuthHttpServiceFilter.Builder.forRegular(CREDENTIALS_VERIFIER, REALM_VALUE)
                 .userInfoKey(USER_INFO_KEY)
-                .build(HELLO_WORLD_SERVICE);
+                .build()
+                .create(HELLO_WORLD_SERVICE);
         testAuthenticated(request, service);
     }
 
@@ -397,9 +401,10 @@ public class BasicAuthHttpServiceFilterBuilderTest {
     }
 
     private static void testAuthenticatedForProxy(StreamingHttpRequest request) throws Exception {
-        StreamingHttpService service = newBasicAuthBuilderForProxy(CREDENTIALS_VERIFIER, REALM_VALUE)
+        StreamingHttpService service = BasicAuthHttpServiceFilter.Builder.forProxy(CREDENTIALS_VERIFIER, REALM_VALUE)
                 .userInfoKey(USER_INFO_KEY)
-                .build(HELLO_WORLD_SERVICE);
+                .build()
+                .create(HELLO_WORLD_SERVICE);
 
         StreamingHttpResponse response = awaitIndefinitelyNonNull(service.handle(CONN_CTX, request, reqRespFactory));
         assertEquals(OK, response.status());

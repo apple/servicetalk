@@ -26,6 +26,7 @@ import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpMetaData;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpServiceContext;
+import io.servicetalk.http.api.HttpServiceFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
@@ -56,26 +57,13 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Objects.requireNonNull;
 
 /**
- * A builder for an {@link StreamingHttpServiceFilter}, which filters HTTP requests using
+ * A {@link StreamingHttpServiceFilter}, which filters HTTP requests using
  * <a href="https://tools.ietf.org/html/rfc7617">RFC7617</a>: The 'Basic' HTTP Authentication Scheme.
- * <p>
- * It accepts credentials as {@code user-id:password} pairs, encoded using {@link Base64} for
- * {@link HttpHeaderNames#AUTHORIZATION Authorization} or
- * {@link HttpHeaderNames#PROXY_AUTHORIZATION Proxy-Authorization} header values. Use of the format
- * {@code user:password} in the {@link HttpRequestMetaData#userInfo() userinfo} field is deprecated by
- * <a href="https://tools.ietf.org/html/rfc3986#section-3.2.1">RFC3986</a>.
- * <p>
- * User info object of authenticated user could be stored in {@link AsyncContextMap}, if {@link Key} was configured via
- * {@link #userInfoKey(AsyncContextMap.Key)}.
- * <p>
- * <b>Note:</b> This scheme is not considered to be a secure method of user authentication unless used in conjunction
- * with some external secure system such as TLS (Transport Layer Security,
- * [<a href="https://tools.ietf.org/html/rfc5246">RFC5246</a>]), as the {@code user-id} and {@code password} are passed
- * over the network as cleartext.
  *
  * @param <UserInfo> a type for authenticated user info object
+ * @see Builder
  */
-public final class BasicAuthHttpServiceFilterBuilder<UserInfo> {
+public final class BasicAuthHttpServiceFilter<UserInfo> implements HttpServiceFilterFactory {
 
     /**
      * Verifies {@code user-id} and {@code password}, parsed from the 'Basic' HTTP Authentication Scheme credentials.
@@ -101,120 +89,162 @@ public final class BasicAuthHttpServiceFilterBuilder<UserInfo> {
         Single<UserInfo> apply(String userId, String password);
     }
 
+    /**
+     * A builder for an {@link StreamingHttpServiceFilter}, which filters HTTP requests using <a
+     * href="https://tools.ietf.org/html/rfc7617">RFC7617</a>: The 'Basic' HTTP Authentication Scheme.
+     * <p>
+     * It accepts credentials as {@code user-id:password} pairs, encoded using {@link Base64} for {@link
+     * HttpHeaderNames#AUTHORIZATION Authorization} or {@link HttpHeaderNames#PROXY_AUTHORIZATION Proxy-Authorization}
+     * header values. Use of the format {@code user:password} in the {@link HttpRequestMetaData#userInfo() userinfo}
+     * field is deprecated by <a href="https://tools.ietf.org/html/rfc3986#section-3.2.1">RFC3986</a>.
+     * <p>
+     * User info object of authenticated user could be stored in {@link AsyncContextMap}, if {@link Key} was configured
+     * via {@link Builder#userInfoKey(AsyncContextMap.Key)}.
+     * <p>
+     * <b>Note:</b> This scheme is not considered to be a secure method of user authentication unless used in
+     * conjunction with some external secure system such as TLS (Transport Layer Security, [<a
+     * href="https://tools.ietf.org/html/rfc5246">RFC5246</a>]), as the {@code user-id} and {@code password} are passed
+     * over the network as cleartext.
+     *
+     * @param <UserInfo> a type for authenticated user info object
+     */
+    public static final class Builder<UserInfo> {
+
+        private final CredentialsVerifier<UserInfo> credentialsVerifier;
+        private final String realm;
+        private final boolean proxy;
+        @Nullable
+        private Key<UserInfo> userInfoKey;
+        private boolean utf8;
+
+        private Builder(final CredentialsVerifier<UserInfo> credentialsVerifier,
+                        final String realm, final boolean proxy) {
+            this.credentialsVerifier = requireNonNull(credentialsVerifier);
+            this.realm = requireNonNull(realm);
+            this.proxy = proxy;
+        }
+
+        /**
+         * Creates a new instance for non-proxy service.
+         * <p>
+         * It will use the next constants to handle authentication:
+         *
+         * <blockquote><table cellpadding=1 cellspacing=0
+         * summary="Response status code, authenticate and authorization headers for non-proxy Basic auth">
+         * <tr>
+         * <td>Response status code</td>
+         * <td><a href="https://tools.ietf.org/html/rfc7235#section-3.1">401 (Unauthorized)</a></td>
+         * </tr>
+         * <tr>
+         * <td>Authenticate header</td>
+         * <td><a href="https://tools.ietf.org/html/rfc7235#section-4.1">WWW-Authenticate</a></td>
+         * </tr>
+         * <tr>
+         * <td>Authorization header</td>
+         * <td><a href="https://tools.ietf.org/html/rfc7235#section-4.2">Authorization</a></td>
+         * </tr>
+         * </table></blockquote>
+         *
+         * @param credentialsVerifier a {@link CredentialsVerifier} for {@code user-id} and {@code passwords} pair
+         * @param realm a <a href="https://tools.ietf.org/html/rfc7235#section-2.2">protection space (realm)</a>
+         * @param <UserInfo> a type for authenticated user info object
+         * @return a new {@link Builder}
+         */
+        public static <UserInfo> Builder<UserInfo> forRegular(
+                final CredentialsVerifier<UserInfo> credentialsVerifier, final String realm) {
+            return new Builder<>(credentialsVerifier, realm, false);
+        }
+
+        /**
+         * Creates a new instance for proxy service.
+         * <p>
+         * It will use the next constants to handle authentication:
+         *
+         * <blockquote><table cellpadding=1 cellspacing=0
+         * summary="Response status code, authenticate and authorization headers for proxy Basic auth">
+         * <tr>
+         * <td>Response status code</td>
+         * <td><a href="https://tools.ietf.org/html/rfc7235#section-3.2">407 (Proxy Authentication Required)</a></td>
+         * </tr>
+         * <tr>
+         * <td>Authenticate header</td>
+         * <td><a href="https://tools.ietf.org/html/rfc7235#section-4.3">Proxy-Authenticate</a></td>
+         * </tr>
+         * <tr>
+         * <td>Authorization header</td>
+         * <td><a href="https://tools.ietf.org/html/rfc7235#section-4.5">Proxy-Authorization</a></td>
+         * </tr>
+         * </table></blockquote>
+         *
+         * @param credentialsVerifier a {@link CredentialsVerifier} for {@code user-id} and {@code passwords} pair
+         * @param realm a <a href="https://tools.ietf.org/html/rfc7235#section-2.2">protection space (realm)</a>
+         * @param <UserInfo> a type for authenticated user info object
+         * @return a new {@link Builder}
+         */
+        public static <UserInfo> Builder<UserInfo> forProxy(
+                final CredentialsVerifier<UserInfo> credentialsVerifier, final String realm) {
+            return new Builder<>(credentialsVerifier, realm, true);
+        }
+
+        /**
+         * Sets a {@link Key key} to store a user info object of authenticated user in {@link AsyncContextMap}.
+         *
+         * @param userInfoKey a key to store a user info object in {@link AsyncContextMap}
+         * @return {@code this}
+         */
+        public Builder<UserInfo> userInfoKey(final Key<UserInfo> userInfoKey) {
+            this.userInfoKey = userInfoKey;
+            return this;
+        }
+
+        /**
+         * Sets an advice for a user agent to use {@link StandardCharsets#UTF_8 UTF-8} charset when it generates
+         * {@code user-id:password} pair.
+         * <p>
+         * It will result in adding an optional <a href="https://tools.ietf.org/html/rfc7617#section-2.1">
+         * charset="UTF-8"</a> parameter for an authenticate header.
+         *
+         * @param utf8 if {@code true}, an optional {@code charset="UTF-8"} parameter will be added for an authenticate
+         * header
+         * @return {@code this}
+         */
+        public Builder<UserInfo> setCharsetUtf8(final boolean utf8) {
+            this.utf8 = utf8;
+            return this;
+        }
+
+        /**
+         * Builds a new Basic HTTP Auth filtering {@link HttpServiceFilterFactory}.
+         *
+         * @return a new {@link HttpServiceFilterFactory}
+         */
+        public HttpServiceFilterFactory build() {
+            return new BasicAuthHttpServiceFilter<>(credentialsVerifier, realm, proxy, userInfoKey, utf8);
+        }
+    }
+
     private final CredentialsVerifier<UserInfo> credentialsVerifier;
     private final String realm;
     private final boolean proxy;
     @Nullable
-    private Key<UserInfo> userInfoKey;
-    private boolean utf8;
+    private final Key<UserInfo> userInfoKey;
+    private final boolean utf8;
 
-    private BasicAuthHttpServiceFilterBuilder(final CredentialsVerifier<UserInfo> credentialsVerifier,
-                                              final String realm, final boolean proxy) {
-        this.credentialsVerifier = requireNonNull(credentialsVerifier);
-        this.realm = requireNonNull(realm);
+    private BasicAuthHttpServiceFilter(final CredentialsVerifier<UserInfo> credentialsVerifier,
+                                       final String realm,
+                                       final boolean proxy,
+                                       @Nullable final Key<UserInfo> userInfoKey,
+                                       final boolean utf8) {
+        this.credentialsVerifier = credentialsVerifier;
+        this.realm = realm;
         this.proxy = proxy;
-    }
-
-    /**
-     * Creates a new instance for non-proxy service.
-     * <p>
-     * It will use the next constants to handle authentication:
-     *
-     * <blockquote><table cellpadding=1 cellspacing=0
-     * summary="Response status code, authenticate and authorization headers for non-proxy Basic auth">
-     * <tr>
-     * <td>Response status code</td>
-     * <td><a href="https://tools.ietf.org/html/rfc7235#section-3.1">401 (Unauthorized)</a></td>
-     * </tr>
-     * <tr>
-     * <td>Authenticate header</td>
-     * <td><a href="https://tools.ietf.org/html/rfc7235#section-4.1">WWW-Authenticate</a></td>
-     * </tr>
-     * <tr>
-     * <td>Authorization header</td>
-     * <td><a href="https://tools.ietf.org/html/rfc7235#section-4.2">Authorization</a></td>
-     * </tr>
-     * </table></blockquote>
-     *
-     * @param credentialsVerifier a {@link CredentialsVerifier} for {@code user-id} and {@code passwords} pair
-     * @param realm a <a href="https://tools.ietf.org/html/rfc7235#section-2.2">protection space (realm)</a>
-     * @param <UserInfo> a type for authenticated user info object
-     * @return a new {@link BasicAuthHttpServiceFilterBuilder}
-     */
-    public static <UserInfo> BasicAuthHttpServiceFilterBuilder<UserInfo> newBasicAuthBuilder(
-            final CredentialsVerifier<UserInfo> credentialsVerifier, final String realm) {
-        return new BasicAuthHttpServiceFilterBuilder<>(credentialsVerifier, realm, false);
-    }
-
-    /**
-     * Creates a new instance for proxy service.
-     * <p>
-     * It will use the next constants to handle authentication:
-     *
-     * <blockquote><table cellpadding=1 cellspacing=0
-     * summary="Response status code, authenticate and authorization headers for proxy Basic auth">
-     * <tr>
-     * <td>Response status code</td>
-     * <td><a href="https://tools.ietf.org/html/rfc7235#section-3.2">407 (Proxy Authentication Required)</a></td>
-     * </tr>
-     * <tr>
-     * <td>Authenticate header</td>
-     * <td><a href="https://tools.ietf.org/html/rfc7235#section-4.3">Proxy-Authenticate</a></td>
-     * </tr>
-     * <tr>
-     * <td>Authorization header</td>
-     * <td><a href="https://tools.ietf.org/html/rfc7235#section-4.5">Proxy-Authorization</a></td>
-     * </tr>
-     * </table></blockquote>
-     *
-     * @param credentialsVerifier a {@link CredentialsVerifier} for {@code user-id} and {@code passwords} pair
-     * @param realm a <a href="https://tools.ietf.org/html/rfc7235#section-2.2">protection space (realm)</a>
-     * @param <UserInfo> a type for authenticated user info object
-     * @return a new {@link BasicAuthHttpServiceFilterBuilder}
-     */
-    public static <UserInfo> BasicAuthHttpServiceFilterBuilder<UserInfo> newBasicAuthBuilderForProxy(
-            final CredentialsVerifier<UserInfo> credentialsVerifier, final String realm) {
-        return new BasicAuthHttpServiceFilterBuilder<>(credentialsVerifier, realm, true);
-    }
-
-    /**
-     * Sets a {@link Key key} to store a user info object of authenticated user in {@link AsyncContextMap}.
-     *
-     * @param userInfoKey a key to store a user info object in {@link AsyncContextMap}
-     * @return {@code this}
-     */
-    public BasicAuthHttpServiceFilterBuilder<UserInfo> userInfoKey(final Key<UserInfo> userInfoKey) {
         this.userInfoKey = userInfoKey;
-        return this;
-    }
-
-    /**
-     * Sets an advice for a user agent to use {@link StandardCharsets#UTF_8 UTF-8} charset when it generates
-     * {@code user-id:password} pair.
-     * <p>
-     * It will result in adding an optional <a href="https://tools.ietf.org/html/rfc7617#section-2.1">
-     * charset="UTF-8"</a> parameter for an authenticate header.
-     *
-     * @param utf8 if {@code true}, an optional {@code charset="UTF-8"} parameter will be added for an authenticate
-     * header
-     * @return {@code this}
-     */
-    public BasicAuthHttpServiceFilterBuilder<UserInfo> setCharsetUtf8(final boolean utf8) {
         this.utf8 = utf8;
-        return this;
     }
 
-    /**
-     * Builds a new Basic HTTP Auth filtering {@link StreamingHttpServiceFilter}. The returned
-     * {@link StreamingHttpServiceFilter} manages the lifecycle of the passed {@link StreamingHttpService}, ensuring it
-     * is closed when the {@link StreamingHttpServiceFilter} is closed.
-     *
-     * @param next an {@link StreamingHttpService} to protect against unauthorized access
-     * @return a new {@link StreamingHttpServiceFilter}
-     */
-    public StreamingHttpServiceFilter build(final StreamingHttpService next) {
-        return new BasicAuthStreamingHttpService<>(credentialsVerifier, realm, proxy, userInfoKey, utf8,
-                requireNonNull(next));
+    @Override
+    public StreamingHttpServiceFilter create(final StreamingHttpService service) {
+        return new BasicAuthStreamingHttpService<>(this, service);
     }
 
     private static final class BasicAuthStreamingHttpService<UserInfo> extends StreamingHttpServiceFilter {
@@ -224,25 +254,17 @@ public final class BasicAuthHttpServiceFilterBuilder<UserInfo> {
         private static final String AUTH_SCHEME = "basic ";
         private static final int AUTH_SCHEME_LENGTH = AUTH_SCHEME.length();
 
-        private final CredentialsVerifier<UserInfo> credentialsVerifier;
+        private final BasicAuthHttpServiceFilter<UserInfo> config;
+
         private final String authenticateHeader;
-        private final boolean proxy;
-        @Nullable
-        private final Key<UserInfo> userInfoKey;
         private final AsyncCloseable closeable;
 
-        BasicAuthStreamingHttpService(final CredentialsVerifier<UserInfo> credentialsVerifier,
-                                      final String realm,
-                                      final boolean proxy,
-                                      @Nullable final Key<UserInfo> userInfoKey,
-                                      final boolean utf8,
+        BasicAuthStreamingHttpService(final BasicAuthHttpServiceFilter<UserInfo> config,
                                       final StreamingHttpService next) {
             super(next);
-            this.credentialsVerifier = credentialsVerifier;
-            this.authenticateHeader = "Basic realm=\"" + realm + (utf8 ? "\", charset=\"UTF-8\"" : '"');
-            this.proxy = proxy;
-            this.userInfoKey = userInfoKey;
-            closeable = newCompositeCloseable().appendAll(next, credentialsVerifier);
+            this.config = config;
+            this.authenticateHeader = "Basic realm=\"" + config.realm + (config.utf8 ? "\", charset=\"UTF-8\"" : '"');
+            closeable = newCompositeCloseable().appendAll(next, config.credentialsVerifier);
         }
 
         @Override
@@ -256,7 +278,7 @@ public final class BasicAuthHttpServiceFilterBuilder<UserInfo> {
             //  - https://tools.ietf.org/html/rfc7617#section-2
             //  - https://tools.ietf.org/html/rfc2617#section-2
             final Iterator<? extends CharSequence> authorizations = request.headers()
-                    .values(proxy ? PROXY_AUTHORIZATION : AUTHORIZATION);
+                    .values(config.proxy ? PROXY_AUTHORIZATION : AUTHORIZATION);
             String token = "";
             while (authorizations.hasNext()) {
                 final CharSequence authorization = authorizations.next();
@@ -296,7 +318,7 @@ public final class BasicAuthHttpServiceFilterBuilder<UserInfo> {
             final String password = userIdAndPassword.length() - 1 == colonIdx ? "" :
                     userIdAndPassword.substring(colonIdx + 1);
 
-            return credentialsVerifier.apply(userId, password)
+            return config.credentialsVerifier.apply(userId, password)
                     .flatMap(userInfo -> onAuthenticated(ctx, request, factory, userInfo))
                     .onErrorResume(t -> {
                         if (t instanceof AuthenticationException) {
@@ -321,9 +343,9 @@ public final class BasicAuthHttpServiceFilterBuilder<UserInfo> {
         private Single<StreamingHttpResponse> onAccessDenied(final HttpMetaData requestMetaData,
                                                              final StreamingHttpResponseFactory factory) {
             final StreamingHttpResponse response = factory.newResponse(
-                    proxy ? PROXY_AUTHENTICATION_REQUIRED : UNAUTHORIZED).version(requestMetaData.version());
+                    config.proxy ? PROXY_AUTHENTICATION_REQUIRED : UNAUTHORIZED).version(requestMetaData.version());
             HttpHeaders headers = response.headers();
-            headers.set(proxy ? PROXY_AUTHENTICATE : WWW_AUTHENTICATE, authenticateHeader);
+            headers.set(config.proxy ? PROXY_AUTHENTICATE : WWW_AUTHENTICATE, authenticateHeader);
             headers.set(CONTENT_LENGTH, ZERO);
             return success(response);
         }
@@ -332,8 +354,8 @@ public final class BasicAuthHttpServiceFilterBuilder<UserInfo> {
                                                               final StreamingHttpRequest request,
                                                               final StreamingHttpResponseFactory factory,
                                                               final UserInfo userInfo) {
-            if (userInfoKey != null) {
-                AsyncContext.put(userInfoKey, userInfo);
+            if (config.userInfoKey != null) {
+                AsyncContext.put(config.userInfoKey, userInfo);
             }
             return delegate().handle(ctx, request, factory);
         }
