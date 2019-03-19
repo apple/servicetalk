@@ -62,17 +62,17 @@ the stream may also block the calling thread.
 
 #### Asynchronous and Aggregated
 
-This API paradigm performs I/O asynchronously (e.g. the calling thread is not blocked) and the user is notified when the
-all the I/O is complete. ServiceTalk provides [Reactive Streams](http://www.reactive-streams.org) compatible
-[Asynchronous Primitives](#asynchronous-primitives) but you this API is similar to using a `Future`/`Promise` based API
-(e.g. 
+This API paradigm performs I/O asynchronously (e.g. the calling thread is not blocked) and the user is notified when all
+the I/O is complete. ServiceTalk provides [Reactive Streams](http://www.reactive-streams.org) compatible
+[Asynchronous Primitives](#asynchronous-primitives) but using this API is similar to using a `Future`/`Promise` based
+API (e.g. 
 [CompletionStage](https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/CompletionStage.html) and
 [CompletableFuture](https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/CompletableFuture.html)).
 
 #### Asynchronous and Streaming
 
 This API paradigm performs I/O asynchronously (e.g. the calling thread is not blocked) and the user can provide/process
-the the I/O in chunks (as opposed to in a single `Object`). ServiceTalk provides
+the I/O in chunks (as opposed to in a single `Object`). ServiceTalk provides
 [Reactive Streams](http://www.reactive-streams.org) compatible [Asynchronous Primitives](#asynchronous-primitives) to
 enable this API paradigm.
 
@@ -109,7 +109,7 @@ that [subscribes](servicetalk-concurrent/src/main/java/io/servicetalk/concurrent
 more data via a
 [PublisherSource.Subscription](servicetalk-concurrent/src/main/java/io/servicetalk/concurrent/PublisherSource.java#L116-L129).
 
-Users are generally not expected to `subscribe` to a `PublisherSource`, or event deal directly with a `PublisherSource`.
+Users are generally not expected to `subscribe` to a `PublisherSource`, or even deal directly with a `PublisherSource`.
 Instead most users are expected to use the
 [Publisher](servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Publisher.java) API which provides
 many operators to define asynchronous and streaming control flow.
@@ -123,7 +123,7 @@ A [Single](servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/ap
 semantics as [Publisher](#publisher), but it either terminates with a
 [single value, or an error](servicetalk-concurrent/src/main/java/io/servicetalk/concurrent/SingleSource.java#L45-L71).
 
-Users are generally not expected to `subscribe` to a `SingleSource`, or event deal directly with a `SingleSource`.
+Users are generally not expected to `subscribe` to a `SingleSource`, or even deal directly with a `SingleSource`.
 Instead most users are expected to use the
 [Single](servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Single.java) API which provides many
 operators to define asynchronous and streaming control flow.
@@ -131,10 +131,10 @@ operators to define asynchronous and streaming control flow.
 #### [Completable](servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Completable.java)
 
 A [Single](servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Single.java) shares all the same
-semantics as [Publisher](#publisher), but it either terminates with a
-[successfully, or an error](servicetalk-concurrent/src/main/java/io/servicetalk/concurrent/CompletableSource.java#L39-63).
+semantics as [Publisher](#publisher), but it either terminates
+[successfully, or with an error](servicetalk-concurrent/src/main/java/io/servicetalk/concurrent/CompletableSource.java#L39-63).
 
-Users are generally not expected to `subscribe` to a `CompletableSource`, or event deal directly with a
+Users are generally not expected to `subscribe` to a `CompletableSource`, or even deal directly with a
 `CompletableSource`. Instead most users are expected to use the
 [Completable](servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Completable.java) API which
 provides many operators to define asynchronous and streaming control flow.
