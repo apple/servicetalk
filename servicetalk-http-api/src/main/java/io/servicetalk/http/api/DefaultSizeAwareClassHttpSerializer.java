@@ -21,6 +21,7 @@ import io.servicetalk.concurrent.BlockingIterable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.serialization.api.Serializer;
 
+import java.io.IOException;
 import java.util.function.Consumer;
 import java.util.function.IntUnaryOperator;
 
@@ -66,5 +67,17 @@ final class DefaultSizeAwareClassHttpSerializer<T> implements HttpSerializer<T> 
                                        final BufferAllocator allocator) {
         addContentType.accept(headers);
         return serializer.serialize(value, allocator, type, bytesEstimator);
+    }
+
+    @Override
+    public HttpPayloadWriter<T> serialize(final HttpHeaders headers, final HttpPayloadWriter<Buffer> payloadWriter,
+                                          final BufferAllocator allocator) {
+        addContentType.accept(headers);
+        return new DelegatingToBufferHttpPayloadWriter<T>(payloadWriter, allocator) {
+            @Override
+            public void write(final T object) throws IOException {
+                delegate.write(serializer.serialize(object, allocator, bytesEstimator.applyAsInt(0)));
+            }
+        };
     }
 }

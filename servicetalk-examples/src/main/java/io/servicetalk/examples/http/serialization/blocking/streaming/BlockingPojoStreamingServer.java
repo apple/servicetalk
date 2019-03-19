@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,48 +16,52 @@
 package io.servicetalk.examples.http.serialization.blocking.streaming;
 
 import io.servicetalk.concurrent.BlockingIterable;
-import io.servicetalk.concurrent.BlockingIterator;
 import io.servicetalk.data.jackson.JacksonSerializationProvider;
 import io.servicetalk.examples.http.serialization.CreatePojoRequest;
 import io.servicetalk.examples.http.serialization.PojoResponse;
+import io.servicetalk.http.api.HttpPayloadWriter;
 import io.servicetalk.http.api.HttpSerializationProvider;
 import io.servicetalk.http.netty.HttpServers;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static io.servicetalk.http.api.HttpHeaderNames.ALLOW;
 import static io.servicetalk.http.api.HttpRequestMethod.POST;
+import static io.servicetalk.http.api.HttpResponseStatus.CREATED;
+import static io.servicetalk.http.api.HttpResponseStatus.METHOD_NOT_ALLOWED;
+import static io.servicetalk.http.api.HttpResponseStatus.NOT_FOUND;
 import static io.servicetalk.http.api.HttpSerializationProviders.jsonSerializer;
 
 public final class BlockingPojoStreamingServer {
 
+    private static final AtomicInteger ID_GENERATOR = new AtomicInteger();
+
     public static void main(String[] args) throws Exception {
         HttpSerializationProvider serializer = jsonSerializer(new JacksonSerializationProvider());
         HttpServers.forPort(8080)
-                .listenBlockingStreamingAndAwait((ctx, request, responseFactory) -> {
+                .listenBlockingStreamingAndAwait((ctx, request, response) -> {
                     if (!"/pojos".equals(request.requestTarget())) {
-                        return responseFactory.notFound();
-                    }
-                    if (!POST.equals(request.method())) {
-                        return responseFactory.methodNotAllowed().addHeader(ALLOW, POST.name());
-                    }
-                    BlockingIterable<CreatePojoRequest> values = request
-                            .payloadBody(serializer.deserializerFor(CreatePojoRequest.class));
-                    List<PojoResponse> pojos = new ArrayList<>();
-                    AtomicInteger newId = new AtomicInteger(ThreadLocalRandom.current().nextInt(100));
-                    try (BlockingIterator<CreatePojoRequest> iterator = values.iterator()) {
-                        while (iterator.hasNext()) {
-                            CreatePojoRequest req = iterator.next();
-                            if (req != null) {
-                                pojos.add(new PojoResponse(newId.getAndIncrement(), req.getValue()));
+                        response.status(NOT_FOUND)
+                                .sendMetaData()
+                                .close();
+                    } else if (!POST.equals(request.method())) {
+                        response.status(METHOD_NOT_ALLOWED)
+                                .addHeader(ALLOW, POST.name())
+                                .sendMetaData()
+                                .close();
+                    } else {
+                        BlockingIterable<CreatePojoRequest> values = request
+                                .payloadBody(serializer.deserializerFor(CreatePojoRequest.class));
+
+                        response.status(CREATED);
+                        try (HttpPayloadWriter<PojoResponse> writer = response.sendMetaData(
+                                serializer.serializerFor(PojoResponse.class))) {
+
+                            for (CreatePojoRequest req : values) {
+                                writer.write(new PojoResponse(ID_GENERATOR.getAndIncrement(), req.getValue()));
                             }
                         }
                     }
-                    return responseFactory.created()
-                            .payloadBody(pojos, serializer.serializerFor(PojoResponse.class));
                 })
                 .awaitShutdown();
     }

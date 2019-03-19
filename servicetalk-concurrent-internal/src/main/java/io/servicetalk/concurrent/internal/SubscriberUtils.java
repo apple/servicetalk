@@ -244,4 +244,30 @@ public final class SubscriberUtils {
     public static <T> void handleExceptionFromOnSubscribe(Subscriber<T> subscriber, Throwable cause) {
         LOGGER.warn("Ignoring exception from onSubscribe of Subscriber {}.", subscriber, cause);
     }
+
+    /**
+     * Handle the case when a call to {@link SingleSource.Subscriber#onSubscribe(Cancellable)} throws from a source.
+     * @param subscriber The {@link SingleSource.Subscriber} that threw an exception from
+     * {@link SingleSource.Subscriber#onSubscribe(Cancellable)}.
+     * @param cause The exception thrown by {@code subscriber}.
+     * @param <T> The type of {@link SingleSource.Subscriber}.
+     */
+    public static <T> void handleExceptionFromOnSubscribe(SingleSource.Subscriber<T> subscriber, Throwable cause) {
+        LOGGER.warn("Ignoring exception from onSubscribe of Subscriber {}.", subscriber, cause);
+    }
+
+    /**
+     * Invokes {@link SingleSource.Subscriber#onError(Throwable)} ignoring an occurred exception if any.
+     * @param subscriber The {@link SingleSource.Subscriber} that may threw an exception from
+     * {@link SingleSource.Subscriber#onError(Throwable)}.
+     * @param cause The occurred {@link Throwable} for {@link SingleSource.Subscriber#onError(Throwable)}.
+     * @param <T> The type of {@link SingleSource.Subscriber}.
+     */
+    public static <T> void safeOnError(SingleSource.Subscriber<T> subscriber, Throwable cause) {
+        try {
+            subscriber.onError(cause);
+        } catch (Throwable t) {
+            LOGGER.debug("Ignoring exception from onError of Subscriber {}.", subscriber, t);
+        }
+    }
 }

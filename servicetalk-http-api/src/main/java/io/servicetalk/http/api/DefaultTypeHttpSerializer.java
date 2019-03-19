@@ -22,6 +22,7 @@ import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.serialization.api.Serializer;
 import io.servicetalk.serialization.api.TypeHolder;
 
+import java.io.IOException;
 import java.util.function.Consumer;
 
 /**
@@ -62,5 +63,17 @@ final class DefaultTypeHttpSerializer<T> implements HttpSerializer<T> {
                                        final BufferAllocator allocator) {
         addContentType.accept(headers);
         return serializer.serialize(value, allocator, type);
+    }
+
+    @Override
+    public HttpPayloadWriter<T> serialize(final HttpHeaders headers, final HttpPayloadWriter<Buffer> payloadWriter,
+                                          final BufferAllocator allocator) {
+        addContentType.accept(headers);
+        return new DelegatingToBufferHttpPayloadWriter<T>(payloadWriter, allocator) {
+            @Override
+            public void write(final T object) throws IOException {
+                delegate.write(serializer.serialize(object, allocator));
+            }
+        };
     }
 }

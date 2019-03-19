@@ -44,30 +44,6 @@ public abstract class BlockingStreamingHttpService implements AutoCloseable, Blo
     }
 
     /**
-     * Convert this {@link BlockingStreamingHttpService} to the {@link HttpService} asynchronous API.
-     * <p>
-     * Note that the resulting {@link HttpService} may still be subject to any blocking, in memory
-     * aggregation, and other behavior as this {@link BlockingStreamingHttpService}.
-     *
-     * @return a {@link HttpService} representation of this {@link BlockingStreamingHttpService}.
-     */
-    public final HttpService asService() {
-        return asStreamingService().asService();
-    }
-
-    /**
-     * Convert this {@link BlockingStreamingHttpService} to the {@link BlockingHttpService} asynchronous API.
-     * <p>
-     * Note that the resulting {@link BlockingHttpService} may still be subject to any blocking, in memory
-     * aggregation, and other behavior as this {@link BlockingStreamingHttpService}.
-     *
-     * @return a {@link BlockingHttpService} representation of this {@link BlockingStreamingHttpService}.
-     */
-    public final BlockingHttpService asBlockingService() {
-        return asStreamingService().asBlockingService();
-    }
-
-    /**
      * Returns the {@link HttpExecutionStrategy} for this {@link BlockingStreamingHttpService}.
      *
      * @return The {@link HttpExecutionStrategy} for this {@link BlockingStreamingHttpService}.

@@ -50,17 +50,6 @@ public abstract class StreamingHttpService implements AsyncCloseable, StreamingH
     }
 
     /**
-     * Convert this {@link StreamingHttpService} to the {@link BlockingStreamingHttpService} API.
-     * <p>
-     * This API is provided for convenience for a more familiar sequential programming model. It is recommended that
-     * filters are implemented using the {@link StreamingHttpService} asynchronous API for maximum portability.
-     * @return a {@link BlockingStreamingHttpService} representation of this {@link StreamingHttpService}.
-     */
-    public final BlockingStreamingHttpService asBlockingStreamingService() {
-        return asBlockingStreamingServiceInternal();
-    }
-
-    /**
      * Convert this {@link StreamingHttpService} to the {@link BlockingHttpService} API.
      * <p>
      * This API is provided for convenience for a more familiar sequential programming model. It is recommended that
@@ -82,10 +71,6 @@ public abstract class StreamingHttpService implements AsyncCloseable, StreamingH
 
     HttpService asServiceInternal() {
         return StreamingHttpServiceToHttpService.transform(this);
-    }
-
-    BlockingStreamingHttpService asBlockingStreamingServiceInternal() {
-        return StreamingHttpServiceToBlockingStreamingHttpService.transform(this);
     }
 
     BlockingHttpService asBlockingServiceInternal() {

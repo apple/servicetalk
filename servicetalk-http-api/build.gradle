@@ -36,6 +36,7 @@ dependencies {
   api "io.servicetalk:servicetalk-concurrent-api:$project.version"
   api "io.servicetalk:servicetalk-serialization-api:$project.version"
   api "io.servicetalk:servicetalk-transport-api:$project.version"
+  api "io.servicetalk:servicetalk-oio-api:$project.version"
 
   implementation "com.google.code.findbugs:jsr305"
   implementation "io.servicetalk:servicetalk-annotations:$project.version"

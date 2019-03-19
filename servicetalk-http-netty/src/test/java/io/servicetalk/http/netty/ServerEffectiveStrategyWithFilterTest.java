@@ -15,9 +15,14 @@
  */
 package io.servicetalk.http.netty;
 
+import io.servicetalk.buffer.api.Buffer;
+import io.servicetalk.concurrent.internal.PlatformDependent;
 import io.servicetalk.http.api.BlockingHttpClient;
+import io.servicetalk.oio.api.PayloadWriter;
 
 import org.junit.Test;
+
+import java.io.IOException;
 
 public class ServerEffectiveStrategyWithFilterTest extends AbstractServerEffectiveStrategyTest {
 
@@ -38,8 +43,20 @@ public class ServerEffectiveStrategyWithFilterTest extends AbstractServerEffecti
 
     @Test
     public void blockingStreamingService() throws Exception {
-        BlockingHttpClient client = context(builder.listenBlockingStreamingAndAwait((ctx, request, factory) ->
-                serviceExecutor.submit(() -> factory.ok().payloadBody(request.payloadBody())).toFuture().get()));
+        BlockingHttpClient client = context(builder.listenBlockingStreamingAndAwait((ctx, request, response) ->
+                serviceExecutor.submit(() -> {
+                    try (PayloadWriter<Buffer> payloadWriter = response.sendMetaData()) {
+                        request.payloadBody().forEach(buffer -> {
+                            try {
+                                payloadWriter.write(buffer);
+                            } catch (IOException e) {
+                                PlatformDependent.throwException(e);
+                            }
+                        });
+                    } catch (IOException e) {
+                        PlatformDependent.throwException(e);
+                    }
+                }).toFuture().get()));
         client.request(client.get("/").payloadBody(client.executionContext().bufferAllocator().fromAscii("Hello")));
         verifyOffloadCount();
         assertOffload(ServerOffloadPoint.ServiceHandle);

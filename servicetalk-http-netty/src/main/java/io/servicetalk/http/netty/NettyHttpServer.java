@@ -177,10 +177,11 @@ final class NettyHttpServer {
                                   final CompositeFlushStrategy compositeFlushStrategy,
                                   final HttpHeadersFactory headersFactory,
                                   final boolean drainRequestPayloadBody) {
-            super(new DefaultHttpResponseFactory(headersFactory, connection.executionContext().bufferAllocator()),
-                  new DefaultStreamingHttpResponseFactory(headersFactory,
-                          connection.executionContext().bufferAllocator()),
-                  new DefaultBlockingStreamingHttpResponseFactory(headersFactory,
+            super(headersFactory,
+                    new DefaultHttpResponseFactory(headersFactory, connection.executionContext().bufferAllocator()),
+                    new DefaultStreamingHttpResponseFactory(headersFactory,
+                            connection.executionContext().bufferAllocator()),
+                    new DefaultBlockingStreamingHttpResponseFactory(headersFactory,
                             connection.executionContext().bufferAllocator()));
             this.connection = connection;
             this.service = service;

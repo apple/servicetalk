@@ -46,7 +46,6 @@ public final class CompletableProcessor extends Completable implements Subscribe
             AtomicIntegerFieldUpdater.newUpdater(CompletableProcessor.class, "drainingTheQueue");
 
     private final Queue<Subscriber> subscribers = newUnboundedLinkedMpscQueue();
-    @SuppressWarnings("unused")
     @Nullable
     private volatile TerminalNotification terminalSignal;
     @SuppressWarnings({"unused", "FieldCanBeLocal"})

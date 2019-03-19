@@ -49,15 +49,6 @@ public abstract class HttpService implements HttpRequestHandler, AsyncCloseable 
     }
 
     /**
-     * Convert this {@link HttpService} to the {@link BlockingStreamingHttpService} API.
-     *
-     * @return a {@link BlockingStreamingHttpService} representation of this {@link HttpService}.
-     */
-    public final BlockingStreamingHttpService asBlockingStreamingService() {
-        return asStreamingService().asBlockingStreamingService();
-    }
-
-    /**
      * Convert this {@link HttpService} to the {@link BlockingHttpService} API.
      *
      * @return a {@link BlockingHttpService} representation of this {@link HttpService}.
