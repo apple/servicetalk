@@ -17,7 +17,7 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
-import io.servicetalk.concurrent.CompletableSource;
+import io.servicetalk.concurrent.CompletableSource.Processor;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.concurrent.api.DefaultThreadFactory;
@@ -401,7 +401,7 @@ public class HttpRequestEncoderTest {
     public void protocolPayloadEndOutboundShouldNotTriggerOnFailedFlush() throws Exception {
         AtomicReference<CloseHandler> closeHandlerRef = new AtomicReference<>();
         try (CompositeCloseable resources = newCompositeCloseable()) {
-            CompletableSource.Processor serverCloseTrigger = newCompletableProcessor();
+            Processor serverCloseTrigger = newCompletableProcessor();
             CountDownLatch serverChannelLatch = new CountDownLatch(1);
             AtomicReference<Channel> serverChannelRef = new AtomicReference<>();
 

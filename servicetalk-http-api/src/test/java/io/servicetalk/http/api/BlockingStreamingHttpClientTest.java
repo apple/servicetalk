@@ -16,6 +16,7 @@
 package io.servicetalk.http.api;
 
 import io.servicetalk.concurrent.CompletableSource;
+import io.servicetalk.concurrent.CompletableSource.Processor;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
@@ -118,7 +119,7 @@ public class BlockingStreamingHttpClientTest extends AbstractBlockingStreamingHt
         }
 
         private final class TestClientTransport extends StreamingHttpClientFilter {
-            private final CompletableSource.Processor onClose = newCompletableProcessor();
+            private final Processor onClose = newCompletableProcessor();
             private final ExecutionContext executionContext;
             private final ConnectionContext connectionContext;
 

@@ -20,7 +20,6 @@ import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.CompletableSource.Subscriber;
 import io.servicetalk.concurrent.SingleSource;
-import io.servicetalk.concurrent.SingleSource.Processor;
 import io.servicetalk.concurrent.api.AsyncCloseable;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Executor;
@@ -104,7 +103,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
     private final ExecutionContext executionContext;
     @Nullable
     private final CompletableSource.Processor onClosing;
-    private final Processor<Throwable, Throwable> transportError = newSingleProcessor();
+    private final SingleSource.Processor<Throwable, Throwable> transportError = newSingleProcessor();
 
     private volatile FlushStrategy flushStrategy;
     private volatile WritableListener writableListener = PLACE_HOLDER_WRITABLE_LISTENER;

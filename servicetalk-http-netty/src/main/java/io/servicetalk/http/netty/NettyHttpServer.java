@@ -16,7 +16,7 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.concurrent.Cancellable;
-import io.servicetalk.concurrent.CompletableSource;
+import io.servicetalk.concurrent.CompletableSource.Processor;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.api.Completable;
@@ -211,7 +211,7 @@ final class NettyHttpServer {
                 // resubscribing to the NettyChannelPublisher before the previous subscriber has terminated. Otherwise
                 // we may attempt to do duplicate subscribe on NettyChannelPublisher, which will result in a connection
                 // closure.
-                CompletableSource.Processor processor = newCompletableProcessor();
+                Processor processor = newCompletableProcessor();
                 StreamingHttpRequest request2 = request.transformRawPayloadBody(
                         // Cancellation is assumed to close the connection, or be ignored if this Subscriber has already
                         // terminated. That means we don't need to trigger the processor as completed because we don't

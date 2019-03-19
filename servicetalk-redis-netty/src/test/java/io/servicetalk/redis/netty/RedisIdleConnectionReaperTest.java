@@ -16,7 +16,7 @@
 package io.servicetalk.redis.netty;
 
 import io.servicetalk.concurrent.Cancellable;
-import io.servicetalk.concurrent.CompletableSource;
+import io.servicetalk.concurrent.CompletableSource.Processor;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.LegacyMockedSingleListenerRule;
 import io.servicetalk.concurrent.api.TestPublisherSubscriber;
@@ -94,7 +94,7 @@ public class RedisIdleConnectionReaperTest {
 
     private final TestPublisherSubscriber<RedisData> requestSubscriber = new TestPublisherSubscriber<>();
 
-    private CompletableSource.Processor delegateConnectionOnCloseCompletable;
+    private Processor delegateConnectionOnCloseCompletable;
 
     private final AtomicReference<Runnable> timerRunnableRef = new AtomicReference<>();
 

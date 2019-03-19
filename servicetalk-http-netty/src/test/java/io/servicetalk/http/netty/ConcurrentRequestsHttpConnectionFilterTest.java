@@ -19,7 +19,7 @@ import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.client.api.ConnectionClosedException;
 import io.servicetalk.client.api.MaxRequestLimitExceededException;
-import io.servicetalk.concurrent.CompletableSource;
+import io.servicetalk.concurrent.CompletableSource.Processor;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
@@ -168,7 +168,7 @@ public class ConcurrentRequestsHttpConnectionFilterTest {
 
     @Test
     public void throwMaxConcurrencyExceededOnOversubscribedConnection() throws Exception {
-        final CompletableSource.Processor lastRequestFinished = newCompletableProcessor();
+        final Processor lastRequestFinished = newCompletableProcessor();
 
         try (ServerContext serverContext = HttpServers.forAddress(localAddress(0))
                 .listenStreamingAndAwait((ctx, request, responseFactory) -> {
@@ -259,7 +259,7 @@ public class ConcurrentRequestsHttpConnectionFilterTest {
                     })
                     .toFuture().get();
 
-            final CompletableSource.Processor closedFinally = newCompletableProcessor();
+            final Processor closedFinally = newCompletableProcessor();
             connection.onClose().doAfterFinally(closedFinally::onComplete).subscribe();
 
             try {

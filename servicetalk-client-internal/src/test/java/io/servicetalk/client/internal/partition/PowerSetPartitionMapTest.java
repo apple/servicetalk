@@ -18,7 +18,7 @@ package io.servicetalk.client.internal.partition;
 import io.servicetalk.client.api.partition.PartitionAttributes;
 import io.servicetalk.client.api.partition.PartitionAttributes.Key;
 import io.servicetalk.client.api.partition.PartitionAttributesBuilder;
-import io.servicetalk.concurrent.CompletableSource;
+import io.servicetalk.concurrent.CompletableSource.Processor;
 import io.servicetalk.concurrent.CompletableSource.Subscriber;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
@@ -42,7 +42,7 @@ public class PowerSetPartitionMapTest {
     private static final Key<Boolean> IS_MASTER = Key.newKey("master");
     private static final Key<Boolean> EXTRA = Key.newKey("extra");
     private static final ListenableAsyncCloseable VALUE = new ListenableAsyncCloseable() {
-        private final CompletableSource.Processor close = newCompletableProcessor();
+        private final Processor close = newCompletableProcessor();
 
         @Override
         public Completable onClose() {

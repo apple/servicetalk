@@ -15,7 +15,7 @@
  */
 package io.servicetalk.http.router.predicate;
 
-import io.servicetalk.concurrent.CompletableSource;
+import io.servicetalk.concurrent.CompletableSource.Processor;
 import io.servicetalk.concurrent.api.DefaultThreadFactory;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
@@ -118,7 +118,7 @@ public class HttpServerOverrideOffloadingTest {
         public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx, final StreamingHttpRequest request,
                                                     final StreamingHttpResponseFactory responseFactory) {
             invoked.incrementAndGet();
-            CompletableSource.Processor cp = newCompletableProcessor();
+            Processor cp = newCompletableProcessor();
             if (isInvalidThread.test(currentThread())) {
                 errors.add(new AssertionError("Invalid thread called the service. Thread: " +
                         currentThread()));

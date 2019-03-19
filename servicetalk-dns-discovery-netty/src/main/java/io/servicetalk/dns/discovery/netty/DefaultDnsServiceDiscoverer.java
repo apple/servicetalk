@@ -20,6 +20,7 @@ import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.CompletableSource;
+import io.servicetalk.concurrent.CompletableSource.Processor;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.internal.SubscribableCompletable;
@@ -79,7 +80,7 @@ final class DefaultDnsServiceDiscoverer
     private static final Comparator<InetAddress> INET_ADDRESS_COMPARATOR = comparing(o -> wrap(o.getAddress()));
     private static final Cancellable TERMINATED = () -> { };
 
-    private final CompletableSource.Processor closeCompletable = newCompletableProcessor();
+    private final Processor closeCompletable = newCompletableProcessor();
     private final Map<String, List<DiscoverEntry>> registerMap = new HashMap<>(8);
     private final EventLoopAwareNettyIoExecutor nettyIoExecutor;
     private final DnsNameResolver resolver;

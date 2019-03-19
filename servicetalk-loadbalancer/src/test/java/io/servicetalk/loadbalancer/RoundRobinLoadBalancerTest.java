@@ -20,7 +20,7 @@ import io.servicetalk.client.api.DefaultServiceDiscovererEvent;
 import io.servicetalk.client.api.LoadBalancerReadyEvent;
 import io.servicetalk.client.api.NoAvailableHostException;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
-import io.servicetalk.concurrent.CompletableSource;
+import io.servicetalk.concurrent.CompletableSource.Processor;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.api.Completable;
@@ -410,7 +410,7 @@ public class RoundRobinLoadBalancerTest {
     @SuppressWarnings("unchecked")
     private TestLoadBalancedConnection newConnection(final String address) {
         final TestLoadBalancedConnection cnx = mock(TestLoadBalancedConnection.class);
-        final CompletableSource.Processor closeCompletable = newCompletableProcessor();
+        final Processor closeCompletable = newCompletableProcessor();
         when(cnx.closeAsync()).thenAnswer(__ -> {
             closeCompletable.onComplete();
             return closeCompletable;

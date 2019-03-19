@@ -17,6 +17,7 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.CompletableSource;
+import io.servicetalk.concurrent.CompletableSource.Processor;
 import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.SingleSource.Subscriber;
 import io.servicetalk.concurrent.api.Completable;
@@ -72,7 +73,7 @@ final class BlockingStreamingHttpServiceToStreamingHttpService extends Streaming
                     return;
                 }
 
-                final CompletableSource.Processor payloadProcessor = newCompletableProcessor();
+                final Processor payloadProcessor = newCompletableProcessor();
                 DefaultBlockingStreamingHttpServerResponse response = null;
                 BufferHttpPayloadWriter payloadWriterOuter = null;
                 try {

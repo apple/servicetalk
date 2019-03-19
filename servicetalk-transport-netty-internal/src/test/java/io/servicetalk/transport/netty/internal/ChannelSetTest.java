@@ -15,7 +15,7 @@
  */
 package io.servicetalk.transport.netty.internal;
 
-import io.servicetalk.concurrent.CompletableSource;
+import io.servicetalk.concurrent.CompletableSource.Processor;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.LegacyMockedCompletableListenerRule;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
@@ -79,8 +79,8 @@ public class ChannelSetTest {
 
     private final ChannelId channelId = DefaultChannelId.newInstance();
     private final ChannelSet fixture = new ChannelSet(immediate());
-    private final CompletableSource.Processor closeAsyncGracefullyCompletable = newCompletableProcessor();
-    private final CompletableSource.Processor closeAsyncCompletable = newCompletableProcessor();
+    private final Processor closeAsyncGracefullyCompletable = newCompletableProcessor();
+    private final Processor closeAsyncCompletable = newCompletableProcessor();
     private GenericFutureListener<ChannelFuture> listener;
 
     @Before
