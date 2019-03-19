@@ -137,7 +137,7 @@ public final class BasicAuthHttpServiceFilter<UserInfo> implements HttpServiceFi
          * @return {@code this}
          */
         public Builder<UserInfo> userInfoKey(final Key<UserInfo> userInfoKey) {
-            this.userInfoKey = userInfoKey;
+            this.userInfoKey = requireNonNull(userInfoKey);
             return this;
         }
 
@@ -160,7 +160,7 @@ public final class BasicAuthHttpServiceFilter<UserInfo> implements HttpServiceFi
         /**
          * Creates a new instance for non-proxy service.
          * <p>
-         * It will use the next constants to handle authentication:
+         * It will use the following constants to handle authentication:
          *
          * <blockquote><table cellpadding=1 cellspacing=0
          * summary="Response status code, authenticate and authorization headers for non-proxy Basic auth">
@@ -187,7 +187,7 @@ public final class BasicAuthHttpServiceFilter<UserInfo> implements HttpServiceFi
         /**
          * Creates a new instance for proxy service.
          * <p>
-         * It will use the next constants to handle authentication:
+         * It will use the following constants to handle authentication:
          *
          * <blockquote><table cellpadding=1 cellspacing=0
          * summary="Response status code, authenticate and authorization headers for proxy Basic auth">
