@@ -66,7 +66,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
-public class HttpServiceAsyncContextTest {
+public class StreamingHttpServiceAsyncContextTest {
     private static final Key<CharSequence> K1 = Key.newKey("k1");
     private static final CharSequence REQUEST_ID_HEADER = newAsciiString("request-id");
     private static final String IO_THREAD_PREFIX = "servicetalk-global-io-executor-";
