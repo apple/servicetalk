@@ -20,11 +20,11 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.BlockingHttpClient.ReservedBlockingHttpConnection;
 import io.servicetalk.http.api.BlockingStreamingHttpClient.ReservedBlockingStreamingHttpConnection;
 import io.servicetalk.http.api.HttpClient.ReservedHttpConnection;
-import io.servicetalk.http.api.StreamingHttpClientToBlockingHttpClient.ReservedStreamingHttpConnectionToBlocking;
-import io.servicetalk.http.api.StreamingHttpClientToBlockingStreamingHttpClient.ReservedStreamingHttpConnectionToBlockingStreaming;
-import io.servicetalk.http.api.StreamingHttpClientToHttpClient.ReservedStreamingHttpConnectionToReservedHttpConnection;
 import io.servicetalk.transport.api.ExecutionContext;
 
+import static io.servicetalk.http.api.HttpExecutionStrategies.OFFLOAD_NONE_STRATEGY;
+import static io.servicetalk.http.api.HttpExecutionStrategies.OFFLOAD_RECEIVE_META_STRATEGY;
+import static io.servicetalk.http.api.HttpExecutionStrategies.OFFLOAD_SEND_STRATEGY;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -92,7 +92,8 @@ public final class StreamingHttpClient extends StreamingHttpRequester {
      * @return a {@link HttpClient} representation of this {@link StreamingHttpRequester}.
      */
     public HttpClient asClient() {
-        return StreamingHttpClientToHttpClient.transform(this);
+        return new HttpClient(this,
+                filterChain.effectiveExecutionStrategy(OFFLOAD_RECEIVE_META_STRATEGY));
     }
 
     /**
@@ -103,7 +104,8 @@ public final class StreamingHttpClient extends StreamingHttpRequester {
      * @return a {@link BlockingStreamingHttpClient} representation of this {@link StreamingHttpClient}.
      */
     public BlockingStreamingHttpClient asBlockingStreamingClient() {
-        return StreamingHttpClientToBlockingStreamingHttpClient.transform(this);
+        return new BlockingStreamingHttpClient(this,
+                filterChain.effectiveExecutionStrategy(OFFLOAD_SEND_STRATEGY));
     }
 
     /**
@@ -114,7 +116,7 @@ public final class StreamingHttpClient extends StreamingHttpRequester {
      * @return a {@link BlockingHttpClient} representation of this {@link StreamingHttpClient}.
      */
     public BlockingHttpClient asBlockingClient() {
-        return StreamingHttpClientToBlockingHttpClient.transform(this);
+        return new BlockingHttpClient(this, filterChain.effectiveExecutionStrategy(OFFLOAD_NONE_STRATEGY));
     }
 
     @Override
@@ -173,7 +175,8 @@ public final class StreamingHttpClient extends StreamingHttpRequester {
          */
         @Override
         public ReservedHttpConnection asConnection() {
-            return ReservedStreamingHttpConnectionToReservedHttpConnection.transform(this);
+            return new ReservedHttpConnection(this,
+                    filterChain.effectiveExecutionStrategy(OFFLOAD_RECEIVE_META_STRATEGY));
         }
 
         /**
@@ -186,7 +189,8 @@ public final class StreamingHttpClient extends StreamingHttpRequester {
          */
         @Override
         public ReservedBlockingStreamingHttpConnection asBlockingStreamingConnection() {
-            return ReservedStreamingHttpConnectionToBlockingStreaming.transform(this);
+            return new ReservedBlockingStreamingHttpConnection(this,
+                    filterChain.effectiveExecutionStrategy(OFFLOAD_SEND_STRATEGY));
         }
 
         /**
@@ -200,7 +204,8 @@ public final class StreamingHttpClient extends StreamingHttpRequester {
          */
         @Override
         public ReservedBlockingHttpConnection asBlockingConnection() {
-            return ReservedStreamingHttpConnectionToBlocking.transform(this);
+            return new ReservedBlockingHttpConnection(this,
+                    filterChain.effectiveExecutionStrategy(OFFLOAD_NONE_STRATEGY));
         }
     }
 }

@@ -46,6 +46,7 @@ import static io.servicetalk.concurrent.api.Single.success;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
+import static io.servicetalk.http.api.RequestResponseFactories.toBlockingStreaming;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.util.Collections.singleton;
 import static org.junit.Assert.assertArrayEquals;
@@ -71,8 +72,7 @@ public class BlockingStreamingHttpServiceTest {
     private static final BufferAllocator allocator = DEFAULT_ALLOCATOR;
     private final StreamingHttpRequestResponseFactory reqRespFactory = new DefaultStreamingHttpRequestResponseFactory(
             allocator, DefaultHttpHeadersFactory.INSTANCE);
-    private final BlockingStreamingHttpRequestResponseFactory blkReqRespFactory =
-            new StreamingHttpRequestResponseFactoryToBlockingStreamingHttpRequestResponseFactory(reqRespFactory);
+    private final BlockingStreamingHttpRequestResponseFactory blkReqRespFactory = toBlockingStreaming(reqRespFactory);
     private final HttpServiceContext mockCtx = new TestHttpServiceContext(reqRespFactory, mockExecutionCtx);
 
     @Before
