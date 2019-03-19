@@ -1,7 +1,7 @@
 # ServiceTalk
 
 ServiceTalk is a cross-platform network application framework with APIs tailored to specific protocols (e.g. HTTP/1.x,
-HTTP/2.x, etc...) which supports multiple [programming paradigms](#programming-paradigms).
+HTTP/2.x, etc...) and supports multiple [programming paradigms](#programming-paradigms).
 
 It is built on [Netty](https://netty.io) and is designed to provide most of the performance/scalability benefits of
 Netty for common networking protocols used in service to service communication. ServiceTalk provides "smart client" like
