@@ -33,7 +33,7 @@ non-blocking I/O core and taking care of the threading model complexities intern
 
 When developing a new application it may not be clear if the complexity of asynchronous control flow is justified. It
 may be the case that initially the scale is relatively small, but over time the scale may grow. The scaling or response
-size characteristics may not be uniform for all APIs offered by the application (e.g. health check vs file server).
+size characteristics may not be uniform for all APIs offered by the application (e.g. health check vs file serving).
 ServiceTalk is designed to evolve with your application so that you can get started quickly and avoid/defer the
 complexity of asynchronous control flow in these cases. This can dramatically lower the bar to entry for ServiceTalk
 compared with most non-blocking I/O frameworks and avoid "application re-write" if scaling/data size characteristics
