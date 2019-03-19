@@ -22,6 +22,7 @@ import io.servicetalk.client.api.partition.PartitionAttributes;
 import io.servicetalk.client.api.partition.PartitionAttributesBuilder;
 import io.servicetalk.client.api.partition.PartitionedServiceDiscovererEvent;
 import io.servicetalk.http.api.HttpClient;
+import io.servicetalk.http.api.HttpConnectionBuilder;
 import io.servicetalk.http.api.HttpHeaderNames;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.MultiAddressHttpClientBuilder;
@@ -152,5 +153,15 @@ public final class HttpClients {
         return new DefaultPartitionedHttpClientBuilder<>(
                 new DefaultSingleAddressHttpClientBuilder<>(address, serviceDiscoverer),
                 partitionAttributesBuilderFactory);
+    }
+
+    /**
+     * Creates a {@link HttpConnectionBuilder} that can be used for building connections to resolved addresses.
+     *
+     * @param <R> the type of address after resolution (resolved address)
+     * @return new builder
+     */
+    public static <R> HttpConnectionBuilder<R> newConnectionBuilder() {
+        return new DefaultHttpConnectionBuilder<>();
     }
 }
