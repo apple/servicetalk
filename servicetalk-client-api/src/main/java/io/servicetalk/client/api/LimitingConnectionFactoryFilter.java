@@ -26,7 +26,6 @@ import java.net.ConnectException;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.client.api.LimitingConnectionFactoryFilter.LimitingFilter.MaxConnectionsLimiter;
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static java.util.Objects.requireNonNull;
@@ -132,7 +131,7 @@ public final class LimitingConnectionFactoryFilter<ResolvedAddress, C extends Li
         }
     }
 
-    static final class LimitingFilter<ResolvedAddress, C extends ListenableAsyncCloseable>
+    private static final class LimitingFilter<ResolvedAddress, C extends ListenableAsyncCloseable>
             implements ConnectionFactory<ResolvedAddress, C> {
 
         private final ConnectionFactory<ResolvedAddress, ? extends C> original;
@@ -169,97 +168,97 @@ public final class LimitingConnectionFactoryFilter<ResolvedAddress, C extends Li
         public Completable closeAsync() {
             return original.closeAsync();
         }
+    }
 
-        static final class MaxConnectionsLimiter<ResolvedAddress, C extends ListenableAsyncCloseable>
-                implements ConnectionLimiter<ResolvedAddress, C> {
+    private static final class MaxConnectionsLimiter<ResolvedAddress, C extends ListenableAsyncCloseable>
+            implements ConnectionLimiter<ResolvedAddress, C> {
 
-            private static final AtomicIntegerFieldUpdater<MaxConnectionsLimiter> countUpdater =
-                    newUpdater(MaxConnectionsLimiter.class, "count");
+        private static final AtomicIntegerFieldUpdater<MaxConnectionsLimiter> countUpdater =
+                newUpdater(MaxConnectionsLimiter.class, "count");
 
-            @SuppressWarnings("unused")
-            private volatile int count;
-            private final int maxAllowed;
+        @SuppressWarnings("unused")
+        private volatile int count;
+        private final int maxAllowed;
 
-            MaxConnectionsLimiter(int maxAllowed) {
-                this.maxAllowed = maxAllowed;
-            }
+        MaxConnectionsLimiter(int maxAllowed) {
+            this.maxAllowed = maxAllowed;
+        }
 
-            @Override
-            public boolean isConnectAllowed(final ResolvedAddress target) {
-                for (;;) {
-                    final int c = count;
-                    if (c == maxAllowed) {
-                        return false;
-                    }
-                    if (countUpdater.compareAndSet(this, c, c + 1)) {
-                        return true;
-                    }
+        @Override
+        public boolean isConnectAllowed(final ResolvedAddress target) {
+            for (;;) {
+                final int c = count;
+                if (c == maxAllowed) {
+                    return false;
                 }
-            }
-
-            @Override
-            public void onConnectionClose(final ResolvedAddress target) {
-                countUpdater.decrementAndGet(this);
+                if (countUpdater.compareAndSet(this, c, c + 1)) {
+                    return true;
+                }
             }
         }
 
-        private static final class CountingSubscriber<A, C extends ListenableAsyncCloseable>
-                implements Subscriber<C> {
+        @Override
+        public void onConnectionClose(final ResolvedAddress target) {
+            countUpdater.decrementAndGet(this);
+        }
+    }
 
-            private static final AtomicIntegerFieldUpdater<CountingSubscriber> doneUpdater =
-                    newUpdater(CountingSubscriber.class, "done");
+    private static final class CountingSubscriber<A, C extends ListenableAsyncCloseable>
+            implements Subscriber<C> {
 
-            @SuppressWarnings("unused")
-            private volatile int done;
-            private final Subscriber<? super C> original;
-            private final ConnectionLimiter<A, ? extends C> limiter;
-            private final A address;
+        private static final AtomicIntegerFieldUpdater<CountingSubscriber> doneUpdater =
+                newUpdater(CountingSubscriber.class, "done");
 
-            CountingSubscriber(final Subscriber<? super C> original, final ConnectionLimiter<A, ? extends C> limiter,
-                               final A address) {
-                this.original = original;
-                this.limiter = limiter;
-                this.address = address;
-            }
+        @SuppressWarnings("unused")
+        private volatile int done;
+        private final Subscriber<? super C> original;
+        private final ConnectionLimiter<A, ? extends C> limiter;
+        private final A address;
 
-            @Override
-            public void onSubscribe(final Cancellable cancellable) {
-                original.onSubscribe(() -> {
-                    try {
-                        sendCloseCallback();
-                    } finally {
-                        cancellable.cancel();
-                    }
-                });
-            }
+        CountingSubscriber(final Subscriber<? super C> original, final ConnectionLimiter<A, ? extends C> limiter,
+                           final A address) {
+            this.original = original;
+            this.limiter = limiter;
+            this.address = address;
+        }
 
-            @Override
-            public void onSuccess(@Nullable final C result) {
-                if (result == null) {
-                    try {
-                        sendCloseCallback();
-                    } finally {
-                        original.onError(new ConnectException("Null connection received"));
-                    }
-                } else {
-                    result.onClose().doFinally(this::sendCloseCallback).subscribe();
-                    original.onSuccess(result);
-                }
-            }
-
-            @Override
-            public void onError(final Throwable t) {
+        @Override
+        public void onSubscribe(final Cancellable cancellable) {
+            original.onSubscribe(() -> {
                 try {
                     sendCloseCallback();
                 } finally {
-                    original.onError(t);
+                    cancellable.cancel();
                 }
-            }
+            });
+        }
 
-            private void sendCloseCallback() {
-                if (doneUpdater.compareAndSet(this, 0, 1)) {
-                    limiter.onConnectionClose(address);
+        @Override
+        public void onSuccess(@Nullable final C result) {
+            if (result == null) {
+                try {
+                    sendCloseCallback();
+                } finally {
+                    original.onError(new ConnectException("Null connection received"));
                 }
+            } else {
+                result.onClose().doFinally(this::sendCloseCallback).subscribe();
+                original.onSuccess(result);
+            }
+        }
+
+        @Override
+        public void onError(final Throwable t) {
+            try {
+                sendCloseCallback();
+            } finally {
+                original.onError(t);
+            }
+        }
+
+        private void sendCloseCallback() {
+            if (doneUpdater.compareAndSet(this, 0, 1)) {
+                limiter.onConnectionClose(address);
             }
         }
     }
