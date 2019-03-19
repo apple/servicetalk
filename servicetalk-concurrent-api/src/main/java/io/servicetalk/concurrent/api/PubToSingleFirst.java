@@ -17,17 +17,15 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.PublisherSource;
 
-import java.util.NoSuchElementException;
+import java.util.function.Supplier;
 
 final class PubToSingleFirst<T> extends AbstractPubToSingle<T> {
 
-    /**
-     * New instance.
-     *
-     * @param source {@link Publisher} for this {@link Single}.
-     */
-    PubToSingleFirst(Publisher<T> source) {
+    private final Supplier<T> defaultValueSupplier;
+
+    PubToSingleFirst(Publisher<T> source, final Supplier<T> defaultValueSupplier) {
         super(source.executor(), source);
+        this.defaultValueSupplier = defaultValueSupplier;
     }
 
     @Override
@@ -40,7 +38,11 @@ final class PubToSingleFirst<T> extends AbstractPubToSingle<T> {
 
             @Override
             Object terminalSignalForComplete() {
-                return new NoSuchElementException();
+                try {
+                    return defaultValueSupplier.get();
+                } catch (Throwable t) {
+                    return t;
+                }
             }
 
             @Override

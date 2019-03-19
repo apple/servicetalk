@@ -128,12 +128,16 @@ public class PubToSingleFirstTest {
                         currentThread()));
             }
             analyzed.countDown();
-        }).subscribeOn(executorRule.executor()).first().toFuture().get();
+        }).subscribeOn(executorRule.executor()).first(() -> {
+            throw new NoSuchElementException();
+        }).toFuture().get();
         analyzed.await();
         assertThat("Unexpected errors observed: " + errors, errors, hasSize(0));
     }
 
     private LegacyMockedSingleListenerRule<String> listen(Publisher<String> src) {
-        return listenerRule.listen(src.first());
+        return listenerRule.listen(src.first(() -> {
+            throw new NoSuchElementException();
+        }));
     }
 }

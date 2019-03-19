@@ -306,7 +306,7 @@ public class RedisConnectionTest extends BaseRedisClientTest {
             RedisCommander commander = filteredConnection.asCommander();
 
             if (monitor) {
-                assertNotNull(awaitIndefinitely(commander.monitor().first()));
+                assertNotNull(awaitIndefinitely(commander.monitor().first(() -> null)));
             } else {
                 assertNotNull(awaitIndefinitely(commander.multi()));
             }

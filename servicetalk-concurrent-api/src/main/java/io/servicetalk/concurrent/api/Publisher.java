@@ -1953,14 +1953,15 @@ public abstract class Publisher<T> {
     /**
      * Converts this {@link Publisher} to a {@link Single}.
      *
+     * @param defaultValueSupplier A {@link Supplier} of default value if this {@link Publisher} did not emit any item.
      * @return A {@link Single} that will contain the first item emitted from the this {@link Publisher}.
-     * If the source {@link Publisher} does not emit any item, then the returned {@link Single} will terminate with
-     * {@link NoSuchElementException}.
+     * If the source {@link Publisher} does not emit any item, then the returned {@link Single} will contain the value
+     * as returned by the passed {@link Supplier}.
      *
      * @see <a href="http://reactivex.io/documentation/operators/first.html">ReactiveX first operator.</a>
      */
-    public final Single<T> first() {
-        return new PubToSingleFirst<>(this);
+    public final Single<T> first(Supplier<T> defaultValueSupplier) {
+        return new PubToSingleFirst<>(this, defaultValueSupplier);
     }
 
     /**
