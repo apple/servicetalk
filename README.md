@@ -138,3 +138,15 @@ Users are generally not expected to `subscribe` to a `CompletableSource`, or eve
 `CompletableSource`. Instead most users are expected to use the
 [Completable](servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Completable.java) API which
 provides many operators to define asynchronous and streaming control flow.
+
+### Design Philosophy
+
+ServiceTalk is designed to designed to provide an extensible core and tailored APIs to networking protocols. ServiceTalk
+does not intend to provide abstractions for low level networking primitives (e.g. Channels, EventLoop, TLS, etc...) but
+instead uses these primitives to provide an higher level API in numerous
+[programming paradigms](#programming-paradigms).
+
+The project is divided into many modules to decouple the user facing API from implementation details. This gives users
+freedom to choose only the functionality they need, and also allows us to evolve each module independently. Note that
+these modules may be divided out into independent repositories to decouple from the core and enable independent
+versioning.  
