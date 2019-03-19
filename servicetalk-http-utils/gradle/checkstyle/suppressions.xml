@@ -21,8 +21,8 @@
 <suppressions>
   <!-- We use new String(byte[], Charset) to create a String from byte-array with specified charset -->
   <suppress id="IllegalInstantiationOfString"
-            files="io/servicetalk/http/utils/auth/BasicAuthHttpServiceFilterBuilder.java"/>
+            files="io/servicetalk/http/utils/auth/BasicAuthHttpServiceFilter.java"/>
   <!-- There's a URL in a comment that exceeds the line length by a couple characters. -->
   <suppress checks="LineLength"
-            files="io/servicetalk/http/utils/auth/BasicAuthHttpServiceFilterBuilder.java"/>
+            files="io/servicetalk/http/utils/auth/BasicAuthHttpServiceFilter.java"/>
 </suppressions>

@@ -180,7 +180,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
 
             // closed by the LoadBalancer
             final ConnectionFactory<R, ? extends StreamingHttpConnectionFilter> connectionFactory =
-                    connectionFactoryFilter.apply(closeOnException.prepend(roConfig.maxPipelinedRequests() == 1 ?
+                    connectionFactoryFilter.create(closeOnException.prepend(roConfig.maxPipelinedRequests() == 1 ?
                             new NonPipelinedLBHttpConnectionFactory<>(roConfig, ctx.executionContext,
                                     connectionFilterFunction, reqRespFactory, strategy) :
                             new PipelinedLBHttpConnectionFactory<>(roConfig, ctx.executionContext,

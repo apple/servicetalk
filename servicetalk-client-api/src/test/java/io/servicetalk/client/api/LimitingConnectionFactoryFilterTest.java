@@ -31,7 +31,6 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.LinkedBlockingQueue;
 
-import static io.servicetalk.client.api.LimitingActiveConnectionFactoryFilter.withMaxConnections;
 import static io.servicetalk.concurrent.api.Single.never;
 import static io.servicetalk.concurrent.api.Single.success;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -41,7 +40,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class LimitingActiveConnectionFactoryFilterTest {
+public class LimitingConnectionFactoryFilterTest {
     @Rule
     public final ServiceTalkTestTimeout timeout = new ServiceTalkTestTimeout();
     @Rule
@@ -66,9 +65,16 @@ public class LimitingActiveConnectionFactoryFilterTest {
         });
     }
 
+    private ConnectionFactory<String, ? extends ListenableAsyncCloseable> makeCF(
+            ConnectionFactoryFilter<String, ListenableAsyncCloseable> filter,
+            ConnectionFactory<String, ListenableAsyncCloseable> connection) {
+        return filter.create(connection);
+    }
+
     @Test
     public void enforceMaxConnections() throws Exception {
-        ConnectionFactory<String, ListenableAsyncCloseable> cf = withMaxConnections(original, 1);
+        ConnectionFactory<String, ? extends ListenableAsyncCloseable> cf =
+                makeCF(LimitingConnectionFactoryFilter.withMax(1), original);
         cf.newConnection("c1").toFuture().get();
         expectedException.expect(ExecutionException.class);
         expectedException.expectCause(instanceOf(ConnectException.class));
@@ -77,7 +83,8 @@ public class LimitingActiveConnectionFactoryFilterTest {
 
     @Test
     public void onCloseReleasesPermit() throws Exception {
-        ConnectionFactory<String, ListenableAsyncCloseable> cf = withMaxConnections(original, 1);
+        ConnectionFactory<String, ? extends ListenableAsyncCloseable> cf =
+                makeCF(LimitingConnectionFactoryFilter.withMax(1), original);
         cf.newConnection("c1").toFuture().get();
         connectAndVerifyFailed(cf);
         connectionOnClose.take().onComplete();
@@ -88,7 +95,8 @@ public class LimitingActiveConnectionFactoryFilterTest {
     public void cancelReleasesPermit() throws Exception {
         ConnectionFactory<String, ListenableAsyncCloseable> o = newMockConnectionFactory();
         when(o.newConnection(any())).thenReturn(never());
-        ConnectionFactory<String, ListenableAsyncCloseable> cf = withMaxConnections(o, 1);
+        ConnectionFactory<String, ? extends ListenableAsyncCloseable> cf =
+                makeCF(LimitingConnectionFactoryFilter.withMax(1), o);
         connectlistener.listen(cf.newConnection("c1")).verifyNoEmissions();
         connectAndVerifyFailed(cf);
         connectlistener.cancel();
@@ -99,7 +107,7 @@ public class LimitingActiveConnectionFactoryFilterTest {
         cf.newConnection("c2").toFuture().get();
     }
 
-    private static void connectAndVerifyFailed(final ConnectionFactory<String, ListenableAsyncCloseable> cf)
+    private static void connectAndVerifyFailed(final ConnectionFactory<String, ? extends ListenableAsyncCloseable> cf)
             throws Exception {
         try {
             cf.newConnection("c-fail").toFuture().get();

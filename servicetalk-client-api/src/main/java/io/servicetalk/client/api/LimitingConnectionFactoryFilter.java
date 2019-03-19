@@ -28,6 +28,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
+import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 
 /**
@@ -38,87 +39,64 @@ import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
  * @param <ResolvedAddress> The type of a resolved address that can be used for connecting.
  * @param <C> The type of connections created by this factory.
  */
-public final class LimitingActiveConnectionFactoryFilter<ResolvedAddress, C extends ListenableAsyncCloseable>
-  implements ConnectionFactory<ResolvedAddress, C> {
+public final class LimitingConnectionFactoryFilter<ResolvedAddress, C extends ListenableAsyncCloseable>
+        implements ConnectionFactoryFilter<ResolvedAddress, C> {
 
-    private final ConnectionFactory<ResolvedAddress, C> original;
-    private final ConnectionLimiter<ResolvedAddress> limiter;
+    private final ConnectionLimiter<ResolvedAddress, C> limiter;
 
-    private LimitingActiveConnectionFactoryFilter(final ConnectionFactory<ResolvedAddress, C> original,
-                                                  final ConnectionLimiter<ResolvedAddress> limiter) {
-        this.original = original;
+    private LimitingConnectionFactoryFilter(final ConnectionLimiter<ResolvedAddress, C> limiter) {
         this.limiter = limiter;
-    }
-
-    @Override
-    public Single<C> newConnection(final ResolvedAddress resolvedAddress) {
-        return new SubscribableSingle<C>() {
-            @Override
-            protected void handleSubscribe(final Subscriber<? super C> subscriber) {
-                if (limiter.isConnectAllowed(resolvedAddress)) {
-                    toSource(original.newConnection(resolvedAddress))
-                            .subscribe(new CountingSubscriber<>(subscriber, limiter, resolvedAddress));
-                } else {
-                    subscriber.onSubscribe(IGNORE_CANCEL);
-                    subscriber.onError(limiter.newConnectionRefusedException(resolvedAddress));
-                }
-            }
-        };
-    }
-
-    @Override
-    public Completable onClose() {
-        return original.onClose();
-    }
-
-    @Override
-    public Completable closeAsync() {
-        return original.closeAsync();
     }
 
     /**
      * Create a new {@link ConnectionFactory} that only creates a maximum of {@code maxConnections} active connections.
      *
-     * @param original {@link ConnectionFactory} used to create the connections.
      * @param maxConnections Maximum number of active connections to create.
      * @param <A> The type of a resolved address that can be used for connecting.
      * @param <C> The type of connections created by the returned factory.
      * @return A new {@link ConnectionFactory} that limits the number of active connections.
      */
-    public static <A, C extends ListenableAsyncCloseable> ConnectionFactory<A, C> withMaxConnections(
-            ConnectionFactory<A, C> original, int maxConnections) {
-        return withLimiter(original, new MaxConnectionsLimiter<>(maxConnections));
+    public static <A, C extends ListenableAsyncCloseable> ConnectionFactoryFilter<A, C> withMax(
+            int maxConnections) {
+        return new LimitingConnectionFactoryFilter<>(new MaxConnectionsLimiter<>(maxConnections));
     }
 
     /**
      * Create a new {@link ConnectionFactory} that limits the created connections using the passed
      * {@link ConnectionLimiter}.
      *
-     * @param original {@link ConnectionFactory} used to create the connections.
      * @param limiter {@link ConnectionLimiter} to use.
      * @param <A> The type of a resolved address that can be used for connecting.
      * @param <C> The type of connections created by the returned factory.
      * @return A new {@link ConnectionFactory} that limits the number of active connections.
      */
-    public static <A, C extends ListenableAsyncCloseable> ConnectionFactory<A, C> withLimiter(
-            ConnectionFactory<A, C> original, ConnectionLimiter<A> limiter) {
-        return new LimitingActiveConnectionFactoryFilter<>(original, limiter);
+    public static <A, C extends ListenableAsyncCloseable> ConnectionFactoryFilter<A, C> with(
+            ConnectionLimiter<A, C> limiter) {
+        return new LimitingConnectionFactoryFilter<>(requireNonNull(limiter));
+    }
+
+    @Override
+    public ConnectionFactory<ResolvedAddress, ? extends C> create(
+            final ConnectionFactory<ResolvedAddress, ? extends C> original) {
+        return new LimitingFilter<>(original, limiter);
     }
 
     /**
-     * A contract to limit number of connections created by {@link LimitingActiveConnectionFactoryFilter}.
+     * A contract to limit number of connections created by {@link LimitingConnectionFactoryFilter}.
      * <p>
      * The following rules apply:
      * <ul>
-     *     <li>{@link #isConnectAllowed(Object)} <em>MUST</em> be called before calling
-     *     {@link #onConnectionClose(Object)}.</li>
-     *     <li>{@link #onConnectionClose(Object)} <em>MAY</em> be called at most once for each call to
-     *     {@link #isConnectAllowed(Object)}.</li>
+     * <li>{@link #isConnectAllowed(Object)} <em>MUST</em> be called before calling
+     * {@link #onConnectionClose(Object)}.</li>
+     * <li>{@link #onConnectionClose(Object)} <em>MAY</em> be called at most once for each call to
+     * {@link #isConnectAllowed(Object)}.</li>
      * </ul>
      *
-     * @param <ResolvedAddress>  The type of a resolved address that can be used for connecting.
+     * @param <ResolvedAddress> The type of a resolved address that can be used for connecting.
+     * @param <C> The type of connections created by this factory.
      */
-    public interface ConnectionLimiter<ResolvedAddress> {
+    @SuppressWarnings("unused") // C needs to be captured at limiter
+    public interface ConnectionLimiter<ResolvedAddress, C extends ListenableAsyncCloseable> {
 
         /**
          * Requests permission to create a single connection to the passed {@link ResolvedAddress target address}.
@@ -153,7 +131,47 @@ public final class LimitingActiveConnectionFactoryFilter<ResolvedAddress, C exte
         }
     }
 
-    private static class MaxConnectionsLimiter<ResolvedAddress> implements ConnectionLimiter<ResolvedAddress> {
+    private static final class LimitingFilter<ResolvedAddress, C extends ListenableAsyncCloseable>
+            implements ConnectionFactory<ResolvedAddress, C> {
+
+        private final ConnectionFactory<ResolvedAddress, ? extends C> original;
+        private final ConnectionLimiter<ResolvedAddress, ? extends C> limiter;
+
+        private LimitingFilter(final ConnectionFactory<ResolvedAddress, ? extends C> original,
+                               final ConnectionLimiter<ResolvedAddress, ? extends C> limiter) {
+            this.original = original;
+            this.limiter = limiter;
+        }
+
+        @Override
+        public Single<C> newConnection(final ResolvedAddress resolvedAddress) {
+            return new SubscribableSingle<C>() {
+                @Override
+                protected void handleSubscribe(final Subscriber<? super C> subscriber) {
+                    if (limiter.isConnectAllowed(resolvedAddress)) {
+                        toSource(original.newConnection(resolvedAddress))
+                                .subscribe(new CountingSubscriber<>(subscriber, limiter, resolvedAddress));
+                    } else {
+                        subscriber.onSubscribe(IGNORE_CANCEL);
+                        subscriber.onError(limiter.newConnectionRefusedException(resolvedAddress));
+                    }
+                }
+            };
+        }
+
+        @Override
+        public Completable onClose() {
+            return original.onClose();
+        }
+
+        @Override
+        public Completable closeAsync() {
+            return original.closeAsync();
+        }
+    }
+
+    private static final class MaxConnectionsLimiter<ResolvedAddress, C extends ListenableAsyncCloseable>
+            implements ConnectionLimiter<ResolvedAddress, C> {
 
         private static final AtomicIntegerFieldUpdater<MaxConnectionsLimiter> countUpdater =
                 newUpdater(MaxConnectionsLimiter.class, "count");
@@ -194,10 +212,10 @@ public final class LimitingActiveConnectionFactoryFilter<ResolvedAddress, C exte
         @SuppressWarnings("unused")
         private volatile int done;
         private final Subscriber<? super C> original;
-        private final ConnectionLimiter<A> limiter;
+        private final ConnectionLimiter<A, ? extends C> limiter;
         private final A address;
 
-        CountingSubscriber(final Subscriber<? super C> original, final ConnectionLimiter<A> limiter,
+        CountingSubscriber(final Subscriber<? super C> original, final ConnectionLimiter<A, ? extends C> limiter,
                            final A address) {
             this.original = original;
             this.limiter = limiter;
