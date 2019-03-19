@@ -24,7 +24,6 @@ import io.servicetalk.http.api.HttpConnectionFilterFactory;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpHeadersFactory;
-import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpConnectionFilter;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
@@ -165,112 +164,57 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> extends HttpCon
         return this;
     }
 
-    /**
-     * Add a {@link SocketOption} for all connections created by this client.
-     *
-     * @param <T> the type of the value.
-     * @param option the option to apply.
-     * @param value the value.
-     * @return this.
-     */
+    @Override
     public <T> DefaultHttpConnectionBuilder<ResolvedAddress> socketOption(final SocketOption<T> option, T value) {
         config.tcpClientConfig().socketOption(option, value);
         return this;
     }
 
-    /**
-     * Enable wire-logging for connections created by this builder. All wire events will be logged at trace level.
-     *
-     * @param loggerName The name of the logger to log wire events.
-     * @return {@code this}.
-     */
+    @Override
     public DefaultHttpConnectionBuilder<ResolvedAddress> enableWireLogging(final String loggerName) {
         config.tcpClientConfig().enableWireLogging(loggerName);
         return this;
     }
 
-    /**
-     * Disable previously configured wire-logging for connections created by this builder.
-     * If wire-logging has not been configured before, this method has no effect.
-     *
-     * @return {@code this}.
-     * @see #enableWireLogging(String)
-     */
+    @Override
     public DefaultHttpConnectionBuilder<ResolvedAddress> disableWireLogging() {
         config.tcpClientConfig().disableWireLogging();
         return this;
     }
 
-    /**
-     * Set the {@link HttpHeadersFactory} to be used for creating {@link HttpHeaders} when decoding responses.
-     *
-     * @param headersFactory the {@link HttpHeadersFactory} to use.
-     * @return {@code this}.
-     */
+    @Override
     public DefaultHttpConnectionBuilder<ResolvedAddress> headersFactory(final HttpHeadersFactory headersFactory) {
         config.headersFactory(headersFactory);
         return this;
     }
 
-    /**
-     * Set the maximum size of the initial HTTP line for created {@link StreamingHttpClient}.
-     *
-     * @param maxInitialLineLength The {@link StreamingHttpClient} will throw TooLongFrameException if the initial HTTP
-     * line exceeds this length.
-     * @return {@code this}.
-     */
+    @Override
     public DefaultHttpConnectionBuilder<ResolvedAddress> maxInitialLineLength(final int maxInitialLineLength) {
         config.maxInitialLineLength(maxInitialLineLength);
         return this;
     }
 
-    /**
-     * Set the maximum total size of HTTP headers, which could be send be created {@link StreamingHttpClient}.
-     *
-     * @param maxHeaderSize The {@link StreamingHttpClient} will throw TooLongFrameException if the total size of all
-     * HTTP headers exceeds this length.
-     * @return {@code this}.
-     */
+    @Override
     public DefaultHttpConnectionBuilder<ResolvedAddress> maxHeaderSize(final int maxHeaderSize) {
         config.maxHeaderSize(maxHeaderSize);
         return this;
     }
 
-    /**
-     * Set the value used to calculate an exponential moving average of the encoded size of the initial line and the
-     * headers for a guess for future buffer allocations.
-     *
-     * @param headersEncodedSizeEstimate An estimated size of encoded initial line and headers.
-     * @return {@code this}.
-     */
+    @Override
     public DefaultHttpConnectionBuilder<ResolvedAddress> headersEncodedSizeEstimate(
             final int headersEncodedSizeEstimate) {
         config.headersEncodedSizeEstimate(headersEncodedSizeEstimate);
         return this;
     }
 
-    /**
-     * Set the value used to calculate an exponential moving average of the encoded size of the trailers for a guess for
-     * future buffer allocations.
-     *
-     * @param trailersEncodedSizeEstimate An estimated size of encoded trailers.
-     * @return {@code this}.
-     */
+    @Override
     public DefaultHttpConnectionBuilder<ResolvedAddress> trailersEncodedSizeEstimate(
             final int trailersEncodedSizeEstimate) {
         config.trailersEncodedSizeEstimate(trailersEncodedSizeEstimate);
         return this;
     }
 
-    /**
-     * Set the maximum number of pipelined HTTP requests to queue up, anything above this will be rejected,
-     * 1 means pipelining is disabled and requests and responses are processed sequentially.
-     * <p>
-     * Request pipelining requires HTTP 1.1.
-     *
-     * @param maxPipelinedRequests number of pipelined requests to queue up
-     * @return {@code this}.
-     */
+    @Override
     public DefaultHttpConnectionBuilder<ResolvedAddress> maxPipelinedRequests(final int maxPipelinedRequests) {
         config.maxPipelinedRequests(maxPipelinedRequests);
         return this;

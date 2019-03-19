@@ -21,18 +21,18 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.IoExecutor;
 
+import java.net.SocketOption;
 import java.util.function.BiFunction;
 import java.util.function.Predicate;
 
 import static io.servicetalk.http.api.BlockingUtils.blockingInvocation;
-import static java.util.Objects.requireNonNull;
 
 /**
  * A builder for {@link StreamingHttpConnection} objects.
  *
  * @param <ResolvedAddress> The type of resolved address that can be used for connecting.
  */
-public abstract class HttpConnectionBuilder<ResolvedAddress> {
+public abstract class HttpConnectionBuilder<ResolvedAddress> extends BaseHttpBuilder<ResolvedAddress> {
     /**
      * An {@link HttpExecutionStrategy} to use when there is none specifed on the {@link HttpConnectionBuilder}.
      */
@@ -40,32 +40,46 @@ public abstract class HttpConnectionBuilder<ResolvedAddress> {
 
     private HttpExecutionStrategy strategy = DEFAULT_BUILDER_STRATEGY;
 
-    /**
-     * Sets the {@link IoExecutor} for all connections created from this {@link HttpConnectionBuilder}.
-     *
-     * @param ioExecutor {@link IoExecutor} to use.
-     * @return {@code this}.
-     */
+    @Override
     public abstract HttpConnectionBuilder<ResolvedAddress> ioExecutor(IoExecutor ioExecutor);
 
-    /**
-     * Sets the {@link HttpExecutionStrategy} for all connections created from this {@link HttpConnectionBuilder}.
-     *
-     * @param strategy {@link HttpExecutionStrategy} to use.
-     * @return {@code this}.
-     */
+    @Override
+    public abstract HttpConnectionBuilder<ResolvedAddress> bufferAllocator(BufferAllocator allocator);
+
+    @Override
     public final HttpConnectionBuilder<ResolvedAddress> executionStrategy(HttpExecutionStrategy strategy) {
         this.strategy = strategy;
         return this;
     }
 
-    /**
-     * Sets the {@link BufferAllocator} for all connections created from this {@link HttpConnectionBuilder}.
-     *
-     * @param allocator {@link BufferAllocator} to use.
-     * @return {@code this}.
-     */
-    public abstract HttpConnectionBuilder<ResolvedAddress> bufferAllocator(BufferAllocator allocator);
+    @Override
+    public abstract <T> HttpConnectionBuilder<ResolvedAddress> socketOption(SocketOption<T> option, T value);
+
+    @Override
+    public abstract HttpConnectionBuilder<ResolvedAddress> enableWireLogging(String loggerName);
+
+    @Override
+    public abstract HttpConnectionBuilder<ResolvedAddress> disableWireLogging();
+
+    @Override
+    public abstract HttpConnectionBuilder<ResolvedAddress> headersFactory(HttpHeadersFactory headersFactory);
+
+    @Override
+    public abstract HttpConnectionBuilder<ResolvedAddress> maxInitialLineLength(int maxInitialLineLength);
+
+    @Override
+    public abstract HttpConnectionBuilder<ResolvedAddress> maxHeaderSize(int maxHeaderSize);
+
+    @Override
+    public abstract HttpConnectionBuilder<ResolvedAddress> headersEncodedSizeEstimate(
+            int headersEncodedSizeEstimate);
+
+    @Override
+    public abstract HttpConnectionBuilder<ResolvedAddress> trailersEncodedSizeEstimate(
+            int trailersEncodedSizeEstimate);
+
+    @Override
+    public abstract HttpConnectionBuilder<ResolvedAddress> maxPipelinedRequests(int maxPipelinedRequests);
 
     /**
      * Creates the {@link StreamingHttpConnectionFilter} chain to be used by the {@link StreamingHttpConnection}.
@@ -140,55 +154,14 @@ public abstract class HttpConnectionBuilder<ResolvedAddress> {
         return new EmptyCloseConnectionFactory<>(this::buildStreaming);
     }
 
-    /**
-     * Append the filter to the chain of filters used to decorate the {@link StreamingHttpConnection} created by this
-     * builder.
-     * <p>
-     * Filtering allows you to wrap a {@link StreamingHttpConnection} and modify behavior during request/response
-     * processing
-     * Some potential candidates for filtering include logging, metrics, and decorating responses.
-     * <p>
-     * The order of execution of these filters are in order of append. If 3 filters are added as follows:
-     * <pre>
-     *     builder.append(filter1).append(filter2).append(filter3)
-     * </pre>
-     * making a request to a connection wrapped by this filter chain the order of invocation of these filters will be:
-     * <pre>
-     *     filter1 =&gt; filter2 =&gt; filter3 =&gt; connection
-     * </pre>
-     * @param factory {@link HttpConnectionFilterFactory} to decorate a {@link StreamingHttpConnection} for the purpose
-     * of filtering.
-     * @return {@code this}
-     */
+    @Override
     public abstract HttpConnectionBuilder<ResolvedAddress> appendConnectionFilter(HttpConnectionFilterFactory factory);
 
-    /**
-     * Append the filter to the chain of filters used to decorate the {@link StreamingHttpConnection} created by this
-     * builder, for every request that passes the provided {@link Predicate}.
-     * <p>
-     * Note this method will be used to decorate the result of {@link #buildStreaming(Object)} before it is
-     * returned to the user.
-     * <p>
-     * The order of execution of these filters are in order of append. If 3 filters are added as follows:
-     * <pre>
-     *     builder.append(filter1).append(filter2).append(filter3)
-     * </pre>
-     * making a request to a connection wrapped by this filter chain the order of invocation of these filters will be:
-     * <pre>
-     *     filter1 =&gt; filter2 =&gt; filter3 =&gt; client
-     * </pre>
-     * @param predicate the {@link Predicate} to test if the filter must be applied.
-     * @param factory {@link HttpConnectionFilterFactory} to decorate a {@link StreamingHttpConnection} for the purpose
-     * of filtering.
-     * @return {@code this}
-     */
+    @Override
     public HttpConnectionBuilder<ResolvedAddress> appendConnectionFilter(
             Predicate<StreamingHttpRequest> predicate, HttpConnectionFilterFactory factory) {
-        requireNonNull(predicate);
-        requireNonNull(factory);
-
-        return appendConnectionFilter((connection) ->
-                new ConditionalHttpConnectionFilter(predicate, factory.create(connection), connection));
+        super.appendConnectionFilter(predicate, factory);
+        return this;
     }
 
     /**
