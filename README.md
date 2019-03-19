@@ -130,8 +130,8 @@ operators to define asynchronous and streaming control flow.
 
 #### [Completable](servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Completable.java)
 
-A [Single](servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Single.java) shares all the same
-semantics as [Publisher](#publisher), but it either terminates
+A [Completable](servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Completable.java) shares all the
+same semantics as [Publisher](#publisher), but it either terminates
 [successfully, or with an error](servicetalk-concurrent/src/main/java/io/servicetalk/concurrent/CompletableSource.java#L39-63).
 
 Users are generally not expected to `subscribe` to a `CompletableSource`, or even deal directly with a
