@@ -78,8 +78,7 @@ final class BlockingStreamingHttpServiceToStreamingHttpService extends Streaming
                     final BufferHttpPayloadWriter payloadWriter = payloadWriterOuter = new BufferHttpPayloadWriter(
                             ctx.headersFactory().newTrailers(), payloadProcessor);
 
-                    final Consumer<HttpResponseMetaData> sendMeta = (metaData) ->
-                    {
+                    final Consumer<HttpResponseMetaData> sendMeta = (metaData) -> {
                         final StreamingHttpResponse result;
                         try {
                             result = newResponseWithTrailers(metaData.status(), metaData.version(),
