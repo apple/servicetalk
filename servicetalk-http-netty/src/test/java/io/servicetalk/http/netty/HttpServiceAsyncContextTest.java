@@ -17,16 +17,12 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
-import io.servicetalk.concurrent.api.AsyncCloseables;
 import io.servicetalk.concurrent.api.AsyncContext;
 import io.servicetalk.concurrent.api.AsyncContextMap.Key;
-import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.HttpConnectionBuilder;
-import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.http.api.HttpExecutionStrategy;
-import io.servicetalk.http.api.HttpServerBuilder;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpRequest;
@@ -36,8 +32,6 @@ import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.transport.api.DelegatingConnectionAcceptor;
 import io.servicetalk.transport.api.ServerContext;
-import io.servicetalk.transport.netty.IoThreadFactory;
-import io.servicetalk.transport.netty.internal.ExecutionContextRule;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -60,7 +54,6 @@ import static io.servicetalk.concurrent.api.Single.success;
 import static io.servicetalk.http.api.CharSequences.newAsciiString;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
-import static io.servicetalk.http.api.HttpResponseStatus.BAD_REQUEST;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static java.lang.Thread.currentThread;
@@ -73,13 +66,10 @@ import static org.junit.Assert.assertTrue;
 public class HttpServiceAsyncContextTest {
     private static final Key<CharSequence> K1 = Key.newKey("k1");
     private static final CharSequence REQUEST_ID_HEADER = newAsciiString("request-id");
-    private static final String IO_THREAD_PREFIX = "iothread-";
+    private static final String IO_THREAD_PREFIX = "servicetalk-global-io-executor-";
 
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
-    @Rule
-    public final ExecutionContextRule immediateExecutor = ExecutionContextRule.immediate(
-            new IoThreadFactory(IO_THREAD_PREFIX));
 
     @Test
     public void newRequestsGetFreshContext() throws Exception {
@@ -91,31 +81,26 @@ public class HttpServiceAsyncContextTest {
         newRequestsGetFreshContext(true);
     }
 
-    private void newRequestsGetFreshContext(boolean useImmediate) throws Exception {
-        StreamingHttpService service = newEmptyAsyncContextService(useImmediate);
-        CompositeCloseable compositeCloseable = AsyncCloseables.newCompositeCloseable();
-        HttpServerBuilder serverBuilder = HttpServers.forAddress(localAddress(0));
-        ServerContext ctx = serverBuilder.listenStreamingAndAwait(service);
-
-        ExecutorService executorService = Executors.newCachedThreadPool();
+    private static void newRequestsGetFreshContext(boolean useImmediate) throws Exception {
+        final ExecutorService executorService = Executors.newCachedThreadPool();
         final int concurrency = 10;
         final int numRequests = 10;
-        try {
+        try (ServerContext ctx = HttpServers.forAddress(localAddress(0))
+                .listenStreamingAndAwait(newEmptyAsyncContextService(useImmediate))) {
+
             AtomicReference<Throwable> causeRef = new AtomicReference<>();
             CyclicBarrier barrier = new CyclicBarrier(concurrency);
             CountDownLatch latch = new CountDownLatch(concurrency);
             for (int i = 0; i < concurrency; ++i) {
                 final int finalI = i;
                 executorService.execute(() -> {
-                    try {
-                        HttpConnectionBuilder<SocketAddress> connectionBuilder =
-                                new DefaultHttpConnectionBuilder<SocketAddress>()
-                                .maxPipelinedRequests(numRequests);
-                        StreamingHttpConnection connection = (useImmediate ?
-                                connectionBuilder.ioExecutor(immediateExecutor.ioExecutor())
-                                .executionStrategy(defaultStrategy(immediateExecutor.executor()))
-                                .buildStreaming(ctx.listenAddress()) :
-                                connectionBuilder.buildStreaming(ctx.listenAddress())).toFuture().get();
+                    HttpConnectionBuilder<SocketAddress> connectionBuilder =
+                            new DefaultHttpConnectionBuilder<SocketAddress>()
+                                    .maxPipelinedRequests(numRequests);
+                    try (StreamingHttpConnection connection = (!useImmediate ? connectionBuilder :
+                            connectionBuilder.executionStrategy(noOffloadsStrategy()))
+                            .buildStreaming(ctx.listenAddress()).toFuture().get()) {
+
                         barrier.await();
                         for (int x = 0; x < numRequests; ++x) {
                             makeClientRequestWithId(connection, "thread=" + finalI + " request=" + x);
@@ -131,7 +116,6 @@ public class HttpServiceAsyncContextTest {
             assertNull(causeRef.get());
         } finally {
             executorService.shutdown();
-            compositeCloseable.close();
         }
     }
 
@@ -151,8 +135,8 @@ public class HttpServiceAsyncContextTest {
         contextPreservedOverFilterBoundaries(true, true, true);
     }
 
-    private void contextPreservedOverFilterBoundaries(boolean useImmediate,
-                                                      boolean asyncFilter, boolean asyncService) throws Exception {
+    private static void contextPreservedOverFilterBoundaries(boolean useImmediate, boolean asyncFilter,
+                                                             boolean asyncService) throws Exception {
         Queue<Throwable> errorQueue = new ConcurrentLinkedQueue<>();
         StreamingHttpService service = new StreamingHttpService() {
             @Override
@@ -166,7 +150,7 @@ public class HttpServiceAsyncContextTest {
             // TODO(scott): should only have to specify this once! On the filter or the service.
             @Override
             public HttpExecutionStrategy executionStrategy() {
-                return useImmediate ? HttpExecutionStrategies.noOffloadsStrategy() : super.executionStrategy();
+                return useImmediate ? noOffloadsStrategy() : super.executionStrategy();
             }
 
             private Single<StreamingHttpResponse> doHandle(
@@ -208,7 +192,7 @@ public class HttpServiceAsyncContextTest {
             // TODO(scott): should only have to specify this once! On the filter or the service.
             @Override
             public HttpExecutionStrategy executionStrategy() {
-                return useImmediate ? HttpExecutionStrategies.noOffloadsStrategy() : super.executionStrategy();
+                return useImmediate ? noOffloadsStrategy() : super.executionStrategy();
             }
 
             private Single<StreamingHttpResponse> doHandle(final HttpServiceContext ctx,
@@ -272,19 +256,15 @@ public class HttpServiceAsyncContextTest {
                 );
             }
         };
-        CompositeCloseable compositeCloseable = AsyncCloseables.newCompositeCloseable();
-        HttpServerBuilder serverBuilder = HttpServers.forAddress(localAddress(0));
-        ServerContext ctx = compositeCloseable.append(serverBuilder
-                .ioExecutor(immediateExecutor.ioExecutor())
-                .listenStreamingAndAwait(filter));
-        try {
-            StreamingHttpConnection connection = compositeCloseable.append(
-                    new DefaultHttpConnectionBuilder<SocketAddress>()
-                    .buildStreaming(ctx.listenAddress()).toFuture().get());
+
+        try (ServerContext ctx = HttpServers.forAddress(localAddress(0))
+                     .listenStreamingAndAwait(filter);
+
+             StreamingHttpConnection connection = new DefaultHttpConnectionBuilder<SocketAddress>()
+                     .buildStreaming(ctx.listenAddress()).toFuture().get()) {
+
             makeClientRequestWithId(connection, "1");
             assertThat("Error queue is not empty!", errorQueue, empty());
-        } finally {
-            compositeCloseable.close();
         }
     }
 
@@ -298,24 +278,19 @@ public class HttpServiceAsyncContextTest {
         connectionAcceptorContextDoesNotLeak(false);
     }
 
-    private void connectionAcceptorContextDoesNotLeak(boolean serverUseImmediate) throws Exception {
-        StreamingHttpService service = newEmptyAsyncContextService(serverUseImmediate);
-        CompositeCloseable compositeCloseable = AsyncCloseables.newCompositeCloseable();
-        ServerContext ctx = compositeCloseable.append(HttpServers.forAddress(localAddress(0))
+    private static void connectionAcceptorContextDoesNotLeak(boolean serverUseImmediate) throws Exception {
+        try (ServerContext ctx = HttpServers.forAddress(localAddress(0))
                 .appendConnectionAcceptorFilter(original -> new DelegatingConnectionAcceptor(context -> {
                     AsyncContext.put(K1, "v1");
                     return completed();
                 }))
-                .listenStreamingAndAwait(service));
-        try {
-            StreamingHttpConnection connection = compositeCloseable.append(
-                    new DefaultHttpConnectionBuilder<SocketAddress>()
-                            .buildStreaming(ctx.listenAddress())
-                            .toFuture().get());
+                .listenStreamingAndAwait(newEmptyAsyncContextService(serverUseImmediate));
+
+             StreamingHttpConnection connection = new DefaultHttpConnectionBuilder<SocketAddress>()
+                     .buildStreaming(ctx.listenAddress()).toFuture().get()) {
+
             makeClientRequestWithId(connection, "1");
             makeClientRequestWithId(connection, "2");
-        } finally {
-            compositeCloseable.close();
         }
     }
 
@@ -338,7 +313,6 @@ public class HttpServiceAsyncContextTest {
     }
 
     private static StreamingHttpService newEmptyAsyncContextService(final boolean noOffloads) {
-        HttpExecutionStrategy strategy = noOffloads ? noOffloadsStrategy() : defaultStrategy();
         return new StreamingHttpService() {
             @Override
             public Single<StreamingHttpResponse> handle(
@@ -352,17 +326,16 @@ public class HttpServiceAsyncContextTest {
                 CharSequence requestId = request.headers().getAndRemove(REQUEST_ID_HEADER);
                 if (requestId != null) {
                     AsyncContext.put(K1, requestId);
-                    StreamingHttpResponse response = factory.ok();
-                    response.headers().set(REQUEST_ID_HEADER, requestId);
-                    return success(response);
+                    return success(factory.ok()
+                            .setHeader(REQUEST_ID_HEADER, requestId));
                 } else {
-                    return success(factory.newResponse(BAD_REQUEST));
+                    return success(factory.badRequest());
                 }
             }
 
             @Override
             public HttpExecutionStrategy executionStrategy() {
-                return strategy;
+                return noOffloads ? noOffloadsStrategy() : defaultStrategy();
             }
         };
     }
