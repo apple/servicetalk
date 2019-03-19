@@ -46,13 +46,13 @@ this context is meant to declare that the API "may block" the calling thread. Th
 way to determine if a method will return synchronous or block the calling thread, and "blocking" is the least common
 denominator.
 
-#### [Blocking](blocking-vs-synchronous) and Aggregated
+#### [Blocking](#blocking-vs-synchronous) and Aggregated
 
 This API paradigm is similar to concepts from `java.io` and generally blocks the calling thread until all I/O is
 completed. The result is aggregated into a single object (e.g.
 [Files.readAllLines](https://docs.oracle.com/javase/8/docs/api/java/nio/file/Files.html#readAllLines-java.nio.file.Path-)).
 
-#### [Blocking](blocking-vs-synchronous) and Streaming
+#### [Blocking](#blocking-vs-synchronous) and Streaming
 
 This API paradigm is similar to concepts from `java.io` and generally blocks the calling thread until I/O is
 flushed/received. The result can be provided/processed in a streaming fashion (e.g.
