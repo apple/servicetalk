@@ -218,8 +218,8 @@ public class BasicAuthHttpServiceFilterTest {
 
     @Test
     public void authenticatedWithoutUserInfo() throws Exception {
-        StreamingHttpService service = BasicAuthHttpServiceFilter.Builder.forRegular(CREDENTIALS_VERIFIER, REALM_VALUE)
-                .build()
+        StreamingHttpService service = new BasicAuthHttpServiceFilter.Builder<>(CREDENTIALS_VERIFIER, REALM_VALUE)
+                .buildServer()
                 .create(HELLO_WORLD_SERVICE);
 
         StreamingHttpRequest request = reqRespFactory.get("/path");
@@ -306,11 +306,12 @@ public class BasicAuthHttpServiceFilterTest {
                 return completed();
             }
         };
-        StreamingHttpService service = BasicAuthHttpServiceFilter.Builder.forRegular(
+        StreamingHttpService service = new BasicAuthHttpServiceFilter.Builder<>(
                 utf8CredentialsVerifier, REALM_VALUE)
                 .userInfoKey(USER_INFO_KEY)
                 .setCharsetUtf8(true)
-                .build().create(HELLO_WORLD_SERVICE);
+                .buildServer()
+                .create(HELLO_WORLD_SERVICE);
 
         StreamingHttpResponse response =
                 awaitIndefinitelyNonNull(service.handle(CONN_CTX, reqRespFactory.get("/path"), reqRespFactory));
@@ -329,7 +330,7 @@ public class BasicAuthHttpServiceFilterTest {
         AtomicBoolean credentialsVerifierClosed = new AtomicBoolean();
         AtomicBoolean nextServiceClosed = new AtomicBoolean();
 
-        StreamingHttpService service = BasicAuthHttpServiceFilter.Builder.forRegular(
+        StreamingHttpService service = new BasicAuthHttpServiceFilter.Builder<>(
                 new CredentialsVerifier<BasicUserInfo>() {
                     @Override
                     public Single<BasicUserInfo> apply(final String userId, final String password) {
@@ -340,7 +341,9 @@ public class BasicAuthHttpServiceFilterTest {
                     public Completable closeAsync() {
                         return completed().doBeforeComplete(() -> credentialsVerifierClosed.set(true));
                     }
-                }, REALM_VALUE).build().create(new StreamingHttpService() {
+                }, REALM_VALUE)
+                .buildServer()
+                .create(new StreamingHttpService() {
             @Override
             public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
                                                         final StreamingHttpRequest request,
@@ -362,8 +365,8 @@ public class BasicAuthHttpServiceFilterTest {
     }
 
     private static void testUnauthorized(StreamingHttpRequest request) throws Exception {
-        StreamingHttpService service = BasicAuthHttpServiceFilter.Builder.forRegular(CREDENTIALS_VERIFIER, REALM_VALUE)
-                .build()
+        StreamingHttpService service = new BasicAuthHttpServiceFilter.Builder<>(CREDENTIALS_VERIFIER, REALM_VALUE)
+                .buildServer()
                 .create(HELLO_WORLD_SERVICE);
 
         StreamingHttpResponse response = awaitIndefinitelyNonNull(service.handle(CONN_CTX, request, reqRespFactory));
@@ -374,8 +377,8 @@ public class BasicAuthHttpServiceFilterTest {
     }
 
     private static void testProxyAuthenticationRequired(StreamingHttpRequest request) throws Exception {
-        StreamingHttpService service = BasicAuthHttpServiceFilter.Builder.forProxy(CREDENTIALS_VERIFIER, REALM_VALUE)
-                .build()
+        StreamingHttpService service = new BasicAuthHttpServiceFilter.Builder<>(CREDENTIALS_VERIFIER, REALM_VALUE)
+                .buildProxy()
                 .create(HELLO_WORLD_SERVICE);
 
         StreamingHttpResponse response = awaitIndefinitelyNonNull(service.handle(CONN_CTX, request, reqRespFactory));
@@ -386,9 +389,9 @@ public class BasicAuthHttpServiceFilterTest {
     }
 
     private static void testAuthenticated(StreamingHttpRequest request) throws Exception {
-        StreamingHttpService service = BasicAuthHttpServiceFilter.Builder.forRegular(CREDENTIALS_VERIFIER, REALM_VALUE)
+        StreamingHttpService service = new BasicAuthHttpServiceFilter.Builder<>(CREDENTIALS_VERIFIER, REALM_VALUE)
                 .userInfoKey(USER_INFO_KEY)
-                .build()
+                .buildServer()
                 .create(HELLO_WORLD_SERVICE);
         testAuthenticated(request, service);
     }
@@ -401,9 +404,9 @@ public class BasicAuthHttpServiceFilterTest {
     }
 
     private static void testAuthenticatedForProxy(StreamingHttpRequest request) throws Exception {
-        StreamingHttpService service = BasicAuthHttpServiceFilter.Builder.forProxy(CREDENTIALS_VERIFIER, REALM_VALUE)
+        StreamingHttpService service = new BasicAuthHttpServiceFilter.Builder<>(CREDENTIALS_VERIFIER, REALM_VALUE)
                 .userInfoKey(USER_INFO_KEY)
-                .build()
+                .buildProxy()
                 .create(HELLO_WORLD_SERVICE);
 
         StreamingHttpResponse response = awaitIndefinitelyNonNull(service.handle(CONN_CTX, request, reqRespFactory));

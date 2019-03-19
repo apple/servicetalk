@@ -29,6 +29,7 @@ import javax.annotation.Nullable;
 import static io.servicetalk.client.api.LimitingActiveConnectionFilter.LimitingConnectionFactoryFilter.MaxConnectionsLimiter;
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
+import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 
 /**
@@ -72,7 +73,7 @@ public final class LimitingActiveConnectionFilter<ResolvedAddress, C extends Lis
      */
     public static <A, C extends ListenableAsyncCloseable> ConnectionFactoryFilter<A, C> with(
             ConnectionLimiter<A, C> limiter) {
-        return new LimitingActiveConnectionFilter<>(limiter);
+        return new LimitingActiveConnectionFilter<>(requireNonNull(limiter));
     }
 
     @Override

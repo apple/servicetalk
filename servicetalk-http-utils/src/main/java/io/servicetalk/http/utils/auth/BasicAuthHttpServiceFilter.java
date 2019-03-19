@@ -92,19 +92,6 @@ public final class BasicAuthHttpServiceFilter<UserInfo> implements HttpServiceFi
     /**
      * A builder for an {@link StreamingHttpServiceFilter}, which filters HTTP requests using <a
      * href="https://tools.ietf.org/html/rfc7617">RFC7617</a>: The 'Basic' HTTP Authentication Scheme.
-     * <p>
-     * It accepts credentials as {@code user-id:password} pairs, encoded using {@link Base64} for {@link
-     * HttpHeaderNames#AUTHORIZATION Authorization} or {@link HttpHeaderNames#PROXY_AUTHORIZATION Proxy-Authorization}
-     * header values. Use of the format {@code user:password} in the {@link HttpRequestMetaData#userInfo() userinfo}
-     * field is deprecated by <a href="https://tools.ietf.org/html/rfc3986#section-3.2.1">RFC3986</a>.
-     * <p>
-     * User info object of authenticated user could be stored in {@link AsyncContextMap}, if {@link Key} was configured
-     * via {@link Builder#userInfoKey(AsyncContextMap.Key)}.
-     * <p>
-     * <b>Note:</b> This scheme is not considered to be a secure method of user authentication unless used in
-     * conjunction with some external secure system such as TLS (Transport Layer Security, [<a
-     * href="https://tools.ietf.org/html/rfc5246">RFC5246</a>]), as the {@code user-id} and {@code password} are passed
-     * over the network as cleartext.
      *
      * @param <UserInfo> a type for authenticated user info object
      */
@@ -112,78 +99,35 @@ public final class BasicAuthHttpServiceFilter<UserInfo> implements HttpServiceFi
 
         private final CredentialsVerifier<UserInfo> credentialsVerifier;
         private final String realm;
-        private final boolean proxy;
         @Nullable
         private Key<UserInfo> userInfoKey;
         private boolean utf8;
 
-        private Builder(final CredentialsVerifier<UserInfo> credentialsVerifier,
-                        final String realm, final boolean proxy) {
+        /**
+         * Creates a new builder for an {@link StreamingHttpServiceFilter}, which filters HTTP requests using <a
+         * href="https://tools.ietf.org/html/rfc7617">RFC7617</a>: The 'Basic' HTTP Authentication Scheme.
+         * <p>
+         * It accepts credentials as {@code user-id:password} pairs, encoded using {@link Base64} for {@link
+         * HttpHeaderNames#AUTHORIZATION Authorization} or {@link HttpHeaderNames#PROXY_AUTHORIZATION
+         * Proxy-Authorization} header values. Use of the format {@code user:password} in the {@link
+         * HttpRequestMetaData#userInfo() userinfo} field is deprecated by <a
+         * href="https://tools.ietf.org/html/rfc3986#section-3.2.1">RFC3986</a>.
+         * <p>
+         * User info object of authenticated user could be stored in {@link AsyncContextMap}, if {@link Key} was
+         * configured via {@link Builder#userInfoKey(AsyncContextMap.Key)}.
+         * <p>
+         * <b>Note:</b> This scheme is not considered to be a secure method of user authentication unless used in
+         * conjunction with some external secure system such as TLS (Transport Layer Security, [<a
+         * href="https://tools.ietf.org/html/rfc5246">RFC5246</a>]), as the {@code user-id} and {@code password} are
+         * passed over the network as cleartext.
+         *
+         * @param credentialsVerifier a {@link CredentialsVerifier} for {@code user-id} and {@code passwords} pair
+         * @param realm a <a href="https://tools.ietf.org/html/rfc7235#section-2.2">protection space (realm)</a>
+         */
+        public Builder(final CredentialsVerifier<UserInfo> credentialsVerifier,
+                       final String realm) {
             this.credentialsVerifier = requireNonNull(credentialsVerifier);
             this.realm = requireNonNull(realm);
-            this.proxy = proxy;
-        }
-
-        /**
-         * Creates a new instance for non-proxy service.
-         * <p>
-         * It will use the next constants to handle authentication:
-         *
-         * <blockquote><table cellpadding=1 cellspacing=0
-         * summary="Response status code, authenticate and authorization headers for non-proxy Basic auth">
-         * <tr>
-         * <td>Response status code</td>
-         * <td><a href="https://tools.ietf.org/html/rfc7235#section-3.1">401 (Unauthorized)</a></td>
-         * </tr>
-         * <tr>
-         * <td>Authenticate header</td>
-         * <td><a href="https://tools.ietf.org/html/rfc7235#section-4.1">WWW-Authenticate</a></td>
-         * </tr>
-         * <tr>
-         * <td>Authorization header</td>
-         * <td><a href="https://tools.ietf.org/html/rfc7235#section-4.2">Authorization</a></td>
-         * </tr>
-         * </table></blockquote>
-         *
-         * @param credentialsVerifier a {@link CredentialsVerifier} for {@code user-id} and {@code passwords} pair
-         * @param realm a <a href="https://tools.ietf.org/html/rfc7235#section-2.2">protection space (realm)</a>
-         * @param <UserInfo> a type for authenticated user info object
-         * @return a new {@link Builder}
-         */
-        public static <UserInfo> Builder<UserInfo> forRegular(
-                final CredentialsVerifier<UserInfo> credentialsVerifier, final String realm) {
-            return new Builder<>(credentialsVerifier, realm, false);
-        }
-
-        /**
-         * Creates a new instance for proxy service.
-         * <p>
-         * It will use the next constants to handle authentication:
-         *
-         * <blockquote><table cellpadding=1 cellspacing=0
-         * summary="Response status code, authenticate and authorization headers for proxy Basic auth">
-         * <tr>
-         * <td>Response status code</td>
-         * <td><a href="https://tools.ietf.org/html/rfc7235#section-3.2">407 (Proxy Authentication Required)</a></td>
-         * </tr>
-         * <tr>
-         * <td>Authenticate header</td>
-         * <td><a href="https://tools.ietf.org/html/rfc7235#section-4.3">Proxy-Authenticate</a></td>
-         * </tr>
-         * <tr>
-         * <td>Authorization header</td>
-         * <td><a href="https://tools.ietf.org/html/rfc7235#section-4.5">Proxy-Authorization</a></td>
-         * </tr>
-         * </table></blockquote>
-         *
-         * @param credentialsVerifier a {@link CredentialsVerifier} for {@code user-id} and {@code passwords} pair
-         * @param realm a <a href="https://tools.ietf.org/html/rfc7235#section-2.2">protection space (realm)</a>
-         * @param <UserInfo> a type for authenticated user info object
-         * @return a new {@link Builder}
-         */
-        public static <UserInfo> Builder<UserInfo> forProxy(
-                final CredentialsVerifier<UserInfo> credentialsVerifier, final String realm) {
-            return new Builder<>(credentialsVerifier, realm, true);
         }
 
         /**
@@ -214,12 +158,57 @@ public final class BasicAuthHttpServiceFilter<UserInfo> implements HttpServiceFi
         }
 
         /**
-         * Builds a new Basic HTTP Auth filtering {@link HttpServiceFilterFactory}.
+         * Creates a new instance for non-proxy service.
+         * <p>
+         * It will use the next constants to handle authentication:
+         *
+         * <blockquote><table cellpadding=1 cellspacing=0
+         * summary="Response status code, authenticate and authorization headers for non-proxy Basic auth">
+         * <tr>
+         * <td>Response status code</td>
+         * <td><a href="https://tools.ietf.org/html/rfc7235#section-3.1">401 (Unauthorized)</a></td>
+         * </tr>
+         * <tr>
+         * <td>Authenticate header</td>
+         * <td><a href="https://tools.ietf.org/html/rfc7235#section-4.1">WWW-Authenticate</a></td>
+         * </tr>
+         * <tr>
+         * <td>Authorization header</td>
+         * <td><a href="https://tools.ietf.org/html/rfc7235#section-4.2">Authorization</a></td>
+         * </tr>
+         * </table></blockquote>
+         *
+         * @return a new {@link Builder}
+         */
+        public HttpServiceFilterFactory buildServer() {
+            return new BasicAuthHttpServiceFilter<>(credentialsVerifier, realm, false, userInfoKey, utf8);
+        }
+
+        /**
+         * Creates a new instance for proxy service.
+         * <p>
+         * It will use the next constants to handle authentication:
+         *
+         * <blockquote><table cellpadding=1 cellspacing=0
+         * summary="Response status code, authenticate and authorization headers for proxy Basic auth">
+         * <tr>
+         * <td>Response status code</td>
+         * <td><a href="https://tools.ietf.org/html/rfc7235#section-3.2">407 (Proxy Authentication Required)</a></td>
+         * </tr>
+         * <tr>
+         * <td>Authenticate header</td>
+         * <td><a href="https://tools.ietf.org/html/rfc7235#section-4.3">Proxy-Authenticate</a></td>
+         * </tr>
+         * <tr>
+         * <td>Authorization header</td>
+         * <td><a href="https://tools.ietf.org/html/rfc7235#section-4.5">Proxy-Authorization</a></td>
+         * </tr>
+         * </table></blockquote>
          *
          * @return a new {@link HttpServiceFilterFactory}
          */
-        public HttpServiceFilterFactory build() {
-            return new BasicAuthHttpServiceFilter<>(credentialsVerifier, realm, proxy, userInfoKey, utf8);
+        public HttpServiceFilterFactory buildProxy() {
+            return new BasicAuthHttpServiceFilter<>(credentialsVerifier, realm, true, userInfoKey, utf8);
         }
     }
 
