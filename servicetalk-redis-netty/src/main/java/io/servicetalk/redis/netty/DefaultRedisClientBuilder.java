@@ -265,7 +265,7 @@ final class DefaultRedisClientBuilder<U, R> implements RedisClientBuilder<U, R> 
         try {
             LoadBalancer<? extends RedisConnection> lbfUntypedForCast =
                     loadBalancerFactory.newLoadBalancer(multicastAddressEventStream,
-                            connectionFactoryFilter.apply(new SubscribedLBRedisConnectionFactory<>(roConfig,
+                            connectionFactoryFilter.create(new SubscribedLBRedisConnectionFactory<>(roConfig,
                                     executionContext, connectionFilterFactory)));
             closeOnException.append(lbfUntypedForCast);
             @SuppressWarnings("unchecked")
@@ -273,7 +273,7 @@ final class DefaultRedisClientBuilder<U, R> implements RedisClientBuilder<U, R> 
                     (LoadBalancer<LoadBalancedRedisConnection>) lbfUntypedForCast;
 
             lbfUntypedForCast = loadBalancerFactory.newLoadBalancer(multicastAddressEventStream,
-                    connectionFactoryFilter.apply(new PipelinedLBRedisConnectionFactory<>(roConfig, executionContext,
+                    connectionFactoryFilter.create(new PipelinedLBRedisConnectionFactory<>(roConfig, executionContext,
                             connectionFilterFactory)));
             closeOnException.append(lbfUntypedForCast);
             @SuppressWarnings("unchecked")

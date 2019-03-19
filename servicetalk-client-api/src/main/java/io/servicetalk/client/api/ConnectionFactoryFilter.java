@@ -34,7 +34,7 @@ public interface ConnectionFactoryFilter<ResolvedAddress, C extends ListenableAs
      * @param original {@link ConnectionFactory} to filter.
      * @return Decorated {@link ConnectionFactory} that contains the filtering logic.
      */
-    ConnectionFactory<ResolvedAddress, ? extends C> apply(ConnectionFactory<ResolvedAddress, ? extends C> original);
+    ConnectionFactory<ResolvedAddress, ? extends C> create(ConnectionFactory<ResolvedAddress, ? extends C> original);
 
     /**
      * Returns a composed function that first applies the {@code before} function to its input, and then applies
@@ -53,7 +53,7 @@ public interface ConnectionFactoryFilter<ResolvedAddress, C extends ListenableAs
      */
     default ConnectionFactoryFilter<ResolvedAddress, C> append(ConnectionFactoryFilter<ResolvedAddress, C> before) {
         requireNonNull(before);
-        return original -> apply(before.apply(original));
+        return original -> create(before.create(original));
     }
 
     /**

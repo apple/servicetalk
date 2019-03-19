@@ -47,6 +47,7 @@ import java.net.InetSocketAddress;
 import java.net.SocketOption;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
@@ -180,7 +181,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
 
             // closed by the LoadBalancer
             final ConnectionFactory<R, ? extends StreamingHttpConnectionFilter> connectionFactory =
-                    connectionFactoryFilter.apply(closeOnException.prepend(roConfig.maxPipelinedRequests() == 1 ?
+                    connectionFactoryFilter.create(closeOnException.prepend(roConfig.maxPipelinedRequests() == 1 ?
                             new NonPipelinedLBHttpConnectionFactory<>(roConfig, ctx.executionContext,
                                     connectionFilterFunction, reqRespFactory, strategy) :
                             new PipelinedLBHttpConnectionFactory<>(roConfig, ctx.executionContext,
