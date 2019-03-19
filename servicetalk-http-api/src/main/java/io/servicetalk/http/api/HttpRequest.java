@@ -165,8 +165,8 @@ public interface HttpRequest extends HttpRequestMetaData, TrailersHolder {
     }
 
     @Override
-    default HttpRequest addTrailer(final HttpHeaders trailers) {
-        TrailersHolder.super.addTrailer(trailers);
+    default HttpRequest addTrailers(final HttpHeaders trailers) {
+        TrailersHolder.super.addTrailers(trailers);
         return this;
     }
 
@@ -177,8 +177,8 @@ public interface HttpRequest extends HttpRequestMetaData, TrailersHolder {
     }
 
     @Override
-    default HttpRequest setTrailer(final HttpHeaders trailers) {
-        TrailersHolder.super.setTrailer(trailers);
+    default HttpRequest setTrailers(final HttpHeaders trailers) {
+        TrailersHolder.super.setTrailers(trailers);
         return this;
     }
 }
