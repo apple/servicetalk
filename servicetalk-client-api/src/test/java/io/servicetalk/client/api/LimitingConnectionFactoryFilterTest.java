@@ -15,8 +15,8 @@
  */
 package io.servicetalk.client.api;
 
+import io.servicetalk.concurrent.CompletableSource.Processor;
 import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.concurrent.api.CompletableProcessor;
 import io.servicetalk.concurrent.api.LegacyMockedSingleListenerRule;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
@@ -31,8 +31,10 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.LinkedBlockingQueue;
 
+import static io.servicetalk.concurrent.api.Processors.newCompletableProcessor;
 import static io.servicetalk.concurrent.api.Single.never;
 import static io.servicetalk.concurrent.api.Single.success;
+import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.fail;
@@ -50,7 +52,7 @@ public class LimitingConnectionFactoryFilterTest {
             new LegacyMockedSingleListenerRule<>();
 
     private ConnectionFactory<String, ListenableAsyncCloseable> original;
-    private BlockingQueue<CompletableProcessor> connectionOnClose;
+    private BlockingQueue<Processor> connectionOnClose;
 
     @Before
     public void setUp() {
@@ -58,9 +60,9 @@ public class LimitingConnectionFactoryFilterTest {
         connectionOnClose = new LinkedBlockingQueue<>();
         when(original.newConnection(any())).thenAnswer(invocation -> {
             ListenableAsyncCloseable conn = mock(ListenableAsyncCloseable.class);
-            CompletableProcessor onClose = new CompletableProcessor();
+            Processor onClose = newCompletableProcessor();
             connectionOnClose.add(onClose);
-            when(conn.onClose()).thenReturn(onClose);
+            when(conn.onClose()).thenReturn(fromSource(onClose));
             return success(conn);
         });
     }

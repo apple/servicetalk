@@ -16,10 +16,10 @@
 package io.servicetalk.redis.api;
 
 import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.SingleSource.Subscriber;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.concurrent.api.SingleProcessor;
 import io.servicetalk.concurrent.internal.DeliberateException;
 import io.servicetalk.redis.api.CommanderUtils.DiscardSingle;
 import io.servicetalk.redis.api.CommanderUtils.ExecCompletable;
@@ -59,7 +59,7 @@ public class CommanderUtilsTest {
 
     private final DeliberateException initialException = new DeliberateException();
     private final DeliberateException releaseException = new DeliberateException();
-    private final List<SingleProcessor<?>> singles = new ArrayList<>();
+    private final List<SingleSource.Processor<?, ?>> singles = new ArrayList<>();
     private final Single<String> queued = Single.error(initialException);
     private final Single<List<Object>> results = Single.error(initialException);
     private final TestCommander commander = new TestCommander();

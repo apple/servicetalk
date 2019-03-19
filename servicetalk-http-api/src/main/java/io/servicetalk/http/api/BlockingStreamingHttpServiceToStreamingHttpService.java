@@ -20,7 +20,6 @@ import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.SingleSource.Subscriber;
 import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.concurrent.api.CompletableProcessor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.internal.ConnectablePayloadWriter;
@@ -33,6 +32,8 @@ import java.io.IOException;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.Consumer;
 
+import static io.servicetalk.concurrent.api.Processors.newCompletableProcessor;
+import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.safeOnError;
 import static io.servicetalk.http.api.BlockingUtils.blockingToCompletable;
@@ -71,7 +72,7 @@ final class BlockingStreamingHttpServiceToStreamingHttpService extends Streaming
                     return;
                 }
 
-                final CompletableProcessor payloadProcessor = new CompletableProcessor();
+                final CompletableSource.Processor payloadProcessor = newCompletableProcessor();
                 DefaultBlockingStreamingHttpServerResponse response = null;
                 BufferHttpPayloadWriter payloadWriterOuter = null;
                 try {
@@ -83,7 +84,7 @@ final class BlockingStreamingHttpServiceToStreamingHttpService extends Streaming
                         try {
                             result = newResponseWithTrailers(metaData.status(), metaData.version(),
                                     metaData.headers(), ctx.executionContext().bufferAllocator(),
-                                    payloadProcessor.merge(payloadWriter.connect()
+                                    fromSource(payloadProcessor).merge(payloadWriter.connect()
                                             .map(buffer -> (Object) buffer) // down cast to Object
                                             .concatWith(success(payloadWriter.trailers())))
                                             .doBeforeSubscription(() -> new PublisherSource.Subscription() {
@@ -112,7 +113,7 @@ final class BlockingStreamingHttpServiceToStreamingHttpService extends Streaming
                     tiCancellable.setDone(cause);
                     if (response == null || response.markMetaSent()) {
                         safeOnError(subscriber, cause);
-                    } else if (payloadWriterOuter != null && payloadWriterOuter.markSubscriberComplete()) {
+                    } else if (payloadWriterOuter.markSubscriberComplete()) {
                         payloadProcessor.onError(cause);
                     } else {
                         LOGGER.error("An exception occurred after the response was sent", cause);

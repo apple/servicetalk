@@ -19,9 +19,9 @@ import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.BlockingIterable;
 import io.servicetalk.concurrent.CloseableIterable;
+import io.servicetalk.concurrent.SingleSource.Processor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.concurrent.api.SingleProcessor;
 import io.servicetalk.http.api.HttpDataSourceTranformations.HttpBufferFilterIterable;
 import io.servicetalk.http.api.HttpDataSourceTranformations.HttpBuffersAndTrailersIterable;
 import io.servicetalk.http.api.HttpDataSourceTranformations.HttpObjectsAndTrailersIterable;
@@ -31,7 +31,9 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 
+import static io.servicetalk.concurrent.api.Processors.newSingleProcessor;
 import static io.servicetalk.concurrent.api.Single.success;
+import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.concurrent.internal.BlockingIterables.from;
 import static io.servicetalk.http.api.HttpDataSourceTranformations.consumeOldPayloadBody;
 import static io.servicetalk.http.api.HttpDataSourceTranformations.consumeOldPayloadBodySerialized;
@@ -214,22 +216,22 @@ class DefaultBlockingStreamingHttpRequest<P> extends DefaultHttpRequestMetaData 
     public final <T> BlockingStreamingHttpRequest transform(
             final Supplier<T> stateSupplier, final BiFunction<Buffer, T, Buffer> transformer,
             final BiFunction<T, HttpHeaders, HttpHeaders> trailersTrans) {
-        final SingleProcessor<HttpHeaders> outTrailersSingle = new SingleProcessor<>();
+        final Processor<HttpHeaders, HttpHeaders> outTrailersSingle = newSingleProcessor();
         return new BufferBlockingStreamingHttpRequest(this, allocator,
                 new HttpBuffersAndTrailersIterable<>(payloadBody(), stateSupplier,
                         transformer, trailersTrans, trailersSingle, outTrailersSingle),
-                outTrailersSingle);
+                fromSource(outTrailersSingle));
     }
 
     @Override
     public final <T> BlockingStreamingHttpRequest transformRaw(final Supplier<T> stateSupplier,
                                                          final BiFunction<Object, T, ?> transformer,
                                                          final BiFunction<T, HttpHeaders, HttpHeaders> trailersTrans) {
-        final SingleProcessor<HttpHeaders> outTrailersSingle = new SingleProcessor<>();
+        final Processor<HttpHeaders, HttpHeaders> outTrailersSingle = newSingleProcessor();
         return new DefaultBlockingStreamingHttpRequest<>(this, allocator,
                 new HttpObjectsAndTrailersIterable<>(payloadBody, stateSupplier,
                         transformer, trailersTrans, trailersSingle, outTrailersSingle),
-                outTrailersSingle);
+                fromSource(outTrailersSingle));
     }
 
     @Override

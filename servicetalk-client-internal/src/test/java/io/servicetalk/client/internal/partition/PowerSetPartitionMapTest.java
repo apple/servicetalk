@@ -18,16 +18,17 @@ package io.servicetalk.client.internal.partition;
 import io.servicetalk.client.api.partition.PartitionAttributes;
 import io.servicetalk.client.api.partition.PartitionAttributes.Key;
 import io.servicetalk.client.api.partition.PartitionAttributesBuilder;
+import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.CompletableSource.Subscriber;
 import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.concurrent.api.CompletableProcessor;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 
 import org.junit.Test;
 
 import java.util.List;
 
-import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
+import static io.servicetalk.concurrent.api.Processors.newCompletableProcessor;
+import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -41,11 +42,11 @@ public class PowerSetPartitionMapTest {
     private static final Key<Boolean> IS_MASTER = Key.newKey("master");
     private static final Key<Boolean> EXTRA = Key.newKey("extra");
     private static final ListenableAsyncCloseable VALUE = new ListenableAsyncCloseable() {
-        private final CompletableProcessor close = new CompletableProcessor();
+        private final CompletableSource.Processor close = newCompletableProcessor();
 
         @Override
         public Completable onClose() {
-            return close;
+            return fromSource(close);
         }
 
         @Override
@@ -54,7 +55,7 @@ public class PowerSetPartitionMapTest {
                 @Override
                 protected void handleSubscribe(Subscriber subscriber) {
                     close.onComplete();
-                    toSource(close).subscribe(subscriber);
+                    close.subscribe(subscriber);
                 }
             };
         }

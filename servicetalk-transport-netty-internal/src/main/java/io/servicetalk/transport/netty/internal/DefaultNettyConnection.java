@@ -17,15 +17,15 @@ package io.servicetalk.transport.netty.internal;
 
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.CompletableSource.Subscriber;
 import io.servicetalk.concurrent.SingleSource;
+import io.servicetalk.concurrent.SingleSource.Processor;
 import io.servicetalk.concurrent.api.AsyncCloseable;
 import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.concurrent.api.CompletableProcessor;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.concurrent.api.SingleProcessor;
 import io.servicetalk.concurrent.api.internal.SubscribableCompletable;
 import io.servicetalk.concurrent.api.internal.SubscribableSingle;
 import io.servicetalk.concurrent.internal.DelayedCancellable;
@@ -58,7 +58,10 @@ import javax.net.ssl.SSLSession;
 import static io.netty.util.ReferenceCountUtil.release;
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.Executors.immediate;
+import static io.servicetalk.concurrent.api.Processors.newCompletableProcessor;
+import static io.servicetalk.concurrent.api.Processors.newSingleProcessor;
 import static io.servicetalk.concurrent.api.Publisher.error;
+import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.ThrowableUtil.unknownStackTrace;
 import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
@@ -100,8 +103,8 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
     private final Publisher<Read> readPublisher;
     private final ExecutionContext executionContext;
     @Nullable
-    private final CompletableProcessor onClosing;
-    private final SingleProcessor<Throwable> transportError = new SingleProcessor<>();
+    private final CompletableSource.Processor onClosing;
+    private final Processor<Throwable, Throwable> transportError = newSingleProcessor();
 
     private volatile FlushStrategy flushStrategy;
     private volatile WritableListener writableListener = PLACE_HOLDER_WRITABLE_LISTENER;
@@ -136,7 +139,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
         this.closeHandler = requireNonNull(closeHandler);
         this.flushStrategy = requireNonNull(flushStrategy);
         if (closeHandler != UNSUPPORTED_PROTOCOL_CLOSE_HANDLER) {
-            onClosing = new CompletableProcessor();
+            onClosing = newCompletableProcessor();
             closeHandler.registerEventHandler(channel, evt -> { // Called from EventLoop only!
                 if (closeReason == null) {
                     closeReason = evt;
@@ -345,7 +348,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
 
     @Override
     public Completable onClosing() {
-        return onClosing == null ? onClose() : onClosing.publishOn(executionContext().executor());
+        return onClosing == null ? onClose() : fromSource(onClosing).publishOn(executionContext().executor());
     }
 
     @Override
@@ -382,7 +385,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
 
     @Override
     public Single<Throwable> transportError() {
-        return transportError.publishOn(executionContext().executor());
+        return fromSource(transportError).publishOn(executionContext().executor());
     }
 
     interface WritableListener {

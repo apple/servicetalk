@@ -15,8 +15,8 @@
  */
 package io.servicetalk.transport.netty.internal;
 
+import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.concurrent.api.CompletableProcessor;
 import io.servicetalk.concurrent.api.LegacyMockedCompletableListenerRule;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 
@@ -37,6 +37,8 @@ import org.mockito.junit.MockitoRule;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.closeAsyncGracefully;
 import static io.servicetalk.concurrent.api.Executors.immediate;
+import static io.servicetalk.concurrent.api.Processors.newCompletableProcessor;
+import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.parseBoolean;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -77,8 +79,8 @@ public class ChannelSetTest {
 
     private final ChannelId channelId = DefaultChannelId.newInstance();
     private final ChannelSet fixture = new ChannelSet(immediate());
-    private final CompletableProcessor closeAsyncGracefullyCompletable = new CompletableProcessor();
-    private final CompletableProcessor closeAsyncCompletable = new CompletableProcessor();
+    private final CompletableSource.Processor closeAsyncGracefullyCompletable = newCompletableProcessor();
+    private final CompletableSource.Processor closeAsyncCompletable = newCompletableProcessor();
     private GenericFutureListener<ChannelFuture> listener;
 
     @Before
@@ -93,8 +95,8 @@ public class ChannelSetTest {
         when(channel.pipeline()).thenReturn(channelPipeline);
         when(channelPipeline.get(AsyncCloseableHolderChannelHandler.class)).thenReturn(asyncCloseableHolder);
         when(asyncCloseableHolder.asyncClosable()).thenReturn(nettyConnection);
-        when(nettyConnection.closeAsync()).thenReturn(closeAsyncCompletable);
-        when(nettyConnection.closeAsyncGracefully()).thenReturn(closeAsyncGracefullyCompletable);
+        when(nettyConnection.closeAsync()).thenReturn(fromSource(closeAsyncCompletable));
+        when(nettyConnection.closeAsyncGracefully()).thenReturn(fromSource(closeAsyncGracefullyCompletable));
         when(channelCloseFuture.addListener(any())).then((invocation) -> {
             listener = invocation.getArgument(0);
             return channelCloseFuture;

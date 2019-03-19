@@ -16,10 +16,10 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.concurrent.api.CompletableProcessor;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Publisher;
@@ -66,7 +66,9 @@ import javax.net.ssl.SSLSession;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.AsyncCloseables.toListenableAsyncCloseable;
 import static io.servicetalk.concurrent.api.Completable.completed;
+import static io.servicetalk.concurrent.api.Processors.newCompletableProcessor;
 import static io.servicetalk.concurrent.api.Single.success;
+import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderValues.ZERO;
 import static io.servicetalk.http.api.StreamingHttpRequests.newRequestWithTrailers;
@@ -209,7 +211,7 @@ final class NettyHttpServer {
                 // resubscribing to the NettyChannelPublisher before the previous subscriber has terminated. Otherwise
                 // we may attempt to do duplicate subscribe on NettyChannelPublisher, which will result in a connection
                 // closure.
-                CompletableProcessor processor = new CompletableProcessor();
+                CompletableSource.Processor processor = newCompletableProcessor();
                 StreamingHttpRequest request2 = request.transformRawPayloadBody(
                         // Cancellation is assumed to close the connection, or be ignored if this Subscriber has already
                         // terminated. That means we don't need to trigger the processor as completed because we don't
@@ -260,7 +262,7 @@ final class NettyHttpServer {
                             .onErrorResume(t -> completed()));
                 }
 
-                return objectPublisher.concatWith(processor);
+                return objectPublisher.concatWith(fromSource(processor));
             });
             return connection.write(responseObjectPublisher.repeat(val -> true)
                     // We generate synthetic callbacks to WriteEventsListener as there is a single write per connection

@@ -19,8 +19,8 @@ import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.client.api.ConnectionClosedException;
 import io.servicetalk.client.api.MaxRequestLimitExceededException;
+import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.concurrent.api.CompletableProcessor;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
@@ -66,10 +66,12 @@ import static io.servicetalk.buffer.api.EmptyBuffer.EMPTY_BUFFER;
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.BlockingTestUtils.awaitIndefinitelyNonNull;
 import static io.servicetalk.concurrent.api.Executors.immediate;
+import static io.servicetalk.concurrent.api.Processors.newCompletableProcessor;
 import static io.servicetalk.concurrent.api.Publisher.empty;
 import static io.servicetalk.concurrent.api.Publisher.just;
 import static io.servicetalk.concurrent.api.Single.error;
 import static io.servicetalk.concurrent.api.Single.success;
+import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.http.api.StreamingHttpConnection.SettingKey.MAX_CONCURRENCY;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
@@ -166,11 +168,11 @@ public class ConcurrentRequestsHttpConnectionFilterTest {
 
     @Test
     public void throwMaxConcurrencyExceededOnOversubscribedConnection() throws Exception {
-        final CompletableProcessor lastRequestFinished = new CompletableProcessor();
+        final CompletableSource.Processor lastRequestFinished = newCompletableProcessor();
 
         try (ServerContext serverContext = HttpServers.forAddress(localAddress(0))
                 .listenStreamingAndAwait((ctx, request, responseFactory) -> {
-                    Publisher<Buffer> deferredPayload = lastRequestFinished.concatWith(empty());
+                    Publisher<Buffer> deferredPayload = fromSource(lastRequestFinished).concatWith(empty());
                     return request.payloadBody().ignoreElements()
                             .concatWith(Single.success(responseFactory.ok().payloadBody(deferredPayload)));
                 });
@@ -257,11 +259,11 @@ public class ConcurrentRequestsHttpConnectionFilterTest {
                     })
                     .toFuture().get();
 
-            final CompletableProcessor closedFinally = new CompletableProcessor();
+            final CompletableSource.Processor closedFinally = newCompletableProcessor();
             connection.onClose().doAfterFinally(closedFinally::onComplete).subscribe();
 
             try {
-                closedFinally.concatWith(resp2).toFuture().get();
+                fromSource(closedFinally).concatWith(resp2).toFuture().get();
                 fail("Should not allow request to complete normally on a closed connection");
             } catch (ExecutionException e) {
                 assertThat(e.getCause(), instanceOf(ConnectionClosedException.class));

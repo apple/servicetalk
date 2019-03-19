@@ -61,4 +61,11 @@ public interface CompletableSource {
          */
         void onError(Throwable t);
     }
+
+    /**
+     * A {@link Processor} represents a processing stage that is both a {@link CompletableSource} and a
+     * {@link Subscriber} and obeys the contracts of both.
+     */
+    interface Processor extends CompletableSource, Subscriber {
+    }
 }

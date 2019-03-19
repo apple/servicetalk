@@ -69,4 +69,14 @@ public interface SingleSource<T> {
          */
         void onError(Throwable t);
     }
+
+    /**
+     * A {@link Processor} represents a processing stage that is both a {@link SingleSource} and a {@link Subscriber}
+     * and obeys the contracts of both.
+     *
+     * @param <T> The type of {@link Subscriber}.
+     * @param <R> the type of {@link SingleSource}.
+     */
+    interface Processor<T, R> extends SingleSource<R>, Subscriber<T> {
+    }
 }

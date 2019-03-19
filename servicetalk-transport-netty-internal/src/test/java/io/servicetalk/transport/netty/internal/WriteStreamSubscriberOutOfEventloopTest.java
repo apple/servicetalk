@@ -17,13 +17,15 @@ package io.servicetalk.transport.netty.internal;
 
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.CompletableSource;
-import io.servicetalk.concurrent.api.CompletableProcessor;
+import io.servicetalk.concurrent.CompletableSource.Processor;
 
 import io.netty.channel.EventLoop;
 import org.junit.Test;
 
 import java.util.concurrent.ExecutionException;
 
+import static io.servicetalk.concurrent.api.Processors.newCompletableProcessor;
+import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -76,7 +78,7 @@ public class WriteStreamSubscriberOutOfEventloopTest extends AbstractOutOfEventl
 
     @Test
     public void testTerminalOrder() throws Exception {
-        CompletableProcessor subject = new CompletableProcessor();
+        Processor subject = newCompletableProcessor();
         CompletableSource.Subscriber subscriber = new CompletableSource.Subscriber() {
             @Override
             public void onSubscribe(Cancellable cancellable) {
@@ -106,7 +108,7 @@ public class WriteStreamSubscriberOutOfEventloopTest extends AbstractOutOfEventl
         this.subscriber.onError(DELIBERATE_EXCEPTION);
 
         try {
-            subject.toFuture().get();
+            fromSource(subject).toFuture().get();
             fail();
         } catch (ExecutionException cause) {
             assertSame(cause.getCause(), DELIBERATE_EXCEPTION);

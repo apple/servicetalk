@@ -16,7 +16,7 @@
 package io.servicetalk.redis.netty;
 
 import io.servicetalk.concurrent.Cancellable;
-import io.servicetalk.concurrent.api.CompletableProcessor;
+import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.LegacyMockedSingleListenerRule;
 import io.servicetalk.concurrent.api.TestPublisherSubscriber;
@@ -47,7 +47,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
+import static io.servicetalk.concurrent.api.Processors.newCompletableProcessor;
 import static io.servicetalk.concurrent.api.Publisher.just;
+import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 import static io.servicetalk.redis.api.RedisData.NULL;
@@ -92,7 +94,7 @@ public class RedisIdleConnectionReaperTest {
 
     private final TestPublisherSubscriber<RedisData> requestSubscriber = new TestPublisherSubscriber<>();
 
-    private CompletableProcessor delegateConnectionOnCloseCompletable;
+    private CompletableSource.Processor delegateConnectionOnCloseCompletable;
 
     private final AtomicReference<Runnable> timerRunnableRef = new AtomicReference<>();
 
@@ -104,9 +106,9 @@ public class RedisIdleConnectionReaperTest {
     @Before
     public void setup() {
         MockitoAnnotations.initMocks(this);
-        delegateConnectionOnCloseCompletable = new CompletableProcessor();
-        when(delegateConnection.closeAsync()).thenReturn(delegateConnectionOnCloseCompletable);
-        when(delegateConnection.onClose()).thenReturn(delegateConnectionOnCloseCompletable);
+        delegateConnectionOnCloseCompletable = newCompletableProcessor();
+        when(delegateConnection.closeAsync()).thenReturn(fromSource(delegateConnectionOnCloseCompletable));
+        when(delegateConnection.onClose()).thenReturn(fromSource(delegateConnectionOnCloseCompletable));
         when(delegateConnection.request(any(RedisExecutionStrategy.class), any(RedisRequest.class)))
                 .thenReturn(just(NULL));
         when(delegateConnection.connectionContext()).thenReturn(connectionContext);

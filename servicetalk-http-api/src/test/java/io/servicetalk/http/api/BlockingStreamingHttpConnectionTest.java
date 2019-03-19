@@ -17,7 +17,6 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.concurrent.api.CompletableProcessor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.StreamingHttpConnection.SettingKey;
@@ -27,7 +26,8 @@ import io.servicetalk.transport.api.ExecutionContext;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiFunction;
 
-import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
+import static io.servicetalk.concurrent.api.Processors.newCompletableProcessor;
+import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.RequestResponseFactories.toStreaming;
 import static org.mockito.Mockito.mock;
@@ -109,7 +109,7 @@ public class BlockingStreamingHttpConnectionTest extends AbstractBlockingStreami
         }
 
         private final class TestConnectionTransport extends StreamingHttpConnectionFilter {
-            private final CompletableProcessor onClose = new CompletableProcessor();
+            private final CompletableSource.Processor onClose = newCompletableProcessor();
             private final ExecutionContext executionContext;
             private final ConnectionContext connectionContext;
 
@@ -133,7 +133,7 @@ public class BlockingStreamingHttpConnectionTest extends AbstractBlockingStreami
 
             @Override
             public Completable onClose() {
-                return onClose;
+                return fromSource(onClose);
             }
 
             @Override
@@ -144,7 +144,7 @@ public class BlockingStreamingHttpConnectionTest extends AbstractBlockingStreami
                         if (closed.compareAndSet(false, true)) {
                             onClose.onComplete();
                         }
-                        toSource(onClose).subscribe(subscriber);
+                        onClose.subscribe(subscriber);
                     }
                 };
             }
