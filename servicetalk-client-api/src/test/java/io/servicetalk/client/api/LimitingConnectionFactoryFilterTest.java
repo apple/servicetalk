@@ -40,7 +40,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class LimitingActiveConnectionFilterTest {
+public class LimitingConnectionFactoryFilterTest {
     @Rule
     public final ServiceTalkTestTimeout timeout = new ServiceTalkTestTimeout();
     @Rule
@@ -74,7 +74,7 @@ public class LimitingActiveConnectionFilterTest {
     @Test
     public void enforceMaxConnections() throws Exception {
         ConnectionFactory<String, ? extends ListenableAsyncCloseable> cf =
-                makeCF(LimitingActiveConnectionFilter.withMax(1), original);
+                makeCF(LimitingConnectionFactoryFilter.withMax(1), original);
         cf.newConnection("c1").toFuture().get();
         expectedException.expect(ExecutionException.class);
         expectedException.expectCause(instanceOf(ConnectException.class));
@@ -84,7 +84,7 @@ public class LimitingActiveConnectionFilterTest {
     @Test
     public void onCloseReleasesPermit() throws Exception {
         ConnectionFactory<String, ? extends ListenableAsyncCloseable> cf =
-                makeCF(LimitingActiveConnectionFilter.withMax(1), original);
+                makeCF(LimitingConnectionFactoryFilter.withMax(1), original);
         cf.newConnection("c1").toFuture().get();
         connectAndVerifyFailed(cf);
         connectionOnClose.take().onComplete();
@@ -96,7 +96,7 @@ public class LimitingActiveConnectionFilterTest {
         ConnectionFactory<String, ListenableAsyncCloseable> o = newMockConnectionFactory();
         when(o.newConnection(any())).thenReturn(never());
         ConnectionFactory<String, ? extends ListenableAsyncCloseable> cf =
-                makeCF(LimitingActiveConnectionFilter.withMax(1), o);
+                makeCF(LimitingConnectionFactoryFilter.withMax(1), o);
         connectlistener.listen(cf.newConnection("c1")).verifyNoEmissions();
         connectAndVerifyFailed(cf);
         connectlistener.cancel();

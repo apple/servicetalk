@@ -26,7 +26,7 @@ import java.net.ConnectException;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.client.api.LimitingActiveConnectionFilter.LimitingConnectionFactoryFilter.MaxConnectionsLimiter;
+import static io.servicetalk.client.api.LimitingConnectionFactoryFilter.LimitingFilter.MaxConnectionsLimiter;
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static java.util.Objects.requireNonNull;
@@ -40,12 +40,12 @@ import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
  * @param <ResolvedAddress> The type of a resolved address that can be used for connecting.
  * @param <C> The type of connections created by this factory.
  */
-public final class LimitingActiveConnectionFilter<ResolvedAddress, C extends ListenableAsyncCloseable>
+public final class LimitingConnectionFactoryFilter<ResolvedAddress, C extends ListenableAsyncCloseable>
         implements ConnectionFactoryFilter<ResolvedAddress, C> {
 
     private final ConnectionLimiter<ResolvedAddress, C> limiter;
 
-    private LimitingActiveConnectionFilter(final ConnectionLimiter<ResolvedAddress, C> limiter) {
+    private LimitingConnectionFactoryFilter(final ConnectionLimiter<ResolvedAddress, C> limiter) {
         this.limiter = limiter;
     }
 
@@ -59,7 +59,7 @@ public final class LimitingActiveConnectionFilter<ResolvedAddress, C extends Lis
      */
     public static <A, C extends ListenableAsyncCloseable> ConnectionFactoryFilter<A, C> withMax(
             int maxConnections) {
-        return new LimitingActiveConnectionFilter<>(new MaxConnectionsLimiter<>(maxConnections));
+        return new LimitingConnectionFactoryFilter<>(new MaxConnectionsLimiter<>(maxConnections));
     }
 
     /**
@@ -73,17 +73,17 @@ public final class LimitingActiveConnectionFilter<ResolvedAddress, C extends Lis
      */
     public static <A, C extends ListenableAsyncCloseable> ConnectionFactoryFilter<A, C> with(
             ConnectionLimiter<A, C> limiter) {
-        return new LimitingActiveConnectionFilter<>(requireNonNull(limiter));
+        return new LimitingConnectionFactoryFilter<>(requireNonNull(limiter));
     }
 
     @Override
     public ConnectionFactory<ResolvedAddress, ? extends C> create(
             final ConnectionFactory<ResolvedAddress, ? extends C> original) {
-        return new LimitingConnectionFactoryFilter<>(original, limiter);
+        return new LimitingFilter<>(original, limiter);
     }
 
     /**
-     * A contract to limit number of connections created by {@link LimitingActiveConnectionFilter}.
+     * A contract to limit number of connections created by {@link LimitingConnectionFactoryFilter}.
      * <p>
      * The following rules apply:
      * <ul>
@@ -132,14 +132,14 @@ public final class LimitingActiveConnectionFilter<ResolvedAddress, C extends Lis
         }
     }
 
-    static final class LimitingConnectionFactoryFilter<ResolvedAddress, C extends ListenableAsyncCloseable>
+    static final class LimitingFilter<ResolvedAddress, C extends ListenableAsyncCloseable>
             implements ConnectionFactory<ResolvedAddress, C> {
 
         private final ConnectionFactory<ResolvedAddress, ? extends C> original;
         private final ConnectionLimiter<ResolvedAddress, ? extends C> limiter;
 
-        private LimitingConnectionFactoryFilter(final ConnectionFactory<ResolvedAddress, ? extends C> original,
-                                                final ConnectionLimiter<ResolvedAddress, ? extends C> limiter) {
+        private LimitingFilter(final ConnectionFactory<ResolvedAddress, ? extends C> original,
+                               final ConnectionLimiter<ResolvedAddress, ? extends C> limiter) {
             this.original = original;
             this.limiter = limiter;
         }
