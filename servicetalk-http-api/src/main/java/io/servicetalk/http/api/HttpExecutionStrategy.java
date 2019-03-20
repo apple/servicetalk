@@ -76,14 +76,14 @@ public interface HttpExecutionStrategy extends ExecutionStrategy {
     <T> Single<T> invokeService(Executor fallback, Function<Executor, T> service);
 
     /**
-     * Wraps the passed {@link StreamingHttpRequestHandler} to apply this {@link HttpExecutionStrategy}.
+     * Wraps the passed {@link StreamingHttpService} to apply this {@link HttpExecutionStrategy}.
      *
      * @param fallback {@link Executor} to use as a fallback if this {@link HttpExecutionStrategy} does not define an
      * {@link Executor}.
-     * @param handler {@link StreamingHttpRequestHandler} to wrap.
+     * @param handler {@link StreamingHttpService} to wrap.
      * @return Wrapped {@link StreamingHttpService}.
      */
-    StreamingHttpService offloadService(Executor fallback, StreamingHttpRequestHandler handler);
+    StreamingHttpService offloadService(Executor fallback, StreamingHttpService handler);
 
     /**
      * Returns {@code true} if metadata receive offloading is enabled for this {@link ExecutionStrategy}.

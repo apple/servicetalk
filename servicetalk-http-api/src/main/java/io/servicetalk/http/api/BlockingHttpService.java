@@ -15,62 +15,41 @@
  */
 package io.servicetalk.http.api;
 
+import io.servicetalk.concurrent.api.Single;
+
 import static io.servicetalk.http.api.HttpExecutionStrategies.OFFLOAD_RECEIVE_META_STRATEGY;
 
 /**
  * The equivalent of {@link HttpService} but with synchronous/blocking APIs instead of asynchronous APIs.
  */
-public abstract class BlockingHttpService implements AutoCloseable, BlockingHttpRequestHandler {
-    static final HttpExecutionStrategy DEFAULT_BLOCKING_SERVICE_STRATEGY = OFFLOAD_RECEIVE_META_STRATEGY;
+@FunctionalInterface
+public interface BlockingHttpService extends AutoCloseable {
+    /**
+     * Handles a single HTTP request.
+     *
+     * @param ctx Context of the service.
+     * @param request to handle.
+     * @param responseFactory used to create {@link HttpResponse} objects.
+     * @return {@link Single} of HTTP response.
+     * @throws Exception If an exception occurs during request processing.
+     */
+    HttpResponse handle(HttpServiceContext ctx, HttpRequest request, HttpResponseFactory responseFactory)
+            throws Exception;
 
     @Override
-    public void close() throws Exception {
+    default void close() throws Exception {
         // noop
     }
 
-    @Override
-    public final BlockingHttpService asBlockingService() {
-        return this;
-    }
-
     /**
-     * Convert this {@link BlockingHttpService} to the {@link StreamingHttpService} API.
-     * <p>
-     * This API is provided for convenience for a more familiar sequential programming model. It is recommended that
-     * filters are implemented using the {@link StreamingHttpService} asynchronous API for maximum portability.
+     * Compute a {@link HttpExecutionStrategy} given the programming model constraints of this
+     * {@link BlockingStreamingHttpService} in combination with another {@link HttpExecutionStrategy}. This may involve
+     * a merge operation between two {@link BlockingStreamingHttpService}.
      *
-     * @return a {@link StreamingHttpService} representation of this {@link BlockingHttpService}.
+     * @param other The other
+     * @return The {@link HttpExecutionStrategy} for this {@link BlockingStreamingHttpService}.
      */
-    public final StreamingHttpService asStreamingService() {
-        return asStreamingServiceInternal();
-    }
-
-    /**
-     * Convert this {@link BlockingHttpService} to the {@link HttpService} API.
-     * <p>
-     * This API is provided for convenience for a more familiar sequential programming model. It is recommended that
-     * filters are implemented using the {@link StreamingHttpService} asynchronous API for maximum portability.
-     *
-     * @return a {@link HttpService} representation of this {@link BlockingHttpService}.
-     */
-    public final HttpService asService() {
-        return asServiceInternal();
-    }
-
-    /**
-     * Returns the {@link HttpExecutionStrategy} for this {@link BlockingHttpService}.
-     *
-     * @return The {@link HttpExecutionStrategy} for this {@link BlockingHttpService}.
-     */
-    public HttpExecutionStrategy executionStrategy() {
-        return DEFAULT_BLOCKING_SERVICE_STRATEGY;
-    }
-
-    StreamingHttpService asStreamingServiceInternal() {
-        return BlockingHttpServiceToStreamingHttpService.transform(this);
-    }
-
-    HttpService asServiceInternal() {
-        return BlockingHttpServiceToHttpService.transform(this);
+    default HttpExecutionStrategy computeExecutionStrategy(HttpExecutionStrategy other) {
+        return other.merge(OFFLOAD_RECEIVE_META_STRATEGY);
     }
 }

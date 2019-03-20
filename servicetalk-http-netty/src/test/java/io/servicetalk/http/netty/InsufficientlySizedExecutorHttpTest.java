@@ -167,8 +167,8 @@ public class InsufficientlySizedExecutorHttpTest {
             }
 
             @Override
-            public HttpExecutionStrategy executionStrategy() {
-                return strategy;
+            public HttpExecutionStrategy computeExecutionStrategy(HttpExecutionStrategy other) {
+                return strategy.merge(other);
             }
         });
         client = forSingleAddress(serverHostAndPort(server)).buildStreaming();

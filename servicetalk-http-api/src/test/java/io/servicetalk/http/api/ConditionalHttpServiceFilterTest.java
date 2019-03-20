@@ -73,7 +73,7 @@ public class ConditionalHttpServiceFilterTest extends AbstractConditionalHttpFil
         return newService(closed);
     }
 
-    private static final class TestStreamingHttpService extends StreamingHttpService {
+    private static final class TestStreamingHttpService implements StreamingHttpService {
 
         private final StreamingHttpServiceFilter filterChain;
         private final ListenableAsyncCloseable closeable = emptyAsyncCloseable();

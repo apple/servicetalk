@@ -40,7 +40,7 @@ import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpResponseStatus.NOT_FOUND;
 import static io.servicetalk.http.api.HttpResponseStatus.NO_CONTENT;
 
-final class TestServiceStreaming extends StreamingHttpService {
+final class TestServiceStreaming implements StreamingHttpService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TestServiceStreaming.class);
 
@@ -112,8 +112,8 @@ final class TestServiceStreaming extends StreamingHttpService {
     }
 
     @Override
-    public HttpExecutionStrategy executionStrategy() {
-        return strategy;
+    public HttpExecutionStrategy computeExecutionStrategy(HttpExecutionStrategy other) {
+        return strategy.merge(other);
     }
 
     private static StreamingHttpResponse newEchoResponse(final StreamingHttpRequest req,

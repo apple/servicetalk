@@ -25,11 +25,11 @@ import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseabl
 
 final class ConditionalHttpServiceFilter extends StreamingHttpServiceFilter {
     private final Predicate<StreamingHttpRequest> predicate;
-    private final StreamingHttpService predicatedFilter;
+    private final StreamingHttpServiceFilter predicatedFilter;
     private final CompositeCloseable closeable;
 
     ConditionalHttpServiceFilter(final Predicate<StreamingHttpRequest> predicate,
-                                 final StreamingHttpService predicatedFilter,
+                                 final StreamingHttpServiceFilter predicatedFilter,
                                  final StreamingHttpService service) {
         super(service);
         this.predicate = predicate;
@@ -57,5 +57,10 @@ final class ConditionalHttpServiceFilter extends StreamingHttpServiceFilter {
     @Override
     public Completable closeAsyncGracefully() {
         return closeable.closeAsyncGracefully();
+    }
+
+    @Override
+    public HttpExecutionStrategy computeExecutionStrategy(HttpExecutionStrategy other) {
+        return delegate().computeExecutionStrategy(predicatedFilter.computeExecutionStrategy(other));
     }
 }

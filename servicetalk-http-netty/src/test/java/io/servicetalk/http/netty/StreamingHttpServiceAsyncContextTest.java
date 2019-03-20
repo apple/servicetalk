@@ -104,8 +104,8 @@ public class StreamingHttpServiceAsyncContextTest extends AbstractHttpServiceAsy
             }
 
             @Override
-            public HttpExecutionStrategy executionStrategy() {
-                return noOffloads ? noOffloadsStrategy() : defaultStrategy();
+            public HttpExecutionStrategy computeExecutionStrategy(HttpExecutionStrategy other) {
+                return other.merge(noOffloads ? noOffloadsStrategy() : defaultStrategy());
             }
         };
     }
@@ -127,8 +127,8 @@ public class StreamingHttpServiceAsyncContextTest extends AbstractHttpServiceAsy
             }
 
             @Override
-            public HttpExecutionStrategy executionStrategy() {
-                return useImmediate ? noOffloadsStrategy() : super.executionStrategy();
+            public HttpExecutionStrategy computeExecutionStrategy(HttpExecutionStrategy other) {
+                return other.merge(useImmediate ? noOffloadsStrategy() : defaultStrategy());
             }
 
             private Single<StreamingHttpResponse> doHandle(final StreamingHttpRequest request,

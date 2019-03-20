@@ -83,7 +83,7 @@ public class HttpConnectionEmptyPayloadTest {
                                 }
 
                                 @Override
-                                public HttpExecutionStrategy executionStrategy() {
+                                public HttpExecutionStrategy computeExecutionStrategy(HttpExecutionStrategy other) {
                                     return noOffloadsStrategy();
                                 }
                             }));

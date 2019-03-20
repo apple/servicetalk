@@ -18,19 +18,16 @@ package io.servicetalk.http.api;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 
-import static io.servicetalk.http.api.BlockingHttpService.DEFAULT_BLOCKING_SERVICE_STRATEGY;
 import static io.servicetalk.http.api.BlockingUtils.blockingToCompletable;
 import static io.servicetalk.http.api.BlockingUtils.blockingToSingle;
+import static io.servicetalk.http.api.HttpExecutionStrategies.OFFLOAD_RECEIVE_META_STRATEGY;
 import static java.util.Objects.requireNonNull;
 
-final class BlockingHttpServiceToStreamingHttpService extends StreamingHttpService {
+final class BlockingHttpServiceToStreamingHttpService implements StreamingHttpService {
     private final BlockingHttpService service;
-    private final HttpExecutionStrategy effectiveStrategy;
 
-    private BlockingHttpServiceToStreamingHttpService(final BlockingHttpService service,
-                                                      final HttpExecutionStrategy effectiveStrategy) {
+    BlockingHttpServiceToStreamingHttpService(final BlockingHttpService service) {
         this.service = requireNonNull(service);
-        this.effectiveStrategy = requireNonNull(effectiveStrategy);
     }
 
     @Override
@@ -47,20 +44,10 @@ final class BlockingHttpServiceToStreamingHttpService extends StreamingHttpServi
     }
 
     @Override
-    BlockingHttpService asBlockingServiceInternal() {
-        return service;
-    }
-
-    @Override
-    public HttpExecutionStrategy executionStrategy() {
-        return effectiveStrategy;
-    }
-
-    static StreamingHttpService transform(final BlockingHttpService service) {
+    public HttpExecutionStrategy computeExecutionStrategy(HttpExecutionStrategy other) {
         // Since we are converting to a different programming model, try altering the strategy for the returned service
         // to contain an appropriate default. We achieve this by merging the expected strategy with the provided
         // service strategy.
-        return new BlockingHttpServiceToStreamingHttpService(service,
-                service.executionStrategy().merge(DEFAULT_BLOCKING_SERVICE_STRATEGY));
+        return service.computeExecutionStrategy(other.merge(OFFLOAD_RECEIVE_META_STRATEGY));
     }
 }

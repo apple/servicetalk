@@ -16,14 +16,18 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.http.api.BlockingHttpClient;
-import io.servicetalk.http.api.HttpRequestHandlerFilterFactory;
+import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpResponse;
-import io.servicetalk.http.api.StreamingHttpRequestHandler;
+import io.servicetalk.http.api.HttpServiceFilterFactory;
+import io.servicetalk.http.api.StreamingHttpService;
+import io.servicetalk.http.api.StreamingHttpServiceFilter;
 import io.servicetalk.transport.api.ServerContext;
 
 import org.junit.Test;
 import org.mockito.InOrder;
+import org.mockito.stubbing.Answer;
 
+import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.netty.HttpClients.forSingleAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
@@ -31,6 +35,7 @@ import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAnd
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -39,11 +44,11 @@ public class HttpServerFilterOrderTest {
 
     @Test
     public void prependOrder() throws Exception {
-        StreamingHttpRequestHandler filter1 = newMockHandler();
-        StreamingHttpRequestHandler filter2 = newMockHandler();
+        StreamingHttpService filter1 = newMockHandler();
+        StreamingHttpService filter2 = newMockHandler();
         ServerContext serverContext = HttpServers.forAddress(localAddress(0))
-                .appendRequestHandlerFilter(addFilter(filter1))
-                .appendRequestHandlerFilter(addFilter(filter2))
+                .appendServiceFilter(addFilter(filter1))
+                .appendServiceFilter(addFilter(filter2))
                 .listenBlockingAndAwait((ctx, request, responseFactory) -> responseFactory.ok());
         BlockingHttpClient client = forSingleAddress(serverHostAndPort(serverContext))
                 .buildBlocking();
@@ -55,17 +60,20 @@ public class HttpServerFilterOrderTest {
         verifier.verify(filter2).handle(any(), any(), any());
     }
 
-    private static StreamingHttpRequestHandler newMockHandler() {
-        StreamingHttpRequestHandler mock = mock(StreamingHttpRequestHandler.class);
-        when(mock.asStreamingService()).thenCallRealMethod();
-        return mock;
+    private static StreamingHttpService newMockHandler() {
+        StreamingHttpService service = mock(StreamingHttpService.class);
+        doAnswer((Answer<HttpExecutionStrategy>) invocation ->
+                invocation.getArgument(0)).when(service).computeExecutionStrategy(any());
+        when(service.closeAsync()).thenReturn(completed());
+        when(service.closeAsyncGracefully()).thenReturn(completed());
+        return service;
     }
 
-    private static HttpRequestHandlerFilterFactory addFilter(StreamingHttpRequestHandler filter) {
+    private static HttpServiceFilterFactory addFilter(StreamingHttpService filter) {
         return orig -> {
             when(filter.handle(any(), any(), any()))
                     .thenAnswer(i -> orig.handle(i.getArgument(0), i.getArgument(1), i.getArgument(2)));
-            return filter;
+            return new StreamingHttpServiceFilter(filter);
         };
     }
 }

@@ -21,6 +21,7 @@ import io.servicetalk.concurrent.api.AsyncContextMap;
 import io.servicetalk.concurrent.api.AsyncContextMap.Key;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpHeaderNames;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpMetaData;
@@ -45,6 +46,7 @@ import javax.annotation.Nullable;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.Single.error;
 import static io.servicetalk.concurrent.api.Single.success;
+import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.http.api.HttpHeaderNames.AUTHORIZATION;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderNames.PROXY_AUTHENTICATE;
@@ -327,6 +329,11 @@ public final class BasicAuthHttpServiceFilter<UserInfo> implements HttpServiceFi
         @Override
         public Completable closeAsyncGracefully() {
             return closeable.closeAsyncGracefully();
+        }
+
+        @Override
+        protected HttpExecutionStrategy executionStrategy() {
+            return noOffloadsStrategy();
         }
 
         private Single<StreamingHttpResponse> onAccessDenied(final HttpMetaData requestMetaData,

@@ -18,16 +18,14 @@ package io.servicetalk.http.api;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 
+import static io.servicetalk.http.api.HttpExecutionStrategies.OFFLOAD_RECEIVE_META_AND_SEND_STRATEGY;
 import static java.util.Objects.requireNonNull;
 
-final class HttpServiceToStreamingHttpService extends StreamingHttpService {
+final class HttpServiceToStreamingHttpService implements StreamingHttpService {
     private final HttpService aggregatedService;
-    private final HttpExecutionStrategy effectiveStrategy;
 
-    private HttpServiceToStreamingHttpService(final HttpService aggregatedService,
-                                              final HttpExecutionStrategy effectiveStrategy) {
+    HttpServiceToStreamingHttpService(final HttpService aggregatedService) {
         this.aggregatedService = requireNonNull(aggregatedService);
-        this.effectiveStrategy = requireNonNull(effectiveStrategy);
     }
 
     @Override
@@ -49,20 +47,10 @@ final class HttpServiceToStreamingHttpService extends StreamingHttpService {
     }
 
     @Override
-    HttpService asServiceInternal() {
-        return aggregatedService;
-    }
-
-    @Override
-    public HttpExecutionStrategy executionStrategy() {
-        return effectiveStrategy;
-    }
-
-    static StreamingHttpService transform(final HttpService service) {
+    public HttpExecutionStrategy computeExecutionStrategy(HttpExecutionStrategy other) {
         // Since we are converting to a different programming model, try altering the strategy for the returned service
         // to contain an appropriate default. We achieve this by merging the expected strategy with the provided
         // service strategy.
-        return new HttpServiceToStreamingHttpService(service,
-                service.executionStrategy().merge(HttpService.DEFAULT_SERVICE_STRATEGY));
+        return aggregatedService.computeExecutionStrategy(other.merge(OFFLOAD_RECEIVE_META_AND_SEND_STRATEGY));
     }
 }

@@ -16,7 +16,6 @@
 package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.BufferAllocator;
-import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.api.ConnectionAcceptor;
 import io.servicetalk.transport.api.ConnectionAcceptorFactory;
@@ -29,14 +28,12 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.net.SocketOption;
 import java.util.Map;
-import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.http.api.BlockingUtils.blockingInvocation;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
-import static io.servicetalk.http.api.HttpServiceFilterFactory.identity;
+import static io.servicetalk.http.api.StreamingHttpServiceConversions.toStreamingHttpService;
 import static io.servicetalk.transport.api.ConnectionAcceptor.ACCEPT_ALL;
-import static java.util.Objects.requireNonNull;
 
 /**
  * A builder for building HTTP Servers.
@@ -45,7 +42,8 @@ public abstract class HttpServerBuilder {
 
     @Nullable
     private ConnectionAcceptorFactory connectionAcceptorFactory;
-    private HttpServiceFilterFactory serviceFilter = identity();
+    @Nullable
+    private HttpServiceFilterFactory serviceFilter;
     private boolean drainRequestPayloadBody = true;
 
     /**
@@ -232,8 +230,8 @@ public abstract class HttpServerBuilder {
      * Append the filter to the chain of filters used to decorate the {@link StreamingHttpService} used by this
      * builder.
      * <p>
-     * Note this method will be used to decorate the {@link StreamingHttpRequestHandler} passed to
-     * {@link #listenStreaming(StreamingHttpRequestHandler)} before it is used by the server.
+     * Note this method will be used to decorate the {@link StreamingHttpService} passed to
+     * {@link #listenStreaming(StreamingHttpService)} before it is used by the server.
      * <p>
      * The order of execution of these filters are in order of append. If 3 filters are added as follows:
      * <pre>
@@ -247,82 +245,12 @@ public abstract class HttpServerBuilder {
      * @return {@code this}
      */
     public final HttpServerBuilder appendServiceFilter(final HttpServiceFilterFactory factory) {
-        serviceFilter = serviceFilter.append(factory);
+        if (serviceFilter == null) {
+            serviceFilter = factory;
+        } else {
+            serviceFilter = serviceFilter.append(factory);
+        }
         return this;
-    }
-
-    /**
-     * Append the filter to the chain of filters used to decorate the {@link StreamingHttpService} used by this builder,
-     * for every request that passes the provided {@link Predicate}.
-     * <p>
-     * Note this method will be used to decorate the {@link StreamingHttpRequestHandler} passed to
-     * {@link #listenStreaming(StreamingHttpRequestHandler)} before it is used by the server.
-     * <p>
-     * The order of execution of these filters are in order of append. If 3 filters are added as follows:
-     * <pre>
-     *     builder.append(filter1).append(filter2).append(filter3)
-     * </pre>
-     * accepting a request by a service wrapped by this filter chain, the order of invocation of these filters will be:
-     * <pre>
-     *     filter1 =&gt; filter2 =&gt; filter3 =&gt; service
-     * </pre>
-     * @param predicate the {@link Predicate} to test if the filter must be applied.
-     * @param factory {@link HttpServiceFilterFactory} to append.
-     * @return {@code this}
-     */
-    public final HttpServerBuilder appendServiceFilter(final Predicate<StreamingHttpRequest> predicate,
-                                                       final HttpServiceFilterFactory factory) {
-        requireNonNull(predicate);
-        requireNonNull(factory);
-
-        return appendServiceFilter(service ->
-                new ConditionalHttpServiceFilter(predicate, factory.create(service), service));
-    }
-
-    /**
-     * Append the filter to the chain of filters used to decorate the {@link StreamingHttpService} used by this
-     * builder.
-     * <p>
-     * Note this method will be used to decorate the {@link StreamingHttpRequestHandler} passed to
-     * {@link #listenStreaming(StreamingHttpRequestHandler)} before it is used by the server.
-     * <p>
-     * The order of execution of these filters are in order of append. If 3 filters are added as follows:
-     * <pre>
-     *     builder.append(filter1).append(filter2).append(filter3)
-     * </pre>
-     * accepting a request by a service wrapped by this filter chain, the order of invocation of these filters will be:
-     * <pre>
-     *     filter1 =&gt; filter2 =&gt; filter3 =&gt; service
-     * </pre>
-     * @param factory {@link HttpRequestHandlerFilterFactory} to append.
-     * @return {@code this}
-     */
-    public final HttpServerBuilder appendRequestHandlerFilter(final HttpRequestHandlerFilterFactory factory) {
-        return appendServiceFilter(factory.asServiceFilterFactory());
-    }
-
-    /**
-     * Conditionally append the filter to the chain of filters used to decorate the {@link StreamingHttpService} used by
-     * this builder.
-     * <p>
-     * Note this method will be used to decorate the {@link StreamingHttpRequestHandler} passed to
-     * {@link #listenStreaming(StreamingHttpRequestHandler)} before it is used by the server.
-     * <p>
-     * The order of execution of these filters are in order of append. If 3 filters are added as follows:
-     * <pre>
-     *     builder.append(filter1).append(filter2).append(filter3)
-     * </pre>
-     * accepting a request by a service wrapped by this filter chain, the order of invocation of these filters will be:
-     * <pre>
-     *     filter1 =&gt; filter2 =&gt; filter3 =&gt; service
-     * </pre>
-     * @param predicate the {@link Predicate} to test if the filter must be applied.
-     * @param factory {@link HttpRequestHandlerFilterFactory} to append.
-     * @return {@code this}
-     */
-    public final HttpServerBuilder appendRequestHandlerFilter(final Predicate<StreamingHttpRequest> predicate,
-                                                              final HttpRequestHandlerFilterFactory factory) {
-        return appendServiceFilter(predicate, factory.asServiceFilterFactory());
     }
 
     /**
@@ -366,14 +294,14 @@ public abstract class HttpServerBuilder {
      * <p>
      * If the underlying protocol (eg. TCP) supports it this will result in a socket bind/listen on {@code address}.
      *
-     * @param handler Service invoked for every request received by this server. The returned {@link ServerContext}
+     * @param service Service invoked for every request received by this server. The returned {@link ServerContext}
      * manages the lifecycle of the {@code service}, ensuring it is closed when the {@link ServerContext} is closed.
      * @return A {@link ServerContext} by blocking the calling thread until the server is successfully started or
      * throws an {@link Exception} if the server could not be started.
      * @throws Exception if the server could not be started.
      */
-    public final ServerContext listenAndAwait(final HttpRequestHandler handler) throws Exception {
-        return blockingInvocation(listen(handler));
+    public final ServerContext listenAndAwait(final HttpService service) throws Exception {
+        return blockingInvocation(listen(service));
     }
 
     /**
@@ -387,7 +315,7 @@ public abstract class HttpServerBuilder {
      * throws an {@link Exception} if the server could not be started.
      * @throws Exception if the server could not be started.
      */
-    public final ServerContext listenStreamingAndAwait(final StreamingHttpRequestHandler handler) throws Exception {
+    public final ServerContext listenStreamingAndAwait(final StreamingHttpService handler) throws Exception {
         return blockingInvocation(listenStreaming(handler));
     }
 
@@ -396,14 +324,14 @@ public abstract class HttpServerBuilder {
      * <p>
      * If the underlying protocol (eg. TCP) supports it this will result in a socket bind/listen on {@code address}.
      *
-     * @param handler Service invoked for every request received by this server. The returned {@link ServerContext}
+     * @param service Service invoked for every request received by this server. The returned {@link ServerContext}
      * manages the lifecycle of the {@code service}, ensuring it is closed when the {@link ServerContext} is closed.
      * @return A {@link ServerContext} by blocking the calling thread until the server is successfully started or
      * throws an {@link Exception} if the server could not be started.
      * @throws Exception if the server could not be started.
      */
-    public final ServerContext listenBlockingAndAwait(final BlockingHttpRequestHandler handler) throws Exception {
-        return blockingInvocation(listenBlocking(handler));
+    public final ServerContext listenBlockingAndAwait(final BlockingHttpService service) throws Exception {
+        return blockingInvocation(listenBlocking(service));
     }
 
     /**
@@ -418,7 +346,7 @@ public abstract class HttpServerBuilder {
      * @throws Exception if the server could not be started.
      */
     public final ServerContext listenBlockingStreamingAndAwait(
-            final BlockingStreamingHttpRequestHandler handler) throws Exception {
+            final BlockingStreamingHttpService handler) throws Exception {
         return blockingInvocation(listenBlockingStreaming(handler));
     }
 
@@ -432,8 +360,8 @@ public abstract class HttpServerBuilder {
      * @return A {@link Single} that completes when the server is successfully started or terminates with an error if
      * the server could not be started.
      */
-    public final Single<ServerContext> listen(final HttpRequestHandler handler) {
-        return listenStreaming(handler.asService().asStreamingService());
+    public final Single<ServerContext> listen(final HttpService handler) {
+        return listenStreaming0(StreamingHttpServiceConversions.toStreamingHttpService(handler));
     }
 
     /**
@@ -446,14 +374,22 @@ public abstract class HttpServerBuilder {
      * @return A {@link Single} that completes when the server is successfully started or terminates with an error if
      * the server could not be started.
      */
-    public final Single<ServerContext> listenStreaming(final StreamingHttpRequestHandler handler) {
-        ConnectionAcceptor connectionAcceptor = connectionAcceptorFactory == null ? null :
-                connectionAcceptorFactory.create(ACCEPT_ALL);
-        StreamingHttpService svc = handler.asStreamingService();
-        StreamingHttpServiceFilter filterChain = serviceFilter.create(svc);
-        HttpExecutionStrategy effectiveStrategy = filterChain.effectiveExecutionStrategy(defaultStrategy());
-        return doListen(connectionAcceptor, new StrategyOverridingService(effectiveStrategy, filterChain),
-                drainRequestPayloadBody);
+    public final Single<ServerContext> listenStreaming(final StreamingHttpService handler) {
+        return listenStreaming0(handler);
+    }
+
+    /**
+     * Starts this server and returns the {@link ServerContext} after the server has been successfully started.
+     * <p>
+     * If the underlying protocol (eg. TCP) supports it this will result in a socket bind/listen on {@code address}.
+     *
+     * @param service Service invoked for every request received by this server. The returned {@link ServerContext}
+     * manages the lifecycle of the {@code service}, ensuring it is closed when the {@link ServerContext} is closed.
+     * @return A {@link Single} that completes when the server is successfully started or terminates with an error if
+     * the server could not be started.
+     */
+    public final Single<ServerContext> listenBlocking(final BlockingHttpService service) {
+        return listenStreaming0(toStreamingHttpService(service));
     }
 
     /**
@@ -466,22 +402,8 @@ public abstract class HttpServerBuilder {
      * @return A {@link Single} that completes when the server is successfully started or terminates with an error if
      * the server could not be started.
      */
-    public final Single<ServerContext> listenBlocking(final BlockingHttpRequestHandler handler) {
-        return listenStreaming(handler.asBlockingService().asStreamingService());
-    }
-
-    /**
-     * Starts this server and returns the {@link ServerContext} after the server has been successfully started.
-     * <p>
-     * If the underlying protocol (eg. TCP) supports it this will result in a socket bind/listen on {@code address}.
-     *
-     * @param handler Service invoked for every request received by this server. The returned {@link ServerContext}
-     * manages the lifecycle of the {@code service}, ensuring it is closed when the {@link ServerContext} is closed.
-     * @return A {@link Single} that completes when the server is successfully started or terminates with an error if
-     * the server could not be started.
-     */
-    public final Single<ServerContext> listenBlockingStreaming(final BlockingStreamingHttpRequestHandler handler) {
-        return listenStreaming(handler.asBlockingStreamingService().asStreamingService());
+    public final Single<ServerContext> listenBlockingStreaming(final BlockingStreamingHttpService handler) {
+        return listenStreaming0(toStreamingHttpService(handler));
     }
 
     /**
@@ -491,6 +413,7 @@ public abstract class HttpServerBuilder {
      *
      * @param connectionAcceptor {@link ConnectionAcceptor} to use for the server.
      * @param service {@link StreamingHttpService} to use for the server.
+     * @param effectiveStrategy the {@link HttpExecutionStrategy} to use for the service.
      * @param drainRequestPayloadBody if {@code true} the server implementation should automatically subscribe and
      * ignore the {@link StreamingHttpRequest#payloadBody() payload body} of incoming requests.
      * @return A {@link Single} that completes when the server is successfully started or terminates with an error if
@@ -498,37 +421,14 @@ public abstract class HttpServerBuilder {
      */
     protected abstract Single<ServerContext> doListen(@Nullable ConnectionAcceptor connectionAcceptor,
                                                       StreamingHttpService service,
+                                                      HttpExecutionStrategy effectiveStrategy,
                                                       boolean drainRequestPayloadBody);
 
-    private static final class StrategyOverridingService extends StreamingHttpService {
-
-        private final HttpExecutionStrategy strategy;
-        private final StreamingHttpService delegate;
-
-        private StrategyOverridingService(final HttpExecutionStrategy strategy, final StreamingHttpService delegate) {
-            this.strategy = strategy;
-            this.delegate = delegate;
-        }
-
-        @Override
-        public Completable closeAsync() {
-            return delegate.closeAsync();
-        }
-
-        @Override
-        public HttpExecutionStrategy executionStrategy() {
-            return strategy;
-        }
-
-        @Override
-        public Completable closeAsyncGracefully() {
-            return delegate.closeAsyncGracefully();
-        }
-
-        @Override
-        public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx, final StreamingHttpRequest request,
-                                                    final StreamingHttpResponseFactory responseFactory) {
-            return delegate.handle(ctx, request, responseFactory);
-        }
+    private Single<ServerContext> listenStreaming0(StreamingHttpService rawService) {
+        ConnectionAcceptor connectionAcceptor = connectionAcceptorFactory == null ? null :
+                connectionAcceptorFactory.create(ACCEPT_ALL);
+        StreamingHttpService filteredService = serviceFilter != null ? serviceFilter.create(rawService) : rawService;
+        return doListen(connectionAcceptor, filteredService,
+                filteredService.computeExecutionStrategy(defaultStrategy()), drainRequestPayloadBody);
     }
 }

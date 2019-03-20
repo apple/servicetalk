@@ -15,8 +15,6 @@
  */
 package io.servicetalk.http.api;
 
-import io.servicetalk.concurrent.api.AsyncCloseable;
-import io.servicetalk.concurrent.api.AsyncCloseables;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
@@ -37,7 +35,7 @@ import static java.util.function.Function.identity;
 /**
  * Default implementation for {@link HttpExecutionStrategy}.
  */
-final class DefaultHttpExecutionStrategy implements HttpExecutionStrategy {
+class DefaultHttpExecutionStrategy implements HttpExecutionStrategy {
 
     static final byte OFFLOAD_RECEIVE_META = 1;
     static final byte OFFLOAD_RECEIVE_DATA = 2;
@@ -108,9 +106,7 @@ final class DefaultHttpExecutionStrategy implements HttpExecutionStrategy {
     }
 
     @Override
-    public StreamingHttpService offloadService(final Executor fallback, final StreamingHttpRequestHandler handler) {
-        final AsyncCloseable closeable = handler instanceof StreamingHttpService ?
-                (AsyncCloseable) handler : AsyncCloseables.emptyAsyncCloseable();
+    public StreamingHttpService offloadService(final Executor fallback, final StreamingHttpService service) {
         return new StreamingHttpService() {
             private final Executor e = executor(fallback);
 
@@ -125,11 +121,11 @@ final class DefaultHttpExecutionStrategy implements HttpExecutionStrategy {
                 final Single<StreamingHttpResponse> resp;
                 if (offloaded(OFFLOAD_RECEIVE_META)) {
                     final StreamingHttpRequest r = request;
-                    resp = e.submit(() -> handler.handle(wrappedCtx, r, responseFactory).subscribeShareContext())
+                    resp = e.submit(() -> service.handle(wrappedCtx, r, responseFactory).subscribeShareContext())
                             // exec.submit() returns a Single<Single<response>>, so flatten the nested Single.
                             .flatMap(identity());
                 } else {
-                    resp = handler.handle(wrappedCtx, request, responseFactory);
+                    resp = service.handle(wrappedCtx, request, responseFactory);
                 }
                 return offloaded(OFFLOAD_SEND) ?
                         // This is different as compared to invokeService() where we just offload once on the
@@ -139,18 +135,19 @@ final class DefaultHttpExecutionStrategy implements HttpExecutionStrategy {
             }
 
             @Override
-            public HttpExecutionStrategy executionStrategy() {
-                return DefaultHttpExecutionStrategy.this;
+            public HttpExecutionStrategy computeExecutionStrategy(HttpExecutionStrategy other) {
+                // TODO(scott): merge or just take it "as is"?
+                return other.merge(DefaultHttpExecutionStrategy.this);
             }
 
             @Override
             public Completable closeAsync() {
-                return closeable.closeAsync();
+                return service.closeAsync();
             }
 
             @Override
             public Completable closeAsyncGracefully() {
-                return closeable.closeAsyncGracefully();
+                return service.closeAsyncGracefully();
             }
         };
     }
@@ -209,7 +206,9 @@ final class DefaultHttpExecutionStrategy implements HttpExecutionStrategy {
             DefaultHttpExecutionStrategy otherAsDefault = (DefaultHttpExecutionStrategy) other;
             if (otherAsDefault.mergeStrategy == ReturnOther) {
                 // If other strategy just returns the mergeWith strategy, then no point in merging here.
-                return this;
+                // return this;
+                return this.executor == otherExecutor ? this :
+                        new DefaultHttpExecutionStrategy(executor, offloads, threadAffinity, mergeStrategy);
             }
             // We checked above that the two strategies are not equal, so just merge and return.
             return new DefaultHttpExecutionStrategy(executor, (byte) (otherAsDefault.offloads | offloads),

@@ -39,7 +39,7 @@ import java.util.List;
  * This service provides an API that fetches recommendations serially using blocking APIs. Returned response is a single
  * JSON array containing all {@link FullRecommendation}s.
  */
-final class BlockingGatewayService extends BlockingHttpService {
+final class BlockingGatewayService implements BlockingHttpService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(BlockingGatewayService.class);
 
