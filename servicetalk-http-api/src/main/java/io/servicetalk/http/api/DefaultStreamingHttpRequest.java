@@ -17,9 +17,9 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
+import io.servicetalk.concurrent.SingleSource.Processor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.concurrent.api.SingleProcessor;
 import io.servicetalk.http.api.HttpDataSourceTranformations.BridgeFlowControlAndDiscardOperator;
 import io.servicetalk.http.api.HttpDataSourceTranformations.HttpBufferFilterOperator;
 import io.servicetalk.http.api.HttpDataSourceTranformations.HttpPayloadAndTrailersFromSingleOperator;
@@ -30,7 +30,9 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 
+import static io.servicetalk.concurrent.api.Processors.newSingleProcessor;
 import static io.servicetalk.concurrent.api.Single.success;
+import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.http.api.HttpDataSourceTranformations.aggregatePayloadAndTrailers;
 import static java.util.Objects.requireNonNull;
 
@@ -205,22 +207,22 @@ class DefaultStreamingHttpRequest<P> extends DefaultHttpRequestMetaData implemen
     public final <T> StreamingHttpRequest transform(Supplier<T> stateSupplier,
                                                     BiFunction<Buffer, T, Buffer> transformer,
                                                     BiFunction<T, HttpHeaders, HttpHeaders> trailersTransformer) {
-        final SingleProcessor<HttpHeaders> outTrailersSingle = new SingleProcessor<>();
+        final Processor<HttpHeaders, HttpHeaders> outTrailersSingle = newSingleProcessor();
         return new BufferStreamingHttpRequest(this, allocator, payloadBody()
                 .liftSynchronous(new HttpPayloadAndTrailersFromSingleOperator<>(stateSupplier, transformer,
                         trailersTransformer, trailersSingle, outTrailersSingle)),
-                outTrailersSingle);
+                fromSource(outTrailersSingle));
     }
 
     @Override
     public final <T> StreamingHttpRequest transformRaw(Supplier<T> stateSupplier,
                                                        BiFunction<Object, T, ?> transformer,
                                                        BiFunction<T, HttpHeaders, HttpHeaders> trailersTransformer) {
-        final SingleProcessor<HttpHeaders> outTrailersSingle = new SingleProcessor<>();
+        final Processor<HttpHeaders, HttpHeaders> outTrailersSingle = newSingleProcessor();
         return new DefaultStreamingHttpRequest<>(this, allocator, payloadBody
                 .liftSynchronous(new HttpPayloadAndTrailersFromSingleOperator<>(stateSupplier, transformer,
                         trailersTransformer, trailersSingle, outTrailersSingle)),
-                outTrailersSingle);
+                fromSource(outTrailersSingle));
     }
 
     @Override

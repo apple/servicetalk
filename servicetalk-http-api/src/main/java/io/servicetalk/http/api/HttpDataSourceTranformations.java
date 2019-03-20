@@ -24,10 +24,10 @@ import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.SingleSource;
+import io.servicetalk.concurrent.SingleSource.Processor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.PublisherOperator;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.concurrent.api.SingleProcessor;
 import io.servicetalk.concurrent.internal.ConcurrentSubscription;
 import io.servicetalk.concurrent.internal.DelayedSubscription;
 
@@ -347,14 +347,14 @@ final class HttpDataSourceTranformations {
         private final BiFunction<Buffer, T, Buffer> transformer;
         private final BiFunction<T, HttpHeaders, HttpHeaders> trailersTrans;
         private final Single<HttpHeaders> inTrailersSingle;
-        private final SingleProcessor<HttpHeaders> outTrailersSingle;
+        private final Processor<HttpHeaders, HttpHeaders> outTrailersSingle;
 
         HttpBuffersAndTrailersIterable(final BlockingIterable<Buffer> iterable,
                                        final Supplier<T> stateSupplier,
                                        final BiFunction<Buffer, T, Buffer> transformer,
                                        final BiFunction<T, HttpHeaders, HttpHeaders> trailersTrans,
                                        final Single<HttpHeaders> inTrailersSingle,
-                                       final SingleProcessor<HttpHeaders> outTrailersSingle) {
+                                       final Processor<HttpHeaders, HttpHeaders> outTrailersSingle) {
             this.iterable = requireNonNull(iterable);
             this.stateSupplier = requireNonNull(stateSupplier);
             this.transformer = requireNonNull(transformer);
@@ -376,14 +376,14 @@ final class HttpDataSourceTranformations {
             private final BiFunction<Buffer, T, Buffer> transformer;
             private final BiFunction<T, HttpHeaders, HttpHeaders> trailersTrans;
             private final Future<HttpHeaders> inTrailersFuture;
-            private final SingleProcessor<HttpHeaders> outTrailersSingle;
+            private final Processor<HttpHeaders, HttpHeaders> outTrailersSingle;
 
             PayloadAndTrailersIterator(BlockingIterator<Buffer> iterator,
                                        @Nullable T userState,
                                        BiFunction<Buffer, T, Buffer> transformer,
                                        BiFunction<T, HttpHeaders, HttpHeaders> trailersTrans,
                                        Future<HttpHeaders> inTrailersFuture,
-                                       SingleProcessor<HttpHeaders> outTrailersSingle) {
+                                       Processor<HttpHeaders, HttpHeaders> outTrailersSingle) {
                 this.iterator = requireNonNull(iterator);
                 this.userState = userState;
                 this.transformer = transformer;
@@ -475,14 +475,14 @@ final class HttpDataSourceTranformations {
         private final BiFunction<Object, T, ?> transformer;
         private final BiFunction<T, HttpHeaders, HttpHeaders> trailersTrans;
         private final Single<HttpHeaders> inTrailersSingle;
-        private final SingleProcessor<HttpHeaders> outTrailersSingle;
+        private final Processor<HttpHeaders, HttpHeaders> outTrailersSingle;
 
         HttpObjectsAndTrailersIterable(final BlockingIterable<?> iterable,
                                        final Supplier<T> stateSupplier,
                                        final BiFunction<Object, T, ?> transformer,
                                        final BiFunction<T, HttpHeaders, HttpHeaders> trailersTrans,
                                        final Single<HttpHeaders> inTrailersSingle,
-                                       final SingleProcessor<HttpHeaders> outTrailersSingle) {
+                                       final Processor<HttpHeaders, HttpHeaders> outTrailersSingle) {
             this.iterable = requireNonNull(iterable);
             this.stateSupplier = requireNonNull(stateSupplier);
             this.transformer = requireNonNull(transformer);
@@ -504,14 +504,14 @@ final class HttpDataSourceTranformations {
             private final BiFunction<Object, T, ?> transformer;
             private final BiFunction<T, HttpHeaders, HttpHeaders> trailersTrans;
             private final Future<HttpHeaders> inTrailersFuture;
-            private final SingleProcessor<HttpHeaders> outTrailersSingle;
+            private final Processor<HttpHeaders, HttpHeaders> outTrailersSingle;
 
             PayloadAndTrailersIterator(BlockingIterator<?> iterator,
                                        @Nullable T userState,
                                        BiFunction<Object, T, ?> transformer,
                                        BiFunction<T, HttpHeaders, HttpHeaders> trailersTrans,
                                        Future<HttpHeaders> inTrailersFuture,
-                                       SingleProcessor<HttpHeaders> outTrailersSingle) {
+                                       Processor<HttpHeaders, HttpHeaders> outTrailersSingle) {
                 this.iterator = requireNonNull(iterator);
                 this.userState = userState;
                 this.transformer = transformer;
@@ -603,9 +603,9 @@ final class HttpDataSourceTranformations {
      * the {@link Subscriber} implementation, and so this can't be re-subscribed or repeated.
      */
     static final class HttpBufferTrailersSpliceOperator implements PublisherOperator<Object, Buffer> {
-        private final SingleProcessor<HttpHeaders> outTrailersSingle;
+        private final Processor<HttpHeaders, HttpHeaders> outTrailersSingle;
 
-        HttpBufferTrailersSpliceOperator(final SingleProcessor<HttpHeaders> outTrailersSingle) {
+        HttpBufferTrailersSpliceOperator(final Processor<HttpHeaders, HttpHeaders> outTrailersSingle) {
             this.outTrailersSingle = requireNonNull(outTrailersSingle);
         }
 
@@ -616,7 +616,7 @@ final class HttpDataSourceTranformations {
 
         private static final class JustBufferSubscriber extends AbstractJustBufferSubscriber<Buffer> {
             JustBufferSubscriber(final Subscriber<? super Buffer> target,
-                                 final SingleProcessor<HttpHeaders> outTrailersSingle) {
+                                 final Processor<HttpHeaders, HttpHeaders> outTrailersSingle) {
                 super(target, outTrailersSingle);
             }
 
@@ -641,9 +641,9 @@ final class HttpDataSourceTranformations {
     }
 
     static final class HttpObjectTrailersSpliceOperator implements PublisherOperator<Object, Object> {
-        private final SingleProcessor<HttpHeaders> outTrailersSingle;
+        private final Processor<HttpHeaders, HttpHeaders> outTrailersSingle;
 
-        HttpObjectTrailersSpliceOperator(final SingleProcessor<HttpHeaders> outTrailersSingle) {
+        HttpObjectTrailersSpliceOperator(final Processor<HttpHeaders, HttpHeaders> outTrailersSingle) {
             this.outTrailersSingle = requireNonNull(outTrailersSingle);
         }
 
@@ -654,7 +654,7 @@ final class HttpDataSourceTranformations {
 
         private static final class JustBufferSubscriber extends AbstractJustBufferSubscriber<Object> {
             JustBufferSubscriber(final Subscriber<? super Object> target,
-                                 final SingleProcessor<HttpHeaders> outTrailersSingle) {
+                                 final Processor<HttpHeaders, HttpHeaders> outTrailersSingle) {
                 super(target, outTrailersSingle);
             }
 
@@ -675,12 +675,12 @@ final class HttpDataSourceTranformations {
 
     private abstract static class AbstractJustBufferSubscriber<T> implements Subscriber<Object> {
         final Subscriber<? super T> subscriber;
-        final SingleProcessor<HttpHeaders> outTrailersSingle;
+        final Processor<HttpHeaders, HttpHeaders> outTrailersSingle;
         @Nullable
         HttpHeaders trailers;
 
         AbstractJustBufferSubscriber(final Subscriber<? super T> target,
-                                     final SingleProcessor<HttpHeaders> outTrailersSingle) {
+                                     final Processor<HttpHeaders, HttpHeaders> outTrailersSingle) {
             this.subscriber = target;
             this.outTrailersSingle = outTrailersSingle;
         }
@@ -729,12 +729,12 @@ final class HttpDataSourceTranformations {
         private final Supplier<T> stateSupplier;
         private final BiFunction<Buffer, T, Buffer> transformer;
         private final BiFunction<T, HttpHeaders, HttpHeaders> trailersTransformer;
-        private final SingleProcessor<HttpHeaders> outTrailersSingle;
+        private final Processor<HttpHeaders, HttpHeaders> outTrailersSingle;
 
         HttpRawBuffersAndTrailersOperator(final Supplier<T> stateSupplier,
                                           final BiFunction<Buffer, T, Buffer> transformer,
                                           final BiFunction<T, HttpHeaders, HttpHeaders> trailersTransformer,
-                                          final SingleProcessor<HttpHeaders> outTrailersSingle) {
+                                          final Processor<HttpHeaders, HttpHeaders> outTrailersSingle) {
             this.stateSupplier = requireNonNull(stateSupplier);
             this.transformer = requireNonNull(transformer);
             this.trailersTransformer = requireNonNull(trailersTransformer);
@@ -753,7 +753,7 @@ final class HttpDataSourceTranformations {
             private final T userState;
             private final BiFunction<Buffer, T, Buffer> transformer;
             private final BiFunction<T, HttpHeaders, HttpHeaders> trailersTransformer;
-            private final SingleProcessor<HttpHeaders> outTrailersSingle;
+            private final Processor<HttpHeaders, HttpHeaders> outTrailersSingle;
             @Nullable
             private HttpHeaders trailers;
 
@@ -761,7 +761,7 @@ final class HttpDataSourceTranformations {
                                                  @Nullable final T userState,
                                                  final BiFunction<Buffer, T, Buffer> transformer,
                                                  final BiFunction<T, HttpHeaders, HttpHeaders> trailersTransformer,
-                                                 final SingleProcessor<HttpHeaders> outTrailersSingle) {
+                                                 final Processor<HttpHeaders, HttpHeaders> outTrailersSingle) {
                 this.subscriber = subscriber;
                 this.userState = userState;
                 this.transformer = transformer;
@@ -812,12 +812,12 @@ final class HttpDataSourceTranformations {
         private final Supplier<T> stateSupplier;
         private final BiFunction<Object, T, ?> transformer;
         private final BiFunction<T, HttpHeaders, HttpHeaders> trailersTransformer;
-        private final SingleProcessor<HttpHeaders> outTrailersSingle;
+        private final Processor<HttpHeaders, HttpHeaders> outTrailersSingle;
 
         HttpRawObjectsAndTrailersOperator(final Supplier<T> stateSupplier,
                                           final BiFunction<Object, T, ?> transformer,
                                           final BiFunction<T, HttpHeaders, HttpHeaders> trailersTransformer,
-                                          final SingleProcessor<HttpHeaders> outTrailersSingle) {
+                                          final Processor<HttpHeaders, HttpHeaders> outTrailersSingle) {
             this.stateSupplier = requireNonNull(stateSupplier);
             this.transformer = requireNonNull(transformer);
             this.trailersTransformer = requireNonNull(trailersTransformer);
@@ -836,7 +836,7 @@ final class HttpDataSourceTranformations {
             private final T userState;
             private final BiFunction<Object, T, ?> transformer;
             private final BiFunction<T, HttpHeaders, HttpHeaders> trailersTransformer;
-            private final SingleProcessor<HttpHeaders> outTrailersSingle;
+            private final Processor<HttpHeaders, HttpHeaders> outTrailersSingle;
             @Nullable
             private HttpHeaders trailers;
 
@@ -844,7 +844,7 @@ final class HttpDataSourceTranformations {
                                                  @Nullable final T userState,
                                                  final BiFunction<Object, T, ?> transformer,
                                                  final BiFunction<T, HttpHeaders, HttpHeaders> trailersTransformer,
-                                                 final SingleProcessor<HttpHeaders> outTrailersSingle) {
+                                                 final Processor<HttpHeaders, HttpHeaders> outTrailersSingle) {
                 this.subscriber = subscriber;
                 this.userState = userState;
                 this.transformer = transformer;
@@ -906,13 +906,13 @@ final class HttpDataSourceTranformations {
         private final BiFunction<I, T, O> transformer;
         private final BiFunction<T, HttpHeaders, HttpHeaders> trailersTransformer;
         private final Single<HttpHeaders> inTrailersSingle;
-        private final SingleProcessor<HttpHeaders> outTrailersSingle;
+        private final Processor<HttpHeaders, HttpHeaders> outTrailersSingle;
 
         HttpPayloadAndTrailersFromSingleOperator(final Supplier<T> stateSupplier,
                                                  final BiFunction<I, T, O> transformer,
                                                  final BiFunction<T, HttpHeaders, HttpHeaders> trailersTransformer,
                                                  final Single<HttpHeaders> inTrailersSingle,
-                                                 final SingleProcessor<HttpHeaders> outTrailersSingle) {
+                                                 final Processor<HttpHeaders, HttpHeaders> outTrailersSingle) {
             this.stateSupplier = requireNonNull(stateSupplier);
             this.transformer = requireNonNull(transformer);
             this.trailersTransformer = requireNonNull(trailersTransformer);
@@ -933,14 +933,14 @@ final class HttpDataSourceTranformations {
             private final BiFunction<I, T, O> transformer;
             private final BiFunction<T, HttpHeaders, HttpHeaders> trailersTransformer;
             private final SingleSource<HttpHeaders> inTrailersSingle;
-            private final SingleProcessor<HttpHeaders> outTrailersSingle;
+            private final Processor<HttpHeaders, HttpHeaders> outTrailersSingle;
 
             PayloadAndTrailersSubscriber(final Subscriber<? super O> subscriber,
                                          @Nullable final T userState,
                                          final BiFunction<I, T, O> transformer,
                                          final BiFunction<T, HttpHeaders, HttpHeaders> trailersTransformer,
                                          final Single<HttpHeaders> inTrailersSingle,
-                                         final SingleProcessor<HttpHeaders> outTrailersSingle) {
+                                         final Processor<HttpHeaders, HttpHeaders> outTrailersSingle) {
                 this.subscriber = subscriber;
                 this.userState = userState;
                 this.transformer = transformer;
@@ -1037,7 +1037,7 @@ final class HttpDataSourceTranformations {
 
     private static <T> void completeOutTrailerSingle(@Nullable T userState, SingleSource<HttpHeaders> inTrailersSingle,
                                                      BiFunction<T, HttpHeaders, HttpHeaders> trailersTransformer,
-                                                     SingleProcessor<HttpHeaders> outTrailersSingle,
+                                                     Processor<HttpHeaders, HttpHeaders> outTrailersSingle,
                                                      Subscriber<?> subscriber) {
         inTrailersSingle.subscribe(new SingleSource.Subscriber<HttpHeaders>() {
             @Override
@@ -1062,7 +1062,7 @@ final class HttpDataSourceTranformations {
 
     private static <T> void completeOutTrailerSingle(@Nullable T userState, @Nullable HttpHeaders inHeaders,
                                                      BiFunction<T, HttpHeaders, HttpHeaders> trailersTransformer,
-                                                     SingleProcessor<HttpHeaders> outTrailersSingle,
+                                                     Processor<HttpHeaders, HttpHeaders> outTrailersSingle,
                                                      Subscriber<?> subscriber) {
         if (inHeaders == null) {
             try {

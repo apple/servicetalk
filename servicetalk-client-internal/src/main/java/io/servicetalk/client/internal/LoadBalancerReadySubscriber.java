@@ -16,14 +16,16 @@
 package io.servicetalk.client.internal;
 
 import io.servicetalk.client.api.LoadBalancerReadyEvent;
+import io.servicetalk.concurrent.CompletableSource.Processor;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.concurrent.api.CompletableProcessor;
 
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Completable.completed;
+import static io.servicetalk.concurrent.api.Processors.newCompletableProcessor;
+import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 
 /**
  * Designed to listen for {@link LoadBalancerReadyEvent}s and provide notification when a {@link LoadBalancerReadyEvent}
@@ -31,7 +33,7 @@ import static io.servicetalk.concurrent.api.Completable.completed;
  */
 public final class LoadBalancerReadySubscriber implements Subscriber<Object> {
     @Nullable
-    private volatile CompletableProcessor onHostsAvailable = new CompletableProcessor();
+    private volatile Processor onHostsAvailable = newCompletableProcessor();
 
     /**
      * Get {@link Completable} that will complete when a {@link LoadBalancerReadyEvent} returns {@code true}
@@ -41,8 +43,8 @@ public final class LoadBalancerReadySubscriber implements Subscriber<Object> {
      * a {@link LoadBalancerReadyEvent} that returns {@code true} has not been seend.
      */
     public Completable onHostsAvailable() {
-        CompletableProcessor onHostsAvailable = this.onHostsAvailable;
-        return onHostsAvailable == null ? completed() : onHostsAvailable;
+        Processor onHostsAvailable = this.onHostsAvailable;
+        return onHostsAvailable == null ? completed() : fromSource(onHostsAvailable);
     }
 
     @Override
@@ -55,20 +57,20 @@ public final class LoadBalancerReadySubscriber implements Subscriber<Object> {
         if (o instanceof LoadBalancerReadyEvent) {
             LoadBalancerReadyEvent event = (LoadBalancerReadyEvent) o;
             if (event.isReady()) {
-                CompletableProcessor onHostsAvailable = LoadBalancerReadySubscriber.this.onHostsAvailable;
+                Processor onHostsAvailable = LoadBalancerReadySubscriber.this.onHostsAvailable;
                 if (onHostsAvailable != null) {
                     LoadBalancerReadySubscriber.this.onHostsAvailable = null;
                     onHostsAvailable.onComplete();
                 }
             } else if (LoadBalancerReadySubscriber.this.onHostsAvailable == null) {
-                LoadBalancerReadySubscriber.this.onHostsAvailable = new CompletableProcessor();
+                LoadBalancerReadySubscriber.this.onHostsAvailable = newCompletableProcessor();
             }
         }
     }
 
     @Override
     public void onError(final Throwable t) {
-        CompletableProcessor onHostsAvailable = LoadBalancerReadySubscriber.this.onHostsAvailable;
+        Processor onHostsAvailable = LoadBalancerReadySubscriber.this.onHostsAvailable;
         if (onHostsAvailable != null) {
             LoadBalancerReadySubscriber.this.onHostsAvailable = null;
             onHostsAvailable.onError(t);
@@ -77,7 +79,7 @@ public final class LoadBalancerReadySubscriber implements Subscriber<Object> {
 
     @Override
     public void onComplete() {
-        CompletableProcessor onHostsAvailable = LoadBalancerReadySubscriber.this.onHostsAvailable;
+        Processor onHostsAvailable = LoadBalancerReadySubscriber.this.onHostsAvailable;
         if (onHostsAvailable != null) {
             LoadBalancerReadySubscriber.this.onHostsAvailable = null;
             // Let the load balancer or retry strategy fail any pending requests.
