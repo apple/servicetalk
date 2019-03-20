@@ -126,7 +126,6 @@ public class StreamingHttpServiceAsyncContextTest extends AbstractHttpServiceAsy
                         doHandle(request, responseFactory);
             }
 
-            // TODO(scott): should only have to specify this once! On the filter or the service.
             @Override
             public HttpExecutionStrategy executionStrategy() {
                 return useImmediate ? noOffloadsStrategy() : super.executionStrategy();
