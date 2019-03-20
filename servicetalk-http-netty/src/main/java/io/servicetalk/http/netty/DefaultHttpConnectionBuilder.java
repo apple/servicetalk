@@ -101,7 +101,6 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> extends HttpCon
                 new DefaultStreamingHttpRequestResponseFactory(executionContext.bufferAllocator(),
                         roConfig.headersFactory());
 
-        // Make a best effort to infer HOST header for HttpConnection
         HttpConnectionFilterFactory filterFactory = connectionFilterFunction.append(
                 hostHeaderFilterFactory.apply(resolvedAddress));
         filterFactory = filterFactory.append(
@@ -244,6 +243,7 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> extends HttpCon
     }
 
     private static <R> HostHeaderHttpRequesterFilter defaultHostHeaderFilterFactory(final R address) {
+        // Make a best effort to infer HOST header for HttpConnection
         if (address instanceof InetSocketAddress) {
             return new HostHeaderHttpRequesterFilter(HostAndPort.of((InetSocketAddress) address));
         }
