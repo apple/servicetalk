@@ -110,15 +110,15 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> extends HttpCon
         filterFactory = filterFactory.append(
                 new ConcurrentRequestsHttpConnectionFilter(roConfig.maxPipelinedRequests()));
 
-        return (isPipelineDisabled(roConfig) ?
+        return (reservedConnectionsPipelineEnabled(roConfig) ?
                 buildForNonPipelined(executionContext, resolvedAddress, roConfig, filterFactory, reqRespFactory) :
                 buildForPipelined(executionContext, resolvedAddress, roConfig, filterFactory, reqRespFactory))
                 .map(filter -> assembler.apply(filter, strategy));
     }
 
     // TODO(derek): Temporary, so we can re-enable the ability to create non-pipelined connections for perf testing.
-    static boolean isPipelineDisabled(final ReadOnlyHttpClientConfig roConfig) {
-        return false;
+    static boolean reservedConnectionsPipelineEnabled(final ReadOnlyHttpClientConfig roConfig) {
+        return Boolean.valueOf(System.getProperty("io.servicetalk.http.netty.reserved.connections.pipeline", "true"));
     }
 
     static <ResolvedAddress> Single<StreamingHttpConnectionFilter> buildForPipelined(

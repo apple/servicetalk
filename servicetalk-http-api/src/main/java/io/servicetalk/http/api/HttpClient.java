@@ -60,7 +60,6 @@ public final class HttpClient extends HttpRequester {
      * <p>
      * <b>Note:</b> reserved connections are not restricted by {@link BaseHttpBuilder#maxPipelinedRequests(int)}.
      *
-     *
      * @param strategy {@link HttpExecutionStrategy} to use.
      * @param metaData Allows the underlying layers to know what {@link HttpConnection}s are valid to
      * reserve for future {@link HttpRequest requests} with the same {@link HttpRequestMetaData}.
