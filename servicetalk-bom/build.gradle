@@ -54,6 +54,7 @@ dependencyManagement {
     dependency "io.servicetalk:servicetalk-concurrent-internal:$project.version"
     dependency "io.servicetalk:servicetalk-concurrent-internal-testFixtures:$project.version"
     dependency "io.servicetalk:servicetalk-concurrent-internal-api:$project.version"
+    dependency "io.servicetalk:servicetalk-concurrent-reactivestreams:$project.version"
     dependency "io.servicetalk:servicetalk-data-jackson:$project.version"
     dependency "io.servicetalk:servicetalk-data-jackson-jersey:$project.version"
     dependency "io.servicetalk:servicetalk-dns-discovery-netty:$project.version"
