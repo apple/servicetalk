@@ -28,9 +28,9 @@ import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.HttpServiceFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequest;
+import io.servicetalk.http.api.StreamingHttpRequestHandler;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
-import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.api.StreamingHttpServiceFilter;
 
 import org.slf4j.Logger;
@@ -232,7 +232,7 @@ public final class BasicAuthHttpServiceFilter<UserInfo> implements HttpServiceFi
     }
 
     @Override
-    public StreamingHttpServiceFilter create(final StreamingHttpService service) {
+    public StreamingHttpServiceFilter create(final StreamingHttpRequestHandler service) {
         return new BasicAuthStreamingHttpService<>(this, service);
     }
 
@@ -249,7 +249,7 @@ public final class BasicAuthHttpServiceFilter<UserInfo> implements HttpServiceFi
         private final AsyncCloseable closeable;
 
         BasicAuthStreamingHttpService(final BasicAuthHttpServiceFilter<UserInfo> config,
-                                      final StreamingHttpService next) {
+                                      final StreamingHttpRequestHandler next) {
             super(next);
             this.config = config;
             this.authenticateHeader = "Basic realm=\"" + config.realm + (config.utf8 ? "\", charset=\"UTF-8\"" : '"');

@@ -32,6 +32,8 @@ import java.util.function.BiPredicate;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
+import static io.servicetalk.http.api.StreamingHttpServiceConversions.toStreamingHttpService;
+
 /**
  * Methods for continuing a route.
  */
@@ -172,7 +174,7 @@ public interface RouteContinuation {
      * @return {@link RouteStarter} for building another route.
      */
     default RouteStarter thenRouteTo(HttpRequestHandler handler) {
-        return thenRouteTo(handler.asService().asStreamingService());
+        return thenRouteTo(toStreamingHttpService(handler));
     }
 
     /**
@@ -184,7 +186,7 @@ public interface RouteContinuation {
      * @return {@link RouteStarter} for building another route.
      */
     default RouteStarter thenRouteTo(BlockingHttpRequestHandler handler) {
-        return thenRouteTo(handler.asBlockingService().asStreamingService());
+        return thenRouteTo(toStreamingHttpService(handler));
     }
 
     /**
@@ -196,6 +198,6 @@ public interface RouteContinuation {
      * @return {@link RouteStarter} for building another route.
      */
     default RouteStarter thenRouteTo(BlockingStreamingHttpRequestHandler handler) {
-        return thenRouteTo(handler.asBlockingStreamingService().asStreamingService());
+        return thenRouteTo(toStreamingHttpService(handler));
     }
 }

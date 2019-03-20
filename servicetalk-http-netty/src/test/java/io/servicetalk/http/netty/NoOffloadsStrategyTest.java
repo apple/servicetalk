@@ -107,7 +107,7 @@ public class NoOffloadsStrategyTest {
         return requireNonNull(client);
     }
 
-    private static final class StreamingHttpServiceImpl extends StreamingHttpService {
+    private static final class StreamingHttpServiceImpl implements StreamingHttpService {
 
         private final HttpExecutionStrategy strategy;
         private volatile Thread executorThread;

@@ -21,7 +21,6 @@ import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.HttpSerializationProvider;
-import io.servicetalk.http.api.StreamingHttpRequestHandler;
 import io.servicetalk.http.netty.HttpServers;
 import io.servicetalk.opentracing.http.TestUtils.CountingInMemorySpanEventListener;
 import io.servicetalk.opentracing.inmemory.DefaultInMemoryTracer;
@@ -91,7 +90,7 @@ public class TracingHttpServiceFilterTest {
                 .addListener(spanListener).build();
         return HttpServers.forAddress(localAddress(0))
                 .appendServiceFilter(new TracingHttpServiceFilter(tracer, "testServer"))
-                .listenStreamingAndAwait(((StreamingHttpRequestHandler) (ctx, request, responseFactory) -> {
+                .listenStreamingAndAwait((ctx, request, responseFactory) -> {
                     InMemorySpan span = tracer.activeSpan();
                     if (span == null) {
                         return success(responseFactory.internalServerError().payloadBody(just("span not found"),
@@ -104,7 +103,7 @@ public class TracingHttpServiceFilterTest {
                                     span.isSampled(),
                                     span.tags().containsKey(ERROR.getKey()))),
                             httpSerializer.serializerFor(TestSpanState.class)));
-                }).asStreamingService());
+                });
     }
 
     @Test
@@ -169,8 +168,7 @@ public class TracingHttpServiceFilterTest {
         when(mockTracer.buildSpan(any())).thenThrow(DELIBERATE_EXCEPTION);
         try (ServerContext context = HttpServers.forAddress(localAddress(0))
                 .appendServiceFilter(new TracingHttpServiceFilter(mockTracer, "testServer"))
-                .listenStreamingAndAwait(((StreamingHttpRequestHandler) (ctx, request, responseFactory) ->
-                                success(responseFactory.forbidden())).asStreamingService())) {
+                .listenStreamingAndAwait(((ctx, request, responseFactory) -> success(responseFactory.forbidden())))) {
             try (HttpClient client = forSingleAddress(serverHostAndPort(context)).build()) {
                 HttpRequest request = client.get("/");
                 HttpResponse response = client.request(request).toFuture().get();

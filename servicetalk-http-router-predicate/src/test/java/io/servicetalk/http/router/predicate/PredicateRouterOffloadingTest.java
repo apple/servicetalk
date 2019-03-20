@@ -212,7 +212,7 @@ public class PredicateRouterOffloadingTest {
         Route
     }
 
-    private final class StreamingHttpServiceImpl extends StreamingHttpService {
+    private final class StreamingHttpServiceImpl implements StreamingHttpService {
         private final HttpExecutionStrategy strategy;
 
         StreamingHttpServiceImpl(final HttpExecutionStrategy strategy) {

@@ -41,7 +41,7 @@ import static io.servicetalk.examples.http.service.composition.AsyncUtils.zip;
  * This service provides an API that fetches recommendations in parallel but provides an aggregated JSON array as a
  * response.
  */
-final class GatewayService extends HttpService {
+final class GatewayService implements HttpService {
 
     private static final TypeHolder<List<Recommendation>> typeOfRecommendation =
             new TypeHolder<List<Recommendation>>() { };

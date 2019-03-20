@@ -24,12 +24,12 @@ import static java.util.Objects.requireNonNull;
 public interface HttpServiceFilterFactory {
 
     /**
-     * Create a {@link StreamingHttpServiceFilter} using the provided {@link StreamingHttpService}.
+     * Create a {@link StreamingHttpServiceFilter} using the provided {@link StreamingHttpRequestHandler}.
      *
-     * @param service {@link StreamingHttpService} to filter
-     * @return {@link StreamingHttpServiceFilter} using the provided {@link StreamingHttpService}.
+     * @param service {@link StreamingHttpRequestHandler} to filter
+     * @return {@link StreamingHttpServiceFilter} using the provided {@link StreamingHttpRequestHandler}.
      */
-    StreamingHttpServiceFilter create(StreamingHttpService service);
+    StreamingHttpServiceFilter create(StreamingHttpRequestHandler service);
 
     /**
      * Returns a composed function that first applies the {@code before} function to its input, and then applies
@@ -50,20 +50,5 @@ public interface HttpServiceFilterFactory {
     default HttpServiceFilterFactory append(HttpServiceFilterFactory before) {
         requireNonNull(before);
         return service -> create(before.create(service));
-    }
-
-    /**
-     * Returns a function that always returns its input {@link HttpServiceFilterFactory}.
-     *
-     * @return a function that always returns its input {@link HttpServiceFilterFactory}.
-     */
-    static HttpServiceFilterFactory identity() {
-        return service -> new StreamingHttpServiceFilter(service) {
-            @Override
-            protected HttpExecutionStrategy mergeForEffectiveStrategy(final HttpExecutionStrategy mergeWith) {
-                // Since this filter does not have any blocking code, we do not need to alter the effective strategy.
-                return mergeWith;
-            }
-        };
     }
 }

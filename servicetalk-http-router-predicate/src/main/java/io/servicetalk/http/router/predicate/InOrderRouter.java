@@ -40,7 +40,7 @@ import static java.util.stream.Collectors.toList;
  * first one which returns {@code true} is used to handle the request. If no predicates match, the fallback service
  * specified is used.
  */
-final class InOrderRouter extends StreamingHttpService {
+final class InOrderRouter implements StreamingHttpService {
 
     private final StreamingHttpService fallbackService;
     private final PredicateServicePair[] predicateServicePairs;
@@ -57,7 +57,7 @@ final class InOrderRouter extends StreamingHttpService {
         this.fallbackService = requireNonNull(fallbackService);
         this.predicateServicePairs = predicateServicePairs.toArray(new PredicateServicePair[0]);
         // Use default strategy from StreamingHttpService if none defined by the user.
-        this.strategy = strategy == null ? super.executionStrategy() : strategy;
+        this.strategy = strategy == null ? StreamingHttpService.super.executionStrategy() : strategy;
         this.closeable = newCompositeCloseable()
                 .mergeAll(fallbackService)
                 .mergeAll(predicateServicePairs.stream().map(PredicateServicePair::service).collect(toList()));

@@ -36,6 +36,7 @@ import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.http.api.StreamingHttpServiceConversions.toStreamingHttpService;
 import static io.servicetalk.http.router.predicate.Predicates.method;
 import static io.servicetalk.http.router.predicate.Predicates.methodIsOneOf;
 import static io.servicetalk.http.router.predicate.Predicates.pathEquals;
@@ -63,9 +64,9 @@ import static java.util.Objects.requireNonNull;
 public final class HttpPredicateRouterBuilder implements RouteStarter {
 
     private final List<PredicateServicePair> predicateServicePairs = new ArrayList<>();
+    private final RouteContinuationImpl continuation = new RouteContinuationImpl();
     @Nullable
     private BiPredicate<ConnectionContext, StreamingHttpRequest> predicate;
-    private final RouteContinuationImpl continuation = new RouteContinuationImpl();
 
     /**
      * Do not define any strategy by default which will use the default strategy.
@@ -254,7 +255,7 @@ public final class HttpPredicateRouterBuilder implements RouteStarter {
         @Override
         public RouteStarter thenRouteTo(final StreamingHttpRequestHandler handler) {
             assert predicate != null;
-            predicateServicePairs.add(new PredicateServicePair(predicate, handler.asStreamingService()));
+            predicateServicePairs.add(new PredicateServicePair(predicate, toStreamingHttpService(handler)));
             predicate = null;
             return HttpPredicateRouterBuilder.this;
         }

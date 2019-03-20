@@ -24,8 +24,7 @@ import io.servicetalk.concurrent.api.Single;
  * concerns.
  */
 @FunctionalInterface
-public interface BlockingHttpRequestHandler {
-
+public interface BlockingHttpRequestHandler extends AutoCloseable {
     /**
      * Handles a single HTTP request.
      *
@@ -38,17 +37,8 @@ public interface BlockingHttpRequestHandler {
     HttpResponse handle(HttpServiceContext ctx, HttpRequest request, HttpResponseFactory responseFactory)
             throws Exception;
 
-    /**
-     * Convert this {@link BlockingHttpRequestHandler} to a {@link BlockingHttpService}.
-     * @return a {@link BlockingHttpService}.
-     */
-    default BlockingHttpService asBlockingService() {
-        return new BlockingHttpService() {
-            @Override
-            public HttpResponse handle(final HttpServiceContext ctx, final HttpRequest request,
-                                       HttpResponseFactory responseFactory) throws Exception {
-                return BlockingHttpRequestHandler.this.handle(ctx, request, responseFactory);
-            }
-        };
+    @Override
+    default void close() throws Exception {
+        // noop
     }
 }

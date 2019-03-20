@@ -75,10 +75,10 @@ public class HttpServerOverrideOffloadingTest {
                 HttpServerOverrideOffloadingTest::isInServerEventLoop);
         server = HttpServers.forAddress(localAddress(0))
                 .ioExecutor(ioExecutor)
-                .listenAndAwait(new HttpPredicateRouterBuilder()
+                .listenStreamingAndAwait(new HttpPredicateRouterBuilder()
                         .executionStrategy(noOffloadsStrategy())
                         .whenPathStartsWith("/service1").thenRouteTo(service1)
-                        .whenPathStartsWith("/service2").thenRouteTo(service2).build());
+                        .whenPathStartsWith("/service2").thenRouteTo(service2).buildStreaming());
         client = HttpClients.forSingleAddress(serverHostAndPort(server)).build();
     }
 
@@ -101,7 +101,7 @@ public class HttpServerOverrideOffloadingTest {
         assertThat("Service-2, unexpected errors: " + service2.errors, service2.errors, hasSize(0));
     }
 
-    private static final class OffloadingTesterService extends StreamingHttpService {
+    private static final class OffloadingTesterService implements StreamingHttpService {
 
         private final AtomicInteger invoked = new AtomicInteger();
         private final HttpExecutionStrategy strategy;

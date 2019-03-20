@@ -25,6 +25,7 @@ import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.RejectedSubscribeError;
+import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.HttpProtocolVersion;
@@ -33,8 +34,8 @@ import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpRequest;
+import io.servicetalk.http.api.StreamingHttpRequestHandler;
 import io.servicetalk.http.api.StreamingHttpResponse;
-import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.tcp.netty.internal.ReadOnlyTcpServerConfig;
 import io.servicetalk.tcp.netty.internal.TcpServerBinder;
 import io.servicetalk.tcp.netty.internal.TcpServerChannelInitializer;
@@ -89,7 +90,8 @@ final class NettyHttpServer {
     static Single<ServerContext> bind(final ExecutionContext executionContext, final ReadOnlyHttpServerConfig config,
                                       final SocketAddress address,
                                       @Nullable final ConnectionAcceptor connectionAcceptor,
-                                      final StreamingHttpService service,
+                                      StreamingHttpRequestHandler service,
+                                      HttpExecutionStrategy effectiveStrategy,
                                       final boolean drainRequestPayloadBody) {
         // This state is read only, so safe to keep a copy across Subscribers
         final ReadOnlyTcpServerConfig tcpServerConfig = config.tcpConfig();
@@ -103,7 +105,7 @@ final class NettyHttpServer {
                             new TerminalPredicate<>(LAST_HTTP_PAYLOAD_CHUNK_OBJECT_PREDICATE), closeHandler,
                             flushStrategy, new TcpServerChannelInitializer(tcpServerConfig)
                                     .andThen(getChannelInitializer(config, closeHandler)))
-                        .map(conn -> new NettyHttpServerConnection(conn, service, flushStrategy,
+                        .map(conn -> new NettyHttpServerConnection(conn, service, effectiveStrategy, flushStrategy,
                                 config.headersFactory(), drainRequestPayloadBody));
                 },
                 serverConnection -> serverConnection.process().subscribe())
@@ -130,7 +132,7 @@ final class NettyHttpServer {
         private final ServerContext delegate;
         private final ListenableAsyncCloseable asyncCloseable;
 
-        NettyHttpServerContext(final ServerContext delegate, final StreamingHttpService service) {
+        NettyHttpServerContext(final ServerContext delegate, final StreamingHttpRequestHandler service) {
             this.delegate = delegate;
             asyncCloseable = toListenableAsyncCloseable(newCompositeCloseable().appendAll(service, delegate));
         }
@@ -169,13 +171,15 @@ final class NettyHttpServer {
 
     private static final class NettyHttpServerConnection extends HttpServiceContext implements NettyConnectionContext {
         private static final Logger LOGGER = LoggerFactory.getLogger(NettyHttpServerConnection.class);
-        private final StreamingHttpService service;
+        private final StreamingHttpRequestHandler service;
+        private final HttpExecutionStrategy effectiveStrategy;
         private final NettyConnection<Object, Object> connection;
         private final CompositeFlushStrategy compositeFlushStrategy;
         private final boolean drainRequestPayloadBody;
 
         NettyHttpServerConnection(final NettyConnection<Object, Object> connection,
-                                  final StreamingHttpService service,
+                                  final StreamingHttpRequestHandler service,
+                                  final HttpExecutionStrategy effectiveStrategy,
                                   final CompositeFlushStrategy compositeFlushStrategy,
                                   final HttpHeadersFactory headersFactory,
                                   final boolean drainRequestPayloadBody) {
@@ -187,6 +191,7 @@ final class NettyHttpServer {
                             connection.executionContext().bufferAllocator()));
             this.connection = connection;
             this.service = service;
+            this.effectiveStrategy = effectiveStrategy;
             this.compositeFlushStrategy = compositeFlushStrategy;
             this.drainRequestPayloadBody = drainRequestPayloadBody;
         }
@@ -244,7 +249,7 @@ final class NettyHttpServer {
 
                 final HttpRequestMethod requestMethod = request2.method();
                 final HttpKeepAlive keepAlive = HttpKeepAlive.responseKeepAlive(request2);
-                Publisher<Object> objectPublisher = service.executionStrategy()
+                Publisher<Object> objectPublisher = effectiveStrategy
                         .invokeService(executionContext().executor(), request2,
                                 req -> service.handle(NettyHttpServerConnection.this, req, streamingResponseFactory())
                                         .map(response -> {

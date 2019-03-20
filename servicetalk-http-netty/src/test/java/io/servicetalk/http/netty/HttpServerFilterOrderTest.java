@@ -56,9 +56,7 @@ public class HttpServerFilterOrderTest {
     }
 
     private static StreamingHttpRequestHandler newMockHandler() {
-        StreamingHttpRequestHandler mock = mock(StreamingHttpRequestHandler.class);
-        when(mock.asStreamingService()).thenCallRealMethod();
-        return mock;
+        return mock(StreamingHttpRequestHandler.class);
     }
 
     private static HttpRequestHandlerFilterFactory addFilter(StreamingHttpRequestHandler filter) {

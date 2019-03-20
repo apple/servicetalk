@@ -72,7 +72,7 @@ final class RecommendationBackend {
         return new Recommendation(valueOf(entityId), valueOf(random.nextInt(1000)));
     }
 
-    private static final class StreamingService extends StreamingHttpService {
+    private static final class StreamingService implements StreamingHttpService {
 
         private final HttpSerializationProvider serializer;
 
@@ -104,7 +104,7 @@ final class RecommendationBackend {
         }
     }
 
-    private static final class AggregatedService extends HttpService {
+    private static final class AggregatedService implements HttpService {
 
         private final HttpSerializationProvider serializer;
 

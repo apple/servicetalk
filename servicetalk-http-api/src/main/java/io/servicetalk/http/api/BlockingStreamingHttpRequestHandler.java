@@ -22,7 +22,7 @@ package io.servicetalk.http.api;
  * level concerns.
  */
 @FunctionalInterface
-public interface BlockingStreamingHttpRequestHandler {
+public interface BlockingStreamingHttpRequestHandler extends AutoCloseable {
     /**
      * Handles a single HTTP request.
      *
@@ -34,19 +34,8 @@ public interface BlockingStreamingHttpRequestHandler {
     void handle(HttpServiceContext ctx, BlockingStreamingHttpRequest request,
                 BlockingStreamingHttpServerResponse response) throws Exception;
 
-    /**
-     * Convert this {@link BlockingStreamingHttpRequestHandler} to a {@link BlockingStreamingHttpService}.
-     *
-     * @return a {@link BlockingStreamingHttpService}.
-     */
-    default BlockingStreamingHttpService asBlockingStreamingService() {
-        return new BlockingStreamingHttpService() {
-            @Override
-            public void handle(final HttpServiceContext ctx,
-                               final BlockingStreamingHttpRequest request,
-                               final BlockingStreamingHttpServerResponse response) throws Exception {
-                BlockingStreamingHttpRequestHandler.this.handle(ctx, request, response);
-            }
-        };
+    @Override
+    default void close() throws Exception {
+        // noop
     }
 }

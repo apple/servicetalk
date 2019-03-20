@@ -24,10 +24,10 @@ import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpRequest;
+import io.servicetalk.http.api.StreamingHttpRequestHandler;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
-import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.api.StreamingHttpServiceFilter;
 import io.servicetalk.transport.netty.internal.NettyConnectionContext;
 
@@ -512,7 +512,7 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
     }
 
     @Override
-    protected void service(final StreamingHttpService service) {
+    protected void service(final StreamingHttpRequestHandler service) {
         super.service(new StreamingHttpServiceFilter(service) {
             @Override
             public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,

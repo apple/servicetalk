@@ -21,6 +21,7 @@ import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.HttpServiceFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequest;
+import io.servicetalk.http.api.StreamingHttpRequestHandler;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpService;
@@ -66,7 +67,7 @@ public class TracingHttpServiceFilter extends AbstractTracingHttpFilter implemen
     }
 
     @Override
-    public final StreamingHttpServiceFilter create(final StreamingHttpService service) {
+    public final StreamingHttpServiceFilter create(final StreamingHttpRequestHandler service) {
         return new StreamingHttpServiceFilter(service) {
             @Override
             public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
@@ -77,7 +78,7 @@ public class TracingHttpServiceFilter extends AbstractTracingHttpFilter implemen
         };
     }
 
-    private Single<StreamingHttpResponse> trackRequest(final StreamingHttpService delegate,
+    private Single<StreamingHttpResponse> trackRequest(final StreamingHttpRequestHandler delegate,
                                                        final HttpServiceContext ctx,
                                                        final StreamingHttpRequest request,
                                                        final StreamingHttpResponseFactory responseFactory) {
@@ -110,7 +111,7 @@ public class TracingHttpServiceFilter extends AbstractTracingHttpFilter implemen
         @Nullable
         private SpanContext parentSpanContext;
 
-        ServiceScopeTracker(final Scope scope, final SpanContext parentSpanContext) {
+        ServiceScopeTracker(final Scope scope, @Nullable final SpanContext parentSpanContext) {
             super(scope);
             this.parentSpanContext = parentSpanContext;
         }

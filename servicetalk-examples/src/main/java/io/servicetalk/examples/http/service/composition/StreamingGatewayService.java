@@ -41,7 +41,7 @@ import static io.servicetalk.examples.http.service.composition.AsyncUtils.zip;
  * This service provides an API that fetches recommendations in parallel and responds with a stream of
  * {@link FullRecommendation} objects as JSON.
  */
-final class StreamingGatewayService extends StreamingHttpService {
+final class StreamingGatewayService implements StreamingHttpService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(StreamingGatewayService.class);
 

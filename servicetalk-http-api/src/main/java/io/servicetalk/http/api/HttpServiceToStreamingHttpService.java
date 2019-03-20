@@ -18,9 +18,10 @@ package io.servicetalk.http.api;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 
+import static io.servicetalk.http.api.HttpExecutionStrategies.OFFLOAD_RECEIVE_META_AND_SEND_STRATEGY;
 import static java.util.Objects.requireNonNull;
 
-final class HttpServiceToStreamingHttpService extends StreamingHttpService {
+final class HttpServiceToStreamingHttpService implements StreamingHttpService {
     private final HttpService aggregatedService;
     private final HttpExecutionStrategy effectiveStrategy;
 
@@ -49,11 +50,6 @@ final class HttpServiceToStreamingHttpService extends StreamingHttpService {
     }
 
     @Override
-    HttpService asServiceInternal() {
-        return aggregatedService;
-    }
-
-    @Override
     public HttpExecutionStrategy executionStrategy() {
         return effectiveStrategy;
     }
@@ -63,6 +59,6 @@ final class HttpServiceToStreamingHttpService extends StreamingHttpService {
         // to contain an appropriate default. We achieve this by merging the expected strategy with the provided
         // service strategy.
         return new HttpServiceToStreamingHttpService(service,
-                service.executionStrategy().merge(HttpService.DEFAULT_SERVICE_STRATEGY));
+                service.executionStrategy().merge(OFFLOAD_RECEIVE_META_AND_SEND_STRATEGY));
     }
 }

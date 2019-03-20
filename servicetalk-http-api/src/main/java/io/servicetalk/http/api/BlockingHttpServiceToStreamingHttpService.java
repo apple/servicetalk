@@ -18,12 +18,12 @@ package io.servicetalk.http.api;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 
-import static io.servicetalk.http.api.BlockingHttpService.DEFAULT_BLOCKING_SERVICE_STRATEGY;
 import static io.servicetalk.http.api.BlockingUtils.blockingToCompletable;
 import static io.servicetalk.http.api.BlockingUtils.blockingToSingle;
+import static io.servicetalk.http.api.HttpExecutionStrategies.OFFLOAD_RECEIVE_META_STRATEGY;
 import static java.util.Objects.requireNonNull;
 
-final class BlockingHttpServiceToStreamingHttpService extends StreamingHttpService {
+final class BlockingHttpServiceToStreamingHttpService implements StreamingHttpService {
     private final BlockingHttpService service;
     private final HttpExecutionStrategy effectiveStrategy;
 
@@ -47,11 +47,6 @@ final class BlockingHttpServiceToStreamingHttpService extends StreamingHttpServi
     }
 
     @Override
-    BlockingHttpService asBlockingServiceInternal() {
-        return service;
-    }
-
-    @Override
     public HttpExecutionStrategy executionStrategy() {
         return effectiveStrategy;
     }
@@ -61,6 +56,6 @@ final class BlockingHttpServiceToStreamingHttpService extends StreamingHttpServi
         // to contain an appropriate default. We achieve this by merging the expected strategy with the provided
         // service strategy.
         return new BlockingHttpServiceToStreamingHttpService(service,
-                service.executionStrategy().merge(DEFAULT_BLOCKING_SERVICE_STRATEGY));
+                service.executionStrategy().merge(OFFLOAD_RECEIVE_META_STRATEGY));
     }
 }

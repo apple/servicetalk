@@ -128,7 +128,7 @@ public class StreamingHttpServiceAsyncContextTest extends AbstractHttpServiceAsy
 
             @Override
             public HttpExecutionStrategy executionStrategy() {
-                return useImmediate ? noOffloadsStrategy() : super.executionStrategy();
+                return useImmediate ? noOffloadsStrategy() : StreamingHttpService.super.executionStrategy();
             }
 
             private Single<StreamingHttpResponse> doHandle(final StreamingHttpRequest request,

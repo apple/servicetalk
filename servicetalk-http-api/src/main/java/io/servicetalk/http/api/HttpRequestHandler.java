@@ -15,6 +15,8 @@
  */
 package io.servicetalk.http.api;
 
+import io.servicetalk.concurrent.api.AsyncCloseable;
+import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 
 /**
@@ -23,8 +25,7 @@ import io.servicetalk.concurrent.api.Single;
  * This is a simpler version of {@link HttpService} without lifecycle constructs and other higher level concerns.
  */
 @FunctionalInterface
-public interface HttpRequestHandler {
-
+public interface HttpRequestHandler extends AsyncCloseable {
     /**
      * Handles a single HTTP request.
      *
@@ -36,16 +37,12 @@ public interface HttpRequestHandler {
     Single<HttpResponse> handle(HttpServiceContext ctx, HttpRequest request, HttpResponseFactory responseFactory);
 
     /**
-     * Convert this {@link HttpRequestHandler} to a {@link HttpService}.
-     * @return a {@link HttpService}.
+     * Closes this {@link HttpService} asynchronously.
+     *
+     * @return {@link Completable} that when subscribed will close this {@link HttpService}.
      */
-    default HttpService asService() {
-        return new HttpService() {
-            @Override
-            public Single<HttpResponse> handle(final HttpServiceContext ctx, final HttpRequest request,
-                                               HttpResponseFactory responseFactory) {
-                return HttpRequestHandler.this.handle(ctx, request, responseFactory);
-            }
-        };
+    @Override
+    default Completable closeAsync() {
+        return Completable.completed();
     }
 }

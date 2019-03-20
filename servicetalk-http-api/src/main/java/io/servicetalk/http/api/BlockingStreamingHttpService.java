@@ -20,47 +20,13 @@ import static io.servicetalk.http.api.HttpExecutionStrategies.OFFLOAD_RECEIVE_ME
 /**
  * The equivalent of {@link StreamingHttpService} but with synchronous/blocking APIs instead of asynchronous APIs.
  */
-public abstract class BlockingStreamingHttpService implements AutoCloseable, BlockingStreamingHttpRequestHandler {
-    static final HttpExecutionStrategy DEFAULT_BLOCKING_STREAMING_SERVICE_STRATEGY =
-            OFFLOAD_RECEIVE_META_AND_SEND_STRATEGY;
-
-    @Override
-    public void close() throws Exception {
-        // noop
-    }
-
-    @Override
-    public final BlockingStreamingHttpService asBlockingStreamingService() {
-        return this;
-    }
-
-    /**
-     * Convert this {@link BlockingStreamingHttpService} to the {@link StreamingHttpService} asynchronous API.
-     * <p>
-     * Note that the resulting {@link StreamingHttpService} may still be subject to any blocking, in memory aggregation,
-     * and other behavior as this {@link BlockingStreamingHttpService}.
-     *
-     * @return a {@link StreamingHttpService} representation of this {@link BlockingStreamingHttpService}.
-     */
-    public final StreamingHttpService asStreamingService() {
-        return asStreamingServiceInternal();
-    }
-
+public interface BlockingStreamingHttpService extends BlockingStreamingHttpRequestHandler {
     /**
      * Returns the {@link HttpExecutionStrategy} for this {@link BlockingStreamingHttpService}.
      *
      * @return The {@link HttpExecutionStrategy} for this {@link BlockingStreamingHttpService}.
      */
-    public HttpExecutionStrategy executionStrategy() {
-        return DEFAULT_BLOCKING_STREAMING_SERVICE_STRATEGY;
-    }
-
-    /**
-     * Provides a means to override the behavior of {@link #asStreamingService()} for internal classes.
-     *
-     * @return a {@link StreamingHttpService} representation of this {@link BlockingStreamingHttpService}.
-     */
-    StreamingHttpService asStreamingServiceInternal() {
-        return BlockingStreamingHttpServiceToStreamingHttpService.transform(this);
+    default HttpExecutionStrategy executionStrategy() {
+        return OFFLOAD_RECEIVE_META_AND_SEND_STRATEGY;
     }
 }

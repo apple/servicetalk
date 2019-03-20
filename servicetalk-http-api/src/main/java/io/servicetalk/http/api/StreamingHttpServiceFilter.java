@@ -15,6 +15,7 @@
  */
 package io.servicetalk.http.api;
 
+import io.servicetalk.concurrent.api.AsyncCloseable;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 
@@ -25,16 +26,16 @@ import static java.util.Objects.requireNonNull;
  * An implementation of {@link StreamingHttpService} that delegates all methods to the provided
  * {@link StreamingHttpService}.
  */
-public class StreamingHttpServiceFilter extends StreamingHttpService {
+public class StreamingHttpServiceFilter implements StreamingHttpRequestHandler, AsyncCloseable {
 
-    private final StreamingHttpService delegate;
+    private final StreamingHttpRequestHandler delegate;
 
     /**
      * New instance.
      *
      * @param delegate {@link StreamingHttpService} to delegate all calls.
      */
-    public StreamingHttpServiceFilter(final StreamingHttpService delegate) {
+    public StreamingHttpServiceFilter(final StreamingHttpRequestHandler delegate) {
         this.delegate = requireNonNull(delegate);
     }
 
@@ -58,9 +59,12 @@ public class StreamingHttpServiceFilter extends StreamingHttpService {
             // something sophisticated if required.
             return ((StreamingHttpServiceFilter) delegate).effectiveExecutionStrategy(
                     mergeForEffectiveStrategy(strategy));
+        } else if (delegate instanceof StreamingHttpService) {
+            // End of the filter chain.
+            return ((StreamingHttpService) delegate).executionStrategy().merge(mergeForEffectiveStrategy(strategy));
+        } else {
+            throw new IllegalStateException("unsupported delegate type: " + delegate.getClass());
         }
-        // End of the filter chain.
-        return delegate.executionStrategy().merge(mergeForEffectiveStrategy(strategy));
     }
 
     /**
@@ -82,21 +86,16 @@ public class StreamingHttpServiceFilter extends StreamingHttpService {
     }
 
     @Override
-    public final HttpExecutionStrategy executionStrategy() {
-        return delegate.executionStrategy();
-    }
-
-    @Override
     public Completable closeAsyncGracefully() {
         return delegate.closeAsyncGracefully();
     }
 
     /**
-     * Returns {@link StreamingHttpService} to which all calls are delegated.
+     * Returns {@link StreamingHttpRequestHandler} to which all calls are delegated.
      *
-     * @return {@link StreamingHttpService} to which all calls are delegated.
+     * @return {@link StreamingHttpRequestHandler} to which all calls are delegated.
      */
-    protected final StreamingHttpService delegate() {
+    protected final StreamingHttpRequestHandler delegate() {
         return delegate;
     }
 }

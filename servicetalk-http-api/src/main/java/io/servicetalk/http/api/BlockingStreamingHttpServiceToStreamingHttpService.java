@@ -37,14 +37,14 @@ import static io.servicetalk.concurrent.api.Processors.newCompletableProcessor;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.safeOnError;
-import static io.servicetalk.http.api.BlockingStreamingHttpService.DEFAULT_BLOCKING_STREAMING_SERVICE_STRATEGY;
 import static io.servicetalk.http.api.BlockingUtils.blockingToCompletable;
+import static io.servicetalk.http.api.HttpExecutionStrategies.OFFLOAD_RECEIVE_META_AND_SEND_STRATEGY;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.StreamingHttpResponses.newResponseWithTrailers;
 import static java.lang.Thread.currentThread;
 import static java.util.Objects.requireNonNull;
 
-final class BlockingStreamingHttpServiceToStreamingHttpService extends StreamingHttpService {
+final class BlockingStreamingHttpServiceToStreamingHttpService implements StreamingHttpService {
 
     private static final Logger LOGGER =
             LoggerFactory.getLogger(BlockingStreamingHttpServiceToStreamingHttpService.class);
@@ -142,7 +142,7 @@ final class BlockingStreamingHttpServiceToStreamingHttpService extends Streaming
         // to contain an appropriate default. We achieve this by merging the expected strategy with the provided
         // service strategy.
         return new BlockingStreamingHttpServiceToStreamingHttpService(service,
-                service.executionStrategy().merge(DEFAULT_BLOCKING_STREAMING_SERVICE_STRATEGY));
+                service.executionStrategy().merge(OFFLOAD_RECEIVE_META_AND_SEND_STRATEGY));
     }
 
     private static final class BufferHttpPayloadWriter implements HttpPayloadWriter<Buffer> {

@@ -26,8 +26,8 @@ import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.http.api.HttpServerBuilder;
 import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpRequest;
+import io.servicetalk.http.api.StreamingHttpRequestHandler;
 import io.servicetalk.http.api.StreamingHttpResponse;
-import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.test.resources.DefaultTestCerts;
 import io.servicetalk.transport.api.ConnectionAcceptor;
 import io.servicetalk.transport.api.DelegatingConnectionAcceptor;
@@ -108,7 +108,7 @@ public abstract class AbstractNettyHttpServerTest {
     private boolean sslEnabled;
     private ServerContext serverContext;
     private StreamingHttpConnection httpConnection;
-    private StreamingHttpService service;
+    private StreamingHttpRequestHandler service;
 
     AbstractNettyHttpServerTest(ExecutorSupplier clientExecutorSupplier, ExecutorSupplier serverExecutorSupplier) {
         this.clientExecutorSupplier = clientExecutorSupplier;
@@ -164,7 +164,7 @@ public abstract class AbstractNettyHttpServerTest {
                         this.serverExecutorSupplier == serverExecutorSupplier, is(FALSE));
     }
 
-    protected void service(final StreamingHttpService service) {
+    protected void service(final StreamingHttpRequestHandler service) {
         this.service = service;
     }
 

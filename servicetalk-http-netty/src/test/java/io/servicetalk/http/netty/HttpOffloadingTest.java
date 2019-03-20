@@ -331,7 +331,7 @@ public class HttpOffloadingTest {
         });
     }
 
-    private static final class OffloadingVerifyingServiceStreaming extends StreamingHttpService {
+    private static final class OffloadingVerifyingServiceStreaming implements StreamingHttpService {
 
         private final Collection<Throwable> errors = new ConcurrentLinkedQueue<>();
         private final HttpExecutionStrategy strategy;

@@ -15,7 +15,11 @@
  */
 package io.servicetalk.http.api;
 
+import io.servicetalk.concurrent.api.AsyncCloseable;
+import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
+
+import static io.servicetalk.concurrent.api.Completable.completed;
 
 /**
  * A handler of {@link StreamingHttpRequest}.
@@ -24,8 +28,7 @@ import io.servicetalk.concurrent.api.Single;
  * concerns.
  */
 @FunctionalInterface
-public interface StreamingHttpRequestHandler {
-
+public interface StreamingHttpRequestHandler extends AsyncCloseable {
     /**
      * Handles a single HTTP request.
      *
@@ -38,17 +41,12 @@ public interface StreamingHttpRequestHandler {
                                          StreamingHttpResponseFactory responseFactory);
 
     /**
-     * Convert this {@link StreamingHttpRequestHandler} to a {@link StreamingHttpService}.
-     * @return a {@link StreamingHttpService}.
+     * Closes this {@link StreamingHttpService} asynchronously.
+     *
+     * @return {@link Completable} that when subscribed will close this {@link StreamingHttpService}.
      */
-    default StreamingHttpService asStreamingService() {
-        return new StreamingHttpService() {
-            @Override
-            public Single<StreamingHttpResponse> handle(
-                    final HttpServiceContext ctx, final StreamingHttpRequest request,
-                    final StreamingHttpResponseFactory responseFactory) {
-                return StreamingHttpRequestHandler.this.handle(ctx, request, responseFactory);
-            }
-        };
+    @Override
+    default Completable closeAsync() {
+        return completed();
     }
 }

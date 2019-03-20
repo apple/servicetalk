@@ -15,66 +15,18 @@
  */
 package io.servicetalk.http.api;
 
-import io.servicetalk.concurrent.api.AsyncCloseable;
-import io.servicetalk.concurrent.api.Completable;
-
-import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.http.api.HttpExecutionStrategies.OFFLOAD_ALL_STRATEGY;
 
 /**
  * A service contract for the HTTP protocol.
  */
-public abstract class StreamingHttpService implements AsyncCloseable, StreamingHttpRequestHandler {
-    static final HttpExecutionStrategy DEFAULT_STREAMING_SERVICE_STRATEGY = OFFLOAD_ALL_STRATEGY;
-    /**
-     * Closes this {@link StreamingHttpService} asynchronously.
-     *
-     * @return {@link Completable} that when subscribed will close this {@link StreamingHttpService}.
-     */
-    @Override
-    public Completable closeAsync() {
-        return completed();
-    }
-
-    @Override
-    public final StreamingHttpService asStreamingService() {
-        return this;
-    }
-
-    /**
-     * Convert this {@link StreamingHttpService} to the {@link HttpService} API.
-     *
-     * @return a {@link HttpService} representation of this {@link StreamingHttpService}.
-     */
-    public final HttpService asService() {
-        return asServiceInternal();
-    }
-
-    /**
-     * Convert this {@link StreamingHttpService} to the {@link BlockingHttpService} API.
-     * <p>
-     * This API is provided for convenience for a more familiar sequential programming model. It is recommended that
-     * filters are implemented using the {@link StreamingHttpService} asynchronous API for maximum portability.
-     * @return a {@link BlockingHttpService} representation of this {@link StreamingHttpService}.
-     */
-    public final BlockingHttpService asBlockingService() {
-        return asBlockingServiceInternal();
-    }
-
+public interface StreamingHttpService extends StreamingHttpRequestHandler {
     /**
      * Returns the {@link HttpExecutionStrategy} for this {@link StreamingHttpService}.
      *
      * @return The {@link HttpExecutionStrategy} for this {@link StreamingHttpService}.
      */
-    public HttpExecutionStrategy executionStrategy() {
-        return DEFAULT_STREAMING_SERVICE_STRATEGY;
-    }
-
-    HttpService asServiceInternal() {
-        return StreamingHttpServiceToHttpService.transform(this);
-    }
-
-    BlockingHttpService asBlockingServiceInternal() {
-        return StreamingHttpServiceToBlockingHttpService.transform(this);
+    default HttpExecutionStrategy executionStrategy() {
+        return OFFLOAD_ALL_STRATEGY;
     }
 }

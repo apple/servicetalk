@@ -29,6 +29,7 @@ import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpService;
+import io.servicetalk.http.api.StreamingHttpServiceFilter;
 import io.servicetalk.http.utils.auth.BasicAuthHttpServiceFilter.CredentialsVerifier;
 import io.servicetalk.transport.api.ExecutionContext;
 
@@ -218,7 +219,7 @@ public class BasicAuthHttpServiceFilterTest {
 
     @Test
     public void authenticatedWithoutUserInfo() throws Exception {
-        StreamingHttpService service = new BasicAuthHttpServiceFilter.Builder<>(CREDENTIALS_VERIFIER, REALM_VALUE)
+        StreamingHttpServiceFilter service = new BasicAuthHttpServiceFilter.Builder<>(CREDENTIALS_VERIFIER, REALM_VALUE)
                 .buildServer()
                 .create(HELLO_WORLD_SERVICE);
 
@@ -306,7 +307,7 @@ public class BasicAuthHttpServiceFilterTest {
                 return completed();
             }
         };
-        StreamingHttpService service = new BasicAuthHttpServiceFilter.Builder<>(
+        StreamingHttpServiceFilter service = new BasicAuthHttpServiceFilter.Builder<>(
                 utf8CredentialsVerifier, REALM_VALUE)
                 .userInfoKey(USER_INFO_KEY)
                 .setCharsetUtf8(true)
@@ -330,7 +331,7 @@ public class BasicAuthHttpServiceFilterTest {
         AtomicBoolean credentialsVerifierClosed = new AtomicBoolean();
         AtomicBoolean nextServiceClosed = new AtomicBoolean();
 
-        StreamingHttpService service = new BasicAuthHttpServiceFilter.Builder<>(
+        StreamingHttpServiceFilter service = new BasicAuthHttpServiceFilter.Builder<>(
                 new CredentialsVerifier<BasicUserInfo>() {
                     @Override
                     public Single<BasicUserInfo> apply(final String userId, final String password) {
@@ -365,7 +366,7 @@ public class BasicAuthHttpServiceFilterTest {
     }
 
     private static void testUnauthorized(StreamingHttpRequest request) throws Exception {
-        StreamingHttpService service = new BasicAuthHttpServiceFilter.Builder<>(CREDENTIALS_VERIFIER, REALM_VALUE)
+        StreamingHttpServiceFilter service = new BasicAuthHttpServiceFilter.Builder<>(CREDENTIALS_VERIFIER, REALM_VALUE)
                 .buildServer()
                 .create(HELLO_WORLD_SERVICE);
 
@@ -377,7 +378,7 @@ public class BasicAuthHttpServiceFilterTest {
     }
 
     private static void testProxyAuthenticationRequired(StreamingHttpRequest request) throws Exception {
-        StreamingHttpService service = new BasicAuthHttpServiceFilter.Builder<>(CREDENTIALS_VERIFIER, REALM_VALUE)
+        StreamingHttpServiceFilter service = new BasicAuthHttpServiceFilter.Builder<>(CREDENTIALS_VERIFIER, REALM_VALUE)
                 .buildProxy()
                 .create(HELLO_WORLD_SERVICE);
 
@@ -389,14 +390,15 @@ public class BasicAuthHttpServiceFilterTest {
     }
 
     private static void testAuthenticated(StreamingHttpRequest request) throws Exception {
-        StreamingHttpService service = new BasicAuthHttpServiceFilter.Builder<>(CREDENTIALS_VERIFIER, REALM_VALUE)
+        StreamingHttpServiceFilter service = new BasicAuthHttpServiceFilter.Builder<>(CREDENTIALS_VERIFIER, REALM_VALUE)
                 .userInfoKey(USER_INFO_KEY)
                 .buildServer()
                 .create(HELLO_WORLD_SERVICE);
         testAuthenticated(request, service);
     }
 
-    private static void testAuthenticated(StreamingHttpRequest request, StreamingHttpService service) throws Exception {
+    private static void testAuthenticated(StreamingHttpRequest request, StreamingHttpServiceFilter service)
+            throws Exception {
         StreamingHttpResponse response = awaitIndefinitelyNonNull(service.handle(CONN_CTX, request, reqRespFactory));
         assertEquals(OK, response.status());
 
@@ -404,7 +406,7 @@ public class BasicAuthHttpServiceFilterTest {
     }
 
     private static void testAuthenticatedForProxy(StreamingHttpRequest request) throws Exception {
-        StreamingHttpService service = new BasicAuthHttpServiceFilter.Builder<>(CREDENTIALS_VERIFIER, REALM_VALUE)
+        StreamingHttpServiceFilter service = new BasicAuthHttpServiceFilter.Builder<>(CREDENTIALS_VERIFIER, REALM_VALUE)
                 .userInfoKey(USER_INFO_KEY)
                 .buildProxy()
                 .create(HELLO_WORLD_SERVICE);

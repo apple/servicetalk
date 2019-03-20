@@ -16,7 +16,6 @@
 package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.BufferAllocator;
-import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.api.ConnectionAcceptor;
 import io.servicetalk.transport.api.ConnectionAcceptorFactory;
@@ -34,7 +33,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.http.api.BlockingUtils.blockingInvocation;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
-import static io.servicetalk.http.api.HttpServiceFilterFactory.identity;
+import static io.servicetalk.http.api.StreamingHttpServiceConversions.toStreamingHttpService;
 import static io.servicetalk.transport.api.ConnectionAcceptor.ACCEPT_ALL;
 import static java.util.Objects.requireNonNull;
 
@@ -45,7 +44,8 @@ public abstract class HttpServerBuilder {
 
     @Nullable
     private ConnectionAcceptorFactory connectionAcceptorFactory;
-    private HttpServiceFilterFactory serviceFilter = identity();
+    @Nullable
+    private HttpServiceFilterFactory serviceFilter;
     private boolean drainRequestPayloadBody = true;
 
     /**
@@ -247,7 +247,11 @@ public abstract class HttpServerBuilder {
      * @return {@code this}
      */
     public final HttpServerBuilder appendServiceFilter(final HttpServiceFilterFactory factory) {
-        serviceFilter = serviceFilter.append(factory);
+        if (serviceFilter == null) {
+            serviceFilter = factory;
+        } else {
+            serviceFilter = serviceFilter.append(factory);
+        }
         return this;
     }
 
@@ -433,7 +437,7 @@ public abstract class HttpServerBuilder {
      * the server could not be started.
      */
     public final Single<ServerContext> listen(final HttpRequestHandler handler) {
-        return listenStreaming(handler.asService().asStreamingService());
+        return listenStreaming0(StreamingHttpServiceConversions.toStreamingHttpService(handler));
     }
 
     /**
@@ -447,13 +451,7 @@ public abstract class HttpServerBuilder {
      * the server could not be started.
      */
     public final Single<ServerContext> listenStreaming(final StreamingHttpRequestHandler handler) {
-        ConnectionAcceptor connectionAcceptor = connectionAcceptorFactory == null ? null :
-                connectionAcceptorFactory.create(ACCEPT_ALL);
-        StreamingHttpService svc = handler.asStreamingService();
-        StreamingHttpServiceFilter filterChain = serviceFilter.create(svc);
-        HttpExecutionStrategy effectiveStrategy = filterChain.effectiveExecutionStrategy(defaultStrategy());
-        return doListen(connectionAcceptor, new StrategyOverridingService(effectiveStrategy, filterChain),
-                drainRequestPayloadBody);
+        return listenStreaming0(toStreamingHttpService(handler));
     }
 
     /**
@@ -467,7 +465,7 @@ public abstract class HttpServerBuilder {
      * the server could not be started.
      */
     public final Single<ServerContext> listenBlocking(final BlockingHttpRequestHandler handler) {
-        return listenStreaming(handler.asBlockingService().asStreamingService());
+        return listenStreaming0(toStreamingHttpService(handler));
     }
 
     /**
@@ -481,7 +479,7 @@ public abstract class HttpServerBuilder {
      * the server could not be started.
      */
     public final Single<ServerContext> listenBlockingStreaming(final BlockingStreamingHttpRequestHandler handler) {
-        return listenStreaming(handler.asBlockingStreamingService().asStreamingService());
+        return listenStreaming0(toStreamingHttpService(handler));
     }
 
     /**
@@ -490,45 +488,31 @@ public abstract class HttpServerBuilder {
      * If the underlying protocol (eg. TCP) supports it this should result in a socket bind/listen on {@code address}.
      *
      * @param connectionAcceptor {@link ConnectionAcceptor} to use for the server.
-     * @param service {@link StreamingHttpService} to use for the server.
+     * @param service {@link StreamingHttpRequestHandler} to use for the server.
+     * @param effectiveStrategy the {@link HttpExecutionStrategy} to use for the service.
      * @param drainRequestPayloadBody if {@code true} the server implementation should automatically subscribe and
      * ignore the {@link StreamingHttpRequest#payloadBody() payload body} of incoming requests.
      * @return A {@link Single} that completes when the server is successfully started or terminates with an error if
      * the server could not be started.
      */
     protected abstract Single<ServerContext> doListen(@Nullable ConnectionAcceptor connectionAcceptor,
-                                                      StreamingHttpService service,
+                                                      StreamingHttpRequestHandler service,
+                                                      HttpExecutionStrategy effectiveStrategy,
                                                       boolean drainRequestPayloadBody);
 
-    private static final class StrategyOverridingService extends StreamingHttpService {
-
-        private final HttpExecutionStrategy strategy;
-        private final StreamingHttpService delegate;
-
-        private StrategyOverridingService(final HttpExecutionStrategy strategy, final StreamingHttpService delegate) {
-            this.strategy = strategy;
-            this.delegate = delegate;
+    private Single<ServerContext> listenStreaming0(StreamingHttpService rawService) {
+        ConnectionAcceptor connectionAcceptor = connectionAcceptorFactory == null ? null :
+                connectionAcceptorFactory.create(ACCEPT_ALL);
+        final HttpExecutionStrategy effectiveStrategy;
+        final StreamingHttpRequestHandler filteredService;
+        if (serviceFilter != null) {
+            StreamingHttpServiceFilter filterChain = serviceFilter.create(rawService);
+            filteredService = filterChain;
+            effectiveStrategy = filterChain.effectiveExecutionStrategy(defaultStrategy());
+        } else {
+            filteredService = rawService;
+            effectiveStrategy = rawService.executionStrategy();
         }
-
-        @Override
-        public Completable closeAsync() {
-            return delegate.closeAsync();
-        }
-
-        @Override
-        public HttpExecutionStrategy executionStrategy() {
-            return strategy;
-        }
-
-        @Override
-        public Completable closeAsyncGracefully() {
-            return delegate.closeAsyncGracefully();
-        }
-
-        @Override
-        public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx, final StreamingHttpRequest request,
-                                                    final StreamingHttpResponseFactory responseFactory) {
-            return delegate.handle(ctx, request, responseFactory);
-        }
+        return doListen(connectionAcceptor, filteredService, effectiveStrategy, drainRequestPayloadBody);
     }
 }

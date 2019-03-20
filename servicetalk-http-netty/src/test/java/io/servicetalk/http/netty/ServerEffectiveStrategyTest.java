@@ -34,6 +34,7 @@ import io.servicetalk.http.api.HttpServerBuilder;
 import io.servicetalk.http.api.HttpService;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpRequest;
+import io.servicetalk.http.api.StreamingHttpRequestHandler;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpService;
@@ -589,7 +590,7 @@ public class ServerEffectiveStrategyTest {
 
         private final InvokingThreadsRecorder<ServerOffloadPoint> recorder;
 
-        ServiceInvokingThreadRecorder(StreamingHttpService delegate,
+        ServiceInvokingThreadRecorder(StreamingHttpRequestHandler delegate,
                                       InvokingThreadsRecorder<ServerOffloadPoint> recorder) {
             super(delegate);
             this.recorder = requireNonNull(recorder);

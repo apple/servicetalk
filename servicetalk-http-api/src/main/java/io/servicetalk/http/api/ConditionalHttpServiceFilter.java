@@ -25,12 +25,12 @@ import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseabl
 
 final class ConditionalHttpServiceFilter extends StreamingHttpServiceFilter {
     private final Predicate<StreamingHttpRequest> predicate;
-    private final StreamingHttpService predicatedFilter;
+    private final StreamingHttpServiceFilter predicatedFilter;
     private final CompositeCloseable closeable;
 
     ConditionalHttpServiceFilter(final Predicate<StreamingHttpRequest> predicate,
-                                 final StreamingHttpService predicatedFilter,
-                                 final StreamingHttpService service) {
+                                 final StreamingHttpServiceFilter predicatedFilter,
+                                 final StreamingHttpRequestHandler service) {
         super(service);
         this.predicate = predicate;
         this.predicatedFilter = predicatedFilter;
