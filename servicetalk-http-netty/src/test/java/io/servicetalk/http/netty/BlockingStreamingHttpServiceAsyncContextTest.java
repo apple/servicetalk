@@ -72,11 +72,10 @@ public class BlockingStreamingHttpServiceAsyncContextTest extends AbstractHttpSe
             public void handle(final HttpServiceContext ctx,
                                final BlockingStreamingHttpRequest request,
                                final BlockingStreamingHttpServerResponse response) throws Exception {
-                doHandle(ctx, request, response);
+                doHandle(request, response);
             }
 
-            private void doHandle(final HttpServiceContext ctx,
-                                  final BlockingStreamingHttpRequest request,
+            private void doHandle(final BlockingStreamingHttpRequest request,
                                   final BlockingStreamingHttpServerResponse response) throws Exception {
                 CharSequence requestId = AsyncContext.get(K1);
                 // The test forces the server to consume the entire request here which will make sure the

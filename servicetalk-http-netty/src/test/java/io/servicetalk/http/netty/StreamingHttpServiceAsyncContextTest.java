@@ -122,8 +122,8 @@ public class StreamingHttpServiceAsyncContextTest extends AbstractHttpServiceAsy
             public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
                                                         final StreamingHttpRequest request,
                                                         final StreamingHttpResponseFactory responseFactory) {
-                return asyncService ? defer(() -> doHandle(ctx, request, responseFactory).subscribeShareContext()) :
-                        doHandle(ctx, request, responseFactory);
+                return asyncService ? defer(() -> doHandle(request, responseFactory).subscribeShareContext()) :
+                        doHandle(request, responseFactory);
             }
 
             // TODO(scott): should only have to specify this once! On the filter or the service.
@@ -132,8 +132,7 @@ public class StreamingHttpServiceAsyncContextTest extends AbstractHttpServiceAsy
                 return useImmediate ? noOffloadsStrategy() : super.executionStrategy();
             }
 
-            private Single<StreamingHttpResponse> doHandle(final HttpServiceContext ctx,
-                                                           final StreamingHttpRequest request,
+            private Single<StreamingHttpResponse> doHandle(final StreamingHttpRequest request,
                                                            final StreamingHttpResponseFactory factory) {
                 CharSequence requestId = AsyncContext.get(K1);
                 // The test doesn't wait until the request body is consumed and only cares when the request is received
