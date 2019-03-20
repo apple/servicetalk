@@ -181,11 +181,12 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
 
             // closed by the LoadBalancer
             final ConnectionFactory<R, ? extends StreamingHttpConnectionFilter> connectionFactory =
-                    connectionFactoryFilter.create(closeOnException.prepend(reservedConnectionsPipelineEnabled(roConfig) ?
-                            new NonPipelinedLBHttpConnectionFactory<>(roConfig, ctx.executionContext,
-                                    connectionFilterFunction, reqRespFactory, strategy) :
-                            new PipelinedLBHttpConnectionFactory<>(roConfig, ctx.executionContext,
-                                    connectionFilterFunction, reqRespFactory, strategy)));
+                    connectionFactoryFilter.create(closeOnException.prepend(
+                            reservedConnectionsPipelineEnabled(roConfig) ?
+                                    new PipelinedLBHttpConnectionFactory<>(roConfig, ctx.executionContext,
+                                            connectionFilterFunction, reqRespFactory, strategy) :
+                                    new NonPipelinedLBHttpConnectionFactory<>(roConfig, ctx.executionContext,
+                                            connectionFilterFunction, reqRespFactory, strategy)));
 
             final LoadBalancer<? extends StreamingHttpConnectionFilter> lbfUntypedForCast = closeOnException.prepend(
                     loadBalancerFactory.newLoadBalancer(sdEvents, connectionFactory));
