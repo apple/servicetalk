@@ -24,9 +24,9 @@ import static io.servicetalk.concurrent.api.VerificationTestUtils.expectThrowabl
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.hamcrest.Matchers.equalTo;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-import static org.testng.Assert.assertNull;
 
 public class TestExecutorTest {
 
