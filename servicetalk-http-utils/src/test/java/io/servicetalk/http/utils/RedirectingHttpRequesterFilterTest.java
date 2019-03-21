@@ -27,8 +27,8 @@ import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpClientFilter;
 import io.servicetalk.http.api.StreamingHttpRequest;
-import io.servicetalk.http.api.StreamingHttpRequestFunction;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
+import io.servicetalk.http.api.StreamingHttpRequester;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.transport.api.ExecutionContext;
 
@@ -89,7 +89,7 @@ public class RedirectingHttpRequesterFilterTest {
     @Rule
     public final ServiceTalkTestTimeout timeout = new ServiceTalkTestTimeout();
 
-    private final StreamingHttpRequestFunction httpClient = mock(StreamingHttpRequestFunction.class);
+    private final StreamingHttpRequester httpClient = mock(StreamingHttpRequester.class);
 
     @Before
     public void setUp() {
@@ -113,7 +113,7 @@ public class RedirectingHttpRequesterFilterTest {
         HttpClientFilterFactory mockResponse = (client, __) ->
                 new StreamingHttpClientFilter(client) {
                     @Override
-                    protected Single<StreamingHttpResponse> request(final StreamingHttpRequestFunction delegate,
+                    protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                                     final HttpExecutionStrategy strategy,
                                                                     final StreamingHttpRequest request) {
                         return httpClient.request(strategy, request);

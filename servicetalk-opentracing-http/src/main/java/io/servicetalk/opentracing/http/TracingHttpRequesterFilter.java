@@ -24,7 +24,7 @@ import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.StreamingHttpClientFilter;
 import io.servicetalk.http.api.StreamingHttpConnectionFilter;
 import io.servicetalk.http.api.StreamingHttpRequest;
-import io.servicetalk.http.api.StreamingHttpRequestFunction;
+import io.servicetalk.http.api.StreamingHttpRequester;
 import io.servicetalk.http.api.StreamingHttpResponse;
 
 import io.opentracing.Scope;
@@ -73,7 +73,7 @@ public class TracingHttpRequesterFilter extends AbstractTracingHttpFilter implem
         return new StreamingHttpClientFilter(client) {
 
             @Override
-            protected Single<StreamingHttpResponse> request(final StreamingHttpRequestFunction delegate,
+            protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                             final HttpExecutionStrategy strategy,
                                                             final StreamingHttpRequest request) {
                 return Single.defer(() -> trackRequest(delegate, strategy, request));
@@ -92,7 +92,7 @@ public class TracingHttpRequesterFilter extends AbstractTracingHttpFilter implem
         return new StreamingHttpConnectionFilter(connection) {
 
             @Override
-            protected Single<StreamingHttpResponse> request(final StreamingHttpConnectionFilter delegate,
+            protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                             final HttpExecutionStrategy strategy,
                                                             final StreamingHttpRequest request) {
                 return Single.defer(() -> trackRequest(delegate, strategy, request));
@@ -106,7 +106,7 @@ public class TracingHttpRequesterFilter extends AbstractTracingHttpFilter implem
         };
     }
 
-    private Single<StreamingHttpResponse> trackRequest(final StreamingHttpRequestFunction delegate,
+    private Single<StreamingHttpResponse> trackRequest(final StreamingHttpRequester delegate,
                                                        final HttpExecutionStrategy strategy,
                                                        final StreamingHttpRequest request) {
         ScopeTracker tracker = newTracker(request);

@@ -65,7 +65,7 @@ public final class LoadBalancerReadyStreamingHttpClientFilter extends StreamingH
     }
 
     @Override
-    protected Single<StreamingHttpResponse> request(final StreamingHttpRequestFunction delegate,
+    protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                     final HttpExecutionStrategy strategy,
                                                     final StreamingHttpRequest request) {
         return delegate.request(strategy, request).retryWhen(retryWhenFunction());

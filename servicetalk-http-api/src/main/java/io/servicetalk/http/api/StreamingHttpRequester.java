@@ -20,39 +20,12 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.api.ExecutionContext;
 
 import static io.servicetalk.concurrent.internal.FutureUtils.awaitTermination;
-import static java.util.Objects.requireNonNull;
 
 /**
  * The equivalent of {@link HttpRequester} but that accepts {@link StreamingHttpRequest} and returns
  * {@link StreamingHttpResponse}.
  */
-public abstract class StreamingHttpRequester
-        implements StreamingHttpRequestFactory, ListenableAsyncCloseable, AutoCloseable {
-    final StreamingHttpRequestResponseFactory reqRespFactory;
-    private final HttpExecutionStrategy strategy;
-
-    /**
-     * Create a new instance.
-     *
-     * @param reqRespFactory The {@link StreamingHttpRequestResponseFactory} used to
-     * {@link #newRequest(HttpRequestMethod, String) create new requests}.
-     * @param strategy Default {@link HttpExecutionStrategy} to use.
-     */
-    protected StreamingHttpRequester(final StreamingHttpRequestResponseFactory reqRespFactory,
-                                     final HttpExecutionStrategy strategy) {
-        this.reqRespFactory = requireNonNull(reqRespFactory);
-        this.strategy = requireNonNull(strategy);
-    }
-
-    /**
-     * Send a {@code request}.
-     *
-     * @param request the request to send.
-     * @return The response.
-     */
-    public final Single<StreamingHttpResponse> request(StreamingHttpRequest request) {
-        return request(strategy, request);
-    }
+public interface StreamingHttpRequester extends StreamingHttpRequestFactory, ListenableAsyncCloseable, AutoCloseable {
 
     /**
      * Send a {@code request} using the specified {@link HttpExecutionStrategy strategy}.
@@ -61,7 +34,7 @@ public abstract class StreamingHttpRequester
      * @param request the request to send.
      * @return The response.
      */
-    public abstract Single<StreamingHttpResponse> request(HttpExecutionStrategy strategy, StreamingHttpRequest request);
+    Single<StreamingHttpResponse> request(HttpExecutionStrategy strategy, StreamingHttpRequest request);
 
     /**
      * Get the {@link ExecutionContext} used during construction of this object.
@@ -71,27 +44,17 @@ public abstract class StreamingHttpRequester
      *
      * @return the {@link ExecutionContext} used during construction of this object.
      */
-    public abstract ExecutionContext executionContext();
+    ExecutionContext executionContext();
 
     /**
-     * Get the {@link ExecutionContext} used during construction of this object.
-     * <p>
-     * Note that the {@link ExecutionContext#ioExecutor()} will not necessarily be associated with a specific thread
-     * unless that was how this object was built.
+     * Get a {@link StreamingHttpResponseFactory}.
      *
-     * @return the {@link ExecutionContext} used during construction of this object.
+     * @return a {@link StreamingHttpResponseFactory}.
      */
-    final HttpExecutionStrategy executionStrategy() {
-        return strategy;
-    }
+    StreamingHttpResponseFactory httpResponseFactory();
 
     @Override
-    public final StreamingHttpRequest newRequest(HttpRequestMethod method, String requestTarget) {
-        return reqRespFactory.newRequest(method, requestTarget);
-    }
-
-    @Override
-    public final void close() {
+    default void close() throws Exception {
         awaitTermination(closeAsyncGracefully().toFuture());
     }
 }

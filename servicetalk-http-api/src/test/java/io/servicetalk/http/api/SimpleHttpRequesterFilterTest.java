@@ -33,6 +33,7 @@ import static io.servicetalk.concurrent.api.Single.success;
 import static io.servicetalk.http.api.AbstractHttpRequesterFilterTest.RequesterType.Client;
 import static io.servicetalk.http.api.AbstractHttpRequesterFilterTest.SecurityType.Insecure;
 import static io.servicetalk.http.api.AbstractHttpRequesterFilterTest.SecurityType.Secure;
+import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasToString;
 import static org.junit.Assert.assertThat;
@@ -68,7 +69,7 @@ public class SimpleHttpRequesterFilterTest extends AbstractHttpRequesterFilterTe
                                                 final Publisher<Object> lbEvents) {
             return new StreamingHttpClientFilter(client) {
                 @Override
-                protected Single<StreamingHttpResponse> request(final StreamingHttpRequestFunction delegate,
+                protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                                 final HttpExecutionStrategy strategy,
                                                                 final StreamingHttpRequest request) {
                     return HeaderEnrichingRequestFilter.this.request(delegate, null, strategy, request);
@@ -83,7 +84,7 @@ public class SimpleHttpRequesterFilterTest extends AbstractHttpRequesterFilterTe
                             new ReservedStreamingHttpConnectionFilter(r) {
                                 @Override
                                 protected Single<StreamingHttpResponse> request(
-                                        final StreamingHttpConnectionFilter delegate,
+                                        final StreamingHttpRequester delegate,
                                         final HttpExecutionStrategy strategy,
                                         final StreamingHttpRequest request) {
                                     return HeaderEnrichingRequestFilter.this.request(
@@ -98,7 +99,7 @@ public class SimpleHttpRequesterFilterTest extends AbstractHttpRequesterFilterTe
         public StreamingHttpConnectionFilter create(final StreamingHttpConnectionFilter connection) {
             return new StreamingHttpConnectionFilter(connection) {
                 @Override
-                protected Single<StreamingHttpResponse> request(final StreamingHttpConnectionFilter delegate,
+                protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                                 final HttpExecutionStrategy strategy,
                                                                 final StreamingHttpRequest request) {
                     return HeaderEnrichingRequestFilter.this.request(delegate, connectionContext(), strategy, request);
@@ -106,7 +107,7 @@ public class SimpleHttpRequesterFilterTest extends AbstractHttpRequesterFilterTe
             };
         }
 
-        private Single<StreamingHttpResponse> request(final StreamingHttpRequestFunction delegate,
+        private Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                       @Nullable final ConnectionContext context,
                                                       final HttpExecutionStrategy strategy,
                                                       final StreamingHttpRequest request) {
@@ -126,7 +127,7 @@ public class SimpleHttpRequesterFilterTest extends AbstractHttpRequesterFilterTe
     public void headersEnrichedByFilter() {
         StreamingHttpRequester filter = createFilter(new HeaderEnrichingRequestFilter());
         StreamingHttpRequest request = filter.get("/");
-        filter.request(request);
+        filter.request(defaultStrategy(), request);
 
         assertThat(request.headers().get("X-Unit"), hasToString("Test"));
         if (type != Client) {
@@ -149,7 +150,7 @@ public class SimpleHttpRequesterFilterTest extends AbstractHttpRequesterFilterTe
             return new StreamingHttpClientFilter(client) {
 
                 @Override
-                protected Single<StreamingHttpResponse> request(final StreamingHttpRequestFunction delegate,
+                protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                                 final HttpExecutionStrategy strategy,
                                                                 final StreamingHttpRequest request) {
                     return InterceptingRequestFilter.this.request(
@@ -165,7 +166,7 @@ public class SimpleHttpRequesterFilterTest extends AbstractHttpRequesterFilterTe
                             .map(r -> new ReservedStreamingHttpConnectionFilter(r) {
                                 @Override
                                 protected Single<StreamingHttpResponse> request(
-                                        final StreamingHttpConnectionFilter delegate,
+                                        final StreamingHttpRequester delegate,
                                         final HttpExecutionStrategy strategy,
                                         final StreamingHttpRequest request) {
                                     return InterceptingRequestFilter.this.request(delegate, connectionContext(),
@@ -180,7 +181,7 @@ public class SimpleHttpRequesterFilterTest extends AbstractHttpRequesterFilterTe
         public StreamingHttpConnectionFilter create(final StreamingHttpConnectionFilter connection) {
             return new StreamingHttpConnectionFilter(connection) {
                 @Override
-                protected Single<StreamingHttpResponse> request(final StreamingHttpConnectionFilter delegate,
+                protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                                 final HttpExecutionStrategy strategy,
                                                                 final StreamingHttpRequest request) {
                     return InterceptingRequestFilter.this.request(
@@ -189,7 +190,7 @@ public class SimpleHttpRequesterFilterTest extends AbstractHttpRequesterFilterTe
             };
         }
 
-        private Single<StreamingHttpResponse> request(final StreamingHttpRequestFunction delegate,
+        private Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                       @Nullable final ConnectionContext context,
                                                       final HttpExecutionStrategy strategy,
                                                       final StreamingHttpRequest request) {
@@ -210,7 +211,7 @@ public class SimpleHttpRequesterFilterTest extends AbstractHttpRequesterFilterTe
                     fail("Filter should have intercepted this request() call");
                     return null;
                 }, filterFactory);
-        filter.request(filter.get("/"));
+        filter.request(defaultStrategy(), filter.get("/"));
         assertThat(filterFactory.requestCalls.get(), equalTo(1));
     }
 
@@ -232,7 +233,7 @@ public class SimpleHttpRequesterFilterTest extends AbstractHttpRequesterFilterTe
                             .map(r -> new ReservedStreamingHttpConnectionFilter(r) {
                                 @Override
                                 protected Single<StreamingHttpResponse> request(
-                                        final StreamingHttpConnectionFilter delegate,
+                                        final StreamingHttpRequester delegate,
                                         final HttpExecutionStrategy strategy,
                                         final StreamingHttpRequest request) {
                                     return SecurityEnforcingFilter.this.request(
@@ -247,7 +248,7 @@ public class SimpleHttpRequesterFilterTest extends AbstractHttpRequesterFilterTe
         public StreamingHttpConnectionFilter create(final StreamingHttpConnectionFilter connection) {
             return new StreamingHttpConnectionFilter(connection) {
                 @Override
-                protected Single<StreamingHttpResponse> request(final StreamingHttpConnectionFilter delegate,
+                protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                                 final HttpExecutionStrategy strategy,
                                                                 final StreamingHttpRequest request) {
                     return SecurityEnforcingFilter.this.request(delegate, connectionContext(), strategy, request);
@@ -255,7 +256,7 @@ public class SimpleHttpRequesterFilterTest extends AbstractHttpRequesterFilterTe
             };
         }
 
-        private Single<StreamingHttpResponse> request(final StreamingHttpRequestFunction delegate,
+        private Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                       final ConnectionContext context,
                                                       final HttpExecutionStrategy strategy,
                                                       final StreamingHttpRequest request) {

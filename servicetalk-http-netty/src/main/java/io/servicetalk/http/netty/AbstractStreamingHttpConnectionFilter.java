@@ -24,6 +24,7 @@ import io.servicetalk.http.api.StreamingHttpConnection.SettingKey;
 import io.servicetalk.http.api.StreamingHttpConnectionFilter;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
+import io.servicetalk.http.api.StreamingHttpRequester;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ExecutionContext;
@@ -75,7 +76,7 @@ abstract class AbstractStreamingHttpConnectionFilter<CC extends ConnectionContex
     }
 
     @Override
-    protected Single<StreamingHttpResponse> request(final StreamingHttpConnectionFilter terminalDelegate,
+    protected Single<StreamingHttpResponse> request(final StreamingHttpRequester terminalDelegate,
                                                     final HttpExecutionStrategy strategy,
                                                     final StreamingHttpRequest request) {
         addRequestTransferEncodingIfNecessary(request); // See https://tools.ietf.org/html/rfc7230#section-3.3.3

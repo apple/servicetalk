@@ -27,7 +27,6 @@ import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.HttpServiceFilterFactory;
 import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpRequest;
-import io.servicetalk.http.api.StreamingHttpRequester;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpServiceFilter;
@@ -48,7 +47,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
-
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Completable.completed;
@@ -245,7 +243,7 @@ public abstract class AbstractHttpServiceAsyncContextTest {
         }
     }
 
-    private static void makeClientRequestWithId(StreamingHttpRequester connection, String requestId)
+    private static void makeClientRequestWithId(StreamingHttpConnection connection, String requestId)
             throws ExecutionException, InterruptedException {
         StreamingHttpRequest request = connection.get("/");
         request.headers().set(REQUEST_ID_HEADER, requestId);
