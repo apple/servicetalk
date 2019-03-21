@@ -138,6 +138,11 @@ public class HttpConnection implements HttpRequester {
     }
 
     @Override
+    public final void close() throws Exception {
+        awaitTermination(closeAsyncGracefully().toFuture());
+    }
+
+    @Override
     public final HttpRequest newRequest(final HttpRequestMethod method, final String requestTarget) {
         return reqRespFactory.newRequest(method, requestTarget);
     }
@@ -145,10 +150,5 @@ public class HttpConnection implements HttpRequester {
     @Override
     public HttpResponseFactory httpResponseFactory() {
         return reqRespFactory;
-    }
-
-    @Override
-    public final void close() throws Exception {
-        awaitTermination(closeAsyncGracefully().toFuture());
     }
 }

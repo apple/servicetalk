@@ -43,7 +43,7 @@ public class StreamingHttpConnection implements StreamingHttpRequester {
      * @param strategy Default {@link HttpExecutionStrategy} to use.
      */
     StreamingHttpConnection(final StreamingHttpConnectionFilter filterChain, final HttpExecutionStrategy strategy) {
-        this.filterChain = filterChain;
+        this.filterChain = requireNonNull(filterChain);
         this.strategy = requireNonNull(strategy);
     }
 

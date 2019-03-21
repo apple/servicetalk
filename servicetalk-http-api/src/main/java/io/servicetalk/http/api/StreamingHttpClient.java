@@ -34,8 +34,8 @@ import static java.util.Objects.requireNonNull;
  */
 public final class StreamingHttpClient implements StreamingHttpRequester {
 
-    final StreamingHttpClientFilter filterChain;
     private final HttpExecutionStrategy strategy;
+    final StreamingHttpClientFilter filterChain;
     private final StreamingHttpRequestResponseFactory reqRespFactory;
 
     /**
@@ -45,9 +45,9 @@ public final class StreamingHttpClient implements StreamingHttpRequester {
      */
     StreamingHttpClient(final StreamingHttpClientFilter filterChain,
                         final HttpExecutionStrategy strategy) {
-        this.strategy = strategy;
-        reqRespFactory = requireNonNull(filterChain).reqRespFactory;
-        this.filterChain = filterChain;
+        this.strategy = requireNonNull(strategy);
+        this.filterChain = requireNonNull(filterChain);
+        reqRespFactory = filterChain.reqRespFactory;
     }
 
     /**
@@ -149,6 +149,11 @@ public final class StreamingHttpClient implements StreamingHttpRequester {
     }
 
     @Override
+    public void close() throws Exception {
+        awaitTermination(closeAsyncGracefully().toFuture());
+    }
+
+    @Override
     public StreamingHttpRequest newRequest(final HttpRequestMethod method, final String requestTarget) {
         return reqRespFactory.newRequest(method, requestTarget);
     }
@@ -156,11 +161,6 @@ public final class StreamingHttpClient implements StreamingHttpRequester {
     @Override
     public StreamingHttpResponseFactory httpResponseFactory() {
         return reqRespFactory;
-    }
-
-    @Override
-    public void close() throws Exception {
-        awaitTermination(closeAsyncGracefully().toFuture());
     }
 
     /**
@@ -179,7 +179,7 @@ public final class StreamingHttpClient implements StreamingHttpRequester {
          */
         ReservedStreamingHttpConnection(final ReservedStreamingHttpConnectionFilter filter,
                                         final HttpExecutionStrategy strategy) {
-            super(requireNonNull(filter), strategy);
+            super(filter, strategy);
             filterChain = filter;
         }
 
