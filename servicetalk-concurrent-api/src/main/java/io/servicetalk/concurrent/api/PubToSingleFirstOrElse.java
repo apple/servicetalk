@@ -21,11 +21,11 @@ import java.util.function.Supplier;
 
 import static java.util.Objects.requireNonNull;
 
-final class PubToSingleFirst<T> extends AbstractPubToSingle<T> {
+final class PubToSingleFirstOrElse<T> extends AbstractPubToSingle<T> {
 
     private final Supplier<T> defaultValueSupplier;
 
-    PubToSingleFirst(Publisher<T> source, final Supplier<T> defaultValueSupplier) {
+    PubToSingleFirstOrElse(Publisher<T> source, final Supplier<T> defaultValueSupplier) {
         super(source.executor(), source);
         this.defaultValueSupplier = requireNonNull(defaultValueSupplier);
     }

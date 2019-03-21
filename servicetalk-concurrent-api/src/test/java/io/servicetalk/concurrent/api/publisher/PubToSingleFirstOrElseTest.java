@@ -41,7 +41,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.junit.Assert.assertTrue;
 
-public class PubToSingleFirstTest {
+public class PubToSingleFirstOrElseTest {
 
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
