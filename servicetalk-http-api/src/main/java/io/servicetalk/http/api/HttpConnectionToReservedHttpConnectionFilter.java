@@ -46,7 +46,7 @@ final class HttpConnectionToReservedHttpConnectionFilter extends ReservedStreami
     }
 
     @Override
-    protected Single<StreamingHttpResponse> request(final StreamingHttpConnectionFilter terminalDelegate,
+    protected Single<StreamingHttpResponse> request(final StreamingHttpRequester terminalDelegate,
                                                     final HttpExecutionStrategy strategy,
                                                     final StreamingHttpRequest request) {
         // Don't call the terminal delegate!

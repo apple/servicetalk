@@ -20,36 +20,11 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.api.ExecutionContext;
 
 import static io.servicetalk.concurrent.internal.FutureUtils.awaitTermination;
-import static java.util.Objects.requireNonNull;
 
 /**
  * Provides a means to make a HTTP request.
  */
-public abstract class HttpRequester implements HttpRequestFactory, ListenableAsyncCloseable, AutoCloseable {
-    final HttpRequestResponseFactory reqRespFactory;
-    private final HttpExecutionStrategy strategy;
-
-    /**
-     * Create a new instance.
-     *
-     * @param reqRespFactory The {@link HttpRequestResponseFactory} used to
-     * {@link #newRequest(HttpRequestMethod, String) create new requests}.
-     * @param strategy {@link HttpExecutionStrategy} to use for executing the request.
-     */
-    HttpRequester(final HttpRequestResponseFactory reqRespFactory, final HttpExecutionStrategy strategy) {
-        this.reqRespFactory = requireNonNull(reqRespFactory);
-        this.strategy = requireNonNull(strategy);
-    }
-
-    /**
-     * Send a {@code request}.
-     *
-     * @param request the request to send.
-     * @return The response.
-     */
-    public final Single<HttpResponse> request(HttpRequest request) {
-        return request(executionStrategy(), request);
-    }
+public interface HttpRequester extends HttpRequestFactory, ListenableAsyncCloseable, AutoCloseable {
 
     /**
      * Send a {@code request} using the specified {@link HttpExecutionStrategy strategy}.
@@ -58,7 +33,7 @@ public abstract class HttpRequester implements HttpRequestFactory, ListenableAsy
      * @param request the request to send.
      * @return The response.
      */
-    public abstract Single<HttpResponse> request(HttpExecutionStrategy strategy, HttpRequest request);
+    Single<HttpResponse> request(HttpExecutionStrategy strategy, HttpRequest request);
 
     /**
      * Get the {@link ExecutionContext} used during construction of this object.
@@ -68,24 +43,17 @@ public abstract class HttpRequester implements HttpRequestFactory, ListenableAsy
      *
      * @return the {@link ExecutionContext} used during construction of this object.
      */
-    public abstract ExecutionContext executionContext();
-
-    @Override
-    public final HttpRequest newRequest(HttpRequestMethod method, String requestTarget) {
-        return reqRespFactory.newRequest(method, requestTarget);
-    }
-
-    @Override
-    public final void close() {
-        awaitTermination(closeAsyncGracefully().toFuture());
-    }
+    ExecutionContext executionContext();
 
     /**
-     * Returns the default {@link HttpExecutionStrategy} for this {@link HttpRequester}.
+     * Get a {@link HttpResponseFactory}.
      *
-     * @return Default {@link HttpExecutionStrategy} for this {@link HttpRequester}.
+     * @return a {@link HttpResponseFactory}.
      */
-    final HttpExecutionStrategy executionStrategy() {
-        return strategy;
+    HttpResponseFactory httpResponseFactory();
+
+    @Override
+    default void close() throws Exception {
+        awaitTermination(closeAsyncGracefully().toFuture());
     }
 }

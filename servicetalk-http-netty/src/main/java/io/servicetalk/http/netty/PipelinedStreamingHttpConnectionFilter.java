@@ -19,9 +19,9 @@ import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpProtocolVersion;
-import io.servicetalk.http.api.StreamingHttpConnectionFilter;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
+import io.servicetalk.http.api.StreamingHttpRequester;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.netty.internal.DefaultNettyPipelinedConnection;
@@ -42,7 +42,7 @@ final class PipelinedStreamingHttpConnectionFilter
     }
 
     @Override
-    protected Single<StreamingHttpResponse> request(final StreamingHttpConnectionFilter terminalDelegate,
+    protected Single<StreamingHttpResponse> request(final StreamingHttpRequester terminalDelegate,
                                                     final HttpExecutionStrategy strategy,
                                                     final StreamingHttpRequest request) {
         HttpProtocolVersion version = request.version();

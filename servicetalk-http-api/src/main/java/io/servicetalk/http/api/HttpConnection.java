@@ -23,14 +23,17 @@ import io.servicetalk.http.api.StreamingHttpConnection.SettingKey;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ExecutionContext;
 
+import static io.servicetalk.concurrent.internal.FutureUtils.awaitTermination;
 import static io.servicetalk.http.api.RequestResponseFactories.toAggregated;
 
 /**
  * Represents a single fixed connection to a HTTP server.
  */
-public class HttpConnection extends HttpRequester {
+public class HttpConnection implements HttpRequester {
 
     private final StreamingHttpConnection connection;
+    private final HttpExecutionStrategy strategy;
+    private final HttpRequestResponseFactory reqRespFactory;
 
     /**
      * Create a new instance.
@@ -40,8 +43,9 @@ public class HttpConnection extends HttpRequester {
      */
     HttpConnection(final StreamingHttpConnection connection,
                    final HttpExecutionStrategy strategy) {
-        super(toAggregated(connection.reqRespFactory), strategy);
+        reqRespFactory = toAggregated(connection.filterChain.reqRespFactory);
         this.connection = connection;
+        this.strategy = strategy;
     }
 
     /**
@@ -51,6 +55,16 @@ public class HttpConnection extends HttpRequester {
      */
     public final ConnectionContext connectionContext() {
         return connection.connectionContext();
+    }
+
+    /**
+     * Send a {@code request}.
+     *
+     * @param request the request to send.
+     * @return The response.
+     */
+    public final Single<HttpResponse> request(HttpRequest request) {
+        return request(strategy, request);
     }
 
     @Override
@@ -121,5 +135,20 @@ public class HttpConnection extends HttpRequester {
     @Override
     public final Completable closeAsyncGracefully() {
         return connection.closeAsyncGracefully();
+    }
+
+    @Override
+    public final void close() throws Exception {
+        awaitTermination(closeAsyncGracefully().toFuture());
+    }
+
+    @Override
+    public final HttpRequest newRequest(final HttpRequestMethod method, final String requestTarget) {
+        return reqRespFactory.newRequest(method, requestTarget);
+    }
+
+    @Override
+    public HttpResponseFactory httpResponseFactory() {
+        return reqRespFactory;
     }
 }

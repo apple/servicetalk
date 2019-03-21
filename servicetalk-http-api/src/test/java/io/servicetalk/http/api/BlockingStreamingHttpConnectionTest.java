@@ -44,7 +44,7 @@ public class BlockingStreamingHttpConnectionTest extends AbstractBlockingStreami
         return new TestStreamingHttpConnection(ctx, reqRespFactory, connection ->
                 new StreamingHttpConnectionFilter(connection) {
                     @Override
-                    protected Single<StreamingHttpResponse> request(final StreamingHttpConnectionFilter delegate,
+                    protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                                     final HttpExecutionStrategy strategy,
                                                                     final StreamingHttpRequest request) {
                         return doRequest.apply(strategy, request);

@@ -31,7 +31,6 @@ import io.servicetalk.http.api.HttpConnection;
 import io.servicetalk.http.api.HttpConnectionFilterFactory;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpHeaderNames;
-import io.servicetalk.http.api.HttpRequester;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpConnection.SettingKey;
@@ -118,7 +117,7 @@ public class ConcurrentRequestsHttpConnectionFilterTest {
                     }
 
                     @Override
-                    protected Single<StreamingHttpResponse> request(final StreamingHttpConnectionFilter delegate,
+                    protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                                     final HttpExecutionStrategy strategy,
                                                                     final StreamingHttpRequest request) {
                         switch (reqCount.incrementAndGet()) {
@@ -170,7 +169,7 @@ public class ConcurrentRequestsHttpConnectionFilterTest {
                             .concatWith(Single.success(responseFactory.ok().payloadBody(deferredPayload)));
                 });
 
-             StreamingHttpRequester connection = new DefaultHttpConnectionBuilder<>()
+             StreamingHttpConnection connection = new DefaultHttpConnectionBuilder<>()
                      .maxPipelinedRequests(2)
                      .buildStreaming(serverContext.listenAddress())
                      .toFuture().get()) {
@@ -202,7 +201,7 @@ public class ConcurrentRequestsHttpConnectionFilterTest {
                         Single.success(responseFactory.ok()
                                 .setHeader(HttpHeaderNames.CONNECTION, "close"))));
 
-             HttpRequester connection = new DefaultHttpConnectionBuilder<>()
+             HttpConnection connection = new DefaultHttpConnectionBuilder<>()
                      .maxPipelinedRequests(99)
                      .executionStrategy(FULLY_NO_OFFLOAD_STRATEGY)
                      .build(serverContext.listenAddress())

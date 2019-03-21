@@ -43,6 +43,7 @@ import org.junit.rules.Timeout;
 
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -133,7 +134,9 @@ public class RoundRobinLoadBalancerTest {
     public void streamEventJustClose() throws InterruptedException {
         CountDownLatch readyLatch = new CountDownLatch(1);
         CountDownLatch completeLatch = new CountDownLatch(1);
-        lb.eventStream().doAfterComplete(completeLatch::countDown).first().subscribe(next -> readyLatch.countDown());
+        lb.eventStream().doAfterComplete(completeLatch::countDown).firstOrElse(() -> {
+            throw new NoSuchElementException();
+        }).subscribe(next -> readyLatch.countDown());
         lb.closeAsync().subscribe();
 
         assertThat(readyLatch.await(100, MILLISECONDS), is(false));

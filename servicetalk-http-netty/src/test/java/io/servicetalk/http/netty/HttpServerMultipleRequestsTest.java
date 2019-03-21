@@ -24,7 +24,6 @@ import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpRequest;
-import io.servicetalk.http.api.StreamingHttpRequester;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpService;
@@ -133,7 +132,7 @@ public class HttpServerMultipleRequestsTest {
         }
     }
 
-    private static void makeClientRequestWithId(StreamingHttpRequester connection, String requestId)
+    private static void makeClientRequestWithId(StreamingHttpConnection connection, String requestId)
             throws ExecutionException, InterruptedException {
         StreamingHttpRequest request = connection.get("/");
         request.headers().set(REQUEST_ID_HEADER, requestId);

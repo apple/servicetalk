@@ -29,7 +29,7 @@ import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.StreamingHttpClientFilter;
 import io.servicetalk.http.api.StreamingHttpConnectionFilter;
 import io.servicetalk.http.api.StreamingHttpRequest;
-import io.servicetalk.http.api.StreamingHttpRequestFunction;
+import io.servicetalk.http.api.StreamingHttpRequester;
 import io.servicetalk.http.api.StreamingHttpResponse;
 
 import java.io.IOException;
@@ -50,7 +50,7 @@ public final class RetryingHttpRequesterFilter implements HttpClientFilterFactor
         this.settings = settings;
     }
 
-    private Single<StreamingHttpResponse> request(final StreamingHttpRequestFunction delegate,
+    private Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                   final HttpExecutionStrategy strategy,
                                                   final StreamingHttpRequest request,
                                                   final BiIntFunction<Throwable, Completable> retryStrategy) {
@@ -70,7 +70,7 @@ public final class RetryingHttpRequesterFilter implements HttpClientFilterFactor
                     settings.newStrategy(client.executionContext().executor());
 
             @Override
-            protected Single<StreamingHttpResponse> request(final StreamingHttpRequestFunction delegate,
+            protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                             final HttpExecutionStrategy strategy,
                                                             final StreamingHttpRequest request) {
                 return RetryingHttpRequesterFilter.this.request(delegate, strategy, request, retryStrategy);
@@ -92,7 +92,7 @@ public final class RetryingHttpRequesterFilter implements HttpClientFilterFactor
                     settings.newStrategy(connection.executionContext().executor());
 
             @Override
-            protected Single<StreamingHttpResponse> request(final StreamingHttpConnectionFilter delegate,
+            protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                             final HttpExecutionStrategy strategy,
                                                             final StreamingHttpRequest request) {
                 return RetryingHttpRequesterFilter.this.request(delegate, strategy, request, retryStrategy);

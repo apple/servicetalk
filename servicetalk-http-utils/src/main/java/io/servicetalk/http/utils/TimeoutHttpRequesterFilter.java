@@ -24,7 +24,7 @@ import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.StreamingHttpClientFilter;
 import io.servicetalk.http.api.StreamingHttpConnectionFilter;
 import io.servicetalk.http.api.StreamingHttpRequest;
-import io.servicetalk.http.api.StreamingHttpRequestFunction;
+import io.servicetalk.http.api.StreamingHttpRequester;
 import io.servicetalk.http.api.StreamingHttpResponse;
 
 import java.time.Duration;
@@ -61,7 +61,7 @@ public final class TimeoutHttpRequesterFilter implements HttpClientFilterFactory
         this.timeoutExecutor = requireNonNull(timeoutExecutor);
     }
 
-    private Single<StreamingHttpResponse> request(final StreamingHttpRequestFunction delegate,
+    private Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                   final HttpExecutionStrategy strategy,
                                                   final StreamingHttpRequest request) {
         return timeoutExecutor != null ? delegate.request(strategy, request).timeout(duration, timeoutExecutor) :
@@ -72,7 +72,7 @@ public final class TimeoutHttpRequesterFilter implements HttpClientFilterFactory
     public StreamingHttpClientFilter create(final StreamingHttpClientFilter client, final Publisher<Object> lbEvents) {
         return new StreamingHttpClientFilter(client) {
             @Override
-            protected Single<StreamingHttpResponse> request(final StreamingHttpRequestFunction delegate,
+            protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                             final HttpExecutionStrategy strategy,
                                                             final StreamingHttpRequest request) {
                 return TimeoutHttpRequesterFilter.this.request(delegate, strategy, request);
@@ -90,7 +90,7 @@ public final class TimeoutHttpRequesterFilter implements HttpClientFilterFactory
     public StreamingHttpConnectionFilter create(final StreamingHttpConnectionFilter connection) {
         return new StreamingHttpConnectionFilter(connection) {
             @Override
-            protected Single<StreamingHttpResponse> request(final StreamingHttpConnectionFilter delegate,
+            protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                             final HttpExecutionStrategy strategy,
                                                             final StreamingHttpRequest request) {
                 return TimeoutHttpRequesterFilter.this.request(delegate, strategy, request);

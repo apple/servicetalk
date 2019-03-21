@@ -26,9 +26,11 @@ import static io.servicetalk.http.api.RequestResponseFactories.toBlockingStreami
 /**
  * The equivalent of {@link StreamingHttpConnection} but with synchronous/blocking APIs instead of asynchronous APIs.
  */
-public /* final */ class BlockingStreamingHttpConnection extends BlockingStreamingHttpRequester {
+public /* final */ class BlockingStreamingHttpConnection implements BlockingStreamingHttpRequester {
 
     private final StreamingHttpConnection connection;
+    private final HttpExecutionStrategy strategy;
+    private final BlockingStreamingHttpRequestResponseFactory reqRespFactory;
 
     /**
      * Create a new instance.
@@ -39,8 +41,9 @@ public /* final */ class BlockingStreamingHttpConnection extends BlockingStreami
      */
     BlockingStreamingHttpConnection(final StreamingHttpConnection connection,
                                     final HttpExecutionStrategy strategy) {
-        super(toBlockingStreaming(connection.reqRespFactory), strategy);
+        this.reqRespFactory = toBlockingStreaming(connection.filterChain.reqRespFactory);
         this.connection = connection;
+        this.strategy = strategy;
     }
 
     /**
@@ -50,6 +53,11 @@ public /* final */ class BlockingStreamingHttpConnection extends BlockingStreami
      */
     public final ConnectionContext connectionContext() {
         return connection.connectionContext();
+    }
+
+    @Override
+    public final BlockingStreamingHttpResponse request(BlockingStreamingHttpRequest request) throws Exception {
+        return request(strategy, request);
     }
 
     @Override
@@ -121,5 +129,15 @@ public /* final */ class BlockingStreamingHttpConnection extends BlockingStreami
     @Override
     public final void close() throws Exception {
         blockingInvocation(connection.closeAsync());
+    }
+
+    @Override
+    public final BlockingStreamingHttpRequest newRequest(final HttpRequestMethod method, final String requestTarget) {
+        return reqRespFactory.newRequest(method, requestTarget);
+    }
+
+    @Override
+    public BlockingStreamingHttpResponseFactory httpResponseFactory() {
+        return reqRespFactory;
     }
 }

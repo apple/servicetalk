@@ -22,15 +22,18 @@ import io.servicetalk.http.api.BlockingStreamingHttpClient.ReservedBlockingStrea
 import io.servicetalk.http.api.StreamingHttpClient.ReservedStreamingHttpConnection;
 import io.servicetalk.transport.api.ExecutionContext;
 
+import static io.servicetalk.concurrent.internal.FutureUtils.awaitTermination;
 import static io.servicetalk.http.api.RequestResponseFactories.toAggregated;
 
 /**
  * Provides a means to issue requests against HTTP service. The implementation is free to maintain a collection of
  * {@link HttpConnection} instances and distribute calls to {@link #request(HttpRequest)} amongst this collection.
  */
-public final class HttpClient extends HttpRequester {
+public final class HttpClient implements HttpRequester {
 
     private final StreamingHttpClient client;
+    private final HttpExecutionStrategy strategy;
+    private final HttpRequestResponseFactory reqRespFactory;
 
     /**
      * Create a new instance.
@@ -39,8 +42,9 @@ public final class HttpClient extends HttpRequester {
      * @param strategy Default {@link HttpExecutionStrategy} to use.
      */
     HttpClient(final StreamingHttpClient client, final HttpExecutionStrategy strategy) {
-        super(toAggregated(client.reqRespFactory), strategy);
+        reqRespFactory = toAggregated(client.filterChain.reqRespFactory);
         this.client = client;
+        this.strategy = strategy;
     }
 
     /**
@@ -52,7 +56,7 @@ public final class HttpClient extends HttpRequester {
      * @return a {@link Single} that provides the {@link ReservedHttpConnection} upon completion.
      */
     public Single<ReservedHttpConnection> reserveConnection(HttpRequestMetaData metaData) {
-        return reserveConnection(executionStrategy(), metaData);
+        return reserveConnection(strategy, metaData);
     }
 
     /**
@@ -67,7 +71,7 @@ public final class HttpClient extends HttpRequester {
     public Single<ReservedHttpConnection> reserveConnection(final HttpExecutionStrategy strategy,
                                                             final HttpRequestMetaData metaData) {
         return client.reserveConnection(strategy, metaData)
-                .map(c -> new ReservedHttpConnection(c, executionStrategy()));
+                .map(c -> new ReservedHttpConnection(c, this.strategy));
     }
 
     /**
@@ -97,6 +101,16 @@ public final class HttpClient extends HttpRequester {
         return asStreamingClient().asBlockingClient();
     }
 
+    /**
+     * Send a {@code request}.
+     *
+     * @param request the request to send.
+     * @return The response.
+     */
+    public Single<HttpResponse> request(final HttpRequest request) {
+        return request(strategy, request);
+    }
+
     @Override
     public Single<HttpResponse> request(final HttpExecutionStrategy strategy, final HttpRequest request) {
         return client.request(strategy, request.toStreamingRequest()).flatMap(StreamingHttpResponse::toResponse);
@@ -120,6 +134,21 @@ public final class HttpClient extends HttpRequester {
     @Override
     public Completable closeAsyncGracefully() {
         return client.closeAsyncGracefully();
+    }
+
+    @Override
+    public void close() throws Exception {
+        awaitTermination(closeAsyncGracefully().toFuture());
+    }
+
+    @Override
+    public HttpRequest newRequest(final HttpRequestMethod method, final String requestTarget) {
+        return reqRespFactory.newRequest(method, requestTarget);
+    }
+
+    @Override
+    public HttpResponseFactory httpResponseFactory() {
+        return reqRespFactory;
     }
 
     /**

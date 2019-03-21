@@ -23,6 +23,7 @@ import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpConnection.SettingKey;
 import io.servicetalk.http.api.StreamingHttpConnectionFilter;
 import io.servicetalk.http.api.StreamingHttpRequest;
+import io.servicetalk.http.api.StreamingHttpRequester;
 import io.servicetalk.http.api.StreamingHttpResponse;
 
 import org.junit.Test;
@@ -67,7 +68,7 @@ public class DefaultHttpConnectionBuilderTest extends AbstractEchoServerBasedHtt
         }
 
         @Override
-        protected Single<StreamingHttpResponse> request(final StreamingHttpConnectionFilter delegate,
+        protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                         final HttpExecutionStrategy strategy,
                                                         final StreamingHttpRequest request) {
             // fanout - simulates followup request on response
@@ -98,7 +99,7 @@ public class DefaultHttpConnectionBuilderTest extends AbstractEchoServerBasedHtt
 
         StreamingHttpConnection connection = awaitIndefinitelyNonNull(connectionSingle);
 
-        Integer maxConcurrent = connection.settingStream(MAX_CONCURRENCY).first().toFuture().get();
+        Integer maxConcurrent = connection.settingStream(MAX_CONCURRENCY).firstOrElse(() -> null).toFuture().get();
         assertThat(maxConcurrent, equalTo(9));
 
         makeRequestValidateResponseAndClose(connection);

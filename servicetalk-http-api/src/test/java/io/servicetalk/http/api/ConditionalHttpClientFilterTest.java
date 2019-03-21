@@ -26,7 +26,7 @@ public class ConditionalHttpClientFilterTest extends AbstractConditionalHttpFilt
 
     private static final HttpClientFilterFactory REQ_FILTER = (client, __) -> new StreamingHttpClientFilter(client) {
         @Override
-        protected Single<StreamingHttpResponse> request(final StreamingHttpRequestFunction delegate,
+        protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                         final HttpExecutionStrategy strategy,
                                                         final StreamingHttpRequest request) {
             return TEST_REQ_HANDLER.apply(request, httpResponseFactory());
@@ -45,7 +45,7 @@ public class ConditionalHttpClientFilterTest extends AbstractConditionalHttpFilt
                                                 final Publisher<Object> lbEvents) {
             return new ConditionalHttpClientFilter(TEST_REQ_PREDICATE, new StreamingHttpClientFilter(client) {
                 @Override
-                protected Single<StreamingHttpResponse> request(final StreamingHttpRequestFunction delegate,
+                protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                                 final HttpExecutionStrategy strategy,
                                                                 final StreamingHttpRequest request) {
                     return delegate.request(strategy, markFiltered(request));

@@ -45,7 +45,7 @@ public class BlockingStreamingHttpClientTest extends AbstractBlockingStreamingHt
                 new StreamingHttpClientFilter(client) {
 
                     @Override
-                    protected Single<StreamingHttpResponse> request(final StreamingHttpRequestFunction delegate,
+                    protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                                     final HttpExecutionStrategy strategy,
                                                                     final StreamingHttpRequest request) {
                         return doRequest.apply(strategy, request);

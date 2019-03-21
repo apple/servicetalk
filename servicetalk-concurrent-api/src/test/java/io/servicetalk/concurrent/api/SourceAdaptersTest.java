@@ -133,7 +133,7 @@ public class SourceAdaptersTest {
     @Test
     public void publisherFromSourceSuccess() throws Exception {
         PublisherSource<Integer> src = s -> s.onSubscribe(new ScalarValueSubscription<>(1, s));
-        Integer result = fromSource(src).first().toFuture().get();
+        Integer result = fromSource(src).firstOrElse(() -> null).toFuture().get();
         assertThat("Unexpected result.", result, is(1));
     }
 
@@ -144,7 +144,7 @@ public class SourceAdaptersTest {
             s.onError(DELIBERATE_EXCEPTION);
         };
 
-        Future<Integer> future = fromSource(src).first().toFuture();
+        Future<Integer> future = fromSource(src).firstOrElse(() -> null).toFuture();
         expectedException.expect(ExecutionException.class);
         expectedException.expectCause(sameInstance(DELIBERATE_EXCEPTION));
         future.get();
@@ -155,7 +155,7 @@ public class SourceAdaptersTest {
         PublisherSource.Subscription srcSubscription = mock(PublisherSource.Subscription.class);
         PublisherSource<Integer> source = s -> s.onSubscribe(srcSubscription);
 
-        fromSource(source).first().toFuture().cancel(true);
+        fromSource(source).firstOrElse(() -> null).toFuture().cancel(true);
         verify(srcSubscription).cancel();
     }
 
