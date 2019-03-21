@@ -41,7 +41,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.junit.Assert.assertTrue;
 
-public class PubToSingleFirstTest {
+public class PubToSingleFirstOrElseTest {
 
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
@@ -128,12 +128,16 @@ public class PubToSingleFirstTest {
                         currentThread()));
             }
             analyzed.countDown();
-        }).subscribeOn(executorRule.executor()).first().toFuture().get();
+        }).subscribeOn(executorRule.executor()).firstOrElse(() -> {
+            throw new NoSuchElementException();
+        }).toFuture().get();
         analyzed.await();
         assertThat("Unexpected errors observed: " + errors, errors, hasSize(0));
     }
 
     private LegacyMockedSingleListenerRule<String> listen(Publisher<String> src) {
-        return listenerRule.listen(src.first());
+        return listenerRule.listen(src.firstOrElse(() -> {
+            throw new NoSuchElementException();
+        }));
     }
 }

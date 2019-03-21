@@ -99,7 +99,7 @@ public class DefaultHttpConnectionBuilderTest extends AbstractEchoServerBasedHtt
 
         StreamingHttpConnection connection = awaitIndefinitelyNonNull(connectionSingle);
 
-        Integer maxConcurrent = connection.settingStream(MAX_CONCURRENCY).first().toFuture().get();
+        Integer maxConcurrent = connection.settingStream(MAX_CONCURRENCY).firstOrElse(() -> null).toFuture().get();
         assertThat(maxConcurrent, equalTo(9));
 
         makeRequestValidateResponseAndClose(connection);
