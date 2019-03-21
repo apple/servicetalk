@@ -128,7 +128,7 @@ public class PubToSingleFirstTest {
                         currentThread()));
             }
             analyzed.countDown();
-        }).subscribeOn(executorRule.executor()).first(() -> {
+        }).subscribeOn(executorRule.executor()).firstOrElse(() -> {
             throw new NoSuchElementException();
         }).toFuture().get();
         analyzed.await();
@@ -136,7 +136,7 @@ public class PubToSingleFirstTest {
     }
 
     private LegacyMockedSingleListenerRule<String> listen(Publisher<String> src) {
-        return listenerRule.listen(src.first(() -> {
+        return listenerRule.listen(src.firstOrElse(() -> {
             throw new NoSuchElementException();
         }));
     }

@@ -224,7 +224,7 @@ public class RedisClientTest extends BaseRedisClientTest {
         assertThat(awaitIndefinitelyNonNull(getEnv().client.request(newRequest(COMMAND, INFO,
                 new CompleteBulkString(buf("GET")), new CompleteBulkString(buf("SET"))), List.class)).size(), is(2));
         assertThat(awaitIndefinitelyNonNull(getEnv().client.request(newRequest(OBJECT, ENCODING,
-                new CompleteBulkString(buf("missing-key")))).first(() -> null)), is(redisNull()));
+                new CompleteBulkString(buf("missing-key")))).firstOrElse(() -> null)), is(redisNull()));
     }
 
     @Test

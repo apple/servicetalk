@@ -110,7 +110,7 @@ public final class AbstractHttpConnectionTest {
 
     @Test
     public void shouldEmitMaxConcurrencyInSettingStream() throws Exception {
-        Integer max = http.settingStream(MAX_CONCURRENCY).first(() -> null).toFuture().get();
+        Integer max = http.settingStream(MAX_CONCURRENCY).firstOrElse(() -> null).toFuture().get();
         assertThat(max, equalTo(101));
     }
 

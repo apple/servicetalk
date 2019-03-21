@@ -62,7 +62,7 @@ public class ReactiveStreamsAdaptersTest {
             subscriber.onNext(1);
             subscriber.onComplete();
         });
-        Integer result = fromReactiveStreamsPublisher(rsPublisher).first(() -> null).toFuture().get();
+        Integer result = fromReactiveStreamsPublisher(rsPublisher).firstOrElse(() -> null).toFuture().get();
         assertThat("Unexpected result", result, is(1));
     }
 
@@ -70,7 +70,7 @@ public class ReactiveStreamsAdaptersTest {
     public void fromRSError() throws Exception {
         Publisher<Integer> rsPublisher = newMockRsPublisher((subscriber, __) ->
                 subscriber.onError(DELIBERATE_EXCEPTION));
-        Future<Integer> future = fromReactiveStreamsPublisher(rsPublisher).first(() -> null).toFuture();
+        Future<Integer> future = fromReactiveStreamsPublisher(rsPublisher).firstOrElse(() -> null).toFuture();
         expectedException.expect(instanceOf(ExecutionException.class));
         expectedException.expectCause(sameInstance(DELIBERATE_EXCEPTION));
         future.get();
@@ -81,7 +81,7 @@ public class ReactiveStreamsAdaptersTest {
         AtomicReference<Subscription> receivedSubscription = new AtomicReference<>();
         Publisher<Integer> rsPublisher = newMockRsPublisher((__, subscription) ->
                 receivedSubscription.set(subscription));
-        fromReactiveStreamsPublisher(rsPublisher).first(() -> null).toFuture().cancel(true);
+        fromReactiveStreamsPublisher(rsPublisher).firstOrElse(() -> null).toFuture().cancel(true);
         Subscription subscription = receivedSubscription.get();
         assertThat("Subscription not received.", subscription, is(notNullValue()));
         verify(subscription).cancel();

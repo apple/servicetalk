@@ -214,7 +214,7 @@ public class SubscribedRedisClientTest extends BaseRedisClientTest {
         checkValidPing(pong, EMPTY_BUFFER);
 
         pong = awaitIndefinitely(cnx.request(newRequest(PING, new CompleteBulkString(buf("my-pong"))))
-                .first(() -> null));
+                .firstOrElse(() -> null));
         checkValidPing(pong, buf("my-pong"));
 
         // Check ping requests also work without "first"
@@ -287,7 +287,7 @@ public class SubscribedRedisClientTest extends BaseRedisClientTest {
 
         // Check ping request still get proper response
         final RedisData myPong = awaitIndefinitely(cnx.request(newRequest(PING,
-                new CompleteBulkString(buf("my-pong")))).first(() -> null));
+                new CompleteBulkString(buf("my-pong")))).firstOrElse(() -> null));
         checkValidPing(myPong, buf("my-pong"));
 
         assertThat(messages1Subscriber.request(1).awaitUntilAtLeastNReceived(1, DEFAULT_TIMEOUT_SECONDS, SECONDS),

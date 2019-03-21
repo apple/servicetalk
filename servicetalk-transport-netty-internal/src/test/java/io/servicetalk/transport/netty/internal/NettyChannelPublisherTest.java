@@ -367,7 +367,7 @@ public class NettyChannelPublisherTest {
         final AtomicReference<Object> resultRef = new AtomicReference<>();
         fireChannelReadToBuffer(1);
         nextItemTerminal = true;
-        toSource(publisher.first(() -> null)).subscribe(new SingleSource.Subscriber<Integer>() {
+        toSource(publisher.firstOrElse(() -> null)).subscribe(new SingleSource.Subscriber<Integer>() {
             @Override
             public void onSubscribe(Cancellable cancellable) {
                 //noop

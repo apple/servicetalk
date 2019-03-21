@@ -1960,7 +1960,7 @@ public abstract class Publisher<T> {
      *
      * @see <a href="http://reactivex.io/documentation/operators/first.html">ReactiveX first operator.</a>
      */
-    public final Single<T> first(Supplier<T> defaultValueSupplier) {
+    public final Single<T> firstOrElse(Supplier<T> defaultValueSupplier) {
         return new PubToSingleFirst<>(this, defaultValueSupplier);
     }
 
