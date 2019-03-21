@@ -17,7 +17,7 @@ package io.servicetalk.http.api;
 
 import org.junit.Test;
 
-import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
+import static io.servicetalk.buffer.api.ReadOnlyBufferAllocators.DEFAULT_RO_ALLOCATOR;
 import static io.servicetalk.http.api.HttpRequestMethod.CONNECT;
 import static io.servicetalk.http.api.HttpRequestMethod.DELETE;
 import static io.servicetalk.http.api.HttpRequestMethod.GET;
@@ -34,15 +34,15 @@ public class HttpRequestMethodTest {
 
     @Test
     public void testOfBufferReturnsConstants() {
-        assertThat(HttpRequestMethod.of(DEFAULT_ALLOCATOR.fromAscii("GET")), sameInstance(GET));
-        assertThat(HttpRequestMethod.of(DEFAULT_ALLOCATOR.fromAscii("HEAD")), sameInstance(HEAD));
-        assertThat(HttpRequestMethod.of(DEFAULT_ALLOCATOR.fromAscii("POST")), sameInstance(POST));
-        assertThat(HttpRequestMethod.of(DEFAULT_ALLOCATOR.fromAscii("PUT")), sameInstance(PUT));
-        assertThat(HttpRequestMethod.of(DEFAULT_ALLOCATOR.fromAscii("DELETE")), sameInstance(DELETE));
-        assertThat(HttpRequestMethod.of(DEFAULT_ALLOCATOR.fromAscii("CONNECT")), sameInstance(CONNECT));
-        assertThat(HttpRequestMethod.of(DEFAULT_ALLOCATOR.fromAscii("OPTIONS")), sameInstance(OPTIONS));
-        assertThat(HttpRequestMethod.of(DEFAULT_ALLOCATOR.fromAscii("TRACE")), sameInstance(TRACE));
-        assertThat(HttpRequestMethod.of(DEFAULT_ALLOCATOR.fromAscii("PATCH")), sameInstance(PATCH));
+        assertThat(HttpRequestMethod.of(DEFAULT_RO_ALLOCATOR.fromAscii("GET")), sameInstance(GET));
+        assertThat(HttpRequestMethod.of(DEFAULT_RO_ALLOCATOR.fromAscii("HEAD")), sameInstance(HEAD));
+        assertThat(HttpRequestMethod.of(DEFAULT_RO_ALLOCATOR.fromAscii("POST")), sameInstance(POST));
+        assertThat(HttpRequestMethod.of(DEFAULT_RO_ALLOCATOR.fromAscii("PUT")), sameInstance(PUT));
+        assertThat(HttpRequestMethod.of(DEFAULT_RO_ALLOCATOR.fromAscii("DELETE")), sameInstance(DELETE));
+        assertThat(HttpRequestMethod.of(DEFAULT_RO_ALLOCATOR.fromAscii("CONNECT")), sameInstance(CONNECT));
+        assertThat(HttpRequestMethod.of(DEFAULT_RO_ALLOCATOR.fromAscii("OPTIONS")), sameInstance(OPTIONS));
+        assertThat(HttpRequestMethod.of(DEFAULT_RO_ALLOCATOR.fromAscii("TRACE")), sameInstance(TRACE));
+        assertThat(HttpRequestMethod.of(DEFAULT_RO_ALLOCATOR.fromAscii("PATCH")), sameInstance(PATCH));
     }
 
     @Test
@@ -60,7 +60,7 @@ public class HttpRequestMethodTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void testOfBufferThrowsExceptionForUnknownMethod() {
-        HttpRequestMethod.of(DEFAULT_ALLOCATOR.fromAscii("UNKNOWN"));
+        HttpRequestMethod.of(DEFAULT_RO_ALLOCATOR.fromAscii("UNKNOWN"));
     }
 
     @Test(expected = IllegalArgumentException.class)
