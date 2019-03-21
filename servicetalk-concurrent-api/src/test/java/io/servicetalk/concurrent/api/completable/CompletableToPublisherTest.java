@@ -18,8 +18,10 @@ package io.servicetalk.concurrent.api.completable;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.ExecutorRule;
+import io.servicetalk.concurrent.api.TestCompletable;
 import io.servicetalk.concurrent.api.TestPublisherSubscriber;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
+import io.servicetalk.concurrent.internal.TerminalNotification;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -29,11 +31,16 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
+import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 import static java.lang.Thread.currentThread;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 public class CompletableToPublisherTest {
     @Rule
@@ -76,5 +83,76 @@ public class CompletableToPublisherTest {
         c.cancel();
         analyzed.await();
         assertThat("Unexpected errors observed: " + errors, errors, hasSize(0));
+    }
+
+    @Test
+    public void sequentialOnSubscribeOnCompleteInOrder() {
+        sequentialOnSubscribeInOrder(true);
+    }
+
+    @Test
+    public void sequentialOnSubscribeOnErrorInOrder() {
+        sequentialOnSubscribeInOrder(false);
+    }
+
+    private void sequentialOnSubscribeInOrder(boolean onComplete) {
+        TestCompletable completable = new TestCompletable();
+        toSource(completable.<String>toPublisher()).subscribe(subscriber);
+        assertTrue(completable.isSubscribed());
+        if (onComplete) {
+            completable.onComplete();
+            assertTrue(subscriber.isCompleted());
+        } else {
+            completable.onError(DELIBERATE_EXCEPTION);
+            assertEquals(DELIBERATE_EXCEPTION, subscriber.takeError());
+        }
+    }
+
+    @Test
+    public void invalidRequestNBeforeOnCompleteResultsInOnError() {
+        invalidRequestNBeforeTerminateResultsInOnError(true);
+    }
+
+    @Test
+    public void invalidRequestNBeforeOnErrorResultsInOnError() {
+        invalidRequestNBeforeTerminateResultsInOnError(false);
+    }
+
+    private void invalidRequestNBeforeTerminateResultsInOnError(boolean onComplete) {
+        TestCompletable completable = new TestCompletable();
+        toSource(completable.<String>toPublisher()).subscribe(subscriber);
+        assertTrue(completable.isSubscribed());
+        subscriber.request(-1);
+        if (onComplete) {
+            completable.onComplete();
+        } else {
+            completable.onError(DELIBERATE_EXCEPTION);
+        }
+        assertThat(subscriber.takeError(), instanceOf(IllegalArgumentException.class));
+    }
+
+    @Test
+    public void invalidRequestNAfterOnCompleteIgnored() {
+        invalidRequestNAfterTerminateIgnored(true);
+    }
+
+    @Test
+    public void invalidRequestNAfterOnErrorIgnored() {
+        invalidRequestNAfterTerminateIgnored(false);
+    }
+
+    private void invalidRequestNAfterTerminateIgnored(boolean onComplete) {
+        TestCompletable completable = new TestCompletable();
+        toSource(completable.<String>toPublisher()).subscribe(subscriber);
+        assertTrue(completable.isSubscribed());
+        if (onComplete) {
+            completable.onComplete();
+            assertEquals(TerminalNotification.complete(), subscriber.takeTerminal());
+        } else {
+            completable.onError(DELIBERATE_EXCEPTION);
+            assertEquals(DELIBERATE_EXCEPTION, subscriber.takeError());
+        }
+        subscriber.request(-1);
+        assertNull(subscriber.takeTerminal());
     }
 }

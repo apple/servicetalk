@@ -17,9 +17,10 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.SingleSource;
-import io.servicetalk.concurrent.internal.SequentialCancellable;
+import io.servicetalk.concurrent.internal.DelayedCancellable;
 import io.servicetalk.concurrent.internal.SignalOffloader;
 
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid;
@@ -40,71 +41,115 @@ final class SingleToPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
     @Override
     void handleSubscribe(final Subscriber<? super T> subscriber, final SignalOffloader signalOffloader,
                          final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
-        subscriber.onSubscribe(new State<>(original, subscriber, signalOffloader, contextMap, contextProvider));
+        Subscriber<? super T> offloadedSubscriber = signalOffloader.offloadSubscriber(subscriber);
+        ConversionSubscriber<T> conversionSubscriber = new ConversionSubscriber<>(subscriber,
+                offloadedSubscriber);
+        // It is important that we call onSubscribe before subscribing, otherwise need more concurrency control between
+        // the subscription and the subscriber.
+        offloadedSubscriber.onSubscribe(conversionSubscriber);
+
+        // Since this is converting a Single to a Publisher, we should try to use the same SignalOffloader
+        // for subscribing to the original Single to avoid thread hop. Since, it is the same source, just
+        // viewed as a Publisher, there is no additional risk of deadlock.
+        //
+        // parent is a Single but we always drive the Cancellable from this Subscription.
+        // So, even though we are using the subscribe method that does not offload Cancellable, we do not
+        // need to explicitly add the offload here.
+        original.delegateSubscribe(conversionSubscriber, signalOffloader, contextMap, contextProvider);
     }
 
-    private static final class State<T> implements Subscription, SingleSource.Subscriber<T> {
-        private final SequentialCancellable sequentialCancellable;
+    private static final class ConversionSubscriber<T> implements Subscription, SingleSource.Subscriber<T> {
+        private static final Object STATE_NULL = new Object();
+        private static final Object STATE_REQUESTED = new Object();
+        private static final Object STATE_TERMINATED = new Object();
+        private static final AtomicReferenceFieldUpdater<ConversionSubscriber, Object> stateUpdater =
+                AtomicReferenceFieldUpdater.newUpdater(ConversionSubscriber.class, Object.class, "state");
+        private final DelayedCancellable delayedCancellable;
         private final Subscriber<? super T> subscriber;
-        private final SignalOffloader signalOffloader;
-        private final AsyncContextMap contextMap;
-        private final AsyncContextProvider contextProvider;
-        private final Single<T> parent;
-        private boolean subscribedToParent;
+        private final Subscriber<? super T> offloadedSubscriber;
+        @Nullable
+        private volatile Object state;
 
-        private State(Single<T> parent, Subscriber<? super T> subscriber, final SignalOffloader signalOffloader,
-                      final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
-            this.parent = parent;
+        private ConversionSubscriber(Subscriber<? super T> subscriber,
+                                     Subscriber<? super T> offloadedSubscriber) {
             this.subscriber = subscriber;
-            this.signalOffloader = signalOffloader;
-            this.contextMap = contextMap;
-            this.contextProvider = contextProvider;
-            sequentialCancellable = new SequentialCancellable();
+            this.offloadedSubscriber = offloadedSubscriber;
+            delayedCancellable = new DelayedCancellable();
         }
 
         @Override
         public void onSubscribe(Cancellable cancellable) {
-            sequentialCancellable.nextCancellable(cancellable);
+            delayedCancellable.delayedCancellable(cancellable);
         }
 
         @Override
         public void onSuccess(@Nullable T result) {
-            try {
-                subscriber.onNext(result);
-            } catch (Throwable cause) {
-                subscriber.onError(cause);
-                return;
+            for (;;) {
+                Object state = this.state;
+                if (state == null) {
+                    if (stateUpdater.compareAndSet(this, null, result == null ? STATE_NULL : result)) {
+                        break;
+                    }
+                } else if (state == STATE_REQUESTED) {
+                    if (stateUpdater.compareAndSet(this, STATE_REQUESTED, STATE_TERMINATED)) {
+                        deliverOnNext(subscriber, result);
+                        break;
+                    }
+                } else {
+                    break;
+                }
             }
-            subscriber.onComplete();
         }
 
         @Override
         public void onError(Throwable t) {
-            subscriber.onError(t);
+            if (stateUpdater.getAndSet(this, STATE_TERMINATED) != STATE_TERMINATED) {
+                subscriber.onError(t);
+            }
         }
 
+        @SuppressWarnings("unchecked")
         @Override
         public void request(long n) {
-            if (!subscribedToParent) {
-                subscribedToParent = true;
-                if (isRequestNValid(n)) {
-                    // Since this is converting a Single to a Publisher, we should try to use the same SignalOffloader
-                    // for subscribing to the original Single to avoid thread hop. Since, it is the same source, just
-                    // viewed as a Publisher, there is no additional risk of deadlock.
-                    //
-                    // parent is a Single but we always drive the Cancellable from this Subscription.
-                    // So, even though we are using the subscribe method that does not offload Cancellable, we do not
-                    // need to explicitly add the offload here.
-                    parent.delegateSubscribe(this, signalOffloader, contextMap, contextProvider);
-                } else {
-                    subscriber.onError(newExceptionForInvalidRequestN(n));
+            if (isRequestNValid(n)) {
+                for (;;) {
+                    Object state = this.state;
+                    if (state == null) {
+                        if (stateUpdater.compareAndSet(this, null, STATE_REQUESTED)) {
+                            break;
+                        }
+                    } else if (state == STATE_REQUESTED || state == STATE_TERMINATED) {
+                        break;
+                    } else if (stateUpdater.compareAndSet(this, state, STATE_TERMINATED)) {
+                        deliverOnNext(offloadedSubscriber, state == STATE_NULL ? null : (T) state);
+                        break;
+                    }
+                }
+            } else {
+                // We MUST propagate this to the Subscriber [1].
+                // [1] https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.2/README.md#3.9
+                // We don't need to protect against concurrency on the Subscriber.onSubscribe because we manually call
+                // onSubscribe on before we actually subscribe.
+                if (stateUpdater.getAndSet(this, STATE_TERMINATED) != STATE_TERMINATED) {
+                    offloadedSubscriber.onError(newExceptionForInvalidRequestN(n));
                 }
             }
         }
 
         @Override
         public void cancel() {
-            sequentialCancellable.cancel();
+            state = STATE_TERMINATED; // make sure we dereference any onNext objects.
+            delayedCancellable.cancel();
+        }
+
+        private void deliverOnNext(Subscriber<? super T> subscriber, @Nullable T state) {
+            try {
+                subscriber.onNext(state);
+            } catch (Throwable cause) {
+                subscriber.onError(cause);
+                return;
+            }
+            subscriber.onComplete();
         }
     }
 }

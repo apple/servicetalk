@@ -17,8 +17,10 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.CompletableSource;
-import io.servicetalk.concurrent.internal.SequentialCancellable;
+import io.servicetalk.concurrent.internal.DelayedCancellable;
 import io.servicetalk.concurrent.internal.SignalOffloader;
+
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.newExceptionForInvalidRequestN;
@@ -38,67 +40,71 @@ final class CompletableToPublisher<T> extends AbstractNoHandleSubscribePublisher
     @Override
     void handleSubscribe(final Subscriber<? super T> subscriber, final SignalOffloader signalOffloader,
                          final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
-        subscriber.onSubscribe(new ConversionSubscriber<>(this, subscriber, signalOffloader, contextMap,
-                contextProvider));
+        Subscriber<? super T> offloadedSubscriber = signalOffloader.offloadSubscriber(subscriber);
+        ConversionSubscriber<T> conversionSubscriber = new ConversionSubscriber<>(subscriber,
+                offloadedSubscriber);
+        // It is important that we call onSubscribe before subscribing, otherwise need more concurrency control between
+        // the subscription and the subscriber in the event of illegal request(n).
+        offloadedSubscriber.onSubscribe(conversionSubscriber);
+
+        // Since this is converting a Single to a Publisher, we should try to use the same SignalOffloader
+        // for subscribing to the original Single to avoid thread hop. Since, it is the same source, just
+        // viewed as a Publisher, there is no additional risk of deadlock.
+        //
+        // parent is a Single but we always drive the Cancellable from this Subscription.
+        // So, even though we are using the subscribe method that does not offload Cancellable, we do not
+        // need to explicitly add the offload here.
+        original.delegateSubscribe(conversionSubscriber, signalOffloader, contextMap, contextProvider);
     }
 
     private static final class ConversionSubscriber<T> implements CompletableSource.Subscriber, Subscription {
-        private final SequentialCancellable sequentialCancellable;
+        private static final AtomicIntegerFieldUpdater<ConversionSubscriber> stateUpdater =
+                AtomicIntegerFieldUpdater.newUpdater(ConversionSubscriber.class, "state");
+        private final DelayedCancellable delayedCancellable;
         private final Subscriber<? super T> subscriber;
-        private final SignalOffloader signalOffloader;
-        private final AsyncContextMap contextMap;
-        private final AsyncContextProvider contextProvider;
-        private final CompletableToPublisher<T> parent;
-        private boolean subscribedToParent;
+        private final Subscriber<? super T> offloadedSubscriber;
+        private volatile int state;
 
-        private ConversionSubscriber(CompletableToPublisher<T> parent, Subscriber<? super T> subscriber,
-                                     SignalOffloader signalOffloader, AsyncContextMap contextMap,
-                                     AsyncContextProvider contextProvider) {
-            this.parent = parent;
+        private ConversionSubscriber(Subscriber<? super T> subscriber,
+                                     Subscriber<? super T> offloadedSubscriber) {
             this.subscriber = subscriber;
-            this.signalOffloader = signalOffloader;
-            this.contextMap = contextMap;
-            this.contextProvider = contextProvider;
-            sequentialCancellable = new SequentialCancellable();
+            this.offloadedSubscriber = offloadedSubscriber;
+            delayedCancellable = new DelayedCancellable();
         }
 
         @Override
         public void onSubscribe(Cancellable cancellable) {
-            sequentialCancellable.nextCancellable(cancellable);
+            delayedCancellable.delayedCancellable(cancellable);
         }
 
         @Override
         public void onComplete() {
-            subscriber.onComplete();
+            if (stateUpdater.compareAndSet(this, 0, 1)) {
+                subscriber.onComplete();
+            }
         }
 
         @Override
         public void onError(Throwable t) {
-            subscriber.onError(t);
+            if (stateUpdater.compareAndSet(this, 0, 1)) {
+                subscriber.onError(t);
+            }
         }
 
         @Override
         public void request(long n) {
-            if (!subscribedToParent) {
-                subscribedToParent = true;
-                if (isRequestNValid(n)) {
-                    // Since this is converting a Completable to a Publisher, we should try to use the same
-                    // SignalOffloader for subscribing to the original Completable to avoid thread hop. Since, it is the
-                    // same source, just viewed as a Publisher, there is no additional risk of deadlock.
-                    //
-                    // parent is a Completable but we always drive the Cancellable from this Subscription.
-                    // So, even though we are using the subscribe method that does not offload Cancellable, we do not
-                    // need to explicitly add the offload here.
-                    parent.original.delegateSubscribe(this, signalOffloader, contextMap, contextProvider);
-                } else {
-                    subscriber.onError(newExceptionForInvalidRequestN(n));
-                }
+            if (!isRequestNValid(n) && stateUpdater.compareAndSet(this, 0, 1)) {
+                // We MUST propagate this to the Subscriber [1].
+                // [1] https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.2/README.md#3.9
+                // We don't need to protect against concurrency on the Subscriber.onSubscribe because we manually call
+                // onSubscribe on before we actually subscribe.
+                offloadedSubscriber.onError(newExceptionForInvalidRequestN(n));
             }
         }
 
         @Override
         public void cancel() {
-            sequentialCancellable.cancel();
+            delayedCancellable.cancel();
         }
     }
 }

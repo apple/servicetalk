@@ -19,7 +19,9 @@ import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.ExecutorRule;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TestPublisherSubscriber;
+import io.servicetalk.concurrent.api.TestSingle;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
+import io.servicetalk.concurrent.internal.TerminalNotification;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -32,6 +34,8 @@ import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 import static java.lang.Thread.currentThread;
+import static java.util.Collections.emptyList;
+import static java.util.Collections.singletonList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.hasSize;
@@ -39,6 +43,9 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 public class SingleToPublisherTest {
@@ -126,5 +133,96 @@ public class SingleToPublisherTest {
         c.cancel();
         analyzed.await();
         assertThat("Unexpected errors observed: " + errors, errors, hasSize(0));
+    }
+
+    @Test
+    public void sequentialOnSubscribeOnCompleteInOrder() {
+        sequentialOnSubscribeInOrder(true);
+    }
+
+    @Test
+    public void sequentialOnSubscribeOnErrorInOrder() {
+        sequentialOnSubscribeInOrder(false);
+    }
+
+    private void sequentialOnSubscribeInOrder(boolean onComplete) {
+        TestSingle<String> single = new TestSingle<>();
+        toSource(single.toPublisher()).subscribe(verifier);
+        assertTrue(single.isSubscribed());
+        if (onComplete) {
+            single.onSuccess("foo");
+            assertFalse(verifier.isTerminated());
+            verifier.request(1);
+            assertEquals(singletonList("foo"), verifier.takeItems());
+            assertTrue(verifier.isCompleted());
+        } else {
+            single.onError(DELIBERATE_EXCEPTION);
+            assertEquals(DELIBERATE_EXCEPTION, verifier.takeError());
+        }
+    }
+
+    @Test
+    public void invalidRequestNBeforeOnCompleteResultsInOnError() {
+        invalidRequestNBeforeTerminateResultsInOnError(true);
+    }
+
+    @Test
+    public void invalidRequestNBeforeOnErrorResultsInOnError() {
+        invalidRequestNBeforeTerminateResultsInOnError(false);
+    }
+
+    private void invalidRequestNBeforeTerminateResultsInOnError(boolean onComplete) {
+        TestSingle<String> single = new TestSingle<>();
+        toSource(single.toPublisher()).subscribe(verifier);
+        assertTrue(single.isSubscribed());
+        verifier.request(-1);
+        if (onComplete) {
+            single.onSuccess("foo");
+        } else {
+            single.onError(DELIBERATE_EXCEPTION);
+        }
+        assertThat(verifier.takeError(), instanceOf(IllegalArgumentException.class));
+    }
+
+    @Test
+    public void invalidRequestNAfterOnCompleteIgnored() {
+        invalidRequestNAfterTerminateIgnored(true);
+    }
+
+    @Test
+    public void invalidRequestNAfterOnErrorIgnored() {
+        invalidRequestNAfterTerminateIgnored(false);
+    }
+
+    private void invalidRequestNAfterTerminateIgnored(boolean onComplete) {
+        TestSingle<String> single = new TestSingle<>();
+        toSource(single.toPublisher()).subscribe(verifier);
+        assertTrue(single.isSubscribed());
+        if (onComplete) {
+            single.onSuccess("foo");
+            assertFalse(verifier.isTerminated());
+            verifier.request(1);
+            assertEquals(singletonList("foo"), verifier.takeItems());
+            assertEquals(TerminalNotification.complete(), verifier.takeTerminal());
+        } else {
+            single.onError(DELIBERATE_EXCEPTION);
+            assertEquals(DELIBERATE_EXCEPTION, verifier.takeError());
+        }
+        verifier.request(-1);
+        assertNull(verifier.takeTerminal());
+    }
+
+    @Test
+    public void onNextDeliveredAfterRequestN() {
+        TestSingle<String> single = new TestSingle<>();
+        toSource(single.toPublisher()).subscribe(verifier);
+        assertTrue(single.isSubscribed());
+        verifier.request(1);
+        assertEquals(emptyList(), verifier.takeItems());
+        assertNull(verifier.takeTerminal());
+
+        single.onSuccess("foo");
+        assertEquals(singletonList("foo"), verifier.takeItems());
+        assertEquals(TerminalNotification.complete(), verifier.takeTerminal());
     }
 }
