@@ -26,9 +26,11 @@ import static io.servicetalk.http.api.RequestResponseFactories.toAggregated;
 /**
  * The equivalent of {@link HttpClient} but with synchronous/blocking APIs instead of asynchronous APIs.
  */
-public final class BlockingHttpClient extends BlockingHttpRequester {
+public final class BlockingHttpClient implements BlockingHttpRequester {
 
     private final StreamingHttpClient client;
+    private final HttpExecutionStrategy strategy;
+    private final HttpRequestResponseFactory reqRespFactory;
 
     /**
      * Create a new instance.
@@ -36,7 +38,8 @@ public final class BlockingHttpClient extends BlockingHttpRequester {
      * @param client {@link StreamingHttpClient} to convert from.
      */
     BlockingHttpClient(final StreamingHttpClient client, final HttpExecutionStrategy strategy) {
-        super(toAggregated(client.reqRespFactory), strategy);
+        reqRespFactory = toAggregated(client.filterChain.reqRespFactory);
+        this.strategy = strategy;
         this.client = client;
     }
 
@@ -50,7 +53,7 @@ public final class BlockingHttpClient extends BlockingHttpRequester {
      * @throws Exception if a exception occurs during the reservation process.
      */
     public ReservedBlockingHttpConnection reserveConnection(HttpRequestMetaData metaData) throws Exception {
-        return reserveConnection(executionStrategy(), metaData);
+        return reserveConnection(strategy, metaData);
     }
 
     /**
@@ -66,7 +69,12 @@ public final class BlockingHttpClient extends BlockingHttpRequester {
     public ReservedBlockingHttpConnection reserveConnection(HttpExecutionStrategy strategy,
                                                             HttpRequestMetaData metaData) throws Exception {
         return blockingInvocation(client.reserveConnection(strategy, metaData)
-                .map(c -> new ReservedBlockingHttpConnection(c, executionStrategy())));
+                .map(c -> new ReservedBlockingHttpConnection(c, this.strategy)));
+    }
+
+    @Override
+    public HttpResponse request(final HttpRequest request) throws Exception {
+        return request(strategy, request);
     }
 
     @Override
@@ -109,6 +117,16 @@ public final class BlockingHttpClient extends BlockingHttpRequester {
     @Override
     public void close() throws Exception {
         blockingInvocation(client.closeAsync());
+    }
+
+    @Override
+    public HttpRequest newRequest(final HttpRequestMethod method, final String requestTarget) {
+        return reqRespFactory.newRequest(method, requestTarget);
+    }
+
+    @Override
+    public HttpResponseFactory httpResponseFactory() {
+        return reqRespFactory;
     }
 
     /**

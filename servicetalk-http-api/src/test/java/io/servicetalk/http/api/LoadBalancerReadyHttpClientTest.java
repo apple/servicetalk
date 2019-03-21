@@ -63,7 +63,7 @@ public class LoadBalancerReadyHttpClientTest {
     private final HttpClientFilterFactory testHandler = (client, __) -> new StreamingHttpClientFilter(client) {
 
         @Override
-        protected Single<StreamingHttpResponse> request(final StreamingHttpRequestFunction delegate,
+        protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                         final HttpExecutionStrategy strategy,
                                                         final StreamingHttpRequest request) {
             return defer(new DeferredSuccessSupplier<>(newOkResponse()));

@@ -17,26 +17,10 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.transport.api.ExecutionContext;
 
-import static java.util.Objects.requireNonNull;
-
 /**
  * The equivalent of {@link HttpRequester} with synchronous/blocking APIs instead of asynchronous APIs.
  */
-public abstract class BlockingHttpRequester implements HttpRequestFactory, AutoCloseable {
-    final HttpRequestResponseFactory reqRespFactory;
-    final HttpExecutionStrategy strategy;
-
-    /**
-     * Create a new instance.
-     * @param reqRespFactory The {@link HttpRequestResponseFactory} used to
-     * {@link #newRequest(HttpRequestMethod, String) create new requests}.
-     * @param strategy Default {@link HttpExecutionStrategy} to use.
-     */
-    BlockingHttpRequester(final HttpRequestResponseFactory reqRespFactory, HttpExecutionStrategy strategy) {
-        this.reqRespFactory = requireNonNull(reqRespFactory);
-        this.strategy = requireNonNull(strategy);
-    }
-
+public interface BlockingHttpRequester extends HttpRequestFactory, AutoCloseable {
     /**
      * Send a {@code request}.
      *
@@ -44,9 +28,7 @@ public abstract class BlockingHttpRequester implements HttpRequestFactory, AutoC
      * @return The response.
      * @throws Exception if an exception occurs during the request processing.
      */
-    public final HttpResponse request(HttpRequest request) throws Exception {
-        return request(executionStrategy(), request);
-    }
+    HttpResponse request(HttpRequest request) throws Exception;
 
     /**
      * Send a {@code request} using the passed {@link HttpExecutionStrategy strategy}.
@@ -56,7 +38,7 @@ public abstract class BlockingHttpRequester implements HttpRequestFactory, AutoC
      * @return The response.
      * @throws Exception if an exception occurs during the request processing.
      */
-    public abstract HttpResponse request(HttpExecutionStrategy strategy, HttpRequest request) throws Exception;
+    HttpResponse request(HttpExecutionStrategy strategy, HttpRequest request) throws Exception;
 
     /**
      * Get the {@link ExecutionContext} used during construction of this object.
@@ -66,19 +48,12 @@ public abstract class BlockingHttpRequester implements HttpRequestFactory, AutoC
      *
      * @return the {@link ExecutionContext} used during construction of this object.
      */
-    public abstract ExecutionContext executionContext();
-
-    @Override
-    public final HttpRequest newRequest(HttpRequestMethod method, String requestTarget) {
-        return reqRespFactory.newRequest(method, requestTarget);
-    }
+    ExecutionContext executionContext();
 
     /**
-     * Returns the default {@link HttpExecutionStrategy} for this {@link BlockingHttpRequester}.
+     * Get a {@link HttpResponseFactory}.
      *
-     * @return Default {@link HttpExecutionStrategy} for this {@link BlockingHttpRequester}.
+     * @return a {@link HttpResponseFactory}.
      */
-    final HttpExecutionStrategy executionStrategy() {
-        return strategy;
-    }
+    HttpResponseFactory httpResponseFactory();
 }

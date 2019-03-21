@@ -24,7 +24,7 @@ import io.servicetalk.http.api.HttpHeaderNames;
 import io.servicetalk.http.api.StreamingHttpClientFilter;
 import io.servicetalk.http.api.StreamingHttpConnectionFilter;
 import io.servicetalk.http.api.StreamingHttpRequest;
-import io.servicetalk.http.api.StreamingHttpRequestFunction;
+import io.servicetalk.http.api.StreamingHttpRequester;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.transport.api.HostAndPort;
 
@@ -74,7 +74,7 @@ final class HostHeaderHttpRequesterFilter implements HttpClientFilterFactory,
         return new StreamingHttpClientFilter(client) {
 
             @Override
-            protected Single<StreamingHttpResponse> request(final StreamingHttpRequestFunction delegate,
+            protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                             final HttpExecutionStrategy strategy,
                                                             final StreamingHttpRequest request) {
                 return HostHeaderHttpRequesterFilter.this.request(delegate, strategy, request);
@@ -92,7 +92,7 @@ final class HostHeaderHttpRequesterFilter implements HttpClientFilterFactory,
     public StreamingHttpConnectionFilter create(final StreamingHttpConnectionFilter connection) {
         return new StreamingHttpConnectionFilter(connection) {
             @Override
-            protected Single<StreamingHttpResponse> request(final StreamingHttpConnectionFilter delegate,
+            protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                             final HttpExecutionStrategy strategy,
                                                             final StreamingHttpRequest request) {
                 return HostHeaderHttpRequesterFilter.this.request(delegate, strategy, request);
@@ -106,7 +106,7 @@ final class HostHeaderHttpRequesterFilter implements HttpClientFilterFactory,
         };
     }
 
-    private Single<StreamingHttpResponse> request(final StreamingHttpRequestFunction delegate,
+    private Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                   final HttpExecutionStrategy strategy,
                                                   final StreamingHttpRequest request) {
         if (HTTP_1_1.equals(request.version()) && !request.headers().contains(HOST)) {

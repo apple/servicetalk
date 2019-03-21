@@ -23,7 +23,7 @@ import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpClientFilter;
 import io.servicetalk.http.api.StreamingHttpRequest;
-import io.servicetalk.http.api.StreamingHttpRequestFunction;
+import io.servicetalk.http.api.StreamingHttpRequester;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.IoExecutor;
@@ -68,7 +68,7 @@ public class AbstractClientEffectiveStrategyTest {
         builder.appendClientFilter((c, __) -> new StreamingHttpClientFilter(c) {
 
             @Override
-            protected Single<StreamingHttpResponse> request(final StreamingHttpRequestFunction delegate,
+            protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                             final HttpExecutionStrategy strategy,
                                                             final StreamingHttpRequest request) {
                 return delegate.request(strategy,

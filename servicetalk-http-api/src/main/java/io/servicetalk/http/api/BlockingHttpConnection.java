@@ -27,9 +27,11 @@ import static io.servicetalk.http.api.RequestResponseFactories.toAggregated;
 /**
  * The equivalent of {@link HttpConnection} but with synchronous/blocking APIs instead of asynchronous APIs.
  */
-public /* final */ class BlockingHttpConnection extends BlockingHttpRequester {
+public /* final */ class BlockingHttpConnection implements BlockingHttpRequester {
 
     private final StreamingHttpConnection connection;
+    private final HttpExecutionStrategy strategy;
+    private final HttpRequestResponseFactory reqRespFactory;
 
     /**
      * Create a new instance.
@@ -39,8 +41,9 @@ public /* final */ class BlockingHttpConnection extends BlockingHttpRequester {
      */
     BlockingHttpConnection(final StreamingHttpConnection connection,
                            final HttpExecutionStrategy strategy) {
-        super(toAggregated(connection.reqRespFactory), strategy);
+        reqRespFactory = toAggregated(connection.filterChain.reqRespFactory);
         this.connection = connection;
+        this.strategy = strategy;
     }
 
     /**
@@ -50,6 +53,11 @@ public /* final */ class BlockingHttpConnection extends BlockingHttpRequester {
      */
     public final ConnectionContext connectionContext() {
         return connection.connectionContext();
+    }
+
+    @Override
+    public final HttpResponse request(HttpRequest request) throws Exception {
+        return request(strategy, request);
     }
 
     @Override
@@ -120,5 +128,15 @@ public /* final */ class BlockingHttpConnection extends BlockingHttpRequester {
     @Override
     public final void close() throws Exception {
         blockingInvocation(connection.closeAsync());
+    }
+
+    @Override
+    public HttpRequest newRequest(final HttpRequestMethod method, final String requestTarget) {
+        return reqRespFactory.newRequest(method, requestTarget);
+    }
+
+    @Override
+    public HttpResponseFactory httpResponseFactory() {
+        return reqRespFactory;
     }
 }

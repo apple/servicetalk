@@ -44,7 +44,7 @@ final class ConditionalHttpClientFilter extends StreamingHttpClientFilter {
     }
 
     @Override
-    protected Single<StreamingHttpResponse> request(final StreamingHttpRequestFunction delegate,
+    protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                     final HttpExecutionStrategy strategy,
                                                     final StreamingHttpRequest request) {
         boolean b;

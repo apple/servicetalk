@@ -17,10 +17,8 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
-import io.servicetalk.concurrent.api.AsyncCloseables;
 import io.servicetalk.concurrent.api.AsyncContext;
 import io.servicetalk.concurrent.api.AsyncContextMap;
-import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.HttpExecutionStrategies;
@@ -29,7 +27,6 @@ import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpClientFilter;
 import io.servicetalk.http.api.StreamingHttpRequest;
-import io.servicetalk.http.api.StreamingHttpRequestFunction;
 import io.servicetalk.http.api.StreamingHttpRequester;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.transport.api.HostAndPort;
@@ -43,6 +40,7 @@ import java.net.InetSocketAddress;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutionException;
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Single.success;
@@ -73,26 +71,29 @@ public class HttpClientAsyncContextTest {
 
     private static void contextPreservedOverFilterBoundaries(boolean useImmediate) throws Exception {
         Queue<Throwable> errorQueue = new ConcurrentLinkedQueue<>();
-        CompositeCloseable compositeCloseable = AsyncCloseables.newCompositeCloseable();
-        ServerContext serverContext = compositeCloseable.append(HttpServers.forAddress(localAddress(0))
-                .listenAndAwait((ctx, request, responseFactory) -> success(responseFactory.ok())));
-        try {
-            SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> clientBuilder = HttpClients.forSingleAddress(
-                    serverHostAndPort(serverContext))
-                    .appendClientFilter((c, lbEvents) -> new TestStreamingHttpClientFilter(c, errorQueue))
-                    .appendClientFilter((c, lbEvents) -> new TestStreamingHttpClientFilter(c, errorQueue));
-            if (useImmediate) {
-                clientBuilder.executionStrategy(HttpExecutionStrategies.noOffloadsStrategy());
-            }
-            StreamingHttpClient client = compositeCloseable.append(clientBuilder.buildStreaming());
+
+        try (ServerContext serverContext = HttpServers.forAddress(localAddress(0))
+                .listenAndAwait((ctx, request, responseFactory) -> success(responseFactory.ok()));
+             StreamingHttpClient client = buildClient(useImmediate, errorQueue, serverContext).buildStreaming()) {
             makeClientRequestWithId(client, "1");
             assertThat("Error queue is not empty!", errorQueue, empty());
-        } finally {
-            compositeCloseable.close();
         }
     }
 
-    private static void makeClientRequestWithId(StreamingHttpRequester connection, String requestId)
+    @Nonnull
+    private static SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> buildClient(
+            final boolean useImmediate, final Queue<Throwable> errorQueue, final ServerContext serverContext) {
+        SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> clientBuilder = HttpClients.forSingleAddress(
+                serverHostAndPort(serverContext))
+                .appendClientFilter((c, lbEvents) -> new TestStreamingHttpClientFilter(c, errorQueue))
+                .appendClientFilter((c, lbEvents) -> new TestStreamingHttpClientFilter(c, errorQueue));
+        if (useImmediate) {
+            clientBuilder.executionStrategy(HttpExecutionStrategies.noOffloadsStrategy());
+        }
+        return clientBuilder;
+    }
+
+    private static void makeClientRequestWithId(StreamingHttpClient connection, String requestId)
             throws ExecutionException, InterruptedException {
         StreamingHttpRequest request = connection.get("/");
         request.headers().set(REQUEST_ID_HEADER, requestId);
@@ -118,7 +119,7 @@ public class HttpClientAsyncContextTest {
         }
 
         @Override
-        protected Single<StreamingHttpResponse> request(final StreamingHttpRequestFunction delegate,
+        protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                         final HttpExecutionStrategy strategy,
                                                         final StreamingHttpRequest request) {
             // The first filter will remove the REQUEST_ID_HEADER and put it into AsyncContext.
