@@ -132,7 +132,7 @@ public final class HttpRequestMethod {
                 return httpRequestMethod;
             }
         }
-        throw new IllegalArgumentException("No HttpRequestMethod found called " + name.toString(US_ASCII));
+        throw new IllegalArgumentException("No HttpRequestMethod found for " + name.toString(US_ASCII));
     }
 
     /**
@@ -150,7 +150,7 @@ public final class HttpRequestMethod {
                 return httpRequestMethod;
             }
         }
-        throw new IllegalArgumentException("No HttpRequestMethod found called " + name);
+        throw new IllegalArgumentException("No HttpRequestMethod found for " + name);
     }
 
     /**
