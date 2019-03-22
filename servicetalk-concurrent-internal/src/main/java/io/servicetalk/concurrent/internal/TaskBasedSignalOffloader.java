@@ -538,8 +538,12 @@ final class TaskBasedSignalOffloader implements SignalOffloader {
                     // Already executing or enqueued for executing, append the state.
                     hasAny(cState, EXECUTING_SUBSCRIBED_RECEIVED_MASK) && casAppend(cState, RECEIVED_TERMINAL_MASK)) {
                     return;
-                } else if (cState == STATE_AWAITING_TERMINAL &&
-                        stateUpdater.compareAndSet(this, STATE_AWAITING_TERMINAL, RECEIVED_TERMINAL_MASK)) {
+                } else if (
+                    // Either we have seen onSubscribe and the Runnable is no longer executing, or we have not
+                    // seen onSubscribe and there is a sequencing issue on the Subscriber. Either way we avoid looping
+                    // and deliver the terminal event.
+                        (cState == STATE_AWAITING_TERMINAL || cState == STATE_INIT) &&
+                        stateUpdater.compareAndSet(this, cState, RECEIVED_TERMINAL_MASK)) {
                     // We are not executing hence need to enqueue the task to deliver terminal.
                     try {
                         executor.execute(this);
