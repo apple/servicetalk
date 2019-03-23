@@ -17,6 +17,9 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.Buffer;
 
+import java.util.Arrays;
+import java.util.List;
+
 import static io.servicetalk.buffer.api.ReadOnlyBufferAllocators.PREFER_DIRECT_RO_ALLOCATOR;
 import static io.servicetalk.http.api.HttpRequestMethod.Properties.CACHEABLE;
 import static io.servicetalk.http.api.HttpRequestMethod.Properties.IDEMPOTENT;
@@ -85,6 +88,9 @@ public final class HttpRequestMethod {
     public static final HttpRequestMethod PATCH =
             new HttpRequestMethod(PREFER_DIRECT_RO_ALLOCATOR.fromAscii("PATCH"), NONE);
 
+    private static final List<HttpRequestMethod> HTTP_REQUEST_METHODS = Arrays.asList(GET, HEAD, POST, PUT, DELETE,
+            CONNECT, OPTIONS, TRACE, PATCH);
+
     private final String nameString;
     private final Buffer name;
     private final Properties properties;
@@ -109,6 +115,42 @@ public final class HttpRequestMethod {
      */
     public static HttpRequestMethod of(final Buffer name, final Properties properties) {
         return new HttpRequestMethod(name, properties);
+    }
+
+    /**
+     * Returns an {@link HttpRequestMethod} for the specified {@link Buffer} representation of
+     * <a href="https://tools.ietf.org/html/rfc7231#section-4.1">method name</a>, with the default {@link Properties}
+     * for that method.
+     *
+     * @param name a <a href="https://tools.ietf.org/html/rfc7231#section-4.1">method name</a>
+     * @return an {@link HttpRequestMethod}
+     * @throws IllegalArgumentException if the method name is not recognized
+     */
+    public static HttpRequestMethod of(final Buffer name) {
+        for (final HttpRequestMethod httpRequestMethod : HTTP_REQUEST_METHODS) {
+            if (httpRequestMethod.name.equals(name)) {
+                return httpRequestMethod;
+            }
+        }
+        throw new IllegalArgumentException("No HttpRequestMethod found for " + name.toString(US_ASCII));
+    }
+
+    /**
+     * Returns an {@link HttpRequestMethod} for the specified
+     * <a href="https://tools.ietf.org/html/rfc7231#section-4.1">method name</a>, with the default {@link Properties}
+     * for that method.
+     *
+     * @param name a <a href="https://tools.ietf.org/html/rfc7231#section-4.1">method name</a>
+     * @return an {@link HttpRequestMethod}
+     * @throws IllegalArgumentException if the method name is not recognized
+     */
+    public static HttpRequestMethod of(final String name) {
+        for (final HttpRequestMethod httpRequestMethod : HTTP_REQUEST_METHODS) {
+            if (httpRequestMethod.nameString.equals(name)) {
+                return httpRequestMethod;
+            }
+        }
+        throw new IllegalArgumentException("No HttpRequestMethod found for " + name);
     }
 
     /**
