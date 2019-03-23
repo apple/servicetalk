@@ -17,7 +17,6 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.StreamingHttpConnection.SettingKey;
@@ -33,8 +32,7 @@ import static java.util.Objects.requireNonNull;
  * A {@link StreamingHttpConnectionFilter} that delegates all methods to a different {@link
  * StreamingHttpConnectionFilter}.
  */
-public class StreamingHttpConnectionFilter implements StreamingHttpRequester,
-                                                      ListenableAsyncCloseable {
+public class StreamingHttpConnectionFilter implements StreamingHttpRequester {
 
     @Nullable
     private final StreamingHttpConnectionFilter delegate;
