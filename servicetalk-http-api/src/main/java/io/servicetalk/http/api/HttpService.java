@@ -24,6 +24,7 @@ import static io.servicetalk.http.api.HttpExecutionStrategies.OFFLOAD_RECEIVE_ME
  * Same as {@link StreamingHttpService} but that accepts {@link HttpRequest} and returns {@link HttpResponse}.
  */
 public abstract class HttpService implements HttpRequestHandler, AsyncCloseable {
+    static final HttpExecutionStrategy DEFAULT_SERVICE_STRATEGY = OFFLOAD_RECEIVE_META_AND_SEND_STRATEGY;
     /**
      * Closes this {@link HttpService} asynchronously.
      *
@@ -63,7 +64,7 @@ public abstract class HttpService implements HttpRequestHandler, AsyncCloseable 
      * @return The {@link HttpExecutionStrategy} for this {@link HttpService}.
      */
     public HttpExecutionStrategy executionStrategy() {
-        return OFFLOAD_RECEIVE_META_AND_SEND_STRATEGY;
+        return DEFAULT_SERVICE_STRATEGY;
     }
 
     StreamingHttpService asStreamingServiceInternal() {

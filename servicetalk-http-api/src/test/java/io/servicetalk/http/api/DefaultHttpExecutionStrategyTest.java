@@ -50,7 +50,7 @@ import static io.servicetalk.http.api.DefaultHttpHeadersFactory.INSTANCE;
 import static io.servicetalk.http.api.HttpExecutionStrategies.customStrategyBuilder;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpRequestMethod.GET;
-import static io.servicetalk.http.api.NoOffloadsHttpExecutionStrategy.NO_OFFLOADS;
+import static io.servicetalk.http.api.NoOffloadsHttpExecutionStrategy.NO_OFFLOADS_NO_EXECUTOR;
 import static io.servicetalk.http.api.StreamingHttpRequests.newRequest;
 import static io.servicetalk.http.api.StreamingHttpResponses.newResponse;
 import static java.lang.Thread.currentThread;
@@ -330,7 +330,7 @@ public class DefaultHttpExecutionStrategyTest {
         }
 
         void verifyThread(final boolean offloadedPath, final String errMsg) {
-            if (strategy == NO_OFFLOADS && testThread != currentThread()) {
+            if (strategy == NO_OFFLOADS_NO_EXECUTOR && testThread != currentThread()) {
                 addError(errMsg);
             } else if (offloadedPath && testThread == currentThread()) {
                 addError(errMsg);

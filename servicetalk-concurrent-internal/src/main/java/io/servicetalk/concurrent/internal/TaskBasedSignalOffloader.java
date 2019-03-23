@@ -601,7 +601,7 @@ final class TaskBasedSignalOffloader implements SignalOffloader {
         @Override
         void terminateOnEnqueueFailure(final Throwable cause) {
             LOGGER.error("Failed to execute task on the executor {}. " +
-                    "Invoking Subscriber (onError()) in the caller thread. Subscriber {}.", executor, target);
+                    "Invoking Subscriber (onError()) in the caller thread. Subscriber {}.", executor, target, cause);
             target.onError(cause);
         }
 
@@ -666,7 +666,8 @@ final class TaskBasedSignalOffloader implements SignalOffloader {
         @Override
         void terminateOnEnqueueFailure(final Throwable cause) {
             LOGGER.error("Failed to execute task on the executor {}. " +
-                            "Invoking Subscriber (onError()) in the caller thread. Subscriber {}.", executor, target);
+                            "Invoking Subscriber (onError()) in the caller thread. Subscriber {}.", executor, target,
+                    cause);
             target.onError(cause);
         }
 

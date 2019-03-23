@@ -49,7 +49,7 @@ final class DefaultStreamingHttpClientFilter extends StreamingHttpClientFilter {
                                      final HttpExecutionStrategy executionStrategy,
                                      final LoadBalancer<LoadBalancedStreamingHttpConnectionFilter> loadBalancer,
                                      final StreamingHttpRequestResponseFactory reqRespFactory) {
-        super(terminal(reqRespFactory));
+        super(terminal(reqRespFactory, executionStrategy));
         this.executionContext = requireNonNull(executionContext);
         this.loadBalancer = requireNonNull(loadBalancer);
     }
