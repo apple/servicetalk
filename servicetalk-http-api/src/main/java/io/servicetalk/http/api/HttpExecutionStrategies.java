@@ -96,9 +96,8 @@ public final class HttpExecutionStrategies {
         private Executor executor;
         private byte offloads;
         private boolean threadAffinity;
-        // User provided strategies will always be used without merging. Any custom behavior will be used at the merged
-        // call site.
-        private MergeStrategy mergeStrategy = ReturnSelf;
+        @Nullable
+        private MergeStrategy mergeStrategy;
 
         private Builder() {
         }
@@ -189,9 +188,16 @@ public final class HttpExecutionStrategies {
          * @return New {@link HttpExecutionStrategy}.
          */
         public HttpExecutionStrategy build() {
-            return offloads == 0 ?
-                    executor == null ? NO_OFFLOADS_NO_EXECUTOR : noOffloadsStrategyWithExecutor(executor) :
-                    new DefaultHttpExecutionStrategy(executor, offloads, threadAffinity, mergeStrategy);
+            if (offloads == 0 && mergeStrategy == null) {
+                return executor == null ? NO_OFFLOADS_NO_EXECUTOR : noOffloadsStrategyWithExecutor(executor);
+            } else {
+                if (mergeStrategy == null) {
+                    // User provided strategies will always be used without merging. Any custom behavior will be used at
+                    // the merged call site.
+                    mergeStrategy = ReturnSelf;
+                }
+                return new DefaultHttpExecutionStrategy(executor, offloads, threadAffinity, mergeStrategy);
+            }
         }
 
         private static HttpExecutionStrategy noOffloadsStrategyWithExecutor(final Executor executor) {

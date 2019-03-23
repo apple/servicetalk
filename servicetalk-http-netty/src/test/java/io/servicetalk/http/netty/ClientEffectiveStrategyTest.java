@@ -47,15 +47,17 @@ import java.util.Map;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
 import static io.servicetalk.http.api.HttpExecutionStrategies.customStrategyBuilder;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
+import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.http.netty.ClientEffectiveStrategyTest.ClientOffloadPoint.RequestPayloadSubscription;
 import static io.servicetalk.http.netty.ClientEffectiveStrategyTest.ClientOffloadPoint.ResponseData;
 import static io.servicetalk.http.netty.ClientEffectiveStrategyTest.ClientOffloadPoint.ResponseMeta;
-import static io.servicetalk.http.netty.InvokingThreadsRecorder.defaultUserStrategy;
 import static io.servicetalk.http.netty.InvokingThreadsRecorder.noStrategy;
 import static io.servicetalk.http.netty.InvokingThreadsRecorder.userStrategy;
+import static io.servicetalk.http.netty.InvokingThreadsRecorder.userStrategyNoVerify;
 import static java.util.Arrays.asList;
 import static java.util.Objects.requireNonNull;
 
@@ -92,6 +94,20 @@ public class ClientEffectiveStrategyTest {
                 ClientEffectiveStrategyTest::userStrategyNoExecutorNoFilter));
         params.add(wrap("userStrategyNoExecutorWithFilter",
                 ClientEffectiveStrategyTest::userStrategyNoExecutorWithFilter));
+        params.add(wrap("userStrategyNoOffloadsNoFilter",
+                ClientEffectiveStrategyTest::userStrategyNoOffloadsNoFilter));
+        // TODO (nkant): We are not yet sure how this should behave, will revisit
+        /*
+        params.add(wrap("userStrategyNoOffloadsWithFilter",
+                ClientEffectiveStrategyTest::userStrategyNoOffloadsWithFilter));
+        */
+        params.add(wrap("userStrategyNoOffloadsNoExecutorNoFilter",
+                ClientEffectiveStrategyTest::userStrategyNoOffloadsNoExecutorNoFilter));
+        // TODO (nkant): We are not yet sure how this should behave, will revisit
+        /*
+        params.add(wrap("userStrategyNoOffloadsNoExecutorWithFilter",
+                ClientEffectiveStrategyTest::userStrategyNoOffloadsNoExecutorWithFilter));
+        */
         params.add(wrap("customUserStrategyNoFilter",
                 ClientEffectiveStrategyTest::customUserStrategyNoFilter));
         params.add(wrap("customUserStrategyWithFilter",
@@ -154,6 +170,34 @@ public class ClientEffectiveStrategyTest {
         return params;
     }
 
+    private static Params userStrategyNoOffloadsNoFilter() {
+        Params params = new Params();
+        params.initStateHolderUserStrategyNoOffloads(false);
+        params.noPointsOffloadedForAllClients();
+        return params;
+    }
+
+    private static Params userStrategyNoOffloadsWithFilter() {
+        Params params = new Params();
+        params.initStateHolderUserStrategyNoOffloads(true);
+        params.allPointsOffloadedForAllClients();
+        return params;
+    }
+
+    private static Params userStrategyNoOffloadsNoExecutorNoFilter() {
+        Params params = new Params();
+        params.initStateHolderUserStrategyNoOffloadsNoExecutor(false);
+        params.noPointsOffloadedForAllClients();
+        return params;
+    }
+
+    private static Params userStrategyNoOffloadsNoExecutorWithFilter() {
+        Params params = new Params();
+        params.initStateHolderUserStrategyNoOffloadsNoExecutor(true);
+        params.allPointsOffloadedForAllClients();
+        return params;
+    }
+
     private static Params customUserStrategyNoExecutorNoFilter() {
         Params params = new Params();
         params.initStateHolderCustomUserStrategyNoExecutor(false);
@@ -183,14 +227,14 @@ public class ClientEffectiveStrategyTest {
     }
 
     @Test
-    public void blockingClient() throws Exception {
+    public void blocking() throws Exception {
         BlockingHttpClient blockingClient = params.client().asBlockingClient();
         blockingClient.request(blockingClient.get("/"));
         params.verifyOffloads(ClientType.Blocking);
     }
 
     @Test
-    public void blockingStreamingClient() throws Exception {
+    public void blockingStreaming() throws Exception {
         BlockingStreamingHttpClient blockingClient = params.client().asBlockingStreamingClient();
         BlockingIterator<Buffer> iter = blockingClient.request(blockingClient.get("/")).payloadBody().iterator();
         iter.forEachRemaining(__ -> { });
@@ -199,14 +243,14 @@ public class ClientEffectiveStrategyTest {
     }
 
     @Test
-    public void streamingClient() throws Exception {
+    public void streaming() throws Exception {
         params.client().request(params.client().get("/"))
                 .flatMapPublisher(StreamingHttpResponse::payloadBody).toFuture().get();
         params.verifyOffloads(ClientType.AsyncStreaming);
     }
 
     @Test
-    public void client() throws Exception {
+    public void async() throws Exception {
         HttpClient httpClient = params.client().asClient();
         httpClient.request(httpClient.get("/")).toFuture().get();
         params.verifyOffloads(ClientType.Async);
@@ -266,6 +310,13 @@ public class ClientEffectiveStrategyTest {
             }
         }
 
+        void noPointsOffloadedForAllClients() {
+            for (ClientType clientType : ClientType.values()) {
+                nonOffloadPoints.get(clientType).addAll(asList(ResponseData,
+                        ResponseMeta, RequestPayloadSubscription));
+            }
+        }
+
         void defaultOffloadPoints() {
             addNonOffloadedPointFor(ClientType.Blocking, RequestPayloadSubscription, ResponseMeta, ResponseData);
 
@@ -285,13 +336,25 @@ public class ClientEffectiveStrategyTest {
         }
 
         void initStateHolderUserStrategy(boolean addFilter) {
-            invokingThreadsRecorder = defaultUserStrategy(defaultStrategy(executor));
+            invokingThreadsRecorder = userStrategyNoVerify(defaultStrategy(executor));
             initState(addFilter);
         }
 
         void initStateHolderUserStrategyNoExecutor(boolean addFilter) {
             executorUsedForStrategy = false;
-            invokingThreadsRecorder = defaultUserStrategy(defaultStrategy());
+            invokingThreadsRecorder = userStrategyNoVerify(defaultStrategy());
+            initState(addFilter);
+        }
+
+        void initStateHolderUserStrategyNoOffloads(boolean addFilter) {
+            executorUsedForStrategy = false;
+            invokingThreadsRecorder = userStrategy(customStrategyBuilder().offloadNone().executor(immediate()).build());
+            initState(addFilter);
+        }
+
+        void initStateHolderUserStrategyNoOffloadsNoExecutor(boolean addFilter) {
+            executorUsedForStrategy = false;
+            invokingThreadsRecorder = userStrategy(noOffloadsStrategy());
             initState(addFilter);
         }
 

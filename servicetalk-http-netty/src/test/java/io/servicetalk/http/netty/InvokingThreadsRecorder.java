@@ -15,6 +15,7 @@
  */
 package io.servicetalk.http.netty;
 
+import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.concurrent.api.DefaultThreadFactory;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
@@ -73,7 +74,7 @@ final class InvokingThreadsRecorder<T> {
         return new InvokingThreadsRecorder<>(null);
     }
 
-    static <T> InvokingThreadsRecorder<T> defaultUserStrategy(HttpExecutionStrategy strategy) {
+    static <T> InvokingThreadsRecorder<T> userStrategyNoVerify(HttpExecutionStrategy strategy) {
         return new InvokingThreadsRecorder<>(strategy);
     }
 
@@ -98,7 +99,17 @@ final class InvokingThreadsRecorder<T> {
     }
 
     void dispose() throws Exception {
-        newCompositeCloseable().appendAll(client, context, ioExecutor).closeAsync().toFuture().get();
+        CompositeCloseable compositeCloseable = newCompositeCloseable();
+        if (client != null) {
+            compositeCloseable.append(client);
+        }
+        if (context != null) {
+            compositeCloseable.append(context);
+        }
+        if (ioExecutor != null) {
+            compositeCloseable.append(ioExecutor);
+        }
+        compositeCloseable.close();
     }
 
     void assertNoOffload(final T offloadPoint) {

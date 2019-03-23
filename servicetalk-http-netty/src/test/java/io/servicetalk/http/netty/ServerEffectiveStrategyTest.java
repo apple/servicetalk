@@ -60,15 +60,20 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
+import static io.servicetalk.concurrent.api.Single.success;
 import static io.servicetalk.concurrent.internal.PlatformDependent.throwException;
 import static io.servicetalk.http.api.HttpExecutionStrategies.customStrategyBuilder;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
-import static io.servicetalk.http.netty.InvokingThreadsRecorder.defaultUserStrategy;
+import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.http.netty.InvokingThreadsRecorder.noStrategy;
 import static io.servicetalk.http.netty.InvokingThreadsRecorder.userStrategy;
+import static io.servicetalk.http.netty.InvokingThreadsRecorder.userStrategyNoVerify;
 import static java.util.Arrays.asList;
 import static java.util.Objects.requireNonNull;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assume.assumeThat;
 
 @RunWith(Parameterized.class)
 public class ServerEffectiveStrategyTest {
@@ -105,6 +110,17 @@ public class ServerEffectiveStrategyTest {
                 ServerEffectiveStrategyTest::userStrategyNoExecutorNoFilter));
         params.add(wrap("userStrategyNoExecutorWithFilter",
                 ServerEffectiveStrategyTest::userStrategyNoExecutorWithFilter));
+        params.add(wrap("userStrategyNoOffloadsNoExecutorNoFilter",
+                ServerEffectiveStrategyTest::userStrategyNoOffloadsNoExecutorNoFilter));
+        params.add(wrap("userStrategyNoOffloadsNoExecutorWithFilter",
+                ServerEffectiveStrategyTest::userStrategyNoOffloadsNoExecutorWithFilter));
+        params.add(wrap("userStrategyNoOffloadsWithExecutorNoFilter",
+                ServerEffectiveStrategyTest::userStrategyNoOffloadsWithExecutorNoFilter));
+        // TODO (nkant): We are not yet sure how this should behave, will revisit
+        /*
+        params.add(wrap("userStrategyNoOffloadsWithExecutorWithFilter",
+                ServerEffectiveStrategyTest::userStrategyNoOffloadsWithExecutorWithFilter));
+        */
         params.add(wrap("customUserStrategyNoFilter",
                 ServerEffectiveStrategyTest::customUserStrategyNoFilter));
         params.add(wrap("customUserStrategyWithFilter",
@@ -149,6 +165,34 @@ public class ServerEffectiveStrategyTest {
     private static Params userStrategyWithFilter() {
         Params params = new Params(true);
         params.initStateHolderUserStrategy();
+        params.allPointsOffloadedForAllServices();
+        return params;
+    }
+
+    private static Params userStrategyNoOffloadsNoExecutorNoFilter() {
+        Params params = new Params(false);
+        params.initStateHolderUserStrategyNoOffloadsNoExecutor();
+        params.noPointsOffloadedForAllServices();
+        return params;
+    }
+
+    private static Params userStrategyNoOffloadsNoExecutorWithFilter() {
+        Params params = new Params(true);
+        params.initStateHolderUserStrategyNoOffloadsNoExecutor();
+        params.allPointsOffloadedForAllServices();
+        return params;
+    }
+
+    private static Params userStrategyNoOffloadsWithExecutorNoFilter() {
+        Params params = new Params(false);
+        params.initStateHolderUserStrategyNoOffloads();
+        params.noPointsOffloadedForAllServices();
+        return params;
+    }
+
+    private static Params userStrategyNoOffloadsWithExecutorWithFilter() {
+        Params params = new Params(true);
+        params.initStateHolderUserStrategyNoOffloads();
         params.allPointsOffloadedForAllServices();
         return params;
     }
@@ -207,6 +251,8 @@ public class ServerEffectiveStrategyTest {
     @Test
     public void blockingStreaming() throws Exception {
         assert params != null;
+        assumeThat("Ignoring no-offloads strategy for blocking-streaming.",
+                params.isNoOffloadsStrategy(), is(false));
         BlockingHttpClient client = params.startBlockingStreaming();
         client.request(client.get("/")
                 .payloadBody(client.executionContext().bufferAllocator().fromAscii("Hello")));
@@ -260,6 +306,7 @@ public class ServerEffectiveStrategyTest {
         private InvokingThreadsRecorder<ServerOffloadPoint> invokingThreadsRecorder;
         private boolean executorUsedForStrategy = true;
         private boolean verifyStrategyUsed;
+        private boolean noOffloadsStrategy;
 
         Params(boolean addFilter) {
             this.addFilter = addFilter;
@@ -290,6 +337,13 @@ public class ServerEffectiveStrategyTest {
             }
         }
 
+        void noPointsOffloadedForAllServices() {
+            for (ServiceType serviceType : ServiceType.values()) {
+                nonOffloadPoints.get(serviceType).addAll(asList(ServerOffloadPoint.ServiceHandle,
+                        ServerOffloadPoint.RequestPayload, ServerOffloadPoint.Response));
+            }
+        }
+
         void defaultOffloadPoints() {
             addOffloadedPointFor(ServiceType.Blocking, ServerOffloadPoint.ServiceHandle);
             addNonOffloadedPointFor(ServiceType.Blocking, ServerOffloadPoint.RequestPayload,
@@ -313,24 +367,45 @@ public class ServerEffectiveStrategyTest {
 
         void initStateHolderUserStrategy() {
             verifyStrategyUsed = false;
-            invokingThreadsRecorder = defaultUserStrategy(defaultStrategy(executor));
+            newRecorder(defaultStrategy(executor));
         }
 
         void initStateHolderUserStrategyNoExecutor() {
             verifyStrategyUsed = false;
             executorUsedForStrategy = false;
-            invokingThreadsRecorder = defaultUserStrategy(defaultStrategy());
+            newRecorder(defaultStrategy());
         }
 
         void initStateHolderCustomUserStrategy() {
             verifyStrategyUsed = !addFilter;
-            invokingThreadsRecorder = userStrategy(customStrategyBuilder().offloadAll().executor(executor).build());
+            newRecorder(customStrategyBuilder().offloadAll().executor(executor).build());
+        }
+
+        void initStateHolderUserStrategyNoOffloads() {
+            noOffloadsStrategy = true;
+            verifyStrategyUsed = !addFilter;
+            newRecorder(customStrategyBuilder().offloadNone().executor(immediate()).build());
+        }
+
+        void initStateHolderUserStrategyNoOffloadsNoExecutor() {
+            noOffloadsStrategy = true;
+            verifyStrategyUsed = !addFilter;
+            executorUsedForStrategy = false;
+            newRecorder(noOffloadsStrategy());
         }
 
         void initStateHolderCustomUserStrategyNoExecutor() {
             verifyStrategyUsed = !addFilter;
             executorUsedForStrategy = false;
-            invokingThreadsRecorder = userStrategy(customStrategyBuilder().offloadAll().build());
+            newRecorder(customStrategyBuilder().offloadAll().build());
+        }
+
+        private void newRecorder(final HttpExecutionStrategy strategy) {
+            invokingThreadsRecorder = verifyStrategyUsed ? userStrategy(strategy) : userStrategyNoVerify(strategy);
+        }
+
+        boolean isNoOffloadsStrategy() {
+            return noOffloadsStrategy;
         }
 
         BlockingHttpClient startBlocking() {
@@ -359,8 +434,8 @@ public class ServerEffectiveStrategyTest {
                                              final HttpRequest request,
                                              final HttpResponseFactory factory)
                 throws InterruptedException, ExecutionException {
-            return serviceExecutor.submit(() -> factory.ok().payloadBody(request.payloadBody()))
-                    .toFuture().get();
+            HttpResponse response = factory.ok().payloadBody(request.payloadBody());
+            return noOffloadsStrategy ? response : serviceExecutor.submit(() -> response).toFuture().get();
         }
 
         BlockingHttpClient startBlockingStreaming() {
@@ -389,6 +464,7 @@ public class ServerEffectiveStrategyTest {
                                               final BlockingStreamingHttpRequest request,
                 final BlockingStreamingHttpServerResponse response)
                 throws InterruptedException, ExecutionException {
+            // noOffloads is not valid for blocking streaming, so no conditional here
             serviceExecutor.submit(() -> {
                 try (PayloadWriter<Buffer> payloadWriter = response.sendMetaData()) {
                     request.payloadBody().forEach(buffer -> {
@@ -429,7 +505,8 @@ public class ServerEffectiveStrategyTest {
         private Single<HttpResponse> asyncHandler(@SuppressWarnings("unused") final HttpServiceContext ctx,
                                                   final HttpRequest request,
                                                   final HttpResponseFactory factory) {
-            return serviceExecutor.submit(() -> factory.ok().payloadBody(request.payloadBody()));
+            HttpResponse response = factory.ok().payloadBody(request.payloadBody());
+            return noOffloadsStrategy ? success(response) : serviceExecutor.submit(() -> response);
         }
 
         BlockingHttpClient startAsyncStreaming() {
@@ -458,7 +535,8 @@ public class ServerEffectiveStrategyTest {
         private Single<StreamingHttpResponse> asyncStreamingHandler(
                 @SuppressWarnings("unused") final HttpServiceContext ctx, final StreamingHttpRequest request,
                 final StreamingHttpResponseFactory factory) {
-            return serviceExecutor.submit(() -> factory.ok().payloadBody(request.payloadBody()));
+            StreamingHttpResponse response = factory.ok().payloadBody(request.payloadBody());
+            return noOffloadsStrategy ? success(response) : serviceExecutor.submit(() -> response);
         }
 
         Executor executor() {
