@@ -16,7 +16,6 @@
 package io.servicetalk.http.api;
 
 import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.api.ExecutionContext;
 
@@ -28,8 +27,7 @@ import static java.util.Objects.requireNonNull;
 /**
  * A {@link StreamingHttpClient} that delegates all methods to a different {@link StreamingHttpClient}.
  */
-public class StreamingHttpClientFilter implements StreamingHttpRequester,
-                                                  ListenableAsyncCloseable {
+public class StreamingHttpClientFilter implements StreamingHttpRequester {
     @Nullable
     private final StreamingHttpClientFilter delegate;
     final StreamingHttpRequestResponseFactory reqRespFactory;
