@@ -46,7 +46,6 @@ import javax.annotation.Nullable;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.Single.error;
 import static io.servicetalk.concurrent.api.Single.success;
-import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.http.api.HttpHeaderNames.AUTHORIZATION;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderNames.PROXY_AUTHENTICATE;
@@ -332,8 +331,8 @@ public final class BasicAuthHttpServiceFilter<UserInfo> implements HttpServiceFi
         }
 
         @Override
-        protected HttpExecutionStrategy executionStrategy() {
-            return noOffloadsStrategy();
+        public HttpExecutionStrategy computeExecutionStrategy(HttpExecutionStrategy other) {
+            return delegate().computeExecutionStrategy(other);
         }
 
         private Single<StreamingHttpResponse> onAccessDenied(final HttpMetaData requestMetaData,

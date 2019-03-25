@@ -38,7 +38,6 @@ import static io.opentracing.tag.Tags.HTTP_METHOD;
 import static io.opentracing.tag.Tags.HTTP_URL;
 import static io.opentracing.tag.Tags.SPAN_KIND;
 import static io.opentracing.tag.Tags.SPAN_KIND_SERVER;
-import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 
 /**
  * A {@link StreamingHttpService} that supports open tracing.
@@ -78,8 +77,8 @@ public class TracingHttpServiceFilter extends AbstractTracingHttpFilter implemen
             }
 
             @Override
-            protected HttpExecutionStrategy executionStrategy() {
-                return noOffloadsStrategy();
+            public HttpExecutionStrategy computeExecutionStrategy(HttpExecutionStrategy other) {
+                return delegate().computeExecutionStrategy(other);
             }
         };
     }
