@@ -28,10 +28,9 @@ public class ConditionalHttpConnectionFilterTest extends AbstractConditionalHttp
 
     private static final HttpConnectionFilterFactory REQ_FILTER = conn -> new StreamingHttpConnectionFilter(conn) {
         @Override
-        protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
-                                                        final HttpExecutionStrategy strategy,
-                                                        final StreamingHttpRequest request) {
-            return TEST_REQ_HANDLER.apply(request, httpResponseFactory());
+        public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
+                                                     final StreamingHttpRequest request) {
+            return TEST_REQ_HANDLER.apply(request, delegate());
         }
     };
 
@@ -44,14 +43,13 @@ public class ConditionalHttpConnectionFilterTest extends AbstractConditionalHttp
         }
 
         @Override
-        public StreamingHttpConnectionFilter create(final StreamingHttpConnectionFilter connection) {
+        public StreamingHttpConnectionFilter create(final FilterableStreamingHttpConnection connection) {
             return new ConditionalHttpConnectionFilter(TEST_REQ_PREDICATE,
                     new StreamingHttpConnectionFilter(connection) {
                 @Override
-                protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
-                                                                final HttpExecutionStrategy strategy,
-                                                                final StreamingHttpRequest request) {
-                    return delegate.request(strategy, markFiltered(request));
+                public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
+                                                             final StreamingHttpRequest request) {
+                    return delegate().request(strategy, markFiltered(request));
                 }
 
                 @Override

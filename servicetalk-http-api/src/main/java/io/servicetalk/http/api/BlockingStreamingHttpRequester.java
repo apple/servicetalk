@@ -17,19 +17,12 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.transport.api.ExecutionContext;
 
+import static io.servicetalk.http.api.HttpExecutionStrategies.OFFLOAD_ALL_STRATEGY;
+
 /**
  * The equivalent of {@link StreamingHttpRequester} but with synchronous/blocking APIs instead of asynchronous APIs.
  */
-public interface BlockingStreamingHttpRequester extends BlockingStreamingHttpRequestFactory, AutoCloseable {
-    /**
-     * Send a {@code request}.
-     *
-     * @param request the request to send.
-     * @return The response.
-     * @throws Exception if an exception occurs during the request processing.
-     */
-    BlockingStreamingHttpResponse request(BlockingStreamingHttpRequest request) throws Exception;
-
+public interface BlockingStreamingHttpRequester extends BlockingStreamingHttpRequestResponseFactory, AutoCloseable {
     /**
      * Send a {@code request} using the passed {@link HttpExecutionStrategy strategy}.
      *
@@ -51,10 +44,20 @@ public interface BlockingStreamingHttpRequester extends BlockingStreamingHttpReq
      */
     ExecutionContext executionContext();
 
+    @Override
+    default void close() throws Exception {
+        // noop
+    }
+
     /**
-     * Get a {@link BlockingStreamingHttpResponseFactory}.
+     * Compute the default {@link HttpExecutionStrategy} given the programming model constraints of this
+     * {@link BlockingStreamingHttpRequester} in combination with another {@link HttpExecutionStrategy}. This may
+     * involve a merge operation between two {@link BlockingStreamingHttpRequester}.
      *
-     * @return a {@link BlockingStreamingHttpResponseFactory}.
+     * @param other The other {@link HttpExecutionStrategy} to consider during the computation.
+     * @return The {@link HttpExecutionStrategy} for this {@link BlockingStreamingHttpRequester}.
      */
-    BlockingStreamingHttpResponseFactory httpResponseFactory();
+    default HttpExecutionStrategy computeExecutionStrategy(HttpExecutionStrategy other) {
+        return other.merge(OFFLOAD_ALL_STRATEGY);
+    }
 }

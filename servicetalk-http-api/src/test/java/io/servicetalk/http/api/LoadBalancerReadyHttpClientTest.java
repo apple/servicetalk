@@ -20,6 +20,7 @@ import io.servicetalk.client.api.NoAvailableHostException;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
+import io.servicetalk.http.api.StreamingHttpClient.ReservedStreamingHttpConnection;
 import io.servicetalk.transport.api.ExecutionContext;
 
 import org.junit.Before;
@@ -27,6 +28,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
 import org.mockito.Mock;
+import org.mockito.stubbing.Answer;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
@@ -42,10 +44,11 @@ import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_
 import static io.servicetalk.http.api.DefaultHttpHeadersFactory.INSTANCE;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
-import static io.servicetalk.http.api.ReservedStreamingHttpConnectionFilter.terminal;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.MockitoAnnotations.initMocks;
 
 public class LoadBalancerReadyHttpClientTest {
@@ -60,6 +63,9 @@ public class LoadBalancerReadyHttpClientTest {
     @Mock
     private ExecutionContext mockExecutionCtx;
 
+    @Mock
+    private ReservedStreamingHttpConnection mockReservedConnection;
+
     private final HttpClientFilterFactory testHandler = (client, __) -> new StreamingHttpClientFilter(client) {
 
         @Override
@@ -70,20 +76,22 @@ public class LoadBalancerReadyHttpClientTest {
         }
 
         @Override
-        protected Single<ReservedStreamingHttpConnectionFilter> reserveConnection(
-                final StreamingHttpClientFilter delegate,
+        public Single<ReservedStreamingHttpConnection> reserveConnection(
                 final HttpExecutionStrategy strategy,
                 final HttpRequestMetaData metaData) {
             return defer(new DeferredSuccessSupplier<>(mockReservedConnection));
         }
     };
 
-    private final ReservedStreamingHttpConnectionFilter mockReservedConnection =
-            new ReservedStreamingHttpConnectionFilter(terminal(reqRespFactory)) { };
-
     @Before
     public void setup() {
         initMocks(this);
+        doAnswer((Answer<StreamingHttpRequest>) invocation ->
+                reqRespFactory.newRequest(invocation.getArgument(0), invocation.getArgument(1)))
+            .when(mockReservedConnection).newRequest(any(), any());
+        doAnswer((Answer<StreamingHttpResponse>) invocation ->
+                reqRespFactory.newResponse(invocation.getArgument(0)))
+                .when(mockReservedConnection).newResponse(any());
     }
 
     @Test

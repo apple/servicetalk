@@ -20,13 +20,14 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.api.ExecutionContext;
 
 import static io.servicetalk.concurrent.internal.FutureUtils.awaitTermination;
+import static io.servicetalk.http.api.HttpExecutionStrategies.OFFLOAD_ALL_STRATEGY;
 
 /**
  * The equivalent of {@link HttpRequester} but that accepts {@link StreamingHttpRequest} and returns
  * {@link StreamingHttpResponse}.
  */
-public interface StreamingHttpRequester extends StreamingHttpRequestFactory, ListenableAsyncCloseable, AutoCloseable {
-
+public interface StreamingHttpRequester extends StreamingHttpRequestResponseFactory, ListenableAsyncCloseable,
+                                                AutoCloseable {
     /**
      * Send a {@code request} using the specified {@link HttpExecutionStrategy strategy}.
      *
@@ -46,15 +47,20 @@ public interface StreamingHttpRequester extends StreamingHttpRequestFactory, Lis
      */
     ExecutionContext executionContext();
 
-    /**
-     * Get a {@link StreamingHttpResponseFactory}.
-     *
-     * @return a {@link StreamingHttpResponseFactory}.
-     */
-    StreamingHttpResponseFactory httpResponseFactory();
-
     @Override
     default void close() throws Exception {
         awaitTermination(closeAsyncGracefully().toFuture());
+    }
+
+    /**
+     * Compute the default {@link HttpExecutionStrategy} given the programming model constraints of this
+     * {@link StreamingHttpRequester} in combination with another {@link HttpExecutionStrategy}. This may involve a
+     * merge operation between two {@link StreamingHttpRequester}.
+     *
+     * @param other The other {@link HttpExecutionStrategy} to consider during the computation.
+     * @return The {@link HttpExecutionStrategy} for this {@link StreamingHttpRequester}.
+     */
+    default HttpExecutionStrategy computeExecutionStrategy(HttpExecutionStrategy other) {
+        return other.merge(OFFLOAD_ALL_STRATEGY);
     }
 }

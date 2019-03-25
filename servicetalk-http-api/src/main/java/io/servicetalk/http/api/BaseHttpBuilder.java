@@ -204,7 +204,7 @@ abstract class BaseHttpBuilder<ResolvedAddress> {
         requireNonNull(predicate);
         requireNonNull(factory);
 
-        return appendConnectionFilter((connection) ->
+        return appendConnectionFilter(connection ->
                 new ConditionalHttpConnectionFilter(predicate, factory.create(connection), connection));
     }
 }

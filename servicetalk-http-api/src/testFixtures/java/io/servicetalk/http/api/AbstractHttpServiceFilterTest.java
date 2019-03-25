@@ -124,7 +124,6 @@ public abstract class AbstractHttpServiceFilterTest {
         });
 
         return new StreamingHttpRequester() {
-
             @Override
             public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
                                                          final StreamingHttpRequest request) {
@@ -158,8 +157,8 @@ public abstract class AbstractHttpServiceFilterTest {
             }
 
             @Override
-            public StreamingHttpResponseFactory httpResponseFactory() {
-                return REQ_RES_FACTORY;
+            public StreamingHttpResponse newResponse(final HttpResponseStatus status) {
+                return REQ_RES_FACTORY.newResponse(status);
             }
         };
     }

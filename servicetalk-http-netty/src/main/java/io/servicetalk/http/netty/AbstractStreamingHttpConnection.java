@@ -18,13 +18,13 @@ package io.servicetalk.http.netty;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpExecutionStrategy;
+import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.HttpResponseMetaData;
-import io.servicetalk.http.api.StreamingHttpConnection.SettingKey;
-import io.servicetalk.http.api.StreamingHttpConnectionFilter;
+import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
-import io.servicetalk.http.api.StreamingHttpRequester;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ExecutionContext;
@@ -37,19 +37,22 @@ import static io.servicetalk.http.api.StreamingHttpResponses.newResponseWithTrai
 import static io.servicetalk.http.netty.HeaderUtils.addRequestTransferEncodingIfNecessary;
 import static java.util.Objects.requireNonNull;
 
-abstract class AbstractStreamingHttpConnectionFilter<CC extends ConnectionContext> extends StreamingHttpConnectionFilter
-        implements Function<Publisher<Object>, Single<StreamingHttpResponse>> {
+abstract class AbstractStreamingHttpConnection<CC extends ConnectionContext> implements
+                       FilterableStreamingHttpConnection, Function<Publisher<Object>, Single<StreamingHttpResponse>> {
 
-    protected final CC connection;
-    protected final ExecutionContext executionContext;
+    final CC connection;
+    final ExecutionContext executionContext;
     private final Publisher<Integer> maxConcurrencySetting;
+    private final StreamingHttpRequestResponseFactory reqRespFactory;
+    private final HttpExecutionStrategy strategy;
 
-    protected AbstractStreamingHttpConnectionFilter(
+    AbstractStreamingHttpConnection(
             CC conn, ReadOnlyHttpClientConfig config, ExecutionContext executionContext,
-            StreamingHttpRequestResponseFactory reqRespFactory) {
-        super(terminal(reqRespFactory));
+            StreamingHttpRequestResponseFactory reqRespFactory, HttpExecutionStrategy strategy) {
         this.connection = requireNonNull(conn);
         this.executionContext = requireNonNull(executionContext);
+        this.reqRespFactory = requireNonNull(reqRespFactory);
+        this.strategy = requireNonNull(strategy);
         // TODO(jayv) we should concat with NettyConnectionContext.onClosing() once it's exposed such that both
         // this class and ConcurrentRequestsHttpConnectionFilter can listen to the same event to reduce ambiguity
         maxConcurrencySetting = from(config.maxPipelinedRequests())
@@ -57,7 +60,7 @@ abstract class AbstractStreamingHttpConnectionFilter<CC extends ConnectionContex
     }
 
     @Override
-    public ConnectionContext connectionContext() {
+    public final ConnectionContext connectionContext() {
         return connection;
     }
 
@@ -72,48 +75,55 @@ abstract class AbstractStreamingHttpConnectionFilter<CC extends ConnectionContex
 
     @Override
     public final Single<StreamingHttpResponse> apply(final Publisher<Object> flattenedRequest) {
-        return new SpliceFlatStreamToMetaSingle<>(writeAndRead(flattenedRequest), this::newResponse);
+        return new SpliceFlatStreamToMetaSingle<>(writeAndRead(flattenedRequest), this::newSplicedResponse);
     }
 
     @Override
-    protected Single<StreamingHttpResponse> request(final StreamingHttpRequester terminalDelegate,
-                                                    final HttpExecutionStrategy strategy,
-                                                    final StreamingHttpRequest request) {
+    public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
+                                                 final StreamingHttpRequest request) {
         addRequestTransferEncodingIfNecessary(request); // See https://tools.ietf.org/html/rfc7230#section-3.3.3
-        // Don't call the terminal delegate!
         return strategy.invokeClient(executionContext.executor(), request, this);
     }
 
     @Override
-    protected HttpExecutionStrategy mergeForEffectiveStrategy(final HttpExecutionStrategy mergeWith) {
-        // Since this filter does not have any blocking code, we do not need to alter the effective strategy.
-        return mergeWith;
+    public final HttpExecutionStrategy computeExecutionStrategy(HttpExecutionStrategy other) {
+        return strategy.merge(other);
     }
 
     @Override
-    public ExecutionContext executionContext() {
+    public final ExecutionContext executionContext() {
         return executionContext;
     }
 
     protected abstract Publisher<Object> writeAndRead(Publisher<Object> stream);
 
-    private StreamingHttpResponse newResponse(HttpResponseMetaData meta, Publisher<Object> pub) {
+    private StreamingHttpResponse newSplicedResponse(HttpResponseMetaData meta, Publisher<Object> pub) {
         return newResponseWithTrailers(meta.status(), meta.version(), meta.headers(),
                 executionContext.bufferAllocator(), pub);
     }
 
     @Override
-    public Completable onClose() {
+    public final StreamingHttpRequest newRequest(HttpRequestMethod method, String requestTarget) {
+        return reqRespFactory.newRequest(method, requestTarget);
+    }
+
+    @Override
+    public final StreamingHttpResponse newResponse(HttpResponseStatus status) {
+        return reqRespFactory.newResponse(status);
+    }
+
+    @Override
+    public final Completable onClose() {
         return connection.onClose();
     }
 
     @Override
-    public Completable closeAsync() {
+    public final Completable closeAsync() {
         return connection.closeAsync();
     }
 
     @Override
-    public Completable closeAsyncGracefully() {
+    public final Completable closeAsyncGracefully() {
         return connection.closeAsyncGracefully();
     }
 

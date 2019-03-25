@@ -16,93 +16,53 @@
 package io.servicetalk.http.api;
 
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
-import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.http.api.StreamingHttpConnection.SettingKey;
+import io.servicetalk.http.api.FilterableStreamingHttpConnection.SettingKey;
 import io.servicetalk.transport.api.ConnectionContext;
-import io.servicetalk.transport.api.ExecutionContext;
-
-import static io.servicetalk.concurrent.internal.FutureUtils.awaitTermination;
-import static io.servicetalk.http.api.RequestResponseFactories.toAggregated;
 
 /**
  * Represents a single fixed connection to a HTTP server.
  */
-public class HttpConnection implements HttpRequester {
-
-    private final StreamingHttpConnection connection;
-    private final HttpExecutionStrategy strategy;
-    private final HttpRequestResponseFactory reqRespFactory;
-
-    /**
-     * Create a new instance.
-     *
-     * @param connection {@link StreamingHttpConnection} to convert from.
-     * @param strategy Default {@link HttpExecutionStrategy} to use.
-     */
-    HttpConnection(final StreamingHttpConnection connection,
-                   final HttpExecutionStrategy strategy) {
-        reqRespFactory = toAggregated(connection.filterChain.reqRespFactory);
-        this.connection = connection;
-        this.strategy = strategy;
-    }
-
-    /**
-     * Get the {@link ConnectionContext}.
-     *
-     * @return the {@link ConnectionContext}.
-     */
-    public final ConnectionContext connectionContext() {
-        return connection.connectionContext();
-    }
-
+public interface HttpConnection extends HttpRequester {
     /**
      * Send a {@code request}.
      *
      * @param request the request to send.
      * @return The response.
      */
-    public final Single<HttpResponse> request(HttpRequest request) {
-        return request(strategy, request);
-    }
-
-    @Override
-    public Single<HttpResponse> request(final HttpExecutionStrategy strategy, final HttpRequest request) {
-        return connection.request(strategy, request.toStreamingRequest()).flatMap(StreamingHttpResponse::toResponse);
-    }
+    Single<HttpResponse> request(HttpRequest request);
 
     /**
-     * Returns a {@link Publisher} that gives the current value of the setting as well as subsequent changes to
-     * the setting value as long as the {@link Subscriber} has expressed enough demand.
+     * Get the {@link ConnectionContext}.
+     *
+     * @return the {@link ConnectionContext}.
+     */
+    ConnectionContext connectionContext();
+
+    /**
+     * Returns a {@link Publisher} that gives the current value of the setting as well as subsequent changes to the
+     * setting value as long as the {@link Subscriber} has expressed enough demand.
      *
      * @param settingKey Name of the setting to fetch.
      * @param <T> Type of the setting value.
      * @return {@link Publisher} for the setting values.
      */
-    public final <T> Publisher<T> settingStream(SettingKey<T> settingKey) {
-        return connection.settingStream(settingKey);
-    }
+    <T> Publisher<T> settingStream(SettingKey<T> settingKey);
 
     /**
      * Convert this {@link HttpConnection} to the {@link StreamingHttpConnection} API.
      *
      * @return a {@link StreamingHttpConnection} representation of this {@link HttpConnection}.
      */
-    // We don't want the user to be able to override but it cannot be final because we need to override the type.
-    // However the constructor of this class is package private so the user will not be able to override this method.
-    public /* final */ StreamingHttpConnection asStreamingConnection() {
-        return connection;
-    }
+    StreamingHttpConnection asStreamingConnection();
 
     /**
      * Convert this {@link HttpConnection} to the {@link BlockingStreamingHttpConnection} API.
      *
      * @return a {@link BlockingStreamingHttpConnection} representation of this {@link HttpConnection}.
      */
-    // We don't want the user to be able to override but it cannot be final because we need to override the type.
-    // However the constructor of this class is package private so the user will not be able to override this method.
-    public /* final */ BlockingStreamingHttpConnection asBlockingStreamingConnection() {
+    default BlockingStreamingHttpConnection asBlockingStreamingConnection() {
         return asStreamingConnection().asBlockingStreamingConnection();
     }
 
@@ -111,44 +71,7 @@ public class HttpConnection implements HttpRequester {
      *
      * @return a {@link BlockingHttpConnection} representation of this {@link HttpConnection}.
      */
-    // We don't want the user to be able to override but it cannot be final because we need to override the type.
-    // However the constructor of this class is package private so the user will not be able to override this method.
-    public /* final */ BlockingHttpConnection asBlockingConnection() {
+    default BlockingHttpConnection asBlockingConnection() {
         return asStreamingConnection().asBlockingConnection();
-    }
-
-    @Override
-    public final ExecutionContext executionContext() {
-        return connection.executionContext();
-    }
-
-    @Override
-    public final Completable onClose() {
-        return connection.onClose();
-    }
-
-    @Override
-    public final Completable closeAsync() {
-        return connection.closeAsync();
-    }
-
-    @Override
-    public final Completable closeAsyncGracefully() {
-        return connection.closeAsyncGracefully();
-    }
-
-    @Override
-    public final void close() throws Exception {
-        awaitTermination(closeAsyncGracefully().toFuture());
-    }
-
-    @Override
-    public final HttpRequest newRequest(final HttpRequestMethod method, final String requestTarget) {
-        return reqRespFactory.newRequest(method, requestTarget);
-    }
-
-    @Override
-    public HttpResponseFactory httpResponseFactory() {
-        return reqRespFactory;
     }
 }

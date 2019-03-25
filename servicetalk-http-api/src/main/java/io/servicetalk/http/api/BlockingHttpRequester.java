@@ -17,19 +17,12 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.transport.api.ExecutionContext;
 
+import static io.servicetalk.http.api.HttpExecutionStrategies.OFFLOAD_ALL_STRATEGY;
+
 /**
  * The equivalent of {@link HttpRequester} with synchronous/blocking APIs instead of asynchronous APIs.
  */
-public interface BlockingHttpRequester extends HttpRequestFactory, AutoCloseable {
-    /**
-     * Send a {@code request}.
-     *
-     * @param request the request to send.
-     * @return The response.
-     * @throws Exception if an exception occurs during the request processing.
-     */
-    HttpResponse request(HttpRequest request) throws Exception;
-
+public interface BlockingHttpRequester extends HttpRequestResponseFactory, AutoCloseable {
     /**
      * Send a {@code request} using the passed {@link HttpExecutionStrategy strategy}.
      *
@@ -50,10 +43,20 @@ public interface BlockingHttpRequester extends HttpRequestFactory, AutoCloseable
      */
     ExecutionContext executionContext();
 
+    @Override
+    default void close() throws Exception {
+        // noop
+    }
+
     /**
-     * Get a {@link HttpResponseFactory}.
+     * Compute the default {@link HttpExecutionStrategy} given the programming model constraints of this
+     * {@link BlockingHttpRequester} in combination with another {@link HttpExecutionStrategy}. This may involve a
+     * merge operation between two {@link BlockingHttpRequester}.
      *
-     * @return a {@link HttpResponseFactory}.
+     * @param other The other {@link HttpExecutionStrategy} to consider during the computation.
+     * @return The {@link HttpExecutionStrategy} for this {@link BlockingHttpRequester}.
      */
-    HttpResponseFactory httpResponseFactory();
+    default HttpExecutionStrategy computeExecutionStrategy(HttpExecutionStrategy other) {
+        return other.merge(OFFLOAD_ALL_STRATEGY);
+    }
 }

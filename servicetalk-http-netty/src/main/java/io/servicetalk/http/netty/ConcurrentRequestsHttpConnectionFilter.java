@@ -21,11 +21,11 @@ import io.servicetalk.client.api.internal.RequestConcurrencyController;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.internal.SubscribableSingle;
 import io.servicetalk.concurrent.internal.LatestValueSubscriber;
+import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpConnectionFilterFactory;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.StreamingHttpConnectionFilter;
 import io.servicetalk.http.api.StreamingHttpRequest;
-import io.servicetalk.http.api.StreamingHttpRequester;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.utils.DoBeforeFinallyOnHttpResponseOperator;
 import io.servicetalk.transport.netty.internal.NettyConnectionContext;
@@ -34,7 +34,7 @@ import static io.servicetalk.client.api.internal.RequestConcurrencyControllers.n
 import static io.servicetalk.client.api.internal.RequestConcurrencyControllers.newSingleController;
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
-import static io.servicetalk.http.api.StreamingHttpConnection.SettingKey.MAX_CONCURRENCY;
+import static io.servicetalk.http.api.FilterableStreamingHttpConnection.SettingKey.MAX_CONCURRENCY;
 
 final class ConcurrentRequestsHttpConnectionFilter implements HttpConnectionFilterFactory {
 
@@ -45,7 +45,7 @@ final class ConcurrentRequestsHttpConnectionFilter implements HttpConnectionFilt
     }
 
     @Override
-    public StreamingHttpConnectionFilter create(final StreamingHttpConnectionFilter connection) {
+    public StreamingHttpConnectionFilter create(final FilterableStreamingHttpConnection connection) {
         return new ConcurrentRequestsFilter(connection, defaultMaxPipelinedRequests);
     }
 
@@ -56,10 +56,9 @@ final class ConcurrentRequestsHttpConnectionFilter implements HttpConnectionFilt
 
         private final LatestValueSubscriber<Throwable> transportError = new LatestValueSubscriber<>();
 
-        private ConcurrentRequestsFilter(final StreamingHttpConnectionFilter next,
+        private ConcurrentRequestsFilter(final FilterableStreamingHttpConnection next,
                                          final int defaultMaxPipelinedRequests) {
             super(next);
-
             if (next.connectionContext() instanceof NettyConnectionContext) {
                 toSource(((NettyConnectionContext) next.connectionContext())
                         .transportError().toPublisher()).subscribe(transportError);
@@ -71,9 +70,8 @@ final class ConcurrentRequestsHttpConnectionFilter implements HttpConnectionFilt
         }
 
         @Override
-        protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
-                                                        final HttpExecutionStrategy strategy,
-                                                        final StreamingHttpRequest request) {
+        public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
+                                                     final StreamingHttpRequest request) {
             return new SubscribableSingle<StreamingHttpResponse>() {
                 @Override
                 protected void handleSubscribe(final Subscriber<? super StreamingHttpResponse> subscriber) {
@@ -81,7 +79,7 @@ final class ConcurrentRequestsHttpConnectionFilter implements HttpConnectionFilt
                     Throwable reportedError;
                     switch (result) {
                         case Accepted:
-                            toSource(delegate.request(strategy, request)
+                            toSource(delegate().request(strategy, request)
                                     .liftSync(new DoBeforeFinallyOnHttpResponseOperator(
                                             limiter::requestFinished)))
                                     .subscribe(subscriber);
@@ -114,9 +112,9 @@ final class ConcurrentRequestsHttpConnectionFilter implements HttpConnectionFilt
         }
 
         @Override
-        protected HttpExecutionStrategy mergeForEffectiveStrategy(final HttpExecutionStrategy mergeWith) {
+        public HttpExecutionStrategy computeExecutionStrategy(final HttpExecutionStrategy other) {
             // Since this filter does not have any blocking code, we do not need to alter the effective strategy.
-            return mergeWith;
+            return delegate().computeExecutionStrategy(other);
         }
     }
 }

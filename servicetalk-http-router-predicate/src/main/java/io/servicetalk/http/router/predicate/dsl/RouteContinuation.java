@@ -28,7 +28,7 @@ import java.util.function.BiPredicate;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
-import static io.servicetalk.http.api.StreamingHttpServiceConversions.toStreamingHttpService;
+import static io.servicetalk.http.api.HttpApiConversions.toStreamingHttpService;
 
 /**
  * Methods for continuing a route.

@@ -24,12 +24,12 @@ import static java.util.Objects.requireNonNull;
 public interface HttpConnectionFilterFactory {
 
     /**
-     * Create a {@link StreamingHttpConnectionFilter} using the provided {@link StreamingHttpConnection}.
+     * Create a {@link StreamingHttpConnectionFilter} using the provided {@link FilterableStreamingHttpConnection}.
      *
-     * @param connection {@link StreamingHttpConnection} to filter
-     * @return {@link StreamingHttpConnectionFilter} using the provided {@link StreamingHttpConnection}.
+     * @param connection {@link FilterableStreamingHttpConnection} to filter
+     * @return {@link StreamingHttpConnectionFilter} using the provided {@link FilterableStreamingHttpConnection}.
      */
-    StreamingHttpConnectionFilter create(StreamingHttpConnectionFilter connection);
+    StreamingHttpConnectionFilter create(FilterableStreamingHttpConnection connection);
 
     /**
      * Returns a composed function that first applies the {@code before} function to its input, and then applies
@@ -51,14 +51,5 @@ public interface HttpConnectionFilterFactory {
     default HttpConnectionFilterFactory append(HttpConnectionFilterFactory before) {
         requireNonNull(before);
         return connection -> create(before.create(connection));
-    }
-
-    /**
-     * Returns a function that always returns its input {@link StreamingHttpConnection}.
-     *
-     * @return a function that always returns its input {@link StreamingHttpConnection}.
-     */
-    static HttpConnectionFilterFactory identity() {
-        return connection -> connection;
     }
 }

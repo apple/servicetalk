@@ -31,8 +31,8 @@ import java.util.Map;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.http.api.BlockingUtils.blockingInvocation;
+import static io.servicetalk.http.api.HttpApiConversions.toStreamingHttpService;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
-import static io.servicetalk.http.api.StreamingHttpServiceConversions.toStreamingHttpService;
 import static io.servicetalk.transport.api.ConnectionAcceptor.ACCEPT_ALL;
 
 /**
@@ -361,7 +361,7 @@ public abstract class HttpServerBuilder {
      * the server could not be started.
      */
     public final Single<ServerContext> listen(final HttpService handler) {
-        return listenStreaming0(StreamingHttpServiceConversions.toStreamingHttpService(handler));
+        return listenStreaming0(HttpApiConversions.toStreamingHttpService(handler));
     }
 
     /**

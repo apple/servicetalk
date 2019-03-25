@@ -21,6 +21,7 @@ import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
+import io.servicetalk.http.api.StreamingHttpClient.ReservedStreamingHttpConnection;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ExecutionContext;
 
@@ -37,6 +38,7 @@ import org.mockito.junit.MockitoRule;
 
 import java.net.InetSocketAddress;
 import java.util.Collection;
+import javax.annotation.Nullable;
 import javax.net.ssl.SSLSession;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
@@ -47,7 +49,6 @@ import static io.servicetalk.http.api.AbstractHttpRequesterFilterTest.RequesterT
 import static io.servicetalk.http.api.AbstractHttpRequesterFilterTest.RequesterType.ReservedConnection;
 import static io.servicetalk.http.api.AbstractHttpRequesterFilterTest.SecurityType.Insecure;
 import static io.servicetalk.http.api.AbstractHttpRequesterFilterTest.SecurityType.Secure;
-import static io.servicetalk.http.api.HttpConnectionFilterFactory.identity;
 import static java.util.Arrays.asList;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -262,14 +263,33 @@ public abstract class AbstractHttpRequesterFilterTest {
         }
     }
 
-    private ReservedStreamingHttpConnectionFilter newReservedConnection() {
-        final StreamingHttpConnection connection = newConnection(ok(), identity());
-        return new ReservedStreamingHttpConnectionFilter(ReservedStreamingHttpConnectionFilter.terminal(
-                connection.filterChain.reqRespFactory)) {
+    private ReservedStreamingHttpConnection newReservedConnection() {
+        final StreamingHttpConnection connection = newConnection(ok(), null);
+        return new ReservedStreamingHttpConnection() {
+
+            @Override
+            public StreamingHttpResponse newResponse(final HttpResponseStatus status) {
+                return connection.newResponse(status);
+            }
+
+            @Override
+            public StreamingHttpRequest newRequest(final HttpRequestMethod method, final String requestTarget) {
+                return connection.newRequest(method, requestTarget);
+            }
+
+            @Override
+            public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
+                return connection.request(request);
+            }
 
             @Override
             public Completable closeAsync() {
                 return connection.closeAsync();
+            }
+
+            @Override
+            public Completable closeAsyncGracefully() {
+                return connection.closeAsyncGracefully();
             }
 
             @Override
@@ -278,9 +298,8 @@ public abstract class AbstractHttpRequesterFilterTest {
             }
 
             @Override
-            protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
-                                                            final HttpExecutionStrategy strategy,
-                                                            final StreamingHttpRequest request) {
+            public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
+                                                         final StreamingHttpRequest request) {
                 return connection.request(strategy, request);
             }
 
@@ -290,8 +309,23 @@ public abstract class AbstractHttpRequesterFilterTest {
             }
 
             @Override
+            public void close() throws Exception {
+                connection.close();
+            }
+
+            @Override
+            public HttpExecutionStrategy computeExecutionStrategy(final HttpExecutionStrategy other) {
+                return connection.computeExecutionStrategy(other);
+            }
+
+            @Override
             public ConnectionContext connectionContext() {
                 return connection.connectionContext();
+            }
+
+            @Override
+            public <T> Publisher<T> settingStream(final SettingKey<T> settingKey) {
+                return connection.settingStream(settingKey);
             }
 
             @Override
@@ -302,18 +336,17 @@ public abstract class AbstractHttpRequesterFilterTest {
     }
 
     private StreamingHttpConnection newConnection(final RequestWithContextHandler rwch,
-                                                  final HttpConnectionFilterFactory filterFactory) {
+                                                  @Nullable final HttpConnectionFilterFactory filterFactory) {
         final HttpConnectionFilterFactory handlerFilter = conn -> new StreamingHttpConnectionFilter(conn) {
             @Override
-            protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
-                                                            final HttpExecutionStrategy strategy,
+            public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
                                                             final StreamingHttpRequest request) {
                 return rwch.request(AbstractHttpRequesterFilterTest.REQ_RES_FACTORY, connectionContext(), request);
             }
         };
 
         return TestStreamingHttpConnection.from(AbstractHttpRequesterFilterTest.REQ_RES_FACTORY, mockExecutionContext,
-                mockConnectionContext, filterFactory.append(handlerFilter));
+                mockConnectionContext, filterFactory == null ? handlerFilter : filterFactory.append(handlerFilter));
     }
 
     private <FF extends HttpClientFilterFactory & HttpConnectionFilterFactory> StreamingHttpClient newClient(
@@ -328,8 +361,7 @@ public abstract class AbstractHttpRequesterFilterTest {
                     }
 
                     @Override
-                    protected Single<ReservedStreamingHttpConnectionFilter> reserveConnection(
-                            final StreamingHttpClientFilter delegate,
+                    public Single<ReservedStreamingHttpConnection> reserveConnection(
                             final HttpExecutionStrategy strategy,
                             final HttpRequestMetaData metaData) {
                         return succeeded(newReservedConnection()).map(rc ->
@@ -339,8 +371,7 @@ public abstract class AbstractHttpRequesterFilterTest {
                                             final StreamingHttpRequester delegate,
                                             final HttpExecutionStrategy strategy,
                                             final StreamingHttpRequest request) {
-                                        return rwch.request(
-                                                delegate.httpResponseFactory(), connectionContext(), request);
+                                        return rwch.request(delegate, connectionContext(), request);
                                     }
                                 });
                     }

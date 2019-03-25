@@ -23,9 +23,11 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.BlockingStreamingHttpClient;
+import io.servicetalk.http.api.FilterableStreamingHttpClient;
 import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.StreamingHttpClient;
+import io.servicetalk.http.api.StreamingHttpClient.ReservedStreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpClientFilter;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequester;
@@ -423,7 +425,7 @@ public class ClientEffectiveStrategyTest {
                                 new ClientInvokingThreadRecorder(c, invokingThreadsRecorder));
                         if (addFilter) {
                             // Here since we do not override mergeForEffectiveStrategy, it will default to offload-all.
-                            clientBuilder.appendClientFilter((client, __) -> new StreamingHttpClientFilter(client));
+                            clientBuilder.appendClientFilter((client, __) -> new StreamingHttpClientFilter(client) { });
                         }
                     });
         }
@@ -433,7 +435,7 @@ public class ClientEffectiveStrategyTest {
 
         private final InvokingThreadsRecorder<ClientOffloadPoint> holder;
 
-        ClientInvokingThreadRecorder(final StreamingHttpClientFilter delegate,
+        ClientInvokingThreadRecorder(final FilterableStreamingHttpClient<ReservedStreamingHttpConnection> delegate,
                                      InvokingThreadsRecorder<ClientOffloadPoint> holder) {
             super(delegate);
             this.holder = requireNonNull(holder);
@@ -452,10 +454,9 @@ public class ClientEffectiveStrategyTest {
         }
 
         @Override
-        protected HttpExecutionStrategy mergeForEffectiveStrategy(
-                final HttpExecutionStrategy mergeWith) {
+        public HttpExecutionStrategy computeExecutionStrategy(final HttpExecutionStrategy other) {
             // Don't modify the effective strategy calculation
-            return mergeWith;
+            return delegate().computeExecutionStrategy(other);
         }
     }
 

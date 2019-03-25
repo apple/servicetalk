@@ -20,12 +20,12 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.api.ExecutionContext;
 
 import static io.servicetalk.concurrent.internal.FutureUtils.awaitTermination;
+import static io.servicetalk.http.api.HttpExecutionStrategies.OFFLOAD_ALL_STRATEGY;
 
 /**
  * Provides a means to make a HTTP request.
  */
-public interface HttpRequester extends HttpRequestFactory, ListenableAsyncCloseable, AutoCloseable {
-
+public interface HttpRequester extends HttpRequestResponseFactory, ListenableAsyncCloseable, AutoCloseable {
     /**
      * Send a {@code request} using the specified {@link HttpExecutionStrategy strategy}.
      *
@@ -45,15 +45,20 @@ public interface HttpRequester extends HttpRequestFactory, ListenableAsyncClosea
      */
     ExecutionContext executionContext();
 
-    /**
-     * Get a {@link HttpResponseFactory}.
-     *
-     * @return a {@link HttpResponseFactory}.
-     */
-    HttpResponseFactory httpResponseFactory();
-
     @Override
     default void close() throws Exception {
         awaitTermination(closeAsyncGracefully().toFuture());
+    }
+
+    /**
+     * Compute the default {@link HttpExecutionStrategy} given the programming model constraints of this
+     * {@link HttpRequester} in combination with another {@link HttpExecutionStrategy}. This may involve a
+     * merge operation between two {@link HttpRequester}.
+     *
+     * @param other The other {@link HttpExecutionStrategy} to consider during the computation.
+     * @return The {@link HttpExecutionStrategy} for this {@link HttpRequester}.
+     */
+    default HttpExecutionStrategy computeExecutionStrategy(HttpExecutionStrategy other) {
+        return other.merge(OFFLOAD_ALL_STRATEGY);
     }
 }

@@ -18,13 +18,14 @@ package io.servicetalk.http.netty;
 import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.http.api.FilterableStreamingHttpClient;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpRequestMetaData;
-import io.servicetalk.http.api.ReservedStreamingHttpConnectionFilter;
-import io.servicetalk.http.api.StreamingHttpClientFilter;
+import io.servicetalk.http.api.HttpRequestMethod;
+import io.servicetalk.http.api.HttpResponseStatus;
+import io.servicetalk.http.api.StreamingHttpClient.ReservedStreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
-import io.servicetalk.http.api.StreamingHttpRequester;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.utils.DoBeforeFinallyOnHttpResponseOperator;
 import io.servicetalk.transport.api.ExecutionContext;
@@ -34,30 +35,32 @@ import java.util.function.Function;
 import static io.servicetalk.client.api.internal.RequestConcurrencyController.Result.Accepted;
 import static java.util.Objects.requireNonNull;
 
-final class DefaultStreamingHttpClientFilter extends StreamingHttpClientFilter {
+final class LoadBalancedStreamingHttpClient implements FilterableStreamingHttpClient<ReservedStreamingHttpConnection> {
 
-    private static final Function<LoadBalancedStreamingHttpConnectionFilter, LoadBalancedStreamingHttpConnectionFilter>
+    private static final Function<LoadBalancedStreamingHttpConnection, LoadBalancedStreamingHttpConnection>
             SELECTOR_FOR_REQUEST = conn -> conn.tryRequest() == Accepted ? conn : null;
-    private static final Function<LoadBalancedStreamingHttpConnectionFilter, LoadBalancedStreamingHttpConnectionFilter>
+    private static final Function<LoadBalancedStreamingHttpConnection, LoadBalancedStreamingHttpConnection>
             SELECTOR_FOR_RESERVE = conn -> conn.tryReserve() ? conn : null;
 
     // TODO Proto specific LB after upgrade and worry about SSL
     private final ExecutionContext executionContext;
-    private final LoadBalancer<LoadBalancedStreamingHttpConnectionFilter> loadBalancer;
+    private final LoadBalancer<LoadBalancedStreamingHttpConnection> loadBalancer;
+    private final StreamingHttpRequestResponseFactory reqRespFactory;
+    private final HttpExecutionStrategy strategy;
 
-    DefaultStreamingHttpClientFilter(final ExecutionContext executionContext,
-                                     final HttpExecutionStrategy executionStrategy,
-                                     final LoadBalancer<LoadBalancedStreamingHttpConnectionFilter> loadBalancer,
-                                     final StreamingHttpRequestResponseFactory reqRespFactory) {
-        super(terminal(reqRespFactory, executionStrategy));
+    LoadBalancedStreamingHttpClient(final ExecutionContext executionContext,
+                                    final LoadBalancer<LoadBalancedStreamingHttpConnection> loadBalancer,
+                                    final HttpExecutionStrategy strategy,
+                                    final StreamingHttpRequestResponseFactory reqRespFactory) {
         this.executionContext = requireNonNull(executionContext);
         this.loadBalancer = requireNonNull(loadBalancer);
+        this.reqRespFactory = requireNonNull(reqRespFactory);
+        this.strategy = requireNonNull(strategy);
     }
 
     @Override
-    protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
-                                                    final HttpExecutionStrategy strategy,
-                                                    final StreamingHttpRequest request) {
+    public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
+                                                 final StreamingHttpRequest request) {
         // We have to do the incrementing/decrementing in the Client instead of LoadBalancedStreamingHttpConnection
         // because it is possible that someone can use the ConnectionFactory exported by this Client before the
         // LoadBalancer takes ownership of it (e.g. connection initialization) and in that case they will not be
@@ -69,22 +72,27 @@ final class DefaultStreamingHttpClientFilter extends StreamingHttpClientFilter {
     }
 
     @Override
-    protected Single<ReservedStreamingHttpConnectionFilter> reserveConnection(final StreamingHttpClientFilter delegate,
-                                                                              final HttpExecutionStrategy strategy,
-                                                                              final HttpRequestMetaData metaData) {
+    public Single<ReservedStreamingHttpConnection> reserveConnection(final HttpExecutionStrategy strategy,
+                                                                     final HttpRequestMetaData metaData) {
         return strategy.offloadReceive(executionContext.executor(),
                 loadBalancer.selectConnection(SELECTOR_FOR_RESERVE).map(c -> c));
     }
 
     @Override
-    protected HttpExecutionStrategy mergeForEffectiveStrategy(final HttpExecutionStrategy mergeWith) {
-        // Since this filter does not have any blocking code, we do not need to alter the effective strategy.
-        return mergeWith;
+    public HttpExecutionStrategy computeExecutionStrategy(HttpExecutionStrategy other) {
+        // TODO(scott): this will not represent the strategy from the Connection. That means the computed strategy
+        // may not reflect the full execution path.
+        return strategy.merge(other);
     }
 
     @Override
     public ExecutionContext executionContext() {
         return executionContext;
+    }
+
+    @Override
+    public void close() throws Exception {
+        loadBalancer.closeAsync().toFuture().get();
     }
 
     @Override
@@ -100,5 +108,15 @@ final class DefaultStreamingHttpClientFilter extends StreamingHttpClientFilter {
     @Override
     public Completable closeAsyncGracefully() {
         return loadBalancer.closeAsyncGracefully();
+    }
+
+    @Override
+    public StreamingHttpRequest newRequest(final HttpRequestMethod method, final String requestTarget) {
+        return reqRespFactory.newRequest(method, requestTarget);
+    }
+
+    @Override
+    public StreamingHttpResponse newResponse(final HttpResponseStatus status) {
+        return reqRespFactory.newResponse(status);
     }
 }

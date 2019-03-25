@@ -87,7 +87,7 @@ public abstract class SingleAddressHttpClientBuilder<U, R>
 
     @Override
     public abstract SingleAddressHttpClientBuilder<U, R> appendConnectionFactoryFilter(
-            ConnectionFactoryFilter<R, StreamingHttpConnectionFilter> factory);
+            ConnectionFactoryFilter<R, FilterableStreamingHttpConnection> factory);
 
     @Override
     public abstract SingleAddressHttpClientBuilder<U, R> disableHostHeaderFallback();
@@ -101,7 +101,7 @@ public abstract class SingleAddressHttpClientBuilder<U, R>
 
     @Override
     public abstract SingleAddressHttpClientBuilder<U, R> loadBalancerFactory(
-            LoadBalancerFactory<R, StreamingHttpConnectionFilter> loadBalancerFactory);
+            LoadBalancerFactory<R, FilterableStreamingHttpConnection> loadBalancerFactory);
 
     @Override
     public abstract SingleAddressHttpClientBuilder<U, R> enableHostHeaderFallback(CharSequence hostHeader);

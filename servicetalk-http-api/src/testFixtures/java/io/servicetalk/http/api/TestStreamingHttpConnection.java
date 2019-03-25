@@ -19,14 +19,12 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.http.api.StreamingHttpConnection.SettingKey;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ExecutionContext;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.emptyAsyncCloseable;
 import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
-import static io.servicetalk.http.api.StreamingHttpConnectionFilter.terminal;
 
 public final class TestStreamingHttpConnection {
 
@@ -39,10 +37,8 @@ public final class TestStreamingHttpConnection {
             final ExecutionContext executionContext,
             final ConnectionContext connectionContext,
             final HttpConnectionFilterFactory factory) {
-
         final StreamingHttpConnectionFilter filterChain = factory
-                .create(new StreamingHttpConnectionFilter(terminal(reqRespFactory)) {
-
+                .create(new FilterableStreamingHttpConnection() {
                     private final ListenableAsyncCloseable closeable = emptyAsyncCloseable();
 
                     @Override
@@ -61,15 +57,19 @@ public final class TestStreamingHttpConnection {
                     }
 
                     @Override
-                    protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
-                                                                    final HttpExecutionStrategy strategy,
-                                                                    final StreamingHttpRequest request) {
+                    public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
+                                                                 final StreamingHttpRequest request) {
                         return failed(new UnsupportedOperationException());
                     }
 
                     @Override
                     public ExecutionContext executionContext() {
                         return executionContext;
+                    }
+
+                    @Override
+                    public HttpExecutionStrategy computeExecutionStrategy(final HttpExecutionStrategy other) {
+                        return other;
                     }
 
                     @Override
@@ -81,7 +81,83 @@ public final class TestStreamingHttpConnection {
                     public <T> Publisher<T> settingStream(final SettingKey<T> settingKey) {
                         return Publisher.failed(new UnsupportedOperationException());
                     }
+
+                    @Override
+                    public StreamingHttpResponse newResponse(final HttpResponseStatus status) {
+                        return reqRespFactory.newResponse(status);
+                    }
+
+                    @Override
+                    public StreamingHttpRequest newRequest(final HttpRequestMethod method, final String requestTarget) {
+                        return reqRespFactory.newRequest(method, requestTarget);
+                    }
                 });
-        return new StreamingHttpConnection(filterChain, defaultStrategy());
+        return from(filterChain);
+    }
+
+    public static StreamingHttpConnection from(FilterableStreamingHttpConnection filterChain) {
+        return new StreamingHttpConnection() {
+            private final HttpExecutionStrategy strategy = filterChain.computeExecutionStrategy(defaultStrategy());
+            @Override
+            public StreamingHttpResponse newResponse(final HttpResponseStatus status) {
+                return filterChain.newResponse(status);
+            }
+
+            @Override
+            public StreamingHttpRequest newRequest(final HttpRequestMethod method, final String requestTarget) {
+                return filterChain.newRequest(method, requestTarget);
+            }
+
+            @Override
+            public Completable closeAsync() {
+                return filterChain.closeAsync();
+            }
+
+            @Override
+            public Completable closeAsyncGracefully() {
+                return filterChain.closeAsyncGracefully();
+            }
+
+            @Override
+            public Completable onClose() {
+                return filterChain.onClose();
+            }
+
+            @Override
+            public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
+                                                         final StreamingHttpRequest request) {
+                return filterChain.request(strategy, request);
+            }
+
+            @Override
+            public ExecutionContext executionContext() {
+                return filterChain.executionContext();
+            }
+
+            @Override
+            public void close() throws Exception {
+                filterChain.close();
+            }
+
+            @Override
+            public HttpExecutionStrategy computeExecutionStrategy(final HttpExecutionStrategy other) {
+                return filterChain.computeExecutionStrategy(other);
+            }
+
+            @Override
+            public ConnectionContext connectionContext() {
+                return filterChain.connectionContext();
+            }
+
+            @Override
+            public <T> Publisher<T> settingStream(final SettingKey<T> settingKey) {
+                return filterChain.settingStream(settingKey);
+            }
+
+            @Override
+            public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
+                return filterChain.request(strategy, request);
+            }
+        };
     }
 }

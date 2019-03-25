@@ -17,54 +17,28 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.concurrent.BlockingIterable;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
-import io.servicetalk.http.api.StreamingHttpConnection.SettingKey;
+import io.servicetalk.http.api.FilterableStreamingHttpConnection.SettingKey;
 import io.servicetalk.transport.api.ConnectionContext;
-import io.servicetalk.transport.api.ExecutionContext;
-
-import static io.servicetalk.http.api.BlockingUtils.blockingInvocation;
-import static io.servicetalk.http.api.RequestResponseFactories.toAggregated;
 
 /**
  * The equivalent of {@link HttpConnection} but with synchronous/blocking APIs instead of asynchronous APIs.
  */
-public /* final */ class BlockingHttpConnection implements BlockingHttpRequester {
-
-    private final StreamingHttpConnection connection;
-    private final HttpExecutionStrategy strategy;
-    private final HttpRequestResponseFactory reqRespFactory;
-
+public interface BlockingHttpConnection extends BlockingHttpRequester {
     /**
-     * Create a new instance.
+     * Send a {@code request}.
      *
-     * @param connection {@link StreamingHttpConnection} to convert from.
-     * @param strategy Default {@link HttpExecutionStrategy} to use.
+     * @param request the request to send.
+     * @return The response.
+     * @throws Exception if an exception occurs during the request processing.
      */
-    BlockingHttpConnection(final StreamingHttpConnection connection,
-                           final HttpExecutionStrategy strategy) {
-        reqRespFactory = toAggregated(connection.filterChain.reqRespFactory);
-        this.connection = connection;
-        this.strategy = strategy;
-    }
+    HttpResponse request(HttpRequest request) throws Exception;
 
     /**
      * Get the {@link ConnectionContext}.
      *
      * @return the {@link ConnectionContext}.
      */
-    public final ConnectionContext connectionContext() {
-        return connection.connectionContext();
-    }
-
-    @Override
-    public final HttpResponse request(HttpRequest request) throws Exception {
-        return request(strategy, request);
-    }
-
-    @Override
-    public final HttpResponse request(final HttpExecutionStrategy strategy,
-                                final HttpRequest request) throws Exception {
-        return BlockingUtils.request(connection, strategy, request);
-    }
+    ConnectionContext connectionContext();
 
     /**
      * Returns a {@link BlockingIterable} that gives the current value of the setting as well as subsequent changes to
@@ -74,9 +48,7 @@ public /* final */ class BlockingHttpConnection implements BlockingHttpRequester
      * @param <T> Type of the setting value.
      * @return {@link BlockingIterable} for the setting values.
      */
-    public final <T> BlockingIterable<T> settingIterable(SettingKey<T> settingKey) {
-        return connection.settingStream(settingKey).toIterable();
-    }
+    <T> BlockingIterable<T> settingIterable(SettingKey<T> settingKey);
 
     /**
      * Convert this {@link BlockingHttpConnection} to the {@link StreamingHttpConnection} API.
@@ -86,11 +58,7 @@ public /* final */ class BlockingHttpConnection implements BlockingHttpRequester
      *
      * @return a {@link StreamingHttpConnection} representation of this {@link BlockingHttpConnection}.
      */
-    // We don't want the user to be able to override but it cannot be final because we need to override the type.
-    // However the constructor of this class is package private so the user will not be able to override this method.
-    public /* final */ StreamingHttpConnection asStreamingConnection() {
-        return connection;
-    }
+    StreamingHttpConnection asStreamingConnection();
 
     /**
      * Convert this {@link BlockingHttpConnection} to the {@link HttpConnection} API.
@@ -100,9 +68,7 @@ public /* final */ class BlockingHttpConnection implements BlockingHttpRequester
      *
      * @return a {@link HttpConnection} representation of this {@link BlockingHttpConnection}.
      */
-    // We don't want the user to be able to override but it cannot be final because we need to override the type.
-    // However the constructor of this class is package private so the user will not be able to override this method.
-    public /* final */ HttpConnection asConnection() {
+    default HttpConnection asConnection() {
         return asStreamingConnection().asConnection();
     }
 
@@ -114,29 +80,7 @@ public /* final */ class BlockingHttpConnection implements BlockingHttpRequester
      *
      * @return a {@link BlockingStreamingHttpConnection} representation of this {@link BlockingHttpConnection}.
      */
-    // We don't want the user to be able to override but it cannot be final because we need to override the type.
-    // However the constructor of this class is package private so the user will not be able to override this method.
-    public /* final */ BlockingStreamingHttpConnection asBlockingStreamingConnection() {
+    default BlockingStreamingHttpConnection asBlockingStreamingConnection() {
         return asStreamingConnection().asBlockingStreamingConnection();
-    }
-
-    @Override
-    public final ExecutionContext executionContext() {
-        return connection.executionContext();
-    }
-
-    @Override
-    public final void close() throws Exception {
-        blockingInvocation(connection.closeAsync());
-    }
-
-    @Override
-    public HttpRequest newRequest(final HttpRequestMethod method, final String requestTarget) {
-        return reqRespFactory.newRequest(method, requestTarget);
-    }
-
-    @Override
-    public HttpResponseFactory httpResponseFactory() {
-        return reqRespFactory;
     }
 }

@@ -19,12 +19,13 @@ import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
+import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpConnectionBuilder;
 import io.servicetalk.http.api.HttpConnectionFilterFactory;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpHeadersFactory;
-import io.servicetalk.http.api.StreamingHttpConnectionFilter;
+import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.tcp.netty.internal.ReadOnlyTcpClientConfig;
@@ -44,7 +45,6 @@ import io.servicetalk.transport.netty.internal.NettyConnection.TerminalPredicate
 import java.io.InputStream;
 import java.net.InetSocketAddress;
 import java.net.SocketOption;
-import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
@@ -63,7 +63,9 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> extends HttpCon
 
     private final HttpClientConfig config;
     private final ExecutionContextBuilder executionContextBuilder = new ExecutionContextBuilder();
-    private HttpConnectionFilterFactory connectionFilterFunction = HttpConnectionFilterFactory.identity();
+    @Nullable
+    private HttpConnectionFilterFactory connectionFilterFunction;
+    @Nullable
     private Function<ResolvedAddress, HttpConnectionFilterFactory> hostHeaderFilterFactory =
             DefaultHttpConnectionBuilder::defaultHostHeaderFilterFactory;
 
@@ -87,9 +89,7 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> extends HttpCon
     }
 
     @Override
-    protected <T> Single<T> buildFilterChain(
-            final ResolvedAddress resolvedAddress,
-            final BiFunction<StreamingHttpConnectionFilter, HttpExecutionStrategy, T> assembler) {
+    public Single<StreamingHttpConnection> buildStreaming(final ResolvedAddress resolvedAddress) {
         ReadOnlyHttpClientConfig roConfig = config.asReadOnly();
         HttpExecutionStrategy strategy = executionStrategy();
         Executor executor = strategy.executor();
@@ -101,15 +101,31 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> extends HttpCon
                 new DefaultStreamingHttpRequestResponseFactory(executionContext.bufferAllocator(),
                         roConfig.headersFactory());
 
-        HttpConnectionFilterFactory filterFactory = connectionFilterFunction.append(
-                hostHeaderFilterFactory.apply(resolvedAddress));
-        filterFactory = filterFactory.append(
-                new ConcurrentRequestsHttpConnectionFilter(roConfig.maxPipelinedRequests()));
+        HttpConnectionFilterFactory filterFactory;
+        if (connectionFilterFunction != null) {
+            if (hostHeaderFilterFactory != null) {
+                filterFactory = connectionFilterFunction.append(hostHeaderFilterFactory.apply(resolvedAddress));
+            } else {
+                filterFactory = connectionFilterFunction;
+            }
+        } else if (hostHeaderFilterFactory != null) {
+            filterFactory = hostHeaderFilterFactory.apply(resolvedAddress);
+        } else {
+            filterFactory = null;
+        }
+
+        if (filterFactory != null) {
+            filterFactory = filterFactory.append(
+                    new ConcurrentRequestsHttpConnectionFilter(roConfig.maxPipelinedRequests()));
+        } else {
+            filterFactory = new ConcurrentRequestsHttpConnectionFilter(roConfig.maxPipelinedRequests());
+        }
 
         return (reservedConnectionsPipelineEnabled(roConfig) ?
-                buildForPipelined(executionContext, resolvedAddress, roConfig, filterFactory, reqRespFactory) :
-                buildForNonPipelined(executionContext, resolvedAddress, roConfig, filterFactory, reqRespFactory))
-                .map(filter -> assembler.apply(filter, strategy));
+                buildForNonPipelined(executionContext, resolvedAddress, roConfig, filterFactory, reqRespFactory,
+                        strategy) :
+                buildForPipelined(executionContext, resolvedAddress, roConfig, filterFactory, reqRespFactory, strategy))
+                .map(DefaultStreamingHttpConnection::new);
     }
 
     // TODO(derek): Temporary, so we can re-enable the ability to create non-pipelined connections for perf testing.
@@ -118,22 +134,28 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> extends HttpCon
                 Boolean.valueOf(System.getProperty("io.servicetalk.http.netty.reserved.connections.pipeline", "true"));
     }
 
-    static <ResolvedAddress> Single<StreamingHttpConnectionFilter> buildForPipelined(
+    static <ResolvedAddress> Single<FilterableStreamingHttpConnection> buildForPipelined(
             final ExecutionContext executionContext, ResolvedAddress resolvedAddress, ReadOnlyHttpClientConfig roConfig,
-            final HttpConnectionFilterFactory connectionFilterFunction,
-            final StreamingHttpRequestResponseFactory reqRespFactory) {
-        return buildStreaming(executionContext, resolvedAddress, roConfig).map(conn ->
-                connectionFilterFunction.create(
-                        new PipelinedStreamingHttpConnectionFilter(conn, roConfig, executionContext, reqRespFactory)));
+            @Nullable final HttpConnectionFilterFactory connectionFilterFunction,
+            final StreamingHttpRequestResponseFactory reqRespFactory, final HttpExecutionStrategy strategy) {
+        return buildStreaming(executionContext, resolvedAddress, roConfig).map(conn -> {
+                    FilterableStreamingHttpConnection mappedConnection = new PipelinedStreamingHttpConnection(conn,
+                            roConfig, executionContext, reqRespFactory, strategy);
+                    return connectionFilterFunction != null ? connectionFilterFunction.create(mappedConnection) :
+                            mappedConnection;
+               });
     }
 
-    static <ResolvedAddress> Single<StreamingHttpConnectionFilter> buildForNonPipelined(
+    static <ResolvedAddress> Single<FilterableStreamingHttpConnection> buildForNonPipelined(
             final ExecutionContext executionContext, ResolvedAddress resolvedAddress, ReadOnlyHttpClientConfig roConfig,
-            final HttpConnectionFilterFactory connectionFilterFunction,
-            final StreamingHttpRequestResponseFactory reqRespFactory) {
-        return buildStreaming(executionContext, resolvedAddress, roConfig).map(conn ->
-                connectionFilterFunction.create(new NonPipelinedStreamingHttpConnectionFilter(conn, roConfig,
-                        executionContext, reqRespFactory)));
+            @Nullable final HttpConnectionFilterFactory connectionFilterFunction,
+            final StreamingHttpRequestResponseFactory reqRespFactory, final HttpExecutionStrategy strategy) {
+        return buildStreaming(executionContext, resolvedAddress, roConfig).map(conn -> {
+                    FilterableStreamingHttpConnection mappedConnection = new NonPipelinedStreamingHttpConnection(conn,
+                            roConfig, executionContext, reqRespFactory, strategy);
+                    return connectionFilterFunction != null ? connectionFilterFunction.create(mappedConnection) :
+                            mappedConnection;
+                });
     }
 
     private static <ResolvedAddress> Single<? extends NettyConnection<Object, Object>> buildStreaming(
@@ -224,7 +246,7 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> extends HttpCon
 
     @Override
     public DefaultHttpConnectionBuilder<ResolvedAddress> disableHostHeaderFallback() {
-        hostHeaderFilterFactory = address -> HttpConnectionFilterFactory.identity();
+        hostHeaderFilterFactory = null;
         return this;
     }
 
@@ -237,7 +259,11 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> extends HttpCon
     @Override
     public DefaultHttpConnectionBuilder<ResolvedAddress> appendConnectionFilter(
             final HttpConnectionFilterFactory function) {
-        connectionFilterFunction = connectionFilterFunction.append(requireNonNull(function));
+        if (connectionFilterFunction == null) {
+            connectionFilterFunction = requireNonNull(function);
+        } else {
+            connectionFilterFunction = connectionFilterFunction.append(requireNonNull(function));
+        }
         return this;
     }
 

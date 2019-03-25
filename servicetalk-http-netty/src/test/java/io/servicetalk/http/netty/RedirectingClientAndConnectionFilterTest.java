@@ -29,6 +29,7 @@ import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.ReservedStreamingHttpConnectionFilter;
 import io.servicetalk.http.api.StreamingHttpClient;
+import io.servicetalk.http.api.StreamingHttpClient.ReservedStreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpClientFilter;
 import io.servicetalk.http.utils.RedirectingHttpRequesterFilter;
 import io.servicetalk.transport.api.HostAndPort;
@@ -43,6 +44,7 @@ import org.junit.runners.Parameterized.Parameters;
 
 import java.net.InetSocketAddress;
 
+import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.http.api.HttpHeaderNames.HOST;
 import static io.servicetalk.http.api.HttpHeaderNames.LOCATION;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_0;
@@ -95,11 +97,10 @@ public final class RedirectingClientAndConnectionFilterTest {
                     StreamingHttpClient client = closeables.prepend(HttpClients.forSingleAddress(serverHostAndPort)
                             .appendClientFilter((clientFilter, __) -> new StreamingHttpClientFilter(clientFilter) {
                                 @Override
-                                protected Single<ReservedStreamingHttpConnectionFilter> reserveConnection(
-                                        final StreamingHttpClientFilter delegate,
+                                public Single<ReservedStreamingHttpConnection> reserveConnection(
                                         final HttpExecutionStrategy strategy,
                                         final HttpRequestMetaData metaData) {
-                                    return delegate.reserveConnection(strategy, metaData).map(r ->
+                                    return delegate().reserveConnection(strategy, metaData).map(r ->
                                             new ReservedStreamingHttpConnectionFilter(closeables.prepend(r)) {
                                                 @Override
                                                 public Completable closeAsync() {
@@ -145,14 +146,14 @@ public final class RedirectingClientAndConnectionFilterTest {
                 }); BlockingHttpRequester client = newRequester(serverContext)) {
 
             HttpRequest request = client.get("/");
-            HttpResponse response = client.request(request);
+            HttpResponse response = client.request(noOffloadsStrategy(), request);
             assertThat(response.status(), equalTo(PERMANENT_REDIRECT));
 
-            response = client.request(request.addHeader("X-REDIRECT", "TRUE"));
+            response = client.request(noOffloadsStrategy(), request.addHeader("X-REDIRECT", "TRUE"));
             assertThat(response.status(), equalTo(OK));
 
             // HTTP/1.0 doesn't support HOST, ensure that we don't get any errors and fallback to redirect
-            response = client.request(
+            response = client.request(noOffloadsStrategy(),
                     client.get("/")
                             .version(HTTP_1_0)
                             .addHeader("X-REDIRECT", "TRUE"));
@@ -173,14 +174,14 @@ public final class RedirectingClientAndConnectionFilterTest {
                 }); BlockingHttpRequester client = newRequester(serverContext)) {
 
             HttpRequest request = client.get("/");
-            HttpResponse response = client.request(request);
+            HttpResponse response = client.request(noOffloadsStrategy(), request);
             assertThat(response.status(), equalTo(PERMANENT_REDIRECT));
 
-            response = client.request(request.addHeader("X-REDIRECT", "TRUE"));
+            response = client.request(noOffloadsStrategy(), request.addHeader("X-REDIRECT", "TRUE"));
             assertThat(response.status(), equalTo(OK));
 
             // HTTP/1.0 doesn't support HOST, ensure that we don't get any errors and fallback to redirect
-            response = client.request(
+            response = client.request(noOffloadsStrategy(),
                     client.get("/")
                             .version(HTTP_1_0)
                             .addHeader("X-REDIRECT", "TRUE"));
@@ -200,10 +201,10 @@ public final class RedirectingClientAndConnectionFilterTest {
                 }); BlockingHttpRequester client = newRequester(serverContext)) {
 
             HttpRequest request = client.get("/").addHeader(HOST, "servicetalk.io");
-            HttpResponse response = client.request(request);
+            HttpResponse response = client.request(noOffloadsStrategy(), request);
             assertThat(response.status(), equalTo(PERMANENT_REDIRECT));
 
-            response = client.request(request.addHeader("X-REDIRECT", "TRUE"));
+            response = client.request(noOffloadsStrategy(), request.addHeader("X-REDIRECT", "TRUE"));
             assertThat(response.status(), equalTo(OK));
         }
     }
@@ -220,10 +221,10 @@ public final class RedirectingClientAndConnectionFilterTest {
                 }); BlockingHttpRequester client = newRequester(serverContext)) {
 
             HttpRequest request = client.get("/").addHeader(HOST, "servicetalk.io");
-            HttpResponse response = client.request(request);
+            HttpResponse response = client.request(noOffloadsStrategy(), request);
             assertThat(response.status(), equalTo(PERMANENT_REDIRECT));
 
-            response = client.request(request.addHeader("X-REDIRECT", "TRUE"));
+            response = client.request(noOffloadsStrategy(), request.addHeader("X-REDIRECT", "TRUE"));
             assertThat(response.status(), equalTo(OK));
         }
     }

@@ -17,6 +17,7 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.http.api.StreamingHttpClient.ReservedStreamingHttpConnection;
 
 import static java.util.Objects.requireNonNull;
 
@@ -29,11 +30,12 @@ public interface HttpClientFilterFactory {
     /**
      * Creates a {@link StreamingHttpClientFilter} using the provided {@link StreamingHttpClientFilter}.
      *
-     * @param client {@link StreamingHttpClient} to filter
+     * @param client {@link FilterableStreamingHttpClient} to filter
      * @param lbEvents the {@link LoadBalancer} events stream
      * @return {@link StreamingHttpClientFilter} using the provided {@link StreamingHttpClientFilter}.
      */
-    StreamingHttpClientFilter create(StreamingHttpClientFilter client, Publisher<Object> lbEvents);
+    StreamingHttpClientFilter create(FilterableStreamingHttpClient<ReservedStreamingHttpConnection> client,
+                                     Publisher<Object> lbEvents);
 
     /**
      * Returns a composed function that first applies the {@code before} function to its input, and then applies
@@ -65,19 +67,10 @@ public interface HttpClientFilterFactory {
     default <U> MultiAddressHttpClientFilterFactory<U> asMultiAddressClientFilter() {
         return (address, client, lbEvents) -> new StreamingHttpClientFilter(create(client, lbEvents)) {
             @Override
-            protected HttpExecutionStrategy mergeForEffectiveStrategy(final HttpExecutionStrategy mergeWith) {
+            public HttpExecutionStrategy computeExecutionStrategy(HttpExecutionStrategy other) {
                 // Since this filter does not have any blocking code, we do not need to alter the effective strategy.
-                return mergeWith;
+                return delegate().computeExecutionStrategy(other);
             }
         };
-    }
-
-    /**
-     * Returns a function that always returns its input {@link StreamingHttpClient}.
-     *
-     * @return a function that always returns its input {@link StreamingHttpClient}.
-     */
-    static HttpClientFilterFactory identity() {
-        return (client, __) -> client;
     }
 }

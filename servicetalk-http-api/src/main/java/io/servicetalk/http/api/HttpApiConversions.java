@@ -18,11 +18,12 @@ package io.servicetalk.http.api;
 /**
  * Conversion routines to {@link StreamingHttpService}.
  */
-public final class StreamingHttpServiceConversions {
-    private StreamingHttpServiceConversions() {
+public final class HttpApiConversions {
+    private HttpApiConversions() {
         // no instances
     }
 
+    // Begin StreamingHttpService
     /**
      * Convert from a {@link HttpService} to a {@link StreamingHttpService}.
      *
@@ -52,4 +53,5 @@ public final class StreamingHttpServiceConversions {
     public static StreamingHttpService toStreamingHttpService(BlockingHttpService handler) {
         return new BlockingHttpServiceToStreamingHttpService(handler);
     }
+    // End StreamingHttpService
 }

@@ -17,9 +17,9 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.http.api.StreamingHttpClient.ReservedStreamingHttpConnection;
 import io.servicetalk.transport.api.ExecutionContext;
-
-import javax.annotation.Nullable;
+import io.servicetalk.transport.api.ExecutionStrategy;
 
 import static io.servicetalk.http.api.HttpExecutionStrategies.OFFLOAD_ALL_STRATEGY;
 import static java.util.Objects.requireNonNull;
@@ -27,52 +27,83 @@ import static java.util.Objects.requireNonNull;
 /**
  * A {@link StreamingHttpClient} that delegates all methods to a different {@link StreamingHttpClient}.
  */
-public class StreamingHttpClientFilter implements StreamingHttpRequester {
-    @Nullable
-    private final StreamingHttpClientFilter delegate;
-    final StreamingHttpRequestResponseFactory reqRespFactory;
-    @Nullable
-    private final HttpExecutionStrategy terminalStrategy;
+public class StreamingHttpClientFilter implements
+                                       FilterableStreamingHttpClient<ReservedStreamingHttpConnection> {
+    private final FilterableStreamingHttpClient<ReservedStreamingHttpConnection> delegate;
 
     /**
      * Create a new instance.
      *
-     * @param delegate The {@link StreamingHttpClient} to delegate all calls to.
+     * @param delegate The {@link FilterableStreamingHttpClient} to delegate all calls to.
      */
-    public StreamingHttpClientFilter(final StreamingHttpClientFilter delegate) {
-        reqRespFactory = delegate.reqRespFactory;
-        this.delegate = delegate;
-        terminalStrategy = null;
-    }
-
-    // This is only for FilterChainTerminal which overrides all methods
-    private StreamingHttpClientFilter(final StreamingHttpRequestResponseFactory reqRespFactory,
-                                      final HttpExecutionStrategy strategy) {
-        this.reqRespFactory = requireNonNull(reqRespFactory);
-        terminalStrategy = requireNonNull(strategy);
-        delegate = null;
-    }
-
-    /**
-     * Reserve a {@link StreamingHttpConnection} based on provided {@link HttpRequestMetaData}.
-     *
-     * @param strategy {@link HttpExecutionStrategy} to use.
-     * @param metaData Allows the underlying layers to know what {@link StreamingHttpConnection}s are valid to
-     * reserve for future {@link StreamingHttpRequest requests} with the same {@link HttpRequestMetaData}.
-     * For example this may provide some insight into shard or other info.
-     * @return a {@link Single} that provides the {@link ReservedStreamingHttpConnectionFilter} upon completion.
-     */
-    public final Single<ReservedStreamingHttpConnectionFilter> reserveConnection(final HttpExecutionStrategy strategy,
-                                                                                 final HttpRequestMetaData metaData) {
-        assert delegate != null;
-        return reserveConnection(delegate, strategy, metaData);
+    protected StreamingHttpClientFilter(final FilterableStreamingHttpClient<ReservedStreamingHttpConnection> delegate) {
+        this.delegate = requireNonNull(delegate);
     }
 
     @Override
     public final Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
                                                        final StreamingHttpRequest request) {
-        assert delegate != null;
         return request(delegate, strategy, request);
+    }
+
+    @Override
+    public Single<ReservedStreamingHttpConnection> reserveConnection(final HttpExecutionStrategy strategy,
+                                                                     final HttpRequestMetaData metaData) {
+        return delegate.reserveConnection(strategy, metaData).map(ClientFilterToReservedConnectionFilter::new);
+    }
+
+    @Override
+    public HttpExecutionStrategy computeExecutionStrategy(HttpExecutionStrategy other) {
+        return delegate.computeExecutionStrategy(other.merge(executionStrategy()));
+    }
+
+    @Override
+    public ExecutionContext executionContext() {
+        return delegate.executionContext();
+    }
+
+    @Override
+    public Completable onClose() {
+        return delegate.onClose();
+    }
+
+    @Override
+    public Completable closeAsync() {
+        return delegate.closeAsync();
+    }
+
+    @Override
+    public Completable closeAsyncGracefully() {
+        return delegate.closeAsyncGracefully();
+    }
+
+    @Override
+    public void close() throws Exception {
+        delegate.close();
+    }
+
+    @Override
+    public StreamingHttpRequest newRequest(final HttpRequestMethod method, final String requestTarget) {
+        return delegate.newRequest(method, requestTarget);
+    }
+
+    @Override
+    public StreamingHttpResponse newResponse(final HttpResponseStatus status) {
+        return delegate.newResponse(status);
+    }
+
+    @Override
+    public String toString() {
+        return getClass().getName() + '(' + delegate + ')';
+    }
+
+    /**
+     * Get the {@link FilterableStreamingHttpClient} this method delegates to.
+     *
+     * @return the {@link FilterableStreamingHttpClient} this method delegates to.
+     */
+    protected final FilterableStreamingHttpClient<ReservedStreamingHttpConnection> delegate() {
+        return delegate;
     }
 
     /**
@@ -91,174 +122,25 @@ public class StreamingHttpClientFilter implements StreamingHttpRequester {
     }
 
     /**
-     * Called when the filter needs to delegate the reserve connection request using the provided {@link
-     * StreamingHttpClient} on which to call {@link StreamingHttpClient#reserveConnection(HttpExecutionStrategy,
-     * HttpRequestMetaData)}.
+     * The {@link ExecutionStrategy} considering the programming constraints of this {@link StreamingHttpServiceFilter}
+     * in isolation. This strategy should be the "least common denominator" for example if any blocking is done this
+     * method should reflect that.
      *
-     * @param delegate the {@link StreamingHttpClientFilter} to delegate requests to.
-     * @param strategy the {@link HttpExecutionStrategy} to use for reserving a connection.
-     * @param metaData the {@link HttpRequestMetaData} for reserving a connection.
-     * @return a {@link Single} that provides the {@link ReservedStreamingHttpConnectionFilter} upon completion.
+     * @return The {@link ExecutionStrategy} considering the programming constraints of this
+     * {@link StreamingHttpServiceFilter} in isolation.
      */
-    protected Single<ReservedStreamingHttpConnectionFilter> reserveConnection(final StreamingHttpClientFilter delegate,
-                                                                              final HttpExecutionStrategy strategy,
-                                                                              final HttpRequestMetaData metaData) {
-        return delegate.reserveConnection(strategy, metaData).map(ClientFilterToReservedConnectionFilter::new);
-    }
-
-    /**
-     * Determine the effective {@link HttpExecutionStrategy} given the passed {@link HttpExecutionStrategy} and the
-     * strategy required by this {@link StreamingHttpClientFilter}.
-     *
-     * @param strategy A {@link HttpExecutionStrategy} as determined by the caller of this method.
-     * @return Effective {@link HttpExecutionStrategy}.
-     */
-    final HttpExecutionStrategy effectiveExecutionStrategy(HttpExecutionStrategy strategy) {
-        if (delegate != null) { // can't avoid runtime check for FilterChainTerminal - we want to keep this final
-            // A streaming filter will offload all paths by default. Implementations can override the behavior and do
-            // something sophisticated if required.
-            return delegate.effectiveExecutionStrategy(mergeForEffectiveStrategy(strategy));
-        }
-        // This is the "dummy" terminal filter, so we should not call mergeForEffectiveStrategy()
-        assert terminalStrategy != null;
-        return terminalStrategy.merge(strategy);
-    }
-
-    /**
-     * When calculating effective {@link HttpExecutionStrategy} this method is called to merge the strategy for the
-     * next {@link StreamingHttpClient} in the filter chain with the {@link HttpExecutionStrategy} of this
-     * {@link StreamingHttpClientFilter}.
-     *
-     * @param mergeWith A {@link HttpExecutionStrategy} with which this {@link StreamingHttpClientFilter} should merge
-     * its {@link HttpExecutionStrategy}.
-     * @return Merged {@link HttpExecutionStrategy}.
-     */
-    protected HttpExecutionStrategy mergeForEffectiveStrategy(HttpExecutionStrategy mergeWith) {
-        return mergeWith.merge(OFFLOAD_ALL_STRATEGY);
-    }
-
-    /**
-     * Get the {@link ExecutionContext} used during construction of this object.
-     * <p>
-     * Note that the {@link ExecutionContext#ioExecutor()} will not necessarily be associated with a specific thread
-     * unless that was how this object was built.
-     *
-     * @return the {@link ExecutionContext} used during construction of this object.
-     */
-    public ExecutionContext executionContext() {
-        assert delegate != null;
-        return delegate.executionContext();
-    }
-
-    @Override
-    public Completable onClose() {
-        assert delegate != null;
-        return delegate.onClose();
-    }
-
-    @Override
-    public Completable closeAsync() {
-        assert delegate != null;
-        return delegate.closeAsync();
-    }
-
-    @Override
-    public Completable closeAsyncGracefully() {
-        assert delegate != null;
-        return delegate.closeAsyncGracefully();
-    }
-
-    @Override
-    public String toString() {
-        return getClass().getName() + '(' + delegate + ')';
-    }
-
-    @Override
-    public final StreamingHttpResponseFactory httpResponseFactory() {
-        return reqRespFactory;
-    }
-
-    @Override
-    public final StreamingHttpRequest newRequest(final HttpRequestMethod method, final String requestTarget) {
-        return reqRespFactory.newRequest(method, requestTarget);
-    }
-
-    /**
-     * Creates a terminal delegate for a {@link StreamingHttpClientFilter} to indicate the end of a filter chain.
-     *
-     * <p>All methods of this terminal will throw so the {@link StreamingHttpClientFilter} using this terminal as
-     * its delegate NEEDS to override all non-final methods of the {@link StreamingHttpClientFilter} contract.
-     *
-     * @param reqRespFactory The {@link StreamingHttpRequestResponseFactory} used to {@link
-     * #newRequest(HttpRequestMethod, String) create new requests}.
-     * @param strategy {@link HttpExecutionStrategy} to use.
-     * @return a terminal delegate for a {@link StreamingHttpClientFilter}.
-     */
-    public static StreamingHttpClientFilter terminal(final StreamingHttpRequestResponseFactory reqRespFactory,
-                                                     final HttpExecutionStrategy strategy) {
-        return new FilterChainTerminal(reqRespFactory, strategy);
-    }
-
-    // This filter is the terminal of the filter chain, the intended use is as delegate for transport implementations
-    private static final class FilterChainTerminal extends StreamingHttpClientFilter {
-        private static final String FILTER_CHAIN_TERMINAL = "FilterChain Terminal";
-
-        private FilterChainTerminal(final StreamingHttpRequestResponseFactory reqRespFactory,
-                                    final HttpExecutionStrategy strategy) {
-            super(reqRespFactory, strategy);
-        }
-
-        @Override
-        protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
-                                                        final HttpExecutionStrategy strategy,
-                                                        final StreamingHttpRequest request) {
-            throw new UnsupportedOperationException(FILTER_CHAIN_TERMINAL);
-        }
-
-        @Override
-        protected HttpExecutionStrategy mergeForEffectiveStrategy(final HttpExecutionStrategy mergeWith) {
-            throw new UnsupportedOperationException(FILTER_CHAIN_TERMINAL);
-        }
-
-        @Override
-        public ExecutionContext executionContext() {
-            throw new UnsupportedOperationException(FILTER_CHAIN_TERMINAL);
-        }
-
-        @Override
-        public Completable onClose() {
-            throw new UnsupportedOperationException(FILTER_CHAIN_TERMINAL);
-        }
-
-        @Override
-        public Completable closeAsync() {
-            throw new UnsupportedOperationException(FILTER_CHAIN_TERMINAL);
-        }
-
-        @Override
-        public Completable closeAsyncGracefully() {
-            throw new UnsupportedOperationException(FILTER_CHAIN_TERMINAL);
-        }
-
-        @Override
-        protected Single<ReservedStreamingHttpConnectionFilter> reserveConnection(
-                final StreamingHttpClientFilter delegate,
-                final HttpExecutionStrategy strategy,
-                final HttpRequestMetaData metaData) {
-            throw new UnsupportedOperationException(FILTER_CHAIN_TERMINAL);
-        }
+    protected HttpExecutionStrategy executionStrategy() {
+        return OFFLOAD_ALL_STRATEGY;
     }
 
     private final class ClientFilterToReservedConnectionFilter extends ReservedStreamingHttpConnectionFilter {
-
-        private ClientFilterToReservedConnectionFilter(final ReservedStreamingHttpConnectionFilter reserved) {
-            super(reserved);
+        ClientFilterToReservedConnectionFilter(final ReservedStreamingHttpConnection delegate) {
+            super(delegate);
         }
 
         @Override
         protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
-                                                        final HttpExecutionStrategy strategy,
-                                                        final StreamingHttpRequest request) {
+                final HttpExecutionStrategy strategy, final StreamingHttpRequest request) {
             return StreamingHttpClientFilter.this.request(delegate, strategy, request);
         }
     }

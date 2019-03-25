@@ -28,12 +28,12 @@ import static io.servicetalk.concurrent.api.Single.failed;
 
 final class ConditionalHttpConnectionFilter extends StreamingHttpConnectionFilter {
     private final Predicate<StreamingHttpRequest> predicate;
-    private final StreamingHttpConnectionFilter predicatedConnection;
+    private final FilterableStreamingHttpConnection predicatedConnection;
     private final ListenableAsyncCloseable closeable;
 
     ConditionalHttpConnectionFilter(final Predicate<StreamingHttpRequest> predicate,
-                                    final StreamingHttpConnectionFilter predicatedConnection,
-                                    final StreamingHttpConnectionFilter connection) {
+                                    final FilterableStreamingHttpConnection predicatedConnection,
+                                    final FilterableStreamingHttpConnection connection) {
         super(connection);
         this.predicate = predicate;
         this.predicatedConnection = predicatedConnection;
@@ -44,10 +44,9 @@ final class ConditionalHttpConnectionFilter extends StreamingHttpConnectionFilte
     }
 
     @Override
-    protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
-                                                    final HttpExecutionStrategy strategy,
-                                                    final StreamingHttpRequest request) {
-        boolean b;
+    public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
+                                                 final StreamingHttpRequest request) {
+        final boolean b;
         try {
             b = predicate.test(request);
         } catch (Throwable t) {
@@ -58,7 +57,7 @@ final class ConditionalHttpConnectionFilter extends StreamingHttpConnectionFilte
             return predicatedConnection.request(strategy, request);
         }
 
-        return delegate.request(strategy, request);
+        return delegate().request(strategy, request);
     }
 
     @Override
@@ -74,5 +73,10 @@ final class ConditionalHttpConnectionFilter extends StreamingHttpConnectionFilte
     @Override
     public Completable onClose() {
         return closeable.onClose();
+    }
+
+    @Override
+    public HttpExecutionStrategy computeExecutionStrategy(HttpExecutionStrategy other) {
+        return delegate().computeExecutionStrategy(predicatedConnection.computeExecutionStrategy(other));
     }
 }

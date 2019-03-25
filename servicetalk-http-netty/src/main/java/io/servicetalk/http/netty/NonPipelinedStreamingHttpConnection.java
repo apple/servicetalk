@@ -16,24 +16,24 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.transport.api.ExecutionContext;
-import io.servicetalk.transport.netty.internal.DefaultNettyPipelinedConnection;
 import io.servicetalk.transport.netty.internal.NettyConnection;
 
-final class PipelinedStreamingHttpConnectionFilter
-        extends AbstractStreamingHttpConnectionFilter<DefaultNettyPipelinedConnection<Object, Object>> {
+final class NonPipelinedStreamingHttpConnection
+        extends AbstractStreamingHttpConnection<NettyConnection<Object, Object>> {
 
-    PipelinedStreamingHttpConnectionFilter(final NettyConnection<Object, Object> connection,
-                                           final ReadOnlyHttpClientConfig config,
-                                           final ExecutionContext executionContext,
-                                           final StreamingHttpRequestResponseFactory reqRespFactory) {
-        super(new DefaultNettyPipelinedConnection<>(connection, config.maxPipelinedRequests()),
-                config, executionContext, reqRespFactory);
+    NonPipelinedStreamingHttpConnection(final NettyConnection<Object, Object> connection,
+                                        final ReadOnlyHttpClientConfig config,
+                                        final ExecutionContext executionContext,
+                                        final StreamingHttpRequestResponseFactory reqRespFactory,
+                                        final HttpExecutionStrategy strategy) {
+        super(connection, config, executionContext, reqRespFactory, strategy);
     }
 
     @Override
-    protected Publisher<Object> writeAndRead(Publisher<Object> requestStream) {
-        return connection.request(requestStream);
+    protected Publisher<Object> writeAndRead(final Publisher<Object> requestStream) {
+        return connection.write(requestStream).concat(connection.read());
     }
 }
