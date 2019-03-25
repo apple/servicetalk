@@ -34,7 +34,7 @@ import java.util.function.BiFunction;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.opentracing.internal.utils.HexUtil.hexBytesOfLong;
+import static io.servicetalk.opentracing.internal.HexUtil.hexBytesOfLong;
 import static java.util.Objects.requireNonNull;
 
 /**

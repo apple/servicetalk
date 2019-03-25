@@ -17,11 +17,11 @@ package io.servicetalk.redis.netty;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.client.api.ServiceDiscoverer;
+import io.servicetalk.client.api.internal.partition.DefaultPartitionAttributesBuilder;
 import io.servicetalk.client.api.partition.PartitionAttributes;
 import io.servicetalk.client.api.partition.PartitionAttributes.Key;
 import io.servicetalk.client.api.partition.PartitionAttributesBuilder;
 import io.servicetalk.client.api.partition.PartitionedServiceDiscovererEvent;
-import io.servicetalk.client.internal.partition.DefaultPartitionAttributesBuilder;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.redis.api.PartitionedRedisClient;

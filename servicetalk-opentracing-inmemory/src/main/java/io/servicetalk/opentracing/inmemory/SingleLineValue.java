@@ -18,8 +18,8 @@ package io.servicetalk.opentracing.inmemory;
 import java.util.function.Consumer;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.opentracing.internal.utils.HexUtil.hexBytesOfLong;
-import static io.servicetalk.opentracing.internal.utils.TracingConstants.NO_PARENT_ID;
+import static io.servicetalk.opentracing.internal.HexUtil.hexBytesOfLong;
+import static io.servicetalk.opentracing.internal.TracingConstants.NO_PARENT_ID;
 
 /**
  * Wrapper for supporting injecting and extracting single-string values.

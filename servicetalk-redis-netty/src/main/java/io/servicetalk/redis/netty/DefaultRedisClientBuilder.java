@@ -50,7 +50,7 @@ import java.util.function.Function;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.client.internal.RequestConcurrencyController.Result.Accepted;
+import static io.servicetalk.client.api.internal.RequestConcurrencyController.Result.Accepted;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.loadbalancer.RoundRobinLoadBalancer.newRoundRobinFactory;
 import static io.servicetalk.redis.api.RedisExecutionStrategies.defaultStrategy;

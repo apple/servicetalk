@@ -19,7 +19,7 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.redis.api.RedisConnectionFilterFactory;
 import io.servicetalk.transport.api.ExecutionContext;
 
-import static io.servicetalk.client.internal.ReservableRequestConcurrencyControllers.newController;
+import static io.servicetalk.client.api.internal.ReservableRequestConcurrencyControllers.newController;
 import static io.servicetalk.redis.api.RedisConnection.SettingKey.MAX_CONCURRENCY;
 import static io.servicetalk.redis.netty.DefaultRedisConnectionBuilder.buildForPipelined;
 import static java.util.Objects.requireNonNull;

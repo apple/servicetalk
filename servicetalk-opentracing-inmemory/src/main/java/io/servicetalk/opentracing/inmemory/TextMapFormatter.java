@@ -25,11 +25,11 @@ import org.slf4j.LoggerFactory;
 import java.util.Map;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.opentracing.internal.utils.HexUtil.validateHexBytes;
-import static io.servicetalk.opentracing.internal.utils.ZipkinHeaderNames.PARENT_SPAN_ID;
-import static io.servicetalk.opentracing.internal.utils.ZipkinHeaderNames.SAMPLED;
-import static io.servicetalk.opentracing.internal.utils.ZipkinHeaderNames.SPAN_ID;
-import static io.servicetalk.opentracing.internal.utils.ZipkinHeaderNames.TRACE_ID;
+import static io.servicetalk.opentracing.internal.HexUtil.validateHexBytes;
+import static io.servicetalk.opentracing.internal.ZipkinHeaderNames.PARENT_SPAN_ID;
+import static io.servicetalk.opentracing.internal.ZipkinHeaderNames.SAMPLED;
+import static io.servicetalk.opentracing.internal.ZipkinHeaderNames.SPAN_ID;
+import static io.servicetalk.opentracing.internal.ZipkinHeaderNames.TRACE_ID;
 
 /**
  * Ziplin-styled header serialization format.
