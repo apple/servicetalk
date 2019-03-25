@@ -50,6 +50,7 @@ import java.util.function.Function;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
+import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.netty.DefaultHttpConnectionBuilder.reservedConnectionsPipelineEnabled;
 import static io.servicetalk.http.netty.GlobalDnsServiceDiscoverer.globalDnsServiceDiscoverer;
 import static io.servicetalk.loadbalancer.RoundRobinLoadBalancer.newRoundRobinFactory;
@@ -73,6 +74,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
     private final U address;
     private final HttpClientConfig config;
     private final ExecutionContextBuilder executionContextBuilder;
+    private HttpExecutionStrategy strategy = defaultStrategy();
     private LoadBalancerFactory<R, StreamingHttpConnectionFilter> loadBalancerFactory;
     private ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> serviceDiscoverer;
     private Function<U, HttpClientFilterFactory> hostHeaderFilterFactory =
@@ -106,7 +108,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
         this.address = address;
         config = new HttpClientConfig(from.config);
         executionContextBuilder = new ExecutionContextBuilder(from.executionContextBuilder);
-        executionStrategy(from.executionStrategy());
+        this.strategy = from.strategy;
         this.loadBalancerFactory = from.loadBalancerFactory;
         this.serviceDiscoverer = from.serviceDiscoverer;
         clientFilterFunction = from.clientFilterFunction;
@@ -147,7 +149,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
         }
 
         HttpExecutionStrategy executionStrategy() {
-            return builder.executionStrategy();
+            return builder.strategy;
         }
 
         Publisher<? extends ServiceDiscovererEvent<R>> discover() {
@@ -174,7 +176,6 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
         // Track resources that potentially need to be closed when an exception is thrown during buildStreaming
         final CompositeCloseable closeOnException = newCompositeCloseable();
         try {
-            final HttpExecutionStrategy strategy = executionStrategy();
             final Publisher<? extends ServiceDiscovererEvent<R>> sdEvents = ctx.discover();
 
             final StreamingHttpRequestResponseFactory reqRespFactory = ctx.reqRespFactory;
@@ -226,8 +227,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
 
         final DefaultSingleAddressHttpClientBuilder<U, R> clonedBuilder = address == null ? copy() : copy(address);
 
-        final HttpExecutionStrategy strategy = clonedBuilder.executionStrategy();
-        Executor executor = strategy.executor();
+        Executor executor = clonedBuilder.strategy.executor();
         if (executor != null) {
             clonedBuilder.executionContextBuilder.executor(executor);
         }
@@ -253,6 +253,12 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
     @Override
     public DefaultSingleAddressHttpClientBuilder<U, R> ioExecutor(final IoExecutor ioExecutor) {
         executionContextBuilder.ioExecutor(ioExecutor);
+        return this;
+    }
+
+    @Override
+    public SingleAddressHttpClientBuilder<U, R> executionStrategy(final HttpExecutionStrategy strategy) {
+        this.strategy = strategy;
         return this;
     }
 

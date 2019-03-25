@@ -1,0 +1,255 @@
+/*
+ * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package io.servicetalk.http.netty;
+
+import io.servicetalk.concurrent.PublisherSource;
+import io.servicetalk.concurrent.api.AsyncContext;
+import io.servicetalk.concurrent.api.AsyncContextMap;
+import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
+import io.servicetalk.http.api.HttpConnectionBuilder;
+import io.servicetalk.http.api.HttpExecutionStrategy;
+import io.servicetalk.http.api.HttpServerBuilder;
+import io.servicetalk.http.api.HttpServiceContext;
+import io.servicetalk.http.api.HttpServiceFilterFactory;
+import io.servicetalk.http.api.StreamingHttpConnection;
+import io.servicetalk.http.api.StreamingHttpRequest;
+import io.servicetalk.http.api.StreamingHttpResponse;
+import io.servicetalk.http.api.StreamingHttpResponseFactory;
+import io.servicetalk.http.api.StreamingHttpServiceFilter;
+import io.servicetalk.transport.api.DelegatingConnectionAcceptor;
+import io.servicetalk.transport.api.ServerContext;
+
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.Timeout;
+
+import java.net.SocketAddress;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
+import javax.annotation.Nullable;
+
+import static io.servicetalk.concurrent.api.Completable.completed;
+import static io.servicetalk.concurrent.api.Single.defer;
+import static io.servicetalk.concurrent.api.Single.success;
+import static io.servicetalk.http.api.CharSequences.newAsciiString;
+import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
+import static io.servicetalk.http.api.HttpResponseStatus.OK;
+import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
+import static java.lang.Thread.currentThread;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.empty;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+
+public abstract class AbstractHttpServiceAsyncContextTest {
+
+    protected static final AsyncContextMap.Key<CharSequence> K1 = AsyncContextMap.Key.newKey("k1");
+    protected static final CharSequence REQUEST_ID_HEADER = newAsciiString("request-id");
+    protected static final String IO_THREAD_PREFIX = "servicetalk-global-io-executor-";
+
+    @Rule
+    public final Timeout timeout = new ServiceTalkTestTimeout();
+
+    @Test
+    public void newRequestsGetFreshContext() throws Exception {
+        newRequestsGetFreshContext(false);
+    }
+
+    protected abstract ServerContext serverWithEmptyAsyncContextService(HttpServerBuilder serverBuilder,
+                                                                        boolean useImmediate) throws Exception;
+
+    protected final void newRequestsGetFreshContext(boolean useImmediate) throws Exception {
+        final ExecutorService executorService = Executors.newCachedThreadPool();
+        final int concurrency = 10;
+        final int numRequests = 10;
+        try (ServerContext ctx = serverWithEmptyAsyncContextService(HttpServers.forAddress(localAddress(0)),
+                useImmediate)) {
+
+            AtomicReference<Throwable> causeRef = new AtomicReference<>();
+            CyclicBarrier barrier = new CyclicBarrier(concurrency);
+            CountDownLatch latch = new CountDownLatch(concurrency);
+            for (int i = 0; i < concurrency; ++i) {
+                final int finalI = i;
+                executorService.execute(() -> {
+                    HttpConnectionBuilder<SocketAddress> connectionBuilder =
+                            new DefaultHttpConnectionBuilder<SocketAddress>()
+                                    .maxPipelinedRequests(numRequests);
+
+                    try (StreamingHttpConnection connection = (!useImmediate ? connectionBuilder :
+                            connectionBuilder.executionStrategy(noOffloadsStrategy()))
+                            .buildStreaming(ctx.listenAddress()).toFuture().get()) {
+
+                        barrier.await();
+                        for (int x = 0; x < numRequests; ++x) {
+                            makeClientRequestWithId(connection, "thread=" + finalI + " request=" + x);
+                        }
+                    } catch (Throwable cause) {
+                        causeRef.compareAndSet(null, cause);
+                    } finally {
+                        latch.countDown();
+                    }
+                });
+            }
+            latch.await();
+            assertNull(causeRef.get());
+        } finally {
+            executorService.shutdown();
+        }
+    }
+
+    @Test
+    public void contextPreservedOverFilterBoundariesOffloaded() throws Exception {
+        contextPreservedOverFilterBoundaries(false, false, false);
+    }
+
+    @Test
+    public void contextPreservedOverFilterBoundariesOffloadedAsyncFilter() throws Exception {
+        contextPreservedOverFilterBoundaries(false, true, false);
+    }
+
+    protected abstract ServerContext serverWithService(HttpServerBuilder serverBuilder,
+                                                       boolean useImmediate, boolean asyncService) throws Exception;
+
+    protected final void contextPreservedOverFilterBoundaries(boolean useImmediate, boolean asyncFilter,
+                                                              boolean asyncService) throws Exception {
+        Queue<Throwable> errorQueue = new ConcurrentLinkedQueue<>();
+
+        try (ServerContext ctx = serverWithService(HttpServers.forAddress(localAddress(0))
+                .appendServiceFilter(filterFactory(useImmediate, asyncFilter, errorQueue)),
+                useImmediate, asyncService);
+
+             StreamingHttpConnection connection = new DefaultHttpConnectionBuilder<SocketAddress>()
+                     .buildStreaming(ctx.listenAddress()).toFuture().get()) {
+
+            makeClientRequestWithId(connection, "1");
+            assertThat("Error queue is not empty!", errorQueue, empty());
+        }
+    }
+
+    private static HttpServiceFilterFactory filterFactory(final boolean useImmediate,
+                                                          final boolean asyncFilter,
+                                                          final Queue<Throwable> errorQueue) {
+        return service -> new StreamingHttpServiceFilter(service) {
+            @Override
+            public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
+                                                        final StreamingHttpRequest request,
+                                                        final StreamingHttpResponseFactory factory) {
+                return asyncFilter ? defer(() -> doHandle(ctx, request, factory).subscribeShareContext()) :
+                        doHandle(ctx, request, factory);
+            }
+
+            @Override
+            protected HttpExecutionStrategy mergeForEffectiveStrategy(final HttpExecutionStrategy mergeWith) {
+                // Do not alter the effective strategy
+                return mergeWith;
+            }
+
+            private Single<StreamingHttpResponse> doHandle(final HttpServiceContext ctx,
+                                                           final StreamingHttpRequest request,
+                                                           final StreamingHttpResponseFactory factory) {
+                if (useImmediate && !currentThread().getName().startsWith(IO_THREAD_PREFIX)) {
+                    // verify that if we expect to be offloaded, that we actually are
+                    return success(factory.internalServerError());
+                }
+                CharSequence requestId = request.headers().getAndRemove(REQUEST_ID_HEADER);
+                if (requestId != null) {
+                    AsyncContext.put(K1, requestId);
+                }
+                final StreamingHttpRequest filteredRequest = request.transformRawPayloadBody(pub ->
+                        pub.doAfterSubscriber(assertAsyncContextSubscriber(requestId, errorQueue)));
+                return delegate().handle(ctx, filteredRequest, factory).map(resp -> {
+                            assertAsyncContext(requestId, errorQueue);
+                            return resp.transformRawPayloadBody(pub ->
+                                    pub.doAfterSubscriber(assertAsyncContextSubscriber(requestId, errorQueue)));
+                        }
+                );
+            }
+        };
+    }
+
+    private static Supplier<PublisherSource.Subscriber<Object>> assertAsyncContextSubscriber(
+            @Nullable final CharSequence requestId, final Queue<Throwable> errorQueue) {
+
+        return () -> new PublisherSource.Subscriber<Object>() {
+            @Override
+            public void onSubscribe(final PublisherSource.Subscription subscription) {
+                assertAsyncContext(requestId, errorQueue);
+            }
+
+            @Override
+            public void onNext(final Object o) {
+                assertAsyncContext(requestId, errorQueue);
+            }
+
+            @Override
+            public void onError(final Throwable throwable) {
+                assertAsyncContext(requestId, errorQueue);
+            }
+
+            @Override
+            public void onComplete() {
+                assertAsyncContext(requestId, errorQueue);
+            }
+        };
+    }
+
+    private static void assertAsyncContext(@Nullable CharSequence requestId, Queue<Throwable> errorQueue) {
+        Object k1Value = AsyncContext.get(K1);
+        if (requestId != null && !requestId.equals(k1Value)) {
+            errorQueue.add(new AssertionError("AsyncContext[" + K1 + "]=[" + k1Value +
+                    "], expected=[" + requestId + "]"));
+        }
+    }
+
+    @Test
+    public void connectionAcceptorContextDoesNotLeakOffload() throws Exception {
+        connectionAcceptorContextDoesNotLeak(false);
+    }
+
+    protected final void connectionAcceptorContextDoesNotLeak(boolean serverUseImmediate) throws Exception {
+        try (ServerContext ctx = serverWithEmptyAsyncContextService(HttpServers.forAddress(localAddress(0))
+                .appendConnectionAcceptorFilter(original -> new DelegatingConnectionAcceptor(context -> {
+                    AsyncContext.put(K1, "v1");
+                    return completed();
+                })), serverUseImmediate);
+
+             StreamingHttpConnection connection = new DefaultHttpConnectionBuilder<SocketAddress>()
+                     .buildStreaming(ctx.listenAddress()).toFuture().get()) {
+
+            makeClientRequestWithId(connection, "1");
+            makeClientRequestWithId(connection, "2");
+        }
+    }
+
+    private static void makeClientRequestWithId(StreamingHttpConnection connection, String requestId)
+            throws ExecutionException, InterruptedException {
+        StreamingHttpRequest request = connection.get("/");
+        request.headers().set(REQUEST_ID_HEADER, requestId);
+        StreamingHttpResponse response = connection.request(request).toFuture().get();
+        assertEquals(OK, response.status());
+        assertTrue(request.headers().contains(REQUEST_ID_HEADER, requestId));
+        response.payloadBodyAndTrailers().ignoreElements().toFuture().get();
+    }
+}

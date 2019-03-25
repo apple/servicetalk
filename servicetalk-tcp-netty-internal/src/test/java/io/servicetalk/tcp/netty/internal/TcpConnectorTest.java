@@ -56,7 +56,8 @@ public final class TcpConnectorTest extends AbstractTcpServerTest {
     private static void testWriteAndRead(NettyConnection<Buffer, Buffer> connection)
             throws ExecutionException, InterruptedException {
         connection.writeAndFlush(connection.executionContext().bufferAllocator().fromAscii("Hello")).toFuture().get();
-        String response = connection.read().first().map(buffer -> buffer.toString(defaultCharset())).toFuture().get();
+        String response = connection.read().firstOrElse(() -> null).map(buffer -> buffer.toString(defaultCharset()))
+                .toFuture().get();
         assertThat("Unexpected response.", response, is("Hello"));
         connection.onClose().toFuture().get();
     }

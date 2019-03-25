@@ -22,12 +22,15 @@ import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.SignalOffloaderFactory;
+import io.servicetalk.http.api.HttpExecutionStrategies.Builder.MergeStrategy;
 
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.internal.OffloaderAwareExecutor.ensureThreadAffinity;
+import static io.servicetalk.http.api.HttpExecutionStrategies.Builder.MergeStrategy.Merge;
+import static io.servicetalk.http.api.HttpExecutionStrategies.Builder.MergeStrategy.ReturnOther;
 import static java.util.Objects.requireNonNull;
 import static java.util.function.Function.identity;
 
@@ -35,15 +38,19 @@ import static java.util.function.Function.identity;
  * Default implementation for {@link HttpExecutionStrategy}.
  */
 final class DefaultHttpExecutionStrategy implements HttpExecutionStrategy {
+
     static final byte OFFLOAD_RECEIVE_META = 1;
     static final byte OFFLOAD_RECEIVE_DATA = 2;
     static final byte OFFLOAD_SEND = 4;
     @Nullable
     private final Executor executor;
     private final byte offloads;
+    private final MergeStrategy mergeStrategy;
     private final boolean threadAffinity;
 
-    DefaultHttpExecutionStrategy(@Nullable final Executor executor, final byte offloads, final boolean threadAffinity) {
+    DefaultHttpExecutionStrategy(@Nullable final Executor executor, final byte offloads, final boolean threadAffinity,
+                                 final MergeStrategy mergeStrategy) {
+        this.mergeStrategy = mergeStrategy;
         this.executor = executor != null ? threadAffinity ? ensureThreadAffinity(executor) : executor : null;
         this.offloads = offloads;
         this.threadAffinity = threadAffinity;
@@ -165,7 +172,34 @@ final class DefaultHttpExecutionStrategy implements HttpExecutionStrategy {
 
     @Override
     public HttpExecutionStrategy merge(final HttpExecutionStrategy other) {
-        if (other instanceof NoOffloadsHttpExecutionStrategy || equals(other)) {
+        if (equals(other)) {
+            return this;
+        }
+
+        switch (mergeStrategy) {
+            case ReturnSelf:
+                return this;
+            case ReturnOther:
+                // If this strategy has an executor then we should preserve the executor even if we are returning other,
+                // as the executors are provided by the user and our default behavior of custom merging shouldn't omit
+                // the executor.
+                if (executor == null || executor == other.executor()) {
+                    return other;
+                } else if (other instanceof DefaultHttpExecutionStrategy) {
+                    DefaultHttpExecutionStrategy otherAsDefault = (DefaultHttpExecutionStrategy) other;
+                    return new DefaultHttpExecutionStrategy(executor, otherAsDefault.offloads,
+                            otherAsDefault.threadAffinity, otherAsDefault.mergeStrategy);
+                } else {
+                    return new DefaultHttpExecutionStrategy(executor, generateOffloadsFlag(other),
+                            extractThreadAffinity(other.executor()), Merge);
+                }
+            case Merge:
+                break;
+            default:
+                throw new AssertionError("Unknown merge strategy: " + mergeStrategy);
+        }
+
+        if (other instanceof NoOffloadsHttpExecutionStrategy) {
             return this;
         }
 
@@ -173,22 +207,39 @@ final class DefaultHttpExecutionStrategy implements HttpExecutionStrategy {
         final Executor executor = otherExecutor == null ? this.executor : otherExecutor;
         if (other instanceof DefaultHttpExecutionStrategy) {
             DefaultHttpExecutionStrategy otherAsDefault = (DefaultHttpExecutionStrategy) other;
+            if (otherAsDefault.mergeStrategy == ReturnOther) {
+                // If other strategy just returns the mergeWith strategy, then no point in merging here.
+                return this;
+            }
             // We checked above that the two strategies are not equal, so just merge and return.
             return new DefaultHttpExecutionStrategy(executor, (byte) (otherAsDefault.offloads | offloads),
-                    threadAffinity || otherAsDefault.threadAffinity);
+                    threadAffinity || otherAsDefault.threadAffinity,
+                    // Conservatively always merge if the two merge strategies are not equal
+                    otherAsDefault.mergeStrategy == mergeStrategy ? mergeStrategy : Merge);
         }
 
         final byte otherOffloads;
         final boolean otherThreadAffinity;
-        otherOffloads = (byte) ((other.isDataReceiveOffloaded() ? OFFLOAD_RECEIVE_DATA : 0) |
-                (other.isMetadataReceiveOffloaded() ? OFFLOAD_RECEIVE_META : 0) |
-                (other.isSendOffloaded() ? OFFLOAD_SEND : 0));
-        otherThreadAffinity = otherExecutor instanceof SignalOffloaderFactory &&
-                ((SignalOffloaderFactory) otherExecutor).hasThreadAffinity();
+        final MergeStrategy otherMergeStrategy;
+        otherOffloads = generateOffloadsFlag(other);
+        otherThreadAffinity = extractThreadAffinity(otherExecutor);
+        otherMergeStrategy = Merge; // always default to merge
 
-        return (otherOffloads == offloads && executor == otherExecutor && otherThreadAffinity == threadAffinity) ?
-                this : new DefaultHttpExecutionStrategy(executor, (byte) (otherOffloads | offloads),
-                threadAffinity || otherThreadAffinity);
+        return (otherOffloads == offloads && executor == otherExecutor && otherThreadAffinity == threadAffinity &&
+                otherMergeStrategy == mergeStrategy) ? this :
+                new DefaultHttpExecutionStrategy(executor, (byte) (otherOffloads | offloads),
+                        threadAffinity || otherThreadAffinity, otherMergeStrategy);
+    }
+
+    private boolean extractThreadAffinity(@Nullable final Executor otherExecutor) {
+        return otherExecutor instanceof SignalOffloaderFactory &&
+                ((SignalOffloaderFactory) otherExecutor).hasThreadAffinity();
+    }
+
+    private byte generateOffloadsFlag(final HttpExecutionStrategy strategy) {
+        return (byte) ((strategy.isDataReceiveOffloaded() ? OFFLOAD_RECEIVE_DATA : 0) |
+                (strategy.isMetadataReceiveOffloaded() ? OFFLOAD_RECEIVE_META : 0) |
+                (strategy.isSendOffloaded() ? OFFLOAD_SEND : 0));
     }
 
     @Override
@@ -254,13 +305,17 @@ final class DefaultHttpExecutionStrategy implements HttpExecutionStrategy {
         if (threadAffinity != that.threadAffinity) {
             return false;
         }
-        return executor != null ? executor.equals(that.executor) : that.executor == null;
+        if (executor != null ? !executor.equals(that.executor) : that.executor != null) {
+            return false;
+        }
+        return mergeStrategy == that.mergeStrategy;
     }
 
     @Override
     public int hashCode() {
         int result = executor != null ? executor.hashCode() : 0;
         result = 31 * result + (int) offloads;
+        result = 31 * result + mergeStrategy.hashCode();
         result = 31 * result + (threadAffinity ? 1 : 0);
         return result;
     }

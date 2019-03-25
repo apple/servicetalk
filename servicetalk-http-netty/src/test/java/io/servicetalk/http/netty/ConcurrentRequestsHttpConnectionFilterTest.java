@@ -19,21 +19,18 @@ import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.client.api.ConnectionClosedException;
 import io.servicetalk.client.api.MaxRequestLimitExceededException;
+import io.servicetalk.concurrent.CompletableSource.Processor;
 import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.concurrent.api.CompletableProcessor;
-import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.DefaultHttpHeadersFactory;
 import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
-import io.servicetalk.http.api.DelegatingHttpExecutionStrategy;
 import io.servicetalk.http.api.HttpConnection;
 import io.servicetalk.http.api.HttpConnectionFilterFactory;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpHeaderNames;
-import io.servicetalk.http.api.HttpRequester;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpConnection.SettingKey;
@@ -66,11 +63,13 @@ import static io.servicetalk.buffer.api.EmptyBuffer.EMPTY_BUFFER;
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.BlockingTestUtils.awaitIndefinitelyNonNull;
 import static io.servicetalk.concurrent.api.Executors.immediate;
+import static io.servicetalk.concurrent.api.Processors.newCompletableProcessor;
 import static io.servicetalk.concurrent.api.Publisher.empty;
 import static io.servicetalk.concurrent.api.Publisher.just;
 import static io.servicetalk.concurrent.api.Single.error;
 import static io.servicetalk.concurrent.api.Single.success;
-import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
+import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
+import static io.servicetalk.http.api.HttpExecutionStrategies.customStrategyBuilder;
 import static io.servicetalk.http.api.StreamingHttpConnection.SettingKey.MAX_CONCURRENCY;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static org.hamcrest.Matchers.equalTo;
@@ -101,12 +100,7 @@ public class ConcurrentRequestsHttpConnectionFilterTest {
 
     // TODO(jayv) Temporary workaround until DefaultNettyConnection leverages strategy.offloadReceive()
     private static final HttpExecutionStrategy FULLY_NO_OFFLOAD_STRATEGY =
-            new DelegatingHttpExecutionStrategy(noOffloadsStrategy()) {
-        @Override
-        public Executor executor() {
-            return immediate();
-        }
-    };
+            customStrategyBuilder().executor(immediate()).build();
 
     @Test
     public void decrementWaitsUntilResponsePayloadIsComplete() throws Exception {
@@ -123,7 +117,7 @@ public class ConcurrentRequestsHttpConnectionFilterTest {
                     }
 
                     @Override
-                    protected Single<StreamingHttpResponse> request(final StreamingHttpConnectionFilter delegate,
+                    protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                                     final HttpExecutionStrategy strategy,
                                                                     final StreamingHttpRequest request) {
                         switch (reqCount.incrementAndGet()) {
@@ -166,16 +160,16 @@ public class ConcurrentRequestsHttpConnectionFilterTest {
 
     @Test
     public void throwMaxConcurrencyExceededOnOversubscribedConnection() throws Exception {
-        final CompletableProcessor lastRequestFinished = new CompletableProcessor();
+        final Processor lastRequestFinished = newCompletableProcessor();
 
         try (ServerContext serverContext = HttpServers.forAddress(localAddress(0))
                 .listenStreamingAndAwait((ctx, request, responseFactory) -> {
-                    Publisher<Buffer> deferredPayload = lastRequestFinished.concatWith(empty());
+                    Publisher<Buffer> deferredPayload = fromSource(lastRequestFinished).concatWith(empty());
                     return request.payloadBody().ignoreElements()
                             .concatWith(Single.success(responseFactory.ok().payloadBody(deferredPayload)));
                 });
 
-             StreamingHttpRequester connection = new DefaultHttpConnectionBuilder<>()
+             StreamingHttpConnection connection = new DefaultHttpConnectionBuilder<>()
                      .maxPipelinedRequests(2)
                      .buildStreaming(serverContext.listenAddress())
                      .toFuture().get()) {
@@ -207,7 +201,7 @@ public class ConcurrentRequestsHttpConnectionFilterTest {
                         Single.success(responseFactory.ok()
                                 .setHeader(HttpHeaderNames.CONNECTION, "close"))));
 
-             HttpRequester connection = new DefaultHttpConnectionBuilder<>()
+             HttpConnection connection = new DefaultHttpConnectionBuilder<>()
                      .maxPipelinedRequests(99)
                      .executionStrategy(FULLY_NO_OFFLOAD_STRATEGY)
                      .build(serverContext.listenAddress())
@@ -257,11 +251,11 @@ public class ConcurrentRequestsHttpConnectionFilterTest {
                     })
                     .toFuture().get();
 
-            final CompletableProcessor closedFinally = new CompletableProcessor();
+            final Processor closedFinally = newCompletableProcessor();
             connection.onClose().doAfterFinally(closedFinally::onComplete).subscribe();
 
             try {
-                closedFinally.concatWith(resp2).toFuture().get();
+                fromSource(closedFinally).concatWith(resp2).toFuture().get();
                 fail("Should not allow request to complete normally on a closed connection");
             } catch (ExecutionException e) {
                 assertThat(e.getCause(), instanceOf(ConnectionClosedException.class));

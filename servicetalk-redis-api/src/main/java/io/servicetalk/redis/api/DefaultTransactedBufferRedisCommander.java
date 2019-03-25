@@ -16,9 +16,9 @@
 package io.servicetalk.redis.api;
 
 import io.servicetalk.buffer.api.Buffer;
+import io.servicetalk.concurrent.SingleSource.Processor;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.concurrent.api.SingleProcessor;
 import io.servicetalk.redis.api.CommanderUtils.DiscardSingle;
 import io.servicetalk.redis.api.CommanderUtils.ExecCompletable;
 
@@ -53,7 +53,7 @@ final class DefaultTransactedBufferRedisCommander extends TransactedBufferRedisC
     @SuppressWarnings("unused")
     private volatile int state;
 
-    private final List<SingleProcessor<?>> singles = new ArrayList<>();
+    private final List<Processor<?, ?>> singles = new ArrayList<>();
 
     DefaultTransactedBufferRedisCommander(final RedisClient.ReservedRedisConnection reservedCnx,
                 final boolean releaseAfterDone) {

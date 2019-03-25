@@ -19,6 +19,7 @@ import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.transport.api.IoExecutor;
 
 import java.net.SocketOption;
+import java.util.function.Function;
 import java.util.function.Predicate;
 
 import static java.util.Objects.requireNonNull;
@@ -139,6 +140,18 @@ abstract class BaseHttpBuilder<ResolvedAddress> {
      * @return {@code this}.
      */
     public abstract BaseHttpBuilder<ResolvedAddress> maxPipelinedRequests(int maxPipelinedRequests);
+
+    /**
+     * Disable automatically setting {@code Host} headers by inferring from the address or {@link StreamingHttpRequest}.
+     * <p>
+     * This setting disables the default filter such that no {@code Host} header will be manipulated.
+     *
+     * @return {@code this}
+     * @see SingleAddressHttpClientBuilder#enableHostHeaderFallback(CharSequence)
+     * @see MultiAddressHttpClientBuilder#enableHostHeaderFallback(Function)
+     * @see HttpConnectionBuilder#enableHostHeaderFallback(CharSequence)
+     */
+    public abstract BaseHttpBuilder<ResolvedAddress> disableHostHeaderFallback();
 
     /**
      * Append the filter to the chain of filters used to decorate the {@link StreamingHttpConnection} created by this

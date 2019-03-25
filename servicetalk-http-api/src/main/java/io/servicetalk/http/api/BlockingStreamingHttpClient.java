@@ -26,9 +26,11 @@ import static io.servicetalk.http.api.RequestResponseFactories.toBlockingStreami
 /**
  * The equivalent of {@link StreamingHttpClient} but with synchronous/blocking APIs instead of asynchronous APIs.
  */
-public final class BlockingStreamingHttpClient extends BlockingStreamingHttpRequester {
+public final class BlockingStreamingHttpClient implements BlockingStreamingHttpRequester {
 
     private final StreamingHttpClient client;
+    private final HttpExecutionStrategy strategy;
+    private final BlockingStreamingHttpRequestResponseFactory reqRespFactory;
 
     /**
      * Create a new instance.
@@ -38,8 +40,9 @@ public final class BlockingStreamingHttpClient extends BlockingStreamingHttpRequ
      */
     BlockingStreamingHttpClient(final StreamingHttpClient client,
                                 final HttpExecutionStrategy strategy) {
-        super(toBlockingStreaming(client.reqRespFactory), strategy);
+        reqRespFactory = toBlockingStreaming(client.filterChain.reqRespFactory);
         this.client = client;
+        this.strategy = strategy;
     }
 
     /**
@@ -52,7 +55,7 @@ public final class BlockingStreamingHttpClient extends BlockingStreamingHttpRequ
      * @throws Exception if a exception occurs during the reservation process.
      */
     public ReservedBlockingStreamingHttpConnection reserveConnection(HttpRequestMetaData metaData) throws Exception {
-        return reserveConnection(executionStrategy(), metaData);
+        return reserveConnection(strategy, metaData);
     }
 
     /**
@@ -70,7 +73,12 @@ public final class BlockingStreamingHttpClient extends BlockingStreamingHttpRequ
         // It is assumed that users will always apply timeouts at the StreamingHttpService layer (e.g. via filter).
         // So we don't apply any explicit timeout here and just wait forever.
         return new ReservedBlockingStreamingHttpConnection(
-                blockingInvocation(client.reserveConnection(strategy, metaData)), executionStrategy());
+                blockingInvocation(client.reserveConnection(strategy, metaData)), this.strategy);
+    }
+
+    @Override
+    public BlockingStreamingHttpResponse request(final BlockingStreamingHttpRequest request) throws Exception {
+        return request(strategy, request);
     }
 
     @Override
@@ -123,6 +131,16 @@ public final class BlockingStreamingHttpClient extends BlockingStreamingHttpRequ
     @Override
     public void close() throws Exception {
         blockingInvocation(client.closeAsync());
+    }
+
+    @Override
+    public BlockingStreamingHttpRequest newRequest(final HttpRequestMethod method, final String requestTarget) {
+        return reqRespFactory.newRequest(method, requestTarget);
+    }
+
+    @Override
+    public BlockingStreamingHttpResponseFactory httpResponseFactory() {
+        return reqRespFactory;
     }
 
     /**

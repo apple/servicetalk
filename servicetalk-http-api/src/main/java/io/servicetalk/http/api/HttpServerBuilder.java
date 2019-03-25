@@ -16,6 +16,7 @@
 package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.BufferAllocator;
+import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.api.ConnectionAcceptor;
 import io.servicetalk.transport.api.ConnectionAcceptorFactory;
@@ -32,6 +33,7 @@ import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.http.api.BlockingUtils.blockingInvocation;
+import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpServiceFilterFactory.identity;
 import static io.servicetalk.transport.api.ConnectionAcceptor.ACCEPT_ALL;
 import static java.util.Objects.requireNonNull;
@@ -448,11 +450,10 @@ public abstract class HttpServerBuilder {
         ConnectionAcceptor connectionAcceptor = connectionAcceptorFactory == null ? null :
                 connectionAcceptorFactory.create(ACCEPT_ALL);
         StreamingHttpService svc = handler.asStreamingService();
-        HttpExecutionStrategy strategy = svc.executionStrategy();
         StreamingHttpServiceFilter filterChain = serviceFilter.create(svc);
-        HttpExecutionStrategy effectiveStrategy = filterChain.effectiveExecutionStrategy(strategy);
-        StreamingHttpServiceFilter finalService = new StreamingHttpServiceFilter(filterChain, effectiveStrategy);
-        return doListen(connectionAcceptor, finalService, drainRequestPayloadBody);
+        HttpExecutionStrategy effectiveStrategy = filterChain.effectiveExecutionStrategy(defaultStrategy());
+        return doListen(connectionAcceptor, new StrategyOverridingService(effectiveStrategy, filterChain),
+                drainRequestPayloadBody);
     }
 
     /**
@@ -498,4 +499,36 @@ public abstract class HttpServerBuilder {
     protected abstract Single<ServerContext> doListen(@Nullable ConnectionAcceptor connectionAcceptor,
                                                       StreamingHttpService service,
                                                       boolean drainRequestPayloadBody);
+
+    private static final class StrategyOverridingService extends StreamingHttpService {
+
+        private final HttpExecutionStrategy strategy;
+        private final StreamingHttpService delegate;
+
+        private StrategyOverridingService(final HttpExecutionStrategy strategy, final StreamingHttpService delegate) {
+            this.strategy = strategy;
+            this.delegate = delegate;
+        }
+
+        @Override
+        public Completable closeAsync() {
+            return delegate.closeAsync();
+        }
+
+        @Override
+        public HttpExecutionStrategy executionStrategy() {
+            return strategy;
+        }
+
+        @Override
+        public Completable closeAsyncGracefully() {
+            return delegate.closeAsyncGracefully();
+        }
+
+        @Override
+        public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx, final StreamingHttpRequest request,
+                                                    final StreamingHttpResponseFactory responseFactory) {
+            return delegate.handle(ctx, request, responseFactory);
+        }
+    }
 }

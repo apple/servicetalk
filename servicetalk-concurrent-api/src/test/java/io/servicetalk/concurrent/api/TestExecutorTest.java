@@ -24,9 +24,9 @@ import static io.servicetalk.concurrent.api.VerificationTestUtils.expectThrowabl
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.hamcrest.Matchers.equalTo;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-import static org.testng.Assert.assertNull;
 
 public class TestExecutorTest {
 
@@ -233,8 +233,8 @@ public class TestExecutorTest {
     @Test
     public void testCloseAsync() throws Exception {
         TestExecutor fixture = new TestExecutor();
-        Future<String> closeFuture = fixture.closeAsync().toFuture();
-        Future<String> onCloseFuture = fixture.onClose().toFuture();
+        Future<Void> closeFuture = fixture.closeAsync().toFuture();
+        Future<Void> onCloseFuture = fixture.onClose().toFuture();
 
         assertNull(closeFuture.get());
         assertTrue(closeFuture.isDone());

@@ -17,8 +17,8 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
+import io.servicetalk.concurrent.CompletableSource.Processor;
 import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.concurrent.api.CompletableProcessor;
 import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.concurrent.api.DefaultThreadFactory;
 import io.servicetalk.concurrent.api.Executors;
@@ -65,7 +65,9 @@ import java.util.concurrent.atomic.AtomicReference;
 import static io.servicetalk.buffer.api.EmptyBuffer.EMPTY_BUFFER;
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
+import static io.servicetalk.concurrent.api.Processors.newCompletableProcessor;
 import static io.servicetalk.concurrent.api.Publisher.from;
+import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.http.api.DefaultHttpHeadersFactory.INSTANCE;
 import static io.servicetalk.http.api.HttpHeaderNames.CONNECTION;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
@@ -399,7 +401,7 @@ public class HttpRequestEncoderTest {
     public void protocolPayloadEndOutboundShouldNotTriggerOnFailedFlush() throws Exception {
         AtomicReference<CloseHandler> closeHandlerRef = new AtomicReference<>();
         try (CompositeCloseable resources = newCompositeCloseable()) {
-            CompletableProcessor serverCloseTrigger = new CompletableProcessor();
+            Processor serverCloseTrigger = newCompletableProcessor();
             CountDownLatch serverChannelLatch = new CountDownLatch(1);
             AtomicReference<Channel> serverChannelRef = new AtomicReference<>();
 
@@ -455,7 +457,7 @@ public class HttpRequestEncoderTest {
 
             StreamingHttpRequest request = reqRespFactory.post("/closeme");
 
-            serverCloseTrigger.toFuture().get();
+            fromSource(serverCloseTrigger).toFuture().get();
             Completable write = conn.write(from(request, allocator.fromAscii("Bye"), EmptyHttpHeaders.INSTANCE));
 
             try {

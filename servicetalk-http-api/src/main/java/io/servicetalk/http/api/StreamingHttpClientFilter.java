@@ -16,7 +16,6 @@
 package io.servicetalk.http.api;
 
 import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.api.ExecutionContext;
 
@@ -28,12 +27,12 @@ import static java.util.Objects.requireNonNull;
 /**
  * A {@link StreamingHttpClient} that delegates all methods to a different {@link StreamingHttpClient}.
  */
-public class StreamingHttpClientFilter implements StreamingHttpRequestFactory,
-                                                  StreamingHttpRequestFunction,
-                                                  ListenableAsyncCloseable {
+public class StreamingHttpClientFilter implements StreamingHttpRequester {
     @Nullable
     private final StreamingHttpClientFilter delegate;
     final StreamingHttpRequestResponseFactory reqRespFactory;
+    @Nullable
+    private final HttpExecutionStrategy terminalStrategy;
 
     /**
      * Create a new instance.
@@ -43,11 +42,14 @@ public class StreamingHttpClientFilter implements StreamingHttpRequestFactory,
     public StreamingHttpClientFilter(final StreamingHttpClientFilter delegate) {
         reqRespFactory = delegate.reqRespFactory;
         this.delegate = delegate;
+        terminalStrategy = null;
     }
 
     // This is only for FilterChainTerminal which overrides all methods
-    private StreamingHttpClientFilter(final StreamingHttpRequestResponseFactory reqRespFactory) {
+    private StreamingHttpClientFilter(final StreamingHttpRequestResponseFactory reqRespFactory,
+                                      final HttpExecutionStrategy strategy) {
         this.reqRespFactory = requireNonNull(reqRespFactory);
+        terminalStrategy = requireNonNull(strategy);
         delegate = null;
     }
 
@@ -74,15 +76,15 @@ public class StreamingHttpClientFilter implements StreamingHttpRequestFactory,
     }
 
     /**
-     * Called when the filter needs to delegate the request using the provided {@link StreamingHttpRequestFunction} on
-     * which to call {@link StreamingHttpRequestFunction#request(HttpExecutionStrategy, StreamingHttpRequest)}.
+     * Called when the filter needs to delegate the request using the provided {@link StreamingHttpRequester} on
+     * which to call {@link StreamingHttpRequester#request(HttpExecutionStrategy, StreamingHttpRequest)}.
      *
-     * @param delegate The {@link StreamingHttpRequestFunction} to delegate requests to.
+     * @param delegate The {@link StreamingHttpRequester} to delegate requests to.
      * @param strategy The {@link HttpExecutionStrategy} to use for executing the request.
      * @param request The request to delegate.
      * @return the response.
      */
-    protected Single<StreamingHttpResponse> request(final StreamingHttpRequestFunction delegate,
+    protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                     final HttpExecutionStrategy strategy,
                                                     final StreamingHttpRequest request) {
         return delegate.request(strategy, request);
@@ -117,7 +119,9 @@ public class StreamingHttpClientFilter implements StreamingHttpRequestFactory,
             // something sophisticated if required.
             return delegate.effectiveExecutionStrategy(mergeForEffectiveStrategy(strategy));
         }
-        return strategy;
+        // This is the "dummy" terminal filter, so we should not call mergeForEffectiveStrategy()
+        assert terminalStrategy != null;
+        return terminalStrategy.merge(strategy);
     }
 
     /**
@@ -187,22 +191,25 @@ public class StreamingHttpClientFilter implements StreamingHttpRequestFactory,
      *
      * @param reqRespFactory The {@link StreamingHttpRequestResponseFactory} used to {@link
      * #newRequest(HttpRequestMethod, String) create new requests}.
+     * @param strategy {@link HttpExecutionStrategy} to use.
      * @return a terminal delegate for a {@link StreamingHttpClientFilter}.
      */
-    public static StreamingHttpClientFilter terminal(final StreamingHttpRequestResponseFactory reqRespFactory) {
-        return new FilterChainTerminal(reqRespFactory);
+    public static StreamingHttpClientFilter terminal(final StreamingHttpRequestResponseFactory reqRespFactory,
+                                                     final HttpExecutionStrategy strategy) {
+        return new FilterChainTerminal(reqRespFactory, strategy);
     }
 
     // This filter is the terminal of the filter chain, the intended use is as delegate for transport implementations
     private static final class FilterChainTerminal extends StreamingHttpClientFilter {
         private static final String FILTER_CHAIN_TERMINAL = "FilterChain Terminal";
 
-        private FilterChainTerminal(final StreamingHttpRequestResponseFactory reqRespFactory) {
-            super(reqRespFactory);
+        private FilterChainTerminal(final StreamingHttpRequestResponseFactory reqRespFactory,
+                                    final HttpExecutionStrategy strategy) {
+            super(reqRespFactory, strategy);
         }
 
         @Override
-        protected Single<StreamingHttpResponse> request(final StreamingHttpRequestFunction delegate,
+        protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                         final HttpExecutionStrategy strategy,
                                                         final StreamingHttpRequest request) {
             throw new UnsupportedOperationException(FILTER_CHAIN_TERMINAL);
@@ -210,7 +217,7 @@ public class StreamingHttpClientFilter implements StreamingHttpRequestFactory,
 
         @Override
         protected HttpExecutionStrategy mergeForEffectiveStrategy(final HttpExecutionStrategy mergeWith) {
-            return mergeWith;
+            throw new UnsupportedOperationException(FILTER_CHAIN_TERMINAL);
         }
 
         @Override
@@ -249,7 +256,7 @@ public class StreamingHttpClientFilter implements StreamingHttpRequestFactory,
         }
 
         @Override
-        protected Single<StreamingHttpResponse> request(final StreamingHttpConnectionFilter delegate,
+        protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                         final HttpExecutionStrategy strategy,
                                                         final StreamingHttpRequest request) {
             return StreamingHttpClientFilter.this.request(delegate, strategy, request);

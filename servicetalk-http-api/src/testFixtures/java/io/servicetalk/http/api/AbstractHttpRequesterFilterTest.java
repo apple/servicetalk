@@ -202,7 +202,8 @@ public abstract class AbstractHttpRequesterFilterTest {
     }
 
     /**
-     * Handler for {@link HttpRequester#request(HttpRequest)} calls as delegated from the filter under test.
+     * Handler for {@link HttpRequester#request(HttpExecutionStrategy, HttpRequest)} calls as delegated from the filter
+     * under test.
      */
     @FunctionalInterface
     public interface RequestHandler {
@@ -235,8 +236,8 @@ public abstract class AbstractHttpRequesterFilterTest {
     }
 
     /**
-     * Handler for {@link HttpRequester#request(HttpRequest)} calls with {@link ConnectionContext} information as
-     * delegated from the filter under test.
+     * Handler for {@link HttpRequester#request(HttpExecutionStrategy, HttpRequest)} calls with {@link
+     * ConnectionContext} information as delegated from the filter under test.
      */
     @FunctionalInterface
     public interface RequestWithContextHandler {
@@ -264,7 +265,7 @@ public abstract class AbstractHttpRequesterFilterTest {
     private ReservedStreamingHttpConnectionFilter newReservedConnection() {
         final StreamingHttpConnection connection = newConnection(ok(), identity());
         return new ReservedStreamingHttpConnectionFilter(ReservedStreamingHttpConnectionFilter.terminal(
-                connection.reqRespFactory)) {
+                connection.filterChain.reqRespFactory)) {
 
             @Override
             public Completable closeAsync() {
@@ -277,7 +278,7 @@ public abstract class AbstractHttpRequesterFilterTest {
             }
 
             @Override
-            protected Single<StreamingHttpResponse> request(final StreamingHttpConnectionFilter delegate,
+            protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                             final HttpExecutionStrategy strategy,
                                                             final StreamingHttpRequest request) {
                 return connection.request(strategy, request);
@@ -304,7 +305,7 @@ public abstract class AbstractHttpRequesterFilterTest {
                                                   final HttpConnectionFilterFactory filterFactory) {
         final HttpConnectionFilterFactory handlerFilter = conn -> new StreamingHttpConnectionFilter(conn) {
             @Override
-            protected Single<StreamingHttpResponse> request(final StreamingHttpConnectionFilter delegate,
+            protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                             final HttpExecutionStrategy strategy,
                                                             final StreamingHttpRequest request) {
                 return rwch.request(AbstractHttpRequesterFilterTest.REQ_RES_FACTORY, connectionContext(), request);
@@ -320,7 +321,7 @@ public abstract class AbstractHttpRequesterFilterTest {
         HttpClientFilterFactory handlerFilter = (client, __) -> new StreamingHttpClientFilter(client) {
 
                     @Override
-                    protected Single<StreamingHttpResponse> request(final StreamingHttpRequestFunction delegate,
+                    protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                                     final HttpExecutionStrategy strategy,
                                                                     final StreamingHttpRequest request) {
                         return rh.request(AbstractHttpRequesterFilterTest.REQ_RES_FACTORY, request);
@@ -335,7 +336,7 @@ public abstract class AbstractHttpRequesterFilterTest {
                                 new ReservedStreamingHttpConnectionFilter(rc) {
                                     @Override
                                     protected Single<StreamingHttpResponse> request(
-                                            final StreamingHttpConnectionFilter delegate,
+                                            final StreamingHttpRequester delegate,
                                             final HttpExecutionStrategy strategy,
                                             final StreamingHttpRequest request) {
                                         return rwch.request(

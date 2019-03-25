@@ -28,7 +28,7 @@ public class ConditionalHttpConnectionFilterTest extends AbstractConditionalHttp
 
     private static final HttpConnectionFilterFactory REQ_FILTER = conn -> new StreamingHttpConnectionFilter(conn) {
         @Override
-        protected Single<StreamingHttpResponse> request(final StreamingHttpConnectionFilter delegate,
+        protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                         final HttpExecutionStrategy strategy,
                                                         final StreamingHttpRequest request) {
             return TEST_REQ_HANDLER.apply(request, httpResponseFactory());
@@ -48,7 +48,7 @@ public class ConditionalHttpConnectionFilterTest extends AbstractConditionalHttp
             return new ConditionalHttpConnectionFilter(TEST_REQ_PREDICATE,
                     new StreamingHttpConnectionFilter(connection) {
                 @Override
-                protected Single<StreamingHttpResponse> request(final StreamingHttpConnectionFilter delegate,
+                protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                                 final HttpExecutionStrategy strategy,
                                                                 final StreamingHttpRequest request) {
                     return delegate.request(strategy, markFiltered(request));

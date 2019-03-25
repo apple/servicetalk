@@ -17,10 +17,12 @@ package io.servicetalk.redis.api;
 
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.CompletableSource;
+import io.servicetalk.concurrent.SingleSource;
+import io.servicetalk.concurrent.SingleSource.Processor;
 import io.servicetalk.concurrent.SingleSource.Subscriber;
 import io.servicetalk.concurrent.api.Completable;
+import io.servicetalk.concurrent.api.Processors;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.concurrent.api.SingleProcessor;
 import io.servicetalk.concurrent.api.internal.SubscribableCompletable;
 import io.servicetalk.concurrent.api.internal.SubscribableSingle;
 import io.servicetalk.concurrent.internal.DuplicateSubscribeException;
@@ -34,6 +36,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
+import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.redis.api.RedisData.QUEUED;
 
@@ -50,7 +53,7 @@ final class CommanderUtils {
     }
 
     @Nonnull
-    static <T> Future<T> enqueueForExecute(final int state, final List<SingleProcessor<?>> singles,
+    static <T> Future<T> enqueueForExecute(final int state, final List<Processor<?, ?>> singles,
                                            final Single<String> queued) {
         // `state` is volatile in the transacted Redis commanders that call this, but we don't expect them to be used
         // to add commands concurrently with exec()/discard() so we don't need to access `state` atomically here.
@@ -61,11 +64,11 @@ final class CommanderUtils {
         // Currently, we do not offload subscribes for `connection.request()` hence the order of subscribes is the
         // order of writes, so using `toFuture()` is sufficient. When we have the ability to override `Executor` per
         // request, we will use that to make sure subscribes are not offloaded.
-        final SingleProcessor<T> single = new SingleProcessor<>();
+        final Processor<T, T> single = Processors.newSingleProcessor();
         singles.add(single);
         return queued.flatMap(status -> {
             if (QUEUED_RESP.equals(status)) {
-                return single;
+                return fromSource(single);
             }
             return Single.error(new RedisClientException("Read '" + status + "' but expected 'QUEUED'"));
         }).<T>liftSynchronous(sub -> new Subscriber<T>() {
@@ -89,11 +92,12 @@ final class CommanderUtils {
         }).toFuture();
     }
 
-    static Single<String> abortSingles(final Single<String> result, final List<SingleProcessor<?>> singles) {
+    static Single<String> abortSingles(final Single<String> result, final List<Processor<?, ?>> singles) {
         return result.doBeforeSuccess(__ -> completeSinglesWithException(new TransactionAbortedException(), singles));
     }
 
-    static Completable completeSingles(final Single<List<Object>> results, final List<SingleProcessor<?>> singles) {
+    static Completable completeSingles(final Single<List<Object>> results,
+                                       final List<Processor<?, ?>> singles) {
         return results.doBeforeSuccess(resultList -> {
             if (singles.size() != resultList.size()) {
                 throw new IllegalStateException("Result resultList size (" + resultList.size()
@@ -102,7 +106,7 @@ final class CommanderUtils {
             final int size = resultList.size();
             for (int i = 0; i < size; ++i) {
                 Object obj = resultList.get(i);
-                SingleProcessor<?> single = singles.get(i);
+                Processor<?, ?> single = singles.get(i);
                 if (obj instanceof Throwable) {
                     // If a Redis command returns an error from the server (eg. if the stored type is invalid for the
                     // attempted command) this is translated into an `Exception`.
@@ -114,19 +118,20 @@ final class CommanderUtils {
         }).ignoreResult();
     }
 
-    private static void completeSinglesWithException(final Exception e, final List<SingleProcessor<?>> singles) {
-        for (SingleProcessor<?> single : singles) {
+    private static void completeSinglesWithException(final Exception e,
+                                                     final List<Processor<?, ?>> singles) {
+        for (Processor<?, ?> single : singles) {
             single.onError(e);
         }
     }
 
     @SuppressWarnings("unchecked")
-    private static void onSuccessUnchecked(final Object obj, final SingleProcessor single) {
+    private static void onSuccessUnchecked(final Object obj, final Processor single) {
         single.onSuccess(obj);
     }
 
     private static void handleCancel(final ReservedRedisConnection reservedCnx,
-                                     final List<SingleProcessor<?>> singles,
+                                     final List<Processor<?, ?>> singles,
                                      final String exceptionMessage) {
         toSource(reservedCnx.closeAsync()).subscribe(new CompletableSource.Subscriber() {
             @Override
@@ -152,13 +157,13 @@ final class CommanderUtils {
 
         private final T commander;
         private final Single<String> queued;
-        private final List<SingleProcessor<?>> singles;
+        private final List<Processor<?, ?>> singles;
         @SuppressWarnings("AtomicFieldUpdaterNotStaticFinal")
         private final AtomicIntegerFieldUpdater<T> stateUpdater;
         private final ReservedRedisConnection reservedCnx;
         private final boolean releaseAfterDone;
 
-        DiscardSingle(final T commander, final Single<String> queued, final List<SingleProcessor<?>> singles,
+        DiscardSingle(final T commander, final Single<String> queued, final List<Processor<?, ?>> singles,
                       final AtomicIntegerFieldUpdater<T> stateUpdater, final ReservedRedisConnection reservedCnx,
                       final boolean releaseAfterDone) {
             this.commander = commander;
@@ -198,13 +203,14 @@ final class CommanderUtils {
 
         private final T commander;
         private final Single<List<Object>> results;
-        private final List<SingleProcessor<?>> singles;
+        private final List<SingleSource.Processor<?, ?>> singles;
         @SuppressWarnings("AtomicFieldUpdaterNotStaticFinal")
         private final AtomicIntegerFieldUpdater<T> stateUpdater;
         private final ReservedRedisConnection reservedCnx;
         private final boolean releaseAfterDone;
 
-        ExecCompletable(final T commander, final Single<List<Object>> results, final List<SingleProcessor<?>> singles,
+        ExecCompletable(final T commander, final Single<List<Object>> results,
+                        final List<SingleSource.Processor<?, ?>> singles,
                         final AtomicIntegerFieldUpdater<T> stateUpdater, final ReservedRedisConnection reservedCnx,
                         final boolean releaseAfterDone) {
             this.commander = commander;

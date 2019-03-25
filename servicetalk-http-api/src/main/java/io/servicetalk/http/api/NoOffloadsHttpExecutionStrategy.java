@@ -21,16 +21,28 @@ import io.servicetalk.concurrent.api.Single;
 
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.http.api.DefaultHttpExecutionStrategy.flatten;
+import static java.util.Objects.requireNonNull;
 
 final class NoOffloadsHttpExecutionStrategy implements HttpExecutionStrategy {
 
-    static final HttpExecutionStrategy NO_OFFLOADS = new NoOffloadsHttpExecutionStrategy();
+    static final HttpExecutionStrategy NO_OFFLOADS_NO_EXECUTOR = new NoOffloadsHttpExecutionStrategy();
+
+    @Nullable
+    private final Executor executor;
 
     private NoOffloadsHttpExecutionStrategy() {
-        // Singleton
+        // Using immediate() here isn't a desirable default as it may end up being used as the Executor for the
+        // associated server and hence any tasks run on the Executor will not be offloaded which may not be the intent.
+        // If a user does want to use immediate() for the server they can create a delegating strategy to do that.
+        this.executor = null;
+    }
+
+    NoOffloadsHttpExecutionStrategy(Executor executor) {
+        this.executor = requireNonNull(executor);
     }
 
     @Override
@@ -72,7 +84,7 @@ final class NoOffloadsHttpExecutionStrategy implements HttpExecutionStrategy {
 
             @Override
             public HttpExecutionStrategy executionStrategy() {
-                return NO_OFFLOADS;
+                return NoOffloadsHttpExecutionStrategy.this;
             }
         };
     }
@@ -94,8 +106,7 @@ final class NoOffloadsHttpExecutionStrategy implements HttpExecutionStrategy {
 
     @Override
     public HttpExecutionStrategy merge(final HttpExecutionStrategy other) {
-        // Since this strategy does not offload, any offloads specified by the other strategy should always be honored.
-        return other;
+        return other.merge(this);
     }
 
     @Override
@@ -125,9 +136,6 @@ final class NoOffloadsHttpExecutionStrategy implements HttpExecutionStrategy {
 
     @Override
     public Executor executor() {
-        // Returning immediate() here isn't a desirable default as it may end up being used as the Executor for the
-        // associated server and hence any tasks run on the Executor will not be offloaded which may not be the intent.
-        // If a user does want to use immediate() for the server they can create a delegating strategy to do that.
-        return null;
+        return executor;
     }
 }

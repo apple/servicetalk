@@ -15,9 +15,9 @@
  */
 package io.servicetalk.transport.netty.internal;
 
+import io.servicetalk.concurrent.CompletableSource.Processor;
 import io.servicetalk.concurrent.api.AsyncCloseable;
 import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.concurrent.api.CompletableProcessor;
 import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
@@ -34,6 +34,8 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.Executors.immediate;
+import static io.servicetalk.concurrent.api.Processors.newCompletableProcessor;
+import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.transport.netty.internal.CloseStates.CLOSING;
 import static io.servicetalk.transport.netty.internal.CloseStates.GRACEFULLY_CLOSING;
@@ -59,7 +61,7 @@ public final class ChannelSet implements ListenableAsyncCloseable {
     };
 
     private final Map<ChannelId, Channel> channelMap = new ConcurrentHashMap<>();
-    private final CompletableProcessor onCloseProcessor = new CompletableProcessor();
+    private final Processor onCloseProcessor = newCompletableProcessor();
     private final Completable onClose;
     @SuppressWarnings("unused")
     private volatile int state;
@@ -70,7 +72,7 @@ public final class ChannelSet implements ListenableAsyncCloseable {
      * @param offloadingExecutor {@link Executor} to use for offloading close signals.
      */
     public ChannelSet(Executor offloadingExecutor) {
-        onClose = onCloseProcessor.publishOn(offloadingExecutor);
+        onClose = fromSource(onCloseProcessor).publishOn(offloadingExecutor);
     }
 
     /**

@@ -20,8 +20,8 @@ import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.CompletableSource;
+import io.servicetalk.concurrent.CompletableSource.Processor;
 import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.concurrent.api.CompletableProcessor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.internal.SubscribableCompletable;
 import io.servicetalk.concurrent.api.internal.SubscribablePublisher;
@@ -54,8 +54,9 @@ import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.client.internal.ServiceDiscovererUtils.calculateDifference;
+import static io.servicetalk.concurrent.api.Processors.newCompletableProcessor;
 import static io.servicetalk.concurrent.api.Publisher.error;
-import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
+import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.concurrent.internal.EmptySubscription.EMPTY_SUBSCRIPTION;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.newExceptionForInvalidRequestN;
@@ -79,7 +80,7 @@ final class DefaultDnsServiceDiscoverer
     private static final Comparator<InetAddress> INET_ADDRESS_COMPARATOR = comparing(o -> wrap(o.getAddress()));
     private static final Cancellable TERMINATED = () -> { };
 
-    private final CompletableProcessor closeCompletable = new CompletableProcessor();
+    private final Processor closeCompletable = newCompletableProcessor();
     private final Map<String, List<DiscoverEntry>> registerMap = new HashMap<>(8);
     private final EventLoopAwareNettyIoExecutor nettyIoExecutor;
     private final DnsNameResolver resolver;
@@ -167,7 +168,7 @@ final class DefaultDnsServiceDiscoverer
 
     @Override
     public Completable onClose() {
-        return closeCompletable;
+        return fromSource(closeCompletable);
     }
 
     @Override
@@ -175,7 +176,7 @@ final class DefaultDnsServiceDiscoverer
         return new SubscribableCompletable() {
             @Override
             protected void handleSubscribe(final CompletableSource.Subscriber subscriber) {
-                toSource(closeCompletable).subscribe(subscriber);
+                closeCompletable.subscribe(subscriber);
                 if (nettyIoExecutor.isCurrentThreadEventLoop()) {
                     closeAsync0();
                 } else {

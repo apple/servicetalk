@@ -22,6 +22,7 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ExecutionContext;
 
+import static io.servicetalk.concurrent.internal.FutureUtils.awaitTermination;
 import static io.servicetalk.http.api.HttpExecutionStrategies.OFFLOAD_NONE_STRATEGY;
 import static io.servicetalk.http.api.HttpExecutionStrategies.OFFLOAD_RECEIVE_META_STRATEGY;
 import static io.servicetalk.http.api.HttpExecutionStrategies.OFFLOAD_SEND_STRATEGY;
@@ -31,8 +32,9 @@ import static java.util.Objects.requireNonNull;
  * The equivalent of {@link HttpConnection} but that accepts {@link StreamingHttpRequest} and returns
  * {@link StreamingHttpResponse}.
  */
-public class StreamingHttpConnection extends StreamingHttpRequester {
+public class StreamingHttpConnection implements StreamingHttpRequester {
 
+    private final HttpExecutionStrategy strategy;
     final StreamingHttpConnectionFilter filterChain;
 
     /**
@@ -41,8 +43,8 @@ public class StreamingHttpConnection extends StreamingHttpRequester {
      * @param strategy Default {@link HttpExecutionStrategy} to use.
      */
     StreamingHttpConnection(final StreamingHttpConnectionFilter filterChain, final HttpExecutionStrategy strategy) {
-        super(requireNonNull(filterChain).reqRespFactory, requireNonNull(strategy));
-        this.filterChain = filterChain;
+        this.filterChain = requireNonNull(filterChain);
+        this.strategy = requireNonNull(strategy);
     }
 
     /**
@@ -106,6 +108,16 @@ public class StreamingHttpConnection extends StreamingHttpRequester {
         return new BlockingHttpConnection(this, filterChain.effectiveExecutionStrategy(OFFLOAD_NONE_STRATEGY));
     }
 
+    /**
+     * Send a {@code request}.
+     *
+     * @param request the request to send.
+     * @return The response.
+     */
+    public final Single<StreamingHttpResponse> request(StreamingHttpRequest request) {
+        return request(strategy, request);
+    }
+
     @Override
     public final Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
                                                        final StreamingHttpRequest request) {
@@ -130,6 +142,21 @@ public class StreamingHttpConnection extends StreamingHttpRequester {
     @Override
     public final Completable closeAsyncGracefully() {
         return filterChain.closeAsyncGracefully();
+    }
+
+    @Override
+    public final void close() {
+        awaitTermination(closeAsyncGracefully().toFuture());
+    }
+
+    @Override
+    public final StreamingHttpRequest newRequest(final HttpRequestMethod method, final String requestTarget) {
+        return filterChain.newRequest(method, requestTarget);
+    }
+
+    @Override
+    public StreamingHttpResponseFactory httpResponseFactory() {
+        return filterChain.httpResponseFactory();
     }
 
     /**

@@ -17,7 +17,6 @@ package io.servicetalk.concurrent.internal;
 
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.CompletableSource;
-import io.servicetalk.concurrent.Executor;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.SingleSource;
@@ -26,12 +25,8 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
-import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 import static io.servicetalk.concurrent.internal.TerminalNotification.error;
@@ -46,25 +41,21 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 
-public class TaskBasedSignalOffloaderTest {
+public class TaskBasedSignalOffloaderTest extends AbstractSignalOffloaderTest<TaskBasedSignalOffloader> {
 
-    private MockExecutor executor;
-    private TaskBasedSignalOffloader offloader;
     private Cancellable cancellable;
     private Subscription subscription;
-    private SingleSource.Subscriber<Integer> singleSub;
-    private CompletableSource.Subscriber completableSub;
-    private Subscriber<? super Integer> pubSub;
 
     @Before
     public void setUp() throws Exception {
-        executor = new MockExecutor();
-        offloader = new TaskBasedSignalOffloader(executor, 2);
+        doSetup();
         cancellable = mock(Cancellable.class);
         subscription = mock(Subscription.class);
-        singleSub = uncheckedMock(SingleSource.Subscriber.class);
-        completableSub = uncheckedMock(CompletableSource.Subscriber.class);
-        pubSub = uncheckedMock(Subscriber.class);
+    }
+
+    @Override
+    protected TaskBasedSignalOffloader newOffloader(MockExecutor executor) {
+        return new TaskBasedSignalOffloader(executor, 2);
     }
 
     @Test
@@ -485,46 +476,5 @@ public class TaskBasedSignalOffloaderTest {
         ArgumentCaptor<Subscription> captor = forClass(Subscription.class);
         verify(pubSub).onSubscribe(captor.capture());
         return captor.getValue();
-    }
-
-    @SuppressWarnings("unchecked")
-    private static <T> T uncheckedMock(Class<?> anyClass) {
-        return (T) mock(anyClass);
-    }
-
-    private static final class MockExecutor implements Executor {
-        private final ConcurrentLinkedQueue<Runnable> tasks;
-        private final Executor mock;
-
-        MockExecutor() {
-            tasks = new ConcurrentLinkedQueue<>();
-            mock = mock(Executor.class);
-            doAnswer(invocation -> {
-                tasks.offer(invocation.getArgument(0));
-                return null;
-            }).when(mock).execute(any());
-        }
-
-        @Override
-        public Cancellable execute(final Runnable runnable) {
-            mock.execute(runnable);
-            return IGNORE_CANCEL;
-        }
-
-        @Override
-        public Cancellable schedule(final Runnable task, final long delay, final TimeUnit unit)
-                throws RejectedExecutionException {
-            throw new UnsupportedOperationException("Schedule not supported for mock.");
-        }
-
-        int executeAllTasks() {
-            int execCount = 0;
-            Runnable task;
-            while ((task = tasks.poll()) != null) {
-                execCount++;
-                task.run();
-            }
-            return execCount;
-        }
     }
 }

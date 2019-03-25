@@ -16,8 +16,8 @@
 package io.servicetalk.http.api;
 
 import io.servicetalk.concurrent.CompletableSource;
+import io.servicetalk.concurrent.CompletableSource.Processor;
 import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.concurrent.api.CompletableProcessor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.api.ConnectionContext;
@@ -26,8 +26,9 @@ import io.servicetalk.transport.api.ExecutionContext;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiFunction;
 
+import static io.servicetalk.concurrent.api.Processors.newCompletableProcessor;
 import static io.servicetalk.concurrent.api.Single.error;
-import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
+import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.RequestResponseFactories.toStreaming;
 import static org.mockito.Mockito.mock;
@@ -44,7 +45,7 @@ public class BlockingStreamingHttpClientTest extends AbstractBlockingStreamingHt
                 new StreamingHttpClientFilter(client) {
 
                     @Override
-                    protected Single<StreamingHttpResponse> request(final StreamingHttpRequestFunction delegate,
+                    protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                                     final HttpExecutionStrategy strategy,
                                                                     final StreamingHttpRequest request) {
                         return doRequest.apply(strategy, request);
@@ -118,13 +119,13 @@ public class BlockingStreamingHttpClientTest extends AbstractBlockingStreamingHt
         }
 
         private final class TestClientTransport extends StreamingHttpClientFilter {
-            private final CompletableProcessor onClose = new CompletableProcessor();
+            private final Processor onClose = newCompletableProcessor();
             private final ExecutionContext executionContext;
             private final ConnectionContext connectionContext;
 
             TestClientTransport(final StreamingHttpRequestResponseFactory reqRespFactory,
                                 final ExecutionContext executionContext) {
-                super(terminal(reqRespFactory));
+                super(terminal(reqRespFactory, defaultStrategy()));
                 this.executionContext = executionContext;
                 this.connectionContext = mock(ConnectionContext.class);
                 when(connectionContext.executionContext()).thenReturn(executionContext);
@@ -132,7 +133,7 @@ public class BlockingStreamingHttpClientTest extends AbstractBlockingStreamingHt
 
             @Override
             public Completable onClose() {
-                return onClose;
+                return fromSource(onClose);
             }
 
             @Override
@@ -143,7 +144,7 @@ public class BlockingStreamingHttpClientTest extends AbstractBlockingStreamingHt
                         if (closed.compareAndSet(false, true)) {
                             onClose.onComplete();
                         }
-                        toSource(onClose).subscribe(subscriber);
+                        onClose.subscribe(subscriber);
                     }
                 };
             }

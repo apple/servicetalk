@@ -19,7 +19,7 @@ import io.servicetalk.concurrent.api.Executor;
 
 import org.junit.Test;
 
-import static io.servicetalk.http.api.HttpExecutionStrategies.customStrategyBuilder;
+import static io.servicetalk.http.api.HttpExecutionStrategies.Builder.MergeStrategy.Merge;
 import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
@@ -133,5 +133,9 @@ public class DefaultHttpExecutionStrategyMergeTest {
         assertThat("Unexpected merge result for data receive offload.", merged.isDataReceiveOffloaded(), is(true));
         assertThat("Unexpected merge result for meta receive offload", merged.isMetadataReceiveOffloaded(), is(false));
         assertThat("Unexpected merge result executor", merged.executor(), is(sameInstance(otherExecutor)));
+    }
+
+    private HttpExecutionStrategies.Builder customStrategyBuilder() {
+        return HttpExecutionStrategies.customStrategyBuilder().mergeStrategy(Merge);
     }
 }

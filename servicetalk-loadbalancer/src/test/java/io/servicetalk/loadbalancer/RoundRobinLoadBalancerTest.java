@@ -20,10 +20,10 @@ import io.servicetalk.client.api.DefaultServiceDiscovererEvent;
 import io.servicetalk.client.api.LoadBalancerReadyEvent;
 import io.servicetalk.client.api.NoAvailableHostException;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
+import io.servicetalk.concurrent.CompletableSource.Processor;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.concurrent.api.CompletableProcessor;
 import io.servicetalk.concurrent.api.LegacyMockedSingleListenerRule;
 import io.servicetalk.concurrent.api.LegacyTestSingle;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
@@ -43,6 +43,7 @@ import org.junit.rules.Timeout;
 
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -59,8 +60,10 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
 import static io.servicetalk.concurrent.api.BlockingTestUtils.awaitIndefinitely;
+import static io.servicetalk.concurrent.api.Processors.newCompletableProcessor;
 import static io.servicetalk.concurrent.api.Single.error;
 import static io.servicetalk.concurrent.api.Single.success;
+import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.concurrent.internal.ServiceTalkTestTimeout.DEFAULT_TIMEOUT_SECONDS;
@@ -131,7 +134,9 @@ public class RoundRobinLoadBalancerTest {
     public void streamEventJustClose() throws InterruptedException {
         CountDownLatch readyLatch = new CountDownLatch(1);
         CountDownLatch completeLatch = new CountDownLatch(1);
-        lb.eventStream().doAfterComplete(completeLatch::countDown).first().subscribe(next -> readyLatch.countDown());
+        lb.eventStream().doAfterComplete(completeLatch::countDown).firstOrElse(() -> {
+            throw new NoSuchElementException();
+        }).subscribe(next -> readyLatch.countDown());
         lb.closeAsync().subscribe();
 
         assertThat(readyLatch.await(100, MILLISECONDS), is(false));
@@ -408,12 +413,12 @@ public class RoundRobinLoadBalancerTest {
     @SuppressWarnings("unchecked")
     private TestLoadBalancedConnection newConnection(final String address) {
         final TestLoadBalancedConnection cnx = mock(TestLoadBalancedConnection.class);
-        final CompletableProcessor closeCompletable = new CompletableProcessor();
+        final Processor closeCompletable = newCompletableProcessor();
         when(cnx.closeAsync()).thenAnswer(__ -> {
             closeCompletable.onComplete();
             return closeCompletable;
         });
-        when(cnx.onClose()).thenReturn(closeCompletable);
+        when(cnx.onClose()).thenReturn(fromSource(closeCompletable));
         when(cnx.address()).thenReturn(address);
         when(cnx.toString()).thenReturn(address + '@' + cnx.hashCode());
 

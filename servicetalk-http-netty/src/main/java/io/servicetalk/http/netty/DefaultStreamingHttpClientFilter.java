@@ -23,8 +23,8 @@ import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.ReservedStreamingHttpConnectionFilter;
 import io.servicetalk.http.api.StreamingHttpClientFilter;
 import io.servicetalk.http.api.StreamingHttpRequest;
-import io.servicetalk.http.api.StreamingHttpRequestFunction;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
+import io.servicetalk.http.api.StreamingHttpRequester;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.utils.DoBeforeFinallyOnHttpResponseOperator;
 import io.servicetalk.transport.api.ExecutionContext;
@@ -49,13 +49,13 @@ final class DefaultStreamingHttpClientFilter extends StreamingHttpClientFilter {
                                      final HttpExecutionStrategy executionStrategy,
                                      final LoadBalancer<LoadBalancedStreamingHttpConnectionFilter> loadBalancer,
                                      final StreamingHttpRequestResponseFactory reqRespFactory) {
-        super(terminal(reqRespFactory));
+        super(terminal(reqRespFactory, executionStrategy));
         this.executionContext = requireNonNull(executionContext);
         this.loadBalancer = requireNonNull(loadBalancer);
     }
 
     @Override
-    protected Single<StreamingHttpResponse> request(final StreamingHttpRequestFunction delegate,
+    protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                     final HttpExecutionStrategy strategy,
                                                     final StreamingHttpRequest request) {
         // We have to do the incrementing/decrementing in the Client instead of LoadBalancedStreamingHttpConnection

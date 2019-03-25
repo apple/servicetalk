@@ -76,7 +76,7 @@ public abstract class ReservedStreamingHttpConnectionFilter extends StreamingHtt
     }
 
     @Override
-    protected Single<StreamingHttpResponse> request(final StreamingHttpConnectionFilter delegate,
+    protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                     final HttpExecutionStrategy strategy,
                                                     final StreamingHttpRequest request) {
         return delegate.request(strategy, request);
@@ -172,7 +172,7 @@ public abstract class ReservedStreamingHttpConnectionFilter extends StreamingHtt
         }
 
         @Override
-        protected Single<StreamingHttpResponse> request(final StreamingHttpConnectionFilter delegate,
+        protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                         final HttpExecutionStrategy strategy,
                                                         final StreamingHttpRequest request) {
             throw new UnsupportedOperationException(FILTER_CHAIN_TERMINAL);

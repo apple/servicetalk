@@ -45,8 +45,8 @@ import io.servicetalk.http.api.ReservedStreamingHttpConnectionFilter;
 import io.servicetalk.http.api.StreamingHttpClientFilter;
 import io.servicetalk.http.api.StreamingHttpConnectionFilter;
 import io.servicetalk.http.api.StreamingHttpRequest;
-import io.servicetalk.http.api.StreamingHttpRequestFunction;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
+import io.servicetalk.http.api.StreamingHttpRequester;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.netty.DefaultSingleAddressHttpClientBuilder.HttpClientBuildContext;
 import io.servicetalk.transport.api.ExecutionContext;
@@ -62,6 +62,7 @@ import javax.annotation.Nullable;
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.concurrent.api.Single.error;
+import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static java.util.Objects.requireNonNull;
 
 class DefaultPartitionedHttpClientBuilder<U, R> extends PartitionedHttpClientBuilder<U, R> {
@@ -96,11 +97,11 @@ class DefaultPartitionedHttpClientBuilder<U, R> extends PartitionedHttpClientBui
         @SuppressWarnings("unchecked")
         final Publisher<? extends PartitionedServiceDiscovererEvent<R>> psdEvents =
                 (Publisher<? extends PartitionedServiceDiscovererEvent<R>>) buildContext.discover();
-
+        HttpExecutionStrategy strategy = buildContext.executionStrategy();
         return assembler.apply(new DefaultPartitionedStreamingHttpClientFilter<>(psdEvents,
                 serviceDiscoveryMaxQueueSize, clientFactory, partitionAttributesBuilderFactory,
-                buildContext.reqRespFactory, buildContext.executionContext, partitionMapFactory),
-                buildContext.executionStrategy());
+                buildContext.reqRespFactory, buildContext.executionContext, partitionMapFactory, strategy),
+                strategy);
     }
 
     private static final class DefaultPartitionedStreamingHttpClientFilter<U, R> extends StreamingHttpClientFilter {
@@ -121,8 +122,8 @@ class DefaultPartitionedHttpClientBuilder<U, R> extends PartitionedHttpClientBui
                 final Function<HttpRequestMetaData, PartitionAttributesBuilder> pabf,
                 final StreamingHttpRequestResponseFactory reqRespFactory,
                 final ExecutionContext executionContext,
-                final PartitionMapFactory partitionMapFactory) {
-            super(terminal(reqRespFactory));
+                final PartitionMapFactory partitionMapFactory, final HttpExecutionStrategy strategy) {
+            super(terminal(reqRespFactory, strategy));
             this.pabf = pabf;
             this.executionContext = executionContext;
             this.group = new DefaultPartitionedClientGroup<>(PARTITION_CLOSED, PARTITION_UNKNOWN, clientFactory,
@@ -130,7 +131,7 @@ class DefaultPartitionedHttpClientBuilder<U, R> extends PartitionedHttpClientBui
         }
 
         @Override
-        protected Single<StreamingHttpResponse> request(final StreamingHttpRequestFunction terminalDelegate,
+        protected Single<StreamingHttpResponse> request(final StreamingHttpRequester terminalDelegate,
                                                         final HttpExecutionStrategy strategy,
                                                         final StreamingHttpRequest request) {
             // Don't call the terminal delegate!
@@ -181,7 +182,7 @@ class DefaultPartitionedHttpClientBuilder<U, R> extends PartitionedHttpClientBui
                 public StreamingHttpRequest newRequest(final HttpRequestMethod method, final String requestTarget) {
                     throw ex;
                 }
-            }));
+            }, defaultStrategy()));
             this.ex = ex;
         }
 
@@ -194,7 +195,7 @@ class DefaultPartitionedHttpClientBuilder<U, R> extends PartitionedHttpClientBui
         }
 
         @Override
-        protected Single<StreamingHttpResponse> request(final StreamingHttpRequestFunction delegate,
+        protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                         final HttpExecutionStrategy strategy,
                                                         final StreamingHttpRequest request) {
             return error(ex);

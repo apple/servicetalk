@@ -79,6 +79,9 @@ public abstract class MultiAddressHttpClientBuilder<U, R>
     public abstract MultiAddressHttpClientBuilder<U, R> maxPipelinedRequests(int maxPipelinedRequests);
 
     @Override
+    public abstract MultiAddressHttpClientBuilder<U, R> disableHostHeaderFallback();
+
+    @Override
     public abstract MultiAddressHttpClientBuilder<U, R> appendConnectionFilter(HttpConnectionFilterFactory factory);
 
     @Override
@@ -90,9 +93,6 @@ public abstract class MultiAddressHttpClientBuilder<U, R>
     @Override
     public abstract MultiAddressHttpClientBuilder<U, R> appendConnectionFactoryFilter(
             ConnectionFactoryFilter<R, StreamingHttpConnectionFilter> factory);
-
-    @Override
-    public abstract MultiAddressHttpClientBuilder<U, R> disableHostHeaderFallback();
 
     @Override
     public abstract MultiAddressHttpClientBuilder<U, R> disableWaitForLoadBalancer();

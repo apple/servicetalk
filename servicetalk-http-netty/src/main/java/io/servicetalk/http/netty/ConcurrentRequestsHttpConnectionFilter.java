@@ -25,6 +25,7 @@ import io.servicetalk.http.api.HttpConnectionFilterFactory;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.StreamingHttpConnectionFilter;
 import io.servicetalk.http.api.StreamingHttpRequest;
+import io.servicetalk.http.api.StreamingHttpRequester;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.utils.DoBeforeFinallyOnHttpResponseOperator;
 import io.servicetalk.transport.netty.internal.NettyConnectionContext;
@@ -70,7 +71,7 @@ final class ConcurrentRequestsHttpConnectionFilter implements HttpConnectionFilt
         }
 
         @Override
-        protected Single<StreamingHttpResponse> request(final StreamingHttpConnectionFilter delegate,
+        protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                         final HttpExecutionStrategy strategy,
                                                         final StreamingHttpRequest request) {
             return new SubscribableSingle<StreamingHttpResponse>() {

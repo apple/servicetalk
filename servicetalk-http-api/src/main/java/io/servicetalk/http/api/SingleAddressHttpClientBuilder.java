@@ -39,25 +39,11 @@ import javax.annotation.Nullable;
 public abstract class SingleAddressHttpClientBuilder<U, R>
         extends BaseSingleAddressHttpClientBuilder<U, R, ServiceDiscovererEvent<R>> {
 
-    private HttpExecutionStrategy strategy = DEFAULT_BUILDER_STRATEGY;
-
-    /**
-     * Returns the {@link HttpExecutionStrategy} used by this {@link SingleAddressHttpClientBuilder}.
-     *
-     * @return {@link HttpExecutionStrategy} used by this {@link SingleAddressHttpClientBuilder}.
-     */
-    protected final HttpExecutionStrategy executionStrategy() {
-        return strategy;
-    }
-
     @Override
     public abstract SingleAddressHttpClientBuilder<U, R> ioExecutor(IoExecutor ioExecutor);
 
     @Override
-    public final SingleAddressHttpClientBuilder<U, R> executionStrategy(HttpExecutionStrategy strategy) {
-        this.strategy = strategy;
-        return this;
-    }
+    public abstract SingleAddressHttpClientBuilder<U, R> executionStrategy(HttpExecutionStrategy strategy);
 
     @Override
     public abstract SingleAddressHttpClientBuilder<U, R> bufferAllocator(BufferAllocator allocator);

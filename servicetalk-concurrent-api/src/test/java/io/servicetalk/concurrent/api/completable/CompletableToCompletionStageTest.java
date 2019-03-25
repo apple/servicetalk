@@ -76,7 +76,7 @@ public class CompletableToCompletionStageTest {
 
     private void verifyComplete(boolean completeBeforeListen) throws InterruptedException {
         CountDownLatch latch = new CountDownLatch(1);
-        CompletionStage<String> stage = source.toCompletionStage();
+        CompletionStage<Void> stage = source.toCompletionStage();
         if (completeBeforeListen) {
             source.onComplete();
             stage.thenRun(latch::countDown);
@@ -100,7 +100,7 @@ public class CompletableToCompletionStageTest {
     private void verifyError(boolean errorBeforeListen) throws InterruptedException {
         CountDownLatch latch = new CountDownLatch(1);
         AtomicReference<Throwable> causeRef = new AtomicReference<>();
-        CompletionStage<String> stage = source.toCompletionStage();
+        CompletionStage<Void> stage = source.toCompletionStage();
         if (errorBeforeListen) {
             source.onError(DELIBERATE_EXCEPTION);
             stage.exceptionally(cause -> {
@@ -122,14 +122,14 @@ public class CompletableToCompletionStageTest {
 
     @Test
     public void futureComplete() throws Exception {
-        Future<String> f = source.toFuture();
+        Future<Void> f = source.toFuture();
         jdkExecutor.execute(source::onComplete);
         f.get();
     }
 
     @Test
     public void futureFail() throws Exception {
-        Future<String> f = source.toFuture();
+        Future<Void> f = source.toFuture();
         jdkExecutor.execute(() -> source.onError(DELIBERATE_EXCEPTION));
         thrown.expect(ExecutionException.class);
         thrown.expectCause(is(DELIBERATE_EXCEPTION));

@@ -24,6 +24,7 @@ import io.servicetalk.transport.api.ExecutionContext;
 import static io.servicetalk.concurrent.api.AsyncCloseables.emptyAsyncCloseable;
 import static io.servicetalk.concurrent.api.Single.error;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
+import static io.servicetalk.http.api.StreamingHttpClientFilter.terminal;
 
 public final class TestStreamingHttpClient {
 
@@ -36,7 +37,7 @@ public final class TestStreamingHttpClient {
             final ExecutionContext executionContext,
             final HttpClientFilterFactory factory) {
         final StreamingHttpClientFilter filterChain = factory.
-                create(new StreamingHttpClientFilter(StreamingHttpClientFilter.terminal(reqRespFactory)) {
+                create(new StreamingHttpClientFilter(terminal(reqRespFactory, defaultStrategy())) {
 
                     private final ListenableAsyncCloseable closeable = emptyAsyncCloseable();
 
@@ -56,7 +57,7 @@ public final class TestStreamingHttpClient {
                     }
 
                     @Override
-                    protected Single<StreamingHttpResponse> request(final StreamingHttpRequestFunction delegate,
+                    protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                                     final HttpExecutionStrategy strategy,
                                                                     final StreamingHttpRequest request) {
                         return error(new UnsupportedOperationException());

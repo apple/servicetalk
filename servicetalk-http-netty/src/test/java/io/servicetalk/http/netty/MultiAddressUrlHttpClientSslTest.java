@@ -19,9 +19,9 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.BlockingHttpRequester;
 import io.servicetalk.http.api.DefaultHttpHeadersFactory;
+import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpRequest;
-import io.servicetalk.http.api.HttpRequester;
 import io.servicetalk.http.api.SslConfigProvider;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
@@ -148,50 +148,50 @@ public class MultiAddressUrlHttpClientSslTest {
 
     @Test(expected = ExecutionException.class)
     public void nonSecureClientToSecureServer() throws Exception {
-        HttpRequester requester = HttpClients.forMultiAddressUrl()
+        HttpClient client = HttpClients.forMultiAddressUrl()
                 .ioExecutor(CTX.ioExecutor())
                 .executionStrategy(defaultStrategy(CTX.executor()))
                 .build();
 
-        HttpRequest request = requester.get("/")
+        HttpRequest request = client.get("/")
                 .addHeader(HOST, secureServerHostHeader)
                 .addHeader(CONTENT_LENGTH, ZERO);
-        await(requester.request(request), 2, SECONDS);
+        await(client.request(request), 2, SECONDS);
     }
 
     @Test(expected = TimeoutException.class)
     public void secureClientToNonSecureServer() throws Exception {
-        HttpRequester requester = HttpClients.forMultiAddressUrl()
+        HttpClient client = HttpClients.forMultiAddressUrl()
                 .sslConfigProvider(secureByDefault())
                 .ioExecutor(CTX.ioExecutor())
                 .executionStrategy(defaultStrategy(CTX.executor()))
                 .build();
 
-        HttpRequest request = requester.get("/")
+        HttpRequest request = client.get("/")
                 .addHeader(HOST, serverHostHeader)
                 .addHeader(CONTENT_LENGTH, ZERO);
-        await(requester.request(request), 2, SECONDS);
+        await(client.request(request), 2, SECONDS);
     }
 
     @Test
     public void requesterWithDefaultSslConfigProvider() throws Exception {
-        try (BlockingHttpRequester requester = HttpClients.forMultiAddressUrl()
+        try (BlockingHttpRequester client = HttpClients.forMultiAddressUrl()
                 .enableWireLogging("servicetalk-tests-client-wire-logger")
                 .ioExecutor(CTX.ioExecutor())
                 .executionStrategy(defaultStrategy(CTX.executor()))
                 .buildBlocking()) {
-            testOnlyNonSecureRequestTargets(requester);
+            testOnlyNonSecureRequestTargets(client);
         }
     }
 
     @Test
     public void requesterWithPlainSslConfigProvider() throws Exception {
-        try (BlockingHttpRequester requester = HttpClients.forMultiAddressUrl()
+        try (BlockingHttpRequester client = HttpClients.forMultiAddressUrl()
                 .sslConfigProvider(plainByDefault())
                 .ioExecutor(CTX.ioExecutor())
                 .executionStrategy(defaultStrategy(CTX.executor()))
                 .buildBlocking()) {
-            testOnlyNonSecureRequestTargets(requester);
+            testOnlyNonSecureRequestTargets(client);
         }
     }
 
@@ -211,12 +211,12 @@ public class MultiAddressUrlHttpClientSslTest {
                         .build();
             }
         };
-        try (BlockingHttpRequester requester = HttpClients.forMultiAddressUrl()
+        try (BlockingHttpRequester client = HttpClients.forMultiAddressUrl()
                 .sslConfigProvider(sslConfigProvider)
                 .ioExecutor(CTX.ioExecutor())
                 .executionStrategy(defaultStrategy(CTX.executor()))
                 .buildBlocking()) {
-            testAllFormsOfRequestTargetWithSecureByDefault(requester);
+            testAllFormsOfRequestTargetWithSecureByDefault(client);
         }
     }
 

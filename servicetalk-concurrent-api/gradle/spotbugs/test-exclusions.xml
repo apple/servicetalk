@@ -45,7 +45,7 @@
   <!-- The tests want to verify objects are GCed, so they force a call to System.gc() intentionally -->
   <Match>
     <Or>
-      <Class name="io.servicetalk.concurrent.api.completable.CompletableProcessorTest"/>
+      <Class name="io.servicetalk.concurrent.api.CompletableProcessorTest"/>
       <Class name="io.servicetalk.concurrent.api.SingleProcessorTest"/>
     </Or>
     <Method name="synchronousCancelStillAllowsForGC"/>

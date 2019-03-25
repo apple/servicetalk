@@ -17,27 +17,10 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.transport.api.ExecutionContext;
 
-import static java.util.Objects.requireNonNull;
-
 /**
  * The equivalent of {@link StreamingHttpRequester} but with synchronous/blocking APIs instead of asynchronous APIs.
  */
-public abstract class BlockingStreamingHttpRequester implements BlockingStreamingHttpRequestFactory, AutoCloseable {
-    final BlockingStreamingHttpRequestResponseFactory reqRespFactory;
-    private final HttpExecutionStrategy strategy;
-
-    /**
-     * Create a new instance.
-     * @param reqRespFactory The {@link BlockingStreamingHttpRequestResponseFactory} used to
-     * {@link #newRequest(HttpRequestMethod, String) create new requests}.
-     * @param strategy Default {@link HttpExecutionStrategy} to use.
-     */
-    BlockingStreamingHttpRequester(final BlockingStreamingHttpRequestResponseFactory reqRespFactory,
-                                   final HttpExecutionStrategy strategy) {
-        this.reqRespFactory = requireNonNull(reqRespFactory);
-        this.strategy = requireNonNull(strategy);
-    }
-
+public interface BlockingStreamingHttpRequester extends BlockingStreamingHttpRequestFactory, AutoCloseable {
     /**
      * Send a {@code request}.
      *
@@ -45,9 +28,7 @@ public abstract class BlockingStreamingHttpRequester implements BlockingStreamin
      * @return The response.
      * @throws Exception if an exception occurs during the request processing.
      */
-    public final BlockingStreamingHttpResponse request(BlockingStreamingHttpRequest request) throws Exception {
-        return request(strategy, request);
-    }
+    BlockingStreamingHttpResponse request(BlockingStreamingHttpRequest request) throws Exception;
 
     /**
      * Send a {@code request} using the passed {@link HttpExecutionStrategy strategy}.
@@ -57,8 +38,8 @@ public abstract class BlockingStreamingHttpRequester implements BlockingStreamin
      * @return The response.
      * @throws Exception if an exception occurs during the request processing.
      */
-    public abstract BlockingStreamingHttpResponse request(HttpExecutionStrategy strategy,
-                                                          BlockingStreamingHttpRequest request) throws Exception;
+    BlockingStreamingHttpResponse request(HttpExecutionStrategy strategy,
+                                          BlockingStreamingHttpRequest request) throws Exception;
 
     /**
      * Get the {@link ExecutionContext} used during construction of this object.
@@ -68,19 +49,12 @@ public abstract class BlockingStreamingHttpRequester implements BlockingStreamin
      *
      * @return the {@link ExecutionContext} used during construction of this object.
      */
-    public abstract ExecutionContext executionContext();
-
-    @Override
-    public final BlockingStreamingHttpRequest newRequest(HttpRequestMethod method, String requestTarget) {
-        return reqRespFactory.newRequest(method, requestTarget);
-    }
+    ExecutionContext executionContext();
 
     /**
-     * Returns the default {@link HttpExecutionStrategy} for this {@link BlockingStreamingHttpRequester}.
+     * Get a {@link BlockingStreamingHttpResponseFactory}.
      *
-     * @return Default {@link HttpExecutionStrategy} for this {@link BlockingStreamingHttpRequester}.
+     * @return a {@link BlockingStreamingHttpResponseFactory}.
      */
-    final HttpExecutionStrategy executionStrategy() {
-        return strategy;
-    }
+    BlockingStreamingHttpResponseFactory httpResponseFactory();
 }

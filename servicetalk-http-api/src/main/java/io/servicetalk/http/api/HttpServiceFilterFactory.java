@@ -58,7 +58,7 @@ public interface HttpServiceFilterFactory {
      * @return a function that always returns its input {@link HttpServiceFilterFactory}.
      */
     static HttpServiceFilterFactory identity() {
-        return service -> new StreamingHttpServiceFilter(service, service.executionStrategy()) {
+        return service -> new StreamingHttpServiceFilter(service) {
             @Override
             protected HttpExecutionStrategy mergeForEffectiveStrategy(final HttpExecutionStrategy mergeWith) {
                 // Since this filter does not have any blocking code, we do not need to alter the effective strategy.

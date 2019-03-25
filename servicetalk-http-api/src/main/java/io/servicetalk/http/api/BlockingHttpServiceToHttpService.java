@@ -18,6 +18,7 @@ package io.servicetalk.http.api;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 
+import static io.servicetalk.http.api.BlockingHttpService.DEFAULT_BLOCKING_SERVICE_STRATEGY;
 import static io.servicetalk.http.api.BlockingUtils.blockingToCompletable;
 import static io.servicetalk.http.api.BlockingUtils.blockingToSingle;
 import static java.util.Objects.requireNonNull;
@@ -54,11 +55,10 @@ final class BlockingHttpServiceToHttpService extends HttpService {
     }
 
     static HttpService transform(final BlockingHttpService service) {
-        // The recommended approach for filtering is using the filter factories which forces people to use the
-        // StreamingHttpServiceFilter API and use the effective strategy. When that path is used, then we will not get
-        // here as the intermediate transitions take care of returning the original StreamingHttpService.
-        // If we are here, it is for a user implemented BlockingStreamingHttpService, so we assume the strategy provided
-        // by the passed service is the effective strategy.
-        return new BlockingHttpServiceToHttpService(service, service.executionStrategy());
+        // Since we are converting to a different programming model, try altering the strategy for the returned service
+        // to contain an appropriate default. We achieve this by merging the expected strategy with the provided
+        // service strategy.
+        return new BlockingHttpServiceToHttpService(service,
+                service.executionStrategy().merge(DEFAULT_BLOCKING_SERVICE_STRATEGY));
     }
 }

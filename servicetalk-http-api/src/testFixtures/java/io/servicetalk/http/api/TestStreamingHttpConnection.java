@@ -61,7 +61,7 @@ public final class TestStreamingHttpConnection {
                     }
 
                     @Override
-                    protected Single<StreamingHttpResponse> request(final StreamingHttpConnectionFilter delegate,
+                    protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                                     final HttpExecutionStrategy strategy,
                                                                     final StreamingHttpRequest request) {
                         return error(new UnsupportedOperationException());

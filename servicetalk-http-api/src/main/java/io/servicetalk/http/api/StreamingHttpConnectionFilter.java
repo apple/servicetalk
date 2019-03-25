@@ -17,7 +17,6 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.StreamingHttpConnection.SettingKey;
@@ -33,9 +32,7 @@ import static java.util.Objects.requireNonNull;
  * A {@link StreamingHttpConnectionFilter} that delegates all methods to a different {@link
  * StreamingHttpConnectionFilter}.
  */
-public class StreamingHttpConnectionFilter implements StreamingHttpRequestFactory,
-                                                      StreamingHttpRequestFunction,
-                                                      ListenableAsyncCloseable {
+public class StreamingHttpConnectionFilter implements StreamingHttpRequester {
 
     @Nullable
     private final StreamingHttpConnectionFilter delegate;
@@ -88,15 +85,15 @@ public class StreamingHttpConnectionFilter implements StreamingHttpRequestFactor
     }
 
     /**
-     * Called when the filter needs to delegate the request using the provided {@link StreamingHttpConnectionFilter} on
-     * which to call {@link StreamingHttpConnectionFilter#request(HttpExecutionStrategy, StreamingHttpRequest)}.
+     * Called when the filter needs to delegate the request using the provided {@link StreamingHttpRequester} on
+     * which to call {@link StreamingHttpRequester#request(HttpExecutionStrategy, StreamingHttpRequest)}.
      *
-     * @param delegate The {@link StreamingHttpRequestFunction} to delegate requests to.
+     * @param delegate The {@link StreamingHttpRequester} to delegate requests to.
      * @param strategy The {@link HttpExecutionStrategy} to use for executing the request.
      * @param request The request to delegate.
      * @return the response.
      */
-    protected Single<StreamingHttpResponse> request(final StreamingHttpConnectionFilter delegate,
+    protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                     final HttpExecutionStrategy strategy,
                                                     final StreamingHttpRequest request) {
         return delegate.request(strategy, request);
@@ -211,7 +208,7 @@ public class StreamingHttpConnectionFilter implements StreamingHttpRequestFactor
         }
 
         @Override
-        protected Single<StreamingHttpResponse> request(final StreamingHttpConnectionFilter delegate,
+        protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                         final HttpExecutionStrategy strategy,
                                                         final StreamingHttpRequest request) {
             throw new UnsupportedOperationException(FILTER_CHAIN_TERMINAL);

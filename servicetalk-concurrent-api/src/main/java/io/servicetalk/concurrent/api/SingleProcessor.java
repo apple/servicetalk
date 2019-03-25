@@ -16,8 +16,7 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
-import io.servicetalk.concurrent.SingleSource;
-import io.servicetalk.concurrent.SingleSource.Subscriber;
+import io.servicetalk.concurrent.SingleSource.Processor;
 import io.servicetalk.concurrent.internal.DelayedCancellable;
 import io.servicetalk.concurrent.internal.QueueFullAndRejectedSubscribeException;
 import io.servicetalk.concurrent.internal.TerminalNotification;
@@ -37,7 +36,7 @@ import static io.servicetalk.concurrent.internal.PlatformDependent.newUnboundedL
  * {@link Subscriber} methods which is forwarded to all existing or subsequent {@link Subscriber}s.
  * @param <T> The type of result of the {@link Single}.
  */
-public final class SingleProcessor<T> extends Single<T> implements Subscriber<T>, SingleSource<T> {
+final class SingleProcessor<T> extends Single<T> implements Processor<T, T> {
     private static final AtomicReferenceFieldUpdater<SingleProcessor, Object> terminalSignalUpdater =
             AtomicReferenceFieldUpdater.newUpdater(SingleProcessor.class, Object.class, "terminalSignal");
     private static final AtomicIntegerFieldUpdater<SingleProcessor> drainingTheQueueUpdater =
