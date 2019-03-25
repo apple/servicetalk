@@ -37,6 +37,6 @@ public class PublisherConcatWithSingleTckTest extends AbstractPublisherOperatorT
 
     @Override
     protected Publisher<Integer> composePublisher(Publisher<Integer> publisher, int elements) {
-        return publisher.concatWith(Single.success(1));
+        return publisher.concat(Single.success(1));
     }
 }

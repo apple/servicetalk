@@ -135,7 +135,7 @@ public class BufferRedisCommanderTest extends BaseRedisClientTest {
         assertThat(awaitIndefinitely(commandClient.blpop(singletonList(buf("missing-key")), 1)), is(nullValue()));
 
         assertThat(awaitIndefinitely(commandClient.sadd(key("a-set-1"), buf("a"), buf("b"), buf("c"))
-                        .concatWith(commandClient.sadd(key("a-set-2"), buf("c"), buf("d"), buf("e")))),
+                        .concat(commandClient.sadd(key("a-set-2"), buf("c"), buf("d"), buf("e")))),
                 contains(greaterThanOrEqualTo(0L), greaterThanOrEqualTo(0L)));
         assertThat(awaitIndefinitely(commandClient.sdiff(key("a-set-1"), key("a-set-2"), buf("missing-key"))),
                 containsInAnyOrder(buf("a"), buf("b")));

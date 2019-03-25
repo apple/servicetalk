@@ -167,7 +167,7 @@ class DefaultStreamingHttpRequest<P> extends DefaultHttpRequestMetaData implemen
     public final Publisher<Object> payloadBodyAndTrailers() {
         return payloadBody
                 .map(payload -> (Object) payload) // down cast to Object
-                .concatWith(trailersSingle);
+                .concat(trailersSingle);
     }
 
     @Override

@@ -39,7 +39,7 @@ public class ConcatWithCompletableTest {
 
     @Test
     public void concatWaitsForCompletableSuccess() {
-        listener.listen(single.concatWith(completable));
+        listener.listen(single.concat(completable));
         single.onSuccess("foo");
         listener.verifyNoEmissions();
         completable.onComplete();
@@ -48,7 +48,7 @@ public class ConcatWithCompletableTest {
 
     @Test
     public void concatPropagatesCompletableFailure() {
-        listener.listen(single.concatWith(completable));
+        listener.listen(single.concat(completable));
         single.onSuccess("foo");
         listener.verifyNoEmissions();
         completable.onError(DELIBERATE_EXCEPTION);
@@ -57,7 +57,7 @@ public class ConcatWithCompletableTest {
 
     @Test
     public void concatPropagatesSingleFailure() {
-        listener.listen(single.concatWith(completable));
+        listener.listen(single.concat(completable));
         single.onError(DELIBERATE_EXCEPTION);
         listener.verifyFailure(DELIBERATE_EXCEPTION);
     }

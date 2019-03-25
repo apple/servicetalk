@@ -34,10 +34,10 @@ public class ConcatWithOrderingTest {
     @Test
     public void completablesOnly() throws Exception {
         completable(1)
-                .concatWith(completable(2))
-                .concatWith(completable(3))
-                .concatWith(completable(4))
-                .concatWith(completable(5))
+                .concat(completable(2))
+                .concat(completable(3))
+                .concat(completable(4))
+                .concat(completable(5))
                 .toFuture().get();
 
         assertResult(sb);
@@ -46,10 +46,10 @@ public class ConcatWithOrderingTest {
     @Test
     public void completableSingeCompletables() throws Exception {
         completable(1)
-                .concatWith(single(2))
-                .concatWith(completable(3))
-                .concatWith(completable(4))
-                .concatWith(completable(5))
+                .concat(single(2))
+                .concat(completable(3))
+                .concat(completable(4))
+                .concat(completable(5))
                 .toFuture().get();
 
         assertResult(sb);
@@ -58,10 +58,10 @@ public class ConcatWithOrderingTest {
     @Test
     public void completableTwoSingesCompletables() throws Exception {
         completable(1)
-                .concatWith(single(2))
-                .concatWith(single(3))
-                .concatWith(completable(4))
-                .concatWith(completable(5))
+                .concat(single(2))
+                .concat(single(3))
+                .concat(completable(4))
+                .concat(completable(5))
                 .toFuture().get();
 
         assertResult(sb);
@@ -70,10 +70,10 @@ public class ConcatWithOrderingTest {
     @Test
     public void completablePublisherCompletables() throws Exception {
         completable(1)
-                .concatWith(publisher(2))
-                .concatWith(completable(3))
-                .concatWith(completable(4))
-                .concatWith(completable(5))
+                .concat(publisher(2))
+                .concat(completable(3))
+                .concat(completable(4))
+                .concat(completable(5))
                 .toFuture().get();
 
         assertResult(sb);
@@ -82,10 +82,10 @@ public class ConcatWithOrderingTest {
     @Test
     public void singlesOnly() throws Exception {
         single(1)
-                .concatWith(single(2))
-                .concatWith(single(3))
-                .concatWith(single(4))
-                .concatWith(single(5))
+                .concat(single(2))
+                .concat(single(3))
+                .concat(single(4))
+                .concat(single(5))
                 .toFuture().get();
 
         assertResult(sb);
@@ -94,10 +94,10 @@ public class ConcatWithOrderingTest {
     @Test
     public void singleCompletableSingles() throws Exception {
         single(1)
-                .concatWith(completable(2))
-                .concatWith(single(3))
-                .concatWith(single(4))
-                .concatWith(single(5))
+                .concat(completable(2))
+                .concat(single(3))
+                .concat(single(4))
+                .concat(single(5))
                 .toFuture().get();
 
         assertResult(sb);
@@ -106,10 +106,10 @@ public class ConcatWithOrderingTest {
     @Test
     public void singleTwoCompletablesSingles() throws Exception {
         single(1)
-                .concatWith(completable(2))
-                .concatWith(completable(3))
-                .concatWith(single(4))
-                .concatWith(single(5))
+                .concat(completable(2))
+                .concat(completable(3))
+                .concat(single(4))
+                .concat(single(5))
                 .toFuture().get();
 
         assertResult(sb);
@@ -118,10 +118,10 @@ public class ConcatWithOrderingTest {
     @Test
     public void singlePublisherSingles() throws Exception {
         single(1)
-                .concatWith(publisher(2))
-                .concatWith(single(3))
-                .concatWith(single(4))
-                .concatWith(single(5))
+                .concat(publisher(2))
+                .concat(single(3))
+                .concat(single(4))
+                .concat(single(5))
                 .toFuture().get();
 
         assertResult(sb);
@@ -130,10 +130,10 @@ public class ConcatWithOrderingTest {
     @Test
     public void publishersOnly() throws Exception {
         publisher(1)
-                .concatWith(publisher(2))
-                .concatWith(publisher(3))
-                .concatWith(publisher(4))
-                .concatWith(publisher(5))
+                .concat(publisher(2))
+                .concat(publisher(3))
+                .concat(publisher(4))
+                .concat(publisher(5))
                 .toFuture().get();
 
         assertResult(sb);
@@ -142,10 +142,10 @@ public class ConcatWithOrderingTest {
     @Test
     public void publisherCompletablePublishers() throws Exception {
         publisher(1)
-                .concatWith(completable(2))
-                .concatWith(publisher(3))
-                .concatWith(publisher(4))
-                .concatWith(publisher(5))
+                .concat(completable(2))
+                .concat(publisher(3))
+                .concat(publisher(4))
+                .concat(publisher(5))
                 .toFuture().get();
 
         assertResult(sb);
@@ -154,10 +154,10 @@ public class ConcatWithOrderingTest {
     @Test
     public void publisherSinglePublishers() throws Exception {
         publisher(1)
-                .concatWith(single(2))
-                .concatWith(publisher(3))
-                .concatWith(publisher(4))
-                .concatWith(publisher(5))
+                .concat(single(2))
+                .concat(publisher(3))
+                .concat(publisher(4))
+                .concat(publisher(5))
                 .toFuture().get();
 
         assertResult(sb);
@@ -166,10 +166,10 @@ public class ConcatWithOrderingTest {
     @Test
     public void completableSinglePublisherSingleCompletable() throws Exception {
         completable(1)
-                .concatWith(single(2))
-                .concatWith(publisher(3))
-                .concatWith(single(4))
-                .concatWith(completable(5))
+                .concat(single(2))
+                .concat(publisher(3))
+                .concat(single(4))
+                .concat(completable(5))
                 .toFuture().get();
 
         assertResult(sb);
@@ -178,10 +178,10 @@ public class ConcatWithOrderingTest {
     @Test
     public void publisherSingleCompletableSinglePublisher() throws Exception {
         publisher(1)
-                .concatWith(single(2))
-                .concatWith(completable(3))
-                .concatWith(single(4))
-                .concatWith(publisher(5))
+                .concat(single(2))
+                .concat(completable(3))
+                .concat(single(4))
+                .concat(publisher(5))
                 .toFuture().get();
 
         assertResult(sb);

@@ -43,7 +43,7 @@ final class AsyncUtils {
                                          Zipper<T1, T2, T3, R> zipper) {
 
         @SuppressWarnings({"unchecked", "rawtypes"})
-        Single<R> resp = first.concatWith((Single) second).concatWith(third)
+        Single<R> resp = first.concat((Single) second).concat(third)
                 .reduce(Collector::new, (collector, aEntity) -> {
                     @SuppressWarnings("unchecked")
                     Collector<T1, T2, T3, R> c = (Collector<T1, T2, T3, R>) collector;

@@ -127,7 +127,7 @@ public final class PublisherAsInputStreamTest {
     public void streamErrorShouldBeEmittedPostData() throws IOException {
         DeliberateException de = new DeliberateException();
         Character[] src = {'1', '2', '3', '4'};
-        InputStream stream = from(src).concatWith(Completable.error(de))
+        InputStream stream = from(src).concat(Completable.error(de))
                 .toInputStream(c -> new byte[]{(byte) c.charValue()});
         byte[] data = new byte[4];
 

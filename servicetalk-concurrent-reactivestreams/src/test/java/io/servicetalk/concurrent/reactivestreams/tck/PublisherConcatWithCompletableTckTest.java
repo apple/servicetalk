@@ -25,6 +25,6 @@ public class PublisherConcatWithCompletableTckTest extends AbstractPublisherOper
 
     @Override
     protected Publisher<Integer> composePublisher(Publisher<Integer> publisher, int elements) {
-        return publisher.concatWith(Completable.completed());
+        return publisher.concat(Completable.completed());
     }
 }

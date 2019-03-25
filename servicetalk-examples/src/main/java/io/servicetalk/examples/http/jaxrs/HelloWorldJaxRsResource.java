@@ -174,7 +174,7 @@ public class HelloWorldJaxRsResource {
         }
 
         final BufferAllocator allocator = ctx.executionContext().bufferAllocator();
-        final Publisher<Buffer> payload = just(allocator.fromAscii("hello ")).concatWith(who);
+        final Publisher<Buffer> payload = just(allocator.fromAscii("hello ")).concat(who);
 
         // Wrap content Publisher to capture its generic type (i.e. Buffer) so it is handled correctly
         final GenericEntity<Publisher<Buffer>> entity = new GenericEntity<Publisher<Buffer>>(payload) { };

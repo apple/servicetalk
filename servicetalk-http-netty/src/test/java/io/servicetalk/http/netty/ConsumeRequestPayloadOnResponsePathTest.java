@@ -67,24 +67,24 @@ public class ConsumeRequestPayloadOnResponsePathTest {
 
     @Test
     public void testConsumeRequestPayloadBeforeResponseMetaDataSent() throws Exception {
-        test((responseSingle, request) -> consumePayloadBody(request).concatWith(responseSingle));
+        test((responseSingle, request) -> consumePayloadBody(request).concat(responseSingle));
     }
 
     @Test
     public void testConsumeRequestPayloadAfterResponseMetaDataSent() throws Exception {
-        test((responseSingle, request) -> responseSingle.concatWith(consumePayloadBody(request)));
+        test((responseSingle, request) -> responseSingle.concat(consumePayloadBody(request)));
     }
 
     @Test
     public void testConsumeRequestPayloadBeforeResponsePayloadSent() throws Exception {
         test((responseSingle, request) -> responseSingle.map(response ->
-                response.transformRawPayloadBody(payloadBody -> consumePayloadBody(request).concatWith(payloadBody))));
+                response.transformRawPayloadBody(payloadBody -> consumePayloadBody(request).concat(payloadBody))));
     }
 
     @Test
     public void testConsumeRequestPayloadAfterResponsePayloadSent() throws Exception {
         test((responseSingle, request) -> responseSingle.map(response ->
-                response.transformRawPayloadBody(payloadBody -> payloadBody.concatWith(consumePayloadBody(request)))));
+                response.transformRawPayloadBody(payloadBody -> payloadBody.concat(consumePayloadBody(request)))));
     }
 
     @Test
@@ -106,14 +106,14 @@ public class ConsumeRequestPayloadOnResponsePathTest {
                 // It doesn't use the BufferAllocator from HttpServiceContext to simplify the test and avoid using
                 // TriFunction. It doesn't change the behavior of this test.
                 newResponseWithTrailers(response.status(), response.version(), response.headers(), DEFAULT_ALLOCATOR,
-                        response.payloadBodyAndTrailers().concatWith(consumePayloadBody(request)))));
+                        response.payloadBodyAndTrailers().concat(consumePayloadBody(request)))));
     }
 
     @Test
     public void testSendResponseMetaDataAndConsumeRequestPayload() throws Exception {
         // TODO: replace flatMap when Single.merge(Completable) is available
         test((responseSingle, request) -> responseSingle.flatMap(response ->
-                consumePayloadBody(request).concatWith(success(response))));
+                consumePayloadBody(request).concat(success(response))));
     }
 
     @Test

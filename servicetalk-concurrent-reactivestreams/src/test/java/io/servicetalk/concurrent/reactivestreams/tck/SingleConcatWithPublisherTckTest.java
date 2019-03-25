@@ -28,7 +28,7 @@ public class SingleConcatWithPublisherTckTest extends AbstractSingleTckTest<Inte
         if (elements < 2) {
             return Single.success(1).toPublisher();
         }
-        return Single.success(1).concatWith(TckUtils.newPublisher(TckUtils.requestNToInt(elements) - 1));
+        return Single.success(1).concat(TckUtils.newPublisher(TckUtils.requestNToInt(elements) - 1));
     }
 
     @Override

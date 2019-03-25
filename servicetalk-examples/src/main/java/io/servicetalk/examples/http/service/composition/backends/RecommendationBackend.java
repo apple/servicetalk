@@ -93,7 +93,7 @@ final class RecommendationBackend {
                     // We use defer() here so that we do not eagerly create a Recommendation which will get emitted for
                     // every schedule. defer() helps us lazily create a new Recommendation object every time we the
                     // scheduler emits a tick.
-                    .concatWith(defer(() -> success(newRecommendation())))
+                    .concat(defer(() -> success(newRecommendation())))
                     // Since schedule() only schedules a single tick, we repeat the ticks to generate infinite
                     // recommendations. This simulates a push based API which pushes new recommendations as and when
                     // they are available.

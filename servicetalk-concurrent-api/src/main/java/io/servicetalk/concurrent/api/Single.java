@@ -398,8 +398,8 @@ public abstract class Single<T> {
      * @return New {@link Publisher} that first emits the result of this {@link Single} and then subscribes and emits
      * result of {@code next} {@link Single}.
      */
-    public final Publisher<T> concatWith(Single<? extends T> next) {
-        return toPublisher().concatWith(next);
+    public final Publisher<T> concat(Single<? extends T> next) {
+        return toPublisher().concat(next);
     }
 
     /**
@@ -420,8 +420,8 @@ public abstract class Single<T> {
      * @return New {@link Single} that emits the result of this {@link Single} after {@code next} {@link Completable}
      * terminates successfully.
      */
-    public final Single<T> concatWith(Completable next) {
-        return toPublisher().concatWith(next).firstOrError();
+    public final Single<T> concat(Completable next) {
+        return toPublisher().concat(next).firstOrError();
     }
 
     /**
@@ -441,8 +441,8 @@ public abstract class Single<T> {
      * @return New {@link Publisher} that first emits the result of this {@link Single} and then subscribes and emits
      * all elements from {@code next} {@link Publisher}.
      */
-    public final Publisher<T> concatWith(Publisher<? extends T> next) {
-        return toPublisher().concatWith(next);
+    public final Publisher<T> concat(Publisher<? extends T> next) {
+        return toPublisher().concat(next);
     }
 
     /**

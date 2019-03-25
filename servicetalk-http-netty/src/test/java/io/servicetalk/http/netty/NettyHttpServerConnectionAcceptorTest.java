@@ -60,15 +60,15 @@ public class NettyHttpServerConnectionAcceptorTest extends AbstractNettyHttpServ
 
     enum FilterMode {
         ACCEPT_ALL(true, (executor, context) -> completed()),
-        DELAY_ACCEPT_ALL(true, (executor, context) -> executor.timer(100, MILLISECONDS).concatWith(completed())),
+        DELAY_ACCEPT_ALL(true, (executor, context) -> executor.timer(100, MILLISECONDS).concat(completed())),
         REJECT_ALL(false, (executor, context) -> error(DELIBERATE_EXCEPTION)),
         DELAY_REJECT_ALL(false, (executor, context) ->
-                executor.timer(100, MILLISECONDS).concatWith(error(DELIBERATE_EXCEPTION))),
+                executor.timer(100, MILLISECONDS).concat(error(DELIBERATE_EXCEPTION))),
         THROW_EXCEPTION(false, (executor, context) -> {
             throw DELIBERATE_EXCEPTION;
         }),
         DELAY_SINGLE_ERROR(false, (executor, context) ->
-                executor.timer(100, MILLISECONDS).concatWith(error(DELIBERATE_EXCEPTION))),
+                executor.timer(100, MILLISECONDS).concat(error(DELIBERATE_EXCEPTION))),
         SINGLE_ERROR(false, (executor, context) -> error(new DeliberateException())),
         ACCEPT_ALL_CONSTANT(true, (executor, context) -> completed()) {
             @Override

@@ -128,12 +128,12 @@ final class DefaultCompositeCloseable implements CompositeCloseable {
     }
 
     private void concatCloseableDelayError(final AsyncCloseable closeable) {
-        closeAsync = closeAsync.concatWith(closeable.closeAsync().onErrorResume(th -> {
+        closeAsync = closeAsync.concat(closeable.closeAsync().onErrorResume(th -> {
             //TODO: This should use concatDelayError when available.
             LOGGER.debug("Ignored failure to close {}.", closeable, th);
             return completed();
         }));
-        closeAsyncGracefully = closeAsyncGracefully.concatWith(closeable.closeAsyncGracefully().onErrorResume(th -> {
+        closeAsyncGracefully = closeAsyncGracefully.concat(closeable.closeAsyncGracefully().onErrorResume(th -> {
             //TODO: This should use concatDelayError when available.
             LOGGER.debug("Ignored failure to close {}.", closeable, th);
             return completed();
@@ -145,11 +145,11 @@ final class DefaultCompositeCloseable implements CompositeCloseable {
             //TODO: This should use prependDelayError when available.
             LOGGER.debug("Ignored failure to close {}.", closeable, th);
             return completed();
-        }).concatWith(closeAsync);
+        }).concat(closeAsync);
         closeAsyncGracefully = closeable.closeAsync().onErrorResume(th -> {
             //TODO: This should use prependDelayError when available.
             LOGGER.debug("Ignored failure to close {}.", closeable, th);
             return completed();
-        }).concatWith(closeAsyncGracefully);
+        }).concat(closeAsyncGracefully);
     }
 }

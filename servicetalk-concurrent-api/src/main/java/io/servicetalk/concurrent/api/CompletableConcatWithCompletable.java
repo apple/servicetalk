@@ -25,7 +25,7 @@ import javax.annotation.Nullable;
 import static java.util.Objects.requireNonNull;
 
 /**
- * As returned by {@link Completable#concatWith(Completable)}.
+ * As returned by {@link Completable#concat(Completable)}.
  */
 final class CompletableConcatWithCompletable extends AbstractNoHandleSubscribeCompletable {
     private final Completable original;

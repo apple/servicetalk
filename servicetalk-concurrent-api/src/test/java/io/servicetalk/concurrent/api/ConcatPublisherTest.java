@@ -33,7 +33,7 @@ public class ConcatPublisherTest {
 
     @Test
     public void testEnoughRequests() {
-        Publisher<String> p = first.concatWith(second);
+        Publisher<String> p = first.concat(second);
         toSource(p).subscribe(subscriber);
         subscriber.request(2);
         first.onNext("Hello1", "Hello2");
@@ -47,7 +47,7 @@ public class ConcatPublisherTest {
 
     @Test
     public void testFirstEmitsError() {
-        Publisher<String> p = first.concatWith(second);
+        Publisher<String> p = first.concat(second);
         toSource(p).subscribe(subscriber);
         subscriber.request(2);
         first.onNext("Hello1", "Hello2");
@@ -58,7 +58,7 @@ public class ConcatPublisherTest {
 
     @Test
     public void testSecondEmitsError() {
-        Publisher<String> p = first.concatWith(second);
+        Publisher<String> p = first.concat(second);
         toSource(p).subscribe(subscriber);
         subscriber.request(2);
         first.onNext("Hello1", "Hello2");

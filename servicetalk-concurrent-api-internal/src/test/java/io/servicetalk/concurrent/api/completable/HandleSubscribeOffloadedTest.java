@@ -61,14 +61,14 @@ public class HandleSubscribeOffloadedTest extends AbstractHandleSubscribeOffload
     @Test
     public void withAsyncOperatorsAddedAfter() throws Exception {
         awaitTermination(source.subscribeOn(newOffloadingAwareExecutor())
-                .concatWith(executorForTimerRule.executor().submit(() -> { })));
+                .concat(executorForTimerRule.executor().submit(() -> { })));
         verifyHandleSubscribeInvoker();
         verifyCompletableOffloadCount();
     }
 
     @Test
     public void withAsyncOperatorsAddedBefore() throws Exception {
-        awaitTermination(source.concatWith(executorForTimerRule.executor().submit(() -> { }))
+        awaitTermination(source.concat(executorForTimerRule.executor().submit(() -> { }))
                 .subscribeOn(newOffloadingAwareExecutor()));
         verifyHandleSubscribeInvoker();
         verifyCompletableOffloadCount();

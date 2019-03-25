@@ -25,6 +25,6 @@ public class CompletableConcatWithSingleTckTest extends AbstractCompletableOpera
 
     @Override
     protected Completable composeCompletable(Completable completable) {
-        return completable.concatWith(Single.success(1)).ignoreResult();
+        return completable.concat(Single.success(1)).ignoreResult();
     }
 }

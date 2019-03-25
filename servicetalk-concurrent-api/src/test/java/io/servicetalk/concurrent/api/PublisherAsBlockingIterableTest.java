@@ -216,7 +216,7 @@ public final class PublisherAsBlockingIterableTest {
     public void errorEmittedIsThrownAfterEmittingAllItems() {
         DeliberateException de = new DeliberateException();
         Iterator<Integer> iterator = from(1, 2, 3, 4)
-                .concatWith(Publisher.error(de)).toIterable().iterator();
+                .concat(Publisher.error(de)).toIterable().iterator();
         List<Integer> result = new ArrayList<>(4);
         try {
             while (iterator.hasNext()) {

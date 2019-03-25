@@ -109,7 +109,7 @@ public final class TcpServerBinder {
                             .flatMap(conn ->
                                     // Defer is required to isolate context for ConnectionAcceptor#accept and the rest
                                     // of connection processing.
-                                    defer(() -> connectionAcceptor.accept(conn).concatWith(success(conn)))
+                                    defer(() -> connectionAcceptor.accept(conn).concat(success(conn)))
                                             // subscribeOn is required to offload calls to connectionAcceptor#accept
                                             .subscribeOn(executionContext.executor()))
                             .doOnError(cause -> {

@@ -270,7 +270,7 @@ public class SynchronousResources {
     @Path("/text-pubin-pubout")
     @POST
     public Publisher<Buffer> postTextPubInPubOut(final Publisher<Buffer> requestContent) {
-        return just(ctx.executionContext().bufferAllocator().fromAscii("GOT: ")).concatWith(requestContent);
+        return just(ctx.executionContext().bufferAllocator().fromAscii("GOT: ")).concat(requestContent);
     }
 
     @Produces(TEXT_PLAIN)

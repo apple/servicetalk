@@ -98,7 +98,7 @@ class DefaultStreamingHttpResponse<P> extends DefaultHttpResponseMetaData implem
     public final Publisher<Object> payloadBodyAndTrailers() {
         return payloadBody
                 .map(payload -> (Object) payload) // down cast to Object
-                .concatWith(trailersSingle);
+                .concat(trailersSingle);
     }
 
     @Override

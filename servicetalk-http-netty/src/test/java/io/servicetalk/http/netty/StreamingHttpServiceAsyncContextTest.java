@@ -138,7 +138,7 @@ public class StreamingHttpServiceAsyncContextTest extends AbstractHttpServiceAsy
                 // from the client. So we force the server to consume the entire request here which will make sure the
                 // AsyncContext is as expected while processing the request data in the filter.
                 return request.payloadBody().ignoreElements()
-                        .concatWith(defer(() -> {
+                        .concat(defer(() -> {
                             if (useImmediate && !currentThread().getName().startsWith(IO_THREAD_PREFIX)) {
                                 // verify that if we expect to be offloaded, that we actually are
                                 return success(factory.internalServerError());

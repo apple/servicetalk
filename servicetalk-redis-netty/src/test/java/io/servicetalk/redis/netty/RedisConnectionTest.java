@@ -82,7 +82,7 @@ public class RedisConnectionTest extends BaseRedisClientTest {
         final RedisRequest evalRequest = newRequest(EVAL);
 
         assertThat(awaitIndefinitely(getEnv().client.reserveConnection(EVAL)
-                        .flatMapPublisher(cnx -> cnx.request(evalRequest).concatWith(cnx.request(newRequest(PING))))),
+                        .flatMapPublisher(cnx -> cnx.request(evalRequest).concat(cnx.request(newRequest(PING))))),
                 contains(redisError(startsWith("ERR")), is(PONG)));
     }
 
@@ -109,8 +109,8 @@ public class RedisConnectionTest extends BaseRedisClientTest {
 
         assertThat(awaitIndefinitely(getEnv().client.reserveConnection(PING)
                         .flatMapPublisher(cnx -> cnx.request(pingRequest)
-                                // concatWith triggers an internal cancel when switching publishers
-                                .concatWith(cnx.request(newRequest(PING, new CompleteBulkString(buf("my-pong"))))))),
+                                // concat triggers an internal cancel when switching publishers
+                                .concat(cnx.request(newRequest(PING, new CompleteBulkString(buf("my-pong"))))))),
                 contains(is(PONG), redisCompleteBulkString(buf("my-pong"))));
     }
 
@@ -182,7 +182,7 @@ public class RedisConnectionTest extends BaseRedisClientTest {
 
         final List<RedisData> results = awaitIndefinitely(getEnv().client.reserveConnection(MULTI)
                 .flatMapPublisher(cnx -> cnx.request(multiRequest)
-                        .concatWith(cnx.request(newRequest(EXEC)))));
+                        .concat(cnx.request(newRequest(EXEC)))));
 
         assertThat(results, contains(is(OK), redisArraySize(0L)));
     }
@@ -193,8 +193,8 @@ public class RedisConnectionTest extends BaseRedisClientTest {
 
         final List<RedisData> results = awaitIndefinitely(getEnv().client.reserveConnection(MULTI)
                 .flatMapPublisher(cnx -> cnx.request(multiRequest)
-                        .concatWith(cnx.request(newRequest(ECHO, new CompleteBulkString(buf("foo")))))
-                        .concatWith(Publisher.defer(() -> {
+                        .concat(cnx.request(newRequest(ECHO, new CompleteBulkString(buf("foo")))))
+                        .concat(Publisher.defer(() -> {
                             // We suspend twice longer than the ping period to ensure at least one ping would make its
                             // way on the connection if the Pinger suspend/resume mechanism for MULTI failed
                             try {
@@ -204,7 +204,7 @@ public class RedisConnectionTest extends BaseRedisClientTest {
                             }
                             return just(NULL);
                         }))
-                        .concatWith(cnx.request(newRequest(EXEC)))));
+                        .concat(cnx.request(newRequest(EXEC)))));
 
         assertThat(results, contains(is(OK), is(QUEUED), is(redisNull()), redisArraySize(1L),
                 is(redisCompleteBulkString(buf("foo")))));
@@ -216,8 +216,8 @@ public class RedisConnectionTest extends BaseRedisClientTest {
 
         final List<RedisData> results = awaitIndefinitely(getEnv().client.reserveConnection(MULTI)
                 .flatMapPublisher(cnx -> cnx.request(multiRequest)
-                        .concatWith(cnx.request(newRequest(PING)))
-                        .concatWith(cnx.request(newRequest(DISCARD)))));
+                        .concat(cnx.request(newRequest(PING)))
+                        .concat(cnx.request(newRequest(DISCARD)))));
 
         assertThat(results, contains(is(OK), is(QUEUED), is(OK)));
     }
@@ -228,9 +228,9 @@ public class RedisConnectionTest extends BaseRedisClientTest {
 
         final List<RedisData> results = awaitIndefinitely(getEnv().client.reserveConnection(MULTI)
                 .flatMapPublisher(cnx -> cnx.request(multiRequest)
-                        .concatWith(cnx.request(newRequest(EVAL)))
-                        .concatWith(cnx.request(newRequest(PING)))
-                        .concatWith(cnx.request(newRequest(EXEC)))));
+                        .concat(cnx.request(newRequest(EVAL)))
+                        .concat(cnx.request(newRequest(PING)))
+                        .concat(cnx.request(newRequest(EXEC)))));
 
         assertThat(results, contains(is(OK), redisError(startsWith("ERR")), is(QUEUED),
                 redisError(startsWith("EXECABORT"))));
@@ -242,14 +242,14 @@ public class RedisConnectionTest extends BaseRedisClientTest {
 
         final List<RedisData> results = awaitIndefinitely(getEnv().client.reserveConnection(MULTI)
                 .flatMapPublisher(cnx -> cnx.request(multiRequest)
-                        .concatWith(cnx.request(newRequest(SET,
+                        .concat(cnx.request(newRequest(SET,
                                 Publisher.from(
                                         new ArraySize(3L),
                                         SET,
                                         new CompleteBulkString(buf("ptf-rccsk")),
                                         new CompleteBulkString(buf("foo"))))))
-                        .concatWith(cnx.request(newRequest(LPOP, new CompleteBulkString(buf("ptf-rccsk")))))
-                        .concatWith(cnx.request(newRequest(EXEC)))));
+                        .concat(cnx.request(newRequest(LPOP, new CompleteBulkString(buf("ptf-rccsk")))))
+                        .concat(cnx.request(newRequest(EXEC)))));
 
         assertThat(results, contains(is(OK), is(QUEUED), is(QUEUED), redisArraySize(2L), is(OK),
                 redisError(startsWith("WRONGTYPE"))));
