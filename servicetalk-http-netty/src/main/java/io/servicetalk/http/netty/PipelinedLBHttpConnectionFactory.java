@@ -21,7 +21,7 @@ import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.transport.api.ExecutionContext;
 
-import static io.servicetalk.client.internal.ReservableRequestConcurrencyControllers.newController;
+import static io.servicetalk.client.api.internal.ReservableRequestConcurrencyControllers.newController;
 import static io.servicetalk.http.api.StreamingHttpConnection.SettingKey.MAX_CONCURRENCY;
 import static io.servicetalk.http.netty.DefaultHttpConnectionBuilder.buildForPipelined;
 import static java.util.Objects.requireNonNull;

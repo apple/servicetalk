@@ -19,14 +19,14 @@ import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.client.api.ConnectionFactoryFilter;
 import io.servicetalk.client.api.LoadBalancerFactory;
 import io.servicetalk.client.api.ServiceDiscoverer;
+import io.servicetalk.client.api.internal.DefaultPartitionedClientGroup;
+import io.servicetalk.client.api.internal.DefaultPartitionedClientGroup.PartitionedClientFactory;
+import io.servicetalk.client.api.internal.partition.PowerSetPartitionMapFactory;
 import io.servicetalk.client.api.partition.ClosedPartitionException;
 import io.servicetalk.client.api.partition.PartitionAttributes;
 import io.servicetalk.client.api.partition.PartitionMapFactory;
 import io.servicetalk.client.api.partition.PartitionedServiceDiscovererEvent;
 import io.servicetalk.client.api.partition.UnknownPartitionException;
-import io.servicetalk.client.internal.DefaultPartitionedClientGroup;
-import io.servicetalk.client.internal.DefaultPartitionedClientGroup.PartitionedClientFactory;
-import io.servicetalk.client.internal.partition.PowerSetPartitionMapFactory;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
@@ -83,6 +83,7 @@ final class DefaultPartitionedRedisClientBuilder<U, R> implements PartitionedRed
         this.address = address;
     }
 
+    @Override
     public PartitionedRedisClientBuilder<U, R> ioExecutor(final IoExecutor ioExecutor) {
         builderTemplate.ioExecutor(ioExecutor);
         return this;

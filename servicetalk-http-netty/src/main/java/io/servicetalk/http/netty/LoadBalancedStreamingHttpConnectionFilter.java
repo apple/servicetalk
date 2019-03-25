@@ -16,7 +16,7 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.client.api.LoadBalancer;
-import io.servicetalk.client.internal.ReservableRequestConcurrencyController;
+import io.servicetalk.client.api.internal.ReservableRequestConcurrencyController;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.http.api.ReservedStreamingHttpConnectionFilter;
 import io.servicetalk.http.api.StreamingHttpConnection;

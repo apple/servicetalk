@@ -15,7 +15,7 @@
  */
 package io.servicetalk.redis.netty;
 
-import io.servicetalk.client.internal.ReservableRequestConcurrencyController;
+import io.servicetalk.client.api.internal.ReservableRequestConcurrencyController;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.redis.api.RedisClient.ReservedRedisConnection;

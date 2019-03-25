@@ -21,8 +21,8 @@ import io.servicetalk.opentracing.inmemory.api.InMemoryTraceStateFormat;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.opentracing.inmemory.SingleLineValue.format;
-import static io.servicetalk.opentracing.internal.utils.HexUtil.validateHexBytes;
-import static io.servicetalk.opentracing.internal.utils.TracingConstants.NO_PARENT_ID;
+import static io.servicetalk.opentracing.internal.HexUtil.validateHexBytes;
+import static io.servicetalk.opentracing.internal.TracingConstants.NO_PARENT_ID;
 
 /**
  * Single-line serialization format. Examples:

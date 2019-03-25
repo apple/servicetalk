@@ -17,10 +17,10 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.client.api.ClientGroup;
 import io.servicetalk.client.api.ServiceDiscoverer;
+import io.servicetalk.client.api.internal.partition.DefaultPartitionAttributesBuilder;
 import io.servicetalk.client.api.partition.PartitionAttributes;
 import io.servicetalk.client.api.partition.PartitionAttributesBuilder;
 import io.servicetalk.client.api.partition.PartitionedServiceDiscovererEvent;
-import io.servicetalk.client.internal.partition.DefaultPartitionAttributesBuilder;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TestPublisher;

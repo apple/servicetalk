@@ -20,8 +20,8 @@ import io.opentracing.Span;
 import java.util.Map;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.opentracing.internal.utils.HexUtil.longOfHexBytes;
-import static io.servicetalk.opentracing.internal.utils.TracingConstants.NO_PARENT_ID;
+import static io.servicetalk.opentracing.internal.HexUtil.longOfHexBytes;
+import static io.servicetalk.opentracing.internal.TracingConstants.NO_PARENT_ID;
 
 /**
  * A span that allows reading values at runtime.

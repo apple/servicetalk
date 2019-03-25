@@ -15,7 +15,7 @@
  */
 package io.servicetalk.redis.netty;
 
-import io.servicetalk.client.internal.RequestConcurrencyController;
+import io.servicetalk.client.api.internal.RequestConcurrencyController;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.redis.api.RedisConnection;
 import io.servicetalk.redis.api.RedisConnectionFilter;
@@ -23,7 +23,7 @@ import io.servicetalk.redis.api.RedisData;
 import io.servicetalk.redis.api.RedisExecutionStrategy;
 import io.servicetalk.redis.api.RedisRequest;
 
-import static io.servicetalk.client.internal.RequestConcurrencyController.Result.Accepted;
+import static io.servicetalk.client.api.internal.RequestConcurrencyController.Result.Accepted;
 
 final class RedisSubscribedConcurrencyLimitingFilter extends RedisConnectionFilter {
     private final RequestConcurrencyController limiter;

@@ -15,7 +15,7 @@
  */
 package io.servicetalk.redis.netty;
 
-import io.servicetalk.client.internal.ReservableRequestConcurrencyControllers;
+import io.servicetalk.client.api.internal.ReservableRequestConcurrencyControllers;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.redis.api.RedisConnection;
 import io.servicetalk.redis.api.RedisConnection.SettingKey;
@@ -23,7 +23,7 @@ import io.servicetalk.redis.api.RedisRequest;
 
 import org.junit.Test;
 
-import static io.servicetalk.client.internal.RequestConcurrencyController.Result.Accepted;
+import static io.servicetalk.client.api.internal.RequestConcurrencyController.Result.Accepted;
 import static io.servicetalk.concurrent.api.BlockingTestUtils.awaitIndefinitely;
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Completable.never;

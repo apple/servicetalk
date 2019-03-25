@@ -53,7 +53,7 @@ import java.util.RandomAccess;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.client.internal.ServiceDiscovererUtils.calculateDifference;
+import static io.servicetalk.client.api.internal.ServiceDiscovererUtils.calculateDifference;
 import static io.servicetalk.concurrent.api.Processors.newCompletableProcessor;
 import static io.servicetalk.concurrent.api.Publisher.error;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
