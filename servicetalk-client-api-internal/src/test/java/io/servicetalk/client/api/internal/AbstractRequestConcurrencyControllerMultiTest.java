@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,14 +20,17 @@ import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 
-import org.hamcrest.Matchers;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
 
+import static io.servicetalk.client.api.internal.RequestConcurrencyController.Result.Accepted;
+import static io.servicetalk.client.api.internal.RequestConcurrencyController.Result.RejectedPermanently;
+import static io.servicetalk.client.api.internal.RequestConcurrencyController.Result.RejectedTemporary;
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Completable.never;
 import static io.servicetalk.concurrent.api.Publisher.just;
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 
 public abstract class AbstractRequestConcurrencyControllerMultiTest {
@@ -46,9 +49,9 @@ public abstract class AbstractRequestConcurrencyControllerMultiTest {
         RequestConcurrencyController controller = newController(just(maxRequestCount), never(), maxRequestCount);
         for (int i = 0; i < 100; ++i) {
             for (int j = 0; j < maxRequestCount; ++j) {
-                assertThat(controller.tryRequest(), Matchers.is(RequestConcurrencyController.Result.Accepted));
+                assertThat(controller.tryRequest(), is(Accepted));
             }
-            assertThat(controller.tryRequest(), Matchers.is(RequestConcurrencyController.Result.RejectedTemporary));
+            assertThat(controller.tryRequest(), is(RejectedTemporary));
             for (int j = 0; j < maxRequestCount; ++j) {
                 controller.requestFinished();
             }
@@ -61,9 +64,9 @@ public abstract class AbstractRequestConcurrencyControllerMultiTest {
         for (int i = 1; i < 100; ++i) {
             limitPublisher.onNext(i);
             for (int j = 0; j < i; ++j) {
-                assertThat(controller.tryRequest(), Matchers.is(RequestConcurrencyController.Result.Accepted));
+                assertThat(controller.tryRequest(), is(Accepted));
             }
-            assertThat(controller.tryRequest(), Matchers.is(RequestConcurrencyController.Result.RejectedTemporary));
+            assertThat(controller.tryRequest(), is(RejectedTemporary));
             for (int j = 0; j < i; ++j) {
                 controller.requestFinished();
             }
@@ -76,22 +79,22 @@ public abstract class AbstractRequestConcurrencyControllerMultiTest {
         RequestConcurrencyController controller = newController(limitPublisher, never(), 10);
 
         for (int j = 0; j < maxRequestCount; ++j) {
-            assertThat(controller.tryRequest(), Matchers.is(RequestConcurrencyController.Result.Accepted));
+            assertThat(controller.tryRequest(), is(Accepted));
         }
-        assertThat(controller.tryRequest(), Matchers.is(RequestConcurrencyController.Result.RejectedTemporary));
+        assertThat(controller.tryRequest(), is(RejectedTemporary));
         limitPublisher.onNext(0);
 
         for (int j = 0; j < maxRequestCount; ++j) {
             controller.requestFinished();
         }
 
-        assertThat(controller.tryRequest(), Matchers.is(RequestConcurrencyController.Result.RejectedTemporary));
+        assertThat(controller.tryRequest(), is(RejectedTemporary));
     }
 
     @Test
     public void noMoreRequestsAfterClose() {
         RequestConcurrencyController controller = newController(just(1), completed(), 10);
-        assertThat(controller.tryRequest(), Matchers.is(RequestConcurrencyController.Result.RejectedPermanently));
+        assertThat(controller.tryRequest(), is(RejectedPermanently));
     }
 
     @Test
@@ -99,9 +102,9 @@ public abstract class AbstractRequestConcurrencyControllerMultiTest {
         final int maxRequestCount = 10;
         RequestConcurrencyController controller = newController(limitPublisher, never(), 10);
         for (int j = 0; j < maxRequestCount; ++j) {
-            assertThat(controller.tryRequest(), Matchers.is(RequestConcurrencyController.Result.Accepted));
+            assertThat(controller.tryRequest(), is(Accepted));
         }
-        assertThat(controller.tryRequest(), Matchers.is(RequestConcurrencyController.Result.RejectedTemporary));
+        assertThat(controller.tryRequest(), is(RejectedTemporary));
         for (int j = 0; j < maxRequestCount; ++j) {
             controller.requestFinished();
         }

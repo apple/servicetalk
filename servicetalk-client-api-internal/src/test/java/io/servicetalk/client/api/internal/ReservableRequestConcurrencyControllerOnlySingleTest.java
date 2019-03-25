@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,11 +18,13 @@ package io.servicetalk.client.api.internal;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 
-import org.hamcrest.Matchers;
 import org.junit.Test;
 
+import static io.servicetalk.client.api.internal.RequestConcurrencyController.Result.Accepted;
+import static io.servicetalk.client.api.internal.ReservableRequestConcurrencyControllers.newSingleController;
 import static io.servicetalk.concurrent.api.Completable.never;
 import static io.servicetalk.concurrent.api.Publisher.just;
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -32,7 +34,7 @@ public class ReservableRequestConcurrencyControllerOnlySingleTest
     @Override
     protected ReservableRequestConcurrencyController newController(final Publisher<Integer> maxSetting,
                                                                    final Completable onClose) {
-        return ReservableRequestConcurrencyControllers.newSingleController(maxSetting, onClose);
+        return newSingleController(maxSetting, onClose);
     }
 
     @Test
@@ -54,7 +56,7 @@ public class ReservableRequestConcurrencyControllerOnlySingleTest
     @Test
     public void reserveFailsWhenPendingRequest() {
         ReservableRequestConcurrencyController controller = newController(just(10), never());
-        assertThat(controller.tryRequest(), Matchers.is(RequestConcurrencyController.Result.Accepted));
+        assertThat(controller.tryRequest(), is(Accepted));
         assertFalse(controller.tryReserve());
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,10 @@ package io.servicetalk.client.api.internal;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 
+import static io.servicetalk.client.api.internal.RequestConcurrencyController.Result.Accepted;
+import static io.servicetalk.client.api.internal.RequestConcurrencyController.Result.RejectedPermanently;
+import static io.servicetalk.client.api.internal.RequestConcurrencyController.Result.RejectedTemporary;
+
 final class ReservableRequestConcurrencyControllerOnlySingle extends AbstractReservableRequestConcurrencyController {
     ReservableRequestConcurrencyControllerOnlySingle(final Publisher<Integer> maxConcurrencySettingStream,
                                                      final Completable onClose) {
@@ -29,10 +33,10 @@ final class ReservableRequestConcurrencyControllerOnlySingle extends AbstractRes
         // No concurrency means we have to have 0 requests!
         if (lastSeenMaxValue(1) > 0) {
             if (casPendingRequests(0, 1)) {
-                return Result.Accepted;
+                return Accepted;
             }
-            return Result.RejectedTemporary;
+            return RejectedTemporary;
         }
-        return Result.RejectedPermanently;
+        return RejectedPermanently;
     }
 }
