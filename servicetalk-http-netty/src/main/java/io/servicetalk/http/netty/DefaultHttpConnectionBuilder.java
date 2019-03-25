@@ -106,10 +106,16 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> extends HttpCon
         filterFactory = filterFactory.append(
                 new ConcurrentRequestsHttpConnectionFilter(roConfig.maxPipelinedRequests()));
 
-        return (roConfig.maxPipelinedRequests() == 1 ?
-                buildForNonPipelined(executionContext, resolvedAddress, roConfig, filterFactory, reqRespFactory) :
-                buildForPipelined(executionContext, resolvedAddress, roConfig, filterFactory, reqRespFactory))
+        return (reservedConnectionsPipelineEnabled(roConfig) ?
+                buildForPipelined(executionContext, resolvedAddress, roConfig, filterFactory, reqRespFactory) :
+                buildForNonPipelined(executionContext, resolvedAddress, roConfig, filterFactory, reqRespFactory))
                 .map(filter -> assembler.apply(filter, strategy));
+    }
+
+    // TODO(derek): Temporary, so we can re-enable the ability to create non-pipelined connections for perf testing.
+    static boolean reservedConnectionsPipelineEnabled(final ReadOnlyHttpClientConfig roConfig) {
+        return roConfig.maxPipelinedRequests() > 1 ||
+                Boolean.valueOf(System.getProperty("io.servicetalk.http.netty.reserved.connections.pipeline", "true"));
     }
 
     static <ResolvedAddress> Single<StreamingHttpConnectionFilter> buildForPipelined(
@@ -126,8 +132,8 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> extends HttpCon
             final HttpConnectionFilterFactory connectionFilterFunction,
             final StreamingHttpRequestResponseFactory reqRespFactory) {
         return buildStreaming(executionContext, resolvedAddress, roConfig).map(conn ->
-                connectionFilterFunction.create(
-                    new NonPipelinedStreamingHttpConnectionFilter(conn, roConfig, executionContext, reqRespFactory)));
+                connectionFilterFunction.create(new NonPipelinedStreamingHttpConnectionFilter(conn, roConfig,
+                        executionContext, reqRespFactory)));
     }
 
     private static <ResolvedAddress> Single<? extends NettyConnection<Object, Object>> buildStreaming(

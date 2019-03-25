@@ -24,7 +24,6 @@ import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.DefaultHttpHeadersFactory;
 import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.HttpHeaders;
-import io.servicetalk.http.api.HttpProtocolVersion;
 import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.StreamingHttpResponse;
@@ -42,11 +41,8 @@ import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Completable.never;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
-import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_0;
 import static io.servicetalk.transport.netty.internal.ExecutionContextRule.immediate;
-import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -98,21 +94,6 @@ public class PipelinedHttpConnectionTest {
         when(connection.read()).thenReturn(readPublisher1, readPublisher2);
         pipe = TestStreamingHttpConnection.from(reqRespFactory, ctx, connection, conn ->
                 new PipelinedStreamingHttpConnectionFilter(connection, config.asReadOnly(), ctx, reqRespFactory));
-    }
-
-    @Test
-    public void http09RequestShouldReturnOnError() {
-        Single<StreamingHttpResponse> request = pipe.request(
-                reqRespFactory.get("/Foo").version(HttpProtocolVersion.of(0, 9)));
-        toSource(request).subscribe(dataSubscriber1);
-        assertThat(dataSubscriber1.takeError(), instanceOf(IllegalArgumentException.class));
-    }
-
-    @Test
-    public void http10RequestShouldReturnOnError() {
-        Single<StreamingHttpResponse> request = pipe.request(reqRespFactory.get("/Foo").version(HTTP_1_0));
-        toSource(request).subscribe(dataSubscriber1);
-        assertThat(dataSubscriber1.takeError(), instanceOf(IllegalArgumentException.class));
     }
 
     @SuppressWarnings("unchecked")

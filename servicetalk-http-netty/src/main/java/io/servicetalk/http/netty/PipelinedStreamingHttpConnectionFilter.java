@@ -16,19 +16,10 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.http.api.HttpExecutionStrategy;
-import io.servicetalk.http.api.HttpProtocolVersion;
-import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
-import io.servicetalk.http.api.StreamingHttpRequester;
-import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.netty.internal.DefaultNettyPipelinedConnection;
 import io.servicetalk.transport.netty.internal.NettyConnection;
-
-import static io.servicetalk.concurrent.api.Single.error;
-import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 
 final class PipelinedStreamingHttpConnectionFilter
         extends AbstractStreamingHttpConnectionFilter<DefaultNettyPipelinedConnection<Object, Object>> {
@@ -39,18 +30,6 @@ final class PipelinedStreamingHttpConnectionFilter
                                            final StreamingHttpRequestResponseFactory reqRespFactory) {
         super(new DefaultNettyPipelinedConnection<>(connection, config.maxPipelinedRequests()),
                 config, executionContext, reqRespFactory);
-    }
-
-    @Override
-    protected Single<StreamingHttpResponse> request(final StreamingHttpRequester terminalDelegate,
-                                                    final HttpExecutionStrategy strategy,
-                                                    final StreamingHttpRequest request) {
-        HttpProtocolVersion version = request.version();
-        if (!HTTP_1_1.equals(version)) {
-            return error(new IllegalArgumentException(
-                    "Pipelining unsupported in protocol version: " + request.version()));
-        }
-        return super.request(terminalDelegate, strategy, request);
     }
 
     @Override
