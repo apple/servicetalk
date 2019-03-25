@@ -180,7 +180,7 @@ public class ConcurrentRequestsHttpConnectionFilterTest {
 
             try {
                 Publisher.from(resp1, resp2, resp3) // Don't consume payloads to build up concurrency
-                        .flatMapSingle(Function.identity())
+                        .flatMapMergeSingle(Function.identity())
                         .toFuture().get();
 
                 fail("Should not allow three concurrent requests to complete normally");

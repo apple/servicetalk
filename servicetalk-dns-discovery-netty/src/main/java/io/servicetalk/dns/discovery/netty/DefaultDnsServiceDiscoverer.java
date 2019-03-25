@@ -230,7 +230,7 @@ final class DefaultDnsServiceDiscoverer
 
         DiscoverEntry(final String inetHost) {
             this.inetHost = inetHost;
-            publisher = new EntriesPublisher().flatMapIterable(identity());
+            publisher = new EntriesPublisher().flatMapConcatIterable(identity());
         }
 
         void close0() {

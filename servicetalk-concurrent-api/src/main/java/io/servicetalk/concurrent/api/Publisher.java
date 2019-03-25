@@ -189,7 +189,8 @@ public abstract class Publisher<T> {
      * Turns every item emitted by this {@link Publisher} into a {@link Single} and emits the items emitted by each of
      * those {@link Single}s.
      * <p>
-     * To control the amount of concurrent processing done by this operator see {@link #flatMapSingle(Function, int)}.
+     * To control the amount of concurrent processing done by this operator see
+     * {@link #flatMapMergeSingle(Function, int)}.
      * <p>
      * This method is similar to {@link #map(Function)} but the result is asynchronous, and provides a data
      * transformation in sequential programming similar to:
@@ -216,9 +217,9 @@ public abstract class Publisher<T> {
      * @return A new {@link Publisher} that emits all items emitted by each single produced by {@code mapper}.
      *
      * @see <a href="http://reactivex.io/documentation/operators/flatmap.html">ReactiveX flatMap operator.</a>
-     * @see #flatMapSingle(Function, int)
+     * @see #flatMapMergeSingle(Function, int)
      */
-    public final <R> Publisher<R> flatMapSingle(Function<? super T, ? extends Single<? extends R>> mapper) {
+    public final <R> Publisher<R> flatMapMergeSingle(Function<? super T, ? extends Single<? extends R>> mapper) {
         return new PublisherFlatMapSingle<>(this, mapper, false, executor);
     }
 
@@ -255,21 +256,21 @@ public abstract class Publisher<T> {
      *
      * @see <a href="http://reactivex.io/documentation/operators/flatmap.html">ReactiveX flatMap operator.</a>
      */
-    public final <R> Publisher<R> flatMapSingle(Function<? super T, ? extends Single<? extends R>> mapper,
-                                                int maxConcurrency) {
+    public final <R> Publisher<R> flatMapMergeSingle(Function<? super T, ? extends Single<? extends R>> mapper,
+                                                     int maxConcurrency) {
         return new PublisherFlatMapSingle<>(this, mapper, maxConcurrency, false, executor);
     }
 
     /**
      * Turns every item emitted by this {@link Publisher} into a {@link Single} and emits the items emitted by each of
-     * those {@link Single}s. This is the same as {@link #flatMapSingle(Function, int)} just that if any {@link Single}
-     * returned by {@code mapper}, terminates with an error, the returned {@link Publisher} will not immediately
-     * terminate. Instead, it will wait for this {@link Publisher} and all {@link Single}s to terminate and then
-     * terminate the returned {@link Publisher} with all errors emitted by the {@link Single}s produced by the
+     * those {@link Single}s. This is the same as {@link #flatMapMergeSingle(Function, int)} just that if any
+     * {@link Single} returned by {@code mapper}, terminates with an error, the returned {@link Publisher} will not
+     * immediately terminate. Instead, it will wait for this {@link Publisher} and all {@link Single}s to terminate and
+     * then terminate the returned {@link Publisher} with all errors emitted by the {@link Single}s produced by the
      * {@code mapper}.
      * <p>
      * To control the amount of concurrent processing done by this operator see
-     * {@link #flatMapSingleDelayError(Function, int)}.
+     * {@link #flatMapMergeSingleDelayError(Function, int)}.
      * <p>
      * This method is similar to {@link #map(Function)} but the result is asynchronous, and provides a data
      * transformation in sequential programming similar to:
@@ -304,18 +305,19 @@ public abstract class Publisher<T> {
      * @return A new {@link Publisher} that emits all items emitted by each single produced by {@code mapper}.
      *
      * @see <a href="http://reactivex.io/documentation/operators/merge.html">ReactiveX merge operator.</a>
-     * @see #flatMapSingleDelayError(Function, int)
+     * @see #flatMapMergeSingleDelayError(Function, int)
      */
-    public final <R> Publisher<R> flatMapSingleDelayError(Function<? super T, ? extends Single<? extends R>> mapper) {
+    public final <R> Publisher<R> flatMapMergeSingleDelayError(
+            Function<? super T, ? extends Single<? extends R>> mapper) {
         return new PublisherFlatMapSingle<>(this, mapper, true, executor);
     }
 
     /**
      * Turns every item emitted by this {@link Publisher} into a {@link Single} and emits the items emitted by each of
-     * those {@link Single}s. This is the same as {@link #flatMapSingle(Function, int)} just that if any {@link Single}
-     * returned by {@code mapper}, terminates with an error, the returned {@link Publisher} will not immediately
-     * terminate. Instead, it will wait for this {@link Publisher} and all {@link Single}s to terminate and then
-     * terminate the returned {@link Publisher} with all errors emitted by the {@link Single}s produced by the
+     * those {@link Single}s. This is the same as {@link #flatMapMergeSingle(Function, int)} just that if any
+     * {@link Single} returned by {@code mapper}, terminates with an error, the returned {@link Publisher} will not
+     * immediately terminate. Instead, it will wait for this {@link Publisher} and all {@link Single}s to terminate and
+     * then terminate the returned {@link Publisher} with all errors emitted by the {@link Single}s produced by the
      * {@code mapper}.
      * <p>
      * This method is similar to {@link #map(Function)} but the result is asynchronous, and provides a data
@@ -355,8 +357,8 @@ public abstract class Publisher<T> {
      *
      * @see <a href="http://reactivex.io/documentation/operators/merge.html">ReactiveX merge operator.</a>
      */
-    public final <R> Publisher<R> flatMapSingleDelayError(Function<? super T, ? extends Single<? extends R>> mapper,
-                                                          int maxConcurrency) {
+    public final <R> Publisher<R> flatMapMergeSingleDelayError(
+            Function<? super T, ? extends Single<? extends R>> mapper, int maxConcurrency) {
         return new PublisherFlatMapSingle<>(this, mapper, maxConcurrency, true, executor);
     }
 
@@ -396,7 +398,7 @@ public abstract class Publisher<T> {
      * @see #flatMapCompletableDelayError(Function)
      */
     public final Completable flatMapCompletable(Function<? super T, ? extends Completable> mapper) {
-        return flatMapSingle(t -> mapper.apply(t).toSingle()).ignoreElements();
+        return flatMapMergeSingle(t -> mapper.apply(t).toSingle()).ignoreElements();
     }
 
     /**
@@ -433,7 +435,7 @@ public abstract class Publisher<T> {
      * @see #flatMapCompletableDelayError(Function, int)
      */
     public final Completable flatMapCompletable(Function<? super T, ? extends Completable> mapper, int maxConcurrency) {
-        return flatMapSingle(t -> mapper.apply(t).toSingle(), maxConcurrency).ignoreElements();
+        return flatMapMergeSingle(t -> mapper.apply(t).toSingle(), maxConcurrency).ignoreElements();
     }
 
     /**
@@ -476,10 +478,10 @@ public abstract class Publisher<T> {
      * terminated successfully or any one of them has terminated with a failure.
      *
      * @see <a href="http://reactivex.io/documentation/operators/merge.html">ReactiveX merge operator.</a>
-     * @see #flatMapSingleDelayError(Function, int)
+     * @see #flatMapMergeSingleDelayError(Function, int)
      */
     public final Completable flatMapCompletableDelayError(Function<? super T, ? extends Completable> mapper) {
-        return flatMapSingleDelayError(t -> mapper.apply(t).toSingle()).ignoreElements();
+        return flatMapMergeSingleDelayError(t -> mapper.apply(t).toSingle()).ignoreElements();
     }
 
     /**
@@ -520,54 +522,11 @@ public abstract class Publisher<T> {
      * terminated successfully or any one of them has terminated with a failure.
      *
      * @see <a href="http://reactivex.io/documentation/operators/merge.html">ReactiveX merge operator.</a>
-     * @see #flatMapSingleDelayError(Function, int)
+     * @see #flatMapMergeSingleDelayError(Function, int)
      */
     public final Completable flatMapCompletableDelayError(Function<? super T, ? extends Completable> mapper,
                                                           int maxConcurrency) {
-        return flatMapSingleDelayError(t -> mapper.apply(t).toSingle(), maxConcurrency).ignoreElements();
-    }
-
-    /**
-     * Create a {@link Publisher} that flattens each element returned by the {@link Iterable#iterator()} from
-     * {@code mapper}.
-     * <p>
-     * Note that {@code flatMap} operators may process input in parallel, provide results as they become available, and
-     * may interleave results from multiple {@link Iterator}s. If ordering is required see
-     * {@link #concatMapIterable(Function)}.
-     * <p>
-     * This method provides similar capabilities as expanding each result into a collection and concatenating each
-     * collection concurrently in sequential programming:
-     * <pre>{@code
-     *     ExecutorService e = ...;
-     *     List<Future<List<R>> futures = ...; // assume this is thread safe
-     *     for (T t : resultOfThisPublisher()) {
-     *         // Note that flatMap process results in parallel.
-     *         futures.add(e.submit(() -> {
-     *             List<R> results = new ArrayList<>();
-     *             Iterable<? extends R> itr = mapper.apply(t);
-     *             itr.forEach(results::add);
-     *             return results;
-     *         }));
-     *     }
-     *     List<R> results = new ArrayList<>(futures.size());
-     *     // This is an approximation, this operator does not provide any ordering guarantees for the results.
-     *     for (Future<R> future : futures) {
-     *         R r = future.get(); // Throws if the processing for this item failed.
-     *         results.add(r);
-     *     }
-     *     return results;
-     * }</pre>
-     *
-     * @param mapper A {@link Function} that returns an {@link Iterable} for each element.
-     * @param <R> The elements returned by the {@link Iterable}.
-     * @return a {@link Publisher} that flattens each element returned by the {@link Iterable#iterator()} from
-     * {@code mapper}. Data is processed concurrently, the results are not necessarily ordered, and will depend upon
-     * completion order of the {@link Iterator}s.
-     * @see <a href="http://reactivex.io/documentation/operators/flatmap.html">ReactiveX FlatMap operator.</a>
-     */
-    public final <R> Publisher<R> flatMapIterable(Function<? super T, ? extends Iterable<? extends R>> mapper) {
-        // TODO(scott): implement the flatMap variant.
-        return concatMapIterable(mapper);
+        return flatMapMergeSingleDelayError(t -> mapper.apply(t).toSingle(), maxConcurrency).ignoreElements();
     }
 
     /**
@@ -594,7 +553,7 @@ public abstract class Publisher<T> {
      * {@code mapper}. The results will be sequential for each {@link Iterator}, and overall for all calls to
      * {@link Iterable#iterator()}
      */
-    public final <R> Publisher<R> concatMapIterable(Function<? super T, ? extends Iterable<? extends R>> mapper) {
+    public final <R> Publisher<R> flatMapConcatIterable(Function<? super T, ? extends Iterable<? extends R>> mapper) {
         return new PublisherConcatMapIterable<>(this, mapper, executor);
     }
 

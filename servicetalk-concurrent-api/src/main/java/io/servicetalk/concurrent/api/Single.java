@@ -1164,7 +1164,7 @@ public abstract class Single<T> {
      * {@link Single}s passed to this method.
      */
     public static <T> Single<Collection<T>> collect(Iterable<? extends Single<? extends T>> singles) {
-        return Publisher.from(singles).flatMapSingle(identity()).reduce(ArrayList::new, (ts, t) -> {
+        return Publisher.from(singles).flatMapMergeSingle(identity()).reduce(ArrayList::new, (ts, t) -> {
             ts.add(t);
             return ts;
         });
@@ -1196,7 +1196,7 @@ public abstract class Single<T> {
      */
     @SafeVarargs
     public static <T> Single<Collection<T>> collect(Single<? extends T>... singles) {
-        return Publisher.from(singles).flatMapSingle(identity()).reduce(() -> new ArrayList<>(singles.length),
+        return Publisher.from(singles).flatMapMergeSingle(identity()).reduce(() -> new ArrayList<>(singles.length),
                 (ts, t) -> {
                     ts.add(t);
                     return ts;
@@ -1229,10 +1229,12 @@ public abstract class Single<T> {
      */
     public static <T> Single<Collection<T>> collect(Iterable<? extends Single<? extends T>> singles,
                                                     int maxConcurrency) {
-        return Publisher.from(singles).flatMapSingle(identity(), maxConcurrency).reduce(ArrayList::new, (ts, t) -> {
-            ts.add(t);
-            return ts;
-        });
+        return Publisher.from(singles)
+                .flatMapMergeSingle(identity(), maxConcurrency)
+                .reduce(ArrayList::new, (ts, t) -> {
+                    ts.add(t);
+                    return ts;
+                });
     }
 
     /**
@@ -1260,7 +1262,7 @@ public abstract class Single<T> {
      */
     @SafeVarargs
     public static <T> Single<Collection<T>> collect(int maxConcurrency, Single<? extends T>... singles) {
-        return Publisher.from(singles).flatMapSingle(identity(), maxConcurrency)
+        return Publisher.from(singles).flatMapMergeSingle(identity(), maxConcurrency)
                 .reduce(() -> new ArrayList<>(singles.length), (ts, t) -> {
                     ts.add(t);
                     return ts;
@@ -1301,7 +1303,7 @@ public abstract class Single<T> {
      * {@link Single}s passed to this method.
      */
     public static <T> Single<Collection<T>> collectDelayError(Iterable<? extends Single<? extends T>> singles) {
-        return Publisher.from(singles).flatMapSingleDelayError(identity()).reduce(ArrayList::new, (ts, t) -> {
+        return Publisher.from(singles).flatMapMergeSingleDelayError(identity()).reduce(ArrayList::new, (ts, t) -> {
             ts.add(t);
             return ts;
         });
@@ -1341,7 +1343,7 @@ public abstract class Single<T> {
      */
     @SafeVarargs
     public static <T> Single<Collection<T>> collectDelayError(Single<? extends T>... singles) {
-        return Publisher.from(singles).flatMapSingleDelayError(identity())
+        return Publisher.from(singles).flatMapMergeSingleDelayError(identity())
                 .reduce(() -> new ArrayList<>(singles.length), (ts, t) -> {
                     ts.add(t);
                     return ts;
@@ -1382,7 +1384,7 @@ public abstract class Single<T> {
      */
     public static <T> Single<Collection<T>> collectDelayError(Iterable<? extends Single<? extends T>> singles,
                                                               int maxConcurrency) {
-        return Publisher.from(singles).flatMapSingleDelayError(identity(), maxConcurrency)
+        return Publisher.from(singles).flatMapMergeSingleDelayError(identity(), maxConcurrency)
                 .reduce(ArrayList::new, (ts, t) -> {
                     ts.add(t);
                     return ts;
@@ -1422,7 +1424,7 @@ public abstract class Single<T> {
      */
     @SafeVarargs
     public static <T> Single<Collection<T>> collectDelayError(int maxConcurrency, Single<? extends T>... singles) {
-        return Publisher.from(singles).flatMapSingleDelayError(identity(), maxConcurrency)
+        return Publisher.from(singles).flatMapMergeSingleDelayError(identity(), maxConcurrency)
                 .reduce(() -> new ArrayList<>(singles.length), (ts, t) -> {
                     ts.add(t);
                     return ts;

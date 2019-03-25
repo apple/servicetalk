@@ -45,7 +45,7 @@ import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater;
 
 /**
- * As returned by {@link Publisher#flatMapSingle(Function, int)} and its variants.
+ * As returned by {@link Publisher#flatMapMergeSingle(Function, int)} and its variants.
  *
  * @param <R> Type of items emitted by this {@link Publisher}
  * @param <T> Type of items emitted by source {@link Publisher}
