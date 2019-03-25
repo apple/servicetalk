@@ -131,7 +131,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
                                    FlushStrategy flushStrategy) {
         super(channel, executor);
         nettyChannelPublisher = new NettyChannelPublisher<>(channel, terminalMsgPredicate, closeHandler);
-        this.readPublisher = nettyChannelPublisher.onErrorResume(this::enrichErrorPublisher);
+        this.readPublisher = nettyChannelPublisher.recoverWith(this::enrichErrorPublisher);
         this.terminalMsgPredicate = requireNonNull(terminalMsgPredicate);
         this.executionContext = new DefaultExecutionContext(allocator, fromNettyEventLoop(channel.eventLoop()),
                 executor);

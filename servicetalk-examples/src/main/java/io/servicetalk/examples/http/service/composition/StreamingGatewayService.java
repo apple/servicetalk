@@ -96,7 +96,7 @@ final class StreamingGatewayService extends StreamingHttpService {
                             // We consider ratings to be a non-critical data and hence we substitute the response
                             // with a static "unavailable" rating when the rating service is unavailable or provides
                             // a bad response. This is typically referred to as a "fallback".
-                            .onErrorResume(cause -> {
+                            .recoverWith(cause -> {
                                 LOGGER.error("Error querying ratings service. Ignoring and providing a fallback.",
                                         cause);
                                 return success(new Rating(recommendation.getEntityId(), -1));

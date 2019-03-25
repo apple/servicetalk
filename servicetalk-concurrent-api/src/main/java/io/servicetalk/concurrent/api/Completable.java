@@ -98,7 +98,8 @@ public abstract class Completable {
     //
 
     /**
-     * Ignores any error returned by this {@link Completable} and resume to a new {@link Completable}.
+     * Recover from any error emitted by this {@link Completable} by using another {@link Completable} provided by the
+     * passed {@code nextFactory}.
      * <p>
      * This method provides similar capabilities to a try/catch block in sequential programming:
      * <pre>{@code
@@ -111,7 +112,8 @@ public abstract class Completable {
      * }</pre>
      *
      * @param nextFactory Returns the next {@link Completable}, if this {@link Completable} emits an error.
-     * @return The new {@link Completable}.
+     * @return A {@link Completable} that recovers from an error from this {@code Completable} by using another
+     * {@link Completable} provided by the passed {@code nextFactory}.
      */
     public final Completable onErrorResume(Function<Throwable, ? extends Completable> nextFactory) {
         return new ResumeCompletable(this, nextFactory, executor);

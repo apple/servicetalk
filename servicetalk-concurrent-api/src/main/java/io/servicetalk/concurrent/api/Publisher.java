@@ -162,7 +162,8 @@ public abstract class Publisher<T> {
     }
 
     /**
-     * Ignores any error returned by this {@link Publisher} and resume to a new {@link Publisher}.
+     * Recover from any error emitted by this {@link Publisher} by using another {@link Publisher} provided by the
+     * passed {@code nextFactory}.
      * <p>
      * This method provides similar capabilities to a try/catch block in sequential programming:
      * <pre>{@code
@@ -177,11 +178,11 @@ public abstract class Publisher<T> {
      * }</pre>
      *
      * @param nextFactory Returns the next {@link Publisher}, when this {@link Publisher} emits an error.
-     * @return A {@link Publisher} that ignores error from this {@code Publisher} and resume with the {@link Publisher}
-     * produced by {@code nextFactory}.
+     * @return A {@link Publisher} that recovers from an error from this {@code Publisher} by using another
+     * {@link Publisher} provided by the passed {@code nextFactory}.
      * @see <a href="http://reactivex.io/documentation/operators/catch.html">ReactiveX catch operator.</a>
      */
-    public final Publisher<T> onErrorResume(Function<Throwable, ? extends Publisher<? extends T>> nextFactory) {
+    public final Publisher<T> recoverWith(Function<Throwable, ? extends Publisher<? extends T>> nextFactory) {
         return new ResumePublisher<>(this, nextFactory, executor);
     }
 
