@@ -170,7 +170,7 @@ public class DefaultRedisExecutionStrategyTest {
         }
 
         Publisher<RedisData> instrumentedResponse(Publisher<RedisData> resp) {
-            return resp.doBeforeNext(__ -> {
+            return resp.doBeforeOnNext(__ -> {
                 analyzed.set(RECEIVE_ANALYZED_INDEX, true);
                 verifyThread(offloadReceive, "Unexpected thread for response payload onNext.");
             });
@@ -192,14 +192,14 @@ public class DefaultRedisExecutionStrategyTest {
         }
 
         <T> Single<T> instrumentReceive(Single<T> original) {
-            return original.doBeforeSuccess(__ -> {
+            return original.doBeforeOnSuccess(__ -> {
                 analyzed.set(RECEIVE_ANALYZED_INDEX, true);
                 verifyThread(offloadReceive, "Unexpected thread requested from success.");
             });
         }
 
         <T> Publisher<T> instrumentReceive(Publisher<T> original) {
-            return original.doBeforeNext(__ -> {
+            return original.doBeforeOnNext(__ -> {
                 analyzed.set(RECEIVE_ANALYZED_INDEX, true);
                 verifyThread(offloadReceive, "Unexpected thread requested from next.");
             });

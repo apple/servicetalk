@@ -376,7 +376,7 @@ public class DefaultDnsServiceDiscovererTest {
         Publisher<ServiceDiscovererEvent<InetAddress>> publisher = discoverer.discover("apple.com");
         ServiceDiscovererTestSubscriber<InetAddress> subscriber =
                 new ServiceDiscovererTestSubscriber<>(latch1, throwableRef, Long.MAX_VALUE);
-        toSource(publisher.doBeforeNext(n -> latch2.countDown())).subscribe(subscriber);
+        toSource(publisher.doBeforeOnNext(n -> latch2.countDown())).subscribe(subscriber);
 
         latch1.await();
         assertNull(throwableRef.get());

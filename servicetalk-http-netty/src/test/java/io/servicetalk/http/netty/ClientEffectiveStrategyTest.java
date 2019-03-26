@@ -446,9 +446,9 @@ public class ClientEffectiveStrategyTest {
             return delegate.request(strategy,
                     request.transformPayloadBody(payload ->
                             payload.doBeforeRequest(__ -> holder.recordThread(RequestPayloadSubscription))))
-                    .doBeforeSuccess(__ -> holder.recordThread(ResponseMeta))
+                    .doBeforeOnSuccess(__ -> holder.recordThread(ResponseMeta))
                     .map(resp -> resp.transformPayloadBody(payload ->
-                            payload.doBeforeNext(__ -> holder.recordThread(ResponseData))));
+                            payload.doBeforeOnNext(__ -> holder.recordThread(ResponseData))));
         }
 
         @Override

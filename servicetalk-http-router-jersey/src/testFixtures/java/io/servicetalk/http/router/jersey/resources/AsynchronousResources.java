@@ -477,7 +477,7 @@ public class AsynchronousResources {
     public void getAsyncResponseTimeoutResume(@Suspended final AsyncResponse ar) {
         ar.setTimeout(1, MINUTES);
         ctx.executionContext().executor().timer(10, MILLISECONDS)
-                .doAfterComplete(() -> ar.resume("DONE"))
+                .doAfterOnComplete(() -> ar.resume("DONE"))
                 .subscribe();
     }
 

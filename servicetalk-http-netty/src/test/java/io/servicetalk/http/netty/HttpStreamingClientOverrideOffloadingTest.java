@@ -113,7 +113,7 @@ public class HttpStreamingClientOverrideOffloadingTest {
 
     @Test
     public void reserveRespectsDisable() throws Exception {
-        client.reserveConnection(overridingStrategy, client.get("/")).doBeforeSuccess(__ -> {
+        client.reserveConnection(overridingStrategy, client.get("/")).doBeforeOnSuccess(__ -> {
             if (isInvalidThread()) {
                 throw new AssertionError("Invalid thread found providing the connection. Thread: "
                         + currentThread());
@@ -131,20 +131,20 @@ public class HttpStreamingClientOverrideOffloadingTest {
             }
         }));
         client.request(overridingStrategy, req)
-                .doBeforeSuccess(__ -> {
+                .doBeforeOnSuccess(__ -> {
                     if (isInvalidThread()) {
                         errors.add(new AssertionError("Invalid thread called response metadata. " +
                                 "Thread: " + currentThread()));
                     }
                 })
                 .flatMapPublisher(StreamingHttpResponse::payloadBody)
-                .doBeforeNext(__ -> {
+                .doBeforeOnNext(__ -> {
                     if (isInvalidThread()) {
                         errors.add(new AssertionError("Invalid thread called response payload onNext. " +
                                 "Thread: " + currentThread()));
                     }
                 })
-                .doBeforeComplete(() -> {
+                .doBeforeOnComplete(() -> {
                     if (isInvalidThread()) {
                         errors.add(new AssertionError("Invalid thread called response payload onComplete. " +
                                 "Thread: " + currentThread()));

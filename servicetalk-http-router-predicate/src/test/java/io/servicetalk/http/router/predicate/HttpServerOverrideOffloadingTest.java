@@ -123,12 +123,12 @@ public class HttpServerOverrideOffloadingTest {
                 errors.add(new AssertionError("Invalid thread called the service. Thread: " +
                         currentThread()));
             }
-            toSource(request.payloadBody().doBeforeNext(__ -> {
+            toSource(request.payloadBody().doBeforeOnNext(__ -> {
                 if (isInvalidThread.test(currentThread())) {
                     errors.add(new AssertionError("Invalid thread calling response payload onNext." +
                             "Thread: " + currentThread()));
                 }
-            }).doBeforeComplete(() -> {
+            }).doBeforeOnComplete(() -> {
                 if (isInvalidThread.test(currentThread())) {
                     errors.add(new AssertionError("Invalid thread calling response payload onComplete." +
                             "Thread: " + currentThread()));

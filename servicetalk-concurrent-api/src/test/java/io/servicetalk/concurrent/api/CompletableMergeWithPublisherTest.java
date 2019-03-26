@@ -217,7 +217,7 @@ public class CompletableMergeWithPublisherTest {
         TestCancellable testCancellable = new TestCancellable();
         CountDownLatch latch = new CountDownLatch(1);
         toSource(completable.publishOn(executorRule.executor())
-                .merge(publisher.publishOn(executorRule.executor())).doAfterNext(item -> {
+                .merge(publisher.publishOn(executorRule.executor())).doAfterOnNext(item -> {
             // The goal of this test is to have the Completable terminate, but have onNext signals from the Publisher be
             // delayed on the Executor. Even in this case the merge operator should correctly sequence the onComplete to
             // the downstream subscriber until after all the onNext events have completed.

@@ -110,8 +110,8 @@ abstract class AbstractTracingHttpFilter {
                     // DoBeforeFinallyOnHttpResponseOperator conditionally outputs a Single<Meta> with a failed
                     // Publisher<Data> instead of the real Publisher<Data> in case a cancel signal is observed before
                     // completion of Meta. So in order for downstream operators to get a consistent view of the data
-                    // path doBeforeSuccess() needs to be applied last.
-                    .doBeforeSuccess(this::onResponseMeta);
+                    // path doBeforeOnSuccess() needs to be applied last.
+                    .doBeforeOnSuccess(this::onResponseMeta);
         }
 
         private void tagStatusCode() {

@@ -115,7 +115,7 @@ public abstract class FromInMemoryPublisherAbstractTest {
     @Test
     public void testReentrant() {
         InMemorySource source = newSource(6);
-        Publisher<String> p = source.publisher().doBeforeNext(s -> subscriber.request(5));
+        Publisher<String> p = source.publisher().doBeforeOnNext(s -> subscriber.request(5));
         toSource(p).subscribe(subscriber);
         subscriber.request(1);
         assertThat(subscriber.takeItems(), contains(source.values()));
@@ -124,7 +124,7 @@ public abstract class FromInMemoryPublisherAbstractTest {
     @Test
     public void testReactiveStreams2_13() {
         InMemorySource source = newSource(6);
-        Publisher<String> p = source.publisher().doBeforeNext(s -> {
+        Publisher<String> p = source.publisher().doBeforeOnNext(s -> {
             throw DELIBERATE_EXCEPTION;
         });
         toSource(p).subscribe(subscriber);

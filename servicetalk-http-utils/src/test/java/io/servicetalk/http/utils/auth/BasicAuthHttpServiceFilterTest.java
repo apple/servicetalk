@@ -339,7 +339,7 @@ public class BasicAuthHttpServiceFilterTest {
 
                     @Override
                     public Completable closeAsync() {
-                        return completed().doBeforeComplete(() -> credentialsVerifierClosed.set(true));
+                        return completed().doBeforeOnComplete(() -> credentialsVerifierClosed.set(true));
                     }
                 }, REALM_VALUE)
                 .buildServer()
@@ -353,7 +353,7 @@ public class BasicAuthHttpServiceFilterTest {
 
             @Override
             public Completable closeAsync() {
-                return completed().doBeforeComplete(() -> nextServiceClosed.set(true));
+                return completed().doBeforeOnComplete(() -> nextServiceClosed.set(true));
             }
         });
 

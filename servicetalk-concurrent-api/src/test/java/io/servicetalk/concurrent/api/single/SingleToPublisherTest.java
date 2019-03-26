@@ -107,7 +107,7 @@ public class SingleToPublisherTest {
         final CountDownLatch analyzed = new CountDownLatch(1);
         ConcurrentLinkedQueue<AssertionError> errors = new ConcurrentLinkedQueue<>();
         Cancellable c = Single.never()
-                .doAfterSubscribe(__ -> singleSubscribed.countDown())
+                .doAfterOnSubscribe(__ -> singleSubscribed.countDown())
                 .doBeforeCancel(() -> {
                     if (currentThread() == testThread) {
                         errors.add(new AssertionError("Invalid thread invoked cancel. Thread: " +

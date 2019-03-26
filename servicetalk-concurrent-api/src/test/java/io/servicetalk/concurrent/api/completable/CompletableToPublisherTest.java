@@ -57,7 +57,7 @@ public class CompletableToPublisherTest {
         final CountDownLatch analyzed = new CountDownLatch(1);
         ConcurrentLinkedQueue<AssertionError> errors = new ConcurrentLinkedQueue<>();
         Cancellable c = Completable.never()
-                .doAfterSubscribe(__ -> completableSubscribed.countDown())
+                .doAfterOnSubscribe(__ -> completableSubscribed.countDown())
                 .doBeforeCancel(() -> {
                     if (currentThread() == testThread) {
                         errors.add(new AssertionError("Invalid thread invoked cancel. Thread: " +

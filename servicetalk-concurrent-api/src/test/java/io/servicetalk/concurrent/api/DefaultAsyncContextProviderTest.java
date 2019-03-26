@@ -343,7 +343,7 @@ public class DefaultAsyncContextProviderTest {
 
             AsyncContext.put(K2, "v2"); // this won't affect the operators below
             return v;
-        }).doBeforeComplete(() -> {
+        }).doBeforeOnComplete(() -> {
             f4.complete(AsyncContext.current());
 
             AsyncContext.put(K2, "v2"); // this won't affect the operators below

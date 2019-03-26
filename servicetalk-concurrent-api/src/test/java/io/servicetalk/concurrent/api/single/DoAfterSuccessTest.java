@@ -31,7 +31,7 @@ public class DoAfterSuccessTest extends AbstractDoSuccessTest {
 
     @Override
     protected <T> Single<T> doSuccess(Single<T> single, Consumer<T> consumer) {
-        return single.doAfterSuccess(consumer);
+        return single.doAfterOnSuccess(consumer);
     }
 
     @Test

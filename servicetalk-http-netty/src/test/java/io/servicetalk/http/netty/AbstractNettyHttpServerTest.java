@@ -143,8 +143,8 @@ public abstract class AbstractNettyHttpServerTest {
         serverContext = awaitIndefinitelyNonNull(serverBuilder.ioExecutor(serverIoExecutor)
                 .appendConnectionAcceptorFilter(original -> new DelegatingConnectionAcceptor(connectionAcceptor))
                 .listenStreaming(service)
-                .doBeforeSuccess(ctx -> LOGGER.debug("Server started on {}.", ctx.listenAddress()))
-                .doBeforeError(throwable -> LOGGER.debug("Failed starting server on {}.", bindAddress)));
+                .doBeforeOnSuccess(ctx -> LOGGER.debug("Server started on {}.", ctx.listenAddress()))
+                .doBeforeOnError(throwable -> LOGGER.debug("Failed starting server on {}.", bindAddress)));
 
         final DefaultHttpConnectionBuilder<Object> httpConnectionBuilder = new DefaultHttpConnectionBuilder<>();
         if (sslEnabled) {
