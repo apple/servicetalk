@@ -57,7 +57,7 @@ public class TimeoutCompletableTest {
 
     @Test
     public void executorScheduleThrows() {
-        listener.listen(source.ignoreResult().timeout(1, NANOSECONDS, new DelegatingExecutor(testExecutor) {
+        listener.listen(source.ignoreResult().idleTimeout(1, NANOSECONDS, new DelegatingExecutor(testExecutor) {
             @Override
             public Cancellable schedule(final Runnable task, final long delay, final TimeUnit unit) {
                 throw DELIBERATE_EXCEPTION;
@@ -136,7 +136,7 @@ public class TimeoutCompletableTest {
     }
 
     private void init(Completable source, boolean expectOnSubscribe) {
-        listener.listen(source.timeout(1, NANOSECONDS, testExecutor), expectOnSubscribe);
+        listener.listen(source.idleTimeout(1, NANOSECONDS, testExecutor), expectOnSubscribe);
         assertThat(testExecutor.scheduledTasksPending(), is(1));
         if (expectOnSubscribe) {
             listener.verifyNoEmissions();

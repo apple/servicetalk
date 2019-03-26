@@ -323,8 +323,8 @@ public abstract class Single<T> {
      * {@link TimeoutException} if time {@code duration} elapses before {@link Subscriber#onSuccess(Object)}.
      * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
      */
-    public final Single<T> timeout(long duration, TimeUnit unit) {
-        return timeout(duration, unit, executor);
+    public final Single<T> idleTimeout(long duration, TimeUnit unit) {
+        return idleTimeout(duration, unit, executor);
     }
 
     /**
@@ -342,7 +342,7 @@ public abstract class Single<T> {
      * {@link TimeoutException} if time {@code duration} elapses before {@link Subscriber#onSuccess(Object)}.
      * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
      */
-    public final Single<T> timeout(long duration, TimeUnit unit, Executor timeoutExecutor) {
+    public final Single<T> idleTimeout(long duration, TimeUnit unit, Executor timeoutExecutor) {
         return new TimeoutSingle<>(this, duration, unit, timeoutExecutor);
     }
 
@@ -360,8 +360,8 @@ public abstract class Single<T> {
      * {@link TimeoutException} if time {@code duration} elapses before {@link Subscriber#onSuccess(Object)}.
      * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
      */
-    public final Single<T> timeout(Duration duration) {
-        return timeout(duration, executor);
+    public final Single<T> idleTimeout(Duration duration) {
+        return idleTimeout(duration, executor);
     }
 
     /**
@@ -378,7 +378,7 @@ public abstract class Single<T> {
      * {@link TimeoutException} if time {@code duration} elapses before {@link Subscriber#onSuccess(Object)}.
      * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
      */
-    public final Single<T> timeout(Duration duration, Executor timeoutExecutor) {
+    public final Single<T> idleTimeout(Duration duration, Executor timeoutExecutor) {
         return new TimeoutSingle<>(this, duration, timeoutExecutor);
     }
 
@@ -1129,11 +1129,11 @@ public abstract class Single<T> {
      * results will block. The caller of subscribe is responsible for offloading if necessary, and also offloading if
      * {@link Cancellable#cancel()} will be called and this operation may block.
      * <p>
-     * To apply a timeout see {@link #timeout(long, TimeUnit)} and related methods.
+     * To apply a timeout see {@link #idleTimeout(long, TimeUnit)} and related methods.
      * @param future The {@link Future} to convert.
      * @param <T> The data type the {@link Future} provides when complete.
      * @return A {@link Single} that derives results from {@link Future}.
-     * @see #timeout(long, TimeUnit)
+     * @see #idleTimeout(long, TimeUnit)
      */
     public static <T> Single<T> fromFuture(Future<? extends T> future) {
         return new FutureToSingle<>(future);
