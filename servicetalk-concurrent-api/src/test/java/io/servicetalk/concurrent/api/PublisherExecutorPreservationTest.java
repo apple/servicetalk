@@ -49,6 +49,6 @@ public class PublisherExecutorPreservationTest {
 
     @Test
     public void testReduceSingle() {
-        assertSame(EXEC.executor(), publisher.reduce(() -> 0, (n, s) -> n += s.length()).executor());
+        assertSame(EXEC.executor(), publisher.collect(() -> 0, (n, s) -> n += s.length()).executor());
     }
 }

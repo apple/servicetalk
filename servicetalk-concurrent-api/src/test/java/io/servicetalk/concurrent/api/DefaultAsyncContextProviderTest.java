@@ -347,7 +347,8 @@ public class DefaultAsyncContextProviderTest {
             f4.complete(AsyncContext.current());
 
             AsyncContext.put(K2, "v2"); // this won't affect the operators below
-        }).reduce(StringBuilder::new, StringBuilder::append).doBeforeFinally(() -> f5.complete(AsyncContext.current()));
+        }).collect(StringBuilder::new, StringBuilder::append)
+                .doBeforeFinally(() -> f5.complete(AsyncContext.current()));
 
         AsyncContext.put(K1, "v1");
         single.toFuture().get();

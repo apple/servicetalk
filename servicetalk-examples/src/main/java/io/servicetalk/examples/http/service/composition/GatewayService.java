@@ -115,9 +115,9 @@ final class GatewayService implements HttpService {
                     return zip(metadata, user, rating, FullRecommendation::new);
                 })
                 // FullRecommendation objects are generated asynchronously and we are responding with a single JSON
-                // array. Thus, we reduce the asynchronously generated FullRecommendation objects into a single
+                // array. Thus, we collect the asynchronously generated FullRecommendation objects into a single
                 // List which is be converted to a single JSON array.
-                .reduce(ArrayList::new, (list, fullRecommendation) -> {
+                .collect(ArrayList::new, (list, fullRecommendation) -> {
                     list.add(fullRecommendation);
                     return list;
                 });

@@ -344,7 +344,7 @@ public abstract class AbstractBlockingStreamingHttpRequesterTest {
         assertEquals(HTTP_1_1, asyncResponse.version());
         assertEquals(OK, asyncResponse.status());
         assertEquals("hello", asyncResponse.payloadBody()
-                .reduce(() -> "", (acc, next) -> acc + next.toString(US_ASCII)).toFuture().get());
+                .collect(() -> "", (acc, next) -> acc + next.toString(US_ASCII)).toFuture().get());
     }
 
     @Test

@@ -54,7 +54,7 @@ public final class TestUtils {
 
     public static String getContentAsString(final Publisher<Buffer> content) {
         try {
-            return content.reduce(DEFAULT_ALLOCATOR::newBuffer, Buffer::writeBytes)
+            return content.collect(DEFAULT_ALLOCATOR::newBuffer, Buffer::writeBytes)
                     .map(buffer -> buffer.toString(UTF_8))
                     .toFuture().get();
         } catch (final Throwable t) {

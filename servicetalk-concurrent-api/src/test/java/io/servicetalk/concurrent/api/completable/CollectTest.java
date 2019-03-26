@@ -15,6 +15,7 @@
  */
 package io.servicetalk.concurrent.api.completable;
 
+import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 
 import org.junit.Rule;
@@ -25,10 +26,10 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static io.servicetalk.concurrent.api.Completable.collect;
-import static io.servicetalk.concurrent.api.Completable.collectDelayError;
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Completable.error;
+import static io.servicetalk.concurrent.api.Completable.mergeAll;
+import static io.servicetalk.concurrent.api.Completable.mergeAllDelayError;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -43,19 +44,19 @@ public class CollectTest {
 
     @Test
     public void collectVarArgSuccess() throws Exception {
-        collect(completed(), completed()).toFuture().get();
+        Completable.mergeAll(completed(), completed()).toFuture().get();
     }
 
     @Test
     public void collectVarArgMaxConcurrencySuccess() throws Exception {
         // Just testing that the method works. As it uses existing operators, we don't require elaborate tests
-        collect(1, completed(), completed()).toFuture().get();
+        mergeAll(1, completed(), completed()).toFuture().get();
     }
 
     @Test
     public void collectVarArgFailure() throws Exception {
         AtomicBoolean secondSubscribed = new AtomicBoolean();
-        Future<Void> future = collect(error(DELIBERATE_EXCEPTION),
+        Future<Void> future = Completable.mergeAll(error(DELIBERATE_EXCEPTION),
                 completed().doBeforeSubscribe(__ -> secondSubscribed.set(true))).toFuture();
         try {
             future.get();
@@ -69,7 +70,7 @@ public class CollectTest {
     @Test
     public void collectVarArgDelayError() throws Exception {
         AtomicBoolean secondSubscribed = new AtomicBoolean();
-        Future<Void> future = collectDelayError(error(DELIBERATE_EXCEPTION),
+        Future<Void> future = Completable.mergeAllDelayError(error(DELIBERATE_EXCEPTION),
                 completed().doBeforeSubscribe(__ -> secondSubscribed.set(true))).toFuture();
         try {
             future.get();
@@ -84,7 +85,7 @@ public class CollectTest {
     @Test
     public void collectVarArgDelayErrorMaxConcurrency() throws Exception {
         AtomicBoolean secondSubscribed = new AtomicBoolean();
-        Future<Void> future = collectDelayError(1, error(DELIBERATE_EXCEPTION),
+        Future<Void> future = mergeAllDelayError(1, error(DELIBERATE_EXCEPTION),
                 completed().doBeforeSubscribe(__ -> secondSubscribed.set(true))).toFuture();
         try {
             future.get();
@@ -98,19 +99,19 @@ public class CollectTest {
 
     @Test
     public void collectIterableSuccess() throws Exception {
-        collect(asList(completed(), completed())).toFuture().get();
+        Completable.mergeAll(asList(completed(), completed())).toFuture().get();
     }
 
     @Test
     public void collectIterableMaxConcurrencySuccess() throws Exception {
         // Just testing that the method works. As it uses existing operators, we don't require elaborate tests
-        collect(asList(completed(), completed()), 1).toFuture().get();
+        Completable.mergeAll(asList(completed(), completed()), 1).toFuture().get();
     }
 
     @Test
     public void collectIterableFailure() throws Exception {
         AtomicBoolean secondSubscribed = new AtomicBoolean();
-        Future<Void> future = collect(asList(error(DELIBERATE_EXCEPTION),
+        Future<Void> future = Completable.mergeAll(asList(error(DELIBERATE_EXCEPTION),
                 completed().doBeforeSubscribe(__ -> secondSubscribed.set(true)))).toFuture();
         try {
             future.get();
@@ -124,7 +125,7 @@ public class CollectTest {
     @Test
     public void collectIterableDelayError() throws Exception {
         AtomicBoolean secondSubscribed = new AtomicBoolean();
-        Future<Void> future = collectDelayError(asList(error(DELIBERATE_EXCEPTION),
+        Future<Void> future = Completable.mergeAllDelayError(asList(error(DELIBERATE_EXCEPTION),
                 completed().doBeforeSubscribe(__ -> secondSubscribed.set(true)))).toFuture();
         try {
             future.get();
@@ -139,7 +140,7 @@ public class CollectTest {
     @Test
     public void collectIterableDelayErrorMaxConcurrency() throws Exception {
         AtomicBoolean secondSubscribed = new AtomicBoolean();
-        Future<Void> future = collectDelayError(asList(error(DELIBERATE_EXCEPTION),
+        Future<Void> future = Completable.mergeAllDelayError(asList(error(DELIBERATE_EXCEPTION),
                 completed().doBeforeSubscribe(__ -> secondSubscribed.set(true))), 1).toFuture();
         try {
             future.get();

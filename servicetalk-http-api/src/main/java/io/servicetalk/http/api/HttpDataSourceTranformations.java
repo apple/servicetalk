@@ -988,7 +988,7 @@ final class HttpDataSourceTranformations {
 
     static Single<PayloadAndTrailers> aggregatePayloadAndTrailers(Publisher<Object> payloadAndTrailers,
                                                                   BufferAllocator allocator) {
-        return payloadAndTrailers.reduce(() ->
+        return payloadAndTrailers.collect(() ->
                         new PayloadAndTrailers(allocator.newCompositeBuffer(MAX_VALUE)),
                 (pair, obj) -> {
                     if (obj instanceof Buffer) {
