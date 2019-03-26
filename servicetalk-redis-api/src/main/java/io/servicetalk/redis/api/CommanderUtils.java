@@ -71,7 +71,7 @@ final class CommanderUtils {
                 return fromSource(single);
             }
             return Single.error(new RedisClientException("Read '" + status + "' but expected 'QUEUED'"));
-        }).<T>liftSynchronous(sub -> new Subscriber<T>() {
+        }).<T>liftSync(sub -> new Subscriber<T>() {
             @Override
             public void onSubscribe(final Cancellable cancellable) {
                 // Allowing cancellation of commands within a transaction would require needing to know whether the

@@ -64,7 +64,7 @@ final class TransportStreamingHttpResponse extends DefaultHttpResponseMetaData i
 
     @Override
     public Publisher<Buffer> payloadBody() {
-        return payloadAndTrailers.liftSynchronous(HttpTransportBufferFilterOperator.INSTANCE);
+        return payloadAndTrailers.liftSync(HttpTransportBufferFilterOperator.INSTANCE);
     }
 
     @Override
@@ -76,7 +76,7 @@ final class TransportStreamingHttpResponse extends DefaultHttpResponseMetaData i
     public StreamingHttpResponse payloadBody(final Publisher<Buffer> payloadBody) {
         final Processor<HttpHeaders, HttpHeaders> outTrailersSingle = newSingleProcessor();
         return new BufferStreamingHttpResponse(this, allocator,
-                payloadBody.liftSynchronous(new BridgeFlowControlAndDiscardOperator(payloadAndTrailers.liftSynchronous(
+                payloadBody.liftSync(new BridgeFlowControlAndDiscardOperator(payloadAndTrailers.liftSync(
                         new HttpBufferTrailersSpliceOperator(outTrailersSingle)))),
                 fromSource(outTrailersSingle));
     }
@@ -86,8 +86,8 @@ final class TransportStreamingHttpResponse extends DefaultHttpResponseMetaData i
                                                  final HttpSerializer<T> serializer) {
         final Processor<HttpHeaders, HttpHeaders> outTrailersSingle = newSingleProcessor();
         return new BufferStreamingHttpResponse(this, allocator, serializer.serialize(headers(),
-                payloadBody.liftSynchronous(new SerializeBridgeFlowControlAndDiscardOperator<>(
-                        payloadAndTrailers.liftSynchronous(new HttpBufferTrailersSpliceOperator(outTrailersSingle)))),
+                payloadBody.liftSync(new SerializeBridgeFlowControlAndDiscardOperator<>(
+                        payloadAndTrailers.liftSync(new HttpBufferTrailersSpliceOperator(outTrailersSingle)))),
                 allocator),
                 fromSource(outTrailersSingle));
     }
@@ -97,7 +97,7 @@ final class TransportStreamingHttpResponse extends DefaultHttpResponseMetaData i
                                                           final HttpSerializer<T> serializer) {
         final Processor<HttpHeaders, HttpHeaders> outTrailersSingle = newSingleProcessor();
         return new BufferStreamingHttpResponse(this, allocator, serializer.serialize(headers(),
-                transformer.apply(payloadAndTrailers.liftSynchronous(new HttpBufferTrailersSpliceOperator(
+                transformer.apply(payloadAndTrailers.liftSync(new HttpBufferTrailersSpliceOperator(
                         outTrailersSingle))), allocator),
                 fromSource(outTrailersSingle));
     }
@@ -105,14 +105,14 @@ final class TransportStreamingHttpResponse extends DefaultHttpResponseMetaData i
     @Override
     public StreamingHttpResponse transformPayloadBody(final UnaryOperator<Publisher<Buffer>> transformer) {
         final Processor<HttpHeaders, HttpHeaders> outTrailersSingle = newSingleProcessor();
-        return new BufferStreamingHttpResponse(this, allocator, transformer.apply(payloadAndTrailers.liftSynchronous(
+        return new BufferStreamingHttpResponse(this, allocator, transformer.apply(payloadAndTrailers.liftSync(
                 new HttpBufferTrailersSpliceOperator(outTrailersSingle))), fromSource(outTrailersSingle));
     }
 
     @Override
     public StreamingHttpResponse transformRawPayloadBody(final UnaryOperator<Publisher<?>> transformer) {
         final Processor<HttpHeaders, HttpHeaders> outTrailersSingle = newSingleProcessor();
-        return new DefaultStreamingHttpResponse<>(this, allocator, transformer.apply(payloadAndTrailers.liftSynchronous(
+        return new DefaultStreamingHttpResponse<>(this, allocator, transformer.apply(payloadAndTrailers.liftSync(
                 new HttpObjectTrailersSpliceOperator(outTrailersSingle))), fromSource(outTrailersSingle));
     }
 
@@ -121,7 +121,7 @@ final class TransportStreamingHttpResponse extends DefaultHttpResponseMetaData i
                                                final BiFunction<Buffer, T, Buffer> transformer,
                                                final BiFunction<T, HttpHeaders, HttpHeaders> trailersTransformer) {
         final Processor<HttpHeaders, HttpHeaders> outTrailersSingle = newSingleProcessor();
-        return new BufferStreamingHttpResponse(this, allocator, payloadAndTrailers.liftSynchronous(
+        return new BufferStreamingHttpResponse(this, allocator, payloadAndTrailers.liftSync(
                 new HttpRawBuffersAndTrailersOperator<>(stateSupplier, transformer,
                         trailersTransformer, outTrailersSingle)),
                 fromSource(outTrailersSingle));
@@ -132,7 +132,7 @@ final class TransportStreamingHttpResponse extends DefaultHttpResponseMetaData i
                                                   final BiFunction<Object, T, ?> transformer,
                                                   final BiFunction<T, HttpHeaders, HttpHeaders> trailersTransformer) {
         final Processor<HttpHeaders, HttpHeaders> outTrailersSingle = newSingleProcessor();
-        return new DefaultStreamingHttpResponse<>(this, allocator, payloadAndTrailers.liftSynchronous(
+        return new DefaultStreamingHttpResponse<>(this, allocator, payloadAndTrailers.liftSync(
                 new HttpRawObjectsAndTrailersOperator<>(stateSupplier, transformer,
                         trailersTransformer, outTrailersSingle)),
                 fromSource(outTrailersSingle));
@@ -150,7 +150,7 @@ final class TransportStreamingHttpResponse extends DefaultHttpResponseMetaData i
     @Override
     public BlockingStreamingHttpResponse toBlockingStreamingResponse() {
         final Processor<HttpHeaders, HttpHeaders> outTrailersSingle = newSingleProcessor();
-        return new DefaultBlockingStreamingHttpResponse<>(this, allocator, payloadAndTrailers.liftSynchronous(
+        return new DefaultBlockingStreamingHttpResponse<>(this, allocator, payloadAndTrailers.liftSync(
                 new HttpObjectTrailersSpliceOperator(outTrailersSingle)).toIterable(), fromSource(outTrailersSingle));
     }
 

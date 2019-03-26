@@ -895,23 +895,23 @@ public abstract class Completable {
      * <pre>{@code
      *     Completable<X> pub = ...;
      *     pub.map(..) // A
-     *        .liftSynchronous(original -> modified)
+     *        .liftSync(original -> modified)
      *        .doAfterFinally(..) // B
      * }</pre>
      * The {@code original -> modified} "operator" <strong>MUST</strong> be "synchronous" in that it does not interact
      * with the original {@link Subscriber} from outside the modified {@link Subscriber} or {@link Cancellable}
      * threads. That is to say this operator will not impact the {@link Executor} constraints already in place between
      * <i>A</i> and <i>B</i> above. If you need asynchronous behavior, or are unsure, see
-     * {@link #liftAsynchronous(CompletableOperator)}.
+     * {@link #liftAsync(CompletableOperator)}.
      *
      * @param operator The custom operator logic. The input is the "original" {@link Subscriber} to this
      * {@link Completable} and the return is the "modified" {@link Subscriber} that provides custom operator business
      * logic.
      * @return a {@link Completable} that when subscribed, the {@code operator} argument will be used to wrap the
      * {@link Subscriber} before subscribing to this {@link Completable}.
-     * @see #liftAsynchronous(CompletableOperator)
+     * @see #liftAsync(CompletableOperator)
      */
-    public final Completable liftSynchronous(CompletableOperator operator) {
+    public final Completable liftSync(CompletableOperator operator) {
         return new LiftSynchronousCompletableOperator(this, operator, executor);
     }
 
@@ -924,7 +924,7 @@ public abstract class Completable {
      * <pre>{@code
      *     Publisher<X> pub = ...;
      *     pub.map(..) // A
-     *        .liftAsynchronous(original -> modified)
+     *        .liftAsync(original -> modified)
      *        .doAfterFinally(..) // B
      * }</pre>
      *
@@ -944,9 +944,9 @@ public abstract class Completable {
      * logic.
      * @return a {@link Completable} that when subscribed, the {@code operator} argument will be used to wrap the
      * {@link Subscriber} before subscribing to this {@link Completable}.
-     * @see #liftSynchronous(CompletableOperator)
+     * @see #liftSync(CompletableOperator)
      */
-    public final Completable liftAsynchronous(CompletableOperator operator) {
+    public final Completable liftAsync(CompletableOperator operator) {
         return new LiftAsynchronousCompletableOperator(this, operator, executor);
     }
 

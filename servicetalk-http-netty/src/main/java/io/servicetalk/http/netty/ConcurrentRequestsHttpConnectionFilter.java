@@ -82,7 +82,7 @@ final class ConcurrentRequestsHttpConnectionFilter implements HttpConnectionFilt
                     switch (result) {
                         case Accepted:
                             toSource(delegate.request(strategy, request)
-                                    .liftSynchronous(new DoBeforeFinallyOnHttpResponseOperator(
+                                    .liftSync(new DoBeforeFinallyOnHttpResponseOperator(
                                             limiter::requestFinished)))
                                     .subscribe(subscriber);
                             return;

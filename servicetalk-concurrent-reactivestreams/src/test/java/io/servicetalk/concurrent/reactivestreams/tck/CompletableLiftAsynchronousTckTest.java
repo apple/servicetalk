@@ -24,6 +24,6 @@ public class CompletableLiftAsynchronousTckTest extends AbstractCompletableOpera
 
     @Override
     protected Completable composeCompletable(final Completable completable) {
-        return completable.liftAsynchronous(subscriber -> subscriber);
+        return completable.liftAsync(subscriber -> subscriber);
     }
 }

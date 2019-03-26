@@ -160,7 +160,7 @@ class DefaultStreamingHttpRequest<P> extends DefaultHttpRequestMetaData implemen
 
     @Override
     public Publisher<Buffer> payloadBody() {
-        return payloadBody.liftSynchronous(HttpBufferFilterOperator.INSTANCE);
+        return payloadBody.liftSync(HttpBufferFilterOperator.INSTANCE);
     }
 
     @Override
@@ -173,14 +173,14 @@ class DefaultStreamingHttpRequest<P> extends DefaultHttpRequestMetaData implemen
     @Override
     public final StreamingHttpRequest payloadBody(Publisher<Buffer> payloadBody) {
         return new BufferStreamingHttpRequest(this, allocator,
-                payloadBody.liftSynchronous(new BridgeFlowControlAndDiscardOperator(payloadBody())), trailersSingle);
+                payloadBody.liftSync(new BridgeFlowControlAndDiscardOperator(payloadBody())), trailersSingle);
     }
 
     @Override
     public final <T> StreamingHttpRequest payloadBody(final Publisher<T> payloadBody,
                                                       final HttpSerializer<T> serializer) {
         return new BufferStreamingHttpRequest(this, allocator, serializer.serialize(headers(),
-                    payloadBody.liftSynchronous(new SerializeBridgeFlowControlAndDiscardOperator<>(payloadBody())),
+                    payloadBody.liftSync(new SerializeBridgeFlowControlAndDiscardOperator<>(payloadBody())),
                     allocator),
                 trailersSingle);
     }
@@ -209,7 +209,7 @@ class DefaultStreamingHttpRequest<P> extends DefaultHttpRequestMetaData implemen
                                                     BiFunction<T, HttpHeaders, HttpHeaders> trailersTransformer) {
         final Processor<HttpHeaders, HttpHeaders> outTrailersSingle = newSingleProcessor();
         return new BufferStreamingHttpRequest(this, allocator, payloadBody()
-                .liftSynchronous(new HttpPayloadAndTrailersFromSingleOperator<>(stateSupplier, transformer,
+                .liftSync(new HttpPayloadAndTrailersFromSingleOperator<>(stateSupplier, transformer,
                         trailersTransformer, trailersSingle, outTrailersSingle)),
                 fromSource(outTrailersSingle));
     }
@@ -220,7 +220,7 @@ class DefaultStreamingHttpRequest<P> extends DefaultHttpRequestMetaData implemen
                                                        BiFunction<T, HttpHeaders, HttpHeaders> trailersTransformer) {
         final Processor<HttpHeaders, HttpHeaders> outTrailersSingle = newSingleProcessor();
         return new DefaultStreamingHttpRequest<>(this, allocator, payloadBody
-                .liftSynchronous(new HttpPayloadAndTrailersFromSingleOperator<>(stateSupplier, transformer,
+                .liftSync(new HttpPayloadAndTrailersFromSingleOperator<>(stateSupplier, transformer,
                         trailersTransformer, trailersSingle, outTrailersSingle)),
                 fromSource(outTrailersSingle));
     }

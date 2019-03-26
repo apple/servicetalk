@@ -274,7 +274,7 @@ final class NettyHttpServer {
                     // but FlushStrategy are implemented considering individual responses.
                     // Since this operator is present on the flattened single write stream, with or without pipelined
                     // requests processed in parallel, we can send WriteEventsListener callbacks per response.
-                    .liftSynchronous(subscriber -> new Subscriber<Object>() {
+                    .liftSync(subscriber -> new Subscriber<Object>() {
                         @Override
                         public void onSubscribe(final Subscription s) {
                             subscriber.onSubscribe(s);
