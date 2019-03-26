@@ -600,14 +600,15 @@ public abstract class Publisher<T> {
     }
 
     /**
-     * Invokes the {@code onSubscribe} {@link Consumer} argument when {@link Subscriber#onSubscribe(Subscription)} is
-     * called for {@link Subscriber}s of the returned {@link Publisher}.
+     * Invokes the {@code onSubscribe} {@link Consumer} argument when
+     * {@link Subscriber#onSubscribe(PublisherSource.Subscription)} is called for {@link Subscriber}s of the returned
+     * {@link Publisher}.
      * <p>
-     * The order in which {@code onSubscribe} will be invoked relative to {@link Subscriber#onSubscribe(Subscription)}
-     * is undefined. If you need strict ordering see {@link #doBeforeOnSubscribe(Consumer)} and
-     * {@link #doAfterOnSubscribe(Consumer)}.
+     * The order in which {@code onSubscribe} will be invoked relative to
+     * {@link Subscriber#onSubscribe(PublisherSource.Subscription)} is undefined. If you need strict ordering see
+     * {@link #doBeforeOnSubscribe(Consumer)} and {@link #doAfterOnSubscribe(Consumer)}.
      *
-     * @param onSubscribe Invoked when {@link Subscriber#onSubscribe(Subscription)} is called for
+     * @param onSubscribe Invoked when {@link Subscriber#onSubscribe(PublisherSource.Subscription)} is called for
      * {@link Subscriber}s of the returned {@link Publisher}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Publisher}.
      * @see #doBeforeOnNext(Consumer)

@@ -253,7 +253,8 @@ public class SubscribedRedisClientTest extends BaseRedisClientTest {
 
         CountDownLatch latch = new CountDownLatch(1);
 
-        final Publisher<RedisData> messages1 = cnx.request(subscribeRequest).doAfterOnSubscribe(__ -> latch.countDown());
+        final Publisher<RedisData> messages1 = cnx.request(subscribeRequest)
+                .doAfterOnSubscribe(__ -> latch.countDown());
 
         final AccumulatingSubscriber<RedisData> messages1Subscriber = new AccumulatingSubscriber<RedisData>()
                 .subscribe(messages1);
