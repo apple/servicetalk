@@ -54,12 +54,14 @@ import static io.servicetalk.concurrent.api.Single.error;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.concurrent.internal.PlatformDependent.throwException;
+import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpHeaderNames.TRAILER;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpResponseStatus.NO_CONTENT;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.HttpSerializationProviders.textDeserializer;
 import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
+import static io.servicetalk.http.api.StreamingHttpServiceConversions.toStreamingHttpService;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
@@ -265,7 +267,7 @@ public class BlockingStreamingHttpServiceToStreamingHttpServiceTest {
                 closedCalled.set(true);
             }
         };
-        StreamingHttpService asyncService = syncService.asStreamingService();
+        StreamingHttpService asyncService = toStreamingHttpService(syncService);
         asyncService.closeAsync().toFuture().get();
         assertThat(closedCalled.get(), is(true));
     }
@@ -291,7 +293,7 @@ public class BlockingStreamingHttpServiceToStreamingHttpServiceTest {
                 }
             }
         };
-        StreamingHttpService asyncService = syncService.asStreamingService();
+        StreamingHttpService asyncService = toStreamingHttpService(syncService);
         toSource(asyncService.handle(mockCtx, reqRespFactory.get("/"), reqRespFactory)
                 // Use subscribeOn(Executor) instead of HttpExecutionStrategy#invokeService which returns a flatten
                 // Publisher<Object> to verify that cancellation of Single<StreamingHttpResponse> interrupts the thread
@@ -343,7 +345,7 @@ public class BlockingStreamingHttpServiceToStreamingHttpServiceTest {
                 }
             }
         };
-        StreamingHttpService asyncService = syncService.asStreamingService();
+        StreamingHttpService asyncService = toStreamingHttpService(syncService);
         StreamingHttpResponse asyncResponse = asyncService.handle(mockCtx, reqRespFactory.get("/"), reqRespFactory)
                 // Use subscribeOn(Executor) instead of HttpExecutionStrategy#invokeService which returns a flatten
                 // Publisher<Object> to verify that cancellation of Publisher<Buffer> interrupts the thread of handle
@@ -429,7 +431,7 @@ public class BlockingStreamingHttpServiceToStreamingHttpServiceTest {
                 throw DELIBERATE_EXCEPTION;
             }
         };
-        StreamingHttpService asyncService = syncService.asStreamingService();
+        StreamingHttpService asyncService = toStreamingHttpService(syncService);
         toSource(asyncService.handle(mockCtx, reqRespFactory.get("/"), reqRespFactory)
                 // Use subscribeOn(Executor) instead of HttpExecutionStrategy#invokeService which returns a flatten
                 // Publisher<Object> to verify that the Single<StreamingHttpResponse> of response meta-data terminates
@@ -469,7 +471,7 @@ public class BlockingStreamingHttpServiceToStreamingHttpServiceTest {
                 throw DELIBERATE_EXCEPTION;
             }
         };
-        StreamingHttpService asyncService = syncService.asStreamingService();
+        StreamingHttpService asyncService = toStreamingHttpService(syncService);
         StreamingHttpResponse asyncResponse = asyncService.handle(mockCtx, reqRespFactory.get("/"), reqRespFactory)
                 // Use subscribeOn(Executor) instead of HttpExecutionStrategy#invokeService which returns a flatten
                 // Publisher<Object> to verify that the Publisher<Buffer> of payload body terminates with an error
@@ -518,10 +520,11 @@ public class BlockingStreamingHttpServiceToStreamingHttpServiceTest {
 
     private List<Object> invokeService(BlockingStreamingHttpService syncService,
                                        StreamingHttpRequest request) throws Exception {
-        StreamingHttpService asyncService = syncService.asStreamingService();
+        StreamingHttpService asyncService = toStreamingHttpService(syncService);
 
-        Collection<Object> responseCollection = asyncService.executionStrategy().invokeService(executorRule.executor(),
-                request, req -> asyncService.handle(mockCtx, req, reqRespFactory), (t, e) -> error(t))
+        Collection<Object> responseCollection = asyncService.computeExecutionStrategy(defaultStrategy())
+                .invokeService(executorRule.executor(), request,
+                        req -> asyncService.handle(mockCtx, req, reqRespFactory), (t, e) -> error(t))
                 .toFuture().get();
 
         return new ArrayList<>(responseCollection);

@@ -105,7 +105,7 @@ public class MultiAddressUrlHttpClientSslTest {
                     resp.headers().set(httpHeaders);
                     return success(resp);
                 });
-        when(STREAMING_HTTP_SERVICE.executionStrategy()).thenReturn(noOffloadsStrategy());
+        when(STREAMING_HTTP_SERVICE.computeExecutionStrategy(any())).thenReturn(noOffloadsStrategy());
         when(STREAMING_HTTP_SERVICE.closeAsync()).thenReturn(completed());
         when(STREAMING_HTTP_SERVICE.closeAsyncGracefully()).thenReturn(completed());
         serverCtx = HttpServers.forAddress(localAddress(0))
@@ -121,7 +121,7 @@ public class MultiAddressUrlHttpClientSslTest {
                     resp.headers().set(httpHeaders);
                     return success(resp);
                 });
-        when(SECURE_STREAMING_HTTP_SERVICE.executionStrategy()).thenReturn(noOffloadsStrategy());
+        when(SECURE_STREAMING_HTTP_SERVICE.computeExecutionStrategy(any())).thenReturn(noOffloadsStrategy());
         when(SECURE_STREAMING_HTTP_SERVICE.closeAsync()).thenReturn(completed());
         when(SECURE_STREAMING_HTTP_SERVICE.closeAsyncGracefully()).thenReturn(completed());
         secureServerCtx = HttpServers.forAddress(localAddress(0))

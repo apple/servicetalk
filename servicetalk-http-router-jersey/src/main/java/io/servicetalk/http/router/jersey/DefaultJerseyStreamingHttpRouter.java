@@ -56,7 +56,7 @@ import static io.servicetalk.http.router.jersey.internal.RequestProperties.initR
 import static java.util.Objects.requireNonNull;
 import static org.glassfish.jersey.server.internal.ContainerUtils.encodeUnsafeCharacters;
 
-final class DefaultJerseyStreamingHttpRouter extends StreamingHttpService {
+final class DefaultJerseyStreamingHttpRouter implements StreamingHttpService {
     private static final SecurityContext UNAUTHENTICATED_SECURITY_CONTEXT = new SecurityContext() {
         @Nullable
         @Override
@@ -175,8 +175,8 @@ final class DefaultJerseyStreamingHttpRouter extends StreamingHttpService {
     }
 
     @Override
-    public HttpExecutionStrategy executionStrategy() {
-        return strategy;
+    public HttpExecutionStrategy computeExecutionStrategy(HttpExecutionStrategy other) {
+        return strategy.merge(other);
     }
 
     private void handle0(final HttpServiceContext serviceCtx, final StreamingHttpRequest req,

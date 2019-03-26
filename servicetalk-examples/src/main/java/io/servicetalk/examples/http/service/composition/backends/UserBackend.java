@@ -23,6 +23,7 @@ import io.servicetalk.http.api.HttpResponseFactory;
 import io.servicetalk.http.api.HttpSerializationProvider;
 import io.servicetalk.http.api.HttpService;
 import io.servicetalk.http.api.HttpServiceContext;
+import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.router.predicate.HttpPredicateRouterBuilder;
 
 import static io.servicetalk.concurrent.api.Single.success;
@@ -31,7 +32,7 @@ import static io.servicetalk.examples.http.service.composition.backends.StringUt
 /**
  * A service that returns {@link User} for an entity.
  */
-final class UserBackend extends HttpService {
+final class UserBackend implements HttpService {
 
     private static final String USER_ID_QP_NAME = "userId";
     private final HttpSerializationProvider serializer;
@@ -53,10 +54,10 @@ final class UserBackend extends HttpService {
         return success(responseFactory.ok().payloadBody(user, serializer.serializerFor(User.class)));
     }
 
-    static HttpService newUserService(HttpSerializationProvider serializer) {
+    static StreamingHttpService newUserService(HttpSerializationProvider serializer) {
         HttpPredicateRouterBuilder routerBuilder = new HttpPredicateRouterBuilder();
         return routerBuilder.whenPathStartsWith("/user")
                 .thenRouteTo(new UserBackend(serializer))
-                .build();
+                .buildStreaming();
     }
 }

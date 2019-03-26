@@ -17,61 +17,44 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.concurrent.api.AsyncCloseable;
 import io.servicetalk.concurrent.api.Completable;
+import io.servicetalk.concurrent.api.Single;
 
 import static io.servicetalk.http.api.HttpExecutionStrategies.OFFLOAD_RECEIVE_META_AND_SEND_STRATEGY;
 
 /**
  * Same as {@link StreamingHttpService} but that accepts {@link HttpRequest} and returns {@link HttpResponse}.
  */
-public abstract class HttpService implements HttpRequestHandler, AsyncCloseable {
-    static final HttpExecutionStrategy DEFAULT_SERVICE_STRATEGY = OFFLOAD_RECEIVE_META_AND_SEND_STRATEGY;
+@FunctionalInterface
+public interface HttpService extends AsyncCloseable {
+    /**
+     * Handles a single HTTP request.
+     *
+     * @param ctx Context of the service.
+     * @param request to handle.
+     * @param responseFactory used to create {@link HttpResponse} objects.
+     * @return {@link Single} of HTTP response.
+     */
+    Single<HttpResponse> handle(HttpServiceContext ctx, HttpRequest request, HttpResponseFactory responseFactory);
+
     /**
      * Closes this {@link HttpService} asynchronously.
      *
      * @return {@link Completable} that when subscribed will close this {@link HttpService}.
      */
     @Override
-    public Completable closeAsync() {
+    default Completable closeAsync() {
         return Completable.completed();
     }
 
-    @Override
-    public final HttpService asService() {
-        return this;
-    }
-
     /**
-     * Convert this {@link HttpService} to the {@link StreamingHttpService} API.
+     * Compute a {@link HttpExecutionStrategy} given the programming model constraints of this
+     * {@link BlockingStreamingHttpService} in combination with another {@link HttpExecutionStrategy}. This may involve
+     * a merge operation between two {@link BlockingStreamingHttpService}.
      *
-     * @return a {@link StreamingHttpService} representation of this {@link HttpService}.
+     * @param other The other
+     * @return The {@link HttpExecutionStrategy} for this {@link BlockingStreamingHttpService}.
      */
-    public final StreamingHttpService asStreamingService() {
-        return asStreamingServiceInternal();
-    }
-
-    /**
-     * Convert this {@link HttpService} to the {@link BlockingHttpService} API.
-     *
-     * @return a {@link BlockingHttpService} representation of this {@link HttpService}.
-     */
-    public final BlockingHttpService asBlockingService() {
-        return asBlockingServiceInternal();
-    }
-
-    /**
-     * Returns the {@link HttpExecutionStrategy}.
-     *
-     * @return The {@link HttpExecutionStrategy} for this {@link HttpService}.
-     */
-    public HttpExecutionStrategy executionStrategy() {
-        return DEFAULT_SERVICE_STRATEGY;
-    }
-
-    StreamingHttpService asStreamingServiceInternal() {
-        return HttpServiceToStreamingHttpService.transform(this);
-    }
-
-    BlockingHttpService asBlockingServiceInternal() {
-        return HttpServiceToBlockingHttpService.transform(this);
+    default HttpExecutionStrategy computeExecutionStrategy(HttpExecutionStrategy other) {
+        return other.merge(OFFLOAD_RECEIVE_META_AND_SEND_STRATEGY);
     }
 }

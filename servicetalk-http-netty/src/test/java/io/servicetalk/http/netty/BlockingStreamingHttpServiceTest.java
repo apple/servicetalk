@@ -18,8 +18,8 @@ package io.servicetalk.http.netty;
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.BlockingStreamingHttpClient;
-import io.servicetalk.http.api.BlockingStreamingHttpRequestHandler;
 import io.servicetalk.http.api.BlockingStreamingHttpResponse;
+import io.servicetalk.http.api.BlockingStreamingHttpService;
 import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpOutputStream;
 import io.servicetalk.http.api.HttpPayloadWriter;
@@ -82,7 +82,7 @@ public class BlockingStreamingHttpServiceTest {
         }
     }
 
-    private BlockingStreamingHttpClient context(BlockingStreamingHttpRequestHandler handler) throws Exception {
+    private BlockingStreamingHttpClient context(BlockingStreamingHttpService handler) throws Exception {
         serverContext = HttpServers.forAddress(localAddress(0)).listenBlockingStreamingAndAwait(handler);
 
         client = HttpClients.forSingleAddress(serverHostAndPort(serverContext)).buildBlockingStreaming();
@@ -173,7 +173,7 @@ public class BlockingStreamingHttpServiceTest {
         }, false);
     }
 
-    private void respondWithPayloadBodyAndTrailers(BlockingStreamingHttpRequestHandler handler,
+    private void respondWithPayloadBodyAndTrailers(BlockingStreamingHttpService handler,
                                                    boolean useDeserializer) throws Exception {
         BlockingStreamingHttpClient client = context(handler);
 
@@ -233,7 +233,7 @@ public class BlockingStreamingHttpServiceTest {
         }, false);
     }
 
-    private void echoServer(BlockingStreamingHttpRequestHandler handler, boolean useDeserializer) throws Exception {
+    private void echoServer(BlockingStreamingHttpService handler, boolean useDeserializer) throws Exception {
         BlockingStreamingHttpClient client = context(handler);
 
         BlockingStreamingHttpResponse response = client.request(client.post("/")

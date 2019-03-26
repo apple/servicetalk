@@ -88,12 +88,12 @@ public final class GatewayServer {
                                     ratingsClient, userClient, httpSerializer))
                             .whenPathStartsWith("/recommendations/aggregated")
                             .thenRouteTo(new GatewayService(recommendationsClient.asClient(),
-                                    metadataClient, ratingsClient, userClient, httpSerializer).asStreamingService())
+                                    metadataClient, ratingsClient, userClient, httpSerializer))
                             .whenPathStartsWith("/recommendations/blocking")
                             .thenRouteTo(new BlockingGatewayService(recommendationsClient.asBlockingClient(),
                                     metadataClient.asBlockingClient(),
                                     ratingsClient.asBlockingClient(),
-                                    userClient.asBlockingClient(), httpSerializer).asStreamingService())
+                                    userClient.asBlockingClient(), httpSerializer))
                             .buildStreaming();
 
             // Create configurable starter for HTTP server.

@@ -137,7 +137,7 @@ public class FlushStrategyOverrideTest {
         assertThat("Unexpected payload for regular flush.", secondReqChunks, hasSize(1/*last chunk*/));
     }
 
-    private static final class FlushingService extends StreamingHttpService {
+    private static final class FlushingService implements StreamingHttpService {
 
         private BlockingQueue<MockFlushStrategy> flushStrategies = new LinkedBlockingQueue<>();
 
@@ -163,7 +163,7 @@ public class FlushStrategyOverrideTest {
         }
 
         @Override
-        public HttpExecutionStrategy executionStrategy() {
+        public HttpExecutionStrategy computeExecutionStrategy(HttpExecutionStrategy other) {
             return noOffloadsStrategy();
         }
     }

@@ -23,6 +23,7 @@ import io.servicetalk.http.api.HttpResponseFactory;
 import io.servicetalk.http.api.HttpSerializationProvider;
 import io.servicetalk.http.api.HttpService;
 import io.servicetalk.http.api.HttpServiceContext;
+import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.router.predicate.HttpPredicateRouterBuilder;
 
 import static io.servicetalk.concurrent.api.Single.success;
@@ -31,7 +32,7 @@ import static io.servicetalk.examples.http.service.composition.backends.StringUt
 /**
  * A service that returns {@link Metadata}s for an entity.
  */
-final class MetadataBackend extends HttpService {
+final class MetadataBackend implements HttpService {
 
     private static final String ENTITY_ID_QP_NAME = "entityId";
     private final HttpSerializationProvider serializer;
@@ -53,10 +54,10 @@ final class MetadataBackend extends HttpService {
         return success(responseFactory.ok().payloadBody(metadata, serializer.serializerFor(Metadata.class)));
     }
 
-    static HttpService newMetadataService(HttpSerializationProvider serializer) {
+    static StreamingHttpService newMetadataService(HttpSerializationProvider serializer) {
         HttpPredicateRouterBuilder routerBuilder = new HttpPredicateRouterBuilder();
         return routerBuilder.whenPathStartsWith("/metadata")
                 .thenRouteTo(new MetadataBackend(serializer))
-                .build();
+                .buildStreaming();
     }
 }

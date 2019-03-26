@@ -124,8 +124,8 @@ public class NettyHttpServerConnectionTest {
                     }
 
                     @Override
-                    public HttpExecutionStrategy executionStrategy() {
-                        return serverExecutionStrategy;
+                    public HttpExecutionStrategy computeExecutionStrategy(HttpExecutionStrategy other) {
+                        return serverExecutionStrategy.merge(other);
                     }
                 }).toFuture().get();
 
