@@ -1034,7 +1034,7 @@ public abstract class Publisher<T> {
      *
      * @see <a href="http://reactivex.io/documentation/operators/take.html">ReactiveX take operator.</a>
      */
-    public final Publisher<T> take(long numElements) {
+    public final Publisher<T> takeAtMost(long numElements) {
         return new TakeNPublisher<>(this, numElements, executor);
     }
 
