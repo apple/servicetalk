@@ -291,7 +291,7 @@ public final class DefaultSerializer implements Serializer {
         // The StreamingDeserializer will be used to buffer data in between Buffers. It is not thread safe but
         // the concatMap should ensure there is no concurrency, and will ensure visibility when transitioning
         // between Buffers.
-        toSource(source.concatMapIterable(deSerializer::deserialize)
+        toSource(source.flatMapConcatIterable(deSerializer::deserialize)
                 .doBeforeComplete(deSerializer::close))
                 .subscribe(subscriber);
     }

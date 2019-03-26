@@ -87,7 +87,7 @@ final class GatewayService implements HttpService {
         // Recommendations are a List and we want to query details for each recommendation in parallel.
         // Turning the List into a Publisher helps us use relevant operators to do so.
         return from(recommendations)
-                .flatMapSingle(reco -> {
+                .flatMapMergeSingle(reco -> {
                     Single<Metadata> metadata =
                             metadataClient.request(metadataClient.get("/metadata?entityId=" + reco.getEntityId()))
                                     // Since HTTP payload is a buffer, we deserialize into Metadata.

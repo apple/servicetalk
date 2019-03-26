@@ -25,6 +25,6 @@ import java.util.Collections;
 public class PublisherConcatMapIterableTckTest extends AbstractPublisherOperatorTckTest<Integer> {
     @Override
     protected Publisher<Integer> composePublisher(Publisher<Integer> publisher, int elements) {
-        return publisher.concatMapIterable(Collections::singletonList);
+        return publisher.flatMapConcatIterable(Collections::singletonList);
     }
 }

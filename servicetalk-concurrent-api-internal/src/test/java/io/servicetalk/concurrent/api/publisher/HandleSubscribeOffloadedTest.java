@@ -59,14 +59,14 @@ public class HandleSubscribeOffloadedTest extends AbstractHandleSubscribeOffload
     @Test
     public void withAsyncOperatorsAddedAfter() throws Exception {
         awaitTermination(source.subscribeOn(newOffloadingAwareExecutor())
-                .flatMapSingle(t -> executorForTimerRule.executor().submit(() -> t)));
+                .flatMapMergeSingle(t -> executorForTimerRule.executor().submit(() -> t)));
         verifyHandleSubscribeInvoker();
         verifyPublisherOffloadCount();
     }
 
     @Test
     public void withAsyncOperatorsAddedBefore() throws Exception {
-        awaitTermination(source.flatMapSingle(t -> executorForTimerRule.executor().submit(() -> t))
+        awaitTermination(source.flatMapMergeSingle(t -> executorForTimerRule.executor().submit(() -> t))
                 .subscribeOn(newOffloadingAwareExecutor()));
         verifyHandleSubscribeInvoker();
         verifyPublisherOffloadCount();

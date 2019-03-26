@@ -78,7 +78,7 @@ final class StreamingGatewayService implements StreamingHttpService {
     }
 
     private Publisher<FullRecommendation> queryRecommendationDetails(Publisher<Recommendation> recommendations) {
-        return recommendations.flatMapSingle(recommendation -> {
+        return recommendations.flatMapMergeSingle(recommendation -> {
             Single<Metadata> metadata =
                     metadataClient.request(metadataClient.get("/metadata?entityId=" + recommendation.getEntityId()))
                             // Since HTTP payload is a buffer, we deserialize into Metadata.
