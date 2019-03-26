@@ -251,7 +251,7 @@ public final class ExecutionStrategyResources {
         }
 
         private Publisher<Buffer> getThreadingInfoPublisherMapped(final Publisher<Buffer> content) {
-            return content.ignoreElements().concatWith(getThreadingInfoSingleBuffer().toPublisher());
+            return content.ignoreElements().concat(getThreadingInfoSingleBuffer().toPublisher());
         }
 
         private static Map<String, String> getThreadingInfo(final ConnectionContext ctx, final StreamingHttpRequest req,

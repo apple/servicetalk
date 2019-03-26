@@ -265,7 +265,7 @@ public class RoundRobinLoadBalancerTest {
 
                     Publisher<TestLoadBalancedConnection> selections = Publisher.empty();
                     for (int j = 0; j < 5; j++) {
-                        selections = selections.concatWith(lb.selectConnection(selectionFilter));
+                        selections = selections.concat(lb.selectConnection(selectionFilter));
                     }
                     selectedConnections.addAll(selections.toFuture().get());
                 } catch (final Throwable t) {
@@ -313,10 +313,10 @@ public class RoundRobinLoadBalancerTest {
         sendServiceDiscoveryEvents(upEvent("address-1"));
         sendServiceDiscoveryEvents(upEvent("address-2"));
         final List<String> connections = awaitIndefinitely((lb.selectConnection(identity())
-                .concatWith(lb.selectConnection(identity()))
-                .concatWith(lb.selectConnection(identity()))
-                .concatWith(lb.selectConnection(identity()))
-                .concatWith(lb.selectConnection(identity()))
+                .concat(lb.selectConnection(identity()))
+                .concat(lb.selectConnection(identity()))
+                .concat(lb.selectConnection(identity()))
+                .concat(lb.selectConnection(identity()))
                 .map(TestLoadBalancedConnection::address)));
 
         assertThat(connections, contains("address-1", "address-2", "address-1", "address-2", "address-1"));

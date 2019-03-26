@@ -125,7 +125,7 @@ public class HttpAuthConnectionFactoryClientTest {
                                 if (OK.equals(response.status())) {
                                     // In this test we have not enabled pipelining so we drain this response before
                                     // indicating the connection is usable.
-                                    return response.payloadBody().ignoreElements().concatWith(success(cnx));
+                                    return response.payloadBody().ignoreElements().concat(success(cnx));
                                 }
                                 cnx.closeAsync().subscribe();
                                 return error(new IllegalStateException("failed auth"));

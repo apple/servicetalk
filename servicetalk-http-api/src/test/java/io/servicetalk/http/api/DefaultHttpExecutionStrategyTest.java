@@ -133,7 +133,7 @@ public class DefaultHttpExecutionStrategyTest {
 
         analyzer.instrumentedResponseForClient(strategy.invokeClient(executor, req,
                 publisher -> analyzer.instrumentedFlatRequestForClient(publisher).ignoreElements()
-                        .concatWith(success(resp))))
+                        .concat(success(resp))))
                 .flatMapPublisher(StreamingHttpResponse::payloadBody)
                 .toFuture().get();
         analyzer.verify();
@@ -148,7 +148,7 @@ public class DefaultHttpExecutionStrategyTest {
         analyzer.instrumentedResponseForServer(strategy.invokeService(executor, req, request -> {
             analyzer.checkServiceInvocation();
             return analyzer.instrumentedRequestPayloadForServer(request.payloadBody())
-                    .ignoreElements().concatWith(success(resp));
+                    .ignoreElements().concat(success(resp));
         }, (throwable, executor1) -> error(throwable))).toFuture().get();
 
         analyzer.verify();

@@ -51,19 +51,19 @@ public class TcpServerBinderConnectionAcceptorTest extends AbstractTcpServerTest
 
     enum FilterMode {
         ACCEPT_ALL(true, false, (executor, context) -> completed()),
-        DELAY_ACCEPT_ALL(true, false, (executor, context) -> executor.timer(100, MILLISECONDS).concatWith(completed())),
+        DELAY_ACCEPT_ALL(true, false, (executor, context) -> executor.timer(100, MILLISECONDS).concat(completed())),
         REJECT_ALL(false, false, (executor, context) -> error(DELIBERATE_EXCEPTION)),
         DELAY_REJECT_ALL(false, false, (executor, context) ->
-                executor.timer(100, MILLISECONDS).concatWith(error(DELIBERATE_EXCEPTION))),
+                executor.timer(100, MILLISECONDS).concat(error(DELIBERATE_EXCEPTION))),
         THROW_EXCEPTION(false, false, (executor, context) -> {
             throw DELIBERATE_EXCEPTION;
         }),
         DELAY_SINGLE_ERROR(false, false, (executor, context) ->
-                executor.timer(100, MILLISECONDS).concatWith(error(DELIBERATE_EXCEPTION))),
+                executor.timer(100, MILLISECONDS).concat(error(DELIBERATE_EXCEPTION))),
         SINGLE_ERROR(false, false, (executor, context) -> error(new DeliberateException())),
         INITIALIZER_THROW(false, true, (executor, context) -> completed()),
         DELAY_INITIALIZER_THROW(false, true, (executor, context) ->
-                executor.timer(100, MILLISECONDS).concatWith(completed())),
+                executor.timer(100, MILLISECONDS).concat(completed())),
         ACCEPT_ALL_CONSTANT(true, false, (executor, context) -> completed()) {
             @Override
             ConnectionAcceptor getContextFilter(final Executor executor) {

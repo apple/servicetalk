@@ -56,7 +56,7 @@ abstract class AbstractRedisConnection extends RedisConnection {
     private final Completable closeAsync = new SubscribableCompletable() {
         @Override
         protected void handleSubscribe(Subscriber subscriber) {
-            toSource(pinger.closeAsync().concatWith(doClose())).subscribe(subscriber);
+            toSource(pinger.closeAsync().concat(doClose())).subscribe(subscriber);
         }
     };
     private final Executor pingTimerProvider;
@@ -94,7 +94,7 @@ abstract class AbstractRedisConnection extends RedisConnection {
             maxPendingRequests = maxPipelinedRequests;
         }
         maxConcurrencySetting = just(roConfig.maxPipelinedRequests())
-                .concatWith(onClosing.concatWith(success(0)));
+                .concat(onClosing.concat(success(0)));
     }
 
     @Override

@@ -202,6 +202,6 @@ final class TestServiceStreaming extends StreamingHttpService {
     private static StreamingHttpResponse throwErrorDuringRead(final StreamingHttpRequest req,
                                                               final StreamingHttpResponseFactory factory) {
         return factory.ok().version(req.version()).payloadBody(
-                req.payloadBody().concatWith(Completable.error(DELIBERATE_EXCEPTION)));
+                req.payloadBody().concat(Completable.error(DELIBERATE_EXCEPTION)));
     }
 }

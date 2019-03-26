@@ -321,6 +321,6 @@ final class DefaultHttpExecutionStrategy implements HttpExecutionStrategy {
     }
 
     static Publisher<Object> flatten(HttpMetaData metaData, Publisher<Object> payload) {
-        return (Publisher.<Object>just(metaData)).concatWith(payload);
+        return (Publisher.<Object>just(metaData)).concat(payload);
     }
 }

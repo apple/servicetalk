@@ -24,6 +24,6 @@ public class CompletableConcatWithCompletableTckTest extends AbstractCompletable
 
     @Override
     protected Completable composeCompletable(Completable completable) {
-        return completable.concatWith(Completable.completed());
+        return completable.concat(Completable.completed());
     }
 }

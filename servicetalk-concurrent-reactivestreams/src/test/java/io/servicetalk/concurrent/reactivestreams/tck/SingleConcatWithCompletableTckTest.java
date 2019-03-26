@@ -25,6 +25,6 @@ public class SingleConcatWithCompletableTckTest extends AbstractSingleOperatorTc
 
     @Override
     protected Single<Integer> composeSingle(Single<Integer> single) {
-        return single.concatWith(Completable.completed());
+        return single.concat(Completable.completed());
     }
 }

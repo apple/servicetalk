@@ -255,14 +255,14 @@ final class NettyHttpServer {
                                 (cause, executor) -> newErrorResponse(cause, executor, request2.version(), keepAlive));
 
                 if (drainRequestPayloadBody) {
-                    objectPublisher = objectPublisher.concatWith(request2.payloadBody().ignoreElements()
+                    objectPublisher = objectPublisher.concat(request2.payloadBody().ignoreElements()
                             // Discarding the request payload body is an operation which should not impact the state of
                             // request/response processing. It's appropriate to recover from any error here.
                             // ST may introduce RejectedSubscribeError if user already consumed the request payload body
                             .onErrorResume(t -> completed()));
                 }
 
-                return objectPublisher.concatWith(fromSource(processor));
+                return objectPublisher.concat(fromSource(processor));
             });
             return connection.write(responseObjectPublisher.repeat(val -> true)
                     // We generate synthetic callbacks to WriteEventsListener as there is a single write per connection

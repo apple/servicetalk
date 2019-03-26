@@ -32,6 +32,6 @@ final class NonPipelinedStreamingHttpConnectionFilter
 
     @Override
     protected Publisher<Object> writeAndRead(final Publisher<Object> requestStream) {
-        return connection.write(requestStream).concatWith(connection.read());
+        return connection.write(requestStream).concat(connection.read());
     }
 }

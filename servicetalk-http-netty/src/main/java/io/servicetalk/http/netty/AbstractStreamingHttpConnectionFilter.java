@@ -53,7 +53,7 @@ abstract class AbstractStreamingHttpConnectionFilter<CC extends ConnectionContex
         // TODO(jayv) we should concat with NettyConnectionContext.onClosing() once it's exposed such that both
         // this class and ConcurrentRequestsHttpConnectionFilter can listen to the same event to reduce ambiguity
         maxConcurrencySetting = just(config.maxPipelinedRequests())
-                .concatWith(connection.onClose()).concatWith(Single.success(0));
+                .concat(connection.onClose()).concat(Single.success(0));
     }
 
     @Override

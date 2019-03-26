@@ -46,7 +46,7 @@ public class CompletableConcatWithCompletableTest {
 
     @Test
     public void testSourceSuccessNextSuccess() {
-        toSource(source.concatWith(next)).subscribe(subscriber);
+        toSource(source.concat(next)).subscribe(subscriber);
         source.onComplete();
         assertThat(subscriber.takeTerminal(), nullValue());
         next.onComplete();
@@ -55,7 +55,7 @@ public class CompletableConcatWithCompletableTest {
 
     @Test
     public void testSourceSuccessNextError() {
-        toSource(source.concatWith(next)).subscribe(subscriber);
+        toSource(source.concat(next)).subscribe(subscriber);
         source.onComplete();
         assertThat(subscriber.takeTerminal(), nullValue());
         next.onError(DELIBERATE_EXCEPTION);
@@ -64,7 +64,7 @@ public class CompletableConcatWithCompletableTest {
 
     @Test
     public void testSourceError() {
-        toSource(source.concatWith(next)).subscribe(subscriber);
+        toSource(source.concat(next)).subscribe(subscriber);
         source.onError(DELIBERATE_EXCEPTION);
         assertThat(subscriber.takeError(), is(DELIBERATE_EXCEPTION));
         assertFalse(next.isSubscribed());
@@ -72,7 +72,7 @@ public class CompletableConcatWithCompletableTest {
 
     @Test
     public void testCancelSource() {
-        toSource(source.concatWith(next)).subscribe(subscriber);
+        toSource(source.concat(next)).subscribe(subscriber);
         assertThat(subscriber.takeTerminal(), nullValue());
         subscriber.cancel();
         TestCancellable cancellable = new TestCancellable();
@@ -83,7 +83,7 @@ public class CompletableConcatWithCompletableTest {
 
     @Test
     public void testCancelNext() {
-        toSource(source.concatWith(next)).subscribe(subscriber);
+        toSource(source.concat(next)).subscribe(subscriber);
         source.onComplete();
         assertThat(subscriber.takeTerminal(), nullValue());
         subscriber.cancel();

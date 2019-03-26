@@ -43,7 +43,7 @@ public class CompletableConcatWithSingleTest {
         subscriber = new TestSingleSubscriber<>();
         source = new TestCompletable();
         next = new TestSingle<>();
-        toSource(source.concatWith(next)).subscribe(subscriber);
+        toSource(source.concat(next)).subscribe(subscriber);
     }
 
     @Test

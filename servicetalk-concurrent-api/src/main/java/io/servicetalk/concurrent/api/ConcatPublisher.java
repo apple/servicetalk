@@ -18,7 +18,7 @@ package io.servicetalk.concurrent.api;
 import static java.util.Objects.requireNonNull;
 
 /**
- * As returned by {@link Publisher#concatWith(Publisher)}.
+ * As returned by {@link Publisher#concat(Publisher)}.
  *
  * @param <T> Type of items emitted by this {@link Publisher}.
  */

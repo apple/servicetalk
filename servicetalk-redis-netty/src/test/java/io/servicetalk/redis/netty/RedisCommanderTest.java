@@ -132,7 +132,7 @@ public class RedisCommanderTest extends BaseRedisClientTest {
 
         assertThat(awaitIndefinitely(commandClient.blpop(singletonList("missing-key"), 1)), is(nullValue()));
 
-        assertThat(awaitIndefinitely(commandClient.sadd(key("a-set-1"), "a", "b", "c").concatWith(commandClient.sadd(
+        assertThat(awaitIndefinitely(commandClient.sadd(key("a-set-1"), "a", "b", "c").concat(commandClient.sadd(
                 key("a-set-2"), "c", "d", "e"))), contains(greaterThanOrEqualTo(0L), greaterThanOrEqualTo(0L)));
         assertThat(awaitIndefinitely(commandClient.sdiff(key("a-set-1"), key("a-set-2"), "missing-key")),
                 containsInAnyOrder("a", "b"));

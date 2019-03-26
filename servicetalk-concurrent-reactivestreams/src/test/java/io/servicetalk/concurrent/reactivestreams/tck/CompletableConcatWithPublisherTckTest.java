@@ -26,7 +26,7 @@ public class CompletableConcatWithPublisherTckTest extends AbstractPublisherTckT
     @Override
     public Publisher<Integer> createServiceTalkPublisher(long elements) {
         int numElements = TckUtils.requestNToInt(elements);
-        return Completable.completed().concatWith(TckUtils.newPublisher(numElements));
+        return Completable.completed().concat(TckUtils.newPublisher(numElements));
     }
 
     @Override

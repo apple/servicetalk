@@ -111,7 +111,7 @@ public class DefaultRedisExecutionStrategyTest {
         RedisRequest req = analyzer.createNewRequest();
         Publisher<RedisData> resp = analyzer.createNewResponse();
         analyzer.instrumentedResponse(strategy.invokeClient(executor, req, request ->
-            analyzer.instrumentedRequest(request).content().ignoreElements().concatWith(resp)
+            analyzer.instrumentedRequest(request).content().ignoreElements().concat(resp)
         )).toFuture().get();
         analyzer.verify();
     }

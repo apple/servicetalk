@@ -148,7 +148,7 @@ final class InternalSubscribedRedisConnection extends AbstractRedisConnection {
                 if (deferSubscribeTillConnect) {
                     response = concatDeferOnSubscribe(write, readStreamSplitter.registerNewCommand(command));
                 } else {
-                    response = write.concatWith(readStreamSplitter.registerNewCommand(command));
+                    response = write.concat(readStreamSplitter.registerNewCommand(command));
                 }
                 // Unwrap PubSubChannelMessage if it wraps an SimpleString response
                 toSource(response.map(m -> m.keyType() == SimpleString ? m.data() : m)).subscribe(subscriber);
@@ -165,8 +165,8 @@ final class InternalSubscribedRedisConnection extends AbstractRedisConnection {
     Completable doClose() {
         return writeQueue.quit(request(newRequest(QUIT)).ignoreElements())
                 .onErrorResume(th -> matches(th, ClosedChannelException.class) ? completed() :
-                        connection.closeAsync().concatWith(error(th)))
-                .concatWith(connection.closeAsync());
+                        connection.closeAsync().concat(error(th)))
+                .concat(connection.closeAsync());
     }
 
     @Override

@@ -317,7 +317,7 @@ public abstract class Completable {
      * @return A {@link Completable} that emits the terminal signal of {@code next} {@link Completable}, after this
      * {@link Completable} has terminated successfully.
      */
-    public final Completable concatWith(Completable next) {
+    public final Completable concat(Completable next) {
         return new CompletableConcatWithCompletable(this, next, executor);
     }
 
@@ -339,7 +339,7 @@ public abstract class Completable {
      * @return A {@link Single} that emits the result of {@code next} {@link Single}, after this {@link Completable}
      * has terminated successfully.
      */
-    public final <T> Single<T> concatWith(Single<? extends T> next) {
+    public final <T> Single<T> concat(Single<? extends T> next) {
         return new CompletableConcatWithSingle<>(this, next, executor);
     }
 
@@ -362,8 +362,8 @@ public abstract class Completable {
      * @return A {@link Publisher} that emits all items emitted from {@code next} {@link Publisher}, after this
      * {@link Completable} has terminated successfully.
      */
-    public final <T> Publisher<T> concatWith(Publisher<? extends T> next) {
-        return this.<T>toPublisher().concatWith(next);
+    public final <T> Publisher<T> concat(Publisher<? extends T> next) {
+        return this.<T>toPublisher().concat(next);
     }
 
     /**
@@ -1084,7 +1084,7 @@ public abstract class Completable {
      * <p>
      * No {@link io.servicetalk.concurrent.PublisherSource.Subscriber#onNext(Object)} signals will be delivered to the
      * returned {@link Publisher}. Only terminal signals will be delivered. If you need more control you should consider
-     * using {@link #concatWith(Publisher)}.
+     * using {@link #concat(Publisher)}.
      * @param <T> The value type of the resulting {@link Publisher}.
      * @return A {@link Publisher} that mirrors the terminal signal from this {@link Completable}.
      */

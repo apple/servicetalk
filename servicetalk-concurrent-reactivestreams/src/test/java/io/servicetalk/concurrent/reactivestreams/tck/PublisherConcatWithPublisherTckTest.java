@@ -27,7 +27,7 @@ public class PublisherConcatWithPublisherTckTest extends AbstractPublisherOperat
         int numElements = TckUtils.requestNToInt(elements);
 
         if (numElements <= 1) {
-            return TckUtils.newPublisher(numElements).concatWith(Publisher.empty());
+            return TckUtils.newPublisher(numElements).concat(Publisher.empty());
         }
 
         int halfElements = numElements / 2;
@@ -39,6 +39,6 @@ public class PublisherConcatWithPublisherTckTest extends AbstractPublisherOperat
 
     @Override
     protected Publisher<Integer> composePublisher(Publisher<Integer> publisher, int elements) {
-        return publisher.concatWith(TckUtils.newPublisher(elements));
+        return publisher.concat(TckUtils.newPublisher(elements));
     }
 }

@@ -164,9 +164,9 @@ public class ConcurrentRequestsHttpConnectionFilterTest {
 
         try (ServerContext serverContext = HttpServers.forAddress(localAddress(0))
                 .listenStreamingAndAwait((ctx, request, responseFactory) -> {
-                    Publisher<Buffer> deferredPayload = fromSource(lastRequestFinished).concatWith(empty());
+                    Publisher<Buffer> deferredPayload = fromSource(lastRequestFinished).concat(empty());
                     return request.payloadBody().ignoreElements()
-                            .concatWith(Single.success(responseFactory.ok().payloadBody(deferredPayload)));
+                            .concat(Single.success(responseFactory.ok().payloadBody(deferredPayload)));
                 });
 
              StreamingHttpConnection connection = new DefaultHttpConnectionBuilder<>()
@@ -197,7 +197,7 @@ public class ConcurrentRequestsHttpConnectionFilterTest {
 
         try (ServerContext serverContext = HttpServers.forAddress(localAddress(0))
                 .listenStreamingAndAwait((ctx, request, responseFactory) ->
-                        request.payloadBody().ignoreElements().concatWith(
+                        request.payloadBody().ignoreElements().concat(
                         Single.success(responseFactory.ok()
                                 .setHeader(HttpHeaderNames.CONNECTION, "close"))));
 
@@ -213,7 +213,7 @@ public class ConcurrentRequestsHttpConnectionFilterTest {
             resp1.toFuture().get();
 
             try {
-                connection.onClose().concatWith(resp2).toFuture().get();
+                connection.onClose().concat(resp2).toFuture().get();
                 fail("Should not allow request to complete normally on a closed connection");
             } catch (ExecutionException e) {
                 assertThat(e.getCause(), instanceOf(ConnectionClosedException.class));
@@ -230,8 +230,8 @@ public class ConcurrentRequestsHttpConnectionFilterTest {
                 .socketOption(StandardSocketOptions.SO_LINGER, 0) // Force connection reset on close
                 .listenStreamingAndAwait((ctx, request, responseFactory) ->
                         request.payloadBody().ignoreElements()
-                                .concatWith(ctx.closeAsync()) // trigger reset after client is done writing
-                                .concatWith(Single.never()));
+                                .concat(ctx.closeAsync()) // trigger reset after client is done writing
+                                .concat(Single.never()));
 
              HttpConnection connection = new DefaultHttpConnectionBuilder<>()
                      .maxPipelinedRequests(99)
@@ -245,7 +245,7 @@ public class ConcurrentRequestsHttpConnectionFilterTest {
             final AtomicReference<Throwable> ioEx = new AtomicReference<>();
 
             Publisher.empty()
-                    .concatWith(resp1).recoverWith(reset -> {
+                    .concat(resp1).recoverWith(reset -> {
                         ioEx.set(reset); // Capture connection reset
                         return Publisher.empty();
                     })
@@ -255,7 +255,7 @@ public class ConcurrentRequestsHttpConnectionFilterTest {
             connection.onClose().doAfterFinally(closedFinally::onComplete).subscribe();
 
             try {
-                fromSource(closedFinally).concatWith(resp2).toFuture().get();
+                fromSource(closedFinally).concat(resp2).toFuture().get();
                 fail("Should not allow request to complete normally on a closed connection");
             } catch (ExecutionException e) {
                 assertThat(e.getCause(), instanceOf(ConnectionClosedException.class));

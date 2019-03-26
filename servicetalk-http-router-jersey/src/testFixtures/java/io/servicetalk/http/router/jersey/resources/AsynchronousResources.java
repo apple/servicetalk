@@ -114,7 +114,7 @@ public class AsynchronousResources {
     @GET
     public Single<String> getStringSingle(final @QueryParam("fail") boolean fail) {
         return ctx.executionContext().executor().timer(10, MILLISECONDS)
-                .concatWith(fail ? error(DELIBERATE_EXCEPTION) : success("DONE"));
+                .concat(fail ? error(DELIBERATE_EXCEPTION) : success("DONE"));
     }
 
     @Consumes(APPLICATION_JSON)
@@ -139,7 +139,7 @@ public class AsynchronousResources {
     @GET
     public Single<Response> getResponseSingle(final @QueryParam("fail") boolean fail) {
         return ctx.executionContext().executor().timer(10, MILLISECONDS)
-                .concatWith(fail ? error(DELIBERATE_EXCEPTION) : success(accepted("DONE").build()));
+                .concat(fail ? error(DELIBERATE_EXCEPTION) : success(accepted("DONE").build()));
     }
 
     @Produces(TEXT_PLAIN)
@@ -148,7 +148,7 @@ public class AsynchronousResources {
     public Single<Response> getResponseSinglePublisherEntity(@QueryParam("i") final int i) {
         final BufferAllocator allocator = ctx.executionContext().bufferAllocator();
         return ctx.executionContext().executor().timer(10, MILLISECONDS)
-                .concatWith(defer(() -> {
+                .concat(defer(() -> {
                     final String contentString = "GOT: " + i;
                     final Publisher<Buffer> responseContent = just(allocator.fromAscii(contentString));
 
@@ -167,7 +167,7 @@ public class AsynchronousResources {
     @GET
     public Single<Map<String, Object>> getMapSingle(final @QueryParam("fail") boolean fail) {
         return ctx.executionContext().executor().timer(10, MILLISECONDS)
-                .concatWith(fail ? error(DELIBERATE_EXCEPTION) : defer(() -> success(singletonMap("foo", "bar4"))));
+                .concat(fail ? error(DELIBERATE_EXCEPTION) : defer(() -> success(singletonMap("foo", "bar4"))));
     }
 
     @Produces(APPLICATION_JSON)
@@ -175,7 +175,7 @@ public class AsynchronousResources {
     @GET
     public Single<TestPojo> getPojoSingle(final @QueryParam("fail") boolean fail) {
         return ctx.executionContext().executor().timer(10, MILLISECONDS)
-                .concatWith(fail ? error(DELIBERATE_EXCEPTION) : defer(() -> {
+                .concat(fail ? error(DELIBERATE_EXCEPTION) : defer(() -> {
                     final TestPojo testPojo = new TestPojo();
                     testPojo.setaString("boo");
                     testPojo.setAnInt(456);
@@ -190,7 +190,7 @@ public class AsynchronousResources {
     public Single<TestPojo> postJsonPojoInPojoOutSingle(@QueryParam("fail") final boolean fail,
                                                         final TestPojo testPojo) {
         return ctx.executionContext().executor().timer(10, MILLISECONDS)
-                .concatWith(fail ? error(DELIBERATE_EXCEPTION) : defer(() -> {
+                .concat(fail ? error(DELIBERATE_EXCEPTION) : defer(() -> {
                     testPojo.setAnInt(testPojo.getAnInt() + 1);
                     testPojo.setaString(testPojo.getaString() + "x");
                     return success(testPojo);
@@ -204,7 +204,7 @@ public class AsynchronousResources {
     public Single<Response> postJsonPojoInPojoOutResponseSingle(@QueryParam("fail") final boolean fail,
                                                                 final TestPojo testPojo) {
         return ctx.executionContext().executor().timer(10, MILLISECONDS)
-                .concatWith(fail ? error(DELIBERATE_EXCEPTION) : defer(() -> {
+                .concat(fail ? error(DELIBERATE_EXCEPTION) : defer(() -> {
                     testPojo.setAnInt(testPojo.getAnInt() + 1);
                     testPojo.setaString(testPojo.getaString() + "x");
                     return success(accepted(testPojo).build());
