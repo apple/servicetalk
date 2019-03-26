@@ -107,7 +107,7 @@ public class PublisherFlatMapSingleTest {
                 return x;
             }
             throw new DeliberateException();
-        }), 1024).onErrorResume(t -> {
+        }), 1024).recoverWith(t -> {
             error.set(t);
             return Publisher.empty();
         }).reduce(ArrayList::new, (ints, s) -> {

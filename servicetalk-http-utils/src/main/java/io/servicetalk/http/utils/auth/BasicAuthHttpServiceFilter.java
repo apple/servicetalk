@@ -309,7 +309,7 @@ public final class BasicAuthHttpServiceFilter<UserInfo> implements HttpServiceFi
 
             return config.credentialsVerifier.apply(userId, password)
                     .flatMap(userInfo -> onAuthenticated(ctx, request, factory, userInfo))
-                    .onErrorResume(t -> {
+                    .recoverWith(t -> {
                         if (t instanceof AuthenticationException) {
                             return onAccessDenied(request, factory);
                         }

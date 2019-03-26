@@ -62,7 +62,7 @@ final class NoOffloadsHttpExecutionStrategy implements HttpExecutionStrategy {
             final BiFunction<Throwable, Executor, Single<StreamingHttpResponse>> errorHandler) {
         request = request.transformRawPayloadBody(payload -> payload.publishOnOverride(immediate()));
         return service.apply(request)
-                .onErrorResume(t -> errorHandler.apply(t, immediate()))
+                .recoverWith(t -> errorHandler.apply(t, immediate()))
                 .flatMapPublisher(response -> flatten(response, response.payloadBodyAndTrailers()))
                 .subscribeOnOverride(immediate());
     }

@@ -245,7 +245,7 @@ public class ConcurrentRequestsHttpConnectionFilterTest {
             final AtomicReference<Throwable> ioEx = new AtomicReference<>();
 
             Publisher.empty()
-                    .concatWith(resp1).onErrorResume(reset -> {
+                    .concatWith(resp1).recoverWith(reset -> {
                         ioEx.set(reset); // Capture connection reset
                         return Publisher.empty();
                     })
