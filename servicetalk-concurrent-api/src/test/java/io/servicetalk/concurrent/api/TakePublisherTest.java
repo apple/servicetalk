@@ -34,7 +34,7 @@ public class TakePublisherTest {
 
     @Test
     public void testEnoughRequests() {
-        Publisher<String> p = publisher.take(2);
+        Publisher<String> p = publisher.takeAtMost(2);
         toSource(p).subscribe(subscriber);
         publisher.onSubscribe(subscription);
         subscriber.request(3);
@@ -46,7 +46,7 @@ public class TakePublisherTest {
 
     @Test
     public void testTakeError() {
-        Publisher<String> p = publisher.take(2);
+        Publisher<String> p = publisher.takeAtMost(2);
         toSource(p).subscribe(subscriber);
         subscriber.request(2);
         publisher.onNext("Hello1");
@@ -57,7 +57,7 @@ public class TakePublisherTest {
 
     @Test
     public void testTakeComplete() {
-        Publisher<String> p = publisher.take(2);
+        Publisher<String> p = publisher.takeAtMost(2);
         toSource(p).subscribe(subscriber);
         subscriber.request(2);
         publisher.onNext("Hello1");
@@ -67,7 +67,7 @@ public class TakePublisherTest {
 
     @Test
     public void testSubCancelled() {
-        Publisher<String> p = publisher.take(3);
+        Publisher<String> p = publisher.takeAtMost(3);
         toSource(p).subscribe(subscriber);
         publisher.onSubscribe(subscription);
         subscriber.request(3);
