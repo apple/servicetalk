@@ -138,14 +138,14 @@ final class DefaultHttpServerBuilder extends HttpServerBuilder {
     @Override
     protected Single<ServerContext> doListen(@Nullable ConnectionAcceptor connectionAcceptor,
                                              StreamingHttpService service,
-                                             HttpExecutionStrategy effectiveStrategy,
+                                             HttpExecutionStrategy strategy,
                                              boolean drainRequestPayloadBody) {
         ReadOnlyHttpServerConfig roConfig = this.config.asReadOnly();
-        Executor executor = effectiveStrategy.executor();
+        Executor executor = strategy.executor();
         if (executor != null) {
             executionContextBuilder.executor(executor);
         }
         return NettyHttpServer.bind(executionContextBuilder.build(), roConfig, address, connectionAcceptor,
-                service, effectiveStrategy, drainRequestPayloadBody);
+                service, strategy, drainRequestPayloadBody);
     }
 }

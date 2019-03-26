@@ -136,8 +136,7 @@ class DefaultHttpExecutionStrategy implements HttpExecutionStrategy {
 
             @Override
             public HttpExecutionStrategy computeExecutionStrategy(HttpExecutionStrategy other) {
-                // TODO(scott): merge or just take it "as is"?
-                return other.merge(DefaultHttpExecutionStrategy.this);
+                return DefaultHttpExecutionStrategy.this;
             }
 
             @Override

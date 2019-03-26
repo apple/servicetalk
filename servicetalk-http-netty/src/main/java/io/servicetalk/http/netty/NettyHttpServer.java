@@ -91,7 +91,7 @@ final class NettyHttpServer {
                                       final SocketAddress address,
                                       @Nullable final ConnectionAcceptor connectionAcceptor,
                                       StreamingHttpService service,
-                                      HttpExecutionStrategy effectiveStrategy,
+                                      HttpExecutionStrategy strategy,
                                       final boolean drainRequestPayloadBody) {
         // This state is read only, so safe to keep a copy across Subscribers
         final ReadOnlyTcpServerConfig tcpServerConfig = config.tcpConfig();
@@ -105,7 +105,7 @@ final class NettyHttpServer {
                             new TerminalPredicate<>(LAST_HTTP_PAYLOAD_CHUNK_OBJECT_PREDICATE), closeHandler,
                             flushStrategy, new TcpServerChannelInitializer(tcpServerConfig)
                                     .andThen(getChannelInitializer(config, closeHandler)))
-                        .map(conn -> new NettyHttpServerConnection(conn, service, effectiveStrategy, flushStrategy,
+                        .map(conn -> new NettyHttpServerConnection(conn, service, strategy, flushStrategy,
                                 config.headersFactory(), drainRequestPayloadBody));
                 },
                 serverConnection -> serverConnection.process().subscribe())
@@ -172,14 +172,14 @@ final class NettyHttpServer {
     private static final class NettyHttpServerConnection extends HttpServiceContext implements NettyConnectionContext {
         private static final Logger LOGGER = LoggerFactory.getLogger(NettyHttpServerConnection.class);
         private final StreamingHttpService service;
-        private final HttpExecutionStrategy effectiveStrategy;
+        private final HttpExecutionStrategy strategy;
         private final NettyConnection<Object, Object> connection;
         private final CompositeFlushStrategy compositeFlushStrategy;
         private final boolean drainRequestPayloadBody;
 
         NettyHttpServerConnection(final NettyConnection<Object, Object> connection,
                                   final StreamingHttpService service,
-                                  final HttpExecutionStrategy effectiveStrategy,
+                                  final HttpExecutionStrategy strategy,
                                   final CompositeFlushStrategy compositeFlushStrategy,
                                   final HttpHeadersFactory headersFactory,
                                   final boolean drainRequestPayloadBody) {
@@ -191,7 +191,7 @@ final class NettyHttpServer {
                             connection.executionContext().bufferAllocator()));
             this.connection = connection;
             this.service = service;
-            this.effectiveStrategy = effectiveStrategy;
+            this.strategy = strategy;
             this.compositeFlushStrategy = compositeFlushStrategy;
             this.drainRequestPayloadBody = drainRequestPayloadBody;
         }
@@ -249,7 +249,7 @@ final class NettyHttpServer {
 
                 final HttpRequestMethod requestMethod = request2.method();
                 final HttpKeepAlive keepAlive = HttpKeepAlive.responseKeepAlive(request2);
-                Publisher<Object> objectPublisher = effectiveStrategy
+                Publisher<Object> objectPublisher = strategy
                         .invokeService(executionContext().executor(), request2,
                                 req -> service.handle(NettyHttpServerConnection.this, req, streamingResponseFactory())
                                         .map(response -> {

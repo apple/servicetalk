@@ -84,8 +84,7 @@ final class NoOffloadsHttpExecutionStrategy implements HttpExecutionStrategy {
 
             @Override
             public HttpExecutionStrategy computeExecutionStrategy(HttpExecutionStrategy other) {
-                // TODO(scott): merge or just take it "as is"?
-                return other.merge(NoOffloadsHttpExecutionStrategy.this);
+                return NoOffloadsHttpExecutionStrategy.this;
             }
         };
     }

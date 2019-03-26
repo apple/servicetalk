@@ -47,7 +47,7 @@ public class StreamingHttpServiceFilter implements StreamingHttpService {
 
     @Override
     public HttpExecutionStrategy computeExecutionStrategy(HttpExecutionStrategy other) {
-        return delegate.computeExecutionStrategy(other.merge(executionStrategy()));
+        return delegate.computeExecutionStrategy(executionStrategy().merge(other));
     }
 
     @Override

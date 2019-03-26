@@ -413,7 +413,7 @@ public abstract class HttpServerBuilder {
      *
      * @param connectionAcceptor {@link ConnectionAcceptor} to use for the server.
      * @param service {@link StreamingHttpService} to use for the server.
-     * @param effectiveStrategy the {@link HttpExecutionStrategy} to use for the service.
+     * @param strategy the {@link HttpExecutionStrategy} to use for the service.
      * @param drainRequestPayloadBody if {@code true} the server implementation should automatically subscribe and
      * ignore the {@link StreamingHttpRequest#payloadBody() payload body} of incoming requests.
      * @return A {@link Single} that completes when the server is successfully started or terminates with an error if
@@ -421,7 +421,7 @@ public abstract class HttpServerBuilder {
      */
     protected abstract Single<ServerContext> doListen(@Nullable ConnectionAcceptor connectionAcceptor,
                                                       StreamingHttpService service,
-                                                      HttpExecutionStrategy effectiveStrategy,
+                                                      HttpExecutionStrategy strategy,
                                                       boolean drainRequestPayloadBody);
 
     private Single<ServerContext> listenStreaming0(StreamingHttpService rawService) {

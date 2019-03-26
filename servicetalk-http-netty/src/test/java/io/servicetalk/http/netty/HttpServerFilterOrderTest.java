@@ -44,8 +44,8 @@ public class HttpServerFilterOrderTest {
 
     @Test
     public void prependOrder() throws Exception {
-        StreamingHttpService filter1 = newMockHandler();
-        StreamingHttpService filter2 = newMockHandler();
+        StreamingHttpService filter1 = newMockService();
+        StreamingHttpService filter2 = newMockService();
         ServerContext serverContext = HttpServers.forAddress(localAddress(0))
                 .appendServiceFilter(addFilter(filter1))
                 .appendServiceFilter(addFilter(filter2))
@@ -60,7 +60,7 @@ public class HttpServerFilterOrderTest {
         verifier.verify(filter2).handle(any(), any(), any());
     }
 
-    private static StreamingHttpService newMockHandler() {
+    private static StreamingHttpService newMockService() {
         StreamingHttpService service = mock(StreamingHttpService.class);
         doAnswer((Answer<HttpExecutionStrategy>) invocation ->
                 invocation.getArgument(0)).when(service).computeExecutionStrategy(any());
