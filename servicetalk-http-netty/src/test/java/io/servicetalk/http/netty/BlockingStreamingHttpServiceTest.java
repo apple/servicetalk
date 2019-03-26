@@ -28,7 +28,6 @@ import io.servicetalk.oio.api.PayloadWriter;
 import io.servicetalk.transport.api.ServerContext;
 
 import org.junit.After;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
@@ -77,7 +76,7 @@ public class BlockingStreamingHttpServiceTest {
             }
         } finally {
             if (serverContext != null) {
-                serverContext.close();
+                serverContext.closeAsync().toFuture().get();
             }
         }
     }
@@ -265,7 +264,6 @@ public class BlockingStreamingHttpServiceTest {
         }
     }
 
-    @Ignore("toFuture().get(timeout, unit) doesn't work")
     @Test(expected = TimeoutException.class)
     public void doNotSendMetaData() throws Exception {
         BlockingStreamingHttpClient client = context((ctx, request, response) -> {
@@ -276,7 +274,6 @@ public class BlockingStreamingHttpServiceTest {
         asyncClient.request(asyncClient.get("/")).toFuture().get(2, SECONDS);
     }
 
-    @Ignore("toFuture().get(timeout, unit) doesn't work")
     @Test(expected = TimeoutException.class)
     public void doNotWriteTheLastChunk() throws Exception {
         BlockingStreamingHttpClient client = context((ctx, request, response) -> {
@@ -286,7 +283,7 @@ public class BlockingStreamingHttpServiceTest {
 
         BlockingStreamingHttpResponse response = client.request(client.get("/"));
         assertResponse(response);
-        assertThat(response.toResponse().toFuture().get(2, SECONDS).payloadBody(), is(EMPTY_BUFFER));
+        response.payloadBody().iterator().hasNext(2, SECONDS);
     }
 
     private static void assertResponse(BlockingStreamingHttpResponse response) throws Exception {
