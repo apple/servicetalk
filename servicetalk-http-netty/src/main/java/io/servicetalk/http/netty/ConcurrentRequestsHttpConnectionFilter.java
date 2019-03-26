@@ -16,8 +16,8 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.client.api.ConnectionClosedException;
-import io.servicetalk.client.internal.MaxRequestLimitExceededRejectedSubscribeException;
-import io.servicetalk.client.internal.RequestConcurrencyController;
+import io.servicetalk.client.api.internal.MaxRequestLimitExceededRejectedSubscribeException;
+import io.servicetalk.client.api.internal.RequestConcurrencyController;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.internal.SubscribableSingle;
 import io.servicetalk.concurrent.internal.LatestValueSubscriber;
@@ -30,8 +30,8 @@ import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.utils.DoBeforeFinallyOnHttpResponseOperator;
 import io.servicetalk.transport.netty.internal.NettyConnectionContext;
 
-import static io.servicetalk.client.internal.RequestConcurrencyControllers.newController;
-import static io.servicetalk.client.internal.RequestConcurrencyControllers.newSingleController;
+import static io.servicetalk.client.api.internal.RequestConcurrencyControllers.newController;
+import static io.servicetalk.client.api.internal.RequestConcurrencyControllers.newSingleController;
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.http.api.StreamingHttpConnection.SettingKey.MAX_CONCURRENCY;

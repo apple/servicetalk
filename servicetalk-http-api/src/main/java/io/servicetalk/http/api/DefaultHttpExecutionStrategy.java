@@ -99,7 +99,7 @@ final class DefaultHttpExecutionStrategy implements HttpExecutionStrategy {
         } else {
             responseSingle = service.apply(request);
         }
-        Publisher<Object> resp = responseSingle.onErrorResume(t -> errorHandler.apply(t, e))
+        Publisher<Object> resp = responseSingle.recoverWith(t -> errorHandler.apply(t, e))
                 .flatMapPublisher(response -> flatten(response, response.payloadBodyAndTrailers()));
         if (offloaded(OFFLOAD_SEND)) {
             resp = resp.subscribeOn(e);

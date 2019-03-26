@@ -15,15 +15,15 @@
  */
 package io.servicetalk.redis.netty;
 
-import io.servicetalk.client.internal.ReservableRequestConcurrencyController;
+import io.servicetalk.client.api.internal.ReservableRequestConcurrencyController;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.internal.SubscribableCompletable;
 
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
-import static io.servicetalk.client.internal.RequestConcurrencyController.Result.Accepted;
-import static io.servicetalk.client.internal.RequestConcurrencyController.Result.RejectedPermanently;
-import static io.servicetalk.client.internal.RequestConcurrencyController.Result.RejectedTemporary;
+import static io.servicetalk.client.api.internal.RequestConcurrencyController.Result.Accepted;
+import static io.servicetalk.client.api.internal.RequestConcurrencyController.Result.RejectedPermanently;
+import static io.servicetalk.client.api.internal.RequestConcurrencyController.Result.RejectedTemporary;
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 

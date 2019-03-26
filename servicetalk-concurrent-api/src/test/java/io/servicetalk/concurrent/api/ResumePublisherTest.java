@@ -41,7 +41,7 @@ public final class ResumePublisherTest {
 
     @Test
     public void testFirstComplete() {
-        toSource(first.onErrorResume(throwable -> second)).subscribe(subscriber);
+        toSource(first.recoverWith(throwable -> second)).subscribe(subscriber);
         subscriber.request(1);
         first.onNext(1);
         first.onComplete();
@@ -51,7 +51,7 @@ public final class ResumePublisherTest {
 
     @Test
     public void testFirstErrorSecondComplete() {
-        toSource(first.onErrorResume(throwable -> second)).subscribe(subscriber);
+        toSource(first.recoverWith(throwable -> second)).subscribe(subscriber);
         subscriber.request(1);
         first.onError(DELIBERATE_EXCEPTION);
         assertTrue(subscriber.subscriptionReceived());
@@ -65,7 +65,7 @@ public final class ResumePublisherTest {
 
     @Test
     public void testFirstErrorSecondError() {
-        toSource(first.onErrorResume(throwable -> second)).subscribe(subscriber);
+        toSource(first.recoverWith(throwable -> second)).subscribe(subscriber);
         subscriber.request(1);
         first.onError(new DeliberateException());
         assertTrue(subscriber.subscriptionReceived());
@@ -77,7 +77,7 @@ public final class ResumePublisherTest {
 
     @Test
     public void testCancelFirstActive() {
-        toSource(first.onErrorResume(throwable -> second)).subscribe(subscriber);
+        toSource(first.recoverWith(throwable -> second)).subscribe(subscriber);
         final TestSubscription subscription = new TestSubscription();
         first.onSubscribe(subscription);
         subscriber.request(1);
@@ -90,7 +90,7 @@ public final class ResumePublisherTest {
 
     @Test
     public void testCancelSecondActive() {
-        toSource(first.onErrorResume(throwable -> second)).subscribe(subscriber);
+        toSource(first.recoverWith(throwable -> second)).subscribe(subscriber);
         final TestSubscription subscription = new TestSubscription();
         subscriber.request(1);
         first.onError(DELIBERATE_EXCEPTION);
@@ -105,7 +105,7 @@ public final class ResumePublisherTest {
 
     @Test
     public void testDemandAcrossPublishers() {
-        toSource(first.onErrorResume(throwable -> second)).subscribe(subscriber);
+        toSource(first.recoverWith(throwable -> second)).subscribe(subscriber);
         subscriber.request(2);
         first.onNext(1);
         first.onError(DELIBERATE_EXCEPTION);
@@ -119,7 +119,7 @@ public final class ResumePublisherTest {
 
     @Test
     public void testDuplicateOnError() {
-        toSource(first.onErrorResume(throwable -> second)).subscribe(subscriber);
+        toSource(first.recoverWith(throwable -> second)).subscribe(subscriber);
         subscriber.request(1);
         first.onError(DELIBERATE_EXCEPTION);
         assertTrue(subscriber.subscriptionReceived());
@@ -134,7 +134,7 @@ public final class ResumePublisherTest {
     @Test
     public void exceptionInTerminalCallsOnError() {
         DeliberateException ex = new DeliberateException();
-        toSource(first.onErrorResume(throwable -> {
+        toSource(first.recoverWith(throwable -> {
             throw ex;
         })).subscribe(subscriber);
         subscriber.request(1);
@@ -146,7 +146,7 @@ public final class ResumePublisherTest {
 
     @Test
     public void nullInTerminalCallsOnError() {
-        toSource(first.onErrorResume(throwable -> null)).subscribe(subscriber);
+        toSource(first.recoverWith(throwable -> null)).subscribe(subscriber);
         subscriber.request(1);
         first.onError(DELIBERATE_EXCEPTION);
         assertThat(subscriber.takeError(), instanceOf(NullPointerException.class));

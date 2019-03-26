@@ -19,7 +19,7 @@ import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.LoadBalancerReadyEvent;
 import io.servicetalk.client.api.NoAvailableHostException;
 import io.servicetalk.client.api.RetryableException;
-import io.servicetalk.client.internal.LoadBalancerReadySubscriber;
+import io.servicetalk.client.api.internal.LoadBalancerReadySubscriber;
 import io.servicetalk.concurrent.api.BiIntFunction;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;

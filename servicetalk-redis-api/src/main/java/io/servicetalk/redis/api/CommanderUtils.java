@@ -183,7 +183,7 @@ final class CommanderUtils {
             }
             Single<String> discardSingle = abortSingles(queued, singles);
             if (releaseAfterDone) {
-                discardSingle = discardSingle.onErrorResume(discardThrowable -> reservedCnx.releaseAsync()
+                discardSingle = discardSingle.recoverWith(discardThrowable -> reservedCnx.releaseAsync()
                         // If releaseAsync() fails then add as a suppressed exception.
                         .onErrorResume(releaseThrowable -> {
                             discardThrowable.addSuppressed(releaseThrowable);

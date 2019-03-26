@@ -61,6 +61,8 @@ public final class HttpClient implements HttpRequester {
 
     /**
      * Reserve an {@link HttpConnection} based on provided {@link HttpRequestMetaData}.
+     * <p>
+     * <b>Note:</b> reserved connections are not restricted by {@link BaseHttpBuilder#maxPipelinedRequests(int)}.
      *
      * @param strategy {@link HttpExecutionStrategy} to use.
      * @param metaData Allows the underlying layers to know what {@link HttpConnection}s are valid to

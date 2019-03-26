@@ -120,7 +120,8 @@ public abstract class Single<T> {
     }
 
     /**
-     * Ignores any error returned by this {@link Single} and resume to a new {@link Single}.
+     * Recover from any error emitted by this {@link Single} by using another {@link Single} provided by the
+     * passed {@code nextFactory}.
      * <p>
      * This method provides similar capabilities to a try/catch block in sequential programming:
      * <pre>{@code
@@ -134,10 +135,10 @@ public abstract class Single<T> {
      *     return result;
      * }</pre>
      * @param nextFactory Returns the next {@link Single}, when this {@link Single} emits an error.
-     * @return A {@link Single} that ignores error from this {@code Single} and resume with the {@link Single} produced
-     * by {@code nextFactory}.
+     * @return A {@link Single} that recovers from an error from this {@code Single} by using another
+     * {@link Single} provided by the passed {@code nextFactory}.
      */
-    public final Single<T> onErrorResume(Function<Throwable, ? extends Single<? extends T>> nextFactory) {
+    public final Single<T> recoverWith(Function<Throwable, ? extends Single<? extends T>> nextFactory) {
         return new ResumeSingle<>(this, nextFactory, executor);
     }
 

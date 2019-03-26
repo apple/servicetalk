@@ -23,7 +23,7 @@ import javax.annotation.Nullable;
 import static java.util.Objects.requireNonNull;
 
 /**
- * As returned by {@link Publisher#onErrorResume(Function)}.
+ * As returned by {@link Publisher#recoverWith(Function)}.
  *
  * @param <T> Type of items emitted by this {@link Publisher}.
  */

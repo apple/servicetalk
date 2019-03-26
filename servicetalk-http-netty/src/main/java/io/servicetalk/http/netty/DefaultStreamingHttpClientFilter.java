@@ -31,7 +31,7 @@ import io.servicetalk.transport.api.ExecutionContext;
 
 import java.util.function.Function;
 
-import static io.servicetalk.client.internal.RequestConcurrencyController.Result.Accepted;
+import static io.servicetalk.client.api.internal.RequestConcurrencyController.Result.Accepted;
 import static java.util.Objects.requireNonNull;
 
 final class DefaultStreamingHttpClientFilter extends StreamingHttpClientFilter {

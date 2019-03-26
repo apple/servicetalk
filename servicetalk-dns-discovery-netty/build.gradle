@@ -37,7 +37,7 @@ dependencies {
   implementation "com.google.code.findbugs:jsr305"
   implementation "io.netty:netty-resolver-dns"
   implementation "io.servicetalk:servicetalk-annotations:$project.version"
-  implementation "io.servicetalk:servicetalk-client-internal:$project.version"
+  implementation "io.servicetalk:servicetalk-client-api-internal:$project.version"
   implementation "io.servicetalk:servicetalk-concurrent-internal:$project.version"
   implementation "io.servicetalk:servicetalk-concurrent-api-internal:$project.version"
   implementation "io.servicetalk:servicetalk-transport-netty:$project.version"
@@ -45,7 +45,7 @@ dependencies {
   implementation "org.slf4j:slf4j-api"
 
   testImplementation "commons-lang:commons-lang"
-  testImplementation "io.servicetalk:servicetalk-client-internal-testFixtures:$project.version"
+  testImplementation "io.servicetalk:servicetalk-client-api-internal-testFixtures:$project.version"
   testImplementation "io.servicetalk:servicetalk-concurrent-api-testFixtures:$project.version"
   testImplementation "io.servicetalk:servicetalk-concurrent-internal-testFixtures:$project.version"
   testImplementation "io.servicetalk:servicetalk-transport-netty-internal-testFixtures:$project.version"

@@ -25,7 +25,7 @@ import javax.annotation.Nullable;
 import static java.util.Objects.requireNonNull;
 
 /**
- * {@link Single} as returned by {@link Single#onErrorResume(Function)}.
+ * {@link Single} as returned by {@link Single#recoverWith(Function)}.
  */
 final class ResumeSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
 

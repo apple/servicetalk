@@ -35,6 +35,6 @@ dependencies {
 
   implementation "com.google.code.findbugs:jsr305"
   implementation "io.servicetalk:servicetalk-annotations:$project.version"
-  implementation "io.servicetalk:servicetalk-opentracing-internal-utils:$project.version"
+  implementation "io.servicetalk:servicetalk-opentracing-internal:$project.version"
   implementation "org.slf4j:slf4j-api"
 }
