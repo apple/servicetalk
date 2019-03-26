@@ -20,47 +20,33 @@ import static io.servicetalk.http.api.HttpExecutionStrategies.OFFLOAD_RECEIVE_ME
 /**
  * The equivalent of {@link StreamingHttpService} but with synchronous/blocking APIs instead of asynchronous APIs.
  */
-public abstract class BlockingStreamingHttpService implements AutoCloseable, BlockingStreamingHttpRequestHandler {
-    static final HttpExecutionStrategy DEFAULT_BLOCKING_STREAMING_SERVICE_STRATEGY =
-            OFFLOAD_RECEIVE_META_AND_SEND_STRATEGY;
+@FunctionalInterface
+public interface BlockingStreamingHttpService extends AutoCloseable {
+    /**
+     * Handles a single HTTP request.
+     *
+     * @param ctx Context of the service.
+     * @param request to handle.
+     * @param response to send to the client.
+     * @throws Exception If an exception occurs during request processing.
+     */
+    void handle(HttpServiceContext ctx, BlockingStreamingHttpRequest request,
+                BlockingStreamingHttpServerResponse response) throws Exception;
 
     @Override
-    public void close() throws Exception {
+    default void close() throws Exception {
         // noop
     }
 
-    @Override
-    public final BlockingStreamingHttpService asBlockingStreamingService() {
-        return this;
-    }
-
     /**
-     * Convert this {@link BlockingStreamingHttpService} to the {@link StreamingHttpService} asynchronous API.
-     * <p>
-     * Note that the resulting {@link StreamingHttpService} may still be subject to any blocking, in memory aggregation,
-     * and other behavior as this {@link BlockingStreamingHttpService}.
+     * Compute a {@link HttpExecutionStrategy} given the programming model constraints of this
+     * {@link BlockingStreamingHttpService} in combination with another {@link HttpExecutionStrategy}. This may involve
+     * a merge operation between two {@link BlockingStreamingHttpService}.
      *
-     * @return a {@link StreamingHttpService} representation of this {@link BlockingStreamingHttpService}.
-     */
-    public final StreamingHttpService asStreamingService() {
-        return asStreamingServiceInternal();
-    }
-
-    /**
-     * Returns the {@link HttpExecutionStrategy} for this {@link BlockingStreamingHttpService}.
-     *
+     * @param other The other
      * @return The {@link HttpExecutionStrategy} for this {@link BlockingStreamingHttpService}.
      */
-    public HttpExecutionStrategy executionStrategy() {
-        return DEFAULT_BLOCKING_STREAMING_SERVICE_STRATEGY;
-    }
-
-    /**
-     * Provides a means to override the behavior of {@link #asStreamingService()} for internal classes.
-     *
-     * @return a {@link StreamingHttpService} representation of this {@link BlockingStreamingHttpService}.
-     */
-    StreamingHttpService asStreamingServiceInternal() {
-        return BlockingStreamingHttpServiceToStreamingHttpService.transform(this);
+    default HttpExecutionStrategy computeExecutionStrategy(HttpExecutionStrategy other) {
+        return other.merge(OFFLOAD_RECEIVE_META_AND_SEND_STRATEGY);
     }
 }

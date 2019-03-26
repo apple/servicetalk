@@ -68,7 +68,7 @@ final class NoOffloadsHttpExecutionStrategy implements HttpExecutionStrategy {
     }
 
     @Override
-    public StreamingHttpService offloadService(final Executor fallback, final StreamingHttpRequestHandler handler) {
+    public StreamingHttpService offloadService(final Executor fallback, final StreamingHttpService handler) {
         return new StreamingHttpService() {
             @Override
             public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
@@ -83,7 +83,7 @@ final class NoOffloadsHttpExecutionStrategy implements HttpExecutionStrategy {
             }
 
             @Override
-            public HttpExecutionStrategy executionStrategy() {
+            public HttpExecutionStrategy computeExecutionStrategy(HttpExecutionStrategy other) {
                 return NoOffloadsHttpExecutionStrategy.this;
             }
         };
@@ -106,7 +106,7 @@ final class NoOffloadsHttpExecutionStrategy implements HttpExecutionStrategy {
 
     @Override
     public HttpExecutionStrategy merge(final HttpExecutionStrategy other) {
-        return other.merge(this);
+        return other == this ? this : other.merge(this);
     }
 
     @Override

@@ -88,8 +88,8 @@ public class HttpServerMultipleRequestsTest {
             }
 
             @Override
-            public HttpExecutionStrategy executionStrategy() {
-                return strategy;
+            public HttpExecutionStrategy computeExecutionStrategy(HttpExecutionStrategy other) {
+                return strategy.merge(other);
             }
         };
         final int concurrency = 10;

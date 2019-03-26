@@ -18,6 +18,7 @@ package io.servicetalk.http.netty;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.HttpServerBuilder;
 import io.servicetalk.http.api.StreamingHttpService;
@@ -135,15 +136,16 @@ final class DefaultHttpServerBuilder extends HttpServerBuilder {
     }
 
     @Override
-    public Single<ServerContext> doListen(@Nullable final ConnectionAcceptor connectionAcceptor,
-                                          final StreamingHttpService service,
-                                          final boolean drainRequestPayloadBody) {
+    protected Single<ServerContext> doListen(@Nullable ConnectionAcceptor connectionAcceptor,
+                                             StreamingHttpService service,
+                                             HttpExecutionStrategy strategy,
+                                             boolean drainRequestPayloadBody) {
         ReadOnlyHttpServerConfig roConfig = this.config.asReadOnly();
-        Executor executor = service.executionStrategy().executor();
+        Executor executor = strategy.executor();
         if (executor != null) {
             executionContextBuilder.executor(executor);
         }
         return NettyHttpServer.bind(executionContextBuilder.build(), roConfig, address, connectionAcceptor,
-                service, drainRequestPayloadBody);
+                service, strategy, drainRequestPayloadBody);
     }
 }

@@ -422,8 +422,8 @@ public class ServerEffectiveStrategyTest {
                     }
 
                     @Override
-                    public HttpExecutionStrategy executionStrategy() {
-                        return strategy;
+                    public HttpExecutionStrategy computeExecutionStrategy(HttpExecutionStrategy other) {
+                        return strategy.merge(other);
                     }
                 }));
             }
@@ -452,8 +452,8 @@ public class ServerEffectiveStrategyTest {
                     }
 
                     @Override
-                    public HttpExecutionStrategy executionStrategy() {
-                        return strategy;
+                    public HttpExecutionStrategy computeExecutionStrategy(HttpExecutionStrategy other) {
+                        return strategy.merge(other);
                     }
                 }));
             }
@@ -494,8 +494,8 @@ public class ServerEffectiveStrategyTest {
                     }
 
                     @Override
-                    public HttpExecutionStrategy executionStrategy() {
-                        return strategy;
+                    public HttpExecutionStrategy computeExecutionStrategy(HttpExecutionStrategy other) {
+                        return strategy.merge(other);
                     }
                 }));
             }
@@ -524,8 +524,8 @@ public class ServerEffectiveStrategyTest {
                     }
 
                     @Override
-                    public HttpExecutionStrategy executionStrategy() {
-                        return strategy;
+                    public HttpExecutionStrategy computeExecutionStrategy(HttpExecutionStrategy other) {
+                        return strategy.merge(other);
                     }
                 }));
             }
@@ -608,8 +608,8 @@ public class ServerEffectiveStrategyTest {
         }
 
         @Override
-        protected HttpExecutionStrategy mergeForEffectiveStrategy(final HttpExecutionStrategy mergeWith) {
-            return mergeWith;
+        protected HttpExecutionStrategy executionStrategy() {
+            return defaultStrategy();
         }
     }
 

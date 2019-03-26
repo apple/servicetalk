@@ -23,6 +23,7 @@ import io.servicetalk.http.api.HttpResponseFactory;
 import io.servicetalk.http.api.HttpSerializationProvider;
 import io.servicetalk.http.api.HttpService;
 import io.servicetalk.http.api.HttpServiceContext;
+import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.router.predicate.HttpPredicateRouterBuilder;
 
 import java.util.concurrent.ThreadLocalRandom;
@@ -32,7 +33,7 @@ import static io.servicetalk.concurrent.api.Single.success;
 /**
  * A service that returns {@link Rating}s for an entity.
  */
-final class RatingBackend extends HttpService {
+final class RatingBackend implements HttpService {
 
     private static final String ENTITY_ID_QP_NAME = "entityId";
     private final HttpSerializationProvider serializer;
@@ -54,10 +55,10 @@ final class RatingBackend extends HttpService {
         return success(responseFactory.ok().payloadBody(rating, serializer.serializerFor(Rating.class)));
     }
 
-    static HttpService newRatingService(HttpSerializationProvider serializer) {
+    static StreamingHttpService newRatingService(HttpSerializationProvider serializer) {
         HttpPredicateRouterBuilder routerBuilder = new HttpPredicateRouterBuilder();
         return routerBuilder.whenPathStartsWith("/rating")
                 .thenRouteTo(new RatingBackend(serializer))
-                .build();
+                .buildStreaming();
     }
 }

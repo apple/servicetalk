@@ -87,7 +87,7 @@ public class PublisherFlatMapSingleTest {
     public void concurrentSingleAndPublisherTermination() throws Exception {
         final List<String> elements = range(0, 1000).mapToObj(Integer::toString).collect(toList());
         final Publisher<String> publisher = Publisher.from(elements);
-        final Single<List<String>> single = publisher.flatMapSingle(x -> executor.submit(() -> x), 1024)
+        final Single<List<String>> single = publisher.flatMapMergeSingle(x -> executor.submit(() -> x), 1024)
                 .reduce(ArrayList::new, (strings, s) -> {
                     strings.add(s);
                     return strings;
@@ -102,7 +102,7 @@ public class PublisherFlatMapSingleTest {
     public void concurrentSingleErrorAndPublisherTermination() throws Exception {
         final Publisher<Integer> publisher = Publisher.from(() -> range(0, 1000).iterator());
         AtomicReference<Throwable> error = new AtomicReference<>();
-        final Single<List<Integer>> single = publisher.flatMapSingleDelayError(x -> executor.submit(() -> {
+        final Single<List<Integer>> single = publisher.flatMapMergeSingleDelayError(x -> executor.submit(() -> {
             if (x % 2 == 0) {
                 return x;
             }
@@ -128,7 +128,7 @@ public class PublisherFlatMapSingleTest {
 
     @Test
     public void testSingleItemSyncSingle() {
-        toSource(source.flatMapSingle(integer1 -> Single.success(2), 2)).subscribe(subscriber);
+        toSource(source.flatMapMergeSingle(integer1 -> Single.success(2), 2)).subscribe(subscriber);
         subscriber.request(1);
         source.onNext(1);
         source.onComplete();
@@ -138,7 +138,7 @@ public class PublisherFlatMapSingleTest {
 
     @Test
     public void testSingleItemCompletesWithNull() {
-        toSource(source.<Integer>flatMapSingle(integer1 -> Single.success(null), 2)).subscribe(subscriber);
+        toSource(source.<Integer>flatMapMergeSingle(integer1 -> Single.success(null), 2)).subscribe(subscriber);
         subscriber.request(1);
         source.onNext(1);
         source.onComplete();
@@ -149,7 +149,7 @@ public class PublisherFlatMapSingleTest {
     @Test
     public void testSingleItemSourceCompleteFirst() {
         LegacyTestSingle<Integer> single = new LegacyTestSingle<>();
-        toSource(source.flatMapSingle(integer1 -> single, 2)).subscribe(subscriber);
+        toSource(source.flatMapMergeSingle(integer1 -> single, 2)).subscribe(subscriber);
         subscriber.request(1);
         source.onNext(1);
         source.onComplete();
@@ -161,7 +161,7 @@ public class PublisherFlatMapSingleTest {
     @Test
     public void testSingleItemSingleCompleteFirst() {
         LegacyTestSingle<Integer> single = new LegacyTestSingle<>();
-        toSource(source.flatMapSingle(integer1 -> single, 2)).subscribe(subscriber);
+        toSource(source.flatMapMergeSingle(integer1 -> single, 2)).subscribe(subscriber);
         subscriber.request(1);
         source.onNext(1);
         single.onSuccess(2);
@@ -172,7 +172,7 @@ public class PublisherFlatMapSingleTest {
 
     @Test
     public void testSingleItemSingleError() {
-        toSource(source.<Integer>flatMapSingle(integer1 -> Single.error(DELIBERATE_EXCEPTION), 2))
+        toSource(source.<Integer>flatMapMergeSingle(integer1 -> Single.error(DELIBERATE_EXCEPTION), 2))
                 .subscribe(subscriber);
         subscriber.request(1);
         source.onNext(1);
@@ -182,7 +182,7 @@ public class PublisherFlatMapSingleTest {
     @Test
     public void testSingleErrorPostSourceComplete() {
         LegacyTestSingle<Integer> single = new LegacyTestSingle<>();
-        toSource(source.flatMapSingle(integer1 -> single, 2)).subscribe(subscriber);
+        toSource(source.flatMapMergeSingle(integer1 -> single, 2)).subscribe(subscriber);
         subscriber.request(1);
         source.onNext(1);
         source.onComplete();
@@ -192,7 +192,7 @@ public class PublisherFlatMapSingleTest {
 
     @Test
     public void testSourceEmitsErrorNoOnNexts() {
-        toSource(source.flatMapSingle(integer1 -> Single.success(2), 2)).subscribe(subscriber);
+        toSource(source.flatMapMergeSingle(integer1 -> Single.success(2), 2)).subscribe(subscriber);
         subscriber.request(1);
         source.onError(DELIBERATE_EXCEPTION);
         assertThat(subscriber.takeError(), sameInstance(DELIBERATE_EXCEPTION));
@@ -200,7 +200,7 @@ public class PublisherFlatMapSingleTest {
 
     @Test
     public void testSourceEmitsErrorPostOnNexts() {
-        toSource(source.flatMapSingle(integer1 -> Single.success(2), 2)).subscribe(subscriber);
+        toSource(source.flatMapMergeSingle(integer1 -> Single.success(2), 2)).subscribe(subscriber);
         subscriber.request(1);
         source.onNext(1);
         source.onError(DELIBERATE_EXCEPTION);
@@ -211,7 +211,7 @@ public class PublisherFlatMapSingleTest {
     @Test
     public void testSourceEmitsErrorPostOnNextsSingleNotCompleted() {
         LegacyTestSingle<Integer> single = new LegacyTestSingle<>(true);
-        toSource(source.flatMapSingle(integer1 -> single, 2)).subscribe(subscriber);
+        toSource(source.flatMapMergeSingle(integer1 -> single, 2)).subscribe(subscriber);
         subscriber.request(1);
         source.onNext(1);
         source.onError(DELIBERATE_EXCEPTION);
@@ -226,7 +226,7 @@ public class PublisherFlatMapSingleTest {
     @Test
     public void testSubscriberCancel() {
         LegacyTestSingle<Integer> single = new LegacyTestSingle<>();
-        toSource(source.flatMapSingle(integer1 -> single, 2)).subscribe(subscriber);
+        toSource(source.flatMapMergeSingle(integer1 -> single, 2)).subscribe(subscriber);
         subscriber.request(1);
         source.onNext(1);
         subscriber.cancel();
@@ -241,7 +241,7 @@ public class PublisherFlatMapSingleTest {
         final TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber.Builder<Integer>()
                 .disableDemandCheck().build();
         LegacyTestSingle<Integer> single = new LegacyTestSingle<>(true);
-        toSource(source.flatMapSingle(integer1 -> single, 2)).subscribe(subscriber);
+        toSource(source.flatMapMergeSingle(integer1 -> single, 2)).subscribe(subscriber);
         subscriber.request(1);
         source.onNext(1);
         subscriber.cancel();
@@ -258,7 +258,7 @@ public class PublisherFlatMapSingleTest {
     @Test
     public void testSingleErrorPostCancel() {
         LegacyTestSingle<Integer> single = new LegacyTestSingle<>(true);
-        toSource(source.flatMapSingle(integer1 -> single, 2)).subscribe(subscriber);
+        toSource(source.flatMapMergeSingle(integer1 -> single, 2)).subscribe(subscriber);
         subscriber.request(1);
         source.onNext(1);
         subscriber.cancel();
@@ -273,7 +273,7 @@ public class PublisherFlatMapSingleTest {
     @Test
     public void testMaxConcurrency() {
         List<LegacyTestSingle<Integer>> emittedSingles = new ArrayList<>();
-        toSource(source.flatMapSingle(integer -> {
+        toSource(source.flatMapMergeSingle(integer -> {
             LegacyTestSingle<Integer> s = new LegacyTestSingle<>();
             emittedSingles.add(s);
             return s;
@@ -306,7 +306,7 @@ public class PublisherFlatMapSingleTest {
 
     @Test
     public void testMapperThrows() {
-        toSource(source.<Integer>flatMapSingle(integer1 -> {
+        toSource(source.<Integer>flatMapMergeSingle(integer1 -> {
             throw DELIBERATE_EXCEPTION;
         }, 2)).subscribe(subscriber);
         source.onSubscribe(subscription);
@@ -328,7 +328,7 @@ public class PublisherFlatMapSingleTest {
     @Test
     public void testNoFlowControl() {
         List<LegacyTestSingle<Integer>> emittedSingles = new ArrayList<>();
-        toSource(source.flatMapSingle(integer1 -> {
+        toSource(source.flatMapMergeSingle(integer1 -> {
             LegacyTestSingle<Integer> s1 = new LegacyTestSingle<>();
             emittedSingles.add(s1);
             return s1;
@@ -364,7 +364,7 @@ public class PublisherFlatMapSingleTest {
 
     @Test
     public void testRequestPostSingleError() {
-        toSource(source.<Integer>flatMapSingleDelayError(integer1 -> Single.error(DELIBERATE_EXCEPTION), 2))
+        toSource(source.<Integer>flatMapMergeSingleDelayError(integer1 -> Single.error(DELIBERATE_EXCEPTION), 2))
                 .subscribe(subscriber);
         source.onSubscribe(subscription);
         subscriber.request(3);
@@ -382,7 +382,7 @@ public class PublisherFlatMapSingleTest {
 
     @Test
     public void testRequestMultipleTimes() {
-        toSource(source.flatMapSingle(integer1 -> Single.success(2), 10)).subscribe(subscriber);
+        toSource(source.flatMapMergeSingle(integer1 -> Single.success(2), 10)).subscribe(subscriber);
         source.onSubscribe(subscription);
         subscriber.request(2);
         assertThat(subscription.requested(), is(2L));
@@ -395,7 +395,7 @@ public class PublisherFlatMapSingleTest {
 
     @Test
     public void testRequestMultipleTimesBreachMaxConcurrency() {
-        toSource(source.flatMapSingle(integer -> Single.success(2), 2)).subscribe(subscriber);
+        toSource(source.flatMapMergeSingle(integer -> Single.success(2), 2)).subscribe(subscriber);
         source.onSubscribe(subscription);
         subscriber.request(2);
         subscriber.request(2);
@@ -410,7 +410,7 @@ public class PublisherFlatMapSingleTest {
     @Test
     public void testMultipleSingleErrors() {
         List<DeliberateException> errors = new ArrayList<>();
-        toSource(source.flatMapSingleDelayError(integer -> {
+        toSource(source.flatMapMergeSingleDelayError(integer -> {
             DeliberateException de = new DeliberateException();
             errors.add(de);
             return Single.<Integer>error(de);
@@ -428,7 +428,7 @@ public class PublisherFlatMapSingleTest {
     @Test
     public void testRequestLongMaxValue() {
         int maxConcurrency = 2;
-        toSource(source.flatMapSingle(integer1 -> Single.success(2), maxConcurrency)).subscribe(subscriber);
+        toSource(source.flatMapMergeSingle(integer1 -> Single.success(2), maxConcurrency)).subscribe(subscriber);
         source.onSubscribe(subscription);
         subscriber.request(Long.MAX_VALUE);
         assertThat(subscription.requested(), is((long) maxConcurrency));
@@ -441,7 +441,7 @@ public class PublisherFlatMapSingleTest {
     @Test
     public void testAccumulateToLongMaxValue() {
         int maxConcurrency = 2;
-        toSource(source.flatMapSingle(integer1 -> Single.success(2), maxConcurrency)).subscribe(subscriber);
+        toSource(source.flatMapMergeSingle(integer1 -> Single.success(2), maxConcurrency)).subscribe(subscriber);
         source.onSubscribe(subscription);
         subscriber.request(Long.MAX_VALUE - 1);
         assertThat(subscription.requested(), is((long) maxConcurrency));
@@ -454,7 +454,7 @@ public class PublisherFlatMapSingleTest {
     @Test
     public void testAccumulateToIntMaxValue() {
         int maxConcurrency = 2;
-        toSource(source.flatMapSingle(integer1 -> Single.success(2), maxConcurrency)).subscribe(subscriber);
+        toSource(source.flatMapMergeSingle(integer1 -> Single.success(2), maxConcurrency)).subscribe(subscriber);
         source.onSubscribe(subscription);
         subscriber.request(Integer.MAX_VALUE - 1);
         assertThat(subscription.requested(), is((long) maxConcurrency));
@@ -516,7 +516,7 @@ public class PublisherFlatMapSingleTest {
     public void testEmitFromQueue() throws Exception {
         List<LegacyTestSingle<Integer>> emittedSingles = new ArrayList<>();
         LegacyBlockingSubscriber<Integer> subscriber = new LegacyBlockingSubscriber<>();
-        toSource(source.flatMapSingle(integer -> {
+        toSource(source.flatMapMergeSingle(integer -> {
             LegacyTestSingle<Integer> s = new LegacyTestSingle<>();
             emittedSingles.add(s);
             return s;
@@ -545,7 +545,7 @@ public class PublisherFlatMapSingleTest {
     public void testRequestAndEmitConcurrency() throws Exception {
         int totalToRequest = 100000;
         Set<Integer> received = new LinkedHashSet<>(totalToRequest);
-        toSource(source.flatMapSingle(Single::success, 2).doBeforeOnNext(received::add)).subscribe(subscriber);
+        toSource(source.flatMapMergeSingle(Single::success, 2).doBeforeOnNext(received::add)).subscribe(subscriber);
         source.onSubscribe(subscription);
         CountDownLatch requestingStarting = new CountDownLatch(1);
         Future<?> submit = executorService.submit(() -> {

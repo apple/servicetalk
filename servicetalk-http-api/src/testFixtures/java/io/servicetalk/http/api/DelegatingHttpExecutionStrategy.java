@@ -62,7 +62,7 @@ public class DelegatingHttpExecutionStrategy implements HttpExecutionStrategy {
     }
 
     @Override
-    public StreamingHttpService offloadService(final Executor fallback, final StreamingHttpRequestHandler handler) {
+    public StreamingHttpService offloadService(final Executor fallback, final StreamingHttpService handler) {
         return delegate.offloadService(fallback, handler);
     }
 

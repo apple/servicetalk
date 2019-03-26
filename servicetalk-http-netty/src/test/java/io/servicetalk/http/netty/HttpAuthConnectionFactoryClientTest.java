@@ -87,7 +87,7 @@ public class HttpAuthConnectionFactoryClientTest {
                             }
 
                             @Override
-                            public HttpExecutionStrategy executionStrategy() {
+                            public HttpExecutionStrategy computeExecutionStrategy(HttpExecutionStrategy other) {
                                 return noOffloadsStrategy();
                             }
                         });

@@ -19,7 +19,6 @@ import io.servicetalk.http.api.HttpCookie;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.StreamingHttpRequest;
-import io.servicetalk.http.api.StreamingHttpRequestHandler;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.router.predicate.dsl.CookieMatcher;
 import io.servicetalk.http.router.predicate.dsl.RouteContinuation;
@@ -63,9 +62,9 @@ import static java.util.Objects.requireNonNull;
 public final class HttpPredicateRouterBuilder implements RouteStarter {
 
     private final List<PredicateServicePair> predicateServicePairs = new ArrayList<>();
+    private final RouteContinuationImpl continuation = new RouteContinuationImpl();
     @Nullable
     private BiPredicate<ConnectionContext, StreamingHttpRequest> predicate;
-    private final RouteContinuationImpl continuation = new RouteContinuationImpl();
 
     /**
      * Do not define any strategy by default which will use the default strategy.
@@ -252,9 +251,9 @@ public final class HttpPredicateRouterBuilder implements RouteStarter {
         }
 
         @Override
-        public RouteStarter thenRouteTo(final StreamingHttpRequestHandler handler) {
+        public RouteStarter thenRouteTo(final StreamingHttpService service) {
             assert predicate != null;
-            predicateServicePairs.add(new PredicateServicePair(predicate, handler.asStreamingService()));
+            predicateServicePairs.add(new PredicateServicePair(predicate, service));
             predicate = null;
             return HttpPredicateRouterBuilder.this;
         }

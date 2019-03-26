@@ -41,7 +41,7 @@ import static io.servicetalk.examples.http.service.composition.AsyncUtils.zip;
  * This service provides an API that fetches recommendations in parallel and responds with a stream of
  * {@link FullRecommendation} objects as JSON.
  */
-final class StreamingGatewayService extends StreamingHttpService {
+final class StreamingGatewayService implements StreamingHttpService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(StreamingGatewayService.class);
 
@@ -78,7 +78,7 @@ final class StreamingGatewayService extends StreamingHttpService {
     }
 
     private Publisher<FullRecommendation> queryRecommendationDetails(Publisher<Recommendation> recommendations) {
-        return recommendations.flatMapSingle(recommendation -> {
+        return recommendations.flatMapMergeSingle(recommendation -> {
             Single<Metadata> metadata =
                     metadataClient.request(metadataClient.get("/metadata?entityId=" + recommendation.getEntityId()))
                             // Since HTTP payload is a buffer, we deserialize into Metadata.

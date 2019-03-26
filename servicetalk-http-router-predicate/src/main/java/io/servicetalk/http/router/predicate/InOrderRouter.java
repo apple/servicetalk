@@ -29,6 +29,7 @@ import java.util.List;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
+import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toList;
 
@@ -40,7 +41,7 @@ import static java.util.stream.Collectors.toList;
  * first one which returns {@code true} is used to handle the request. If no predicates match, the fallback service
  * specified is used.
  */
-final class InOrderRouter extends StreamingHttpService {
+final class InOrderRouter implements StreamingHttpService {
 
     private final StreamingHttpService fallbackService;
     private final PredicateServicePair[] predicateServicePairs;
@@ -57,7 +58,7 @@ final class InOrderRouter extends StreamingHttpService {
         this.fallbackService = requireNonNull(fallbackService);
         this.predicateServicePairs = predicateServicePairs.toArray(new PredicateServicePair[0]);
         // Use default strategy from StreamingHttpService if none defined by the user.
-        this.strategy = strategy == null ? super.executionStrategy() : strategy;
+        this.strategy = strategy == null ? defaultStrategy() : strategy;
         this.closeable = newCompositeCloseable()
                 .mergeAll(fallbackService)
                 .mergeAll(predicateServicePairs.stream().map(PredicateServicePair::service).collect(toList()));
@@ -70,7 +71,9 @@ final class InOrderRouter extends StreamingHttpService {
         for (final PredicateServicePair pair : predicateServicePairs) {
             if (pair.predicate().test(ctx, request)) {
                 StreamingHttpService service = pair.service();
-                return service.executionStrategy().offloadService(ctx.executionContext().executor(), service)
+                // TODO(scott): combine the InOrderRouter strategy and the route strategy?
+                return service.computeExecutionStrategy(defaultStrategy())
+                        .offloadService(ctx.executionContext().executor(), service)
                         .handle(ctx, request, factory);
             }
         }
@@ -78,8 +81,8 @@ final class InOrderRouter extends StreamingHttpService {
     }
 
     @Override
-    public HttpExecutionStrategy executionStrategy() {
-        return strategy;
+    public HttpExecutionStrategy computeExecutionStrategy(HttpExecutionStrategy other) {
+        return strategy.merge(other);
     }
 
     @Override

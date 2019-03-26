@@ -93,12 +93,12 @@ public abstract class BaseHttpPredicateRouterBuilderTest {
                 });
 
         when(strategy.offloadService(any(), any())).then(invocation -> invocation.getArgument(1));
-        when(serviceA.executionStrategy()).thenReturn(strategy);
-        when(serviceB.executionStrategy()).thenReturn(strategy);
-        when(serviceC.executionStrategy()).thenReturn(strategy);
-        when(serviceD.executionStrategy()).thenReturn(strategy);
-        when(serviceE.executionStrategy()).thenReturn(strategy);
-        when(fallbackService.executionStrategy()).thenReturn(strategy);
+        when(serviceA.computeExecutionStrategy(any())).thenReturn(strategy);
+        when(serviceB.computeExecutionStrategy(any())).thenReturn(strategy);
+        when(serviceC.computeExecutionStrategy(any())).thenReturn(strategy);
+        when(serviceD.computeExecutionStrategy(any())).thenReturn(strategy);
+        when(serviceE.computeExecutionStrategy(any())).thenReturn(strategy);
+        when(fallbackService.computeExecutionStrategy(any())).thenReturn(strategy);
 
         when(serviceA.handle(eq(ctx), eq(request), any())).thenReturn(responseA);
         when(serviceB.handle(eq(ctx), eq(request), any())).thenReturn(responseB);

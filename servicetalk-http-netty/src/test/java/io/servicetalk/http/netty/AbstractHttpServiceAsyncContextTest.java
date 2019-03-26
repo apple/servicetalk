@@ -161,9 +161,8 @@ public abstract class AbstractHttpServiceAsyncContextTest {
             }
 
             @Override
-            protected HttpExecutionStrategy mergeForEffectiveStrategy(final HttpExecutionStrategy mergeWith) {
-                // Do not alter the effective strategy
-                return mergeWith;
+            public HttpExecutionStrategy executionStrategy() {
+                return noOffloadsStrategy();
             }
 
             private Single<StreamingHttpResponse> doHandle(final HttpServiceContext ctx,

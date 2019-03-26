@@ -37,25 +37,22 @@ import static io.servicetalk.concurrent.api.Processors.newCompletableProcessor;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.safeOnError;
-import static io.servicetalk.http.api.BlockingStreamingHttpService.DEFAULT_BLOCKING_STREAMING_SERVICE_STRATEGY;
 import static io.servicetalk.http.api.BlockingUtils.blockingToCompletable;
+import static io.servicetalk.http.api.HttpExecutionStrategies.OFFLOAD_RECEIVE_META_AND_SEND_STRATEGY;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.StreamingHttpResponses.newResponseWithTrailers;
 import static java.lang.Thread.currentThread;
 import static java.util.Objects.requireNonNull;
 
-final class BlockingStreamingHttpServiceToStreamingHttpService extends StreamingHttpService {
+final class BlockingStreamingHttpServiceToStreamingHttpService implements StreamingHttpService {
 
     private static final Logger LOGGER =
             LoggerFactory.getLogger(BlockingStreamingHttpServiceToStreamingHttpService.class);
 
     private final BlockingStreamingHttpService service;
-    private final HttpExecutionStrategy effectiveStrategy;
 
-    private BlockingStreamingHttpServiceToStreamingHttpService(final BlockingStreamingHttpService service,
-                                                               final HttpExecutionStrategy effectiveStrategy) {
+    BlockingStreamingHttpServiceToStreamingHttpService(final BlockingStreamingHttpService service) {
         this.service = requireNonNull(service);
-        this.effectiveStrategy = requireNonNull(effectiveStrategy);
     }
 
     @Override
@@ -133,16 +130,11 @@ final class BlockingStreamingHttpServiceToStreamingHttpService extends Streaming
     }
 
     @Override
-    public HttpExecutionStrategy executionStrategy() {
-        return effectiveStrategy;
-    }
-
-    static StreamingHttpService transform(final BlockingStreamingHttpService service) {
+    public HttpExecutionStrategy computeExecutionStrategy(HttpExecutionStrategy other) {
         // Since we are converting to a different programming model, try altering the strategy for the returned service
         // to contain an appropriate default. We achieve this by merging the expected strategy with the provided
         // service strategy.
-        return new BlockingStreamingHttpServiceToStreamingHttpService(service,
-                service.executionStrategy().merge(DEFAULT_BLOCKING_STREAMING_SERVICE_STRATEGY));
+        return service.computeExecutionStrategy(other.merge(OFFLOAD_RECEIVE_META_AND_SEND_STRATEGY));
     }
 
     private static final class BufferHttpPayloadWriter implements HttpPayloadWriter<Buffer> {

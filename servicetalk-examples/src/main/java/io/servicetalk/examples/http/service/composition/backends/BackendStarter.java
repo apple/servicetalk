@@ -50,8 +50,4 @@ final class BackendStarter {
         LOGGER.info("Started {} listening on {}.", name, ctx.listenAddress());
         return ctx;
     }
-
-    ServerContext start(int listenPort, String name, HttpService service) throws Exception {
-        return start(listenPort, name, service.asStreamingService());
-    }
 }
