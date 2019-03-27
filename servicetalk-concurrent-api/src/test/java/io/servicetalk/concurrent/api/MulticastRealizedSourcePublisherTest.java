@@ -53,7 +53,7 @@ public class MulticastRealizedSourcePublisherTest {
     @Test
     public void testOnSubscribeErrors() throws InterruptedException {
         CountDownLatch latch = new CountDownLatch(2);
-        Publisher<Integer> multicast = new TerminateFromOnSubscribePublisher(error(DELIBERATE_EXCEPTION)).multicast(2);
+        Publisher<Integer> multicast = new TerminateFromOnSubscribePublisher(error(DELIBERATE_EXCEPTION)).multicastToExactly(2);
         MulticastSubscriber subscriber1 = new MulticastSubscriber(latch);
         MulticastSubscriber subscriber2 = new MulticastSubscriber(latch);
         toSource(multicast).subscribe(subscriber1);
@@ -66,7 +66,7 @@ public class MulticastRealizedSourcePublisherTest {
     @Test
     public void testOnSubscribeCompletesNoItems() throws InterruptedException {
         CountDownLatch latch = new CountDownLatch(2);
-        Publisher<Integer> multicast = new TerminateFromOnSubscribePublisher(complete()).multicast(2);
+        Publisher<Integer> multicast = new TerminateFromOnSubscribePublisher(complete()).multicastToExactly(2);
         MulticastSubscriber subscriber1 = new MulticastSubscriber(latch);
         MulticastSubscriber subscriber2 = new MulticastSubscriber(latch);
         toSource(multicast).subscribe(subscriber1);
@@ -79,7 +79,7 @@ public class MulticastRealizedSourcePublisherTest {
     @Test
     public void testOnSubscribeCompletesWithItems() throws InterruptedException {
         CountDownLatch latch = new CountDownLatch(2);
-        Publisher<Integer> multicast = Publisher.from(1, 2).multicast(2);
+        Publisher<Integer> multicast = Publisher.from(1, 2).multicastToExactly(2);
         MulticastSubscriber subscriber1 = new MulticastSubscriber(latch);
         MulticastSubscriber subscriber2 = new MulticastSubscriber(latch);
         toSource(multicast).subscribe(subscriber1);
@@ -92,7 +92,7 @@ public class MulticastRealizedSourcePublisherTest {
     @Test
     public void testOnSubscribeCompletesWithSingleItem() throws InterruptedException {
         CountDownLatch latch = new CountDownLatch(2);
-        Publisher<Integer> multicast = Publisher.just(1).multicast(2);
+        Publisher<Integer> multicast = Publisher.just(1).multicastToExactly(2);
         MulticastSubscriber subscriber1 = new MulticastSubscriber(latch);
         MulticastSubscriber subscriber2 = new MulticastSubscriber(latch);
         toSource(multicast).subscribe(subscriber1);

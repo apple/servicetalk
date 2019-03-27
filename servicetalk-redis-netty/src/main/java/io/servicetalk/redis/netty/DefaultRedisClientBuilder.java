@@ -256,7 +256,8 @@ final class DefaultRedisClientBuilder<U, R> implements RedisClientBuilder<U, R> 
     @Nonnull
     private RedisClient build0(final ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> sd,
                                final ExecutionContext executionContext) {
-        Publisher<? extends ServiceDiscovererEvent<R>> multicastAddressEventStream = sd.discover(address).multicast(2);
+        Publisher<? extends ServiceDiscovererEvent<R>> multicastAddressEventStream = sd.discover(address)
+                .multicastToExactly(2);
         ReadOnlyRedisClientConfig roConfig = config.asReadOnly();
 
         // Track resources that potentially need to be closed when an exception is thrown during buildStreaming

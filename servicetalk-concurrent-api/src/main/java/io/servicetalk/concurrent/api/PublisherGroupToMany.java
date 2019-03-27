@@ -26,19 +26,19 @@ import static java.util.Objects.requireNonNull;
  * @param <Key> The type of key which identifies a {@link GroupedPublisher}.
  * @param <T> Type of elements emitted by the {@link GroupedPublisher}s emitted by this {@link Publisher}.
  */
-final class PublisherGroupByMulti<Key, T> extends AbstractPublisherGroupBy<Key, T> {
+final class PublisherGroupToMany<Key, T> extends AbstractPublisherGroupBy<Key, T> {
     private final Function<? super T, ? extends Iterator<? extends Key>> keySelector;
     private final Executor executor;
 
-    PublisherGroupByMulti(Publisher<T> original, Function<? super T, ? extends Iterator<? extends Key>> keySelector,
-                          int groupQueueSize, Executor executor) {
+    PublisherGroupToMany(Publisher<T> original, Function<? super T, ? extends Iterator<? extends Key>> keySelector,
+                         int groupQueueSize, Executor executor) {
         super(original, groupQueueSize, executor);
         this.keySelector = requireNonNull(keySelector);
         this.executor = executor;
     }
 
-    PublisherGroupByMulti(Publisher<T> original, Function<? super T, ? extends Iterator<? extends Key>> keySelector,
-                          int groupQueueSize, int expectedGroupCountHint, Executor executor) {
+    PublisherGroupToMany(Publisher<T> original, Function<? super T, ? extends Iterator<? extends Key>> keySelector,
+                         int groupQueueSize, int expectedGroupCountHint, Executor executor) {
         super(original, groupQueueSize, expectedGroupCountHint, executor);
         this.keySelector = requireNonNull(keySelector);
         this.executor = executor;
@@ -50,9 +50,9 @@ final class PublisherGroupByMulti<Key, T> extends AbstractPublisherGroupBy<Key, 
     }
 
     private static final class SourceSubscriber<Key, T> extends AbstractSourceSubscriber<Key, T> {
-        private final PublisherGroupByMulti<Key, T> source;
+        private final PublisherGroupToMany<Key, T> source;
 
-        SourceSubscriber(Executor executor, PublisherGroupByMulti<Key, T> source,
+        SourceSubscriber(Executor executor, PublisherGroupToMany<Key, T> source,
                          Subscriber<? super GroupedPublisher<Key, T>> target) {
             super(executor, source.initialCapacityForGroups, target);
             this.source = source;

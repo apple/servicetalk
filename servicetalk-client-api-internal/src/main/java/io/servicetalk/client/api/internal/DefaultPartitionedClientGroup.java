@@ -104,7 +104,7 @@ public final class DefaultPartitionedClientGroup<U, R, Client extends Listenable
         this.unknownPartitionClient = unknownPartitionClient;
         this.partitionMap = partitionMapFactory.newPartitionMap(event ->
                 new Partition<>(event, closedPartitionClient.apply(event)));
-        toSource(psdEvents.groupByMulti(event -> event.isAvailable() ?
+        toSource(psdEvents.groupToMany(event -> event.isAvailable() ?
                 partitionMap.add(event.partitionAddress()).iterator() :
                 partitionMap.remove(event.partitionAddress()).iterator(), psdMaxQueueSize))
                 .subscribe(new GroupedByPartitionSubscriber(clientFactory));

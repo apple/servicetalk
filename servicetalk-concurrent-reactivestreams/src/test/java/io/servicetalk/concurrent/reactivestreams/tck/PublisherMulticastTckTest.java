@@ -28,7 +28,7 @@ import static java.lang.Math.max;
 public class PublisherMulticastTckTest extends AbstractPublisherOperatorTckTest<Integer> {
     @Override
     protected Publisher<Integer> composePublisher(Publisher<Integer> publisher, int elements) {
-        Publisher<Integer> multicastPublisher = publisher.multicast(2, max(elements, 10));
+        Publisher<Integer> multicastPublisher = publisher.multicastToExactly(2, max(elements, 10));
 
         // The TCK expects a single publisher, and the multicast operator must have the expected number of subscriptions
         // before subscribing to the original Publisher. To facilitate this operator being used by the TCK tests we
