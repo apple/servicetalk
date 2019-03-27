@@ -20,7 +20,7 @@ import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.BlockingIterable;
 import io.servicetalk.concurrent.api.Single;
 
-import static io.servicetalk.concurrent.api.Publisher.from;
+import static io.servicetalk.concurrent.api.Publisher.fromIterable;
 
 final class BufferBlockingStreamingHttpRequest extends DefaultBlockingStreamingHttpRequest<Buffer> {
     BufferBlockingStreamingHttpRequest(final HttpRequestMethod method, final String requestTarget,
@@ -52,6 +52,6 @@ final class BufferBlockingStreamingHttpRequest extends DefaultBlockingStreamingH
     @Override
     public StreamingHttpRequest toStreamingRequest() {
         return new BufferStreamingHttpRequest(method(), requestTarget(), version(), headers(),
-                trailersSingle, allocator, from(payloadBody));
+                trailersSingle, allocator, fromIterable(payloadBody));
     }
 }

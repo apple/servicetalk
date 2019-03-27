@@ -64,7 +64,7 @@ import javax.ws.rs.sse.SseBroadcaster;
 import javax.ws.rs.sse.SseEventSink;
 
 import static io.servicetalk.concurrent.api.Completable.completed;
-import static io.servicetalk.concurrent.api.Publisher.just;
+import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.Single.succeeded;
@@ -150,7 +150,7 @@ public class AsynchronousResources {
         return ctx.executionContext().executor().timer(10, MILLISECONDS)
                 .concat(defer(() -> {
                     final String contentString = "GOT: " + i;
-                    final Publisher<Buffer> responseContent = just(allocator.fromAscii(contentString));
+                    final Publisher<Buffer> responseContent = from(allocator.fromAscii(contentString));
 
                     return succeeded(status(i)
                             // We know the content length so we set it, otherwise the response is chunked
@@ -378,7 +378,7 @@ public class AsynchronousResources {
     public CompletionStage<Response> getTextPubResponse(@QueryParam("i") final int i) {
         final String contentString = "GOT: " + i;
         final Publisher<Buffer> responseContent =
-                just(ctx.executionContext().bufferAllocator().fromAscii(contentString));
+                from(ctx.executionContext().bufferAllocator().fromAscii(contentString));
 
         return completedFuture(status(i)
                 // We know the content length so we set it, otherwise the response is chunked

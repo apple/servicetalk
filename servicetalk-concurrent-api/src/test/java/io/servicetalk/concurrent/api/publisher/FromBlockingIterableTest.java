@@ -26,7 +26,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
 
 import static io.servicetalk.concurrent.api.Executors.immediate;
-import static io.servicetalk.concurrent.api.Publisher.from;
+import static io.servicetalk.concurrent.api.Publisher.fromBlockingIterable;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static java.util.Arrays.asList;
@@ -47,7 +47,7 @@ public class FromBlockingIterableTest extends FromInMemoryPublisherAbstractTest 
                                         BiConsumer<Long, TimeUnit> nextConsumer,
                                         AutoCloseable closeable) {
         return new InMemorySource(values) {
-            private final Publisher<String> publisher = from(
+            private final Publisher<String> publisher = fromBlockingIterable(
                     new TestIterableToBlockingIterable<>(asList(values), hashNextConsumer, nextConsumer,
                             closeable), () -> 1, SECONDS);
             @Override

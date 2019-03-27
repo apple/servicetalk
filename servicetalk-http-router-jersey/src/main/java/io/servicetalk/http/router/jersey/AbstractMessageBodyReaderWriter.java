@@ -40,6 +40,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.MessageBodyWriter;
 
+import static io.servicetalk.concurrent.api.Publisher.fromInputStream;
 import static io.servicetalk.http.router.jersey.internal.BufferPublisherInputStream.handleEntityStream;
 import static io.servicetalk.http.router.jersey.internal.RequestProperties.setResponseBufferPublisher;
 import static javax.ws.rs.Priorities.ENTITY_CODER;
@@ -86,7 +87,7 @@ abstract class AbstractMessageBodyReaderWriter<Source, T, SourceOfT, WrappedSour
         return handleEntityStream(entityStream, allocator, bodyFunction,
                 (is, a) -> bodyFunction
                         .andThen(sourceFunction)
-                        .apply(Publisher.from(is).map(a::wrap), a));
+                        .apply(fromInputStream(is).map(a::wrap), a));
     }
 
     @Override

@@ -52,6 +52,7 @@ import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.MessageBodyWriter;
 import javax.ws.rs.ext.Providers;
 
+import static io.servicetalk.concurrent.api.Publisher.fromInputStream;
 import static io.servicetalk.concurrent.internal.FutureUtils.awaitResult;
 import static io.servicetalk.http.router.jersey.internal.BufferPublisherInputStream.handleEntityStream;
 import static io.servicetalk.http.router.jersey.internal.RequestProperties.setResponseBufferPublisher;
@@ -161,7 +162,7 @@ final class JacksonSerializerMessageBodyReaderWriter implements MessageBodyReade
     }
 
     private static Publisher<Buffer> toBufferPublisher(final InputStream is, final BufferAllocator a) {
-        return Publisher.from(is).map(a::wrap);
+        return fromInputStream(is).map(a::wrap);
     }
 
     private static <T> Single<T> deserialize(final Publisher<Buffer> bufferPublisher, final Serializer ser,

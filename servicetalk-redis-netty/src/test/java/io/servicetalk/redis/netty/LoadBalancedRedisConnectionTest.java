@@ -27,7 +27,7 @@ import static io.servicetalk.client.api.internal.RequestConcurrencyController.Re
 import static io.servicetalk.concurrent.api.BlockingTestUtils.awaitIndefinitely;
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Completable.never;
-import static io.servicetalk.concurrent.api.Publisher.just;
+import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.redis.api.RedisData.PONG;
 import static io.servicetalk.redis.api.RedisProtocolSupport.Command.PING;
 import static io.servicetalk.redis.api.RedisRequests.newRequest;
@@ -40,14 +40,14 @@ import static org.mockito.Mockito.when;
 public class LoadBalancedRedisConnectionTest {
     @Test
     public void singleRequestBringsCountBackToZero() throws Exception {
-        final Publisher<Integer> maxRequestsPublisher = just(1);
+        final Publisher<Integer> maxRequestsPublisher = from(1);
         RedisConnection delegate = mock(RedisConnection.class);
         when(delegate.onClose()).thenReturn(never());
         when(delegate.closeAsync()).thenReturn(completed());
         when(delegate.settingStream(any(SettingKey.class))).thenReturn(maxRequestsPublisher);
-        when(delegate.request(any(), any(RedisRequest.class))).thenReturn(just(PONG));
+        when(delegate.request(any(), any(RedisRequest.class))).thenReturn(from(PONG));
         LoadBalancedRedisConnection connection = new LoadBalancedRedisConnection(delegate,
-                ReservableRequestConcurrencyControllers.newController(just(1), never(), 1));
+                ReservableRequestConcurrencyControllers.newController(from(1), never(), 1));
         assertThat(connection.tryRequest(), is(Accepted));
         awaitIndefinitely(connection.request(newRequest(PING)));
         connection.requestFinished();

@@ -29,7 +29,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Publisher.defer;
 import static io.servicetalk.concurrent.api.Publisher.failed;
-import static io.servicetalk.concurrent.api.Publisher.from;
+import static io.servicetalk.concurrent.api.Publisher.fromIterable;
 import static io.servicetalk.concurrent.internal.PlatformDependent.throwException;
 import static java.lang.Thread.currentThread;
 
@@ -134,7 +134,7 @@ final class BlockingUtils {
             } catch (Exception e) {
                 return failed(e);
             }
-            return from(result);
+            return fromIterable(result);
         });
     }
 

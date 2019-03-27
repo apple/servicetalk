@@ -32,7 +32,7 @@ import java.util.concurrent.Future;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.Completable.completed;
-import static io.servicetalk.concurrent.api.Publisher.just;
+import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
@@ -54,7 +54,7 @@ public class SourceAdaptersTest {
 
     @Test
     public void publisherToSourceSuccess() {
-        PublisherSource.Subscriber<Integer> subscriber = toSourceAndSubscribe(just(1));
+        PublisherSource.Subscriber<Integer> subscriber = toSourceAndSubscribe(from(1));
         verify(subscriber).onNext(1);
         verify(subscriber).onComplete();
         verifyNoMoreInteractions(subscriber);

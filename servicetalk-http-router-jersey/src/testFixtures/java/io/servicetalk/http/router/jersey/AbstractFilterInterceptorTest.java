@@ -43,6 +43,8 @@ import javax.ws.rs.ext.ReaderInterceptorContext;
 import javax.ws.rs.ext.WriterInterceptor;
 import javax.ws.rs.ext.WriterInterceptorContext;
 
+import static io.servicetalk.concurrent.api.Publisher.fromInputStream;
+import static io.servicetalk.concurrent.api.Publisher.fromIterable;
 import static io.servicetalk.http.api.CharSequences.newAsciiString;
 import static io.servicetalk.http.api.HttpHeaderValues.APPLICATION_JSON;
 import static io.servicetalk.http.api.HttpHeaderValues.TEXT_PLAIN;
@@ -115,9 +117,9 @@ public abstract class AbstractFilterInterceptorTest extends AbstractJerseyStream
             // Simulate an ill-behaved filter that consumes the all request content beforehand
             // instead of modifying it in a streaming fashion (as done in super)
             try {
-                Collection<byte[]> collection = Publisher.from(new UpperCaseInputStream(
+                Collection<byte[]> collection = fromInputStream(new UpperCaseInputStream(
                         requestCtx.getEntityStream())).toFuture().get();
-                requestCtx.setEntityStream(Publisher.from(collection).toInputStream(identity()));
+                requestCtx.setEntityStream(fromIterable(collection).toInputStream(identity()));
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }

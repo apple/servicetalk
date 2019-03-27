@@ -22,6 +22,7 @@ import org.junit.Test;
 
 import java.util.function.Consumer;
 
+import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static org.hamcrest.Matchers.hasSize;
@@ -33,7 +34,7 @@ public class DoAfterSubscribeTest extends AbstractDoSubscribeTest {
 
     @Test
     public void testCallbackThrowsError() {
-        Publisher<String> src = doSubscribe(Publisher.just("Hello"), s -> {
+        Publisher<String> src = doSubscribe(from("Hello"), s -> {
             throw DELIBERATE_EXCEPTION;
         });
         toSource(src).subscribe(subscriber);

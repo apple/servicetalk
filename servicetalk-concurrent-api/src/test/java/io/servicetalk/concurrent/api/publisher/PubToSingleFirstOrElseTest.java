@@ -33,7 +33,7 @@ import java.util.NoSuchElementException;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 
-import static io.servicetalk.concurrent.api.Publisher.just;
+import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 import static java.lang.Thread.currentThread;
@@ -55,7 +55,7 @@ public class PubToSingleFirstOrElseTest {
 
     @Test
     public void testSuccess() {
-        listen(Publisher.just("Hello")).verifySuccess("Hello");
+        listen(from("Hello")).verifySuccess("Hello");
     }
 
     @Test
@@ -122,7 +122,7 @@ public class PubToSingleFirstOrElseTest {
         final Thread testThread = currentThread();
         final CountDownLatch analyzed = new CountDownLatch(1);
         ConcurrentLinkedQueue<AssertionError> errors = new ConcurrentLinkedQueue<>();
-        just("Hello").doBeforeRequest(__ -> {
+        from("Hello").doBeforeRequest(__ -> {
             if (currentThread() == testThread) {
                 errors.add(new AssertionError("Invalid thread invoked request-n. Thread: " +
                         currentThread()));

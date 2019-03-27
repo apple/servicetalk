@@ -57,7 +57,7 @@ import javax.ws.rs.core.StreamingOutput;
 import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.core.UriInfo;
 
-import static io.servicetalk.concurrent.api.Publisher.just;
+import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.http.router.jersey.TestUtils.getContentAsString;
 import static io.servicetalk.http.router.jersey.resources.SynchronousResources.PATH;
@@ -254,7 +254,7 @@ public class SynchronousResources {
     @Path("/text-strin-pubout")
     @POST
     public Publisher<Buffer> postTextStrInPubOut(final String requestContent) {
-        return just(ctx.executionContext().bufferAllocator().fromUtf8("GOT: " + requestContent));
+        return from(ctx.executionContext().bufferAllocator().fromUtf8("GOT: " + requestContent));
     }
 
     @Consumes(TEXT_PLAIN)
@@ -270,7 +270,7 @@ public class SynchronousResources {
     @Path("/text-pubin-pubout")
     @POST
     public Publisher<Buffer> postTextPubInPubOut(final Publisher<Buffer> requestContent) {
-        return just(ctx.executionContext().bufferAllocator().fromAscii("GOT: ")).concat(requestContent);
+        return from(ctx.executionContext().bufferAllocator().fromAscii("GOT: ")).concat(requestContent);
     }
 
     @Produces(TEXT_PLAIN)
@@ -279,7 +279,7 @@ public class SynchronousResources {
     public Response getTextPubResponse(@QueryParam("i") final int i) {
         final String contentString = "GOT: " + i;
         final Publisher<Buffer> responseContent =
-                just(ctx.executionContext().bufferAllocator().fromAscii(contentString));
+                from(ctx.executionContext().bufferAllocator().fromAscii(contentString));
 
         return status(i)
                 // We know the content length so we set it, otherwise the response is chunked
@@ -366,7 +366,7 @@ public class SynchronousResources {
         // and ServiceTalk streaming serialization is used for the response
         final Map<String, Object> responseContent = new HashMap<>(requestContent);
         responseContent.put("foo", "bar3");
-        return SERIALIZER.serialize(just(responseContent), ctx.executionContext().bufferAllocator(),
+        return SERIALIZER.serialize(from(responseContent), ctx.executionContext().bufferAllocator(),
                 STRING_OBJECT_MAP_TYPE);
     }
 

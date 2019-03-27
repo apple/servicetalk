@@ -40,6 +40,8 @@ import javax.annotation.Nullable;
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.NeverSingle.neverSingle;
+import static io.servicetalk.concurrent.api.Publisher.from;
+import static io.servicetalk.concurrent.api.Publisher.fromIterable;
 import static io.servicetalk.concurrent.api.SingleDoOnUtils.doOnErrorSupplier;
 import static io.servicetalk.concurrent.api.SingleDoOnUtils.doOnSubscribeSupplier;
 import static io.servicetalk.concurrent.api.SingleDoOnUtils.doOnSuccessSupplier;
@@ -1165,7 +1167,7 @@ public abstract class Single<T> {
      * {@link Single}s passed to this method.
      */
     public static <T> Single<Collection<T>> collectUnordered(Iterable<? extends Single<? extends T>> singles) {
-        return Publisher.from(singles).flatMapMergeSingle(identity()).collect(ArrayList::new, (ts, t) -> {
+        return fromIterable(singles).flatMapMergeSingle(identity()).collect(ArrayList::new, (ts, t) -> {
             ts.add(t);
             return ts;
         });
@@ -1197,7 +1199,7 @@ public abstract class Single<T> {
      */
     @SafeVarargs
     public static <T> Single<Collection<T>> collectUnordered(Single<? extends T>... singles) {
-        return Publisher.from(singles).flatMapMergeSingle(identity()).collect(() -> new ArrayList<>(singles.length),
+        return from(singles).flatMapMergeSingle(identity()).collect(() -> new ArrayList<>(singles.length),
                 (ts, t) -> {
                     ts.add(t);
                     return ts;
@@ -1230,7 +1232,7 @@ public abstract class Single<T> {
      */
     public static <T> Single<Collection<T>> collectUnordered(Iterable<? extends Single<? extends T>> singles,
                                                              int maxConcurrency) {
-        return Publisher.from(singles)
+        return fromIterable(singles)
                 .flatMapMergeSingle(identity(), maxConcurrency)
                 .collect(ArrayList::new, (ts, t) -> {
                     ts.add(t);
@@ -1263,7 +1265,7 @@ public abstract class Single<T> {
      */
     @SafeVarargs
     public static <T> Single<Collection<T>> collectUnordered(int maxConcurrency, Single<? extends T>... singles) {
-        return Publisher.from(singles).flatMapMergeSingle(identity(), maxConcurrency)
+        return from(singles).flatMapMergeSingle(identity(), maxConcurrency)
                 .collect(() -> new ArrayList<>(singles.length), (ts, t) -> {
                     ts.add(t);
                     return ts;
@@ -1305,7 +1307,7 @@ public abstract class Single<T> {
      */
     public static <T> Single<Collection<T>> collectUnorderedDelayError(
             Iterable<? extends Single<? extends T>> singles) {
-        return Publisher.from(singles).flatMapMergeSingleDelayError(identity()).collect(ArrayList::new, (ts, t) -> {
+        return fromIterable(singles).flatMapMergeSingleDelayError(identity()).collect(ArrayList::new, (ts, t) -> {
             ts.add(t);
             return ts;
         });
@@ -1345,7 +1347,7 @@ public abstract class Single<T> {
      */
     @SafeVarargs
     public static <T> Single<Collection<T>> collectUnorderedDelayError(Single<? extends T>... singles) {
-        return Publisher.from(singles).flatMapMergeSingleDelayError(identity())
+        return from(singles).flatMapMergeSingleDelayError(identity())
                 .collect(() -> new ArrayList<>(singles.length), (ts, t) -> {
                     ts.add(t);
                     return ts;
@@ -1386,7 +1388,7 @@ public abstract class Single<T> {
      */
     public static <T> Single<Collection<T>> collectUnorderedDelayError(Iterable<? extends Single<? extends T>> singles,
                                                                        int maxConcurrency) {
-        return Publisher.from(singles).flatMapMergeSingleDelayError(identity(), maxConcurrency)
+        return fromIterable(singles).flatMapMergeSingleDelayError(identity(), maxConcurrency)
                 .collect(ArrayList::new, (ts, t) -> {
                     ts.add(t);
                     return ts;
@@ -1427,7 +1429,7 @@ public abstract class Single<T> {
     @SafeVarargs
     public static <T> Single<Collection<T>> collectUnorderedDelayError(int maxConcurrency,
                                                                        Single<? extends T>... singles) {
-        return Publisher.from(singles).flatMapMergeSingleDelayError(identity(), maxConcurrency)
+        return from(singles).flatMapMergeSingleDelayError(identity(), maxConcurrency)
                 .collect(() -> new ArrayList<>(singles.length), (ts, t) -> {
                     ts.add(t);
                     return ts;

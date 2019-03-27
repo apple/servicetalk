@@ -30,6 +30,7 @@ import java.util.concurrent.CountDownLatch;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Executors.immediate;
+import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
@@ -80,7 +81,7 @@ public class MulticastRealizedSourcePublisherTest {
     @Test
     public void testOnSubscribeCompletesWithItems() throws InterruptedException {
         CountDownLatch latch = new CountDownLatch(2);
-        Publisher<Integer> multicast = Publisher.from(1, 2).multicastToExactly(2);
+        Publisher<Integer> multicast = from(1, 2).multicastToExactly(2);
         MulticastSubscriber subscriber1 = new MulticastSubscriber(latch);
         MulticastSubscriber subscriber2 = new MulticastSubscriber(latch);
         toSource(multicast).subscribe(subscriber1);
@@ -93,7 +94,7 @@ public class MulticastRealizedSourcePublisherTest {
     @Test
     public void testOnSubscribeCompletesWithSingleItem() throws InterruptedException {
         CountDownLatch latch = new CountDownLatch(2);
-        Publisher<Integer> multicast = Publisher.just(1).multicastToExactly(2);
+        Publisher<Integer> multicast = from(1).multicastToExactly(2);
         MulticastSubscriber subscriber1 = new MulticastSubscriber(latch);
         MulticastSubscriber subscriber2 = new MulticastSubscriber(latch);
         toSource(multicast).subscribe(subscriber1);

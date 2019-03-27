@@ -27,7 +27,7 @@ import org.junit.rules.Timeout;
 
 import java.util.NoSuchElementException;
 
-import static io.servicetalk.concurrent.api.Publisher.just;
+import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 
 public class PubFirstOrErrorTest {
@@ -41,7 +41,7 @@ public class PubFirstOrErrorTest {
 
     @Test
     public void syncSingleItemCompleted() {
-        listenerRule.listen(just("hello").firstOrError()).verifySuccess("hello");
+        listenerRule.listen(from("hello").firstOrError()).verifySuccess("hello");
     }
 
     @Test

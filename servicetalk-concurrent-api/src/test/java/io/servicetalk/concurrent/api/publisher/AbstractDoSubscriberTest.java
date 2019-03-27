@@ -24,6 +24,7 @@ import org.junit.Test;
 
 import java.util.function.Supplier;
 
+import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
@@ -41,7 +42,7 @@ public abstract class AbstractDoSubscriberTest {
 
     @Test
     public void testOnWithOnComplete() {
-        toSource(doSubscriber(Publisher.just("Hello"), () -> subscriber)).subscribe(finalSubscriber);
+        toSource(doSubscriber(from("Hello"), () -> subscriber)).subscribe(finalSubscriber);
         finalSubscriber.request(1);
         assertThat(finalSubscriber.takeItems(), contains("Hello"));
         assertThat(finalSubscriber.takeTerminal(), is(complete()));

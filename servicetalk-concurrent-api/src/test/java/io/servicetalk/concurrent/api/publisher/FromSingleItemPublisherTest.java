@@ -20,6 +20,7 @@ import io.servicetalk.concurrent.api.TestPublisherSubscriber;
 
 import org.junit.Test;
 
+import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
@@ -28,13 +29,13 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.Assert.assertThat;
 
-public class JustPublisherTest {
+public class FromSingleItemPublisherTest {
 
     private final TestPublisherSubscriber<String> subscriber = new TestPublisherSubscriber<>();
 
     @Test
     public void exceptionInTerminalCallsOnError() {
-        toSource(Publisher.just("foo").doOnNext(n -> {
+        toSource(from("foo").doOnNext(n -> {
             throw DELIBERATE_EXCEPTION;
         })).subscribe(subscriber);
         subscriber.request(1);
@@ -44,7 +45,7 @@ public class JustPublisherTest {
 
     @Test
     public void nullInTerminalSucceeds() {
-        toSource(Publisher.<String>just(null)).subscribe(subscriber);
+        toSource(Publisher.from((String) null)).subscribe(subscriber);
         subscriber.request(1);
         assertThat(subscriber.takeItems(), contains(new String[]{null}));
         assertThat(subscriber.takeTerminal(), is(complete()));

@@ -39,6 +39,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static io.servicetalk.concurrent.api.Executors.immediate;
+import static io.servicetalk.concurrent.api.Publisher.fromIterable;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.api.VerificationTestUtils.verifyOriginalAndSuppressedCauses;
 import static io.servicetalk.concurrent.api.VerificationTestUtils.verifySuppressed;
@@ -86,7 +87,7 @@ public class PublisherFlatMapSingleTest {
     @Test
     public void concurrentSingleAndPublisherTermination() throws Exception {
         final List<String> elements = range(0, 1000).mapToObj(Integer::toString).collect(toList());
-        final Publisher<String> publisher = Publisher.from(elements);
+        final Publisher<String> publisher = fromIterable(elements);
         final Single<List<String>> single = publisher.flatMapMergeSingle(x -> executor.submit(() -> x), 1024)
                 .collect(ArrayList::new, (strings, s) -> {
                     strings.add(s);
@@ -100,7 +101,7 @@ public class PublisherFlatMapSingleTest {
 
     @Test
     public void concurrentSingleErrorAndPublisherTermination() throws Exception {
-        final Publisher<Integer> publisher = Publisher.from(() -> range(0, 1000).iterator());
+        final Publisher<Integer> publisher = fromIterable(() -> range(0, 1000).iterator());
         AtomicReference<Throwable> error = new AtomicReference<>();
         final Single<List<Integer>> single = publisher.flatMapMergeSingleDelayError(x -> executor.submit(() -> {
             if (x % 2 == 0) {

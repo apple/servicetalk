@@ -40,7 +40,7 @@ import static io.opentracing.tag.Tags.HTTP_STATUS;
 import static io.opentracing.tag.Tags.HTTP_URL;
 import static io.opentracing.tag.Tags.SPAN_KIND;
 import static io.opentracing.tag.Tags.SPAN_KIND_SERVER;
-import static io.servicetalk.concurrent.api.Publisher.just;
+import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.http.api.HttpRequestMethod.GET;
@@ -93,10 +93,10 @@ public class TracingHttpServiceFilterTest {
                 .listenStreamingAndAwait((ctx, request, responseFactory) -> {
                     InMemorySpan span = tracer.activeSpan();
                     if (span == null) {
-                        return succeeded(responseFactory.internalServerError().payloadBody(just("span not found"),
+                        return succeeded(responseFactory.internalServerError().payloadBody(from("span not found"),
                                 textSerializer()));
                     }
-                    return succeeded(responseFactory.ok().payloadBody(just(new TestSpanState(
+                    return succeeded(responseFactory.ok().payloadBody(from(new TestSpanState(
                                     span.traceIdHex(),
                                     span.spanIdHex(),
                                     span.parentSpanIdHex(),
