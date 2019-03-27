@@ -21,6 +21,6 @@ public class DoBeforeCompleteTest extends AbstractDoCompleteTest {
 
     @Override
     protected <T> Publisher<T> doComplete(Publisher<T> publisher, Runnable runnable) {
-        return publisher.doBeforeComplete(runnable);
+        return publisher.doBeforeOnComplete(runnable);
     }
 }

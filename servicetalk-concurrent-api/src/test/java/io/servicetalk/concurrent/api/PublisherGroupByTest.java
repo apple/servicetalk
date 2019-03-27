@@ -258,7 +258,7 @@ public class PublisherGroupByTest {
 
     @Test
     public void testOnNextThrows() {
-        toSource(subscribeToAllGroups(10, s -> s).doAfterNext(i -> {
+        toSource(subscribeToAllGroups(10, s -> s).doAfterOnNext(i -> {
             throw DELIBERATE_EXCEPTION;
         })).subscribe(subscriber);
         source.onSubscribe(subscription);

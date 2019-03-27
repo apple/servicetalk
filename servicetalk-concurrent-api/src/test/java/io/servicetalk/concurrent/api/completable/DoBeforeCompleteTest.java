@@ -24,7 +24,7 @@ import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_
 public class DoBeforeCompleteTest extends AbstractDoCompleteTest {
     @Override
     protected Completable doComplete(Completable completable, Runnable runnable) {
-        return completable.doBeforeComplete(runnable);
+        return completable.doBeforeOnComplete(runnable);
     }
 
     @Test

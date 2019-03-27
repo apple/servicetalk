@@ -93,12 +93,12 @@ final class CommanderUtils {
     }
 
     static Single<String> abortSingles(final Single<String> result, final List<Processor<?, ?>> singles) {
-        return result.doBeforeSuccess(__ -> completeSinglesWithException(new TransactionAbortedException(), singles));
+        return result.doBeforeOnSuccess(__ -> completeSinglesWithException(new TransactionAbortedException(), singles));
     }
 
     static Completable completeSingles(final Single<List<Object>> results,
                                        final List<Processor<?, ?>> singles) {
-        return results.doBeforeSuccess(resultList -> {
+        return results.doBeforeOnSuccess(resultList -> {
             if (singles.size() != resultList.size()) {
                 throw new IllegalStateException("Result resultList size (" + resultList.size()
                         + ") and SingleProcessor resultList size (" + singles.size() + ") did not match");

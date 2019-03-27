@@ -241,10 +241,10 @@ public class DefaultHttpExecutionStrategyTest {
         }
 
         Single<StreamingHttpResponse> instrumentedResponseForClient(Single<StreamingHttpResponse> resp) {
-            return resp.map(response -> response.transformPayloadBody(p -> p.doBeforeNext(__ -> {
+            return resp.map(response -> response.transformPayloadBody(p -> p.doBeforeOnNext(__ -> {
                 analyzed.set(RECEIVE_DATA_ANALYZED_INDEX, true);
                 verifyThread(offloadReceiveData, "Unexpected thread for response payload onNext.");
-            }))).doBeforeSuccess(__ -> {
+            }))).doBeforeOnSuccess(__ -> {
                 analyzed.set(RECEIVE_META_ANALYZED_INDEX, true);
                 verifyThread(offloadReceiveMeta, "Unexpected thread for response single.");
             });
@@ -280,14 +280,14 @@ public class DefaultHttpExecutionStrategyTest {
         }
 
         <T> Single<T> instrumentReceive(Single<T> original) {
-            return original.doBeforeSuccess(__ -> {
+            return original.doBeforeOnSuccess(__ -> {
                 analyzed.set(RECEIVE_DATA_ANALYZED_INDEX, true);
                 verifyThread(offloadReceiveData, "Unexpected thread requested from success.");
             });
         }
 
         <T> Publisher<T> instrumentReceive(Publisher<T> original) {
-            return original.doBeforeNext(__ -> {
+            return original.doBeforeOnNext(__ -> {
                 analyzed.set(RECEIVE_DATA_ANALYZED_INDEX, true);
                 verifyThread(offloadReceiveData, "Unexpected thread requested from next.");
             });
@@ -316,7 +316,7 @@ public class DefaultHttpExecutionStrategyTest {
         }
 
         Publisher<Buffer> instrumentedRequestPayloadForServer(Publisher<Buffer> req) {
-            return req.doBeforeNext(__ -> {
+            return req.doBeforeOnNext(__ -> {
                 analyzed.set(RECEIVE_DATA_ANALYZED_INDEX, true);
                 verifyThread(offloadReceiveData, "Unexpected thread for request payload onNext.");
             });

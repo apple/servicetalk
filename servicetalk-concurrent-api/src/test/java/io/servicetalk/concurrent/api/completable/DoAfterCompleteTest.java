@@ -30,7 +30,7 @@ public class DoAfterCompleteTest extends AbstractDoCompleteTest {
 
     @Override
     protected Completable doComplete(Completable completable, Runnable runnable) {
-        return completable.doAfterComplete(runnable);
+        return completable.doAfterOnComplete(runnable);
     }
 
     @Test

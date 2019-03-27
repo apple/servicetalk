@@ -489,7 +489,7 @@ public class NettyChannelPublisherTest {
         assertFalse(channel.isOpen());
 
         AtomicReference<Throwable> exRef = new AtomicReference<>();
-        publisher.doBeforeError(exRef::set).forEach(__ -> { });
+        publisher.doBeforeOnError(exRef::set).forEach(__ -> { });
         assertThat("Subscriber active post channel error.", exRef.get(),
                 is(instanceOf(ClosedChannelException.class)));
     }

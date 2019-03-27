@@ -100,7 +100,7 @@ public class RedisClientOverrideOffloadingTest {
 
     @Test
     public void reserveRespectsOverride() throws Exception {
-        client.reserveConnection(overridingStrategy, PING).doBeforeSuccess(__ -> {
+        client.reserveConnection(overridingStrategy, PING).doBeforeOnSuccess(__ -> {
             if (isInvalidThread()) {
                 throw new AssertionError("Invalid thread found providing the connection. Thread: "
                         + currentThread());
@@ -118,12 +118,12 @@ public class RedisClientOverrideOffloadingTest {
             }
         }));
         client.request(overridingStrategy, req)
-                .doBeforeNext(__ -> {
+                .doBeforeOnNext(__ -> {
                     if (isInvalidThread()) {
                         errors.add(new AssertionError("Invalid thread called response onNext. Thread: " +
                                 currentThread()));
                     }
-                }).doBeforeComplete(() -> {
+                }).doBeforeOnComplete(() -> {
                     if (isInvalidThread()) {
                         errors.add(new AssertionError("Invalid thread called response onComplete. Thread: "
                                 + currentThread()));
@@ -143,7 +143,7 @@ public class RedisClientOverrideOffloadingTest {
             }
         }));
         client.request(overridingStrategy, req, CharSequence.class)
-                .doBeforeSuccess(__ -> {
+                .doBeforeOnSuccess(__ -> {
                     if (isInvalidThread()) {
                         errors.add(new AssertionError("Invalid thread called response onNext. Thread: " +
                                 currentThread()));

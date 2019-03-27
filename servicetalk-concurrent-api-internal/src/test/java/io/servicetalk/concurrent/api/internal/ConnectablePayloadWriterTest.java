@@ -87,7 +87,7 @@ public class ConnectablePayloadWriterTest {
     @Test
     public void subscribeDeliverDataSynchronously() throws Exception {
         AtomicReference<Future<?>> futureRef = new AtomicReference<>();
-        toSource(cpw.connect().doAfterSubscribe(subscription -> {
+        toSource(cpw.connect().doAfterOnSubscribe(subscription -> {
             subscriber.request(1); // request from the TestPublisherSubscriber!
             // We want to increase the chance that the writer thread has to wait for the Subscriber to become
             // available, instead of waiting for the requestN demand.
@@ -115,7 +115,7 @@ public class ConnectablePayloadWriterTest {
     @Test
     public void subscribeCloseSynchronously() throws Exception {
         AtomicReference<Future<?>> futureRef = new AtomicReference<>();
-        toSource(cpw.connect().doAfterSubscribe(subscription -> {
+        toSource(cpw.connect().doAfterOnSubscribe(subscription -> {
             // We want to increase the chance that the writer thread has to wait for the Subscriber to become
             // available, instead of waiting for the requestN demand.
             CyclicBarrier barrier = new CyclicBarrier(2);

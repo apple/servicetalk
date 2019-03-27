@@ -33,7 +33,7 @@ public class DoAfterErrorTest extends AbstractDoErrorTest {
 
     @Override
     protected Completable doError(Completable completable, Consumer<Throwable> consumer) {
-        return completable.doAfterError(consumer);
+        return completable.doAfterOnError(consumer);
     }
 
     @Test

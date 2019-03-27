@@ -52,12 +52,12 @@ import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
  * <pre>{@code
  *     // coarse grained, any terminal signal calls the provided `Runnable`
  *     return requester.request(strategy, request)
- *                     .doBeforeSubscribe(__ -> tracker.requestStarted())
+ *                     .doBeforeOnSubscribe(__ -> tracker.requestStarted())
  *                     .liftSync(new DoBeforeFinallyOnHttpResponseOperator(tracker::requestFinished));
  *
  *     // fine grained, `tracker` implements `TerminalSignalConsumer`, terminal signal indicated by the callback method
  *     return requester.request(strategy, request)
- *                     .doBeforeSubscribe(__ -> tracker.requestStarted())
+ *                     .doBeforeOnSubscribe(__ -> tracker.requestStarted())
  *                     .liftSync(new DoBeforeFinallyOnHttpResponseOperator(tracker));
  * }</pre>
  */
