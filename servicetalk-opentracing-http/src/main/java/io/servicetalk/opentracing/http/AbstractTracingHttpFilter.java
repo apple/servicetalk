@@ -106,7 +106,7 @@ abstract class AbstractTracingHttpFilter {
         }
 
         Single<StreamingHttpResponse> track(Single<StreamingHttpResponse> responseSingle) {
-            return responseSingle.liftSynchronous(new DoBeforeFinallyOnHttpResponseOperator(this))
+            return responseSingle.liftSync(new DoBeforeFinallyOnHttpResponseOperator(this))
                     // DoBeforeFinallyOnHttpResponseOperator conditionally outputs a Single<Meta> with a failed
                     // Publisher<Data> instead of the real Publisher<Data> in case a cancel signal is observed before
                     // completion of Meta. So in order for downstream operators to get a consistent view of the data

@@ -924,23 +924,23 @@ public abstract class Single<T> {
      * <pre>{@code
      *     Single<X> pub = ...;
      *     pub.map(..) // A
-     *        .liftSynchronous(original -> modified)
+     *        .liftSync(original -> modified)
      *        .doAfterFinally(..) // B
      * }</pre>
      * The {@code original -> modified} "operator" <strong>MUST</strong> be "synchronous" in that it does not interact
      * with the original {@link Subscriber} from outside the modified {@link Subscriber} or {@link Cancellable}
      * threads. That is to say this operator will not impact the {@link Executor} constraints already in place between
      * <i>A</i> and <i>B</i> above. If you need asynchronous behavior, or are unsure, see
-     * {@link #liftAsynchronous(SingleOperator)}.
+     * {@link #liftAsync(SingleOperator)}.
      * @param operator The custom operator logic. The input is the "original" {@link Subscriber} to this
      * {@link Single} and the return is the "modified" {@link Subscriber} that provides custom operator business
      * logic.
      * @param <R> Type of the items emitted by the returned {@link Single}.
      * @return a {@link Single} which when subscribed, the {@code operator} argument will be used to wrap the
      * {@link Subscriber} before subscribing to this {@link Single}.
-     * @see #liftAsynchronous(SingleOperator)
+     * @see #liftAsync(SingleOperator)
      */
-    public final <R> Single<R> liftSynchronous(SingleOperator<? super T, ? extends R> operator) {
+    public final <R> Single<R> liftSync(SingleOperator<? super T, ? extends R> operator) {
         return new LiftSynchronousSingleOperator<>(this, operator, executor);
     }
 
@@ -953,7 +953,7 @@ public abstract class Single<T> {
      * <pre>{@code
      *     Publisher<X> pub = ...;
      *     pub.map(..) // Aw
-     *        .liftAsynchronous(original -> modified)
+     *        .liftAsync(original -> modified)
      *        .doAfterFinally(..) // B
      * }</pre>
      * The {@code original -> modified} "operator" MAY be "asynchronous" in that it may interact with the original
@@ -973,9 +973,9 @@ public abstract class Single<T> {
      * @param <R> Type of the items emitted by the returned {@link Single}.
      * @return a {@link Single} which when subscribed, the {@code operator} argument will be used to wrap the
      * {@link Subscriber} before subscribing to this {@link Single}.
-     * @see #liftSynchronous(SingleOperator)
+     * @see #liftSync(SingleOperator)
      */
-    public final <R> Single<R> liftAsynchronous(SingleOperator<? super T, ? extends R> operator) {
+    public final <R> Single<R> liftAsync(SingleOperator<? super T, ? extends R> operator) {
         return new LiftAsynchronousSingleOperator<>(this, operator, executor);
     }
 
