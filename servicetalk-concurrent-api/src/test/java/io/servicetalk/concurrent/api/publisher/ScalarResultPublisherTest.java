@@ -46,7 +46,7 @@ public class ScalarResultPublisherTest {
 
     @Test
     public void testError() {
-        toSource(Publisher.<String>error(DELIBERATE_EXCEPTION)).subscribe(subscriber);
+        toSource(Publisher.<String>failed(DELIBERATE_EXCEPTION)).subscribe(subscriber);
         assertThat(subscriber.takeError(), sameInstance(DELIBERATE_EXCEPTION));
     }
 

@@ -26,13 +26,13 @@ import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_
 public class DoBeforeSuccessTest extends AbstractDoSuccessTest {
     @Override
     protected <T> Single<T> doSuccess(Single<T> single, Consumer<T> consumer) {
-        return single.doBeforeSuccess(consumer);
+        return single.doBeforeOnSuccess(consumer);
     }
 
     @Test
     @Override
     public void testCallbackThrowsError() {
-        listener.listen(doSuccess(Single.success("Hello"), t -> {
+        listener.listen(doSuccess(Single.succeeded("Hello"), t -> {
             throw DELIBERATE_EXCEPTION;
         })).verifyFailure(DELIBERATE_EXCEPTION);
     }

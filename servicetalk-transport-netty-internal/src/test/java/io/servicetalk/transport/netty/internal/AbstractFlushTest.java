@@ -38,7 +38,7 @@ abstract class AbstractFlushTest {
         when(eventLoop.inEventLoop()).thenReturn(true);
         when(channel.eventLoop()).thenReturn(eventLoop);
         Publisher<String> flushedStream = composeFlushes(channel, source, strategy)
-                .doBeforeNext(s -> channel.write(s));
+                .doBeforeOnNext(s -> channel.write(s));
         verifier = inOrder(channel);
         return flushedStream;
     }

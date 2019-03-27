@@ -110,12 +110,12 @@ public abstract class BaseRedisClientTest {
             return client.reserveConnection(command).map(rconn -> {
                 ReservedRedisConnection mockConnection = mock(ReservedRedisConnection.class, delegatesTo(rconn));
                 when(mockConnection.releaseAsync()).then(__ -> {
-                    return rconn.releaseAsync().doAfterComplete(() -> {
+                    return rconn.releaseAsync().doAfterOnComplete(() -> {
                         postReleaseLatch.countDown();
                     });
                 });
                 when(mockConnection.closeAsync()).then(__ -> {
-                    return rconn.closeAsync().doAfterComplete(() -> {
+                    return rconn.closeAsync().doAfterOnComplete(() -> {
                         postCloseLatch.countDown();
                     });
                 });

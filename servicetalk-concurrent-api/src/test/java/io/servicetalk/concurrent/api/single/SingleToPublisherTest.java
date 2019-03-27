@@ -52,7 +52,7 @@ public class SingleToPublisherTest {
 
     @Test
     public void testSuccessfulFuture() {
-        toSource(Single.success("Hello").toPublisher()).subscribe(verifier);
+        toSource(Single.succeeded("Hello").toPublisher()).subscribe(verifier);
         verifier.request(1);
         assertThat(verifier.takeItems(), contains("Hello"));
         assertThat(verifier.takeTerminal(), is(complete()));
@@ -60,14 +60,14 @@ public class SingleToPublisherTest {
 
     @Test
     public void testFailedFuture() {
-        toSource(Single.<String>error(DELIBERATE_EXCEPTION).toPublisher()).subscribe(verifier);
+        toSource(Single.<String>failed(DELIBERATE_EXCEPTION).toPublisher()).subscribe(verifier);
         verifier.request(1);
         assertThat(verifier.takeError(), sameInstance(DELIBERATE_EXCEPTION));
     }
 
     @Test
     public void testCancelBeforeRequest() {
-        toSource(Single.success("Hello").toPublisher()).subscribe(verifier);
+        toSource(Single.succeeded("Hello").toPublisher()).subscribe(verifier);
         assertTrue(verifier.subscriptionReceived());
         assertThat(verifier.takeItems(), hasSize(0));
         assertThat(verifier.takeTerminal(), nullValue());
@@ -75,7 +75,7 @@ public class SingleToPublisherTest {
 
     @Test
     public void testCancelAfterRequest() {
-        toSource(Single.success("Hello").toPublisher()).subscribe(verifier);
+        toSource(Single.succeeded("Hello").toPublisher()).subscribe(verifier);
         verifier.request(1);
         assertThat(verifier.takeItems(), contains("Hello"));
         assertThat(verifier.takeTerminal(), is(complete()));
@@ -84,14 +84,14 @@ public class SingleToPublisherTest {
 
     @Test
     public void testInvalidRequestN() {
-        toSource(Single.success("Hello").toPublisher()).subscribe(verifier);
+        toSource(Single.succeeded("Hello").toPublisher()).subscribe(verifier);
         verifier.request(-1);
         assertThat(verifier.takeError(), instanceOf(IllegalArgumentException.class));
     }
 
     @Test
     public void exceptionInTerminalCallsOnError() {
-        toSource(Single.success("Hello").toPublisher().doOnNext(n -> {
+        toSource(Single.succeeded("Hello").toPublisher().doOnNext(n -> {
             throw DELIBERATE_EXCEPTION;
         })).subscribe(verifier);
         // The mock behavior must be applied after subscribe, because a new mock is created as part of this process.
@@ -107,7 +107,7 @@ public class SingleToPublisherTest {
         final CountDownLatch analyzed = new CountDownLatch(1);
         ConcurrentLinkedQueue<AssertionError> errors = new ConcurrentLinkedQueue<>();
         Cancellable c = Single.never()
-                .doAfterSubscribe(__ -> singleSubscribed.countDown())
+                .doAfterOnSubscribe(__ -> singleSubscribed.countDown())
                 .doBeforeCancel(() -> {
                     if (currentThread() == testThread) {
                         errors.add(new AssertionError("Invalid thread invoked cancel. Thread: " +

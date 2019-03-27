@@ -26,7 +26,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static io.servicetalk.concurrent.api.Completable.completed;
-import static io.servicetalk.concurrent.api.Completable.error;
+import static io.servicetalk.concurrent.api.Completable.failed;
 import static io.servicetalk.concurrent.api.Completable.mergeAll;
 import static io.servicetalk.concurrent.api.Completable.mergeAllDelayError;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
@@ -55,8 +55,8 @@ public class CollectTest {
     @Test
     public void collectVarArgFailure() throws Exception {
         AtomicBoolean secondSubscribed = new AtomicBoolean();
-        Future<Void> future = mergeAll(error(DELIBERATE_EXCEPTION),
-                completed().doBeforeSubscribe(__ -> secondSubscribed.set(true))).toFuture();
+        Future<Void> future = mergeAll(failed(DELIBERATE_EXCEPTION),
+                completed().doBeforeOnSubscribe(__ -> secondSubscribed.set(true))).toFuture();
         try {
             future.get();
             fail();
@@ -69,8 +69,8 @@ public class CollectTest {
     @Test
     public void collectVarArgDelayError() throws Exception {
         AtomicBoolean secondSubscribed = new AtomicBoolean();
-        Future<Void> future = mergeAllDelayError(error(DELIBERATE_EXCEPTION),
-                completed().doBeforeSubscribe(__ -> secondSubscribed.set(true))).toFuture();
+        Future<Void> future = mergeAllDelayError(failed(DELIBERATE_EXCEPTION),
+                completed().doBeforeOnSubscribe(__ -> secondSubscribed.set(true))).toFuture();
         try {
             future.get();
             fail();
@@ -84,8 +84,8 @@ public class CollectTest {
     @Test
     public void collectVarArgDelayErrorMaxConcurrency() throws Exception {
         AtomicBoolean secondSubscribed = new AtomicBoolean();
-        Future<Void> future = mergeAllDelayError(1, error(DELIBERATE_EXCEPTION),
-                completed().doBeforeSubscribe(__ -> secondSubscribed.set(true))).toFuture();
+        Future<Void> future = mergeAllDelayError(1, failed(DELIBERATE_EXCEPTION),
+                completed().doBeforeOnSubscribe(__ -> secondSubscribed.set(true))).toFuture();
         try {
             future.get();
             fail();
@@ -110,8 +110,8 @@ public class CollectTest {
     @Test
     public void collectIterableFailure() throws Exception {
         AtomicBoolean secondSubscribed = new AtomicBoolean();
-        Future<Void> future = mergeAll(asList(error(DELIBERATE_EXCEPTION),
-                completed().doBeforeSubscribe(__ -> secondSubscribed.set(true)))).toFuture();
+        Future<Void> future = mergeAll(asList(failed(DELIBERATE_EXCEPTION),
+                completed().doBeforeOnSubscribe(__ -> secondSubscribed.set(true)))).toFuture();
         try {
             future.get();
             fail();
@@ -124,8 +124,8 @@ public class CollectTest {
     @Test
     public void collectIterableDelayError() throws Exception {
         AtomicBoolean secondSubscribed = new AtomicBoolean();
-        Future<Void> future = mergeAllDelayError(asList(error(DELIBERATE_EXCEPTION),
-                completed().doBeforeSubscribe(__ -> secondSubscribed.set(true)))).toFuture();
+        Future<Void> future = mergeAllDelayError(asList(failed(DELIBERATE_EXCEPTION),
+                completed().doBeforeOnSubscribe(__ -> secondSubscribed.set(true)))).toFuture();
         try {
             future.get();
             fail();
@@ -139,8 +139,8 @@ public class CollectTest {
     @Test
     public void collectIterableDelayErrorMaxConcurrency() throws Exception {
         AtomicBoolean secondSubscribed = new AtomicBoolean();
-        Future<Void> future = mergeAllDelayError(asList(error(DELIBERATE_EXCEPTION),
-                completed().doBeforeSubscribe(__ -> secondSubscribed.set(true))), 1).toFuture();
+        Future<Void> future = mergeAllDelayError(asList(failed(DELIBERATE_EXCEPTION),
+                completed().doBeforeOnSubscribe(__ -> secondSubscribed.set(true))), 1).toFuture();
         try {
             future.get();
             fail();

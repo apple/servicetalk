@@ -35,7 +35,7 @@ public abstract class AbstractDoSuccessTest {
     public void testSuccess() {
         @SuppressWarnings("unchecked")
         Consumer<String> onSuccess = Mockito.mock(Consumer.class);
-        listener.listen(doSuccess(Single.success("Hello"), onSuccess));
+        listener.listen(doSuccess(Single.succeeded("Hello"), onSuccess));
         verify(onSuccess).accept("Hello");
         listener.verifySuccess("Hello");
     }

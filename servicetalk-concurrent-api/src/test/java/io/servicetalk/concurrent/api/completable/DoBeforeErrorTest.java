@@ -27,14 +27,14 @@ import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_
 public class DoBeforeErrorTest extends AbstractDoErrorTest {
     @Override
     protected Completable doError(Completable completable, Consumer<Throwable> consumer) {
-        return completable.doBeforeError(consumer);
+        return completable.doBeforeOnError(consumer);
     }
 
     @Test
     @Override
     public void testCallbackThrowsError() {
         DeliberateException srcEx = new DeliberateException();
-        listener.listen(doError(Completable.error(srcEx), t -> {
+        listener.listen(doError(Completable.failed(srcEx), t -> {
             throw DELIBERATE_EXCEPTION;
         }));
         listener.verifyFailure(srcEx).verifySuppressedFailure(DELIBERATE_EXCEPTION);

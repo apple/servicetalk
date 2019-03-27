@@ -126,7 +126,7 @@ public class DefaultNettyConnectionTest {
 
     @Test
     public void testWriteSingle() {
-        writeListener.listen(conn.writeAndFlush(Single.success(newBuffer("Hello"))))
+        writeListener.listen(conn.writeAndFlush(Single.succeeded(newBuffer("Hello"))))
                 .verifyCompletion();
         pollChannelAndVerifyWrites("Hello");
     }
@@ -283,13 +283,13 @@ public class DefaultNettyConnectionTest {
 
     @Test
     public void testPublisherErrorFailsWrite() {
-        writeListener.listen(conn.write(Publisher.error(DELIBERATE_EXCEPTION)))
+        writeListener.listen(conn.write(Publisher.failed(DELIBERATE_EXCEPTION)))
                 .verifyFailure(DELIBERATE_EXCEPTION);
     }
 
     @Test
     public void testSingleErrorFailsWrite() {
-        writeListener.listen(conn.writeAndFlush(Single.error(DELIBERATE_EXCEPTION)))
+        writeListener.listen(conn.writeAndFlush(Single.failed(DELIBERATE_EXCEPTION)))
                 .verifyFailure(DELIBERATE_EXCEPTION);
     }
 

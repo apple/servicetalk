@@ -35,7 +35,7 @@ public class DoBeforeSubscribeTest extends AbstractDoSubscribeTest {
     @Test
     public void testCallbackThrowsError() {
         List<AssertionError> failures = new ArrayList<>();
-        toSource(doSubscribe(Single.success("Hello"), s -> {
+        toSource(doSubscribe(Single.succeeded("Hello"), s -> {
             throw DELIBERATE_EXCEPTION;
         })).subscribe(new Subscriber<String>() {
             @Override
@@ -58,6 +58,6 @@ public class DoBeforeSubscribeTest extends AbstractDoSubscribeTest {
 
     @Override
     protected <T> Single<T> doSubscribe(Single<T> single, Consumer<Cancellable> consumer) {
-        return single.doBeforeSubscribe(consumer);
+        return single.doBeforeOnSubscribe(consumer);
     }
 }

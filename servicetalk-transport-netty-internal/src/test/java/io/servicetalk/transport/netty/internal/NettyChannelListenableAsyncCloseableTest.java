@@ -51,7 +51,7 @@ public class NettyChannelListenableAsyncCloseableTest {
 
     @Test
     public void cancellingOnCloseShouldNotCancelFuture() {
-        fixture.onClose().doAfterSubscribe(Cancellable::cancel).subscribe();
+        fixture.onClose().doAfterOnSubscribe(Cancellable::cancel).subscribe();
         verify(channelCloseFuture, never()).cancel(anyBoolean());
     }
 }

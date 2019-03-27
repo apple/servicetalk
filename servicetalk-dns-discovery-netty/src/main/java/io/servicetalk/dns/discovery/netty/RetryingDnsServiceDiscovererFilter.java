@@ -28,7 +28,7 @@ import org.slf4j.LoggerFactory;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 
-import static io.servicetalk.concurrent.api.Completable.error;
+import static io.servicetalk.concurrent.api.Completable.failed;
 
 /**
  * Applies a retry strategy to a DNS {@link ServiceDiscoverer}.
@@ -63,7 +63,7 @@ public class RetryingDnsServiceDiscovererFilter extends ServiceDiscovererFilter<
                 LOGGER.warn("Unable to resolve host {}", unresolvedAddress, t);
                 return retryStrategy.apply(i, t);
             } else {
-                return error(t);
+                return failed(t);
             }
         });
     }

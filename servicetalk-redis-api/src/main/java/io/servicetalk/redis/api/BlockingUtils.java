@@ -28,7 +28,7 @@ import java.util.concurrent.ExecutionException;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Publisher.defer;
-import static io.servicetalk.concurrent.api.Publisher.error;
+import static io.servicetalk.concurrent.api.Publisher.failed;
 import static io.servicetalk.concurrent.api.Publisher.fromIterable;
 import static io.servicetalk.concurrent.internal.PlatformDependent.throwException;
 import static java.lang.Thread.currentThread;
@@ -132,7 +132,7 @@ final class BlockingUtils {
             try {
                 result = supplier.get();
             } catch (Exception e) {
-                return error(e);
+                return failed(e);
             }
             return fromIterable(result);
         });

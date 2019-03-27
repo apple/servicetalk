@@ -66,8 +66,8 @@ import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Processors.newCompletableProcessor;
 import static io.servicetalk.concurrent.api.Publisher.empty;
 import static io.servicetalk.concurrent.api.Publisher.from;
-import static io.servicetalk.concurrent.api.Single.error;
-import static io.servicetalk.concurrent.api.Single.success;
+import static io.servicetalk.concurrent.api.Single.failed;
+import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.http.api.HttpExecutionStrategies.customStrategyBuilder;
 import static io.servicetalk.http.api.StreamingHttpConnection.SettingKey.MAX_CONCURRENCY;
@@ -121,10 +121,10 @@ public class ConcurrentRequestsHttpConnectionFilterTest {
                                                                     final HttpExecutionStrategy strategy,
                                                                     final StreamingHttpRequest request) {
                         switch (reqCount.incrementAndGet()) {
-                            case 1: return success(reqRespFactory.ok().payloadBody(response1Publisher));
-                            case 2: return success(reqRespFactory.ok().payloadBody(response2Publisher));
-                            case 3: return success(reqRespFactory.ok().payloadBody(response3Publisher));
-                            default: return error(new UnsupportedOperationException());
+                            case 1: return succeeded(reqRespFactory.ok().payloadBody(response1Publisher));
+                            case 2: return succeeded(reqRespFactory.ok().payloadBody(response2Publisher));
+                            case 3: return succeeded(reqRespFactory.ok().payloadBody(response3Publisher));
+                            default: return failed(new UnsupportedOperationException());
                         }
                     }
 
@@ -166,7 +166,7 @@ public class ConcurrentRequestsHttpConnectionFilterTest {
                 .listenStreamingAndAwait((ctx, request, responseFactory) -> {
                     Publisher<Buffer> deferredPayload = fromSource(lastRequestFinished).concat(empty());
                     return request.payloadBody().ignoreElements()
-                            .concat(Single.success(responseFactory.ok().payloadBody(deferredPayload)));
+                            .concat(Single.succeeded(responseFactory.ok().payloadBody(deferredPayload)));
                 });
 
              StreamingHttpConnection connection = new DefaultHttpConnectionBuilder<>()
@@ -198,7 +198,7 @@ public class ConcurrentRequestsHttpConnectionFilterTest {
         try (ServerContext serverContext = HttpServers.forAddress(localAddress(0))
                 .listenStreamingAndAwait((ctx, request, responseFactory) ->
                         request.payloadBody().ignoreElements().concat(
-                        Single.success(responseFactory.ok()
+                        Single.succeeded(responseFactory.ok()
                                 .setHeader(HttpHeaderNames.CONNECTION, "close"))));
 
              HttpConnection connection = new DefaultHttpConnectionBuilder<>()

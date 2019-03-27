@@ -31,7 +31,7 @@ import io.servicetalk.transport.api.ExecutionContext;
 
 import java.util.function.Function;
 
-import static io.servicetalk.concurrent.api.Publisher.error;
+import static io.servicetalk.concurrent.api.Publisher.failed;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.http.api.StreamingHttpResponses.newResponseWithTrailers;
 import static io.servicetalk.http.netty.HeaderUtils.addRequestTransferEncodingIfNecessary;
@@ -53,7 +53,7 @@ abstract class AbstractStreamingHttpConnectionFilter<CC extends ConnectionContex
         // TODO(jayv) we should concat with NettyConnectionContext.onClosing() once it's exposed such that both
         // this class and ConcurrentRequestsHttpConnectionFilter can listen to the same event to reduce ambiguity
         maxConcurrencySetting = from(config.maxPipelinedRequests())
-                .concat(connection.onClose()).concat(Single.success(0));
+                .concat(connection.onClose()).concat(Single.succeeded(0));
     }
 
     @Override
@@ -67,7 +67,7 @@ abstract class AbstractStreamingHttpConnectionFilter<CC extends ConnectionContex
         if (settingKey == SettingKey.MAX_CONCURRENCY) {
             return (Publisher<T>) maxConcurrencySetting;
         }
-        return error(new IllegalArgumentException("Unknown setting: " + settingKey));
+        return failed(new IllegalArgumentException("Unknown setting: " + settingKey));
     }
 
     @Override

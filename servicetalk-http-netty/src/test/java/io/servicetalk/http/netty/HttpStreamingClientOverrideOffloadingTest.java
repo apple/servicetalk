@@ -41,7 +41,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
-import static io.servicetalk.concurrent.api.Single.success;
+import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
@@ -77,7 +77,7 @@ public class HttpStreamingClientOverrideOffloadingTest {
         this.isInvalidThread = isInvalidThread;
         this.overridingStrategy = overridingStrategy == null ? defaultStrategy(executor) : overridingStrategy;
         server = HttpServers.forAddress(localAddress(0))
-                .listenStreamingAndAwait((ctx, request, responseFactory) -> success(responseFactory.ok()));
+                .listenStreamingAndAwait((ctx, request, responseFactory) -> succeeded(responseFactory.ok()));
         client = HttpClients.forSingleAddress(serverHostAndPort(server))
                 .ioExecutor(ioExecutor)
                 .executionStrategy(defaultStrategy == null ? defaultStrategy(executor) : defaultStrategy)
@@ -113,7 +113,7 @@ public class HttpStreamingClientOverrideOffloadingTest {
 
     @Test
     public void reserveRespectsDisable() throws Exception {
-        client.reserveConnection(overridingStrategy, client.get("/")).doBeforeSuccess(__ -> {
+        client.reserveConnection(overridingStrategy, client.get("/")).doBeforeOnSuccess(__ -> {
             if (isInvalidThread()) {
                 throw new AssertionError("Invalid thread found providing the connection. Thread: "
                         + currentThread());
@@ -131,20 +131,20 @@ public class HttpStreamingClientOverrideOffloadingTest {
             }
         }));
         client.request(overridingStrategy, req)
-                .doBeforeSuccess(__ -> {
+                .doBeforeOnSuccess(__ -> {
                     if (isInvalidThread()) {
                         errors.add(new AssertionError("Invalid thread called response metadata. " +
                                 "Thread: " + currentThread()));
                     }
                 })
                 .flatMapPublisher(StreamingHttpResponse::payloadBody)
-                .doBeforeNext(__ -> {
+                .doBeforeOnNext(__ -> {
                     if (isInvalidThread()) {
                         errors.add(new AssertionError("Invalid thread called response payload onNext. " +
                                 "Thread: " + currentThread()));
                     }
                 })
-                .doBeforeComplete(() -> {
+                .doBeforeOnComplete(() -> {
                     if (isInvalidThread()) {
                         errors.add(new AssertionError("Invalid thread called response payload onComplete. " +
                                 "Thread: " + currentThread()));

@@ -137,7 +137,7 @@ final class DefaultContainerResponseWriter implements ContainerResponseWriter {
     public boolean suspend(final long timeOut, final TimeUnit timeUnit, @Nullable final TimeoutHandler timeoutHandler) {
         // This timeoutHandler is not the one provided by users but a Jersey wrapper
         // that catches any throwable and converts them into error responses,
-        // thus it is safe to use this runnable in doAfterComplete (below).
+        // thus it is safe to use this runnable in doAfterOnComplete (below).
         // Also note that Jersey maintains a suspended/resumed state so if this fires after
         // the response has resumed, it will actually be a NOOP.
         // So there's no strong requirement for cancelling timer on commit/failure (below)

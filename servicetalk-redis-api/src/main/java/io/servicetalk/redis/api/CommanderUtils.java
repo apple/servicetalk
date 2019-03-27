@@ -70,7 +70,7 @@ final class CommanderUtils {
             if (QUEUED_RESP.equals(status)) {
                 return fromSource(single);
             }
-            return Single.error(new RedisClientException("Read '" + status + "' but expected 'QUEUED'"));
+            return Single.failed(new RedisClientException("Read '" + status + "' but expected 'QUEUED'"));
         }).<T>liftSync(sub -> new Subscriber<T>() {
             @Override
             public void onSubscribe(final Cancellable cancellable) {
@@ -93,12 +93,12 @@ final class CommanderUtils {
     }
 
     static Single<String> abortSingles(final Single<String> result, final List<Processor<?, ?>> singles) {
-        return result.doBeforeSuccess(__ -> completeSinglesWithException(new TransactionAbortedException(), singles));
+        return result.doBeforeOnSuccess(__ -> completeSinglesWithException(new TransactionAbortedException(), singles));
     }
 
     static Completable completeSingles(final Single<List<Object>> results,
                                        final List<Processor<?, ?>> singles) {
-        return results.doBeforeSuccess(resultList -> {
+        return results.doBeforeOnSuccess(resultList -> {
             if (singles.size() != resultList.size()) {
                 throw new IllegalStateException("Result resultList size (" + resultList.size()
                         + ") and SingleProcessor resultList size (" + singles.size() + ") did not match");
@@ -187,10 +187,10 @@ final class CommanderUtils {
                         // If releaseAsync() fails then add as a suppressed exception.
                         .onErrorResume(releaseThrowable -> {
                             discardThrowable.addSuppressed(releaseThrowable);
-                            return Completable.error(discardThrowable);
+                            return Completable.failed(discardThrowable);
                         })
                         // If releaseAsync() completes successfully, emit the original error.
-                        .concat(error(discardThrowable))
+                        .concat(failed(discardThrowable))
                 ).concat(reservedCnx.releaseAsync()); // If discard succeeds, release the connection.
             }
             toSource(discardSingle.doAfterCancel(() -> handleCancel(reservedCnx, singles,
@@ -235,10 +235,10 @@ final class CommanderUtils {
                         // If releaseAsync() fails then add as a suppressed exception.
                         .onErrorResume(releaseThrowable -> {
                             discardThrowable.addSuppressed(releaseThrowable);
-                            return error(discardThrowable);
+                            return failed(discardThrowable);
                         })
                         // If releaseAsync() completes successfully, emit the original error.
-                        .concat(error(discardThrowable))
+                        .concat(failed(discardThrowable))
                 ).concat(reservedCnx.releaseAsync()); // If exec succeeds, release the connection.
             }
             toSource(execCompletable.doAfterCancel(() -> handleCancel(reservedCnx, singles,

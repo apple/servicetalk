@@ -27,7 +27,7 @@ import java.util.function.BiPredicate;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Completable.completed;
-import static io.servicetalk.concurrent.api.Completable.error;
+import static io.servicetalk.concurrent.api.Completable.failed;
 import static io.servicetalk.concurrent.api.RetryStrategies.retryWithConstantBackoff;
 import static io.servicetalk.concurrent.api.RetryStrategies.retryWithConstantBackoffAndJitter;
 import static io.servicetalk.concurrent.api.RetryStrategies.retryWithExponentialBackoff;
@@ -280,7 +280,7 @@ public abstract class AbstractRetryingFilterBuilder<Builder
          */
         public BiIntFunction<Throwable, Completable> newStrategy(final Executor alternativeTimerExecutor) {
             if (initialDelay == null) {
-                return (count, throwable) -> count <= maxRetries ? completed() : error(throwable);
+                return (count, throwable) -> count <= maxRetries ? completed() : failed(throwable);
             } else {
                 final Executor effectiveExecutor = timerExecutor == null ?
                         requireNonNull(alternativeTimerExecutor) : timerExecutor;

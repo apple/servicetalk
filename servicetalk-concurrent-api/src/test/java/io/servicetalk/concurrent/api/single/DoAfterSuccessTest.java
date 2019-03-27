@@ -31,13 +31,13 @@ public class DoAfterSuccessTest extends AbstractDoSuccessTest {
 
     @Override
     protected <T> Single<T> doSuccess(Single<T> single, Consumer<T> consumer) {
-        return single.doAfterSuccess(consumer);
+        return single.doAfterOnSuccess(consumer);
     }
 
     @Test
     @Override
     public void testCallbackThrowsError() {
-        listener.listen(doSuccess(Single.success("Hello"), t -> {
+        listener.listen(doSuccess(Single.succeeded("Hello"), t -> {
             throw DELIBERATE_EXCEPTION;
         })).verifySuccess("Hello");
     }

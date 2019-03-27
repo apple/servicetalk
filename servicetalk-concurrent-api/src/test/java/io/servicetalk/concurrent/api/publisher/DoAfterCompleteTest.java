@@ -21,6 +21,6 @@ public class DoAfterCompleteTest extends AbstractDoCompleteTest {
 
     @Override
     protected <T> Publisher<T> doComplete(Publisher<T> publisher, Runnable runnable) {
-        return publisher.doAfterComplete(runnable);
+        return publisher.doAfterOnComplete(runnable);
     }
 }

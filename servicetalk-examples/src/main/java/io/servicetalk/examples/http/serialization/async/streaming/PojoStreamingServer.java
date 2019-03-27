@@ -24,7 +24,7 @@ import io.servicetalk.http.netty.HttpServers;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static io.servicetalk.concurrent.api.Single.success;
+import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.HttpHeaderNames.ALLOW;
 import static io.servicetalk.http.api.HttpRequestMethod.POST;
 import static io.servicetalk.http.api.HttpSerializationProviders.jsonSerializer;
@@ -36,13 +36,13 @@ public final class PojoStreamingServer {
         HttpServers.forPort(8080)
                 .listenStreamingAndAwait((ctx, request, responseFactory) -> {
                     if (!"/pojos".equals(request.requestTarget())) {
-                        return success(responseFactory.notFound());
+                        return succeeded(responseFactory.notFound());
                     }
                     if (!POST.equals(request.method())) {
-                        return success(responseFactory.methodNotAllowed().addHeader(ALLOW, POST.name()));
+                        return succeeded(responseFactory.methodNotAllowed().addHeader(ALLOW, POST.name()));
                     }
                     AtomicInteger newId = new AtomicInteger(ThreadLocalRandom.current().nextInt(100));
-                    return success(responseFactory.created()
+                    return succeeded(responseFactory.created()
                             .payloadBody(request.payloadBody(serializer.deserializerFor(CreatePojoRequest.class))
                                     .map(req -> new PojoResponse(newId.getAndIncrement(), req.getValue())),
                                     serializer.serializerFor(PojoResponse.class)));

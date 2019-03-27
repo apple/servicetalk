@@ -61,7 +61,7 @@ public abstract class AbstractDoFinallyTest {
 
     @Test
     public void testForCancelPostError() {
-        listener.listen(doFinally(Completable.<String>error(DELIBERATE_EXCEPTION), doFinally));
+        listener.listen(doFinally(Completable.<String>failed(DELIBERATE_EXCEPTION), doFinally));
         listener.cancel();
         verify(doFinally).run();
     }
@@ -75,7 +75,7 @@ public abstract class AbstractDoFinallyTest {
 
     @Test
     public void testForError() {
-        listener.listen(doFinally(Completable.<String>error(DELIBERATE_EXCEPTION), doFinally));
+        listener.listen(doFinally(Completable.<String>failed(DELIBERATE_EXCEPTION), doFinally));
         listener.verifyFailure(DELIBERATE_EXCEPTION);
         verify(doFinally).run();
     }

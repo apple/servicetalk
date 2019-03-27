@@ -27,7 +27,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiFunction;
 
 import static io.servicetalk.concurrent.api.Processors.newCompletableProcessor;
-import static io.servicetalk.concurrent.api.Single.error;
+import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.RequestResponseFactories.toStreaming;
@@ -56,7 +56,7 @@ public class BlockingStreamingHttpClientTest extends AbstractBlockingStreamingHt
                             final StreamingHttpClientFilter delegate,
                             final HttpExecutionStrategy strategy,
                             final HttpRequestMetaData metaData) {
-                        return error(new UnsupportedOperationException());
+                        return failed(new UnsupportedOperationException());
                     }
                 });
     }

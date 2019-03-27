@@ -33,7 +33,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 import static io.servicetalk.concurrent.api.Processors.newCompletableProcessor;
 import static io.servicetalk.concurrent.api.Single.never;
-import static io.servicetalk.concurrent.api.Single.success;
+import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
@@ -63,7 +63,7 @@ public class LimitingConnectionFactoryFilterTest {
             Processor onClose = newCompletableProcessor();
             connectionOnClose.add(onClose);
             when(conn.onClose()).thenReturn(fromSource(onClose));
-            return success(conn);
+            return succeeded(conn);
         });
     }
 
@@ -105,7 +105,7 @@ public class LimitingConnectionFactoryFilterTest {
 
         ListenableAsyncCloseable c = mock(ListenableAsyncCloseable.class);
         when(c.onClose()).thenReturn(Completable.never());
-        when(o.newConnection(any())).thenReturn(success(c));
+        when(o.newConnection(any())).thenReturn(succeeded(c));
         cf.newConnection("c2").toFuture().get();
     }
 

@@ -61,8 +61,8 @@ import java.util.function.Function;
 
 import static io.servicetalk.concurrent.api.BlockingTestUtils.awaitIndefinitely;
 import static io.servicetalk.concurrent.api.Processors.newCompletableProcessor;
-import static io.servicetalk.concurrent.api.Single.error;
-import static io.servicetalk.concurrent.api.Single.success;
+import static io.servicetalk.concurrent.api.Single.failed;
+import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
@@ -134,7 +134,7 @@ public class RoundRobinLoadBalancerTest {
     public void streamEventJustClose() throws InterruptedException {
         CountDownLatch readyLatch = new CountDownLatch(1);
         CountDownLatch completeLatch = new CountDownLatch(1);
-        lb.eventStream().doAfterComplete(completeLatch::countDown).firstOrElse(() -> {
+        lb.eventStream().doAfterOnComplete(completeLatch::countDown).firstOrElse(() -> {
             throw new NoSuchElementException();
         }).subscribe(next -> readyLatch.countDown());
         lb.closeAsync().subscribe();
@@ -355,7 +355,7 @@ public class RoundRobinLoadBalancerTest {
 
         thrown.expect(instanceOf(ExecutionException.class));
         thrown.expectCause(instanceOf(DeliberateException.class));
-        connectionFactory = new DelegatingConnectionFactory(__ -> error(DELIBERATE_EXCEPTION));
+        connectionFactory = new DelegatingConnectionFactory(__ -> failed(DELIBERATE_EXCEPTION));
         lb = newTestLoadBalancer(connectionFactory);
         sendServiceDiscoveryEvents(upEvent("address-1"));
         awaitIndefinitely(lb.selectConnection(identity()));
@@ -407,7 +407,7 @@ public class RoundRobinLoadBalancerTest {
     }
 
     private Single<TestLoadBalancedConnection> newRealizedConnectionSingle(final String address) {
-        return success(newConnection(address));
+        return succeeded(newConnection(address));
     }
 
     @SuppressWarnings("unchecked")
@@ -465,7 +465,7 @@ public class RoundRobinLoadBalancerTest {
 
         @Override
         public Completable closeAsync() {
-            return Completable.completed().doBeforeSubscribe(cancellable -> closed.set(true));
+            return Completable.completed().doBeforeOnSubscribe(cancellable -> closed.set(true));
         }
 
         boolean isClosed() {

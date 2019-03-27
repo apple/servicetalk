@@ -64,6 +64,6 @@ public class DoBeforeSubscribeTest extends AbstractDoSubscribeTest {
 
     @Override
     protected <T> Publisher<T> doSubscribe(Publisher<T> publisher, Consumer<Subscription> consumer) {
-        return publisher.doBeforeSubscribe(consumer);
+        return publisher.doBeforeOnSubscribe(consumer);
     }
 }

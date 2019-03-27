@@ -39,7 +39,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
-import static io.servicetalk.concurrent.api.Single.success;
+import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
@@ -74,7 +74,7 @@ public class HttpClientOverrideOffloadingTest {
         this.isInvalidThread = isInvalidThread;
         this.overridingStrategy = overridingStrategy == null ? defaultStrategy(executor) : overridingStrategy;
         server = HttpServers.forAddress(localAddress(0))
-                .listenStreamingAndAwait((ctx, request, responseFactory) -> success(responseFactory.ok()));
+                .listenStreamingAndAwait((ctx, request, responseFactory) -> succeeded(responseFactory.ok()));
         client = HttpClients.forSingleAddress(serverHostAndPort(server))
                 .ioExecutor(ioExecutor)
                 .executionStrategy(defaultStrategy == null ? defaultStrategy(executor) : defaultStrategy)
@@ -105,7 +105,7 @@ public class HttpClientOverrideOffloadingTest {
     @Test
     public void reserveRespectsDisable() throws Exception {
         ConcurrentLinkedQueue<AssertionError> errors = new ConcurrentLinkedQueue<>();
-        client.reserveConnection(overridingStrategy, client.get("/")).doBeforeSuccess(__ -> {
+        client.reserveConnection(overridingStrategy, client.get("/")).doBeforeOnSuccess(__ -> {
             if (isInvalidThread()) {
                 errors.add(new AssertionError("Invalid thread found providing the connection. Thread: "
                         + currentThread()));
@@ -118,7 +118,7 @@ public class HttpClientOverrideOffloadingTest {
     public void requestRespectsDisable() throws Exception {
         ConcurrentLinkedQueue<AssertionError> errors = new ConcurrentLinkedQueue<>();
         client.request(overridingStrategy, client.get("/"))
-                .doBeforeSuccess(__ -> {
+                .doBeforeOnSuccess(__ -> {
                     if (isInvalidThread()) {
                         errors.add(new AssertionError("Invalid thread called response. " +
                                 "Thread: " + currentThread()));

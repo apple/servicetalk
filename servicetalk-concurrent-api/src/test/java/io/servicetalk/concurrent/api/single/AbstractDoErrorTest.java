@@ -41,7 +41,7 @@ public abstract class AbstractDoErrorTest {
     public void testError() {
         @SuppressWarnings("unchecked")
         Consumer<Throwable> onError = Mockito.mock(Consumer.class);
-        listener.listen(doError(Single.error(DELIBERATE_EXCEPTION), onError));
+        listener.listen(doError(Single.failed(DELIBERATE_EXCEPTION), onError));
         verify(onError).accept(DELIBERATE_EXCEPTION);
         listener.verifyFailure(DELIBERATE_EXCEPTION);
     }
@@ -49,7 +49,7 @@ public abstract class AbstractDoErrorTest {
     @Test
     public void testCallbackThrowsError() {
         DeliberateException srcEx = new DeliberateException();
-        listener.listen(doError(Single.error(srcEx), t -> {
+        listener.listen(doError(Single.failed(srcEx), t -> {
             throw DELIBERATE_EXCEPTION;
         })).verifyFailure(srcEx);
     }

@@ -59,12 +59,12 @@ public abstract class AbstractPublishAndSubscribeOnTest {
 
         Publisher<String> original = new PublisherWithExecutor<>(originalSourceExecutorRule.executor(),
                 from("Hello"))
-                .doBeforeNext(__ -> capturedThreads.set(ORIGINAL_SUBSCRIBER_THREAD, currentThread()))
+                .doBeforeOnNext(__ -> capturedThreads.set(ORIGINAL_SUBSCRIBER_THREAD, currentThread()))
                 .doBeforeRequest(__ -> capturedThreads.set(ORIGINAL_SUBSCRIPTION_THREAD, currentThread()));
 
         Publisher<String> offloaded = offloadingFunction.apply(original, executor);
 
-        toSource(offloaded.doBeforeNext(__ -> capturedThreads.set(OFFLOADED_SUBSCRIBER_THREAD, currentThread()))
+        toSource(offloaded.doBeforeOnNext(__ -> capturedThreads.set(OFFLOADED_SUBSCRIBER_THREAD, currentThread()))
                 .doBeforeRequest(__ -> capturedThreads.set(OFFLOADED_SUBSCRIPTION_THREAD, currentThread()))
                 .doAfterFinally(allDone::countDown))
                 .subscribe(new Subscriber<String>() {

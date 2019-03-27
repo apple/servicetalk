@@ -40,7 +40,7 @@ import javax.ws.rs.ext.ExceptionMapper;
 
 import static io.servicetalk.buffer.api.EmptyBuffer.EMPTY_BUFFER;
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
-import static io.servicetalk.concurrent.api.Single.success;
+import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.router.jersey.ExceptionMapperTest.ExceptionResponseType.BUF;
 import static io.servicetalk.http.router.jersey.ExceptionMapperTest.ExceptionResponseType.MAP;
 import static io.servicetalk.http.router.jersey.ExceptionMapperTest.ExceptionResponseType.SBUF;
@@ -89,7 +89,7 @@ public class ExceptionMapperTest extends AbstractJerseyStreamingHttpServiceTest 
                 return status(555)
                         .header(CONTENT_TYPE, TEXT_PLAIN)
                         .header(CONTENT_LENGTH, buf.readableBytes())
-                        .entity(new GenericEntity<Single<Buffer>>(success(buf)) { })
+                        .entity(new GenericEntity<Single<Buffer>>(succeeded(buf)) { })
                         .build();
             }
         },
@@ -108,7 +108,7 @@ public class ExceptionMapperTest extends AbstractJerseyStreamingHttpServiceTest 
                 final Map<String, String> map = singletonMap("exceptionClassName", exception.getClass().getName());
                 return status(555)
                         .header(CONTENT_TYPE, APPLICATION_JSON)
-                        .entity(new GenericEntity<Single<Map<String, String>>>(success(map)) { })
+                        .entity(new GenericEntity<Single<Map<String, String>>>(succeeded(map)) { })
                         .build();
             }
         };

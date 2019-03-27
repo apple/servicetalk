@@ -33,7 +33,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 
-import static io.servicetalk.concurrent.api.Publisher.error;
+import static io.servicetalk.concurrent.api.Publisher.failed;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.concurrent.internal.EmptySubscription.EMPTY_SUBSCRIPTION;
@@ -108,7 +108,7 @@ public class ReactiveStreamsAdaptersTest {
 
     @Test
     public void toRSError() {
-        verifyRSError(toRSPublisherAndSubscribe(error(DELIBERATE_EXCEPTION)));
+        verifyRSError(toRSPublisherAndSubscribe(failed(DELIBERATE_EXCEPTION)));
     }
 
     @Test

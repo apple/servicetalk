@@ -24,7 +24,7 @@ import java.util.function.Predicate;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.AsyncCloseables.toListenableAsyncCloseable;
-import static io.servicetalk.concurrent.api.Single.error;
+import static io.servicetalk.concurrent.api.Single.failed;
 
 final class ConditionalHttpConnectionFilter extends StreamingHttpConnectionFilter {
     private final Predicate<StreamingHttpRequest> predicate;
@@ -51,7 +51,7 @@ final class ConditionalHttpConnectionFilter extends StreamingHttpConnectionFilte
         try {
             b = predicate.test(request);
         } catch (Throwable t) {
-            return error(t);
+            return failed(t);
         }
 
         if (b) {

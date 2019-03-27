@@ -29,7 +29,7 @@ import static org.junit.Assert.assertThat;
 public class DoBeforeNextTest extends AbstractDoNextTest {
     @Override
     protected <T> Publisher<T> doNext(Publisher<T> publisher, Consumer<T> consumer) {
-        return publisher.doBeforeNext(consumer);
+        return publisher.doBeforeOnNext(consumer);
     }
 
     @Override

@@ -49,7 +49,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.Completable.completed;
-import static io.servicetalk.concurrent.api.Single.success;
+import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.http.api.HttpRequestMethod.GET;
@@ -118,9 +118,9 @@ public class NettyHttpServerConnectionTest {
                                                                 final StreamingHttpResponseFactory responseFactory) {
                         if (handledFirstRequest.compareAndSet(false, true)) {
                             customStrategy.doAfterFirstWrite(FlushStrategy.FlushSender::flush);
-                            return success(responseFactory.ok().payloadBody(responsePublisher));
+                            return succeeded(responseFactory.ok().payloadBody(responsePublisher));
                         }
-                        return success(responseFactory.ok().payloadBody(responsePublisher2));
+                        return succeeded(responseFactory.ok().payloadBody(responsePublisher2));
                     }
 
                     @Override

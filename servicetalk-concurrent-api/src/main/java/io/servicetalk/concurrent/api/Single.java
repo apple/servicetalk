@@ -208,8 +208,8 @@ public abstract class Single<T> {
      * {@link Subscriber}s of the returned {@link Single}.
      * <p>
      * The order in which {@code onSuccess} will be invoked relative to {@link Subscriber#onSuccess(Object)} is
-     * undefined. If you need strict ordering see {@link #doBeforeSuccess(Consumer)} and
-     * {@link #doAfterSuccess(Consumer)}.
+     * undefined. If you need strict ordering see {@link #doBeforeOnSuccess(Consumer)} and
+     * {@link #doAfterOnSuccess(Consumer)}.
      * <p>
      * From a sequential programming point of view this method is roughly equivalent to the following:
      * <pre>{@code
@@ -221,11 +221,11 @@ public abstract class Single<T> {
      * @param onSuccess Invoked when {@link Subscriber#onSuccess(Object)} is called for
      * {@link Subscriber}s of the returned {@link Single}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Single}.
-     * @see #doBeforeSuccess(Consumer)
-     * @see #doAfterSuccess(Consumer)
+     * @see #doBeforeOnSuccess(Consumer)
+     * @see #doAfterOnSuccess(Consumer)
      */
     public final Single<T> doOnSuccess(Consumer<? super T> onSuccess) {
-        return doAfterSuccess(onSuccess);
+        return doAfterOnSuccess(onSuccess);
     }
 
     /**
@@ -233,8 +233,8 @@ public abstract class Single<T> {
      * {@link Subscriber}s of the returned {@link Single}.
      * <p>
      * The order in which {@code onError} will be invoked relative to {@link Subscriber#onError(Throwable)} is
-     * undefined. If you need strict ordering see {@link #doBeforeError(Consumer)} and
-     * {@link #doAfterError(Consumer)}.
+     * undefined. If you need strict ordering see {@link #doBeforeOnError(Consumer)} and
+     * {@link #doAfterOnError(Consumer)}.
      * <p>
      * From a sequential programming point of view this method is roughly equivalent to the following:
      * <pre>{@code
@@ -249,11 +249,11 @@ public abstract class Single<T> {
      * @param onError Invoked when {@link Subscriber#onError(Throwable)} is called for {@link Subscriber}s of the
      * returned {@link Single}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Single}.
-     * @see #doBeforeError(Consumer)
-     * @see #doAfterError(Consumer)
+     * @see #doBeforeOnError(Consumer)
+     * @see #doAfterOnError(Consumer)
      */
     public final Single<T> doOnError(Consumer<Throwable> onError) {
-        return doAfterError(onError);
+        return doAfterOnError(onError);
     }
 
     /**
@@ -586,7 +586,7 @@ public abstract class Single<T> {
      * {@link Subscriber}s of the returned {@link Single}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Single}.
      */
-    public final Single<T> doBeforeSubscribe(Consumer<Cancellable> onSubscribe) {
+    public final Single<T> doBeforeOnSubscribe(Consumer<Cancellable> onSubscribe) {
         return doBeforeSubscriber(doOnSubscribeSupplier(onSubscribe));
     }
 
@@ -604,7 +604,7 @@ public abstract class Single<T> {
      * {@link Subscriber}s of the returned {@link Single}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Single}.
      */
-    public final Single<T> doBeforeSuccess(Consumer<? super T> onSuccess) {
+    public final Single<T> doBeforeOnSuccess(Consumer<? super T> onSuccess) {
         return doBeforeSubscriber(doOnSuccessSupplier(onSuccess));
     }
 
@@ -625,7 +625,7 @@ public abstract class Single<T> {
      * {@link Subscriber}s of the returned {@link Single}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Single}.
      */
-    public final Single<T> doBeforeError(Consumer<Throwable> onError) {
+    public final Single<T> doBeforeOnError(Consumer<Throwable> onError) {
         return doBeforeSubscriber(doOnErrorSupplier(onError));
     }
 
@@ -695,7 +695,7 @@ public abstract class Single<T> {
      * {@link Subscriber}s of the returned {@link Single}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Single}.
      */
-    public final Single<T> doAfterSubscribe(Consumer<Cancellable> onSubscribe) {
+    public final Single<T> doAfterOnSubscribe(Consumer<Cancellable> onSubscribe) {
         return doAfterSubscriber(doOnSubscribeSupplier(onSubscribe));
     }
 
@@ -713,7 +713,7 @@ public abstract class Single<T> {
      * {@link Subscriber}s of the returned {@link Single}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Single}.
      */
-    public final Single<T> doAfterSuccess(Consumer<? super T> onSuccess) {
+    public final Single<T> doAfterOnSuccess(Consumer<? super T> onSuccess) {
         return doAfterSubscriber(doOnSuccessSupplier(onSuccess));
     }
 
@@ -734,7 +734,7 @@ public abstract class Single<T> {
      * {@link Subscriber}s of the returned {@link Single}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Single}.
      */
-    public final Single<T> doAfterError(Consumer<Throwable> onError) {
+    public final Single<T> doAfterOnError(Consumer<Throwable> onError) {
         return doAfterSubscriber(doOnErrorSupplier(onError));
     }
 
@@ -1084,7 +1084,7 @@ public abstract class Single<T> {
      *
      * @return A new {@link Single}.
      */
-    public static <T> Single<T> success(@Nullable T value) {
+    public static <T> Single<T> succeeded(@Nullable T value) {
         return new SucceededSingle<>(value);
     }
 
@@ -1096,7 +1096,7 @@ public abstract class Single<T> {
      *
      * @return A new {@link Single}.
      */
-    public static <T> Single<T> error(Throwable cause) {
+    public static <T> Single<T> failed(Throwable cause) {
         return new FailedSingle<>(cause);
     }
 

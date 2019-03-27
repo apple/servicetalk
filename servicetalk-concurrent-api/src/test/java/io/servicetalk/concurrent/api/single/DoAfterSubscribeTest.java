@@ -28,13 +28,13 @@ public class DoAfterSubscribeTest extends AbstractDoSubscribeTest {
 
     @Test
     public void testCallbackThrowsError() {
-        listener.listen(doSubscribe(Single.success("Hello"), __ -> {
+        listener.listen(doSubscribe(Single.succeeded("Hello"), __ -> {
             throw DELIBERATE_EXCEPTION;
         })).verifyNoEmissions();
     }
 
     @Override
     protected <T> Single<T> doSubscribe(Single<T> single, Consumer<Cancellable> consumer) {
-        return single.doAfterSubscribe(consumer);
+        return single.doAfterOnSubscribe(consumer);
     }
 }

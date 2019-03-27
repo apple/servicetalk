@@ -21,7 +21,7 @@ import org.mockito.Mockito;
 import java.util.concurrent.CountDownLatch;
 
 import static io.servicetalk.concurrent.api.Completable.completed;
-import static io.servicetalk.concurrent.api.Completable.error;
+import static io.servicetalk.concurrent.api.Completable.failed;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
@@ -59,7 +59,7 @@ public class SimpleSubscribeTest {
     public void runnableIsNotInvokedOnError() throws Exception {
         Runnable onComplete = Mockito.mock(Runnable.class);
         CountDownLatch latch = new CountDownLatch(1);
-        error(DELIBERATE_EXCEPTION).doAfterFinally(latch::countDown).subscribe(onComplete);
+        failed(DELIBERATE_EXCEPTION).doAfterFinally(latch::countDown).subscribe(onComplete);
         latch.await();
         verifyZeroInteractions(onComplete);
     }
@@ -68,7 +68,7 @@ public class SimpleSubscribeTest {
     public void runnableIsNotInvokedWhenCancelled() throws Exception {
         Runnable onComplete = Mockito.mock(Runnable.class);
         CountDownLatch latch = new CountDownLatch(1);
-        error(DELIBERATE_EXCEPTION).doAfterFinally(latch::countDown).subscribe(onComplete).cancel();
+        failed(DELIBERATE_EXCEPTION).doAfterFinally(latch::countDown).subscribe(onComplete).cancel();
         latch.await();
         verifyZeroInteractions(onComplete);
     }

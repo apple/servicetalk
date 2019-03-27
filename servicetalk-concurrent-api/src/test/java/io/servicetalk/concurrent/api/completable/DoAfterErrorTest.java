@@ -33,14 +33,14 @@ public class DoAfterErrorTest extends AbstractDoErrorTest {
 
     @Override
     protected Completable doError(Completable completable, Consumer<Throwable> consumer) {
-        return completable.doAfterError(consumer);
+        return completable.doAfterOnError(consumer);
     }
 
     @Test
     @Override
     public void testCallbackThrowsError() {
         DeliberateException srcEx = new DeliberateException();
-        listener.listen(doError(Completable.error(srcEx), __ -> {
+        listener.listen(doError(Completable.failed(srcEx), __ -> {
             throw DELIBERATE_EXCEPTION;
         })).verifyFailure(srcEx);
     }

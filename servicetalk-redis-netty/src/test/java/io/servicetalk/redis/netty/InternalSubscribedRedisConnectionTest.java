@@ -133,7 +133,7 @@ public class InternalSubscribedRedisConnectionTest {
                         .fromUtf8(channelToSubscribe)));
 
         Publisher<RedisData> subscriptionRequest = connection.request(subReq)
-                .doAfterSubscribe(__ -> latch.countDown());
+                .doAfterOnSubscribe(__ -> latch.countDown());
 
         LinkedBlockingQueue<Object> notifications = new LinkedBlockingQueue<>();
         Subscription subscription = subscribeToResponse(subscriptionRequest, notifications);

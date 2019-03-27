@@ -37,14 +37,14 @@ public class DoAfterErrorTest extends AbstractDoErrorTest {
 
     @Override
     protected <T> PublisherSource<T> doError(Publisher<T> publisher, Consumer<Throwable> consumer) {
-        return toSource(publisher.doAfterError(consumer));
+        return toSource(publisher.doAfterOnError(consumer));
     }
 
     @Override
     @Test
     public void testCallbackThrowsError() {
         DeliberateException srcEx = new DeliberateException();
-        doError(Publisher.<String>error(srcEx), t -> {
+        doError(Publisher.<String>failed(srcEx), t -> {
             throw DELIBERATE_EXCEPTION;
         }).subscribe(subscriber);
         assertThat(subscriber.takeError(), sameInstance(srcEx));

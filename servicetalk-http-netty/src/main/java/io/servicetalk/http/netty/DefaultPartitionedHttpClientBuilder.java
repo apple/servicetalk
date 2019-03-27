@@ -61,7 +61,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Single.defer;
-import static io.servicetalk.concurrent.api.Single.error;
+import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static java.util.Objects.requireNonNull;
 
@@ -191,14 +191,14 @@ class DefaultPartitionedHttpClientBuilder<U, R> extends PartitionedHttpClientBui
                 final StreamingHttpClientFilter delegate,
                 final HttpExecutionStrategy strategy,
                 final HttpRequestMetaData metaData) {
-            return error(ex);
+            return failed(ex);
         }
 
         @Override
         protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                         final HttpExecutionStrategy strategy,
                                                         final StreamingHttpRequest request) {
-            return error(ex);
+            return failed(ex);
         }
 
         @Override

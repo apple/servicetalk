@@ -36,7 +36,7 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Completable.completed;
-import static io.servicetalk.concurrent.api.Completable.error;
+import static io.servicetalk.concurrent.api.Completable.failed;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.EmptySubscription.EMPTY_SUBSCRIPTION;
 import static io.servicetalk.concurrent.internal.ThrowableUtil.matches;
@@ -93,7 +93,7 @@ final class PipelinedRedisConnection extends AbstractRedisConnection {
         return request0(newRequest(QUIT), true, false)
                 .ignoreElements()
                 .onErrorResume(th -> matches(th, ClosedChannelException.class) ? completed() :
-                        connection.closeAsync().concat(error(th)))
+                        connection.closeAsync().concat(failed(th)))
                 .concat(connection.closeAsync());
     }
 
@@ -158,12 +158,12 @@ final class PipelinedRedisConnection extends AbstractRedisConnection {
                         potentiallyConflictingCommand = null;
                     }
                     if (internalPing && potentiallyConflictingCommand != null) {
-                        return Completable.error(new PingRejectedException(potentiallyConflictingCommand));
+                        return Completable.failed(new PingRejectedException(potentiallyConflictingCommand));
                     }
                     return rawConnection.write(encodeRequestContent(request,
                             connection.executionContext().bufferAllocator()));
                 }, () -> predicate)
-                        .doBeforeNext(predicate::trackMessage)
+                        .doBeforeOnNext(predicate::trackMessage)
                         .doBeforeFinally(() -> {
                             if (flaggedSkipQuit) {
                                 skipQuitWhenClosedUpdater.decrementAndGet(PipelinedRedisConnection.this);

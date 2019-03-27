@@ -42,7 +42,7 @@ import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseabl
 import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
 import static io.servicetalk.concurrent.api.Processors.newCompletableProcessor;
 import static io.servicetalk.concurrent.api.Publisher.from;
-import static io.servicetalk.concurrent.api.Single.success;
+import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
@@ -123,18 +123,18 @@ public class HttpServerOverrideOffloadingTest {
                 errors.add(new AssertionError("Invalid thread called the service. Thread: " +
                         currentThread()));
             }
-            toSource(request.payloadBody().doBeforeNext(__ -> {
+            toSource(request.payloadBody().doBeforeOnNext(__ -> {
                 if (isInvalidThread.test(currentThread())) {
                     errors.add(new AssertionError("Invalid thread calling response payload onNext." +
                             "Thread: " + currentThread()));
                 }
-            }).doBeforeComplete(() -> {
+            }).doBeforeOnComplete(() -> {
                 if (isInvalidThread.test(currentThread())) {
                     errors.add(new AssertionError("Invalid thread calling response payload onComplete." +
                             "Thread: " + currentThread()));
                 }
             }).ignoreElements()).subscribe(cp);
-            return success(responseFactory.ok().payloadBody(from("Hello"), textSerializer())
+            return succeeded(responseFactory.ok().payloadBody(from("Hello"), textSerializer())
                     .transformPayloadBody(p -> p.doBeforeRequest(__ -> {
                         if (isInvalidThread.test(currentThread())) {
                             errors.add(new AssertionError("Invalid thread calling response payload " +

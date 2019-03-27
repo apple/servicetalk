@@ -90,7 +90,7 @@ public abstract class AbstractEchoServerBasedHttpRequesterTest {
 
             HttpHeaders headers = resp.headers();
             request.headers().forEach(entry -> headers.set("test-req-header-" + entry.getKey(), entry.getValue()));
-            return Single.success(resp);
+            return Single.succeeded(resp);
         }
 
         @Override

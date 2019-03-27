@@ -22,6 +22,6 @@ import java.util.function.Consumer;
 public class DoBeforeErrorTest extends AbstractDoErrorTest {
     @Override
     protected <T> Single<T> doError(Single<T> single, Consumer<Throwable> consumer) {
-        return single.doBeforeError(consumer);
+        return single.doBeforeOnError(consumer);
     }
 }

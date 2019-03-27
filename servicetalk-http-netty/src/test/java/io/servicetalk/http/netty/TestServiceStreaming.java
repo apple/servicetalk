@@ -97,7 +97,7 @@ final class TestServiceStreaming implements StreamingHttpService {
                 response = throwErrorSynchronously();
                 break;
             case SVC_SINGLE_ERROR:
-                return Single.error(DELIBERATE_EXCEPTION);
+                return Single.failed(DELIBERATE_EXCEPTION);
             case SVC_ERROR_BEFORE_READ:
                 response = throwErrorBeforeRead(req, factory);
                 break;
@@ -107,7 +107,7 @@ final class TestServiceStreaming implements StreamingHttpService {
             default:
                 response = newNotFoundResponse(req, factory);
         }
-        return Single.success(response);
+        return Single.succeeded(response);
     }
 
     @Override
@@ -194,13 +194,13 @@ final class TestServiceStreaming implements StreamingHttpService {
 
     private static StreamingHttpResponse throwErrorBeforeRead(final StreamingHttpRequest req,
                                                               final StreamingHttpResponseFactory factory) {
-        return factory.ok().version(req.version()).payloadBody(Publisher.error(
+        return factory.ok().version(req.version()).payloadBody(Publisher.failed(
                 DELIBERATE_EXCEPTION));
     }
 
     private static StreamingHttpResponse throwErrorDuringRead(final StreamingHttpRequest req,
                                                               final StreamingHttpResponseFactory factory) {
         return factory.ok().version(req.version()).payloadBody(
-                req.payloadBody().concat(Completable.error(DELIBERATE_EXCEPTION)));
+                req.payloadBody().concat(Completable.failed(DELIBERATE_EXCEPTION)));
     }
 }

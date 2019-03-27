@@ -83,7 +83,7 @@ public class DoBeforeFinallyOnHttpResponseOperatorTest {
     public void nullAsSuccess() {
         final ResponseSubscriber subscriber = new ResponseSubscriber();
 
-        toSource(Single.<StreamingHttpResponse>success(null).liftSync(operator)).subscribe(subscriber);
+        toSource(Single.<StreamingHttpResponse>succeeded(null).liftSync(operator)).subscribe(subscriber);
         assertThat("onSubscribe not called.", subscriber.cancellable, is(notNullValue()));
         verify(doBeforeFinally).onComplete();
 

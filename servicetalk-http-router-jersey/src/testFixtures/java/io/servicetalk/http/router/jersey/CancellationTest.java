@@ -197,7 +197,7 @@ public class CancellationTest {
         final CountDownLatch cancelledLatch = new CountDownLatch(1);
 
         res.payloadBody()
-                .doBeforeError(errorRef::set)
+                .doBeforeOnError(errorRef::set)
                 .doBeforeCancel(cancelledLatch::countDown)
                 .ignoreElements().subscribe().cancel();
 
@@ -221,7 +221,7 @@ public class CancellationTest {
             Single<StreamingHttpResponse> respSingle = execRule.executor().submit(() ->
                     jerseyRouter.handle(ctx, req, HTTP_REQ_RES_FACTORY)
             ).flatMap(identity())
-             .doBeforeError(errorRef::set)
+             .doBeforeOnError(errorRef::set)
              .doAfterCancel(cancelledLatch::countDown);
 
             toSource(respSingle).subscribe(new SingleSource.Subscriber<StreamingHttpResponse>() {
@@ -248,7 +248,7 @@ public class CancellationTest {
             });
         } else {
             jerseyRouter.handle(ctx, req, HTTP_REQ_RES_FACTORY)
-                    .doBeforeError(errorRef::set)
+                    .doBeforeOnError(errorRef::set)
                     .doAfterCancel(cancelledLatch::countDown)
                     .ignoreResult().subscribe().cancel();
         }

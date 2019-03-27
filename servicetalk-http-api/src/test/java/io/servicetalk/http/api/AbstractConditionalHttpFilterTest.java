@@ -32,7 +32,7 @@ import java.util.function.BiFunction;
 import java.util.function.Predicate;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
-import static io.servicetalk.concurrent.api.Single.success;
+import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.transport.netty.internal.ExecutionContextRule.cached;
 import static org.hamcrest.Matchers.is;
@@ -50,7 +50,7 @@ public abstract class AbstractConditionalHttpFilterTest {
     protected static final Predicate<StreamingHttpRequest> TEST_REQ_PREDICATE = req -> "/accept".equals(req.path());
 
     protected static final BiFunction<StreamingHttpRequest, StreamingHttpResponseFactory, Single<StreamingHttpResponse>>
-            TEST_REQ_HANDLER = (req, resFactory) -> success(resFactory.ok()
+            TEST_REQ_HANDLER = (req, resFactory) -> succeeded(resFactory.ok()
             .setHeader(FILTERED_HEADER, req.headers().get(FILTERED_HEADER, "false")));
 
     @Rule

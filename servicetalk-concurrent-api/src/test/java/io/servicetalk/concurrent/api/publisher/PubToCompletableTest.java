@@ -53,7 +53,7 @@ public class PubToCompletableTest {
 
     @Test
     public void testError() {
-        listen(Publisher.error(DELIBERATE_EXCEPTION)).verifyFailure(DELIBERATE_EXCEPTION);
+        listen(Publisher.failed(DELIBERATE_EXCEPTION)).verifyFailure(DELIBERATE_EXCEPTION);
     }
 
     @Test

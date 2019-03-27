@@ -53,7 +53,7 @@ import javax.annotation.Nullable;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.Executors.from;
 import static io.servicetalk.concurrent.api.Executors.newFixedSizeExecutor;
-import static io.servicetalk.concurrent.api.Single.success;
+import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.HttpExecutionStrategies.customStrategyBuilder;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.HttpResponseStatus.SERVICE_UNAVAILABLE;
@@ -145,7 +145,7 @@ public class InsufficientlySizedExecutorHttpTest {
     private void initWhenClientUnderProvisioned() throws Exception {
         executor = getExecutorForCapacity(capacity, !threadBased);
         server = forAddress(localAddress(0))
-                .listenStreamingAndAwait((ctx, request, responseFactory) -> success(responseFactory.ok()));
+                .listenStreamingAndAwait((ctx, request, responseFactory) -> succeeded(responseFactory.ok()));
         client = forSingleAddress(serverHostAndPort(server))
                 .executionStrategy(newStrategy())
                 .buildStreaming();
@@ -163,7 +163,7 @@ public class InsufficientlySizedExecutorHttpTest {
             public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
                                                         final StreamingHttpRequest request,
                                                         final StreamingHttpResponseFactory respFactory) {
-                return success(respFactory.ok());
+                return succeeded(respFactory.ok());
             }
 
             @Override

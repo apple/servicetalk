@@ -29,7 +29,7 @@ import org.junit.Test;
 import java.util.Collection;
 import java.util.function.IntFunction;
 
-import static io.servicetalk.concurrent.api.Completable.error;
+import static io.servicetalk.concurrent.api.Completable.failed;
 import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
@@ -73,7 +73,7 @@ public class RepeatWhenTest {
         Collection<Integer> result = from(1).publishOn(executor).repeatWhen(count -> count == 1 ?
                 // If we complete the returned Completable synchronously, then the offloader will not terminate before
                 // we add another entity in the next subscribe. So, we return an asynchronously completed Completable.
-                executor.submit(() -> { }) : error(DELIBERATE_EXCEPTION)).toFuture().get();
+                executor.submit(() -> { }) : failed(DELIBERATE_EXCEPTION)).toFuture().get();
         assertThat("Unexpected items received.", result, hasSize(2));
     }
 

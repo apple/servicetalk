@@ -559,11 +559,30 @@ public abstract class Publisher<T> {
     }
 
     /**
+     * Invokes the {@code onSubscribe} {@link Consumer} argument when
+     * {@link Subscriber#onSubscribe(PublisherSource.Subscription)} is called for {@link Subscriber}s of the returned
+     * {@link Publisher}.
+     * <p>
+     * The order in which {@code onSubscribe} will be invoked relative to
+     * {@link Subscriber#onSubscribe(PublisherSource.Subscription)} is undefined. If you need strict ordering see
+     * {@link #doBeforeOnSubscribe(Consumer)} and {@link #doAfterOnSubscribe(Consumer)}.
+     *
+     * @param onSubscribe Invoked when {@link Subscriber#onSubscribe(PublisherSource.Subscription)} is called for
+     * {@link Subscriber}s of the returned {@link Publisher}. <strong>MUST NOT</strong> throw.
+     * @return The new {@link Publisher}.
+     * @see #doBeforeOnNext(Consumer)
+     * @see #doAfterOnNext(Consumer)
+     */
+    public final Publisher<T> doOnSubscribe(Consumer<? super Subscription> onSubscribe) {
+        return doAfterOnSubscribe(onSubscribe);
+    }
+
+    /**
      * Invokes the {@code onNext} {@link Consumer} argument when {@link Subscriber#onNext(Object)} is called for
      * {@link Subscriber}s of the returned {@link Publisher}.
      * <p>
      * The order in which {@code onNext} will be invoked relative to {@link Subscriber#onNext(Object)} is undefined. If
-     * you need strict ordering see {@link #doBeforeNext(Consumer)} and {@link #doAfterNext(Consumer)}.
+     * you need strict ordering see {@link #doBeforeOnNext(Consumer)} and {@link #doAfterOnNext(Consumer)}.
      * <p>
      * From a sequential programming point of view this method is roughly equivalent to the following:
      * <pre>{@code
@@ -577,11 +596,11 @@ public abstract class Publisher<T> {
      * @param onNext Invoked when {@link Subscriber#onNext(Object)} is called for {@link Subscriber}s of the returned
      * {@link Publisher}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Publisher}.
-     * @see #doBeforeNext(Consumer)
-     * @see #doAfterNext(Consumer)
+     * @see #doBeforeOnNext(Consumer)
+     * @see #doAfterOnNext(Consumer)
      */
     public final Publisher<T> doOnNext(Consumer<? super T> onNext) {
-        return doAfterNext(onNext);
+        return doAfterOnNext(onNext);
     }
 
     /**
@@ -589,7 +608,7 @@ public abstract class Publisher<T> {
      * {@link Subscriber}s of the returned {@link Publisher}.
      * <p>
      * The order in which {@code onComplete} will be invoked relative to {@link Subscriber#onComplete()} is undefined.
-     * If you need strict ordering see {@link #doBeforeComplete(Runnable)} and {@link #doAfterComplete(Runnable)}.
+     * If you need strict ordering see {@link #doBeforeOnComplete(Runnable)} and {@link #doAfterOnComplete(Runnable)}.
      * <p>
      * From a sequential programming point of view this method is roughly equivalent to the following:
      * <pre>{@code
@@ -602,11 +621,11 @@ public abstract class Publisher<T> {
      * @param onComplete Invoked when {@link Subscriber#onComplete()} is called for {@link Subscriber}s of the
      * returned {@link Publisher}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Publisher}.
-     * @see #doBeforeComplete(Runnable)
-     * @see #doAfterComplete(Runnable)
+     * @see #doBeforeOnComplete(Runnable)
+     * @see #doAfterOnComplete(Runnable)
      */
     public final Publisher<T> doOnComplete(Runnable onComplete) {
-        return doAfterComplete(onComplete);
+        return doAfterOnComplete(onComplete);
     }
 
     /**
@@ -614,8 +633,8 @@ public abstract class Publisher<T> {
      * {@link Subscriber}s of the returned {@link Publisher}.
      * <p>
      * The order in which {@code onError} will be invoked relative to {@link Subscriber#onError(Throwable)} is
-     * undefined. If you need strict ordering see {@link #doBeforeError(Consumer)} and
-     * {@link #doAfterError(Consumer)}.
+     * undefined. If you need strict ordering see {@link #doBeforeOnError(Consumer)} and
+     * {@link #doAfterOnError(Consumer)}.
      * <p>
      * From a sequential programming point of view this method is roughly equivalent to the following:
      * <pre>{@code
@@ -631,11 +650,11 @@ public abstract class Publisher<T> {
      * @param onError Invoked <strong>before</strong> {@link Subscriber#onError(Throwable)} is called for
      * {@link Subscriber}s of the returned {@link Publisher}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Publisher}.
-     * @see #doBeforeError(Consumer)
-     * @see #doAfterError(Consumer)
+     * @see #doBeforeOnError(Consumer)
+     * @see #doAfterOnError(Consumer)
      */
     public final Publisher<T> doOnError(Consumer<Throwable> onError) {
-        return doAfterError(onError);
+        return doAfterOnError(onError);
     }
 
     /**
@@ -1234,9 +1253,9 @@ public abstract class Publisher<T> {
      * {@code keySelector} {@link Function}.
      * @see #groupBy(Function, int)
      */
-    public final <Key> Publisher<GroupedPublisher<Key, T>> groupByMulti(
+    public final <Key> Publisher<GroupedPublisher<Key, T>> groupToMany(
             Function<? super T, ? extends Iterator<? extends Key>> keySelector, int groupMaxQueueSize) {
-        return new PublisherGroupByMulti<>(this, keySelector, groupMaxQueueSize, executor);
+        return new PublisherGroupToMany<>(this, keySelector, groupMaxQueueSize, executor);
     }
 
     /**
@@ -1271,15 +1290,14 @@ public abstract class Publisher<T> {
      * {@code keySelector} {@link Function}.
      * @see #groupBy(Function, int)
      */
-    public final <Key> Publisher<GroupedPublisher<Key, T>> groupByMulti(
+    public final <Key> Publisher<GroupedPublisher<Key, T>> groupToMany(
             Function<? super T, ? extends Iterator<? extends Key>> keySelector, int groupMaxQueueSize,
             int expectedGroupCountHint) {
-        return new PublisherGroupByMulti<>(this, keySelector, groupMaxQueueSize, expectedGroupCountHint, executor);
+        return new PublisherGroupToMany<>(this, keySelector, groupMaxQueueSize, expectedGroupCountHint, executor);
     }
 
     /**
-     * Create a {@link Publisher} that allows exactly {@code expectedSubscribers} subscribes.
-     * The events from this {@link Publisher} object will be delivered to each {@link Subscriber}.
+     * Create a {@link Publisher} that multicasts all the signals to exactly {@code expectedSubscribers}.
      * <p>
      * Depending on {@link Subscription#request(long)} demand it is possible that data maybe queued before being
      * delivered to each {@link Subscriber}! For example if there are 2 {@link Subscriber}s and the first calls
@@ -1301,7 +1319,7 @@ public abstract class Publisher<T> {
      * before subscribing to this {@link Publisher}.
      * @return a {@link Publisher} that allows exactly {@code expectedSubscribers} subscribes.
      */
-    public final Publisher<T> multicast(int expectedSubscribers) {
+    public final Publisher<T> multicastToExactly(int expectedSubscribers) {
         return new MulticastPublisher<>(this, expectedSubscribers, executor);
     }
 
@@ -1332,7 +1350,7 @@ public abstract class Publisher<T> {
      * is no demand for data before the {@link Subscriber} will be discarded.
      * @return a {@link Publisher} that allows exactly {@code expectedSubscribers} subscribes.
      */
-    public final Publisher<T> multicast(int expectedSubscribers, int maxQueueSize) {
+    public final Publisher<T> multicastToExactly(int expectedSubscribers, int maxQueueSize) {
         return new MulticastPublisher<>(this, expectedSubscribers, maxQueueSize, executor);
     }
 
@@ -1348,7 +1366,7 @@ public abstract class Publisher<T> {
      *
      * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
-    public final Publisher<T> doBeforeSubscribe(Consumer<? super Subscription> onSubscribe) {
+    public final Publisher<T> doBeforeOnSubscribe(Consumer<? super Subscription> onSubscribe) {
         return doBeforeSubscriber(doOnSubscribeSupplier(onSubscribe));
     }
 
@@ -1371,7 +1389,7 @@ public abstract class Publisher<T> {
      *
      * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
-    public final Publisher<T> doBeforeNext(Consumer<? super T> onNext) {
+    public final Publisher<T> doBeforeOnNext(Consumer<? super T> onNext) {
         return doBeforeSubscriber(doOnNextSupplier(onNext));
     }
 
@@ -1395,7 +1413,7 @@ public abstract class Publisher<T> {
      *
      * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
-    public final Publisher<T> doBeforeError(Consumer<Throwable> onError) {
+    public final Publisher<T> doBeforeOnError(Consumer<Throwable> onError) {
         return doBeforeSubscriber(doOnErrorSupplier(onError));
     }
 
@@ -1416,7 +1434,7 @@ public abstract class Publisher<T> {
      *
      * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
-    public final Publisher<T> doBeforeComplete(Runnable onComplete) {
+    public final Publisher<T> doBeforeOnComplete(Runnable onComplete) {
         return doBeforeSubscriber(doOnCompleteSupplier(onComplete));
     }
 
@@ -1527,7 +1545,7 @@ public abstract class Publisher<T> {
      *
      * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
-    public final Publisher<T> doAfterSubscribe(Consumer<? super Subscription> onSubscribe) {
+    public final Publisher<T> doAfterOnSubscribe(Consumer<? super Subscription> onSubscribe) {
         return doAfterSubscriber(doOnSubscribeSupplier(onSubscribe));
     }
 
@@ -1550,7 +1568,7 @@ public abstract class Publisher<T> {
      *
      * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
-    public final Publisher<T> doAfterNext(Consumer<? super T> onNext) {
+    public final Publisher<T> doAfterOnNext(Consumer<? super T> onNext) {
         return doAfterSubscriber(doOnNextSupplier(onNext));
     }
 
@@ -1574,7 +1592,7 @@ public abstract class Publisher<T> {
      *
      * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
-    public final Publisher<T> doAfterError(Consumer<Throwable> onError) {
+    public final Publisher<T> doAfterOnError(Consumer<Throwable> onError) {
         return doAfterSubscriber(doOnErrorSupplier(onError));
     }
 
@@ -1595,7 +1613,7 @@ public abstract class Publisher<T> {
      *
      * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
-    public final Publisher<T> doAfterComplete(Runnable onComplete) {
+    public final Publisher<T> doAfterOnComplete(Runnable onComplete) {
         return doAfterSubscriber(doOnCompleteSupplier(onComplete));
     }
 
@@ -2343,7 +2361,7 @@ public abstract class Publisher<T> {
      *
      * @see <a href="http://reactivex.io/documentation/operators/empty-never-throw.html">ReactiveX error operator.</a>
      */
-    public static <T> Publisher<T> error(Throwable cause) {
+    public static <T> Publisher<T> failed(Throwable cause) {
         return new ErrorPublisher<>(cause);
     }
 

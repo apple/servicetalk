@@ -43,9 +43,9 @@ import java.util.function.Function;
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
 import static io.servicetalk.concurrent.api.Publisher.from;
-import static io.servicetalk.concurrent.api.Single.error;
+import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.Single.never;
-import static io.servicetalk.concurrent.api.Single.success;
+import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.DefaultHttpHeadersFactory.INSTANCE;
 import static io.servicetalk.http.api.HttpExecutionStrategies.customStrategyBuilder;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
@@ -133,7 +133,7 @@ public class DefaultHttpExecutionStrategyTest {
 
         analyzer.instrumentedResponseForClient(strategy.invokeClient(executor, req,
                 publisher -> analyzer.instrumentedFlatRequestForClient(publisher).ignoreElements()
-                        .concat(success(resp))))
+                        .concat(succeeded(resp))))
                 .flatMapPublisher(StreamingHttpResponse::payloadBody)
                 .toFuture().get();
         analyzer.verify();
@@ -148,8 +148,8 @@ public class DefaultHttpExecutionStrategyTest {
         analyzer.instrumentedResponseForServer(strategy.invokeService(executor, req, request -> {
             analyzer.checkServiceInvocation();
             return analyzer.instrumentedRequestPayloadForServer(request.payloadBody())
-                    .ignoreElements().concat(success(resp));
-        }, (throwable, executor1) -> error(throwable))).toFuture().get();
+                    .ignoreElements().concat(succeeded(resp));
+        }, (throwable, executor1) -> failed(throwable))).toFuture().get();
 
         analyzer.verify();
     }
@@ -176,7 +176,7 @@ public class DefaultHttpExecutionStrategyTest {
                                                         final StreamingHttpResponseFactory responseFactory) {
                 analyzer.checkContext(ctx);
                 analyzer.checkServiceInvocation();
-                return success(analyzer.createNewResponse()
+                return succeeded(analyzer.createNewResponse()
                         .payloadBody(analyzer.instrumentedRequestPayloadForServer(request.payloadBody())));
             }
         });
@@ -208,7 +208,7 @@ public class DefaultHttpExecutionStrategyTest {
     @Test
     public void offloadReceiveSingle() throws Exception {
         ThreadAnalyzer analyzer = new ThreadAnalyzer();
-        analyzer.instrumentReceive(strategy.offloadReceive(executor, success(1))).toFuture().get();
+        analyzer.instrumentReceive(strategy.offloadReceive(executor, succeeded(1))).toFuture().get();
         analyzer.verifyReceive();
     }
 
@@ -241,10 +241,10 @@ public class DefaultHttpExecutionStrategyTest {
         }
 
         Single<StreamingHttpResponse> instrumentedResponseForClient(Single<StreamingHttpResponse> resp) {
-            return resp.map(response -> response.transformPayloadBody(p -> p.doBeforeNext(__ -> {
+            return resp.map(response -> response.transformPayloadBody(p -> p.doBeforeOnNext(__ -> {
                 analyzed.set(RECEIVE_DATA_ANALYZED_INDEX, true);
                 verifyThread(offloadReceiveData, "Unexpected thread for response payload onNext.");
-            }))).doBeforeSuccess(__ -> {
+            }))).doBeforeOnSuccess(__ -> {
                 analyzed.set(RECEIVE_META_ANALYZED_INDEX, true);
                 verifyThread(offloadReceiveMeta, "Unexpected thread for response single.");
             });
@@ -280,14 +280,14 @@ public class DefaultHttpExecutionStrategyTest {
         }
 
         <T> Single<T> instrumentReceive(Single<T> original) {
-            return original.doBeforeSuccess(__ -> {
+            return original.doBeforeOnSuccess(__ -> {
                 analyzed.set(RECEIVE_DATA_ANALYZED_INDEX, true);
                 verifyThread(offloadReceiveData, "Unexpected thread requested from success.");
             });
         }
 
         <T> Publisher<T> instrumentReceive(Publisher<T> original) {
-            return original.doBeforeNext(__ -> {
+            return original.doBeforeOnNext(__ -> {
                 analyzed.set(RECEIVE_DATA_ANALYZED_INDEX, true);
                 verifyThread(offloadReceiveData, "Unexpected thread requested from next.");
             });
@@ -316,7 +316,7 @@ public class DefaultHttpExecutionStrategyTest {
         }
 
         Publisher<Buffer> instrumentedRequestPayloadForServer(Publisher<Buffer> req) {
-            return req.doBeforeNext(__ -> {
+            return req.doBeforeOnNext(__ -> {
                 analyzed.set(RECEIVE_DATA_ANALYZED_INDEX, true);
                 verifyThread(offloadReceiveData, "Unexpected thread for request payload onNext.");
             });
