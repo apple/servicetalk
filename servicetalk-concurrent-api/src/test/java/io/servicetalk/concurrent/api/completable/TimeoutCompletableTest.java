@@ -57,7 +57,7 @@ public class TimeoutCompletableTest {
 
     @Test
     public void executorScheduleThrows() {
-        listener.listen(source.ignoreResult().idleTimeout(1, NANOSECONDS, new DelegatingExecutor(testExecutor) {
+        listener.listen(source.ignoreElement().idleTimeout(1, NANOSECONDS, new DelegatingExecutor(testExecutor) {
             @Override
             public Cancellable schedule(final Runnable task, final long delay, final TimeUnit unit) {
                 throw DELIBERATE_EXCEPTION;
@@ -132,7 +132,7 @@ public class TimeoutCompletableTest {
     }
 
     private void init() {
-        init(source.ignoreResult(), true);
+        init(source.ignoreElement(), true);
     }
 
     private void init(Completable source, boolean expectOnSubscribe) {

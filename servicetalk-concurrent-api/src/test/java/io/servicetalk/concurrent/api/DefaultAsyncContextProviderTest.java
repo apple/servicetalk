@@ -268,7 +268,7 @@ public class DefaultAsyncContextProviderTest {
                 f1.complete(AsyncContext.current().copy());
                 completeOnExecutor(singleSubscriber, "a");
             }
-        }.ignoreResult().merge(new Completable() {
+        }.ignoreElement().merge(new Completable() {
             @Override
             protected void handleSubscribe(CompletableSource.Subscriber completableSubscriber) {
                 // We are in another async source, this shouldn't be visible to the outer Subscriber chain.

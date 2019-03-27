@@ -566,7 +566,7 @@ public abstract class Completable {
      * @see <a href="http://reactivex.io/documentation/operators/retry.html">ReactiveX retry operator.</a>
      */
     public final Completable retry(BiIntPredicate<Throwable> shouldRetry) {
-        return toSingle().retry(shouldRetry).ignoreResult();
+        return toSingle().retry(shouldRetry).ignoreElement();
     }
 
     /**
@@ -606,7 +606,7 @@ public abstract class Completable {
      * @see <a href="http://reactivex.io/documentation/operators/retry.html">ReactiveX retry operator.</a>
      */
     public final Completable retryWhen(BiIntFunction<Throwable, ? extends Completable> retryWhen) {
-        return toSingle().retryWhen(retryWhen).ignoreResult();
+        return toSingle().retryWhen(retryWhen).ignoreElement();
     }
 
     /**
