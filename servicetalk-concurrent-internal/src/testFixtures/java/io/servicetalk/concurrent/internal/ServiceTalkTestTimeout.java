@@ -43,6 +43,7 @@ import java.util.stream.Stream;
 import javax.annotation.Nullable;
 
 import static java.lang.Boolean.parseBoolean;
+import static java.lang.Math.max;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -58,7 +59,7 @@ public final class ServiceTalkTestTimeout extends Timeout {
     }
 
     public ServiceTalkTestTimeout(long timeout, TimeUnit unit) {
-        this(timeout, unit, () -> { });
+        this(max(timeout, DEFAULT_TIMEOUT_SECONDS), unit, () -> { });
     }
 
     public ServiceTalkTestTimeout(long timeout, TimeUnit unit, Runnable onTimeout) {
