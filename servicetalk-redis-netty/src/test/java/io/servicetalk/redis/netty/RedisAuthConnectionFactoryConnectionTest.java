@@ -65,7 +65,7 @@ public class RedisAuthConnectionFactoryConnectionTest {
             assert ioExecutor != null;
             connectionSingle.flatMap(connection ->
                     connection.closeAsync().onErrorResume(cause -> completed()).concat(succeeded(connection)))
-                    .ignoreResult()
+                    .ignoreElement()
                     .onErrorResume(cause -> completed())
                     .concat(ioExecutor.closeAsync()).toFuture().get();
         }

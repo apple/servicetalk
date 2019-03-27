@@ -1014,7 +1014,7 @@ public abstract class Single<T> {
      *
      * @return A {@link Completable} that mirrors the terminal signal from this {@code Single}.
      */
-    public final Completable ignoreResult() {
+    public final Completable ignoreElement() {
         return toCompletable();
     }
 

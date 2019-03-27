@@ -101,8 +101,8 @@ final class PipelinedRedisConnection extends AbstractRedisConnection {
     Completable sendPing() {
         // We send a PING with no payload so the response is a simple string PONG with no payload.
         // So issuing a single request(1) followed by a cancel is enough to consume to overall response,
-        // thus the usage of first() and ignoreResult() below.
-        return request0(newRequest(PING), false, true).firstOrError().ignoreResult();
+        // thus the usage of first() and ignoreElement() below.
+        return request0(newRequest(PING), false, true).firstOrError().ignoreElement();
     }
 
     @Override

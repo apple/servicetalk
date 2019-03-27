@@ -115,7 +115,7 @@ final class CommanderUtils {
                     onSuccessUnchecked(obj, single);
                 }
             }
-        }).ignoreResult();
+        }).ignoreElement();
     }
 
     private static void completeSinglesWithException(final Exception e,
