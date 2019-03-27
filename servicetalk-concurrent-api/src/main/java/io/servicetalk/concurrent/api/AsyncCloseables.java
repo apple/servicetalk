@@ -45,7 +45,7 @@ public final class AsyncCloseables {
      * @return A {@link Completable} that is notified once the close is complete.
      */
     public static Completable closeAsyncGracefully(AsyncCloseable closable, long timeout, TimeUnit timeoutUnit) {
-        return closable.closeAsyncGracefully().timeout(timeout, timeoutUnit).onErrorResume(
+        return closable.closeAsyncGracefully().idleTimeout(timeout, timeoutUnit).onErrorResume(
                 t -> t instanceof TimeoutException ? closable.closeAsync() : Completable.error(t)
         );
     }

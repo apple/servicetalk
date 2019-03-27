@@ -243,8 +243,8 @@ public abstract class Completable {
      * a {@link TimeoutException} if time {@code duration} elapses before {@link Subscriber#onComplete()}.
      * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
      */
-    public final Completable timeout(long duration, TimeUnit unit) {
-        return timeout(duration, unit, executor);
+    public final Completable idleTimeout(long duration, TimeUnit unit) {
+        return idleTimeout(duration, unit, executor);
     }
 
     /**
@@ -262,7 +262,7 @@ public abstract class Completable {
      * a {@link TimeoutException} if time {@code duration} elapses before {@link Subscriber#onComplete()}.
      * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
      */
-    public final Completable timeout(long duration, TimeUnit unit, Executor timeoutExecutor) {
+    public final Completable idleTimeout(long duration, TimeUnit unit, Executor timeoutExecutor) {
         return new TimeoutCompletable(this, duration, unit, timeoutExecutor);
     }
 
@@ -279,8 +279,8 @@ public abstract class Completable {
      * a {@link TimeoutException} if time {@code duration} elapses before {@link Subscriber#onComplete()}.
      * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
      */
-    public final Completable timeout(Duration duration) {
-        return timeout(duration, executor);
+    public final Completable idleTimeout(Duration duration) {
+        return idleTimeout(duration, executor);
     }
 
     /**
@@ -297,7 +297,7 @@ public abstract class Completable {
      * a {@link TimeoutException} if time {@code duration} elapses before {@link Subscriber#onComplete()}.
      * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
      */
-    public final Completable timeout(Duration duration, Executor timeoutExecutor) {
+    public final Completable idleTimeout(Duration duration, Executor timeoutExecutor) {
         return new TimeoutCompletable(this, duration, timeoutExecutor);
     }
 
@@ -1224,10 +1224,10 @@ public abstract class Completable {
      * offloading if necessary, and also offloading if {@link Cancellable#cancel()} will be called if this operation may
      * block.
      * <p>
-     * To apply a timeout see {@link #timeout(long, TimeUnit)} and related methods.
+     * To apply a timeout see {@link #idleTimeout(long, TimeUnit)} and related methods.
      * @param future The {@link Future} to convert.
      * @return A {@link Completable} that derives results from {@link Future}.
-     * @see #timeout(long, TimeUnit)
+     * @see #idleTimeout(long, TimeUnit)
      */
     public static Completable fromFuture(Future<?> future) {
         return Single.fromFuture(future).toCompletable();
