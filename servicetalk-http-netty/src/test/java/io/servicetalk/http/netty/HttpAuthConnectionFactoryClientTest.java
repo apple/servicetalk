@@ -39,8 +39,8 @@ import org.junit.rules.Timeout;
 
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.api.Single.error;
-import static io.servicetalk.concurrent.api.Single.success;
+import static io.servicetalk.concurrent.api.Single.failed;
+import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
@@ -83,7 +83,7 @@ public class HttpAuthConnectionFactoryClientTest {
                             public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
                                                                         final StreamingHttpRequest request,
                                                                         final StreamingHttpResponseFactory factory) {
-                                return success(newTestResponse(factory));
+                                return succeeded(newTestResponse(factory));
                             }
 
                             @Override
@@ -119,16 +119,16 @@ public class HttpAuthConnectionFactoryClientTest {
                     cnx.request(defaultStrategy(), newTestRequest(cnx, "/auth"))
                             .recoverWith(cause -> {
                                 cnx.closeAsync().subscribe();
-                                return error(new IllegalStateException("failed auth"));
+                                return failed(new IllegalStateException("failed auth"));
                             })
                             .flatMap(response -> {
                                 if (OK.equals(response.status())) {
                                     // In this test we have not enabled pipelining so we drain this response before
                                     // indicating the connection is usable.
-                                    return response.payloadBody().ignoreElements().concat(success(cnx));
+                                    return response.payloadBody().ignoreElements().concat(succeeded(cnx));
                                 }
                                 cnx.closeAsync().subscribe();
-                                return error(new IllegalStateException("failed auth"));
+                                return failed(new IllegalStateException("failed auth"));
                             })
             );
         }

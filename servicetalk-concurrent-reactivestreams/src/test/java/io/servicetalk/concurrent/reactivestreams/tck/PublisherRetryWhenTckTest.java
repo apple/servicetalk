@@ -19,13 +19,13 @@ import io.servicetalk.concurrent.api.Publisher;
 
 import org.testng.annotations.Test;
 
-import static io.servicetalk.concurrent.api.Completable.error;
+import static io.servicetalk.concurrent.api.Completable.failed;
 
 @Test
 public class PublisherRetryWhenTckTest extends AbstractPublisherOperatorTckTest<Integer> {
 
     @Override
     protected Publisher<Integer> composePublisher(Publisher<Integer> publisher, int elements) {
-        return publisher.retryWhen((integer, throwable) -> error(throwable));
+        return publisher.retryWhen((integer, throwable) -> failed(throwable));
     }
 }

@@ -41,7 +41,7 @@ import java.util.function.BiFunction;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Publisher.from;
-import static io.servicetalk.concurrent.api.Single.success;
+import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.HttpHeaderNames.TRAILER;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
@@ -113,7 +113,7 @@ public class ConsumeRequestPayloadOnResponsePathTest {
     public void testSendResponseMetaDataAndConsumeRequestPayload() throws Exception {
         // TODO: replace flatMap when Single.merge(Completable) is available
         test((responseSingle, request) -> responseSingle.flatMap(response ->
-                consumePayloadBody(request).concat(success(response))));
+                consumePayloadBody(request).concat(succeeded(response))));
     }
 
     @Test
@@ -160,7 +160,7 @@ public class ConsumeRequestPayloadOnResponsePathTest {
                                 return chunk;
                             }, (total, trailers) -> trailers.add(X_TOTAL_LENGTH, String.valueOf(total.get())));
 
-                    return success(response);
+                    return succeeded(response);
                 })) {
 
             HttpResponse response;

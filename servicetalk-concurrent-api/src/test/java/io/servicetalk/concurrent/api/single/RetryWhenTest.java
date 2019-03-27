@@ -32,7 +32,7 @@ import org.junit.rules.ExpectedException;
 
 import java.util.concurrent.ExecutionException;
 
-import static io.servicetalk.concurrent.api.Completable.error;
+import static io.servicetalk.concurrent.api.Completable.failed;
 import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static org.hamcrest.Matchers.instanceOf;
@@ -85,14 +85,14 @@ public class RetryWhenTest {
         // then it does not really matter if we reuse offloaders or not. eg: if tomorrow we do not hold up a thread for
         // the lifetime of the Subscriber, we can reuse the offloader.
         executor = newCachedThreadExecutor();
-        Single<Object> source = Single.error(DELIBERATE_EXCEPTION)
+        Single<Object> source = Single.failed(DELIBERATE_EXCEPTION)
                 .publishOn(executor)
                 .retryWhen((count, t) ->
                         count == 1 ?
                                 // If we complete the returned Completable synchronously, then the offloader will not
                                 // terminate before we add another entity in the next subscribe. So, we return an
                                 // asynchronously completed Completable.
-                                executor.submit(() -> { }) : error(t));
+                                executor.submit(() -> { }) : failed(t));
         expectedException.expect(instanceOf(ExecutionException.class));
         expectedException.expectCause(is(DELIBERATE_EXCEPTION));
         source.toFuture().get();

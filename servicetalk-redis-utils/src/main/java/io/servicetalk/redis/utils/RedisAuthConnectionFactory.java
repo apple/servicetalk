@@ -24,8 +24,8 @@ import io.servicetalk.transport.api.ConnectionContext;
 
 import java.util.function.Function;
 
-import static io.servicetalk.concurrent.api.Single.error;
-import static io.servicetalk.concurrent.api.Single.success;
+import static io.servicetalk.concurrent.api.Single.failed;
+import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.redis.api.RedisData.OK;
 import static java.util.Objects.requireNonNull;
 
@@ -60,16 +60,16 @@ public class RedisAuthConnectionFactory<ResolvedAddress>
                 .flatMap(cnx -> cnx.asBufferCommander().auth(addressToPassword.apply(cnx.connectionContext()))
                         .recoverWith(cause -> {
                             cnx.closeAsync().subscribe();
-                            return error(new RedisAuthorizationException("Failed to authenticate on connection " + cnx +
-                                    " to address " + resolvedAddress, cause));
+                            return failed(new RedisAuthorizationException("Failed to authenticate on connection " +
+                                    cnx + " to address " + resolvedAddress, cause));
                         })
                         .flatMap(response -> {
                             if (response.contentEquals(OK.charSequenceValue())) {
-                                return success(cnx);
+                                return succeeded(cnx);
                             }
                             cnx.closeAsync().subscribe();
-                            return error(new RedisAuthorizationException("Failed to authenticate on connection " + cnx +
-                                    " to address " + resolvedAddress + ". Response: " + response));
+                            return failed(new RedisAuthorizationException("Failed to authenticate on connection " +
+                                    cnx + " to address " + resolvedAddress + ". Response: " + response));
                         })
                 );
     }

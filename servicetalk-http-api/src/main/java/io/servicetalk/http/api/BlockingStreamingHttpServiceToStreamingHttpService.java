@@ -85,7 +85,7 @@ final class BlockingStreamingHttpServiceToStreamingHttpService implements Stream
                                     metaData.headers(), ctx.executionContext().bufferAllocator(),
                                     fromSource(payloadProcessor).merge(payloadWriter.connect()
                                             .map(buffer -> (Object) buffer) // down cast to Object
-                                            .concat(success(payloadWriter.trailers())))
+                                            .concat(succeeded(payloadWriter.trailers())))
                                             .doBeforeSubscription(() -> new PublisherSource.Subscription() {
                                                 @Override
                                                 public void request(final long n) {

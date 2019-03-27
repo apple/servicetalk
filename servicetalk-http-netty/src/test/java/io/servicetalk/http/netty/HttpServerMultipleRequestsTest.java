@@ -42,7 +42,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static io.servicetalk.concurrent.api.Single.success;
+import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.CharSequences.newAsciiString;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpResponseStatus.BAD_REQUEST;
@@ -81,9 +81,9 @@ public class HttpServerMultipleRequestsTest {
                 if (requestId != null) {
                     StreamingHttpResponse response = responseFactory.ok();
                     response.headers().set(REQUEST_ID_HEADER, requestId);
-                    return success(response);
+                    return succeeded(response);
                 } else {
-                    return success(responseFactory.newResponse(BAD_REQUEST));
+                    return succeeded(responseFactory.newResponse(BAD_REQUEST));
                 }
             }
 

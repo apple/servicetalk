@@ -31,7 +31,7 @@ import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 
 import static io.servicetalk.concurrent.api.Processors.newSingleProcessor;
-import static io.servicetalk.concurrent.api.Single.success;
+import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.http.api.HttpDataSourceTranformations.aggregatePayloadAndTrailers;
 import static java.util.Objects.requireNonNull;
@@ -45,7 +45,7 @@ class DefaultStreamingHttpRequest<P> extends DefaultHttpRequestMetaData implemen
                                 final HttpProtocolVersion version, final HttpHeaders headers,
                                 final HttpHeaders initialTrailers, final BufferAllocator allocator,
                                 final Publisher<P> payloadBody) {
-        this(method, requestTarget, version, headers, success(initialTrailers), allocator, payloadBody);
+        this(method, requestTarget, version, headers, succeeded(initialTrailers), allocator, payloadBody);
     }
 
     /**

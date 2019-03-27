@@ -118,7 +118,7 @@ public class SingleToCompletionStageTest {
     @Test
     public void nestedInADifferentFuture() throws Exception {
         String result = CompletableFuture.completedFuture("foo")
-                .thenCompose(s -> Single.success(s + "bar").toCompletionStage())
+                .thenCompose(s -> Single.succeeded(s + "bar").toCompletionStage())
                 .get();
         assertThat("Unexpected result.", result, is("foobar"));
     }

@@ -26,7 +26,7 @@ public class SingleOnErrorResumeTckTest extends AbstractSingleTckTest<Integer> {
 
     @Override
     public Publisher<Integer> createServiceTalkPublisher(long elements) {
-        return Single.<Integer>error(DeliberateException.DELIBERATE_EXCEPTION)
-                .recoverWith(cause -> Single.success(1)).toPublisher();
+        return Single.<Integer>failed(DeliberateException.DELIBERATE_EXCEPTION)
+                .recoverWith(cause -> Single.succeeded(1)).toPublisher();
     }
 }

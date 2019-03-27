@@ -48,7 +48,7 @@ public abstract class AbstractDoCompleteTest {
     @Test
     public void testCallbackThrowsError() {
         DeliberateException srcEx = new DeliberateException();
-        Publisher<String> src = doComplete(Publisher.error(srcEx), () -> {
+        Publisher<String> src = doComplete(Publisher.failed(srcEx), () -> {
             throw DELIBERATE_EXCEPTION;
         });
         toSource(src).subscribe(subscriber);

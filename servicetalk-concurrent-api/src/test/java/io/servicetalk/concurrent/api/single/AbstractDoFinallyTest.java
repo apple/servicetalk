@@ -55,28 +55,28 @@ public abstract class AbstractDoFinallyTest {
 
     @Test
     public void testForCancelPostSuccess() {
-        listener.listen(doFinally(Single.success("Hello"), doFinally));
+        listener.listen(doFinally(Single.succeeded("Hello"), doFinally));
         listener.cancel();
         verify(doFinally).run();
     }
 
     @Test
     public void testForCancelPostError() {
-        listener.listen(doFinally(Single.error(DELIBERATE_EXCEPTION), doFinally));
+        listener.listen(doFinally(Single.failed(DELIBERATE_EXCEPTION), doFinally));
         listener.cancel();
         verify(doFinally).run();
     }
 
     @Test
     public void testForSuccess() {
-        listener.listen(doFinally(Single.success("Hello"), doFinally));
+        listener.listen(doFinally(Single.succeeded("Hello"), doFinally));
         listener.verifySuccess("Hello").cancel();
         verify(doFinally).run();
     }
 
     @Test
     public void testForError() {
-        listener.listen(doFinally(Single.error(DELIBERATE_EXCEPTION), doFinally));
+        listener.listen(doFinally(Single.failed(DELIBERATE_EXCEPTION), doFinally));
         listener.verifyFailure(DELIBERATE_EXCEPTION);
         verify(doFinally).run();
     }

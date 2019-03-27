@@ -25,8 +25,8 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import static io.servicetalk.concurrent.api.Completable.completed;
-import static io.servicetalk.concurrent.api.Completable.error;
-import static io.servicetalk.concurrent.api.Single.success;
+import static io.servicetalk.concurrent.api.Completable.failed;
+import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 
 public final class SingleFlatMapCompletableTest {
@@ -45,19 +45,19 @@ public final class SingleFlatMapCompletableTest {
 
     @Test
     public void testSuccess() {
-        listener.listen(success(1).flatMapCompletable(s -> completed()));
+        listener.listen(succeeded(1).flatMapCompletable(s -> completed()));
         listener.verifyCompletion();
     }
 
     @Test
     public void testFirstEmitsError() {
-        listener.listen(Single.error(DELIBERATE_EXCEPTION).flatMapCompletable(s -> completable));
+        listener.listen(Single.failed(DELIBERATE_EXCEPTION).flatMapCompletable(s -> completable));
         listener.verifyFailure(DELIBERATE_EXCEPTION);
     }
 
     @Test
     public void testSecondEmitsError() {
-        listener.listen(success(1).flatMapCompletable(s -> error(DELIBERATE_EXCEPTION)));
+        listener.listen(succeeded(1).flatMapCompletable(s -> failed(DELIBERATE_EXCEPTION)));
         listener.verifyFailure(DELIBERATE_EXCEPTION);
     }
 

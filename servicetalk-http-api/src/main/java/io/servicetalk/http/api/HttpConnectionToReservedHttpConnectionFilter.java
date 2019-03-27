@@ -21,7 +21,7 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ExecutionContext;
 
-import static io.servicetalk.concurrent.api.Completable.error;
+import static io.servicetalk.concurrent.api.Completable.failed;
 
 /**
  * This adapts a {@link StreamingHttpConnectionFilter} to be used as delegate and propagates all calls.
@@ -88,6 +88,6 @@ final class HttpConnectionToReservedHttpConnectionFilter extends ReservedStreami
 
     @Override
     public Completable releaseAsync() {
-        return error(new UnsupportedOperationException());
+        return failed(new UnsupportedOperationException());
     }
 }

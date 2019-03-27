@@ -37,9 +37,9 @@ import java.util.concurrent.CancellationException;
 import java.util.function.Supplier;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
-import static io.servicetalk.concurrent.api.Publisher.error;
+import static io.servicetalk.concurrent.api.Publisher.failed;
 import static io.servicetalk.concurrent.api.Publisher.just;
-import static io.servicetalk.concurrent.api.Single.success;
+import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.redis.api.RedisConnection.SettingKey.MAX_CONCURRENCY;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
@@ -94,7 +94,7 @@ abstract class AbstractRedisConnection extends RedisConnection {
             maxPendingRequests = maxPipelinedRequests;
         }
         maxConcurrencySetting = just(roConfig.maxPipelinedRequests())
-                .concat(onClosing.concat(success(0)));
+                .concat(onClosing.concat(succeeded(0)));
     }
 
     @Override
@@ -115,7 +115,7 @@ abstract class AbstractRedisConnection extends RedisConnection {
         if (settingKey == MAX_CONCURRENCY) {
             return (Publisher<T>) maxConcurrencySetting;
         }
-        return error(new IllegalArgumentException("Unknown option: " + settingKey));
+        return failed(new IllegalArgumentException("Unknown option: " + settingKey));
     }
 
     @Override

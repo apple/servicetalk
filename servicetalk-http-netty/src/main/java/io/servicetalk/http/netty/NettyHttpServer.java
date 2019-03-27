@@ -68,7 +68,7 @@ import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseabl
 import static io.servicetalk.concurrent.api.AsyncCloseables.toListenableAsyncCloseable;
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Processors.newCompletableProcessor;
-import static io.servicetalk.concurrent.api.Single.success;
+import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderValues.ZERO;
@@ -325,7 +325,7 @@ final class NettyHttpServer {
             response.version(version)
                     .setHeader(CONTENT_LENGTH, ZERO);
             keepAlive.addConnectionHeaderIfNecessary(response);
-            return success(response);
+            return succeeded(response);
         }
 
         @Override

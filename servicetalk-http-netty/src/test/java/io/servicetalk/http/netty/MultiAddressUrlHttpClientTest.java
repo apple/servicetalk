@@ -47,7 +47,7 @@ import java.util.concurrent.ExecutionException;
 import static io.servicetalk.buffer.api.EmptyBuffer.EMPTY_BUFFER;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.BlockingTestUtils.awaitIndefinitelyNonNull;
-import static io.servicetalk.concurrent.api.Single.success;
+import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderNames.HOST;
@@ -118,13 +118,13 @@ public class MultiAddressUrlHttpClientTest {
                 if (HTTP_1_1.equals(request.version()) && !request.headers().contains(HOST)) {
                     StreamingHttpResponse resp = factory.newResponse(BAD_REQUEST);
                     resp.headers().set(httpHeaders);
-                    return success(resp);
+                    return succeeded(resp);
                 }
 
                 if (OPTIONS.equals(request.method()) || CONNECT.equals(request.method())) {
                     StreamingHttpResponse resp = factory.ok();
                     resp.headers().set(httpHeaders);
-                    return success(resp);
+                    return succeeded(resp);
                 }
                 try {
                     HttpResponseStatus status = HttpResponseStatus.of(parseInt(request.path().substring(1)),
@@ -135,11 +135,11 @@ public class MultiAddressUrlHttpClientTest {
                     if (locationHeader != null) {
                         response.headers().set(LOCATION, locationHeader);
                     }
-                    return success(response);
+                    return succeeded(response);
                 } catch (Exception e) {
                     StreamingHttpResponse resp = factory.newResponse(BAD_REQUEST);
                     resp.headers().set(httpHeaders);
-                    return success(resp);
+                    return succeeded(resp);
                 }
             }
 

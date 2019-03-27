@@ -36,7 +36,7 @@ import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
 import static io.servicetalk.concurrent.api.Single.defer;
-import static io.servicetalk.concurrent.api.Single.success;
+import static io.servicetalk.concurrent.api.Single.succeeded;
 import static java.lang.Integer.parseInt;
 import static java.lang.String.valueOf;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -85,7 +85,7 @@ final class RecommendationBackend {
                                                     StreamingHttpResponseFactory responseFactory) {
             final String userId = request.queryParameter(USER_ID_QP_NAME);
             if (userId == null) {
-                return success(responseFactory.badRequest());
+                return succeeded(responseFactory.badRequest());
             }
 
             // Create a new random recommendation every 1 SECOND.
@@ -93,13 +93,13 @@ final class RecommendationBackend {
                     // We use defer() here so that we do not eagerly create a Recommendation which will get emitted for
                     // every schedule. defer() helps us lazily create a new Recommendation object every time we the
                     // scheduler emits a tick.
-                    .concat(defer(() -> success(newRecommendation())))
+                    .concat(defer(() -> succeeded(newRecommendation())))
                     // Since schedule() only schedules a single tick, we repeat the ticks to generate infinite
                     // recommendations. This simulates a push based API which pushes new recommendations as and when
                     // they are available.
                     .repeat(count -> true);
 
-            return success(responseFactory.ok()
+            return succeeded(responseFactory.ok()
                     .payloadBody(recommendations, serializer.serializerFor(Recommendation.class)));
         }
     }
@@ -117,7 +117,7 @@ final class RecommendationBackend {
                                            HttpResponseFactory responseFactory) {
             final String userId = request.queryParameter(USER_ID_QP_NAME);
             if (userId == null) {
-                return success(responseFactory.badRequest());
+                return succeeded(responseFactory.badRequest());
             }
             int expectedEntitiesCount = 10;
             final String expectedEntitiesCountStr = request.queryParameter(EXPECTED_ENTITY_COUNT_QP_NAME);
@@ -130,7 +130,7 @@ final class RecommendationBackend {
             }
 
             // Serialize the Recommendation list to a single Buffer containing JSON and use it as the response payload.
-            return success(responseFactory.ok()
+            return succeeded(responseFactory.ok()
                     .payloadBody(recommendations, serializer.serializerFor(typeOfRecommendation)));
         }
     }

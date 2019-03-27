@@ -54,8 +54,8 @@ import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseabl
 import static io.servicetalk.concurrent.api.AsyncCloseables.toAsyncCloseable;
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Single.defer;
-import static io.servicetalk.concurrent.api.Single.error;
-import static io.servicetalk.concurrent.api.Single.success;
+import static io.servicetalk.concurrent.api.Single.failed;
+import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.ThrowableUtil.unknownStackTrace;
 import static java.util.Collections.binarySearch;
@@ -233,13 +233,13 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends ListenableA
 
     private <CC extends C> Single<CC> selectConnection0(Function<? super C, CC> selector) {
         if (closed) {
-            return error(LB_CLOSED_SELECT_CNX_EXCEPTION);
+            return failed(LB_CLOSED_SELECT_CNX_EXCEPTION);
         }
 
         final List<Host<ResolvedAddress, C>> activeHosts = this.activeHosts;
         if (activeHosts.isEmpty()) {
             // This is the case when SD has emitted some items but none of the hosts are active.
-            return error(NO_ACTIVE_HOSTS_SELECT_CNX_EXCEPTION);
+            return failed(NO_ACTIVE_HOSTS_SELECT_CNX_EXCEPTION);
         }
 
         final int cursor = indexUpdater.getAndUpdate(this, i -> (++i & Integer.MAX_VALUE)) % activeHosts.size();
@@ -252,7 +252,7 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends ListenableA
         for (final C connection : host.connections) {
             CC selection = selector.apply(connection);
             if (selection != null) {
-                return success(selection);
+                return succeeded(selection);
             }
         }
 
@@ -266,7 +266,7 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends ListenableA
                         newCnx.closeAsync().subscribe();
                         // Failure in selection could be temporary, hence add it to the queue and be consistent with the
                         // fact that select failure does not close a connection.
-                        return error(new ConnectionRejectedException("Newly created connection " + newCnx +
+                        return failed(new ConnectionRejectedException("Newly created connection " + newCnx +
                                 " rejected by the selection filter."));
                     }
                     if (host.addConnection(newCnx)) {
@@ -277,11 +277,11 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends ListenableA
                             if (host.connections.remove(newCnx)) {
                                 newCnx.closeAsync().subscribe();
                             }
-                            return error(LB_CLOSED_SELECT_CNX_EXCEPTION);
+                            return failed(LB_CLOSED_SELECT_CNX_EXCEPTION);
                         }
-                        return success(selection);
+                        return succeeded(selection);
                     }
-                    return error(new ConnectionRejectedException("Failed to add newly created connection for host: " +
+                    return failed(new ConnectionRejectedException("Failed to add newly created connection for host: " +
                             host.address + ", host inactive? " + host.removed));
                 });
     }

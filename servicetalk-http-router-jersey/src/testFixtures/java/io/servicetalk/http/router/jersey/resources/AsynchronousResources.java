@@ -66,8 +66,8 @@ import javax.ws.rs.sse.SseEventSink;
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Publisher.just;
 import static io.servicetalk.concurrent.api.Single.defer;
-import static io.servicetalk.concurrent.api.Single.error;
-import static io.servicetalk.concurrent.api.Single.success;
+import static io.servicetalk.concurrent.api.Single.failed;
+import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.http.router.jersey.resources.AsynchronousResources.PATH;
 import static java.lang.System.arraycopy;
@@ -106,7 +106,7 @@ public class AsynchronousResources {
     @Path("/completable")
     @GET
     public Completable getCompletableOut(@QueryParam("fail") final boolean fail) {
-        return Completable.defer(() -> fail ? Completable.error(DELIBERATE_EXCEPTION) : completed());
+        return Completable.defer(() -> fail ? Completable.failed(DELIBERATE_EXCEPTION) : completed());
     }
 
     @Produces(TEXT_PLAIN)
@@ -114,7 +114,7 @@ public class AsynchronousResources {
     @GET
     public Single<String> getStringSingle(final @QueryParam("fail") boolean fail) {
         return ctx.executionContext().executor().timer(10, MILLISECONDS)
-                .concat(fail ? error(DELIBERATE_EXCEPTION) : success("DONE"));
+                .concat(fail ? failed(DELIBERATE_EXCEPTION) : succeeded("DONE"));
     }
 
     @Consumes(APPLICATION_JSON)
@@ -125,7 +125,7 @@ public class AsynchronousResources {
                                                        final Single<Buffer> requestContent) {
         final BufferAllocator allocator = ctx.executionContext().bufferAllocator();
 
-        return fail ? defer(() -> error(DELIBERATE_EXCEPTION)) :
+        return fail ? defer(() -> failed(DELIBERATE_EXCEPTION)) :
                 requestContent.map(buf -> {
                     final Map<String, Object> responseContent =
                             new HashMap<>(SERIALIZER.deserializeAggregatedSingle(buf, STRING_OBJECT_MAP_TYPE));
@@ -139,7 +139,7 @@ public class AsynchronousResources {
     @GET
     public Single<Response> getResponseSingle(final @QueryParam("fail") boolean fail) {
         return ctx.executionContext().executor().timer(10, MILLISECONDS)
-                .concat(fail ? error(DELIBERATE_EXCEPTION) : success(accepted("DONE").build()));
+                .concat(fail ? failed(DELIBERATE_EXCEPTION) : succeeded(accepted("DONE").build()));
     }
 
     @Produces(TEXT_PLAIN)
@@ -152,7 +152,7 @@ public class AsynchronousResources {
                     final String contentString = "GOT: " + i;
                     final Publisher<Buffer> responseContent = just(allocator.fromAscii(contentString));
 
-                    return success(status(i)
+                    return succeeded(status(i)
                             // We know the content length so we set it, otherwise the response is chunked
                             .header(CONTENT_LENGTH, contentString.length())
                             // Wrap content Publisher to capture its generic type (i.e. Buffer)
@@ -167,7 +167,7 @@ public class AsynchronousResources {
     @GET
     public Single<Map<String, Object>> getMapSingle(final @QueryParam("fail") boolean fail) {
         return ctx.executionContext().executor().timer(10, MILLISECONDS)
-                .concat(fail ? error(DELIBERATE_EXCEPTION) : defer(() -> success(singletonMap("foo", "bar4"))));
+                .concat(fail ? failed(DELIBERATE_EXCEPTION) : defer(() -> succeeded(singletonMap("foo", "bar4"))));
     }
 
     @Produces(APPLICATION_JSON)
@@ -175,11 +175,11 @@ public class AsynchronousResources {
     @GET
     public Single<TestPojo> getPojoSingle(final @QueryParam("fail") boolean fail) {
         return ctx.executionContext().executor().timer(10, MILLISECONDS)
-                .concat(fail ? error(DELIBERATE_EXCEPTION) : defer(() -> {
+                .concat(fail ? failed(DELIBERATE_EXCEPTION) : defer(() -> {
                     final TestPojo testPojo = new TestPojo();
                     testPojo.setaString("boo");
                     testPojo.setAnInt(456);
-                    return success(testPojo);
+                    return succeeded(testPojo);
                 }));
     }
 
@@ -190,10 +190,10 @@ public class AsynchronousResources {
     public Single<TestPojo> postJsonPojoInPojoOutSingle(@QueryParam("fail") final boolean fail,
                                                         final TestPojo testPojo) {
         return ctx.executionContext().executor().timer(10, MILLISECONDS)
-                .concat(fail ? error(DELIBERATE_EXCEPTION) : defer(() -> {
+                .concat(fail ? failed(DELIBERATE_EXCEPTION) : defer(() -> {
                     testPojo.setAnInt(testPojo.getAnInt() + 1);
                     testPojo.setaString(testPojo.getaString() + "x");
-                    return success(testPojo);
+                    return succeeded(testPojo);
                 }));
     }
 
@@ -204,10 +204,10 @@ public class AsynchronousResources {
     public Single<Response> postJsonPojoInPojoOutResponseSingle(@QueryParam("fail") final boolean fail,
                                                                 final TestPojo testPojo) {
         return ctx.executionContext().executor().timer(10, MILLISECONDS)
-                .concat(fail ? error(DELIBERATE_EXCEPTION) : defer(() -> {
+                .concat(fail ? failed(DELIBERATE_EXCEPTION) : defer(() -> {
                     testPojo.setAnInt(testPojo.getAnInt() + 1);
                     testPojo.setaString(testPojo.getaString() + "x");
-                    return success(accepted(testPojo).build());
+                    return succeeded(accepted(testPojo).build());
                 }));
     }
 

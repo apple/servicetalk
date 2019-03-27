@@ -44,8 +44,8 @@ import java.util.function.BiFunction;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
-import static io.servicetalk.concurrent.api.Single.error;
-import static io.servicetalk.concurrent.api.Single.success;
+import static io.servicetalk.concurrent.api.Single.failed;
+import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.HttpHeaderNames.AUTHORIZATION;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderNames.PROXY_AUTHENTICATE;
@@ -316,7 +316,7 @@ public final class BasicAuthHttpServiceFilter<UserInfo> implements HttpServiceFi
                         }
 
                         LOGGER.debug("Unexpected exception during authentication", t);
-                        return error(t);
+                        return failed(t);
                     });
         }
 
@@ -342,7 +342,7 @@ public final class BasicAuthHttpServiceFilter<UserInfo> implements HttpServiceFi
             HttpHeaders headers = response.headers();
             headers.set(config.proxy ? PROXY_AUTHENTICATE : WWW_AUTHENTICATE, authenticateHeader);
             headers.set(CONTENT_LENGTH, ZERO);
-            return success(response);
+            return succeeded(response);
         }
 
         private Single<StreamingHttpResponse> onAuthenticated(final HttpServiceContext ctx,

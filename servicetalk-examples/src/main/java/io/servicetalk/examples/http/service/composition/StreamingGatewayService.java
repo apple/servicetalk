@@ -34,7 +34,7 @@ import io.servicetalk.http.api.StreamingHttpService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static io.servicetalk.concurrent.api.Single.success;
+import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.examples.http.service.composition.AsyncUtils.zip;
 
 /**
@@ -68,7 +68,7 @@ final class StreamingGatewayService implements StreamingHttpService {
                                                 final StreamingHttpResponseFactory responseFactory) {
         final String userId = request.queryParameter(USER_ID_QP_NAME);
         if (userId == null) {
-            return success(responseFactory.badRequest());
+            return succeeded(responseFactory.badRequest());
         }
 
         return recommendationsClient.request(recommendationsClient.get("/recommendations/stream?userId=" + userId))
@@ -99,7 +99,7 @@ final class StreamingGatewayService implements StreamingHttpService {
                             .recoverWith(cause -> {
                                 LOGGER.error("Error querying ratings service. Ignoring and providing a fallback.",
                                         cause);
-                                return success(new Rating(recommendation.getEntityId(), -1));
+                                return succeeded(new Rating(recommendation.getEntityId(), -1));
                             });
 
             // The below asynchronously queries metadata, user and rating backends and zips them into a single

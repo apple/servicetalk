@@ -23,7 +23,7 @@ import org.junit.Test;
 
 import java.util.function.Supplier;
 
-import static io.servicetalk.concurrent.api.Single.success;
+import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -40,7 +40,7 @@ public class SingleDeferTest {
     @Before
     public void setUp() throws Exception {
         factory = mock(Supplier.class);
-        when(factory.get()).thenReturn(success(1));
+        when(factory.get()).thenReturn(succeeded(1));
     }
 
     @Test

@@ -55,7 +55,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.client.api.internal.ServiceDiscovererUtils.calculateDifference;
 import static io.servicetalk.concurrent.api.Processors.newCompletableProcessor;
-import static io.servicetalk.concurrent.api.Publisher.error;
+import static io.servicetalk.concurrent.api.Publisher.failed;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.concurrent.internal.EmptySubscription.EMPTY_SUBSCRIPTION;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid;
@@ -127,7 +127,7 @@ final class DefaultDnsServiceDiscoverer
         final DiscoverEntry entry;
         if (nettyIoExecutor.isCurrentThreadEventLoop()) {
             if (closed) {
-                return error(new IllegalStateException(DefaultDnsServiceDiscoverer.class.getSimpleName() +
+                return failed(new IllegalStateException(DefaultDnsServiceDiscoverer.class.getSimpleName() +
                         " closed!"));
             }
             entry = new DiscoverEntry(address);

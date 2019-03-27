@@ -47,7 +47,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.BlockingTestUtils.await;
 import static io.servicetalk.concurrent.api.Completable.completed;
-import static io.servicetalk.concurrent.api.Single.success;
+import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
@@ -103,7 +103,7 @@ public class MultiAddressUrlHttpClientSslTest {
                     StreamingHttpResponseFactory factory = invocation.getArgument(2);
                     StreamingHttpResponse resp = factory.ok();
                     resp.headers().set(httpHeaders);
-                    return success(resp);
+                    return succeeded(resp);
                 });
         when(STREAMING_HTTP_SERVICE.computeExecutionStrategy(any())).thenReturn(noOffloadsStrategy());
         when(STREAMING_HTTP_SERVICE.closeAsync()).thenReturn(completed());
@@ -119,7 +119,7 @@ public class MultiAddressUrlHttpClientSslTest {
                     StreamingHttpResponseFactory factory = invocation.getArgument(2);
                     StreamingHttpResponse resp = factory.ok();
                     resp.headers().set(httpHeaders);
-                    return success(resp);
+                    return succeeded(resp);
                 });
         when(SECURE_STREAMING_HTTP_SERVICE.computeExecutionStrategy(any())).thenReturn(noOffloadsStrategy());
         when(SECURE_STREAMING_HTTP_SERVICE.closeAsync()).thenReturn(completed());

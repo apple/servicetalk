@@ -40,7 +40,7 @@ import java.util.Collection;
 import javax.net.ssl.SSLSession;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
-import static io.servicetalk.concurrent.api.Single.success;
+import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.AbstractHttpRequesterFilterTest.RequestWithContextHandler.ok;
 import static io.servicetalk.http.api.AbstractHttpRequesterFilterTest.RequesterType.Client;
 import static io.servicetalk.http.api.AbstractHttpRequesterFilterTest.RequesterType.Connection;
@@ -223,7 +223,7 @@ public abstract class AbstractHttpRequesterFilterTest {
          * @return OK response handler.
          */
         static RequestHandler ok() {
-            return (respFactory, request) -> success(REQ_RES_FACTORY.ok());
+            return (respFactory, request) -> succeeded(REQ_RES_FACTORY.ok());
         }
 
         /**
@@ -258,7 +258,7 @@ public abstract class AbstractHttpRequesterFilterTest {
          * @return OK response handler.
          */
         static RequestWithContextHandler ok() {
-            return (respFactory, context, request) -> success(REQ_RES_FACTORY.ok());
+            return (respFactory, context, request) -> succeeded(REQ_RES_FACTORY.ok());
         }
     }
 
@@ -332,7 +332,7 @@ public abstract class AbstractHttpRequesterFilterTest {
                             final StreamingHttpClientFilter delegate,
                             final HttpExecutionStrategy strategy,
                             final HttpRequestMetaData metaData) {
-                        return success(newReservedConnection()).map(rc ->
+                        return succeeded(newReservedConnection()).map(rc ->
                                 new ReservedStreamingHttpConnectionFilter(rc) {
                                     @Override
                                     protected Single<StreamingHttpResponse> request(

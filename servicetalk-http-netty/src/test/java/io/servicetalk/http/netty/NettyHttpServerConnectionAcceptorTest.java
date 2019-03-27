@@ -41,7 +41,7 @@ import javax.annotation.Nullable;
 import javax.net.ssl.SSLSession;
 
 import static io.servicetalk.concurrent.api.Completable.completed;
-import static io.servicetalk.concurrent.api.Completable.error;
+import static io.servicetalk.concurrent.api.Completable.failed;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
@@ -62,15 +62,15 @@ public class NettyHttpServerConnectionAcceptorTest extends AbstractNettyHttpServ
     enum FilterMode {
         ACCEPT_ALL(true, (executor, context) -> completed()),
         DELAY_ACCEPT_ALL(true, (executor, context) -> executor.timer(100, MILLISECONDS).concat(completed())),
-        REJECT_ALL(false, (executor, context) -> error(DELIBERATE_EXCEPTION)),
+        REJECT_ALL(false, (executor, context) -> failed(DELIBERATE_EXCEPTION)),
         DELAY_REJECT_ALL(false, (executor, context) ->
-                executor.timer(100, MILLISECONDS).concat(error(DELIBERATE_EXCEPTION))),
+                executor.timer(100, MILLISECONDS).concat(failed(DELIBERATE_EXCEPTION))),
         THROW_EXCEPTION(false, (executor, context) -> {
             throw DELIBERATE_EXCEPTION;
         }),
         DELAY_SINGLE_ERROR(false, (executor, context) ->
-                executor.timer(100, MILLISECONDS).concat(error(DELIBERATE_EXCEPTION))),
-        SINGLE_ERROR(false, (executor, context) -> error(new DeliberateException())),
+                executor.timer(100, MILLISECONDS).concat(failed(DELIBERATE_EXCEPTION))),
+        SINGLE_ERROR(false, (executor, context) -> failed(new DeliberateException())),
         ACCEPT_ALL_CONSTANT(true, (executor, context) -> completed()) {
             @Override
             ConnectionAcceptor getContextFilter(final Executor executor) {

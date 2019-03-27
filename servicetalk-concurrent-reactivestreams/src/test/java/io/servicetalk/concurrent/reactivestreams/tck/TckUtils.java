@@ -52,6 +52,6 @@ final class TckUtils {
     }
 
     static <T> Publisher<T> newFailedPublisher() {
-        return Publisher.error(DeliberateException.DELIBERATE_EXCEPTION);
+        return Publisher.failed(DeliberateException.DELIBERATE_EXCEPTION);
     }
 }

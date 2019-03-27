@@ -31,7 +31,7 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.concurrent.locks.LockSupport;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.api.Publisher.error;
+import static io.servicetalk.concurrent.api.Publisher.failed;
 import static io.servicetalk.concurrent.internal.FlowControlUtil.addWithOverflowProtection;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverTerminalFromSource;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
@@ -157,7 +157,7 @@ public final class ConnectablePayloadWriter<T> implements PayloadWriter<T> {
      */
     public Publisher<T> connect() {
         return stateUpdater.compareAndSet(this, State.DISCONNECTED, State.CONNECTING) ? new ConnectedPublisher<>(this) :
-                error(new IllegalStateException("Stream state " + state + " is not valid for connect."));
+                failed(new IllegalStateException("Stream state " + state + " is not valid for connect."));
     }
 
     private void verifyOpen() throws IOException {

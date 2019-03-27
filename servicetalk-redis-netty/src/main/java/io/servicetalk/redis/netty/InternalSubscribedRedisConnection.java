@@ -45,7 +45,7 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.Completable.completed;
-import static io.servicetalk.concurrent.api.Completable.error;
+import static io.servicetalk.concurrent.api.Completable.failed;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.EmptySubscription.EMPTY_SUBSCRIPTION;
 import static io.servicetalk.concurrent.internal.ThrowableUtil.matches;
@@ -95,7 +95,7 @@ final class InternalSubscribedRedisConnection extends AbstractRedisConnection {
     Publisher<RedisData> handleRequest(RedisRequest request) {
         final Command command = request.command();
         if (!isSubscribeModeCommand(command) && command != PING && command != QUIT && command != AUTH) {
-            return Publisher.error(new IllegalArgumentException("Invalid command: " + command
+            return Publisher.failed(new IllegalArgumentException("Invalid command: " + command
                     + ". This command is not allowed in subscribe mode."));
         }
 
@@ -165,7 +165,7 @@ final class InternalSubscribedRedisConnection extends AbstractRedisConnection {
     Completable doClose() {
         return writeQueue.quit(request(newRequest(QUIT)).ignoreElements())
                 .onErrorResume(th -> matches(th, ClosedChannelException.class) ? completed() :
-                        connection.closeAsync().concat(error(th)))
+                        connection.closeAsync().concat(failed(th)))
                 .concat(connection.closeAsync());
     }
 
@@ -183,7 +183,7 @@ final class InternalSubscribedRedisConnection extends AbstractRedisConnection {
             // after SUBSCRIBE. However, with this approach we just wait for the next ping cycle. Since, the ping
             // frequency is not strictly defined and expected, this is an acceptable approach which reduces work done
             // inside command execution to detect this case.
-            return error(new PingRejectedException());
+            return failed(new PingRejectedException());
         }
         // We send a PING with no payload so the response is a fully aggregated PubSubChannelMessage.
         // So, issuing a single request(1) followed by a cancel is enough to consume to overall response,

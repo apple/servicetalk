@@ -51,7 +51,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Single.defer;
-import static io.servicetalk.concurrent.api.Single.success;
+import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.CharSequences.newAsciiString;
 import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
@@ -170,7 +170,7 @@ public abstract class AbstractHttpServiceAsyncContextTest {
                                                            final StreamingHttpResponseFactory factory) {
                 if (useImmediate && !currentThread().getName().startsWith(IO_THREAD_PREFIX)) {
                     // verify that if we expect to be offloaded, that we actually are
-                    return success(factory.internalServerError());
+                    return succeeded(factory.internalServerError());
                 }
                 CharSequence requestId = request.headers().getAndRemove(REQUEST_ID_HEADER);
                 if (requestId != null) {

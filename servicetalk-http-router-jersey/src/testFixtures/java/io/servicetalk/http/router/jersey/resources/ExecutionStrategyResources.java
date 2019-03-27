@@ -46,7 +46,7 @@ import javax.ws.rs.sse.Sse;
 import javax.ws.rs.sse.SseEventSink;
 
 import static io.servicetalk.concurrent.api.Single.defer;
-import static io.servicetalk.concurrent.api.Single.success;
+import static io.servicetalk.concurrent.api.Single.succeeded;
 import static java.lang.Thread.currentThread;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
@@ -221,7 +221,7 @@ public final class ExecutionStrategyResources {
             final Map<String, String> threadingInfo = getThreadingInfo(ctx, req, uriInfo);
             return defer(() -> {
                 threadingInfo.put(RS_THREAD_NAME, currentThread().getName());
-                return success(threadingInfo);
+                return succeeded(threadingInfo);
             });
         }
 
@@ -229,7 +229,7 @@ public final class ExecutionStrategyResources {
             final Map<String, String> threadingInfo = getThreadingInfo(ctx, req, uriInfo);
             return defer(() -> {
                 threadingInfo.put(RS_THREAD_NAME, currentThread().getName());
-                return success(ok(threadingInfo).build());
+                return succeeded(ok(threadingInfo).build());
             });
         }
 
@@ -238,7 +238,7 @@ public final class ExecutionStrategyResources {
             final Map<String, String> threadingInfo = getThreadingInfo(ctx, req, uriInfo);
             return defer(() -> {
                 threadingInfo.put(RS_THREAD_NAME, currentThread().getName());
-                return success(SERIALIZER.serialize(threadingInfo, allocator));
+                return succeeded(SERIALIZER.serialize(threadingInfo, allocator));
             });
         }
 
@@ -246,7 +246,7 @@ public final class ExecutionStrategyResources {
             final Map<String, String> threadingInfo = getThreadingInfo(ctx, req, uriInfo);
             return content.flatMap(__ -> {
                 threadingInfo.put(RS_THREAD_NAME, currentThread().getName());
-                return success(threadingInfo);
+                return succeeded(threadingInfo);
             });
         }
 

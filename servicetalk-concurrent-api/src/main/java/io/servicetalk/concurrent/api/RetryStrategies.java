@@ -19,7 +19,7 @@ import java.time.Duration;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Predicate;
 
-import static io.servicetalk.concurrent.api.Completable.error;
+import static io.servicetalk.concurrent.api.Completable.failed;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
@@ -55,7 +55,7 @@ public final class RetryStrategies {
         final long delayNanos = delay.toNanos();
         return (retryCount, cause) -> {
             if (retryCount > maxRetries || !causeFilter.test(cause)) {
-                return error(cause);
+                return failed(cause);
             }
             return timerExecutor.timer(delayNanos, NANOSECONDS);
         };
@@ -87,7 +87,7 @@ public final class RetryStrategies {
         final long delayNanos = delay.toNanos();
         return (retryCount, cause) -> {
             if (retryCount > maxRetries || !causeFilter.test(cause)) {
-                return error(cause);
+                return failed(cause);
             }
             return timerExecutor.timer(ThreadLocalRandom.current().nextLong(0, delayNanos), NANOSECONDS);
         };
@@ -121,7 +121,7 @@ public final class RetryStrategies {
         final long initialDelayNanos = initialDelay.toNanos();
         return (retryCount, cause) -> {
             if (retryCount > maxRetries || !causeFilter.test(cause)) {
-                return error(cause);
+                return failed(cause);
             }
             return timerExecutor.timer(initialDelayNanos << (retryCount - 1), NANOSECONDS);
         };
@@ -157,7 +157,7 @@ public final class RetryStrategies {
         final long initialDelayNanos = initialDelay.toNanos();
         return (retryCount, cause) -> {
             if (retryCount > maxRetries || !causeFilter.test(cause)) {
-                return error(cause);
+                return failed(cause);
             }
             return timerExecutor.timer(ThreadLocalRandom.current().nextLong(0, initialDelayNanos << (retryCount - 1)),
                     NANOSECONDS);

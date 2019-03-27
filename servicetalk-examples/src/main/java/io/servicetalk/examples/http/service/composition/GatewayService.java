@@ -34,7 +34,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static io.servicetalk.concurrent.api.Publisher.from;
-import static io.servicetalk.concurrent.api.Single.success;
+import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.examples.http.service.composition.AsyncUtils.zip;
 
 /**
@@ -72,7 +72,7 @@ final class GatewayService implements HttpService {
                                        final HttpResponseFactory responseFactory) {
         final String userId = request.queryParameter(USER_ID_QP_NAME);
         if (userId == null) {
-            return success(responseFactory.badRequest());
+            return succeeded(responseFactory.badRequest());
         }
 
         return recommendationsClient.request(recommendationsClient.get("/recommendations/aggregated?userId=" + userId))
@@ -106,7 +106,7 @@ final class GatewayService implements HttpService {
                                     // response with a static "unavailable" rating when the rating service is
                                     // unavailable or provides a bad response. This is typically referred to as a
                                     // "fallback".
-                                    .recoverWith(cause -> success(new Rating(reco.getEntityId(), -1)));
+                                    .recoverWith(cause -> succeeded(new Rating(reco.getEntityId(), -1)));
 
                     // The below asynchronously queries metadata, user and rating backends and zips them into a single
                     // FullRecommendation instance.
