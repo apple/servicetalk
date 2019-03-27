@@ -43,7 +43,9 @@ import java.util.stream.Stream;
 import javax.annotation.Nullable;
 
 import static java.lang.Boolean.parseBoolean;
+import static java.lang.Math.max;
 import static java.util.Objects.requireNonNull;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
  * Standard timeout shared by test classes. The {@link #lookForStuckThread} setting is ignored.
@@ -54,11 +56,11 @@ public final class ServiceTalkTestTimeout extends Timeout {
     private final Runnable onTimeout;
 
     public ServiceTalkTestTimeout() {
-        this(DEFAULT_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+        this(DEFAULT_TIMEOUT_SECONDS, SECONDS);
     }
 
     public ServiceTalkTestTimeout(long timeout, TimeUnit unit) {
-        this(timeout, unit, () -> { });
+        this(max(timeout, unit.convert(DEFAULT_TIMEOUT_SECONDS, SECONDS)), unit, () -> { });
     }
 
     public ServiceTalkTestTimeout(long timeout, TimeUnit unit, Runnable onTimeout) {
