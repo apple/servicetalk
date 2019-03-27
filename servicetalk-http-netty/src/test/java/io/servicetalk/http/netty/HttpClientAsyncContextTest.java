@@ -43,7 +43,7 @@ import java.util.concurrent.ExecutionException;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.api.Single.success;
+import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.CharSequences.newAsciiString;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
@@ -73,7 +73,7 @@ public class HttpClientAsyncContextTest {
         Queue<Throwable> errorQueue = new ConcurrentLinkedQueue<>();
 
         try (ServerContext serverContext = HttpServers.forAddress(localAddress(0))
-                .listenAndAwait((ctx, request, responseFactory) -> success(responseFactory.ok()));
+                .listenAndAwait((ctx, request, responseFactory) -> succeeded(responseFactory.ok()));
              StreamingHttpClient client = buildClient(useImmediate, errorQueue, serverContext).buildStreaming()) {
             makeClientRequestWithId(client, "1");
             assertThat("Error queue is not empty!", errorQueue, empty());

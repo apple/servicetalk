@@ -52,7 +52,7 @@ public abstract class AbstractDoSubscriberTest {
 
     @Test
     public void testOnWithOnError() {
-        toSource(doSubscriber(Publisher.error(DeliberateException.DELIBERATE_EXCEPTION), () -> subscriber))
+        toSource(doSubscriber(Publisher.failed(DeliberateException.DELIBERATE_EXCEPTION), () -> subscriber))
                 .subscribe(finalSubscriber);
         assertThat(finalSubscriber.takeError(), sameInstance(DELIBERATE_EXCEPTION));
         assertTrue(subscriber.subscriptionReceived());

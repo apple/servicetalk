@@ -28,7 +28,7 @@ public class DoAfterSubscribeTest extends AbstractDoSubscribeTest {
 
     @Test
     public void testCallbackThrowsError() {
-        listener.listen(doSubscribe(Single.success("Hello"), __ -> {
+        listener.listen(doSubscribe(Single.succeeded("Hello"), __ -> {
             throw DELIBERATE_EXCEPTION;
         })).verifyNoEmissions();
     }

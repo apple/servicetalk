@@ -19,7 +19,7 @@ import java.time.Duration;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.IntFunction;
 
-import static io.servicetalk.concurrent.api.Completable.error;
+import static io.servicetalk.concurrent.api.Completable.failed;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
@@ -131,6 +131,6 @@ public final class RepeatStrategies {
     }
 
     private static Completable terminateRepeat() {
-        return error(TerminateRepeatException.INSTANCE);
+        return failed(TerminateRepeatException.INSTANCE);
     }
 }

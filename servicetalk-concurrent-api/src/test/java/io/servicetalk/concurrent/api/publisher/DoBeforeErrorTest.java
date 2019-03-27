@@ -40,7 +40,7 @@ public class DoBeforeErrorTest extends AbstractDoErrorTest {
     @Test
     public void testCallbackThrowsError() {
         DeliberateException srcEx = new DeliberateException();
-        this.<String>doError(Publisher.error(srcEx), t1 -> {
+        this.<String>doError(Publisher.failed(srcEx), t1 -> {
             throw DELIBERATE_EXCEPTION;
         }).subscribe(subscriber);
         subscriber.request(1);

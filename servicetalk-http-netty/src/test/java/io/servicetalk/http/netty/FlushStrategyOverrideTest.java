@@ -53,7 +53,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import static io.servicetalk.concurrent.api.AsyncCloseables.emptyAsyncCloseable;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.Publisher.from;
-import static io.servicetalk.concurrent.api.Single.success;
+import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.http.netty.HttpClients.forSingleAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
@@ -148,12 +148,12 @@ public class FlushStrategyOverrideTest {
                 NettyConnectionContext nctx = (NettyConnectionContext) ctx;
                 MockFlushStrategy strategy = new MockFlushStrategy();
                 Cancellable c = nctx.updateFlushStrategy(old -> strategy);
-                return success(responseFactory.ok().payloadBody(request.payloadBody().doAfterFinally(() -> {
+                return succeeded(responseFactory.ok().payloadBody(request.payloadBody().doAfterFinally(() -> {
                     c.cancel();
                     flushStrategies.add(strategy);
                 })));
             } else {
-                return success(responseFactory.ok().payloadBody(request.payloadBody()
+                return succeeded(responseFactory.ok().payloadBody(request.payloadBody()
                         .doAfterFinally(() -> flushStrategies.add(new MockFlushStrategy()))));
             }
         }

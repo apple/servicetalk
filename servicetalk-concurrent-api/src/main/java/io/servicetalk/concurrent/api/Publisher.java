@@ -2342,7 +2342,7 @@ public abstract class Publisher<T> {
      *
      * @see <a href="http://reactivex.io/documentation/operators/empty-never-throw.html">ReactiveX error operator.</a>
      */
-    public static <T> Publisher<T> error(Throwable cause) {
+    public static <T> Publisher<T> failed(Throwable cause) {
         return new ErrorPublisher<>(cause);
     }
 

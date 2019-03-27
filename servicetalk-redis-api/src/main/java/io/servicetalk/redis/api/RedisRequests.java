@@ -34,7 +34,7 @@ import java.util.RandomAccess;
 import java.util.function.BiFunction;
 import java.util.function.Predicate;
 
-import static io.servicetalk.concurrent.api.Single.success;
+import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.redis.api.StringByteSizeUtil.numberOfBytesUtf8;
 import static io.servicetalk.redis.api.StringByteSizeUtil.numberOfDigits;
 import static io.servicetalk.redis.api.StringByteSizeUtil.numberOfDigitsPositive;
@@ -451,14 +451,14 @@ public final class RedisRequests {
     static <C> Single<C> reserveConnection(final RedisRequester requestor, final RedisRequest request,
                                            final BiFunction<ReservedRedisConnection, Publisher<RedisData>, C> builder) {
         if (requestor instanceof ReservedRedisConnection) {
-            return success(builder.apply((ReservedRedisConnection) requestor, requestor.request(request)));
+            return succeeded(builder.apply((ReservedRedisConnection) requestor, requestor.request(request)));
         } else if (requestor instanceof RedisClient) {
             return ((RedisClient) requestor).reserveConnection(request.command())
-                    .flatMap(reservedCnx -> success(builder.apply(reservedCnx, reservedCnx.request(request))));
+                    .flatMap(reservedCnx -> succeeded(builder.apply(reservedCnx, reservedCnx.request(request))));
         } else {
             final StandAloneReservedRedisConnection reservedCnx =
                     new StandAloneReservedRedisConnection((RedisConnection) requestor);
-            return success(builder.apply(reservedCnx, reservedCnx.request(request)));
+            return succeeded(builder.apply(reservedCnx, reservedCnx.request(request)));
         }
     }
 
@@ -466,7 +466,7 @@ public final class RedisRequests {
                                            final PartitionAttributes partitionSelector, final RedisRequest request,
                                            final BiFunction<ReservedRedisConnection, Publisher<RedisData>, C> builder) {
         return client.reserveConnection(partitionSelector, request.command())
-                .flatMap(reservedCnx -> success(builder.apply(reservedCnx, reservedCnx.request(request))));
+                .flatMap(reservedCnx -> succeeded(builder.apply(reservedCnx, reservedCnx.request(request))));
     }
 
     private static <C> Single<C> requestAndWrapConnection(final ReservedRedisConnection reservedCnx,

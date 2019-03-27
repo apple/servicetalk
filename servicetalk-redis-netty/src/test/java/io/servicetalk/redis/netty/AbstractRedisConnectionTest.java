@@ -39,7 +39,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Completable.never;
-import static io.servicetalk.concurrent.api.Publisher.error;
+import static io.servicetalk.concurrent.api.Publisher.failed;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.redis.api.RedisProtocolSupport.Command.AUTH;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -158,7 +158,7 @@ public final class AbstractRedisConnectionTest {
 
         @Override
         public Publisher<RedisData> handleRequest(RedisRequest request) {
-            return error(new UnsupportedOperationException("Not implemented."));
+            return failed(new UnsupportedOperationException("Not implemented."));
         }
 
         @Override

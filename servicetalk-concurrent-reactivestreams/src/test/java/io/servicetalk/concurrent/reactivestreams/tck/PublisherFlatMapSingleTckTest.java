@@ -24,6 +24,6 @@ import org.testng.annotations.Test;
 public class PublisherFlatMapSingleTckTest extends AbstractPublisherOperatorTckTest<Integer> {
     @Override
     protected Publisher<Integer> composePublisher(Publisher<Integer> publisher, int elements) {
-        return publisher.flatMapMergeSingle(Single::success, 10);
+        return publisher.flatMapMergeSingle(Single::succeeded, 10);
     }
 }

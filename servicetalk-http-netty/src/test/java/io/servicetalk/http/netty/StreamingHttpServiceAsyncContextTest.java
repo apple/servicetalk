@@ -29,7 +29,7 @@ import io.servicetalk.transport.api.ServerContext;
 import org.junit.Test;
 
 import static io.servicetalk.concurrent.api.Single.defer;
-import static io.servicetalk.concurrent.api.Single.success;
+import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static java.lang.Thread.currentThread;
@@ -91,15 +91,15 @@ public class StreamingHttpServiceAsyncContextTest extends AbstractHttpServiceAsy
                 request.payloadBody().ignoreElements().subscribe();
 
                 if (!AsyncContext.isEmpty()) {
-                    return success(factory.internalServerError());
+                    return succeeded(factory.internalServerError());
                 }
                 CharSequence requestId = request.headers().getAndRemove(REQUEST_ID_HEADER);
                 if (requestId != null) {
                     AsyncContext.put(K1, requestId);
-                    return success(factory.ok()
+                    return succeeded(factory.ok()
                             .setHeader(REQUEST_ID_HEADER, requestId));
                 } else {
-                    return success(factory.badRequest());
+                    return succeeded(factory.badRequest());
                 }
             }
 
@@ -141,18 +141,18 @@ public class StreamingHttpServiceAsyncContextTest extends AbstractHttpServiceAsy
                         .concat(defer(() -> {
                             if (useImmediate && !currentThread().getName().startsWith(IO_THREAD_PREFIX)) {
                                 // verify that if we expect to be offloaded, that we actually are
-                                return success(factory.internalServerError());
+                                return succeeded(factory.internalServerError());
                             }
                             CharSequence requestId2 = AsyncContext.get(K1);
                             if (requestId2 == requestId && requestId2 != null) {
                                 StreamingHttpResponse response = factory.ok();
                                 response.headers().set(REQUEST_ID_HEADER, requestId);
-                                return success(response);
+                                return succeeded(response);
                             } else {
                                 StreamingHttpResponse response = factory.internalServerError();
                                 response.headers().set(REQUEST_ID_HEADER, String.valueOf(requestId));
                                 response.headers().set(REQUEST_ID_HEADER + "2", String.valueOf(requestId2));
-                                return success(response);
+                                return succeeded(response);
                             }
                         }));
             }

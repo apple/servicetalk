@@ -40,7 +40,7 @@ public class DoBeforeFinallyTest extends AbstractDoFinallyTest {
     @Override
     public void testCallbackThrowsErrorOnError() {
         DeliberateException exception = new DeliberateException();
-        listener.listen(doFinally(Completable.error(DELIBERATE_EXCEPTION), () -> {
+        listener.listen(doFinally(Completable.failed(DELIBERATE_EXCEPTION), () -> {
             throw exception;
         }));
         listener.verifyFailure(exception);

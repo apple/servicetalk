@@ -44,7 +44,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static io.servicetalk.concurrent.api.Completable.error;
+import static io.servicetalk.concurrent.api.Completable.failed;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.dns.discovery.netty.DnsTestUtils.nextIp;
@@ -104,7 +104,7 @@ public class DefaultDnsServiceDiscovererTest {
                                 serviceDiscoverer, (retryCount, cause) -> {
                             retryLatch.countDown();
                             return retryCount == 1 && cause instanceof UnknownHostException ?
-                                    globalExecutionContext().executor().timer(Duration.ofSeconds(1)) : error(cause);
+                                    globalExecutionContext().executor().timer(Duration.ofSeconds(1)) : failed(cause);
                         })).buildInetDiscoverer();
 
         try {

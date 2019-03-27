@@ -25,6 +25,6 @@ public class SingleToPublisherTckTest extends AbstractSingleTckTest<Integer> {
 
     @Override
     public Publisher<Integer> createServiceTalkPublisher(long elements) {
-        return Single.success(1).toPublisher();
+        return Single.succeeded(1).toPublisher();
     }
 }

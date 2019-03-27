@@ -25,7 +25,7 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 
-import static io.servicetalk.concurrent.api.Completable.error;
+import static io.servicetalk.concurrent.api.Completable.failed;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 
 /**
@@ -79,6 +79,6 @@ public final class LoadBalancerReadyStreamingHttpClientFilter extends StreamingH
 
     private BiIntFunction<Throwable, Completable> retryWhenFunction() {
         return (count, cause) -> count <= maxRetryCount && cause instanceof NoAvailableHostException ?
-                loadBalancerReadySubscriber.onHostsAvailable() : error(cause);
+                loadBalancerReadySubscriber.onHostsAvailable() : failed(cause);
     }
 }

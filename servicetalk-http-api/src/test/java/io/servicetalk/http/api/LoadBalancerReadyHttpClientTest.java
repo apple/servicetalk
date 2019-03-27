@@ -36,8 +36,8 @@ import java.util.function.Supplier;
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.client.api.LoadBalancerReadyEvent.LOAD_BALANCER_READY_EVENT;
 import static io.servicetalk.concurrent.api.Single.defer;
-import static io.servicetalk.concurrent.api.Single.error;
-import static io.servicetalk.concurrent.api.Single.success;
+import static io.servicetalk.concurrent.api.Single.failed;
+import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.http.api.DefaultHttpHeadersFactory.INSTANCE;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
@@ -163,7 +163,7 @@ public class LoadBalancerReadyHttpClientTest {
 
         @Override
         public Single<T> get() {
-            return ++count == 1 ? error(new NoAvailableHostException("deliberate testing")) : success(value);
+            return ++count == 1 ? failed(new NoAvailableHostException("deliberate testing")) : succeeded(value);
         }
     }
 

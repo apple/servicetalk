@@ -30,7 +30,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.api.Single.error;
+import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.redis.api.RedisExecutionStrategies.defaultStrategy;
 
 /**
@@ -129,7 +129,7 @@ public abstract class RedisRequester implements ListenableAsyncCloseable {
         if (List.class.isAssignableFrom(responseType)) {
             return new ToListSingle<>(strategy, this, request, false);
         }
-        return error(new IllegalArgumentException("Unsupported type: " + responseType));
+        return failed(new IllegalArgumentException("Unsupported type: " + responseType));
     }
 
     /**

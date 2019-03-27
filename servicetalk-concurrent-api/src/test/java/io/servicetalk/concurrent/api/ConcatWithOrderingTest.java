@@ -196,7 +196,7 @@ public class ConcatWithOrderingTest {
     }
 
     private Single<Integer> single(final int number) {
-        return Single.success(0).doBeforeSuccess(__ -> sb.append(number));
+        return Single.succeeded(0).doBeforeSuccess(__ -> sb.append(number));
     }
 
     private Publisher<Integer> publisher(final int number) {

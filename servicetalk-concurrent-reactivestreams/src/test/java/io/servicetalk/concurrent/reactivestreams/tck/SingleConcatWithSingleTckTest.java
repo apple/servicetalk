@@ -26,9 +26,9 @@ public class SingleConcatWithSingleTckTest extends AbstractSingleTckTest<Integer
     @Override
     public Publisher<Integer> createServiceTalkPublisher(long elements) {
         if (elements == 2) {
-            return Single.success(1).concat(Single.success(2));
+            return Single.succeeded(1).concat(Single.succeeded(2));
         }
-        return Single.success(1).toPublisher();
+        return Single.succeeded(1).toPublisher();
     }
 
     @Override

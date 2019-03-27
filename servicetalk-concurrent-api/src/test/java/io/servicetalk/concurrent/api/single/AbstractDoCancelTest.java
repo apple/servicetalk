@@ -40,7 +40,7 @@ public abstract class AbstractDoCancelTest {
     @Test
     public void testCancelAfterSuccess() {
         Runnable onCancel = Mockito.mock(Runnable.class);
-        listener.listen(doCancel(Single.success("Hello"), onCancel)).cancel();
+        listener.listen(doCancel(Single.succeeded("Hello"), onCancel)).cancel();
         verify(onCancel).run();
     }
 

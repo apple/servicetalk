@@ -32,7 +32,7 @@ import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 
 import static io.servicetalk.concurrent.api.Processors.newSingleProcessor;
-import static io.servicetalk.concurrent.api.Single.success;
+import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.concurrent.internal.BlockingIterables.from;
 import static io.servicetalk.http.api.HttpDataSourceTranformations.consumeOldPayloadBody;
@@ -49,7 +49,7 @@ class DefaultBlockingStreamingHttpRequest<P> extends DefaultHttpRequestMetaData 
             final HttpRequestMethod method, final String requestTarget, final HttpProtocolVersion version,
             final HttpHeaders headers, final HttpHeaders initialTrailers, final BufferAllocator allocator,
             final BlockingIterable<P> payloadBody) {
-        this(method, requestTarget, version, headers, success(initialTrailers), allocator, payloadBody);
+        this(method, requestTarget, version, headers, succeeded(initialTrailers), allocator, payloadBody);
     }
 
     /**

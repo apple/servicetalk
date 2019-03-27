@@ -47,9 +47,9 @@ import static io.servicetalk.concurrent.api.AsyncContextMap.Key.newKey;
 import static io.servicetalk.concurrent.api.BlockingTestUtils.awaitIndefinitelyNonNull;
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Publisher.just;
-import static io.servicetalk.concurrent.api.Single.error;
+import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.Single.never;
-import static io.servicetalk.concurrent.api.Single.success;
+import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.CharSequences.newAsciiString;
 import static io.servicetalk.http.api.HttpHeaderNames.AUTHORIZATION;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
@@ -99,7 +99,7 @@ public class BasicAuthHttpServiceFilterTest {
             if (userInfo != null) {
                 response.headers().set(USER_ID_HEADER_NAME, userInfo.userId());
             }
-            return success(response);
+            return succeeded(response);
         }
     };
 
@@ -108,9 +108,9 @@ public class BasicAuthHttpServiceFilterTest {
                 @Override
                 public Single<BasicUserInfo> apply(final String userId, final String password) {
                     if ("password".equals(password)) {
-                        return success(new BasicUserInfo(userId));
+                        return succeeded(new BasicUserInfo(userId));
                     }
-                    return error(new AuthenticationException("Wrong password"));
+                    return failed(new AuthenticationException("Wrong password"));
                 }
 
                 @Override
@@ -297,9 +297,9 @@ public class BasicAuthHttpServiceFilterTest {
             @Override
             public Single<BasicUserInfo> apply(final String userId, final String password) {
                 if ("пароль".equals(password)) {
-                    return success(new BasicUserInfo(userId));
+                    return succeeded(new BasicUserInfo(userId));
                 }
-                return error(new AuthenticationException("Wrong password"));
+                return failed(new AuthenticationException("Wrong password"));
             }
 
             @Override

@@ -36,7 +36,7 @@ import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
 import static io.servicetalk.concurrent.api.Publisher.just;
 import static io.servicetalk.concurrent.api.Single.never;
-import static io.servicetalk.concurrent.api.Single.success;
+import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.redis.api.NoOffloadsRedisExecutionStrategy.NO_OFFLOADS;
 import static io.servicetalk.redis.api.RedisExecutionStrategies.customStrategyBuilder;
 import static io.servicetalk.redis.api.RedisProtocolSupport.Command.PING;
@@ -134,7 +134,7 @@ public class DefaultRedisExecutionStrategyTest {
     @Test
     public void offloadReceiveSingle() throws Exception {
         ThreadAnalyzer analyzer = new ThreadAnalyzer();
-        analyzer.instrumentReceive(strategy.offloadReceive(executor, success(1))).toFuture().get();
+        analyzer.instrumentReceive(strategy.offloadReceive(executor, succeeded(1))).toFuture().get();
         analyzer.verifyReceive();
     }
 

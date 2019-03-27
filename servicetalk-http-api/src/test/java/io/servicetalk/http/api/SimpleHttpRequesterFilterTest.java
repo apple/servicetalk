@@ -28,8 +28,8 @@ import javax.annotation.Nullable;
 import javax.net.ssl.SSLPeerUnverifiedException;
 import javax.net.ssl.SSLSession;
 
-import static io.servicetalk.concurrent.api.Single.error;
-import static io.servicetalk.concurrent.api.Single.success;
+import static io.servicetalk.concurrent.api.Single.failed;
+import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.AbstractHttpRequesterFilterTest.RequesterType.Client;
 import static io.servicetalk.http.api.AbstractHttpRequesterFilterTest.SecurityType.Insecure;
 import static io.servicetalk.http.api.AbstractHttpRequesterFilterTest.SecurityType.Secure;
@@ -195,7 +195,7 @@ public class SimpleHttpRequesterFilterTest extends AbstractHttpRequesterFilterTe
                                                       final HttpExecutionStrategy strategy,
                                                       final StreamingHttpRequest request) {
             requestCalls.incrementAndGet();
-            return success(delegate.httpResponseFactory().ok());
+            return succeeded(delegate.httpResponseFactory().ok());
         }
     }
 
@@ -268,10 +268,10 @@ public class SimpleHttpRequesterFilterTest extends AbstractHttpRequesterFilterTe
                     return delegate.request(strategy, request);
                 }
             } catch (SSLPeerUnverifiedException e) {
-                return error(e);
+                return failed(e);
             }
 
-            return success(delegate.httpResponseFactory().unauthorized());
+            return succeeded(delegate.httpResponseFactory().unauthorized());
         }
     }
 

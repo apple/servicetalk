@@ -1082,7 +1082,7 @@ public abstract class Single<T> {
      *
      * @return A new {@link Single}.
      */
-    public static <T> Single<T> success(@Nullable T value) {
+    public static <T> Single<T> succeeded(@Nullable T value) {
         return new SucceededSingle<>(value);
     }
 
@@ -1094,7 +1094,7 @@ public abstract class Single<T> {
      *
      * @return A new {@link Single}.
      */
-    public static <T> Single<T> error(Throwable cause) {
+    public static <T> Single<T> failed(Throwable cause) {
         return new FailedSingle<>(cause);
     }
 

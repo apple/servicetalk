@@ -46,7 +46,7 @@ public final class AsyncCloseables {
      */
     public static Completable closeAsyncGracefully(AsyncCloseable closable, long timeout, TimeUnit timeoutUnit) {
         return closable.closeAsyncGracefully().idleTimeout(timeout, timeoutUnit).onErrorResume(
-                t -> t instanceof TimeoutException ? closable.closeAsync() : Completable.error(t)
+                t -> t instanceof TimeoutException ? closable.closeAsync() : Completable.failed(t)
         );
     }
 

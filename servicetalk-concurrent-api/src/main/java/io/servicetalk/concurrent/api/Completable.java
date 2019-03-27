@@ -1190,7 +1190,7 @@ public abstract class Completable {
      * @param cause error that the returned {@code Completable} completes with.
      * @return A new {@code Completable}.
      */
-    public static Completable error(Throwable cause) {
+    public static Completable failed(Throwable cause) {
         return new FailedCompletable(requireNonNull(cause));
     }
 

@@ -35,7 +35,7 @@ import io.servicetalk.http.api.StreamingHttpResponse;
 import java.io.IOException;
 import java.util.function.BiPredicate;
 
-import static io.servicetalk.concurrent.api.Completable.error;
+import static io.servicetalk.concurrent.api.Completable.failed;
 
 /**
  * A filter to enable retries for HTTP requests.
@@ -58,7 +58,7 @@ public final class RetryingHttpRequesterFilter implements HttpClientFilterFactor
             if (settings.isRetryable(request, t)) {
                 return retryStrategy.apply(count, t);
             }
-            return error(t);
+            return failed(t);
         });
     }
 

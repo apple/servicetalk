@@ -37,7 +37,7 @@ public class DoAfterSuccessTest extends AbstractDoSuccessTest {
     @Test
     @Override
     public void testCallbackThrowsError() {
-        listener.listen(doSuccess(Single.success("Hello"), t -> {
+        listener.listen(doSuccess(Single.succeeded("Hello"), t -> {
             throw DELIBERATE_EXCEPTION;
         })).verifySuccess("Hello");
     }

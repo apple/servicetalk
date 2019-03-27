@@ -46,14 +46,14 @@ public abstract class AbstractDoSubscriberTest {
 
     @Test
     public void testOnWithOnSuccess() {
-        listener.listen(doSubscriber(Single.success("Hello"), () -> subscriber)).verifySuccess("Hello");
+        listener.listen(doSubscriber(Single.succeeded("Hello"), () -> subscriber)).verifySuccess("Hello");
         verify(subscriber).onSubscribe(any());
         verify(subscriber).onSuccess("Hello");
     }
 
     @Test
     public void testOnWithOnError() {
-        listener.listen(doSubscriber(Single.error(DELIBERATE_EXCEPTION), () -> subscriber))
+        listener.listen(doSubscriber(Single.failed(DELIBERATE_EXCEPTION), () -> subscriber))
                 .verifyFailure(DELIBERATE_EXCEPTION);
         verify(subscriber).onSubscribe(any());
         verify(subscriber).onError(DeliberateException.DELIBERATE_EXCEPTION);

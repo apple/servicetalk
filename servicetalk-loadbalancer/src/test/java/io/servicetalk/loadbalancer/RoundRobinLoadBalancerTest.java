@@ -61,8 +61,8 @@ import java.util.function.Function;
 
 import static io.servicetalk.concurrent.api.BlockingTestUtils.awaitIndefinitely;
 import static io.servicetalk.concurrent.api.Processors.newCompletableProcessor;
-import static io.servicetalk.concurrent.api.Single.error;
-import static io.servicetalk.concurrent.api.Single.success;
+import static io.servicetalk.concurrent.api.Single.failed;
+import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
@@ -355,7 +355,7 @@ public class RoundRobinLoadBalancerTest {
 
         thrown.expect(instanceOf(ExecutionException.class));
         thrown.expectCause(instanceOf(DeliberateException.class));
-        connectionFactory = new DelegatingConnectionFactory(__ -> error(DELIBERATE_EXCEPTION));
+        connectionFactory = new DelegatingConnectionFactory(__ -> failed(DELIBERATE_EXCEPTION));
         lb = newTestLoadBalancer(connectionFactory);
         sendServiceDiscoveryEvents(upEvent("address-1"));
         awaitIndefinitely(lb.selectConnection(identity()));
@@ -407,7 +407,7 @@ public class RoundRobinLoadBalancerTest {
     }
 
     private Single<TestLoadBalancedConnection> newRealizedConnectionSingle(final String address) {
-        return success(newConnection(address));
+        return succeeded(newConnection(address));
     }
 
     @SuppressWarnings("unchecked")

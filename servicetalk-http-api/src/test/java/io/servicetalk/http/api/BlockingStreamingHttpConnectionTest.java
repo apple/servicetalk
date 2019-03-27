@@ -129,7 +129,7 @@ public class BlockingStreamingHttpConnectionTest extends AbstractBlockingStreami
 
             @Override
             public <T> Publisher<T> settingStream(final SettingKey<T> settingKey) {
-                return Publisher.error(new IllegalStateException("unsupported"));
+                return Publisher.failed(new IllegalStateException("unsupported"));
             }
 
             @Override

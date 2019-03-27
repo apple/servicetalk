@@ -60,8 +60,8 @@ public class CommanderUtilsTest {
     private final DeliberateException initialException = new DeliberateException();
     private final DeliberateException releaseException = new DeliberateException();
     private final List<Processor<?, ?>> singles = new ArrayList<>();
-    private final Single<String> queued = Single.error(initialException);
-    private final Single<List<Object>> results = Single.error(initialException);
+    private final Single<String> queued = Single.failed(initialException);
+    private final Single<List<Object>> results = Single.failed(initialException);
     private final TestCommander commander = new TestCommander();
 
     @Test
@@ -95,7 +95,7 @@ public class CommanderUtilsTest {
 
     @Test
     public void testDiscardErrorReleaseError() throws Exception {
-        Completable releaseCompletable = Completable.error(releaseException);
+        Completable releaseCompletable = Completable.failed(releaseException);
         when(reservedCnx.releaseAsync()).thenReturn(releaseCompletable);
 
         DiscardSingle<TestCommander> discardSingle = new DiscardSingle<>(commander, queued, singles,
@@ -122,7 +122,7 @@ public class CommanderUtilsTest {
 
     @Test
     public void testExecErrorReleaseError() throws Exception {
-        Completable releaseCompletable = Completable.error(releaseException);
+        Completable releaseCompletable = Completable.failed(releaseException);
         when(reservedCnx.releaseAsync()).thenReturn(releaseCompletable);
 
         ExecCompletable<TestCommander> execCompletable = new ExecCompletable<>(commander, results, singles,
