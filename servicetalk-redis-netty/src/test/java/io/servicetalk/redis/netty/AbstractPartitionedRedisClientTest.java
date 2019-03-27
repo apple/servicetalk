@@ -155,7 +155,7 @@ public abstract class AbstractPartitionedRedisClientTest {
                 client.request(partitionAttributesBuilder.build(), newRequest(INFO,
                         new CompleteBulkString(buf("SERVER"))))
                         .filter(d -> d instanceof BulkStringChunk)
-                        .reduce(StringBuilder::new, (sb, d) -> sb.append(d.bufferValue().toString(US_ASCII))))
+                        .collect(StringBuilder::new, (sb, d) -> sb.append(d.bufferValue().toString(US_ASCII))))
                 .toString();
 
         final java.util.regex.Matcher versionMatcher = compile("(?s).*redis_version:([\\d]+)\\.([\\d]+)\\.([\\d]+).*")

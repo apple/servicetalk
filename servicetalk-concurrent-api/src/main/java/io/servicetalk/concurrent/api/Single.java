@@ -1143,10 +1143,10 @@ public abstract class Single<T> {
      * Asynchronously collects results of individual {@link Single}s returned by the passed {@link Iterable} into a
      * single {@link Collection}. <p>
      * This will actively subscribe to a limited number of {@link Single}s concurrently, in order to alter the defaults,
-     * {@link #collect(Iterable, int)} should be used. <p>
+     * {@link #collectUnordered(Iterable, int)} should be used. <p>
      * If any of the {@link Single}s terminate with an error, returned {@link Single} will immediately terminate with
      * that error. In such a case, any in progress {@link Single}s will be cancelled. In order to delay error
-     * termination use {@link #collectDelayError(Iterable)}.
+     * termination use {@link #collectUnorderedDelayError(Iterable)}.
      * <p>
      * From a sequential programming point of view this method is roughly equivalent to the following:
      * <pre>{@code
@@ -1164,8 +1164,8 @@ public abstract class Single<T> {
      * There is no guarantee of the order of the values in the produced {@link Collection} as compared to the order of
      * {@link Single}s passed to this method.
      */
-    public static <T> Single<Collection<T>> collect(Iterable<? extends Single<? extends T>> singles) {
-        return Publisher.from(singles).flatMapMergeSingle(identity()).reduce(ArrayList::new, (ts, t) -> {
+    public static <T> Single<Collection<T>> collectUnordered(Iterable<? extends Single<? extends T>> singles) {
+        return Publisher.from(singles).flatMapMergeSingle(identity()).collect(ArrayList::new, (ts, t) -> {
             ts.add(t);
             return ts;
         });
@@ -1174,10 +1174,10 @@ public abstract class Single<T> {
     /**
      * Asynchronously collects results of the passed {@link Single}s into a single {@link Collection}. <p>
      * This will actively subscribe to a limited number of {@link Single}s concurrently, in order to alter the defaults,
-     * {@link #collect(int, Single[])} should be used. <p>
+     * {@link #collectUnordered(int, Single[])} should be used. <p>
      * If any of the {@link Single}s terminate with an error, returned {@link Single} will immediately terminate with
      * that error. In such a case, any in progress {@link Single}s will be cancelled. In order to delay error
-     * termination use {@link #collectDelayError(Single[])}.
+     * termination use {@link #collectUnorderedDelayError(Single[])}.
      * <p>
      * From a sequential programming point of view this method is roughly equivalent to the following:
      * <pre>{@code
@@ -1196,8 +1196,8 @@ public abstract class Single<T> {
      * {@link Single}s passed to this method.
      */
     @SafeVarargs
-    public static <T> Single<Collection<T>> collect(Single<? extends T>... singles) {
-        return Publisher.from(singles).flatMapMergeSingle(identity()).reduce(() -> new ArrayList<>(singles.length),
+    public static <T> Single<Collection<T>> collectUnordered(Single<? extends T>... singles) {
+        return Publisher.from(singles).flatMapMergeSingle(identity()).collect(() -> new ArrayList<>(singles.length),
                 (ts, t) -> {
                     ts.add(t);
                     return ts;
@@ -1209,7 +1209,7 @@ public abstract class Single<T> {
      * single {@link Collection}. <p>
      * If any of the {@link Single}s terminate with an error, returned {@link Single} will immediately terminate with
      * that error. In such a case, any in progress {@link Single}s will be cancelled. In order to delay error
-     * termination use {@link #collectDelayError(Iterable, int)}.
+     * termination use {@link #collectUnorderedDelayError(Iterable, int)}.
      * <p>
      * From a sequential programming point of view this method is roughly equivalent to the following:
      * <pre>{@code
@@ -1228,11 +1228,11 @@ public abstract class Single<T> {
      * There is no guarantee of the order of the values in the produced {@link Collection} as compared to the order of
      * {@link Single}s passed to this method.
      */
-    public static <T> Single<Collection<T>> collect(Iterable<? extends Single<? extends T>> singles,
-                                                    int maxConcurrency) {
+    public static <T> Single<Collection<T>> collectUnordered(Iterable<? extends Single<? extends T>> singles,
+                                                             int maxConcurrency) {
         return Publisher.from(singles)
                 .flatMapMergeSingle(identity(), maxConcurrency)
-                .reduce(ArrayList::new, (ts, t) -> {
+                .collect(ArrayList::new, (ts, t) -> {
                     ts.add(t);
                     return ts;
                 });
@@ -1242,7 +1242,7 @@ public abstract class Single<T> {
      * Asynchronously collects results of the passed {@link Single}s into a single {@link Collection}. <p>
      * If any of the {@link Single}s terminate with an error, returned {@link Single} will immediately terminate with
      * that error. In such a case, any in progress {@link Single}s will be cancelled. In order to delay error
-     * termination use {@link #collectDelayError(int, Single[])}.
+     * termination use {@link #collectUnorderedDelayError(int, Single[])}.
      * <p>
      * From a sequential programming point of view this method is roughly equivalent to the following:
      * <pre>{@code
@@ -1262,9 +1262,9 @@ public abstract class Single<T> {
      * {@link Single}s passed to this method.
      */
     @SafeVarargs
-    public static <T> Single<Collection<T>> collect(int maxConcurrency, Single<? extends T>... singles) {
+    public static <T> Single<Collection<T>> collectUnordered(int maxConcurrency, Single<? extends T>... singles) {
         return Publisher.from(singles).flatMapMergeSingle(identity(), maxConcurrency)
-                .reduce(() -> new ArrayList<>(singles.length), (ts, t) -> {
+                .collect(() -> new ArrayList<>(singles.length), (ts, t) -> {
                     ts.add(t);
                     return ts;
                 });
@@ -1274,10 +1274,10 @@ public abstract class Single<T> {
      * Asynchronously collects results of individual {@link Single}s returned by the passed {@link Iterable} into a
      * single {@link Collection}. <p>
      * This will actively subscribe to a limited number of {@link Single}s concurrently, in order to alter the defaults,
-     * {@link #collectDelayError(Iterable, int)}. <p>
+     * {@link #collectUnorderedDelayError(Iterable, int)}. <p>
      * If any of the {@link Single}s terminate with an error, returned {@link Single} will wait for termination till all
      * the other {@link Single}s have been subscribed and terminated. If it is expected for the returned {@link Single}
-     * to terminate on the first failing {@link Single}, {@link #collect(Iterable)} should be used.
+     * to terminate on the first failing {@link Single}, {@link #collectUnordered(Iterable)} should be used.
      * <p>
      * From a sequential programming point of view this method is roughly equivalent to the following:
      * <pre>{@code
@@ -1303,8 +1303,9 @@ public abstract class Single<T> {
      * There is no guarantee of the order of the values in the produced {@link Collection} as compared to the order of
      * {@link Single}s passed to this method.
      */
-    public static <T> Single<Collection<T>> collectDelayError(Iterable<? extends Single<? extends T>> singles) {
-        return Publisher.from(singles).flatMapMergeSingleDelayError(identity()).reduce(ArrayList::new, (ts, t) -> {
+    public static <T> Single<Collection<T>> collectUnorderedDelayError(
+            Iterable<? extends Single<? extends T>> singles) {
+        return Publisher.from(singles).flatMapMergeSingleDelayError(identity()).collect(ArrayList::new, (ts, t) -> {
             ts.add(t);
             return ts;
         });
@@ -1313,10 +1314,10 @@ public abstract class Single<T> {
     /**
      * Asynchronously collects results of the passed {@link Single}s into a single {@link Collection}. <p>
      * This will actively subscribe to a limited number of {@link Single}s concurrently, in order to alter the defaults,
-     * {@link #collect(int, Single[])}. <p>
+     * {@link #collectUnordered(int, Single[])}. <p>
      * If any of the {@link Single}s terminate with an error, returned {@link Single} will wait for termination till all
      * the other {@link Single}s have been subscribed and terminated. If it is expected for the returned {@link Single}
-     * to terminate on the first failing {@link Single}, {@link #collect(Single[])} should be used.
+     * to terminate on the first failing {@link Single}, {@link #collectUnordered(Single[])} should be used.
      * <p>
      * From a sequential programming point of view this method is roughly equivalent to the following:
      * <pre>{@code
@@ -1343,9 +1344,9 @@ public abstract class Single<T> {
      * {@link Single}s passed to this method.
      */
     @SafeVarargs
-    public static <T> Single<Collection<T>> collectDelayError(Single<? extends T>... singles) {
+    public static <T> Single<Collection<T>> collectUnorderedDelayError(Single<? extends T>... singles) {
         return Publisher.from(singles).flatMapMergeSingleDelayError(identity())
-                .reduce(() -> new ArrayList<>(singles.length), (ts, t) -> {
+                .collect(() -> new ArrayList<>(singles.length), (ts, t) -> {
                     ts.add(t);
                     return ts;
                 });
@@ -1356,7 +1357,7 @@ public abstract class Single<T> {
      * single {@link Collection}. <p>
      * If any of the {@link Single}s terminate with an error, returned {@link Single} will wait for termination till all
      * the other {@link Single}s have been subscribed and terminated. If it is expected for the returned {@link Single}
-     * to terminate on the first failing {@link Single}, {@link #collect(Iterable, int)} should be used.
+     * to terminate on the first failing {@link Single}, {@link #collectUnordered(Iterable, int)} should be used.
      * <p>
      * From a sequential programming point of view this method is roughly equivalent to the following:
      * <pre>{@code
@@ -1383,10 +1384,10 @@ public abstract class Single<T> {
      * There is no guarantee of the order of the values in the produced {@link Collection} as compared to the order of
      * {@link Single}s passed to this method.
      */
-    public static <T> Single<Collection<T>> collectDelayError(Iterable<? extends Single<? extends T>> singles,
-                                                              int maxConcurrency) {
+    public static <T> Single<Collection<T>> collectUnorderedDelayError(Iterable<? extends Single<? extends T>> singles,
+                                                                       int maxConcurrency) {
         return Publisher.from(singles).flatMapMergeSingleDelayError(identity(), maxConcurrency)
-                .reduce(ArrayList::new, (ts, t) -> {
+                .collect(ArrayList::new, (ts, t) -> {
                     ts.add(t);
                     return ts;
                 });
@@ -1396,7 +1397,7 @@ public abstract class Single<T> {
      * Asynchronously collects results of the passed {@link Single}s into a single {@link Collection}. <p>
      * If any of the {@link Single}s terminate with an error, returned {@link Single} will wait for termination till all
      * the other {@link Single}s have been subscribed and terminated. If it is expected for the returned {@link Single}
-     * to terminate on the first failing {@link Single}, {@link #collect(Iterable, int)} should be used.
+     * to terminate on the first failing {@link Single}, {@link #collectUnordered(Iterable, int)} should be used.
      * <p>
      * From a sequential programming point of view this method is roughly equivalent to the following:
      * <pre>{@code
@@ -1424,9 +1425,10 @@ public abstract class Single<T> {
      * {@link Single}s passed to this method.
      */
     @SafeVarargs
-    public static <T> Single<Collection<T>> collectDelayError(int maxConcurrency, Single<? extends T>... singles) {
+    public static <T> Single<Collection<T>> collectUnorderedDelayError(int maxConcurrency,
+                                                                       Single<? extends T>... singles) {
         return Publisher.from(singles).flatMapMergeSingleDelayError(identity(), maxConcurrency)
-                .reduce(() -> new ArrayList<>(singles.length), (ts, t) -> {
+                .collect(() -> new ArrayList<>(singles.length), (ts, t) -> {
                     ts.add(t);
                     return ts;
                 });

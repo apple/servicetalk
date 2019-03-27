@@ -1251,11 +1251,11 @@ public abstract class Completable {
      * Returns a {@link Completable} that terminates when all the passed {@link Completable} terminate.
      * <p>
      * This will actively subscribe to a default number of {@link Completable}s concurrently, in order to alter the
-     * defaults, {@link #collect(Iterable, int)}.
+     * defaults, {@link #mergeAll(Iterable, int)}.
      * <p>
      * If any of the {@link Completable}s terminate with an error, returned {@link Completable} will immediately
      * terminate with that error. In such a case, any in-progress {@link Completable}s will be cancelled. In order to
-     * delay error termination use {@link #collectDelayError(Iterable)}.
+     * delay error termination use {@link #mergeAllDelayError(Iterable)}.
      * <p>
      * From a sequential programming point of view this method is roughly equivalent to the following:
      * <pre>{@code
@@ -1269,7 +1269,7 @@ public abstract class Completable {
      * @return A new {@link Completable} that terminates successfully if all the provided {@link Completable}s have
      * terminated successfully or any one of them has terminated with a failure.
      */
-    public static Completable collect(Iterable<? extends Completable> completables) {
+    public static Completable mergeAll(Iterable<? extends Completable> completables) {
         return Publisher.from(completables).flatMapCompletable(identity());
     }
 
@@ -1277,11 +1277,11 @@ public abstract class Completable {
      * Returns a {@link Completable} that terminates when all the passed {@link Completable} terminate.
      * <p>
      * This will actively subscribe to a default number of {@link Completable}s concurrently, in order to alter the
-     * defaults, {@link #collect(int, Completable...)} should be used.
+     * defaults, {@link #mergeAll(int, Completable...)} should be used.
      * <p>
      * If any of the {@link Completable}s terminate with an error, returned {@link Completable} will immediately
      * terminate with that error. In such a case, any in-progress {@link Completable}s will be cancelled.
-     *  In order to delay error termination use {@link #collectDelayError(Completable...)}.
+     *  In order to delay error termination use {@link #mergeAllDelayError(Completable...)}.
      * <p>
      * From a sequential programming point of view this method is roughly equivalent to the following:
      * <pre>{@code
@@ -1295,7 +1295,7 @@ public abstract class Completable {
      * @return A new {@link Completable} that terminates successfully if all the provided {@link Completable}s have
      * terminated successfully or any one of them has terminated with a failure.
      */
-    public static Completable collect(Completable... completables) {
+    public static Completable mergeAll(Completable... completables) {
         return Publisher.from(completables).flatMapCompletable(identity());
     }
 
@@ -1304,7 +1304,7 @@ public abstract class Completable {
      * <p>
      * If any of the {@link Completable}s terminate with an error, returned {@link Completable} will immediately
      * terminate with that error. In such a case, any in-progress {@link Completable}s will be cancelled. In order to
-     * delay error termination use {@link #collectDelayError(Iterable, int)}.
+     * delay error termination use {@link #mergeAllDelayError(Iterable, int)}.
      * <p>
      * From a sequential programming point of view this method is roughly equivalent to the following:
      * <pre>{@code
@@ -1319,7 +1319,7 @@ public abstract class Completable {
      * @return A new {@link Completable} that terminates successfully if all the provided {@link Completable}s have
      * terminated successfully or any one of them has terminated with a failure.
      */
-    public static Completable collect(Iterable<? extends Completable> completables, int maxConcurrency) {
+    public static Completable mergeAll(Iterable<? extends Completable> completables, int maxConcurrency) {
         return Publisher.from(completables).flatMapCompletable(identity(), maxConcurrency);
     }
 
@@ -1328,7 +1328,7 @@ public abstract class Completable {
      * <p>
      * If any of the {@link Completable}s terminate with an error, returned {@link Completable} will immediately
      * terminate with that error. In such a case, any in-progress {@link Completable}s will be cancelled.
-     *  In order to delay error termination use {@link #collectDelayError(int, Completable...)}.
+     *  In order to delay error termination use {@link #mergeAllDelayError(int, Completable...)}.
      * <p>
      * From a sequential programming point of view this method is roughly equivalent to the following:
      * <pre>{@code
@@ -1343,7 +1343,7 @@ public abstract class Completable {
      * @return A new {@link Completable} that terminates successfully if all the provided {@link Completable}s have
      * terminated successfully or any one of them has terminated with a failure.
      */
-    public static Completable collect(int maxConcurrency, Completable... completables) {
+    public static Completable mergeAll(int maxConcurrency, Completable... completables) {
         return Publisher.from(completables).flatMapCompletable(identity(), maxConcurrency);
     }
 
@@ -1351,12 +1351,12 @@ public abstract class Completable {
      * Returns a {@link Completable} that terminates when all the passed {@link Completable} terminate.
      * <p>
      * This will actively subscribe to a default number of {@link Completable}s concurrently, in order to alter the
-     * defaults, {@link #collectDelayError(Iterable, int)} should be used.
+     * defaults, {@link #mergeAllDelayError(Iterable, int)} should be used.
      * <p>
      * If any of the {@link Completable}s terminate with an error, returned {@link Completable} will wait for
      * termination till all the other {@link Completable}s have been subscribed and terminated. If it is expected for
      * the returned {@link Completable} to terminate on the first failing {@link Completable},
-     * {@link #collect(Iterable)} should be used.
+     * {@link #mergeAll(Iterable)} should be used.
      * <p>
      * From a sequential programming point of view this method is roughly equivalent to the following:
      * <pre>{@code
@@ -1379,7 +1379,7 @@ public abstract class Completable {
      * @return A new {@link Completable} that terminates successfully if all the provided {@link Completable}s have
      * terminated successfully or any one of them has terminated with a failure.
      */
-    public static Completable collectDelayError(Iterable<? extends Completable> completables) {
+    public static Completable mergeAllDelayError(Iterable<? extends Completable> completables) {
         return Publisher.from(completables).flatMapCompletableDelayError(identity());
     }
 
@@ -1387,11 +1387,11 @@ public abstract class Completable {
      * Returns a {@link Completable} that terminates when all the passed {@link Completable} terminate.
      * <p>
      * This will actively subscribe to a limited number of {@link Single}s concurrently, in order to alter the defaults,
-     * {@link #collect(int, Completable...)} should be used.
+     * {@link #mergeAll(int, Completable...)} should be used.
      * <p>
      * If any of the {@link Single}s terminate with an error, returned {@link Single} will wait for termination till all
      * the other {@link Single}s have been subscribed and terminated. If it is expected for the returned {@link Single}
-     * to terminate on the first failing {@link Single}, {@link #collect(Completable...)} should be used.
+     * to terminate on the first failing {@link Single}, {@link #mergeAll(Completable...)} should be used.
      * <p>
      * From a sequential programming point of view this method is roughly equivalent to the following:
      * <pre>{@code
@@ -1414,7 +1414,7 @@ public abstract class Completable {
      * @return A new {@link Completable} that terminates successfully if all the provided {@link Completable}s have
      * terminated successfully or any one of them has terminated with a failure.
      */
-    public static Completable collectDelayError(Completable... completables) {
+    public static Completable mergeAllDelayError(Completable... completables) {
         return Publisher.from(completables).flatMapCompletableDelayError(identity());
     }
 
@@ -1423,7 +1423,7 @@ public abstract class Completable {
      * <p>
      * If any of the {@link Single}s terminate with an error, returned {@link Single} will wait for termination till all
      * the other {@link Single}s have been subscribed and terminated. If it is expected for the returned {@link Single}
-     * to terminate on the first failing {@link Single}, {@link #collect(Iterable, int)} should be used.
+     * to terminate on the first failing {@link Single}, {@link #mergeAll(Iterable, int)} should be used.
      * <p>
      * From a sequential programming point of view this method is roughly equivalent to the following:
      * <pre>{@code
@@ -1447,7 +1447,7 @@ public abstract class Completable {
      * @return A new {@link Completable} that terminates successfully if all the provided {@link Completable}s have
      * terminated successfully or any one of them has terminated with a failure.
      */
-    public static Completable collectDelayError(Iterable<? extends Completable> completables, int maxConcurrency) {
+    public static Completable mergeAllDelayError(Iterable<? extends Completable> completables, int maxConcurrency) {
         return Publisher.from(completables).flatMapCompletableDelayError(identity(), maxConcurrency);
     }
 
@@ -1456,7 +1456,7 @@ public abstract class Completable {
      * <p>
      * If any of the {@link Single}s terminate with an error, returned {@link Single} will wait for termination till all
      * the other {@link Single}s have been subscribed and terminated. If it is expected for the returned {@link Single}
-     * to terminate on the first failing {@link Single}, {@link #collect(Iterable, int)} should be used.
+     * to terminate on the first failing {@link Single}, {@link #mergeAll(Iterable, int)} should be used.
      * <p>
      * From a sequential programming point of view this method is roughly equivalent to the following:
      * <pre>{@code
@@ -1480,7 +1480,7 @@ public abstract class Completable {
      * @return A new {@link Completable} that terminates successfully if all the provided {@link Completable}s have
      * terminated successfully or any one of them has terminated with a failure.
      */
-    public static Completable collectDelayError(int maxConcurrency, Completable... completables) {
+    public static Completable mergeAllDelayError(int maxConcurrency, Completable... completables) {
         return Publisher.from(completables).flatMapCompletableDelayError(identity(), maxConcurrency);
     }
 

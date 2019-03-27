@@ -149,7 +149,7 @@ public class NettyHttpServerConnectionTest {
         responsePublisher.onNext(DEFAULT_ALLOCATOR.fromAscii(payloadBodyString));
         responsePublisher.onComplete();
         customFlushSender.flush();
-        Buffer responsePayload = response.payloadBody().reduce(DEFAULT_ALLOCATOR::newBuffer, (results, current) -> {
+        Buffer responsePayload = response.payloadBody().collect(DEFAULT_ALLOCATOR::newBuffer, (results, current) -> {
             results.writeBytes(current);
             return results;
         }).toFuture().get();
@@ -164,7 +164,7 @@ public class NettyHttpServerConnectionTest {
         responsePublisher2.onSubscribe(testSubscription2);
         responsePublisher2.onNext(DEFAULT_ALLOCATOR.fromAscii(payloadBodyString));
         responsePublisher2.onComplete();
-        responsePayload = response2.payloadBody().reduce(DEFAULT_ALLOCATOR::newBuffer, (results, current) -> {
+        responsePayload = response2.payloadBody().collect(DEFAULT_ALLOCATOR::newBuffer, (results, current) -> {
             results.writeBytes(current);
             return results;
         }).toFuture().get();

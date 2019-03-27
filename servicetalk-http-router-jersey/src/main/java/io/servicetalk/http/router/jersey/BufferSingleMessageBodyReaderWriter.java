@@ -49,7 +49,7 @@ final class BufferSingleMessageBodyReaderWriter
                                    final InputStream entityStream) throws WebApplicationException {
         // Get the value here because requestCtxProvider is out of scope when the reduction happens
         final int contentLength = getRequestContentLength(requestCtxProvider);
-        return readFrom(entityStream, (p, a) -> p.reduce(() -> newBufferForRequestContent(contentLength, a),
+        return readFrom(entityStream, (p, a) -> p.collect(() -> newBufferForRequestContent(contentLength, a),
                 Buffer::writeBytes), SingleSource::new);
     }
 

@@ -82,7 +82,7 @@ public class RedisUtilsTest {
 
     private void assertEncoded(final String expected, final Publisher<RequestRedisData> content) throws Exception {
         final String encodedResult = encodeRequestContent(newRequest(content), allocator)
-                .reduce(() -> toByteBuf(allocator.newBuffer()), ByteBuf::writeBytes).toFuture().get().toString(UTF_8);
+                .collect(() -> toByteBuf(allocator.newBuffer()), ByteBuf::writeBytes).toFuture().get().toString(UTF_8);
         assertEquals(expected, encodedResult);
     }
 

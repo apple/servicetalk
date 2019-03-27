@@ -89,7 +89,7 @@ public class ReduceSingleTest {
 
     @Test
     public void testFactoryReturnsNull() {
-        listenerRule.listen(publisher.reduce(() -> null, (o, s) -> o));
+        listenerRule.listen(publisher.collect(() -> null, (o, s) -> o));
         publisher.onNext("foo");
         publisher.onComplete();
         listenerRule.verifySuccess(null);
@@ -97,7 +97,7 @@ public class ReduceSingleTest {
 
     @Test
     public void testAggregatorReturnsNull() {
-        listenerRule.listen(publisher.reduce(() -> "", (o, s) -> null));
+        listenerRule.listen(publisher.collect(() -> "", (o, s) -> null));
         publisher.onNext("foo");
         publisher.onComplete();
         listenerRule.verifySuccess(null);
@@ -106,7 +106,7 @@ public class ReduceSingleTest {
     @Test
     public void testReducerExceptionCleanup() {
         final RuntimeException testException = new RuntimeException("fake exception");
-        listenerRule.listen(publisher.reduce(() -> "", new BiFunction<String, String, String>() {
+        listenerRule.listen(publisher.collect(() -> "", new BiFunction<String, String, String>() {
             private int callNumber;
 
             @Override
@@ -132,7 +132,7 @@ public class ReduceSingleTest {
                         currentThread()));
             }
             analyzed.countDown();
-        }).subscribeOn(executorRule.executor()).reduce(ArrayList::new, (objects, s) -> {
+        }).subscribeOn(executorRule.executor()).collect(ArrayList::new, (objects, s) -> {
             objects.add(s);
             return objects;
         }).toFuture().get();
@@ -157,7 +157,7 @@ public class ReduceSingleTest {
     private static class ReducerRule extends Verifier {
 
         ReducerRule listen(TestPublisher<String> testPublisher, LegacyMockedSingleListenerRule<String> listenerRule) {
-            listenerRule.listen(testPublisher.reduce(() -> "", (r, s) -> r + s));
+            listenerRule.listen(testPublisher.collect(() -> "", (r, s) -> r + s));
             return this;
         }
     }

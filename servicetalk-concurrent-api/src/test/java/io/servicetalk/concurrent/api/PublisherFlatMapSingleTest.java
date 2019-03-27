@@ -88,7 +88,7 @@ public class PublisherFlatMapSingleTest {
         final List<String> elements = range(0, 1000).mapToObj(Integer::toString).collect(toList());
         final Publisher<String> publisher = Publisher.from(elements);
         final Single<List<String>> single = publisher.flatMapMergeSingle(x -> executor.submit(() -> x), 1024)
-                .reduce(ArrayList::new, (strings, s) -> {
+                .collect(ArrayList::new, (strings, s) -> {
                     strings.add(s);
                     return strings;
                 });
@@ -110,7 +110,7 @@ public class PublisherFlatMapSingleTest {
         }), 1024).recoverWith(t -> {
             error.set(t);
             return Publisher.empty();
-        }).reduce(ArrayList::new, (ints, s) -> {
+        }).collect(ArrayList::new, (ints, s) -> {
             ints.add(s);
             return ints;
         });

@@ -44,7 +44,7 @@ final class AsyncUtils {
 
         @SuppressWarnings({"unchecked", "rawtypes"})
         Single<R> resp = first.concat((Single) second).concat(third)
-                .reduce(Collector::new, (collector, aEntity) -> {
+                .collect(Collector::new, (collector, aEntity) -> {
                     @SuppressWarnings("unchecked")
                     Collector<T1, T2, T3, R> c = (Collector<T1, T2, T3, R>) collector;
                     return c.add(aEntity);

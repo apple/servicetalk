@@ -1953,11 +1953,11 @@ public abstract class Publisher<T> {
     }
 
     /**
-     * Reduces the stream into a single item.
+     * Collects all items emitted by this {@link Publisher} into a single item.
      *
      * @param resultFactory Factory for the result which collects all items emitted by this {@link Publisher}.
      * This will be called every time the returned {@link Single} is subscribed.
-     * @param reducer Invoked for every item emitted by the source {@link Publisher} and returns the same or altered
+     * @param collector Invoked for every item emitted by the source {@link Publisher} and returns the same or altered
      * {@code result} object.
      * @param <R> Type of the reduced item.
      * @return A {@link Single} that completes with the single {@code result} or any error emitted by the source
@@ -1965,9 +1965,9 @@ public abstract class Publisher<T> {
      *
      * @see <a href="http://reactivex.io/documentation/operators/reduce.html">ReactiveX reduce operator.</a>
      */
-    public final <R> Single<R> reduce(Supplier<? extends R> resultFactory,
-                                      BiFunction<? super R, ? super T, R> reducer) {
-        return new ReduceSingle<>(this, resultFactory, reducer);
+    public final <R> Single<R> collect(Supplier<? extends R> resultFactory,
+                                       BiFunction<? super R, ? super T, R> collector) {
+        return new ReduceSingle<>(this, resultFactory, collector);
     }
 
     /**
@@ -1998,7 +1998,7 @@ public abstract class Publisher<T> {
      */
     public final <R> Future<R> toFuture(Supplier<? extends R> resultFactory,
                                         BiFunction<? super R, ? super T, R> reducer) {
-        return reduce(resultFactory, reducer).toFuture();
+        return collect(resultFactory, reducer).toFuture();
     }
 
     /**
@@ -2029,7 +2029,7 @@ public abstract class Publisher<T> {
      */
     public final <R> CompletionStage<R> toCompletionStage(Supplier<? extends R> resultFactory,
                                                           BiFunction<? super R, ? super T, R> reducer) {
-        return reduce(resultFactory, reducer).toCompletionStage();
+        return collect(resultFactory, reducer).toCompletionStage();
     }
 
     /**
