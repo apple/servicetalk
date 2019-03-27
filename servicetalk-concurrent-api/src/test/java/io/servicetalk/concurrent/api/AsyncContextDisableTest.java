@@ -91,7 +91,8 @@ public class AsyncContextDisableTest {
                             .doBeforeOnComplete(() -> actualValue.set(AsyncContext.get(K1))).toFuture().get();
                     assertNull(actualValue.get());
                     actualValue.set(null);
-                    Single.succeeded(1).publishOn(executor).doBeforeOnSuccess(i -> actualValue.set(AsyncContext.get(K1)))
+                    Single.succeeded(1).publishOn(executor)
+                            .doBeforeOnSuccess(i -> actualValue.set(AsyncContext.get(K1)))
                             .toFuture().get();
                     assertNull(actualValue.get());
                     actualValue.set(null);
