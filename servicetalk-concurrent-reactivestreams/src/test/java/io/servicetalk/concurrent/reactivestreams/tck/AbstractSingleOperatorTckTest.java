@@ -32,7 +32,7 @@ public abstract class AbstractSingleOperatorTckTest<T> extends AbstractSingleTck
 
     @Override
     public Publisher<T> createServiceTalkPublisher(long elements) {
-        return composeSingle(Single.success(1)).toPublisher();
+        return composeSingle(Single.succeeded(1)).toPublisher();
     }
 
     protected abstract Single<T> composeSingle(Single<Integer> single);

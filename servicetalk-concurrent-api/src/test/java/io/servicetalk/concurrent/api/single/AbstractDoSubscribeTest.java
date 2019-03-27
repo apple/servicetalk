@@ -48,7 +48,7 @@ public abstract class AbstractDoSubscribeTest {
 
     @Test
     public void testSubscribe() {
-        listener.listen(doSubscribe(Single.success("Hello"), doOnListen)).verifySuccess("Hello");
+        listener.listen(doSubscribe(Single.succeeded("Hello"), doOnListen)).verifySuccess("Hello");
         verify(doOnListen).accept(any(Cancellable.class));
     }
 

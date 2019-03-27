@@ -24,7 +24,7 @@ import org.junit.rules.Timeout;
 import java.util.concurrent.CompletableFuture;
 
 import static io.servicetalk.concurrent.api.Single.fromStage;
-import static io.servicetalk.concurrent.api.Single.success;
+import static io.servicetalk.concurrent.api.Single.succeeded;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
@@ -36,7 +36,7 @@ public class SingleToCompletableFutureToCompletionStageWrappingTest {
     @Test
     public void wrappedTerminationTerminates() throws Exception {
         CompletableFuture<String> composed = completedFuture("Hello")
-                .thenCompose(s -> success("Hello-Nested").toCompletionStage().toCompletableFuture());
+                .thenCompose(s -> succeeded("Hello-Nested").toCompletionStage().toCompletableFuture());
         assertThat("Unexpected result.", composed.get(), is("Hello-Nested"));
     }
 
@@ -53,7 +53,7 @@ public class SingleToCompletableFutureToCompletionStageWrappingTest {
     @Test
     public void wrappedAndApplyTerminationTerminates() throws Exception {
         CompletableFuture<String> composed = completedFuture("Hello")
-                .thenCompose(s -> success("Hello-Nested").toCompletionStage().toCompletableFuture()
+                .thenCompose(s -> succeeded("Hello-Nested").toCompletionStage().toCompletableFuture()
                         .thenApply(s1 -> s1));
         assertThat("Unexpected result.", composed.get(), is("Hello-Nested"));
     }

@@ -42,8 +42,8 @@ import java.util.function.BiFunction;
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Publisher.just;
-import static io.servicetalk.concurrent.api.Single.error;
-import static io.servicetalk.concurrent.api.Single.success;
+import static io.servicetalk.concurrent.api.Single.failed;
+import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
@@ -178,7 +178,7 @@ public abstract class AbstractBlockingStreamingHttpRequesterTest {
                         final StreamingHttpClientFilter delegate,
                         final HttpExecutionStrategy strategy,
                         final HttpRequestMetaData metaData) {
-                    return error(new UnsupportedOperationException());
+                    return failed(new UnsupportedOperationException());
                 }
             };
         }
@@ -252,7 +252,7 @@ public abstract class AbstractBlockingStreamingHttpRequesterTest {
     @Test
     public void asyncToSyncNoPayload() throws Exception {
         TestStreamingHttpRequester asyncRequester = newAsyncRequester(reqRespFactory, mockExecutionCtx,
-                (strategy, req) -> success(reqRespFactory.ok()));
+                (strategy, req) -> succeeded(reqRespFactory.ok()));
         BlockingStreamingHttpRequester syncRequester = asyncRequester.asBlockingStreaming();
         BlockingStreamingHttpResponse syncResponse = syncRequester.request(
                 syncRequester.get("/"));
@@ -263,7 +263,7 @@ public abstract class AbstractBlockingStreamingHttpRequesterTest {
     @Test
     public void asyncToSyncWithPayload() throws Exception {
         TestStreamingHttpRequester asyncRequester = newAsyncRequester(reqRespFactory, mockExecutionCtx,
-                (strategy, req) -> success(reqRespFactory.ok().payloadBody(just(allocator.fromAscii("hello")))));
+                (strategy, req) -> succeeded(reqRespFactory.ok().payloadBody(just(allocator.fromAscii("hello")))));
         BlockingStreamingHttpRequester syncRequester = asyncRequester.asBlockingStreaming();
         BlockingStreamingHttpResponse syncResponse = syncRequester.request(
                 syncRequester.get("/"));
@@ -280,7 +280,7 @@ public abstract class AbstractBlockingStreamingHttpRequesterTest {
         String expectedPayload = "hello";
         byte[] expectedPayloadBytes = expectedPayload.getBytes(US_ASCII);
         TestStreamingHttpRequester asyncRequester = newAsyncRequester(reqRespFactory, mockExecutionCtx,
-                (strategy, req) -> success(reqRespFactory.ok().payloadBody(
+                (strategy, req) -> succeeded(reqRespFactory.ok().payloadBody(
                         just(allocator.fromAscii(expectedPayload)))));
         BlockingStreamingHttpRequester syncRequester = asyncRequester.asBlockingStreaming();
         BlockingStreamingHttpResponse syncResponse = syncRequester.request(
@@ -297,7 +297,7 @@ public abstract class AbstractBlockingStreamingHttpRequesterTest {
     @Test
     public void asyncToSyncClose() throws Exception {
         TestStreamingHttpRequester asyncRequester = newAsyncRequester(reqRespFactory, mockExecutionCtx,
-                (strategy, req) -> error(new IllegalStateException("shouldn't be called!")));
+                (strategy, req) -> failed(new IllegalStateException("shouldn't be called!")));
         BlockingStreamingHttpRequester syncRequester = asyncRequester.asBlockingStreaming();
         syncRequester.close();
         assertTrue(asyncRequester.isClosed());
@@ -306,7 +306,7 @@ public abstract class AbstractBlockingStreamingHttpRequesterTest {
     @Test
     public void asyncToSyncCancelPropagated() throws Exception {
         TestStreamingHttpRequester asyncRequester = newAsyncRequester(reqRespFactory, mockExecutionCtx,
-                (strategy, req) -> success(reqRespFactory.ok().payloadBody(publisher)));
+                (strategy, req) -> succeeded(reqRespFactory.ok().payloadBody(publisher)));
         TestSubscription subscription = new TestSubscription();
         BlockingStreamingHttpRequester syncRequester = asyncRequester.asBlockingStreaming();
         BlockingStreamingHttpResponse syncResponse = syncRequester.request(
@@ -344,7 +344,7 @@ public abstract class AbstractBlockingStreamingHttpRequesterTest {
         assertEquals(HTTP_1_1, asyncResponse.version());
         assertEquals(OK, asyncResponse.status());
         assertEquals("hello", asyncResponse.payloadBody()
-                .reduce(() -> "", (acc, next) -> acc + next.toString(US_ASCII)).toFuture().get());
+                .collect(() -> "", (acc, next) -> acc + next.toString(US_ASCII)).toFuture().get());
     }
 
     @Test

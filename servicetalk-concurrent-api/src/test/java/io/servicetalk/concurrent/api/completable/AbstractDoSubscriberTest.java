@@ -53,7 +53,7 @@ public abstract class AbstractDoSubscriberTest {
 
     @Test
     public void testOnWithOnError() {
-        listener.listen(doSubscriber(Completable.error(DELIBERATE_EXCEPTION), () -> subscriber))
+        listener.listen(doSubscriber(Completable.failed(DELIBERATE_EXCEPTION), () -> subscriber))
                 .verifyFailure(DELIBERATE_EXCEPTION);
         verify(subscriber).onSubscribe(any());
         verify(subscriber).onError(DeliberateException.DELIBERATE_EXCEPTION);

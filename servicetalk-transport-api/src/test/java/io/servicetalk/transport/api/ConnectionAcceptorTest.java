@@ -78,7 +78,7 @@ public class ConnectionAcceptorTest {
     @Test
     public void chainingCompletedThenErrorShouldReturnError() {
         setFilterResult(first, Completable.completed());
-        setFilterResult(second, Completable.error(DELIBERATE_EXCEPTION));
+        setFilterResult(second, Completable.failed(DELIBERATE_EXCEPTION));
 
         applyFilters();
         listener.verifyFailure(DeliberateException.class);
@@ -89,7 +89,7 @@ public class ConnectionAcceptorTest {
 
     @Test
     public void chainingAfterErrorShouldNotCallNextFilter() {
-        setFilterResult(first, Completable.error(DELIBERATE_EXCEPTION));
+        setFilterResult(first, Completable.failed(DELIBERATE_EXCEPTION));
 
         applyFilters();
         listener.verifyFailure(DeliberateException.class);

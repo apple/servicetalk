@@ -59,7 +59,7 @@ import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Processors.newCompletableProcessor;
 import static io.servicetalk.concurrent.api.Processors.newSingleProcessor;
-import static io.servicetalk.concurrent.api.Publisher.error;
+import static io.servicetalk.concurrent.api.Publisher.failed;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.ThrowableUtil.unknownStackTrace;
@@ -228,11 +228,11 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
     }
 
     private Publisher<Read> enrichErrorPublisher(final Throwable t) {
-        return error(enrichError(t));
+        return failed(enrichError(t));
     }
 
     private Completable enrichErrorCompletable(final Throwable t) {
-        return Completable.error(enrichError(t));
+        return Completable.failed(enrichError(t));
     }
 
     private Throwable enrichError(final Throwable t) {

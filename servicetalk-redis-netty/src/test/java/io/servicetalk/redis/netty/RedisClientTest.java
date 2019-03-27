@@ -168,14 +168,15 @@ public class RedisClientTest extends BaseRedisClientTest {
 
         final RedisRequest request = newRequest(PING, Publisher.from(args));
 
-        final String responseData = awaitIndefinitelyNonNull(getEnv().client.request(request).reduce(StringBuilder::new,
-          (r, d) -> {
-              if (d instanceof FirstBulkStringChunk) {
-                  assertThat(((FirstBulkStringChunk) d).bulkStringLength(), is(1000));
-              }
-              r.append(d.bufferValue().toString(UTF_8));
-            return r;
-        })).toString();
+        final String responseData = awaitIndefinitelyNonNull(getEnv().client.request(request)
+                .collect(StringBuilder::new,
+                        (r, d) -> {
+                            if (d instanceof FirstBulkStringChunk) {
+                                assertThat(((FirstBulkStringChunk) d).bulkStringLength(), is(1000));
+                            }
+                            r.append(d.bufferValue().toString(UTF_8));
+                            return r;
+                        })).toString();
 
         assertThat(responseData, is(expected.toString()));
     }
@@ -202,7 +203,7 @@ public class RedisClientTest extends BaseRedisClientTest {
 
         final RedisRequest getRequest = newRequest(SET, Publisher.from(new ArraySize(2L), GET,
                 new CompleteBulkString(buf("key"))));
-        final String responseData = getEnv().client.request(getRequest).reduce(StringBuilder::new,
+        final String responseData = getEnv().client.request(getRequest).collect(StringBuilder::new,
                 (r, d) -> {
                     if (d instanceof FirstBulkStringChunk) {
                         assertThat(((FirstBulkStringChunk) d).bulkStringLength(), is(1000));
@@ -334,7 +335,7 @@ public class RedisClientTest extends BaseRedisClientTest {
         final String key = "foo";
         awaitIndefinitely(commander.del(key));
         assertThat(awaitIndefinitely(commander.append(key, "bar").repeat(times -> times < 2)
-                        .reduce(() -> new ArrayList<>(2), (list, value) -> {
+                        .collect(() -> new ArrayList<>(2), (list, value) -> {
                             list.add(value);
                             return list;
                         })),
@@ -345,7 +346,7 @@ public class RedisClientTest extends BaseRedisClientTest {
     public void requestSingleStringIsRepeatable() throws Exception {
         RedisCommander commander = getEnv().client.asCommander();
         assertThat(awaitIndefinitely(commander.set("foo", "value").repeat(times -> times < 2)
-                        .reduce(() -> new ArrayList<>(2), (list, value) -> {
+                        .collect(() -> new ArrayList<>(2), (list, value) -> {
                             list.add(value);
                             return list;
                         })),
@@ -363,7 +364,7 @@ public class RedisClientTest extends BaseRedisClientTest {
         assertThat(awaitIndefinitely(commander.sadd(key.slice(), v1.slice())), is(1L));
         assertThat(awaitIndefinitely(commander.sadd(key.slice(), v2.slice())), is(1L));
         assertThat(awaitIndefinitely(commander.spop(key.slice()).repeat(times -> times < 2)
-                        .reduce(() -> new ArrayList<>(2), (list, value) -> {
+                        .collect(() -> new ArrayList<>(2), (list, value) -> {
                             list.add(value);
                             return list;
                         })),
@@ -387,7 +388,7 @@ public class RedisClientTest extends BaseRedisClientTest {
         assertThat(awaitIndefinitely(commander.sadd(key2.slice(), v3.slice())), is(1L));
         assertThat(awaitIndefinitely(commander.sadd(key2.slice(), v4.slice())), is(1L));
         assertThat(awaitIndefinitely(commander.sunion(key1.slice(), key2.slice()).repeat(times -> times < 2)
-                        .reduce(() -> new ArrayList<Object>(4), (aggregator, value) -> {
+                        .collect(() -> new ArrayList<Object>(4), (aggregator, value) -> {
                             aggregator.addAll(value);
                             return aggregator;
                         })),

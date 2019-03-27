@@ -21,7 +21,7 @@ import io.servicetalk.concurrent.api.Single;
 
 import java.util.function.Predicate;
 
-import static io.servicetalk.concurrent.api.Publisher.error;
+import static io.servicetalk.concurrent.api.Publisher.failed;
 
 final class ConditionalPartitionedRedisClientFilter extends PartitionedRedisClientFilter {
     private final Predicate<RedisRequest> predicate;
@@ -43,7 +43,7 @@ final class ConditionalPartitionedRedisClientFilter extends PartitionedRedisClie
         try {
             b = predicate.test(req);
         } catch (Throwable t) {
-            return error(new RuntimeException("Unexpected predicate failure", t));
+            return failed(new RuntimeException("Unexpected predicate failure", t));
         }
 
         if (b) {
@@ -62,7 +62,7 @@ final class ConditionalPartitionedRedisClientFilter extends PartitionedRedisClie
         try {
             b = predicate.test(req);
         } catch (Throwable t) {
-            return Single.error(new RuntimeException("Unexpected predicate failure", t));
+            return Single.failed(new RuntimeException("Unexpected predicate failure", t));
         }
 
         if (b) {

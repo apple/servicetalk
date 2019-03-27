@@ -32,8 +32,8 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 
 import static io.servicetalk.concurrent.api.Publisher.from;
-import static io.servicetalk.concurrent.api.Single.error;
-import static io.servicetalk.concurrent.api.Single.success;
+import static io.servicetalk.concurrent.api.Single.failed;
+import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
@@ -62,7 +62,7 @@ public final class SingleFlatMapPublisherTest {
 
     @Test
     public void testFirstAndSecondPropagate() {
-        toSource(success(1).flatMapPublisher(s1 -> from(new String[]{"Hello1", "Hello2"}).map(str1 -> str1 + s1)))
+        toSource(succeeded(1).flatMapPublisher(s1 -> from(new String[]{"Hello1", "Hello2"}).map(str1 -> str1 + s1)))
                 .subscribe(subscriber);
         subscriber.request(2);
         assertThat(subscriber.takeItems(), contains("Hello11", "Hello21"));
@@ -71,7 +71,7 @@ public final class SingleFlatMapPublisherTest {
 
     @Test
     public void testSuccess() {
-        toSource(success(1).flatMapPublisher(s1 -> publisher)).subscribe(subscriber);
+        toSource(succeeded(1).flatMapPublisher(s1 -> publisher)).subscribe(subscriber);
         subscriber.request(2);
         publisher.onNext("Hello1", "Hello2");
         publisher.onComplete();
@@ -81,7 +81,7 @@ public final class SingleFlatMapPublisherTest {
 
     @Test
     public void testPublisherEmitsError() {
-        toSource(success(1).flatMapPublisher(s1 -> publisher)).subscribe(subscriber);
+        toSource(succeeded(1).flatMapPublisher(s1 -> publisher)).subscribe(subscriber);
         subscriber.request(1);
         publisher.onError(DELIBERATE_EXCEPTION);
         assertThat(subscriber.takeError(), sameInstance(DELIBERATE_EXCEPTION));
@@ -89,7 +89,7 @@ public final class SingleFlatMapPublisherTest {
 
     @Test
     public void testSingleEmitsError() {
-        toSource(error(DELIBERATE_EXCEPTION).flatMapPublisher(s1 -> publisher)).subscribe(subscriber);
+        toSource(failed(DELIBERATE_EXCEPTION).flatMapPublisher(s1 -> publisher)).subscribe(subscriber);
         subscriber.request(1);
         assertFalse(publisher.isSubscribed());
         assertThat(subscriber.takeError(), sameInstance(DELIBERATE_EXCEPTION));
@@ -127,7 +127,7 @@ public final class SingleFlatMapPublisherTest {
 
     @Test
     public void testCancelPostOnSubscribe() {
-        toSource(success(1).flatMapPublisher(s1 -> publisher)).subscribe(subscriber);
+        toSource(succeeded(1).flatMapPublisher(s1 -> publisher)).subscribe(subscriber);
         subscriber.request(2);
         publisher.onSubscribe(subscription);
         subscriber.cancel();
@@ -136,7 +136,7 @@ public final class SingleFlatMapPublisherTest {
 
     @Test
     public void exceptionInTerminalCallsOnError() {
-        toSource(success(1).<String>flatMapPublisher(s1 -> {
+        toSource(succeeded(1).<String>flatMapPublisher(s1 -> {
             throw DELIBERATE_EXCEPTION;
         })).subscribe(subscriber);
         subscriber.request(2);
@@ -146,7 +146,7 @@ public final class SingleFlatMapPublisherTest {
 
     @Test
     public void nullInTerminalCallsOnError() {
-        toSource(success(1).<String>flatMapPublisher(s1 -> null)).subscribe(subscriber);
+        toSource(succeeded(1).<String>flatMapPublisher(s1 -> null)).subscribe(subscriber);
         subscriber.request(2);
         single.onSuccess("Hello");
         assertThat(subscriber.takeError(), instanceOf(NullPointerException.class));

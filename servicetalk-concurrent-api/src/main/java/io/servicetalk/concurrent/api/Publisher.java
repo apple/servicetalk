@@ -738,9 +738,9 @@ public abstract class Publisher<T> {
      * @return a new {@link Publisher} that will mimic the signals of this {@link Publisher} but will terminate with a
      * {@link TimeoutException} if time {@code duration} elapses between {@link Subscriber#onNext(Object)} calls.
      * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
-     * @see #timeout(long, TimeUnit, Executor)
+     * @see #idleTimeout(long, TimeUnit, Executor)
      */
-    public final Publisher<T> timeout(long duration, TimeUnit unit) {
+    public final Publisher<T> idleTimeout(long duration, TimeUnit unit) {
         return new TimeoutPublisher<>(this, executor, duration, unit);
     }
 
@@ -756,9 +756,9 @@ public abstract class Publisher<T> {
      * @return a new {@link Publisher} that will mimic the signals of this {@link Publisher} but will terminate with a
      * {@link TimeoutException} if time {@code duration} elapses between {@link Subscriber#onNext(Object)} calls.
      * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
-     * @see #timeout(long, TimeUnit, Executor)
+     * @see #idleTimeout(long, TimeUnit, Executor)
      */
-    public final Publisher<T> timeout(Duration duration) {
+    public final Publisher<T> idleTimeout(Duration duration) {
         return new TimeoutPublisher<>(this, executor, duration);
     }
 
@@ -777,7 +777,7 @@ public abstract class Publisher<T> {
      * {@link TimeoutException} if time {@code duration} elapses between {@link Subscriber#onNext(Object)} calls.
      * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
      */
-    public final Publisher<T> timeout(long duration, TimeUnit unit, Executor timeoutExecutor) {
+    public final Publisher<T> idleTimeout(long duration, TimeUnit unit, Executor timeoutExecutor) {
         return new TimeoutPublisher<>(this, executor, duration, unit, timeoutExecutor);
     }
 
@@ -795,7 +795,7 @@ public abstract class Publisher<T> {
      * {@link TimeoutException} if time {@code duration} elapses between {@link Subscriber#onNext(Object)} calls.
      * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
      */
-    public final Publisher<T> timeout(Duration duration, Executor timeoutExecutor) {
+    public final Publisher<T> idleTimeout(Duration duration, Executor timeoutExecutor) {
         return new TimeoutPublisher<>(this, executor, duration, timeoutExecutor);
     }
 
@@ -1053,7 +1053,7 @@ public abstract class Publisher<T> {
      *
      * @see <a href="http://reactivex.io/documentation/operators/take.html">ReactiveX take operator.</a>
      */
-    public final Publisher<T> take(long numElements) {
+    public final Publisher<T> takeAtMost(long numElements) {
         return new TakeNPublisher<>(this, numElements, executor);
     }
 
@@ -1253,9 +1253,9 @@ public abstract class Publisher<T> {
      * {@code keySelector} {@link Function}.
      * @see #groupBy(Function, int)
      */
-    public final <Key> Publisher<GroupedPublisher<Key, T>> groupByMulti(
+    public final <Key> Publisher<GroupedPublisher<Key, T>> groupToMany(
             Function<? super T, ? extends Iterator<? extends Key>> keySelector, int groupMaxQueueSize) {
-        return new PublisherGroupByMulti<>(this, keySelector, groupMaxQueueSize, executor);
+        return new PublisherGroupToMany<>(this, keySelector, groupMaxQueueSize, executor);
     }
 
     /**
@@ -1290,15 +1290,14 @@ public abstract class Publisher<T> {
      * {@code keySelector} {@link Function}.
      * @see #groupBy(Function, int)
      */
-    public final <Key> Publisher<GroupedPublisher<Key, T>> groupByMulti(
+    public final <Key> Publisher<GroupedPublisher<Key, T>> groupToMany(
             Function<? super T, ? extends Iterator<? extends Key>> keySelector, int groupMaxQueueSize,
             int expectedGroupCountHint) {
-        return new PublisherGroupByMulti<>(this, keySelector, groupMaxQueueSize, expectedGroupCountHint, executor);
+        return new PublisherGroupToMany<>(this, keySelector, groupMaxQueueSize, expectedGroupCountHint, executor);
     }
 
     /**
-     * Create a {@link Publisher} that allows exactly {@code expectedSubscribers} subscribes.
-     * The events from this {@link Publisher} object will be delivered to each {@link Subscriber}.
+     * Create a {@link Publisher} that multicasts all the signals to exactly {@code expectedSubscribers}.
      * <p>
      * Depending on {@link Subscription#request(long)} demand it is possible that data maybe queued before being
      * delivered to each {@link Subscriber}! For example if there are 2 {@link Subscriber}s and the first calls
@@ -1320,7 +1319,7 @@ public abstract class Publisher<T> {
      * before subscribing to this {@link Publisher}.
      * @return a {@link Publisher} that allows exactly {@code expectedSubscribers} subscribes.
      */
-    public final Publisher<T> multicast(int expectedSubscribers) {
+    public final Publisher<T> multicastToExactly(int expectedSubscribers) {
         return new MulticastPublisher<>(this, expectedSubscribers, executor);
     }
 
@@ -1351,7 +1350,7 @@ public abstract class Publisher<T> {
      * is no demand for data before the {@link Subscriber} will be discarded.
      * @return a {@link Publisher} that allows exactly {@code expectedSubscribers} subscribes.
      */
-    public final Publisher<T> multicast(int expectedSubscribers, int maxQueueSize) {
+    public final Publisher<T> multicastToExactly(int expectedSubscribers, int maxQueueSize) {
         return new MulticastPublisher<>(this, expectedSubscribers, maxQueueSize, executor);
     }
 
@@ -1864,7 +1863,7 @@ public abstract class Publisher<T> {
      * <pre>{@code
      *     Publisher<X> pub = ...;
      *     pub.map(..) // A
-     *        .liftSynchronous(original -> modified)
+     *        .liftSync(original -> modified)
      *        .filter(..) // B
      * }</pre>
      *
@@ -1872,16 +1871,16 @@ public abstract class Publisher<T> {
      * with the original {@link Subscriber} from outside the modified {@link Subscriber} or {@link Subscription}
      * threads. That is to say this operator will not impact the {@link Executor} constraints already in place between
      * <i>A</i> and <i>B</i> above. If you need asynchronous behavior, or are unsure, see
-     * {@link #liftAsynchronous(PublisherOperator)}.
+     * {@link #liftAsync(PublisherOperator)}.
      * @param operator The custom operator logic. The input is the "original" {@link Subscriber} to this
      * {@link Publisher} and the return is the "modified" {@link Subscriber} that provides custom operator business
      * logic.
      * @param <R> Type of the items emitted by the returned {@link Publisher}.
      * @return a {@link Publisher} which when subscribed, the {@code operator} argument will be used to wrap the
      * {@link Subscriber} before subscribing to this {@link Publisher}.
-     * @see #liftAsynchronous(PublisherOperator)
+     * @see #liftAsync(PublisherOperator)
      */
-    public final <R> Publisher<R> liftSynchronous(PublisherOperator<? super T, ? extends R> operator) {
+    public final <R> Publisher<R> liftSync(PublisherOperator<? super T, ? extends R> operator) {
         return new LiftSynchronousPublisherOperator<>(this, operator, executor);
     }
 
@@ -1894,7 +1893,7 @@ public abstract class Publisher<T> {
      * <pre>{@code
      *     Publisher<X> pub = ...;
      *     pub.map(..) // A
-     *        .liftAsynchronous(original -> modified)
+     *        .liftAsync(original -> modified)
      *        .filter(..) // B
      * }</pre>
      * The {@code original -> modified} "operator" MAY be "asynchronous" in that it may interact with the original
@@ -1915,9 +1914,9 @@ public abstract class Publisher<T> {
      * @param <R> Type of the items emitted by the returned {@link Publisher}.
      * @return a {@link Publisher} which when subscribed, the {@code operator} argument will be used to wrap the
      * {@link Subscriber} before subscribing to this {@link Publisher}.
-     * @see #liftSynchronous(PublisherOperator)
+     * @see #liftSync(PublisherOperator)
      */
-    public final <R> Publisher<R> liftAsynchronous(PublisherOperator<? super T, ? extends R> operator) {
+    public final <R> Publisher<R> liftAsync(PublisherOperator<? super T, ? extends R> operator) {
         return new LiftAsynchronousPublisherOperator<>(this, operator, executor);
     }
 
@@ -1972,11 +1971,11 @@ public abstract class Publisher<T> {
     }
 
     /**
-     * Reduces the stream into a single item.
+     * Collects all items emitted by this {@link Publisher} into a single item.
      *
      * @param resultFactory Factory for the result which collects all items emitted by this {@link Publisher}.
      * This will be called every time the returned {@link Single} is subscribed.
-     * @param reducer Invoked for every item emitted by the source {@link Publisher} and returns the same or altered
+     * @param collector Invoked for every item emitted by the source {@link Publisher} and returns the same or altered
      * {@code result} object.
      * @param <R> Type of the reduced item.
      * @return A {@link Single} that completes with the single {@code result} or any error emitted by the source
@@ -1984,9 +1983,9 @@ public abstract class Publisher<T> {
      *
      * @see <a href="http://reactivex.io/documentation/operators/reduce.html">ReactiveX reduce operator.</a>
      */
-    public final <R> Single<R> reduce(Supplier<? extends R> resultFactory,
-                                      BiFunction<? super R, ? super T, R> reducer) {
-        return new ReduceSingle<>(this, resultFactory, reducer);
+    public final <R> Single<R> collect(Supplier<? extends R> resultFactory,
+                                       BiFunction<? super R, ? super T, R> collector) {
+        return new ReduceSingle<>(this, resultFactory, collector);
     }
 
     /**
@@ -2017,7 +2016,7 @@ public abstract class Publisher<T> {
      */
     public final <R> Future<R> toFuture(Supplier<? extends R> resultFactory,
                                         BiFunction<? super R, ? super T, R> reducer) {
-        return reduce(resultFactory, reducer).toFuture();
+        return collect(resultFactory, reducer).toFuture();
     }
 
     /**
@@ -2048,7 +2047,7 @@ public abstract class Publisher<T> {
      */
     public final <R> CompletionStage<R> toCompletionStage(Supplier<? extends R> resultFactory,
                                                           BiFunction<? super R, ? super T, R> reducer) {
-        return reduce(resultFactory, reducer).toCompletionStage();
+        return collect(resultFactory, reducer).toCompletionStage();
     }
 
     /**
@@ -2361,7 +2360,7 @@ public abstract class Publisher<T> {
      *
      * @see <a href="http://reactivex.io/documentation/operators/empty-never-throw.html">ReactiveX error operator.</a>
      */
-    public static <T> Publisher<T> error(Throwable cause) {
+    public static <T> Publisher<T> failed(Throwable cause) {
         return new ErrorPublisher<>(cause);
     }
 

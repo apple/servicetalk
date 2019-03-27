@@ -22,8 +22,8 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-import static io.servicetalk.concurrent.api.Single.error;
-import static io.servicetalk.concurrent.api.Single.success;
+import static io.servicetalk.concurrent.api.Single.failed;
+import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 
 public final class SingleFlatMapSingleTest {
@@ -42,25 +42,25 @@ public final class SingleFlatMapSingleTest {
 
     @Test
     public void testFirstAndSecondPropagate() {
-        listener.listen(success(1).flatMap(s -> success("Hello" + s)));
+        listener.listen(succeeded(1).flatMap(s -> succeeded("Hello" + s)));
         listener.verifySuccess("Hello1");
     }
 
     @Test
     public void testSuccess() {
-        listener.listen(success(1).flatMap(s -> success("Hello")));
+        listener.listen(succeeded(1).flatMap(s -> succeeded("Hello")));
         listener.verifySuccess("Hello");
     }
 
     @Test
     public void testFirstEmitsError() {
-        listener.listen(error(DELIBERATE_EXCEPTION).flatMap(s -> success("Hello")));
+        listener.listen(failed(DELIBERATE_EXCEPTION).flatMap(s -> succeeded("Hello")));
         listener.verifyFailure(DELIBERATE_EXCEPTION);
     }
 
     @Test
     public void testSecondEmitsError() {
-        listener.listen(success(1).flatMap(s -> error(DELIBERATE_EXCEPTION)));
+        listener.listen(succeeded(1).flatMap(s -> failed(DELIBERATE_EXCEPTION)));
         listener.verifyFailure(DELIBERATE_EXCEPTION);
     }
 

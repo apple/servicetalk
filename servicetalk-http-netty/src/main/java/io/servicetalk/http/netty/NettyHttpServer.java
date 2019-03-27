@@ -68,7 +68,7 @@ import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseabl
 import static io.servicetalk.concurrent.api.AsyncCloseables.toListenableAsyncCloseable;
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Processors.newCompletableProcessor;
-import static io.servicetalk.concurrent.api.Single.success;
+import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderValues.ZERO;
@@ -274,7 +274,7 @@ final class NettyHttpServer {
                     // but FlushStrategy are implemented considering individual responses.
                     // Since this operator is present on the flattened single write stream, with or without pipelined
                     // requests processed in parallel, we can send WriteEventsListener callbacks per response.
-                    .liftSynchronous(subscriber -> new Subscriber<Object>() {
+                    .liftSync(subscriber -> new Subscriber<Object>() {
                         @Override
                         public void onSubscribe(final Subscription s) {
                             subscriber.onSubscribe(s);
@@ -325,7 +325,7 @@ final class NettyHttpServer {
             response.version(version)
                     .setHeader(CONTENT_LENGTH, ZERO);
             keepAlive.addConnectionHeaderIfNecessary(response);
-            return success(response);
+            return succeeded(response);
         }
 
         @Override

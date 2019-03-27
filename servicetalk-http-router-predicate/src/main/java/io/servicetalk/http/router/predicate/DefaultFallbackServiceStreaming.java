@@ -44,7 +44,7 @@ final class DefaultFallbackServiceStreaming implements StreamingHttpService {
         response.headers().set(CONTENT_LENGTH, ZERO)
                 .set(CONTENT_TYPE, TEXT_PLAIN);
         // TODO(derek): Set keepalive once we have an isKeepAlive helper method.
-        return Single.success(response);
+        return Single.succeeded(response);
     }
 
     static StreamingHttpService instance() {

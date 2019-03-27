@@ -39,7 +39,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import static io.servicetalk.buffer.api.EmptyBuffer.EMPTY_BUFFER;
 import static io.servicetalk.concurrent.api.BlockingTestUtils.awaitIndefinitelyNonNull;
 import static io.servicetalk.concurrent.api.Publisher.just;
-import static io.servicetalk.concurrent.api.Single.success;
+import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
@@ -79,7 +79,7 @@ public class HttpConnectionEmptyPayloadTest {
                                                             .newBuffer(expectedContentLength)
                                                             .writeBytes(expectedPayload)));
                                     resp.addHeader(CONTENT_LENGTH, String.valueOf(expectedContentLength));
-                                    return success(resp);
+                                    return succeeded(resp);
                                 }
 
                                 @Override
@@ -114,7 +114,7 @@ public class HttpConnectionEmptyPayloadTest {
             contentLength = response.headers().get(CONTENT_LENGTH);
             assertNotNull(contentLength);
             assertEquals(expectedContentLength, parseInt(contentLength.toString()));
-            Buffer buffer = awaitIndefinitelyNonNull(response.payloadBody().reduce(
+            Buffer buffer = awaitIndefinitelyNonNull(response.payloadBody().collect(
                     () -> connection.connectionContext().executionContext().bufferAllocator().newBuffer(),
                     Buffer::writeBytes));
             byte[] actualBytes = new byte[buffer.readableBytes()];

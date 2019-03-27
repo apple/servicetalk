@@ -41,7 +41,7 @@ import static io.opentracing.tag.Tags.HTTP_URL;
 import static io.opentracing.tag.Tags.SPAN_KIND;
 import static io.opentracing.tag.Tags.SPAN_KIND_SERVER;
 import static io.servicetalk.concurrent.api.Publisher.just;
-import static io.servicetalk.concurrent.api.Single.success;
+import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.http.api.HttpRequestMethod.GET;
 import static io.servicetalk.http.api.HttpResponseStatus.INTERNAL_SERVER_ERROR;
@@ -93,10 +93,10 @@ public class TracingHttpServiceFilterTest {
                 .listenStreamingAndAwait((ctx, request, responseFactory) -> {
                     InMemorySpan span = tracer.activeSpan();
                     if (span == null) {
-                        return success(responseFactory.internalServerError().payloadBody(just("span not found"),
+                        return succeeded(responseFactory.internalServerError().payloadBody(just("span not found"),
                                 textSerializer()));
                     }
-                    return success(responseFactory.ok().payloadBody(just(new TestSpanState(
+                    return succeeded(responseFactory.ok().payloadBody(just(new TestSpanState(
                                     span.traceIdHex(),
                                     span.spanIdHex(),
                                     span.parentSpanIdHex(),
@@ -168,7 +168,7 @@ public class TracingHttpServiceFilterTest {
         when(mockTracer.buildSpan(any())).thenThrow(DELIBERATE_EXCEPTION);
         try (ServerContext context = HttpServers.forAddress(localAddress(0))
                 .appendServiceFilter(new TracingHttpServiceFilter(mockTracer, "testServer"))
-                .listenStreamingAndAwait(((ctx, request, responseFactory) -> success(responseFactory.forbidden())))) {
+                .listenStreamingAndAwait(((ctx, request, responseFactory) -> succeeded(responseFactory.forbidden())))) {
             try (HttpClient client = forSingleAddress(serverHostAndPort(context)).build()) {
                 HttpRequest request = client.get("/");
                 HttpResponse response = client.request(request).toFuture().get();

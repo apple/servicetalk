@@ -31,7 +31,7 @@ public class DoBeforeFinallyTest extends AbstractDoFinallyTest {
     @Test
     @Override
     public void testCallbackThrowsErrorOnSuccess() {
-        listener.listen(doFinally(Single.success("Hello"), () -> {
+        listener.listen(doFinally(Single.succeeded("Hello"), () -> {
             throw DELIBERATE_EXCEPTION;
         })).verifyFailure(DELIBERATE_EXCEPTION);
     }
@@ -40,7 +40,7 @@ public class DoBeforeFinallyTest extends AbstractDoFinallyTest {
     @Override
     public void testCallbackThrowsErrorOnError() {
         DeliberateException exception = new DeliberateException();
-        listener.listen(doFinally(Single.error(DELIBERATE_EXCEPTION), () -> {
+        listener.listen(doFinally(Single.failed(DELIBERATE_EXCEPTION), () -> {
             throw exception;
         })).verifyFailure(exception).verifySuppressedFailure(DELIBERATE_EXCEPTION);
     }

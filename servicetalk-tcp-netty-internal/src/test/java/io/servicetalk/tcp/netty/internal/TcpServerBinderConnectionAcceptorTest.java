@@ -39,7 +39,7 @@ import javax.net.ssl.SSLSession;
 
 import static io.servicetalk.concurrent.api.BlockingTestUtils.awaitIndefinitelyNonNull;
 import static io.servicetalk.concurrent.api.Completable.completed;
-import static io.servicetalk.concurrent.api.Completable.error;
+import static io.servicetalk.concurrent.api.Completable.failed;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -52,15 +52,15 @@ public class TcpServerBinderConnectionAcceptorTest extends AbstractTcpServerTest
     enum FilterMode {
         ACCEPT_ALL(true, false, (executor, context) -> completed()),
         DELAY_ACCEPT_ALL(true, false, (executor, context) -> executor.timer(100, MILLISECONDS).concat(completed())),
-        REJECT_ALL(false, false, (executor, context) -> error(DELIBERATE_EXCEPTION)),
+        REJECT_ALL(false, false, (executor, context) -> failed(DELIBERATE_EXCEPTION)),
         DELAY_REJECT_ALL(false, false, (executor, context) ->
-                executor.timer(100, MILLISECONDS).concat(error(DELIBERATE_EXCEPTION))),
+                executor.timer(100, MILLISECONDS).concat(failed(DELIBERATE_EXCEPTION))),
         THROW_EXCEPTION(false, false, (executor, context) -> {
             throw DELIBERATE_EXCEPTION;
         }),
         DELAY_SINGLE_ERROR(false, false, (executor, context) ->
-                executor.timer(100, MILLISECONDS).concat(error(DELIBERATE_EXCEPTION))),
-        SINGLE_ERROR(false, false, (executor, context) -> error(new DeliberateException())),
+                executor.timer(100, MILLISECONDS).concat(failed(DELIBERATE_EXCEPTION))),
+        SINGLE_ERROR(false, false, (executor, context) -> failed(new DeliberateException())),
         INITIALIZER_THROW(false, true, (executor, context) -> completed()),
         DELAY_INITIALIZER_THROW(false, true, (executor, context) ->
                 executor.timer(100, MILLISECONDS).concat(completed())),

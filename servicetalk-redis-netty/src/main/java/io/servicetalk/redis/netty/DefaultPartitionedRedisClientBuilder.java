@@ -51,7 +51,7 @@ import java.time.Duration;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.api.Publisher.error;
+import static io.servicetalk.concurrent.api.Publisher.failed;
 import static io.servicetalk.redis.api.PartitionedRedisClientFilterFactory.identity;
 import static java.util.Objects.requireNonNull;
 
@@ -304,12 +304,12 @@ final class DefaultPartitionedRedisClientBuilder<U, R> implements PartitionedRed
         @Override
         public Single<? extends ReservedRedisConnection> reserveConnection(final RedisExecutionStrategy strategy,
                                                                            final Command command) {
-            return Single.error(ex);
+            return Single.failed(ex);
         }
 
         @Override
         public Publisher<RedisData> request(final RedisExecutionStrategy strategy, final RedisRequest request) {
-            return error(ex);
+            return failed(ex);
         }
 
         @Override

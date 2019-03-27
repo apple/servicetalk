@@ -41,8 +41,8 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.buffer.api.EmptyBuffer.EMPTY_BUFFER;
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
-import static io.servicetalk.concurrent.api.Single.error;
-import static io.servicetalk.concurrent.api.Single.success;
+import static io.servicetalk.concurrent.api.Single.failed;
+import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpHeaderNames.HOST;
 import static io.servicetalk.http.api.HttpHeaderNames.LOCATION;
@@ -102,9 +102,9 @@ public class RedirectingHttpRequesterFilterTest {
                 StreamingHttpResponse response = reqRespFactory.newResponse(status);
                 CharSequence redirectLocation = request.headers().get(REQUESTED_LOCATION);
                 response.headers().set(LOCATION, redirectLocation);
-                return success(response);
+                return succeeded(response);
             } catch (Throwable t) {
-                return error(t);
+                return failed(t);
             }
         });
     }
@@ -238,7 +238,7 @@ public class RedirectingHttpRequesterFilterTest {
 
     @Test
     public void requestWithNullResponse() throws Exception {
-        when(httpClient.request(any(), any())).thenReturn(success(null));
+        when(httpClient.request(any(), any())).thenReturn(succeeded(null));
 
         StreamingHttpClient redirectingRequester = newClient(new RedirectingHttpRequesterFilter(false));
 
@@ -311,7 +311,7 @@ public class RedirectingHttpRequesterFilterTest {
                 createRedirectResponse(1),
                 createRedirectResponse(2),
                 createRedirectResponse(3),
-                success(reqRespFactory.ok()));
+                succeeded(reqRespFactory.ok()));
 
         StreamingHttpClient redirectingRequester = newClient(new RedirectingHttpRequesterFilter(false));
 
@@ -328,7 +328,7 @@ public class RedirectingHttpRequesterFilterTest {
     private static Single<StreamingHttpResponse> createRedirectResponse(final int i) {
         StreamingHttpResponse response = reqRespFactory.newResponse(MOVED_PERMANENTLY);
         response.headers().set(LOCATION, "/location-" + i);
-        return success(response);
+        return succeeded(response);
     }
 
     @Test

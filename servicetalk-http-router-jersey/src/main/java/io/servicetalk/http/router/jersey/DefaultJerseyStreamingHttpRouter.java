@@ -47,7 +47,7 @@ import javax.ws.rs.core.SecurityContext;
 
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Completable.defer;
-import static io.servicetalk.concurrent.api.Completable.error;
+import static io.servicetalk.concurrent.api.Completable.failed;
 import static io.servicetalk.http.router.jersey.CharSequenceUtils.ensureNoLeadingSlash;
 import static io.servicetalk.http.router.jersey.Context.CONNECTION_CONTEXT_REF_TYPE;
 import static io.servicetalk.http.router.jersey.Context.HTTP_REQUEST_REF_TYPE;
@@ -151,7 +151,7 @@ final class DefaultJerseyStreamingHttpRouter implements StreamingHttpService {
                 applicationHandler.onShutdown(container);
                 return completed();
             } catch (final Throwable t) {
-                return error(t);
+                return failed(t);
             }
         });
     }

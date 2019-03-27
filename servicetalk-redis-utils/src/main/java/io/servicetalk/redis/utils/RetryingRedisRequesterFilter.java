@@ -39,7 +39,7 @@ import io.servicetalk.redis.api.ReservedRedisConnectionFilter;
 import java.io.IOException;
 import java.util.function.BiPredicate;
 
-import static io.servicetalk.concurrent.api.Completable.error;
+import static io.servicetalk.concurrent.api.Completable.failed;
 import static io.servicetalk.redis.api.RedisProtocolSupport.CommandFlag.READONLY;
 
 /**
@@ -63,7 +63,7 @@ public final class RetryingRedisRequesterFilter implements RedisClientFilterFact
             if (settings.isRetryable(request.command(), t)) {
                 return retryStrategy.apply(count, t);
             }
-            return error(t);
+            return failed(t);
         });
     }
 

@@ -26,10 +26,10 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static io.servicetalk.concurrent.api.Single.collect;
-import static io.servicetalk.concurrent.api.Single.collectDelayError;
-import static io.servicetalk.concurrent.api.Single.error;
-import static io.servicetalk.concurrent.api.Single.success;
+import static io.servicetalk.concurrent.api.Single.collectUnordered;
+import static io.servicetalk.concurrent.api.Single.collectUnorderedDelayError;
+import static io.servicetalk.concurrent.api.Single.failed;
+import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -45,22 +45,22 @@ public class CollectTest {
 
     @Test
     public void collectVarArgSuccess() throws Exception {
-        Collection<Integer> integers = collect(success(1), success(2)).toFuture().get();
+        Collection<Integer> integers = collectUnordered(succeeded(1), succeeded(2)).toFuture().get();
         assertThat("Unexpected result.", integers, containsInAnyOrder(1, 2));
     }
 
     @Test
     public void collectVarArgMaxConcurrencySuccess() throws Exception {
         // Just testing that the method works. As it uses existing operators, we don't require elaborate tests
-        Collection<Integer> integers = collect(1, success(1), success(2)).toFuture().get();
+        Collection<Integer> integers = collectUnordered(1, succeeded(1), succeeded(2)).toFuture().get();
         assertThat("Unexpected result.", integers, containsInAnyOrder(1, 2));
     }
 
     @Test
     public void collectVarArgFailure() throws Exception {
         AtomicBoolean secondSubscribed = new AtomicBoolean();
-        Future<? extends Collection<Integer>> future = collect(error(DELIBERATE_EXCEPTION),
-                success(2).doBeforeOnSubscribe(__ -> secondSubscribed.set(true))).toFuture();
+        Future<? extends Collection<Integer>> future = collectUnordered(failed(DELIBERATE_EXCEPTION),
+                succeeded(2).doBeforeOnSubscribe(__ -> secondSubscribed.set(true))).toFuture();
         try {
             future.get();
             fail();
@@ -73,8 +73,8 @@ public class CollectTest {
     @Test
     public void collectVarArgDelayError() throws Exception {
         AtomicBoolean secondSubscribed = new AtomicBoolean();
-        Future<? extends Collection<Integer>> future = collectDelayError(error(DELIBERATE_EXCEPTION),
-                success(2).doBeforeOnSubscribe(__ -> secondSubscribed.set(true))).toFuture();
+        Future<? extends Collection<Integer>> future = collectUnorderedDelayError(failed(DELIBERATE_EXCEPTION),
+                succeeded(2).doBeforeOnSubscribe(__ -> secondSubscribed.set(true))).toFuture();
         try {
             future.get();
             fail();
@@ -88,8 +88,8 @@ public class CollectTest {
     @Test
     public void collectVarArgDelayErrorMaxConcurrency() throws Exception {
         AtomicBoolean secondSubscribed = new AtomicBoolean();
-        Future<? extends Collection<Integer>> future = collectDelayError(1, error(DELIBERATE_EXCEPTION),
-                success(2).doBeforeOnSubscribe(__ -> secondSubscribed.set(true))).toFuture();
+        Future<? extends Collection<Integer>> future = collectUnorderedDelayError(1, failed(DELIBERATE_EXCEPTION),
+                succeeded(2).doBeforeOnSubscribe(__ -> secondSubscribed.set(true))).toFuture();
         try {
             future.get();
             fail();
@@ -102,22 +102,22 @@ public class CollectTest {
 
     @Test
     public void collectIterableSuccess() throws Exception {
-        Collection<Integer> integers = collect(asList(success(1), success(2))).toFuture().get();
+        Collection<Integer> integers = collectUnordered(asList(succeeded(1), succeeded(2))).toFuture().get();
         assertThat("Unexpected result.", integers, containsInAnyOrder(1, 2));
     }
 
     @Test
     public void collectIterableMaxConcurrencySuccess() throws Exception {
         // Just testing that the method works. As it uses existing operators, we don't require elaborate tests
-        Collection<Integer> integers = collect(asList(success(1), success(2)), 1).toFuture().get();
+        Collection<Integer> integers = collectUnordered(asList(succeeded(1), succeeded(2)), 1).toFuture().get();
         assertThat("Unexpected result.", integers, containsInAnyOrder(1, 2));
     }
 
     @Test
     public void collectIterableFailure() throws Exception {
         AtomicBoolean secondSubscribed = new AtomicBoolean();
-        Future<? extends Collection<Integer>> future = collect(asList(error(DELIBERATE_EXCEPTION),
-                success(2).doBeforeOnSubscribe(__ -> secondSubscribed.set(true)))).toFuture();
+        Future<? extends Collection<Integer>> future = collectUnordered(asList(failed(DELIBERATE_EXCEPTION),
+                succeeded(2).doBeforeOnSubscribe(__ -> secondSubscribed.set(true)))).toFuture();
         try {
             future.get();
             fail();
@@ -130,8 +130,8 @@ public class CollectTest {
     @Test
     public void collectIterableDelayError() throws Exception {
         AtomicBoolean secondSubscribed = new AtomicBoolean();
-        Future<? extends Collection<Integer>> future = collectDelayError(asList(error(DELIBERATE_EXCEPTION),
-                success(2).doBeforeOnSubscribe(__ -> secondSubscribed.set(true)))).toFuture();
+        Future<? extends Collection<Integer>> future = collectUnorderedDelayError(asList(failed(DELIBERATE_EXCEPTION),
+                succeeded(2).doBeforeOnSubscribe(__ -> secondSubscribed.set(true)))).toFuture();
         try {
             future.get();
             fail();
@@ -145,8 +145,8 @@ public class CollectTest {
     @Test
     public void collectIterableDelayErrorMaxConcurrency() throws Exception {
         AtomicBoolean secondSubscribed = new AtomicBoolean();
-        Future<? extends Collection<Integer>> future = collectDelayError(asList(error(DELIBERATE_EXCEPTION),
-                success(2).doBeforeOnSubscribe(__ -> secondSubscribed.set(true))), 1).toFuture();
+        Future<? extends Collection<Integer>> future = collectUnorderedDelayError(asList(failed(DELIBERATE_EXCEPTION),
+                succeeded(2).doBeforeOnSubscribe(__ -> secondSubscribed.set(true))), 1).toFuture();
         try {
             future.get();
             fail();

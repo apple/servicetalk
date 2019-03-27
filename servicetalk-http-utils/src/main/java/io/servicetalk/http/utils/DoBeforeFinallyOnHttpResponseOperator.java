@@ -53,12 +53,12 @@ import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
  *     // coarse grained, any terminal signal calls the provided `Runnable`
  *     return requester.request(strategy, request)
  *                     .doBeforeOnSubscribe(__ -> tracker.requestStarted())
- *                     .liftSynchronous(new DoBeforeFinallyOnHttpResponseOperator(tracker::requestFinished));
+ *                     .liftSync(new DoBeforeFinallyOnHttpResponseOperator(tracker::requestFinished));
  *
  *     // fine grained, `tracker` implements `TerminalSignalConsumer`, terminal signal indicated by the callback method
  *     return requester.request(strategy, request)
  *                     .doBeforeOnSubscribe(__ -> tracker.requestStarted())
- *                     .liftSynchronous(new DoBeforeFinallyOnHttpResponseOperator(tracker));
+ *                     .liftSync(new DoBeforeFinallyOnHttpResponseOperator(tracker));
  * }</pre>
  */
 public final class DoBeforeFinallyOnHttpResponseOperator
@@ -133,7 +133,7 @@ public final class DoBeforeFinallyOnHttpResponseOperator
                 sendNullResponse();
             } else if (stateUpdater.compareAndSet(this, IDLE, PROCESSING_PAYLOAD)) {
                 subscriber.onSuccess(response.transformRawPayloadBody(payload ->
-                        payload.liftSynchronous(subscriber ->
+                        payload.liftSync(subscriber ->
                                 new Subscriber<Object>() {
                                     @Override
                                     public void onSubscribe(final Subscription subscription) {
@@ -195,7 +195,7 @@ public final class DoBeforeFinallyOnHttpResponseOperator
                     // We have been cancelled. Subscribe and cancel the content so that we do not hold up the
                     // connection and indicate that there is no one else that will subscribe.
                     toSource(payload).subscribe(CancelImmediatelySubscriber.INSTANCE);
-                    return Publisher.error(new CancellationException("Received response post cancel."));
+                    return Publisher.failed(new CancellationException("Received response post cancel."));
                 }));
             }
         }

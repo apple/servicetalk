@@ -36,7 +36,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Executors.immediate;
-import static io.servicetalk.concurrent.api.Single.success;
+import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
 import static io.servicetalk.transport.netty.internal.NettyIoExecutors.toNettyIoExecutor;
 import static java.net.InetAddress.getLoopbackAddress;
@@ -64,7 +64,7 @@ public class RedisAuthConnectionFactoryConnectionTest {
         if (connectionSingle != null) {
             assert ioExecutor != null;
             connectionSingle.flatMap(connection ->
-                    connection.closeAsync().onErrorResume(cause -> completed()).concat(success(connection)))
+                    connection.closeAsync().onErrorResume(cause -> completed()).concat(succeeded(connection)))
                     .ignoreResult()
                     .onErrorResume(cause -> completed())
                     .concat(ioExecutor.closeAsync()).toFuture().get();

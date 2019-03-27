@@ -90,7 +90,7 @@ public abstract class AbstractEchoServerBasedHttpRequesterTest {
 
             HttpHeaders headers = resp.headers();
             request.headers().forEach(entry -> headers.set("test-req-header-" + entry.getKey(), entry.getValue()));
-            return Single.success(resp);
+            return Single.succeeded(resp);
         }
 
         @Override
@@ -114,7 +114,7 @@ public abstract class AbstractEchoServerBasedHttpRequesterTest {
 
             assertThat(resp.status(), equalTo(OK));
 
-            Single<String> respBody = resp.payloadBody().reduce(StringBuilder::new, (sb, buf) -> {
+            Single<String> respBody = resp.payloadBody().collect(StringBuilder::new, (sb, buf) -> {
                 sb.append(buf.toString(UTF_8));
                 return sb;
             }).map(StringBuilder::toString);

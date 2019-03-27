@@ -82,7 +82,7 @@ final class RedisTestEnvironment implements AutoCloseable {
         final String serverInfo = awaitIndefinitelyNonNull(
                 client.request(newRequest(INFO, new CompleteBulkString(DEFAULT_ALLOCATOR.fromUtf8("SERVER"))))
                         .filter(d -> d instanceof BulkStringChunk)
-                        .reduce(StringBuilder::new, (sb, d) -> sb.append(d.bufferValue().toString(US_ASCII))))
+                        .collect(StringBuilder::new, (sb, d) -> sb.append(d.bufferValue().toString(US_ASCII))))
                 .toString();
 
         final Matcher versionMatcher =

@@ -206,7 +206,7 @@ public abstract class AbstractNettyHttpServerTest {
         assertEquals(version, response.version());
 
         final int size = awaitIndefinitelyNonNull(
-                response.payloadBody().reduce(() -> 0, (is, c) -> is + c.readableBytes()));
+                response.payloadBody().collect(() -> 0, (is, c) -> is + c.readableBytes()));
         assertEquals(expectedSize, size);
     }
 

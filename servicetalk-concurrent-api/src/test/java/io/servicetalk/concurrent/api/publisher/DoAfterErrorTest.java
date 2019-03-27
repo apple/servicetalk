@@ -44,7 +44,7 @@ public class DoAfterErrorTest extends AbstractDoErrorTest {
     @Test
     public void testCallbackThrowsError() {
         DeliberateException srcEx = new DeliberateException();
-        doError(Publisher.<String>error(srcEx), t -> {
+        doError(Publisher.<String>failed(srcEx), t -> {
             throw DELIBERATE_EXCEPTION;
         }).subscribe(subscriber);
         assertThat(subscriber.takeError(), sameInstance(srcEx));

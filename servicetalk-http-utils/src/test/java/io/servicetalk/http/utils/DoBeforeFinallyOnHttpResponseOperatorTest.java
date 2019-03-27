@@ -83,7 +83,7 @@ public class DoBeforeFinallyOnHttpResponseOperatorTest {
     public void nullAsSuccess() {
         final ResponseSubscriber subscriber = new ResponseSubscriber();
 
-        toSource(Single.<StreamingHttpResponse>success(null).liftSynchronous(operator)).subscribe(subscriber);
+        toSource(Single.<StreamingHttpResponse>succeeded(null).liftSync(operator)).subscribe(subscriber);
         assertThat("onSubscribe not called.", subscriber.cancellable, is(notNullValue()));
         verify(doBeforeFinally).onComplete();
 
@@ -104,7 +104,7 @@ public class DoBeforeFinallyOnHttpResponseOperatorTest {
         };
 
         final ResponseSubscriber subscriber = new ResponseSubscriber();
-        toSource(original.liftSynchronous(operator)).subscribe(subscriber);
+        toSource(original.liftSync(operator)).subscribe(subscriber);
         assertThat("Original Single not subscribed.", subRef.get(), is(notNullValue()));
         assertThat("onSubscribe not called.", subscriber.cancellable, is(notNullValue()));
 
@@ -131,7 +131,7 @@ public class DoBeforeFinallyOnHttpResponseOperatorTest {
     public void cancelBeforeOnSuccess() throws Exception {
         LegacyTestSingle<StreamingHttpResponse> responseSingle = new LegacyTestSingle<>(true);
         final ResponseSubscriber subscriber = new ResponseSubscriber();
-        toSource(responseSingle.liftSynchronous(operator)).subscribe(subscriber);
+        toSource(responseSingle.liftSync(operator)).subscribe(subscriber);
         assertThat("onSubscribe not called.", subscriber.cancellable, is(notNullValue()));
 
         subscriber.cancellable.cancel();
@@ -152,7 +152,7 @@ public class DoBeforeFinallyOnHttpResponseOperatorTest {
     public void cancelBeforeOnError() {
         LegacyTestSingle<StreamingHttpResponse> responseSingle = new LegacyTestSingle<>(true);
         final ResponseSubscriber subscriber = new ResponseSubscriber();
-        toSource(responseSingle.liftSynchronous(operator)).subscribe(subscriber);
+        toSource(responseSingle.liftSync(operator)).subscribe(subscriber);
         assertThat("onSubscribe not called.", subscriber.cancellable, is(notNullValue()));
 
         subscriber.cancellable.cancel();
@@ -168,7 +168,7 @@ public class DoBeforeFinallyOnHttpResponseOperatorTest {
     public void cancelAfterOnSuccess() {
         LegacyTestSingle<StreamingHttpResponse> responseSingle = new LegacyTestSingle<>(true);
         final ResponseSubscriber subscriber = new ResponseSubscriber();
-        toSource(responseSingle.liftSynchronous(operator)).subscribe(subscriber);
+        toSource(responseSingle.liftSync(operator)).subscribe(subscriber);
         assertThat("onSubscribe not called.", subscriber.cancellable, is(notNullValue()));
 
         final StreamingHttpResponse response = reqRespFactory.ok().payloadBody(never());
@@ -188,7 +188,7 @@ public class DoBeforeFinallyOnHttpResponseOperatorTest {
     public void cancelAfterOnError() {
         LegacyTestSingle<StreamingHttpResponse> responseSingle = new LegacyTestSingle<>(true);
         final ResponseSubscriber subscriber = new ResponseSubscriber();
-        toSource(responseSingle.liftSynchronous(operator)).subscribe(subscriber);
+        toSource(responseSingle.liftSync(operator)).subscribe(subscriber);
         assertThat("onSubscribe not called.", subscriber.cancellable, is(notNullValue()));
 
         responseSingle.onError(DELIBERATE_EXCEPTION);
@@ -207,7 +207,7 @@ public class DoBeforeFinallyOnHttpResponseOperatorTest {
         TestPublisher<Buffer> payload = new TestPublisher<>();
         LegacyTestSingle<StreamingHttpResponse> responseSingle = new LegacyTestSingle<>(true);
         final ResponseSubscriber subscriber = new ResponseSubscriber();
-        toSource(responseSingle.liftSynchronous(operator)).subscribe(subscriber);
+        toSource(responseSingle.liftSync(operator)).subscribe(subscriber);
         assertThat("onSubscribe not called.", subscriber.cancellable, is(notNullValue()));
 
         final StreamingHttpResponse response = reqRespFactory.ok().payloadBody(payload);

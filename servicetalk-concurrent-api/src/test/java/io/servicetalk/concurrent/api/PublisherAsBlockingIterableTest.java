@@ -79,7 +79,7 @@ public final class PublisherAsBlockingIterableTest {
     @Test
     public void errorEmittedIsThrown() {
         DeliberateException de = new DeliberateException();
-        Iterator<Integer> iterator = Publisher.<Integer>error(de).toIterable().iterator();
+        Iterator<Integer> iterator = Publisher.<Integer>failed(de).toIterable().iterator();
         assertThat("Item expected but not found.", iterator.hasNext(), is(true));
         expected.expect(sameInstance(de));
         iterator.next();
@@ -88,7 +88,7 @@ public final class PublisherAsBlockingIterableTest {
     @Test
     public void doubleHashNextWithError() {
         DeliberateException de = new DeliberateException();
-        Iterator<Integer> iterator = Publisher.<Integer>error(de)
+        Iterator<Integer> iterator = Publisher.<Integer>failed(de)
                 .toIterable().iterator();
         assertThat("Item expected but not found.", iterator.hasNext(), is(true));
         assertThat("Second hasNext inconsistent with first.", iterator.hasNext(), is(true));
@@ -216,7 +216,7 @@ public final class PublisherAsBlockingIterableTest {
     public void errorEmittedIsThrownAfterEmittingAllItems() {
         DeliberateException de = new DeliberateException();
         Iterator<Integer> iterator = from(1, 2, 3, 4)
-                .concat(Publisher.error(de)).toIterable().iterator();
+                .concat(Publisher.failed(de)).toIterable().iterator();
         List<Integer> result = new ArrayList<>(4);
         try {
             while (iterator.hasNext()) {

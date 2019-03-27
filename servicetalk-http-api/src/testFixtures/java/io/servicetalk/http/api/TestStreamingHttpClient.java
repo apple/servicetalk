@@ -22,7 +22,7 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.api.ExecutionContext;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.emptyAsyncCloseable;
-import static io.servicetalk.concurrent.api.Single.error;
+import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.StreamingHttpClientFilter.terminal;
 
@@ -60,7 +60,7 @@ public final class TestStreamingHttpClient {
                     protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                                     final HttpExecutionStrategy strategy,
                                                                     final StreamingHttpRequest request) {
-                        return error(new UnsupportedOperationException());
+                        return failed(new UnsupportedOperationException());
                     }
 
                     @Override
@@ -73,7 +73,7 @@ public final class TestStreamingHttpClient {
                             final StreamingHttpClientFilter delegate,
                             final HttpExecutionStrategy strategy,
                             final HttpRequestMetaData metaData) {
-                        return error(new UnsupportedOperationException());
+                        return failed(new UnsupportedOperationException());
                     }
                 }, Publisher.empty());
         return new StreamingHttpClient(filterChain, defaultStrategy());

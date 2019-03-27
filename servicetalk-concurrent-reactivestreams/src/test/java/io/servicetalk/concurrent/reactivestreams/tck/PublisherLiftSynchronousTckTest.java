@@ -23,6 +23,6 @@ import org.testng.annotations.Test;
 public class PublisherLiftSynchronousTckTest extends AbstractPublisherOperatorTckTest<Integer> {
     @Override
     protected Publisher<Integer> composePublisher(Publisher<Integer> publisher, int elements) {
-        return publisher.liftSynchronous(subscriber -> subscriber);
+        return publisher.liftSync(subscriber -> subscriber);
     }
 }

@@ -27,7 +27,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.function.Function;
 
-import static io.servicetalk.concurrent.api.Single.success;
+import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.api.completable.AbstractPublishAndSubscribeOnTest.verifyCapturedThreads;
 import static java.lang.Thread.currentThread;
 
@@ -46,7 +46,7 @@ public abstract class AbstractPublishAndSubscribeOnTest {
         CountDownLatch allDone = new CountDownLatch(1);
         AtomicReferenceArray<Thread> capturedThreads = new AtomicReferenceArray<>(2);
 
-        Single<String> original = new SingleWithExecutor<>(originalSourceExecutorRule.executor(), success("Hello"))
+        Single<String> original = new SingleWithExecutor<>(originalSourceExecutorRule.executor(), succeeded("Hello"))
                 .doBeforeOnSuccess(__ -> capturedThreads.set(ORIGINAL_SUBSCRIBER_THREAD, currentThread()));
 
         Single<String> offloaded = offloadingFunction.apply(original);

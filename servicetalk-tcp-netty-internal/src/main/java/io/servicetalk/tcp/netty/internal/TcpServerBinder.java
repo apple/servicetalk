@@ -47,7 +47,7 @@ import java.util.function.Function;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Single.defer;
-import static io.servicetalk.concurrent.api.Single.success;
+import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.transport.netty.internal.BuilderUtils.toNettyAddress;
 import static io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutors.toEventLoopAwareNettyIoExecutor;
 import static java.util.Objects.requireNonNull;
@@ -109,7 +109,7 @@ public final class TcpServerBinder {
                             .flatMap(conn ->
                                     // Defer is required to isolate context for ConnectionAcceptor#accept and the rest
                                     // of connection processing.
-                                    defer(() -> connectionAcceptor.accept(conn).concat(success(conn)))
+                                    defer(() -> connectionAcceptor.accept(conn).concat(succeeded(conn)))
                                             // subscribeOn is required to offload calls to connectionAcceptor#accept
                                             .subscribeOn(executionContext.executor()))
                             .doOnError(cause -> {

@@ -21,7 +21,7 @@ import java.util.Collection;
 import java.util.function.Function;
 
 import static io.servicetalk.concurrent.api.Completable.completed;
-import static io.servicetalk.concurrent.api.Completable.error;
+import static io.servicetalk.concurrent.api.Completable.failed;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
@@ -44,7 +44,7 @@ public class RepeatTest {
     @Test
     public void repeatWhenValueSupplier() throws Exception {
         Collection<Integer> repeats = completed().repeatWhen(count ->
-                        count < 2 ? completed() : error(DELIBERATE_EXCEPTION)).map(
+                        count < 2 ? completed() : failed(DELIBERATE_EXCEPTION)).map(
             new Function<Object, Integer>() {
                 private int count;
             @Override

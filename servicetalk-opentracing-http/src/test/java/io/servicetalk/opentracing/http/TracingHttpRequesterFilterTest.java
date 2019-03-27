@@ -46,7 +46,7 @@ import static io.opentracing.tag.Tags.HTTP_URL;
 import static io.opentracing.tag.Tags.SPAN_KIND;
 import static io.opentracing.tag.Tags.SPAN_KIND_CLIENT;
 import static io.servicetalk.concurrent.api.Publisher.just;
-import static io.servicetalk.concurrent.api.Single.success;
+import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.http.api.HttpRequestMethod.GET;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
@@ -175,7 +175,7 @@ public class TracingHttpRequesterFilterTest {
     private static ServerContext buildServer() throws Exception {
         return HttpServers.forAddress(localAddress(0))
                 .listenStreamingAndAwait((ctx, request, responseFactory) ->
-                        success(responseFactory.ok().payloadBody(just(new TestSpanState(
+                        succeeded(responseFactory.ok().payloadBody(just(new TestSpanState(
                         valueOf(request.headers().get(TRACE_ID)),
                         valueOf(request.headers().get(SPAN_ID)),
                         toStringOrNull(request.headers().get(PARENT_SPAN_ID)),

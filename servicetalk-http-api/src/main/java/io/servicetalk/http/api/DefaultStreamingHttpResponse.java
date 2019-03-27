@@ -31,7 +31,7 @@ import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 
 import static io.servicetalk.concurrent.api.Processors.newSingleProcessor;
-import static io.servicetalk.concurrent.api.Single.success;
+import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.http.api.HttpDataSourceTranformations.aggregatePayloadAndTrailers;
 import static java.util.Objects.requireNonNull;
@@ -44,7 +44,7 @@ class DefaultStreamingHttpResponse<P> extends DefaultHttpResponseMetaData implem
     DefaultStreamingHttpResponse(final HttpResponseStatus status, final HttpProtocolVersion version,
                                  final HttpHeaders headers, final HttpHeaders initialTrailers,
                                  final BufferAllocator allocator, final Publisher<P> payloadBody) {
-        this(status, version, headers, success(initialTrailers), allocator, payloadBody);
+        this(status, version, headers, succeeded(initialTrailers), allocator, payloadBody);
     }
 
     /**
@@ -91,7 +91,7 @@ class DefaultStreamingHttpResponse<P> extends DefaultHttpResponseMetaData implem
 
     @Override
     public Publisher<Buffer> payloadBody() {
-        return payloadBody.liftSynchronous(HttpBufferFilterOperator.INSTANCE);
+        return payloadBody.liftSync(HttpBufferFilterOperator.INSTANCE);
     }
 
     @Override
@@ -104,14 +104,14 @@ class DefaultStreamingHttpResponse<P> extends DefaultHttpResponseMetaData implem
     @Override
     public final StreamingHttpResponse payloadBody(final Publisher<Buffer> payloadBody) {
         return new BufferStreamingHttpResponse(this, allocator,
-                payloadBody.liftSynchronous(new BridgeFlowControlAndDiscardOperator(payloadBody())), trailersSingle);
+                payloadBody.liftSync(new BridgeFlowControlAndDiscardOperator(payloadBody())), trailersSingle);
     }
 
     @Override
     public final <T> StreamingHttpResponse payloadBody(final Publisher<T> payloadBody,
                                                        final HttpSerializer<T> serializer) {
         return new BufferStreamingHttpResponse(this, allocator, serializer.serialize(headers(),
-                    payloadBody.liftSynchronous(new SerializeBridgeFlowControlAndDiscardOperator<>(payloadBody())),
+                    payloadBody.liftSync(new SerializeBridgeFlowControlAndDiscardOperator<>(payloadBody())),
                     allocator),
                 trailersSingle);
     }
@@ -140,7 +140,7 @@ class DefaultStreamingHttpResponse<P> extends DefaultHttpResponseMetaData implem
                                                      final BiFunction<T, HttpHeaders, HttpHeaders> trailersTrans) {
         final Processor<HttpHeaders, HttpHeaders> outTrailersSingle = newSingleProcessor();
         return new BufferStreamingHttpResponse(this, allocator, payloadBody()
-                .liftSynchronous(new HttpPayloadAndTrailersFromSingleOperator<>(stateSupplier, transformer,
+                .liftSync(new HttpPayloadAndTrailersFromSingleOperator<>(stateSupplier, transformer,
                         trailersTrans, trailersSingle, outTrailersSingle)),
                 fromSource(outTrailersSingle));
     }
@@ -151,7 +151,7 @@ class DefaultStreamingHttpResponse<P> extends DefaultHttpResponseMetaData implem
                                                         final BiFunction<T, HttpHeaders, HttpHeaders> trailersTrans) {
         final Processor<HttpHeaders, HttpHeaders> outTrailersSingle = newSingleProcessor();
         return new DefaultStreamingHttpResponse<>(this, allocator, payloadBody
-                .liftSynchronous(new HttpPayloadAndTrailersFromSingleOperator<>(stateSupplier, transformer,
+                .liftSync(new HttpPayloadAndTrailersFromSingleOperator<>(stateSupplier, transformer,
                         trailersTrans, trailersSingle, outTrailersSingle)),
                 fromSource(outTrailersSingle));
     }

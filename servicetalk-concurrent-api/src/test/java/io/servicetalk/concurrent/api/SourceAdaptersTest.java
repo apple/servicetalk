@@ -33,7 +33,7 @@ import java.util.concurrent.Future;
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Publisher.just;
-import static io.servicetalk.concurrent.api.Single.success;
+import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
@@ -62,7 +62,7 @@ public class SourceAdaptersTest {
 
     @Test
     public void publisherToSourceError() {
-        PublisherSource.Subscriber<Integer> subscriber = toSourceAndSubscribe(Publisher.error(DELIBERATE_EXCEPTION));
+        PublisherSource.Subscriber<Integer> subscriber = toSourceAndSubscribe(Publisher.failed(DELIBERATE_EXCEPTION));
         verify(subscriber).onError(DELIBERATE_EXCEPTION);
         verifyNoMoreInteractions(subscriber);
     }
@@ -82,14 +82,14 @@ public class SourceAdaptersTest {
 
     @Test
     public void singleToSourceSuccess() {
-        SingleSource.Subscriber<Integer> subscriber = toSourceAndSubscribe(success(1));
+        SingleSource.Subscriber<Integer> subscriber = toSourceAndSubscribe(succeeded(1));
         verify(subscriber).onSuccess(1);
         verifyNoMoreInteractions(subscriber);
     }
 
     @Test
     public void singleToSourceError() {
-        SingleSource.Subscriber<Integer> subscriber = toSourceAndSubscribe(Single.error(DELIBERATE_EXCEPTION));
+        SingleSource.Subscriber<Integer> subscriber = toSourceAndSubscribe(Single.failed(DELIBERATE_EXCEPTION));
         verify(subscriber).onError(DELIBERATE_EXCEPTION);
         verifyNoMoreInteractions(subscriber);
     }
@@ -114,7 +114,7 @@ public class SourceAdaptersTest {
 
     @Test
     public void completableToSourceError() {
-        CompletableSource.Subscriber subscriber = toSourceAndSubscribe(Completable.error(DELIBERATE_EXCEPTION));
+        CompletableSource.Subscriber subscriber = toSourceAndSubscribe(Completable.failed(DELIBERATE_EXCEPTION));
         verify(subscriber).onError(DELIBERATE_EXCEPTION);
         verifyNoMoreInteractions(subscriber);
     }

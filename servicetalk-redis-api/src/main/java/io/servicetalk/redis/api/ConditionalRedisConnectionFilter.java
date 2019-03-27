@@ -19,7 +19,7 @@ import io.servicetalk.concurrent.api.Publisher;
 
 import java.util.function.Predicate;
 
-import static io.servicetalk.concurrent.api.Publisher.error;
+import static io.servicetalk.concurrent.api.Publisher.failed;
 
 final class ConditionalRedisConnectionFilter extends RedisConnectionFilter {
     private final Predicate<RedisRequest> predicate;
@@ -47,7 +47,7 @@ final class ConditionalRedisConnectionFilter extends RedisConnectionFilter {
         try {
             b = predicate.test(req);
         } catch (Throwable t) {
-            return error(new RuntimeException("Unexpected predicate failure", t));
+            return failed(new RuntimeException("Unexpected predicate failure", t));
         }
 
         if (b) {

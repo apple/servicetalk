@@ -30,13 +30,13 @@ public class MapSingleTest {
 
     @Test
     public void exceptionInTerminalCallsOnError() {
-        listener.listen(Single.success("foo").map(v -> {
+        listener.listen(Single.succeeded("foo").map(v -> {
             throw DELIBERATE_EXCEPTION;
         })).verifyFailure(DELIBERATE_EXCEPTION);
     }
 
     @Test
     public void nullInTerminalSucceeds() {
-        listener.listen(Single.success("foo").map(v -> null)).verifySuccess(null);
+        listener.listen(Single.succeeded("foo").map(v -> null)).verifySuccess(null);
     }
 }

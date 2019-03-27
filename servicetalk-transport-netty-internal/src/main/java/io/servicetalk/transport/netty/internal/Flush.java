@@ -49,7 +49,7 @@ final class Flush {
     static <T> Publisher<T> composeFlushes(Channel channel, Publisher<T> source, FlushStrategy flushStrategy) {
         requireNonNull(channel);
         requireNonNull(flushStrategy);
-        return source.liftSynchronous(subscriber -> new FlushSubscriber<>(flushStrategy, subscriber, channel));
+        return source.liftSync(subscriber -> new FlushSubscriber<>(flushStrategy, subscriber, channel));
     }
 
     private static final class FlushSubscriber<T> implements Subscriber<T> {

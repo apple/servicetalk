@@ -37,6 +37,6 @@ final class RedisSubscribedConcurrencyLimitingFilter extends RedisConnectionFilt
     public Publisher<RedisData> request(RedisExecutionStrategy strategy, RedisRequest request) {
         RequestConcurrencyController.Result result = limiter.tryRequest();
         return result == Accepted ? delegate().request(strategy, request) :
-                Publisher.error(new IllegalStateException("Connection in invalid state for requests: " + result));
+                Publisher.failed(new IllegalStateException("Connection in invalid state for requests: " + result));
     }
 }

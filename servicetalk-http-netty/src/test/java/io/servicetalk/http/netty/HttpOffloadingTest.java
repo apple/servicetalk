@@ -55,7 +55,7 @@ import javax.annotation.Nullable;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.BlockingTestUtils.awaitIndefinitelyNonNull;
 import static io.servicetalk.concurrent.api.Publisher.just;
-import static io.servicetalk.concurrent.api.Single.success;
+import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
@@ -364,7 +364,7 @@ public class HttpOffloadingTest {
                                             + currentThread().getName()));
                                 }
                             });
-            return success(factory.ok().payloadBody(responsePayload));
+            return succeeded(factory.ok().payloadBody(responsePayload));
         }
 
         @Override

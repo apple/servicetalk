@@ -50,7 +50,7 @@ import javax.annotation.Nullable;
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.ExecutorRule.newRule;
 import static io.servicetalk.concurrent.api.Publisher.from;
-import static io.servicetalk.concurrent.api.Single.error;
+import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.concurrent.internal.PlatformDependent.throwException;
@@ -524,7 +524,7 @@ public class BlockingStreamingHttpServiceToStreamingHttpServiceTest {
 
         Collection<Object> responseCollection = asyncService.computeExecutionStrategy(defaultStrategy())
                 .invokeService(executorRule.executor(), request,
-                        req -> asyncService.handle(mockCtx, req, reqRespFactory), (t, e) -> error(t))
+                        req -> asyncService.handle(mockCtx, req, reqRespFactory), (t, e) -> failed(t))
                 .toFuture().get();
 
         return new ArrayList<>(responseCollection);

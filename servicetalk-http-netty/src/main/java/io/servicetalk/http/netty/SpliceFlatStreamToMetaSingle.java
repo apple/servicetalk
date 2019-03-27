@@ -208,7 +208,7 @@ final class SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> extends Subscr
                 try {
                     data = parent.packer.apply(meta,
                             maybePayloadSubUpdater.compareAndSet(this, null, PENDING) ?
-                                    newPayloadPublisher() : Publisher.error(CANCELED));
+                                    newPayloadPublisher() : Publisher.failed(CANCELED));
                 } catch (Throwable t) {
                     assert rawSubscription != null;
                     // We know that there is nothing else that can happen on this stream as we are not sending the

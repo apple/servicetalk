@@ -93,7 +93,7 @@ public class TracingHttpServiceFilter extends AbstractTracingHttpFilter implemen
             response = delegate.handle(ctx, request, responseFactory);
         } catch (Throwable t) {
             tracker.onError(t);
-            return Single.error(t);
+            return Single.failed(t);
         }
         return tracker.track(response).subscribeShareContext();
     }

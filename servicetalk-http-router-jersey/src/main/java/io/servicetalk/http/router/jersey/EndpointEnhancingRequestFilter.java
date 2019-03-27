@@ -51,8 +51,8 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 
 import static io.servicetalk.concurrent.api.Single.defer;
-import static io.servicetalk.concurrent.api.Single.error;
-import static io.servicetalk.concurrent.api.Single.success;
+import static io.servicetalk.concurrent.api.Single.failed;
+import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.router.jersey.RouteExecutionStrategyUtils.getRouteExecutionStrategy;
 import static io.servicetalk.http.router.jersey.internal.RequestProperties.getRequestBufferPublisherInputStream;
 import static io.servicetalk.http.router.jersey.internal.RequestProperties.setRequestCancellable;
@@ -206,15 +206,15 @@ final class EndpointEnhancingRequestFilter implements ContainerRequestFilter {
 
             return defer(() -> {
                 try {
-                    return success(originalEndpoint.apply(requestProcessingCtx));
+                    return succeeded(originalEndpoint.apply(requestProcessingCtx));
                 } catch (final Throwable t) {
-                    return error(t);
+                    return failed(t);
                 }
             });
         }
 
         protected Single<Response> handleContainerResponse(final ContainerResponse res) {
-            return success(new OutboundJaxrsResponse(res.getStatusInfo(), res.getWrappedMessageContext()));
+            return succeeded(new OutboundJaxrsResponse(res.getStatusInfo(), res.getWrappedMessageContext()));
         }
     }
 
@@ -264,7 +264,7 @@ final class EndpointEnhancingRequestFilter implements ContainerRequestFilter {
 
         @Override
         protected Single<Response> handleSourceResponse(final Completable source, final ContainerResponse res) {
-            return source.concat(defer(() -> success(noContent().build())));
+            return source.concat(defer(() -> succeeded(noContent().build())));
         }
     }
 

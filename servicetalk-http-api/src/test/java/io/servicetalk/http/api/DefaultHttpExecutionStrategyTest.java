@@ -43,9 +43,9 @@ import java.util.function.Function;
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
 import static io.servicetalk.concurrent.api.Publisher.just;
-import static io.servicetalk.concurrent.api.Single.error;
+import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.Single.never;
-import static io.servicetalk.concurrent.api.Single.success;
+import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.DefaultHttpHeadersFactory.INSTANCE;
 import static io.servicetalk.http.api.HttpExecutionStrategies.customStrategyBuilder;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
@@ -133,7 +133,7 @@ public class DefaultHttpExecutionStrategyTest {
 
         analyzer.instrumentedResponseForClient(strategy.invokeClient(executor, req,
                 publisher -> analyzer.instrumentedFlatRequestForClient(publisher).ignoreElements()
-                        .concat(success(resp))))
+                        .concat(succeeded(resp))))
                 .flatMapPublisher(StreamingHttpResponse::payloadBody)
                 .toFuture().get();
         analyzer.verify();
@@ -148,8 +148,8 @@ public class DefaultHttpExecutionStrategyTest {
         analyzer.instrumentedResponseForServer(strategy.invokeService(executor, req, request -> {
             analyzer.checkServiceInvocation();
             return analyzer.instrumentedRequestPayloadForServer(request.payloadBody())
-                    .ignoreElements().concat(success(resp));
-        }, (throwable, executor1) -> error(throwable))).toFuture().get();
+                    .ignoreElements().concat(succeeded(resp));
+        }, (throwable, executor1) -> failed(throwable))).toFuture().get();
 
         analyzer.verify();
     }
@@ -176,7 +176,7 @@ public class DefaultHttpExecutionStrategyTest {
                                                         final StreamingHttpResponseFactory responseFactory) {
                 analyzer.checkContext(ctx);
                 analyzer.checkServiceInvocation();
-                return success(analyzer.createNewResponse()
+                return succeeded(analyzer.createNewResponse()
                         .payloadBody(analyzer.instrumentedRequestPayloadForServer(request.payloadBody())));
             }
         });
@@ -208,7 +208,7 @@ public class DefaultHttpExecutionStrategyTest {
     @Test
     public void offloadReceiveSingle() throws Exception {
         ThreadAnalyzer analyzer = new ThreadAnalyzer();
-        analyzer.instrumentReceive(strategy.offloadReceive(executor, success(1))).toFuture().get();
+        analyzer.instrumentReceive(strategy.offloadReceive(executor, succeeded(1))).toFuture().get();
         analyzer.verifyReceive();
     }
 

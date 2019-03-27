@@ -20,7 +20,7 @@ import io.servicetalk.concurrent.api.AsyncContextMap;
 
 import org.junit.Test;
 
-import static io.servicetalk.concurrent.api.Single.success;
+import static io.servicetalk.concurrent.api.Single.succeeded;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
@@ -31,7 +31,7 @@ public class SubscribeShareContextTest {
     @Test
     public void contextIsShared() throws Exception {
         AsyncContext.put(KEY, "v1");
-        success(1).doBeforeOnSuccess(__ -> AsyncContext.put(KEY, "v2")).subscribeShareContext().toFuture().get();
+        succeeded(1).doBeforeOnSuccess(__ -> AsyncContext.put(KEY, "v2")).subscribeShareContext().toFuture().get();
         assertThat("Unexpected value found in the context.", AsyncContext.get(KEY), is("v2"));
     }
 
@@ -39,7 +39,7 @@ public class SubscribeShareContextTest {
     public void contextIsNotSharedIfNotLastOperator() throws Exception {
         // When we support this feature, then we can change this test
         AsyncContext.put(KEY, "v1");
-        success(1).doBeforeOnSuccess(__ -> AsyncContext.put(KEY, "v2"))
+        succeeded(1).doBeforeOnSuccess(__ -> AsyncContext.put(KEY, "v2"))
                 .subscribeShareContext().doBeforeOnSuccess(__ -> { }).toFuture().get();
         assertThat("Unexpected value found in the context.", AsyncContext.get(KEY), is("v1"));
     }

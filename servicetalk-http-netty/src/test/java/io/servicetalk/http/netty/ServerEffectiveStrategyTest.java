@@ -62,7 +62,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
-import static io.servicetalk.concurrent.api.Single.success;
+import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.internal.PlatformDependent.throwException;
 import static io.servicetalk.http.api.HttpExecutionStrategies.customStrategyBuilder;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
@@ -506,7 +506,7 @@ public class ServerEffectiveStrategyTest {
                                                   final HttpRequest request,
                                                   final HttpResponseFactory factory) {
             HttpResponse response = factory.ok().payloadBody(request.payloadBody());
-            return noOffloadsStrategy ? success(response) : serviceExecutor.submit(() -> response);
+            return noOffloadsStrategy ? succeeded(response) : serviceExecutor.submit(() -> response);
         }
 
         BlockingHttpClient startAsyncStreaming() {
@@ -536,7 +536,7 @@ public class ServerEffectiveStrategyTest {
                 @SuppressWarnings("unused") final HttpServiceContext ctx, final StreamingHttpRequest request,
                 final StreamingHttpResponseFactory factory) {
             StreamingHttpResponse response = factory.ok().payloadBody(request.payloadBody());
-            return noOffloadsStrategy ? success(response) : serviceExecutor.submit(() -> response);
+            return noOffloadsStrategy ? succeeded(response) : serviceExecutor.submit(() -> response);
         }
 
         Executor executor() {

@@ -169,7 +169,7 @@ final class JacksonSerializerMessageBodyReaderWriter implements MessageBodyReade
                                              final BufferAllocator allocator) {
 
         return bufferPublisher
-                .reduce(() -> newBufferForRequestContent(contentLength, allocator), Buffer::writeBytes)
+                .collect(() -> newBufferForRequestContent(contentLength, allocator), Buffer::writeBytes)
                 .map(buf -> {
                     try {
                         return ser.deserializeAggregatedSingle(buf, type);

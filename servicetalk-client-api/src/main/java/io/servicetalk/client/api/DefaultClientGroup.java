@@ -29,7 +29,7 @@ import java.util.function.Function;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.toAsyncCloseable;
 import static io.servicetalk.concurrent.api.Completable.completed;
-import static io.servicetalk.concurrent.api.Completable.error;
+import static io.servicetalk.concurrent.api.Completable.failed;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toList;
@@ -50,12 +50,12 @@ final class DefaultClientGroup<Key, Client extends ListenableAsyncCloseable> imp
                 "This placeholder Client should never be returned from the ClientGroup)";
         @Override
         public Completable onClose() {
-            return error(new UnsupportedOperationException(PLACEHOLDER_EXCEPTION_MSG));
+            return failed(new UnsupportedOperationException(PLACEHOLDER_EXCEPTION_MSG));
         }
 
         @Override
         public Completable closeAsync() {
-            return error(new UnsupportedOperationException(PLACEHOLDER_EXCEPTION_MSG));
+            return failed(new UnsupportedOperationException(PLACEHOLDER_EXCEPTION_MSG));
         }
     };
 

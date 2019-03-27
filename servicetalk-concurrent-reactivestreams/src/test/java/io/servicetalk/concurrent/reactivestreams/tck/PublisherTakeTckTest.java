@@ -31,6 +31,6 @@ public class PublisherTakeTckTest extends AbstractPublisherOperatorTckTest<Integ
     @Override
     protected Publisher<Integer> composePublisher(Publisher<Integer> publisher, int elements) {
         // If zero elements are requested we will just return the original publisher.
-        return elements == 0 ? publisher : publisher.take(elements / 2);
+        return elements == 0 ? publisher : publisher.takeAtMost(elements / 2);
     }
 }
