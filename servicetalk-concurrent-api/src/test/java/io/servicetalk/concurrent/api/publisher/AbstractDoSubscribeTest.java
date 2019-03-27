@@ -26,6 +26,7 @@ import org.junit.rules.ExpectedException;
 
 import java.util.function.Consumer;
 
+import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 import static org.hamcrest.Matchers.contains;
@@ -51,7 +52,7 @@ public abstract class AbstractDoSubscribeTest {
 
     @Test
     public void testOnSubscribe() {
-        toSource(doSubscribe(Publisher.just("Hello"), doOnSubscribe)).subscribe(subscriber);
+        toSource(doSubscribe(from("Hello"), doOnSubscribe)).subscribe(subscriber);
         subscriber.request(1);
         assertThat(subscriber.takeItems(), contains("Hello"));
         assertThat(subscriber.takeTerminal(), is(complete()));

@@ -23,7 +23,7 @@ import org.junit.Test;
 import static io.servicetalk.client.api.internal.RequestConcurrencyController.Result.Accepted;
 import static io.servicetalk.client.api.internal.ReservableRequestConcurrencyControllers.newSingleController;
 import static io.servicetalk.concurrent.api.Completable.never;
-import static io.servicetalk.concurrent.api.Publisher.just;
+import static io.servicetalk.concurrent.api.Publisher.from;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
@@ -39,7 +39,7 @@ public class ReservableRequestConcurrencyControllerOnlySingleTest
 
     @Test
     public void reserveWithNoRequests() throws Exception {
-        ReservableRequestConcurrencyController controller = newController(just(10), never());
+        ReservableRequestConcurrencyController controller = newController(from(10), never());
         for (int i = 0; i < 10; ++i) {
             assertTrue(controller.tryReserve());
             assertFalse(controller.tryReserve());
@@ -55,7 +55,7 @@ public class ReservableRequestConcurrencyControllerOnlySingleTest
 
     @Test
     public void reserveFailsWhenPendingRequest() {
-        ReservableRequestConcurrencyController controller = newController(just(10), never());
+        ReservableRequestConcurrencyController controller = newController(from(10), never());
         assertThat(controller.tryRequest(), is(Accepted));
         assertFalse(controller.tryReserve());
     }

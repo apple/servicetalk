@@ -25,7 +25,7 @@ import org.junit.Test;
 import java.util.concurrent.CountDownLatch;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.api.Publisher.just;
+import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -39,7 +39,7 @@ public class SubscribeShareContextTest {
         AsyncContext.put(KEY, "v1");
         // publisher.toFuture() will use the toSingle() conversion and share context operator will not be effective
         // since it isn't the last operator. So we directly subscribe to the publisher.
-        awaitTermination(just(1).doBeforeOnNext(__ -> AsyncContext.put(KEY, "v2")).subscribeShareContext());
+        awaitTermination(from(1).doBeforeOnNext(__ -> AsyncContext.put(KEY, "v2")).subscribeShareContext());
         assertThat("Unexpected value found in the context.", AsyncContext.get(KEY), is("v2"));
     }
 
@@ -49,7 +49,7 @@ public class SubscribeShareContextTest {
         AsyncContext.put(KEY, "v1");
         // publisher.toFuture() will use the toSingle() conversion and share context operator will not be effective
         // since it isn't the last operator. So we directly subscribe to the publisher.
-        awaitTermination(just(1).doBeforeOnNext(__ -> AsyncContext.put(KEY, "v2")).subscribeShareContext()
+        awaitTermination(from(1).doBeforeOnNext(__ -> AsyncContext.put(KEY, "v2")).subscribeShareContext()
                 .doBeforeOnNext(__ -> { }));
         assertThat("Unexpected value found in the context.", AsyncContext.get(KEY), is("v1"));
     }

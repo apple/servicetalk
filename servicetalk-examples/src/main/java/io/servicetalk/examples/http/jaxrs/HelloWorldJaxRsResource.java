@@ -35,7 +35,7 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.GenericEntity;
 import javax.ws.rs.core.Response;
 
-import static io.servicetalk.concurrent.api.Publisher.just;
+import static io.servicetalk.concurrent.api.Publisher.from;
 import static java.lang.Math.random;
 import static java.util.Collections.singletonMap;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -174,7 +174,7 @@ public class HelloWorldJaxRsResource {
         }
 
         final BufferAllocator allocator = ctx.executionContext().bufferAllocator();
-        final Publisher<Buffer> payload = just(allocator.fromAscii("hello ")).concat(who);
+        final Publisher<Buffer> payload = from(allocator.fromAscii("hello ")).concat(who);
 
         // Wrap content Publisher to capture its generic type (i.e. Buffer) so it is handled correctly
         final GenericEntity<Publisher<Buffer>> entity = new GenericEntity<Publisher<Buffer>>(payload) { };

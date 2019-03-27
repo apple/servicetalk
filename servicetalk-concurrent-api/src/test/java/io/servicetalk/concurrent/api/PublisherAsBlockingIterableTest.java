@@ -397,8 +397,7 @@ public final class PublisherAsBlockingIterableTest {
 
     @Test
     public void nullShouldBeEmitted() {
-        @SuppressWarnings("ConstantConditions")
-        Iterator<Void> iterator = Publisher.<Void>just(null).toIterable().iterator();
+        Iterator<Void> iterator = Publisher.from((Void) null).toIterable().iterator();
         assertThat("Item expected but not found.", iterator.hasNext(), is(true));
         assertThat("Unexpected item found.", iterator.next(), is(nullValue()));
     }

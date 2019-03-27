@@ -18,7 +18,7 @@ package io.servicetalk.concurrent.reactivestreams.tck;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.TestIterableToBlockingIterable;
 
-import static io.servicetalk.concurrent.api.Publisher.from;
+import static io.servicetalk.concurrent.api.Publisher.fromIterable;
 import static io.servicetalk.concurrent.reactivestreams.tck.TckUtils.newArray;
 import static io.servicetalk.concurrent.reactivestreams.tck.TckUtils.requestNToInt;
 import static java.util.Arrays.asList;
@@ -26,7 +26,7 @@ import static java.util.Arrays.asList;
 public class PublisherFromBlockingIterableTckTest extends AbstractPublisherTckTest<Integer> {
     @Override
     public Publisher<Integer> createServiceTalkPublisher(final long elements) {
-        return from(new TestIterableToBlockingIterable<>(
+        return fromIterable(new TestIterableToBlockingIterable<>(
                 asList(newArray(requestNToInt(elements))),
                 (timeout, unit) -> { }, (timeout, unit) -> { }, () -> { }));
     }

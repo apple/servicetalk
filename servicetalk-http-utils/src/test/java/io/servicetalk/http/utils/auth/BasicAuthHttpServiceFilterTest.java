@@ -46,7 +46,7 @@ import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.AsyncContextMap.Key.newKey;
 import static io.servicetalk.concurrent.api.BlockingTestUtils.awaitIndefinitelyNonNull;
 import static io.servicetalk.concurrent.api.Completable.completed;
-import static io.servicetalk.concurrent.api.Publisher.just;
+import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.Single.never;
 import static io.servicetalk.concurrent.api.Single.succeeded;
@@ -94,7 +94,7 @@ public class BasicAuthHttpServiceFilterTest {
                                                     final StreamingHttpRequest request,
                                                     final StreamingHttpResponseFactory factory) {
             StreamingHttpResponse response = factory.ok().payloadBody(
-                    just(ctx.executionContext().bufferAllocator().fromAscii("Hello World!")));
+                    from(ctx.executionContext().bufferAllocator().fromAscii("Hello World!")));
             BasicUserInfo userInfo = AsyncContext.get(USER_INFO_KEY);
             if (userInfo != null) {
                 response.headers().set(USER_ID_HEADER_NAME, userInfo.userId());

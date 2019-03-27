@@ -29,7 +29,6 @@ import org.junit.Test;
 import java.util.concurrent.CancellationException;
 
 import static io.servicetalk.concurrent.api.Publisher.from;
-import static io.servicetalk.concurrent.api.Publisher.just;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
@@ -257,7 +256,7 @@ public class SpliceFlatStreamToMetaSingleTest {
         // We use Publisher.just() here to make sure the Publisher invokes onError when onNext throws.
         // TestPublisher used in other cases, does not show that behavior. Instead it throws from sendItems() which is
         // less obvious failure message than what we get with dataSubscriber.verifyFailure(DELIBERATE_EXCEPTION);
-        Publisher<Object> stream = just(metaData);
+        Publisher<Object> stream = Publisher.from(metaData);
         SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> op = new SpliceFlatStreamToMetaSingle<>(
                 stream, (metaData, payload) -> {
                     throw DELIBERATE_EXCEPTION;

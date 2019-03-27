@@ -40,7 +40,7 @@ import java.util.concurrent.ExecutionException;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.BlockingTestUtils.awaitIndefinitelyNonNull;
-import static io.servicetalk.concurrent.api.Publisher.just;
+import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.RetryStrategies.retryWithExponentialBackoff;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
@@ -103,7 +103,7 @@ public abstract class AbstractEchoServerBasedHttpRequesterTest {
             throws ExecutionException, InterruptedException {
         try {
             StreamingHttpRequest request = requester.get("/request?foo=bar&foo=baz").payloadBody(
-                    just(DEFAULT_ALLOCATOR.fromAscii("Testing123")));
+                    from(DEFAULT_ALLOCATOR.fromAscii("Testing123")));
             request.headers().set(HttpHeaderNames.HOST, "mock.servicetalk.io");
 
             StreamingHttpResponse resp = awaitIndefinitelyNonNull(

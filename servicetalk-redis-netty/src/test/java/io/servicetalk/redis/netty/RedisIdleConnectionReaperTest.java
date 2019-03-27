@@ -48,7 +48,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Processors.newCompletableProcessor;
-import static io.servicetalk.concurrent.api.Publisher.just;
+import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
@@ -110,7 +110,7 @@ public class RedisIdleConnectionReaperTest {
         when(delegateConnection.closeAsync()).thenReturn(fromSource(delegateConnectionOnCloseCompletable));
         when(delegateConnection.onClose()).thenReturn(fromSource(delegateConnectionOnCloseCompletable));
         when(delegateConnection.request(any(RedisExecutionStrategy.class), any(RedisRequest.class)))
-                .thenReturn(just(NULL));
+                .thenReturn(from(NULL));
         when(delegateConnection.connectionContext()).thenReturn(connectionContext);
         when(delegateConnection.executionContext()).thenReturn(mockExecutionCtx);
         when(mockExecutionCtx.bufferAllocator()).thenReturn(DEFAULT_ALLOCATOR);
@@ -200,7 +200,7 @@ public class RedisIdleConnectionReaperTest {
                 .thenAnswer(invocation -> {
                     Command cmd = ((RedisRequest) invocation.getArgument(1)).command();
                     if ((cmd == PING)) {
-                        return just(new SimpleString("pong"));
+                        return from(new SimpleString("pong"));
                     }
                     throw new IllegalArgumentException("Unknown command: " + cmd);
                 });

@@ -41,7 +41,7 @@ import javax.ws.rs.core.StreamingOutput;
 import javax.ws.rs.sse.Sse;
 import javax.ws.rs.sse.SseEventSink;
 
-import static io.servicetalk.concurrent.api.Publisher.just;
+import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.never;
 import static io.servicetalk.http.router.jersey.TestUtils.getContentAsString;
 import static io.servicetalk.http.router.jersey.resources.CancellableResources.PATH;
@@ -129,7 +129,7 @@ public class CancellableResources {
         // If subscribe is true, we consume the request publisher in the resource method, otherwise we let the server
         // subscribe when it gets the response back from the router
         if (subscribe) {
-            return just(responseBuffer.writeAscii(getContentAsString(requestContent)));
+            return from(responseBuffer.writeAscii(getContentAsString(requestContent)));
         } else {
             final AtomicBoolean first = new AtomicBoolean(true);
             return requestContent.map(c -> first.compareAndSet(true, false) ? responseBuffer.addBuffer(c) : c);

@@ -29,7 +29,7 @@ import static io.servicetalk.client.api.internal.RequestConcurrencyController.Re
 import static io.servicetalk.client.api.internal.RequestConcurrencyController.Result.RejectedTemporary;
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Completable.never;
-import static io.servicetalk.concurrent.api.Publisher.just;
+import static io.servicetalk.concurrent.api.Publisher.from;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 
@@ -43,7 +43,7 @@ public abstract class AbstractRequestConcurrencyControllerOnlySingleTest {
 
     @Test
     public void singleRequestAtTime() {
-        RequestConcurrencyController controller = newController(just(1), never());
+        RequestConcurrencyController controller = newController(from(1), never());
         for (int i = 0; i < 100; ++i) {
             assertThat(controller.tryRequest(), is(Accepted));
             assertThat(controller.tryRequest(), is(RejectedTemporary));
@@ -84,7 +84,7 @@ public abstract class AbstractRequestConcurrencyControllerOnlySingleTest {
 
     @Test
     public void noMoreRequestsAfterClose() {
-        RequestConcurrencyController controller = newController(just(1), completed());
+        RequestConcurrencyController controller = newController(from(1), completed());
         assertThat(controller.tryRequest(), is(RejectedTemporary));
     }
 }

@@ -32,7 +32,7 @@ import io.servicetalk.transport.api.ExecutionContext;
 import java.util.function.Function;
 
 import static io.servicetalk.concurrent.api.Publisher.failed;
-import static io.servicetalk.concurrent.api.Publisher.just;
+import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.http.api.StreamingHttpResponses.newResponseWithTrailers;
 import static io.servicetalk.http.netty.HeaderUtils.addRequestTransferEncodingIfNecessary;
 import static java.util.Objects.requireNonNull;
@@ -52,7 +52,7 @@ abstract class AbstractStreamingHttpConnectionFilter<CC extends ConnectionContex
         this.executionContext = requireNonNull(executionContext);
         // TODO(jayv) we should concat with NettyConnectionContext.onClosing() once it's exposed such that both
         // this class and ConcurrentRequestsHttpConnectionFilter can listen to the same event to reduce ambiguity
-        maxConcurrencySetting = just(config.maxPipelinedRequests())
+        maxConcurrencySetting = from(config.maxPipelinedRequests())
                 .concat(connection.onClose()).concat(Single.succeeded(0));
     }
 

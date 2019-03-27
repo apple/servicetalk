@@ -50,7 +50,7 @@ public class HttpClientBuilderTest extends AbstractEchoServerBasedHttpRequesterT
         DefaultServiceDiscovererEvent<InetSocketAddress> sdEvent = new DefaultServiceDiscovererEvent<>(
                 (InetSocketAddress) serverContext.listenAddress(), true);
 
-        sendRequestAndValidate(Publisher.just(sdEvent));
+        sendRequestAndValidate(Publisher.from(sdEvent));
     }
 
     @Test

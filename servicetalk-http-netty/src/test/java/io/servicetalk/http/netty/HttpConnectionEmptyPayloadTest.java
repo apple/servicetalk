@@ -38,7 +38,7 @@ import java.util.concurrent.ThreadLocalRandom;
 
 import static io.servicetalk.buffer.api.EmptyBuffer.EMPTY_BUFFER;
 import static io.servicetalk.concurrent.api.BlockingTestUtils.awaitIndefinitelyNonNull;
-import static io.servicetalk.concurrent.api.Publisher.just;
+import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
@@ -73,7 +73,7 @@ public class HttpConnectionEmptyPayloadTest {
                                 public Single<StreamingHttpResponse> handle(
                                         final HttpServiceContext ctx, final StreamingHttpRequest req,
                                         final StreamingHttpResponseFactory factory) {
-                                    StreamingHttpResponse resp = factory.ok().payloadBody(just(
+                                    StreamingHttpResponse resp = factory.ok().payloadBody(from(
                                             HEAD.equals(req.method()) ? EMPTY_BUFFER :
                                                     ctx.executionContext().bufferAllocator()
                                                             .newBuffer(expectedContentLength)

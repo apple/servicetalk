@@ -42,7 +42,7 @@ import java.util.function.Function;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
-import static io.servicetalk.concurrent.api.Publisher.just;
+import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.Single.never;
 import static io.servicetalk.concurrent.api.Single.succeeded;
@@ -201,7 +201,7 @@ public class DefaultHttpExecutionStrategyTest {
     @Test
     public void offloadSendPublisher() throws Exception {
         ThreadAnalyzer analyzer = new ThreadAnalyzer();
-        analyzer.instrumentSend(strategy.offloadSend(executor, just(1))).toFuture().get();
+        analyzer.instrumentSend(strategy.offloadSend(executor, from(1))).toFuture().get();
         analyzer.verifySend();
     }
 
@@ -215,7 +215,7 @@ public class DefaultHttpExecutionStrategyTest {
     @Test
     public void offloadReceivePublisher() throws Exception {
         ThreadAnalyzer analyzer = new ThreadAnalyzer();
-        analyzer.instrumentReceive(strategy.offloadReceive(executor, just(1))).toFuture().get();
+        analyzer.instrumentReceive(strategy.offloadReceive(executor, from(1))).toFuture().get();
         analyzer.verifyReceive();
     }
 
@@ -231,13 +231,13 @@ public class DefaultHttpExecutionStrategyTest {
 
         StreamingHttpRequest createNewRequest() {
             return newRequest(GET, "/", HTTP_1_1, INSTANCE.newHeaders(),
-                    INSTANCE.newHeaders(), DEFAULT_ALLOCATOR, just(DEFAULT_ALLOCATOR.fromAscii("Hello")));
+                    INSTANCE.newHeaders(), DEFAULT_ALLOCATOR, from(DEFAULT_ALLOCATOR.fromAscii("Hello")));
         }
 
         StreamingHttpResponse createNewResponse() {
             return newResponse(HttpResponseStatus.OK, HTTP_1_1, INSTANCE.newHeaders(),
                     INSTANCE.newTrailers(), DEFAULT_ALLOCATOR,
-                    just(DEFAULT_ALLOCATOR.fromAscii("Hello-Response")));
+                    from(DEFAULT_ALLOCATOR.fromAscii("Hello-Response")));
         }
 
         Single<StreamingHttpResponse> instrumentedResponseForClient(Single<StreamingHttpResponse> resp) {

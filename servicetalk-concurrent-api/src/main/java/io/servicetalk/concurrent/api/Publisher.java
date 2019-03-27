@@ -2230,8 +2230,8 @@ public abstract class Publisher<T> {
      *
      * @see <a href="http://reactivex.io/documentation/operators/just.html">ReactiveX just operator.</a>
      */
-    public static <T> Publisher<T> just(@Nullable T value) {
-        return new JustPublisher<>(value);
+    public static <T> Publisher<T> from(@Nullable T value) {
+        return new FromSingleItemPublisher<>(value);
     }
 
     /**
@@ -2269,7 +2269,7 @@ public abstract class Publisher<T> {
      * @return a new {@link Publisher} that when subscribed will get an {@link Iterator} via {@link Iterable#iterator()}
      * and emit all values to the {@link Subscriber} and then {@link Subscriber#onComplete()}.
      */
-    public static <T> Publisher<T> from(Iterable<? extends T> iterable) {
+    public static <T> Publisher<T> fromIterable(Iterable<? extends T> iterable) {
         return new FromIterablePublisher<>(iterable);
     }
 
@@ -2295,8 +2295,9 @@ public abstract class Publisher<T> {
      * {@link BlockingIterable#iterator()} and emit all values to the {@link Subscriber} and then
      * {@link Subscriber#onComplete()}.
      */
-    public static <T> Publisher<T> from(BlockingIterable<? extends T> iterable, LongSupplier timeoutSupplier,
-                                        TimeUnit unit) {
+    public static <T> Publisher<T> fromBlockingIterable(BlockingIterable<? extends T> iterable,
+                                                        LongSupplier timeoutSupplier,
+                                                        TimeUnit unit) {
         return new FromBlockingIterablePublisher<>(iterable, timeoutSupplier, unit);
     }
 
@@ -2317,7 +2318,7 @@ public abstract class Publisher<T> {
      * @return a new {@link Publisher} that when subscribed will emit all data from the {@link InputStream} to the
      * {@link Subscriber} and then {@link Subscriber#onComplete()}.
      */
-    public static Publisher<byte[]> from(InputStream stream) {
+    public static Publisher<byte[]> fromInputStream(InputStream stream) {
         return new FromInputStreamPublisher(stream);
     }
 

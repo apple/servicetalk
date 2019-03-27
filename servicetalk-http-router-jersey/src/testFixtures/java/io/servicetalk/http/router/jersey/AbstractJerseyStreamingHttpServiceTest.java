@@ -48,7 +48,7 @@ import javax.ws.rs.core.Configuration;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.BlockingTestUtils.awaitNonNull;
-import static io.servicetalk.concurrent.api.Publisher.just;
+import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.internal.ServiceTalkTestTimeout.DEFAULT_TIMEOUT_SECONDS;
 import static io.servicetalk.http.api.CharSequences.newAsciiString;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
@@ -171,7 +171,7 @@ public abstract class AbstractJerseyStreamingHttpServiceTest {
                                                   final CharSequence payload,
                                                   final CharSequence contentType) {
         final Buffer content = DEFAULT_ALLOCATOR.fromUtf8(payload);
-        final StreamingHttpRequest req = httpClient.newRequest(method, testUri(path)).payloadBody(just(content));
+        final StreamingHttpRequest req = httpClient.newRequest(method, testUri(path)).payloadBody(from(content));
         req.headers().set(HOST, host());
         req.headers().set(CONTENT_TYPE, contentType);
         req.headers().set(CONTENT_LENGTH, Integer.toString(content.readableBytes()));
