@@ -16,6 +16,7 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.buffer.api.Buffer;
+import io.servicetalk.concurrent.BlockingIterator;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.BlockingStreamingHttpClient;
 import io.servicetalk.http.api.BlockingStreamingHttpResponse;
@@ -28,14 +29,15 @@ import io.servicetalk.oio.api.PayloadWriter;
 import io.servicetalk.transport.api.ServerContext;
 
 import org.junit.After;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.junit.rules.Timeout;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -66,6 +68,9 @@ public class BlockingStreamingHttpServiceTest {
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
 
+    @Rule
+    public final ExpectedException expected = ExpectedException.none();
+
     private ServerContext serverContext;
     private BlockingStreamingHttpClient client;
 
@@ -77,7 +82,7 @@ public class BlockingStreamingHttpServiceTest {
             }
         } finally {
             if (serverContext != null) {
-                serverContext.close();
+                serverContext.closeAsync().toFuture().get();
             }
         }
     }
@@ -265,19 +270,20 @@ public class BlockingStreamingHttpServiceTest {
         }
     }
 
-    @Ignore("toFuture().get(timeout, unit) doesn't work")
-    @Test(expected = TimeoutException.class)
+    @Test
     public void doNotSendMetaData() throws Exception {
         BlockingStreamingHttpClient client = context((ctx, request, response) -> {
             // Noop
         });
 
         HttpClient asyncClient = client.asClient();
-        asyncClient.request(asyncClient.get("/")).toFuture().get(2, SECONDS);
+        final Future<HttpResponse> responseFuture = asyncClient.request(asyncClient.get("/")).toFuture();
+
+        expected.expect(TimeoutException.class);
+        responseFuture.get(1, SECONDS);
     }
 
-    @Ignore("toFuture().get(timeout, unit) doesn't work")
-    @Test(expected = TimeoutException.class)
+    @Test
     public void doNotWriteTheLastChunk() throws Exception {
         BlockingStreamingHttpClient client = context((ctx, request, response) -> {
             response.sendMetaData();
@@ -286,7 +292,10 @@ public class BlockingStreamingHttpServiceTest {
 
         BlockingStreamingHttpResponse response = client.request(client.get("/"));
         assertResponse(response);
-        assertThat(response.toResponse().toFuture().get(2, SECONDS).payloadBody(), is(EMPTY_BUFFER));
+        final BlockingIterator<Buffer> iterator = response.payloadBody().iterator();
+
+        expected.expect(TimeoutException.class);
+        iterator.hasNext(1, SECONDS);
     }
 
     private static void assertResponse(BlockingStreamingHttpResponse response) throws Exception {

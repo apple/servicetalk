@@ -146,7 +146,7 @@ final class DefaultCompositeCloseable implements CompositeCloseable {
             LOGGER.debug("Ignored failure to close {}.", closeable, th);
             return completed();
         }).concat(closeAsync);
-        closeAsyncGracefully = closeable.closeAsync().onErrorResume(th -> {
+        closeAsyncGracefully = closeable.closeAsyncGracefully().onErrorResume(th -> {
             //TODO: This should use prependDelayError when available.
             LOGGER.debug("Ignored failure to close {}.", closeable, th);
             return completed();

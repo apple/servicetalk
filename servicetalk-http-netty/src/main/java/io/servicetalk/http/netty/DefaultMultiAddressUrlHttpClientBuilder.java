@@ -312,6 +312,11 @@ final class DefaultMultiAddressUrlHttpClientBuilder extends MultiAddressHttpClie
         public Completable closeAsync() {
             return group.closeAsync();
         }
+
+        @Override
+        public Completable closeAsyncGracefully() {
+            return group.closeAsyncGracefully();
+        }
     }
 
     private static final class StreamingHttpClientWithDependencies extends StreamingHttpClientFilter {

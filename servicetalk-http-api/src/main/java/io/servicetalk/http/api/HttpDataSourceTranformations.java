@@ -193,7 +193,7 @@ final class HttpDataSourceTranformations {
                 }
                 long timeoutNanos = unit.toNanos(timeout);
                 final long timeStampA = nanoTime();
-                if (!hasNext(timeoutNanos, NANOSECONDS)) {
+                if (!iterator.hasNext(timeoutNanos, NANOSECONDS)) {
                     return false;
                 }
                 timeoutNanos -= (nanoTime() - timeStampA);
