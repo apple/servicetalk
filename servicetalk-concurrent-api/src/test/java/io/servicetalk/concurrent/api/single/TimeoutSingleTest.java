@@ -60,7 +60,7 @@ public class TimeoutSingleTest {
 
     @Test
     public void executorScheduleThrows() {
-        toSource(source.timeout(1, NANOSECONDS, new DelegatingExecutor(testExecutor) {
+        toSource(source.idleTimeout(1, NANOSECONDS, new DelegatingExecutor(testExecutor) {
             @Override
             public Cancellable schedule(final Runnable task, final long delay, final TimeUnit unit) {
                 throw DELIBERATE_EXCEPTION;
@@ -144,7 +144,7 @@ public class TimeoutSingleTest {
     }
 
     private void init(final Single<Integer> source, final boolean expectOnSubscribe) {
-        toSource(source.timeout(1, NANOSECONDS, testExecutor)).subscribe(subscriber);
+        toSource(source.idleTimeout(1, NANOSECONDS, testExecutor)).subscribe(subscriber);
         assertThat(testExecutor.scheduledTasksPending(), is(1));
         if (expectOnSubscribe) {
             assertTrue(subscriber.cancellableReceived());

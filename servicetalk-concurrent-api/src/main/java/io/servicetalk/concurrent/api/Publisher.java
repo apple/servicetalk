@@ -719,9 +719,9 @@ public abstract class Publisher<T> {
      * @return a new {@link Publisher} that will mimic the signals of this {@link Publisher} but will terminate with a
      * {@link TimeoutException} if time {@code duration} elapses between {@link Subscriber#onNext(Object)} calls.
      * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
-     * @see #timeout(long, TimeUnit, Executor)
+     * @see #idleTimeout(long, TimeUnit, Executor)
      */
-    public final Publisher<T> timeout(long duration, TimeUnit unit) {
+    public final Publisher<T> idleTimeout(long duration, TimeUnit unit) {
         return new TimeoutPublisher<>(this, executor, duration, unit);
     }
 
@@ -737,9 +737,9 @@ public abstract class Publisher<T> {
      * @return a new {@link Publisher} that will mimic the signals of this {@link Publisher} but will terminate with a
      * {@link TimeoutException} if time {@code duration} elapses between {@link Subscriber#onNext(Object)} calls.
      * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
-     * @see #timeout(long, TimeUnit, Executor)
+     * @see #idleTimeout(long, TimeUnit, Executor)
      */
-    public final Publisher<T> timeout(Duration duration) {
+    public final Publisher<T> idleTimeout(Duration duration) {
         return new TimeoutPublisher<>(this, executor, duration);
     }
 
@@ -758,7 +758,7 @@ public abstract class Publisher<T> {
      * {@link TimeoutException} if time {@code duration} elapses between {@link Subscriber#onNext(Object)} calls.
      * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
      */
-    public final Publisher<T> timeout(long duration, TimeUnit unit, Executor timeoutExecutor) {
+    public final Publisher<T> idleTimeout(long duration, TimeUnit unit, Executor timeoutExecutor) {
         return new TimeoutPublisher<>(this, executor, duration, unit, timeoutExecutor);
     }
 
@@ -776,7 +776,7 @@ public abstract class Publisher<T> {
      * {@link TimeoutException} if time {@code duration} elapses between {@link Subscriber#onNext(Object)} calls.
      * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
      */
-    public final Publisher<T> timeout(Duration duration, Executor timeoutExecutor) {
+    public final Publisher<T> idleTimeout(Duration duration, Executor timeoutExecutor) {
         return new TimeoutPublisher<>(this, executor, duration, timeoutExecutor);
     }
 
@@ -1845,7 +1845,7 @@ public abstract class Publisher<T> {
      * <pre>{@code
      *     Publisher<X> pub = ...;
      *     pub.map(..) // A
-     *        .liftSynchronous(original -> modified)
+     *        .liftSync(original -> modified)
      *        .filter(..) // B
      * }</pre>
      *
@@ -1853,16 +1853,16 @@ public abstract class Publisher<T> {
      * with the original {@link Subscriber} from outside the modified {@link Subscriber} or {@link Subscription}
      * threads. That is to say this operator will not impact the {@link Executor} constraints already in place between
      * <i>A</i> and <i>B</i> above. If you need asynchronous behavior, or are unsure, see
-     * {@link #liftAsynchronous(PublisherOperator)}.
+     * {@link #liftAsync(PublisherOperator)}.
      * @param operator The custom operator logic. The input is the "original" {@link Subscriber} to this
      * {@link Publisher} and the return is the "modified" {@link Subscriber} that provides custom operator business
      * logic.
      * @param <R> Type of the items emitted by the returned {@link Publisher}.
      * @return a {@link Publisher} which when subscribed, the {@code operator} argument will be used to wrap the
      * {@link Subscriber} before subscribing to this {@link Publisher}.
-     * @see #liftAsynchronous(PublisherOperator)
+     * @see #liftAsync(PublisherOperator)
      */
-    public final <R> Publisher<R> liftSynchronous(PublisherOperator<? super T, ? extends R> operator) {
+    public final <R> Publisher<R> liftSync(PublisherOperator<? super T, ? extends R> operator) {
         return new LiftSynchronousPublisherOperator<>(this, operator, executor);
     }
 
@@ -1875,7 +1875,7 @@ public abstract class Publisher<T> {
      * <pre>{@code
      *     Publisher<X> pub = ...;
      *     pub.map(..) // A
-     *        .liftAsynchronous(original -> modified)
+     *        .liftAsync(original -> modified)
      *        .filter(..) // B
      * }</pre>
      * The {@code original -> modified} "operator" MAY be "asynchronous" in that it may interact with the original
@@ -1896,9 +1896,9 @@ public abstract class Publisher<T> {
      * @param <R> Type of the items emitted by the returned {@link Publisher}.
      * @return a {@link Publisher} which when subscribed, the {@code operator} argument will be used to wrap the
      * {@link Subscriber} before subscribing to this {@link Publisher}.
-     * @see #liftSynchronous(PublisherOperator)
+     * @see #liftSync(PublisherOperator)
      */
-    public final <R> Publisher<R> liftAsynchronous(PublisherOperator<? super T, ? extends R> operator) {
+    public final <R> Publisher<R> liftAsync(PublisherOperator<? super T, ? extends R> operator) {
         return new LiftAsynchronousPublisherOperator<>(this, operator, executor);
     }
 

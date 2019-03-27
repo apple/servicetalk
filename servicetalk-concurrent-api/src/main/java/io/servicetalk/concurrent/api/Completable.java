@@ -243,8 +243,8 @@ public abstract class Completable {
      * a {@link TimeoutException} if time {@code duration} elapses before {@link Subscriber#onComplete()}.
      * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
      */
-    public final Completable timeout(long duration, TimeUnit unit) {
-        return timeout(duration, unit, executor);
+    public final Completable idleTimeout(long duration, TimeUnit unit) {
+        return idleTimeout(duration, unit, executor);
     }
 
     /**
@@ -262,7 +262,7 @@ public abstract class Completable {
      * a {@link TimeoutException} if time {@code duration} elapses before {@link Subscriber#onComplete()}.
      * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
      */
-    public final Completable timeout(long duration, TimeUnit unit, Executor timeoutExecutor) {
+    public final Completable idleTimeout(long duration, TimeUnit unit, Executor timeoutExecutor) {
         return new TimeoutCompletable(this, duration, unit, timeoutExecutor);
     }
 
@@ -279,8 +279,8 @@ public abstract class Completable {
      * a {@link TimeoutException} if time {@code duration} elapses before {@link Subscriber#onComplete()}.
      * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
      */
-    public final Completable timeout(Duration duration) {
-        return timeout(duration, executor);
+    public final Completable idleTimeout(Duration duration) {
+        return idleTimeout(duration, executor);
     }
 
     /**
@@ -297,7 +297,7 @@ public abstract class Completable {
      * a {@link TimeoutException} if time {@code duration} elapses before {@link Subscriber#onComplete()}.
      * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
      */
-    public final Completable timeout(Duration duration, Executor timeoutExecutor) {
+    public final Completable idleTimeout(Duration duration, Executor timeoutExecutor) {
         return new TimeoutCompletable(this, duration, timeoutExecutor);
     }
 
@@ -895,23 +895,23 @@ public abstract class Completable {
      * <pre>{@code
      *     Completable<X> pub = ...;
      *     pub.map(..) // A
-     *        .liftSynchronous(original -> modified)
+     *        .liftSync(original -> modified)
      *        .doAfterFinally(..) // B
      * }</pre>
      * The {@code original -> modified} "operator" <strong>MUST</strong> be "synchronous" in that it does not interact
      * with the original {@link Subscriber} from outside the modified {@link Subscriber} or {@link Cancellable}
      * threads. That is to say this operator will not impact the {@link Executor} constraints already in place between
      * <i>A</i> and <i>B</i> above. If you need asynchronous behavior, or are unsure, see
-     * {@link #liftAsynchronous(CompletableOperator)}.
+     * {@link #liftAsync(CompletableOperator)}.
      *
      * @param operator The custom operator logic. The input is the "original" {@link Subscriber} to this
      * {@link Completable} and the return is the "modified" {@link Subscriber} that provides custom operator business
      * logic.
      * @return a {@link Completable} that when subscribed, the {@code operator} argument will be used to wrap the
      * {@link Subscriber} before subscribing to this {@link Completable}.
-     * @see #liftAsynchronous(CompletableOperator)
+     * @see #liftAsync(CompletableOperator)
      */
-    public final Completable liftSynchronous(CompletableOperator operator) {
+    public final Completable liftSync(CompletableOperator operator) {
         return new LiftSynchronousCompletableOperator(this, operator, executor);
     }
 
@@ -924,7 +924,7 @@ public abstract class Completable {
      * <pre>{@code
      *     Publisher<X> pub = ...;
      *     pub.map(..) // A
-     *        .liftAsynchronous(original -> modified)
+     *        .liftAsync(original -> modified)
      *        .doAfterFinally(..) // B
      * }</pre>
      *
@@ -944,9 +944,9 @@ public abstract class Completable {
      * logic.
      * @return a {@link Completable} that when subscribed, the {@code operator} argument will be used to wrap the
      * {@link Subscriber} before subscribing to this {@link Completable}.
-     * @see #liftSynchronous(CompletableOperator)
+     * @see #liftSync(CompletableOperator)
      */
-    public final Completable liftAsynchronous(CompletableOperator operator) {
+    public final Completable liftAsync(CompletableOperator operator) {
         return new LiftAsynchronousCompletableOperator(this, operator, executor);
     }
 
@@ -1224,10 +1224,10 @@ public abstract class Completable {
      * offloading if necessary, and also offloading if {@link Cancellable#cancel()} will be called if this operation may
      * block.
      * <p>
-     * To apply a timeout see {@link #timeout(long, TimeUnit)} and related methods.
+     * To apply a timeout see {@link #idleTimeout(long, TimeUnit)} and related methods.
      * @param future The {@link Future} to convert.
      * @return A {@link Completable} that derives results from {@link Future}.
-     * @see #timeout(long, TimeUnit)
+     * @see #idleTimeout(long, TimeUnit)
      */
     public static Completable fromFuture(Future<?> future) {
         return Single.fromFuture(future).toCompletable();

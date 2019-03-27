@@ -24,6 +24,6 @@ public class CompletableLiftSynchronousTckTest extends AbstractCompletableOperat
 
     @Override
     protected Completable composeCompletable(final Completable completable) {
-        return completable.liftSynchronous(subscriber -> subscriber);
+        return completable.liftSync(subscriber -> subscriber);
     }
 }

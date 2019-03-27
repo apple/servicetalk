@@ -24,6 +24,6 @@ public class SingleLiftSynchronousTckTest extends AbstractSingleOperatorTckTest<
 
     @Override
     protected Single<Integer> composeSingle(final Single<Integer> single) {
-        return single.liftSynchronous(subscriber -> subscriber);
+        return single.liftSync(subscriber -> subscriber);
     }
 }

@@ -65,7 +65,7 @@ final class DefaultStreamingHttpClientFilter extends StreamingHttpClientFilter {
         // correct.
         return loadBalancer.selectConnection(SELECTOR_FOR_REQUEST)
                 .flatMap(c -> c.request(strategy, request)
-                        .liftSynchronous(new DoBeforeFinallyOnHttpResponseOperator(c::requestFinished)));
+                        .liftSync(new DoBeforeFinallyOnHttpResponseOperator(c::requestFinished)));
     }
 
     @Override

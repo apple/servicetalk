@@ -323,8 +323,8 @@ public abstract class Single<T> {
      * {@link TimeoutException} if time {@code duration} elapses before {@link Subscriber#onSuccess(Object)}.
      * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
      */
-    public final Single<T> timeout(long duration, TimeUnit unit) {
-        return timeout(duration, unit, executor);
+    public final Single<T> idleTimeout(long duration, TimeUnit unit) {
+        return idleTimeout(duration, unit, executor);
     }
 
     /**
@@ -342,7 +342,7 @@ public abstract class Single<T> {
      * {@link TimeoutException} if time {@code duration} elapses before {@link Subscriber#onSuccess(Object)}.
      * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
      */
-    public final Single<T> timeout(long duration, TimeUnit unit, Executor timeoutExecutor) {
+    public final Single<T> idleTimeout(long duration, TimeUnit unit, Executor timeoutExecutor) {
         return new TimeoutSingle<>(this, duration, unit, timeoutExecutor);
     }
 
@@ -360,8 +360,8 @@ public abstract class Single<T> {
      * {@link TimeoutException} if time {@code duration} elapses before {@link Subscriber#onSuccess(Object)}.
      * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
      */
-    public final Single<T> timeout(Duration duration) {
-        return timeout(duration, executor);
+    public final Single<T> idleTimeout(Duration duration) {
+        return idleTimeout(duration, executor);
     }
 
     /**
@@ -378,7 +378,7 @@ public abstract class Single<T> {
      * {@link TimeoutException} if time {@code duration} elapses before {@link Subscriber#onSuccess(Object)}.
      * @see <a href="http://reactivex.io/documentation/operators/timeout.html">ReactiveX timeout operator.</a>
      */
-    public final Single<T> timeout(Duration duration, Executor timeoutExecutor) {
+    public final Single<T> idleTimeout(Duration duration, Executor timeoutExecutor) {
         return new TimeoutSingle<>(this, duration, timeoutExecutor);
     }
 
@@ -924,23 +924,23 @@ public abstract class Single<T> {
      * <pre>{@code
      *     Single<X> pub = ...;
      *     pub.map(..) // A
-     *        .liftSynchronous(original -> modified)
+     *        .liftSync(original -> modified)
      *        .doAfterFinally(..) // B
      * }</pre>
      * The {@code original -> modified} "operator" <strong>MUST</strong> be "synchronous" in that it does not interact
      * with the original {@link Subscriber} from outside the modified {@link Subscriber} or {@link Cancellable}
      * threads. That is to say this operator will not impact the {@link Executor} constraints already in place between
      * <i>A</i> and <i>B</i> above. If you need asynchronous behavior, or are unsure, see
-     * {@link #liftAsynchronous(SingleOperator)}.
+     * {@link #liftAsync(SingleOperator)}.
      * @param operator The custom operator logic. The input is the "original" {@link Subscriber} to this
      * {@link Single} and the return is the "modified" {@link Subscriber} that provides custom operator business
      * logic.
      * @param <R> Type of the items emitted by the returned {@link Single}.
      * @return a {@link Single} which when subscribed, the {@code operator} argument will be used to wrap the
      * {@link Subscriber} before subscribing to this {@link Single}.
-     * @see #liftAsynchronous(SingleOperator)
+     * @see #liftAsync(SingleOperator)
      */
-    public final <R> Single<R> liftSynchronous(SingleOperator<? super T, ? extends R> operator) {
+    public final <R> Single<R> liftSync(SingleOperator<? super T, ? extends R> operator) {
         return new LiftSynchronousSingleOperator<>(this, operator, executor);
     }
 
@@ -953,7 +953,7 @@ public abstract class Single<T> {
      * <pre>{@code
      *     Publisher<X> pub = ...;
      *     pub.map(..) // Aw
-     *        .liftAsynchronous(original -> modified)
+     *        .liftAsync(original -> modified)
      *        .doAfterFinally(..) // B
      * }</pre>
      * The {@code original -> modified} "operator" MAY be "asynchronous" in that it may interact with the original
@@ -973,9 +973,9 @@ public abstract class Single<T> {
      * @param <R> Type of the items emitted by the returned {@link Single}.
      * @return a {@link Single} which when subscribed, the {@code operator} argument will be used to wrap the
      * {@link Subscriber} before subscribing to this {@link Single}.
-     * @see #liftSynchronous(SingleOperator)
+     * @see #liftSync(SingleOperator)
      */
-    public final <R> Single<R> liftAsynchronous(SingleOperator<? super T, ? extends R> operator) {
+    public final <R> Single<R> liftAsync(SingleOperator<? super T, ? extends R> operator) {
         return new LiftAsynchronousSingleOperator<>(this, operator, executor);
     }
 
@@ -1129,11 +1129,11 @@ public abstract class Single<T> {
      * results will block. The caller of subscribe is responsible for offloading if necessary, and also offloading if
      * {@link Cancellable#cancel()} will be called and this operation may block.
      * <p>
-     * To apply a timeout see {@link #timeout(long, TimeUnit)} and related methods.
+     * To apply a timeout see {@link #idleTimeout(long, TimeUnit)} and related methods.
      * @param future The {@link Future} to convert.
      * @param <T> The data type the {@link Future} provides when complete.
      * @return A {@link Single} that derives results from {@link Future}.
-     * @see #timeout(long, TimeUnit)
+     * @see #idleTimeout(long, TimeUnit)
      */
     public static <T> Single<T> fromFuture(Future<? extends T> future) {
         return new FutureToSingle<>(future);
