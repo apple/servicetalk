@@ -34,7 +34,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 
 import static io.servicetalk.concurrent.api.Publisher.error;
-import static io.servicetalk.concurrent.api.Publisher.just;
+import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.concurrent.internal.EmptySubscription.EMPTY_SUBSCRIPTION;
 import static io.servicetalk.concurrent.reactivestreams.ReactiveStreamsAdapters.fromReactiveStreamsPublisher;
@@ -89,7 +89,7 @@ public class ReactiveStreamsAdaptersTest {
 
     @Test
     public void toRSSuccess() {
-        verifyRSSuccess(toRSPublisherAndSubscribe(just(1)));
+        verifyRSSuccess(toRSPublisherAndSubscribe(from(1)));
     }
 
     @Test

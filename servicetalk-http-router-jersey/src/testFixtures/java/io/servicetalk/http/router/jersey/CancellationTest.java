@@ -48,7 +48,7 @@ import javax.annotation.Nullable;
 import javax.ws.rs.core.Application;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
-import static io.servicetalk.concurrent.api.Publisher.just;
+import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
@@ -264,7 +264,7 @@ public class CancellationTest {
 
     private static StreamingHttpRequest post(final String resourcePath) {
         final StreamingHttpRequest req = HTTP_REQ_RES_FACTORY.post(PATH + resourcePath)
-                .payloadBody(just(DEFAULT_ALLOCATOR.fromAscii(TEST_DATA)));
+                .payloadBody(from(DEFAULT_ALLOCATOR.fromAscii(TEST_DATA)));
         req.headers().set(CONTENT_TYPE, TEXT_PLAIN);
         return req;
     }

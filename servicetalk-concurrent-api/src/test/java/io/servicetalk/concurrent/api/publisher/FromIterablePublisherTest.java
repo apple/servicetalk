@@ -18,14 +18,14 @@ package io.servicetalk.concurrent.api.publisher;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 
-import static io.servicetalk.concurrent.api.Publisher.from;
+import static io.servicetalk.concurrent.api.Publisher.fromIterable;
 import static java.util.Arrays.asList;
 
 public class FromIterablePublisherTest extends FromInMemoryPublisherAbstractTest {
     @Override
     protected InMemorySource newPublisher(final Executor executor, final String[] values) {
         return new InMemorySource(values) {
-            private final Publisher<String> publisher = from(asList(values));
+            private final Publisher<String> publisher = fromIterable(asList(values));
             @Override
             protected Publisher<String> publisher() {
                 return publisher;

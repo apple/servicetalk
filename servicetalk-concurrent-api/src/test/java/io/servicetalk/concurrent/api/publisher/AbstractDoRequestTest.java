@@ -88,7 +88,7 @@ public abstract class AbstractDoRequestTest {
     public void testCallbackThrowsError() {
         thrown.expect(is(sameInstance(DELIBERATE_EXCEPTION)));
 
-        doRequest(Publisher.just("Hello"), n -> {
+        doRequest(Publisher.from("Hello"), n -> {
             throw DELIBERATE_EXCEPTION;
         }).subscribe(subscriber);
         subscriber.request(1);

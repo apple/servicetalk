@@ -33,7 +33,7 @@ import java.nio.channels.ClosedChannelException;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Executors.immediate;
-import static io.servicetalk.concurrent.api.Publisher.just;
+import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.success;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
@@ -154,7 +154,7 @@ public class DefaultNettyPipelinedConnectionTest {
 
     @Test
     public void testPublisherWrite() {
-        toSource(requester.request(just(1))).subscribe(readSubscriber);
+        toSource(requester.request(from(1))).subscribe(readSubscriber);
         readSubscriber.request(1);
         forceReadSubscriberComplete();
     }

@@ -33,7 +33,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 
-import static io.servicetalk.concurrent.api.Publisher.just;
+import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static java.lang.Thread.currentThread;
 import static org.hamcrest.Matchers.hasSize;
@@ -126,7 +126,7 @@ public class ReduceSingleTest {
         final Thread testThread = currentThread();
         final CountDownLatch analyzed = new CountDownLatch(1);
         ConcurrentLinkedQueue<AssertionError> errors = new ConcurrentLinkedQueue<>();
-        just("Hello").doBeforeRequest(__ -> {
+        from("Hello").doBeforeRequest(__ -> {
             if (currentThread() == testThread) {
                 errors.add(new AssertionError("Invalid thread invoked request-n. Thread: " +
                         currentThread()));

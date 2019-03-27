@@ -41,7 +41,7 @@ import java.util.function.Predicate;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
 import static io.servicetalk.concurrent.api.Processors.newCompletableProcessor;
-import static io.servicetalk.concurrent.api.Publisher.just;
+import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.success;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
@@ -134,7 +134,7 @@ public class HttpServerOverrideOffloadingTest {
                             "Thread: " + currentThread()));
                 }
             }).ignoreElements()).subscribe(cp);
-            return success(responseFactory.ok().payloadBody(just("Hello"), textSerializer())
+            return success(responseFactory.ok().payloadBody(from("Hello"), textSerializer())
                     .transformPayloadBody(p -> p.doBeforeRequest(__ -> {
                         if (isInvalidThread.test(currentThread())) {
                             errors.add(new AssertionError("Invalid thread calling response payload " +

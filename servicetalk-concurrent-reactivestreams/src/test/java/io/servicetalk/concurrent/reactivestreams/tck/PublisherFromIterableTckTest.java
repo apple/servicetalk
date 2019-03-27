@@ -19,7 +19,7 @@ import io.servicetalk.concurrent.api.Publisher;
 
 import org.testng.annotations.Test;
 
-import static io.servicetalk.concurrent.api.Publisher.from;
+import static io.servicetalk.concurrent.api.Publisher.fromIterable;
 import static io.servicetalk.concurrent.reactivestreams.tck.TckUtils.newArray;
 import static io.servicetalk.concurrent.reactivestreams.tck.TckUtils.requestNToInt;
 import static java.util.Arrays.asList;
@@ -28,7 +28,7 @@ import static java.util.Arrays.asList;
 public class PublisherFromIterableTckTest extends AbstractPublisherTckTest<Integer> {
     @Override
     public Publisher<Integer> createServiceTalkPublisher(final long elements) {
-        return from(() -> asList(newArray(requestNToInt(elements))).iterator());
+        return fromIterable(() -> asList(newArray(requestNToInt(elements))).iterator());
     }
 
     @Override

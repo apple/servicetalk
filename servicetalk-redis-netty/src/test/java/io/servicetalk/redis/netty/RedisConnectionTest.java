@@ -44,7 +44,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static io.servicetalk.concurrent.api.BlockingTestUtils.awaitIndefinitely;
-import static io.servicetalk.concurrent.api.Publisher.just;
+import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.ServiceTalkTestTimeout.DEFAULT_TIMEOUT_SECONDS;
 import static io.servicetalk.redis.api.RedisData.NULL;
@@ -202,7 +202,7 @@ public class RedisConnectionTest extends BaseRedisClientTest {
                             } catch (InterruptedException e) {
                                 throw new RuntimeException(e);
                             }
-                            return just(NULL);
+                            return from(NULL);
                         }))
                         .concat(cnx.request(newRequest(EXEC)))));
 

@@ -47,7 +47,6 @@ import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.Executors.from;
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Publisher.from;
-import static io.servicetalk.concurrent.api.Publisher.just;
 import static io.servicetalk.concurrent.api.Publisher.never;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
@@ -315,7 +314,7 @@ public class DefaultNettyConnectionTest {
 
     @Test
     public void testUpdateFlushStrategy() {
-        writeListener.listen(conn.write(just(newBuffer("Hello"))));
+        writeListener.listen(conn.write(Publisher.from(newBuffer("Hello"))));
         writeListener.verifyCompletion();
         pollChannelAndVerifyWrites("Hello"); // Flush on each (default)
 
@@ -332,7 +331,7 @@ public class DefaultNettyConnectionTest {
         c.cancel();
 
         writeListener.reset();
-        writeListener.listen(conn.write(just(newBuffer("Hello3"))));
+        writeListener.listen(conn.write(Publisher.from(newBuffer("Hello3"))));
         writeListener.verifyCompletion();
         pollChannelAndVerifyWrites("Hello3"); // Reverted to flush on each
     }

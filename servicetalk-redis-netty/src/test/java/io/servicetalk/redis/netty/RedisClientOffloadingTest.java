@@ -46,7 +46,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.BlockingTestUtils.awaitIndefinitelyNonNull;
 import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
-import static io.servicetalk.concurrent.api.Publisher.just;
+import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.redis.api.RedisConnection.SettingKey.MAX_CONCURRENCY;
 import static io.servicetalk.redis.api.RedisProtocolSupport.Command.PING;
@@ -95,7 +95,7 @@ public class RedisClientOffloadingTest {
     public void requestResponseIsOffloaded() throws Exception {
         final RequestRedisData ping = new CompleteBulkString(
                 connectionContext.executionContext().bufferAllocator().fromUtf8("Hello"));
-        final Publisher<RequestRedisData> reqContent = just(ping).doBeforeRequest(n -> {
+        final Publisher<RequestRedisData> reqContent = from(ping).doBeforeRequest(n -> {
             if (isInClientEventLoop(currentThread())) {
                 errors.add(new AssertionError("Request content: request-n not offloaded"));
             }

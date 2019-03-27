@@ -65,7 +65,7 @@ import static io.servicetalk.concurrent.api.BlockingTestUtils.awaitIndefinitelyN
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Processors.newCompletableProcessor;
 import static io.servicetalk.concurrent.api.Publisher.empty;
-import static io.servicetalk.concurrent.api.Publisher.just;
+import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.error;
 import static io.servicetalk.concurrent.api.Single.success;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
@@ -113,7 +113,7 @@ public class ConcurrentRequestsHttpConnectionFilterTest {
                     @Override
                     @SuppressWarnings("unchecked")
                     public <T> Publisher<T> settingStream(final SettingKey<T> settingKey) {
-                        return settingKey == MAX_CONCURRENCY ? (Publisher<T>) just(2) : super.settingStream(settingKey);
+                        return settingKey == MAX_CONCURRENCY ? (Publisher<T>) from(2) : super.settingStream(settingKey);
                     }
 
                     @Override

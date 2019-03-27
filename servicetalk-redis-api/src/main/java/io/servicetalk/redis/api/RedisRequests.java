@@ -34,6 +34,7 @@ import java.util.RandomAccess;
 import java.util.function.BiFunction;
 import java.util.function.Predicate;
 
+import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.success;
 import static io.servicetalk.redis.api.StringByteSizeUtil.numberOfBytesUtf8;
 import static io.servicetalk.redis.api.StringByteSizeUtil.numberOfDigits;
@@ -63,7 +64,7 @@ public final class RedisRequests {
      * @return a new {@link RedisRequest}.
      */
     public static RedisRequest newRequest(final Command command) {
-        return newRequest(command, Publisher.from(new ArraySize(1L), command));
+        return newRequest(command, from(new ArraySize(1L), command));
     }
 
     /**
@@ -74,7 +75,7 @@ public final class RedisRequests {
      * @return a new {@link RedisRequest}.
      */
     public static RedisRequest newRequest(final Command command, final SubCommand subCommand) {
-        return newRequest(command, Publisher.from(new ArraySize(2L), command, requireNonNull(subCommand)));
+        return newRequest(command, from(new ArraySize(2L), command, requireNonNull(subCommand)));
     }
 
     /**
@@ -85,7 +86,7 @@ public final class RedisRequests {
      * @return a new {@link RedisRequest}.
      */
     public static RedisRequest newRequest(final Command command, final CompleteBulkString arg) {
-        return newRequest(command, Publisher.from(new ArraySize(2L), command, requireNonNull(arg)));
+        return newRequest(command, from(new ArraySize(2L), command, requireNonNull(arg)));
     }
 
     /**
@@ -98,7 +99,7 @@ public final class RedisRequests {
      */
     public static RedisRequest newRequest(final Command command, final SubCommand subCommand,
                                           final CompleteBulkString arg) {
-        return newRequest(command, Publisher.from(new ArraySize(3L), command, requireNonNull(subCommand),
+        return newRequest(command, from(new ArraySize(3L), command, requireNonNull(subCommand),
                 requireNonNull(arg)));
     }
 
@@ -115,7 +116,7 @@ public final class RedisRequests {
         stanzaAndArgs[1] = command;
         arraycopy(args, 0, stanzaAndArgs, 2, args.length);
 
-        return newRequest(command, Publisher.from(stanzaAndArgs));
+        return newRequest(command, from(stanzaAndArgs));
     }
 
     /**
@@ -134,7 +135,7 @@ public final class RedisRequests {
         stanzaAndArgs[2] = requireNonNull(subCommand);
         arraycopy(args, 0, stanzaAndArgs, 3, args.length);
 
-        return newRequest(command, Publisher.from(stanzaAndArgs));
+        return newRequest(command, from(stanzaAndArgs));
     }
 
     /**
@@ -154,7 +155,7 @@ public final class RedisRequests {
         arraycopy(stanzaAndArgs, 0, stanzaAndArgs, 1, data.size());
         stanzaAndArgs[0] = new ArraySize(data.size());
 
-        return newRequest(command, Publisher.from(stanzaAndArgs));
+        return newRequest(command, from(stanzaAndArgs));
     }
 
     /**
@@ -180,7 +181,7 @@ public final class RedisRequests {
      */
     public static RedisRequest newRequest(final Command command,
                                           final Buffer content) {
-        return new DefaultRedisRequest(command, Publisher.just(new RESPBuffer(content)));
+        return new DefaultRedisRequest(command, from(new RESPBuffer(content)));
     }
 
     static void addBufferKeysToAttributeBuilder(final Collection<? extends Buffer> keys,

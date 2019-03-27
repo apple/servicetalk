@@ -41,7 +41,7 @@ import java.util.function.BiFunction;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Executors.immediate;
-import static io.servicetalk.concurrent.api.Publisher.just;
+import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.error;
 import static io.servicetalk.concurrent.api.Single.success;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
@@ -263,7 +263,7 @@ public abstract class AbstractBlockingStreamingHttpRequesterTest {
     @Test
     public void asyncToSyncWithPayload() throws Exception {
         TestStreamingHttpRequester asyncRequester = newAsyncRequester(reqRespFactory, mockExecutionCtx,
-                (strategy, req) -> success(reqRespFactory.ok().payloadBody(just(allocator.fromAscii("hello")))));
+                (strategy, req) -> success(reqRespFactory.ok().payloadBody(from(allocator.fromAscii("hello")))));
         BlockingStreamingHttpRequester syncRequester = asyncRequester.asBlockingStreaming();
         BlockingStreamingHttpResponse syncResponse = syncRequester.request(
                 syncRequester.get("/"));
@@ -281,7 +281,7 @@ public abstract class AbstractBlockingStreamingHttpRequesterTest {
         byte[] expectedPayloadBytes = expectedPayload.getBytes(US_ASCII);
         TestStreamingHttpRequester asyncRequester = newAsyncRequester(reqRespFactory, mockExecutionCtx,
                 (strategy, req) -> success(reqRespFactory.ok().payloadBody(
-                        just(allocator.fromAscii(expectedPayload)))));
+                        from(allocator.fromAscii(expectedPayload)))));
         BlockingStreamingHttpRequester syncRequester = asyncRequester.asBlockingStreaming();
         BlockingStreamingHttpResponse syncResponse = syncRequester.request(
                 syncRequester.get("/"));

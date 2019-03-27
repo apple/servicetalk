@@ -38,7 +38,7 @@ import java.util.function.Supplier;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.Publisher.error;
-import static io.servicetalk.concurrent.api.Publisher.just;
+import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.success;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.redis.api.RedisConnection.SettingKey.MAX_CONCURRENCY;
@@ -93,7 +93,7 @@ abstract class AbstractRedisConnection extends RedisConnection {
             pinger = NOOP_PINGER;
             maxPendingRequests = maxPipelinedRequests;
         }
-        maxConcurrencySetting = just(roConfig.maxPipelinedRequests())
+        maxConcurrencySetting = from(roConfig.maxPipelinedRequests())
                 .concat(onClosing.concat(success(0)));
     }
 

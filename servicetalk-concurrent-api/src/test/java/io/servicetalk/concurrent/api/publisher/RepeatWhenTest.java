@@ -31,7 +31,7 @@ import java.util.function.IntFunction;
 
 import static io.servicetalk.concurrent.api.Completable.error;
 import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
-import static io.servicetalk.concurrent.api.Publisher.just;
+import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
@@ -70,7 +70,7 @@ public class RepeatWhenTest {
         // then it does not really matter if we reuse offloaders or not. eg: if tomorrow we do not hold up a thread for
         // the lifetime of the Subscriber, we can reuse the offloader.
         executor = newCachedThreadExecutor();
-        Collection<Integer> result = just(1).publishOn(executor).repeatWhen(count -> count == 1 ?
+        Collection<Integer> result = from(1).publishOn(executor).repeatWhen(count -> count == 1 ?
                 // If we complete the returned Completable synchronously, then the offloader will not terminate before
                 // we add another entity in the next subscribe. So, we return an asynchronously completed Completable.
                 executor.submit(() -> { }) : error(DELIBERATE_EXCEPTION)).toFuture().get();

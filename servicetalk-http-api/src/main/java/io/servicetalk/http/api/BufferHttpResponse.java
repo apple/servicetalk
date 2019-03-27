@@ -19,7 +19,7 @@ import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
 
 import static io.servicetalk.buffer.api.EmptyBuffer.EMPTY_BUFFER;
-import static io.servicetalk.concurrent.api.Publisher.just;
+import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.success;
 import static io.servicetalk.concurrent.internal.BlockingIterables.singletonBlockingIterable;
 import static java.util.Objects.requireNonNull;
@@ -89,7 +89,7 @@ final class BufferHttpResponse extends DefaultHttpResponseMetaData implements Ht
     @Override
     public StreamingHttpResponse toStreamingResponse() {
         return new BufferStreamingHttpResponse(status(), version(), headers(), success(trailers), allocator,
-                just(payloadBody));
+                from(payloadBody));
     }
 
     @Override

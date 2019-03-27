@@ -21,7 +21,7 @@ import org.slf4j.LoggerFactory;
 import static io.servicetalk.concurrent.internal.EmptySubscription.EMPTY_SUBSCRIPTION;
 
 final class NeverPublisher<T> extends AbstractSynchronousPublisher<T> {
-    private static final Logger LOGGER = LoggerFactory.getLogger(JustPublisher.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(NeverPublisher.class);
     private static final NeverPublisher NEVER_PUBLISHER = new NeverPublisher();
 
     @Override

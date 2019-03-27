@@ -34,7 +34,7 @@ import java.util.concurrent.atomic.AtomicReferenceArray;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
-import static io.servicetalk.concurrent.api.Publisher.just;
+import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.never;
 import static io.servicetalk.concurrent.api.Single.success;
 import static io.servicetalk.redis.api.NoOffloadsRedisExecutionStrategy.NO_OFFLOADS;
@@ -127,7 +127,7 @@ public class DefaultRedisExecutionStrategyTest {
     @Test
     public void offloadSendPublisher() throws Exception {
         ThreadAnalyzer analyzer = new ThreadAnalyzer();
-        analyzer.instrumentSend(strategy.offloadSend(executor, just(1))).toFuture().get();
+        analyzer.instrumentSend(strategy.offloadSend(executor, from(1))).toFuture().get();
         analyzer.verifySend();
     }
 
@@ -141,7 +141,7 @@ public class DefaultRedisExecutionStrategyTest {
     @Test
     public void offloadReceivePublisher() throws Exception {
         ThreadAnalyzer analyzer = new ThreadAnalyzer();
-        analyzer.instrumentReceive(strategy.offloadReceive(executor, just(1))).toFuture().get();
+        analyzer.instrumentReceive(strategy.offloadReceive(executor, from(1))).toFuture().get();
         analyzer.verifyReceive();
     }
 
@@ -159,7 +159,7 @@ public class DefaultRedisExecutionStrategyTest {
         }
 
         Publisher<RedisData> createNewResponse() {
-            return just(DEFAULT_ALLOCATOR.fromAscii("Hello-Response")).map(CompleteBulkString::new);
+            return from(DEFAULT_ALLOCATOR.fromAscii("Hello-Response")).map(CompleteBulkString::new);
         }
 
         RedisRequest instrumentedRequest(RedisRequest request) {

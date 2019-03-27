@@ -22,7 +22,7 @@ import io.servicetalk.transport.api.ServerContext;
 
 import org.junit.Test;
 
-import static io.servicetalk.concurrent.api.Publisher.just;
+import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.success;
 import static io.servicetalk.http.api.HttpHeaderNames.HOST;
 import static io.servicetalk.http.api.HttpSerializationProviders.textDeserializer;
@@ -59,7 +59,7 @@ public class HostHeaderHttpRequesterFilterTest {
         return HttpServers.forAddress(localAddress(0))
                 .listenStreamingAndAwait((ctx, request, responseFactory) ->
                             success(responseFactory.ok().payloadBody(
-                                    just(requireNonNull(request.headers().get(HOST)).toString()), textSerializer())));
+                                    from(requireNonNull(request.headers().get(HOST)).toString()), textSerializer())));
     }
 
     @Test

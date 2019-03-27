@@ -20,6 +20,7 @@ import io.servicetalk.concurrent.api.TestPublisherSubscriber;
 
 import org.junit.Test;
 
+import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
@@ -37,7 +38,7 @@ public class ScalarResultPublisherTest {
 
     @Test
     public void testJust() {
-        toSource(Publisher.just("Hello")).subscribe(subscriber);
+        toSource(from("Hello")).subscribe(subscriber);
         subscriber.request(1);
         assertThat(subscriber.takeItems(), contains("Hello"));
         assertThat(subscriber.takeTerminal(), is(complete()));

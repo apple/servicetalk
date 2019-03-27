@@ -34,7 +34,6 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Function;
 
 import static io.servicetalk.concurrent.api.Publisher.from;
-import static io.servicetalk.concurrent.api.Publisher.just;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpResponseStatus.NOT_FOUND;
@@ -132,7 +131,7 @@ final class TestServiceStreaming implements StreamingHttpService {
                                                          final StreamingHttpResponseFactory factory) {
         final Buffer responseContent = context.executionContext().bufferAllocator().fromUtf8(
                 "Testing" + ++counter + "\n");
-        return factory.ok().version(req.version()).payloadBody(just(responseContent));
+        return factory.ok().version(req.version()).payloadBody(Publisher.from(responseContent));
     }
 
     private StreamingHttpResponse newTestCounterResponseWithLastPayloadChunk(
@@ -140,7 +139,7 @@ final class TestServiceStreaming implements StreamingHttpService {
             final StreamingHttpResponseFactory factory) {
         final Buffer responseContent = context.executionContext().bufferAllocator().fromUtf8(
                 "Testing" + ++counter + "\n");
-        return factory.ok().version(req.version()).payloadBody(just(responseContent));
+        return factory.ok().version(req.version()).payloadBody(Publisher.from(responseContent));
     }
 
     private static StreamingHttpResponse newLargeLastChunkResponse(

@@ -29,7 +29,7 @@ import java.util.function.Consumer;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.Completable.completed;
-import static io.servicetalk.concurrent.api.Publisher.just;
+import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.success;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
@@ -70,7 +70,7 @@ public class TaskBasedSignalOffloaderExecutorRejectionTests {
     @Test
     public void publisherSubscribeRejects() throws Exception {
         rejectNextTask.set(true);
-        expectFailureAndVerify(just(1).subscribeOn(executor).toFuture());
+        expectFailureAndVerify(from(1).subscribeOn(executor).toFuture());
     }
 
     @Test

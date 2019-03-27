@@ -54,7 +54,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.BlockingTestUtils.awaitIndefinitelyNonNull;
-import static io.servicetalk.concurrent.api.Publisher.just;
+import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.success;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
@@ -115,7 +115,7 @@ public class HttpOffloadingTest {
     @Test
     public void requestResponseIsOffloaded() throws Exception {
         final Publisher<Buffer> reqPayload =
-                just(httpConnection.connectionContext().executionContext().bufferAllocator()
+                from(httpConnection.connectionContext().executionContext().bufferAllocator()
                         .fromAscii("Hello"))
                         .doBeforeRequest(n -> {
                             if (inEventLoop().test(currentThread())) {
@@ -356,7 +356,7 @@ public class HttpOffloadingTest {
                 errors.add(e);
             }
             Publisher responsePayload =
-                    just(ctx.executionContext().bufferAllocator().fromAscii("Hello"))
+                    from(ctx.executionContext().bufferAllocator().fromAscii("Hello"))
                             .doBeforeRequest(n -> {
                                 if (inEventLoop().test(currentThread())) {
                                     errors.add(

@@ -33,7 +33,7 @@ import io.servicetalk.serialization.api.TypeHolder;
 import java.util.ArrayList;
 import java.util.List;
 
-import static io.servicetalk.concurrent.api.Publisher.from;
+import static io.servicetalk.concurrent.api.Publisher.fromIterable;
 import static io.servicetalk.concurrent.api.Single.success;
 import static io.servicetalk.examples.http.service.composition.AsyncUtils.zip;
 
@@ -86,7 +86,7 @@ final class GatewayService implements HttpService {
     private Single<List<FullRecommendation>> queryRecommendationDetails(List<Recommendation> recommendations) {
         // Recommendations are a List and we want to query details for each recommendation in parallel.
         // Turning the List into a Publisher helps us use relevant operators to do so.
-        return from(recommendations)
+        return fromIterable(recommendations)
                 .flatMapMergeSingle(reco -> {
                     Single<Metadata> metadata =
                             metadataClient.request(metadataClient.get("/metadata?entityId=" + reco.getEntityId()))

@@ -41,6 +41,8 @@ import static io.servicetalk.concurrent.api.CompletableDoOnUtils.doOnCompleteSup
 import static io.servicetalk.concurrent.api.CompletableDoOnUtils.doOnErrorSupplier;
 import static io.servicetalk.concurrent.api.CompletableDoOnUtils.doOnSubscribeSupplier;
 import static io.servicetalk.concurrent.api.Executors.immediate;
+import static io.servicetalk.concurrent.api.Publisher.from;
+import static io.servicetalk.concurrent.api.Publisher.fromIterable;
 import static io.servicetalk.concurrent.internal.SignalOffloaders.newOffloaderFor;
 import static java.util.Objects.requireNonNull;
 import static java.util.function.Function.identity;
@@ -1270,7 +1272,7 @@ public abstract class Completable {
      * terminated successfully or any one of them has terminated with a failure.
      */
     public static Completable mergeAll(Iterable<? extends Completable> completables) {
-        return Publisher.from(completables).flatMapCompletable(identity());
+        return fromIterable(completables).flatMapCompletable(identity());
     }
 
     /**
@@ -1296,7 +1298,7 @@ public abstract class Completable {
      * terminated successfully or any one of them has terminated with a failure.
      */
     public static Completable mergeAll(Completable... completables) {
-        return Publisher.from(completables).flatMapCompletable(identity());
+        return from(completables).flatMapCompletable(identity());
     }
 
     /**
@@ -1320,7 +1322,7 @@ public abstract class Completable {
      * terminated successfully or any one of them has terminated with a failure.
      */
     public static Completable mergeAll(Iterable<? extends Completable> completables, int maxConcurrency) {
-        return Publisher.from(completables).flatMapCompletable(identity(), maxConcurrency);
+        return fromIterable(completables).flatMapCompletable(identity(), maxConcurrency);
     }
 
     /**
@@ -1344,7 +1346,7 @@ public abstract class Completable {
      * terminated successfully or any one of them has terminated with a failure.
      */
     public static Completable mergeAll(int maxConcurrency, Completable... completables) {
-        return Publisher.from(completables).flatMapCompletable(identity(), maxConcurrency);
+        return from(completables).flatMapCompletable(identity(), maxConcurrency);
     }
 
     /**
@@ -1380,7 +1382,7 @@ public abstract class Completable {
      * terminated successfully or any one of them has terminated with a failure.
      */
     public static Completable mergeAllDelayError(Iterable<? extends Completable> completables) {
-        return Publisher.from(completables).flatMapCompletableDelayError(identity());
+        return fromIterable(completables).flatMapCompletableDelayError(identity());
     }
 
     /**
@@ -1415,7 +1417,7 @@ public abstract class Completable {
      * terminated successfully or any one of them has terminated with a failure.
      */
     public static Completable mergeAllDelayError(Completable... completables) {
-        return Publisher.from(completables).flatMapCompletableDelayError(identity());
+        return from(completables).flatMapCompletableDelayError(identity());
     }
 
     /**
@@ -1448,7 +1450,7 @@ public abstract class Completable {
      * terminated successfully or any one of them has terminated with a failure.
      */
     public static Completable mergeAllDelayError(Iterable<? extends Completable> completables, int maxConcurrency) {
-        return Publisher.from(completables).flatMapCompletableDelayError(identity(), maxConcurrency);
+        return fromIterable(completables).flatMapCompletableDelayError(identity(), maxConcurrency);
     }
 
     /**
@@ -1481,7 +1483,7 @@ public abstract class Completable {
      * terminated successfully or any one of them has terminated with a failure.
      */
     public static Completable mergeAllDelayError(int maxConcurrency, Completable... completables) {
-        return Publisher.from(completables).flatMapCompletableDelayError(identity(), maxConcurrency);
+        return from(completables).flatMapCompletableDelayError(identity(), maxConcurrency);
     }
 
     //

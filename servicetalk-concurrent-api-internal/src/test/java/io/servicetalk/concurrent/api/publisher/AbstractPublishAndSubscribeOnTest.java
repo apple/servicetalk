@@ -32,7 +32,7 @@ import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.function.BiFunction;
 
 import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
-import static io.servicetalk.concurrent.api.Publisher.just;
+import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.api.completable.AbstractPublishAndSubscribeOnTest.verifyCapturedThreads;
 import static io.servicetalk.concurrent.internal.SignalOffloaders.threadBasedOffloaderFactory;
@@ -58,7 +58,7 @@ public abstract class AbstractPublishAndSubscribeOnTest {
         AtomicReferenceArray<Thread> capturedThreads = new AtomicReferenceArray<>(4);
 
         Publisher<String> original = new PublisherWithExecutor<>(originalSourceExecutorRule.executor(),
-                just("Hello"))
+                from("Hello"))
                 .doBeforeNext(__ -> capturedThreads.set(ORIGINAL_SUBSCRIBER_THREAD, currentThread()))
                 .doBeforeRequest(__ -> capturedThreads.set(ORIGINAL_SUBSCRIPTION_THREAD, currentThread()));
 

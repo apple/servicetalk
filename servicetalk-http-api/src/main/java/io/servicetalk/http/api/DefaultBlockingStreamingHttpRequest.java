@@ -20,7 +20,6 @@ import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.BlockingIterable;
 import io.servicetalk.concurrent.CloseableIterable;
 import io.servicetalk.concurrent.SingleSource.Processor;
-import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpDataSourceTranformations.HttpBufferFilterIterable;
 import io.servicetalk.http.api.HttpDataSourceTranformations.HttpBuffersAndTrailersIterable;
@@ -32,6 +31,7 @@ import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 
 import static io.servicetalk.concurrent.api.Processors.newSingleProcessor;
+import static io.servicetalk.concurrent.api.Publisher.fromIterable;
 import static io.servicetalk.concurrent.api.Single.success;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.concurrent.internal.BlockingIterables.from;
@@ -242,7 +242,7 @@ class DefaultBlockingStreamingHttpRequest<P> extends DefaultHttpRequestMetaData 
     @Override
     public StreamingHttpRequest toStreamingRequest() {
         return new DefaultStreamingHttpRequest<>(method(), requestTarget(), version(), headers(),
-                trailersSingle, allocator, Publisher.from(payloadBody));
+                trailersSingle, allocator, fromIterable(payloadBody));
     }
 
     @Override

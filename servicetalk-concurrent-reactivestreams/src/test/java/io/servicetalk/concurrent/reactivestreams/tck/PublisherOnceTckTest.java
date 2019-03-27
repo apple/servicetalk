@@ -19,11 +19,13 @@ import io.servicetalk.concurrent.api.Publisher;
 
 import org.testng.annotations.Test;
 
+import static io.servicetalk.concurrent.api.Publisher.from;
+
 @Test
 public class PublisherOnceTckTest extends AbstractPublisherTckTest<Integer> {
     @Override
     public Publisher<Integer> createServiceTalkPublisher(long elements) {
-        return Publisher.just(1);
+        return from(1);
     }
 
     @Override
