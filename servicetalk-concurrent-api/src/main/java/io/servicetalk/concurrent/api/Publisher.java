@@ -1234,9 +1234,9 @@ public abstract class Publisher<T> {
      * {@code keySelector} {@link Function}.
      * @see #groupBy(Function, int)
      */
-    public final <Key> Publisher<GroupedPublisher<Key, T>> groupByMulti(
+    public final <Key> Publisher<GroupedPublisher<Key, T>> groupToMany(
             Function<? super T, ? extends Iterator<? extends Key>> keySelector, int groupMaxQueueSize) {
-        return new PublisherGroupByMulti<>(this, keySelector, groupMaxQueueSize, executor);
+        return new PublisherGroupToMany<>(this, keySelector, groupMaxQueueSize, executor);
     }
 
     /**
@@ -1271,15 +1271,14 @@ public abstract class Publisher<T> {
      * {@code keySelector} {@link Function}.
      * @see #groupBy(Function, int)
      */
-    public final <Key> Publisher<GroupedPublisher<Key, T>> groupByMulti(
+    public final <Key> Publisher<GroupedPublisher<Key, T>> groupToMany(
             Function<? super T, ? extends Iterator<? extends Key>> keySelector, int groupMaxQueueSize,
             int expectedGroupCountHint) {
-        return new PublisherGroupByMulti<>(this, keySelector, groupMaxQueueSize, expectedGroupCountHint, executor);
+        return new PublisherGroupToMany<>(this, keySelector, groupMaxQueueSize, expectedGroupCountHint, executor);
     }
 
     /**
-     * Create a {@link Publisher} that allows exactly {@code expectedSubscribers} subscribes.
-     * The events from this {@link Publisher} object will be delivered to each {@link Subscriber}.
+     * Create a {@link Publisher} that multicasts all the signals to exactly {@code expectedSubscribers}.
      * <p>
      * Depending on {@link Subscription#request(long)} demand it is possible that data maybe queued before being
      * delivered to each {@link Subscriber}! For example if there are 2 {@link Subscriber}s and the first calls
@@ -1301,7 +1300,7 @@ public abstract class Publisher<T> {
      * before subscribing to this {@link Publisher}.
      * @return a {@link Publisher} that allows exactly {@code expectedSubscribers} subscribes.
      */
-    public final Publisher<T> multicast(int expectedSubscribers) {
+    public final Publisher<T> multicastToExactly(int expectedSubscribers) {
         return new MulticastPublisher<>(this, expectedSubscribers, executor);
     }
 
@@ -1332,7 +1331,7 @@ public abstract class Publisher<T> {
      * is no demand for data before the {@link Subscriber} will be discarded.
      * @return a {@link Publisher} that allows exactly {@code expectedSubscribers} subscribes.
      */
-    public final Publisher<T> multicast(int expectedSubscribers, int maxQueueSize) {
+    public final Publisher<T> multicastToExactly(int expectedSubscribers, int maxQueueSize) {
         return new MulticastPublisher<>(this, expectedSubscribers, maxQueueSize, executor);
     }
 

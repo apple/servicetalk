@@ -61,7 +61,7 @@ public class MulticastPublisherTest {
 
     @Test
     public void emitItemsAndThenError() {
-        Publisher<Integer> multicast = source.multicast(2);
+        Publisher<Integer> multicast = source.multicastToExactly(2);
         TestPublisherSubscriber<Integer> subscriber1 = new TestPublisherSubscriber<>();
         TestPublisherSubscriber<Integer> subscriber2 = new TestPublisherSubscriber<>();
         toSource(multicast).subscribe(subscriber1);
@@ -105,7 +105,7 @@ public class MulticastPublisherTest {
 
     @Test
     public void sourceSubscribeAfter() {
-        Publisher<Integer> multicast = source.multicast(2);
+        Publisher<Integer> multicast = source.multicastToExactly(2);
         TestPublisherSubscriber<Integer> subscriber1 = new TestPublisherSubscriber<>();
         TestPublisherSubscriber<Integer> subscriber2 = new TestPublisherSubscriber<>();
         toSource(multicast).subscribe(subscriber1);
@@ -128,7 +128,7 @@ public class MulticastPublisherTest {
     @Test
     public void sourceSubscribeBefore() {
         source = new TestPublisher<>(); // With auto-on-subscribe enabled
-        Publisher<Integer> multicast = source.multicast(2);
+        Publisher<Integer> multicast = source.multicastToExactly(2);
         TestPublisherSubscriber<Integer> subscriber1 = new TestPublisherSubscriber<>();
         TestPublisherSubscriber<Integer> subscriber2 = new TestPublisherSubscriber<>();
 
@@ -148,7 +148,7 @@ public class MulticastPublisherTest {
     @Test
     public void concurrentRequestN() throws InterruptedException {
         final int expectedSubscribers = 2000;
-        Publisher<Integer> multicast = source.multicast(expectedSubscribers, expectedSubscribers);
+        Publisher<Integer> multicast = source.multicastToExactly(expectedSubscribers, expectedSubscribers);
         @SuppressWarnings("unchecked")
         TestPublisherSubscriber<Integer>[] subscribers = (TestPublisherSubscriber<Integer>[])
                 new TestPublisherSubscriber[expectedSubscribers];
@@ -188,7 +188,7 @@ public class MulticastPublisherTest {
     @Test
     public void concurrentRequestNAndOnNext() throws BrokenBarrierException, InterruptedException {
         final int expectedSubscribers = 400;
-        Publisher<Integer> multicast = source.multicast(expectedSubscribers, expectedSubscribers);
+        Publisher<Integer> multicast = source.multicastToExactly(expectedSubscribers, expectedSubscribers);
         @SuppressWarnings("unchecked")
         TestPublisherSubscriber<Integer>[] subscribers = (TestPublisherSubscriber<Integer>[])
                 new TestPublisherSubscriber[expectedSubscribers];
@@ -259,15 +259,11 @@ public class MulticastPublisherTest {
 
     @Test
     public void reentryBothSubscriberRequestCountIsCorrect() {
-        Publisher<Integer> multicast = source.multicast(2);
+        Publisher<Integer> multicast = source.multicastToExactly(2);
         TestPublisherSubscriber<Integer> subscriber1 = new TestPublisherSubscriber<>();
         TestPublisherSubscriber<Integer> subscriber2 = new TestPublisherSubscriber<>();
-        toSource(multicast.doOnNext(n -> {
-            subscriber1.request(1);
-        })).subscribe(subscriber1);
-        toSource(multicast.doOnNext(n -> {
-            subscriber2.request(1);
-        })).subscribe(subscriber2);
+        toSource(multicast.doOnNext(n -> subscriber1.request(1))).subscribe(subscriber1);
+        toSource(multicast.doOnNext(n -> subscriber2.request(1))).subscribe(subscriber2);
 
         source.onSubscribe(subscription);
 
@@ -284,7 +280,7 @@ public class MulticastPublisherTest {
     }
 
     private void reentrySubscriberRequestCountIsCorrect(boolean firstIsReentry) {
-        Publisher<Integer> multicast = source.multicast(2);
+        Publisher<Integer> multicast = source.multicastToExactly(2);
         TestPublisherSubscriber<Integer> subscriber1 = new TestPublisherSubscriber<>();
         TestPublisherSubscriber<Integer> subscriber2 = new TestPublisherSubscriber<>();
         toSource(multicast.doOnNext(n -> {
@@ -324,7 +320,7 @@ public class MulticastPublisherTest {
 
     @Test
     public void reentryAndMultiQueueSupportsNull() {
-        Publisher<Integer> multicast = source.multicast(2);
+        Publisher<Integer> multicast = source.multicastToExactly(2);
         TestPublisherSubscriber<Integer> subscriber1 = new TestPublisherSubscriber<>();
         TestPublisherSubscriber<Integer> subscriber2 = new TestPublisherSubscriber<>();
         AtomicBoolean onNextCalled = new AtomicBoolean();
@@ -358,7 +354,7 @@ public class MulticastPublisherTest {
     @Test
     public void requestLongMax() {
         final int maxQueueSize = 1000;
-        Publisher<Integer> multicast = source.multicast(2, maxQueueSize);
+        Publisher<Integer> multicast = source.multicastToExactly(2, maxQueueSize);
         TestPublisherSubscriber<Integer> subscriber1 = new TestPublisherSubscriber<>();
         TestPublisherSubscriber<Integer> subscriber2 = new TestPublisherSubscriber<>();
         toSource(multicast).subscribe(subscriber1);
