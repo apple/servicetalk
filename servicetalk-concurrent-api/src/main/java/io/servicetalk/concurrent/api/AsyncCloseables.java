@@ -23,6 +23,7 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import static io.servicetalk.concurrent.api.Completable.failed;
 import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 import static java.util.function.Function.identity;
 
@@ -46,7 +47,7 @@ public final class AsyncCloseables {
      */
     public static Completable closeAsyncGracefully(AsyncCloseable closable, long timeout, TimeUnit timeoutUnit) {
         return closable.closeAsyncGracefully().idleTimeout(timeout, timeoutUnit).onErrorResume(
-                t -> t instanceof TimeoutException ? closable.closeAsync() : Completable.failed(t)
+                t -> t instanceof TimeoutException ? closable.closeAsync() : failed(t)
         );
     }
 
