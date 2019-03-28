@@ -28,7 +28,6 @@ import io.servicetalk.http.api.HttpClientFilterFactory;
 import io.servicetalk.http.api.HttpConnectionFilterFactory;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpRequestMetaData;
-import io.servicetalk.http.api.StreamingHttpClient.ReservedStreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpClientFilter;
 import io.servicetalk.http.api.StreamingHttpConnectionFilter;
 import io.servicetalk.http.api.StreamingHttpRequest;
@@ -66,7 +65,7 @@ public final class RetryingHttpRequesterFilter implements HttpClientFilterFactor
     }
 
     @Override
-    public StreamingHttpClientFilter create(final FilterableStreamingHttpClient<ReservedStreamingHttpConnection> client,
+    public StreamingHttpClientFilter create(final FilterableStreamingHttpClient client,
                                             final Publisher<Object> lbEvents) {
         return new StreamingHttpClientFilter(client) {
 

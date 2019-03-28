@@ -23,7 +23,6 @@ import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpClientFilterFactory;
 import io.servicetalk.http.api.HttpConnectionFilterFactory;
 import io.servicetalk.http.api.HttpExecutionStrategy;
-import io.servicetalk.http.api.StreamingHttpClient.ReservedStreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpClientFilter;
 import io.servicetalk.http.api.StreamingHttpConnectionFilter;
 import io.servicetalk.http.api.StreamingHttpRequest;
@@ -73,7 +72,7 @@ public final class TimeoutHttpRequesterFilter implements HttpClientFilterFactory
 
     @Override
     public StreamingHttpClientFilter create(
-            final FilterableStreamingHttpClient<ReservedStreamingHttpConnection> client,
+            final FilterableStreamingHttpClient client,
             final Publisher<Object> lbEvents) {
         return new StreamingHttpClientFilter(client) {
             @Override

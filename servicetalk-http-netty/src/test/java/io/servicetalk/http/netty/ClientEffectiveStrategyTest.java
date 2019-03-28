@@ -27,7 +27,6 @@ import io.servicetalk.http.api.FilterableStreamingHttpClient;
 import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.StreamingHttpClient;
-import io.servicetalk.http.api.StreamingHttpClient.ReservedStreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpClientFilter;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequester;
@@ -435,7 +434,7 @@ public class ClientEffectiveStrategyTest {
 
         private final InvokingThreadsRecorder<ClientOffloadPoint> holder;
 
-        ClientInvokingThreadRecorder(final FilterableStreamingHttpClient<ReservedStreamingHttpConnection> delegate,
+        ClientInvokingThreadRecorder(final FilterableStreamingHttpClient delegate,
                                      InvokingThreadsRecorder<ClientOffloadPoint> holder) {
             super(delegate);
             this.holder = requireNonNull(holder);

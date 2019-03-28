@@ -19,7 +19,6 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.http.api.StreamingHttpClient.ReservedStreamingHttpConnection;
 
 import java.util.function.Predicate;
 
@@ -33,8 +32,8 @@ final class ConditionalHttpClientFilter extends StreamingHttpClientFilter {
     private final ListenableAsyncCloseable closeable;
 
     ConditionalHttpClientFilter(final Predicate<StreamingHttpRequest> predicate,
-                                final FilterableStreamingHttpClient<ReservedStreamingHttpConnection> predicatedClient,
-                                final FilterableStreamingHttpClient<ReservedStreamingHttpConnection> client) {
+                                final FilterableStreamingHttpClient predicatedClient,
+                                final FilterableStreamingHttpClient client) {
         super(client);
         this.predicate = predicate;
         this.predicatedClient = predicatedClient;

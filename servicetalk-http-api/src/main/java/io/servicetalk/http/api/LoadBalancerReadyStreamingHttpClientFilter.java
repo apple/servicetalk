@@ -24,7 +24,6 @@ import io.servicetalk.concurrent.api.BiIntFunction;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.http.api.StreamingHttpClient.ReservedStreamingHttpConnection;
 
 import static io.servicetalk.concurrent.api.Completable.failed;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
@@ -47,8 +46,7 @@ public final class LoadBalancerReadyStreamingHttpClientFilter extends StreamingH
      * @param next The next {@link StreamingHttpClient} in the filter chain.
      */
     public LoadBalancerReadyStreamingHttpClientFilter(
-            int maxRetryCount, Publisher<Object> loadBalancerEvents,
-            FilterableStreamingHttpClient<ReservedStreamingHttpConnection> next) {
+            int maxRetryCount, Publisher<Object> loadBalancerEvents, FilterableStreamingHttpClient next) {
         super(next);
         if (maxRetryCount <= 0) {
             throw new IllegalArgumentException("maxRetryCount " + maxRetryCount + " (expected >0)");

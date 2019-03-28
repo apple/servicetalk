@@ -17,7 +17,6 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.http.api.StreamingHttpClient.ReservedStreamingHttpConnection;
 
 import static java.util.Objects.requireNonNull;
 
@@ -34,8 +33,7 @@ public interface HttpClientFilterFactory {
      * @param lbEvents the {@link LoadBalancer} events stream
      * @return {@link StreamingHttpClientFilter} using the provided {@link StreamingHttpClientFilter}.
      */
-    StreamingHttpClientFilter create(FilterableStreamingHttpClient<ReservedStreamingHttpConnection> client,
-                                     Publisher<Object> lbEvents);
+    StreamingHttpClientFilter create(FilterableStreamingHttpClient client, Publisher<Object> lbEvents);
 
     /**
      * Returns a composed function that first applies the {@code before} function to its input, and then applies

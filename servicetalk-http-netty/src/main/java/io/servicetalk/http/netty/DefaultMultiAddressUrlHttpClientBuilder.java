@@ -39,10 +39,10 @@ import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.http.api.MultiAddressHttpClientBuilder;
 import io.servicetalk.http.api.MultiAddressHttpClientFilterFactory;
+import io.servicetalk.http.api.ReservedStreamingHttpConnection;
 import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.http.api.SslConfigProvider;
 import io.servicetalk.http.api.StreamingHttpClient;
-import io.servicetalk.http.api.StreamingHttpClient.ReservedStreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.StreamingHttpResponse;
@@ -117,7 +117,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder extends MultiAddressHttpClie
             CachingKeyFactory keyFactory = closeables.prepend(new CachingKeyFactory(sslConfigProvider));
             HttpExecutionStrategy strategy = buildContext.executionStrategy();
 
-            FilterableStreamingHttpClient<ReservedStreamingHttpConnection> urlClient = closeables.prepend(
+            FilterableStreamingHttpClient urlClient = closeables.prepend(
                     new StreamingUrlHttpClient(buildContext.executionContext, clientFactory, keyFactory,
                             strategy, buildContext.reqRespFactory));
 
@@ -213,8 +213,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder extends MultiAddressHttpClie
      * Creates a new {@link SingleAddressHttpClientBuilder} with appropriate {@link SslConfig} for specified
      * {@link HostAndPort}.
      */
-    private static final class ClientFactory implements Function<UrlKey,
-            FilterableStreamingHttpClient<ReservedStreamingHttpConnection>> {
+    private static final class ClientFactory implements Function<UrlKey, FilterableStreamingHttpClient> {
 
         private final DefaultSingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builderTemplate;
         private final SslConfigProvider sslConfigProvider;
@@ -268,17 +267,16 @@ final class DefaultMultiAddressUrlHttpClientBuilder extends MultiAddressHttpClie
         }
     }
 
-    private static final class StreamingUrlHttpClient implements
-                                                FilterableStreamingHttpClient<ReservedStreamingHttpConnection> {
+    private static final class StreamingUrlHttpClient implements FilterableStreamingHttpClient {
         private final ExecutionContext executionContext;
         private final StreamingHttpRequestResponseFactory reqRespFactory;
-        private final ClientGroup<UrlKey, FilterableStreamingHttpClient<ReservedStreamingHttpConnection>> group;
+        private final ClientGroup<UrlKey, FilterableStreamingHttpClient> group;
         private final CachingKeyFactory keyFactory;
         private final ListenableAsyncCloseable closeable;
         private final HttpExecutionStrategy strategy;
 
         StreamingUrlHttpClient(final ExecutionContext executionContext,
-                   final Function<UrlKey, FilterableStreamingHttpClient<ReservedStreamingHttpConnection>> clientFactory,
+                               final Function<UrlKey, FilterableStreamingHttpClient> clientFactory,
                                final CachingKeyFactory keyFactory,
                                final HttpExecutionStrategy strategy,
                                final StreamingHttpRequestResponseFactory reqRespFactory) {
@@ -293,7 +291,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder extends MultiAddressHttpClie
             this.executionContext = requireNonNull(executionContext);
         }
 
-        private FilterableStreamingHttpClient<ReservedStreamingHttpConnection> selectClient(
+        private FilterableStreamingHttpClient selectClient(
                 HttpRequestMetaData metaData) {
             return group.get(keyFactory.apply(metaData));
         }

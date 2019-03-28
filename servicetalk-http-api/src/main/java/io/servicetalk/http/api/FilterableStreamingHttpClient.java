@@ -19,11 +19,8 @@ import io.servicetalk.concurrent.api.Single;
 
 /**
  * A {@link StreamingHttpClient} that supports filtering.
- *
- * @param <T> The type of {@link FilterableReservedStreamingHttpConnection}.
  */
-public interface FilterableStreamingHttpClient<T extends FilterableReservedStreamingHttpConnection> extends
-                                                                                                StreamingHttpRequester {
+public interface FilterableStreamingHttpClient extends StreamingHttpRequester {
     /**
      * Reserve a {@link StreamingHttpConnection} based on provided {@link HttpRequestMetaData}.
      *
@@ -33,5 +30,6 @@ public interface FilterableStreamingHttpClient<T extends FilterableReservedStrea
      * For example this may provide some insight into shard or other info.
      * @return a {@link Single} that provides the {@link FilterableReservedStreamingHttpConnection} upon completion.
      */
-    Single<T> reserveConnection(HttpExecutionStrategy strategy, HttpRequestMetaData metaData);
+    Single<ReservedStreamingHttpConnection> reserveConnection(HttpExecutionStrategy strategy,
+                                                              HttpRequestMetaData metaData);
 }

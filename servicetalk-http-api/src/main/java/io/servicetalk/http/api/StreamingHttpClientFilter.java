@@ -17,7 +17,6 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.http.api.StreamingHttpClient.ReservedStreamingHttpConnection;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.ExecutionStrategy;
 
@@ -27,16 +26,15 @@ import static java.util.Objects.requireNonNull;
 /**
  * A {@link StreamingHttpClient} that delegates all methods to a different {@link StreamingHttpClient}.
  */
-public class StreamingHttpClientFilter implements
-                                       FilterableStreamingHttpClient<ReservedStreamingHttpConnection> {
-    private final FilterableStreamingHttpClient<ReservedStreamingHttpConnection> delegate;
+public class StreamingHttpClientFilter implements FilterableStreamingHttpClient {
+    private final FilterableStreamingHttpClient delegate;
 
     /**
      * Create a new instance.
      *
      * @param delegate The {@link FilterableStreamingHttpClient} to delegate all calls to.
      */
-    protected StreamingHttpClientFilter(final FilterableStreamingHttpClient<ReservedStreamingHttpConnection> delegate) {
+    protected StreamingHttpClientFilter(final FilterableStreamingHttpClient delegate) {
         this.delegate = requireNonNull(delegate);
     }
 
@@ -102,7 +100,7 @@ public class StreamingHttpClientFilter implements
      *
      * @return the {@link FilterableStreamingHttpClient} this method delegates to.
      */
-    protected final FilterableStreamingHttpClient<ReservedStreamingHttpConnection> delegate() {
+    protected final FilterableStreamingHttpClient delegate() {
         return delegate;
     }
 

@@ -26,8 +26,8 @@ import io.servicetalk.http.api.HttpConnectionFilterFactory;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpHeaderNames;
 import io.servicetalk.http.api.HttpRequestMetaData;
+import io.servicetalk.http.api.ReservedStreamingHttpConnection;
 import io.servicetalk.http.api.ReservedStreamingHttpConnectionFilter;
-import io.servicetalk.http.api.StreamingHttpClient.ReservedStreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpClientFilter;
 import io.servicetalk.http.api.StreamingHttpConnectionFilter;
 import io.servicetalk.http.api.StreamingHttpRequest;
@@ -124,7 +124,7 @@ public final class RedirectingHttpRequesterFilter implements HttpClientFilterFac
     }
 
     @Override
-    public StreamingHttpClientFilter create(final FilterableStreamingHttpClient<ReservedStreamingHttpConnection> client,
+    public StreamingHttpClientFilter create(final FilterableStreamingHttpClient client,
                                             final Publisher<Object> lbEvents) {
         return new StreamingHttpClientFilter(client) {
 

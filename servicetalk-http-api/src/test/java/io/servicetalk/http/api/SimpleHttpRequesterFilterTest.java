@@ -17,7 +17,6 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.http.api.StreamingHttpClient.ReservedStreamingHttpConnection;
 import io.servicetalk.transport.api.ConnectionContext;
 
 import org.junit.Before;
@@ -66,9 +65,8 @@ public class SimpleHttpRequesterFilterTest extends AbstractHttpRequesterFilterTe
     private static final class HeaderEnrichingRequestFilter implements HttpClientFilterFactory,
                                                                        HttpConnectionFilterFactory {
         @Override
-        public StreamingHttpClientFilter create(
-                final FilterableStreamingHttpClient<ReservedStreamingHttpConnection> client,
-                final Publisher<Object> lbEvents) {
+        public StreamingHttpClientFilter create(final FilterableStreamingHttpClient client,
+                                                final Publisher<Object> lbEvents) {
             return new StreamingHttpClientFilter(client) {
                 @Override
                 protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
@@ -146,9 +144,8 @@ public class SimpleHttpRequesterFilterTest extends AbstractHttpRequesterFilterTe
         AtomicInteger requestCalls = new AtomicInteger();
 
         @Override
-        public StreamingHttpClientFilter create(
-                final FilterableStreamingHttpClient<ReservedStreamingHttpConnection> client,
-                final Publisher<Object> lbEvents) {
+        public StreamingHttpClientFilter create(final FilterableStreamingHttpClient client,
+                                                final Publisher<Object> lbEvents) {
             return new StreamingHttpClientFilter(client) {
 
                 @Override
@@ -215,9 +212,8 @@ public class SimpleHttpRequesterFilterTest extends AbstractHttpRequesterFilterTe
      */
     private static final class SecurityEnforcingFilter implements HttpClientFilterFactory, HttpConnectionFilterFactory {
         @Override
-        public StreamingHttpClientFilter create(
-                final FilterableStreamingHttpClient<ReservedStreamingHttpConnection> client,
-                final Publisher<Object> lbEvents) {
+        public StreamingHttpClientFilter create(final FilterableStreamingHttpClient client,
+                                                final Publisher<Object> lbEvents) {
             return new StreamingHttpClientFilter(client) {
                 @Override
                 public Single<ReservedStreamingHttpConnection> reserveConnection(

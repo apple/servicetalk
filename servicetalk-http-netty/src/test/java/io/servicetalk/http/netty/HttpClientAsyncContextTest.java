@@ -26,7 +26,6 @@ import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.http.api.StreamingHttpClient;
-import io.servicetalk.http.api.StreamingHttpClient.ReservedStreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpClientFilter;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequester;
@@ -115,7 +114,7 @@ public class HttpClientAsyncContextTest {
     private static final class TestStreamingHttpClientFilter extends StreamingHttpClientFilter {
         private final Queue<Throwable> errorQueue;
 
-        TestStreamingHttpClientFilter(final FilterableStreamingHttpClient<ReservedStreamingHttpConnection> delegate,
+        TestStreamingHttpClientFilter(final FilterableStreamingHttpClient delegate,
                                       Queue<Throwable> errorQueue) {
             super(delegate);
             this.errorQueue = errorQueue;

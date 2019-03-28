@@ -15,12 +15,7 @@
  */
 package io.servicetalk.http.api;
 
-import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.http.api.BlockingHttpClient.ReservedBlockingHttpConnection;
-import io.servicetalk.http.api.StreamingHttpClient.ReservedStreamingHttpConnection;
-
-import static io.servicetalk.http.api.BlockingStreamingHttpClient.ReservedBlockingStreamingHttpConnection;
 
 /**
  * Provides a means to issue requests against HTTP service. The implementation is free to maintain a collection of
@@ -81,33 +76,5 @@ public interface HttpClient extends HttpRequester {
      */
     default BlockingHttpClient asBlockingClient() {
         return asStreamingClient().asBlockingClient();
-    }
-
-    /**
-     * A special type of {@link HttpConnection} for the exclusive use of the caller of
-     * {@link #reserveConnection(HttpRequestMetaData)} and
-     * {@link #reserveConnection(HttpExecutionStrategy, HttpRequestMetaData)}.
-     */
-    interface ReservedHttpConnection extends HttpConnection {
-        /**
-         * Releases this reserved {@link ReservedHttpConnection} to be used for subsequent requests.
-         * This method must be idempotent, i.e. calling multiple times must not have side-effects.
-         *
-         * @return the {@code Completable} that is notified on releaseAsync.
-         */
-        Completable releaseAsync();
-
-        @Override
-        ReservedStreamingHttpConnection asStreamingConnection();
-
-        @Override
-        default ReservedBlockingStreamingHttpConnection asBlockingStreamingConnection() {
-            return asStreamingConnection().asBlockingStreamingConnection();
-        }
-
-        @Override
-        default ReservedBlockingHttpConnection asBlockingConnection() {
-            return asStreamingConnection().asBlockingConnection();
-        }
     }
 }

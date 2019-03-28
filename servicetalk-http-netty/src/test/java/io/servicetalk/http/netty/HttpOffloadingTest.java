@@ -27,6 +27,7 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpServiceContext;
+import io.servicetalk.http.api.ReservedStreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpRequest;
@@ -171,7 +172,7 @@ public class HttpOffloadingTest {
     @Test
     public void reserveConnectionIsOffloaded() throws Exception {
         toSource(client.reserveConnection(client.get("/")).doAfterFinally(terminated::countDown))
-                .subscribe(new SingleSource.Subscriber<StreamingHttpClient.ReservedStreamingHttpConnection>() {
+                .subscribe(new SingleSource.Subscriber<ReservedStreamingHttpConnection>() {
                     @Override
                     public void onSubscribe(final Cancellable cancellable) {
                         if (inEventLoop().test(currentThread())) {
@@ -181,7 +182,7 @@ public class HttpOffloadingTest {
                     }
 
                     @Override
-                    public void onSuccess(@Nullable final StreamingHttpClient.ReservedStreamingHttpConnection result) {
+                    public void onSuccess(@Nullable final ReservedStreamingHttpConnection result) {
                         if (result == null) {
                             errors.add(new AssertionError("Reserved connection is null."));
                             return;

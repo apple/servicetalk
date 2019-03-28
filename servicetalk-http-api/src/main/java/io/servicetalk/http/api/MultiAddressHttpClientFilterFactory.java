@@ -18,7 +18,6 @@ package io.servicetalk.http.api;
 import io.servicetalk.client.api.GroupKey;
 import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.http.api.StreamingHttpClient.ReservedStreamingHttpConnection;
 
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -43,8 +42,7 @@ public interface MultiAddressHttpClientFilterFactory<U> {
      * @param lbEvents the {@link LoadBalancer} events stream
      * @return the filtered {@link FilterableStreamingHttpClient}
      */
-    StreamingHttpClientFilter create(U address, FilterableStreamingHttpClient<ReservedStreamingHttpConnection> client,
-                                     Publisher<Object> lbEvents);
+    StreamingHttpClientFilter create(U address, FilterableStreamingHttpClient client, Publisher<Object> lbEvents);
 
     /**
      * Returns a composed function that first applies the {@code before} function to its input, and then applies
@@ -94,8 +92,7 @@ public interface MultiAddressHttpClientFilterFactory<U> {
      * @return the resulting {@link MultiAddressHttpClientFilterFactory}
      */
     static <U> MultiAddressHttpClientFilterFactory<U> from(
-            BiFunction<U, FilterableStreamingHttpClient<ReservedStreamingHttpConnection>,
-                    StreamingHttpClientFilter> function) {
+            BiFunction<U, FilterableStreamingHttpClient, StreamingHttpClientFilter> function) {
         requireNonNull(function);
         return (address, client, __) -> function.apply(address, client);
     }
@@ -109,8 +106,7 @@ public interface MultiAddressHttpClientFilterFactory<U> {
      * @return A {@link HttpClientFilterFactory} that uses the passed filter {@link Function}.
      */
     static <U> MultiAddressHttpClientFilterFactory<U> from(
-            Function<FilterableStreamingHttpClient<ReservedStreamingHttpConnection>,
-                    StreamingHttpClientFilter> function) {
+            Function<FilterableStreamingHttpClient, StreamingHttpClientFilter> function) {
         requireNonNull(function);
         return (__, client, ___) -> function.apply(client);
     }

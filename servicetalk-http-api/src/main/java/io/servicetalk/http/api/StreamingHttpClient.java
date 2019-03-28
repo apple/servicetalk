@@ -16,20 +16,12 @@
 package io.servicetalk.http.api;
 
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.http.api.BlockingStreamingHttpClient.ReservedBlockingStreamingHttpConnection;
-import io.servicetalk.http.api.HttpClient.ReservedHttpConnection;
-import io.servicetalk.http.api.StreamingHttpClientToBlockingHttpClient.ReservedStreamingHttpConnectionToReservedBlockingHttpConnection;
-import io.servicetalk.http.api.StreamingHttpClientToBlockingStreamingHttpClient.ReservedStreamingHttpConnectionToBlockingStreaming;
-import io.servicetalk.http.api.StreamingHttpClientToHttpClient.ReservedStreamingHttpConnectionToReservedHttpConnection;
-
-import static io.servicetalk.http.api.BlockingHttpClient.ReservedBlockingHttpConnection;
-import static io.servicetalk.http.api.StreamingHttpClient.ReservedStreamingHttpConnection;
 
 /**
  * The equivalent of {@link HttpClient} but that accepts {@link StreamingHttpRequest} and returns
  * {@link StreamingHttpResponse}.
  */
-public interface StreamingHttpClient extends FilterableStreamingHttpClient<ReservedStreamingHttpConnection> {
+public interface StreamingHttpClient extends FilterableStreamingHttpClient {
     /**
      * Send a {@code request}.
      *
@@ -79,28 +71,5 @@ public interface StreamingHttpClient extends FilterableStreamingHttpClient<Reser
      */
     default BlockingHttpClient asBlockingClient() {
         return new StreamingHttpClientToBlockingHttpClient(this);
-    }
-
-    /**
-     * A special type of {@link StreamingHttpConnection} for the exclusive use of the caller of
-     * {@link #reserveConnection(HttpRequestMetaData)} and
-     * {@link #reserveConnection(HttpExecutionStrategy, HttpRequestMetaData)}.
-     */
-    interface ReservedStreamingHttpConnection extends StreamingHttpConnection,
-                                                      FilterableReservedStreamingHttpConnection {
-        @Override
-        default ReservedHttpConnection asConnection() {
-            return new ReservedStreamingHttpConnectionToReservedHttpConnection(this);
-        }
-
-        @Override
-        default ReservedBlockingStreamingHttpConnection asBlockingStreamingConnection() {
-            return new ReservedStreamingHttpConnectionToBlockingStreaming(this);
-        }
-
-        @Override
-        default ReservedBlockingHttpConnection asBlockingConnection() {
-            return new ReservedStreamingHttpConnectionToReservedBlockingHttpConnection(this);
-        }
     }
 }

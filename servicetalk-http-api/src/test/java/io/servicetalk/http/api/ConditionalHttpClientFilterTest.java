@@ -19,7 +19,6 @@ import io.servicetalk.concurrent.api.AsyncCloseable;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.http.api.StreamingHttpClient.ReservedStreamingHttpConnection;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -43,7 +42,7 @@ public class ConditionalHttpClientFilterTest extends AbstractConditionalHttpFilt
 
         @Override
         public StreamingHttpClientFilter create(
-                final FilterableStreamingHttpClient<ReservedStreamingHttpConnection> client,
+                final FilterableStreamingHttpClient client,
                 final Publisher<Object> lbEvents) {
             return new ConditionalHttpClientFilter(TEST_REQ_PREDICATE, new StreamingHttpClientFilter(client) {
                 @Override

@@ -23,7 +23,7 @@ import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.HttpResponseStatus;
-import io.servicetalk.http.api.StreamingHttpClient.ReservedStreamingHttpConnection;
+import io.servicetalk.http.api.ReservedStreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.StreamingHttpResponse;
@@ -35,7 +35,7 @@ import java.util.function.Function;
 import static io.servicetalk.client.api.internal.RequestConcurrencyController.Result.Accepted;
 import static java.util.Objects.requireNonNull;
 
-final class LoadBalancedStreamingHttpClient implements FilterableStreamingHttpClient<ReservedStreamingHttpConnection> {
+final class LoadBalancedStreamingHttpClient implements FilterableStreamingHttpClient {
 
     private static final Function<LoadBalancedStreamingHttpConnection, LoadBalancedStreamingHttpConnection>
             SELECTOR_FOR_REQUEST = conn -> conn.tryRequest() == Accepted ? conn : null;

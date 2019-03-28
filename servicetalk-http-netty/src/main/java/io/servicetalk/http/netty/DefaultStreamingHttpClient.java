@@ -22,6 +22,7 @@ import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.HttpResponseStatus;
+import io.servicetalk.http.api.ReservedStreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
@@ -30,10 +31,10 @@ import io.servicetalk.transport.api.ExecutionContext;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 
 final class DefaultStreamingHttpClient implements StreamingHttpClient {
-    private final FilterableStreamingHttpClient<ReservedStreamingHttpConnection> client;
+    private final FilterableStreamingHttpClient client;
     private final HttpExecutionStrategy strategy;
 
-    DefaultStreamingHttpClient(FilterableStreamingHttpClient<ReservedStreamingHttpConnection> filteredClient) {
+    DefaultStreamingHttpClient(FilterableStreamingHttpClient filteredClient) {
         strategy = filteredClient.computeExecutionStrategy(defaultStrategy());
         client = filteredClient;
     }

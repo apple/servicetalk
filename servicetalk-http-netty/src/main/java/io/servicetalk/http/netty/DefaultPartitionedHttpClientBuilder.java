@@ -44,8 +44,8 @@ import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.http.api.PartitionHttpClientBuilderFilterFunction;
 import io.servicetalk.http.api.PartitionedHttpClientBuilder;
+import io.servicetalk.http.api.ReservedStreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpClient;
-import io.servicetalk.http.api.StreamingHttpClient.ReservedStreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.StreamingHttpRequests;
@@ -87,7 +87,7 @@ class DefaultPartitionedHttpClientBuilder<U, R> extends PartitionedHttpClientBui
     public StreamingHttpClient buildStreaming() {
         final HttpClientBuildContext<U, R> buildContext = builderTemplate.copyBuildCtx();
 
-        final PartitionedClientFactory<U, R, FilterableStreamingHttpClient<ReservedStreamingHttpConnection>>
+        final PartitionedClientFactory<U, R, FilterableStreamingHttpClient>
                 clientFactory = (pa, sd) -> {
             // build new context, user may have changed anything on the builder from the filter
             DefaultSingleAddressHttpClientBuilder<U, R> builder = buildContext.builder.copyBuildCtx().builder;
@@ -107,17 +107,14 @@ class DefaultPartitionedHttpClientBuilder<U, R> extends PartitionedHttpClientBui
     }
 
     private static final class DefaultPartitionedStreamingHttpClientFilter<U, R> implements
-                                                     FilterableStreamingHttpClient<ReservedStreamingHttpConnection> {
+                                                                                 FilterableStreamingHttpClient {
 
-        private static final Function<PartitionAttributes,
-                FilterableStreamingHttpClient<ReservedStreamingHttpConnection>> PARTITION_CLOSED = pa ->
+        private static final Function<PartitionAttributes, FilterableStreamingHttpClient> PARTITION_CLOSED = pa ->
                 new NoopPartitionClient(new ClosedPartitionException(pa, "Partition closed "));
-        private static final Function<PartitionAttributes,
-                FilterableStreamingHttpClient<ReservedStreamingHttpConnection>> PARTITION_UNKNOWN = pa ->
+        private static final Function<PartitionAttributes, FilterableStreamingHttpClient> PARTITION_UNKNOWN = pa ->
                 new NoopPartitionClient(new UnknownPartitionException(pa, "Partition unknown"));
 
-        private final ClientGroup<PartitionAttributes,
-                FilterableStreamingHttpClient<ReservedStreamingHttpConnection>> group;
+        private final ClientGroup<PartitionAttributes, FilterableStreamingHttpClient> group;
         private final Function<HttpRequestMetaData, PartitionAttributesBuilder> pabf;
         private final ExecutionContext executionContext;
         private final StreamingHttpRequestResponseFactory reqRespFactory;
@@ -126,8 +123,7 @@ class DefaultPartitionedHttpClientBuilder<U, R> extends PartitionedHttpClientBui
         DefaultPartitionedStreamingHttpClientFilter(
                 final Publisher<? extends PartitionedServiceDiscovererEvent<R>> psdEvents,
                 final int psdMaxQueueSize,
-                final PartitionedClientFactory<U, R,
-                        FilterableStreamingHttpClient<ReservedStreamingHttpConnection>> clientFactory,
+                final PartitionedClientFactory<U, R, FilterableStreamingHttpClient> clientFactory,
                 final Function<HttpRequestMetaData, PartitionAttributesBuilder> pabf,
                 final StreamingHttpRequestResponseFactory reqRespFactory,
                 final ExecutionContext executionContext,
@@ -140,7 +136,7 @@ class DefaultPartitionedHttpClientBuilder<U, R> extends PartitionedHttpClientBui
             this.reqRespFactory = requireNonNull(reqRespFactory);
         }
 
-        private FilterableStreamingHttpClient<ReservedStreamingHttpConnection> selectClient(
+        private FilterableStreamingHttpClient selectClient(
                 final HttpRequestMetaData metaData) {
             return group.get(pabf.apply(metaData).build());
         }
@@ -200,8 +196,7 @@ class DefaultPartitionedHttpClientBuilder<U, R> extends PartitionedHttpClientBui
         }
     }
 
-    private static final class NoopPartitionClient implements
-                                                   FilterableStreamingHttpClient<ReservedStreamingHttpConnection> {
+    private static final class NoopPartitionClient implements FilterableStreamingHttpClient {
         private final RuntimeException ex;
 
         NoopPartitionClient(RuntimeException ex) {

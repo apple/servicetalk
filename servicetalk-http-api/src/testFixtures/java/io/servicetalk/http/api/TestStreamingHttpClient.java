@@ -19,7 +19,6 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.http.api.StreamingHttpClient.ReservedStreamingHttpConnection;
 import io.servicetalk.transport.api.ExecutionContext;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.emptyAsyncCloseable;
@@ -37,7 +36,7 @@ public final class TestStreamingHttpClient {
             final ExecutionContext executionContext,
             final HttpClientFilterFactory factory) {
         final StreamingHttpClientFilter filterChain = factory
-                .create(new FilterableStreamingHttpClient<ReservedStreamingHttpConnection>() {
+                .create(new FilterableStreamingHttpClient() {
                     private final ListenableAsyncCloseable closeable = emptyAsyncCloseable();
 
                     @Override
@@ -85,7 +84,7 @@ public final class TestStreamingHttpClient {
         return from(filterChain);
     }
 
-    public static StreamingHttpClient from(FilterableStreamingHttpClient<ReservedStreamingHttpConnection> filterChain) {
+    public static StreamingHttpClient from(FilterableStreamingHttpClient filterChain) {
         return new StreamingHttpClient() {
             private final HttpExecutionStrategy strategy = filterChain.computeExecutionStrategy(defaultStrategy());
 

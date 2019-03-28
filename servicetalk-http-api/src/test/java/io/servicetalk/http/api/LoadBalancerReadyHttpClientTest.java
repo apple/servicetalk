@@ -20,7 +20,6 @@ import io.servicetalk.client.api.NoAvailableHostException;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
-import io.servicetalk.http.api.StreamingHttpClient.ReservedStreamingHttpConnection;
 import io.servicetalk.transport.api.ExecutionContext;
 
 import org.junit.Before;

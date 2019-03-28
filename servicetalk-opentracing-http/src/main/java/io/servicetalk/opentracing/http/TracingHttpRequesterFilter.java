@@ -23,7 +23,6 @@ import io.servicetalk.http.api.HttpClientFilterFactory;
 import io.servicetalk.http.api.HttpConnectionFilterFactory;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpRequestMetaData;
-import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpClientFilter;
 import io.servicetalk.http.api.StreamingHttpConnectionFilter;
 import io.servicetalk.http.api.StreamingHttpRequest;
@@ -71,9 +70,8 @@ public class TracingHttpRequesterFilter extends AbstractTracingHttpFilter implem
     }
 
     @Override
-    public final StreamingHttpClientFilter create(
-            final FilterableStreamingHttpClient<StreamingHttpClient.ReservedStreamingHttpConnection> client,
-            final Publisher<Object> lbEvents) {
+    public final StreamingHttpClientFilter create(final FilterableStreamingHttpClient client,
+                                                  final Publisher<Object> lbEvents) {
         return new StreamingHttpClientFilter(client) {
             @Override
             protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
