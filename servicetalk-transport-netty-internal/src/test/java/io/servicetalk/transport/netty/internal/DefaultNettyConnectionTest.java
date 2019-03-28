@@ -314,7 +314,7 @@ public class DefaultNettyConnectionTest {
 
     @Test
     public void testUpdateFlushStrategy() {
-        writeListener.listen(conn.write(Publisher.from(newBuffer("Hello"))));
+        writeListener.listen(conn.write(from(newBuffer("Hello"))));
         writeListener.verifyCompletion();
         pollChannelAndVerifyWrites("Hello"); // Flush on each (default)
 
@@ -331,7 +331,7 @@ public class DefaultNettyConnectionTest {
         c.cancel();
 
         writeListener.reset();
-        writeListener.listen(conn.write(Publisher.from(newBuffer("Hello3"))));
+        writeListener.listen(conn.write(from(newBuffer("Hello3"))));
         writeListener.verifyCompletion();
         pollChannelAndVerifyWrites("Hello3"); // Reverted to flush on each
     }

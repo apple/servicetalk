@@ -131,7 +131,7 @@ final class TestServiceStreaming implements StreamingHttpService {
                                                          final StreamingHttpResponseFactory factory) {
         final Buffer responseContent = context.executionContext().bufferAllocator().fromUtf8(
                 "Testing" + ++counter + "\n");
-        return factory.ok().version(req.version()).payloadBody(Publisher.from(responseContent));
+        return factory.ok().version(req.version()).payloadBody(from(responseContent));
     }
 
     private StreamingHttpResponse newTestCounterResponseWithLastPayloadChunk(
@@ -139,7 +139,7 @@ final class TestServiceStreaming implements StreamingHttpService {
             final StreamingHttpResponseFactory factory) {
         final Buffer responseContent = context.executionContext().bufferAllocator().fromUtf8(
                 "Testing" + ++counter + "\n");
-        return factory.ok().version(req.version()).payloadBody(Publisher.from(responseContent));
+        return factory.ok().version(req.version()).payloadBody(from(responseContent));
     }
 
     private static StreamingHttpResponse newLargeLastChunkResponse(
