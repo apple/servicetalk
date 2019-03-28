@@ -122,10 +122,9 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> extends HttpCon
         }
 
         return (reservedConnectionsPipelineEnabled(roConfig) ?
+               buildForPipelined(executionContext, resolvedAddress, roConfig, filterFactory, reqRespFactory, strategy) :
                 buildForNonPipelined(executionContext, resolvedAddress, roConfig, filterFactory, reqRespFactory,
-                        strategy) :
-                buildForPipelined(executionContext, resolvedAddress, roConfig, filterFactory, reqRespFactory, strategy))
-                .map(DefaultStreamingHttpConnection::new);
+                        strategy)).map(DefaultStreamingHttpConnection::new);
     }
 
     // TODO(derek): Temporary, so we can re-enable the ability to create non-pipelined connections for perf testing.
