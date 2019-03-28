@@ -27,7 +27,6 @@ import javax.annotation.Nonnull;
 
 import static java.util.Objects.requireNonNull;
 
-// TODO(scott): make available outside this package to use in other ServiceDiscoverer tests
 public final class ServiceDiscovererTestSubscriber<T> implements Subscriber<ServiceDiscovererEvent<T>> {
     private final CountDownLatch latch;
     private final AtomicReference<Throwable> throwableRef;
