@@ -158,7 +158,7 @@ public final class SingleFlatMapPublisherTest {
         final CountDownLatch analyzed = new CountDownLatch(1);
         ConcurrentLinkedQueue<AssertionError> errors = new ConcurrentLinkedQueue<>();
         Single.never()
-                .doBeforeCancel(() -> {
+                .beforeCancel(() -> {
                     if (currentThread() == testThread) {
                         errors.add(new AssertionError("Invalid thread invoked cancel. Thread: " +
                                 currentThread()));

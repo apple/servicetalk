@@ -446,10 +446,10 @@ public class ClientEffectiveStrategyTest {
                                                         final StreamingHttpRequest request) {
             return delegate.request(strategy,
                     request.transformPayloadBody(payload ->
-                            payload.doBeforeRequest(__ -> holder.recordThread(RequestPayloadSubscription))))
-                    .doBeforeOnSuccess(__ -> holder.recordThread(ResponseMeta))
+                            payload.beforeRequest(__ -> holder.recordThread(RequestPayloadSubscription))))
+                    .beforeOnSuccess(__ -> holder.recordThread(ResponseMeta))
                     .map(resp -> resp.transformPayloadBody(payload ->
-                            payload.doBeforeOnNext(__ -> holder.recordThread(ResponseData))));
+                            payload.beforeOnNext(__ -> holder.recordThread(ResponseData))));
         }
 
         @Override

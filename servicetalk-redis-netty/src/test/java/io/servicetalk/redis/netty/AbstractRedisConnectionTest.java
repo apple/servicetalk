@@ -136,14 +136,14 @@ public final class AbstractRedisConnectionTest {
 
         @Override
         Completable doClose() {
-            return completed().doBeforeOnSubscribe(cancellable -> closed.set(true));
+            return completed().beforeOnSubscribe(cancellable -> closed.set(true));
         }
 
         @Override
         Completable sendPing() {
             LegacyTestCompletable response = new LegacyTestCompletable();
             pings.add(response);
-            return response.doBeforeOnSubscribe(cancellable -> pingCount.incrementAndGet());
+            return response.beforeOnSubscribe(cancellable -> pingCount.incrementAndGet());
         }
 
         @Override

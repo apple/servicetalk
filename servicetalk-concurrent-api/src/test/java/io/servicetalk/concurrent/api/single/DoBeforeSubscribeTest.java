@@ -58,6 +58,6 @@ public class DoBeforeSubscribeTest extends AbstractDoSubscribeTest {
 
     @Override
     protected <T> Single<T> doSubscribe(Single<T> single, Consumer<Cancellable> consumer) {
-        return single.doBeforeOnSubscribe(consumer);
+        return single.beforeOnSubscribe(consumer);
     }
 }

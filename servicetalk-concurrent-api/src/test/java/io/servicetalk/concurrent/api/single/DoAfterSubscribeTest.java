@@ -35,6 +35,6 @@ public class DoAfterSubscribeTest extends AbstractDoSubscribeTest {
 
     @Override
     protected <T> Single<T> doSubscribe(Single<T> single, Consumer<Cancellable> consumer) {
-        return single.doAfterOnSubscribe(consumer);
+        return single.afterOnSubscribe(consumer);
     }
 }

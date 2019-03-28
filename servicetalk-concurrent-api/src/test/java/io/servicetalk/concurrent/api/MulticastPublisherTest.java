@@ -262,8 +262,8 @@ public class MulticastPublisherTest {
         Publisher<Integer> multicast = source.multicastToExactly(2);
         TestPublisherSubscriber<Integer> subscriber1 = new TestPublisherSubscriber<>();
         TestPublisherSubscriber<Integer> subscriber2 = new TestPublisherSubscriber<>();
-        toSource(multicast.doOnNext(n -> subscriber1.request(1))).subscribe(subscriber1);
-        toSource(multicast.doOnNext(n -> subscriber2.request(1))).subscribe(subscriber2);
+        toSource(multicast.whenOnNext(n -> subscriber1.request(1))).subscribe(subscriber1);
+        toSource(multicast.whenOnNext(n -> subscriber2.request(1))).subscribe(subscriber2);
 
         source.onSubscribe(subscription);
 
@@ -283,12 +283,12 @@ public class MulticastPublisherTest {
         Publisher<Integer> multicast = source.multicastToExactly(2);
         TestPublisherSubscriber<Integer> subscriber1 = new TestPublisherSubscriber<>();
         TestPublisherSubscriber<Integer> subscriber2 = new TestPublisherSubscriber<>();
-        toSource(multicast.doOnNext(n -> {
+        toSource(multicast.whenOnNext(n -> {
             if (firstIsReentry) {
                 subscriber1.request(1);
             }
         })).subscribe(subscriber1);
-        toSource(multicast.doOnNext(n -> {
+        toSource(multicast.whenOnNext(n -> {
             if (!firstIsReentry) {
                 subscriber2.request(1);
             }
@@ -324,7 +324,7 @@ public class MulticastPublisherTest {
         TestPublisherSubscriber<Integer> subscriber1 = new TestPublisherSubscriber<>();
         TestPublisherSubscriber<Integer> subscriber2 = new TestPublisherSubscriber<>();
         AtomicBoolean onNextCalled = new AtomicBoolean();
-        toSource(multicast.doOnNext(n -> {
+        toSource(multicast.whenOnNext(n -> {
             if (onNextCalled.compareAndSet(false, true)) {
                 source.onNext(null, 3);
             }

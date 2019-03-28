@@ -205,7 +205,7 @@ public final class DefaultExecutorTest {
     private void timerCancel(Completable timer) throws InterruptedException {
         AtomicReference<Throwable> refCause = new AtomicReference<>();
         CountDownLatch latch = new CountDownLatch(1);
-        toSource(timer.doAfterCancel(latch::countDown))
+        toSource(timer.afterCancel(latch::countDown))
                 .subscribe(new CompletableSource.Subscriber() {
                     @Override
                     public void onSubscribe(final Cancellable cancellable) {

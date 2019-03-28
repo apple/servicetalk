@@ -33,7 +33,7 @@ public class DoBeforeErrorTest extends AbstractDoErrorTest {
 
     @Override
     protected <T> PublisherSource<T> doError(Publisher<T> publisher, Consumer<Throwable> consumer) {
-        return toSource(publisher.doBeforeOnError(consumer));
+        return toSource(publisher.beforeOnError(consumer));
     }
 
     @Override

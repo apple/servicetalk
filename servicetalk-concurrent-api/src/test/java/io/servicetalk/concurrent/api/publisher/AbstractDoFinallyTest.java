@@ -158,7 +158,7 @@ public abstract class AbstractDoFinallyTest {
             publisher.onSubscribe(subscription);
             subscriber.cancel();
         } finally {
-            assertThat("Unexpected calls to doFinally callback.", invocationCount.get(), is(1));
+            assertThat("Unexpected calls to whenFinally callback.", invocationCount.get(), is(1));
 
             assertTrue(subscription.isCancelled());
         }

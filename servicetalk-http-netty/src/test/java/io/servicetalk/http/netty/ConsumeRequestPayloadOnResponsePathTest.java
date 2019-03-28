@@ -133,10 +133,10 @@ public class ConsumeRequestPayloadOnResponsePathTest {
     // TODO: add testTrailersSentAndConsumeRequestPayload when Publisher.merge(Completable) is available
 
     private Completable consumePayloadBody(final StreamingHttpRequest request) {
-        return request.payloadBody().doBeforeOnNext(receivedPayload::addBuffer)
+        return request.payloadBody().beforeOnNext(receivedPayload::addBuffer)
                 .ignoreElements()
-                .doBeforeOnError(errorRef::set)
-                .doAfterFinally(waitServer::countDown);
+                .beforeOnError(errorRef::set)
+                .afterFinally(waitServer::countDown);
     }
 
     private void test(final BiFunction<Single<StreamingHttpResponse>, StreamingHttpRequest,

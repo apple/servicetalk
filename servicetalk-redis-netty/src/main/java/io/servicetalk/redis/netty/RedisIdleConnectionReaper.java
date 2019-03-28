@@ -127,7 +127,7 @@ final class RedisIdleConnectionReaper implements UnaryOperator<RedisConnection> 
             };
 
             delegate.onClose()
-                    .doBeforeOnComplete(timerCancellable::cancel)
+                    .beforeOnComplete(timerCancellable::cancel)
                     .subscribe();
 
             scheduleNextIdleCheck();
@@ -161,8 +161,8 @@ final class RedisIdleConnectionReaper implements UnaryOperator<RedisConnection> 
         @Override
         public Publisher<RedisData> request(final RedisExecutionStrategy strategy, final RedisRequest request) {
             return delegate.request(strategy, request)
-                    .doBeforeOnSubscribe(__ -> onRequestStarted())
-                    .doBeforeFinally(this::onRequestFinished);
+                    .beforeOnSubscribe(__ -> onRequestStarted())
+                    .beforeFinally(this::onRequestFinished);
         }
 
         @Override

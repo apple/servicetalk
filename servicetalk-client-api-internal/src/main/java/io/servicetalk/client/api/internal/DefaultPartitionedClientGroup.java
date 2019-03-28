@@ -119,14 +119,14 @@ public final class DefaultPartitionedClientGroup<U, R, Client extends Listenable
     public Completable closeAsync() {
         // Cancel doesn't provide any status and is assumed to complete immediately so we just cancel when subscribe
         // is called.
-        return partitionMap.closeAsync().doFinally(sequentialCancellable::cancel);
+        return partitionMap.closeAsync().whenFinally(sequentialCancellable::cancel);
     }
 
     @Override
     public Completable closeAsyncGracefully() {
         // Cancel doesn't provide any status and is assumed to complete immediately so we just cancel when subscribe
         // is called.
-        return partitionMap.closeAsyncGracefully().doFinally(sequentialCancellable::cancel);
+        return partitionMap.closeAsyncGracefully().whenFinally(sequentialCancellable::cancel);
     }
 
     @Override
@@ -181,7 +181,7 @@ public final class DefaultPartitionedClientGroup<U, R, Client extends Listenable
                     }
                     return acceptEvent;
                 }
-            }).doBeforeFinally(partition::closeNow);
+            }).beforeFinally(partition::closeNow);
         }
 
         @Override

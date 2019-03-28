@@ -25,7 +25,7 @@ import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_
 public class DoAfterFinallyTest extends AbstractDoFinallyTest {
     @Override
     protected <T> Single<T> doFinally(Single<T> single, Runnable runnable) {
-        return single.doAfterFinally(runnable);
+        return single.afterFinally(runnable);
     }
 
     @Test

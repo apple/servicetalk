@@ -241,31 +241,31 @@ public class DefaultHttpExecutionStrategyTest {
         }
 
         Single<StreamingHttpResponse> instrumentedResponseForClient(Single<StreamingHttpResponse> resp) {
-            return resp.map(response -> response.transformPayloadBody(p -> p.doBeforeOnNext(__ -> {
+            return resp.map(response -> response.transformPayloadBody(p -> p.beforeOnNext(__ -> {
                 analyzed.set(RECEIVE_DATA_ANALYZED_INDEX, true);
                 verifyThread(offloadReceiveData, "Unexpected thread for response payload onNext.");
-            }))).doBeforeOnSuccess(__ -> {
+            }))).beforeOnSuccess(__ -> {
                 analyzed.set(RECEIVE_META_ANALYZED_INDEX, true);
                 verifyThread(offloadReceiveMeta, "Unexpected thread for response single.");
             });
         }
 
         Single<StreamingHttpResponse> instrumentedResponseForServer(Single<StreamingHttpResponse> resp) {
-            return resp.map(response -> response.transformPayloadBody(p -> p.doBeforeRequest(__ -> {
+            return resp.map(response -> response.transformPayloadBody(p -> p.beforeRequest(__ -> {
                 analyzed.set(SEND_ANALYZED_INDEX, true);
                 verifyThread(offloadSend, "Unexpected thread requested from request.");
             })));
         }
 
         Publisher<Object> instrumentedFlatRequestForClient(Publisher<Object> req) {
-            return req.doBeforeRequest(__ -> {
+            return req.beforeRequest(__ -> {
                 analyzed.set(SEND_ANALYZED_INDEX, true);
                 verifyThread(offloadSend, "Unexpected thread requested from request.");
             });
         }
 
         <T> Single<T> instrumentSend(Single<T> original) {
-            return original.doBeforeCancel(() -> {
+            return original.beforeCancel(() -> {
                 analyzed.set(SEND_ANALYZED_INDEX, true);
                 verifyThread(offloadSend, "Unexpected thread requested from cancel.");
                 awaitCancel.countDown();
@@ -273,21 +273,21 @@ public class DefaultHttpExecutionStrategyTest {
         }
 
         <T> Publisher<T> instrumentSend(Publisher<T> original) {
-            return original.doBeforeRequest(__ -> {
+            return original.beforeRequest(__ -> {
                 analyzed.set(SEND_ANALYZED_INDEX, true);
                 verifyThread(offloadSend, "Unexpected thread requested from request.");
             });
         }
 
         <T> Single<T> instrumentReceive(Single<T> original) {
-            return original.doBeforeOnSuccess(__ -> {
+            return original.beforeOnSuccess(__ -> {
                 analyzed.set(RECEIVE_DATA_ANALYZED_INDEX, true);
                 verifyThread(offloadReceiveData, "Unexpected thread requested from success.");
             });
         }
 
         <T> Publisher<T> instrumentReceive(Publisher<T> original) {
-            return original.doBeforeOnNext(__ -> {
+            return original.beforeOnNext(__ -> {
                 analyzed.set(RECEIVE_DATA_ANALYZED_INDEX, true);
                 verifyThread(offloadReceiveData, "Unexpected thread requested from next.");
             });
@@ -316,14 +316,14 @@ public class DefaultHttpExecutionStrategyTest {
         }
 
         Publisher<Buffer> instrumentedRequestPayloadForServer(Publisher<Buffer> req) {
-            return req.doBeforeOnNext(__ -> {
+            return req.beforeOnNext(__ -> {
                 analyzed.set(RECEIVE_DATA_ANALYZED_INDEX, true);
                 verifyThread(offloadReceiveData, "Unexpected thread for request payload onNext.");
             });
         }
 
         Publisher<Object> instrumentedResponseForServer(Publisher<Object> resp) {
-            return resp.doBeforeRequest(__ -> {
+            return resp.beforeRequest(__ -> {
                 analyzed.set(SEND_ANALYZED_INDEX, true);
                 verifyThread(offloadSend, "Unexpected thread requested from response.");
             });

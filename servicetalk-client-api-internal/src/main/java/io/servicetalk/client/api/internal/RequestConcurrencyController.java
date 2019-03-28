@@ -50,7 +50,7 @@ public interface RequestConcurrencyController {
      * Must be called after {@link #tryRequest()} to signify the request has completed. This method should be called
      * no more than once for each call to {@link #tryRequest()}.
      * <p>
-     * Generally called from a {@link Publisher#doBeforeFinally(Runnable)} after a {@link #tryRequest()}.
+     * Generally called from a {@link Publisher#beforeFinally(Runnable)} after a {@link #tryRequest()}.
      */
     void requestFinished();
 }

@@ -330,7 +330,7 @@ final class DefaultRedisClientBuilder<U, R> implements RedisClientBuilder<U, R> 
             // takes ownership of it (e.g. connection initialization) and in that case they will not be following the
             // LoadBalancer API which this Client depends upon to ensure the concurrent request count state is correct.
             return lbForCommand(request.command()).selectConnection(SELECTOR_FOR_REQUEST)
-                    .flatMapPublisher(conn -> conn.request(strategy, request).doBeforeFinally(conn::requestFinished));
+                    .flatMapPublisher(conn -> conn.request(strategy, request).beforeFinally(conn::requestFinished));
         }
 
         @Override

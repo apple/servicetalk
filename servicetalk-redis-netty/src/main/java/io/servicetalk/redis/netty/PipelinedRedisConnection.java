@@ -163,8 +163,8 @@ final class PipelinedRedisConnection extends AbstractRedisConnection {
                     return rawConnection.write(encodeRequestContent(request,
                             connection.executionContext().bufferAllocator()));
                 }, () -> predicate)
-                        .doBeforeOnNext(predicate::trackMessage)
-                        .doBeforeFinally(() -> {
+                        .beforeOnNext(predicate::trackMessage)
+                        .beforeFinally(() -> {
                             if (flaggedSkipQuit) {
                                 skipQuitWhenClosedUpdater.decrementAndGet(PipelinedRedisConnection.this);
                             }

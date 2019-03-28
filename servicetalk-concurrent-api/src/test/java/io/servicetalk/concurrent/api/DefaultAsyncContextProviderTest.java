@@ -160,7 +160,7 @@ public class DefaultAsyncContextProviderTest {
                 f2.complete(AsyncContext.current().copy());
                 completeOnExecutor(completableSubscriber);
             }
-        }).doBeforeFinally(() -> f3.complete(AsyncContext.current().copy()));
+        }).beforeFinally(() -> f3.complete(AsyncContext.current().copy()));
 
         AsyncContext.put(K1, "v1.1");
         completable.toFuture().get();
@@ -234,7 +234,7 @@ public class DefaultAsyncContextProviderTest {
                     completeOnExecutor(singleSubscriber, "b");
                 }
             };
-        }).doBeforeFinally(() -> f5.complete(AsyncContext.current().copy()));
+        }).beforeFinally(() -> f5.complete(AsyncContext.current().copy()));
 
         AsyncContext.put(K1, "v1.1");
         single.toFuture().get();
@@ -276,7 +276,7 @@ public class DefaultAsyncContextProviderTest {
                 f2.complete(AsyncContext.current().copy());
                 completeOnExecutor(completableSubscriber);
             }
-        }).doBeforeFinally(() -> f3.complete(AsyncContext.current().copy()));
+        }).beforeFinally(() -> f3.complete(AsyncContext.current().copy()));
 
         AsyncContext.put(K1, "v1.1");
         completable.toFuture().get();
@@ -343,12 +343,12 @@ public class DefaultAsyncContextProviderTest {
 
             AsyncContext.put(K2, "v2"); // this won't affect the operators below
             return v;
-        }).doBeforeOnComplete(() -> {
+        }).beforeOnComplete(() -> {
             f4.complete(AsyncContext.current());
 
             AsyncContext.put(K2, "v2"); // this won't affect the operators below
         }).collect(StringBuilder::new, StringBuilder::append)
-                .doBeforeFinally(() -> f5.complete(AsyncContext.current()));
+                .beforeFinally(() -> f5.complete(AsyncContext.current()));
 
         AsyncContext.put(K1, "v1");
         single.toFuture().get();

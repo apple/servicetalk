@@ -39,7 +39,7 @@ public class SubscribeShareContextTest {
         AsyncContext.put(KEY, "v1");
         // publisher.toFuture() will use the toSingle() conversion and share context operator will not be effective
         // since it isn't the last operator. So we directly subscribe to the publisher.
-        awaitTermination(from(1).doBeforeOnNext(__ -> AsyncContext.put(KEY, "v2")).subscribeShareContext());
+        awaitTermination(from(1).beforeOnNext(__ -> AsyncContext.put(KEY, "v2")).subscribeShareContext());
         assertThat("Unexpected value found in the context.", AsyncContext.get(KEY), is("v2"));
     }
 
@@ -49,8 +49,8 @@ public class SubscribeShareContextTest {
         AsyncContext.put(KEY, "v1");
         // publisher.toFuture() will use the toSingle() conversion and share context operator will not be effective
         // since it isn't the last operator. So we directly subscribe to the publisher.
-        awaitTermination(from(1).doBeforeOnNext(__ -> AsyncContext.put(KEY, "v2")).subscribeShareContext()
-                .doBeforeOnNext(__ -> { }));
+        awaitTermination(from(1).beforeOnNext(__ -> AsyncContext.put(KEY, "v2")).subscribeShareContext()
+                .beforeOnNext(__ -> { }));
         assertThat("Unexpected value found in the context.", AsyncContext.get(KEY), is("v1"));
     }
 

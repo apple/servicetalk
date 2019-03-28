@@ -46,14 +46,14 @@ public class HandleSubscribeOffloadedTest extends AbstractHandleSubscribeOffload
 
     @Test
     public void withSyncOperatorsAddedAfter() throws Exception {
-        awaitTermination(source.subscribeOn(newOffloadingAwareExecutor()).doBeforeOnComplete(() -> { }));
+        awaitTermination(source.subscribeOn(newOffloadingAwareExecutor()).beforeOnComplete(() -> { }));
         verifyHandleSubscribeInvoker();
         verifyCompletableOffloadCount();
     }
 
     @Test
     public void withSyncOperatorsAddedBefore() throws Exception {
-        awaitTermination(source.doBeforeOnComplete(() -> { }).subscribeOn(newOffloadingAwareExecutor()));
+        awaitTermination(source.beforeOnComplete(() -> { }).subscribeOn(newOffloadingAwareExecutor()));
         verifyHandleSubscribeInvoker();
         verifyCompletableOffloadCount();
     }
@@ -78,7 +78,7 @@ public class HandleSubscribeOffloadedTest extends AbstractHandleSubscribeOffload
         CountDownLatch latch = new CountDownLatch(1);
         // completable.toFuture() will use the toSingle() conversion and we can not verify offload for
         // Completable.Subscriber. So we directly subscribe to the completable.
-        completable.doAfterFinally(latch::countDown).subscribe();
+        completable.afterFinally(latch::countDown).subscribe();
         latch.await();
     }
 }

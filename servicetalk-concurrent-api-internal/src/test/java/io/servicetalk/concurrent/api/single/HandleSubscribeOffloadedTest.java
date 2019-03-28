@@ -44,14 +44,14 @@ public class HandleSubscribeOffloadedTest extends AbstractHandleSubscribeOffload
 
     @Test
     public void withSyncOperatorsAddedAfter() throws Exception {
-        source.subscribeOn(newOffloadingAwareExecutor()).doBeforeOnSuccess(__ -> { }).toFuture().get();
+        source.subscribeOn(newOffloadingAwareExecutor()).beforeOnSuccess(__ -> { }).toFuture().get();
         verifyHandleSubscribeInvoker();
         verifySingleOffloadCount();
     }
 
     @Test
     public void withSyncOperatorsAddedBefore() throws Exception {
-        source.doBeforeOnSuccess(__ -> { }).subscribeOn(newOffloadingAwareExecutor()).toFuture().get();
+        source.beforeOnSuccess(__ -> { }).subscribeOn(newOffloadingAwareExecutor()).toFuture().get();
         verifyHandleSubscribeInvoker();
         verifySingleOffloadCount();
     }

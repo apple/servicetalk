@@ -25,6 +25,6 @@ import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 public class DoBeforeRequestTest extends AbstractDoRequestTest {
     @Override
     protected <T> PublisherSource<T> doRequest(Publisher<T> publisher, LongConsumer consumer) {
-        return toSource(publisher.doBeforeRequest(consumer));
+        return toSource(publisher.beforeRequest(consumer));
     }
 }

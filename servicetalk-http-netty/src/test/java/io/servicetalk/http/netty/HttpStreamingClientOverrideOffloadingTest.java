@@ -113,7 +113,7 @@ public class HttpStreamingClientOverrideOffloadingTest {
 
     @Test
     public void reserveRespectsDisable() throws Exception {
-        client.reserveConnection(overridingStrategy, client.get("/")).doBeforeOnSuccess(__ -> {
+        client.reserveConnection(overridingStrategy, client.get("/")).beforeOnSuccess(__ -> {
             if (isInvalidThread()) {
                 throw new AssertionError("Invalid thread found providing the connection. Thread: "
                         + currentThread());
@@ -124,27 +124,27 @@ public class HttpStreamingClientOverrideOffloadingTest {
     @Test
     public void requestRespectsDisable() throws Exception {
         ConcurrentLinkedQueue<AssertionError> errors = new ConcurrentLinkedQueue<>();
-        StreamingHttpRequest req = client.get("/").transformPayloadBody(p -> p.doBeforeRequest(__ -> {
+        StreamingHttpRequest req = client.get("/").transformPayloadBody(p -> p.beforeRequest(__ -> {
             if (isInvalidThread()) {
                 errors.add(new AssertionError("Invalid thread called request-n. Thread: "
                         + currentThread()));
             }
         }));
         client.request(overridingStrategy, req)
-                .doBeforeOnSuccess(__ -> {
+                .beforeOnSuccess(__ -> {
                     if (isInvalidThread()) {
                         errors.add(new AssertionError("Invalid thread called response metadata. " +
                                 "Thread: " + currentThread()));
                     }
                 })
                 .flatMapPublisher(StreamingHttpResponse::payloadBody)
-                .doBeforeOnNext(__ -> {
+                .beforeOnNext(__ -> {
                     if (isInvalidThread()) {
                         errors.add(new AssertionError("Invalid thread called response payload onNext. " +
                                 "Thread: " + currentThread()));
                     }
                 })
-                .doBeforeOnComplete(() -> {
+                .beforeOnComplete(() -> {
                     if (isInvalidThread()) {
                         errors.add(new AssertionError("Invalid thread called response payload onComplete. " +
                                 "Thread: " + currentThread()));

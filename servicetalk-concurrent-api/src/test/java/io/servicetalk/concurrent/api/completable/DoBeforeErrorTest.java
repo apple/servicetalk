@@ -27,7 +27,7 @@ import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_
 public class DoBeforeErrorTest extends AbstractDoErrorTest {
     @Override
     protected Completable doError(Completable completable, Consumer<Throwable> consumer) {
-        return completable.doBeforeOnError(consumer);
+        return completable.beforeOnError(consumer);
     }
 
     @Test

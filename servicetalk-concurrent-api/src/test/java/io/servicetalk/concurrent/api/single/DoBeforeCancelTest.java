@@ -21,6 +21,6 @@ public class DoBeforeCancelTest extends AbstractDoCancelTest {
 
     @Override
     protected <T> Single<T> doCancel(Single<T> single, Runnable runnable) {
-        return single.doBeforeCancel(runnable);
+        return single.beforeCancel(runnable);
     }
 }

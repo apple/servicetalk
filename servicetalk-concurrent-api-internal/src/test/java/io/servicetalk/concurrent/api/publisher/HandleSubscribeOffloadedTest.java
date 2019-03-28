@@ -44,14 +44,14 @@ public class HandleSubscribeOffloadedTest extends AbstractHandleSubscribeOffload
 
     @Test
     public void withSyncOperatorsAddedAfter() throws Exception {
-        awaitTermination(source.subscribeOn(newOffloadingAwareExecutor()).doBeforeOnNext(__ -> { }));
+        awaitTermination(source.subscribeOn(newOffloadingAwareExecutor()).beforeOnNext(__ -> { }));
         verifyHandleSubscribeInvoker();
         verifyPublisherOffloadCount();
     }
 
     @Test
     public void withSyncOperatorsAddedBefore() throws Exception {
-        awaitTermination(source.doBeforeOnNext(__ -> { }).subscribeOn(newOffloadingAwareExecutor()));
+        awaitTermination(source.beforeOnNext(__ -> { }).subscribeOn(newOffloadingAwareExecutor()));
         verifyHandleSubscribeInvoker();
         verifyPublisherOffloadCount();
     }
@@ -76,7 +76,7 @@ public class HandleSubscribeOffloadedTest extends AbstractHandleSubscribeOffload
         CountDownLatch latch = new CountDownLatch(1);
         // publisher.toFuture() will use the toSingle() conversion and we can not verify offload for
         // Publisher.Subscriber. So we directly subscribe to the publisher.
-        publisher.doAfterFinally(latch::countDown).forEach(__ -> { });
+        publisher.afterFinally(latch::countDown).forEach(__ -> { });
         latch.await();
     }
 }

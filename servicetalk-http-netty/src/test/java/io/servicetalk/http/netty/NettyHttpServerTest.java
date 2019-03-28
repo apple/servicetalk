@@ -341,7 +341,7 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
         makeRequest(request1);
 
         // cancelling the Completable while in the timeout cancels the forceful shutdown.
-        closeAsyncGracefully(serverContext(), 1000, SECONDS).doAfterOnSubscribe(Cancellable::cancel).subscribe();
+        closeAsyncGracefully(serverContext(), 1000, SECONDS).afterOnSubscribe(Cancellable::cancel).subscribe();
 
         onCloseListener.verifyNoEmissions();
 
@@ -361,7 +361,7 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
         makeRequest(request1);
 
         // cancelling the Completable while in the timeout cancels the forceful shutdown.
-        closeAsyncGracefully(serverContext(), 1000, SECONDS).doAfterOnSubscribe(Cancellable::cancel).subscribe();
+        closeAsyncGracefully(serverContext(), 1000, SECONDS).afterOnSubscribe(Cancellable::cancel).subscribe();
 
         onCloseListener.verifyNoEmissions();
 

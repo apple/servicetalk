@@ -25,6 +25,6 @@ public class DoBeforeSubscriberTest extends AbstractDoSubscriberTest {
     @Override
     protected <T> Single<T> doSubscriber(Single<T> single,
                                          Supplier<SingleSource.Subscriber<? super T>> subscriberSupplier) {
-        return single.doBeforeSubscriber(subscriberSupplier);
+        return single.beforeSubscriber(subscriberSupplier);
     }
 }

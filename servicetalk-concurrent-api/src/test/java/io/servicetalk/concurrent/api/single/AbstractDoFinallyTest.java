@@ -48,7 +48,7 @@ public abstract class AbstractDoFinallyTest {
 
     @Test
     public void testForCancel() {
-        listener.listen(Single.<String>never().doAfterFinally(doFinally));
+        listener.listen(Single.<String>never().afterFinally(doFinally));
         listener.cancel();
         verify(doFinally).run();
     }

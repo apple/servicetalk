@@ -565,16 +565,16 @@ public abstract class Publisher<T> {
      * <p>
      * The order in which {@code onSubscribe} will be invoked relative to
      * {@link Subscriber#onSubscribe(PublisherSource.Subscription)} is undefined. If you need strict ordering see
-     * {@link #doBeforeOnSubscribe(Consumer)} and {@link #doAfterOnSubscribe(Consumer)}.
+     * {@link #beforeOnSubscribe(Consumer)} and {@link #afterOnSubscribe(Consumer)}.
      *
      * @param onSubscribe Invoked when {@link Subscriber#onSubscribe(PublisherSource.Subscription)} is called for
      * {@link Subscriber}s of the returned {@link Publisher}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Publisher}.
-     * @see #doBeforeOnNext(Consumer)
-     * @see #doAfterOnNext(Consumer)
+     * @see #beforeOnNext(Consumer)
+     * @see #afterOnNext(Consumer)
      */
-    public final Publisher<T> doOnSubscribe(Consumer<? super Subscription> onSubscribe) {
-        return doAfterOnSubscribe(onSubscribe);
+    public final Publisher<T> whenOnSubscribe(Consumer<? super Subscription> onSubscribe) {
+        return afterOnSubscribe(onSubscribe);
     }
 
     /**
@@ -582,7 +582,7 @@ public abstract class Publisher<T> {
      * {@link Subscriber}s of the returned {@link Publisher}.
      * <p>
      * The order in which {@code onNext} will be invoked relative to {@link Subscriber#onNext(Object)} is undefined. If
-     * you need strict ordering see {@link #doBeforeOnNext(Consumer)} and {@link #doAfterOnNext(Consumer)}.
+     * you need strict ordering see {@link #beforeOnNext(Consumer)} and {@link #afterOnNext(Consumer)}.
      * <p>
      * From a sequential programming point of view this method is roughly equivalent to the following:
      * <pre>{@code
@@ -596,11 +596,11 @@ public abstract class Publisher<T> {
      * @param onNext Invoked when {@link Subscriber#onNext(Object)} is called for {@link Subscriber}s of the returned
      * {@link Publisher}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Publisher}.
-     * @see #doBeforeOnNext(Consumer)
-     * @see #doAfterOnNext(Consumer)
+     * @see #beforeOnNext(Consumer)
+     * @see #afterOnNext(Consumer)
      */
-    public final Publisher<T> doOnNext(Consumer<? super T> onNext) {
-        return doAfterOnNext(onNext);
+    public final Publisher<T> whenOnNext(Consumer<? super T> onNext) {
+        return afterOnNext(onNext);
     }
 
     /**
@@ -608,7 +608,7 @@ public abstract class Publisher<T> {
      * {@link Subscriber}s of the returned {@link Publisher}.
      * <p>
      * The order in which {@code onComplete} will be invoked relative to {@link Subscriber#onComplete()} is undefined.
-     * If you need strict ordering see {@link #doBeforeOnComplete(Runnable)} and {@link #doAfterOnComplete(Runnable)}.
+     * If you need strict ordering see {@link #beforeOnComplete(Runnable)} and {@link #afterOnComplete(Runnable)}.
      * <p>
      * From a sequential programming point of view this method is roughly equivalent to the following:
      * <pre>{@code
@@ -621,11 +621,11 @@ public abstract class Publisher<T> {
      * @param onComplete Invoked when {@link Subscriber#onComplete()} is called for {@link Subscriber}s of the
      * returned {@link Publisher}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Publisher}.
-     * @see #doBeforeOnComplete(Runnable)
-     * @see #doAfterOnComplete(Runnable)
+     * @see #beforeOnComplete(Runnable)
+     * @see #afterOnComplete(Runnable)
      */
-    public final Publisher<T> doOnComplete(Runnable onComplete) {
-        return doAfterOnComplete(onComplete);
+    public final Publisher<T> whenOnComplete(Runnable onComplete) {
+        return afterOnComplete(onComplete);
     }
 
     /**
@@ -633,8 +633,8 @@ public abstract class Publisher<T> {
      * {@link Subscriber}s of the returned {@link Publisher}.
      * <p>
      * The order in which {@code onError} will be invoked relative to {@link Subscriber#onError(Throwable)} is
-     * undefined. If you need strict ordering see {@link #doBeforeOnError(Consumer)} and
-     * {@link #doAfterOnError(Consumer)}.
+     * undefined. If you need strict ordering see {@link #beforeOnError(Consumer)} and
+     * {@link #afterOnError(Consumer)}.
      * <p>
      * From a sequential programming point of view this method is roughly equivalent to the following:
      * <pre>{@code
@@ -650,16 +650,16 @@ public abstract class Publisher<T> {
      * @param onError Invoked <strong>before</strong> {@link Subscriber#onError(Throwable)} is called for
      * {@link Subscriber}s of the returned {@link Publisher}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Publisher}.
-     * @see #doBeforeOnError(Consumer)
-     * @see #doAfterOnError(Consumer)
+     * @see #beforeOnError(Consumer)
+     * @see #afterOnError(Consumer)
      */
-    public final Publisher<T> doOnError(Consumer<Throwable> onError) {
-        return doAfterOnError(onError);
+    public final Publisher<T> whenOnError(Consumer<Throwable> onError) {
+        return afterOnError(onError);
     }
 
     /**
-     * Invokes the {@code doFinally} {@link Runnable} argument exactly once, when any of the following terminal methods
-     * are called:
+     * Invokes the {@code whenFinally} {@link Runnable} argument exactly once, when any of the following terminal
+     * methods are called:
      * <ul>
      *     <li>{@link Subscriber#onComplete()}</li>
      *     <li>{@link Subscriber#onError(Throwable)}</li>
@@ -667,8 +667,8 @@ public abstract class Publisher<T> {
      * </ul>
      * for {@link Subscription}s/{@link Subscriber}s of the returned {@link Publisher}.
      * <p>
-     * The order in which {@code doFinally} will be invoked relative to the above methods is undefined. If you need
-     * strict ordering see {@link #doBeforeFinally(Runnable)} and {@link #doAfterFinally(Runnable)}.
+     * The order in which {@code whenFinally} will be invoked relative to the above methods is undefined. If you need
+     * strict ordering see {@link #beforeFinally(Runnable)} and {@link #afterFinally(Runnable)}.
      * <p>
      * From a sequential programming point of view this method is roughly equivalent to the following:
      * <pre>{@code
@@ -677,7 +677,7 @@ public abstract class Publisher<T> {
      *  } finally {
      *      // NOTE: The order of operations here is not guaranteed by this method!
      *      nextOperation(); // Maybe notifying of cancellation, or termination
-     *      doFinally.run();
+     *      whenFinally.run();
      *  }
      * }</pre>
      *
@@ -689,11 +689,11 @@ public abstract class Publisher<T> {
      * </ul>
      * for {@link Subscription}s/{@link Subscriber}s of the returned {@link Publisher}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Publisher}.
-     * @see #doAfterFinally(Runnable)
-     * @see #doBeforeFinally(Runnable)
+     * @see #afterFinally(Runnable)
+     * @see #beforeFinally(Runnable)
      */
-    public final Publisher<T> doFinally(Runnable doFinally) {
-        return doAfterFinally(doFinally);
+    public final Publisher<T> whenFinally(Runnable doFinally) {
+        return afterFinally(doFinally);
     }
 
     /**
@@ -705,24 +705,24 @@ public abstract class Publisher<T> {
      *
      * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
-    public final Publisher<T> doOnRequest(LongConsumer onRequest) {
-        return doAfterRequest(onRequest);
+    public final Publisher<T> whenRequest(LongConsumer onRequest) {
+        return afterRequest(onRequest);
     }
 
     /**
      * Invokes the {@code onCancel} {@link Runnable} argument when {@link Subscription#cancel()} is called for
      * Subscriptions of the returned {@link Publisher}.
      * <p>
-     * The order in which {@code doFinally} will be invoked relative to {@link Subscription#cancel()} is undefined. If
-     * you need strict ordering see {@link #doBeforeCancel(Runnable)} and {@link #doAfterCancel(Runnable)}.
+     * The order in which {@code whenFinally} will be invoked relative to {@link Subscription#cancel()} is undefined. If
+     * you need strict ordering see {@link #beforeCancel(Runnable)} and {@link #afterCancel(Runnable)}.
      * @param onCancel Invoked when {@link Subscription#cancel()} is called for Subscriptions of the returned
      * {@link Publisher}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Publisher}.
-     * @see #doBeforeCancel(Runnable)
-     * @see #doAfterCancel(Runnable)
+     * @see #beforeCancel(Runnable)
+     * @see #afterCancel(Runnable)
      */
-    public final Publisher<T> doOnCancel(Runnable onCancel) {
-        return doAfterCancel(onCancel);
+    public final Publisher<T> whenCancel(Runnable onCancel) {
+        return afterCancel(onCancel);
     }
 
     /**
@@ -1366,8 +1366,8 @@ public abstract class Publisher<T> {
      *
      * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
-    public final Publisher<T> doBeforeOnSubscribe(Consumer<? super Subscription> onSubscribe) {
-        return doBeforeSubscriber(doOnSubscribeSupplier(onSubscribe));
+    public final Publisher<T> beforeOnSubscribe(Consumer<? super Subscription> onSubscribe) {
+        return beforeSubscriber(doOnSubscribeSupplier(onSubscribe));
     }
 
     /**
@@ -1389,8 +1389,8 @@ public abstract class Publisher<T> {
      *
      * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
-    public final Publisher<T> doBeforeOnNext(Consumer<? super T> onNext) {
-        return doBeforeSubscriber(doOnNextSupplier(onNext));
+    public final Publisher<T> beforeOnNext(Consumer<? super T> onNext) {
+        return beforeSubscriber(doOnNextSupplier(onNext));
     }
 
     /**
@@ -1413,8 +1413,8 @@ public abstract class Publisher<T> {
      *
      * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
-    public final Publisher<T> doBeforeOnError(Consumer<Throwable> onError) {
-        return doBeforeSubscriber(doOnErrorSupplier(onError));
+    public final Publisher<T> beforeOnError(Consumer<Throwable> onError) {
+        return beforeSubscriber(doOnErrorSupplier(onError));
     }
 
     /**
@@ -1434,8 +1434,8 @@ public abstract class Publisher<T> {
      *
      * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
-    public final Publisher<T> doBeforeOnComplete(Runnable onComplete) {
-        return doBeforeSubscriber(doOnCompleteSupplier(onComplete));
+    public final Publisher<T> beforeOnComplete(Runnable onComplete) {
+        return beforeSubscriber(doOnCompleteSupplier(onComplete));
     }
 
     /**
@@ -1448,8 +1448,8 @@ public abstract class Publisher<T> {
      *
      * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
-    public final Publisher<T> doBeforeRequest(LongConsumer onRequest) {
-        return doBeforeSubscription(doOnRequestSupplier(onRequest));
+    public final Publisher<T> beforeRequest(LongConsumer onRequest) {
+        return beforeSubscription(doOnRequestSupplier(onRequest));
     }
 
     /**
@@ -1462,12 +1462,12 @@ public abstract class Publisher<T> {
      *
      * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
-    public final Publisher<T> doBeforeCancel(Runnable onCancel) {
-        return doBeforeSubscription(doOnCancelSupplier(onCancel));
+    public final Publisher<T> beforeCancel(Runnable onCancel) {
+        return beforeSubscription(doOnCancelSupplier(onCancel));
     }
 
     /**
-     * Invokes the {@code doFinally} {@link Runnable} argument <strong>before</strong> any of the following terminal
+     * Invokes the {@code whenFinally} {@link Runnable} argument <strong>before</strong> any of the following terminal
      * methods are called:
      * <ul>
      *     <li>{@link Subscriber#onComplete()}</li>
@@ -1481,7 +1481,7 @@ public abstract class Publisher<T> {
      *  try {
      *      List<T> results = resultOfThisPublisher();
      *  } finally {
-     *      doFinally.run();
+     *      whenFinally.run();
      *      nextOperation(); // Maybe notifying of cancellation, or termination
      *  }
      * }</pre>
@@ -1497,7 +1497,7 @@ public abstract class Publisher<T> {
      *
      * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
-    public final Publisher<T> doBeforeFinally(Runnable doFinally) {
+    public final Publisher<T> beforeFinally(Runnable doFinally) {
         return new DoBeforeFinallyPublisher<>(this, doFinally, executor);
     }
 
@@ -1513,7 +1513,7 @@ public abstract class Publisher<T> {
      *
      * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
-    public final Publisher<T> doBeforeSubscriber(Supplier<? extends Subscriber<? super T>> subscriberSupplier) {
+    public final Publisher<T> beforeSubscriber(Supplier<? extends Subscriber<? super T>> subscriberSupplier) {
         return new DoBeforeSubscriberPublisher<>(this, subscriberSupplier, executor);
     }
 
@@ -1529,7 +1529,7 @@ public abstract class Publisher<T> {
      *
      * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
-    public final Publisher<T> doBeforeSubscription(Supplier<? extends Subscription> subscriptionSupplier) {
+    public final Publisher<T> beforeSubscription(Supplier<? extends Subscription> subscriptionSupplier) {
         return new DoSubscriptionPublisher<>(this, subscriptionSupplier, true, executor);
     }
 
@@ -1545,8 +1545,8 @@ public abstract class Publisher<T> {
      *
      * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
-    public final Publisher<T> doAfterOnSubscribe(Consumer<? super Subscription> onSubscribe) {
-        return doAfterSubscriber(doOnSubscribeSupplier(onSubscribe));
+    public final Publisher<T> afterOnSubscribe(Consumer<? super Subscription> onSubscribe) {
+        return afterSubscriber(doOnSubscribeSupplier(onSubscribe));
     }
 
     /**
@@ -1568,8 +1568,8 @@ public abstract class Publisher<T> {
      *
      * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
-    public final Publisher<T> doAfterOnNext(Consumer<? super T> onNext) {
-        return doAfterSubscriber(doOnNextSupplier(onNext));
+    public final Publisher<T> afterOnNext(Consumer<? super T> onNext) {
+        return afterSubscriber(doOnNextSupplier(onNext));
     }
 
     /**
@@ -1592,8 +1592,8 @@ public abstract class Publisher<T> {
      *
      * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
-    public final Publisher<T> doAfterOnError(Consumer<Throwable> onError) {
-        return doAfterSubscriber(doOnErrorSupplier(onError));
+    public final Publisher<T> afterOnError(Consumer<Throwable> onError) {
+        return afterSubscriber(doOnErrorSupplier(onError));
     }
 
     /**
@@ -1613,8 +1613,8 @@ public abstract class Publisher<T> {
      *
      * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
-    public final Publisher<T> doAfterOnComplete(Runnable onComplete) {
-        return doAfterSubscriber(doOnCompleteSupplier(onComplete));
+    public final Publisher<T> afterOnComplete(Runnable onComplete) {
+        return afterSubscriber(doOnCompleteSupplier(onComplete));
     }
 
     /**
@@ -1627,8 +1627,8 @@ public abstract class Publisher<T> {
      *
      * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
-    public final Publisher<T> doAfterRequest(LongConsumer onRequest) {
-        return doAfterSubscription(doOnRequestSupplier(onRequest));
+    public final Publisher<T> afterRequest(LongConsumer onRequest) {
+        return afterSubscription(doOnRequestSupplier(onRequest));
     }
 
     /**
@@ -1641,12 +1641,12 @@ public abstract class Publisher<T> {
      *
      * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
-    public final Publisher<T> doAfterCancel(Runnable onCancel) {
-        return doAfterSubscription(doOnCancelSupplier(onCancel));
+    public final Publisher<T> afterCancel(Runnable onCancel) {
+        return afterSubscription(doOnCancelSupplier(onCancel));
     }
 
     /**
-     * Invokes the {@code doFinally} {@link Runnable} argument <strong>after</strong> any of the following terminal
+     * Invokes the {@code whenFinally} {@link Runnable} argument <strong>after</strong> any of the following terminal
      * methods are called:
      * <ul>
      *     <li>{@link Subscriber#onComplete()}</li>
@@ -1661,7 +1661,7 @@ public abstract class Publisher<T> {
      *      List<T> results = resultOfThisPublisher();
      *  } finally {
      *      nextOperation(); // Maybe notifying of cancellation, or termination
-     *      doFinally.run();
+     *      whenFinally.run();
      *  }
      * }</pre>
      *
@@ -1676,7 +1676,7 @@ public abstract class Publisher<T> {
      *
      * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
-    public final Publisher<T> doAfterFinally(Runnable doFinally) {
+    public final Publisher<T> afterFinally(Runnable doFinally) {
         return new DoAfterFinallyPublisher<>(this, doFinally, executor);
     }
 
@@ -1692,7 +1692,7 @@ public abstract class Publisher<T> {
      *
      * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
-    public final Publisher<T> doAfterSubscriber(Supplier<? extends Subscriber<? super T>> subscriberSupplier) {
+    public final Publisher<T> afterSubscriber(Supplier<? extends Subscriber<? super T>> subscriberSupplier) {
         return new DoAfterSubscriberPublisher<>(this, subscriberSupplier, executor);
     }
 
@@ -1708,7 +1708,7 @@ public abstract class Publisher<T> {
      *
      * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
-    public final Publisher<T> doAfterSubscription(Supplier<? extends Subscription> subscriptionSupplier) {
+    public final Publisher<T> afterSubscription(Supplier<? extends Subscription> subscriptionSupplier) {
         return new DoSubscriptionPublisher<>(this, subscriptionSupplier, false, executor);
     }
 

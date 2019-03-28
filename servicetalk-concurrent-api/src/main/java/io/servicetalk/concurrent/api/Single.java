@@ -208,8 +208,8 @@ public abstract class Single<T> {
      * {@link Subscriber}s of the returned {@link Single}.
      * <p>
      * The order in which {@code onSuccess} will be invoked relative to {@link Subscriber#onSuccess(Object)} is
-     * undefined. If you need strict ordering see {@link #doBeforeOnSuccess(Consumer)} and
-     * {@link #doAfterOnSuccess(Consumer)}.
+     * undefined. If you need strict ordering see {@link #beforeOnSuccess(Consumer)} and
+     * {@link #afterOnSuccess(Consumer)}.
      * <p>
      * From a sequential programming point of view this method is roughly equivalent to the following:
      * <pre>{@code
@@ -221,11 +221,11 @@ public abstract class Single<T> {
      * @param onSuccess Invoked when {@link Subscriber#onSuccess(Object)} is called for
      * {@link Subscriber}s of the returned {@link Single}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Single}.
-     * @see #doBeforeOnSuccess(Consumer)
-     * @see #doAfterOnSuccess(Consumer)
+     * @see #beforeOnSuccess(Consumer)
+     * @see #afterOnSuccess(Consumer)
      */
-    public final Single<T> doOnSuccess(Consumer<? super T> onSuccess) {
-        return doAfterOnSuccess(onSuccess);
+    public final Single<T> whenOnSuccess(Consumer<? super T> onSuccess) {
+        return afterOnSuccess(onSuccess);
     }
 
     /**
@@ -233,8 +233,8 @@ public abstract class Single<T> {
      * {@link Subscriber}s of the returned {@link Single}.
      * <p>
      * The order in which {@code onError} will be invoked relative to {@link Subscriber#onError(Throwable)} is
-     * undefined. If you need strict ordering see {@link #doBeforeOnError(Consumer)} and
-     * {@link #doAfterOnError(Consumer)}.
+     * undefined. If you need strict ordering see {@link #beforeOnError(Consumer)} and
+     * {@link #afterOnError(Consumer)}.
      * <p>
      * From a sequential programming point of view this method is roughly equivalent to the following:
      * <pre>{@code
@@ -249,16 +249,16 @@ public abstract class Single<T> {
      * @param onError Invoked when {@link Subscriber#onError(Throwable)} is called for {@link Subscriber}s of the
      * returned {@link Single}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Single}.
-     * @see #doBeforeOnError(Consumer)
-     * @see #doAfterOnError(Consumer)
+     * @see #beforeOnError(Consumer)
+     * @see #afterOnError(Consumer)
      */
-    public final Single<T> doOnError(Consumer<Throwable> onError) {
-        return doAfterOnError(onError);
+    public final Single<T> whenOnError(Consumer<Throwable> onError) {
+        return afterOnError(onError);
     }
 
     /**
-     * Invokes the {@code doFinally} {@link Runnable} argument exactly once, when any of the following terminal methods
-     * are called:
+     * Invokes the {@code whenFinally} {@link Runnable} argument exactly once, when any of the following terminal
+     * methods are called:
      * <ul>
      *     <li>{@link Subscriber#onSuccess(Object)}</li>
      *     <li>{@link Subscriber#onError(Throwable)}</li>
@@ -266,8 +266,8 @@ public abstract class Single<T> {
      * </ul>
      * for Subscriptions/{@link Subscriber}s of the returned {@link Single}.
      * <p>
-     * The order in which {@code doFinally} will be invoked relative to the above methods is undefined. If you need
-     * strict ordering see {@link #doBeforeFinally(Runnable)} and {@link #doAfterFinally(Runnable)}.
+     * The order in which {@code whenFinally} will be invoked relative to the above methods is undefined. If you need
+     * strict ordering see {@link #beforeFinally(Runnable)} and {@link #afterFinally(Runnable)}.
      * <p>
      * From a sequential programming point of view this method is roughly equivalent to the following:
      * <pre>{@code
@@ -276,7 +276,7 @@ public abstract class Single<T> {
      *  } finally {
      *      // NOTE: The order of operations here is not guaranteed by this method!
      *      nextOperation(); // Maybe notifying of cancellation, or termination
-     *      doFinally.run();
+     *      whenFinally.run();
      *  }
      * }</pre>
      * @param doFinally Invoked exactly once, when any of the following terminal methods are called:
@@ -287,28 +287,28 @@ public abstract class Single<T> {
      * </ul>
      * for Subscriptions/{@link Subscriber}s of the returned {@link Single}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Single}.
-     * @see #doAfterFinally(Runnable)
-     * @see #doBeforeFinally(Runnable)
+     * @see #afterFinally(Runnable)
+     * @see #beforeFinally(Runnable)
      */
-    public final Single<T> doFinally(Runnable doFinally) {
-        return doAfterFinally(doFinally);
+    public final Single<T> whenFinally(Runnable doFinally) {
+        return afterFinally(doFinally);
     }
 
     /**
      * Invokes the {@code onCancel} {@link Runnable} argument when {@link Cancellable#cancel()} is called for
      * Subscriptions of the returned {@link Single}.
      * <p>
-     * The order in which {@code doFinally} will be invoked relative to {@link Cancellable#cancel()} is undefined. If
-     * you need strict ordering see {@link #doBeforeCancel(Runnable)} and {@link #doAfterCancel(Runnable)}.
+     * The order in which {@code whenFinally} will be invoked relative to {@link Cancellable#cancel()} is undefined. If
+     * you need strict ordering see {@link #beforeCancel(Runnable)} and {@link #afterCancel(Runnable)}.
 
      * @param onCancel Invoked when {@link Cancellable#cancel()} is called for Subscriptions of the
      * returned {@link Single}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Single}.
-     * @see #doBeforeCancel(Runnable)
-     * @see #doAfterCancel(Runnable)
+     * @see #beforeCancel(Runnable)
+     * @see #afterCancel(Runnable)
      */
-    public final Single<T> doOnCancel(Runnable onCancel) {
-        return doAfterCancel(onCancel);
+    public final Single<T> whenCancel(Runnable onCancel) {
+        return afterCancel(onCancel);
     }
 
     /**
@@ -586,8 +586,8 @@ public abstract class Single<T> {
      * {@link Subscriber}s of the returned {@link Single}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Single}.
      */
-    public final Single<T> doBeforeOnSubscribe(Consumer<Cancellable> onSubscribe) {
-        return doBeforeSubscriber(doOnSubscribeSupplier(onSubscribe));
+    public final Single<T> beforeOnSubscribe(Consumer<Cancellable> onSubscribe) {
+        return beforeSubscriber(doOnSubscribeSupplier(onSubscribe));
     }
 
     /**
@@ -604,8 +604,8 @@ public abstract class Single<T> {
      * {@link Subscriber}s of the returned {@link Single}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Single}.
      */
-    public final Single<T> doBeforeOnSuccess(Consumer<? super T> onSuccess) {
-        return doBeforeSubscriber(doOnSuccessSupplier(onSuccess));
+    public final Single<T> beforeOnSuccess(Consumer<? super T> onSuccess) {
+        return beforeSubscriber(doOnSuccessSupplier(onSuccess));
     }
 
     /**
@@ -625,8 +625,8 @@ public abstract class Single<T> {
      * {@link Subscriber}s of the returned {@link Single}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Single}.
      */
-    public final Single<T> doBeforeOnError(Consumer<Throwable> onError) {
-        return doBeforeSubscriber(doOnErrorSupplier(onError));
+    public final Single<T> beforeOnError(Consumer<Throwable> onError) {
+        return beforeSubscriber(doOnErrorSupplier(onError));
     }
 
     /**
@@ -637,12 +637,12 @@ public abstract class Single<T> {
      * returned {@link Single}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Single}.
      */
-    public final Single<T> doBeforeCancel(Runnable onCancel) {
+    public final Single<T> beforeCancel(Runnable onCancel) {
         return new DoCancellableSingle<>(this, onCancel::run, true, executor);
     }
 
     /**
-     * Invokes the {@code doFinally} {@link Runnable} argument <strong>before</strong> any of the following terminal
+     * Invokes the {@code whenFinally} {@link Runnable} argument <strong>before</strong> any of the following terminal
      * methods are called:
      * <ul>
      *     <li>{@link Subscriber#onSuccess(Object)}</li>
@@ -656,7 +656,7 @@ public abstract class Single<T> {
      *  try {
      *      T result = resultOfThisSingle();
      *  } finally {
-     *      doFinally.run();
+     *      whenFinally.run();
      *      nextOperation(); // Maybe notifying of cancellation, or termination
      *  }
      * }</pre>
@@ -669,7 +669,7 @@ public abstract class Single<T> {
      * for Subscriptions/{@link Subscriber}s of the returned {@link Single}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Single}.
      */
-    public final Single<T> doBeforeFinally(Runnable doFinally) {
+    public final Single<T> beforeFinally(Runnable doFinally) {
         return new DoBeforeFinallySingle<>(this, doFinally, executor);
     }
 
@@ -683,7 +683,7 @@ public abstract class Single<T> {
      * {@link Subscriber} methods <strong>MUST NOT</strong> throw.
      * @return The new {@link Single}.
      */
-    public final Single<T> doBeforeSubscriber(Supplier<? extends Subscriber<? super T>> subscriberSupplier) {
+    public final Single<T> beforeSubscriber(Supplier<? extends Subscriber<? super T>> subscriberSupplier) {
         return new DoBeforeSubscriberSingle<>(this, subscriberSupplier, executor);
     }
 
@@ -695,8 +695,8 @@ public abstract class Single<T> {
      * {@link Subscriber}s of the returned {@link Single}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Single}.
      */
-    public final Single<T> doAfterOnSubscribe(Consumer<Cancellable> onSubscribe) {
-        return doAfterSubscriber(doOnSubscribeSupplier(onSubscribe));
+    public final Single<T> afterOnSubscribe(Consumer<Cancellable> onSubscribe) {
+        return afterSubscriber(doOnSubscribeSupplier(onSubscribe));
     }
 
     /**
@@ -713,8 +713,8 @@ public abstract class Single<T> {
      * {@link Subscriber}s of the returned {@link Single}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Single}.
      */
-    public final Single<T> doAfterOnSuccess(Consumer<? super T> onSuccess) {
-        return doAfterSubscriber(doOnSuccessSupplier(onSuccess));
+    public final Single<T> afterOnSuccess(Consumer<? super T> onSuccess) {
+        return afterSubscriber(doOnSuccessSupplier(onSuccess));
     }
 
     /**
@@ -734,8 +734,8 @@ public abstract class Single<T> {
      * {@link Subscriber}s of the returned {@link Single}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Single}.
      */
-    public final Single<T> doAfterOnError(Consumer<Throwable> onError) {
-        return doAfterSubscriber(doOnErrorSupplier(onError));
+    public final Single<T> afterOnError(Consumer<Throwable> onError) {
+        return afterSubscriber(doOnErrorSupplier(onError));
     }
 
     /**
@@ -746,12 +746,12 @@ public abstract class Single<T> {
      * returned {@link Single}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Single}.
      */
-    public final Single<T> doAfterCancel(Runnable onCancel) {
+    public final Single<T> afterCancel(Runnable onCancel) {
         return new DoCancellableSingle<>(this, onCancel::run, false, executor);
     }
 
     /**
-     * Invokes the {@code doFinally} {@link Runnable} argument <strong>after</strong> any of the following terminal
+     * Invokes the {@code whenFinally} {@link Runnable} argument <strong>after</strong> any of the following terminal
      * methods are called:
      * <ul>
      *     <li>{@link Subscriber#onSuccess(Object)}</li>
@@ -766,7 +766,7 @@ public abstract class Single<T> {
      *      T result = resultOfThisSingle();
      *  } finally {
      *      nextOperation(); // Maybe notifying of cancellation, or termination
-     *      doFinally.run();
+     *      whenFinally.run();
      *  }
      * }</pre>
      * @param doFinally Invoked <strong>after</strong> any of the following terminal methods are called:
@@ -778,7 +778,7 @@ public abstract class Single<T> {
      * for Subscriptions/{@link Subscriber}s of the returned {@link Single}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Single}.
      */
-    public final Single<T> doAfterFinally(Runnable doFinally) {
+    public final Single<T> afterFinally(Runnable doFinally) {
         return new DoAfterFinallySingle<>(this, doFinally, executor);
     }
 
@@ -792,7 +792,7 @@ public abstract class Single<T> {
      * {@link Subscriber} methods <strong>MUST NOT</strong> throw.
      * @return The new {@link Single}.
      */
-    public final Single<T> doAfterSubscriber(Supplier<? extends Subscriber<? super T>> subscriberSupplier) {
+    public final Single<T> afterSubscriber(Supplier<? extends Subscriber<? super T>> subscriberSupplier) {
         return new DoAfterSubscriberSingle<>(this, subscriberSupplier, executor);
     }
 
@@ -927,7 +927,7 @@ public abstract class Single<T> {
      *     Single<X> pub = ...;
      *     pub.map(..) // A
      *        .liftSync(original -> modified)
-     *        .doAfterFinally(..) // B
+     *        .afterFinally(..) // B
      * }</pre>
      * The {@code original -> modified} "operator" <strong>MUST</strong> be "synchronous" in that it does not interact
      * with the original {@link Subscriber} from outside the modified {@link Subscriber} or {@link Cancellable}
@@ -956,7 +956,7 @@ public abstract class Single<T> {
      *     Publisher<X> pub = ...;
      *     pub.map(..) // Aw
      *        .liftAsync(original -> modified)
-     *        .doAfterFinally(..) // B
+     *        .afterFinally(..) // B
      * }</pre>
      * The {@code original -> modified} "operator" MAY be "asynchronous" in that it may interact with the original
      * {@link Subscriber} from outside the modified {@link Subscriber} or {@link Cancellable} threads. More

@@ -162,9 +162,9 @@ final class EndpointEnhancingRequestFilter implements ContainerRequestFilter {
 
             final Single<Response> objectSingle = callOriginalEndpoint(requestProcessingCtx)
                     .flatMap(this::handleContainerResponse)
-                    .doBeforeFinally(() -> uriRoutingContext.setEndpoint(originalEndpoint))
-                    .doAfterOnError(asyncContext::resume)
-                    .doAfterCancel(asyncContext::cancel);
+                    .beforeFinally(() -> uriRoutingContext.setEndpoint(originalEndpoint))
+                    .afterOnError(asyncContext::resume)
+                    .afterCancel(asyncContext::cancel);
 
             final Cancellable cancellable;
             if (routeExecutionStrategy != null) {

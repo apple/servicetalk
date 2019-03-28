@@ -24,6 +24,6 @@ public class DoAfterSubscriberTest extends AbstractDoSubscriberTest {
     @Override
     protected Completable doSubscriber(Completable completable,
                                        Supplier<CompletableSource.Subscriber> subscriberSupplier) {
-        return completable.doAfterSubscriber(subscriberSupplier);
+        return completable.afterSubscriber(subscriberSupplier);
     }
 }

@@ -35,7 +35,7 @@ import static org.junit.Assert.fail;
 public class DoAfterFinallyTest extends AbstractDoFinallyTest {
     @Override
     protected <T> PublisherSource<T> doFinally(Publisher<T> publisher, Runnable runnable) {
-        return toSource(publisher.doAfterFinally(runnable));
+        return toSource(publisher.afterFinally(runnable));
     }
 
     @Override
@@ -53,7 +53,7 @@ public class DoAfterFinallyTest extends AbstractDoFinallyTest {
             fail();
         } finally {
             assertThat(subscriber.takeTerminal(), is(complete()));
-            assertThat("Unexpected calls to doFinally callback.", invocationCount.get(), is(1));
+            assertThat("Unexpected calls to whenFinally callback.", invocationCount.get(), is(1));
             assertFalse(subscription.isCancelled());
         }
     }
@@ -74,7 +74,7 @@ public class DoAfterFinallyTest extends AbstractDoFinallyTest {
             fail();
         } finally {
             assertThat(subscriber.takeError(), sameInstance(DELIBERATE_EXCEPTION));
-            assertThat("Unexpected calls to doFinally callback.", invocationCount.get(), is(1));
+            assertThat("Unexpected calls to whenFinally callback.", invocationCount.get(), is(1));
             assertFalse(subscription.isCancelled());
         }
     }

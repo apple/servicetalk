@@ -344,7 +344,7 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends ListenableA
             }
 
             // Instrument the new connection so we prune it on close
-            connection.onClose().doBeforeFinally(() -> connections.remove(connection)).subscribe();
+            connection.onClose().beforeFinally(() -> connections.remove(connection)).subscribe();
             return true;
         }
 

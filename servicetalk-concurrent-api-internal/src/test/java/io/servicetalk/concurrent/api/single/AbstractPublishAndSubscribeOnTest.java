@@ -47,12 +47,12 @@ public abstract class AbstractPublishAndSubscribeOnTest {
         AtomicReferenceArray<Thread> capturedThreads = new AtomicReferenceArray<>(2);
 
         Single<String> original = new SingleWithExecutor<>(originalSourceExecutorRule.executor(), succeeded("Hello"))
-                .doBeforeOnSuccess(__ -> capturedThreads.set(ORIGINAL_SUBSCRIBER_THREAD, currentThread()));
+                .beforeOnSuccess(__ -> capturedThreads.set(ORIGINAL_SUBSCRIBER_THREAD, currentThread()));
 
         Single<String> offloaded = offloadingFunction.apply(original);
 
-        offloaded.doAfterFinally(allDone::countDown)
-                .doBeforeOnSuccess(__ -> capturedThreads.set(OFFLOADED_SUBSCRIBER_THREAD, currentThread()))
+        offloaded.afterFinally(allDone::countDown)
+                .beforeOnSuccess(__ -> capturedThreads.set(OFFLOADED_SUBSCRIBER_THREAD, currentThread()))
                 .subscribe(val -> { });
         allDone.await();
 
@@ -67,14 +67,14 @@ public abstract class AbstractPublishAndSubscribeOnTest {
 
         Single<String> original = new SingleWithExecutor<>(originalSourceExecutorRule.executor(),
                 Single.<String>never())
-                .doAfterCancel(() -> {
+                .afterCancel(() -> {
                     capturedThreads.set(ORIGINAL_SUBSCRIBER_THREAD, currentThread());
                     allDone.countDown();
                 });
 
         Single<String> offloaded = offloadingFunction.apply(original);
 
-        offloaded.doBeforeCancel(() -> capturedThreads.set(OFFLOADED_SUBSCRIBER_THREAD, currentThread()))
+        offloaded.beforeCancel(() -> capturedThreads.set(OFFLOADED_SUBSCRIBER_THREAD, currentThread()))
                 .subscribe(val -> { }).cancel();
         allDone.await();
 

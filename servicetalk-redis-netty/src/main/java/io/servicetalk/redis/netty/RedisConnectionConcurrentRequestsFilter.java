@@ -69,7 +69,7 @@ final class RedisConnectionConcurrentRequestsFilter extends RedisConnectionFilte
                 Throwable reportedError;
                 switch (result) {
                     case Accepted:
-                        toSource(delegate().request(strategy, request).doBeforeFinally(limiter::requestFinished))
+                        toSource(delegate().request(strategy, request).beforeFinally(limiter::requestFinished))
                                 .subscribe(subscriber);
                         return;
                     case RejectedTemporary:

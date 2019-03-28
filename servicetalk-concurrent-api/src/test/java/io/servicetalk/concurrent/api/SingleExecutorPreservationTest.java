@@ -43,6 +43,6 @@ public class SingleExecutorPreservationTest {
 
     @Test
     public void testDoAfterFinallySingle() {
-        assertSame(EXEC.executor(), single.doAfterFinally(() -> { /* NOOP */ }).executor());
+        assertSame(EXEC.executor(), single.afterFinally(() -> { /* NOOP */ }).executor());
     }
 }

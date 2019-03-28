@@ -35,6 +35,6 @@ public class DoAfterSubscribeTest extends AbstractDoSubscribeTest {
 
     @Override
     protected Completable doSubscribe(Completable completable, Consumer<Cancellable> consumer) {
-        return completable.doAfterOnSubscribe(consumer);
+        return completable.afterOnSubscribe(consumer);
     }
 }

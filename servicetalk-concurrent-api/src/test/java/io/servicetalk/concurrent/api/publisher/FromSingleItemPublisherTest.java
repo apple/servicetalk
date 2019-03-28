@@ -35,7 +35,7 @@ public class FromSingleItemPublisherTest {
 
     @Test
     public void exceptionInTerminalCallsOnError() {
-        toSource(from("foo").doOnNext(n -> {
+        toSource(from("foo").whenOnNext(n -> {
             throw DELIBERATE_EXCEPTION;
         })).subscribe(subscriber);
         subscriber.request(1);

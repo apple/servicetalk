@@ -48,12 +48,12 @@ public abstract class AbstractPublishAndSubscribeOnTest {
         AtomicReferenceArray<Thread> capturedThreads = new AtomicReferenceArray<>(2);
 
         Completable original = new CompletableWithExecutor(originalSourceExecutorRule.executor(), completed())
-                .doBeforeOnComplete(() -> capturedThreads.set(ORIGINAL_SUBSCRIBER_THREAD, currentThread()));
+                .beforeOnComplete(() -> capturedThreads.set(ORIGINAL_SUBSCRIBER_THREAD, currentThread()));
 
         Completable offloaded = offloadingFunction.apply(original);
 
-        offloaded.doAfterFinally(allDone::countDown)
-                .doBeforeOnComplete(() -> capturedThreads.set(OFFLOADED_SUBSCRIBER_THREAD, currentThread()))
+        offloaded.afterFinally(allDone::countDown)
+                .beforeOnComplete(() -> capturedThreads.set(OFFLOADED_SUBSCRIBER_THREAD, currentThread()))
                 .subscribe();
         allDone.await();
 
@@ -67,14 +67,14 @@ public abstract class AbstractPublishAndSubscribeOnTest {
         AtomicReferenceArray<Thread> capturedThreads = new AtomicReferenceArray<>(2);
 
         Completable original = new CompletableWithExecutor(originalSourceExecutorRule.executor(), never())
-                .doAfterCancel(() -> {
+                .afterCancel(() -> {
                     capturedThreads.set(0, currentThread());
                     allDone.countDown();
                 });
 
         Completable offloaded = offloadingFunction.apply(original);
 
-        offloaded.doBeforeCancel(() -> capturedThreads.set(1, currentThread()))
+        offloaded.beforeCancel(() -> capturedThreads.set(1, currentThread()))
                 .subscribe().cancel();
         allDone.await();
 

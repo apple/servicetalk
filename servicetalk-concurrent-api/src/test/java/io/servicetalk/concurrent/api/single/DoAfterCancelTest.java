@@ -20,6 +20,6 @@ import io.servicetalk.concurrent.api.Single;
 public class DoAfterCancelTest extends AbstractDoCancelTest {
     @Override
     protected <T> Single<T> doCancel(Single<T> single, Runnable runnable) {
-        return single.doAfterCancel(runnable);
+        return single.afterCancel(runnable);
     }
 }

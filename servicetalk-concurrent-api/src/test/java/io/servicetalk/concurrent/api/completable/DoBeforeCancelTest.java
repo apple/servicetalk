@@ -20,6 +20,6 @@ import io.servicetalk.concurrent.api.Completable;
 public class DoBeforeCancelTest extends AbstractDoCancelTest {
     @Override
     protected Completable doCancel(Completable completable, Runnable runnable) {
-        return completable.doBeforeCancel(runnable);
+        return completable.beforeCancel(runnable);
     }
 }

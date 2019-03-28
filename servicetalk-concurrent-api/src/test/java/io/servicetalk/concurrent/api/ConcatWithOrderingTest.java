@@ -192,14 +192,14 @@ public class ConcatWithOrderingTest {
     }
 
     private Completable completable(final int number) {
-        return Completable.completed().doBeforeOnComplete(() -> sb.append(number));
+        return Completable.completed().beforeOnComplete(() -> sb.append(number));
     }
 
     private Single<Integer> single(final int number) {
-        return Single.succeeded(0).doBeforeOnSuccess(__ -> sb.append(number));
+        return Single.succeeded(0).beforeOnSuccess(__ -> sb.append(number));
     }
 
     private Publisher<Integer> publisher(final int number) {
-        return Publisher.from(0, 1, 2).doBeforeOnComplete(() -> sb.append(number));
+        return Publisher.from(0, 1, 2).beforeOnComplete(() -> sb.append(number));
     }
 }

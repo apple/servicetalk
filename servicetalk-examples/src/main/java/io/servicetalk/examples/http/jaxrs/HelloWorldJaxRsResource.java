@@ -110,7 +110,7 @@ public class HelloWorldJaxRsResource {
                                              @Context final ConnectionContext ctx) {
         final CompletableFuture<String> delayedResponse = new CompletableFuture<>();
         ctx.executionContext().executor().timer(1, SECONDS)
-                .doAfterOnComplete(() -> delayedResponse.complete("well, hello " + who))
+                .afterOnComplete(() -> delayedResponse.complete("well, hello " + who))
                 .subscribe();
         return delayedResponse;
     }

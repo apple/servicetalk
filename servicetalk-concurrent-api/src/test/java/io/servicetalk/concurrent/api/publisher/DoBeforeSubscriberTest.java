@@ -24,6 +24,6 @@ public class DoBeforeSubscriberTest extends AbstractDoSubscriberTest {
     @Override
     protected <T> Publisher<T> doSubscriber(Publisher<T> publisher,
                                             Supplier<Subscriber<? super T>> subscriberSupplier) {
-        return publisher.doBeforeSubscriber(subscriberSupplier);
+        return publisher.beforeSubscriber(subscriberSupplier);
     }
 }

@@ -52,12 +52,12 @@ import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
  * <pre>{@code
  *     // coarse grained, any terminal signal calls the provided `Runnable`
  *     return requester.request(strategy, request)
- *                     .doBeforeOnSubscribe(__ -> tracker.requestStarted())
+ *                     .beforeOnSubscribe(__ -> tracker.requestStarted())
  *                     .liftSync(new DoBeforeFinallyOnHttpResponseOperator(tracker::requestFinished));
  *
  *     // fine grained, `tracker` implements `TerminalSignalConsumer`, terminal signal indicated by the callback method
  *     return requester.request(strategy, request)
- *                     .doBeforeOnSubscribe(__ -> tracker.requestStarted())
+ *                     .beforeOnSubscribe(__ -> tracker.requestStarted())
  *                     .liftSync(new DoBeforeFinallyOnHttpResponseOperator(tracker));
  * }</pre>
  */
@@ -89,7 +89,7 @@ public final class DoBeforeFinallyOnHttpResponseOperator
     @Override
     public SingleSource.Subscriber<? super StreamingHttpResponse> apply(
             final SingleSource.Subscriber<? super StreamingHttpResponse> subscriber) {
-        // Here we avoid calling doBeforeFinally#onCancel when we get a cancel() on the Single after we have handed out
+        // Here we avoid calling beforeFinally#onCancel when we get a cancel() on the Single after we have handed out
         // the StreamingHttpResponse to the subscriber. In case, we do get an StreamingHttpResponse after we got
         // cancel(), we subscribe to the payload Publisher and cancel to indicate to the Connection that there is no
         // other Subscriber that will use the payload Publisher.

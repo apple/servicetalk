@@ -31,7 +31,7 @@ public class SubscribeShareContextTest {
     @Test
     public void contextIsShared() throws Exception {
         AsyncContext.put(KEY, "v1");
-        succeeded(1).doBeforeOnSuccess(__ -> AsyncContext.put(KEY, "v2")).subscribeShareContext().toFuture().get();
+        succeeded(1).beforeOnSuccess(__ -> AsyncContext.put(KEY, "v2")).subscribeShareContext().toFuture().get();
         assertThat("Unexpected value found in the context.", AsyncContext.get(KEY), is("v2"));
     }
 
@@ -39,8 +39,8 @@ public class SubscribeShareContextTest {
     public void contextIsNotSharedIfNotLastOperator() throws Exception {
         // When we support this feature, then we can change this test
         AsyncContext.put(KEY, "v1");
-        succeeded(1).doBeforeOnSuccess(__ -> AsyncContext.put(KEY, "v2"))
-                .subscribeShareContext().doBeforeOnSuccess(__ -> { }).toFuture().get();
+        succeeded(1).beforeOnSuccess(__ -> AsyncContext.put(KEY, "v2"))
+                .subscribeShareContext().beforeOnSuccess(__ -> { }).toFuture().get();
         assertThat("Unexpected value found in the context.", AsyncContext.get(KEY), is("v1"));
     }
 }

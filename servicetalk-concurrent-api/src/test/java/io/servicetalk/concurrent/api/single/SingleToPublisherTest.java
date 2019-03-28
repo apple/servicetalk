@@ -121,7 +121,7 @@ public class SingleToPublisherTest {
 
     @Test
     public void exceptionInTerminalCallsOnError() {
-        toSource(Single.succeeded("Hello").toPublisher().doOnNext(n -> {
+        toSource(Single.succeeded("Hello").toPublisher().whenOnNext(n -> {
             throw DELIBERATE_EXCEPTION;
         })).subscribe(verifier);
         // The mock behavior must be applied after subscribe, because a new mock is created as part of this process.
@@ -137,12 +137,12 @@ public class SingleToPublisherTest {
         ConcurrentLinkedQueue<AssertionError> errors = new ConcurrentLinkedQueue<>();
         TestSingle<String> single = new TestSingle.Builder<String>().disableAutoOnSubscribe().build();
         TestPublisherSubscriber<String> subscriber = new TestPublisherSubscriber<>();
-        toSource(single.doBeforeCancel(() -> {
+        toSource(single.beforeCancel(() -> {
             if (currentThread() == testThread) {
                 errors.add(new AssertionError("Invalid thread invoked cancel. Thread: " +
                         currentThread()));
             }
-        }).doAfterCancel(analyzed::countDown).subscribeOn(executorRule.executor()).toPublisher()).subscribe(subscriber);
+        }).afterCancel(analyzed::countDown).subscribeOn(executorRule.executor()).toPublisher()).subscribe(subscriber);
         TestCancellable cancellable = new TestCancellable();
         single.onSubscribe(cancellable); // waits till subscribed.
         assertThat("Single not subscribed.", single.isSubscribed(), is(true));
@@ -220,7 +220,7 @@ public class SingleToPublisherTest {
         CountDownLatch analyzed = new CountDownLatch(1);
         CountDownLatch receivedOnSubscribe = new CountDownLatch(1);
         toSource(single.publishOn(executorRule.executor())
-                .doBeforeOnSuccess(__ -> {
+                .beforeOnSuccess(__ -> {
                     if (currentThread() == testThread) {
                         errors.add(new AssertionError("Invalid thread invoked onSuccess " +
                                 "(from Completable). Thread: " + currentThread()));
@@ -229,28 +229,28 @@ public class SingleToPublisherTest {
                         receivedOnSuccessFromSingle.countDown();
                     }
                 })
-                .doBeforeOnError(__ -> {
+                .beforeOnError(__ -> {
                     if (currentThread() == testThread) {
                         errors.add(new AssertionError("Invalid thread invoked onError" +
                                 "(from Completable). Thread: " + currentThread()));
                     }
                 })
                 .toPublisher()
-                .doBeforeOnNext(__ -> {
+                .beforeOnNext(__ -> {
                     if (currentThread() == testThread) {
                         errors.add(new AssertionError("Invalid thread invoked onNext " +
                                 "(from Publisher). Thread: " + currentThread()));
                     }
                 })
-                .doBeforeOnError(__ -> {
+                .beforeOnError(__ -> {
                     if (currentThread() == testThread) {
                         errors.add(new AssertionError("Invalid thread invoked onError " +
                                 "(from Publisher). Thread: " + currentThread()));
                     }
                 })
-                .doBeforeOnComplete(analyzed::countDown)
-                .doBeforeOnError(__ -> analyzed.countDown())
-                .doAfterOnSubscribe(__ -> receivedOnSubscribe.countDown())
+                .beforeOnComplete(analyzed::countDown)
+                .beforeOnError(__ -> analyzed.countDown())
+                .afterOnSubscribe(__ -> receivedOnSubscribe.countDown())
         )
                 .subscribe(subscriber);
         single.onSubscribe(new TestCancellable()); // await subscribe

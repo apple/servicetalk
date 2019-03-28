@@ -23,6 +23,6 @@ import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 public class DoBeforeCancelTest extends AbstractDoCancelTest {
     @Override
     protected <T> PublisherSource<T> doCancel(Publisher<T> publisher, Runnable runnable) {
-        return toSource(publisher.doBeforeCancel(runnable));
+        return toSource(publisher.beforeCancel(runnable));
     }
 }

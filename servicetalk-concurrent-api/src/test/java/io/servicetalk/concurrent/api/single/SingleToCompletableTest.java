@@ -41,7 +41,7 @@ public class SingleToCompletableTest {
         final Thread testThread = currentThread();
         final CountDownLatch analyzed = new CountDownLatch(1);
         ConcurrentLinkedQueue<AssertionError> errors = new ConcurrentLinkedQueue<>();
-        never().doBeforeCancel(() -> {
+        never().beforeCancel(() -> {
             if (currentThread() == testThread) {
                 errors.add(new AssertionError("Invalid thread invoked cancel. Thread: " +
                         currentThread()));

@@ -26,7 +26,7 @@ import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_
 public class DoBeforeSuccessTest extends AbstractDoSuccessTest {
     @Override
     protected <T> Single<T> doSuccess(Single<T> single, Consumer<T> consumer) {
-        return single.doBeforeOnSuccess(consumer);
+        return single.beforeOnSuccess(consumer);
     }
 
     @Test

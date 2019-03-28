@@ -786,7 +786,7 @@ public class SingleToCompletionStageTest {
     @Test
     public void cancellationAfterListen() throws InterruptedException {
         CountDownLatch cancelLatch = new CountDownLatch(1);
-        CompletionStage<String> stage = source.doAfterCancel(cancelLatch::countDown).toCompletionStage();
+        CompletionStage<String> stage = source.afterCancel(cancelLatch::countDown).toCompletionStage();
         AtomicReference<Throwable> causeRef = new AtomicReference<>();
         CountDownLatch latch = new CountDownLatch(1);
         stage.whenComplete((s, t) -> {
@@ -802,7 +802,7 @@ public class SingleToCompletionStageTest {
     @Test
     public void blockingCancellationAfterListen() throws Exception {
         CountDownLatch cancelLatch = new CountDownLatch(1);
-        CompletionStage<String> stage = source.doAfterCancel(cancelLatch::countDown).toCompletionStage();
+        CompletionStage<String> stage = source.afterCancel(cancelLatch::countDown).toCompletionStage();
         CompletableFuture<String> future = stage.toCompletableFuture();
         AtomicReference<Throwable> causeRef = new AtomicReference<>();
         CountDownLatch latch = new CountDownLatch(1);
@@ -823,7 +823,7 @@ public class SingleToCompletionStageTest {
     @Test
     public void cancellationOnDependentCancelsSource() throws InterruptedException {
         CountDownLatch cancelLatch = new CountDownLatch(1);
-        CompletionStage<String> stage = source.doAfterCancel(cancelLatch::countDown).toCompletionStage();
+        CompletionStage<String> stage = source.afterCancel(cancelLatch::countDown).toCompletionStage();
         AtomicReference<Throwable> causeRef = new AtomicReference<>();
         CountDownLatch latch = new CountDownLatch(1);
         stage = stage.whenComplete((s, t) -> causeRef.compareAndSet(null, t))

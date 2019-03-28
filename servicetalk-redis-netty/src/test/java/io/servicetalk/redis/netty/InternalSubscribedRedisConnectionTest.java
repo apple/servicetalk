@@ -108,7 +108,7 @@ public class InternalSubscribedRedisConnectionTest {
                 new CompleteBulkString(connection.executionContext().bufferAllocator().fromUtf8("FOO")));
 
         Publisher<RedisData> subscriptionRequest = connection.request(subReq)
-                .doAfterCancel(requestStreamCancelled::countDown);
+                .afterCancel(requestStreamCancelled::countDown);
 
         Subscription subscription = subscribeToResponse(subscriptionRequest, new ConcurrentLinkedQueue<>());
         subscription.cancel();
@@ -133,7 +133,7 @@ public class InternalSubscribedRedisConnectionTest {
                         .fromUtf8(channelToSubscribe)));
 
         Publisher<RedisData> subscriptionRequest = connection.request(subReq)
-                .doAfterOnSubscribe(__ -> latch.countDown());
+                .afterOnSubscribe(__ -> latch.countDown());
 
         LinkedBlockingQueue<Object> notifications = new LinkedBlockingQueue<>();
         Subscription subscription = subscribeToResponse(subscriptionRequest, notifications);

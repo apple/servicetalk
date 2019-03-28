@@ -44,6 +44,6 @@ public class CompletableExecutorPreservationTest {
 
     @Test
     public void testDoBeforeFinallyCompletable() {
-        assertSame(EXEC.executor(), completable.doBeforeFinally(() -> { /* NOOP */ }).executor());
+        assertSame(EXEC.executor(), completable.beforeFinally(() -> { /* NOOP */ }).executor());
     }
 }

@@ -163,21 +163,21 @@ public class DefaultRedisExecutionStrategyTest {
         }
 
         RedisRequest instrumentedRequest(RedisRequest request) {
-            return request.transformContent(p -> p.doBeforeRequest(__ -> {
+            return request.transformContent(p -> p.beforeRequest(__ -> {
                 analyzed.set(SEND_ANALYZED_INDEX, true);
                 verifyThread(offloadSend, "Unexpected thread requested from request.");
             }));
         }
 
         Publisher<RedisData> instrumentedResponse(Publisher<RedisData> resp) {
-            return resp.doBeforeOnNext(__ -> {
+            return resp.beforeOnNext(__ -> {
                 analyzed.set(RECEIVE_ANALYZED_INDEX, true);
                 verifyThread(offloadReceive, "Unexpected thread for response payload onNext.");
             });
         }
 
         <T> Single<T> instrumentSend(Single<T> original) {
-            return original.doBeforeCancel(() -> {
+            return original.beforeCancel(() -> {
                 analyzed.set(SEND_ANALYZED_INDEX, true);
                 verifyThread(offloadSend, "Unexpected thread requested from cancel.");
                 awaitCancel.countDown();
@@ -185,21 +185,21 @@ public class DefaultRedisExecutionStrategyTest {
         }
 
         <T> Publisher<T> instrumentSend(Publisher<T> original) {
-            return original.doBeforeRequest(__ -> {
+            return original.beforeRequest(__ -> {
                 analyzed.set(SEND_ANALYZED_INDEX, true);
                 verifyThread(offloadSend, "Unexpected thread requested from request.");
             });
         }
 
         <T> Single<T> instrumentReceive(Single<T> original) {
-            return original.doBeforeOnSuccess(__ -> {
+            return original.beforeOnSuccess(__ -> {
                 analyzed.set(RECEIVE_ANALYZED_INDEX, true);
                 verifyThread(offloadReceive, "Unexpected thread requested from success.");
             });
         }
 
         <T> Publisher<T> instrumentReceive(Publisher<T> original) {
-            return original.doBeforeOnNext(__ -> {
+            return original.beforeOnNext(__ -> {
                 analyzed.set(RECEIVE_ANALYZED_INDEX, true);
                 verifyThread(offloadReceive, "Unexpected thread requested from next.");
             });

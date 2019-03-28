@@ -44,16 +44,16 @@ public class AsyncContextDisableTest {
                 AsyncContext.put(K1, expectedValue);
                 assertEquals(expectedValue, executor.submit(() -> AsyncContext.get(K1)).toFuture().get());
                 AtomicReference<String> actualValue = new AtomicReference<>();
-                Publisher.from(1, 2).publishOn(executor).doBeforeOnComplete(() -> actualValue.set(AsyncContext.get(K1)))
+                Publisher.from(1, 2).publishOn(executor).beforeOnComplete(() -> actualValue.set(AsyncContext.get(K1)))
                         .toFuture().get();
                 assertEquals(expectedValue, actualValue.get());
                 actualValue.set(null);
-                Single.succeeded(1).publishOn(executor).doBeforeOnSuccess(i -> actualValue.set(AsyncContext.get(K1)))
+                Single.succeeded(1).publishOn(executor).beforeOnSuccess(i -> actualValue.set(AsyncContext.get(K1)))
                         .toFuture().get();
                 assertEquals(expectedValue, actualValue.get());
                 actualValue.set(null);
                 Completable.completed().publishOn(executor)
-                        .doBeforeOnComplete(() -> actualValue.set(AsyncContext.get(K1))).toFuture().get();
+                        .beforeOnComplete(() -> actualValue.set(AsyncContext.get(K1))).toFuture().get();
                 assertEquals(expectedValue, actualValue.get());
                 actualValue.set(null);
 
@@ -88,16 +88,16 @@ public class AsyncContextDisableTest {
 
                     AtomicReference<String> actualValue = new AtomicReference<>();
                     Publisher.from(1, 2).publishOn(executor)
-                            .doBeforeOnComplete(() -> actualValue.set(AsyncContext.get(K1))).toFuture().get();
+                            .beforeOnComplete(() -> actualValue.set(AsyncContext.get(K1))).toFuture().get();
                     assertNull(actualValue.get());
                     actualValue.set(null);
                     Single.succeeded(1).publishOn(executor)
-                            .doBeforeOnSuccess(i -> actualValue.set(AsyncContext.get(K1)))
+                            .beforeOnSuccess(i -> actualValue.set(AsyncContext.get(K1)))
                             .toFuture().get();
                     assertNull(actualValue.get());
                     actualValue.set(null);
                     Completable.completed().publishOn(executor)
-                            .doBeforeOnComplete(() -> actualValue.set(AsyncContext.get(K1))).toFuture().get();
+                            .beforeOnComplete(() -> actualValue.set(AsyncContext.get(K1))).toFuture().get();
                     assertNull(actualValue.get());
                     actualValue.set(null);
                 } finally {

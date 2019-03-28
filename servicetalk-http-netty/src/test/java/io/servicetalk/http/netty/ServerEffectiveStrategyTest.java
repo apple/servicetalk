@@ -601,10 +601,10 @@ public class ServerEffectiveStrategyTest {
                                                     final StreamingHttpResponseFactory responseFactory) {
             recorder.recordThread(ServerOffloadPoint.ServiceHandle);
             return delegate().handle(ctx, request.transformPayloadBody(publisher ->
-                    publisher.doBeforeOnNext(__ -> recorder.recordThread(ServerOffloadPoint.RequestPayload))),
+                    publisher.beforeOnNext(__ -> recorder.recordThread(ServerOffloadPoint.RequestPayload))),
                     responseFactory)
                     .map(resp -> resp.transformPayloadBody(pub ->
-                            pub.doBeforeRequest(__ -> recorder.recordThread(ServerOffloadPoint.Response))));
+                            pub.beforeRequest(__ -> recorder.recordThread(ServerOffloadPoint.Response))));
         }
 
         @Override

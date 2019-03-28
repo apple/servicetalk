@@ -86,7 +86,7 @@ final class BlockingStreamingHttpServiceToStreamingHttpService implements Stream
                                     fromSource(payloadProcessor).merge(payloadWriter.connect()
                                             .map(buffer -> (Object) buffer) // down cast to Object
                                             .concat(succeeded(payloadWriter.trailers())))
-                                            .doBeforeSubscription(() -> new PublisherSource.Subscription() {
+                                            .beforeSubscription(() -> new PublisherSource.Subscription() {
                                                 @Override
                                                 public void request(final long n) {
                                                     // Noop
