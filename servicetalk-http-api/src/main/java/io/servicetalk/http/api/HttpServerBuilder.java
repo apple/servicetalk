@@ -361,7 +361,7 @@ public abstract class HttpServerBuilder {
      * the server could not be started.
      */
     public final Single<ServerContext> listen(final HttpService handler) {
-        return listenStreaming0(HttpApiConversions.toStreamingHttpService(handler));
+        return listenStreaming0(toStreamingHttpService(handler));
     }
 
     /**

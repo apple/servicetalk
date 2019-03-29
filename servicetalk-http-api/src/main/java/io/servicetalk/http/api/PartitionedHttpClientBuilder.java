@@ -82,11 +82,12 @@ public abstract class PartitionedHttpClientBuilder<U, R>
     public abstract PartitionedHttpClientBuilder<U, R> maxPipelinedRequests(int maxPipelinedRequests);
 
     @Override
-    public abstract PartitionedHttpClientBuilder<U, R> appendConnectionFilter(HttpConnectionFilterFactory factory);
+    public abstract PartitionedHttpClientBuilder<U, R> appendConnectionFilter(
+            StreamingHttpConnectionFilterFactory factory);
 
     @Override
     public PartitionedHttpClientBuilder<U, R> appendConnectionFilter(Predicate<StreamingHttpRequest> predicate,
-                                                                     HttpConnectionFilterFactory factory) {
+                                                                     StreamingHttpConnectionFilterFactory factory) {
         return (PartitionedHttpClientBuilder<U, R>)
                 super.appendConnectionFilter(predicate, factory);
     }
@@ -113,11 +114,11 @@ public abstract class PartitionedHttpClientBuilder<U, R>
     public abstract PartitionedHttpClientBuilder<U, R> enableHostHeaderFallback(CharSequence hostHeader);
 
     @Override
-    public abstract PartitionedHttpClientBuilder<U, R> appendClientFilter(HttpClientFilterFactory function);
+    public abstract PartitionedHttpClientBuilder<U, R> appendClientFilter(StreamingHttpClientFilterFactory function);
 
     @Override
     public PartitionedHttpClientBuilder<U, R> appendClientFilter(Predicate<StreamingHttpRequest> predicate,
-                                                                 HttpClientFilterFactory factory) {
+                                                                 StreamingHttpClientFilterFactory factory) {
         return (PartitionedHttpClientBuilder<U, R>)
                 super.appendClientFilter(predicate, factory);
     }

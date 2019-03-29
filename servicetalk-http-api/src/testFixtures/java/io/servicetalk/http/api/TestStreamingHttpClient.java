@@ -34,7 +34,7 @@ public final class TestStreamingHttpClient {
     public static StreamingHttpClient from(
             final StreamingHttpRequestResponseFactory reqRespFactory,
             final ExecutionContext executionContext,
-            final HttpClientFilterFactory factory) {
+            final StreamingHttpClientFilterFactory factory) {
         final StreamingHttpClientFilter filterChain = factory
                 .create(new FilterableStreamingHttpClient() {
                     private final ListenableAsyncCloseable closeable = emptyAsyncCloseable();

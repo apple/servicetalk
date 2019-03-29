@@ -69,12 +69,12 @@ abstract class BaseSingleAddressHttpClientBuilder<U, R, SDE extends ServiceDisco
 
     @Override
     public abstract BaseSingleAddressHttpClientBuilder<U, R, SDE> appendConnectionFilter(
-            HttpConnectionFilterFactory factory);
+            StreamingHttpConnectionFilterFactory factory);
 
     @Override
     public BaseSingleAddressHttpClientBuilder<U, R, SDE> appendConnectionFilter(
             Predicate<StreamingHttpRequest> predicate,
-            HttpConnectionFilterFactory factory) {
+            StreamingHttpConnectionFilterFactory factory) {
         return (BaseSingleAddressHttpClientBuilder<U, R, SDE>) super.appendConnectionFilter(predicate, factory);
     }
 

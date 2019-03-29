@@ -153,11 +153,12 @@ public abstract class HttpConnectionBuilder<ResolvedAddress> extends BaseHttpBui
     }
 
     @Override
-    public abstract HttpConnectionBuilder<ResolvedAddress> appendConnectionFilter(HttpConnectionFilterFactory factory);
+    public abstract HttpConnectionBuilder<ResolvedAddress> appendConnectionFilter(
+            StreamingHttpConnectionFilterFactory factory);
 
     @Override
     public HttpConnectionBuilder<ResolvedAddress> appendConnectionFilter(
-            Predicate<StreamingHttpRequest> predicate, HttpConnectionFilterFactory factory) {
+            Predicate<StreamingHttpRequest> predicate, StreamingHttpConnectionFilterFactory factory) {
         super.appendConnectionFilter(predicate, factory);
         return this;
     }

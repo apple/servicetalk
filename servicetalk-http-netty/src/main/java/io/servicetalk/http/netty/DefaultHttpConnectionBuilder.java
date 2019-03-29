@@ -21,11 +21,11 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpConnectionBuilder;
-import io.servicetalk.http.api.HttpConnectionFilterFactory;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.StreamingHttpConnection;
+import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.tcp.netty.internal.ReadOnlyTcpClientConfig;
@@ -64,9 +64,9 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> extends HttpCon
     private final HttpClientConfig config;
     private final ExecutionContextBuilder executionContextBuilder = new ExecutionContextBuilder();
     @Nullable
-    private HttpConnectionFilterFactory connectionFilterFunction;
+    private StreamingHttpConnectionFilterFactory connectionFilterFunction;
     @Nullable
-    private Function<ResolvedAddress, HttpConnectionFilterFactory> hostHeaderFilterFactory =
+    private Function<ResolvedAddress, StreamingHttpConnectionFilterFactory> hostHeaderFilterFactory =
             DefaultHttpConnectionBuilder::defaultHostHeaderFilterFactory;
 
     /**
@@ -101,7 +101,7 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> extends HttpCon
                 new DefaultStreamingHttpRequestResponseFactory(executionContext.bufferAllocator(),
                         roConfig.headersFactory());
 
-        HttpConnectionFilterFactory filterFactory;
+        StreamingHttpConnectionFilterFactory filterFactory;
         if (connectionFilterFunction != null) {
             if (hostHeaderFilterFactory != null) {
                 filterFactory = connectionFilterFunction.append(hostHeaderFilterFactory.apply(resolvedAddress));
@@ -135,7 +135,7 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> extends HttpCon
 
     static <ResolvedAddress> Single<FilterableStreamingHttpConnection> buildForPipelined(
             final ExecutionContext executionContext, ResolvedAddress resolvedAddress, ReadOnlyHttpClientConfig roConfig,
-            @Nullable final HttpConnectionFilterFactory connectionFilterFunction,
+            @Nullable final StreamingHttpConnectionFilterFactory connectionFilterFunction,
             final StreamingHttpRequestResponseFactory reqRespFactory, final HttpExecutionStrategy strategy) {
         return buildStreaming(executionContext, resolvedAddress, roConfig).map(conn -> {
                     FilterableStreamingHttpConnection mappedConnection = new PipelinedStreamingHttpConnection(conn,
@@ -147,7 +147,7 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> extends HttpCon
 
     static <ResolvedAddress> Single<FilterableStreamingHttpConnection> buildForNonPipelined(
             final ExecutionContext executionContext, ResolvedAddress resolvedAddress, ReadOnlyHttpClientConfig roConfig,
-            @Nullable final HttpConnectionFilterFactory connectionFilterFunction,
+            @Nullable final StreamingHttpConnectionFilterFactory connectionFilterFunction,
             final StreamingHttpRequestResponseFactory reqRespFactory, final HttpExecutionStrategy strategy) {
         return buildStreaming(executionContext, resolvedAddress, roConfig).map(conn -> {
                     FilterableStreamingHttpConnection mappedConnection = new NonPipelinedStreamingHttpConnection(conn,
@@ -251,13 +251,13 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> extends HttpCon
 
     @Override
     public DefaultHttpConnectionBuilder<ResolvedAddress> enableHostHeaderFallback(final CharSequence hostHeader) {
-        hostHeaderFilterFactory = __ -> new HostHeaderHttpRequesterFilter(hostHeader);
+        hostHeaderFilterFactory = __ -> new HostHeaderStreamingHttpRequesterFilter(hostHeader);
         return this;
     }
 
     @Override
     public DefaultHttpConnectionBuilder<ResolvedAddress> appendConnectionFilter(
-            final HttpConnectionFilterFactory function) {
+            final StreamingHttpConnectionFilterFactory function) {
         if (connectionFilterFunction == null) {
             connectionFilterFunction = requireNonNull(function);
         } else {
@@ -268,15 +268,15 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> extends HttpCon
 
     @Override
     public DefaultHttpConnectionBuilder<ResolvedAddress> appendConnectionFilter(
-            final Predicate<StreamingHttpRequest> predicate, final HttpConnectionFilterFactory factory) {
+            final Predicate<StreamingHttpRequest> predicate, final StreamingHttpConnectionFilterFactory factory) {
         super.appendConnectionFilter(predicate, factory);
         return this;
     }
 
-    private static <R> HostHeaderHttpRequesterFilter defaultHostHeaderFilterFactory(final R address) {
+    private static <R> HostHeaderStreamingHttpRequesterFilter defaultHostHeaderFilterFactory(final R address) {
         // Make a best effort to infer HOST header for HttpConnection
         if (address instanceof InetSocketAddress) {
-            return new HostHeaderHttpRequesterFilter(HostAndPort.of((InetSocketAddress) address));
+            return new HostHeaderStreamingHttpRequesterFilter(HostAndPort.of((InetSocketAddress) address));
         }
         throw new IllegalArgumentException("Unsupported host header address type, provide an override");
     }

@@ -26,7 +26,8 @@ import static org.mockito.Mockito.mock;
 
 public class ConditionalHttpConnectionFilterTest extends AbstractConditionalHttpFilterTest {
 
-    private static final HttpConnectionFilterFactory REQ_FILTER = conn -> new StreamingHttpConnectionFilter(conn) {
+    private static final StreamingHttpConnectionFilterFactory REQ_FILTER =
+            conn -> new StreamingHttpConnectionFilter(conn) {
         @Override
         public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
                                                      final StreamingHttpRequest request) {
@@ -34,7 +35,7 @@ public class ConditionalHttpConnectionFilterTest extends AbstractConditionalHttp
         }
     };
 
-    private static final class TestCondFilterFactory implements HttpConnectionFilterFactory {
+    private static final class TestCondFilterFactory implements StreamingHttpConnectionFilterFactory {
 
         private final AtomicBoolean closed;
 

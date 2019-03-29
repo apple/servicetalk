@@ -24,8 +24,8 @@ import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.netty.HttpClients;
 import io.servicetalk.http.netty.HttpServers;
 import io.servicetalk.http.router.predicate.HttpPredicateRouterBuilder;
-import io.servicetalk.http.utils.RetryingHttpRequesterFilter;
-import io.servicetalk.http.utils.TimeoutHttpRequesterFilter;
+import io.servicetalk.http.utils.RetryingStreamingHttpRequesterFilter;
+import io.servicetalk.http.utils.TimeoutStreamingHttpRequesterFilter;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.ServerContext;
@@ -115,11 +115,11 @@ public final class GatewayServer {
         return resources.prepend(
                 HttpClients.forSingleAddress(serviceAddress)
                         // Set retry and timeout filters for all clients.
-                        .appendClientFilter(new RetryingHttpRequesterFilter.Builder()
+                        .appendClientFilter(new RetryingStreamingHttpRequesterFilter.Builder()
                                 .maxRetries(3)
                                 .buildWithExponentialBackoffAndJitter(ofMillis(100)))
                         // Apply a timeout filter for the client to guard against latent clients.
-                        .appendClientFilter(new TimeoutHttpRequesterFilter(ofMillis(500)))
+                        .appendClientFilter(new TimeoutStreamingHttpRequesterFilter(ofMillis(500)))
                         .ioExecutor(ioExecutor)
                         .buildStreaming());
     }

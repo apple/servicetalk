@@ -50,9 +50,9 @@ public interface BlockingStreamingHttpRequester extends BlockingStreamingHttpReq
     }
 
     /**
-     * Compute the default {@link HttpExecutionStrategy} given the programming model constraints of this
-     * {@link BlockingStreamingHttpRequester} in combination with another {@link HttpExecutionStrategy}. This may
-     * involve a merge operation between two {@link BlockingStreamingHttpRequester}.
+     * Compute the {@link HttpExecutionStrategy} to be used for this {@link BlockingStreamingHttpRequester} considering
+     * the passed {@link HttpExecutionStrategy}. The passed {@link HttpExecutionStrategy} is the strategy that the
+     * caller intends to use if this {@link BlockingStreamingHttpRequester} does not modify it.
      *
      * @param other The other {@link HttpExecutionStrategy} to consider during the computation.
      * @return The {@link HttpExecutionStrategy} for this {@link BlockingStreamingHttpRequester}.

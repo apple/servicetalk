@@ -147,8 +147,8 @@ public abstract class AbstractHttpRequesterFilterTest {
      * @param <FF> type capture for the filter factory
      * @return a filtered {@link StreamingHttpRequester}
      */
-    protected final <FF extends HttpClientFilterFactory & HttpConnectionFilterFactory> StreamingHttpRequester
-    createFilter(FF filterFactory) {
+    protected final <FF extends StreamingHttpClientFilterFactory & StreamingHttpConnectionFilterFactory>
+        StreamingHttpRequester createFilter(FF filterFactory) {
         return createFilter(RequestHandler.ok(), ok(), filterFactory);
     }
 
@@ -160,8 +160,8 @@ public abstract class AbstractHttpRequesterFilterTest {
      * @param <FF> type capture for the filter factory
      * @return a filtered {@link StreamingHttpRequester}
      */
-    protected final <FF extends HttpClientFilterFactory & HttpConnectionFilterFactory> StreamingHttpRequester
-    createFilter(RequestHandler rh, FF filterFactory) {
+    protected final <FF extends StreamingHttpClientFilterFactory & StreamingHttpConnectionFilterFactory>
+        StreamingHttpRequester createFilter(RequestHandler rh, FF filterFactory) {
         return createFilter(rh, rh.withContext(), filterFactory);
     }
 
@@ -174,8 +174,8 @@ public abstract class AbstractHttpRequesterFilterTest {
      * @param <FF> type capture for the filter factory
      * @return a filtered {@link StreamingHttpRequester}
      */
-    protected final <FF extends HttpClientFilterFactory & HttpConnectionFilterFactory> StreamingHttpRequester
-    createFilter(RequestHandler rh, RequestWithContextHandler rwch, FF filterFactory) {
+    protected final <FF extends StreamingHttpClientFilterFactory & StreamingHttpConnectionFilterFactory>
+        StreamingHttpRequester createFilter(RequestHandler rh, RequestWithContextHandler rwch, FF filterFactory) {
         switch (type) {
             case Client:
                 return closeables.prepend(newClient(rh, rwch, filterFactory));
@@ -335,8 +335,8 @@ public abstract class AbstractHttpRequesterFilterTest {
     }
 
     private StreamingHttpConnection newConnection(final RequestWithContextHandler rwch,
-                                                  @Nullable final HttpConnectionFilterFactory filterFactory) {
-        final HttpConnectionFilterFactory handlerFilter = conn -> new StreamingHttpConnectionFilter(conn) {
+                                                  @Nullable final StreamingHttpConnectionFilterFactory filterFactory) {
+        final StreamingHttpConnectionFilterFactory handlerFilter = conn -> new StreamingHttpConnectionFilter(conn) {
             @Override
             public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
                                                             final StreamingHttpRequest request) {
@@ -348,9 +348,9 @@ public abstract class AbstractHttpRequesterFilterTest {
                 mockConnectionContext, filterFactory == null ? handlerFilter : filterFactory.append(handlerFilter));
     }
 
-    private <FF extends HttpClientFilterFactory & HttpConnectionFilterFactory> StreamingHttpClient newClient(
-            final RequestHandler rh, final RequestWithContextHandler rwch, final FF filterFactory) {
-        HttpClientFilterFactory handlerFilter = (client, __) -> new StreamingHttpClientFilter(client) {
+    private <FF extends StreamingHttpClientFilterFactory & StreamingHttpConnectionFilterFactory> StreamingHttpClient
+        newClient(final RequestHandler rh, final RequestWithContextHandler rwch, final FF filterFactory) {
+        StreamingHttpClientFilterFactory handlerFilter = (client, __) -> new StreamingHttpClientFilter(client) {
 
                     @Override
                     protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,

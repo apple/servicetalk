@@ -24,7 +24,7 @@ import static java.util.Objects.requireNonNull;
  * A factory for {@link StreamingHttpClientFilter}.
  */
 @FunctionalInterface
-public interface HttpClientFilterFactory {
+public interface StreamingHttpClientFilterFactory {
 
     /**
      * Creates a {@link StreamingHttpClientFilter} using the provided {@link StreamingHttpClientFilter}.
@@ -51,13 +51,14 @@ public interface HttpClientFilterFactory {
      * @return a composed function that first applies the {@code before}
      * function and then applies this function
      */
-    default HttpClientFilterFactory append(HttpClientFilterFactory before) {
+    default StreamingHttpClientFilterFactory append(StreamingHttpClientFilterFactory before) {
         requireNonNull(before);
         return (client, lbEvents) -> create(before.create(client, lbEvents), lbEvents);
     }
 
     /**
-     * Returns a {@link MultiAddressHttpClientFilterFactory} that adapts from a {@link HttpClientFilterFactory}.
+     * Returns a {@link MultiAddressHttpClientFilterFactory} that adapts from a
+     * {@link StreamingHttpClientFilterFactory}.
      *
      * @param <U> the type of address before resolution (unresolved address).
      * @return a {@link MultiAddressHttpClientFilterFactory} function

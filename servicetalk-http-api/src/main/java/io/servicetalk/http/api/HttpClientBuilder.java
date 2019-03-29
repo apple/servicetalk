@@ -81,11 +81,11 @@ abstract class HttpClientBuilder<U, R, SDE extends ServiceDiscovererEvent<R>> ex
     public abstract HttpClientBuilder<U, R, SDE> maxPipelinedRequests(int maxPipelinedRequests);
 
     @Override
-    public abstract HttpClientBuilder<U, R, SDE> appendConnectionFilter(HttpConnectionFilterFactory factory);
+    public abstract HttpClientBuilder<U, R, SDE> appendConnectionFilter(StreamingHttpConnectionFilterFactory factory);
 
     @Override
     public HttpClientBuilder<U, R, SDE> appendConnectionFilter(Predicate<StreamingHttpRequest> predicate,
-                                                               HttpConnectionFilterFactory factory) {
+                                                               StreamingHttpConnectionFilterFactory factory) {
         super.appendConnectionFilter(predicate, factory);
         return this;
     }
@@ -128,11 +128,11 @@ abstract class HttpClientBuilder<U, R, SDE extends ServiceDiscovererEvent<R>> ex
      *     filter1 =&gt; filter2 =&gt; filter3 =&gt; client
      * </pre>
      *
-     * @param factory {@link HttpClientFilterFactory} to decorate a {@link HttpClient} for the purpose of
+     * @param factory {@link StreamingHttpClientFilterFactory} to decorate a {@link HttpClient} for the purpose of
      * filtering.
      * @return {@code this}
      */
-    public abstract HttpClientBuilder<U, R, SDE> appendClientFilter(HttpClientFilterFactory factory);
+    public abstract HttpClientBuilder<U, R, SDE> appendClientFilter(StreamingHttpClientFilterFactory factory);
 
     /**
      * Append the filter to the chain of filters used to decorate the {@link HttpClient} created by this
@@ -151,12 +151,12 @@ abstract class HttpClientBuilder<U, R, SDE extends ServiceDiscovererEvent<R>> ex
      * </pre>
      *
      * @param predicate the {@link Predicate} to test if the filter must be applied.
-     * @param factory {@link HttpClientFilterFactory} to decorate a {@link HttpClient} for the purpose of
+     * @param factory {@link StreamingHttpClientFilterFactory} to decorate a {@link HttpClient} for the purpose of
      * filtering.
      * @return {@code this}
      */
     public HttpClientBuilder<U, R, SDE> appendClientFilter(Predicate<StreamingHttpRequest> predicate,
-                                                            HttpClientFilterFactory factory) {
+                                                            StreamingHttpClientFilterFactory factory) {
         requireNonNull(predicate);
         requireNonNull(factory);
 

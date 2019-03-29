@@ -19,12 +19,12 @@ import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
-import io.servicetalk.http.api.HttpClientFilterFactory;
-import io.servicetalk.http.api.HttpConnectionFilterFactory;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.StreamingHttpClientFilter;
+import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
 import io.servicetalk.http.api.StreamingHttpConnectionFilter;
+import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequester;
 import io.servicetalk.http.api.StreamingHttpResponse;
@@ -42,8 +42,8 @@ import static io.opentracing.tag.Tags.SPAN_KIND_CLIENT;
 /**
  * An HTTP filter that supports open tracing.
  */
-public class TracingHttpRequesterFilter extends AbstractTracingHttpFilter implements HttpClientFilterFactory,
-                                                                                     HttpConnectionFilterFactory {
+public class TracingStreamingHttpRequesterFilter extends AbstractTracingHttpFilter implements
+                                               StreamingHttpClientFilterFactory, StreamingHttpConnectionFilterFactory {
 
     /**
      * Create a new instance.
@@ -51,8 +51,8 @@ public class TracingHttpRequesterFilter extends AbstractTracingHttpFilter implem
      * @param tracer The {@link Tracer}.
      * @param componentName The component name used during building new spans.
      */
-    public TracingHttpRequesterFilter(final Tracer tracer,
-                                      final String componentName) {
+    public TracingStreamingHttpRequesterFilter(final Tracer tracer,
+                                               final String componentName) {
         this(tracer, componentName, true);
     }
 
@@ -63,9 +63,9 @@ public class TracingHttpRequesterFilter extends AbstractTracingHttpFilter implem
      * @param componentName The component name used during building new spans.
      * @param validateTraceKeyFormat {@code true} to validate the contents of the trace ids.
      */
-    public TracingHttpRequesterFilter(final Tracer tracer,
-                                      final String componentName,
-                                      boolean validateTraceKeyFormat) {
+    public TracingStreamingHttpRequesterFilter(final Tracer tracer,
+                                               final String componentName,
+                                               boolean validateTraceKeyFormat) {
         super(tracer, componentName, validateTraceKeyFormat);
     }
 

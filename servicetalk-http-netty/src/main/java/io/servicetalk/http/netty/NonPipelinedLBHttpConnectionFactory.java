@@ -16,8 +16,8 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.http.api.HttpConnectionFilterFactory;
 import io.servicetalk.http.api.HttpExecutionStrategy;
+import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.transport.api.ExecutionContext;
 
@@ -31,7 +31,7 @@ final class NonPipelinedLBHttpConnectionFactory<ResolvedAddress>
         extends AbstractLBHttpConnectionFactory<ResolvedAddress> {
     NonPipelinedLBHttpConnectionFactory(final ReadOnlyHttpClientConfig config,
                                         final ExecutionContext executionContext,
-                                        @Nullable final HttpConnectionFilterFactory connectionFilterFunction,
+                                        @Nullable final StreamingHttpConnectionFilterFactory connectionFilterFunction,
                                         final StreamingHttpRequestResponseFactory reqRespFactory,
                                         final HttpExecutionStrategy defaultStrategy) {
         super(config, executionContext, connectionFilterFunction, reqRespFactory, defaultStrategy);

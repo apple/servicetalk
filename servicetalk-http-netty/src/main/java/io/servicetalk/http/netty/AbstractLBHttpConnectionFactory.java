@@ -18,8 +18,8 @@ package io.servicetalk.http.netty;
 import io.servicetalk.client.api.ConnectionFactory;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
-import io.servicetalk.http.api.HttpConnectionFilterFactory;
 import io.servicetalk.http.api.HttpExecutionStrategy;
+import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.transport.api.ExecutionContext;
 
@@ -32,7 +32,7 @@ abstract class AbstractLBHttpConnectionFactory<ResolvedAddress>
         implements ConnectionFactory<ResolvedAddress, LoadBalancedStreamingHttpConnection> {
     private final ListenableAsyncCloseable close = emptyAsyncCloseable();
     @Nullable
-    final HttpConnectionFilterFactory connectionFilterFunction;
+    final StreamingHttpConnectionFilterFactory connectionFilterFunction;
     final HttpExecutionStrategy defaultStrategy;
     final ReadOnlyHttpClientConfig config;
     final ExecutionContext executionContext;
@@ -40,7 +40,7 @@ abstract class AbstractLBHttpConnectionFactory<ResolvedAddress>
 
     AbstractLBHttpConnectionFactory(final ReadOnlyHttpClientConfig config,
                                     final ExecutionContext executionContext,
-                                    @Nullable final HttpConnectionFilterFactory connectionFilterFunction,
+                                    @Nullable final StreamingHttpConnectionFilterFactory connectionFilterFunction,
                                     final StreamingHttpRequestResponseFactory reqRespFactory,
                                     final HttpExecutionStrategy defaultStrategy) {
         this.connectionFilterFunction = connectionFilterFunction;

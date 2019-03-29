@@ -36,7 +36,7 @@ public final class TestStreamingHttpConnection {
             final StreamingHttpRequestResponseFactory reqRespFactory,
             final ExecutionContext executionContext,
             final ConnectionContext connectionContext,
-            final HttpConnectionFilterFactory factory) {
+            final StreamingHttpConnectionFilterFactory factory) {
         final StreamingHttpConnectionFilter filterChain = factory
                 .create(new FilterableStreamingHttpConnection() {
                     private final ListenableAsyncCloseable closeable = emptyAsyncCloseable();

@@ -24,7 +24,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 public class ConditionalHttpClientFilterTest extends AbstractConditionalHttpFilterTest {
 
-    private static final HttpClientFilterFactory REQ_FILTER = (client, __) -> new StreamingHttpClientFilter(client) {
+    private static final StreamingHttpClientFilterFactory REQ_FILTER = (client, __) ->
+            new StreamingHttpClientFilter(client) {
         @Override
         protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                         final HttpExecutionStrategy strategy,
@@ -33,7 +34,7 @@ public class ConditionalHttpClientFilterTest extends AbstractConditionalHttpFilt
         }
     };
 
-    private static final class TestCondFilterFactory implements HttpClientFilterFactory {
+    private static final class TestCondFilterFactory implements StreamingHttpClientFilterFactory {
         private final AtomicBoolean closed;
 
         private TestCondFilterFactory(AtomicBoolean closed) {

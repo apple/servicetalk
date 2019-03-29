@@ -27,13 +27,13 @@ import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
-import io.servicetalk.http.api.HttpClientFilterFactory;
-import io.servicetalk.http.api.HttpConnectionFilterFactory;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.LoadBalancerReadyStreamingHttpClientFilter;
 import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.http.api.StreamingHttpClient;
+import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
+import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.tcp.netty.internal.TcpClientConfig;
 import io.servicetalk.transport.api.ExecutionContext;
@@ -64,7 +64,7 @@ import static java.util.Objects.requireNonNull;
  */
 final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHttpClientBuilder<U, R> {
 
-    private static final HttpClientFilterFactory LB_READY_FILTER =
+    private static final StreamingHttpClientFilterFactory LB_READY_FILTER =
             (client, lbEvents) -> new LoadBalancerReadyStreamingHttpClientFilter(4, lbEvents, client);
 
     @Nullable
@@ -75,14 +75,14 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
     private LoadBalancerFactory<R, FilterableStreamingHttpConnection> loadBalancerFactory;
     private ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> serviceDiscoverer;
     @Nullable
-    private Function<U, HttpClientFilterFactory> hostHeaderFilterFactory =
+    private Function<U, StreamingHttpClientFilterFactory> hostHeaderFilterFactory =
             DefaultSingleAddressHttpClientBuilder::defaultHostHeaderFilterFactory;
     @Nullable
-    private HttpConnectionFilterFactory connectionFilterFunction;
+    private StreamingHttpConnectionFilterFactory connectionFilterFunction;
     @Nullable
-    private HttpClientFilterFactory clientFilterFunction;
+    private StreamingHttpClientFilterFactory clientFilterFunction;
     @Nullable
-    private HttpClientFilterFactory lbReadyFilter = LB_READY_FILTER;
+    private StreamingHttpClientFilterFactory lbReadyFilter = LB_READY_FILTER;
     private ConnectionFactoryFilter<R, FilterableStreamingHttpConnection> connectionFactoryFilter =
             ConnectionFactoryFilter.identity();
 
@@ -191,7 +191,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
             final LoadBalancer<LoadBalancedStreamingHttpConnection> lb =
                     (LoadBalancer<LoadBalancedStreamingHttpConnection>) lbfUntypedForCast;
 
-            HttpClientFilterFactory currClientFilterFunction;
+            StreamingHttpClientFilterFactory currClientFilterFunction;
             if (clientFilterFunction != null) {
                 currClientFilterFunction = clientFilterFunction;
                 if (lbReadyFilter != null) {
@@ -253,12 +253,12 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
         return new HttpClientBuildContext<>(clonedBuilder, exec, reqRespFactory);
     }
 
-    private static <U> HostHeaderHttpRequesterFilter defaultHostHeaderFilterFactory(final U address) {
+    private static <U> HostHeaderStreamingHttpRequesterFilter defaultHostHeaderFilterFactory(final U address) {
         if (address instanceof CharSequence) {
-            return new HostHeaderHttpRequesterFilter((CharSequence) address);
+            return new HostHeaderStreamingHttpRequesterFilter((CharSequence) address);
         }
         if (address instanceof HostAndPort) {
-            return new HostHeaderHttpRequesterFilter((HostAndPort) address);
+            return new HostHeaderStreamingHttpRequesterFilter((HostAndPort) address);
         }
         throw new IllegalArgumentException("Unsupported host header address type, provide an override");
     }
@@ -339,7 +339,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
 
     @Override
     public DefaultSingleAddressHttpClientBuilder<U, R> appendConnectionFilter(
-            final HttpConnectionFilterFactory factory) {
+            final StreamingHttpConnectionFilterFactory factory) {
         if (connectionFilterFunction == null) {
             connectionFilterFunction = requireNonNull(factory);
         } else {
@@ -369,12 +369,13 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
 
     @Override
     public DefaultSingleAddressHttpClientBuilder<U, R> enableHostHeaderFallback(final CharSequence hostHeader) {
-        hostHeaderFilterFactory = address -> new HostHeaderHttpRequesterFilter(hostHeader);
+        hostHeaderFilterFactory = address -> new HostHeaderStreamingHttpRequesterFilter(hostHeader);
         return this;
     }
 
     @Override
-    public DefaultSingleAddressHttpClientBuilder<U, R> appendClientFilter(final HttpClientFilterFactory function) {
+    public DefaultSingleAddressHttpClientBuilder<U, R> appendClientFilter(
+            final StreamingHttpClientFilterFactory function) {
         if (clientFilterFunction == null) {
             clientFilterFunction = requireNonNull(function);
         } else {

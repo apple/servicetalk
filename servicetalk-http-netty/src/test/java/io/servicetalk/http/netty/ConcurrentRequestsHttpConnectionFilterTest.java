@@ -29,12 +29,12 @@ import io.servicetalk.http.api.DefaultHttpHeadersFactory;
 import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpConnection;
-import io.servicetalk.http.api.HttpConnectionFilterFactory;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpHeaderNames;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpConnectionFilter;
+import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.StreamingHttpResponse;
@@ -103,7 +103,7 @@ public class ConcurrentRequestsHttpConnectionFilterTest {
 
     @Test
     public void decrementWaitsUntilResponsePayloadIsComplete() throws Exception {
-        HttpConnectionFilterFactory mockConnection = new HttpConnectionFilterFactory() {
+        StreamingHttpConnectionFilterFactory mockConnection = new StreamingHttpConnectionFilterFactory() {
             @Override
             public StreamingHttpConnectionFilter create(final FilterableStreamingHttpConnection connection) {
                 return new StreamingHttpConnectionFilter(connection) {

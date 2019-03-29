@@ -62,8 +62,8 @@ public class SimpleHttpRequesterFilterTest extends AbstractHttpRequesterFilterTe
         return session;
     }
 
-    private static final class HeaderEnrichingRequestFilter implements HttpClientFilterFactory,
-                                                                       HttpConnectionFilterFactory {
+    private static final class HeaderEnrichingRequestFilter implements StreamingHttpClientFilterFactory,
+                                                                       StreamingHttpConnectionFilterFactory {
         @Override
         public StreamingHttpClientFilter create(final FilterableStreamingHttpClient client,
                                                 final Publisher<Object> lbEvents) {
@@ -139,7 +139,7 @@ public class SimpleHttpRequesterFilterTest extends AbstractHttpRequesterFilterTe
     }
 
     private static final class InterceptingRequestFilter
-            implements HttpClientFilterFactory, HttpConnectionFilterFactory {
+            implements StreamingHttpClientFilterFactory, StreamingHttpConnectionFilterFactory {
 
         AtomicInteger requestCalls = new AtomicInteger();
 
@@ -210,7 +210,8 @@ public class SimpleHttpRequesterFilterTest extends AbstractHttpRequesterFilterTe
      * Simple SSL {@link Principal} verifying filter that should be applied as both connection-filter and client-filter
      * at the same time to ensure full coverage of all code paths.
      */
-    private static final class SecurityEnforcingFilter implements HttpClientFilterFactory, HttpConnectionFilterFactory {
+    private static final class SecurityEnforcingFilter implements StreamingHttpClientFilterFactory,
+                                                                  StreamingHttpConnectionFilterFactory {
         @Override
         public StreamingHttpClientFilter create(final FilterableStreamingHttpClient client,
                                                 final Publisher<Object> lbEvents) {

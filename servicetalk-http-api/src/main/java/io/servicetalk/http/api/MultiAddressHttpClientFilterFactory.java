@@ -29,7 +29,7 @@ import static java.util.Objects.requireNonNull;
  * A factory for {@link StreamingHttpClientFilter} to filter clients for different unresolved addresses.
  *
  * @param <U> the type of address before resolution (unresolved address).
- * @see HttpClientFilterFactory
+ * @see StreamingHttpClientFilterFactory
  */
 @FunctionalInterface
 public interface MultiAddressHttpClientFilterFactory<U> {
@@ -66,12 +66,13 @@ public interface MultiAddressHttpClientFilterFactory<U> {
     }
 
     /**
-     * Returns a {@link HttpClientFilterFactory} that adapts from a {@link MultiAddressHttpClientFilterFactory}.
+     * Returns a {@link StreamingHttpClientFilterFactory} that adapts from a
+     * {@link MultiAddressHttpClientFilterFactory}.
      *
-     * @param address will be passed in all {@link HttpClientFilterFactory} applications
-     * @return a {@link HttpClientFilterFactory} function with a provided {@link GroupKey}
+     * @param address will be passed in all {@link StreamingHttpClientFilterFactory} applications
+     * @return a {@link StreamingHttpClientFilterFactory} function with a provided {@link GroupKey}
      */
-    default HttpClientFilterFactory asClientFilter(U address) {
+    default StreamingHttpClientFilterFactory asClientFilter(U address) {
         requireNonNull(address);
         return (client, lbEvents) -> new StreamingHttpClientFilter(create(address, client, lbEvents)) {
             @Override
@@ -99,11 +100,11 @@ public interface MultiAddressHttpClientFilterFactory<U> {
 
     /**
      * Returns a function that adapts from a {@link Function}&lt;{@link FilterableStreamingHttpClient},
-     * {@link StreamingHttpClientFilter}&gt; to the {@link HttpClientFilterFactory}.
+     * {@link StreamingHttpClientFilter}&gt; to the {@link StreamingHttpClientFilterFactory}.
      *
      * @param function the function that is applied to the original {@link FilterableStreamingHttpClient}
      * @param <U> the type of address before resolution (unresolved address)
-     * @return A {@link HttpClientFilterFactory} that uses the passed filter {@link Function}.
+     * @return A {@link StreamingHttpClientFilterFactory} that uses the passed filter {@link Function}.
      */
     static <U> MultiAddressHttpClientFilterFactory<U> from(
             Function<FilterableStreamingHttpClient, StreamingHttpClientFilter> function) {

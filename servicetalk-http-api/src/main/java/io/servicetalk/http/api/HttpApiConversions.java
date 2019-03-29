@@ -23,7 +23,6 @@ public final class HttpApiConversions {
         // no instances
     }
 
-    // Begin StreamingHttpService
     /**
      * Convert from a {@link HttpService} to a {@link StreamingHttpService}.
      *
@@ -53,5 +52,4 @@ public final class HttpApiConversions {
     public static StreamingHttpService toStreamingHttpService(BlockingHttpService handler) {
         return new BlockingHttpServiceToStreamingHttpService(handler);
     }
-    // End StreamingHttpService
 }

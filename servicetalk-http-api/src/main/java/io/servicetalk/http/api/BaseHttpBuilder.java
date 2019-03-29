@@ -169,12 +169,12 @@ abstract class BaseHttpBuilder<ResolvedAddress> {
      * <pre>
      *     filter1 =&gt; filter2 =&gt; filter3 =&gt; connection
      * </pre>
-     * @param factory {@link HttpConnectionFilterFactory} to decorate a {@link StreamingHttpConnection} for the purpose
-     * of filtering.
+     * @param factory {@link StreamingHttpConnectionFilterFactory} to decorate a {@link StreamingHttpConnection} for the
+     * purpose of filtering.
      * @return {@code this}
      */
     public abstract BaseHttpBuilder<ResolvedAddress> appendConnectionFilter(
-            HttpConnectionFilterFactory factory);
+            StreamingHttpConnectionFilterFactory factory);
 
     /**
      * Append the filter to the chain of filters used to decorate the {@link StreamingHttpConnection} created by this
@@ -193,14 +193,14 @@ abstract class BaseHttpBuilder<ResolvedAddress> {
      *     filter1 =&gt; filter2 =&gt; filter3 =&gt; connection
      * </pre>
      * @param predicate the {@link Predicate} to test if the filter must be applied.
-     * @param factory {@link HttpConnectionFilterFactory} to decorate a {@link StreamingHttpConnection} for the purpose
-     * of filtering.
+     * @param factory {@link StreamingHttpConnectionFilterFactory} to decorate a {@link StreamingHttpConnection} for the
+     * purpose of filtering.
      * @return {@code this}
      */
     // We don't want the user to be able to override but it cannot be final because we need to override the type.
     // However this class is package private so the user will not be able to override this method.
     public /* final */ BaseHttpBuilder<ResolvedAddress> appendConnectionFilter(
-            Predicate<StreamingHttpRequest> predicate, HttpConnectionFilterFactory factory) {
+            Predicate<StreamingHttpRequest> predicate, StreamingHttpConnectionFilterFactory factory) {
         requireNonNull(predicate);
         requireNonNull(factory);
 

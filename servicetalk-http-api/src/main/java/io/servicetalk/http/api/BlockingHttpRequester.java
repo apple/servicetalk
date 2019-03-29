@@ -49,9 +49,9 @@ public interface BlockingHttpRequester extends HttpRequestResponseFactory, AutoC
     }
 
     /**
-     * Compute the default {@link HttpExecutionStrategy} given the programming model constraints of this
-     * {@link BlockingHttpRequester} in combination with another {@link HttpExecutionStrategy}. This may involve a
-     * merge operation between two {@link BlockingHttpRequester}.
+     * Compute the {@link HttpExecutionStrategy} to be used for this {@link BlockingHttpRequester} considering the
+     * passed {@link HttpExecutionStrategy}. The passed {@link HttpExecutionStrategy} is the strategy that the caller
+     * intends to use if this {@link BlockingHttpRequester} does not modify it.
      *
      * @param other The other {@link HttpExecutionStrategy} to consider during the computation.
      * @return The {@link HttpExecutionStrategy} for this {@link BlockingHttpRequester}.

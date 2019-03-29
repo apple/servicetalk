@@ -82,11 +82,12 @@ public abstract class MultiAddressHttpClientBuilder<U, R>
     public abstract MultiAddressHttpClientBuilder<U, R> disableHostHeaderFallback();
 
     @Override
-    public abstract MultiAddressHttpClientBuilder<U, R> appendConnectionFilter(HttpConnectionFilterFactory factory);
+    public abstract MultiAddressHttpClientBuilder<U, R> appendConnectionFilter(
+            StreamingHttpConnectionFilterFactory factory);
 
     @Override
     public MultiAddressHttpClientBuilder<U, R> appendConnectionFilter(Predicate<StreamingHttpRequest> predicate,
-                                                                      HttpConnectionFilterFactory factory) {
+                                                                      StreamingHttpConnectionFilterFactory factory) {
         return (MultiAddressHttpClientBuilder<U, R>) super.appendConnectionFilter(predicate, factory);
     }
 

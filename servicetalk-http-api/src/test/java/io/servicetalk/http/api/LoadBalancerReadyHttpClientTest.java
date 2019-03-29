@@ -65,7 +65,7 @@ public class LoadBalancerReadyHttpClientTest {
     @Mock
     private ReservedStreamingHttpConnection mockReservedConnection;
 
-    private final HttpClientFilterFactory testHandler = (client, __) -> new StreamingHttpClientFilter(client) {
+    private final StreamingHttpClientFilterFactory testHandler = (client, __) -> new StreamingHttpClientFilter(client) {
 
         @Override
         protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
@@ -117,7 +117,7 @@ public class LoadBalancerReadyHttpClientTest {
             Function<StreamingHttpClient, Single<?>> action) throws InterruptedException {
         TestPublisher<Object> loadBalancerPublisher = new TestPublisher<>();
 
-        HttpClientFilterFactory filterFactory = (next, __) ->
+        StreamingHttpClientFilterFactory filterFactory = (next, __) ->
                 new LoadBalancerReadyStreamingHttpClientFilter(1, loadBalancerPublisher, next);
 
         StreamingHttpClient client = TestStreamingHttpClient.from(reqRespFactory, mockExecutionCtx,
@@ -144,7 +144,7 @@ public class LoadBalancerReadyHttpClientTest {
     private void verifyActionIsDelayedUntilAfterInitialized(Function<StreamingHttpClient, Single<?>> action)
             throws InterruptedException {
 
-        HttpClientFilterFactory filterFactory = (next, __) -> new LoadBalancerReadyStreamingHttpClientFilter(
+        StreamingHttpClientFilterFactory filterFactory = (next, __) -> new LoadBalancerReadyStreamingHttpClientFilter(
                 1, loadBalancerPublisher, next);
 
         StreamingHttpClient client = TestStreamingHttpClient.from(reqRespFactory, mockExecutionCtx,
