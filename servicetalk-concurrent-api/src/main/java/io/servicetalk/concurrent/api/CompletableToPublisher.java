@@ -20,8 +20,12 @@ import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.internal.SequentialCancellable;
 import io.servicetalk.concurrent.internal.SignalOffloader;
 
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+
+import static io.servicetalk.concurrent.api.OnSubscribeIgnoringSubscriberForOffloading.offloadWithDummyOnSubscribe;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.newExceptionForInvalidRequestN;
+import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 
 /**
  * {@link Publisher} created from a {@link Completable}.
@@ -38,67 +42,55 @@ final class CompletableToPublisher<T> extends AbstractNoHandleSubscribePublisher
     @Override
     void handleSubscribe(final Subscriber<? super T> subscriber, final SignalOffloader signalOffloader,
                          final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
-        subscriber.onSubscribe(new ConversionSubscriber<>(this, subscriber, signalOffloader, contextMap,
-                contextProvider));
+        original.delegateSubscribe(new ConversionSubscriber<>(subscriber, signalOffloader), signalOffloader, contextMap,
+                contextProvider);
     }
 
-    private static final class ConversionSubscriber<T> implements CompletableSource.Subscriber, Subscription {
-        private final SequentialCancellable sequentialCancellable;
+    private static final class ConversionSubscriber<T> extends SequentialCancellable
+            implements CompletableSource.Subscriber, Subscription {
+        private static final AtomicIntegerFieldUpdater<ConversionSubscriber> terminatedUpdater =
+                newUpdater(ConversionSubscriber.class, "terminated");
         private final Subscriber<? super T> subscriber;
         private final SignalOffloader signalOffloader;
-        private final AsyncContextMap contextMap;
-        private final AsyncContextProvider contextProvider;
-        private final CompletableToPublisher<T> parent;
-        private boolean subscribedToParent;
 
-        private ConversionSubscriber(CompletableToPublisher<T> parent, Subscriber<? super T> subscriber,
-                                     SignalOffloader signalOffloader, AsyncContextMap contextMap,
-                                     AsyncContextProvider contextProvider) {
-            this.parent = parent;
+        private volatile int terminated;
+
+        private ConversionSubscriber(Subscriber<? super T> subscriber, final SignalOffloader signalOffloader) {
             this.subscriber = subscriber;
             this.signalOffloader = signalOffloader;
-            this.contextMap = contextMap;
-            this.contextProvider = contextProvider;
-            sequentialCancellable = new SequentialCancellable();
         }
 
         @Override
         public void onSubscribe(Cancellable cancellable) {
-            sequentialCancellable.nextCancellable(cancellable);
+            nextCancellable(cancellable);
+            subscriber.onSubscribe(this);
         }
 
         @Override
         public void onComplete() {
-            subscriber.onComplete();
-        }
-
-        @Override
-        public void onError(Throwable t) {
-            subscriber.onError(t);
-        }
-
-        @Override
-        public void request(long n) {
-            if (!subscribedToParent) {
-                subscribedToParent = true;
-                if (isRequestNValid(n)) {
-                    // Since this is converting a Completable to a Publisher, we should try to use the same
-                    // SignalOffloader for subscribing to the original Completable to avoid thread hop. Since, it is the
-                    // same source, just viewed as a Publisher, there is no additional risk of deadlock.
-                    //
-                    // parent is a Completable but we always drive the Cancellable from this Subscription.
-                    // So, even though we are using the subscribe method that does not offload Cancellable, we do not
-                    // need to explicitly add the offload here.
-                    parent.original.delegateSubscribe(this, signalOffloader, contextMap, contextProvider);
-                } else {
-                    subscriber.onError(newExceptionForInvalidRequestN(n));
-                }
+            if (terminatedUpdater.compareAndSet(this, 0, 1)) {
+                subscriber.onComplete();
             }
         }
 
         @Override
-        public void cancel() {
-            sequentialCancellable.cancel();
+        public void onError(Throwable t) {
+            if (terminatedUpdater.compareAndSet(this, 0, 1)) {
+                subscriber.onError(t);
+            }
+        }
+
+        @Override
+        public void request(long n) {
+            if (!isRequestNValid(n) && terminatedUpdater.compareAndSet(this, 0, 1)) {
+                // We have not offloaded the Subscriber as we generally emit to the Subscriber from the Completable
+                // Subscriber methods which is correctly offloaded. This is the only case where we invoke the
+                // Subscriber directly, hence we explicitly offload.
+                Subscriber<? super T> offloaded = offloadWithDummyOnSubscribe(signalOffloader, this.subscriber);
+                // offloadSubscriber before cancellation so that signalOffloader does not exit on seeing a cancel.
+                cancel();
+                offloaded.onError(newExceptionForInvalidRequestN(n));
+            }
         }
     }
 }

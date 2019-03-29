@@ -15,9 +15,10 @@
  */
 package io.servicetalk.concurrent.api.completable;
 
-import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.ExecutorRule;
+import io.servicetalk.concurrent.api.TestCancellable;
+import io.servicetalk.concurrent.api.TestCompletable;
 import io.servicetalk.concurrent.api.TestPublisherSubscriber;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 
@@ -29,11 +30,15 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
+import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 import static java.lang.Thread.currentThread;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.sameInstance;
 
 public class CompletableToPublisherTest {
     @Rule
@@ -42,6 +47,17 @@ public class CompletableToPublisherTest {
     public final ExecutorRule executorRule = ExecutorRule.newRule();
 
     private TestPublisherSubscriber<String> subscriber = new TestPublisherSubscriber<>();
+
+    @Test
+    public void invalidRequestNCancelsCompletable() {
+        TestCompletable completable = new TestCompletable.Builder().disableAutoOnSubscribe().build();
+        toSource(completable.<String>toPublisher()).subscribe(subscriber);
+        TestCancellable cancellable = new TestCancellable();
+        completable.onSubscribe(cancellable);
+        subscriber.request(-1);
+        assertThat(subscriber.takeError(), is(instanceOf(IllegalArgumentException.class)));
+        assertThat("Completable not cancelled for invalid request-n", cancellable.isCancelled(), is(true));
+    }
 
     @Test
     public void noTerminalSucceeds() {
@@ -53,28 +69,108 @@ public class CompletableToPublisherTest {
     @Test
     public void subscribeOnOriginalIsPreserved() throws Exception {
         final Thread testThread = currentThread();
-        final CountDownLatch completableSubscribed = new CountDownLatch(1);
         final CountDownLatch analyzed = new CountDownLatch(1);
         ConcurrentLinkedQueue<AssertionError> errors = new ConcurrentLinkedQueue<>();
-        Cancellable c = Completable.never()
-                .doAfterOnSubscribe(__ -> completableSubscribed.countDown())
-                .doBeforeCancel(() -> {
+        TestCompletable completable = new TestCompletable.Builder().disableAutoOnSubscribe().build();
+        TestPublisherSubscriber<String> subscriber = new TestPublisherSubscriber<>();
+        toSource(completable.doBeforeCancel(() -> {
                     if (currentThread() == testThread) {
                         errors.add(new AssertionError("Invalid thread invoked cancel. Thread: " +
                                 currentThread()));
                     }
-                    analyzed.countDown();
                 })
+                .doAfterCancel(analyzed::countDown)
                 .subscribeOn(executorRule.executor())
-                .toPublisher()
-                .forEach(__ -> { });
-        // toPublisher does not subscribe to the Completable, till data is requested. Since subscription is offloaded,
-        // cancel may be called before request-n is sent to the offloaded subscription, which would ignore request-n
-        // and only propagate cancel. In such a case, original Completable will not be subscribed and hence
-        // doBeforeCancel above may never be invoked.
-        completableSubscribed.await();
-        c.cancel();
+                .<String>toPublisher())
+                .subscribe(subscriber);
+        TestCancellable cancellable = new TestCancellable();
+        completable.onSubscribe(cancellable); // waits till subscribed.
+        assertThat("Completable not subscribed.", completable.isSubscribed(), is(true));
+        assertThat("Subscription not received.", subscriber.subscriptionReceived(), is(true));
+        subscriber.cancel();
+        analyzed.await();
+        assertThat("Completable did not get a cancel.", cancellable.isCancelled(), is(true));
+        assertThat("Unexpected errors observed: " + errors, errors, hasSize(0));
+    }
+
+    @Test
+    public void publishOnOriginalIsPreservedOnComplete() throws Exception {
+        ConcurrentLinkedQueue<AssertionError> errors = new ConcurrentLinkedQueue<>();
+        TestPublisherSubscriber<String> subscriber = new TestPublisherSubscriber<>();
+        TestCompletable completable = new TestCompletable();
+        CountDownLatch analyzed = publishOnOriginalIsPreserved0(errors, subscriber, completable);
+        completable.onComplete();
         analyzed.await();
         assertThat("Unexpected errors observed: " + errors, errors, hasSize(0));
+        assertThat("No terminal received.", subscriber.takeTerminal(), is(complete()));
+    }
+
+    @Test
+    public void publishOnOriginalIsPreservedOnError() throws Exception {
+        ConcurrentLinkedQueue<AssertionError> errors = new ConcurrentLinkedQueue<>();
+        TestPublisherSubscriber<String> subscriber = new TestPublisherSubscriber<>();
+        TestCompletable completable = new TestCompletable();
+        CountDownLatch analyzed = publishOnOriginalIsPreserved0(errors, subscriber, completable);
+        completable.onError(DELIBERATE_EXCEPTION);
+        analyzed.await();
+        assertThat("Unexpected errors observed: " + errors, errors, hasSize(0));
+        Throwable err = subscriber.takeError();
+        assertThat("No error received.", err, is(notNullValue()));
+        assertThat("Wrong error received.", err, is(sameInstance(DELIBERATE_EXCEPTION)));
+    }
+
+    @Test
+    public void publishOnOriginalIsPreservedOnInvalidRequestN() throws Exception {
+        ConcurrentLinkedQueue<AssertionError> errors = new ConcurrentLinkedQueue<>();
+        TestPublisherSubscriber<String> subscriber = new TestPublisherSubscriber<>();
+        TestCompletable completable = new TestCompletable();
+        CountDownLatch analyzed = publishOnOriginalIsPreserved0(errors, subscriber, completable);
+        subscriber.request(-1);
+        analyzed.await();
+        assertThat("Unexpected errors observed: " + errors, errors, hasSize(0));
+        Throwable err = subscriber.takeError();
+        assertThat("No error received.", err, is(notNullValue()));
+        assertThat("Wrong error received.", err, is(instanceOf(IllegalArgumentException.class)));
+    }
+
+    private CountDownLatch publishOnOriginalIsPreserved0(final ConcurrentLinkedQueue<AssertionError> errors,
+                                                         final TestPublisherSubscriber<String> subscriber,
+                                                         final TestCompletable completable) {
+        final Thread testThread = currentThread();
+        CountDownLatch analyzed = new CountDownLatch(1);
+        CountDownLatch receivedOnSubscribe = new CountDownLatch(1);
+        toSource(completable.publishOn(executorRule.executor())
+                .doBeforeOnComplete(() -> {
+                    if (currentThread() == testThread) {
+                        errors.add(new AssertionError("Invalid thread invoked onComplete " +
+                                "(from Completable). Thread: " + currentThread()));
+                    }
+                })
+                .doBeforeOnError(__ -> {
+                    if (currentThread() == testThread) {
+                        errors.add(new AssertionError("Invalid thread invoked onError" +
+                                "(from Completable). Thread: " + currentThread()));
+                    }
+                })
+                .<String>toPublisher()
+                .doBeforeOnComplete(() -> {
+                    if (currentThread() == testThread) {
+                        errors.add(new AssertionError("Invalid thread invoked onComplete " +
+                                "(from Publisher). Thread: " + currentThread()));
+                    }
+                })
+                .doBeforeOnError(__ -> {
+                    if (currentThread() == testThread) {
+                        errors.add(new AssertionError("Invalid thread invoked onError " +
+                                "(from Publisher). Thread: " + currentThread()));
+                    }
+                })
+                .doBeforeOnComplete(analyzed::countDown)
+                .doBeforeOnError(__ -> analyzed.countDown())
+                .doAfterOnSubscribe(__ -> receivedOnSubscribe.countDown())
+        )
+                .subscribe(subscriber);
+        assertThat("Completable not subscribed.", completable.isSubscribed(), is(true));
+        return analyzed;
     }
 }
