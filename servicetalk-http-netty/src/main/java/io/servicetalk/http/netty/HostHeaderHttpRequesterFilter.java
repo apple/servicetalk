@@ -40,15 +40,15 @@ import static java.util.Objects.requireNonNull;
 /**
  * A filter which will apply a fallback value for the {@link HttpHeaderNames#HOST} header if one is not present.
  */
-final class HostHeaderStreamingHttpRequesterFilter implements StreamingHttpClientFilterFactory,
-                                                              StreamingHttpConnectionFilterFactory {
+final class HostHeaderHttpRequesterFilter implements StreamingHttpClientFilterFactory,
+                                                     StreamingHttpConnectionFilterFactory {
     private final CharSequence fallbackHost;
 
     /**
      * Create a new instance.
      * @param fallbackHost The address to use as a fallback if a {@link HttpHeaderNames#HOST} header is not present.
      */
-    HostHeaderStreamingHttpRequesterFilter(HostAndPort fallbackHost) {
+    HostHeaderHttpRequesterFilter(HostAndPort fallbackHost) {
         this(fallbackHost.hostName(), fallbackHost.port());
     }
 
@@ -58,7 +58,7 @@ final class HostHeaderStreamingHttpRequesterFilter implements StreamingHttpClien
      * present.
      * @param fallbackPort The port to use as a fallback if a {@link HttpHeaderNames#HOST} header is not present.
      */
-    HostHeaderStreamingHttpRequesterFilter(String fallbackHostName, int fallbackPort) {
+    HostHeaderHttpRequesterFilter(String fallbackHostName, int fallbackPort) {
         this.fallbackHost = requireNonNull(newAsciiString(toSocketAddressString(fallbackHostName, fallbackPort)));
     }
 
@@ -66,7 +66,7 @@ final class HostHeaderStreamingHttpRequesterFilter implements StreamingHttpClien
      * Create a new instance.
      * @param fallbackHost The address to use as a fallback if a {@link HttpHeaderNames#HOST} header is not present.
      */
-    HostHeaderStreamingHttpRequesterFilter(CharSequence fallbackHost) {
+    HostHeaderHttpRequesterFilter(CharSequence fallbackHost) {
         this.fallbackHost = newAsciiString(isValidIpV6Address(fallbackHost) && fallbackHost.charAt(0) != '[' ?
                 "[" + fallbackHost + "]" : fallbackHost.toString());
     }
@@ -80,7 +80,7 @@ final class HostHeaderStreamingHttpRequesterFilter implements StreamingHttpClien
             protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                             final HttpExecutionStrategy strategy,
                                                             final StreamingHttpRequest request) {
-                return HostHeaderStreamingHttpRequesterFilter.this.request(delegate, strategy, request);
+                return HostHeaderHttpRequesterFilter.this.request(delegate, strategy, request);
             }
 
             @Override
@@ -97,7 +97,7 @@ final class HostHeaderStreamingHttpRequesterFilter implements StreamingHttpClien
             @Override
             public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
                                                             final StreamingHttpRequest request) {
-                return HostHeaderStreamingHttpRequesterFilter.this.request(delegate(), strategy, request);
+                return HostHeaderHttpRequesterFilter.this.request(delegate(), strategy, request);
             }
 
             @Override

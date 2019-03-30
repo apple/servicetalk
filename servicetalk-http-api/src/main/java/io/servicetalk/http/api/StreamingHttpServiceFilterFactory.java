@@ -21,7 +21,7 @@ import static java.util.Objects.requireNonNull;
  * A factory for {@link StreamingHttpServiceFilter}.
  */
 @FunctionalInterface
-public interface HttpServiceFilterFactory {
+public interface StreamingHttpServiceFilterFactory {
 
     /**
      * Create a {@link StreamingHttpServiceFilter} using the provided {@link StreamingHttpService}.
@@ -47,7 +47,7 @@ public interface HttpServiceFilterFactory {
      * @return a composed function that first applies the {@code before}
      * function and then applies this function
      */
-    default HttpServiceFilterFactory append(HttpServiceFilterFactory before) {
+    default StreamingHttpServiceFilterFactory append(StreamingHttpServiceFilterFactory before) {
         requireNonNull(before);
         return service -> create(before.create(service));
     }

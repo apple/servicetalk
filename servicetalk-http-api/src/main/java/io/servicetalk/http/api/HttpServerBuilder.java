@@ -43,7 +43,7 @@ public abstract class HttpServerBuilder {
     @Nullable
     private ConnectionAcceptorFactory connectionAcceptorFactory;
     @Nullable
-    private HttpServiceFilterFactory serviceFilter;
+    private StreamingHttpServiceFilterFactory serviceFilter;
     private boolean drainRequestPayloadBody = true;
 
     /**
@@ -241,10 +241,10 @@ public abstract class HttpServerBuilder {
      * <pre>
      *     filter1 =&gt; filter2 =&gt; filter3 =&gt; service
      * </pre>
-     * @param factory {@link HttpServiceFilterFactory} to append.
+     * @param factory {@link StreamingHttpServiceFilterFactory} to append.
      * @return {@code this}
      */
-    public final HttpServerBuilder appendServiceFilter(final HttpServiceFilterFactory factory) {
+    public final HttpServerBuilder appendServiceFilter(final StreamingHttpServiceFilterFactory factory) {
         if (serviceFilter == null) {
             serviceFilter = factory;
         } else {

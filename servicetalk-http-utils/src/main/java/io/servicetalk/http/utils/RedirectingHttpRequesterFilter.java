@@ -51,8 +51,8 @@ import io.servicetalk.http.api.StreamingHttpResponse;
  *     limited to automatically following relative redirects only.</li>
  * </ul>
  */
-public final class RedirectingStreamingHttpRequesterFilter implements StreamingHttpClientFilterFactory,
-                                                                      StreamingHttpConnectionFilterFactory {
+public final class RedirectingHttpRequesterFilter implements StreamingHttpClientFilterFactory,
+                                                             StreamingHttpConnectionFilterFactory {
 
     // https://tools.ietf.org/html/rfc2068#section-10.3 says:
     // A user agent SHOULD NOT automatically redirect a request more than 5 times,
@@ -66,7 +66,7 @@ public final class RedirectingStreamingHttpRequesterFilter implements StreamingH
     /**
      * Create a new instance, only performing relative redirects.
      */
-    public RedirectingStreamingHttpRequesterFilter() {
+    public RedirectingHttpRequesterFilter() {
         this(true, true);
     }
 
@@ -75,7 +75,7 @@ public final class RedirectingStreamingHttpRequesterFilter implements StreamingH
      *
      * @param maxRedirects The maximum number of follow up redirects.
      */
-    public RedirectingStreamingHttpRequesterFilter(final int maxRedirects) {
+    public RedirectingHttpRequesterFilter(final int maxRedirects) {
         this(true, true, maxRedirects);
     }
 
@@ -84,7 +84,7 @@ public final class RedirectingStreamingHttpRequesterFilter implements StreamingH
      *
      * @param onlyRelativeClient Limits the redirects to relative paths for {@link HttpClient} filters.
      */
-    public RedirectingStreamingHttpRequesterFilter(final boolean onlyRelativeClient) {
+    public RedirectingHttpRequesterFilter(final boolean onlyRelativeClient) {
         this(onlyRelativeClient, true, DEFAULT_MAX_REDIRECTS);
     }
 
@@ -94,8 +94,8 @@ public final class RedirectingStreamingHttpRequesterFilter implements StreamingH
      * @param onlyRelativeClient Limits the redirects to relative paths for {@link HttpClient} filters.
      * @param maxRedirects The maximum number of follow up redirects.
      */
-    public RedirectingStreamingHttpRequesterFilter(final boolean onlyRelativeClient,
-                                                   final int maxRedirects) {
+    public RedirectingHttpRequesterFilter(final boolean onlyRelativeClient,
+                                          final int maxRedirects) {
         this(onlyRelativeClient, true, maxRedirects);
     }
 
@@ -105,8 +105,8 @@ public final class RedirectingStreamingHttpRequesterFilter implements StreamingH
      * @param onlyRelativeClient Limits the redirects to relative paths for {@link HttpClient} filters.
      * @param onlyRelativeConnection Limits the redirects to relative paths for {@link HttpConnection} filters.
      */
-    public RedirectingStreamingHttpRequesterFilter(final boolean onlyRelativeClient,
-                                                   final boolean onlyRelativeConnection) {
+    public RedirectingHttpRequesterFilter(final boolean onlyRelativeClient,
+                                          final boolean onlyRelativeConnection) {
         this(onlyRelativeClient, onlyRelativeConnection, DEFAULT_MAX_REDIRECTS);
     }
 
@@ -117,9 +117,9 @@ public final class RedirectingStreamingHttpRequesterFilter implements StreamingH
      * @param onlyRelativeConnection Limits the redirects to relative paths for {@link HttpConnection} filters.
      * @param maxRedirects The maximum number of follow up redirects.
      */
-    public RedirectingStreamingHttpRequesterFilter(final boolean onlyRelativeClient,
-                                                   final boolean onlyRelativeConnection,
-                                                   final int maxRedirects) {
+    public RedirectingHttpRequesterFilter(final boolean onlyRelativeClient,
+                                          final boolean onlyRelativeConnection,
+                                          final int maxRedirects) {
         this.onlyRelativeClient = onlyRelativeClient;
         this.onlyRelativeConnection = onlyRelativeConnection;
         this.maxRedirects = maxRedirects;
@@ -134,7 +134,7 @@ public final class RedirectingStreamingHttpRequesterFilter implements StreamingH
             protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                             final HttpExecutionStrategy strategy,
                                                             final StreamingHttpRequest request) {
-                return RedirectingStreamingHttpRequesterFilter.this.request(delegate, strategy, request,
+                return RedirectingHttpRequesterFilter.this.request(delegate, strategy, request,
                         onlyRelativeClient);
             }
 
@@ -149,7 +149,7 @@ public final class RedirectingStreamingHttpRequesterFilter implements StreamingH
                                     final StreamingHttpRequester delegate,
                                     final HttpExecutionStrategy strategy,
                                     final StreamingHttpRequest request) {
-                                return RedirectingStreamingHttpRequesterFilter.this.request(delegate, strategy, request,
+                                return RedirectingHttpRequesterFilter.this.request(delegate, strategy, request,
                                         onlyRelativeConnection);
                             }
                         });
@@ -169,7 +169,7 @@ public final class RedirectingStreamingHttpRequesterFilter implements StreamingH
             @Override
             public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
                                                          final StreamingHttpRequest request) {
-                return RedirectingStreamingHttpRequesterFilter.this.request(delegate(), strategy, request,
+                return RedirectingHttpRequesterFilter.this.request(delegate(), strategy, request,
                         onlyRelativeConnection);
             }
 

@@ -27,12 +27,12 @@ import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpMetaData;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpServiceContext;
-import io.servicetalk.http.api.HttpServiceFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.api.StreamingHttpServiceFilter;
+import io.servicetalk.http.api.StreamingHttpServiceFilterFactory;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -64,7 +64,7 @@ import static java.util.Objects.requireNonNull;
  * @param <UserInfo> a type for authenticated user info object
  * @see Builder
  */
-public final class BasicAuthHttpServiceFilter<UserInfo> implements HttpServiceFilterFactory {
+public final class BasicAuthHttpServiceFilter<UserInfo> implements StreamingHttpServiceFilterFactory {
 
     /**
      * Verifies {@code user-id} and {@code password}, parsed from the 'Basic' HTTP Authentication Scheme credentials.
@@ -181,7 +181,7 @@ public final class BasicAuthHttpServiceFilter<UserInfo> implements HttpServiceFi
          *
          * @return a new {@link Builder}
          */
-        public HttpServiceFilterFactory buildServer() {
+        public StreamingHttpServiceFilterFactory buildServer() {
             return new BasicAuthHttpServiceFilter<>(credentialsVerifier, realm, false, userInfoKey, utf8);
         }
 
@@ -206,9 +206,9 @@ public final class BasicAuthHttpServiceFilter<UserInfo> implements HttpServiceFi
          * </tr>
          * </table></blockquote>
          *
-         * @return a new {@link HttpServiceFilterFactory}
+         * @return a new {@link StreamingHttpServiceFilterFactory}
          */
-        public HttpServiceFilterFactory buildProxy() {
+        public StreamingHttpServiceFilterFactory buildProxy() {
             return new BasicAuthHttpServiceFilter<>(credentialsVerifier, realm, true, userInfoKey, utf8);
         }
     }

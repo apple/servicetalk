@@ -251,7 +251,7 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> extends HttpCon
 
     @Override
     public DefaultHttpConnectionBuilder<ResolvedAddress> enableHostHeaderFallback(final CharSequence hostHeader) {
-        hostHeaderFilterFactory = __ -> new HostHeaderStreamingHttpRequesterFilter(hostHeader);
+        hostHeaderFilterFactory = __ -> new HostHeaderHttpRequesterFilter(hostHeader);
         return this;
     }
 
@@ -273,10 +273,10 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> extends HttpCon
         return this;
     }
 
-    private static <R> HostHeaderStreamingHttpRequesterFilter defaultHostHeaderFilterFactory(final R address) {
+    private static <R> HostHeaderHttpRequesterFilter defaultHostHeaderFilterFactory(final R address) {
         // Make a best effort to infer HOST header for HttpConnection
         if (address instanceof InetSocketAddress) {
-            return new HostHeaderStreamingHttpRequesterFilter(HostAndPort.of((InetSocketAddress) address));
+            return new HostHeaderHttpRequesterFilter(HostAndPort.of((InetSocketAddress) address));
         }
         throw new IllegalArgumentException("Unsupported host header address type, provide an override");
     }
