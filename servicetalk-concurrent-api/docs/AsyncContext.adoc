@@ -27,6 +27,17 @@ public static Single<Resposne> authenticate(Single<Response> responseSingle) {
 
 == Motivation
 
+ServiceTalk is a fully asynchronous framework and therefore multiple requests may be multiplexed on the same thread.
+Also depending on the application's threading model a single request may be processed on different threads. This means
+that `ThreadLocal` and derivatives such as https://www.slf4j.org/manual.html#mdc[`MDC`] would not work as expected. To
+overcome this limitation, we provide an `AsyncContext` which hooks into the internal async machinery to make sure
+thread local context data is propagated along with the request.
+
+Although `AsyncContext` may be convenient to use it shouldn't be over used when traditional argument passing is an
+option. The intended use case of `AsyncContext` is to propagate context across method boundaries which do not
+accommodate for additional parameters. This is typically applicable for infrastructure like tasks (e.g. tracing,
+logging, etc...).
+
 `AsyncContext` is designed to provide a static API to retain state associated across asynchronous boundaries. A static
 API has a few benefits:
 
