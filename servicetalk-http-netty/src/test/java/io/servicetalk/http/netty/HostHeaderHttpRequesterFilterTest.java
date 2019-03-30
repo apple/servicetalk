@@ -67,7 +67,7 @@ public class HostHeaderHttpRequesterFilterTest {
         try (ServerContext context = buildServer();
              BlockingHttpClient client = forSingleAddress(serverHostAndPort(context))
                     .disableHostHeaderFallback() // turn off the default
-                    .appendClientFilter(new HostHeaderStreamingHttpRequesterFilter(HostAndPort.of("foo.bar", -1)))
+                    .appendClientFilter(new HostHeaderHttpRequesterFilter(HostAndPort.of("foo.bar", -1)))
                     .buildBlocking()) {
                 assertEquals("foo.bar:-1",
                         client.request(client.get("/")).payloadBody(textDeserializer()));
@@ -79,7 +79,7 @@ public class HostHeaderHttpRequesterFilterTest {
         try (ServerContext context = buildServer();
              BlockingHttpClient client = forSingleAddress(serverHostAndPort(context))
                     .disableHostHeaderFallback() // turn off the default
-                    .appendConnectionFilter(new HostHeaderStreamingHttpRequesterFilter(HostAndPort.of("foo.bar", -1)))
+                    .appendConnectionFilter(new HostHeaderHttpRequesterFilter(HostAndPort.of("foo.bar", -1)))
                     .buildBlocking()) {
                 assertEquals("foo.bar:-1",
                         client.request(client.get("/")).payloadBody(textDeserializer()));
@@ -90,7 +90,7 @@ public class HostHeaderHttpRequesterFilterTest {
     public void connectionBuilderAppendConnectionFilter() throws Exception {
         try (ServerContext context = buildServer();
              BlockingHttpConnection conn = new DefaultHttpConnectionBuilder<>()
-                    .appendConnectionFilter(new HostHeaderStreamingHttpRequesterFilter(HostAndPort.of("foo.bar", -1)))
+                    .appendConnectionFilter(new HostHeaderHttpRequesterFilter(HostAndPort.of("foo.bar", -1)))
                     .buildBlocking(context.listenAddress())) {
                 assertEquals("foo.bar:-1",
                         conn.request(conn.get("/")).payloadBody(textDeserializer()));

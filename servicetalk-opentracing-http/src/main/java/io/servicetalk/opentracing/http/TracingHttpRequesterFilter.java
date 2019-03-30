@@ -42,7 +42,7 @@ import static io.opentracing.tag.Tags.SPAN_KIND_CLIENT;
 /**
  * An HTTP filter that supports open tracing.
  */
-public class TracingStreamingHttpRequesterFilter extends AbstractTracingHttpFilter implements
+public class TracingHttpRequesterFilter extends AbstractTracingHttpFilter implements
                                                StreamingHttpClientFilterFactory, StreamingHttpConnectionFilterFactory {
 
     /**
@@ -51,8 +51,8 @@ public class TracingStreamingHttpRequesterFilter extends AbstractTracingHttpFilt
      * @param tracer The {@link Tracer}.
      * @param componentName The component name used during building new spans.
      */
-    public TracingStreamingHttpRequesterFilter(final Tracer tracer,
-                                               final String componentName) {
+    public TracingHttpRequesterFilter(final Tracer tracer,
+                                      final String componentName) {
         this(tracer, componentName, true);
     }
 
@@ -63,9 +63,9 @@ public class TracingStreamingHttpRequesterFilter extends AbstractTracingHttpFilt
      * @param componentName The component name used during building new spans.
      * @param validateTraceKeyFormat {@code true} to validate the contents of the trace ids.
      */
-    public TracingStreamingHttpRequesterFilter(final Tracer tracer,
-                                               final String componentName,
-                                               boolean validateTraceKeyFormat) {
+    public TracingHttpRequesterFilter(final Tracer tracer,
+                                      final String componentName,
+                                      boolean validateTraceKeyFormat) {
         super(tracer, componentName, validateTraceKeyFormat);
     }
 

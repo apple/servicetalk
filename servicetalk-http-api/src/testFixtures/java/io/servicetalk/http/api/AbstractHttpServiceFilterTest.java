@@ -112,7 +112,7 @@ public abstract class AbstractHttpServiceFilterTest {
     }
 
     protected final StreamingHttpRequester createFilter(final RequestHandler handler,
-                                                        final HttpServiceFilterFactory factory) {
+                                                        final StreamingHttpServiceFilterFactory factory) {
 
         StreamingHttpServiceFilter service = factory.create(new StreamingHttpService() {
             @Override

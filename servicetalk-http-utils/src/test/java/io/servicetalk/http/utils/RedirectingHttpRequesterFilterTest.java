@@ -201,7 +201,7 @@ public class RedirectingHttpRequesterFilterTest {
                                        @Nullable final CharSequence requestedLocation) throws Exception {
 
         StreamingHttpClient redirectingRequester =
-                newClient(new RedirectingStreamingHttpRequesterFilter(false, maxRedirects));
+                newClient(new RedirectingHttpRequesterFilter(false, maxRedirects));
 
         StreamingHttpRequest request = redirectingRequester.newRequest(method, "/path");
         request.headers().set(HOST, "servicetalk.io");
@@ -225,7 +225,7 @@ public class RedirectingHttpRequesterFilterTest {
 
         final int maxRedirects = MAX_REDIRECTS;
         StreamingHttpClient redirectingRequester = newClient(
-                new RedirectingStreamingHttpRequesterFilter(false, maxRedirects));
+                new RedirectingHttpRequesterFilter(false, maxRedirects));
 
         StreamingHttpRequest request = redirectingRequester.get("/path");
         request.headers().set(HOST, "servicetalk.io");
@@ -241,7 +241,7 @@ public class RedirectingHttpRequesterFilterTest {
     public void requestWithNullResponse() throws Exception {
         when(httpClient.request(any(), any())).thenReturn(succeeded(null));
 
-        StreamingHttpClient redirectingRequester = newClient(new RedirectingStreamingHttpRequesterFilter(false));
+        StreamingHttpClient redirectingRequester = newClient(new RedirectingHttpRequesterFilter(false));
 
         StreamingHttpRequest request = redirectingRequester.get("/path");
         request.headers().set(HOST, "servicetalk.io");
@@ -291,7 +291,7 @@ public class RedirectingHttpRequesterFilterTest {
     private void testRequestForRedirect(final HttpRequestMethod method,
                                         final HttpResponseStatus requestedStatus) throws Exception {
 
-        StreamingHttpClient redirectingRequester = newClient(new RedirectingStreamingHttpRequesterFilter(false));
+        StreamingHttpClient redirectingRequester = newClient(new RedirectingHttpRequesterFilter(false));
 
         StreamingHttpRequest request = redirectingRequester.newRequest(method, "/path");
         request.headers().set(HOST, "servicetalk.io");
@@ -314,7 +314,7 @@ public class RedirectingHttpRequesterFilterTest {
                 createRedirectResponse(3),
                 succeeded(reqRespFactory.ok()));
 
-        StreamingHttpClient redirectingRequester = newClient(new RedirectingStreamingHttpRequesterFilter(false));
+        StreamingHttpClient redirectingRequester = newClient(new RedirectingHttpRequesterFilter(false));
 
         StreamingHttpRequest request = redirectingRequester.get("/path");
         request.headers().set(HOST, "servicetalk.io");
@@ -334,7 +334,7 @@ public class RedirectingHttpRequesterFilterTest {
 
     @Test
     public void getRequestForRedirectWithAbsoluteFormRequestTarget() throws Exception {
-        StreamingHttpClient redirectingRequester = newClient(new RedirectingStreamingHttpRequesterFilter(false));
+        StreamingHttpClient redirectingRequester = newClient(new RedirectingHttpRequesterFilter(false));
 
         StreamingHttpRequest request = redirectingRequester.get("http://servicetalk.io/path");
         request.headers().set(REQUESTED_STATUS, String.valueOf(SEE_OTHER.code()));
@@ -349,7 +349,7 @@ public class RedirectingHttpRequesterFilterTest {
 
     @Test
     public void redirectForOnlyRelativeWithAbsoluteRelativeLocation() throws Exception {
-        StreamingHttpClient redirectingRequester = newClient(new RedirectingStreamingHttpRequesterFilter(true));
+        StreamingHttpClient redirectingRequester = newClient(new RedirectingHttpRequesterFilter(true));
 
         StreamingHttpRequest request = redirectingRequester.get("/path");
         request.headers().set(HOST, "servicetalk.io");
@@ -365,7 +365,7 @@ public class RedirectingHttpRequesterFilterTest {
 
     @Test
     public void redirectForOnlyRelativeWithAbsoluteRelativeLocationWithPortDoesntRedirect() throws Exception {
-        StreamingHttpClient redirectingRequester = newClient(new RedirectingStreamingHttpRequesterFilter(true));
+        StreamingHttpClient redirectingRequester = newClient(new RedirectingHttpRequesterFilter(true));
 
         StreamingHttpRequest request = redirectingRequester.get("/path");
         request.headers().set(HOST, "servicetalk.io");
@@ -381,7 +381,7 @@ public class RedirectingHttpRequesterFilterTest {
 
     @Test
     public void redirectForOnlyRelativeWithRelativeLocation() throws Exception {
-        StreamingHttpClient redirectingRequester = newClient(new RedirectingStreamingHttpRequesterFilter(true));
+        StreamingHttpClient redirectingRequester = newClient(new RedirectingHttpRequesterFilter(true));
 
         StreamingHttpRequest request = redirectingRequester.get("/path");
         request.headers().set(HOST, "servicetalk.io");
@@ -397,7 +397,7 @@ public class RedirectingHttpRequesterFilterTest {
 
     @Test
     public void redirectForOnlyRelativeWithAbsoluteNonRelativeLocationDoesntRedirect() throws Exception {
-        StreamingHttpClient redirectingRequester = newClient(new RedirectingStreamingHttpRequesterFilter(true));
+        StreamingHttpClient redirectingRequester = newClient(new RedirectingHttpRequesterFilter(true));
 
         StreamingHttpRequest request = redirectingRequester.get("/path");
         request.headers().set(HOST, "servicetalk.io");
@@ -413,7 +413,7 @@ public class RedirectingHttpRequesterFilterTest {
 
     @Test
     public void absoluteTargetRedirectForOnlyRelativeWithAbsoluteRelativeLocation() throws Exception {
-        StreamingHttpClient redirectingRequester = newClient(new RedirectingStreamingHttpRequesterFilter(true));
+        StreamingHttpClient redirectingRequester = newClient(new RedirectingHttpRequesterFilter(true));
 
         StreamingHttpRequest request = redirectingRequester.get("http://servicetalk.io/path");
         request.headers().set(REQUESTED_STATUS, String.valueOf(SEE_OTHER.code()));
@@ -428,7 +428,7 @@ public class RedirectingHttpRequesterFilterTest {
 
     @Test
     public void absoluteTargetRedirectForOnlyRelativeWithNonRelativeLocationDoesntRedirect() throws Exception {
-        StreamingHttpClient redirectingRequester = newClient(new RedirectingStreamingHttpRequesterFilter(true));
+        StreamingHttpClient redirectingRequester = newClient(new RedirectingHttpRequesterFilter(true));
 
         StreamingHttpRequest request = redirectingRequester.get("http://servicetalk.io/path");
         request.headers().set(REQUESTED_STATUS, String.valueOf(SEE_OTHER.code()));

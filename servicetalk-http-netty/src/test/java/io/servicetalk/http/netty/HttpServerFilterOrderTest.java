@@ -18,9 +18,9 @@ package io.servicetalk.http.netty;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpResponse;
-import io.servicetalk.http.api.HttpServiceFilterFactory;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.api.StreamingHttpServiceFilter;
+import io.servicetalk.http.api.StreamingHttpServiceFilterFactory;
 import io.servicetalk.transport.api.ServerContext;
 
 import org.junit.Test;
@@ -69,7 +69,7 @@ public class HttpServerFilterOrderTest {
         return service;
     }
 
-    private static HttpServiceFilterFactory addFilter(StreamingHttpService filter) {
+    private static StreamingHttpServiceFilterFactory addFilter(StreamingHttpService filter) {
         return orig -> {
             when(filter.handle(any(), any(), any()))
                     .thenAnswer(i -> orig.handle(i.getArgument(0), i.getArgument(1), i.getArgument(2)));

@@ -44,12 +44,12 @@ import static io.servicetalk.concurrent.api.Completable.failed;
  *
  * @see RetryStrategies
  */
-public final class RetryingStreamingHttpRequesterFilter implements StreamingHttpClientFilterFactory,
-                                                                   StreamingHttpConnectionFilterFactory {
+public final class RetryingHttpRequesterFilter implements StreamingHttpClientFilterFactory,
+                                                          StreamingHttpConnectionFilterFactory {
 
     private final ReadOnlyRetryableSettings<HttpRequestMetaData> settings;
 
-    private RetryingStreamingHttpRequesterFilter(final ReadOnlyRetryableSettings<HttpRequestMetaData> settings) {
+    private RetryingHttpRequesterFilter(final ReadOnlyRetryableSettings<HttpRequestMetaData> settings) {
         this.settings = settings;
     }
 
@@ -77,7 +77,7 @@ public final class RetryingStreamingHttpRequesterFilter implements StreamingHttp
             protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                             final HttpExecutionStrategy strategy,
                                                             final StreamingHttpRequest request) {
-                return RetryingStreamingHttpRequesterFilter.this.request(delegate, strategy, request, retryStrategy);
+                return RetryingHttpRequesterFilter.this.request(delegate, strategy, request, retryStrategy);
             }
 
             @Override
@@ -98,7 +98,7 @@ public final class RetryingStreamingHttpRequesterFilter implements StreamingHttp
             @Override
             public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
                                                          final StreamingHttpRequest request) {
-                return RetryingStreamingHttpRequesterFilter.this.request(delegate(), strategy, request, retryStrategy);
+                return RetryingHttpRequesterFilter.this.request(delegate(), strategy, request, retryStrategy);
             }
 
             @Override
@@ -110,16 +110,16 @@ public final class RetryingStreamingHttpRequesterFilter implements StreamingHttp
     }
 
     /**
-     * A builder for {@link RetryingStreamingHttpRequesterFilter}, which puts an upper bound on retry attempts.
+     * A builder for {@link RetryingHttpRequesterFilter}, which puts an upper bound on retry attempts.
      * To configure the maximum number of retry attempts see {@link #maxRetries(int)}.
      */
     public static final class Builder
-            extends AbstractRetryingFilterBuilder<Builder, RetryingStreamingHttpRequesterFilter, HttpRequestMetaData> {
+            extends AbstractRetryingFilterBuilder<Builder, RetryingHttpRequesterFilter, HttpRequestMetaData> {
 
         @Override
-        protected RetryingStreamingHttpRequesterFilter build(
+        protected RetryingHttpRequesterFilter build(
                 final ReadOnlyRetryableSettings<HttpRequestMetaData> readOnlySettings) {
-            return new RetryingStreamingHttpRequesterFilter(readOnlySettings);
+            return new RetryingHttpRequesterFilter(readOnlySettings);
         }
 
         /**

@@ -27,7 +27,7 @@ import static org.mockito.Mockito.mock;
 
 public class ConditionalHttpServiceFilterTest extends AbstractConditionalHttpFilterTest {
 
-    private static final class TestCondFilterFactory implements HttpServiceFilterFactory {
+    private static final class TestCondFilterFactory implements StreamingHttpServiceFilterFactory {
         private final AtomicBoolean closed;
 
         private TestCondFilterFactory(AtomicBoolean closed) {
@@ -78,7 +78,7 @@ public class ConditionalHttpServiceFilterTest extends AbstractConditionalHttpFil
         private final StreamingHttpServiceFilter filterChain;
         private final ListenableAsyncCloseable closeable = emptyAsyncCloseable();
 
-        private TestStreamingHttpService(HttpServiceFilterFactory factory) {
+        private TestStreamingHttpService(StreamingHttpServiceFilterFactory factory) {
             filterChain = factory.create(new StreamingHttpService() {
                 @Override
                 public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,

@@ -253,12 +253,12 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
         return new HttpClientBuildContext<>(clonedBuilder, exec, reqRespFactory);
     }
 
-    private static <U> HostHeaderStreamingHttpRequesterFilter defaultHostHeaderFilterFactory(final U address) {
+    private static <U> HostHeaderHttpRequesterFilter defaultHostHeaderFilterFactory(final U address) {
         if (address instanceof CharSequence) {
-            return new HostHeaderStreamingHttpRequesterFilter((CharSequence) address);
+            return new HostHeaderHttpRequesterFilter((CharSequence) address);
         }
         if (address instanceof HostAndPort) {
-            return new HostHeaderStreamingHttpRequesterFilter((HostAndPort) address);
+            return new HostHeaderHttpRequesterFilter((HostAndPort) address);
         }
         throw new IllegalArgumentException("Unsupported host header address type, provide an override");
     }
@@ -369,7 +369,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
 
     @Override
     public DefaultSingleAddressHttpClientBuilder<U, R> enableHostHeaderFallback(final CharSequence hostHeader) {
-        hostHeaderFilterFactory = address -> new HostHeaderStreamingHttpRequesterFilter(hostHeader);
+        hostHeaderFilterFactory = address -> new HostHeaderHttpRequesterFilter(hostHeader);
         return this;
     }
 

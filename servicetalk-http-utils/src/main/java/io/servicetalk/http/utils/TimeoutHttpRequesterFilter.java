@@ -37,8 +37,8 @@ import static java.util.Objects.requireNonNull;
 /**
  * A filter to enable timeouts for HTTP requests.
  */
-public final class TimeoutStreamingHttpRequesterFilter implements StreamingHttpClientFilterFactory,
-                                                                  StreamingHttpConnectionFilterFactory {
+public final class TimeoutHttpRequesterFilter implements StreamingHttpClientFilterFactory,
+                                                         StreamingHttpConnectionFilterFactory {
     private final Duration duration;
     @Nullable
     private final Executor timeoutExecutor;
@@ -48,7 +48,7 @@ public final class TimeoutStreamingHttpRequesterFilter implements StreamingHttpC
      *
      * @param duration the timeout {@link Duration}
      */
-    public TimeoutStreamingHttpRequesterFilter(final Duration duration) {
+    public TimeoutHttpRequesterFilter(final Duration duration) {
         this.duration = duration;
         this.timeoutExecutor = null;
     }
@@ -59,7 +59,7 @@ public final class TimeoutStreamingHttpRequesterFilter implements StreamingHttpC
      * @param duration the timeout {@link Duration}
      * @param timeoutExecutor the {@link Executor} to use for managing the timer notifications
      */
-    public TimeoutStreamingHttpRequesterFilter(final Duration duration, final Executor timeoutExecutor) {
+    public TimeoutHttpRequesterFilter(final Duration duration, final Executor timeoutExecutor) {
         this.duration = duration;
         this.timeoutExecutor = requireNonNull(timeoutExecutor);
     }
@@ -80,7 +80,7 @@ public final class TimeoutStreamingHttpRequesterFilter implements StreamingHttpC
             protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                             final HttpExecutionStrategy strategy,
                                                             final StreamingHttpRequest request) {
-                return TimeoutStreamingHttpRequesterFilter.this.request(delegate, strategy, request);
+                return TimeoutHttpRequesterFilter.this.request(delegate, strategy, request);
             }
 
             @Override
@@ -97,7 +97,7 @@ public final class TimeoutStreamingHttpRequesterFilter implements StreamingHttpC
             @Override
             public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
                                                             final StreamingHttpRequest request) {
-                return TimeoutStreamingHttpRequesterFilter.this.request(delegate(), strategy, request);
+                return TimeoutHttpRequesterFilter.this.request(delegate(), strategy, request);
             }
 
             @Override
