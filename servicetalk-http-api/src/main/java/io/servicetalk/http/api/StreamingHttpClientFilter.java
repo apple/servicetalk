@@ -61,6 +61,11 @@ public class StreamingHttpClientFilter implements FilterableStreamingHttpClient 
     }
 
     @Override
+    public StreamingHttpResponseFactory httpResponseFactory() {
+        return delegate.httpResponseFactory();
+    }
+
+    @Override
     public Completable onClose() {
         return delegate.onClose();
     }
@@ -83,11 +88,6 @@ public class StreamingHttpClientFilter implements FilterableStreamingHttpClient 
     @Override
     public StreamingHttpRequest newRequest(final HttpRequestMethod method, final String requestTarget) {
         return delegate.newRequest(method, requestTarget);
-    }
-
-    @Override
-    public StreamingHttpResponse newResponse(final HttpResponseStatus status) {
-        return delegate.newResponse(status);
     }
 
     @Override

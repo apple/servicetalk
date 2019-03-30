@@ -66,6 +66,11 @@ final class StreamingHttpClientToHttpClient implements HttpClient {
     }
 
     @Override
+    public HttpResponseFactory httpResponseFactory() {
+        return reqRespFactory;
+    }
+
+    @Override
     public void close() throws Exception {
         client.close();
     }
@@ -94,11 +99,6 @@ final class StreamingHttpClientToHttpClient implements HttpClient {
     @Override
     public HttpRequest newRequest(final HttpRequestMethod method, final String requestTarget) {
         return reqRespFactory.newRequest(method, requestTarget);
-    }
-
-    @Override
-    public HttpResponse newResponse(final HttpResponseStatus status) {
-        return reqRespFactory.newResponse(status);
     }
 
     @Override
@@ -161,6 +161,11 @@ final class StreamingHttpClientToHttpClient implements HttpClient {
         }
 
         @Override
+        public HttpResponseFactory httpResponseFactory() {
+            return reqRespFactory;
+        }
+
+        @Override
         public Completable onClose() {
             return connection.onClose();
         }
@@ -189,11 +194,6 @@ final class StreamingHttpClientToHttpClient implements HttpClient {
         @Override
         public HttpRequest newRequest(final HttpRequestMethod method, final String requestTarget) {
             return reqRespFactory.newRequest(method, requestTarget);
-        }
-
-        @Override
-        public HttpResponse newResponse(final HttpResponseStatus status) {
-            return reqRespFactory.newResponse(status);
         }
     }
 }

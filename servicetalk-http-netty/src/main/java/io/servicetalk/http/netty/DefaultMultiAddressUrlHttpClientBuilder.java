@@ -32,7 +32,6 @@ import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpRequestMethod;
-import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.http.api.MultiAddressHttpClientBuilder;
 import io.servicetalk.http.api.MultiAddressHttpClientFilterFactory;
 import io.servicetalk.http.api.ReservedStreamingHttpConnection;
@@ -45,6 +44,7 @@ import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.StreamingHttpResponse;
+import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.netty.DefaultSingleAddressHttpClientBuilder.HttpClientBuildContext;
 import io.servicetalk.http.utils.RedirectingStreamingHttpRequesterFilter;
 import io.servicetalk.transport.api.ExecutionContext;
@@ -314,6 +314,11 @@ final class DefaultMultiAddressUrlHttpClientBuilder extends MultiAddressHttpClie
         }
 
         @Override
+        public StreamingHttpResponseFactory httpResponseFactory() {
+            return reqRespFactory;
+        }
+
+        @Override
         public void close() throws Exception {
             closeable.closeAsync().toFuture().get();
         }
@@ -343,11 +348,6 @@ final class DefaultMultiAddressUrlHttpClientBuilder extends MultiAddressHttpClie
         @Override
         public StreamingHttpRequest newRequest(final HttpRequestMethod method, final String requestTarget) {
             return reqRespFactory.newRequest(method, requestTarget);
-        }
-
-        @Override
-        public StreamingHttpResponse newResponse(final HttpResponseStatus status) {
-            return reqRespFactory.newResponse(status);
         }
     }
 

@@ -23,11 +23,11 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpRequestMethod;
-import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.http.api.ReservedStreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
+import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ExecutionContext;
 
@@ -97,6 +97,11 @@ final class LoadBalancedStreamingHttpConnection implements ReservedStreamingHttp
     }
 
     @Override
+    public StreamingHttpResponseFactory httpResponseFactory() {
+        return filteredConnection.httpResponseFactory();
+    }
+
+    @Override
     public void close() throws Exception {
         filteredConnection.close();
     }
@@ -124,10 +129,5 @@ final class LoadBalancedStreamingHttpConnection implements ReservedStreamingHttp
     @Override
     public StreamingHttpRequest newRequest(final HttpRequestMethod method, final String requestTarget) {
         return filteredConnection.newRequest(method, requestTarget);
-    }
-
-    @Override
-    public StreamingHttpResponse newResponse(final HttpResponseStatus status) {
-        return filteredConnection.newResponse(status);
     }
 }

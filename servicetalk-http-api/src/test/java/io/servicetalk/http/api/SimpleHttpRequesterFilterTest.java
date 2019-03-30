@@ -186,7 +186,7 @@ public class SimpleHttpRequesterFilterTest extends AbstractHttpRequesterFilterTe
 
         private Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate) {
             requestCalls.incrementAndGet();
-            return succeeded(delegate.ok());
+            return succeeded(delegate.httpResponseFactory().ok());
         }
     }
 
@@ -261,7 +261,7 @@ public class SimpleHttpRequesterFilterTest extends AbstractHttpRequesterFilterTe
                 return failed(e);
             }
 
-            return succeeded(delegate.unauthorized());
+            return succeeded(delegate.httpResponseFactory().unauthorized());
         }
     }
 

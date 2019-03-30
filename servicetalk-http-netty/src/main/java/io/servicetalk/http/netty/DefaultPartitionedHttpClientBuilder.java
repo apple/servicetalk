@@ -32,13 +32,13 @@ import io.servicetalk.client.api.partition.UnknownPartitionException;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.http.api.DefaultHttpHeadersFactory;
 import io.servicetalk.http.api.EmptyHttpHeaders;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpRequestMethod;
-import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.http.api.PartitionHttpClientBuilderFilterFunction;
 import io.servicetalk.http.api.PartitionedHttpClientBuilder;
 import io.servicetalk.http.api.ReservedStreamingHttpConnection;
@@ -50,7 +50,7 @@ import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.StreamingHttpRequests;
 import io.servicetalk.http.api.StreamingHttpResponse;
-import io.servicetalk.http.api.StreamingHttpResponses;
+import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.netty.DefaultSingleAddressHttpClientBuilder.HttpClientBuildContext;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.IoExecutor;
@@ -159,6 +159,11 @@ class DefaultPartitionedHttpClientBuilder<U, R> extends PartitionedHttpClientBui
         }
 
         @Override
+        public StreamingHttpResponseFactory httpResponseFactory() {
+            return reqRespFactory;
+        }
+
+        @Override
         public void close() throws Exception {
             group.closeAsync().toFuture().get();
         }
@@ -189,11 +194,6 @@ class DefaultPartitionedHttpClientBuilder<U, R> extends PartitionedHttpClientBui
         public StreamingHttpRequest newRequest(final HttpRequestMethod method, final String requestTarget) {
             return reqRespFactory.newRequest(method, requestTarget);
         }
-
-        @Override
-        public StreamingHttpResponse newResponse(final HttpResponseStatus status) {
-            return reqRespFactory.newResponse(status);
-        }
     }
 
     private static final class NoopPartitionClient implements FilterableStreamingHttpClient {
@@ -212,6 +212,11 @@ class DefaultPartitionedHttpClientBuilder<U, R> extends PartitionedHttpClientBui
         @Override
         public ExecutionContext executionContext() {
             throw ex;
+        }
+
+        @Override
+        public StreamingHttpResponseFactory httpResponseFactory() {
+            return new DefaultStreamingHttpResponseFactory(DefaultHttpHeadersFactory.INSTANCE, DEFAULT_ALLOCATOR);
         }
 
         @Override
@@ -243,12 +248,6 @@ class DefaultPartitionedHttpClientBuilder<U, R> extends PartitionedHttpClientBui
         public StreamingHttpRequest newRequest(final HttpRequestMethod method, final String requestTarget) {
             return StreamingHttpRequests.newRequest(method, requestTarget, HTTP_1_1, EmptyHttpHeaders.INSTANCE,
                     EmptyHttpHeaders.INSTANCE, DEFAULT_ALLOCATOR, empty());
-        }
-
-        @Override
-        public StreamingHttpResponse newResponse(final HttpResponseStatus status) {
-            return StreamingHttpResponses.newResponse(HttpResponseStatus.OK, HTTP_1_1, EmptyHttpHeaders.INSTANCE,
-                    EmptyHttpHeaders.INSTANCE, DEFAULT_ALLOCATOR);
         }
     }
 

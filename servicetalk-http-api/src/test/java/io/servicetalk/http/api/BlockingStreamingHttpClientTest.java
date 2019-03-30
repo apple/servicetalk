@@ -74,6 +74,11 @@ public class BlockingStreamingHttpClientTest extends AbstractBlockingStreamingHt
         }
 
         @Override
+        public StreamingHttpResponseFactory httpResponseFactory() {
+            return factory;
+        }
+
+        @Override
         public final Completable onClose() {
             return fromSource(onClose);
         }
@@ -109,11 +114,6 @@ public class BlockingStreamingHttpClientTest extends AbstractBlockingStreamingHt
         @Override
         public StreamingHttpRequest newRequest(final HttpRequestMethod method, final String requestTarget) {
             return factory.newRequest(method, requestTarget);
-        }
-
-        @Override
-        public StreamingHttpResponse newResponse(final HttpResponseStatus status) {
-            return factory.newResponse(status);
         }
     }
 }

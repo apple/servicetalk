@@ -57,6 +57,11 @@ public final class TestStreamingHttpClient {
                     }
 
                     @Override
+                    public StreamingHttpResponseFactory httpResponseFactory() {
+                        return reqRespFactory;
+                    }
+
+                    @Override
                     public Completable closeAsync() {
                         return closeable.closeAsync();
                     }
@@ -69,11 +74,6 @@ public final class TestStreamingHttpClient {
                     @Override
                     public Completable onClose() {
                         return closeable.onClose();
-                    }
-
-                    @Override
-                    public StreamingHttpResponse newResponse(final HttpResponseStatus status) {
-                        return reqRespFactory.newResponse(status);
                     }
 
                     @Override
@@ -92,11 +92,6 @@ public final class TestStreamingHttpClient {
             public Single<ReservedStreamingHttpConnection> reserveConnection(final HttpExecutionStrategy strategy,
                                                                              final HttpRequestMetaData metaData) {
                 return filterChain.reserveConnection(strategy, metaData);
-            }
-
-            @Override
-            public StreamingHttpResponse newResponse(final HttpResponseStatus status) {
-                return filterChain.newResponse(status);
             }
 
             @Override
@@ -128,6 +123,11 @@ public final class TestStreamingHttpClient {
             @Override
             public ExecutionContext executionContext() {
                 return filterChain.executionContext();
+            }
+
+            @Override
+            public StreamingHttpResponseFactory httpResponseFactory() {
+                return filterChain.httpResponseFactory();
             }
 
             @Override

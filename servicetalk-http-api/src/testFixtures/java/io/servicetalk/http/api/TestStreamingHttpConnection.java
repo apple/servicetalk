@@ -68,6 +68,11 @@ public final class TestStreamingHttpConnection {
                     }
 
                     @Override
+                    public StreamingHttpResponseFactory httpResponseFactory() {
+                        return reqRespFactory;
+                    }
+
+                    @Override
                     public HttpExecutionStrategy computeExecutionStrategy(final HttpExecutionStrategy other) {
                         return other;
                     }
@@ -83,11 +88,6 @@ public final class TestStreamingHttpConnection {
                     }
 
                     @Override
-                    public StreamingHttpResponse newResponse(final HttpResponseStatus status) {
-                        return reqRespFactory.newResponse(status);
-                    }
-
-                    @Override
                     public StreamingHttpRequest newRequest(final HttpRequestMethod method, final String requestTarget) {
                         return reqRespFactory.newRequest(method, requestTarget);
                     }
@@ -98,10 +98,6 @@ public final class TestStreamingHttpConnection {
     public static StreamingHttpConnection from(FilterableStreamingHttpConnection filterChain) {
         return new StreamingHttpConnection() {
             private final HttpExecutionStrategy strategy = filterChain.computeExecutionStrategy(defaultStrategy());
-            @Override
-            public StreamingHttpResponse newResponse(final HttpResponseStatus status) {
-                return filterChain.newResponse(status);
-            }
 
             @Override
             public StreamingHttpRequest newRequest(final HttpRequestMethod method, final String requestTarget) {
@@ -132,6 +128,11 @@ public final class TestStreamingHttpConnection {
             @Override
             public ExecutionContext executionContext() {
                 return filterChain.executionContext();
+            }
+
+            @Override
+            public StreamingHttpResponseFactory httpResponseFactory() {
+                return filterChain.httpResponseFactory();
             }
 
             @Override

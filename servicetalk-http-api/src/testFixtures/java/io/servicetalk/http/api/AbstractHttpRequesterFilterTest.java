@@ -265,12 +265,6 @@ public abstract class AbstractHttpRequesterFilterTest {
     private ReservedStreamingHttpConnection newReservedConnection() {
         final StreamingHttpConnection connection = newConnection(ok(), null);
         return new ReservedStreamingHttpConnection() {
-
-            @Override
-            public StreamingHttpResponse newResponse(final HttpResponseStatus status) {
-                return connection.newResponse(status);
-            }
-
             @Override
             public StreamingHttpRequest newRequest(final HttpRequestMethod method, final String requestTarget) {
                 return connection.newRequest(method, requestTarget);
@@ -305,6 +299,11 @@ public abstract class AbstractHttpRequesterFilterTest {
             @Override
             public ExecutionContext executionContext() {
                 return connection.executionContext();
+            }
+
+            @Override
+            public StreamingHttpResponseFactory httpResponseFactory() {
+                return connection.httpResponseFactory();
             }
 
             @Override
@@ -370,7 +369,8 @@ public abstract class AbstractHttpRequesterFilterTest {
                                             final StreamingHttpRequester delegate,
                                             final HttpExecutionStrategy strategy,
                                             final StreamingHttpRequest request) {
-                                        return rwch.request(delegate, connectionContext(), request);
+                                        return rwch.request(delegate.httpResponseFactory(), connectionContext(),
+                                                request);
                                     }
                                 });
                     }

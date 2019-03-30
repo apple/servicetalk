@@ -73,6 +73,11 @@ public class BlockingStreamingHttpConnectionTest extends AbstractBlockingStreami
         }
 
         @Override
+        public StreamingHttpResponseFactory httpResponseFactory() {
+            return factory;
+        }
+
+        @Override
         public final <T> Publisher<T> settingStream(final SettingKey<T> settingKey) {
             return Publisher.failed(new IllegalStateException("unsupported"));
         }
@@ -103,11 +108,6 @@ public class BlockingStreamingHttpConnectionTest extends AbstractBlockingStreami
         @Override
         public final boolean isClosed() {
             return closed.get();
-        }
-
-        @Override
-        public StreamingHttpResponse newResponse(final HttpResponseStatus status) {
-            return factory.newResponse(status);
         }
 
         @Override

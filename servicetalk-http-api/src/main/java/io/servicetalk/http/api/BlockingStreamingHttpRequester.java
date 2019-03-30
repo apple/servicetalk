@@ -22,7 +22,7 @@ import static io.servicetalk.http.api.HttpExecutionStrategies.OFFLOAD_ALL_STRATE
 /**
  * The equivalent of {@link StreamingHttpRequester} but with synchronous/blocking APIs instead of asynchronous APIs.
  */
-public interface BlockingStreamingHttpRequester extends BlockingStreamingHttpRequestResponseFactory, AutoCloseable {
+public interface BlockingStreamingHttpRequester extends BlockingStreamingHttpRequestFactory, AutoCloseable {
     /**
      * Send a {@code request} using the passed {@link HttpExecutionStrategy strategy}.
      *
@@ -43,6 +43,13 @@ public interface BlockingStreamingHttpRequester extends BlockingStreamingHttpReq
      * @return the {@link ExecutionContext} used during construction of this object.
      */
     ExecutionContext executionContext();
+
+    /**
+     * Get a {@link BlockingStreamingHttpResponseFactory}.
+     *
+     * @return a {@link BlockingStreamingHttpResponseFactory}.
+     */
+    BlockingStreamingHttpResponseFactory httpResponseFactory();
 
     @Override
     default void close() throws Exception {

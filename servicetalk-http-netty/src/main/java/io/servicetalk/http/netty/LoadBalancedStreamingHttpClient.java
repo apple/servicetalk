@@ -22,11 +22,11 @@ import io.servicetalk.http.api.FilterableStreamingHttpClient;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpRequestMethod;
-import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.http.api.ReservedStreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.StreamingHttpResponse;
+import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.utils.DoBeforeFinallyOnHttpResponseOperator;
 import io.servicetalk.transport.api.ExecutionContext;
 
@@ -91,6 +91,11 @@ final class LoadBalancedStreamingHttpClient implements FilterableStreamingHttpCl
     }
 
     @Override
+    public StreamingHttpResponseFactory httpResponseFactory() {
+        return reqRespFactory;
+    }
+
+    @Override
     public void close() throws Exception {
         loadBalancer.closeAsync().toFuture().get();
     }
@@ -113,10 +118,5 @@ final class LoadBalancedStreamingHttpClient implements FilterableStreamingHttpCl
     @Override
     public StreamingHttpRequest newRequest(final HttpRequestMethod method, final String requestTarget) {
         return reqRespFactory.newRequest(method, requestTarget);
-    }
-
-    @Override
-    public StreamingHttpResponse newResponse(final HttpResponseStatus status) {
-        return reqRespFactory.newResponse(status);
     }
 }

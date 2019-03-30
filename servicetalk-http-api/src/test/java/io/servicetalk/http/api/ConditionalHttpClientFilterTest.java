@@ -30,7 +30,7 @@ public class ConditionalHttpClientFilterTest extends AbstractConditionalHttpFilt
         protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                         final HttpExecutionStrategy strategy,
                                                         final StreamingHttpRequest request) {
-            return TEST_REQ_HANDLER.apply(request, delegate);
+            return TEST_REQ_HANDLER.apply(request, delegate.httpResponseFactory());
         }
     };
 

@@ -70,6 +70,11 @@ final class StreamingHttpClientToBlockingHttpClient implements BlockingHttpClien
     }
 
     @Override
+    public HttpResponseFactory httpResponseFactory() {
+        return reqRespFactory;
+    }
+
+    @Override
     public void close() throws Exception {
         client.close();
     }
@@ -83,11 +88,6 @@ final class StreamingHttpClientToBlockingHttpClient implements BlockingHttpClien
     @Override
     public HttpRequest newRequest(final HttpRequestMethod method, final String requestTarget) {
         return reqRespFactory.newRequest(method, requestTarget);
-    }
-
-    @Override
-    public HttpResponse newResponse(final HttpResponseStatus status) {
-        return reqRespFactory.newResponse(status);
     }
 
     static final class ReservedStreamingHttpConnectionToReservedBlockingHttpConnection implements
@@ -144,6 +144,11 @@ final class StreamingHttpClientToBlockingHttpClient implements BlockingHttpClien
         }
 
         @Override
+        public HttpResponseFactory httpResponseFactory() {
+            return reqRespFactory;
+        }
+
+        @Override
         public void close() throws Exception {
             connection.close();
         }
@@ -157,11 +162,6 @@ final class StreamingHttpClientToBlockingHttpClient implements BlockingHttpClien
         @Override
         public HttpRequest newRequest(final HttpRequestMethod method, final String requestTarget) {
             return reqRespFactory.newRequest(method, requestTarget);
-        }
-
-        @Override
-        public HttpResponse newResponse(final HttpResponseStatus status) {
-            return reqRespFactory.newResponse(status);
         }
     }
 }

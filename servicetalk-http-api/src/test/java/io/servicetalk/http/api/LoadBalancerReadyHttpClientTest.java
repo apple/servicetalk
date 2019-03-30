@@ -88,9 +88,8 @@ public class LoadBalancerReadyHttpClientTest {
         doAnswer((Answer<StreamingHttpRequest>) invocation ->
                 reqRespFactory.newRequest(invocation.getArgument(0), invocation.getArgument(1)))
             .when(mockReservedConnection).newRequest(any(), any());
-        doAnswer((Answer<StreamingHttpResponse>) invocation ->
-                reqRespFactory.newResponse(invocation.getArgument(0)))
-                .when(mockReservedConnection).newResponse(any());
+        doAnswer((Answer<StreamingHttpResponseFactory>) invocation -> reqRespFactory)
+                .when(mockReservedConnection).httpResponseFactory();
     }
 
     @Test

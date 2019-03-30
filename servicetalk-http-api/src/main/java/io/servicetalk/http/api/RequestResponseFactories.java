@@ -23,34 +23,33 @@ final class RequestResponseFactories {
         // no instances
     }
 
-    static StreamingHttpRequestResponseFactory toStreaming(
-            final BlockingStreamingHttpRequestResponseFactory reqRespFactory) {
-        return new BlockingStreamingHttpRequestResponseFactoryToStreamingHttpRequestResponseFactory(reqRespFactory);
-    }
-
-    private static final class BlockingStreamingHttpRequestResponseFactoryToStreamingHttpRequestResponseFactory
-            implements StreamingHttpRequestResponseFactory {
-        private final BlockingStreamingHttpRequestResponseFactory reqRespFactory;
-
-        BlockingStreamingHttpRequestResponseFactoryToStreamingHttpRequestResponseFactory(
-                final BlockingStreamingHttpRequestResponseFactory reqRespFactory) {
-            this.reqRespFactory = reqRespFactory;
-        }
-
-        @Override
-        public StreamingHttpRequest newRequest(final HttpRequestMethod method, final String requestTarget) {
-            return reqRespFactory.newRequest(method, requestTarget).toStreamingRequest();
-        }
-
-        @Override
-        public StreamingHttpResponse newResponse(final HttpResponseStatus status) {
-            return reqRespFactory.newResponse(status).toStreamingResponse();
-        }
-    }
-
     static BlockingStreamingHttpRequestResponseFactory toBlockingStreaming(
             final StreamingHttpRequestResponseFactory reqRespFactory) {
         return new StreamingHttpRequestResponseFactoryToBlockingStreamingHttpRequestResponseFactory(reqRespFactory);
+    }
+
+    static BlockingStreamingHttpRequestResponseFactory toBlockingStreaming(final StreamingHttpRequester requester) {
+        return new StreamingHttpRequesterToBlockingStreamingHttpRequestResponseFactory(requester);
+    }
+
+    private static final class StreamingHttpRequesterToBlockingStreamingHttpRequestResponseFactory
+            implements BlockingStreamingHttpRequestResponseFactory {
+        private final StreamingHttpRequester requester;
+
+        private StreamingHttpRequesterToBlockingStreamingHttpRequestResponseFactory(
+                final StreamingHttpRequester requester) {
+            this.requester = requester;
+        }
+
+        @Override
+        public BlockingStreamingHttpRequest newRequest(final HttpRequestMethod method, final String requestTarget) {
+            return requester.newRequest(method, requestTarget).toBlockingStreamingRequest();
+        }
+
+        @Override
+        public BlockingStreamingHttpResponse newResponse(final HttpResponseStatus status) {
+            return requester.httpResponseFactory().newResponse(status).toBlockingStreamingResponse();
+        }
     }
 
     private static final class StreamingHttpRequestResponseFactoryToBlockingStreamingHttpRequestResponseFactory
@@ -77,6 +76,29 @@ final class RequestResponseFactories {
         return new StreamingHttpRequestResponseFactoryToHttpRequestResponseFactory(reqRespFactory);
     }
 
+    static HttpRequestResponseFactory toAggregated(final StreamingHttpRequester requester) {
+        return new StreamingHttpRequesterToHttpRequestResponseFactory(requester);
+    }
+
+    private static final class StreamingHttpRequesterToHttpRequestResponseFactory
+            implements HttpRequestResponseFactory {
+        private final StreamingHttpRequester requester;
+
+        private StreamingHttpRequesterToHttpRequestResponseFactory(final StreamingHttpRequester requester) {
+            this.requester = requester;
+        }
+
+        @Override
+        public HttpRequest newRequest(final HttpRequestMethod method, final String requestTarget) {
+            return newRequestBlocking(requester, method, requestTarget);
+        }
+
+        @Override
+        public HttpResponse newResponse(final HttpResponseStatus status) {
+            return newResponseBlocking(requester.httpResponseFactory(), status);
+        }
+    }
+
     private static final class StreamingHttpRequestResponseFactoryToHttpRequestResponseFactory
             implements HttpRequestResponseFactory {
         private final StreamingHttpRequestResponseFactory reqRespFactory;
@@ -95,26 +117,26 @@ final class RequestResponseFactories {
         public HttpResponse newResponse(final HttpResponseStatus status) {
             return newResponseBlocking(reqRespFactory, status);
         }
+    }
 
-        static HttpRequest newRequestBlocking(StreamingHttpRequestFactory requestFactory,
-                                              HttpRequestMethod method, String requestTarget) {
-            try {
-                return requestFactory.newRequest(method, requestTarget).toRequest().toFuture().get();
-            } catch (InterruptedException | ExecutionException e) {
-                throw new RuntimeException(e);
-            }
+    private static HttpRequest newRequestBlocking(StreamingHttpRequestFactory requestFactory,
+                                          HttpRequestMethod method, String requestTarget) {
+        try {
+            return requestFactory.newRequest(method, requestTarget).toRequest().toFuture().get();
+        } catch (InterruptedException | ExecutionException e) {
+            throw new RuntimeException(e);
         }
+    }
 
-        static HttpResponse newResponseBlocking(StreamingHttpResponseFactory responseFactory,
-                                                HttpResponseStatus status) {
-            try {
-                return responseFactory.newResponse(status).toResponse().toFuture().get();
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                throw new RuntimeException(e);
-            } catch (ExecutionException e) {
-                throw new RuntimeException(e);
-            }
+    private static HttpResponse newResponseBlocking(StreamingHttpResponseFactory responseFactory,
+                                            HttpResponseStatus status) {
+        try {
+            return responseFactory.newResponse(status).toResponse().toFuture().get();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException(e);
+        } catch (ExecutionException e) {
+            throw new RuntimeException(e);
         }
     }
 }

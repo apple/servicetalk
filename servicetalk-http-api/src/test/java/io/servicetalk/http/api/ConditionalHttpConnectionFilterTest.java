@@ -31,7 +31,7 @@ public class ConditionalHttpConnectionFilterTest extends AbstractConditionalHttp
         @Override
         public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
                                                      final StreamingHttpRequest request) {
-            return TEST_REQ_HANDLER.apply(request, delegate());
+            return TEST_REQ_HANDLER.apply(request, delegate().httpResponseFactory());
         }
     };
 

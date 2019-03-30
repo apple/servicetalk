@@ -137,6 +137,11 @@ public abstract class AbstractHttpServiceFilterTest {
             }
 
             @Override
+            public StreamingHttpResponseFactory httpResponseFactory() {
+                return REQ_RES_FACTORY;
+            }
+
+            @Override
             public Completable onClose() {
                 return Completable.completed();
             }
@@ -154,11 +159,6 @@ public abstract class AbstractHttpServiceFilterTest {
             @Override
             public StreamingHttpRequest newRequest(final HttpRequestMethod method, final String requestTarget) {
                 return REQ_RES_FACTORY.newRequest(method, requestTarget);
-            }
-
-            @Override
-            public StreamingHttpResponse newResponse(final HttpResponseStatus status) {
-                return REQ_RES_FACTORY.newResponse(status);
             }
         };
     }

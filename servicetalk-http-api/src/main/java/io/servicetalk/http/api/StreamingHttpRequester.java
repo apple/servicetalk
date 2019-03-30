@@ -26,8 +26,7 @@ import static io.servicetalk.http.api.HttpExecutionStrategies.OFFLOAD_ALL_STRATE
  * The equivalent of {@link HttpRequester} but that accepts {@link StreamingHttpRequest} and returns
  * {@link StreamingHttpResponse}.
  */
-public interface StreamingHttpRequester extends StreamingHttpRequestResponseFactory, ListenableAsyncCloseable,
-                                                AutoCloseable {
+public interface StreamingHttpRequester extends StreamingHttpRequestFactory, ListenableAsyncCloseable, AutoCloseable {
     /**
      * Send a {@code request} using the specified {@link HttpExecutionStrategy strategy}.
      *
@@ -46,6 +45,13 @@ public interface StreamingHttpRequester extends StreamingHttpRequestResponseFact
      * @return the {@link ExecutionContext} used during construction of this object.
      */
     ExecutionContext executionContext();
+
+    /**
+     * Get a {@link StreamingHttpResponseFactory}.
+     *
+     * @return a {@link StreamingHttpResponseFactory}.
+     */
+    StreamingHttpResponseFactory httpResponseFactory();
 
     @Override
     default void close() throws Exception {

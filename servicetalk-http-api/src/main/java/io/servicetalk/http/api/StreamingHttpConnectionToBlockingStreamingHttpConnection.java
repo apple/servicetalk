@@ -68,6 +68,11 @@ final class StreamingHttpConnectionToBlockingStreamingHttpConnection implements 
     }
 
     @Override
+    public BlockingStreamingHttpResponseFactory httpResponseFactory() {
+        return reqRespFactory;
+    }
+
+    @Override
     public void close() throws Exception {
         connection.close();
     }
@@ -81,10 +86,5 @@ final class StreamingHttpConnectionToBlockingStreamingHttpConnection implements 
     @Override
     public BlockingStreamingHttpRequest newRequest(final HttpRequestMethod method, final String requestTarget) {
         return reqRespFactory.newRequest(method, requestTarget);
-    }
-
-    @Override
-    public BlockingStreamingHttpResponse newResponse(final HttpResponseStatus status) {
-        return reqRespFactory.newResponse(status);
     }
 }

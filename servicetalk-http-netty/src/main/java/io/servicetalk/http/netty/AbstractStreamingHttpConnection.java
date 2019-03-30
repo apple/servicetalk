@@ -22,10 +22,10 @@ import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.HttpResponseMetaData;
-import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.StreamingHttpResponse;
+import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ExecutionContext;
 
@@ -108,8 +108,8 @@ abstract class AbstractStreamingHttpConnection<CC extends ConnectionContext> imp
     }
 
     @Override
-    public final StreamingHttpResponse newResponse(HttpResponseStatus status) {
-        return reqRespFactory.newResponse(status);
+    public final StreamingHttpResponseFactory httpResponseFactory() {
+        return reqRespFactory;
     }
 
     @Override

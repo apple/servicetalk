@@ -25,7 +25,7 @@ import static io.servicetalk.http.api.HttpExecutionStrategies.OFFLOAD_ALL_STRATE
 /**
  * Provides a means to make a HTTP request.
  */
-public interface HttpRequester extends HttpRequestResponseFactory, ListenableAsyncCloseable, AutoCloseable {
+public interface HttpRequester extends HttpRequestFactory, ListenableAsyncCloseable, AutoCloseable {
     /**
      * Send a {@code request} using the specified {@link HttpExecutionStrategy strategy}.
      *
@@ -44,6 +44,13 @@ public interface HttpRequester extends HttpRequestResponseFactory, ListenableAsy
      * @return the {@link ExecutionContext} used during construction of this object.
      */
     ExecutionContext executionContext();
+
+    /**
+     * Get a {@link HttpResponseFactory}.
+     *
+     * @return a {@link HttpResponseFactory}.
+     */
+    HttpResponseFactory httpResponseFactory();
 
     @Override
     default void close() throws Exception {
