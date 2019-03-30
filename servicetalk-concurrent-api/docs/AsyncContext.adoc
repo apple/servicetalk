@@ -148,66 +148,6 @@ make sure the same static state is carried along through these different threads
 === Disable AsyncContext
 `AsyncContext` is enabled by default to accommodate for easy setup, but it can be disabled via `AsyncContext.disable()`.
 
-== Industry Comparison
-
-=== reactor-core
-
-==== Context
-reactor-core provides a
-link:https://github.com/reactor/reactor-core/blob/master/docs/asciidoc/advancedFeatures.adoc#adding-a-context-to-a-reactive-sequence#context[context concept]
-similar to what has been described above. The general approach is initialized context at
-link:https://github.com/reactor/reactor-core/blob/master/reactor-core/src/main/java/reactor/core/publisher/Flux.java#L7794[subscribe time],
- link:https://github.com/reactor/reactor-core/blob/master/reactor-core/src/main/java/reactor/util/context/Context.java#L31[thread safe and immutable],
- and is isolated to a
-link:https://github.com/reactor/reactor-core/blob/master/reactor-core/src/main/java/reactor/core/CoreSubscriber.java#L44-L46[Subscriber chain].
-This approach depends upon retaining the context via the
-link:https://github.com/reactor/reactor-core/blob/master/reactor-core/src/main/java/reactor/core/CoreSubscriber.java#L36[CoreSubscriber]
-API (which extends from ReactiveStreams `Subscriber`) and is
-link:https://github.com/reactor/reactor-core/blob/master/reactor-core/src/main/java/reactor/core/CoreSubscriber.java#L44-L46[empty by default].
-There are a few limitations to this approach:
-
-* Limited to ReactiveStream function composition control flow
-** In order to get access to the context it is necessary to create a new asynchronous source
-(e.g. `Mono.subscriberContext()`). This will trigger a `subscribe` and thus capture the current context, and provides it
-in the return type (e.g. `Mono<Context>`) to then use function composition to modify.
-** Requires some external mechanism to track when you transition to alternative APIs provided by ServiceTalk
-(e.g. blocking) and also interact with 3rd party libraries (e.g. MDC, OpenTracing which is
-link:https://github.com/reactor/reactor-netty/issues/539[not yet supported by reactor-netty]). The external mechanism
-can be error prone and is easily forgotten.
-* Modifications not visible in synchronous data control flow
-** The `Context` is copy-on-write and modifications are not updating the original map in the `Subscriber`. This means
-that modifications will not propagate synchronous operator chain boundaries (e.g. map().filter(), map makes a change
-and filter observes the change). In order to accomplish this the context has to be brought into the data control flow
-(e.g. `Mono<Data>..zipWith(Mono.subscriberContex().map(c → /*modify context*/)` which returns a
-`Tuple<Data, Context>`).
-* Context not available in the `Subscription`
-** We have use cases that require access/modification of the context from the `Subscription`. For example to cleanup
-state (e.g. close a Span from distributed tracing) in the event of a `Subscription#cancel()`. The expected context isn't
-available in the `Subscription` todo this work.
-* Semantics difficult to manage with offloading
-** The context is captured at `subscribe` time, and is coupled to a `Subscriber`. However some protocols
-(e.g. HTTP server) call `subscribe` on the EventLoop thread and invoke user code on another thread. This makes it
-challenging to make the same context available in all places where user code processes that request.
-
-==== Hooks
-reactor-core also exposes a callback mechanisms that allows you to decorate or modify the operator lifecycle events
-called
-link:https://github.com/reactor/reactor-core/blob/master/reactor-core/src/main/java/reactor/core/publisher/Hooks.java[Hooks].
-The `Hooks` approach provides general visibility which could be used to wrap each `Subscriber` to save/restore static
-state. The visibility into the type of operator and if the control flow is synchronous, asynchronous, and other
-control flow complexity in operator implementations. This approach also suffers from the issues related to offloading
-discussed above. The costs of wrapping on every `Subscriber` (and potentially `Subscription`) also adds depth to call
-stacks, increased frequency of accessing static state for save/restore, and increases memory pressure.
-
-=== RxJava Reactiverse Extensions
-
-The link:https://github.com/reactiverse/reactive-contexts[reactive-context] project uses RxJava's
-link:https://github.com/reactiverse/reactive-contexts/blob/master/propagators-rxjava2/src/main/java/io/reactiverse/reactivecontexts/propagators/rxjava2/ContextPropagatorOnSingleAssemblyAction.java[Assembly]
-and
-link:https://github.com/reactiverse/reactive-contexts/blob/master/propagators-rxjava2/src/main/java/io/reactiverse/reactivecontexts/propagators/rxjava2/ContextPropagatorOnSingleCreateAction.java[Subscribe]
-Plugin mechanism to capture context on `subscribe`, and save/restore before each method call. This approach has the same
-issues described in <<Hooks>>.
-
 == ServiceTalk Approach
 
 In order to accommodate the <<Expectations of AsyncContext>> we need specific behavior from `AsyncContext`. As described
