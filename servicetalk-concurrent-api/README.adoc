@@ -7,5 +7,5 @@ for definitions and rules regarding concurrency.
 
 ## Async Context
 
-See <<docs/AsyncContext.adoc, AsyncContext document>> to understand what `AsyncContext` is and what use cases it is
-intended for.
+See link:docs/AsyncContext{outfilesuffix}[AsyncContext document] to understand what `AsyncContext` is and what use cases
+it is intended for.
