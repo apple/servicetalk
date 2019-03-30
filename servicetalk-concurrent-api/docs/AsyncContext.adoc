@@ -33,19 +33,20 @@ API has a few benefits:
 * Interop with existing APIs depending on `ThreadLocal`
 ** Some APIs / features assume static state that is coupled with the current thread. This worked well in the
 1-request-per-thread model, however it breaks down when we may process a request on different threads due to
-asynchronous execution and also share threads for processing different requests. For example the OpenTracing APIs and
-the MDC based APIs assume state is stored in some static structure.
+asynchronous execution and also share threads for processing different requests. For example the
+link:https://github.com/opentracing/opentracing-java/blob/master/opentracing-api/src/main/java/io/opentracing/Tracer.java[OpenTracing APIs]
+and the
+link:https://www.slf4j.org/api/org/slf4j/MDC.html[MDC APIs] assume state is stored in some static structure.
 * API is decoupled from application data APIs
 ** A use case for `AsyncContext` is to retain distributed tracing state. This state maybe useful across different APIs
 and maybe burdensome to account for this state in every API (e.g. gRPC and generated code). It also maybe error prone to
 rely upon users to propagate this state according to control flow which may result inconsistent state. This state is
 often optional and not always required, and so if it is baked into the protocol APIs this would make them more complex
 and not be required.
-*** Note this maybe seen as a negative in some respects in that if state is required it should be explicitly passed.
-While this isn't untrue we are focusing on the clarity of not coupling independent concerns (application data flow vs
-“infrastructure” tasks), and the libraries ability to “just work” for most cases.
+*** Note this maybe seen as a negative in some respects. On the contrary, this does not restrict users from explicitly
+passing state through their APIs. In this case users can <<Disable AsyncContext>>.
 
-However these befits don't come for free. Some of the costs of the static API are as follows:
+However these benefits don't come for free. Some of the costs of the static API are as follows:
 
 * Complexity of implementation
 ** ServiceTalk is on the hook for making sure the state is saved/restored across asynchronous boundaries. This means that
@@ -68,11 +69,11 @@ context, and then restore original value.
 
 == Expectations of AsyncContext
 
-Whether you hate it or love it there are existing APIs that assume a `ThreadLocal` type of state (e.g. `MDC`,
-`OpenTracing`). For this reason we would like to provide a similar experience within our asynchronous primitives and
-control flow provided by operators. From a practical stand point we want to leverage this tool as the foundation for
-infrastructure type tasks that require static state, or cannot otherwise be explicitly accounted for in the API. This
-leads us to the following desirable characteristics.
+Perhaps unfortunately, but many existing APIs assume a `ThreadLocal` type of state (e.g. `MDC`, `OpenTracing`). For this
+reason we would like to provide a similar experience within our asynchronous primitives and control flow provided by
+operators. From a practical stand point we want to leverage this tool as the foundation for infrastructure type tasks
+that require static state, or cannot otherwise be explicitly accounted for in the API. This leads us to the following
+desirable characteristics.
 
 [start=1]
 . State is shared across synchronous boundaries
@@ -81,7 +82,7 @@ leads us to the following desirable characteristics.
 functionality. To clarify this means if someone is calling an method in the imperative style and the state is shared
 then the same property should hold for adjacent operators. To demonstrate this check out the following code snippets:
 
-===== Function composition and operator approach
+===== Function composition
 [source, java]
 ----
 Single<String> single = ...
@@ -143,7 +144,7 @@ make sure the same static state is carried along through these different threads
 ==== Context
 reactor-core provides a
 link:https://github.com/reactor/reactor-core/blob/master/docs/asciidoc/advancedFeatures.adoc#adding-a-context-to-a-reactive-sequence#context[context concept]
-similar to was has been described above. The general approach is initialized context at
+similar to what has been described above. The general approach is initialized context at
 link:https://github.com/reactor/reactor-core/blob/master/reactor-core/src/main/java/reactor/core/publisher/Flux.java#L7794[subscribe time],
  link:https://github.com/reactor/reactor-core/blob/master/reactor-core/src/main/java/reactor/util/context/Context.java#L31[thread safe and immutable],
  and is isolated to a
@@ -166,7 +167,7 @@ can be error prone and is easily forgotten.
 ** The `Context` is copy-on-write and modifications are not updating the original map in the `Subscriber`. This means
 that modifications will not propagate synchronous operator chain boundaries (e.g. map().filter(), map makes a change
 and filter observes the change). In order to accomplish this the context has to be brought into the data control flow
-(e.g. `Single<Data>..zipWith(Mono.subscriberContex().map(c → /*modify context*/)` which returns a
+(e.g. `Mono<Data>..zipWith(Mono.subscriberContex().map(c → /*modify context*/)` which returns a
 `Tuple<Data, Context>`).
 * Context not available in the `Subscription`
 ** We have use cases that require access/modification of the context from the `Subscription`. For example to cleanup
@@ -215,8 +216,8 @@ utilities (e.g. `Runnable asyncContextBoundary(Runnable)`) to create boundaries.
 The above approach will provide the isolation required so that the state set inside an offloaded
 `HttpService#handle(..)` call is visible when processing the request/response.
 
-Due to the intricacies of control flow this mechanism is be directly implemented in our operators as opposed to
-exposing and leveraging a <<Hooks>>-like mechanism.
+Due to the intricacies of control flow this mechanism is directly implemented in our operators as opposed to exposing
+and leveraging a <<Hooks>>-like mechanism.
 
 === Complexity of implementation
 
