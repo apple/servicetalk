@@ -80,7 +80,7 @@ abstract class BaseSingleAddressHttpClientBuilder<U, R, SDE extends ServiceDisco
 
     @Override
     public abstract BaseSingleAddressHttpClientBuilder<U, R, SDE> appendConnectionFactoryFilter(
-            ConnectionFactoryFilter<R, FilterableStreamingHttpConnection> factory);
+            ConnectionFactoryFilter<R, StreamingHttpConnection> factory);
 
     @Override
     public abstract BaseSingleAddressHttpClientBuilder<U, R, SDE> disableHostHeaderFallback();
@@ -94,7 +94,7 @@ abstract class BaseSingleAddressHttpClientBuilder<U, R, SDE extends ServiceDisco
 
     @Override
     public abstract BaseSingleAddressHttpClientBuilder<U, R, SDE> loadBalancerFactory(
-            LoadBalancerFactory<R, FilterableStreamingHttpConnection> loadBalancerFactory);
+            LoadBalancerFactory<R, StreamingHttpConnection> loadBalancerFactory);
 
     /**
      * Automatically set the provided {@link HttpHeaderNames#HOST} on {@link StreamingHttpRequest}s when it's missing.

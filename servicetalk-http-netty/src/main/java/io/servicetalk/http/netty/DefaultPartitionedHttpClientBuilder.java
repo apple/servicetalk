@@ -34,7 +34,6 @@ import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.EmptyHttpHeaders;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
-import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.HttpRequestMetaData;
@@ -45,6 +44,7 @@ import io.servicetalk.http.api.PartitionedHttpClientBuilder;
 import io.servicetalk.http.api.ReservedStreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
+import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
@@ -327,7 +327,7 @@ class DefaultPartitionedHttpClientBuilder<U, R> extends PartitionedHttpClientBui
 
     @Override
     public PartitionedHttpClientBuilder<U, R> appendConnectionFactoryFilter(
-            final ConnectionFactoryFilter<R, FilterableStreamingHttpConnection> factory) {
+            final ConnectionFactoryFilter<R, StreamingHttpConnection> factory) {
         builderTemplate.appendConnectionFactoryFilter(factory);
         return this;
     }
@@ -353,7 +353,7 @@ class DefaultPartitionedHttpClientBuilder<U, R> extends PartitionedHttpClientBui
 
     @Override
     public PartitionedHttpClientBuilder<U, R> loadBalancerFactory(
-            final LoadBalancerFactory<R, FilterableStreamingHttpConnection> loadBalancerFactory) {
+            final LoadBalancerFactory<R, StreamingHttpConnection> loadBalancerFactory) {
         builderTemplate.loadBalancerFactory(loadBalancerFactory);
         return this;
     }

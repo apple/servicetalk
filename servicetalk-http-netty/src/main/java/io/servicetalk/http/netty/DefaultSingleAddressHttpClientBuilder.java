@@ -26,13 +26,13 @@ import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
-import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.LoadBalancerReadyStreamingHttpClientFilter;
 import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
+import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.tcp.netty.internal.TcpClientConfig;
@@ -72,7 +72,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
     private final HttpClientConfig config;
     private final ExecutionContextBuilder executionContextBuilder;
     private HttpExecutionStrategy strategy = defaultStrategy();
-    private LoadBalancerFactory<R, FilterableStreamingHttpConnection> loadBalancerFactory;
+    private LoadBalancerFactory<R, StreamingHttpConnection> loadBalancerFactory;
     private ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> serviceDiscoverer;
     @Nullable
     private Function<U, StreamingHttpClientFilterFactory> hostHeaderFilterFactory =
@@ -83,7 +83,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
     private StreamingHttpClientFilterFactory clientFilterFunction;
     @Nullable
     private StreamingHttpClientFilterFactory lbReadyFilter = LB_READY_FILTER;
-    private ConnectionFactoryFilter<R, FilterableStreamingHttpConnection> connectionFactoryFilter =
+    private ConnectionFactoryFilter<R, StreamingHttpConnection> connectionFactoryFilter =
             ConnectionFactoryFilter.identity();
 
     DefaultSingleAddressHttpClientBuilder(
@@ -178,14 +178,14 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
             final StreamingHttpRequestResponseFactory reqRespFactory = ctx.reqRespFactory;
 
             // closed by the LoadBalancer
-            final ConnectionFactory<R, ? extends FilterableStreamingHttpConnection> connectionFactory =
+            final ConnectionFactory<R, ? extends StreamingHttpConnection> connectionFactory =
                     connectionFactoryFilter.create(closeOnException.prepend(roConfig.maxPipelinedRequests() == 1 ?
                             new NonPipelinedLBHttpConnectionFactory<>(roConfig, ctx.executionContext,
                                     connectionFilterFunction, reqRespFactory, strategy) :
                             new PipelinedLBHttpConnectionFactory<>(roConfig, ctx.executionContext,
                                     connectionFilterFunction, reqRespFactory, strategy)));
 
-            final LoadBalancer<? extends FilterableStreamingHttpConnection> lbfUntypedForCast =
+            final LoadBalancer<? extends StreamingHttpConnection> lbfUntypedForCast =
                     closeOnException.prepend(loadBalancerFactory.newLoadBalancer(sdEvents, connectionFactory));
             @SuppressWarnings("unchecked")
             final LoadBalancer<LoadBalancedStreamingHttpConnection> lb =
@@ -350,7 +350,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
 
     @Override
     public DefaultSingleAddressHttpClientBuilder<U, R> appendConnectionFactoryFilter(
-            final ConnectionFactoryFilter<R, FilterableStreamingHttpConnection> factory) {
+            final ConnectionFactoryFilter<R, StreamingHttpConnection> factory) {
         connectionFactoryFilter = connectionFactoryFilter.append(factory);
         return this;
     }
@@ -393,7 +393,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
 
     @Override
     public DefaultSingleAddressHttpClientBuilder<U, R> loadBalancerFactory(
-            final LoadBalancerFactory<R, FilterableStreamingHttpConnection> loadBalancerFactory) {
+            final LoadBalancerFactory<R, StreamingHttpConnection> loadBalancerFactory) {
         this.loadBalancerFactory = requireNonNull(loadBalancerFactory);
         return this;
     }

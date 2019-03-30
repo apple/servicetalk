@@ -94,7 +94,7 @@ public abstract class PartitionedHttpClientBuilder<U, R>
 
     @Override
     public abstract PartitionedHttpClientBuilder<U, R> appendConnectionFactoryFilter(
-            ConnectionFactoryFilter<R, FilterableStreamingHttpConnection> factory);
+            ConnectionFactoryFilter<R, StreamingHttpConnection> factory);
 
     @Override
     public abstract PartitionedHttpClientBuilder<U, R> disableHostHeaderFallback();
@@ -108,7 +108,7 @@ public abstract class PartitionedHttpClientBuilder<U, R>
 
     @Override
     public abstract PartitionedHttpClientBuilder<U, R> loadBalancerFactory(
-            LoadBalancerFactory<R, FilterableStreamingHttpConnection> loadBalancerFactory);
+            LoadBalancerFactory<R, StreamingHttpConnection> loadBalancerFactory);
 
     @Override
     public abstract PartitionedHttpClientBuilder<U, R> enableHostHeaderFallback(CharSequence hostHeader);

@@ -28,7 +28,6 @@ import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.internal.SubscribableCompletable;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
-import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.HttpRequestMetaData;
@@ -41,6 +40,7 @@ import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.http.api.SslConfigProvider;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
+import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
@@ -433,7 +433,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder extends MultiAddressHttpClie
 
     @Override
     public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> appendConnectionFactoryFilter(
-            final ConnectionFactoryFilter<InetSocketAddress, FilterableStreamingHttpConnection> factory) {
+            final ConnectionFactoryFilter<InetSocketAddress, StreamingHttpConnection> factory) {
         builderTemplate.appendConnectionFactoryFilter(factory);
         return this;
     }
@@ -502,7 +502,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder extends MultiAddressHttpClie
 
     @Override
     public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> loadBalancerFactory(
-            final LoadBalancerFactory<InetSocketAddress, FilterableStreamingHttpConnection> loadBalancerFactory) {
+            final LoadBalancerFactory<InetSocketAddress, StreamingHttpConnection> loadBalancerFactory) {
         builderTemplate.loadBalancerFactory(loadBalancerFactory);
         return this;
     }
