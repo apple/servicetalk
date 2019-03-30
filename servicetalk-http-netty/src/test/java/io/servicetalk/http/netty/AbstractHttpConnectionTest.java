@@ -46,13 +46,14 @@ import static io.servicetalk.concurrent.api.BlockingTestUtils.awaitIndefinitelyN
 import static io.servicetalk.concurrent.api.Completable.never;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.http.api.DefaultHttpHeadersFactory.INSTANCE;
+import static io.servicetalk.http.api.FilterableStreamingHttpConnection.SettingKey.MAX_CONCURRENCY;
+import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
 import static io.servicetalk.http.api.HttpHeaderValues.TEXT_PLAIN;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpRequestMethod.GET;
 import static io.servicetalk.http.api.HttpResponseMetaDataFactory.newResponseMetaData;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
-import static io.servicetalk.http.api.StreamingHttpConnection.SettingKey.MAX_CONCURRENCY;
 import static io.servicetalk.http.api.StreamingHttpRequests.newRequest;
 import static io.servicetalk.http.api.StreamingHttpRequests.newRequestWithTrailers;
 import static io.servicetalk.transport.netty.internal.ExecutionContextRule.immediate;
@@ -64,7 +65,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 /**
- * This tests the common functionality in {@link AbstractStreamingHttpConnectionFilter}.
+ * This tests the common functionality in {@link AbstractStreamingHttpConnection}.
  */
 public final class AbstractHttpConnectionTest {
 
@@ -84,11 +85,11 @@ public final class AbstractHttpConnectionTest {
     private final StreamingHttpRequestResponseFactory reqRespFactory =
             new DefaultStreamingHttpRequestResponseFactory(allocator, headersFactory);
 
-    private class MockStreamingHttpConnectionFilter
-            extends AbstractStreamingHttpConnectionFilter<NettyConnection<Object, Object>> {
-        protected MockStreamingHttpConnectionFilter(final NettyConnection<Object, Object> connection,
-                                                    final ReadOnlyHttpClientConfig config) {
-            super(connection, config, ctx, reqRespFactory);
+    private class MockStreamingHttpConnection
+            extends AbstractStreamingHttpConnection<NettyConnection<Object, Object>> {
+        MockStreamingHttpConnection(final NettyConnection<Object, Object> connection,
+                                    final ReadOnlyHttpClientConfig config) {
+            super(connection, config, ctx, reqRespFactory, defaultStrategy());
         }
 
         @Override
@@ -104,8 +105,7 @@ public final class AbstractHttpConnectionTest {
         config.maxPipelinedRequests(101);
         NettyConnection conn = mock(NettyConnection.class);
         when(conn.onClose()).thenReturn(never());
-        http = TestStreamingHttpConnection.from(reqRespFactory, ctx, conn, __ ->
-                new MockStreamingHttpConnectionFilter(conn, config.asReadOnly()));
+        http = TestStreamingHttpConnection.from(new MockStreamingHttpConnection(conn, config.asReadOnly()));
     }
 
     @Test

@@ -51,7 +51,7 @@ public interface HttpService extends AsyncCloseable {
      * {@link BlockingStreamingHttpService} in combination with another {@link HttpExecutionStrategy}. This may involve
      * a merge operation between two {@link BlockingStreamingHttpService}.
      *
-     * @param other The other
+     * @param other The other {@link HttpExecutionStrategy} to consider during the computation.
      * @return The {@link HttpExecutionStrategy} for this {@link BlockingStreamingHttpService}.
      */
     default HttpExecutionStrategy computeExecutionStrategy(HttpExecutionStrategy other) {

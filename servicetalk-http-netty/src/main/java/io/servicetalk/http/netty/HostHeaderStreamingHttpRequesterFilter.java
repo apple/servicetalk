@@ -17,12 +17,14 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.http.api.HttpClientFilterFactory;
-import io.servicetalk.http.api.HttpConnectionFilterFactory;
+import io.servicetalk.http.api.FilterableStreamingHttpClient;
+import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpHeaderNames;
 import io.servicetalk.http.api.StreamingHttpClientFilter;
+import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
 import io.servicetalk.http.api.StreamingHttpConnectionFilter;
+import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequester;
 import io.servicetalk.http.api.StreamingHttpResponse;
@@ -38,15 +40,15 @@ import static java.util.Objects.requireNonNull;
 /**
  * A filter which will apply a fallback value for the {@link HttpHeaderNames#HOST} header if one is not present.
  */
-final class HostHeaderHttpRequesterFilter implements HttpClientFilterFactory,
-                                                     HttpConnectionFilterFactory {
+final class HostHeaderStreamingHttpRequesterFilter implements StreamingHttpClientFilterFactory,
+                                                              StreamingHttpConnectionFilterFactory {
     private final CharSequence fallbackHost;
 
     /**
      * Create a new instance.
      * @param fallbackHost The address to use as a fallback if a {@link HttpHeaderNames#HOST} header is not present.
      */
-    HostHeaderHttpRequesterFilter(HostAndPort fallbackHost) {
+    HostHeaderStreamingHttpRequesterFilter(HostAndPort fallbackHost) {
         this(fallbackHost.hostName(), fallbackHost.port());
     }
 
@@ -56,7 +58,7 @@ final class HostHeaderHttpRequesterFilter implements HttpClientFilterFactory,
      * present.
      * @param fallbackPort The port to use as a fallback if a {@link HttpHeaderNames#HOST} header is not present.
      */
-    HostHeaderHttpRequesterFilter(String fallbackHostName, int fallbackPort) {
+    HostHeaderStreamingHttpRequesterFilter(String fallbackHostName, int fallbackPort) {
         this.fallbackHost = requireNonNull(newAsciiString(toSocketAddressString(fallbackHostName, fallbackPort)));
     }
 
@@ -64,44 +66,44 @@ final class HostHeaderHttpRequesterFilter implements HttpClientFilterFactory,
      * Create a new instance.
      * @param fallbackHost The address to use as a fallback if a {@link HttpHeaderNames#HOST} header is not present.
      */
-    HostHeaderHttpRequesterFilter(CharSequence fallbackHost) {
+    HostHeaderStreamingHttpRequesterFilter(CharSequence fallbackHost) {
         this.fallbackHost = newAsciiString(isValidIpV6Address(fallbackHost) && fallbackHost.charAt(0) != '[' ?
                 "[" + fallbackHost + "]" : fallbackHost.toString());
     }
 
     @Override
-    public StreamingHttpClientFilter create(final StreamingHttpClientFilter client, final Publisher<Object> lbEvents) {
+    public StreamingHttpClientFilter create(final FilterableStreamingHttpClient client,
+                                            final Publisher<Object> lbEvents) {
         return new StreamingHttpClientFilter(client) {
 
             @Override
             protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                             final HttpExecutionStrategy strategy,
                                                             final StreamingHttpRequest request) {
-                return HostHeaderHttpRequesterFilter.this.request(delegate, strategy, request);
+                return HostHeaderStreamingHttpRequesterFilter.this.request(delegate, strategy, request);
             }
 
             @Override
-            protected HttpExecutionStrategy mergeForEffectiveStrategy(final HttpExecutionStrategy mergeWith) {
+            public HttpExecutionStrategy computeExecutionStrategy(final HttpExecutionStrategy other) {
                 // Since this filter does not have any blocking code, we do not need to alter the effective strategy.
-                return mergeWith;
+                return delegate().computeExecutionStrategy(other);
             }
         };
     }
 
     @Override
-    public StreamingHttpConnectionFilter create(final StreamingHttpConnectionFilter connection) {
+    public StreamingHttpConnectionFilter create(final FilterableStreamingHttpConnection connection) {
         return new StreamingHttpConnectionFilter(connection) {
             @Override
-            protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
-                                                            final HttpExecutionStrategy strategy,
+            public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
                                                             final StreamingHttpRequest request) {
-                return HostHeaderHttpRequesterFilter.this.request(delegate, strategy, request);
+                return HostHeaderStreamingHttpRequesterFilter.this.request(delegate(), strategy, request);
             }
 
             @Override
-            protected HttpExecutionStrategy mergeForEffectiveStrategy(final HttpExecutionStrategy mergeWith) {
+            public HttpExecutionStrategy computeExecutionStrategy(final HttpExecutionStrategy other) {
                 // Since this filter does not have any blocking code, we do not need to alter the effective strategy.
-                return mergeWith;
+                return delegate().computeExecutionStrategy(other);
             }
         };
     }

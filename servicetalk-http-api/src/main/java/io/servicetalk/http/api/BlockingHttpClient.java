@@ -15,33 +15,18 @@
  */
 package io.servicetalk.http.api;
 
-import io.servicetalk.http.api.BlockingStreamingHttpClient.ReservedBlockingStreamingHttpConnection;
-import io.servicetalk.http.api.HttpClient.ReservedHttpConnection;
-import io.servicetalk.http.api.StreamingHttpClient.ReservedStreamingHttpConnection;
-import io.servicetalk.transport.api.ExecutionContext;
-
-import static io.servicetalk.http.api.BlockingUtils.blockingInvocation;
-import static io.servicetalk.http.api.RequestResponseFactories.toAggregated;
-
 /**
  * The equivalent of {@link HttpClient} but with synchronous/blocking APIs instead of asynchronous APIs.
  */
-public final class BlockingHttpClient implements BlockingHttpRequester {
-
-    private final StreamingHttpClient client;
-    private final HttpExecutionStrategy strategy;
-    private final HttpRequestResponseFactory reqRespFactory;
-
+public interface BlockingHttpClient extends BlockingHttpRequester {
     /**
-     * Create a new instance.
+     * Send a {@code request}.
      *
-     * @param client {@link StreamingHttpClient} to convert from.
+     * @param request the request to send.
+     * @return The response.
+     * @throws Exception if an exception occurs during the request processing.
      */
-    BlockingHttpClient(final StreamingHttpClient client, final HttpExecutionStrategy strategy) {
-        reqRespFactory = toAggregated(client.filterChain.reqRespFactory);
-        this.strategy = strategy;
-        this.client = client;
-    }
+    HttpResponse request(HttpRequest request) throws Exception;
 
     /**
      * Reserve a {@link BlockingHttpConnection} based on provided {@link HttpRequestMetaData}.
@@ -52,9 +37,7 @@ public final class BlockingHttpClient implements BlockingHttpRequester {
      * @return a {@link ReservedBlockingHttpConnection}.
      * @throws Exception if a exception occurs during the reservation process.
      */
-    public ReservedBlockingHttpConnection reserveConnection(HttpRequestMetaData metaData) throws Exception {
-        return reserveConnection(strategy, metaData);
-    }
+    ReservedBlockingHttpConnection reserveConnection(HttpRequestMetaData metaData) throws Exception;
 
     /**
      * Reserve a {@link BlockingHttpConnection} based on provided {@link HttpRequestMetaData}.
@@ -66,37 +49,22 @@ public final class BlockingHttpClient implements BlockingHttpRequester {
      * @return a {@link ReservedBlockingHttpConnection}.
      * @throws Exception if a exception occurs during the reservation process.
      */
-    public ReservedBlockingHttpConnection reserveConnection(HttpExecutionStrategy strategy,
-                                                            HttpRequestMetaData metaData) throws Exception {
-        return blockingInvocation(client.reserveConnection(strategy, metaData)
-                .map(c -> new ReservedBlockingHttpConnection(c, this.strategy)));
-    }
-
-    @Override
-    public HttpResponse request(final HttpRequest request) throws Exception {
-        return request(strategy, request);
-    }
-
-    @Override
-    public HttpResponse request(final HttpExecutionStrategy strategy, final HttpRequest request) throws Exception {
-        return BlockingUtils.request(client, strategy, request);
-    }
+    ReservedBlockingHttpConnection reserveConnection(HttpExecutionStrategy strategy,
+                                                     HttpRequestMetaData metaData) throws Exception;
 
     /**
      * Convert this {@link BlockingHttpClient} to the {@link StreamingHttpClient} API.
      *
      * @return a {@link StreamingHttpClient} representation of this {@link BlockingHttpClient}.
      */
-    public StreamingHttpClient asStreamingClient() {
-        return client;
-    }
+    StreamingHttpClient asStreamingClient();
 
     /**
      * Convert this {@link BlockingHttpClient} to the {@link HttpClient} API.
      *
      * @return a {@link HttpClient} representation of this {@link BlockingHttpClient}.
      */
-    public HttpClient asClient() {
+    default HttpClient asClient() {
         return asStreamingClient().asClient();
     }
 
@@ -105,103 +73,7 @@ public final class BlockingHttpClient implements BlockingHttpRequester {
      *
      * @return a {@link BlockingStreamingHttpClient} representation of this {@link BlockingHttpClient}.
      */
-    public BlockingStreamingHttpClient asBlockingStreamingClient() {
+    default BlockingStreamingHttpClient asBlockingStreamingClient() {
         return asStreamingClient().asBlockingStreamingClient();
-    }
-
-    @Override
-    public ExecutionContext executionContext() {
-        return client.executionContext();
-    }
-
-    @Override
-    public void close() throws Exception {
-        blockingInvocation(client.closeAsync());
-    }
-
-    @Override
-    public HttpRequest newRequest(final HttpRequestMethod method, final String requestTarget) {
-        return reqRespFactory.newRequest(method, requestTarget);
-    }
-
-    @Override
-    public HttpResponseFactory httpResponseFactory() {
-        return reqRespFactory;
-    }
-
-    /**
-     * A special type of {@link BlockingHttpConnection} for the exclusive use of the caller of
-     * {@link #reserveConnection(HttpRequestMetaData)} and
-     * {@link #reserveConnection(HttpExecutionStrategy, HttpRequestMetaData)}.
-     */
-    public static final class ReservedBlockingHttpConnection extends BlockingHttpConnection {
-
-        private final ReservedStreamingHttpConnection connection;
-
-        /**
-         * Create a new instance.
-         *
-         * @param connection {@link ReservedStreamingHttpConnection} to convert from.
-         * @param strategy Default {@link HttpExecutionStrategy} to use.
-         */
-        ReservedBlockingHttpConnection(final ReservedStreamingHttpConnection connection,
-                                       final HttpExecutionStrategy strategy) {
-            super(connection, strategy);
-            this.connection = connection;
-        }
-
-        /**
-         * Releases this reserved {@link BlockingHttpConnection} to be used for subsequent requests.
-         * This method must be idempotent, i.e. calling multiple times must not have side-effects.
-         *
-         * @throws Exception if any exception occurs during releasing.
-         */
-        public void release() throws Exception {
-            blockingInvocation(connection.releaseAsync());
-        }
-
-        /**
-         * Convert this {@link ReservedBlockingHttpConnection} to the {@link ReservedStreamingHttpConnection} API.
-         * <p>
-         * Note that the resulting {@link ReservedStreamingHttpConnection} may still be subject to any blocking, in
-         * memory aggregation, and other behavior as this {@link ReservedBlockingHttpConnection}.
-         *
-         * @return a {@link StreamingHttpClient.ReservedStreamingHttpConnection} representation of this
-         * {@link ReservedBlockingHttpConnection}.
-         */
-        @Override
-        public ReservedStreamingHttpConnection asStreamingConnection() {
-            return connection;
-        }
-
-        /**
-         * Convert this {@link ReservedBlockingHttpConnection} to the {@link ReservedHttpConnection}
-         * API.
-         * <p>
-         * Note that the resulting {@link ReservedHttpConnection} may still be subject to any blocking, in
-         * memory aggregation, and other behavior as this {@link ReservedBlockingHttpConnection}.
-         *
-         * @return a {@link ReservedHttpConnection} representation of this
-         * {@link ReservedBlockingHttpConnection}.
-         */
-        @Override
-        public ReservedHttpConnection asConnection() {
-            return asStreamingConnection().asConnection();
-        }
-
-        /**
-         * Convert this {@link ReservedBlockingHttpConnection} to the {@link ReservedBlockingStreamingHttpConnection}
-         * API.
-         * <p>
-         * Note that the resulting {@link ReservedBlockingStreamingHttpConnection} may still be subject to in
-         * memory aggregation and other behavior as this {@link ReservedBlockingHttpConnection}.
-         *
-         * @return a {@link ReservedBlockingStreamingHttpConnection} representation of this
-         * {@link ReservedBlockingHttpConnection}.
-         */
-        @Override
-        public ReservedBlockingStreamingHttpConnection asBlockingStreamingConnection() {
-            return asStreamingConnection().asBlockingStreamingConnection();
-        }
     }
 }

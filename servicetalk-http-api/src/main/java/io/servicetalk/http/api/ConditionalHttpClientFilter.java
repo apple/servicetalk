@@ -28,12 +28,12 @@ import static io.servicetalk.concurrent.api.Single.failed;
 
 final class ConditionalHttpClientFilter extends StreamingHttpClientFilter {
     private final Predicate<StreamingHttpRequest> predicate;
-    private final StreamingHttpClientFilter predicatedClient;
+    private final FilterableStreamingHttpClient predicatedClient;
     private final ListenableAsyncCloseable closeable;
 
     ConditionalHttpClientFilter(final Predicate<StreamingHttpRequest> predicate,
-                                final StreamingHttpClientFilter predicatedClient,
-                                final StreamingHttpClientFilter client) {
+                                final FilterableStreamingHttpClient predicatedClient,
+                                final FilterableStreamingHttpClient client) {
         super(client);
         this.predicate = predicate;
         this.predicatedClient = predicatedClient;
@@ -47,7 +47,7 @@ final class ConditionalHttpClientFilter extends StreamingHttpClientFilter {
     protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                     final HttpExecutionStrategy strategy,
                                                     final StreamingHttpRequest request) {
-        boolean b;
+        final boolean b;
         try {
             b = predicate.test(request);
         } catch (Throwable t) {
@@ -74,5 +74,10 @@ final class ConditionalHttpClientFilter extends StreamingHttpClientFilter {
     @Override
     public Completable onClose() {
         return closeable.onClose();
+    }
+
+    @Override
+    public HttpExecutionStrategy computeExecutionStrategy(HttpExecutionStrategy other) {
+        return delegate().computeExecutionStrategy(predicatedClient.computeExecutionStrategy(other));
     }
 }

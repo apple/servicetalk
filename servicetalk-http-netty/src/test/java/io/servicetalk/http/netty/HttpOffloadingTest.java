@@ -27,6 +27,7 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpServiceContext;
+import io.servicetalk.http.api.ReservedStreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpRequest;
@@ -57,9 +58,9 @@ import static io.servicetalk.concurrent.api.BlockingTestUtils.awaitIndefinitelyN
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
+import static io.servicetalk.http.api.FilterableStreamingHttpConnection.SettingKey.MAX_CONCURRENCY;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
-import static io.servicetalk.http.api.StreamingHttpConnection.SettingKey.MAX_CONCURRENCY;
 import static io.servicetalk.http.netty.HttpClients.forSingleAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
@@ -171,7 +172,7 @@ public class HttpOffloadingTest {
     @Test
     public void reserveConnectionIsOffloaded() throws Exception {
         toSource(client.reserveConnection(client.get("/")).doAfterFinally(terminated::countDown))
-                .subscribe(new SingleSource.Subscriber<StreamingHttpClient.ReservedStreamingHttpConnection>() {
+                .subscribe(new SingleSource.Subscriber<ReservedStreamingHttpConnection>() {
                     @Override
                     public void onSubscribe(final Cancellable cancellable) {
                         if (inEventLoop().test(currentThread())) {
@@ -181,7 +182,7 @@ public class HttpOffloadingTest {
                     }
 
                     @Override
-                    public void onSuccess(@Nullable final StreamingHttpClient.ReservedStreamingHttpConnection result) {
+                    public void onSuccess(@Nullable final ReservedStreamingHttpConnection result) {
                         if (result == null) {
                             errors.add(new AssertionError("Reserved connection is null."));
                             return;

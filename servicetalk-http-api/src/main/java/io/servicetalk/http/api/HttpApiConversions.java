@@ -18,8 +18,8 @@ package io.servicetalk.http.api;
 /**
  * Conversion routines to {@link StreamingHttpService}.
  */
-public final class StreamingHttpServiceConversions {
-    private StreamingHttpServiceConversions() {
+public final class HttpApiConversions {
+    private HttpApiConversions() {
         // no instances
     }
 

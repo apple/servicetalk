@@ -17,12 +17,14 @@ package io.servicetalk.opentracing.http;
 
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.http.api.HttpClientFilterFactory;
-import io.servicetalk.http.api.HttpConnectionFilterFactory;
+import io.servicetalk.http.api.FilterableStreamingHttpClient;
+import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.StreamingHttpClientFilter;
+import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
 import io.servicetalk.http.api.StreamingHttpConnectionFilter;
+import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequester;
 import io.servicetalk.http.api.StreamingHttpResponse;
@@ -40,8 +42,8 @@ import static io.opentracing.tag.Tags.SPAN_KIND_CLIENT;
 /**
  * An HTTP filter that supports open tracing.
  */
-public class TracingHttpRequesterFilter extends AbstractTracingHttpFilter implements HttpClientFilterFactory,
-                                                                                     HttpConnectionFilterFactory {
+public class TracingStreamingHttpRequesterFilter extends AbstractTracingHttpFilter implements
+                                               StreamingHttpClientFilterFactory, StreamingHttpConnectionFilterFactory {
 
     /**
      * Create a new instance.
@@ -49,8 +51,8 @@ public class TracingHttpRequesterFilter extends AbstractTracingHttpFilter implem
      * @param tracer The {@link Tracer}.
      * @param componentName The component name used during building new spans.
      */
-    public TracingHttpRequesterFilter(final Tracer tracer,
-                                      final String componentName) {
+    public TracingStreamingHttpRequesterFilter(final Tracer tracer,
+                                               final String componentName) {
         this(tracer, componentName, true);
     }
 
@@ -61,17 +63,16 @@ public class TracingHttpRequesterFilter extends AbstractTracingHttpFilter implem
      * @param componentName The component name used during building new spans.
      * @param validateTraceKeyFormat {@code true} to validate the contents of the trace ids.
      */
-    public TracingHttpRequesterFilter(final Tracer tracer,
-                                      final String componentName,
-                                      boolean validateTraceKeyFormat) {
+    public TracingStreamingHttpRequesterFilter(final Tracer tracer,
+                                               final String componentName,
+                                               boolean validateTraceKeyFormat) {
         super(tracer, componentName, validateTraceKeyFormat);
     }
 
     @Override
-    public final StreamingHttpClientFilter create(final StreamingHttpClientFilter client,
+    public final StreamingHttpClientFilter create(final FilterableStreamingHttpClient client,
                                                   final Publisher<Object> lbEvents) {
         return new StreamingHttpClientFilter(client) {
-
             @Override
             protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                             final HttpExecutionStrategy strategy,
@@ -80,28 +81,27 @@ public class TracingHttpRequesterFilter extends AbstractTracingHttpFilter implem
             }
 
             @Override
-            protected HttpExecutionStrategy mergeForEffectiveStrategy(final HttpExecutionStrategy mergeWith) {
+            public HttpExecutionStrategy computeExecutionStrategy(final HttpExecutionStrategy other) {
                 // Since this filter does not have any blocking code, we do not need to alter the effective strategy.
-                return mergeWith;
+                return delegate().computeExecutionStrategy(other);
             }
         };
     }
 
     @Override
-    public final StreamingHttpConnectionFilter create(final StreamingHttpConnectionFilter connection) {
+    public final StreamingHttpConnectionFilter create(final FilterableStreamingHttpConnection connection) {
         return new StreamingHttpConnectionFilter(connection) {
 
             @Override
-            protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
-                                                            final HttpExecutionStrategy strategy,
-                                                            final StreamingHttpRequest request) {
-                return Single.defer(() -> trackRequest(delegate, strategy, request));
+            public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
+                                                         final StreamingHttpRequest request) {
+                return Single.defer(() -> trackRequest(delegate(), strategy, request));
             }
 
             @Override
-            protected HttpExecutionStrategy mergeForEffectiveStrategy(final HttpExecutionStrategy mergeWith) {
+            public HttpExecutionStrategy computeExecutionStrategy(final HttpExecutionStrategy other) {
                 // Since this filter does not have any blocking code, we do not need to alter the effective strategy.
-                return mergeWith;
+                return delegate().computeExecutionStrategy(other);
             }
         };
     }

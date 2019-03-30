@@ -18,12 +18,11 @@ package io.servicetalk.http.netty;
 import io.servicetalk.client.api.ConnectionFactory;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.StreamingHttpConnection;
-import io.servicetalk.http.api.StreamingHttpConnection.SettingKey;
 import io.servicetalk.http.api.StreamingHttpConnectionFilter;
 import io.servicetalk.http.api.StreamingHttpRequest;
-import io.servicetalk.http.api.StreamingHttpRequester;
 import io.servicetalk.http.api.StreamingHttpResponse;
 
 import org.junit.Test;
@@ -33,8 +32,8 @@ import java.util.concurrent.ExecutionException;
 import javax.annotation.Nonnull;
 
 import static io.servicetalk.concurrent.api.BlockingTestUtils.awaitIndefinitelyNonNull;
+import static io.servicetalk.http.api.FilterableStreamingHttpConnection.SettingKey.MAX_CONCURRENCY;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
-import static io.servicetalk.http.api.StreamingHttpConnection.SettingKey.MAX_CONCURRENCY;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
 
@@ -63,17 +62,16 @@ public class DefaultHttpConnectionBuilderTest extends AbstractEchoServerBasedHtt
 
     private static final class DummyFanoutFilter extends StreamingHttpConnectionFilter {
 
-        private DummyFanoutFilter(final StreamingHttpConnectionFilter connection) {
+        private DummyFanoutFilter(final FilterableStreamingHttpConnection connection) {
             super(connection);
         }
 
         @Override
-        protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
-                                                        final HttpExecutionStrategy strategy,
-                                                        final StreamingHttpRequest request) {
+        public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
+                                                     final StreamingHttpRequest request) {
             // fanout - simulates followup request on response
-            return delegate.request(strategy, request).flatMap(resp ->
-                    resp.payloadBody().ignoreElements().concat(delegate.request(strategy, request)));
+            return delegate().request(strategy, request).flatMap(resp ->
+                    resp.payloadBody().ignoreElements().concat(delegate().request(strategy, request)));
         }
 
         @Override

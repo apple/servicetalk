@@ -22,12 +22,14 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.RetryStrategies;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.http.api.HttpClientFilterFactory;
-import io.servicetalk.http.api.HttpConnectionFilterFactory;
+import io.servicetalk.http.api.FilterableStreamingHttpClient;
+import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.StreamingHttpClientFilter;
+import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
 import io.servicetalk.http.api.StreamingHttpConnectionFilter;
+import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequester;
 import io.servicetalk.http.api.StreamingHttpResponse;
@@ -42,11 +44,12 @@ import static io.servicetalk.concurrent.api.Completable.failed;
  *
  * @see RetryStrategies
  */
-public final class RetryingHttpRequesterFilter implements HttpClientFilterFactory, HttpConnectionFilterFactory {
+public final class RetryingStreamingHttpRequesterFilter implements StreamingHttpClientFilterFactory,
+                                                                   StreamingHttpConnectionFilterFactory {
 
     private final ReadOnlyRetryableSettings<HttpRequestMetaData> settings;
 
-    private RetryingHttpRequesterFilter(final ReadOnlyRetryableSettings<HttpRequestMetaData> settings) {
+    private RetryingStreamingHttpRequesterFilter(final ReadOnlyRetryableSettings<HttpRequestMetaData> settings) {
         this.settings = settings;
     }
 
@@ -63,7 +66,8 @@ public final class RetryingHttpRequesterFilter implements HttpClientFilterFactor
     }
 
     @Override
-    public StreamingHttpClientFilter create(final StreamingHttpClientFilter client, final Publisher<Object> lbEvents) {
+    public StreamingHttpClientFilter create(final FilterableStreamingHttpClient client,
+                                            final Publisher<Object> lbEvents) {
         return new StreamingHttpClientFilter(client) {
 
             private final BiIntFunction<Throwable, Completable> retryStrategy =
@@ -73,50 +77,49 @@ public final class RetryingHttpRequesterFilter implements HttpClientFilterFactor
             protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                             final HttpExecutionStrategy strategy,
                                                             final StreamingHttpRequest request) {
-                return RetryingHttpRequesterFilter.this.request(delegate, strategy, request, retryStrategy);
+                return RetryingStreamingHttpRequesterFilter.this.request(delegate, strategy, request, retryStrategy);
             }
 
             @Override
-            protected HttpExecutionStrategy mergeForEffectiveStrategy(final HttpExecutionStrategy mergeWith) {
+            public HttpExecutionStrategy computeExecutionStrategy(HttpExecutionStrategy other) {
                 // Since this filter does not have any blocking code, we do not need to alter the effective strategy.
-                return mergeWith;
+                return delegate().computeExecutionStrategy(other);
             }
         };
     }
 
     @Override
-    public StreamingHttpConnectionFilter create(final StreamingHttpConnectionFilter connection) {
+    public StreamingHttpConnectionFilter create(final FilterableStreamingHttpConnection connection) {
         return new StreamingHttpConnectionFilter(connection) {
 
             private final BiIntFunction<Throwable, Completable> retryStrategy =
                     settings.newStrategy(connection.executionContext().executor());
 
             @Override
-            protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
-                                                            final HttpExecutionStrategy strategy,
-                                                            final StreamingHttpRequest request) {
-                return RetryingHttpRequesterFilter.this.request(delegate, strategy, request, retryStrategy);
+            public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
+                                                         final StreamingHttpRequest request) {
+                return RetryingStreamingHttpRequesterFilter.this.request(delegate(), strategy, request, retryStrategy);
             }
 
             @Override
-            protected HttpExecutionStrategy mergeForEffectiveStrategy(final HttpExecutionStrategy mergeWith) {
+            public HttpExecutionStrategy computeExecutionStrategy(HttpExecutionStrategy other) {
                 // Since this filter does not have any blocking code, we do not need to alter the effective strategy.
-                return mergeWith;
+                return delegate().computeExecutionStrategy(other);
             }
         };
     }
 
     /**
-     * A builder for {@link RetryingHttpRequesterFilter}, which puts an upper bound on retry attempts.
+     * A builder for {@link RetryingStreamingHttpRequesterFilter}, which puts an upper bound on retry attempts.
      * To configure the maximum number of retry attempts see {@link #maxRetries(int)}.
      */
     public static final class Builder
-            extends AbstractRetryingFilterBuilder<Builder, RetryingHttpRequesterFilter, HttpRequestMetaData> {
+            extends AbstractRetryingFilterBuilder<Builder, RetryingStreamingHttpRequesterFilter, HttpRequestMetaData> {
 
         @Override
-        protected RetryingHttpRequesterFilter build(
+        protected RetryingStreamingHttpRequesterFilter build(
                 final ReadOnlyRetryableSettings<HttpRequestMetaData> readOnlySettings) {
-            return new RetryingHttpRequesterFilter(readOnlySettings);
+            return new RetryingStreamingHttpRequesterFilter(readOnlySettings);
         }
 
         /**

@@ -69,18 +69,18 @@ abstract class BaseSingleAddressHttpClientBuilder<U, R, SDE extends ServiceDisco
 
     @Override
     public abstract BaseSingleAddressHttpClientBuilder<U, R, SDE> appendConnectionFilter(
-            HttpConnectionFilterFactory factory);
+            StreamingHttpConnectionFilterFactory factory);
 
     @Override
     public BaseSingleAddressHttpClientBuilder<U, R, SDE> appendConnectionFilter(
             Predicate<StreamingHttpRequest> predicate,
-            HttpConnectionFilterFactory factory) {
+            StreamingHttpConnectionFilterFactory factory) {
         return (BaseSingleAddressHttpClientBuilder<U, R, SDE>) super.appendConnectionFilter(predicate, factory);
     }
 
     @Override
     public abstract BaseSingleAddressHttpClientBuilder<U, R, SDE> appendConnectionFactoryFilter(
-            ConnectionFactoryFilter<R, StreamingHttpConnectionFilter> factory);
+            ConnectionFactoryFilter<R, StreamingHttpConnection> factory);
 
     @Override
     public abstract BaseSingleAddressHttpClientBuilder<U, R, SDE> disableHostHeaderFallback();
@@ -94,7 +94,7 @@ abstract class BaseSingleAddressHttpClientBuilder<U, R, SDE extends ServiceDisco
 
     @Override
     public abstract BaseSingleAddressHttpClientBuilder<U, R, SDE> loadBalancerFactory(
-            LoadBalancerFactory<R, StreamingHttpConnectionFilter> loadBalancerFactory);
+            LoadBalancerFactory<R, StreamingHttpConnection> loadBalancerFactory);
 
     /**
      * Automatically set the provided {@link HttpHeaderNames#HOST} on {@link StreamingHttpRequest}s when it's missing.

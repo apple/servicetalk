@@ -24,16 +24,16 @@ import static java.util.Objects.requireNonNull;
  * A factory for {@link StreamingHttpClientFilter}.
  */
 @FunctionalInterface
-public interface HttpClientFilterFactory {
+public interface StreamingHttpClientFilterFactory {
 
     /**
      * Creates a {@link StreamingHttpClientFilter} using the provided {@link StreamingHttpClientFilter}.
      *
-     * @param client {@link StreamingHttpClient} to filter
+     * @param client {@link FilterableStreamingHttpClient} to filter
      * @param lbEvents the {@link LoadBalancer} events stream
      * @return {@link StreamingHttpClientFilter} using the provided {@link StreamingHttpClientFilter}.
      */
-    StreamingHttpClientFilter create(StreamingHttpClientFilter client, Publisher<Object> lbEvents);
+    StreamingHttpClientFilter create(FilterableStreamingHttpClient client, Publisher<Object> lbEvents);
 
     /**
      * Returns a composed function that first applies the {@code before} function to its input, and then applies
@@ -51,13 +51,14 @@ public interface HttpClientFilterFactory {
      * @return a composed function that first applies the {@code before}
      * function and then applies this function
      */
-    default HttpClientFilterFactory append(HttpClientFilterFactory before) {
+    default StreamingHttpClientFilterFactory append(StreamingHttpClientFilterFactory before) {
         requireNonNull(before);
         return (client, lbEvents) -> create(before.create(client, lbEvents), lbEvents);
     }
 
     /**
-     * Returns a {@link MultiAddressHttpClientFilterFactory} that adapts from a {@link HttpClientFilterFactory}.
+     * Returns a {@link MultiAddressHttpClientFilterFactory} that adapts from a
+     * {@link StreamingHttpClientFilterFactory}.
      *
      * @param <U> the type of address before resolution (unresolved address).
      * @return a {@link MultiAddressHttpClientFilterFactory} function
@@ -65,19 +66,10 @@ public interface HttpClientFilterFactory {
     default <U> MultiAddressHttpClientFilterFactory<U> asMultiAddressClientFilter() {
         return (address, client, lbEvents) -> new StreamingHttpClientFilter(create(client, lbEvents)) {
             @Override
-            protected HttpExecutionStrategy mergeForEffectiveStrategy(final HttpExecutionStrategy mergeWith) {
+            public HttpExecutionStrategy computeExecutionStrategy(HttpExecutionStrategy other) {
                 // Since this filter does not have any blocking code, we do not need to alter the effective strategy.
-                return mergeWith;
+                return delegate().computeExecutionStrategy(other);
             }
         };
-    }
-
-    /**
-     * Returns a function that always returns its input {@link StreamingHttpClient}.
-     *
-     * @return a function that always returns its input {@link StreamingHttpClient}.
-     */
-    static HttpClientFilterFactory identity() {
-        return (client, __) -> client;
     }
 }

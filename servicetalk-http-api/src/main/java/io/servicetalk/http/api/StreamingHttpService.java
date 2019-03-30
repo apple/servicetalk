@@ -53,7 +53,7 @@ public interface StreamingHttpService extends AsyncCloseable {
      * {@link StreamingHttpService} in combination with another {@link HttpExecutionStrategy}. This may involve a merge
      * operation between two {@link StreamingHttpService}.
      *
-     * @param other The other
+     * @param other The other {@link HttpExecutionStrategy} to consider during the computation.
      * @return The {@link HttpExecutionStrategy} for this {@link StreamingHttpService}.
      */
     default HttpExecutionStrategy computeExecutionStrategy(HttpExecutionStrategy other) {

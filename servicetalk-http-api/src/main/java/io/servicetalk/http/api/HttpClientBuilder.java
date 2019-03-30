@@ -26,7 +26,6 @@ import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.IoExecutor;
 
 import java.net.SocketOption;
-import java.util.function.BiFunction;
 import java.util.function.Predicate;
 
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
@@ -82,11 +81,11 @@ abstract class HttpClientBuilder<U, R, SDE extends ServiceDiscovererEvent<R>> ex
     public abstract HttpClientBuilder<U, R, SDE> maxPipelinedRequests(int maxPipelinedRequests);
 
     @Override
-    public abstract HttpClientBuilder<U, R, SDE> appendConnectionFilter(HttpConnectionFilterFactory factory);
+    public abstract HttpClientBuilder<U, R, SDE> appendConnectionFilter(StreamingHttpConnectionFilterFactory factory);
 
     @Override
     public HttpClientBuilder<U, R, SDE> appendConnectionFilter(Predicate<StreamingHttpRequest> predicate,
-                                                               HttpConnectionFilterFactory factory) {
+                                                               StreamingHttpConnectionFilterFactory factory) {
         super.appendConnectionFilter(predicate, factory);
         return this;
     }
@@ -111,7 +110,7 @@ abstract class HttpClientBuilder<U, R, SDE extends ServiceDiscovererEvent<R>> ex
      * @return {@code this}
      */
     public abstract HttpClientBuilder<U, R, SDE> appendConnectionFactoryFilter(
-            ConnectionFactoryFilter<R, StreamingHttpConnectionFilter> factory);
+            ConnectionFactoryFilter<R, StreamingHttpConnection> factory);
 
     /**
      * Append the filter to the chain of filters used to decorate the {@link HttpClient} created by this
@@ -129,11 +128,11 @@ abstract class HttpClientBuilder<U, R, SDE extends ServiceDiscovererEvent<R>> ex
      *     filter1 =&gt; filter2 =&gt; filter3 =&gt; client
      * </pre>
      *
-     * @param factory {@link HttpClientFilterFactory} to decorate a {@link HttpClient} for the purpose of
+     * @param factory {@link StreamingHttpClientFilterFactory} to decorate a {@link HttpClient} for the purpose of
      * filtering.
      * @return {@code this}
      */
-    public abstract HttpClientBuilder<U, R, SDE> appendClientFilter(HttpClientFilterFactory factory);
+    public abstract HttpClientBuilder<U, R, SDE> appendClientFilter(StreamingHttpClientFilterFactory factory);
 
     /**
      * Append the filter to the chain of filters used to decorate the {@link HttpClient} created by this
@@ -152,12 +151,12 @@ abstract class HttpClientBuilder<U, R, SDE extends ServiceDiscovererEvent<R>> ex
      * </pre>
      *
      * @param predicate the {@link Predicate} to test if the filter must be applied.
-     * @param factory {@link HttpClientFilterFactory} to decorate a {@link HttpClient} for the purpose of
+     * @param factory {@link StreamingHttpClientFilterFactory} to decorate a {@link HttpClient} for the purpose of
      * filtering.
      * @return {@code this}
      */
     public HttpClientBuilder<U, R, SDE> appendClientFilter(Predicate<StreamingHttpRequest> predicate,
-                                                            HttpClientFilterFactory factory) {
+                                                            StreamingHttpClientFilterFactory factory) {
         requireNonNull(predicate);
         requireNonNull(factory);
 
@@ -193,30 +192,14 @@ abstract class HttpClientBuilder<U, R, SDE extends ServiceDiscovererEvent<R>> ex
      * @return {@code this}.
      */
     public abstract HttpClientBuilder<U, R, SDE> loadBalancerFactory(
-            LoadBalancerFactory<R, StreamingHttpConnectionFilter> loadBalancerFactory);
-
-    /**
-     * Creates the {@link StreamingHttpConnectionFilter} chain to be used by the {@link StreamingHttpConnection}.
-     *
-     * @param assembler {@link BiFunction} used to compose a {@link StreamingHttpClientFilter} chain and {@link
-     * HttpExecutionStrategy} into typically a {@link StreamingHttpClient} or {@link StreamingHttpClientFilter} for
-     * further composition.
-     * @param <T> the type of assembled object, typically a {@link StreamingHttpClient} or {@link
-     * StreamingHttpClientFilter}
-     * @return the {@link StreamingHttpConnectionFilter} chain to be used by the {@link
-     * StreamingHttpConnection} when assembled.
-     */
-    protected abstract <T> T buildFilterChain(
-            BiFunction<StreamingHttpClientFilter, HttpExecutionStrategy, T> assembler);
+            LoadBalancerFactory<R, StreamingHttpConnection> loadBalancerFactory);
 
     /**
      * Build a new {@link StreamingHttpClient}, using a default {@link ExecutionContext}.
      *
      * @return A new {@link StreamingHttpClient}
      */
-    public final StreamingHttpClient buildStreaming() {
-        return buildFilterChain(StreamingHttpClient::new);
-    }
+    public abstract StreamingHttpClient buildStreaming();
 
     /**
      * Build a new {@link HttpClient}, using a default {@link ExecutionContext}.
