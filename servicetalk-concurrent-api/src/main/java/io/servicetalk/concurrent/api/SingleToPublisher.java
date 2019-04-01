@@ -81,7 +81,8 @@ final class SingleToPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
                 int cState = state;
                 if (cState == STATE_REQUESTED &&
                         stateUpdater.compareAndSet(this, STATE_REQUESTED, STATE_TERMINATED)) {
-                    break;
+                    terminateSuccessfully(result, subscriber);
+                    return;
                 } else if (cState == STATE_IDLE &&
                         stateUpdater.compareAndSet(this, STATE_IDLE, STATE_AWAITING_REQUESTED)) {
                     return;
@@ -89,13 +90,11 @@ final class SingleToPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
                     return;
                 }
             }
-            terminateSuccessfully(result, subscriber);
         }
 
         @Override
         public void onError(Throwable t) {
-            int oldState = stateUpdater.getAndSet(this, STATE_TERMINATED);
-            if (oldState != STATE_TERMINATED) {
+            if (stateUpdater.getAndSet(this, STATE_TERMINATED) != STATE_TERMINATED) {
                 subscriber.onError(t);
             }
         }
@@ -120,11 +119,16 @@ final class SingleToPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
                     }
                 }
             } else {
-                int oldState = stateUpdater.getAndSet(this, STATE_TERMINATED);
-                if (oldState != STATE_TERMINATED) {
+                if (stateUpdater.getAndSet(this, STATE_TERMINATED) != STATE_TERMINATED) {
                     Subscriber<? super T> offloaded = offloadWithDummyOnSubscribe(signalOffloader, this.subscriber);
-                    // offloadSubscriber before cancellation so that signalOffloader does not exit on seeing a cancel.
-                    cancel();
+                    try {
+                        // offloadSubscriber before cancellation so that signalOffloader does not exit on seeing a
+                        // cancel.
+                        cancel();
+                    } catch (Throwable t) {
+                        offloaded.onError(t);
+                        return;
+                    }
                     offloaded.onError(newExceptionForInvalidRequestN(n));
                 }
             }

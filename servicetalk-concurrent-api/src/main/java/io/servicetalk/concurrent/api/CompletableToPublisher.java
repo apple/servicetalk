@@ -86,9 +86,14 @@ final class CompletableToPublisher<T> extends AbstractNoHandleSubscribePublisher
                 // We have not offloaded the Subscriber as we generally emit to the Subscriber from the Completable
                 // Subscriber methods which is correctly offloaded. This is the only case where we invoke the
                 // Subscriber directly, hence we explicitly offload.
-                Subscriber<? super T> offloaded = offloadWithDummyOnSubscribe(signalOffloader, this.subscriber);
-                // offloadSubscriber before cancellation so that signalOffloader does not exit on seeing a cancel.
-                cancel();
+                Subscriber<? super T> offloaded = offloadWithDummyOnSubscribe(signalOffloader, subscriber);
+                try {
+                    // offloadSubscriber before cancellation so that signalOffloader does not exit on seeing a cancel.
+                    cancel();
+                } catch (Throwable t) {
+                    offloaded.onError(t);
+                    return;
+                }
                 offloaded.onError(newExceptionForInvalidRequestN(n));
             }
         }
