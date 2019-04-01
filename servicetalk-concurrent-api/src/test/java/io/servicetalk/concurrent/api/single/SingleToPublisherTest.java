@@ -15,10 +15,11 @@
  */
 package io.servicetalk.concurrent.api.single;
 
-import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.ExecutorRule;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.concurrent.api.TestCancellable;
 import io.servicetalk.concurrent.api.TestPublisherSubscriber;
+import io.servicetalk.concurrent.api.TestSingle;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 
 import org.junit.Rule;
@@ -27,6 +28,7 @@ import org.junit.rules.Timeout;
 
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
+import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
@@ -37,6 +39,7 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.Assert.assertTrue;
@@ -51,9 +54,26 @@ public class SingleToPublisherTest {
     private TestPublisherSubscriber<String> verifier = new TestPublisherSubscriber<>();
 
     @Test
-    public void testSuccessfulFuture() {
+    public void testSuccessBeforeRequest() {
         toSource(Single.succeeded("Hello").toPublisher()).subscribe(verifier);
         verifier.request(1);
+        assertThat(verifier.takeItems(), contains("Hello"));
+        assertThat(verifier.takeTerminal(), is(complete()));
+    }
+
+    @Test
+    public void testFailureBeforeRequest() {
+        toSource(Single.<String>failed(DELIBERATE_EXCEPTION).toPublisher()).subscribe(verifier);
+        verifier.request(1);
+        assertThat(verifier.takeError(), sameInstance(DELIBERATE_EXCEPTION));
+    }
+
+    @Test
+    public void testSuccessAfterRequest() {
+        TestSingle<String> single = new TestSingle<>();
+        toSource(single.toPublisher()).subscribe(verifier);
+        verifier.request(1);
+        single.onSuccess("Hello");
         assertThat(verifier.takeItems(), contains("Hello"));
         assertThat(verifier.takeTerminal(), is(complete()));
     }
@@ -90,6 +110,16 @@ public class SingleToPublisherTest {
     }
 
     @Test
+    public void testSuccessAfterInvalidRequestN() {
+        TestSingle<String> single = new TestSingle<>();
+        toSource(single.toPublisher()).subscribe(verifier);
+        verifier.request(-1);
+        assertThat(verifier.takeError(), instanceOf(IllegalArgumentException.class));
+        single.onSuccess("Hello");
+        assertThat(verifier.takeTerminal(), is(nullValue()));
+    }
+
+    @Test
     public void exceptionInTerminalCallsOnError() {
         toSource(Single.succeeded("Hello").toPublisher().doOnNext(n -> {
             throw DELIBERATE_EXCEPTION;
@@ -103,28 +133,129 @@ public class SingleToPublisherTest {
     @Test
     public void subscribeOnOriginalIsPreserved() throws Exception {
         final Thread testThread = currentThread();
-        final CountDownLatch singleSubscribed = new CountDownLatch(1);
         final CountDownLatch analyzed = new CountDownLatch(1);
         ConcurrentLinkedQueue<AssertionError> errors = new ConcurrentLinkedQueue<>();
-        Cancellable c = Single.never()
-                .doAfterOnSubscribe(__ -> singleSubscribed.countDown())
-                .doBeforeCancel(() -> {
-                    if (currentThread() == testThread) {
-                        errors.add(new AssertionError("Invalid thread invoked cancel. Thread: " +
-                                currentThread()));
-                    }
-                    analyzed.countDown();
-                })
-                .subscribeOn(executorRule.executor())
-                .toPublisher()
-                .forEach(__ -> { });
-        // toPublisher does not subscribe to the Single, till data is requested. Since subscription is offloaded,
-        // cancel may be called before request-n is sent to the offloaded subscription, which would ignore request-n
-        // and only propagate cancel. In such a case, original Single will not be subscribed and hence doBeforeCancel
-        // above may never be invoked.
-        singleSubscribed.await();
-        c.cancel();
+        TestSingle<String> single = new TestSingle.Builder<String>().disableAutoOnSubscribe().build();
+        TestPublisherSubscriber<String> subscriber = new TestPublisherSubscriber<>();
+        toSource(single.doBeforeCancel(() -> {
+            if (currentThread() == testThread) {
+                errors.add(new AssertionError("Invalid thread invoked cancel. Thread: " +
+                        currentThread()));
+            }
+        }).doAfterCancel(analyzed::countDown).subscribeOn(executorRule.executor()).toPublisher()).subscribe(subscriber);
+        TestCancellable cancellable = new TestCancellable();
+        single.onSubscribe(cancellable); // waits till subscribed.
+        assertThat("Single not subscribed.", single.isSubscribed(), is(true));
+        assertThat("Subscription not received.", subscriber.subscriptionReceived(), is(true));
+        subscriber.cancel();
+        analyzed.await();
+        assertThat("Single did not get a cancel.", cancellable.isCancelled(), is(true));
+        assertThat("Unexpected errors observed: " + errors, errors, hasSize(0));
+    }
+
+    @Test
+    public void publishOnOriginalIsPreservedOnCompleteFromRequest() throws Exception {
+        ConcurrentLinkedQueue<AssertionError> errors = new ConcurrentLinkedQueue<>();
+        TestPublisherSubscriber<String> subscriber = new TestPublisherSubscriber<>();
+        TestSingle<String> single = new TestSingle.Builder<String>().disableAutoOnSubscribe().build();
+        CountDownLatch receivedOnSuccess = new CountDownLatch(1);
+        CountDownLatch analyzed = publishOnOriginalIsPreserved0(errors, subscriber, single, receivedOnSuccess);
+        single.onSuccess("Hello");
+        receivedOnSuccess.await();
+        subscriber.request(1);
         analyzed.await();
         assertThat("Unexpected errors observed: " + errors, errors, hasSize(0));
+        assertThat("No terminal received.", subscriber.takeItems(), contains("Hello"));
+        assertThat("No terminal received.", subscriber.takeTerminal(), is(complete()));
+    }
+
+    @Test
+    public void publishOnOriginalIsPreservedOnCompleteFromOnSuccess() throws Exception {
+        ConcurrentLinkedQueue<AssertionError> errors = new ConcurrentLinkedQueue<>();
+        TestPublisherSubscriber<String> subscriber = new TestPublisherSubscriber<>();
+        TestSingle<String> single = new TestSingle.Builder<String>().disableAutoOnSubscribe().build();
+        CountDownLatch analyzed = publishOnOriginalIsPreserved0(errors, subscriber, single, null);
+        subscriber.request(1);
+        single.onSuccess("Hello");
+        analyzed.await();
+        assertThat("Unexpected errors observed: " + errors, errors, hasSize(0));
+        assertThat("No terminal received.", subscriber.takeItems(), contains("Hello"));
+        assertThat("No terminal received.", subscriber.takeTerminal(), is(complete()));
+    }
+
+    @Test
+    public void publishOnOriginalIsPreservedOnError() throws Exception {
+        ConcurrentLinkedQueue<AssertionError> errors = new ConcurrentLinkedQueue<>();
+        TestPublisherSubscriber<String> subscriber = new TestPublisherSubscriber<>();
+        TestSingle<String> single = new TestSingle.Builder<String>().disableAutoOnSubscribe().build();
+        CountDownLatch analyzed = publishOnOriginalIsPreserved0(errors, subscriber, single, null);
+        single.onError(DELIBERATE_EXCEPTION);
+        analyzed.await();
+        assertThat("Unexpected errors observed: " + errors, errors, hasSize(0));
+        Throwable err = subscriber.takeError();
+        assertThat("No error received.", err, is(notNullValue()));
+        assertThat("Wrong error received.", err, is(sameInstance(DELIBERATE_EXCEPTION)));
+    }
+
+    @Test
+    public void publishOnOriginalIsPreservedOnInvalidRequestN() throws Exception {
+        ConcurrentLinkedQueue<AssertionError> errors = new ConcurrentLinkedQueue<>();
+        TestPublisherSubscriber<String> subscriber = new TestPublisherSubscriber<>();
+        TestSingle<String> single = new TestSingle.Builder<String>().disableAutoOnSubscribe().build();
+        CountDownLatch analyzed = publishOnOriginalIsPreserved0(errors, subscriber, single, null);
+        subscriber.request(-1);
+        analyzed.await();
+        assertThat("Unexpected errors observed: " + errors, errors, hasSize(0));
+        Throwable err = subscriber.takeError();
+        assertThat("No error received.", err, is(notNullValue()));
+        assertThat("Wrong error received.", err, is(instanceOf(IllegalArgumentException.class)));
+    }
+
+    private CountDownLatch publishOnOriginalIsPreserved0(final ConcurrentLinkedQueue<AssertionError> errors,
+                                                         final TestPublisherSubscriber<String> subscriber,
+                                                         final TestSingle<String> single,
+                                                         @Nullable final CountDownLatch receivedOnSuccessFromSingle)
+            throws Exception {
+        final Thread testThread = currentThread();
+        CountDownLatch analyzed = new CountDownLatch(1);
+        CountDownLatch receivedOnSubscribe = new CountDownLatch(1);
+        toSource(single.publishOn(executorRule.executor())
+                .doBeforeOnSuccess(__ -> {
+                    if (currentThread() == testThread) {
+                        errors.add(new AssertionError("Invalid thread invoked onSuccess " +
+                                "(from Completable). Thread: " + currentThread()));
+                    }
+                    if (receivedOnSuccessFromSingle != null) {
+                        receivedOnSuccessFromSingle.countDown();
+                    }
+                })
+                .doBeforeOnError(__ -> {
+                    if (currentThread() == testThread) {
+                        errors.add(new AssertionError("Invalid thread invoked onError" +
+                                "(from Completable). Thread: " + currentThread()));
+                    }
+                })
+                .toPublisher()
+                .doBeforeOnNext(__ -> {
+                    if (currentThread() == testThread) {
+                        errors.add(new AssertionError("Invalid thread invoked onNext " +
+                                "(from Publisher). Thread: " + currentThread()));
+                    }
+                })
+                .doBeforeOnError(__ -> {
+                    if (currentThread() == testThread) {
+                        errors.add(new AssertionError("Invalid thread invoked onError " +
+                                "(from Publisher). Thread: " + currentThread()));
+                    }
+                })
+                .doBeforeOnComplete(analyzed::countDown)
+                .doBeforeOnError(__ -> analyzed.countDown())
+                .doAfterOnSubscribe(__ -> receivedOnSubscribe.countDown())
+        )
+                .subscribe(subscriber);
+        single.onSubscribe(new TestCancellable()); // await subscribe
+        receivedOnSubscribe.await();
+        assertThat("Single not subscribed.", single.isSubscribed(), is(true));
+        return analyzed;
     }
 }
