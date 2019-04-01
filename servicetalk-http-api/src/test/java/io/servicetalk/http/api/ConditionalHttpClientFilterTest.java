@@ -24,16 +24,17 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 public class ConditionalHttpClientFilterTest extends AbstractConditionalHttpFilterTest {
 
-    private static final HttpClientFilterFactory REQ_FILTER = (client, __) -> new StreamingHttpClientFilter(client) {
+    private static final StreamingHttpClientFilterFactory REQ_FILTER = (client, __) ->
+            new StreamingHttpClientFilter(client) {
         @Override
         protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                         final HttpExecutionStrategy strategy,
                                                         final StreamingHttpRequest request) {
-            return TEST_REQ_HANDLER.apply(request, httpResponseFactory());
+            return TEST_REQ_HANDLER.apply(request, delegate.httpResponseFactory());
         }
     };
 
-    private static final class TestCondFilterFactory implements HttpClientFilterFactory {
+    private static final class TestCondFilterFactory implements StreamingHttpClientFilterFactory {
         private final AtomicBoolean closed;
 
         private TestCondFilterFactory(AtomicBoolean closed) {
@@ -41,8 +42,9 @@ public class ConditionalHttpClientFilterTest extends AbstractConditionalHttpFilt
         }
 
         @Override
-        public StreamingHttpClientFilter create(final StreamingHttpClientFilter client,
-                                                final Publisher<Object> lbEvents) {
+        public StreamingHttpClientFilter create(
+                final FilterableStreamingHttpClient client,
+                final Publisher<Object> lbEvents) {
             return new ConditionalHttpClientFilter(TEST_REQ_PREDICATE, new StreamingHttpClientFilter(client) {
                 @Override
                 protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,

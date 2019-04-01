@@ -18,18 +18,18 @@ package io.servicetalk.http.api;
 import static java.util.Objects.requireNonNull;
 
 /**
- * A factory for {@link StreamingHttpConnectionFilter}.
+ * A factory for {@link StreamingHttpServiceFilter}.
  */
 @FunctionalInterface
-public interface HttpConnectionFilterFactory {
+public interface StreamingHttpServiceFilterFactory {
 
     /**
-     * Create a {@link StreamingHttpConnectionFilter} using the provided {@link StreamingHttpConnection}.
+     * Create a {@link StreamingHttpServiceFilter} using the provided {@link StreamingHttpService}.
      *
-     * @param connection {@link StreamingHttpConnection} to filter
-     * @return {@link StreamingHttpConnectionFilter} using the provided {@link StreamingHttpConnection}.
+     * @param service {@link StreamingHttpService} to filter
+     * @return {@link StreamingHttpServiceFilter} using the provided {@link StreamingHttpService}.
      */
-    StreamingHttpConnectionFilter create(StreamingHttpConnectionFilter connection);
+    StreamingHttpServiceFilter create(StreamingHttpService service);
 
     /**
      * Returns a composed function that first applies the {@code before} function to its input, and then applies
@@ -37,28 +37,18 @@ public interface HttpConnectionFilterFactory {
      * <p>
      * The order of execution of these filters are in order of append. If 3 filters are added as follows:
      * <pre>
-     *     filter1.append(filter2).append(filter3)
+     *     builder.append(filter1).append(filter2).append(filter3)
      * </pre>
-     * making a request to a connection wrapped by this filter chain the order of invocation of these filters will
-     * be:
+     * accepting a request by a service wrapped by this filter chain, the order of invocation of these filters will be:
      * <pre>
-     *     filter1 =&gt; filter2 =&gt; filter3 =&gt; connection
+     *     filter1 =&gt; filter2 =&gt; filter3 =&gt; service
      * </pre>
      * @param before the function to apply before this function is applied
      * @return a composed function that first applies the {@code before}
      * function and then applies this function
      */
-    default HttpConnectionFilterFactory append(HttpConnectionFilterFactory before) {
+    default StreamingHttpServiceFilterFactory append(StreamingHttpServiceFilterFactory before) {
         requireNonNull(before);
-        return connection -> create(before.create(connection));
-    }
-
-    /**
-     * Returns a function that always returns its input {@link StreamingHttpConnection}.
-     *
-     * @return a function that always returns its input {@link StreamingHttpConnection}.
-     */
-    static HttpConnectionFilterFactory identity() {
-        return connection -> connection;
+        return service -> create(before.create(service));
     }
 }

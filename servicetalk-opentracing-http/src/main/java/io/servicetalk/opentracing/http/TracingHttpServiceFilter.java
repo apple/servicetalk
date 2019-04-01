@@ -20,12 +20,12 @@ import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.http.api.HttpServiceContext;
-import io.servicetalk.http.api.HttpServiceFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.api.StreamingHttpServiceFilter;
+import io.servicetalk.http.api.StreamingHttpServiceFilterFactory;
 
 import io.opentracing.Scope;
 import io.opentracing.SpanContext;
@@ -42,7 +42,7 @@ import static io.opentracing.tag.Tags.SPAN_KIND_SERVER;
 /**
  * A {@link StreamingHttpService} that supports open tracing.
  */
-public class TracingHttpServiceFilter extends AbstractTracingHttpFilter implements HttpServiceFilterFactory {
+public class TracingHttpServiceFilter extends AbstractTracingHttpFilter implements StreamingHttpServiceFilterFactory {
 
     /**
      * Create a new instance.

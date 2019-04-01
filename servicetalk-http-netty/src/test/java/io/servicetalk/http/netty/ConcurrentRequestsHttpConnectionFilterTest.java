@@ -27,17 +27,16 @@ import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.DefaultHttpHeadersFactory;
 import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
+import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpConnection;
-import io.servicetalk.http.api.HttpConnectionFilterFactory;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpHeaderNames;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.StreamingHttpConnection;
-import io.servicetalk.http.api.StreamingHttpConnection.SettingKey;
 import io.servicetalk.http.api.StreamingHttpConnectionFilter;
+import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
-import io.servicetalk.http.api.StreamingHttpRequester;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.TestStreamingHttpConnection;
 import io.servicetalk.transport.api.ConnectionContext;
@@ -69,8 +68,8 @@ import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
+import static io.servicetalk.http.api.FilterableStreamingHttpConnection.SettingKey.MAX_CONCURRENCY;
 import static io.servicetalk.http.api.HttpExecutionStrategies.customStrategyBuilder;
-import static io.servicetalk.http.api.StreamingHttpConnection.SettingKey.MAX_CONCURRENCY;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
@@ -104,9 +103,9 @@ public class ConcurrentRequestsHttpConnectionFilterTest {
 
     @Test
     public void decrementWaitsUntilResponsePayloadIsComplete() throws Exception {
-        HttpConnectionFilterFactory mockConnection = new HttpConnectionFilterFactory() {
+        StreamingHttpConnectionFilterFactory mockConnection = new StreamingHttpConnectionFilterFactory() {
             @Override
-            public StreamingHttpConnectionFilter create(final StreamingHttpConnectionFilter connection) {
+            public StreamingHttpConnectionFilter create(final FilterableStreamingHttpConnection connection) {
                 return new StreamingHttpConnectionFilter(connection) {
                     private final AtomicInteger reqCount = new AtomicInteger(0);
 
@@ -117,9 +116,8 @@ public class ConcurrentRequestsHttpConnectionFilterTest {
                     }
 
                     @Override
-                    protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
-                                                                    final HttpExecutionStrategy strategy,
-                                                                    final StreamingHttpRequest request) {
+                    public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
+                                                                 final StreamingHttpRequest request) {
                         switch (reqCount.incrementAndGet()) {
                             case 1: return succeeded(reqRespFactory.ok().payloadBody(response1Publisher));
                             case 2: return succeeded(reqRespFactory.ok().payloadBody(response2Publisher));

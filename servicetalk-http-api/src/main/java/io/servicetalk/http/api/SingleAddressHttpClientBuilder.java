@@ -76,18 +76,19 @@ public abstract class SingleAddressHttpClientBuilder<U, R>
     public abstract SingleAddressHttpClientBuilder<U, R> maxPipelinedRequests(int maxPipelinedRequests);
 
     @Override
-    public abstract SingleAddressHttpClientBuilder<U, R> appendConnectionFilter(HttpConnectionFilterFactory factory);
+    public abstract SingleAddressHttpClientBuilder<U, R> appendConnectionFilter(
+            StreamingHttpConnectionFilterFactory factory);
 
     @Override
     public SingleAddressHttpClientBuilder<U, R> appendConnectionFilter(Predicate<StreamingHttpRequest> predicate,
-                                                                       HttpConnectionFilterFactory factory) {
+                                                                       StreamingHttpConnectionFilterFactory factory) {
         return (SingleAddressHttpClientBuilder<U, R>)
                 super.appendConnectionFilter(predicate, factory);
     }
 
     @Override
     public abstract SingleAddressHttpClientBuilder<U, R> appendConnectionFactoryFilter(
-            ConnectionFactoryFilter<R, StreamingHttpConnectionFilter> factory);
+            ConnectionFactoryFilter<R, StreamingHttpConnection> factory);
 
     @Override
     public abstract SingleAddressHttpClientBuilder<U, R> disableHostHeaderFallback();
@@ -101,17 +102,17 @@ public abstract class SingleAddressHttpClientBuilder<U, R>
 
     @Override
     public abstract SingleAddressHttpClientBuilder<U, R> loadBalancerFactory(
-            LoadBalancerFactory<R, StreamingHttpConnectionFilter> loadBalancerFactory);
+            LoadBalancerFactory<R, StreamingHttpConnection> loadBalancerFactory);
 
     @Override
     public abstract SingleAddressHttpClientBuilder<U, R> enableHostHeaderFallback(CharSequence hostHeader);
 
     @Override
-    public abstract SingleAddressHttpClientBuilder<U, R> appendClientFilter(HttpClientFilterFactory function);
+    public abstract SingleAddressHttpClientBuilder<U, R> appendClientFilter(StreamingHttpClientFilterFactory function);
 
     @Override
     public SingleAddressHttpClientBuilder<U, R> appendClientFilter(Predicate<StreamingHttpRequest> predicate,
-                                                                   HttpClientFilterFactory factory) {
+                                                                   StreamingHttpClientFilterFactory factory) {
         return (SingleAddressHttpClientBuilder<U, R>)
                 super.appendClientFilter(predicate, factory);
     }

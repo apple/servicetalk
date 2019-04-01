@@ -163,7 +163,8 @@ public class TracingHttpRequesterFilterTest {
         when(mockTracer.buildSpan(any())).thenThrow(DELIBERATE_EXCEPTION);
         try (ServerContext context = buildServer()) {
             try (HttpClient client = forSingleAddress(serverHostAndPort(context))
-                    .appendConnectionFilter(new TracingHttpRequesterFilter(mockTracer, "testClient")).build()) {
+                    .appendConnectionFilter(
+                            new TracingHttpRequesterFilter(mockTracer, "testClient")).build()) {
                 HttpRequest request = client.get("/");
                 expected.expect(ExecutionException.class);
                 expected.expectCause(is(DELIBERATE_EXCEPTION));

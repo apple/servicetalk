@@ -20,12 +20,12 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.DefaultHttpHeadersFactory;
 import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
-import io.servicetalk.http.api.HttpClientFilterFactory;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpClientFilter;
+import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.StreamingHttpRequester;
@@ -109,8 +109,8 @@ public class RedirectingHttpRequesterFilterTest {
         });
     }
 
-    private StreamingHttpClient newClient(HttpClientFilterFactory customFilter) {
-        HttpClientFilterFactory mockResponse = (client, __) ->
+    private StreamingHttpClient newClient(StreamingHttpClientFilterFactory customFilter) {
+        StreamingHttpClientFilterFactory mockResponse = (client, __) ->
                 new StreamingHttpClientFilter(client) {
                     @Override
                     protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
@@ -224,7 +224,8 @@ public class RedirectingHttpRequesterFilterTest {
         when(httpClient.request(any(), any())).thenAnswer(a -> createRedirectResponse(counter.incrementAndGet()));
 
         final int maxRedirects = MAX_REDIRECTS;
-        StreamingHttpClient redirectingRequester = newClient(new RedirectingHttpRequesterFilter(false, maxRedirects));
+        StreamingHttpClient redirectingRequester = newClient(
+                new RedirectingHttpRequesterFilter(false, maxRedirects));
 
         StreamingHttpRequest request = redirectingRequester.get("/path");
         request.headers().set(HOST, "servicetalk.io");

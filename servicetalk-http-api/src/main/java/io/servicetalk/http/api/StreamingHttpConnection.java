@@ -15,57 +15,20 @@
  */
 package io.servicetalk.http.api;
 
-import io.servicetalk.concurrent.PublisherSource.Subscriber;
-import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.transport.api.ConnectionContext;
-import io.servicetalk.transport.api.ExecutionContext;
-
-import static io.servicetalk.concurrent.internal.FutureUtils.awaitTermination;
-import static io.servicetalk.http.api.HttpExecutionStrategies.OFFLOAD_NONE_STRATEGY;
-import static io.servicetalk.http.api.HttpExecutionStrategies.OFFLOAD_RECEIVE_META_STRATEGY;
-import static io.servicetalk.http.api.HttpExecutionStrategies.OFFLOAD_SEND_STRATEGY;
-import static java.util.Objects.requireNonNull;
 
 /**
  * The equivalent of {@link HttpConnection} but that accepts {@link StreamingHttpRequest} and returns
  * {@link StreamingHttpResponse}.
  */
-public class StreamingHttpConnection implements StreamingHttpRequester {
-
-    private final HttpExecutionStrategy strategy;
-    final StreamingHttpConnectionFilter filterChain;
-
+public interface StreamingHttpConnection extends FilterableStreamingHttpConnection {
     /**
-     * Create a new instance.
+     * Send a {@code request}.
      *
-     * @param strategy Default {@link HttpExecutionStrategy} to use.
+     * @param request the request to send.
+     * @return The response.
      */
-    StreamingHttpConnection(final StreamingHttpConnectionFilter filterChain, final HttpExecutionStrategy strategy) {
-        this.filterChain = requireNonNull(filterChain);
-        this.strategy = requireNonNull(strategy);
-    }
-
-    /**
-     * Get the {@link ConnectionContext}.
-     * @return the {@link ConnectionContext}.
-     */
-    public final ConnectionContext connectionContext() {
-        return filterChain.connectionContext();
-    }
-
-    /**
-     * Returns a {@link Publisher} that gives the current value of the setting as well as subsequent changes to the
-     * setting value as long as the {@link Subscriber} has expressed enough demand.
-     *
-     * @param settingKey Name of the setting to fetch.
-     * @param <T> Type of the setting value.
-     * @return {@link Publisher} for the setting values.
-     */
-    public final <T> Publisher<T> settingStream(SettingKey<T> settingKey) {
-        return filterChain.settingStream(settingKey);
-    }
+    Single<StreamingHttpResponse> request(StreamingHttpRequest request);
 
     /**
      * Convert this {@link StreamingHttpConnection} to the {@link HttpConnection} API.
@@ -74,11 +37,8 @@ public class StreamingHttpConnection implements StreamingHttpRequester {
      * filters are implemented using the {@link StreamingHttpConnection} asynchronous API for maximum portability.
      * @return a {@link HttpConnection} representation of this {@link StreamingHttpConnection}.
      */
-    // We don't want the user to be able to override but it cannot be final because we need to override the type.
-    // However the constructor of this class is package private so the user will not be able to override this method.
-    public /* final */ HttpConnection asConnection() {
-        return new HttpConnection(this, filterChain
-                .effectiveExecutionStrategy(OFFLOAD_RECEIVE_META_STRATEGY));
+    default HttpConnection asConnection() {
+        return new StreamingHttpConnectionToHttpConnection(this);
     }
 
     /**
@@ -88,11 +48,8 @@ public class StreamingHttpConnection implements StreamingHttpRequester {
      * filters are implemented using the {@link StreamingHttpConnection} asynchronous API for maximum portability.
      * @return a {@link BlockingStreamingHttpConnection} representation of this {@link StreamingHttpConnection}.
      */
-    // We don't want the user to be able to override but it cannot be final because we need to override the type.
-    // However the constructor of this class is package private so the user will not be able to override this method.
-    public /* final */ BlockingStreamingHttpConnection asBlockingStreamingConnection() {
-        return new BlockingStreamingHttpConnection(this,
-                filterChain.effectiveExecutionStrategy(OFFLOAD_SEND_STRATEGY));
+    default BlockingStreamingHttpConnection asBlockingStreamingConnection() {
+        return new StreamingHttpConnectionToBlockingStreamingHttpConnection(this);
     }
 
     /**
@@ -102,108 +59,7 @@ public class StreamingHttpConnection implements StreamingHttpRequester {
      * filters are implemented using the {@link StreamingHttpConnection} asynchronous API for maximum portability.
      * @return a {@link BlockingHttpConnection} representation of this {@link StreamingHttpConnection}.
      */
-    // We don't want the user to be able to override but it cannot be final because we need to override the type.
-    // However the constructor of this class is package private so the user will not be able to override this method.
-    public /* final */ BlockingHttpConnection asBlockingConnection() {
-        return new BlockingHttpConnection(this, filterChain.effectiveExecutionStrategy(OFFLOAD_NONE_STRATEGY));
-    }
-
-    /**
-     * Send a {@code request}.
-     *
-     * @param request the request to send.
-     * @return The response.
-     */
-    public final Single<StreamingHttpResponse> request(StreamingHttpRequest request) {
-        return request(strategy, request);
-    }
-
-    @Override
-    public final Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
-                                                       final StreamingHttpRequest request) {
-        return filterChain.request(strategy, request);
-    }
-
-    @Override
-    public final ExecutionContext executionContext() {
-        return filterChain.executionContext();
-    }
-
-    @Override
-    public final Completable onClose() {
-        return filterChain.onClose();
-    }
-
-    @Override
-    public final Completable closeAsync() {
-        return filterChain.closeAsync();
-    }
-
-    @Override
-    public final Completable closeAsyncGracefully() {
-        return filterChain.closeAsyncGracefully();
-    }
-
-    @Override
-    public final void close() {
-        awaitTermination(closeAsyncGracefully().toFuture());
-    }
-
-    @Override
-    public final StreamingHttpRequest newRequest(final HttpRequestMethod method, final String requestTarget) {
-        return filterChain.newRequest(method, requestTarget);
-    }
-
-    @Override
-    public StreamingHttpResponseFactory httpResponseFactory() {
-        return filterChain.httpResponseFactory();
-    }
-
-    /**
-     * A key which identifies a configuration setting for a connection. Setting values may change over time.
-     * @param <T> Type of the value of this setting.
-     */
-    @SuppressWarnings("unused")
-    public static final class SettingKey<T> {
-        /**
-         * Option to define max concurrent requests allowed on a connection.
-         */
-        public static final SettingKey<Integer> MAX_CONCURRENCY = newKeyWithDebugToString("max-concurrency");
-
-        private final String stringRepresentation;
-
-        private SettingKey(String stringRepresentation) {
-            this.stringRepresentation = requireNonNull(stringRepresentation);
-        }
-
-        private SettingKey() {
-            this.stringRepresentation = super.toString();
-        }
-
-        /**
-         * Creates a new {@link SettingKey} with the specific {@code name}.
-         *
-         * @param stringRepresentation of the option. This is only used for debugging purpose and not for key equality.
-         * @param <T>                  Type of the value of the option.
-         * @return A new {@link SettingKey}.
-         */
-        static <T> SettingKey<T> newKeyWithDebugToString(String stringRepresentation) {
-            return new SettingKey<>(stringRepresentation);
-        }
-
-        /**
-         * Creates a new {@link SettingKey}.
-         *
-         * @param <T> Type of the value of the option.
-         * @return A new {@link SettingKey}.
-         */
-        static <T> SettingKey<T> newKey() {
-            return new SettingKey<>();
-        }
-
-        @Override
-        public String toString() {
-            return stringRepresentation;
-        }
+    default BlockingHttpConnection asBlockingConnection() {
+        return new StreamingHttpConnectionToBlockingHttpConnection(this);
     }
 }

@@ -17,12 +17,14 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.http.api.HttpClientFilterFactory;
-import io.servicetalk.http.api.HttpConnectionFilterFactory;
+import io.servicetalk.http.api.FilterableStreamingHttpClient;
+import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpHeaderNames;
 import io.servicetalk.http.api.StreamingHttpClientFilter;
+import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
 import io.servicetalk.http.api.StreamingHttpConnectionFilter;
+import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequester;
 import io.servicetalk.http.api.StreamingHttpResponse;
@@ -38,8 +40,8 @@ import static java.util.Objects.requireNonNull;
 /**
  * A filter which will apply a fallback value for the {@link HttpHeaderNames#HOST} header if one is not present.
  */
-final class HostHeaderHttpRequesterFilter implements HttpClientFilterFactory,
-                                                     HttpConnectionFilterFactory {
+final class HostHeaderHttpRequesterFilter implements StreamingHttpClientFilterFactory,
+                                                     StreamingHttpConnectionFilterFactory {
     private final CharSequence fallbackHost;
 
     /**
@@ -70,7 +72,8 @@ final class HostHeaderHttpRequesterFilter implements HttpClientFilterFactory,
     }
 
     @Override
-    public StreamingHttpClientFilter create(final StreamingHttpClientFilter client, final Publisher<Object> lbEvents) {
+    public StreamingHttpClientFilter create(final FilterableStreamingHttpClient client,
+                                            final Publisher<Object> lbEvents) {
         return new StreamingHttpClientFilter(client) {
 
             @Override
@@ -81,27 +84,26 @@ final class HostHeaderHttpRequesterFilter implements HttpClientFilterFactory,
             }
 
             @Override
-            protected HttpExecutionStrategy mergeForEffectiveStrategy(final HttpExecutionStrategy mergeWith) {
+            public HttpExecutionStrategy computeExecutionStrategy(final HttpExecutionStrategy other) {
                 // Since this filter does not have any blocking code, we do not need to alter the effective strategy.
-                return mergeWith;
+                return delegate().computeExecutionStrategy(other);
             }
         };
     }
 
     @Override
-    public StreamingHttpConnectionFilter create(final StreamingHttpConnectionFilter connection) {
+    public StreamingHttpConnectionFilter create(final FilterableStreamingHttpConnection connection) {
         return new StreamingHttpConnectionFilter(connection) {
             @Override
-            protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
-                                                            final HttpExecutionStrategy strategy,
+            public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
                                                             final StreamingHttpRequest request) {
-                return HostHeaderHttpRequesterFilter.this.request(delegate, strategy, request);
+                return HostHeaderHttpRequesterFilter.this.request(delegate(), strategy, request);
             }
 
             @Override
-            protected HttpExecutionStrategy mergeForEffectiveStrategy(final HttpExecutionStrategy mergeWith) {
+            public HttpExecutionStrategy computeExecutionStrategy(final HttpExecutionStrategy other) {
                 // Since this filter does not have any blocking code, we do not need to alter the effective strategy.
-                return mergeWith;
+                return delegate().computeExecutionStrategy(other);
             }
         };
     }

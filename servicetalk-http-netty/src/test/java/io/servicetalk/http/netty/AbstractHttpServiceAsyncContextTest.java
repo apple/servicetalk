@@ -24,12 +24,12 @@ import io.servicetalk.http.api.HttpConnectionBuilder;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpServerBuilder;
 import io.servicetalk.http.api.HttpServiceContext;
-import io.servicetalk.http.api.HttpServiceFilterFactory;
 import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpServiceFilter;
+import io.servicetalk.http.api.StreamingHttpServiceFilterFactory;
 import io.servicetalk.transport.api.DelegatingConnectionAcceptor;
 import io.servicetalk.transport.api.ServerContext;
 
@@ -148,9 +148,9 @@ public abstract class AbstractHttpServiceAsyncContextTest {
         }
     }
 
-    private static HttpServiceFilterFactory filterFactory(final boolean useImmediate,
-                                                          final boolean asyncFilter,
-                                                          final Queue<Throwable> errorQueue) {
+    private static StreamingHttpServiceFilterFactory filterFactory(final boolean useImmediate,
+                                                                   final boolean asyncFilter,
+                                                                   final Queue<Throwable> errorQueue) {
         return service -> new StreamingHttpServiceFilter(service) {
             @Override
             public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,

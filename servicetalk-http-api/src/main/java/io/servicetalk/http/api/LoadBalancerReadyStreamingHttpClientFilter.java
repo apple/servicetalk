@@ -45,9 +45,8 @@ public final class LoadBalancerReadyStreamingHttpClientFilter extends StreamingH
      * {@link LoadBalancerReadyEvent} events to trigger retries.
      * @param next The next {@link StreamingHttpClient} in the filter chain.
      */
-    public LoadBalancerReadyStreamingHttpClientFilter(int maxRetryCount,
-                                                      Publisher<Object> loadBalancerEvents,
-                                                      StreamingHttpClientFilter next) {
+    public LoadBalancerReadyStreamingHttpClientFilter(
+            int maxRetryCount, Publisher<Object> loadBalancerEvents, FilterableStreamingHttpClient next) {
         super(next);
         if (maxRetryCount <= 0) {
             throw new IllegalArgumentException("maxRetryCount " + maxRetryCount + " (expected >0)");
@@ -58,10 +57,9 @@ public final class LoadBalancerReadyStreamingHttpClientFilter extends StreamingH
     }
 
     @Override
-    protected Single<ReservedStreamingHttpConnectionFilter> reserveConnection(final StreamingHttpClientFilter delegate,
-                                                                              final HttpExecutionStrategy strategy,
-                                                                              final HttpRequestMetaData metaData) {
-        return delegate.reserveConnection(strategy, metaData).retryWhen(retryWhenFunction());
+    public Single<ReservedStreamingHttpConnection> reserveConnection(final HttpExecutionStrategy strategy,
+                                                                     final HttpRequestMetaData metaData) {
+        return delegate().reserveConnection(strategy, metaData).retryWhen(retryWhenFunction());
     }
 
     @Override
@@ -72,9 +70,9 @@ public final class LoadBalancerReadyStreamingHttpClientFilter extends StreamingH
     }
 
     @Override
-    protected HttpExecutionStrategy mergeForEffectiveStrategy(final HttpExecutionStrategy mergeWith) {
+    public HttpExecutionStrategy computeExecutionStrategy(final HttpExecutionStrategy other) {
         // Since this filter does not have any blocking code, we do not need to alter the effective strategy.
-        return mergeWith;
+        return delegate().computeExecutionStrategy(other);
     }
 
     private BiIntFunction<Throwable, Completable> retryWhenFunction() {

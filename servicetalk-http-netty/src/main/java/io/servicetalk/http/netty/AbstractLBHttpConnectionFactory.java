@@ -18,30 +18,36 @@ package io.servicetalk.http.netty;
 import io.servicetalk.client.api.ConnectionFactory;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
-import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.http.api.HttpConnectionFilterFactory;
 import io.servicetalk.http.api.HttpExecutionStrategy;
+import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
+import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
+import io.servicetalk.transport.api.ExecutionContext;
+
+import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.emptyAsyncCloseable;
+import static java.util.Objects.requireNonNull;
 
 abstract class AbstractLBHttpConnectionFactory<ResolvedAddress>
-        implements ConnectionFactory<ResolvedAddress, LoadBalancedStreamingHttpConnectionFilter> {
-    private final HttpConnectionFilterFactory connectionFilterFunction;
+        implements ConnectionFactory<ResolvedAddress, LoadBalancedStreamingHttpConnection> {
     private final ListenableAsyncCloseable close = emptyAsyncCloseable();
-    protected final HttpExecutionStrategy defaultStrategy;
+    @Nullable
+    final StreamingHttpConnectionFilterFactory connectionFilterFunction;
+    final HttpExecutionStrategy defaultStrategy;
+    final ReadOnlyHttpClientConfig config;
+    final ExecutionContext executionContext;
+    final StreamingHttpRequestResponseFactory reqRespFactory;
 
-    AbstractLBHttpConnectionFactory(final HttpConnectionFilterFactory connectionFilterFunction,
+    AbstractLBHttpConnectionFactory(final ReadOnlyHttpClientConfig config,
+                                    final ExecutionContext executionContext,
+                                    @Nullable final StreamingHttpConnectionFilterFactory connectionFilterFunction,
+                                    final StreamingHttpRequestResponseFactory reqRespFactory,
                                     final HttpExecutionStrategy defaultStrategy) {
         this.connectionFilterFunction = connectionFilterFunction;
-        this.defaultStrategy = defaultStrategy;
-    }
-
-    abstract Single<LoadBalancedStreamingHttpConnectionFilter> newConnection(
-            ResolvedAddress address, HttpConnectionFilterFactory connectionFilterFunction);
-
-    @Override
-    public final Single<LoadBalancedStreamingHttpConnectionFilter> newConnection(ResolvedAddress address) {
-        return newConnection(address, connectionFilterFunction);
+        this.defaultStrategy = requireNonNull(defaultStrategy);
+        this.config = requireNonNull(config);
+        this.executionContext = requireNonNull(executionContext);
+        this.reqRespFactory = requireNonNull(reqRespFactory);
     }
 
     @Override

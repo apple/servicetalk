@@ -17,22 +17,22 @@ package io.servicetalk.http.utils;
 
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.http.api.FilterableStreamingHttpClient;
+import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpClient;
-import io.servicetalk.http.api.HttpClientFilterFactory;
 import io.servicetalk.http.api.HttpConnection;
-import io.servicetalk.http.api.HttpConnectionFilterFactory;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpHeaderNames;
 import io.servicetalk.http.api.HttpRequestMetaData;
+import io.servicetalk.http.api.ReservedStreamingHttpConnection;
 import io.servicetalk.http.api.ReservedStreamingHttpConnectionFilter;
-import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpClientFilter;
+import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
 import io.servicetalk.http.api.StreamingHttpConnectionFilter;
+import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequester;
 import io.servicetalk.http.api.StreamingHttpResponse;
-
-import static io.servicetalk.concurrent.api.Publisher.empty;
 
 /**
  * A HTTP request filter that performs automatic redirects if {@link
@@ -51,7 +51,8 @@ import static io.servicetalk.concurrent.api.Publisher.empty;
  *     limited to automatically following relative redirects only.</li>
  * </ul>
  */
-public final class RedirectingHttpRequesterFilter implements HttpClientFilterFactory, HttpConnectionFilterFactory {
+public final class RedirectingHttpRequesterFilter implements StreamingHttpClientFilterFactory,
+                                                             StreamingHttpConnectionFilterFactory {
 
     // https://tools.ietf.org/html/rfc2068#section-10.3 says:
     // A user agent SHOULD NOT automatically redirect a request more than 5 times,
@@ -104,7 +105,8 @@ public final class RedirectingHttpRequesterFilter implements HttpClientFilterFac
      * @param onlyRelativeClient Limits the redirects to relative paths for {@link HttpClient} filters.
      * @param onlyRelativeConnection Limits the redirects to relative paths for {@link HttpConnection} filters.
      */
-    public RedirectingHttpRequesterFilter(final boolean onlyRelativeClient, final boolean onlyRelativeConnection) {
+    public RedirectingHttpRequesterFilter(final boolean onlyRelativeClient,
+                                          final boolean onlyRelativeConnection) {
         this(onlyRelativeClient, onlyRelativeConnection, DEFAULT_MAX_REDIRECTS);
     }
 
@@ -124,22 +126,23 @@ public final class RedirectingHttpRequesterFilter implements HttpClientFilterFac
     }
 
     @Override
-    public StreamingHttpClientFilter create(final StreamingHttpClientFilter client, final Publisher<Object> lbEvents) {
+    public StreamingHttpClientFilter create(final FilterableStreamingHttpClient client,
+                                            final Publisher<Object> lbEvents) {
         return new StreamingHttpClientFilter(client) {
 
             @Override
             protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                             final HttpExecutionStrategy strategy,
                                                             final StreamingHttpRequest request) {
-                return RedirectingHttpRequesterFilter.this.request(delegate, strategy, request, onlyRelativeClient);
+                return RedirectingHttpRequesterFilter.this.request(delegate, strategy, request,
+                        onlyRelativeClient);
             }
 
             @Override
-            protected Single<ReservedStreamingHttpConnectionFilter> reserveConnection(
-                    final StreamingHttpClientFilter delegate,
+            public Single<ReservedStreamingHttpConnection> reserveConnection(
                     final HttpExecutionStrategy strategy,
                     final HttpRequestMetaData metaData) {
-                return delegate.reserveConnection(strategy, metaData)
+                return delegate().reserveConnection(strategy, metaData)
                         .map(r -> new ReservedStreamingHttpConnectionFilter(r) {
                             @Override
                             protected Single<StreamingHttpResponse> request(
@@ -153,37 +156,27 @@ public final class RedirectingHttpRequesterFilter implements HttpClientFilterFac
             }
 
             @Override
-            protected HttpExecutionStrategy mergeForEffectiveStrategy(final HttpExecutionStrategy mergeWith) {
+            public HttpExecutionStrategy computeExecutionStrategy(final HttpExecutionStrategy other) {
                 // Since this filter does not have any blocking code, we do not need to alter the effective strategy.
-                return mergeWith;
+                return delegate().computeExecutionStrategy(other);
             }
         };
     }
 
-    /**
-     * Create a {@link StreamingHttpClientFilter} using the provided {@link StreamingHttpClient}.
-     *
-     * @param client {@link StreamingHttpClient} to filter
-     * @return {@link StreamingHttpClientFilter} using the provided {@link StreamingHttpClient}.
-     */
-    public StreamingHttpClientFilter create(final StreamingHttpClientFilter client) {
-        return create(client, empty());
-    }
-
     @Override
-    public StreamingHttpConnectionFilter create(final StreamingHttpConnectionFilter connection) {
+    public StreamingHttpConnectionFilter create(final FilterableStreamingHttpConnection connection) {
         return new StreamingHttpConnectionFilter(connection) {
             @Override
-            protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
-                                                            final HttpExecutionStrategy strategy,
-                                                            final StreamingHttpRequest request) {
-                return RedirectingHttpRequesterFilter.this.request(delegate, strategy, request, onlyRelativeConnection);
+            public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
+                                                         final StreamingHttpRequest request) {
+                return RedirectingHttpRequesterFilter.this.request(delegate(), strategy, request,
+                        onlyRelativeConnection);
             }
 
             @Override
-            protected HttpExecutionStrategy mergeForEffectiveStrategy(final HttpExecutionStrategy mergeWith) {
+            public HttpExecutionStrategy computeExecutionStrategy(final HttpExecutionStrategy other) {
                 // Since this filter does not have any blocking code, we do not need to alter the effective strategy.
-                return mergeWith;
+                return delegate().computeExecutionStrategy(other);
             }
         };
     }

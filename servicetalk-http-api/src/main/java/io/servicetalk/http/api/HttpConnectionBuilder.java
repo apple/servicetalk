@@ -23,7 +23,6 @@ import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.IoExecutor;
 
 import java.net.SocketOption;
-import java.util.function.BiFunction;
 import java.util.function.Predicate;
 
 import static io.servicetalk.http.api.BlockingUtils.blockingInvocation;
@@ -99,30 +98,12 @@ public abstract class HttpConnectionBuilder<ResolvedAddress> extends BaseHttpBui
     public abstract HttpConnectionBuilder<ResolvedAddress> enableHostHeaderFallback(CharSequence hostHeader);
 
     /**
-     * Creates the {@link StreamingHttpConnectionFilter} chain to be used by the {@link StreamingHttpConnection}.
-     *
-     * @param resolvedAddress a resolved address to use when connecting
-     * @param assembler {@link BiFunction} used to compose a {@link StreamingHttpConnectionFilter} chain and {@link
-     * HttpExecutionStrategy} into typically a {@link StreamingHttpConnection} or {@link StreamingHttpConnectionFilter}
-     * for further composition.
-     * @param <T> the type of assembled object, typically a {@link StreamingHttpConnection} or {@link
-     * StreamingHttpConnectionFilter}
-     * @return A single that will complete with the {@link StreamingHttpConnectionFilter} chain to be used by the {@link
-     * StreamingHttpConnection}.
-     */
-    protected abstract <T> Single<T> buildFilterChain(
-            ResolvedAddress resolvedAddress,
-            BiFunction<StreamingHttpConnectionFilter, HttpExecutionStrategy, T> assembler);
-
-    /**
      * Create a new {@link StreamingHttpConnection}.
      *
      * @param resolvedAddress a resolved address to use when connecting
      * @return A single that will complete with the {@link StreamingHttpConnection}
      */
-    public final Single<StreamingHttpConnection> buildStreaming(ResolvedAddress resolvedAddress) {
-        return buildFilterChain(resolvedAddress, StreamingHttpConnection::new);
-    }
+    public abstract Single<StreamingHttpConnection> buildStreaming(ResolvedAddress resolvedAddress);
 
     /**
      * Create a new {@link HttpConnection}, using a default {@link ExecutionContext}.
@@ -172,11 +153,12 @@ public abstract class HttpConnectionBuilder<ResolvedAddress> extends BaseHttpBui
     }
 
     @Override
-    public abstract HttpConnectionBuilder<ResolvedAddress> appendConnectionFilter(HttpConnectionFilterFactory factory);
+    public abstract HttpConnectionBuilder<ResolvedAddress> appendConnectionFilter(
+            StreamingHttpConnectionFilterFactory factory);
 
     @Override
     public HttpConnectionBuilder<ResolvedAddress> appendConnectionFilter(
-            Predicate<StreamingHttpRequest> predicate, HttpConnectionFilterFactory factory) {
+            Predicate<StreamingHttpRequest> predicate, StreamingHttpConnectionFilterFactory factory) {
         super.appendConnectionFilter(predicate, factory);
         return this;
     }

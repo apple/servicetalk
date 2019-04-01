@@ -243,10 +243,10 @@ public class MultiAddressUrlHttpClientSslTest {
     }
 
         private static void requestAndValidate(final BlockingHttpRequester requester,
-                                           final String requestTarget, final String hostHeader) throws Exception {
+                                               final String requestTarget, final String hostHeader) throws Exception {
         HttpRequest request = requester.get(requestTarget)
                 .addHeader(HOST, hostHeader)
                 .addHeader(CONTENT_LENGTH, ZERO);
-        assertEquals(OK, requester.request(request).status());
+        assertEquals(OK, requester.request(noOffloadsStrategy(), request).status());
     }
 }

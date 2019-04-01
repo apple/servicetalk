@@ -41,6 +41,7 @@ import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Completable.never;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
+import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.transport.netty.internal.ExecutionContextRule.immediate;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -92,8 +93,9 @@ public class PipelinedHttpConnectionTest {
             return publisher.ignoreElements(); // simulate write consuming all
         });
         when(connection.read()).thenReturn(readPublisher1, readPublisher2);
-        pipe = TestStreamingHttpConnection.from(reqRespFactory, ctx, connection, conn ->
-                new PipelinedStreamingHttpConnectionFilter(connection, config.asReadOnly(), ctx, reqRespFactory));
+        pipe = TestStreamingHttpConnection.from(
+                new PipelinedStreamingHttpConnection(connection, config.asReadOnly(), ctx, reqRespFactory,
+                        defaultStrategy()));
     }
 
     @SuppressWarnings("unchecked")

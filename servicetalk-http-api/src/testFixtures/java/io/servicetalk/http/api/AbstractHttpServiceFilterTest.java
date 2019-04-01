@@ -112,7 +112,7 @@ public abstract class AbstractHttpServiceFilterTest {
     }
 
     protected final StreamingHttpRequester createFilter(final RequestHandler handler,
-                                                        final HttpServiceFilterFactory factory) {
+                                                        final StreamingHttpServiceFilterFactory factory) {
 
         StreamingHttpServiceFilter service = factory.create(new StreamingHttpService() {
             @Override
@@ -124,7 +124,6 @@ public abstract class AbstractHttpServiceFilterTest {
         });
 
         return new StreamingHttpRequester() {
-
             @Override
             public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
                                                          final StreamingHttpRequest request) {
@@ -135,6 +134,11 @@ public abstract class AbstractHttpServiceFilterTest {
             @Override
             public ExecutionContext executionContext() {
                 return executionContext;
+            }
+
+            @Override
+            public StreamingHttpResponseFactory httpResponseFactory() {
+                return REQ_RES_FACTORY;
             }
 
             @Override
@@ -155,11 +159,6 @@ public abstract class AbstractHttpServiceFilterTest {
             @Override
             public StreamingHttpRequest newRequest(final HttpRequestMethod method, final String requestTarget) {
                 return REQ_RES_FACTORY.newRequest(method, requestTarget);
-            }
-
-            @Override
-            public StreamingHttpResponseFactory httpResponseFactory() {
-                return REQ_RES_FACTORY;
             }
         };
     }
