@@ -1,0 +1,384 @@
+= HTTP
+
+This module defines the ServiceTalk client and server API for the link:https://tools.ietf.org/html/rfc7231[HTTP/1.x]
+protocol. This module supports the different <<../README#programming-Paradigms, Programming Paradigms>> for client and
+server. Here is a quick start example of the <<../README#blocking-and-aggregated, blocking and aggregated>> paradigm:
+
+==== Blocking Client
+[source, java]
+----
+try (BlockingHttpClient client = HttpClients.forSingleAddress("localhost", 8080).buildBlocking()) {
+  HttpResponse response = client.request(client.get("/sayHello"));
+  // use the response
+}
+----
+
+==== Blocking Server
+[source, java]
+----
+HttpServers.forPort(8080)
+  .listenBlockingAndAwait((ctx, request, responseFactory) ->
+    responseFactory.ok().payloadBody("Hello World!", textSerializer()))
+  .awaitShutdown();
+----
+
+=== Extensibility and Filters
+The design of this protocol involves configuring builders for core protocol concerns, and then appending `Filters` for
+extensibility. `Filters` are described in more detail below (e.g. <<Service Filters>>, <<Client Filters>>) but in
+general they facilitate user code to filter/intercept/modify the request/response processing. Some example usages of
+`Filters` include authentication, authorization, logging, metrics, tracing, etc...
+
+== Server
+The server side is built around the concept of `Service`. A `Service` is where your business logic lives. ServiceTalk's
+HTTP module will interact with a single service which is provided by the user via `HttpServers`. The flow of data from
+the socket to the a HTTP `Service` is visualized as follows:
+
+[ditaa]
+----
++--------+ request  +---------+       +---------+
+|        |--------->|  HTTP   |------>|  HTTP   |
+| Socket |          | Decoder |       | Service |
+|        |<---------| Encoder |<------|         |
++--------+ response +---------+       +---------+
+----
+
+Each `Service` has access to a
+link:src/main/java/io/servicetalk/http/api/HttpServiceContext.java[HttpServiceContext] which provides additional context
+(via link:src/main/java/io/servicetalk/transport/api/ConnectionContext.java[ConnectionContext]) into the
+`Connection`/transport details for each request/response. This means that the `HttpService` may be invoked for multiple
+connections, from different threads, and even concurrently.
+
+=== Service Filters
+Filters provide a means to filter/intercept and modify each request/response life cycle. `Service` Filters are used to
+implement
+link:../servicetalk-opentracing-http/src/main/java/io/servicetalk/opentracing/http/TracingHttpServiceFilter.java[tracing]
+metrics, logging,
+link:../servicetalk-http-utils/src/main/java/io/servicetalk/http/utils/auth/BasicAuthHttpServiceFilter.java[basic auth],
+and any other extension that needs request/response level visibility. The diagram below describes the control flow
+as related to `Service` filters:
+
+[ditaa]
+----
++--------+ request  +---------+       +---------+       +---------+       +---------+
+|        |--------->|  HTTP   |------>|  HTTP   |------>|  HTTP   |------>|  HTTP   |
+| Socket |          | Decoder |       | Service |       | Service |       | Service |
+|        |<---------| Encoder |<------| Filter 1|<------| Filter n|<------|         |
++--------+ response +---------+       +---------+       +---------+       +---------+
+----
+
+To implement a `Service` filter you should implement the
+link:src/main/java/io/servicetalk/http/api/StreamingHttpServiceFilterFactory.java[Service Filter Factory] corresponding
+to your preferred programming paradigm and append it on the
+link:src/main/java/io/servicetalk/http/api/HttpServerBuilder.java#L247[HttpServerBuilder].
+
+
+=== Routers
+In practice it is common for a HTTP `Service` to handle many different types of request(s) that all have unique
+processing requirements. The control flow in ServiceTalk is represented by a "Router". A "Router" is a `Service` that
+owns the responsibility of multiplexing the control flow. ServiceTalk does not mandate a specific "Router"
+implementation but provides a few reference implementations for common use cases (e.g.
+link:../servicetalk-http-router-predicate[Predicate Router] and
+ink:../servicetalk-http-router-jersey[JAX-RS via Jersey]. The general component diagram of a "Router" is as follows:
+
+
+[ditaa]
+----
+                                                                +---------+
+                                                        /------>| Route 1 |
+                                                        |       +---------+
++--------+ request  +---------+       +---------+       |
+|        |--------->|  HTTP   |------>|  HTTP   |       |       +---------+
+| Socket |          | Decoder |       | Service |<------+------>| Route 2 |
+|        |<---------| Encoder |<------| Router  |       |       +---------+
++--------+ response +---------+       +---------+       |
+                                                        |       +---------+
+                                                        \------>| Route n |
+                                                                +---------+
+----
+
+=== Service Programming Paradigms
+HTTP Service supports all the variations described in <<../README#programming-Paradigms, Programming Paradigms>>.
+
+==== Service Blocking and Aggregated
+This programming paradigms exposes the request payload body as single aggregated object, and the response payload body
+is also a single aggregated object. There are no asynchronous primitives involved.
+
+[source, java]
+----
+HttpServers.forPort(8080)
+  .listenBlockingAndAwait((ctx, request, responseFactory) ->
+    responseFactory.ok().payloadBody("Hello World!", textSerializer()))
+  .awaitShutdown();
+----
+
+==== Service Blocking and Streaming
+This programming paradigms exposes the request payload body as an
+link:https://docs.oracle.com/javase/8/docs/api/java/lang/Iterable.html[Iterable] of
+link:../servicetalk-buffer-api/src/main/java/io/servicetalk/buffer/api/Buffer.java[Buffer]s and the response payload
+body is written via an
+link:src/main/java/io/servicetalk/http/api/HttpPayloadWriter.java[HttpPayloadWriter] or an
+link:src/main/java/io/servicetalk/http/api/HttpOutputStream.java[HttpOutputStream].
+
+[source, java]
+----
+HttpServers.forPort(8080).listenBlockingStreamingAndAwait((ctx, request, response) -> {
+  try (HttpPayloadWriter<String> payloadWriter = response.sendMetaData(textSerializer())) {
+    payloadWriter.write("Hello\n");
+    payloadWriter.write("World\n");
+    payloadWriter.write("From\n");
+    payloadWriter.write("ServiceTalk\n");
+  }
+}).awaitShutdown();
+----
+
+==== Service Asynchronous and Aggregated
+This programming paradigms exposes the request payload body as single aggregated object, and the response payload body
+is also a single aggregated object. The `Service` provides the response by completing a
+link:../servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Single.java[Single] which is an
+asynchronous primitive.
+
+[source, java]
+----
+HttpServers.forPort(8080)
+  .listenAndAwait((ctx, request, responseFactory) ->
+    succeeded(responseFactory.ok()
+      .payloadBody("Hello World!", textSerializer())))
+  .awaitShutdown();
+----
+
+==== Service Asynchronous and Streaming
+This programming paradigms exposes the request payload body as an
+link:../servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Publisher.java[Publisher] typically of
+link:../servicetalk-buffer-api/src/main/java/io/servicetalk/buffer/api/Buffer.java[Buffer]s (although other types like
+file regions maybe added), the response meta data is provided by completing a
+link:../servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Single.java[Single], and the response
+payload body is written via a
+link:../servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Publisher.java[Publisher].
+
+[source, java]
+----
+HttpServers.forPort(8080)
+  .listenStreamingAndAwait((ctx, request, responseFactory) ->
+    succeeded(responseFactory.ok()
+      .payloadBody(from("Hello\n", "World\n", "From\n", "ServiceTalk\n"), textSerializer())))
+  .awaitShutdown();
+----
+
+== Client
+A `Client` is generally responsible for managing multiple `Connections`. There are a few flavors of HTTP Clients:
+
+==== SingleAddress Client
+This `Client` will only connect to a single address, that is provided upfront at build time. This `Client` is
+for use cases where you want to issue requests to a single service (that may have multiple instances).
+
+==== MultiAddress Client
+This `Client` parses the link:https://tools.ietf.org/html/rfc7230#section-5.3[request-target] to determine the remote
+address for each request. This `Client` simulates a browser type of use case.
+
+Each of the above `Client`s can be created via the
+link:src/main/java/io/servicetalk/http/netty/HttpClients.java[HttpClients] static factory.
+
+The `Client` manages multiple `Connections` via a
+link:../servicetalk-client-api/src/main/java/io/servicetalk/client/api/LoadBalancer.java[LoadBalancer]. The control flow
+of a request/response can be visualized in the below diagram:
+
+[ditaa]
+----
+                                             +--------------+     +----------------------+     +--------+
+                                        /--->| Connection 1 |<--->| HTTP Decoder/Encoder |<--->| Socket |
+                                        |    +--------------+     +----------------------+     +--------+
++--------+ request  +--------------+    |
+|        |--------->|              |    |    +--------------+     +----------------------+     +--------+
+| Client |          | LoadBalancer |<---+--->| Connection 2 |<--->| HTTP Decoder/Encoder |<--->| Socket |
+|        |<---------|              |    |    +--------------+     +----------------------+     +--------+
++--------+ response +--------------+    |
+                                        |    +--------------+     +----------------------+     +--------+
+                                        \--->| Connection x |<--->| HTTP Decoder/Encoder |<--->| Socket |
+                                             +--------------+     +----------------------+     +--------+
+----
+
+The link:../servicetalk-client-api/src/main/java/io/servicetalk/client/api/LoadBalancer.java[LoadBalancer] is consulted
+for each request to determine which connection should be used. The `LoadBalancer` interface is extensible and an
+the reference implementation provides a
+link:../servicetalk-loadbalancer/src/main/java/io/servicetalk/loadbalancer/RoundRobinLoadBalancer.java[Round Robin algorithm].
+
+=== Client Filters
+Filters provide a means to filter/intercept and modify each request/response life cycle. `Client` Filters are used to
+implement
+link:../servicetalk-opentracing-http/src/main/java/io/servicetalk/opentracing/http/TracingHttpRequesterFilter.java[tracing]
+metrics, logging, authorization, and any other extension that needs request/response level visibility.
+
+[ditaa]
+----
+                                                                             +--------------+     +----------------------+     +--------+
+                                                                        /--->| Connection 1 |<--->| HTTP Decoder/Encoder |<--->| Socket |
+                                                                        |    +--------------+     +----------------------+     +--------+
++--------+ request  +---------+     +---------+     +--------------+    |
+|        |--------->|         |---->|         |---->|              |    |    +--------------+     +----------------------+     +--------+
+| Client |          | Client  |     | Client  |     | LoadBalancer |<---+--->| Connection 2 |<--->| HTTP Decoder/Encoder |<--->| Socket |
+|        |<---------| Filter 1|<----| Filter n|<----|              |    |    +--------------+     +----------------------+     +--------+
++--------+ response +---------+     +---------+     +--------------+    |
+                                                                        |    +--------------+     +----------------------+     +--------+
+                                                                        \--->| Connection x |<--->| HTTP Decoder/Encoder |<--->| Socket |
+                                                                             +--------------+     +----------------------+     +--------+
+----
+
+To implement a `Client` filter you should implement the
+link:src/main/java/io/servicetalk/http/api/StreamingHttpClientFilterFactory.java[Client Filter Factory] corresponding to
+your preferred programming paradigm and append it on the respective
+link:src/main/java/io/servicetalk/http/api/HttpClientBuilder.java[HttpClientBuilder].
+
+=== Connection Filters
+The `Client` doesn't have visibility into `Connection` specific information. For example the `Connection` layer knows
+about transport details such as connected remote address and other elements in the
+link:../servicetalk-transport-api/src/main/java/io/servicetalk/transport/api/ConnectionContext.java[ConnectionContext].
+If you have use cases that require this information in the request/response control flow you can use a
+`Connection Filter`. The diagram below illustrates how the `Connection Filter` interacts with the request/response
+control flow.
+
+[ditaa]
+----
+                                             +---------------------+     +---------------------+     +--------------+     +----------------------+     +--------+
+                                        /--->| Connection Filter 1 |<--->| Connection Filter n |<--->| Connection 1 |<--->| HTTP Decoder/Encoder |<--->| Socket |
+                                        |    +---------------------+     +---------------------+     +--------------+     +----------------------+     +--------+
++--------+ request  +--------------+    |
+|        |--------->|              |    |    +---------------------+     +---------------------+     +--------------+     +----------------------+     +--------+
+| Client |          | LoadBalancer |<---+--->| Connection Filter 1 |<--->| Connection Filter n |<--->| Connection 2 |<--->| HTTP Decoder/Encoder |<--->| Socket |
+|        |<---------|              |    |    +---------------------+     +---------------------+     +--------------+     +----------------------+     +--------+
++--------+ response +--------------+    |
+                                        |    +---------------------+     +---------------------+     +--------------+     +----------------------+     +--------+
+                                        \--->| Connection Filter 1 |<--->| Connection Filter n |<--->| Connection x |<--->| HTTP Decoder/Encoder |<--->| Socket |
+                                             +---------------------+     +---------------------+     +--------------+     +----------------------+     +--------+
+----
+
+=== Service Discovery
+Another core component of the Client is the
+link:../servicetalk-client-api/src/main/java/io/servicetalk/client/api/ServiceDiscoverer.java[ServiceDiscoverer]. The
+`ServiceDiscoverer` is responsible for resolving a service address into a set of addresses used to create
+`Connection`(s) by the `LoadBalancer`. The default implementation for HTTP is DNS and will resolve the IP addresses of
+each service address every link:https://tools.ietf.org/html/rfc1035#section-3.2.1[TTL] seconds. The `ServiceDiscoverer`
+is not in the request/response path but instead resolves `Connection` addresses "out of band".
+
+[ditaa]
+----
+                     +------------+
+                     |   Service  |
+                     | Discoverer |
+                     +------------+
+                           ^
+                           |
+                           |                 +--------------+
+                           |            /--->| Connection 1 |
+                           V            |    +--------------+
++--------+ request  +--------------+    |
+|        |--------->|              |    |    +--------------+
+| Client |          | LoadBalancer |<---+--->| Connection 2 |
+|        |<---------|              |    |    +--------------+
++--------+ response +--------------+    |
+                                        |    +--------------+
+                                        \--->| Connection x |
+                                             +--------------+
+----
+
+
+=== Client Programming Paradigms
+HTTP Client supports all the variations described in <<../README#programming-Paradigms, Programming Paradigms>>.
+
+==== Client Blocking and Aggregated
+This programming paradigms expects the request payload body as single aggregated object, and the response payload body
+is also a single aggregated object. There are no asynchronous primitives involved.
+
+[source, java]
+----
+try (BlockingHttpClient client = HttpClients.forSingleAddress("localhost", 8080).buildBlocking()) {
+  HttpResponse response = client.request(client.get("/sayHello"));
+  // use the response
+}
+----
+
+==== Client Blocking and Streaming
+This programming paradigms expects the request payload body as an
+link:https://docs.oracle.com/javase/8/docs/api/java/lang/Iterable.html[Iterable] of
+link:../servicetalk-buffer-api/src/main/java/io/servicetalk/buffer/api/Buffer.java[Buffer]s and the response payload
+body is consumed via an
+link:https://docs.oracle.com/javase/8/docs/api/java/lang/Iterable.html[Iterable] of
+link:../servicetalk-buffer-api/src/main/java/io/servicetalk/buffer/api/Buffer.java[Buffer]s.
+
+[source, java]
+----
+try (BlockingStreamingHttpClient client = HttpClients.forSingleAddress("localhost", 8080)
+      .buildBlockingStreaming()) {
+  BlockingStreamingHttpResponse response = client.request(client.get("/sayHello"));
+  System.out.println(response.toString((name, value) -> value));
+  try (BlockingIterator<String> payload = response.payloadBody(textDeserializer()).iterator()) {
+    while (payload.hasNext()) {
+      System.out.println(payload.next());
+    }
+  }
+}
+----
+
+==== Client Asynchronous and Aggregated
+This programming paradigms expect the request payload body as single aggregated object, and the response payload body
+is also a single aggregated object. The `HttpClient` provides the response via a
+link:../servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Single.java[Single] which is an
+asynchronous primitive.
+
+[source, java]
+----
+try (HttpClient client = HttpClients.forSingleAddress("localhost", 8080).build()) {
+  // This example is demonstrating asynchronous execution, but needs to prevent the main thread from exiting
+  // before the response has been processed. This isn't typical usage for a streaming API but is useful for
+  // demonstration purposes.
+  CountDownLatch responseProcessedLatch = new CountDownLatch(1);
+  client.request(client.get("/sayHello"))
+        .doFinally(responseProcessedLatch::countDown)
+        .subscribe(resp -> {
+     System.out.println(resp.toString((name, value) -> value));
+     System.out.println(resp.payloadBody(textDeserializer()));
+  });
+
+  responseProcessedLatch.await();
+}
+----
+
+==== Client Asynchronous and Streaming
+This programming paradigms expects the request payload body as an
+link:../servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Publisher.java[Publisher] typically of
+link:../servicetalk-buffer-api/src/main/java/io/servicetalk/buffer/api/Buffer.java[Buffer]s (although other types like
+file regions maybe added), the response meta data is provided via a
+link:../servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Single.java[Single], and the response
+payload body is written via a
+link:../servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Publisher.java[Publisher].
+
+[source, java]
+----
+try (StreamingHttpClient client = HttpClients.forSingleAddress("localhost", 8080).buildStreaming()) {
+  // This example is demonstrating asynchronous execution, but needs to prevent the main thread from exiting
+  // before the response has been processed. This isn't typical usage for a streaming API but is useful for
+  // demonstration purposes.
+  CountDownLatch responseProcessedLatch = new CountDownLatch(1);
+  client.request(client.get("/sayHello"))
+        .doBeforeOnSuccess(response -> System.out.println(response.toString((name, value) -> value)))
+        .flatMapPublisher(resp -> resp.payloadBody(textDeserializer()))
+        .doFinally(responseProcessedLatch::countDown)
+        .forEach(System.out::println);
+
+  responseProcessedLatch.await();
+}
+----
+
+== Serialization
+Serialization factories are made available in the
+link:src/main/java/io/servicetalk/http/api/HttpSerializationProviders.java[HttpSerializationProviders] static factory
+class.
+
+The core abstractions
+link:src/main/java/io/servicetalk/http/api/HttpDeserializer.java[HttpDeserializer] and
+link:src/main/java/io/servicetalk/http/api/HttpSerializer.java[HttpSerializer] are designed to be coupled to a
+specific java type `T` and accessed via a
+link:src/main/java/io/servicetalk/http/api/HttpSerializationProvider.java[HttpSerializationProvider]. The
+link:src/main/java/io/servicetalk/http/api/HttpDeserializer.java[HttpDeserializer] and
+link:src/main/java/io/servicetalk/http/api/HttpSerializer.java[HttpSerializer] are also designed to handle the HTTP
+headers data behind the scenes. This means either checking if `content-type` format is compatible with the
+deserialization format and also adding `content-type` header identifying the resulting serialization format.
