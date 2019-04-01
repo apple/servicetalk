@@ -161,8 +161,8 @@ public abstract class AbstractHttpServiceAsyncContextTest {
             }
 
             @Override
-            public HttpExecutionStrategy executionStrategy() {
-                return noOffloadsStrategy();
+            public HttpExecutionStrategy computeExecutionStrategy(final HttpExecutionStrategy other) {
+                return delegate().computeExecutionStrategy(noOffloadsStrategy().merge(other));
             }
 
             private Single<StreamingHttpResponse> doHandle(final HttpServiceContext ctx,

@@ -15,10 +15,24 @@
  */
 package io.servicetalk.http.api;
 
+import static io.servicetalk.http.api.HttpExecutionStrategies.OFFLOAD_ALL_STRATEGY;
+import static io.servicetalk.http.api.HttpExecutionStrategies.OFFLOAD_RECEIVE_DATA_AND_SEND_STRATEGY;
+import static io.servicetalk.http.api.HttpExecutionStrategies.OFFLOAD_RECEIVE_DATA_STRATEGY;
+import static io.servicetalk.http.api.HttpExecutionStrategies.OFFLOAD_RECEIVE_META_STRATEGY;
+
 /**
  * Conversion routines to {@link StreamingHttpService}.
  */
 public final class HttpApiConversions {
+
+    /**
+     * For aggregation, we invoke the service after the payload is completed, hence we need to offload data.
+     */
+    static final HttpExecutionStrategy DEFAULT_SERVICE_STRATEGY = OFFLOAD_RECEIVE_DATA_AND_SEND_STRATEGY;
+    static final HttpExecutionStrategy DEFAULT_STREAMING_SERVICE_STRATEGY = OFFLOAD_ALL_STRATEGY;
+    static final HttpExecutionStrategy DEFAULT_BLOCKING_SERVICE_STRATEGY = OFFLOAD_RECEIVE_DATA_STRATEGY;
+    static final HttpExecutionStrategy DEFAULT_BLOCKING_STREAMING_SERVICE_STRATEGY = OFFLOAD_RECEIVE_META_STRATEGY;
+
     private HttpApiConversions() {
         // no instances
     }
@@ -30,7 +44,7 @@ public final class HttpApiConversions {
      * @return The conversion result.
      */
     public static StreamingHttpService toStreamingHttpService(HttpService service) {
-        return new HttpServiceToStreamingHttpService(service);
+        return new ServiceToStreamingService(service);
     }
 
     /**
@@ -40,7 +54,7 @@ public final class HttpApiConversions {
      * @return The conversion result.
      */
     public static StreamingHttpService toStreamingHttpService(BlockingStreamingHttpService handler) {
-        return new BlockingStreamingHttpServiceToStreamingHttpService(handler);
+        return new BlockingStreamingToStreamingService(handler);
     }
 
     /**
@@ -50,6 +64,6 @@ public final class HttpApiConversions {
      * @return The conversion result.
      */
     public static StreamingHttpService toStreamingHttpService(BlockingHttpService handler) {
-        return new BlockingHttpServiceToStreamingHttpService(handler);
+        return new BlockingToStreamingService(handler);
     }
 }

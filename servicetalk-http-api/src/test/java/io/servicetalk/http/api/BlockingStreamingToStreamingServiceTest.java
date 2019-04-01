@@ -71,7 +71,7 @@ import static org.junit.Assert.fail;
 import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
-public class BlockingStreamingHttpServiceToStreamingHttpServiceTest {
+public class BlockingStreamingToStreamingServiceTest {
 
     private static final String X_TOTAL_LENGTH = "x-total-length";
     private static final String HELLO_WORLD = "Hello\nWorld\n";

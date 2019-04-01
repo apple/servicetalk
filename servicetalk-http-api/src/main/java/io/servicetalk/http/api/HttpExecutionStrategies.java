@@ -37,10 +37,12 @@ public final class HttpExecutionStrategies {
     static final HttpExecutionStrategy OFFLOAD_NONE_STRATEGY = customStrategyBuilder().mergeStrategy(Merge).build();
     static final HttpExecutionStrategy OFFLOAD_RECEIVE_META_STRATEGY =
             customStrategyBuilder().offloadReceiveMetadata().mergeStrategy(Merge).build();
+    static final HttpExecutionStrategy OFFLOAD_RECEIVE_DATA_STRATEGY =
+            customStrategyBuilder().offloadReceiveData().mergeStrategy(Merge).build();
+    static final HttpExecutionStrategy OFFLOAD_RECEIVE_DATA_AND_SEND_STRATEGY =
+            customStrategyBuilder().offloadReceiveData().offloadSend().mergeStrategy(Merge).build();
     static final HttpExecutionStrategy OFFLOAD_ALL_STRATEGY = customStrategyBuilder().offloadAll()
             .mergeStrategy(Merge).build();
-    static final HttpExecutionStrategy OFFLOAD_RECEIVE_META_AND_SEND_STRATEGY =
-            customStrategyBuilder().offloadReceiveMetadata().offloadSend().mergeStrategy(Merge).build();
     static final HttpExecutionStrategy OFFLOAD_SEND_STRATEGY = customStrategyBuilder().offloadSend()
             .mergeStrategy(Merge).build();
 

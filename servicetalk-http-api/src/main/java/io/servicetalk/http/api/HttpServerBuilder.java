@@ -44,6 +44,7 @@ public abstract class HttpServerBuilder {
     private ConnectionAcceptorFactory connectionAcceptorFactory;
     @Nullable
     private StreamingHttpServiceFilterFactory serviceFilter;
+    private HttpExecutionStrategy executionStrategy = defaultStrategy();
     private boolean drainRequestPayloadBody = true;
 
     /**
@@ -290,6 +291,17 @@ public abstract class HttpServerBuilder {
     public abstract HttpServerBuilder bufferAllocator(BufferAllocator allocator);
 
     /**
+     * Sets the {@link HttpExecutionStrategy} to be used by this server.
+     *
+     * @param strategy {@link HttpExecutionStrategy} to use by this server.
+     * @return {@code this}.
+     */
+    public final HttpServerBuilder executionStrategy(HttpExecutionStrategy strategy) {
+        this.executionStrategy = strategy;
+        return this;
+    }
+
+    /**
      * Starts this server and returns the {@link ServerContext} after the server has been successfully started.
      * <p>
      * If the underlying protocol (eg. TCP) supports it this will result in a socket bind/listen on {@code address}.
@@ -428,7 +440,13 @@ public abstract class HttpServerBuilder {
         ConnectionAcceptor connectionAcceptor = connectionAcceptorFactory == null ? null :
                 connectionAcceptorFactory.create(ACCEPT_ALL);
         StreamingHttpService filteredService = serviceFilter != null ? serviceFilter.create(rawService) : rawService;
+        // Evaluate strategy from the filter chain.
+        HttpExecutionStrategy strategyFromFilters = filteredService.computeExecutionStrategy(defaultStrategy());
         return doListen(connectionAcceptor, filteredService,
-                filteredService.computeExecutionStrategy(defaultStrategy()), drainRequestPayloadBody);
+                // For a server, end of the filter chain does not contain the execution strategy as it is done by the
+                // client, so we merge the user specified strategy with the one computed from the filters. On the
+                // client, this is done by the transport.
+                executionStrategy.merge(strategyFromFilters),
+                drainRequestPayloadBody);
     }
 }

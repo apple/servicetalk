@@ -16,22 +16,14 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.buffer.api.Buffer;
-import io.servicetalk.concurrent.api.AsyncCloseables;
 import io.servicetalk.concurrent.api.DefaultThreadFactory;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.BlockingHttpClient;
-import io.servicetalk.http.api.BlockingHttpService;
-import io.servicetalk.http.api.BlockingStreamingHttpRequest;
-import io.servicetalk.http.api.BlockingStreamingHttpServerResponse;
-import io.servicetalk.http.api.BlockingStreamingHttpService;
 import io.servicetalk.http.api.HttpExecutionStrategy;
-import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpResponse;
-import io.servicetalk.http.api.HttpResponseFactory;
 import io.servicetalk.http.api.HttpServerBuilder;
-import io.servicetalk.http.api.HttpService;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
@@ -55,11 +47,11 @@ import java.util.Collection;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
 import static io.servicetalk.concurrent.api.Single.succeeded;
@@ -67,12 +59,17 @@ import static io.servicetalk.concurrent.internal.PlatformDependent.throwExceptio
 import static io.servicetalk.http.api.HttpExecutionStrategies.customStrategyBuilder;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
+import static io.servicetalk.http.netty.InvokingThreadsRecorder.IO_EXECUTOR_NAME_PREFIX;
 import static io.servicetalk.http.netty.InvokingThreadsRecorder.noStrategy;
 import static io.servicetalk.http.netty.InvokingThreadsRecorder.userStrategy;
 import static io.servicetalk.http.netty.InvokingThreadsRecorder.userStrategyNoVerify;
 import static java.util.Arrays.asList;
 import static java.util.Objects.requireNonNull;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.either;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assume.assumeThat;
 
 @RunWith(Parameterized.class)
@@ -345,16 +342,16 @@ public class ServerEffectiveStrategyTest {
         }
 
         void defaultOffloadPoints() {
-            addOffloadedPointFor(ServiceType.Blocking, ServerOffloadPoint.ServiceHandle);
-            addNonOffloadedPointFor(ServiceType.Blocking, ServerOffloadPoint.RequestPayload,
+            addOffloadedPointFor(ServiceType.Blocking, ServerOffloadPoint.ServiceHandle,
+                    ServerOffloadPoint.RequestPayload);
+            addNonOffloadedPointFor(ServiceType.Blocking, ServerOffloadPoint.Response);
+
+            addOffloadedPointFor(ServiceType.BlockingStreaming, ServerOffloadPoint.ServiceHandle);
+            addNonOffloadedPointFor(ServiceType.BlockingStreaming, ServerOffloadPoint.RequestPayload,
                     ServerOffloadPoint.Response);
 
-            addOffloadedPointFor(ServiceType.BlockingStreaming, ServerOffloadPoint.ServiceHandle,
-             ServerOffloadPoint.Response);
-            addNonOffloadedPointFor(ServiceType.BlockingStreaming, ServerOffloadPoint.RequestPayload);
-
-            addOffloadedPointFor(ServiceType.Async, ServerOffloadPoint.ServiceHandle, ServerOffloadPoint.Response);
-            addNonOffloadedPointFor(ServiceType.Async, ServerOffloadPoint.RequestPayload);
+            addOffloadedPointFor(ServiceType.Async, ServerOffloadPoint.ServiceHandle, ServerOffloadPoint.Response,
+                    ServerOffloadPoint.RequestPayload);
 
             addOffloadedPointFor(ServiceType.AsyncStreaming, ServerOffloadPoint.ServiceHandle,
                     ServerOffloadPoint.Response, ServerOffloadPoint.RequestPayload);
@@ -411,132 +408,73 @@ public class ServerEffectiveStrategyTest {
         BlockingHttpClient startBlocking() {
             assert invokingThreadsRecorder != null;
             final HttpExecutionStrategy strategy = invokingThreadsRecorder.executionStrategy();
-            if (strategy == null) {
-                initState(builder -> builder.listenBlocking(this::blockingHandler));
-            } else {
-                initState(builder -> builder.listenBlocking(new BlockingHttpService() {
-                    @Override
-                    public HttpResponse handle(final HttpServiceContext ctx, final HttpRequest request,
-                                               final HttpResponseFactory factory) throws Exception {
-                        return blockingHandler(ctx, request, factory);
-                    }
-
-                    @Override
-                    public HttpExecutionStrategy computeExecutionStrategy(HttpExecutionStrategy other) {
-                        return strategy.merge(other);
-                    }
-                }));
-            }
+            initState(builder -> {
+                if (strategy != null) {
+                    builder.executionStrategy(strategy);
+                }
+                return builder.listenBlocking((ctx, request, factory) -> {
+                    invokingThreadsRecorder.recordThread(ServerOffloadPoint.ServiceHandle);
+                    return factory.ok().payloadBody(request.payloadBody());
+                });
+            });
             return invokingThreadsRecorder.client().asBlockingClient();
-        }
-
-        private HttpResponse blockingHandler(@SuppressWarnings("unused") final HttpServiceContext ctx,
-                                             final HttpRequest request,
-                                             final HttpResponseFactory factory)
-                throws InterruptedException, ExecutionException {
-            HttpResponse response = factory.ok().payloadBody(request.payloadBody());
-            return noOffloadsStrategy ? response : serviceExecutor.submit(() -> response).toFuture().get();
         }
 
         BlockingHttpClient startBlockingStreaming() {
             assert invokingThreadsRecorder != null;
             final HttpExecutionStrategy strategy = invokingThreadsRecorder.executionStrategy();
-            if (strategy == null) {
-                initState(builder -> builder.listenBlockingStreaming(this::blockingStreamingHandler));
-            } else {
-                initState(builder -> builder.listenBlockingStreaming(new BlockingStreamingHttpService() {
-                    @Override
-                    public void handle(final HttpServiceContext ctx, final BlockingStreamingHttpRequest request,
-                                       final BlockingStreamingHttpServerResponse response) throws Exception {
-                        blockingStreamingHandler(ctx, request, response);
-                    }
-
-                    @Override
-                    public HttpExecutionStrategy computeExecutionStrategy(HttpExecutionStrategy other) {
-                        return strategy.merge(other);
-                    }
-                }));
-            }
-            return invokingThreadsRecorder.client().asBlockingClient();
-        }
-
-        private void blockingStreamingHandler(@SuppressWarnings("unused") final HttpServiceContext ctx,
-                                              final BlockingStreamingHttpRequest request,
-                final BlockingStreamingHttpServerResponse response)
-                throws InterruptedException, ExecutionException {
-            // noOffloads is not valid for blocking streaming, so no conditional here
-            serviceExecutor.submit(() -> {
-                try (PayloadWriter<Buffer> payloadWriter = response.sendMetaData()) {
-                    request.payloadBody().forEach(buffer -> {
-                        try {
-                            payloadWriter.write(buffer);
-                        } catch (IOException e) {
-                            throwException(e);
-                        }
-                    });
-                } catch (IOException e) {
-                    throwException(e);
+            initState(builder -> {
+                if (strategy != null) {
+                    builder.executionStrategy(strategy);
                 }
-            }).toFuture().get();
+                return builder.listenBlockingStreaming((ctx, request, response) -> {
+                    invokingThreadsRecorder.recordThread(ServerOffloadPoint.ServiceHandle);
+                    try (PayloadWriter<Buffer> payloadWriter = response.sendMetaData()) {
+                        request.payloadBody().forEach(buffer -> {
+                            try {
+                                payloadWriter.write(buffer);
+                            } catch (IOException e) {
+                                throwException(e);
+                            }
+                        });
+                    } catch (IOException e) {
+                        throwException(e);
+                    }
+                });
+            });
+            return invokingThreadsRecorder.client().asBlockingClient();
         }
 
         BlockingHttpClient startAsync() {
             assert invokingThreadsRecorder != null;
             final HttpExecutionStrategy strategy = invokingThreadsRecorder.executionStrategy();
-            if (strategy == null) {
-                initState(builder -> builder.listen(this::asyncHandler));
-            } else {
-                initState(builder -> builder.listen(new HttpService() {
-                    @Override
-                    public Single<HttpResponse> handle(final HttpServiceContext ctx, final HttpRequest request,
-                                                       final HttpResponseFactory factory) {
-                        return asyncHandler(ctx, request, factory);
-                    }
-
-                    @Override
-                    public HttpExecutionStrategy computeExecutionStrategy(HttpExecutionStrategy other) {
-                        return strategy.merge(other);
-                    }
-                }));
-            }
+            initState(builder -> {
+                if (strategy != null) {
+                    builder.executionStrategy(strategy);
+                }
+                return builder.listen((ctx, request, factory) -> {
+                    invokingThreadsRecorder.recordThread(ServerOffloadPoint.ServiceHandle);
+                    HttpResponse response = factory.ok().payloadBody(request.payloadBody());
+                    return succeeded(response);
+                });
+            });
             return invokingThreadsRecorder.client().asBlockingClient();
-        }
-
-        private Single<HttpResponse> asyncHandler(@SuppressWarnings("unused") final HttpServiceContext ctx,
-                                                  final HttpRequest request,
-                                                  final HttpResponseFactory factory) {
-            HttpResponse response = factory.ok().payloadBody(request.payloadBody());
-            return noOffloadsStrategy ? succeeded(response) : serviceExecutor.submit(() -> response);
         }
 
         BlockingHttpClient startAsyncStreaming() {
             assert invokingThreadsRecorder != null;
             final HttpExecutionStrategy strategy = invokingThreadsRecorder.executionStrategy();
-            if (strategy == null) {
-                initState(builder -> builder.listenStreaming(this::asyncStreamingHandler));
-            } else {
-                initState(builder -> builder.listenStreaming(new StreamingHttpService() {
-                    @Override
-                    public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
-                                                                final StreamingHttpRequest request,
-                                                                final StreamingHttpResponseFactory factory) {
-                        return asyncStreamingHandler(ctx, request, factory);
-                    }
-
-                    @Override
-                    public HttpExecutionStrategy computeExecutionStrategy(HttpExecutionStrategy other) {
-                        return strategy.merge(other);
-                    }
-                }));
-            }
+            initState(builder -> {
+                if (strategy != null) {
+                    builder.executionStrategy(strategy);
+                }
+                return builder.listenStreaming((ctx, request, factory) -> {
+                    invokingThreadsRecorder.recordThread(ServerOffloadPoint.ServiceHandle);
+                    StreamingHttpResponse response = factory.ok().payloadBody(request.payloadBody());
+                    return succeeded(response);
+                });
+            });
             return invokingThreadsRecorder.client().asBlockingClient();
-        }
-
-        private Single<StreamingHttpResponse> asyncStreamingHandler(
-                @SuppressWarnings("unused") final HttpServiceContext ctx, final StreamingHttpRequest request,
-                final StreamingHttpResponseFactory factory) {
-            StreamingHttpResponse response = factory.ok().payloadBody(request.payloadBody());
-            return noOffloadsStrategy ? succeeded(response) : serviceExecutor.submit(() -> response);
         }
 
         Executor executor() {
@@ -550,14 +488,27 @@ public class ServerEffectiveStrategyTest {
             }
             invokingThreadsRecorder.verifyOffloadCount();
             for (ServerOffloadPoint offloadPoint : offloadPoints.get(serviceType)) {
-                if (executorUsedForStrategy && offloadPoint != ServerOffloadPoint.Response) {
+                if (executorUsedForStrategy) {
                     invokingThreadsRecorder.assertOffload(offloadPoint, USER_STRATEGY_EXECUTOR_NAME_PREFIX);
                 } else {
                     invokingThreadsRecorder.assertOffload(offloadPoint);
                 }
             }
             for (ServerOffloadPoint offloadPoint : nonOffloadPoints.get(serviceType)) {
-                invokingThreadsRecorder.assertNoOffload(offloadPoint);
+                if (offloadPoint == ServerOffloadPoint.Response) {
+                    if (offloadPoints.get(serviceType).contains(ServerOffloadPoint.ServiceHandle)) {
+                        Thread serviceInvoker =
+                                invokingThreadsRecorder.invokingThread(ServerOffloadPoint.ServiceHandle);
+                        Thread responseInvoker = invokingThreadsRecorder.invokingThread(ServerOffloadPoint.Response);
+                        // If service#handle is offloaded, and response is not then response may be requested
+                        // synchronously from service#handle
+                        assertThat("Unexpected thread for response (not-offloaded)",
+                                responseInvoker.getName(), either(equalTo(serviceInvoker.getName()))
+                                        .or(startsWith(IO_EXECUTOR_NAME_PREFIX)));
+                    }
+                } else {
+                    invokingThreadsRecorder.assertNoOffload(offloadPoint);
+                }
             }
         }
 
@@ -566,7 +517,7 @@ public class ServerEffectiveStrategyTest {
             try {
                 invokingThreadsRecorder.dispose();
             } finally {
-                AsyncCloseables.newCompositeCloseable().appendAll(executor, serviceExecutor).close();
+                newCompositeCloseable().appendAll(executor, serviceExecutor).close();
             }
         }
 
@@ -599,7 +550,6 @@ public class ServerEffectiveStrategyTest {
         public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
                                                     final StreamingHttpRequest request,
                                                     final StreamingHttpResponseFactory responseFactory) {
-            recorder.recordThread(ServerOffloadPoint.ServiceHandle);
             return delegate().handle(ctx, request.transformPayloadBody(publisher ->
                     publisher.doBeforeOnNext(__ -> recorder.recordThread(ServerOffloadPoint.RequestPayload))),
                     responseFactory)
@@ -608,8 +558,8 @@ public class ServerEffectiveStrategyTest {
         }
 
         @Override
-        protected HttpExecutionStrategy executionStrategy() {
-            return defaultStrategy();
+        public HttpExecutionStrategy computeExecutionStrategy(final HttpExecutionStrategy other) {
+            return delegate().computeExecutionStrategy(defaultStrategy().merge(other));
         }
     }
 

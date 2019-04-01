@@ -15,7 +15,7 @@
  */
 package io.servicetalk.http.api;
 
-import static io.servicetalk.http.api.HttpExecutionStrategies.OFFLOAD_RECEIVE_META_AND_SEND_STRATEGY;
+import static io.servicetalk.http.api.HttpApiConversions.DEFAULT_BLOCKING_STREAMING_SERVICE_STRATEGY;
 
 /**
  * The equivalent of {@link StreamingHttpService} but with synchronous/blocking APIs instead of asynchronous APIs.
@@ -47,6 +47,6 @@ public interface BlockingStreamingHttpService extends AutoCloseable {
      * @return The {@link HttpExecutionStrategy} for this {@link BlockingStreamingHttpService}.
      */
     default HttpExecutionStrategy computeExecutionStrategy(HttpExecutionStrategy other) {
-        return other.merge(OFFLOAD_RECEIVE_META_AND_SEND_STRATEGY);
+        return other.merge(DEFAULT_BLOCKING_STREAMING_SERVICE_STRATEGY);
     }
 }

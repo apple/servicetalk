@@ -19,7 +19,7 @@ import io.servicetalk.concurrent.api.AsyncCloseable;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 
-import static io.servicetalk.http.api.HttpExecutionStrategies.OFFLOAD_RECEIVE_META_AND_SEND_STRATEGY;
+import static io.servicetalk.http.api.HttpApiConversions.DEFAULT_SERVICE_STRATEGY;
 
 /**
  * Same as {@link StreamingHttpService} but that accepts {@link HttpRequest} and returns {@link HttpResponse}.
@@ -55,6 +55,6 @@ public interface HttpService extends AsyncCloseable {
      * @return The {@link HttpExecutionStrategy} for this {@link BlockingStreamingHttpService}.
      */
     default HttpExecutionStrategy computeExecutionStrategy(HttpExecutionStrategy other) {
-        return other.merge(OFFLOAD_RECEIVE_META_AND_SEND_STRATEGY);
+        return other.merge(DEFAULT_SERVICE_STRATEGY);
     }
 }

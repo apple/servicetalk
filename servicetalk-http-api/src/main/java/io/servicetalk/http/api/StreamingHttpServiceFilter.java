@@ -17,9 +17,8 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.transport.api.ExecutionStrategy;
 
-import static io.servicetalk.http.api.HttpExecutionStrategies.OFFLOAD_ALL_STRATEGY;
+import static io.servicetalk.http.api.HttpApiConversions.DEFAULT_STREAMING_SERVICE_STRATEGY;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -47,7 +46,7 @@ public class StreamingHttpServiceFilter implements StreamingHttpService {
 
     @Override
     public HttpExecutionStrategy computeExecutionStrategy(HttpExecutionStrategy other) {
-        return delegate.computeExecutionStrategy(executionStrategy().merge(other));
+        return delegate.computeExecutionStrategy(DEFAULT_STREAMING_SERVICE_STRATEGY.merge(other));
     }
 
     @Override
@@ -67,17 +66,5 @@ public class StreamingHttpServiceFilter implements StreamingHttpService {
      */
     protected final StreamingHttpService delegate() {
         return delegate;
-    }
-
-    /**
-     * The {@link ExecutionStrategy} considering the programming constraints of this {@link StreamingHttpServiceFilter}
-     * in isolation. This strategy should be the "least common denominator" for example if any blocking is done this
-     * method should reflect that.
-     *
-     * @return The {@link ExecutionStrategy} considering the programming constraints of this
-     * {@link StreamingHttpServiceFilter} in isolation.
-     */
-    protected HttpExecutionStrategy executionStrategy() {
-        return OFFLOAD_ALL_STRATEGY;
     }
 }

@@ -18,13 +18,13 @@ package io.servicetalk.http.api;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 
-import static io.servicetalk.http.api.HttpExecutionStrategies.OFFLOAD_RECEIVE_META_AND_SEND_STRATEGY;
+import static io.servicetalk.http.api.HttpApiConversions.DEFAULT_SERVICE_STRATEGY;
 import static java.util.Objects.requireNonNull;
 
-final class HttpServiceToStreamingHttpService implements StreamingHttpService {
+final class ServiceToStreamingService implements StreamingHttpService {
     private final HttpService aggregatedService;
 
-    HttpServiceToStreamingHttpService(final HttpService aggregatedService) {
+    ServiceToStreamingService(final HttpService aggregatedService) {
         this.aggregatedService = requireNonNull(aggregatedService);
     }
 
@@ -51,6 +51,6 @@ final class HttpServiceToStreamingHttpService implements StreamingHttpService {
         // Since we are converting to a different programming model, try altering the strategy for the returned service
         // to contain an appropriate default. We achieve this by merging the expected strategy with the provided
         // service strategy.
-        return aggregatedService.computeExecutionStrategy(other.merge(OFFLOAD_RECEIVE_META_AND_SEND_STRATEGY));
+        return aggregatedService.computeExecutionStrategy(other.merge(DEFAULT_SERVICE_STRATEGY));
     }
 }

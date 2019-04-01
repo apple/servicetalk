@@ -20,13 +20,13 @@ import io.servicetalk.concurrent.api.Single;
 
 import static io.servicetalk.http.api.BlockingUtils.blockingToCompletable;
 import static io.servicetalk.http.api.BlockingUtils.blockingToSingle;
-import static io.servicetalk.http.api.HttpExecutionStrategies.OFFLOAD_RECEIVE_META_STRATEGY;
+import static io.servicetalk.http.api.HttpApiConversions.DEFAULT_BLOCKING_SERVICE_STRATEGY;
 import static java.util.Objects.requireNonNull;
 
-final class BlockingHttpServiceToStreamingHttpService implements StreamingHttpService {
+final class BlockingToStreamingService implements StreamingHttpService {
     private final BlockingHttpService service;
 
-    BlockingHttpServiceToStreamingHttpService(final BlockingHttpService service) {
+    BlockingToStreamingService(final BlockingHttpService service) {
         this.service = requireNonNull(service);
     }
 
@@ -48,6 +48,6 @@ final class BlockingHttpServiceToStreamingHttpService implements StreamingHttpSe
         // Since we are converting to a different programming model, try altering the strategy for the returned service
         // to contain an appropriate default. We achieve this by merging the expected strategy with the provided
         // service strategy.
-        return service.computeExecutionStrategy(other.merge(OFFLOAD_RECEIVE_META_STRATEGY));
+        return service.computeExecutionStrategy(other.merge(DEFAULT_BLOCKING_SERVICE_STRATEGY));
     }
 }
