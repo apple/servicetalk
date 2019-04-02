@@ -17,6 +17,7 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpExecutionStrategy;
+import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.transport.api.ExecutionContext;
@@ -37,7 +38,7 @@ final class PipelinedLBHttpConnectionFactory<ResolvedAddress> extends AbstractLB
     }
 
     @Override
-    public Single<LoadBalancedStreamingHttpConnection> newConnection(final ResolvedAddress resolvedAddress) {
+    public Single<StreamingHttpConnection> newConnection(final ResolvedAddress resolvedAddress) {
         return buildForPipelined(executionContext, resolvedAddress, config, connectionFilterFunction, reqRespFactory,
                 defaultStrategy).map(filteredConnection -> new LoadBalancedStreamingHttpConnection(filteredConnection,
                         newController(filteredConnection.settingStream(MAX_CONCURRENCY),

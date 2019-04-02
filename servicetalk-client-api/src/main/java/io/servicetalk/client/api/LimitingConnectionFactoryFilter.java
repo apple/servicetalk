@@ -76,8 +76,7 @@ public final class LimitingConnectionFactoryFilter<ResolvedAddress, C extends Li
     }
 
     @Override
-    public ConnectionFactory<ResolvedAddress, ? extends C> create(
-            final ConnectionFactory<ResolvedAddress, ? extends C> original) {
+    public ConnectionFactory<ResolvedAddress, C> create(final ConnectionFactory<ResolvedAddress, C> original) {
         return new LimitingFilter<>(original, limiter);
     }
 

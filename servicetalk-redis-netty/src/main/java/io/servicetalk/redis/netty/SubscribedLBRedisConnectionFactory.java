@@ -16,6 +16,7 @@
 package io.servicetalk.redis.netty;
 
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.redis.api.RedisConnection;
 import io.servicetalk.redis.api.RedisConnectionFilterFactory;
 import io.servicetalk.transport.api.ExecutionContext;
 
@@ -36,7 +37,7 @@ final class SubscribedLBRedisConnectionFactory<ResolvedAddress> extends
     }
 
     @Override
-    Single<LoadBalancedRedisConnection> newConnection(final ResolvedAddress resolvedAddress,
+    Single<RedisConnection> newConnection(final ResolvedAddress resolvedAddress,
                                           final RedisConnectionFilterFactory connectionFilterFactory) {
         return buildForSubscribe(executionContext, resolvedAddress, config, connectionFilterFactory)
                 .map(filteredConnection -> new LoadBalancedRedisConnection(filteredConnection,
