@@ -51,7 +51,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
  * </pre>
  * <p>
  * This decoder can also decode the content of an HTTP POST request whose
- * content type is <tt>application/x-www-form-urlencoded</tt>:
+ * content type is <code>application/x-www-form-urlencoded</code>:
  * <pre>
  * {@link QueryStringDecoder} decoder = new {@link QueryStringDecoder}("recipient=world&x=1;y=2", false);
  * ...

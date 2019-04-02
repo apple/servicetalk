@@ -18,10 +18,16 @@ version: "3"
 
 services:
 
-  java:
-    image: java:latest
+  java8:
+    image: java8:latest
     build:
-      context: .
+      context: ./jdk8
+      dockerfile: Dockerfile
+
+  java11:
+    image: java11:latest
+    build:
+      context: ./jdk11
       dockerfile: Dockerfile
 
   redis-2:
@@ -40,8 +46,8 @@ services:
     command: bash -c "redis-server --port 6379 & redis-server --port 6378 --requirepass password"
 
   test-redis-2:
-    depends_on: [java, redis-2]
-    image: java:latest
+    depends_on: [java8, redis-2]
+    image: java8:latest
     environment:
       - CI
       - REDIS_HOST=redis-2
@@ -56,8 +62,8 @@ services:
     networks: [test-net]
 
   test-redis-3:
-    depends_on: [java, redis-3]
-    image: java:latest
+    depends_on: [java8, redis-3]
+    image: java8:latest
     environment:
       - CI
       - REDIS_HOST=redis-3
@@ -72,8 +78,8 @@ services:
     networks: [test-net]
 
   pull-request-build:
-    depends_on: [java, redis-4]
-    image: java:latest
+    depends_on: [java8, redis-4]
+    image: java8:latest
     environment:
       - CI
       - REDIS_HOST=redis-4
@@ -87,9 +93,25 @@ services:
     working_dir: /code
     networks: [test-net]
 
-  publish-snapshot:
-    depends_on: [java, redis-4]
-    image: java:latest
+  pull-request-build-jdk11:
+    depends_on: [java11, redis-4]
+    image: java11:latest
+    environment:
+    - CI
+    - REDIS_HOST=redis-4
+    - REDIS_PORT=6379
+    - REDIS_AUTH_PORT=6378
+    command: bash -cl "./gradlew clean build"
+    volumes:
+    - ~/.ssh:/root/.ssh
+    - ~/.gradle${EXECUTOR_NUMBER}:/root/.gradle
+    - ..:/code
+    working_dir: /code
+    networks: [test-net]
+
+  test-snapshot:
+    depends_on: [java8, redis-4]
+    image: java8:latest
     environment:
       - CI
       - REDIS_HOST=redis-4
@@ -97,7 +119,7 @@ services:
       - REDIS_AUTH_PORT=6378
       - BINTRAY_USER
       - BINTRAY_KEY
-    command: bash -cl "./gradlew clean check && ./gradlew bintrayUpload"
+    command: bash -cl "./gradlew clean check"
     volumes:
       - ~/.ssh:/root/.ssh
       - ~/.gradle${EXECUTOR_NUMBER}:/root/.gradle
@@ -105,9 +127,27 @@ services:
     working_dir: /code
     networks: [test-net]
 
+  publish-snapshot:
+    depends_on: [java8, redis-4]
+    image: java8:latest
+    environment:
+    - CI
+    - REDIS_HOST=redis-4
+    - REDIS_PORT=6379
+    - REDIS_AUTH_PORT=6378
+    - BINTRAY_USER
+    - BINTRAY_KEY
+    command: bash -cl "./gradlew clean check && ./gradlew bintrayUpload"
+    volumes:
+    - ~/.ssh:/root/.ssh
+    - ~/.gradle${EXECUTOR_NUMBER}:/root/.gradle
+    - ..:/code
+    working_dir: /code
+    networks: [test-net]
+
   publish-release:
-    depends_on: [java, redis-4]
-    image: java:latest
+    depends_on: [java8, redis-4]
+    image: java8:latest
     environment:
       - CI
       - REDIS_HOST=redis-4

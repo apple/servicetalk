@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -51,6 +51,13 @@ dependencyManagement {
     dependency "org.reactivestreams:reactive-streams:$reactiveStreamsVersion"
     dependency "org.slf4j:slf4j-api:$slf4jVersion"
     dependency "io.opentracing:opentracing-api:$openTracingVersion"
+
+    // Java 11 removals
+    dependency "com.sun.activation:javax.activation:$javaxActivationVersion"
+    dependency "com.sun.xml.bind:jaxb-core:$javaxJaxbCoreVersion"
+    dependency "com.sun.xml.bind:jaxb-impl:$javaxJaxbImplVersion"
+    dependency "javax.annotation:javax.annotation-api:$javaxAnnotationsApiVersion"
+    dependency "javax.xml.bind:jaxb-api:$javaxJaxbApiVersion"
 
     // Testing
     dependency "junit:junit:$junitVersion"
