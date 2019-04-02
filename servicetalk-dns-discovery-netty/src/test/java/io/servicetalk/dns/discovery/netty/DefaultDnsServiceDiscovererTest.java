@@ -166,6 +166,27 @@ public class DefaultDnsServiceDiscovererTest {
     }
 
     @Test
+    public void singleDiscoverDuplicateRecords() throws InterruptedException {
+        final String ip = nextIp();
+        recordStore.addResponse("apple.com", A, nextIp(), ip, ip, nextIp());
+
+        final int expectedActiveCount = 3;
+        final int expectedInactiveCount = 0;
+
+        CountDownLatch latch = new CountDownLatch(expectedActiveCount + expectedInactiveCount);
+        AtomicReference<Throwable> throwableRef = new AtomicReference<>();
+        Publisher<ServiceDiscovererEvent<InetAddress>> publisher = discoverer.discover("apple.com");
+        ServiceDiscovererTestSubscriber<InetAddress> subscriber =
+                new ServiceDiscovererTestSubscriber<>(latch, throwableRef, expectedActiveCount);
+        toSource(publisher).subscribe(subscriber);
+
+        latch.await();
+        assertNull(throwableRef.get());
+        assertThat(subscriber.activeCount(), equalTo(expectedActiveCount));
+        assertThat(subscriber.inactiveCount(), equalTo(expectedInactiveCount));
+    }
+
+    @Test
     public void repeatDiscoverMultipleRecords() throws Exception {
         recordStore.addResponse("apple.com", A, nextIp(), nextIp(), nextIp(), nextIp(), nextIp())
                 .defaultResponse("apple.com", A, nextIp(), nextIp(), nextIp(), nextIp(), nextIp());
