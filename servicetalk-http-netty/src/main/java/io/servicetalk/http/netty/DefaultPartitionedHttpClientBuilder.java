@@ -39,7 +39,7 @@ import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpRequestMethod;
-import io.servicetalk.http.api.PartitionHttpClientBuilderFilterFunction;
+import io.servicetalk.http.api.PartitionHttpClientBuilderConfigurator;
 import io.servicetalk.http.api.PartitionedHttpClientBuilder;
 import io.servicetalk.http.api.ReservedStreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpClient;
@@ -72,7 +72,7 @@ class DefaultPartitionedHttpClientBuilder<U, R> extends PartitionedHttpClientBui
 
     private final Function<HttpRequestMetaData, PartitionAttributesBuilder> partitionAttributesBuilderFactory;
     private final DefaultSingleAddressHttpClientBuilder<U, R> builderTemplate;
-    private PartitionHttpClientBuilderFilterFunction<U, R> clientFilterFunction = (__, ___) -> { };
+    private PartitionHttpClientBuilderConfigurator<U, R> clientFilterFunction = (__, ___) -> { };
     private PartitionMapFactory partitionMapFactory = PowerSetPartitionMapFactory.INSTANCE;
     private int serviceDiscoveryMaxQueueSize = 32;
 
@@ -92,7 +92,7 @@ class DefaultPartitionedHttpClientBuilder<U, R> extends PartitionedHttpClientBui
             // build new context, user may have changed anything on the builder from the filter
             DefaultSingleAddressHttpClientBuilder<U, R> builder = buildContext.builder.copyBuildCtx().builder;
             builder.serviceDiscoverer(sd);
-            clientFilterFunction.apply(pa, builder);
+            clientFilterFunction.configureForPartition(pa, builder);
             return builder.buildStreaming();
         };
 
@@ -389,7 +389,7 @@ class DefaultPartitionedHttpClientBuilder<U, R> extends PartitionedHttpClientBui
 
     @Override
     public PartitionedHttpClientBuilder<U, R> appendClientBuilderFilter(
-            final PartitionHttpClientBuilderFilterFunction<U, R> clientFilterFunction) {
+            final PartitionHttpClientBuilderConfigurator<U, R> clientFilterFunction) {
         this.clientFilterFunction = this.clientFilterFunction.append(clientFilterFunction);
         return this;
     }
