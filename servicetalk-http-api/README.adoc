@@ -76,14 +76,16 @@ link:src/main/java/io/servicetalk/http/api/StreamingHttpServiceFilterFactory.jav
 to your preferred programming paradigm and append it on the `HttpServerBuilder` via
 link:src/main/java/io/servicetalk/http/api/HttpServerBuilder.java[HttpServerBuilder#appendServiceFilter(..)].
 
-NOTE: Currently we only support `Filters` for the <<service-filter-async-streaming, Asynchronous and Streaming>>
-programming paradigm but plan to add support for the others soon.
+NOTE: Currently we only support writing `Filters` for the <<service-filter-async-streaming, Asynchronous and Streaming>>
+programming paradigm but plan to add support for the others soon. The
+<<service-filter-async-streaming, Asynchronous and Streaming>> can be used with a `Service` in any other programming
+paradigm.
 
 === Routers
 In practice it is common for a HTTP `Service` to handle many different types of request(s) that all have unique
 processing requirements. The control flow in ServiceTalk is represented by a "Router". A "Router" is a `Service` that
 owns the responsibility of multiplexing the control flow. ServiceTalk does not mandate a specific "Router"
-implementation but provides a few reference implementations for common use cases (e.g.
+implementation but provides a couple reference implementations for common use cases (e.g.
 link:../servicetalk-http-router-predicate[Predicate Router] and
 link:../servicetalk-http-router-jersey[JAX-RS via Jersey]). The general component diagram of a "Router" is as follows:
 
@@ -103,11 +105,12 @@ link:../servicetalk-http-router-jersey[JAX-RS via Jersey]). The general componen
 ----
 
 === Service Programming Paradigms
-HTTP Service supports all the variations described in <<../README#programming-Paradigms, Programming Paradigms>>.
+HTTP `Service` supports all the variations described in <<../README#programming-Paradigms, Programming Paradigms>>.
 
 ==== Blocking and Aggregated
-This programming paradigm exposes the request payload body as a single aggregated object, and the response payload body
-is also a single aggregated object. There are no asynchronous primitives involved.
+This programming paradigm exposes the request (including the payload body) as a single aggregated object, and the
+response (including the payload body) is also a single aggregated object. The `Service` directly returns the response
+object and there are no asynchronous primitives involved.
 
 See
 link:../servicetalk-examples/src/main/java/io/servicetalk/examples/http/helloworld/blocking/BlockingHelloWorldServer.java[BlockingHelloWorldServer].
@@ -184,8 +187,8 @@ A `Client` is generally responsible for managing multiple `Connections`. There a
 
 ==== SingleAddress Client
 This `Client` will connect to a single unresolved address, that is provided while creating the client. The unresolved
-address is resolved using a pluggable <<Service Discovery>> mechanism. This `Client` is for use cases where you want to
-issue requests to a single service (that may have multiple instances).
+address is resolved via an asynchronous DNS resolver (see <<Service Discovery>> for more details). This `Client` is for
+use cases where you want to issue requests to a single service (that may have multiple instances).
 
 ==== MultiAddress Client
 This `Client` parses the link:https://tools.ietf.org/html/rfc7230#section-5.3[request-target] to determine the remote
@@ -244,8 +247,10 @@ link:src/main/java/io/servicetalk/http/api/StreamingHttpClientFilterFactory.java
 your preferred programming paradigm and append it on the `HttpClientBuilder` via
 link:src/main/java/io/servicetalk/http/api/HttpClientBuilder.java[HttpClientBuilder#appendClientFilter(..)].
 
-NOTE: Currently we only support `Filters` for the <<client-filter-async-streaming, Asynchronous and Streaming>>
-programming paradigm but plan to add support for the others soon.
+NOTE: Currently we only support writing `Filters` for the <<client-filter-async-streaming, Asynchronous and Streaming>>
+programming paradigm but plan to add support for the others soon. The
+<<client-filter-async-streaming, Asynchronous and Streaming>> can be used with a `Client` in any other programming
+paradigm.
 
 === Connection Filters
 The `Client` doesn't have visibility into `Connection` specific information. For example, the `Connection` layer knows
@@ -304,8 +309,9 @@ background.
 HTTP Client supports all the variations described in <<../README#programming-Paradigms, Programming Paradigms>>.
 
 ==== Client Blocking and Aggregated
-This programming paradigm expects the request payload body as a single aggregated object, and the response payload body
-is also a single aggregated object. There are no asynchronous primitives involved.
+This programming paradigm expects the request (including the payload body) as a single aggregated object, and the
+response (including the payload body) is also a single aggregated object. The `Client` directly returns the response
+object and there are no asynchronous primitives involved.
 
 See
 link:../servicetalk-examples/src/main/java/io/servicetalk/examples/http/helloworld/blocking/BlockingHelloWorldClient.java[BlockingHelloWorldClient]
