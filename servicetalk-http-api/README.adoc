@@ -23,7 +23,7 @@ link:../servicetalk-examples/src/main/java/io/servicetalk/examples/http/hellowor
 ----
 HttpServers.forPort(8080)
   .listenBlockingAndAwait((ctx, request, responseFactory) ->
-    responseFactory.ok().payloadBody("Hello World!", HttpSerializationProviders.textSerializer()))
+    responseFactory.ok().payloadBody("Hello World!", textSerializer()))
   .awaitShutdown();
 ----
 
@@ -36,7 +36,7 @@ cross-cutting concerns such as authentication, authorization, logging, metrics, 
 == Server
 The server side is built around the concept of `Service`. A `Service` is where your business logic lives. ServiceTalk's
 HTTP module will interact with a single service which is provided by the user via `HttpServers`. The flow of data from
-the socket to the a HTTP `Service` is visualized as follows:
+the socket to the HTTP `Service` is visualized as follows:
 
 [ditaa]
 ----
@@ -106,7 +106,7 @@ link:../servicetalk-http-router-jersey[JAX-RS via Jersey]). The general componen
 HTTP Service supports all the variations described in <<../README#programming-Paradigms, Programming Paradigms>>.
 
 ==== Blocking and Aggregated
-This programming paradigm exposes the request payload body as single aggregated object, and the response payload body
+This programming paradigm exposes the request payload body as a single aggregated object, and the response payload body
 is also a single aggregated object. There are no asynchronous primitives involved.
 
 See
@@ -115,7 +115,7 @@ link:../servicetalk-examples/src/main/java/io/servicetalk/examples/http/hellowor
 ----
 HttpServers.forPort(8080)
   .listenBlockingAndAwait((ctx, request, responseFactory) ->
-    responseFactory.ok().payloadBody("Hello World!", HttpSerializationProviders.textSerializer()))
+    responseFactory.ok().payloadBody("Hello World!", textSerializer()))
   .awaitShutdown();
 ----
 
@@ -133,7 +133,7 @@ link:../servicetalk-examples/src/main/java/io/servicetalk/examples/http/hellowor
 [source, java]
 ----
 HttpServers.forPort(8080).listenBlockingStreamingAndAwait((ctx, request, response) -> {
-  try (HttpPayloadWriter<String> payloadWriter = response.sendMetaData(HttpSerializationProviders.textSerializer())) {
+  try (HttpPayloadWriter<String> payloadWriter = response.sendMetaData(textSerializer())) {
     payloadWriter.write("Hello\n");
     payloadWriter.write("World\n");
     payloadWriter.write("From\n");
@@ -143,7 +143,7 @@ HttpServers.forPort(8080).listenBlockingStreamingAndAwait((ctx, request, respons
 ----
 
 ==== Asynchronous and Aggregated
-This programming paradigm exposes the request payload body as single aggregated object, and the response payload body
+This programming paradigm exposes the request payload body as a single aggregated object, and the response payload body
 is also a single aggregated object. The `Service` provides the response by completing a
 link:../servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Single.java[Single] which is an
 asynchronous primitive.
@@ -154,8 +154,7 @@ link:../servicetalk-examples/src/main/java/io/servicetalk/examples/http/hellowor
 ----
 HttpServers.forPort(8080)
   .listenAndAwait((ctx, request, responseFactory) ->
-    succeeded(responseFactory.ok()
-      .payloadBody("Hello World!", HttpSerializationProviders.textSerializer())))
+    succeeded(responseFactory.ok().payloadBody("Hello World!", textSerializer())))
   .awaitShutdown();
 ----
 
@@ -164,7 +163,7 @@ HttpServers.forPort(8080)
 This programming paradigm exposes the request payload body as a
 link:../servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Publisher.java[Publisher] typically of
 link:../servicetalk-buffer-api/src/main/java/io/servicetalk/buffer/api/Buffer.java[Buffer]s (although other types like
-file regions maybe added), the response meta data is provided by completing a
+file regions may be added), the response meta-data is provided by completing a
 link:../servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Single.java[Single], and the response
 payload body is written via a
 link:../servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Publisher.java[Publisher].
@@ -176,7 +175,7 @@ link:../servicetalk-examples/src/main/java/io/servicetalk/examples/http/hellowor
 HttpServers.forPort(8080)
   .listenStreamingAndAwait((ctx, request, responseFactory) ->
     succeeded(responseFactory.ok()
-      .payloadBody(from("Hello\n", "World\n", "From\n", "ServiceTalk\n"), HttpSerializationProviders.textSerializer())))
+      .payloadBody(from("Hello\n", "World\n", "From\n", "ServiceTalk\n"), textSerializer())))
   .awaitShutdown();
 ----
 
@@ -249,7 +248,7 @@ NOTE: Currently we only support `Filters` for the <<client-filter-async-streamin
 programming paradigm but plan to add support for the others soon.
 
 === Connection Filters
-The `Client` doesn't have visibility into `Connection` specific information. For example the `Connection` layer knows
+The `Client` doesn't have visibility into `Connection` specific information. For example, the `Connection` layer knows
 about transport details such as connected remote address and other elements in the
 link:../servicetalk-transport-api/src/main/java/io/servicetalk/transport/api/ConnectionContext.java[ConnectionContext].
 If you have use cases that require this information in the request/response control flow you can use a
@@ -305,7 +304,7 @@ background.
 HTTP Client supports all the variations described in <<../README#programming-Paradigms, Programming Paradigms>>.
 
 ==== Client Blocking and Aggregated
-This programming paradigm expects the request payload body as single aggregated object, and the response payload body
+This programming paradigm expects the request payload body as a single aggregated object, and the response payload body
 is also a single aggregated object. There are no asynchronous primitives involved.
 
 See
@@ -344,7 +343,7 @@ try (BlockingStreamingHttpClient client = HttpClients.forSingleAddress("localhos
 ----
 
 ==== Asynchronous and Aggregated
-This programming paradigm expect the request payload body as single aggregated object, and the response payload body
+This programming paradigm expects the request payload body as a single aggregated object, and the response payload body
 is also a single aggregated object. The `HttpClient` provides the response via a
 link:../servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Single.java[Single] which is an
 asynchronous primitive.
@@ -354,9 +353,9 @@ link:../servicetalk-examples/src/main/java/io/servicetalk/examples/http/hellowor
 [source, java]
 ----
 try (HttpClient client = HttpClients.forSingleAddress("localhost", 8080).build()) {
-  // This example is demonstrating asynchronous execution, but needs to prevent the main thread from exiting
-  // before the response has been processed. This isn't typical usage for a streaming API but is useful for
-  // demonstration purposes.
+// This example is demonstrating asynchronous execution, but needs to prevent the main thread from exiting
+// before the response has been processed. This isn't typical usage for a streaming API but is useful for
+// demonstration purposes.
   CountDownLatch responseProcessedLatch = new CountDownLatch(1);
   client.request(client.get("/sayHello"))
         .doFinally(responseProcessedLatch::countDown)
@@ -374,7 +373,7 @@ try (HttpClient client = HttpClients.forSingleAddress("localhost", 8080).build()
 This programming paradigm expects the request payload body as a
 link:../servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Publisher.java[Publisher] typically of
 link:../servicetalk-buffer-api/src/main/java/io/servicetalk/buffer/api/Buffer.java[Buffer]s (although other types like
-file regions maybe added), the response meta data is provided via a
+file regions may be added), the response meta-data is provided via a
 link:../servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Single.java[Single], and the response
 payload body is written via a
 link:../servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Publisher.java[Publisher].
@@ -384,9 +383,9 @@ link:../servicetalk-examples/src/main/java/io/servicetalk/examples/http/hellowor
 [source, java]
 ----
 try (StreamingHttpClient client = HttpClients.forSingleAddress("localhost", 8080).buildStreaming()) {
-  // This example is demonstrating asynchronous execution, but needs to prevent the main thread from exiting
-  // before the response has been processed. This isn't typical usage for a streaming API but is useful for
-  // demonstration purposes.
+// This example is demonstrating asynchronous execution, but needs to prevent the main thread from exiting
+// before the response has been processed. This isn't typical usage for a streaming API but is useful for
+// demonstration purposes.
   CountDownLatch responseProcessedLatch = new CountDownLatch(1);
   client.request(client.get("/sayHello"))
         .doBeforeOnSuccess(response -> System.out.println(response.toString((name, value) -> value)))
@@ -406,9 +405,9 @@ class.
 The core abstractions
 link:src/main/java/io/servicetalk/http/api/HttpDeserializer.java[HttpDeserializer] and
 link:src/main/java/io/servicetalk/http/api/HttpSerializer.java[HttpSerializer] are designed to be coupled to a
-specific java type `T` and accessed via a
+specific Java type `T` and accessed via a
 link:src/main/java/io/servicetalk/http/api/HttpSerializationProvider.java[HttpSerializationProvider]. The
 link:src/main/java/io/servicetalk/http/api/HttpDeserializer.java[HttpDeserializer] and
 link:src/main/java/io/servicetalk/http/api/HttpSerializer.java[HttpSerializer] are also designed to handle the HTTP
 headers data behind the scenes. This means either checking if `content-type` format is compatible with the
-deserialization format and also adding `content-type` header identifying the resulting serialization format.
+deserialization format and also adding a `content-type` header identifying the resulting serialization format.
