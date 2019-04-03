@@ -29,4 +29,23 @@
     <Class name="io.servicetalk.http.netty.TestServiceStreaming"/>
     <Bug pattern="RV_RETURN_VALUE_IGNORED_NO_SIDE_EFFECT"/>
   </Match>
+  <!-- false positive in Java 11, see https://github.com/spotbugs/spotbugs/issues/756 -->
+  <Match>
+    <Class name="io.servicetalk.http.netty.AbstractHttpServiceAsyncContextTest"/>
+    <Or>
+      <Method name="connectionAcceptorContextDoesNotLeak" />
+      <Method name="contextPreservedOverFilterBoundaries" />
+    </Or>
+    <Bug pattern="RCN_REDUNDANT_NULLCHECK_WOULD_HAVE_BEEN_A_NPE"/>
+  </Match>
+  <!-- false positive in Java 11, see https://github.com/spotbugs/spotbugs/issues/756 -->
+  <Match>
+    <Class name="io.servicetalk.http.netty.ConcurrentRequestsHttpConnectionFilterTest"/>
+    <Or>
+      <Method name="throwConnectionClosedOnConnectionClose" />
+      <Method name="throwConnectionClosedWithCauseOnUnexpectedConnectionClose" />
+      <Method name="throwMaxConcurrencyExceededOnOversubscribedConnection" />
+    </Or>
+    <Bug pattern="RCN_REDUNDANT_NULLCHECK_WOULD_HAVE_BEEN_A_NPE"/>
+  </Match>
 </FindBugsFilter>

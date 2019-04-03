@@ -401,6 +401,7 @@ final class DefaultDnsServiceDiscoverer
                         if (cause != null) {
                             handleError0(cause, invalidateHostsOnDnsFailure);
                         } else {
+                            // DNS lookup can return duplicate InetAddress
                             final List<InetAddress> addresses = addressFuture.getNow();
                             final List<ServiceDiscovererEvent<InetAddress>> events =
                                     calculateDifference(activeAddresses, addresses, INET_ADDRESS_COMPARATOR);

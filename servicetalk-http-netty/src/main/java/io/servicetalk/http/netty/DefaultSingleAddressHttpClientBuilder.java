@@ -49,6 +49,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
+import static io.servicetalk.http.netty.DefaultHttpConnectionBuilder.reservedConnectionsPipelineEnabled;
 import static io.servicetalk.http.netty.GlobalDnsServiceDiscoverer.globalDnsServiceDiscoverer;
 import static io.servicetalk.loadbalancer.RoundRobinLoadBalancer.newRoundRobinFactory;
 import static java.util.Objects.requireNonNull;
@@ -179,7 +180,8 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
 
             // closed by the LoadBalancer
             final ConnectionFactory<R, ? extends StreamingHttpConnection> connectionFactory =
-                    connectionFactoryFilter.create(closeOnException.prepend(roConfig.maxPipelinedRequests() == 1 ?
+                    connectionFactoryFilter.create(closeOnException.prepend(
+                            reservedConnectionsPipelineEnabled(roConfig) ?
                             new NonPipelinedLBHttpConnectionFactory<>(roConfig, ctx.executionContext,
                                     connectionFilterFunction, reqRespFactory, strategy) :
                             new PipelinedLBHttpConnectionFactory<>(roConfig, ctx.executionContext,

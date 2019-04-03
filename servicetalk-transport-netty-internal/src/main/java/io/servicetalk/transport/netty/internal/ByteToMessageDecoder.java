@@ -77,16 +77,16 @@ import static java.lang.Math.min;
  * <p>
  * To check for complete frames without modifying the reader index, use methods like {@link ByteBuf#getInt(int)}.
  * One <strong>MUST</strong> use the reader index when using methods like {@link ByteBuf#getInt(int)}.
- * For example calling <tt>in.getInt(0)</tt> is assuming the frame starts at the beginning of the buffer, which
- * is not always the case. Use <tt>in.getInt(in.readerIndex())</tt> instead.
+ * For example calling <code>in.getInt(0)</code> is assuming the frame starts at the beginning of the buffer, which
+ * is not always the case. Use <code>in.getInt(in.readerIndex())</code> instead.
  * <h3>Pitfalls</h3>
  * <p>
  * Be aware that sub-classes of {@link ByteToMessageDecoder} <strong>MUST NOT</strong>
  * annotated with {@link Sharable}.
  * <p>
  * Some methods such as {@link ByteBuf#readBytes(int)} will cause a memory leak if the returned buffer
- * is not released or added to the <tt>out</tt> {@link List}. Use derived buffers like {@link ByteBuf#readSlice(int)}
- * to avoid leaking memory.
+ * is not released or added to the <code>out</code> {@link List}. Use derived buffers like
+ * {@link ByteBuf#readSlice(int)} to avoid leaking memory.
  */
 public abstract class ByteToMessageDecoder extends ChannelInboundHandlerAdapter {
     private static final byte STATE_INIT = 0;

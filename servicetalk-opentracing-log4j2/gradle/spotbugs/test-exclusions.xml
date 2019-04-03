@@ -15,15 +15,9 @@
   ~ limitations under the License.
   -->
 <FindBugsFilter>
-  <!-- Fields are usually initialized in @BeforeClass/@Before methods instead of constructors for tests -->
   <Match>
-    <Source name="~.*Test\.java"/>
-    <Bug pattern="NP_NONNULL_FIELD_NOT_INITIALIZED_IN_CONSTRUCTOR"/>
-  </Match>
-  <!-- false positive in Java 11, see https://github.com/spotbugs/spotbugs/issues/756 -->
-  <Match>
-    <Class name="io.servicetalk.opentracing.http.TracingHttpRequesterFilterTest"/>
-    <Method name="testInjectWithParent" />
+    <Class name="io.servicetalk.opentracing.log4j2.ServiceTalkTracingThreadContextMapTest"/>
+    <Method name="tracingInfoDisplayedPresentInLogsViaMDC" />
     <Bug pattern="RCN_REDUNDANT_NULLCHECK_WOULD_HAVE_BEEN_A_NPE"/>
   </Match>
 </FindBugsFilter>

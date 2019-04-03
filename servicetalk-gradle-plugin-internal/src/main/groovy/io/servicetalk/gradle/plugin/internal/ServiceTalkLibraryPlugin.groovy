@@ -282,7 +282,7 @@ class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
       pluginManager.apply("com.github.spotbugs")
 
       spotbugs {
-        toolVersion = "3.1.10"
+        toolVersion = "3.1.12"
       }
 
       // This task defaults to XML reporting for CI, but humans like HTML

@@ -37,12 +37,13 @@ public final class ServiceDiscovererUtils {
     }
 
     /**
-     * Give a sorted list of currently active addresses, and a new set of unsorted active address calculate the
+     * Given a sorted list of currently active addresses, and a new set of unsorted active address calculate the
      * {@link ServiceDiscovererEvent}s.
      * <p>
      * {@code newActiveAddresses} will be sorted in this method.
      * @param currentActiveAddresses The currently active addresses.
-     * @param newActiveAddresses The new list of active addresses.
+     * @param newActiveAddresses The new list of active addresses.<b>This list must be modifiable</b> as it will be
+     * sorted with {@link List#sort(Comparator)}.
      * @param comparator A comparator for the addresses and to use for binary searches.
      * @param <T> The type of address.
      * @return A list of {@link ServiceDiscovererEvent}s which represents the changes between
@@ -87,8 +88,12 @@ public final class ServiceDiscovererUtils {
                 if (binarySearch(sortedA, valueB, comparator) < 0) {
                     if (result == null) {
                         result = new ArrayList<>(4);
+                        result.add(new DefaultServiceDiscovererEvent<>(valueB, available));
+                    } else if (comparator.compare(valueB, result.get(result.size() - 1).address()) != 0) {
+                        // make sure we don't include duplicates. the input lists are sorted and we process in order so
+                        // we verify the previous entry is not a duplicate.
+                        result.add(new DefaultServiceDiscovererEvent<>(valueB, available));
                     }
-                    result.add(new DefaultServiceDiscovererEvent<>(valueB, available));
                 }
             }
         } else {
@@ -96,8 +101,12 @@ public final class ServiceDiscovererUtils {
                 if (binarySearch(sortedA, valueB, comparator) < 0) {
                     if (result == null) {
                         result = new ArrayList<>(4);
+                        result.add(new DefaultServiceDiscovererEvent<>(valueB, available));
+                    } else if (comparator.compare(valueB, result.get(result.size() - 1).address()) != 0) {
+                        // make sure we don't include duplicates. the input lists are sorted and we process in order so
+                        // we verify the previous entry is not a duplicate.
+                        result.add(new DefaultServiceDiscovererEvent<>(valueB, available));
                     }
-                    result.add(new DefaultServiceDiscovererEvent<>(valueB, available));
                 }
             }
         }
