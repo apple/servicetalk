@@ -155,5 +155,5 @@ public abstract class PartitionedHttpClientBuilder<U, R>
      * @return {@code this}
      */
     public abstract PartitionedHttpClientBuilder<U, R> appendClientBuilderFilter(
-            PartitionHttpClientBuilderFilterFunction<U, R> clientFilterFunction);
+            PartitionHttpClientBuilderConfigurator<U, R> clientFilterFunction);
 }
