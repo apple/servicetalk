@@ -19,6 +19,8 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Single;
 
+import static java.util.Objects.requireNonNull;
+
 /**
  * A {@link ConnectionFactory} that delegates all methods to another {@link ConnectionFactory}.
  *
@@ -35,7 +37,7 @@ public class DelegatingConnectionFactory<ResolvedAddress, C extends ListenableAs
      * @param delegate {@link ConnectionFactory} to which all methods are delegated.
      */
     public DelegatingConnectionFactory(final ConnectionFactory<ResolvedAddress, C> delegate) {
-        this.delegate = delegate;
+        this.delegate = requireNonNull(delegate);
     }
 
     @Override

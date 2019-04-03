@@ -35,7 +35,7 @@ abstract class AbstractLBRedisConnectionFactory<ResolvedAddress>
     }
 
     abstract Single<RedisConnection> newConnection(ResolvedAddress resolvedAddress,
-                                                               RedisConnectionFilterFactory connectionFilterFactory);
+                                                   RedisConnectionFilterFactory connectionFilterFactory);
 
     @Override
     public final Single<RedisConnection> newConnection(ResolvedAddress address) {
