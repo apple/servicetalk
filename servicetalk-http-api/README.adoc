@@ -72,8 +72,8 @@ as related to `Service` filters:
 ----
 
 To implement a `Service` filter you should implement the
-link:src/main/java/io/servicetalk/http/api/StreamingHttpServiceFilterFactory.java[Service Filter Factory] corresponding
-to your preferred programming paradigm and append it on the `HttpServerBuilder` via
+link:src/main/java/io/servicetalk/http/api/StreamingHttpServiceFilterFactory.java[Service Filter Factory] and append it
+on the `HttpServerBuilder` via
 link:src/main/java/io/servicetalk/http/api/HttpServerBuilder.java[HttpServerBuilder#appendServiceFilter(..)].
 
 NOTE: Currently we only support writing `Filters` for the <<service-filter-async-streaming, Asynchronous and Streaming>>
@@ -243,8 +243,8 @@ metrics, logging, authorization, and any other extension that needs request/resp
 ----
 
 To implement a `Client` filter you should implement the
-link:src/main/java/io/servicetalk/http/api/StreamingHttpClientFilterFactory.java[Client Filter Factory] corresponding to
-your preferred programming paradigm and append it on the `HttpClientBuilder` via
+link:src/main/java/io/servicetalk/http/api/StreamingHttpClientFilterFactory.java[Client Filter Factory] and append it on
+the `HttpClientBuilder` via
 link:src/main/java/io/servicetalk/http/api/HttpClientBuilder.java[HttpClientBuilder#appendClientFilter(..)].
 
 NOTE: Currently we only support writing `Filters` for the <<client-filter-async-streaming, Asynchronous and Streaming>>
