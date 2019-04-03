@@ -88,8 +88,12 @@ public final class ServiceDiscovererUtils {
                 if (binarySearch(sortedA, valueB, comparator) < 0) {
                     if (result == null) {
                         result = new ArrayList<>(4);
+                        result.add(new DefaultServiceDiscovererEvent<>(valueB, available));
+                    } else if (comparator.compare(valueB, result.get(result.size() - 1).address()) != 0) {
+                        // make sure we don't include duplicates. the input lists are sorted and we process in order so
+                        // we verify the previous entry is not a duplicate.
+                        result.add(new DefaultServiceDiscovererEvent<>(valueB, available));
                     }
-                    result.add(new DefaultServiceDiscovererEvent<>(valueB, available));
                 }
             }
         } else {
@@ -97,8 +101,12 @@ public final class ServiceDiscovererUtils {
                 if (binarySearch(sortedA, valueB, comparator) < 0) {
                     if (result == null) {
                         result = new ArrayList<>(4);
+                        result.add(new DefaultServiceDiscovererEvent<>(valueB, available));
+                    } else if (comparator.compare(valueB, result.get(result.size() - 1).address()) != 0) {
+                        // make sure we don't include duplicates. the input lists are sorted and we process in order so
+                        // we verify the previous entry is not a duplicate.
+                        result.add(new DefaultServiceDiscovererEvent<>(valueB, available));
                     }
-                    result.add(new DefaultServiceDiscovererEvent<>(valueB, available));
                 }
             }
         }

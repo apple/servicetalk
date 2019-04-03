@@ -69,7 +69,6 @@ import static java.util.Comparator.comparing;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.function.Function.identity;
-import static java.util.stream.Collectors.toList;
 
 /**
  * Default load balancer which will attempt to resolve A, AAAA, and CNAME type queries.
@@ -403,8 +402,7 @@ final class DefaultDnsServiceDiscoverer
                             handleError0(cause, invalidateHostsOnDnsFailure);
                         } else {
                             // DNS lookup can return duplicate InetAddress
-                            final List<InetAddress> addresses =
-                                    addressFuture.getNow().stream().distinct().collect(toList());
+                            final List<InetAddress> addresses = addressFuture.getNow();
                             final List<ServiceDiscovererEvent<InetAddress>> events =
                                     calculateDifference(activeAddresses, addresses, INET_ADDRESS_COMPARATOR);
                             ttlNanos = SECONDS.toNanos(ttlCache.minTtl(inetHost));
