@@ -192,7 +192,7 @@ issue requests to a single service (that may have multiple instances).
 This `Client` parses the link:https://tools.ietf.org/html/rfc7230#section-5.3[request-target] to determine the remote
 address for each request. This `Client` simulates a browser type of use case.
 
-Each of the above ```Client```s can be created via the
+Each of the above ``Client``s can be created via the
 link:src/main/java/io/servicetalk/http/netty/HttpClients.java[HttpClients] static factory.
 
 The `Client` manages multiple `Connections` via a
@@ -276,7 +276,7 @@ Another core component of the `Client` is the
 link:../servicetalk-client-api/src/main/java/io/servicetalk/client/api/ServiceDiscoverer.java[ServiceDiscoverer]. The
 `ServiceDiscoverer` is responsible for resolving a service address into a set of addresses used to create
 `Connection`(s) by the `LoadBalancer`. The default implementation for HTTP is DNS and will resolve the IP addresses of
-each service address every link:https://tools.ietf.org/html/rfc1035#section-3.2.1[TTL] seconds. ```ServiceDiscoverer```s
+each service address every link:https://tools.ietf.org/html/rfc1035#section-3.2.1[TTL] seconds. ``ServiceDiscoverer``s
 are typically not invoked in the request/response path and addresses are resolved "out of band", a.k.a in the
 background.
 
