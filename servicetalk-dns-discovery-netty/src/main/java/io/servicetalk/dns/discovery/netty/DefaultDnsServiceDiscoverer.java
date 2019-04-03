@@ -69,7 +69,6 @@ import static java.util.Comparator.comparing;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.function.Function.identity;
-import static java.util.stream.Collectors.toList;
 
 /**
  * Default load balancer which will attempt to resolve A, AAAA, and CNAME type queries.
