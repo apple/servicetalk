@@ -403,8 +403,7 @@ final class DefaultDnsServiceDiscoverer
                             handleError0(cause, invalidateHostsOnDnsFailure);
                         } else {
                             // DNS lookup can return duplicate InetAddress
-                            final List<InetAddress> addresses =
-                                    addressFuture.getNow().stream().distinct().collect(toList());
+                            final List<InetAddress> addresses = addressFuture.getNow();
                             final List<ServiceDiscovererEvent<InetAddress>> events =
                                     calculateDifference(activeAddresses, addresses, INET_ADDRESS_COMPARATOR);
                             ttlNanos = SECONDS.toNanos(ttlCache.minTtl(inetHost));
