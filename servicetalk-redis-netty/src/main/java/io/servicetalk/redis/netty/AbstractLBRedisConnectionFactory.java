@@ -19,12 +19,13 @@ import io.servicetalk.client.api.ConnectionFactory;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.redis.api.RedisConnection;
 import io.servicetalk.redis.api.RedisConnectionFilterFactory;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.emptyAsyncCloseable;
 
 abstract class AbstractLBRedisConnectionFactory<ResolvedAddress>
-        implements ConnectionFactory<ResolvedAddress, LoadBalancedRedisConnection> {
+        implements ConnectionFactory<ResolvedAddress, RedisConnection> {
 
     private final RedisConnectionFilterFactory connectionFilterFactory;
     private final ListenableAsyncCloseable close = emptyAsyncCloseable();
@@ -33,11 +34,11 @@ abstract class AbstractLBRedisConnectionFactory<ResolvedAddress>
         this.connectionFilterFactory = connectionFilterFactory;
     }
 
-    abstract Single<LoadBalancedRedisConnection> newConnection(ResolvedAddress resolvedAddress,
-                                                               RedisConnectionFilterFactory connectionFilterFactory);
+    abstract Single<RedisConnection> newConnection(ResolvedAddress resolvedAddress,
+                                                   RedisConnectionFilterFactory connectionFilterFactory);
 
     @Override
-    public final Single<LoadBalancedRedisConnection> newConnection(ResolvedAddress address) {
+    public final Single<RedisConnection> newConnection(ResolvedAddress address) {
         return newConnection(address, connectionFilterFactory);
     }
 

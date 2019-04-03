@@ -34,7 +34,7 @@ public interface ConnectionFactoryFilter<ResolvedAddress, C extends ListenableAs
      * @param original {@link ConnectionFactory} to filter.
      * @return Decorated {@link ConnectionFactory} that contains the filtering logic.
      */
-    ConnectionFactory<ResolvedAddress, ? extends C> create(ConnectionFactory<ResolvedAddress, ? extends C> original);
+    ConnectionFactory<ResolvedAddress, C> create(ConnectionFactory<ResolvedAddress, C> original);
 
     /**
      * Returns a composed function that first applies the {@code before} function to its input, and then applies

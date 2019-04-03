@@ -19,6 +19,7 @@ import io.servicetalk.client.api.ConnectionFactory;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.http.api.HttpExecutionStrategy;
+import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.transport.api.ExecutionContext;
@@ -29,7 +30,7 @@ import static io.servicetalk.concurrent.api.AsyncCloseables.emptyAsyncCloseable;
 import static java.util.Objects.requireNonNull;
 
 abstract class AbstractLBHttpConnectionFactory<ResolvedAddress>
-        implements ConnectionFactory<ResolvedAddress, LoadBalancedStreamingHttpConnection> {
+        implements ConnectionFactory<ResolvedAddress, StreamingHttpConnection> {
     private final ListenableAsyncCloseable close = emptyAsyncCloseable();
     @Nullable
     final StreamingHttpConnectionFilterFactory connectionFilterFunction;

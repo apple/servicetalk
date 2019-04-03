@@ -72,8 +72,8 @@ public class HttpClientBuilderTest extends AbstractEchoServerBasedHttpRequesterT
 
     @Test
     public void withConnectionFactoryFilter() throws Exception {
-        ConnectionFactory<InetSocketAddress, ? extends StreamingHttpConnection> factory1 = newFilter();
-        ConnectionFactory<InetSocketAddress, ? extends StreamingHttpConnection> factory2 = newFilter();
+        ConnectionFactory<InetSocketAddress, StreamingHttpConnection> factory1 = newFilter();
+        ConnectionFactory<InetSocketAddress, StreamingHttpConnection> factory2 = newFilter();
         StreamingHttpClient requester = HttpClients.forSingleAddress(serverHostAndPort(serverContext))
                 .appendConnectionFactoryFilter(factoryFilter(factory1))
                 .appendConnectionFactoryFilter(factoryFilter(factory2))
@@ -89,7 +89,7 @@ public class HttpClientBuilderTest extends AbstractEchoServerBasedHttpRequesterT
 
     @Nonnull
     private static ConnectionFactoryFilter<InetSocketAddress, StreamingHttpConnection> factoryFilter(
-            final ConnectionFactory<InetSocketAddress, ? extends StreamingHttpConnection> factory) {
+            final ConnectionFactory<InetSocketAddress, StreamingHttpConnection> factory) {
         return orig -> {
             when(factory.newConnection(any()))
                     .thenAnswer(invocation -> orig.newConnection(invocation.getArgument(0)));
@@ -98,8 +98,8 @@ public class HttpClientBuilderTest extends AbstractEchoServerBasedHttpRequesterT
     }
 
     @SuppressWarnings("unchecked")
-    private static ConnectionFactory<InetSocketAddress, ? extends StreamingHttpConnection> newFilter() {
-        ConnectionFactory<InetSocketAddress, ? extends StreamingHttpConnection> factory =
+    private static ConnectionFactory<InetSocketAddress, StreamingHttpConnection> newFilter() {
+        ConnectionFactory<InetSocketAddress, StreamingHttpConnection> factory =
                 mock(ConnectionFactory.class);
         when(factory.closeAsyncGracefully()).thenReturn(completed());
         when(factory.closeAsync()).thenReturn(completed());
