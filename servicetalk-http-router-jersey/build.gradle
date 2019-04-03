@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,12 +36,16 @@ dependencies {
   api "javax.ws.rs:javax.ws.rs-api:$jaxRsVersion"
 
   implementation "com.google.code.findbugs:jsr305"
+  implementation "com.sun.activation:javax.activation"
+  implementation "com.sun.xml.bind:jaxb-core"
+  implementation "com.sun.xml.bind:jaxb-impl"
   implementation "io.servicetalk:servicetalk-annotations:$project.version"
   implementation "io.servicetalk:servicetalk-concurrent-api-internal:$project.version"
   implementation "io.servicetalk:servicetalk-concurrent-internal:$project.version"
   implementation "io.servicetalk:servicetalk-data-jackson:$project.version"
   implementation "io.servicetalk:servicetalk-http-router-jersey-internal:$project.version"
   implementation "io.servicetalk:servicetalk-http-utils:$project.version"
+  implementation "javax.xml.bind:jaxb-api"
   implementation "org.glassfish.jersey.core:jersey-server:$jerseyVersion"
   implementation "org.slf4j:slf4j-api"
 

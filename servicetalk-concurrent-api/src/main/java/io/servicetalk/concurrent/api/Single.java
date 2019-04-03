@@ -1199,7 +1199,7 @@ public abstract class Single<T> {
      */
     @SafeVarargs
     public static <T> Single<Collection<T>> collectUnordered(Single<? extends T>... singles) {
-        return from(singles).flatMapMergeSingle(identity()).collect(() -> new ArrayList<>(singles.length),
+        return from(singles).<T>flatMapMergeSingle(identity()).collect(() -> new ArrayList<>(singles.length),
                 (ts, t) -> {
                     ts.add(t);
                     return ts;
@@ -1265,7 +1265,7 @@ public abstract class Single<T> {
      */
     @SafeVarargs
     public static <T> Single<Collection<T>> collectUnordered(int maxConcurrency, Single<? extends T>... singles) {
-        return from(singles).flatMapMergeSingle(identity(), maxConcurrency)
+        return from(singles).<T>flatMapMergeSingle(identity(), maxConcurrency)
                 .collect(() -> new ArrayList<>(singles.length), (ts, t) -> {
                     ts.add(t);
                     return ts;
@@ -1347,7 +1347,7 @@ public abstract class Single<T> {
      */
     @SafeVarargs
     public static <T> Single<Collection<T>> collectUnorderedDelayError(Single<? extends T>... singles) {
-        return from(singles).flatMapMergeSingleDelayError(identity())
+        return from(singles).<T>flatMapMergeSingleDelayError(identity())
                 .collect(() -> new ArrayList<>(singles.length), (ts, t) -> {
                     ts.add(t);
                     return ts;
@@ -1429,7 +1429,7 @@ public abstract class Single<T> {
     @SafeVarargs
     public static <T> Single<Collection<T>> collectUnorderedDelayError(int maxConcurrency,
                                                                        Single<? extends T>... singles) {
-        return from(singles).flatMapMergeSingleDelayError(identity(), maxConcurrency)
+        return from(singles).<T>flatMapMergeSingleDelayError(identity(), maxConcurrency)
                 .collect(() -> new ArrayList<>(singles.length), (ts, t) -> {
                     ts.add(t);
                     return ts;

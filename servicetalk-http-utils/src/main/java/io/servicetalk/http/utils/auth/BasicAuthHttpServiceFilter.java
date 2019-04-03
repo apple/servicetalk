@@ -163,8 +163,8 @@ public final class BasicAuthHttpServiceFilter<UserInfo> implements StreamingHttp
          * <p>
          * It will use the following constants to handle authentication:
          *
-         * <blockquote><table cellpadding=1 cellspacing=0
-         * summary="Response status code, authenticate and authorization headers for non-proxy Basic auth">
+         * <blockquote><table>
+         * <caption>Response status code, authenticate and authorization headers for non-proxy Basic auth</caption>
          * <tr>
          * <td>Response status code</td>
          * <td><a href="https://tools.ietf.org/html/rfc7235#section-3.1">401 (Unauthorized)</a></td>
@@ -190,8 +190,8 @@ public final class BasicAuthHttpServiceFilter<UserInfo> implements StreamingHttp
          * <p>
          * It will use the following constants to handle authentication:
          *
-         * <blockquote><table cellpadding=1 cellspacing=0
-         * summary="Response status code, authenticate and authorization headers for proxy Basic auth">
+         * <blockquote><table>
+         * <caption>Response status code, authenticate and authorization headers for proxy Basic auth</caption>
          * <tr>
          * <td>Response status code</td>
          * <td><a href="https://tools.ietf.org/html/rfc7235#section-3.2">407 (Proxy Authentication Required)</a></td>

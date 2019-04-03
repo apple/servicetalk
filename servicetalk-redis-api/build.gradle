@@ -43,6 +43,7 @@ dependencies {
   implementation "io.servicetalk:servicetalk-concurrent-internal:$project.version"
   implementation "io.servicetalk:servicetalk-concurrent-api-internal:$project.version"
   implementation "io.servicetalk:servicetalk-redis-internal:$project.version"
+  implementation "javax.annotation:javax.annotation-api"
   implementation "org.slf4j:slf4j-api"
 
   testImplementation "io.servicetalk:servicetalk-concurrent-api-testFixtures:$project.version"

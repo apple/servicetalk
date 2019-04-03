@@ -43,6 +43,7 @@ class ServiceTalkCorePlugin implements Plugin<Project> {
       pluginManager.apply("com.jfrog.bintray")
 
       sourceCompatibility = 1.8
+      targetCompatibility = 1.8
 
       publishing {
         publications {
@@ -112,8 +113,8 @@ class ServiceTalkCorePlugin implements Plugin<Project> {
         }
 
         jvmArgs '-server', '-Xms2g', '-Xmx4g', '-dsa', '-da', '-ea:io.servicetalk...',
-                '-XX:+AggressiveOpts', '-XX:+TieredCompilation', '-XX:+UseBiasedLocking', '-XX:+UseFastAccessorMethods',
-                '-XX:+OptimizeStringConcat', '-XX:+HeapDumpOnOutOfMemoryError', '-XX:+PrintGCDetails'
+            '-XX:+AggressiveOpts', '-XX:+TieredCompilation', '-XX:+UseBiasedLocking',
+                '-XX:+OptimizeStringConcat', '-XX:+HeapDumpOnOutOfMemoryError'
       }
     }
   }
