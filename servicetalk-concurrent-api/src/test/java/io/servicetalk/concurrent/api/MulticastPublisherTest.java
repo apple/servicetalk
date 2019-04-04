@@ -147,7 +147,7 @@ public class MulticastPublisherTest {
 
     @Test
     public void concurrentRequestN() throws InterruptedException {
-        final int expectedSubscribers = 2000;
+        final int expectedSubscribers = 50;
         Publisher<Integer> multicast = source.multicastToExactly(expectedSubscribers, expectedSubscribers);
         @SuppressWarnings("unchecked")
         TestPublisherSubscriber<Integer>[] subscribers = (TestPublisherSubscriber<Integer>[])

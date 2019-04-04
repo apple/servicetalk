@@ -76,7 +76,7 @@ public final class PublisherGroupByConcurrencyTest {
 
     @Test
     public void testConcurrentEmissionAndGroupCancel() throws Exception {
-        int itemCount = 100_000;
+        int itemCount = 1000;
         Queue<GroupSubscriber> subs = subscribeToAll(itemCount, true);
         Task cancels = drainGroupSubscribers(subs, GroupSubscriber::cancel).awaitStart();
         sendRangeToSource(0, itemCount).onComplete();
@@ -86,7 +86,7 @@ public final class PublisherGroupByConcurrencyTest {
 
     @Test
     public void testConcurrentEmissionAndGroupRequestN() throws Exception {
-        int itemCount = 100_000;
+        int itemCount = 1000;
         Queue<GroupSubscriber> subs = subscribeToAll(itemCount, false);
         Task requestNs = requestAndDrainGroupSubscribers(subs).awaitStart();
         sendRangeToSource(0, itemCount).onComplete();
@@ -96,7 +96,7 @@ public final class PublisherGroupByConcurrencyTest {
 
     @Test
     public void testConcurrentGroupsCancel() throws Exception {
-        int itemCount = 100_000;
+        int itemCount = 1000;
         Queue<GroupSubscriber> subs = subscribeToAll(itemCount, false);
         final TestSubscription subscription = new TestSubscription();
         source.onSubscribe(subscription);

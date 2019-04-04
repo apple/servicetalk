@@ -120,27 +120,27 @@ public class SubscriberUtilsTest {
 
     @Test
     public void calculateSourceRequestedConcurrentA() throws Exception {
-        calculateSourceRequestedConcurrentLoop(333, 1, 3, 10, 10);
+        calculateSourceRequestedConcurrentLoop(5, 1, 3, 10, 10);
     }
 
     @Test
     public void calculateSourceRequestedConcurrentB() throws Exception {
-        calculateSourceRequestedConcurrentLoop(50, 5, 6, 100, 123456);
+        calculateSourceRequestedConcurrentLoop(5, 5, 6, 100, 123456);
     }
 
     @Test
     public void calculateSourceRequestedConcurrentC() throws Exception {
-        calculateSourceRequestedConcurrentLoop(10, 1, 3, 2, 900103);
+        calculateSourceRequestedConcurrentLoop(5, 1, 3, 2, 900103);
     }
 
     @Test
     public void calculateSourceRequestedConcurrentD() throws Exception {
-        calculateSourceRequestedConcurrentLoop(123, 1, 5635, 483, 800026);
+        calculateSourceRequestedConcurrentLoop(5, 1, 5635, 483, 800026);
     }
 
     @Test
     public void calculateSourceRequestedConcurrentE() throws Exception {
-        calculateSourceRequestedConcurrentLoop(222, 6, 512, Integer.MAX_VALUE, 1000001);
+        calculateSourceRequestedConcurrentLoop(5, 6, 512, Integer.MAX_VALUE, 1000001);
     }
 
     private void calculateSourceRequestedConcurrentLoop(
