@@ -114,7 +114,7 @@ class ServiceTalkCorePlugin implements Plugin<Project> {
 
         jvmArgs '-server', '-Xms2g', '-Xmx4g', '-dsa', '-da', '-ea:io.servicetalk...',
             '-XX:+AggressiveOpts', '-XX:+TieredCompilation', '-XX:+UseBiasedLocking',
-                '-XX:+OptimizeStringConcat', '-XX:+HeapDumpOnOutOfMemoryError', '-DDEFAULT_TIMEOUT_MILLIS=5000'
+                '-XX:+OptimizeStringConcat', '-XX:+HeapDumpOnOutOfMemoryError'
       }
     }
   }
