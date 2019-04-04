@@ -110,8 +110,8 @@ services:
     networks: [test-net]
 
   test-snapshot:
-    depends_on: [java8, redis-4]
-    image: java8:latest
+    depends_on: [java11, redis-4]
+    image: java11:latest
     environment:
       - CI
       - REDIS_HOST=redis-4
@@ -119,7 +119,7 @@ services:
       - REDIS_AUTH_PORT=6378
       - BINTRAY_USER
       - BINTRAY_KEY
-    command: bash -cl "./gradlew clean check"
+    command: bash -cl "./gradlew clean test"
     volumes:
       - ~/.ssh:/root/.ssh
       - ~/.gradle${EXECUTOR_NUMBER}:/root/.gradle
