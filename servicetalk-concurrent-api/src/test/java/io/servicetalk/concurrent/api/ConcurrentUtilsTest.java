@@ -95,7 +95,7 @@ public final class ConcurrentUtilsTest {
 
     @Test
     public void testExecuteExclusive() throws Exception {
-        final Task[] tasks = new Task[1000];
+        final Task[] tasks = new Task[20];
         final AtomicInteger runCount = new AtomicInteger();
         final CountDownLatch allOthersDone = new CountDownLatch(1);
         final AtomicReference<Throwable> causeRef = new AtomicReference<>();
