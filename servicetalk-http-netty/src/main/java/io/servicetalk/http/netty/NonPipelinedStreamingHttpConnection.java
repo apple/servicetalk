@@ -29,7 +29,7 @@ final class NonPipelinedStreamingHttpConnection
                                         final ExecutionContext executionContext,
                                         final StreamingHttpRequestResponseFactory reqRespFactory,
                                         final HttpExecutionStrategy strategy) {
-        super(connection, config, executionContext, reqRespFactory, strategy);
+        super(connection, config, executionContext, reqRespFactory);
     }
 
     @Override

@@ -18,6 +18,9 @@ package io.servicetalk.http.api;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.http.api.StreamingHttpClientToBlockingHttpClient.ReservedStreamingHttpConnectionToReservedBlockingHttpConnection;
+import io.servicetalk.http.api.StreamingHttpClientToBlockingStreamingHttpClient.ReservedStreamingHttpConnectionToBlockingStreaming;
+import io.servicetalk.http.api.StreamingHttpClientToHttpClient.ReservedStreamingHttpConnectionToReservedHttpConnection;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.ExecutionStrategy;
@@ -33,6 +36,7 @@ import static java.util.Objects.requireNonNull;
 public class ReservedStreamingHttpConnectionFilter implements ReservedStreamingHttpConnection {
     private final ReservedStreamingHttpConnection delegate;
     private final HttpExecutionStrategy strategy;
+    private final HttpExecutionStrategyInfluencer influencer;
 
     /**
      * Create a new instance.
@@ -41,8 +45,12 @@ public class ReservedStreamingHttpConnectionFilter implements ReservedStreamingH
      */
     protected ReservedStreamingHttpConnectionFilter(final ReservedStreamingHttpConnection delegate) {
         this.delegate = requireNonNull(delegate);
-        // TODO(scott): should we compute this lazily?
-        this.strategy = computeExecutionStrategy(defaultStrategy());
+        if (delegate instanceof HttpExecutionStrategyInfluencer) {
+            influencer = (HttpExecutionStrategyInfluencer) delegate;
+        } else {
+            influencer = strategy -> defaultStrategy().merge(strategy);
+        }
+        this.strategy = influencer.influenceStrategy(defaultStrategy());
     }
 
     @Override
@@ -66,6 +74,21 @@ public class ReservedStreamingHttpConnectionFilter implements ReservedStreamingH
     }
 
     @Override
+    public ReservedHttpConnection asConnection() {
+        return new ReservedStreamingHttpConnectionToReservedHttpConnection(this, influencer);
+    }
+
+    @Override
+    public ReservedBlockingStreamingHttpConnection asBlockingStreamingConnection() {
+        return new ReservedStreamingHttpConnectionToBlockingStreaming(this, influencer);
+    }
+
+    @Override
+    public ReservedBlockingHttpConnection asBlockingConnection() {
+        return new ReservedStreamingHttpConnectionToReservedBlockingHttpConnection(this, influencer);
+    }
+
+    @Override
     public final Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
                                                        final StreamingHttpRequest request) {
         return request(delegate, strategy, request);
@@ -84,11 +107,6 @@ public class ReservedStreamingHttpConnectionFilter implements ReservedStreamingH
     @Override
     public void close() throws Exception {
         delegate.close();
-    }
-
-    @Override
-    public HttpExecutionStrategy computeExecutionStrategy(final HttpExecutionStrategy other) {
-        return delegate.computeExecutionStrategy(other.merge(executionStrategy()));
     }
 
     @Override

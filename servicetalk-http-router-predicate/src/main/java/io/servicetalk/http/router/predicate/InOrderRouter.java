@@ -26,10 +26,8 @@ import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpService;
 
 import java.util.List;
-import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
-import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toList;
 
@@ -45,7 +43,6 @@ final class InOrderRouter implements StreamingHttpService {
 
     private final StreamingHttpService fallbackService;
     private final PredicateServicePair[] predicateServicePairs;
-    private final HttpExecutionStrategy strategy;
     private final AsyncCloseable closeable;
 
     /**
@@ -53,12 +50,9 @@ final class InOrderRouter implements StreamingHttpService {
      * @param fallbackService the service to use to handle requests if no predicates match.
      * @param predicateServicePairs the list of predicate-service pairs to use for handling requests.
      */
-    InOrderRouter(final StreamingHttpService fallbackService, final List<PredicateServicePair> predicateServicePairs,
-                  @Nullable final HttpExecutionStrategy strategy) {
+    InOrderRouter(final StreamingHttpService fallbackService, final List<PredicateServicePair> predicateServicePairs) {
         this.fallbackService = requireNonNull(fallbackService);
         this.predicateServicePairs = predicateServicePairs.toArray(new PredicateServicePair[0]);
-        // Use default strategy from StreamingHttpService if none defined by the user.
-        this.strategy = strategy == null ? defaultStrategy() : strategy;
         this.closeable = newCompositeCloseable()
                 .mergeAll(fallbackService)
                 .mergeAll(predicateServicePairs.stream().map(PredicateServicePair::service).collect(toList()));
@@ -71,18 +65,14 @@ final class InOrderRouter implements StreamingHttpService {
         for (final PredicateServicePair pair : predicateServicePairs) {
             if (pair.predicate().test(ctx, request)) {
                 StreamingHttpService service = pair.service();
-                // TODO(scott): combine the InOrderRouter strategy and the route strategy?
-                return service.computeExecutionStrategy(defaultStrategy())
-                        .offloadService(ctx.executionContext().executor(), service)
-                        .handle(ctx, request, factory);
+                HttpExecutionStrategy strategy = pair.routeStrategy();
+                if (strategy != null) {
+                    service = strategy.offloadService(ctx.executionContext().executor(), service);
+                }
+                return service.handle(ctx, request, factory);
             }
         }
         return fallbackService.handle(ctx, request, factory);
-    }
-
-    @Override
-    public HttpExecutionStrategy computeExecutionStrategy(HttpExecutionStrategy other) {
-        return strategy.merge(other);
     }
 
     @Override

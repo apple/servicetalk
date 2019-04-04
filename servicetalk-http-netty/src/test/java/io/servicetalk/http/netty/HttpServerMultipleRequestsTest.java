@@ -18,14 +18,10 @@ package io.servicetalk.http.netty;
 import io.servicetalk.concurrent.api.AsyncCloseables;
 import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.concurrent.api.DefaultThreadFactory;
-import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
-import io.servicetalk.http.api.HttpExecutionStrategy;
-import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
-import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.netty.internal.ExecutionContextRule;
@@ -68,28 +64,16 @@ public class HttpServerMultipleRequestsTest {
 
     @Test
     public void consumeOfRequestBodyDoesNotCloseConnection() throws Exception {
-        StreamingHttpService service = new StreamingHttpService() {
+        StreamingHttpService service = (ctx, request, responseFactory) -> {
+            request.payloadBody().ignoreElements().subscribe();
 
-            private final HttpExecutionStrategy strategy = defaultStrategy(serverExecution.executor());
-            @Override
-            public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
-                                                        final StreamingHttpRequest request,
-                                                        final StreamingHttpResponseFactory responseFactory) {
-                request.payloadBody().ignoreElements().subscribe();
-
-                CharSequence requestId = request.headers().get(REQUEST_ID_HEADER);
-                if (requestId != null) {
-                    StreamingHttpResponse response = responseFactory.ok();
-                    response.headers().set(REQUEST_ID_HEADER, requestId);
-                    return succeeded(response);
-                } else {
-                    return succeeded(responseFactory.newResponse(BAD_REQUEST));
-                }
-            }
-
-            @Override
-            public HttpExecutionStrategy computeExecutionStrategy(HttpExecutionStrategy other) {
-                return strategy.merge(other);
+            CharSequence requestId = request.headers().get(REQUEST_ID_HEADER);
+            if (requestId != null) {
+                StreamingHttpResponse response = responseFactory.ok();
+                response.headers().set(REQUEST_ID_HEADER, requestId);
+                return succeeded(response);
+            } else {
+                return succeeded(responseFactory.newResponse(BAD_REQUEST));
             }
         };
         final int concurrency = 10;
@@ -97,6 +81,7 @@ public class HttpServerMultipleRequestsTest {
         CompositeCloseable compositeCloseable = AsyncCloseables.newCompositeCloseable();
         ServerContext ctx = compositeCloseable.append(HttpServers.forAddress(localAddress(0))
                 .ioExecutor(serverExecution.ioExecutor())
+                .executionStrategy(defaultStrategy(serverExecution.executor()))
                 .listenStreamingAndAwait(service));
         ExecutorService executorService = Executors.newCachedThreadPool();
         try {

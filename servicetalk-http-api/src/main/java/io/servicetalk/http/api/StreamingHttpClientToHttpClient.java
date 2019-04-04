@@ -22,7 +22,7 @@ import io.servicetalk.http.api.FilterableStreamingHttpConnection.SettingKey;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ExecutionContext;
 
-import static io.servicetalk.http.api.HttpExecutionStrategies.OFFLOAD_RECEIVE_META_STRATEGY;
+import static io.servicetalk.http.api.HttpApiConversions.DEFAULT_CLIENT_STRATEGY;
 import static io.servicetalk.http.api.RequestResponseFactories.toAggregated;
 import static java.util.Objects.requireNonNull;
 
@@ -31,8 +31,9 @@ final class StreamingHttpClientToHttpClient implements HttpClient {
     private final HttpExecutionStrategy strategy;
     private final HttpRequestResponseFactory reqRespFactory;
 
-    StreamingHttpClientToHttpClient(final StreamingHttpClient client) {
-        strategy = client.computeExecutionStrategy(OFFLOAD_RECEIVE_META_STRATEGY);
+    StreamingHttpClientToHttpClient(final StreamingHttpClient client,
+                                    final HttpExecutionStrategyInfluencer influencer) {
+        strategy = influencer.influenceStrategy(DEFAULT_CLIENT_STRATEGY);
         this.client = client;
         reqRespFactory = toAggregated(client);
     }
@@ -76,12 +77,6 @@ final class StreamingHttpClientToHttpClient implements HttpClient {
     }
 
     @Override
-    public HttpExecutionStrategy computeExecutionStrategy(final HttpExecutionStrategy other) {
-        // TODO(scott): should we include the API strategy?
-        return client.computeExecutionStrategy(other);
-    }
-
-    @Override
     public Completable onClose() {
         return client.onClose();
     }
@@ -111,8 +106,9 @@ final class StreamingHttpClientToHttpClient implements HttpClient {
         private final HttpExecutionStrategy strategy;
         private final HttpRequestResponseFactory reqRespFactory;
 
-        ReservedStreamingHttpConnectionToReservedHttpConnection(ReservedStreamingHttpConnection connection) {
-            this(connection, connection.computeExecutionStrategy(OFFLOAD_RECEIVE_META_STRATEGY),
+        ReservedStreamingHttpConnectionToReservedHttpConnection(ReservedStreamingHttpConnection connection,
+                                                                final HttpExecutionStrategyInfluencer influencer) {
+            this(connection, influencer.influenceStrategy(DEFAULT_CLIENT_STRATEGY),
                     toAggregated(connection));
         }
 
@@ -183,12 +179,6 @@ final class StreamingHttpClientToHttpClient implements HttpClient {
         @Override
         public void close() throws Exception {
             connection.close();
-        }
-
-        @Override
-        public HttpExecutionStrategy computeExecutionStrategy(HttpExecutionStrategy other) {
-            // TODO(scott): should we include the API strategy?
-            return connection.computeExecutionStrategy(other);
         }
 
         @Override

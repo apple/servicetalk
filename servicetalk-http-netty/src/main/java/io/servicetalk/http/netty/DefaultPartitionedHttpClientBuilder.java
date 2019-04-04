@@ -99,11 +99,13 @@ class DefaultPartitionedHttpClientBuilder<U, R> extends PartitionedHttpClientBui
         @SuppressWarnings("unchecked")
         final Publisher<? extends PartitionedServiceDiscovererEvent<R>> psdEvents =
                 (Publisher<? extends PartitionedServiceDiscovererEvent<R>>) buildContext.discover();
-        HttpExecutionStrategy strategy = buildContext.executionStrategy();
 
-        return new DefaultStreamingHttpClient(new DefaultPartitionedStreamingHttpClientFilter<>(psdEvents,
-                serviceDiscoveryMaxQueueSize, clientFactory, partitionAttributesBuilderFactory,
-                buildContext.reqRespFactory, buildContext.executionContext, partitionMapFactory, strategy));
+        DefaultPartitionedStreamingHttpClientFilter<U, R> partitionedClient =
+                new DefaultPartitionedStreamingHttpClientFilter<>(psdEvents, serviceDiscoveryMaxQueueSize,
+                        clientFactory, partitionAttributesBuilderFactory, buildContext.reqRespFactory,
+                        buildContext.executionContext, partitionMapFactory);
+        return new FilterableClientToClient(partitionedClient, buildContext.executionStrategy(),
+                buildContext.builder.buildStrategyInfluencerForClient());
     }
 
     private static final class DefaultPartitionedStreamingHttpClientFilter<U, R> implements
@@ -118,7 +120,6 @@ class DefaultPartitionedHttpClientBuilder<U, R> extends PartitionedHttpClientBui
         private final Function<HttpRequestMetaData, PartitionAttributesBuilder> pabf;
         private final ExecutionContext executionContext;
         private final StreamingHttpRequestResponseFactory reqRespFactory;
-        private final HttpExecutionStrategy strategy;
 
         DefaultPartitionedStreamingHttpClientFilter(
                 final Publisher<? extends PartitionedServiceDiscovererEvent<R>> psdEvents,
@@ -127,12 +128,11 @@ class DefaultPartitionedHttpClientBuilder<U, R> extends PartitionedHttpClientBui
                 final Function<HttpRequestMetaData, PartitionAttributesBuilder> pabf,
                 final StreamingHttpRequestResponseFactory reqRespFactory,
                 final ExecutionContext executionContext,
-                final PartitionMapFactory partitionMapFactory, final HttpExecutionStrategy strategy) {
+                final PartitionMapFactory partitionMapFactory) {
             this.pabf = pabf;
             this.executionContext = executionContext;
             this.group = new DefaultPartitionedClientGroup<>(PARTITION_CLOSED, PARTITION_UNKNOWN, clientFactory,
                     partitionMapFactory, psdEvents, psdMaxQueueSize);
-            this.strategy = requireNonNull(strategy);
             this.reqRespFactory = requireNonNull(reqRespFactory);
         }
 
@@ -166,13 +166,6 @@ class DefaultPartitionedHttpClientBuilder<U, R> extends PartitionedHttpClientBui
         @Override
         public void close() throws Exception {
             group.closeAsync().toFuture().get();
-        }
-
-        @Override
-        public HttpExecutionStrategy computeExecutionStrategy(final HttpExecutionStrategy other) {
-            // TODO(scott): this will not represent the strategy from the Client. That means the computed strategy
-            // may not reflect the full execution path.
-            return strategy.merge(other);
         }
 
         @Override
@@ -221,11 +214,6 @@ class DefaultPartitionedHttpClientBuilder<U, R> extends PartitionedHttpClientBui
 
         @Override
         public void close() {
-        }
-
-        @Override
-        public HttpExecutionStrategy computeExecutionStrategy(final HttpExecutionStrategy other) {
-            return other;
         }
 
         @Override

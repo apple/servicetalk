@@ -20,6 +20,7 @@ import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.HttpProtocolVersion;
 import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.HttpResponseStatus;
+import io.servicetalk.http.api.HttpServerBuilder;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
@@ -95,12 +96,15 @@ public abstract class AbstractJerseyStreamingHttpServiceTest {
 
     @Before
     public final void initServerAndClient() throws Exception {
-        final StreamingHttpService router = configureBuilder(new HttpJerseyRouterBuilder()).build(application());
+        HttpServerBuilder serverBuilder = HttpServers.forAddress(localAddress(0));
+        HttpJerseyRouterBuilder routerBuilder = new HttpJerseyRouterBuilder();
+        configureBuilder(serverBuilder, routerBuilder);
+        final StreamingHttpService router = routerBuilder.build(application());
         final Configuration config = ((DefaultJerseyStreamingHttpRouter) router).configuration();
         streamingJsonEnabled = getValue(config.getProperties(), config.getRuntimeType(), JSON_FEATURE, "",
                 String.class).toLowerCase().contains("servicetalk");
 
-        serverContext = HttpServers.forAddress(localAddress(0))
+        serverContext = serverBuilder
                 .ioExecutor(SERVER_CTX.ioExecutor())
                 .bufferAllocator(SERVER_CTX.bufferAllocator())
                 .listenStreamingAndAwait(router);
@@ -110,8 +114,9 @@ public abstract class AbstractJerseyStreamingHttpServiceTest {
         hostHeader = hostHeader(hostAndPort);
     }
 
-    protected HttpJerseyRouterBuilder configureBuilder(final HttpJerseyRouterBuilder builder) {
-        return builder.executionStrategy(defaultStrategy(SERVER_CTX.executor()));
+    protected void configureBuilder(final HttpServerBuilder serverBuilder,
+                                    final HttpJerseyRouterBuilder jerseyRouterBuilder) {
+        serverBuilder.executionStrategy(defaultStrategy(SERVER_CTX.executor()));
     }
 
     @After

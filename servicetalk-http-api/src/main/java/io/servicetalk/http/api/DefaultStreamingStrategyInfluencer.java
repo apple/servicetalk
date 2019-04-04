@@ -15,19 +15,17 @@
  */
 package io.servicetalk.http.api;
 
-/**
- * A special type of {@link StreamingHttpConnection} for the exclusive use of the caller of
- * {@link StreamingHttpClient#reserveConnection(HttpRequestMetaData)} and
- * {@link StreamingHttpClient#reserveConnection(HttpExecutionStrategy, HttpRequestMetaData)}.
- */
-public interface ReservedStreamingHttpConnection extends StreamingHttpConnection,
-                                                         FilterableReservedStreamingHttpConnection {
-    @Override
-    ReservedHttpConnection asConnection();
+final class DefaultStreamingStrategyInfluencer implements HttpExecutionStrategyInfluencer {
+
+    static final HttpExecutionStrategyInfluencer DEFAULT_STREAMING_STRATEGY_INFLUENCER =
+            new DefaultStreamingStrategyInfluencer();
+
+    private DefaultStreamingStrategyInfluencer() {
+        // singleton
+    }
 
     @Override
-    ReservedBlockingStreamingHttpConnection asBlockingStreamingConnection();
-
-    @Override
-    ReservedBlockingHttpConnection asBlockingConnection();
+    public HttpExecutionStrategy influenceStrategy(final HttpExecutionStrategy strategy) {
+        return strategy.merge(HttpExecutionStrategies.OFFLOAD_ALL_STRATEGY);
+    }
 }

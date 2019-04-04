@@ -22,7 +22,7 @@ import io.servicetalk.http.api.FilterableStreamingHttpConnection.SettingKey;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ExecutionContext;
 
-import static io.servicetalk.http.api.HttpExecutionStrategies.OFFLOAD_RECEIVE_META_STRATEGY;
+import static io.servicetalk.http.api.HttpApiConversions.DEFAULT_CLIENT_STRATEGY;
 import static io.servicetalk.http.api.RequestResponseFactories.toAggregated;
 
 final class StreamingHttpConnectionToHttpConnection implements HttpConnection {
@@ -30,8 +30,9 @@ final class StreamingHttpConnectionToHttpConnection implements HttpConnection {
     private final HttpExecutionStrategy strategy;
     private final HttpRequestResponseFactory reqRespFactory;
 
-    StreamingHttpConnectionToHttpConnection(final StreamingHttpConnection connection) {
-        strategy = connection.computeExecutionStrategy(OFFLOAD_RECEIVE_META_STRATEGY);
+    StreamingHttpConnectionToHttpConnection(final StreamingHttpConnection connection,
+                                            final HttpExecutionStrategyInfluencer influencer) {
+        strategy = influencer.influenceStrategy(DEFAULT_CLIENT_STRATEGY);
         this.connection = connection;
         reqRespFactory = toAggregated(connection);
     }
@@ -74,12 +75,6 @@ final class StreamingHttpConnectionToHttpConnection implements HttpConnection {
     @Override
     public void close() throws Exception {
         connection.close();
-    }
-
-    @Override
-    public HttpExecutionStrategy computeExecutionStrategy(final HttpExecutionStrategy other) {
-        // TODO(scott): should we include the API strategy?
-        return connection.computeExecutionStrategy(other);
     }
 
     @Override

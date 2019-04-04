@@ -19,15 +19,12 @@ import io.servicetalk.client.api.ConnectionFactory;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
-import io.servicetalk.http.api.HttpExecutionStrategy;
-import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequestFactory;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
-import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.netty.internal.ExecutionContextRule;
 
@@ -77,20 +74,8 @@ public class HttpAuthConnectionFactoryClientTest {
     public void simulateAuth() throws Exception {
         serverContext = HttpServers.forAddress(localAddress(0))
                 .ioExecutor(CTX.ioExecutor())
-                .listenStreamingAndAwait(
-                        new StreamingHttpService() {
-                            @Override
-                            public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
-                                                                        final StreamingHttpRequest request,
-                                                                        final StreamingHttpResponseFactory factory) {
-                                return succeeded(newTestResponse(factory));
-                            }
-
-                            @Override
-                            public HttpExecutionStrategy computeExecutionStrategy(HttpExecutionStrategy other) {
-                                return noOffloadsStrategy();
-                            }
-                        });
+                .executionStrategy(noOffloadsStrategy())
+                .listenStreamingAndAwait((ctx, request, factory) -> succeeded(newTestResponse(factory)));
 
         client = HttpClients.forSingleAddress(serverHostAndPort(serverContext))
                 .appendConnectionFactoryFilter(TestHttpAuthConnectionFactory::new)

@@ -25,6 +25,7 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpExecutionStrategy;
+import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.StreamingHttpClientFilter;
 import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
@@ -45,7 +46,8 @@ import static io.servicetalk.concurrent.api.Completable.failed;
  * @see RetryStrategies
  */
 public final class RetryingHttpRequesterFilter implements StreamingHttpClientFilterFactory,
-                                                          StreamingHttpConnectionFilterFactory {
+                                                          StreamingHttpConnectionFilterFactory,
+                                                          HttpExecutionStrategyInfluencer {
 
     private final ReadOnlyRetryableSettings<HttpRequestMetaData> settings;
 
@@ -79,12 +81,6 @@ public final class RetryingHttpRequesterFilter implements StreamingHttpClientFil
                                                             final StreamingHttpRequest request) {
                 return RetryingHttpRequesterFilter.this.request(delegate, strategy, request, retryStrategy);
             }
-
-            @Override
-            public HttpExecutionStrategy computeExecutionStrategy(HttpExecutionStrategy other) {
-                // Since this filter does not have any blocking code, we do not need to alter the effective strategy.
-                return delegate().computeExecutionStrategy(other);
-            }
         };
     }
 
@@ -100,13 +96,13 @@ public final class RetryingHttpRequesterFilter implements StreamingHttpClientFil
                                                          final StreamingHttpRequest request) {
                 return RetryingHttpRequesterFilter.this.request(delegate(), strategy, request, retryStrategy);
             }
+       };
+    }
 
-            @Override
-            public HttpExecutionStrategy computeExecutionStrategy(HttpExecutionStrategy other) {
-                // Since this filter does not have any blocking code, we do not need to alter the effective strategy.
-                return delegate().computeExecutionStrategy(other);
-            }
-        };
+    @Override
+    public HttpExecutionStrategy influenceStrategy(final HttpExecutionStrategy strategy) {
+        // No influence since we do not block.
+        return strategy;
     }
 
     /**

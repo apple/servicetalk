@@ -16,9 +16,14 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.buffer.api.Buffer;
+import io.servicetalk.client.api.ConnectionFactory;
+import io.servicetalk.client.api.LoadBalancer;
+import io.servicetalk.client.api.LoadBalancerFactory;
+import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.BlockingIterator;
 import io.servicetalk.concurrent.api.DefaultThreadFactory;
 import io.servicetalk.concurrent.api.Executor;
+import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.BlockingHttpClient;
@@ -26,11 +31,16 @@ import io.servicetalk.http.api.BlockingStreamingHttpClient;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
 import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpExecutionStrategy;
+import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpClientFilter;
+import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
+import io.servicetalk.http.api.StreamingHttpConnection;
+import io.servicetalk.http.api.StreamingHttpConnectionFilter;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequester;
 import io.servicetalk.http.api.StreamingHttpResponse;
+import io.servicetalk.loadbalancer.RoundRobinLoadBalancer;
 
 import org.junit.After;
 import org.junit.Before;
@@ -40,6 +50,7 @@ import org.junit.rules.Timeout;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumMap;
@@ -60,7 +71,6 @@ import static io.servicetalk.http.netty.InvokingThreadsRecorder.noStrategy;
 import static io.servicetalk.http.netty.InvokingThreadsRecorder.userStrategy;
 import static io.servicetalk.http.netty.InvokingThreadsRecorder.userStrategyNoVerify;
 import static java.util.Arrays.asList;
-import static java.util.Objects.requireNonNull;
 
 @RunWith(Parameterized.class)
 public class ClientEffectiveStrategyTest {
@@ -89,23 +99,28 @@ public class ClientEffectiveStrategyTest {
         List<ParamsSupplier> params = new ArrayList<>();
         params.add(wrap("noUserStrategyNoFilter", ClientEffectiveStrategyTest::noUserStrategyNoFilter));
         params.add(wrap("noUserStrategyWithFilter", ClientEffectiveStrategyTest::noUserStrategyWithFilter));
+        params.add(wrap("noUserStrategyWithLB", ClientEffectiveStrategyTest::noUserStrategyWithLB));
+        params.add(wrap("noUserStrategyWithCF", ClientEffectiveStrategyTest::noUserStrategyWithCF));
         params.add(wrap("userStrategyNoFilter", ClientEffectiveStrategyTest::userStrategyNoFilter));
         params.add(wrap("userStrategyWithFilter", ClientEffectiveStrategyTest::userStrategyWithFilter));
+        params.add(wrap("userStrategyWithLB", ClientEffectiveStrategyTest::userStrategyWithLB));
+        params.add(wrap("userStrategyWithCF", ClientEffectiveStrategyTest::userStrategyWithCF));
         params.add(wrap("userStrategyNoExecutorNoFilter",
                 ClientEffectiveStrategyTest::userStrategyNoExecutorNoFilter));
         params.add(wrap("userStrategyNoExecutorWithFilter",
                 ClientEffectiveStrategyTest::userStrategyNoExecutorWithFilter));
+        params.add(wrap("userStrategyNoExecutorWithLB",
+                ClientEffectiveStrategyTest::userStrategyNoExecutorWithLB));
+        params.add(wrap("userStrategyNoExecutorWithCF",
+                ClientEffectiveStrategyTest::userStrategyNoExecutorWithCF));
+        // TODO (nkant): We are not yet sure how this should behave, will revisit
+        /*
         params.add(wrap("userStrategyNoOffloadsNoFilter",
                 ClientEffectiveStrategyTest::userStrategyNoOffloadsNoFilter));
-        // TODO (nkant): We are not yet sure how this should behave, will revisit
-        /*
         params.add(wrap("userStrategyNoOffloadsWithFilter",
                 ClientEffectiveStrategyTest::userStrategyNoOffloadsWithFilter));
-        */
         params.add(wrap("userStrategyNoOffloadsNoExecutorNoFilter",
                 ClientEffectiveStrategyTest::userStrategyNoOffloadsNoExecutorNoFilter));
-        // TODO (nkant): We are not yet sure how this should behave, will revisit
-        /*
         params.add(wrap("userStrategyNoOffloadsNoExecutorWithFilter",
                 ClientEffectiveStrategyTest::userStrategyNoOffloadsNoExecutorWithFilter));
         */
@@ -113,10 +128,18 @@ public class ClientEffectiveStrategyTest {
                 ClientEffectiveStrategyTest::customUserStrategyNoFilter));
         params.add(wrap("customUserStrategyWithFilter",
                 ClientEffectiveStrategyTest::customUserStrategyWithFilter));
+        params.add(wrap("customUserStrategyWithLB",
+                ClientEffectiveStrategyTest::customUserStrategyWithLB));
+        params.add(wrap("customUserStrategyWithCF",
+                ClientEffectiveStrategyTest::customUserStrategyWithCF));
         params.add(wrap("customUserStrategyNoExecutorNoFilter",
                 ClientEffectiveStrategyTest::customUserStrategyNoExecutorNoFilter));
         params.add(wrap("customUserStrategyNoExecutorWithFilter",
                 ClientEffectiveStrategyTest::customUserStrategyNoExecutorWithFilter));
+        params.add(wrap("customUserStrategyNoExecutorWithLB",
+                ClientEffectiveStrategyTest::customUserStrategyNoExecutorWithLB));
+        params.add(wrap("customUserStrategyNoExecutorWithCF",
+                ClientEffectiveStrategyTest::customUserStrategyNoExecutorWithCF));
         return params;
     }
 
@@ -131,98 +154,168 @@ public class ClientEffectiveStrategyTest {
 
     private static Params noUserStrategyNoFilter() {
         Params params = new Params();
-        params.initStateHolderDefaultStrategy(false);
+        params.initStateHolderDefaultStrategy(false, false, false);
         params.defaultOffloadPoints();
         return params;
     }
 
     private static Params noUserStrategyWithFilter() {
         Params params = new Params();
-        params.initStateHolderDefaultStrategy(true);
+        params.initStateHolderDefaultStrategy(true, false, false);
+        params.allPointsOffloadedForAllClients();
+        return params;
+    }
+
+    private static Params noUserStrategyWithLB() {
+        Params params = new Params();
+        params.initStateHolderDefaultStrategy(false, true, false);
+        params.allPointsOffloadedForAllClients();
+        return params;
+    }
+
+    private static Params noUserStrategyWithCF() {
+        Params params = new Params();
+        params.initStateHolderDefaultStrategy(false, false, true);
         params.allPointsOffloadedForAllClients();
         return params;
     }
 
     private static Params userStrategyNoFilter() {
         Params params = new Params();
-        params.initStateHolderUserStrategy(false);
+        params.initStateHolderUserStrategy(false, false, false);
         params.defaultOffloadPoints();
         return params;
     }
 
     private static Params userStrategyWithFilter() {
         Params params = new Params();
-        params.initStateHolderUserStrategy(true);
+        params.initStateHolderUserStrategy(true, false, false);
+        params.allPointsOffloadedForAllClients();
+        return params;
+    }
+
+    private static Params userStrategyWithLB() {
+        Params params = new Params();
+        params.initStateHolderUserStrategy(false, true, false);
+        params.allPointsOffloadedForAllClients();
+        return params;
+    }
+
+    private static Params userStrategyWithCF() {
+        Params params = new Params();
+        params.initStateHolderUserStrategy(false, false, true);
         params.allPointsOffloadedForAllClients();
         return params;
     }
 
     private static Params userStrategyNoExecutorNoFilter() {
         Params params = new Params();
-        params.initStateHolderUserStrategyNoExecutor(false);
+        params.initStateHolderUserStrategyNoExecutor(false, false, false);
         params.defaultOffloadPoints();
         return params;
     }
 
     private static Params userStrategyNoExecutorWithFilter() {
         Params params = new Params();
-        params.initStateHolderUserStrategyNoExecutor(true);
+        params.initStateHolderUserStrategyNoExecutor(true, false, false);
+        params.allPointsOffloadedForAllClients();
+        return params;
+    }
+
+    private static Params userStrategyNoExecutorWithLB() {
+        Params params = new Params();
+        params.initStateHolderUserStrategyNoExecutor(false, true, false);
+        params.allPointsOffloadedForAllClients();
+        return params;
+    }
+
+    private static Params userStrategyNoExecutorWithCF() {
+        Params params = new Params();
+        params.initStateHolderUserStrategyNoExecutor(false, false, true);
         params.allPointsOffloadedForAllClients();
         return params;
     }
 
     private static Params userStrategyNoOffloadsNoFilter() {
         Params params = new Params();
-        params.initStateHolderUserStrategyNoOffloads(false);
+        params.initStateHolderUserStrategyNoOffloads(false, false, false);
         params.noPointsOffloadedForAllClients();
         return params;
     }
 
     private static Params userStrategyNoOffloadsWithFilter() {
         Params params = new Params();
-        params.initStateHolderUserStrategyNoOffloads(true);
+        params.initStateHolderUserStrategyNoOffloads(true, false, false);
         params.allPointsOffloadedForAllClients();
         return params;
     }
 
     private static Params userStrategyNoOffloadsNoExecutorNoFilter() {
         Params params = new Params();
-        params.initStateHolderUserStrategyNoOffloadsNoExecutor(false);
+        params.initStateHolderUserStrategyNoOffloadsNoExecutor(false, false, false);
         params.noPointsOffloadedForAllClients();
         return params;
     }
 
     private static Params userStrategyNoOffloadsNoExecutorWithFilter() {
         Params params = new Params();
-        params.initStateHolderUserStrategyNoOffloadsNoExecutor(true);
+        params.initStateHolderUserStrategyNoOffloadsNoExecutor(true, false, false);
         params.allPointsOffloadedForAllClients();
         return params;
     }
 
     private static Params customUserStrategyNoExecutorNoFilter() {
         Params params = new Params();
-        params.initStateHolderCustomUserStrategyNoExecutor(false);
+        params.initStateHolderCustomUserStrategyNoExecutor(false, false, false);
         params.allPointsOffloadedForAllClients();
         return params;
     }
 
     private static Params customUserStrategyNoExecutorWithFilter() {
         Params params = new Params();
-        params.initStateHolderCustomUserStrategyNoExecutor(true);
+        params.initStateHolderCustomUserStrategyNoExecutor(true, false, false);
+        params.allPointsOffloadedForAllClients();
+        return params;
+    }
+
+    private static Params customUserStrategyNoExecutorWithLB() {
+        Params params = new Params();
+        params.initStateHolderCustomUserStrategyNoExecutor(false, true, false);
+        params.allPointsOffloadedForAllClients();
+        return params;
+    }
+
+    private static Params customUserStrategyNoExecutorWithCF() {
+        Params params = new Params();
+        params.initStateHolderCustomUserStrategyNoExecutor(false, false, true);
         params.allPointsOffloadedForAllClients();
         return params;
     }
 
     private static Params customUserStrategyNoFilter() {
         Params params = new Params();
-        params.initStateHolderCustomUserStrategy(false);
+        params.initStateHolderCustomUserStrategy(false, false, false);
         params.allPointsOffloadedForAllClients();
         return params;
     }
 
     private static Params customUserStrategyWithFilter() {
         Params params = new Params();
-        params.initStateHolderCustomUserStrategy(true);
+        params.initStateHolderCustomUserStrategy(true, false, false);
+        params.allPointsOffloadedForAllClients();
+        return params;
+    }
+
+    private static Params customUserStrategyWithLB() {
+        Params params = new Params();
+        params.initStateHolderCustomUserStrategy(false, true, false);
+        params.allPointsOffloadedForAllClients();
+        return params;
+    }
+
+    private static Params customUserStrategyWithCF() {
+        Params params = new Params();
+        params.initStateHolderCustomUserStrategy(false, false, true);
         params.allPointsOffloadedForAllClients();
         return params;
     }
@@ -324,52 +417,59 @@ public class ClientEffectiveStrategyTest {
             addNonOffloadedPointFor(ClientType.BlockingStreaming, ResponseMeta, ResponseData);
             addOffloadedPointFor(ClientType.BlockingStreaming, RequestPayloadSubscription);
 
-            addNonOffloadedPointFor(ClientType.Async, RequestPayloadSubscription, ResponseData);
-            addOffloadedPointFor(ClientType.Async, ResponseMeta);
+            addNonOffloadedPointFor(ClientType.Async, RequestPayloadSubscription, ResponseMeta);
+            addOffloadedPointFor(ClientType.Async, ResponseData);
 
             addOffloadedPointFor(ClientType.AsyncStreaming, RequestPayloadSubscription, ResponseMeta, ResponseData);
         }
 
-        void initStateHolderDefaultStrategy(boolean addFilter) {
+        void initStateHolderDefaultStrategy(boolean addFilter, boolean addLoadBalancer,
+                                            boolean addConnectionFilter) {
             executorUsedForStrategy = false;
             invokingThreadsRecorder = noStrategy();
-            initState(addFilter);
+            initState(addFilter, addLoadBalancer, addConnectionFilter);
         }
 
-        void initStateHolderUserStrategy(boolean addFilter) {
+        void initStateHolderUserStrategy(boolean addFilter, boolean addLoadBalancer,
+                                         boolean addConnectionFilter) {
             invokingThreadsRecorder = userStrategyNoVerify(defaultStrategy(executor));
-            initState(addFilter);
+            initState(addFilter, addLoadBalancer, addConnectionFilter);
         }
 
-        void initStateHolderUserStrategyNoExecutor(boolean addFilter) {
+        void initStateHolderUserStrategyNoExecutor(boolean addFilter, boolean addLoadBalancer,
+                                                   boolean addConnectionFilter) {
             executorUsedForStrategy = false;
             invokingThreadsRecorder = userStrategyNoVerify(defaultStrategy());
-            initState(addFilter);
+            initState(addFilter, addLoadBalancer, addConnectionFilter);
         }
 
-        void initStateHolderUserStrategyNoOffloads(boolean addFilter) {
+        void initStateHolderUserStrategyNoOffloads(boolean addFilter, boolean addLoadBalancer,
+                                                   boolean addConnectionFilter) {
             executorUsedForStrategy = false;
             invokingThreadsRecorder = userStrategy(customStrategyBuilder().offloadNone().executor(immediate()).build());
-            initState(addFilter);
+            initState(addFilter, addLoadBalancer, addConnectionFilter);
         }
 
-        void initStateHolderUserStrategyNoOffloadsNoExecutor(boolean addFilter) {
+        void initStateHolderUserStrategyNoOffloadsNoExecutor(boolean addFilter, boolean addLoadBalancer,
+                                                             boolean addConnectionFilter) {
             executorUsedForStrategy = false;
             invokingThreadsRecorder = userStrategy(noOffloadsStrategy());
-            initState(addFilter);
+            initState(addFilter, addLoadBalancer, addConnectionFilter);
         }
 
-        void initStateHolderCustomUserStrategy(boolean addFilter) {
+        void initStateHolderCustomUserStrategy(boolean addFilter, boolean addLoadBalancer,
+                                               boolean addConnectionFilter) {
             verifyStrategyUsed = true;
             invokingThreadsRecorder = userStrategy(customStrategyBuilder().offloadAll().executor(executor).build());
-            initState(addFilter);
+            initState(addFilter, addLoadBalancer, addConnectionFilter);
         }
 
-        void initStateHolderCustomUserStrategyNoExecutor(boolean addFilter) {
+        void initStateHolderCustomUserStrategyNoExecutor(boolean addFilter, boolean addLoadBalancer,
+                                                         boolean addConnectionFilter) {
             executorUsedForStrategy = false;
             verifyStrategyUsed = true;
             invokingThreadsRecorder = userStrategy(customStrategyBuilder().offloadAll().build());
-            initState(addFilter);
+            initState(addFilter, addLoadBalancer, addConnectionFilter);
         }
 
         StreamingHttpClient client() {
@@ -408,7 +508,7 @@ public class ClientEffectiveStrategyTest {
             }
         }
 
-        private void initState(final boolean addFilter) {
+        private void initState(final boolean addFilter, boolean addLoadBalancer, boolean addConnectionFilter) {
             assert invokingThreadsRecorder != null;
             HttpExecutionStrategy strategy = invokingThreadsRecorder.executionStrategy();
             invokingThreadsRecorder.init((__, serverBuilder) ->
@@ -420,8 +520,14 @@ public class ClientEffectiveStrategyTest {
                             clientBuilder.executionStrategy(strategy);
                         }
                         clientBuilder.ioExecutor(ioExecutor);
-                        clientBuilder.appendClientFilter((c, __) ->
-                                new ClientInvokingThreadRecorder(c, invokingThreadsRecorder));
+                        clientBuilder.appendClientFilter(new ClientInvokingThreadRecorder(invokingThreadsRecorder));
+                        if (addConnectionFilter) {
+                            clientBuilder.appendConnectionFilter(connection ->
+                                    new StreamingHttpConnectionFilter(connection) { });
+                        }
+                        if (addLoadBalancer) {
+                            clientBuilder.loadBalancerFactory(new LoadBalancerFactoryImpl());
+                        }
                         if (addFilter) {
                             // Here since we do not override mergeForEffectiveStrategy, it will default to offload-all.
                             clientBuilder.appendClientFilter((client, __) -> new StreamingHttpClientFilter(client) { });
@@ -430,32 +536,49 @@ public class ClientEffectiveStrategyTest {
         }
     }
 
-    private static final class ClientInvokingThreadRecorder extends StreamingHttpClientFilter {
+    private static final class ClientInvokingThreadRecorder
+            implements StreamingHttpClientFilterFactory, HttpExecutionStrategyInfluencer {
 
         private final InvokingThreadsRecorder<ClientOffloadPoint> holder;
 
-        ClientInvokingThreadRecorder(final FilterableStreamingHttpClient delegate,
-                                     InvokingThreadsRecorder<ClientOffloadPoint> holder) {
-            super(delegate);
-            this.holder = requireNonNull(holder);
+        ClientInvokingThreadRecorder(final InvokingThreadsRecorder<ClientOffloadPoint> holder) {
+            this.holder = holder;
         }
 
         @Override
-        protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
-                                                        final HttpExecutionStrategy strategy,
-                                                        final StreamingHttpRequest request) {
-            return delegate.request(strategy,
-                    request.transformPayloadBody(payload ->
-                            payload.beforeRequest(__ -> holder.recordThread(RequestPayloadSubscription))))
-                    .beforeOnSuccess(__ -> holder.recordThread(ResponseMeta))
-                    .map(resp -> resp.transformPayloadBody(payload ->
-                            payload.beforeOnNext(__ -> holder.recordThread(ResponseData))));
+        public HttpExecutionStrategy influenceStrategy(final HttpExecutionStrategy strategy) {
+            // Don't influence strategy
+            return strategy;
         }
 
         @Override
-        public HttpExecutionStrategy computeExecutionStrategy(final HttpExecutionStrategy other) {
-            // Don't modify the effective strategy calculation
-            return delegate().computeExecutionStrategy(other);
+        public StreamingHttpClientFilter create(final FilterableStreamingHttpClient client,
+                                                final Publisher<Object> lbEvents) {
+            return new StreamingHttpClientFilter(client) {
+
+                @Override
+                protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
+                                                                final HttpExecutionStrategy strategy,
+                                                                final StreamingHttpRequest request) {
+                    return delegate.request(strategy,
+                            request.transformPayloadBody(payload ->
+                                    payload.beforeRequest(__ -> holder.recordThread(RequestPayloadSubscription))))
+                            .beforeOnSuccess(__ -> holder.recordThread(ResponseMeta))
+                            .map(resp -> resp.transformPayloadBody(payload ->
+                                    payload.beforeOnNext(__ -> holder.recordThread(ResponseData))));
+                }
+            };
+        }
+    }
+
+    private static class LoadBalancerFactoryImpl
+            implements LoadBalancerFactory<InetSocketAddress, StreamingHttpConnection> {
+        @Override
+        public LoadBalancer<StreamingHttpConnection> newLoadBalancer(
+                final Publisher<? extends ServiceDiscovererEvent<InetSocketAddress>> eventPublisher,
+                final ConnectionFactory<InetSocketAddress, ? extends StreamingHttpConnection> connectionFactory) {
+            return RoundRobinLoadBalancer.<InetSocketAddress, StreamingHttpConnection>newRoundRobinFactory()
+                    .newLoadBalancer(eventPublisher, connectionFactory);
         }
     }
 

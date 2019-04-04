@@ -20,7 +20,7 @@ import io.servicetalk.http.api.FilterableStreamingHttpConnection.SettingKey;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ExecutionContext;
 
-import static io.servicetalk.http.api.HttpExecutionStrategies.OFFLOAD_NONE_STRATEGY;
+import static io.servicetalk.http.api.HttpApiConversions.DEFAULT_BLOCKING_CLIENT_STRATEGY;
 import static io.servicetalk.http.api.RequestResponseFactories.toAggregated;
 
 final class StreamingHttpConnectionToBlockingHttpConnection implements BlockingHttpConnection {
@@ -28,8 +28,9 @@ final class StreamingHttpConnectionToBlockingHttpConnection implements BlockingH
     private final HttpExecutionStrategy strategy;
     private final HttpRequestResponseFactory reqRespFactory;
 
-    StreamingHttpConnectionToBlockingHttpConnection(final StreamingHttpConnection connection) {
-        strategy = connection.computeExecutionStrategy(OFFLOAD_NONE_STRATEGY);
+    StreamingHttpConnectionToBlockingHttpConnection(final StreamingHttpConnection connection,
+                                                    final HttpExecutionStrategyInfluencer influencer) {
+        strategy = influencer.influenceStrategy(DEFAULT_BLOCKING_CLIENT_STRATEGY);
         this.connection = connection;
         reqRespFactory = toAggregated(connection);
     }
@@ -72,12 +73,6 @@ final class StreamingHttpConnectionToBlockingHttpConnection implements BlockingH
     @Override
     public void close() throws Exception {
         connection.close();
-    }
-
-    @Override
-    public HttpExecutionStrategy computeExecutionStrategy(final HttpExecutionStrategy other) {
-        // TODO(scott): should we include the API strategy?
-        return connection.computeExecutionStrategy(other);
     }
 
     @Override

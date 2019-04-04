@@ -19,6 +19,7 @@ import io.servicetalk.client.api.ConnectionFactory;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.http.api.HttpExecutionStrategy;
+import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
 import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
@@ -34,21 +35,24 @@ abstract class AbstractLBHttpConnectionFactory<ResolvedAddress>
     private final ListenableAsyncCloseable close = emptyAsyncCloseable();
     @Nullable
     final StreamingHttpConnectionFilterFactory connectionFilterFunction;
-    final HttpExecutionStrategy defaultStrategy;
+    final HttpExecutionStrategy streamingStrategy;
     final ReadOnlyHttpClientConfig config;
     final ExecutionContext executionContext;
     final StreamingHttpRequestResponseFactory reqRespFactory;
+    final HttpExecutionStrategyInfluencer strategyInfluencer;
 
     AbstractLBHttpConnectionFactory(final ReadOnlyHttpClientConfig config,
                                     final ExecutionContext executionContext,
                                     @Nullable final StreamingHttpConnectionFilterFactory connectionFilterFunction,
                                     final StreamingHttpRequestResponseFactory reqRespFactory,
-                                    final HttpExecutionStrategy defaultStrategy) {
+                                    final HttpExecutionStrategy streamingStrategy,
+                                    final HttpExecutionStrategyInfluencer strategyInfluencer) {
         this.connectionFilterFunction = connectionFilterFunction;
-        this.defaultStrategy = requireNonNull(defaultStrategy);
+        this.streamingStrategy = requireNonNull(streamingStrategy);
         this.config = requireNonNull(config);
         this.executionContext = requireNonNull(executionContext);
         this.reqRespFactory = requireNonNull(reqRespFactory);
+        this.strategyInfluencer = strategyInfluencer;
     }
 
     @Override

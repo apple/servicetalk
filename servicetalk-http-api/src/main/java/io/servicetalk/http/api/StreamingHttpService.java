@@ -20,7 +20,6 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 
 import static io.servicetalk.concurrent.api.Completable.completed;
-import static io.servicetalk.http.api.HttpExecutionStrategies.OFFLOAD_ALL_STRATEGY;
 
 /**
  * A service contract for the HTTP protocol.
@@ -46,17 +45,5 @@ public interface StreamingHttpService extends AsyncCloseable {
     @Override
     default Completable closeAsync() {
         return completed();
-    }
-
-    /**
-     * Compute a {@link HttpExecutionStrategy} given the programming model constraints of this
-     * {@link StreamingHttpService} in combination with another {@link HttpExecutionStrategy}. This may involve a merge
-     * operation between two {@link StreamingHttpService}.
-     *
-     * @param other The other {@link HttpExecutionStrategy} to consider during the computation.
-     * @return The {@link HttpExecutionStrategy} for this {@link StreamingHttpService}.
-     */
-    default HttpExecutionStrategy computeExecutionStrategy(HttpExecutionStrategy other) {
-        return other.merge(OFFLOAD_ALL_STRATEGY);
     }
 }

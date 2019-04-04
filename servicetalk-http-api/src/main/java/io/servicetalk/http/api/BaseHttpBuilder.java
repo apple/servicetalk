@@ -22,7 +22,7 @@ import java.net.SocketOption;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-import static java.util.Objects.requireNonNull;
+import static io.servicetalk.http.api.StrategyInfluencerAwareConversions.toConditionalConnectionFilterFactory;
 
 /**
  * A builder of {@link HttpClient} or {@link HttpConnection} objects.
@@ -201,10 +201,6 @@ abstract class BaseHttpBuilder<ResolvedAddress> {
     // However this class is package private so the user will not be able to override this method.
     public /* final */ BaseHttpBuilder<ResolvedAddress> appendConnectionFilter(
             Predicate<StreamingHttpRequest> predicate, StreamingHttpConnectionFilterFactory factory) {
-        requireNonNull(predicate);
-        requireNonNull(factory);
-
-        return appendConnectionFilter(connection ->
-                new ConditionalHttpConnectionFilter(predicate, factory.create(connection), connection));
+        return appendConnectionFilter(toConditionalConnectionFilterFactory(predicate, factory));
     }
 }

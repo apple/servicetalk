@@ -57,11 +57,6 @@ public class StreamingHttpConnectionFilter implements FilterableStreamingHttpCon
     }
 
     @Override
-    public HttpExecutionStrategy computeExecutionStrategy(HttpExecutionStrategy other) {
-        return delegate.computeExecutionStrategy(other.merge(executionStrategy()));
-    }
-
-    @Override
     public ExecutionContext executionContext() {
         return delegate.executionContext();
     }

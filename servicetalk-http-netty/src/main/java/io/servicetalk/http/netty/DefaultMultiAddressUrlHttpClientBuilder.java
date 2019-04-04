@@ -96,7 +96,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder extends MultiAddressHttpClie
     private SslConfigProvider sslConfigProvider = plainByDefault();
     private int maxRedirects = DEFAULT_MAX_REDIRECTS;
     @Nullable
-    private MultiAddressHttpClientFilterFactory<HostAndPort> clientFilterFunction;
+    private MultiAddressHttpClientFilterFactory<HostAndPort> clientFilterFactory;
     @Nullable
     private Function<HostAndPort, CharSequence> hostHeaderTransformer;
 
@@ -112,20 +112,20 @@ final class DefaultMultiAddressUrlHttpClientBuilder extends MultiAddressHttpClie
             final HttpClientBuildContext<HostAndPort, InetSocketAddress> buildContext = builderTemplate.copyBuildCtx();
 
             final ClientFactory clientFactory = new ClientFactory(buildContext.builder,
-                    sslConfigProvider, clientFilterFunction, hostHeaderTransformer);
+                    sslConfigProvider, clientFilterFactory, hostHeaderTransformer);
 
             CachingKeyFactory keyFactory = closeables.prepend(new CachingKeyFactory(sslConfigProvider));
-            HttpExecutionStrategy strategy = buildContext.executionStrategy();
 
             FilterableStreamingHttpClient urlClient = closeables.prepend(
                     new StreamingUrlHttpClient(buildContext.executionContext, clientFactory, keyFactory,
-                            strategy, buildContext.reqRespFactory));
+                            buildContext.reqRespFactory));
 
             // Need to wrap the top level client (group) in order for non-relative redirects to work
             urlClient = maxRedirects <= 0 ? urlClient :
                     new RedirectingHttpRequesterFilter(false, maxRedirects).create(urlClient, empty());
 
-            return new DefaultStreamingHttpClient(urlClient);
+            return new FilterableClientToClient(urlClient, buildContext.executionStrategy(),
+                    buildContext.builder.buildStrategyInfluencerForClient());
         } catch (final Throwable t) {
             closeables.closeAsync().subscribe();
             throw t;
@@ -218,18 +218,18 @@ final class DefaultMultiAddressUrlHttpClientBuilder extends MultiAddressHttpClie
         private final DefaultSingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builderTemplate;
         private final SslConfigProvider sslConfigProvider;
         @Nullable
-        private final MultiAddressHttpClientFilterFactory<HostAndPort> clientFilterFunction;
+        private final MultiAddressHttpClientFilterFactory<HostAndPort> clientFilterFactory;
         @Nullable
         private final Function<HostAndPort, CharSequence> hostHeaderTransformer;
 
         ClientFactory(
                 final DefaultSingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builderTemplate,
                 final SslConfigProvider sslConfigProvider,
-                @Nullable final MultiAddressHttpClientFilterFactory<HostAndPort> clientFilterFunction,
+                @Nullable final MultiAddressHttpClientFilterFactory<HostAndPort> clientFilterFactory,
                 @Nullable final Function<HostAndPort, CharSequence> hostHeaderTransformer) {
             this.builderTemplate = builderTemplate;
             this.sslConfigProvider = sslConfigProvider;
-            this.clientFilterFunction = clientFilterFunction;
+            this.clientFilterFactory = clientFilterFactory;
             this.hostHeaderTransformer = hostHeaderTransformer;
         }
 
@@ -260,8 +260,8 @@ final class DefaultMultiAddressUrlHttpClientBuilder extends MultiAddressHttpClie
                 }
             }
             buildContext.builder.sslConfig(sslConfig);
-            if (clientFilterFunction != null) {
-                buildContext.builder.appendClientFilter(clientFilterFunction.asClientFilter(urlKey.hostAndPort));
+            if (clientFilterFactory != null) {
+                buildContext.builder.appendClientFilter(clientFilterFactory.asClientFilter(urlKey.hostAndPort));
             }
             return buildContext.build();
         }
@@ -273,12 +273,10 @@ final class DefaultMultiAddressUrlHttpClientBuilder extends MultiAddressHttpClie
         private final ClientGroup<UrlKey, FilterableStreamingHttpClient> group;
         private final CachingKeyFactory keyFactory;
         private final ListenableAsyncCloseable closeable;
-        private final HttpExecutionStrategy strategy;
 
         StreamingUrlHttpClient(final ExecutionContext executionContext,
                                final Function<UrlKey, FilterableStreamingHttpClient> clientFactory,
                                final CachingKeyFactory keyFactory,
-                               final HttpExecutionStrategy strategy,
                                final StreamingHttpRequestResponseFactory reqRespFactory) {
             this.reqRespFactory = requireNonNull(reqRespFactory);
             this.group = ClientGroup.from(clientFactory);
@@ -287,7 +285,6 @@ final class DefaultMultiAddressUrlHttpClientBuilder extends MultiAddressHttpClie
             compositeCloseable.append(group);
             compositeCloseable.append(keyFactory);
             closeable = toListenableAsyncCloseable(compositeCloseable);
-            this.strategy = requireNonNull(strategy);
             this.executionContext = requireNonNull(executionContext);
         }
 
@@ -321,13 +318,6 @@ final class DefaultMultiAddressUrlHttpClientBuilder extends MultiAddressHttpClie
         @Override
         public void close() throws Exception {
             closeable.closeAsync().toFuture().get();
-        }
-
-        @Override
-        public HttpExecutionStrategy computeExecutionStrategy(final HttpExecutionStrategy other) {
-            // TODO(scott): this will not represent the strategy from the Client. That means the computed strategy
-            // may not reflect the full execution path.
-            return strategy.merge(other);
         }
 
         @Override
@@ -441,10 +431,10 @@ final class DefaultMultiAddressUrlHttpClientBuilder extends MultiAddressHttpClie
     @Override
     public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> appendClientFilter(
             final StreamingHttpClientFilterFactory function) {
-        if (clientFilterFunction == null) {
-            clientFilterFunction = function.asMultiAddressClientFilter();
+        if (clientFilterFactory == null) {
+            clientFilterFactory = function.asMultiAddressClientFilter();
         } else {
-            clientFilterFunction = clientFilterFunction.append(function.asMultiAddressClientFilter());
+            clientFilterFactory = clientFilterFactory.append(function.asMultiAddressClientFilter());
         }
         return this;
     }
@@ -484,11 +474,12 @@ final class DefaultMultiAddressUrlHttpClientBuilder extends MultiAddressHttpClie
     @Override
     public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> appendClientFilter(
             final MultiAddressHttpClientFilterFactory<HostAndPort> function) {
-        if (clientFilterFunction == null) {
-            clientFilterFunction = requireNonNull(function);
+        if (clientFilterFactory == null) {
+            clientFilterFactory = requireNonNull(function);
         } else {
-            clientFilterFunction = clientFilterFunction.append(requireNonNull(function));
+            clientFilterFactory = clientFilterFactory.append(requireNonNull(function));
         }
+        builderTemplate.appendToStrategyInfluencer(function);
         return this;
     }
 

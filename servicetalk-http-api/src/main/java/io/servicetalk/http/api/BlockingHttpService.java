@@ -17,8 +17,6 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.concurrent.api.Single;
 
-import static io.servicetalk.http.api.HttpExecutionStrategies.OFFLOAD_RECEIVE_META_STRATEGY;
-
 /**
  * The equivalent of {@link HttpService} but with synchronous/blocking APIs instead of asynchronous APIs.
  */
@@ -39,17 +37,5 @@ public interface BlockingHttpService extends AutoCloseable {
     @Override
     default void close() throws Exception {
         // noop
-    }
-
-    /**
-     * Compute a {@link HttpExecutionStrategy} given the programming model constraints of this
-     * {@link BlockingStreamingHttpService} in combination with another {@link HttpExecutionStrategy}. This may involve
-     * a merge operation between two {@link BlockingStreamingHttpService}.
-     *
-     * @param other The other {@link HttpExecutionStrategy} to consider during the computation.
-     * @return The {@link HttpExecutionStrategy} for this {@link BlockingStreamingHttpService}.
-     */
-    default HttpExecutionStrategy computeExecutionStrategy(HttpExecutionStrategy other) {
-        return other.merge(OFFLOAD_RECEIVE_META_STRATEGY);
     }
 }

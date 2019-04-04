@@ -47,9 +47,7 @@ public interface StreamingHttpClient extends FilterableStreamingHttpClient {
      * filters are implemented using the {@link StreamingHttpClient} asynchronous API for maximum portability.
      * @return a {@link HttpClient} representation of this {@link StreamingHttpRequester}.
      */
-    default HttpClient asClient() {
-        return new StreamingHttpClientToHttpClient(this);
-    }
+    HttpClient asClient();
 
     /**
      * Convert this {@link StreamingHttpClient} to the {@link BlockingStreamingHttpClient} API.
@@ -58,9 +56,7 @@ public interface StreamingHttpClient extends FilterableStreamingHttpClient {
      * filters are implemented using the {@link StreamingHttpClient} asynchronous API for maximum portability.
      * @return a {@link BlockingStreamingHttpClient} representation of this {@link StreamingHttpClient}.
      */
-    default BlockingStreamingHttpClient asBlockingStreamingClient() {
-        return new StreamingHttpClientToBlockingStreamingHttpClient(this);
-    }
+    BlockingStreamingHttpClient asBlockingStreamingClient();
 
     /**
      * Convert this {@link StreamingHttpClient} to the {@link BlockingHttpClient} API.
@@ -69,7 +65,5 @@ public interface StreamingHttpClient extends FilterableStreamingHttpClient {
      * filters are implemented using the {@link StreamingHttpClient} asynchronous API for maximum portability.
      * @return a {@link BlockingHttpClient} representation of this {@link StreamingHttpClient}.
      */
-    default BlockingHttpClient asBlockingClient() {
-        return new StreamingHttpClientToBlockingHttpClient(this);
-    }
+    BlockingHttpClient asBlockingClient();
 }

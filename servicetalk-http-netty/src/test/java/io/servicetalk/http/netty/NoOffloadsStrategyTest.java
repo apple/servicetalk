@@ -17,11 +17,8 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.concurrent.api.DefaultThreadFactory;
-import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.BlockingHttpClient;
-import io.servicetalk.http.api.DelegatingHttpExecutionStrategy;
-import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpServerBuilder;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpRequest;
@@ -38,7 +35,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.Executors.immediate;
-import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
+import static io.servicetalk.http.api.HttpExecutionStrategies.customStrategyBuilder;
 import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
@@ -78,7 +75,8 @@ public class NoOffloadsStrategyTest {
 
     @Test
     public void noOffloadsStillUsesAServerExecutor() throws Exception {
-        StreamingHttpServiceImpl svc = new StreamingHttpServiceImpl(noOffloadsStrategy());
+        serverBuilder.executionStrategy(customStrategyBuilder().offloadNone().build());
+        StreamingHttpServiceImpl svc = new StreamingHttpServiceImpl();
         BlockingHttpClient client = initServerAndClient(svc);
         client.request(client.get("/"));
         assertThat("Unexpected thread for the server executor.", svc.executorThread.getName(),
@@ -87,13 +85,8 @@ public class NoOffloadsStrategyTest {
 
     @Test
     public void turnOffAllExecutors() throws Exception {
-        StreamingHttpServiceImpl svc =
-                new StreamingHttpServiceImpl(new DelegatingHttpExecutionStrategy(noOffloadsStrategy()) {
-                    @Override
-                    public Executor executor() {
-                        return immediate();
-                    }
-                });
+        serverBuilder.executionStrategy(customStrategyBuilder().offloadNone().executor(immediate()).build());
+        StreamingHttpServiceImpl svc = new StreamingHttpServiceImpl();
         BlockingHttpClient client = initServerAndClient(svc);
         client.request(client.get("/"));
         assertThat("Unexpected thread for the server executor.", svc.executorThread.getName(),
@@ -109,12 +102,7 @@ public class NoOffloadsStrategyTest {
 
     private static final class StreamingHttpServiceImpl implements StreamingHttpService {
 
-        private final HttpExecutionStrategy strategy;
         private volatile Thread executorThread;
-
-        StreamingHttpServiceImpl(final HttpExecutionStrategy strategy) {
-            this.strategy = strategy;
-        }
 
         @Override
         public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
@@ -124,11 +112,6 @@ public class NoOffloadsStrategyTest {
                 executorThread = currentThread();
                 return responseFactory.ok();
             });
-        }
-
-        @Override
-        public HttpExecutionStrategy computeExecutionStrategy(HttpExecutionStrategy other) {
-            return strategy.merge(other);
         }
     }
 }

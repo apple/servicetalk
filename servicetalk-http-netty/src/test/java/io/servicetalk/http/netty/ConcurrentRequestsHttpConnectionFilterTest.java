@@ -66,7 +66,6 @@ import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.http.api.HttpExecutionStrategies.customStrategyBuilder;
-import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
@@ -110,8 +109,7 @@ public class ConcurrentRequestsHttpConnectionFilterTest {
         when(conn.onClosing()).thenReturn(never());
         when(conn.transportError()).thenReturn(Single.never());
         AbstractStreamingHttpConnection<NettyConnection> mockConnection =
-                new AbstractStreamingHttpConnection<NettyConnection>(conn,
-                        roConfig, executionContext, reqRespFactory, noOffloadsStrategy()) {
+                new AbstractStreamingHttpConnection<NettyConnection>(conn, roConfig, executionContext, reqRespFactory) {
                     private final AtomicInteger reqCount = new AtomicInteger(0);
 
                     @Override

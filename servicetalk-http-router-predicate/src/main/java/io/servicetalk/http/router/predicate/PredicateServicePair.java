@@ -15,11 +15,13 @@
  */
 package io.servicetalk.http.router.predicate;
 
+import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.transport.api.ConnectionContext;
 
 import java.util.function.BiPredicate;
+import javax.annotation.Nullable;
 
 import static java.util.Objects.requireNonNull;
 
@@ -31,6 +33,8 @@ final class PredicateServicePair {
 
     private final BiPredicate<ConnectionContext, StreamingHttpRequest> predicate;
     private final StreamingHttpService service;
+    @Nullable
+    private final HttpExecutionStrategy routeStrategy;
 
     /**
      * Constructs a {@link PredicateServicePair} POJO.
@@ -39,9 +43,10 @@ final class PredicateServicePair {
      * @param service the {@link StreamingHttpService} to route to.
      */
     PredicateServicePair(final BiPredicate<ConnectionContext, StreamingHttpRequest> predicate,
-                         final StreamingHttpService service) {
+                         final StreamingHttpService service, @Nullable final HttpExecutionStrategy strategy) {
         this.predicate = requireNonNull(predicate);
         this.service = requireNonNull(service);
+        routeStrategy = strategy;
     }
 
     /**
@@ -60,5 +65,10 @@ final class PredicateServicePair {
      */
     StreamingHttpService service() {
         return service;
+    }
+
+    @Nullable
+    HttpExecutionStrategy routeStrategy() {
+        return routeStrategy;
     }
 }

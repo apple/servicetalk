@@ -20,7 +20,6 @@ import io.servicetalk.concurrent.api.AsyncCloseables;
 import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
-import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpRequest;
@@ -67,6 +66,7 @@ public class HttpConnectionEmptyPayloadTest {
             ServerContext serverContext = closeable.merge(HttpServers
                     .forAddress(localAddress(0))
                     .ioExecutor(executionContextRule.ioExecutor())
+                    .executionStrategy(noOffloadsStrategy())
                     .listenStreamingAndAwait(
                             new StreamingHttpService() {
                                 @Override
@@ -80,11 +80,6 @@ public class HttpConnectionEmptyPayloadTest {
                                                             .writeBytes(expectedPayload)));
                                     resp.addHeader(CONTENT_LENGTH, String.valueOf(expectedContentLength));
                                     return succeeded(resp);
-                                }
-
-                                @Override
-                                public HttpExecutionStrategy computeExecutionStrategy(HttpExecutionStrategy other) {
-                                    return noOffloadsStrategy();
                                 }
                             }));
 

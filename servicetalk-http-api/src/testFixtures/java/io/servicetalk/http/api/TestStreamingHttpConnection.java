@@ -24,6 +24,9 @@ import io.servicetalk.transport.api.ExecutionContext;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.emptyAsyncCloseable;
 import static io.servicetalk.concurrent.api.Single.failed;
+import static io.servicetalk.http.api.HttpApiConversions.toBlockingConnection;
+import static io.servicetalk.http.api.HttpApiConversions.toBlockingStreamingConnection;
+import static io.servicetalk.http.api.HttpApiConversions.toConnection;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 
 public final class TestStreamingHttpConnection {
@@ -73,11 +76,6 @@ public final class TestStreamingHttpConnection {
                     }
 
                     @Override
-                    public HttpExecutionStrategy computeExecutionStrategy(final HttpExecutionStrategy other) {
-                        return other;
-                    }
-
-                    @Override
                     public ConnectionContext connectionContext() {
                         return connectionContext;
                     }
@@ -97,8 +95,6 @@ public final class TestStreamingHttpConnection {
 
     public static StreamingHttpConnection from(FilterableStreamingHttpConnection filterChain) {
         return new StreamingHttpConnection() {
-            private final HttpExecutionStrategy strategy = filterChain.computeExecutionStrategy(defaultStrategy());
-
             @Override
             public StreamingHttpRequest newRequest(final HttpRequestMethod method, final String requestTarget) {
                 return filterChain.newRequest(method, requestTarget);
@@ -141,11 +137,6 @@ public final class TestStreamingHttpConnection {
             }
 
             @Override
-            public HttpExecutionStrategy computeExecutionStrategy(final HttpExecutionStrategy other) {
-                return filterChain.computeExecutionStrategy(other);
-            }
-
-            @Override
             public ConnectionContext connectionContext() {
                 return filterChain.connectionContext();
             }
@@ -157,7 +148,22 @@ public final class TestStreamingHttpConnection {
 
             @Override
             public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
-                return filterChain.request(strategy, request);
+                return filterChain.request(defaultStrategy(), request);
+            }
+
+            @Override
+            public HttpConnection asConnection() {
+                return toConnection(this, strategy -> strategy);
+            }
+
+            @Override
+            public BlockingStreamingHttpConnection asBlockingStreamingConnection() {
+                return toBlockingStreamingConnection(this, strategy -> strategy);
+            }
+
+            @Override
+            public BlockingHttpConnection asBlockingConnection() {
+                return toBlockingConnection(this, strategy -> strategy);
             }
         };
     }

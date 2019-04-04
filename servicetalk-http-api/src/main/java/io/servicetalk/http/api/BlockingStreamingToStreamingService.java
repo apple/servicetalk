@@ -25,6 +25,7 @@ import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.internal.ConnectablePayloadWriter;
 import io.servicetalk.concurrent.internal.ThreadInterruptingCancellable;
+import io.servicetalk.http.api.HttpApiConversions.StreamingServiceAdapter;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,21 +39,23 @@ import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.safeOnError;
 import static io.servicetalk.http.api.BlockingUtils.blockingToCompletable;
-import static io.servicetalk.http.api.HttpExecutionStrategies.OFFLOAD_RECEIVE_META_AND_SEND_STRATEGY;
+import static io.servicetalk.http.api.HttpApiConversions.DEFAULT_BLOCKING_STREAMING_SERVICE_STRATEGY;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.StreamingHttpResponses.newResponseWithTrailers;
 import static java.lang.Thread.currentThread;
 import static java.util.Objects.requireNonNull;
 
-final class BlockingStreamingHttpServiceToStreamingHttpService implements StreamingHttpService {
+final class BlockingStreamingToStreamingService implements StreamingServiceAdapter {
 
     private static final Logger LOGGER =
-            LoggerFactory.getLogger(BlockingStreamingHttpServiceToStreamingHttpService.class);
+            LoggerFactory.getLogger(BlockingStreamingToStreamingService.class);
 
-    private final BlockingStreamingHttpService service;
+    private final BlockingStreamingHttpService original;
+    private final HttpExecutionStrategy strategy;
 
-    BlockingStreamingHttpServiceToStreamingHttpService(final BlockingStreamingHttpService service) {
-        this.service = requireNonNull(service);
+    BlockingStreamingToStreamingService(final BlockingStreamingHttpService original) {
+        this.original = requireNonNull(original);
+        strategy = DEFAULT_BLOCKING_STREAMING_SERVICE_STRATEGY;
     }
 
     @Override
@@ -107,7 +110,7 @@ final class BlockingStreamingHttpServiceToStreamingHttpService implements Stream
                     response = new DefaultBlockingStreamingHttpServerResponse(OK, request.version(),
                                     ctx.headersFactory().newHeaders(), payloadWriter,
                                     ctx.executionContext().bufferAllocator(), sendMeta);
-                    service.handle(ctx, request.toBlockingStreamingRequest(), response);
+                    original.handle(ctx, request.toBlockingStreamingRequest(), response);
                 } catch (Throwable cause) {
                     tiCancellable.setDone(cause);
                     if (response == null || response.markMetaSent()) {
@@ -126,15 +129,18 @@ final class BlockingStreamingHttpServiceToStreamingHttpService implements Stream
 
     @Override
     public Completable closeAsync() {
-        return blockingToCompletable(service::close);
+        return blockingToCompletable(original::close);
     }
 
     @Override
-    public HttpExecutionStrategy computeExecutionStrategy(HttpExecutionStrategy other) {
-        // Since we are converting to a different programming model, try altering the strategy for the returned service
-        // to contain an appropriate default. We achieve this by merging the expected strategy with the provided
-        // service strategy.
-        return service.computeExecutionStrategy(other.merge(OFFLOAD_RECEIVE_META_AND_SEND_STRATEGY));
+    public HttpExecutionStrategy influenceStrategy(final HttpExecutionStrategy strategy) {
+        return original instanceof HttpExecutionStrategyInfluencer ?
+                ((HttpExecutionStrategyInfluencer) original).influenceStrategy(strategy) : strategy;
+    }
+
+    @Override
+    public HttpExecutionStrategy executionStrategy() {
+        return strategy;
     }
 
     private static final class BufferHttpPayloadWriter implements HttpPayloadWriter<Buffer> {

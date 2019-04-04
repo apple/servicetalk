@@ -22,8 +22,10 @@ import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpConnectionBuilder;
 import io.servicetalk.http.api.HttpExecutionStrategy;
+import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpHeadersFactory;
+import io.servicetalk.http.api.StrategyInfluencerChainBuilder;
 import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequest;
@@ -49,6 +51,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.transport.netty.internal.CloseHandler.forPipelinedRequestResponse;
 import static java.util.Objects.requireNonNull;
 
@@ -63,6 +66,8 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> extends HttpCon
 
     private final HttpClientConfig config;
     private final ExecutionContextBuilder executionContextBuilder = new ExecutionContextBuilder();
+    private final StrategyInfluencerChainBuilder influencerChainBuilder;
+    private HttpExecutionStrategy strategy = defaultStrategy();
     @Nullable
     private StreamingHttpConnectionFilterFactory connectionFilterFunction;
     @Nullable
@@ -74,6 +79,7 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> extends HttpCon
      */
     public DefaultHttpConnectionBuilder() {
         config = new HttpClientConfig(new TcpClientConfig(false));
+        influencerChainBuilder = new StrategyInfluencerChainBuilder();
     }
 
     @Override
@@ -89,9 +95,15 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> extends HttpCon
     }
 
     @Override
+    public DefaultHttpConnectionBuilder<ResolvedAddress> executionStrategy(final HttpExecutionStrategy strategy) {
+        this.strategy = requireNonNull(strategy);
+        return this;
+    }
+
+    @Override
     public Single<StreamingHttpConnection> buildStreaming(final ResolvedAddress resolvedAddress) {
         ReadOnlyHttpClientConfig roConfig = config.asReadOnly();
-        HttpExecutionStrategy strategy = executionStrategy();
+        final HttpExecutionStrategy strategy = this.strategy;
         Executor executor = strategy.executor();
         if (executor != null) {
             executionContextBuilder.executor(executor);
@@ -100,6 +112,8 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> extends HttpCon
         final StreamingHttpRequestResponseFactory reqRespFactory =
                 new DefaultStreamingHttpRequestResponseFactory(executionContext.bufferAllocator(),
                         roConfig.headersFactory());
+        influencerChainBuilder.addAt(0, strategy::merge);
+        HttpExecutionStrategyInfluencer strategyInfluencer = influencerChainBuilder.build();
 
         StreamingHttpConnectionFilterFactory filterFactory;
         if (connectionFilterFunction != null) {
@@ -128,7 +142,7 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> extends HttpCon
                                     strategy), roConfig.maxPipelinedRequests());
                     return finalFilterFactory == null ? limitedConn : finalFilterFactory.create(limitedConn);
                 })
-                ).map(DefaultStreamingHttpConnection::new);
+                ).map(conn -> new DefaultStreamingHttpConnection(conn, strategy, strategyInfluencer));
     }
 
     // TODO(derek): Temporary, so we can re-enable the ability to create non-pipelined connections for perf testing.
@@ -237,12 +251,13 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> extends HttpCon
 
     @Override
     public DefaultHttpConnectionBuilder<ResolvedAddress> appendConnectionFilter(
-            final StreamingHttpConnectionFilterFactory function) {
+            final StreamingHttpConnectionFilterFactory factory) {
         if (connectionFilterFunction == null) {
-            connectionFilterFunction = requireNonNull(function);
+            connectionFilterFunction = requireNonNull(factory);
         } else {
-            connectionFilterFunction = connectionFilterFunction.append(requireNonNull(function));
+            connectionFilterFunction = connectionFilterFunction.append(requireNonNull(factory));
         }
+        influencerChainBuilder.appendIfInfluencer(factory);
         return this;
     }
 

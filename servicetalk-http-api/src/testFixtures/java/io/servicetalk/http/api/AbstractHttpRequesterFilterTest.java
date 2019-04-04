@@ -266,6 +266,21 @@ public abstract class AbstractHttpRequesterFilterTest {
         final StreamingHttpConnection connection = newConnection(ok(), null);
         return new ReservedStreamingHttpConnection() {
             @Override
+            public ReservedHttpConnection asConnection() {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public ReservedBlockingStreamingHttpConnection asBlockingStreamingConnection() {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public ReservedBlockingHttpConnection asBlockingConnection() {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
             public StreamingHttpRequest newRequest(final HttpRequestMethod method, final String requestTarget) {
                 return connection.newRequest(method, requestTarget);
             }
@@ -309,11 +324,6 @@ public abstract class AbstractHttpRequesterFilterTest {
             @Override
             public void close() throws Exception {
                 connection.close();
-            }
-
-            @Override
-            public HttpExecutionStrategy computeExecutionStrategy(final HttpExecutionStrategy other) {
-                return connection.computeExecutionStrategy(other);
             }
 
             @Override

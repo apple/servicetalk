@@ -20,7 +20,6 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.api.ExecutionContext;
 
 import static io.servicetalk.concurrent.internal.FutureUtils.awaitTermination;
-import static io.servicetalk.http.api.HttpExecutionStrategies.OFFLOAD_ALL_STRATEGY;
 
 /**
  * The equivalent of {@link HttpRequester} but that accepts {@link StreamingHttpRequest} and returns
@@ -56,17 +55,5 @@ public interface StreamingHttpRequester extends StreamingHttpRequestFactory, Lis
     @Override
     default void close() throws Exception {
         awaitTermination(closeAsyncGracefully().toFuture());
-    }
-
-    /**
-     * Compute the {@link HttpExecutionStrategy} to be used for this {@link StreamingHttpRequester} considering the
-     * passed {@link HttpExecutionStrategy}. The passed {@link HttpExecutionStrategy} is the strategy that the caller
-     * intends to use if this {@link StreamingHttpRequester} does not modify it.
-     *
-     * @param other The other {@link HttpExecutionStrategy} to consider during the computation.
-     * @return The {@link HttpExecutionStrategy} for this {@link StreamingHttpRequester}.
-     */
-    default HttpExecutionStrategy computeExecutionStrategy(HttpExecutionStrategy other) {
-        return other.merge(OFFLOAD_ALL_STRATEGY);
     }
 }

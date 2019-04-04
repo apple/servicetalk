@@ -19,8 +19,6 @@ import io.servicetalk.concurrent.api.AsyncCloseable;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 
-import static io.servicetalk.http.api.HttpExecutionStrategies.OFFLOAD_RECEIVE_META_AND_SEND_STRATEGY;
-
 /**
  * Same as {@link StreamingHttpService} but that accepts {@link HttpRequest} and returns {@link HttpResponse}.
  */
@@ -44,17 +42,5 @@ public interface HttpService extends AsyncCloseable {
     @Override
     default Completable closeAsync() {
         return Completable.completed();
-    }
-
-    /**
-     * Compute a {@link HttpExecutionStrategy} given the programming model constraints of this
-     * {@link BlockingStreamingHttpService} in combination with another {@link HttpExecutionStrategy}. This may involve
-     * a merge operation between two {@link BlockingStreamingHttpService}.
-     *
-     * @param other The other {@link HttpExecutionStrategy} to consider during the computation.
-     * @return The {@link HttpExecutionStrategy} for this {@link BlockingStreamingHttpService}.
-     */
-    default HttpExecutionStrategy computeExecutionStrategy(HttpExecutionStrategy other) {
-        return other.merge(OFFLOAD_RECEIVE_META_AND_SEND_STRATEGY);
     }
 }

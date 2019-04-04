@@ -15,9 +15,12 @@
  */
 package io.servicetalk.http.router.predicate;
 
+import io.servicetalk.http.api.BlockingHttpService;
+import io.servicetalk.http.api.BlockingStreamingHttpService;
 import io.servicetalk.http.api.HttpCookie;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpRequestMethod;
+import io.servicetalk.http.api.HttpService;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.router.predicate.dsl.CookieMatcher;
@@ -35,6 +38,7 @@ import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.http.api.HttpApiConversions.toStreamingHttpService;
 import static io.servicetalk.http.router.predicate.Predicates.method;
 import static io.servicetalk.http.router.predicate.Predicates.methodIsOneOf;
 import static io.servicetalk.http.router.predicate.Predicates.pathEquals;
@@ -65,14 +69,6 @@ public final class HttpPredicateRouterBuilder implements RouteStarter {
     private final RouteContinuationImpl continuation = new RouteContinuationImpl();
     @Nullable
     private BiPredicate<ConnectionContext, StreamingHttpRequest> predicate;
-
-    /**
-     * Do not define any strategy by default which will use the default strategy.
-     * Since, we invoke user-code (predicates) from this router, we want to use the default strategy and an opt-in for
-     * non-blocking predicates.
-     */
-    @Nullable
-    private HttpExecutionStrategy strategy;
 
     @Override
     public RouteContinuation whenMethod(final HttpRequestMethod method) {
@@ -160,14 +156,8 @@ public final class HttpPredicateRouterBuilder implements RouteStarter {
     }
 
     @Override
-    public RouteStarter executionStrategy(final HttpExecutionStrategy strategy) {
-        this.strategy = requireNonNull(strategy);
-        return this;
-    }
-
-    @Override
     public StreamingHttpService buildStreaming() {
-        return new InOrderRouter(DefaultFallbackServiceStreaming.instance(), predicateServicePairs, strategy);
+        return new InOrderRouter(DefaultFallbackServiceStreaming.instance(), predicateServicePairs);
     }
 
     private void andPredicate(final BiPredicate<ConnectionContext, StreamingHttpRequest> newPredicate) {
@@ -179,6 +169,9 @@ public final class HttpPredicateRouterBuilder implements RouteStarter {
     }
 
     private class RouteContinuationImpl implements RouteContinuation {
+
+        @Nullable
+        private HttpExecutionStrategy strategy;
 
         @Override
         public RouteContinuation andMethod(final HttpRequestMethod method) {
@@ -251,10 +244,37 @@ public final class HttpPredicateRouterBuilder implements RouteStarter {
         }
 
         @Override
+        public RouteContinuation executionStrategy(final HttpExecutionStrategy routeStrategy) {
+            strategy = routeStrategy;
+            return this;
+        }
+
+        @Override
         public RouteStarter thenRouteTo(final StreamingHttpService service) {
+            return thenRouteTo0(service);
+        }
+
+        @Override
+        public RouteStarter thenRouteTo(final HttpService service) {
+            return thenRouteTo0(toStreamingHttpService(service));
+        }
+
+        @Override
+        public RouteStarter thenRouteTo(final BlockingHttpService service) {
+            return thenRouteTo0(toStreamingHttpService(service));
+        }
+
+        @Override
+        public RouteStarter thenRouteTo(final BlockingStreamingHttpService service) {
+            return thenRouteTo0(toStreamingHttpService(service));
+        }
+
+        private RouteStarter thenRouteTo0(final StreamingHttpService service) {
             assert predicate != null;
-            predicateServicePairs.add(new PredicateServicePair(predicate, service));
+            predicateServicePairs.add(new PredicateServicePair(predicate, service, strategy));
+            // Reset shared state since we have finished current route construction
             predicate = null;
+            strategy = null;
             return HttpPredicateRouterBuilder.this;
         }
     }

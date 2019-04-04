@@ -16,7 +16,6 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.http.api.BlockingHttpClient;
-import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.api.StreamingHttpServiceFilter;
@@ -25,7 +24,6 @@ import io.servicetalk.transport.api.ServerContext;
 
 import org.junit.Test;
 import org.mockito.InOrder;
-import org.mockito.stubbing.Answer;
 
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
@@ -35,7 +33,6 @@ import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAnd
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -62,8 +59,6 @@ public class HttpServerFilterOrderTest {
 
     private static StreamingHttpService newMockService() {
         StreamingHttpService service = mock(StreamingHttpService.class);
-        doAnswer((Answer<HttpExecutionStrategy>) invocation ->
-                invocation.getArgument(0)).when(service).computeExecutionStrategy(any());
         when(service.closeAsync()).thenReturn(completed());
         when(service.closeAsyncGracefully()).thenReturn(completed());
         return service;

@@ -108,7 +108,7 @@ public abstract class SingleAddressHttpClientBuilder<U, R>
     public abstract SingleAddressHttpClientBuilder<U, R> enableHostHeaderFallback(CharSequence hostHeader);
 
     @Override
-    public abstract SingleAddressHttpClientBuilder<U, R> appendClientFilter(StreamingHttpClientFilterFactory function);
+    public abstract SingleAddressHttpClientBuilder<U, R> appendClientFilter(StreamingHttpClientFilterFactory factory);
 
     @Override
     public SingleAddressHttpClientBuilder<U, R> appendClientFilter(Predicate<StreamingHttpRequest> predicate,

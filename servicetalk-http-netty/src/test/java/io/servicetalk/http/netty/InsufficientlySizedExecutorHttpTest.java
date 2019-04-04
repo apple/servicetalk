@@ -18,18 +18,13 @@ package io.servicetalk.http.netty;
 import io.servicetalk.client.api.ConnectionRejectedException;
 import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.concurrent.api.Executor;
-import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.http.api.HttpServerBuilder;
-import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpClient;
-import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
-import io.servicetalk.http.api.StreamingHttpResponseFactory;
-import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.transport.api.ServerContext;
 
 import org.junit.After;
@@ -158,19 +153,8 @@ public class InsufficientlySizedExecutorHttpTest {
         if (addConnectionAcceptor) {
             serverBuilder.appendConnectionAcceptorFilter(identity());
         }
-        server = serverBuilder.listenStreamingAndAwait(new StreamingHttpService() {
-            @Override
-            public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
-                                                        final StreamingHttpRequest request,
-                                                        final StreamingHttpResponseFactory respFactory) {
-                return succeeded(respFactory.ok());
-            }
-
-            @Override
-            public HttpExecutionStrategy computeExecutionStrategy(HttpExecutionStrategy other) {
-                return strategy.merge(other);
-            }
-        });
+        server = serverBuilder.executionStrategy(strategy)
+                .listenStreamingAndAwait((ctx, request, respFactory) -> succeeded(respFactory.ok()));
         client = forSingleAddress(serverHostAndPort(server)).buildStreaming();
     }
 

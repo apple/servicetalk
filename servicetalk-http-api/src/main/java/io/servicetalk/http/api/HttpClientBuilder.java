@@ -29,7 +29,7 @@ import java.net.SocketOption;
 import java.util.function.Predicate;
 
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
-import static java.util.Objects.requireNonNull;
+import static io.servicetalk.http.api.StrategyInfluencerAwareConversions.toConditionalClientFilterFactory;
 
 /**
  * A builder of {@link HttpClient} objects.
@@ -156,12 +156,8 @@ abstract class HttpClientBuilder<U, R, SDE extends ServiceDiscovererEvent<R>> ex
      * @return {@code this}
      */
     public HttpClientBuilder<U, R, SDE> appendClientFilter(Predicate<StreamingHttpRequest> predicate,
-                                                            StreamingHttpClientFilterFactory factory) {
-        requireNonNull(predicate);
-        requireNonNull(factory);
-
-        return appendClientFilter((client, lbEvents) ->
-                new ConditionalHttpClientFilter(predicate, factory.create(client, lbEvents), client));
+                                                           StreamingHttpClientFilterFactory factory) {
+        return appendClientFilter(toConditionalClientFilterFactory(predicate, factory));
     }
 
     @Override

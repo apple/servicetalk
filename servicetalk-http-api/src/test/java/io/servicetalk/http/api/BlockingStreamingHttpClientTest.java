@@ -26,6 +26,9 @@ import java.util.function.BiFunction;
 import static io.servicetalk.concurrent.api.Processors.newCompletableProcessor;
 import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
+import static io.servicetalk.http.api.HttpApiConversions.toBlockingClient;
+import static io.servicetalk.http.api.HttpApiConversions.toBlockingStreamingClient;
+import static io.servicetalk.http.api.HttpApiConversions.toClient;
 import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static java.util.Objects.requireNonNull;
 
@@ -114,6 +117,21 @@ public class BlockingStreamingHttpClientTest extends AbstractBlockingStreamingHt
         @Override
         public StreamingHttpRequest newRequest(final HttpRequestMethod method, final String requestTarget) {
             return factory.newRequest(method, requestTarget);
+        }
+
+        @Override
+        public HttpClient asClient() {
+            return toClient(this, strategy -> strategy);
+        }
+
+        @Override
+        public BlockingStreamingHttpClient asBlockingStreamingClient() {
+            return toBlockingStreamingClient(this, strategy -> strategy);
+        }
+
+        @Override
+        public BlockingHttpClient asBlockingClient() {
+            return toBlockingClient(this, strategy -> strategy);
         }
     }
 }

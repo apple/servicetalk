@@ -75,9 +75,4 @@ final class ConditionalHttpClientFilter extends StreamingHttpClientFilter {
     public Completable onClose() {
         return closeable.onClose();
     }
-
-    @Override
-    public HttpExecutionStrategy computeExecutionStrategy(HttpExecutionStrategy other) {
-        return delegate().computeExecutionStrategy(predicatedClient.computeExecutionStrategy(other));
-    }
 }

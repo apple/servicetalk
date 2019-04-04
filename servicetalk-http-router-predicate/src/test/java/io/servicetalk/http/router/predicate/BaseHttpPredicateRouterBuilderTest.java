@@ -21,7 +21,6 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.DefaultHttpHeadersFactory;
 import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
-import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.http.api.HttpServiceContext;
@@ -77,8 +76,6 @@ public abstract class BaseHttpPredicateRouterBuilderTest {
     HttpHeaders headers;
     @Mock
     Single<StreamingHttpResponse> responseA, responseB, responseC, responseD, responseE, fallbackResponse;
-    @Mock
-    HttpExecutionStrategy strategy;
 
     @Before
     public void setUp() {
@@ -91,14 +88,6 @@ public abstract class BaseHttpPredicateRouterBuilderTest {
                     HttpResponseStatus status = invocation.getArgument(0);
                     return reqRespFactory.newResponse(status);
                 });
-
-        when(strategy.offloadService(any(), any())).then(invocation -> invocation.getArgument(1));
-        when(serviceA.computeExecutionStrategy(any())).thenReturn(strategy);
-        when(serviceB.computeExecutionStrategy(any())).thenReturn(strategy);
-        when(serviceC.computeExecutionStrategy(any())).thenReturn(strategy);
-        when(serviceD.computeExecutionStrategy(any())).thenReturn(strategy);
-        when(serviceE.computeExecutionStrategy(any())).thenReturn(strategy);
-        when(fallbackService.computeExecutionStrategy(any())).thenReturn(strategy);
 
         when(serviceA.handle(eq(ctx), eq(request), any())).thenReturn(responseA);
         when(serviceB.handle(eq(ctx), eq(request), any())).thenReturn(responseB);

@@ -19,7 +19,6 @@ import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
@@ -55,14 +54,11 @@ final class TestServiceStreaming implements StreamingHttpService {
     static final String SVC_ERROR_BEFORE_READ = "/errorBeforeRead";
     static final String SVC_ERROR_DURING_READ = "/errorDuringRead";
     private final Function<StreamingHttpRequest, Publisher<Buffer>> publisherSupplier;
-    private final HttpExecutionStrategy strategy;
 
     private int counter;
 
-    TestServiceStreaming(final Function<StreamingHttpRequest, Publisher<Buffer>> publisherSupplier,
-                         final HttpExecutionStrategy strategy) {
+    TestServiceStreaming(final Function<StreamingHttpRequest, Publisher<Buffer>> publisherSupplier) {
         this.publisherSupplier = publisherSupplier;
-        this.strategy = strategy;
     }
 
     @Override
@@ -108,11 +104,6 @@ final class TestServiceStreaming implements StreamingHttpService {
                 response = newNotFoundResponse(req, factory);
         }
         return Single.succeeded(response);
-    }
-
-    @Override
-    public HttpExecutionStrategy computeExecutionStrategy(HttpExecutionStrategy other) {
-        return strategy.merge(other);
     }
 
     private static StreamingHttpResponse newEchoResponse(final StreamingHttpRequest req,

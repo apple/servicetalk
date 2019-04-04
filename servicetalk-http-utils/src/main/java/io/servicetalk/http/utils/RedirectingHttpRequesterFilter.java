@@ -22,6 +22,7 @@ import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpConnection;
 import io.servicetalk.http.api.HttpExecutionStrategy;
+import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
 import io.servicetalk.http.api.HttpHeaderNames;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.ReservedStreamingHttpConnection;
@@ -52,7 +53,8 @@ import io.servicetalk.http.api.StreamingHttpResponse;
  * </ul>
  */
 public final class RedirectingHttpRequesterFilter implements StreamingHttpClientFilterFactory,
-                                                             StreamingHttpConnectionFilterFactory {
+                                                             StreamingHttpConnectionFilterFactory,
+                                                             HttpExecutionStrategyInfluencer {
 
     // https://tools.ietf.org/html/rfc2068#section-10.3 says:
     // A user agent SHOULD NOT automatically redirect a request more than 5 times,
@@ -145,22 +147,15 @@ public final class RedirectingHttpRequesterFilter implements StreamingHttpClient
                 return delegate().reserveConnection(strategy, metaData)
                         .map(r -> new ReservedStreamingHttpConnectionFilter(r) {
                             @Override
-                            protected Single<StreamingHttpResponse> request(
-                                    final StreamingHttpRequester delegate,
-                                    final HttpExecutionStrategy strategy,
-                                    final StreamingHttpRequest request) {
+                            protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
+                                                                            final HttpExecutionStrategy strategy,
+                                                                            final StreamingHttpRequest request) {
                                 return RedirectingHttpRequesterFilter.this.request(delegate, strategy, request,
                                         onlyRelativeConnection);
                             }
                         });
             }
-
-            @Override
-            public HttpExecutionStrategy computeExecutionStrategy(final HttpExecutionStrategy other) {
-                // Since this filter does not have any blocking code, we do not need to alter the effective strategy.
-                return delegate().computeExecutionStrategy(other);
-            }
-        };
+       };
     }
 
     @Override
@@ -171,12 +166,6 @@ public final class RedirectingHttpRequesterFilter implements StreamingHttpClient
                                                          final StreamingHttpRequest request) {
                 return RedirectingHttpRequesterFilter.this.request(delegate(), strategy, request,
                         onlyRelativeConnection);
-            }
-
-            @Override
-            public HttpExecutionStrategy computeExecutionStrategy(final HttpExecutionStrategy other) {
-                // Since this filter does not have any blocking code, we do not need to alter the effective strategy.
-                return delegate().computeExecutionStrategy(other);
             }
         };
     }
@@ -190,5 +179,11 @@ public final class RedirectingHttpRequesterFilter implements StreamingHttpClient
             return response;
         }
         return new RedirectSingle(strategy, response, request, maxRedirects, delegate, onlyRelative);
+    }
+
+    @Override
+    public HttpExecutionStrategy influenceStrategy(final HttpExecutionStrategy strategy) {
+        // No influence since we do not block.
+        return strategy;
     }
 }

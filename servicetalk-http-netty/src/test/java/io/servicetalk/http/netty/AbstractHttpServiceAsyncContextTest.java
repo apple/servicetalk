@@ -21,7 +21,6 @@ import io.servicetalk.concurrent.api.AsyncContextMap;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.HttpConnectionBuilder;
-import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpServerBuilder;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpConnection;
@@ -137,7 +136,8 @@ public abstract class AbstractHttpServiceAsyncContextTest {
         Queue<Throwable> errorQueue = new ConcurrentLinkedQueue<>();
 
         try (ServerContext ctx = serverWithService(HttpServers.forAddress(localAddress(0))
-                .appendServiceFilter(filterFactory(useImmediate, asyncFilter, errorQueue)),
+                .appendServiceFilter(filterFactory(useImmediate, asyncFilter, errorQueue))
+                        .executionStrategy(noOffloadsStrategy()),
                 useImmediate, asyncService);
 
              StreamingHttpConnection connection = new DefaultHttpConnectionBuilder<SocketAddress>()
@@ -158,11 +158,6 @@ public abstract class AbstractHttpServiceAsyncContextTest {
                                                         final StreamingHttpResponseFactory factory) {
                 return asyncFilter ? defer(() -> doHandle(ctx, request, factory).subscribeShareContext()) :
                         doHandle(ctx, request, factory);
-            }
-
-            @Override
-            public HttpExecutionStrategy executionStrategy() {
-                return noOffloadsStrategy();
             }
 
             private Single<StreamingHttpResponse> doHandle(final HttpServiceContext ctx,

@@ -17,17 +17,13 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.concurrent.api.LegacyMockedSingleListenerRule;
-import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.DefaultHttpHeadersFactory;
-import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpResponseStatus;
-import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
-import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
@@ -110,42 +106,32 @@ public class MultiAddressUrlHttpClientTest {
                 .buildStreaming());
 
         final HttpHeaders httpHeaders = DefaultHttpHeadersFactory.INSTANCE.newHeaders().set(CONTENT_LENGTH, ZERO);
-        httpService = new StreamingHttpService() {
-            @Override
-            public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
-                                                        final StreamingHttpRequest request,
-                                                        final StreamingHttpResponseFactory factory) {
-                if (HTTP_1_1.equals(request.version()) && !request.headers().contains(HOST)) {
-                    StreamingHttpResponse resp = factory.newResponse(BAD_REQUEST);
-                    resp.headers().set(httpHeaders);
-                    return succeeded(resp);
-                }
-
-                if (OPTIONS.equals(request.method()) || CONNECT.equals(request.method())) {
-                    StreamingHttpResponse resp = factory.ok();
-                    resp.headers().set(httpHeaders);
-                    return succeeded(resp);
-                }
-                try {
-                    HttpResponseStatus status = HttpResponseStatus.of(parseInt(request.path().substring(1)),
-                            EMPTY_BUFFER);
-                    StreamingHttpResponse response = factory.newResponse(status);
-                    response.headers().set(httpHeaders);
-                    final CharSequence locationHeader = request.headers().get(X_REQUESTED_LOCATION);
-                    if (locationHeader != null) {
-                        response.headers().set(LOCATION, locationHeader);
-                    }
-                    return succeeded(response);
-                } catch (Exception e) {
-                    StreamingHttpResponse resp = factory.newResponse(BAD_REQUEST);
-                    resp.headers().set(httpHeaders);
-                    return succeeded(resp);
-                }
+        httpService = (ctx, request, factory) -> {
+            if (HTTP_1_1.equals(request.version()) && !request.headers().contains(HOST)) {
+                StreamingHttpResponse resp = factory.newResponse(BAD_REQUEST);
+                resp.headers().set(httpHeaders);
+                return succeeded(resp);
             }
 
-            @Override
-            public HttpExecutionStrategy computeExecutionStrategy(HttpExecutionStrategy other) {
-                return noOffloadsStrategy();
+            if (OPTIONS.equals(request.method()) || CONNECT.equals(request.method())) {
+                StreamingHttpResponse resp = factory.ok();
+                resp.headers().set(httpHeaders);
+                return succeeded(resp);
+            }
+            try {
+                HttpResponseStatus status = HttpResponseStatus.of(parseInt(request.path().substring(1)),
+                        EMPTY_BUFFER);
+                StreamingHttpResponse response = factory.newResponse(status);
+                response.headers().set(httpHeaders);
+                final CharSequence locationHeader = request.headers().get(X_REQUESTED_LOCATION);
+                if (locationHeader != null) {
+                    response.headers().set(LOCATION, locationHeader);
+                }
+                return succeeded(response);
+            } catch (Exception e) {
+                StreamingHttpResponse resp = factory.newResponse(BAD_REQUEST);
+                resp.headers().set(httpHeaders);
+                return succeeded(resp);
             }
         };
         serverCtx = startNewLocalServer(httpService, afterClassCloseables);
@@ -295,6 +281,7 @@ public class MultiAddressUrlHttpClientTest {
     private static ServerContext startNewLocalServer(final StreamingHttpService httpService,
                                                      final CompositeCloseable closeables) throws Exception {
         return closeables.append(HttpServers.forAddress(localAddress(0))
+                .executionStrategy(noOffloadsStrategy())
                 .ioExecutor(CTX.ioExecutor())
                 .listenStreamingAndAwait(httpService));
     }

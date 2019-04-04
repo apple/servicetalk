@@ -17,37 +17,46 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.http.api.HttpApiConversions.StreamingServiceAdapter;
 
-import static io.servicetalk.http.api.BlockingUtils.blockingToCompletable;
-import static io.servicetalk.http.api.BlockingUtils.blockingToSingle;
-import static io.servicetalk.http.api.HttpExecutionStrategies.OFFLOAD_RECEIVE_META_STRATEGY;
+import static io.servicetalk.http.api.HttpApiConversions.DEFAULT_SERVICE_STRATEGY;
 import static java.util.Objects.requireNonNull;
 
-final class BlockingHttpServiceToStreamingHttpService implements StreamingHttpService {
-    private final BlockingHttpService service;
+final class ServiceToStreamingService implements StreamingServiceAdapter {
+    private final HttpService original;
+    private final HttpExecutionStrategy strategy;
 
-    BlockingHttpServiceToStreamingHttpService(final BlockingHttpService service) {
-        this.service = requireNonNull(service);
+    ServiceToStreamingService(final HttpService original) {
+        this.original = requireNonNull(original);
+        strategy = DEFAULT_SERVICE_STRATEGY;
     }
 
     @Override
     public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
                                                 final StreamingHttpRequest request,
                                                 final StreamingHttpResponseFactory responseFactory) {
-        return request.toRequest().flatMap(req -> blockingToSingle(() -> service.handle(
-                ctx, req, ctx.responseFactory())).map(HttpResponse::toStreamingResponse));
+        return request.toRequest().flatMap(req -> original.handle(ctx, req, ctx.responseFactory()))
+                .map(HttpResponse::toStreamingResponse);
     }
 
     @Override
     public Completable closeAsync() {
-        return blockingToCompletable(service::close);
+        return original.closeAsync();
     }
 
     @Override
-    public HttpExecutionStrategy computeExecutionStrategy(HttpExecutionStrategy other) {
-        // Since we are converting to a different programming model, try altering the strategy for the returned service
-        // to contain an appropriate default. We achieve this by merging the expected strategy with the provided
-        // service strategy.
-        return service.computeExecutionStrategy(other.merge(OFFLOAD_RECEIVE_META_STRATEGY));
+    public Completable closeAsyncGracefully() {
+        return original.closeAsyncGracefully();
+    }
+
+    @Override
+    public HttpExecutionStrategy influenceStrategy(final HttpExecutionStrategy strategy) {
+        return original instanceof HttpExecutionStrategyInfluencer ?
+                ((HttpExecutionStrategyInfluencer) original).influenceStrategy(strategy) : strategy;
+    }
+
+    @Override
+    public HttpExecutionStrategy executionStrategy() {
+        return strategy;
     }
 }
