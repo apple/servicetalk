@@ -51,8 +51,3 @@ dependencies {
 task tck(type: Test) {
   useTestNG()
 }
-
-//TODO: Depend unconditionally when this issue is resolved: https://github.com/apple/servicetalk/issues/145
-if (!ext.isCiBuild) {
-  test.dependsOn tck
-}
