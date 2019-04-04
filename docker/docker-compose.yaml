@@ -101,7 +101,7 @@ services:
     - REDIS_HOST=redis-4
     - REDIS_PORT=6379
     - REDIS_AUTH_PORT=6378
-    command: bash -cl "./gradlew clean build"
+    command: bash -cl "./gradlew clean test"
     volumes:
     - ~/.ssh:/root/.ssh
     - ~/.gradle${EXECUTOR_NUMBER}:/root/.gradle
