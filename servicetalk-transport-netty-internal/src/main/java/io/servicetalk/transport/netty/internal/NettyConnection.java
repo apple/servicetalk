@@ -37,14 +37,6 @@ import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater
  */
 public interface NettyConnection<Read, Write> extends NettyConnectionContext {
     /**
-     * Returns a {@link Completable} that notifies when the connection has begun its closing sequence.
-     *
-     * @return a {@link Completable} that notifies when the connection has begun its closing sequence. A configured
-     * {@link CloseHandler} will determine whether more reads or writes will be allowed on this {@link NettyConnection}.
-     */
-    Completable onClosing();
-
-    /**
      * Returns {@link Publisher} that emits all items as read from this connection.
      *
      * @return {@link Publisher} that emits all items as read from this connection.

@@ -26,8 +26,8 @@ import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
-import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ExecutionContext;
+import io.servicetalk.transport.netty.internal.NettyConnectionContext;
 
 import java.util.function.Function;
 
@@ -37,7 +37,7 @@ import static io.servicetalk.http.api.StreamingHttpResponses.newResponseWithTrai
 import static io.servicetalk.http.netty.HeaderUtils.addRequestTransferEncodingIfNecessary;
 import static java.util.Objects.requireNonNull;
 
-abstract class AbstractStreamingHttpConnection<CC extends ConnectionContext> implements
+abstract class AbstractStreamingHttpConnection<CC extends NettyConnectionContext> implements
                        FilterableStreamingHttpConnection, Function<Publisher<Object>, Single<StreamingHttpResponse>> {
 
     final CC connection;
@@ -53,14 +53,12 @@ abstract class AbstractStreamingHttpConnection<CC extends ConnectionContext> imp
         this.executionContext = requireNonNull(executionContext);
         this.reqRespFactory = requireNonNull(reqRespFactory);
         this.strategy = requireNonNull(strategy);
-        // TODO(jayv) we should concat with NettyConnectionContext.onClosing() once it's exposed such that both
-        // this class and ConcurrentRequestsHttpConnectionFilter can listen to the same event to reduce ambiguity
         maxConcurrencySetting = from(config.maxPipelinedRequests())
-                .concat(connection.onClose()).concat(Single.succeeded(0));
+                .concat(connection.onClosing()).concat(Single.succeeded(0));
     }
 
     @Override
-    public final ConnectionContext connectionContext() {
+    public final NettyConnectionContext connectionContext() {
         return connection;
     }
 

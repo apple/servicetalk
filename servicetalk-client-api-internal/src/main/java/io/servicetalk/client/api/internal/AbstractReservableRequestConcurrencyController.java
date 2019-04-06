@@ -25,6 +25,7 @@ import io.servicetalk.concurrent.internal.LatestValueSubscriber;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
+import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 
@@ -51,8 +52,9 @@ abstract class AbstractReservableRequestConcurrencyController implements Reserva
     AbstractReservableRequestConcurrencyController(final Publisher<Integer> maxConcurrencySettingStream,
                                                    final Completable onClose) {
         maxConcurrencyHolder = new LatestValueSubscriber<>();
-        toSource(maxConcurrencySettingStream).subscribe(maxConcurrencyHolder);
-        toSource(onClose).subscribe(new Subscriber() {
+        toSource(maxConcurrencySettingStream
+                .publishAndSubscribeOnOverride(immediate())).subscribe(maxConcurrencyHolder);
+        toSource(onClose.publishAndSubscribeOnOverride(immediate())).subscribe(new Subscriber() {
             @Override
             public void onSubscribe(Cancellable cancellable) {
                 // No op

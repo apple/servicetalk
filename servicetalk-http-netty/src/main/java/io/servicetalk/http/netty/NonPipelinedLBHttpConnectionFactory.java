@@ -16,6 +16,7 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
@@ -26,7 +27,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.client.api.internal.ReservableRequestConcurrencyControllers.newSingleController;
 import static io.servicetalk.http.api.FilterableStreamingHttpConnection.SettingKey.MAX_CONCURRENCY;
-import static io.servicetalk.http.netty.DefaultHttpConnectionBuilder.buildForNonPipelined;
+import static io.servicetalk.http.netty.DefaultHttpConnectionBuilder.buildStreaming;
 
 final class NonPipelinedLBHttpConnectionFactory<ResolvedAddress>
         extends AbstractLBHttpConnectionFactory<ResolvedAddress> {
@@ -40,9 +41,14 @@ final class NonPipelinedLBHttpConnectionFactory<ResolvedAddress>
 
     @Override
     public Single<StreamingHttpConnection> newConnection(final ResolvedAddress resolvedAddress) {
-        return buildForNonPipelined(executionContext, resolvedAddress, config, connectionFilterFunction, reqRespFactory,
-                defaultStrategy).map(filteredConnection -> new LoadBalancedStreamingHttpConnection(filteredConnection,
-                                newSingleController(filteredConnection.settingStream(MAX_CONCURRENCY),
-                                        filteredConnection.onClose())));
+        return buildStreaming(executionContext, resolvedAddress, config).map(conn -> {
+            FilterableStreamingHttpConnection mappedConnection = new NonPipelinedStreamingHttpConnection(conn,
+                    config, executionContext, reqRespFactory, defaultStrategy);
+
+            FilterableStreamingHttpConnection filteredConnection = connectionFilterFunction != null ?
+                    connectionFilterFunction.create(mappedConnection) : mappedConnection;
+            return new LoadBalancedStreamingHttpConnection(filteredConnection, newSingleController(
+                    filteredConnection.settingStream(MAX_CONCURRENCY), conn.onClosing()));
+        });
     }
 }

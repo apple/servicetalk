@@ -194,6 +194,11 @@ public final class DefaultNettyPipelinedConnection<Req, Resp> implements NettyPi
     }
 
     @Override
+    public Completable onClosing() {
+        return connection.onClosing();
+    }
+
+    @Override
     public Completable onClose() {
         return connection.onClose();
     }

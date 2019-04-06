@@ -105,6 +105,8 @@ public final class AbstractHttpConnectionTest {
         config.maxPipelinedRequests(101);
         NettyConnection conn = mock(NettyConnection.class);
         when(conn.onClose()).thenReturn(never());
+        when(conn.onClosing()).thenReturn(never());
+        when(conn.transportError()).thenReturn(Single.never());
         http = TestStreamingHttpConnection.from(new MockStreamingHttpConnection(conn, config.asReadOnly()));
     }
 

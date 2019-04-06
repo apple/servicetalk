@@ -142,9 +142,10 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
             closeHandler.registerEventHandler(channel, evt -> { // Called from EventLoop only!
                 if (closeReason == null) {
                     closeReason = evt;
+                    // Notify onClosing ASAP to notify the LoadBalancer to stop using the connection.
+                    onClosing.onComplete();
                     transportError.onSuccess(evt.wrapError(null, channel));
                     LOGGER.debug("{} Emitted CloseEvent: {}", channel, evt);
-                    onClosing.onComplete();
                 }
             });
             // Users may depend on onClosing to be notified for all kinds of closures and not just graceful close.

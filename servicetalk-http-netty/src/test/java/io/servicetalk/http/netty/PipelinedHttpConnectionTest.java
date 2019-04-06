@@ -81,6 +81,7 @@ public class PipelinedHttpConnectionTest {
     public void setup() {
         mockResp = reqRespFactory.ok();
         when(connection.onClose()).thenReturn(never());
+        when(connection.onClosing()).thenReturn(never());
         when(connection.executionContext()).thenReturn(ctx);
         HttpClientConfig config = new HttpClientConfig(new TcpClientConfig(true));
         config.maxPipelinedRequests(2);
