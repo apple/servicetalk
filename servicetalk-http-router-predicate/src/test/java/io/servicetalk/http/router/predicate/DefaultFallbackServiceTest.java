@@ -15,26 +15,12 @@
  */
 package io.servicetalk.http.router.predicate;
 
-import io.servicetalk.buffer.api.BufferAllocator;
-import io.servicetalk.buffer.api.ReadOnlyBufferAllocators;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.http.api.DefaultHttpHeadersFactory;
-import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
-import io.servicetalk.http.api.HttpServiceContext;
-import io.servicetalk.http.api.StreamingHttpRequest;
-import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpService;
-import io.servicetalk.transport.api.ExecutionContext;
 
-import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnit;
-import org.mockito.junit.MockitoRule;
 
-import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
 import static io.servicetalk.http.api.HttpHeaderValues.TEXT_PLAIN;
@@ -42,29 +28,8 @@ import static io.servicetalk.http.api.HttpHeaderValues.ZERO;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpResponseStatus.NOT_FOUND;
 import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.when;
 
-public class DefaultFallbackServiceTest {
-    static final BufferAllocator allocator = ReadOnlyBufferAllocators.DEFAULT_RO_ALLOCATOR;
-    static final StreamingHttpRequestResponseFactory reqRespFactory =
-            new DefaultStreamingHttpRequestResponseFactory(allocator, DefaultHttpHeadersFactory.INSTANCE);
-
-    @Rule
-    public MockitoRule rule = MockitoJUnit.rule();
-
-    @Mock
-    private HttpServiceContext ctx;
-    @Mock
-    private ExecutionContext executionCtx;
-    @Mock
-    private StreamingHttpRequest request;
-
-    @Before
-    public void setUp() {
-        when(request.version()).thenReturn(HTTP_1_1);
-        when(ctx.executionContext()).thenReturn(executionCtx);
-        when(executionCtx.executor()).thenReturn(immediate());
-    }
+public class DefaultFallbackServiceTest extends BaseHttpPredicateRouterBuilderTest {
 
     @Test
     public void testDefaultFallbackService() throws Exception {
