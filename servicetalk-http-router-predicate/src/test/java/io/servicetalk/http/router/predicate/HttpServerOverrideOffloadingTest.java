@@ -19,6 +19,7 @@ import io.servicetalk.concurrent.CompletableSource.Processor;
 import io.servicetalk.concurrent.api.DefaultThreadFactory;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpServiceContext;
@@ -32,7 +33,9 @@ import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.ServerContext;
 
 import org.junit.After;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.Timeout;
 
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -58,6 +61,9 @@ import static org.hamcrest.Matchers.is;
 
 public class HttpServerOverrideOffloadingTest {
     private static final String IO_EXECUTOR_THREAD_NAME_PREFIX = "http-server-io-executor-";
+
+    @Rule
+    public final Timeout timeout = new ServiceTalkTestTimeout();
 
     private final IoExecutor ioExecutor;
     private final Executor executor;
