@@ -24,8 +24,8 @@ import static io.servicetalk.client.api.internal.RequestConcurrencyController.Re
 
 final class ReservableRequestConcurrencyControllerOnlySingle extends AbstractReservableRequestConcurrencyController {
     ReservableRequestConcurrencyControllerOnlySingle(final Publisher<Integer> maxConcurrencySettingStream,
-                                                     final Completable onClose) {
-        super(maxConcurrencySettingStream, onClose);
+                                                     final Completable onClosing) {
+        super(maxConcurrencySettingStream, onClosing);
     }
 
     @Override

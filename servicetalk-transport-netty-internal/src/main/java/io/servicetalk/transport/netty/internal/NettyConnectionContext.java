@@ -16,6 +16,7 @@
 package io.servicetalk.transport.netty.internal;
 
 import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.api.ConnectionContext;
 
@@ -47,4 +48,13 @@ public interface NettyConnectionContext extends ConnectionContext {
      * the transport.
      */
     Single<Throwable> transportError();
+
+    /**
+     * Returns a {@link Completable} that notifies when the connection has begun its closing sequence.
+     *
+     * @return a {@link Completable} that notifies when the connection has begun its closing sequence. A configured
+     * {@link CloseHandler} will determine whether more reads or writes will be allowed on this
+     * {@link NettyConnectionContext}.
+     */
+    Completable onClosing();
 }

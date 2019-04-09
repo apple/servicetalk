@@ -355,6 +355,11 @@ final class NettyHttpServer {
         }
 
         @Override
+        public Completable onClosing() {
+            return connection.onClosing();
+        }
+
+        @Override
         public Completable onClose() {
             return connection.onClose();
         }

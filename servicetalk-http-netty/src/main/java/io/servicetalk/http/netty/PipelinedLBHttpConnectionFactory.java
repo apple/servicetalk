@@ -16,6 +16,7 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
@@ -26,7 +27,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.client.api.internal.ReservableRequestConcurrencyControllers.newController;
 import static io.servicetalk.http.api.FilterableStreamingHttpConnection.SettingKey.MAX_CONCURRENCY;
-import static io.servicetalk.http.netty.DefaultHttpConnectionBuilder.buildForPipelined;
+import static io.servicetalk.http.netty.DefaultHttpConnectionBuilder.buildStreaming;
 
 final class PipelinedLBHttpConnectionFactory<ResolvedAddress> extends AbstractLBHttpConnectionFactory<ResolvedAddress> {
     PipelinedLBHttpConnectionFactory(final ReadOnlyHttpClientConfig config,
@@ -39,9 +40,13 @@ final class PipelinedLBHttpConnectionFactory<ResolvedAddress> extends AbstractLB
 
     @Override
     public Single<StreamingHttpConnection> newConnection(final ResolvedAddress resolvedAddress) {
-        return buildForPipelined(executionContext, resolvedAddress, config, connectionFilterFunction, reqRespFactory,
-                defaultStrategy).map(filteredConnection -> new LoadBalancedStreamingHttpConnection(filteredConnection,
-                        newController(filteredConnection.settingStream(MAX_CONCURRENCY),
-                                   filteredConnection.onClose(), config.maxPipelinedRequests())));
+        return buildStreaming(executionContext, resolvedAddress, config).map(conn -> {
+            FilterableStreamingHttpConnection mappedConnection = new PipelinedStreamingHttpConnection(conn,
+                    config, executionContext, reqRespFactory, defaultStrategy);
+            FilterableStreamingHttpConnection filteredConnection = connectionFilterFunction != null ?
+                    connectionFilterFunction.create(mappedConnection) : mappedConnection;
+            return new LoadBalancedStreamingHttpConnection(filteredConnection, newController(
+                   filteredConnection.settingStream(MAX_CONCURRENCY), conn.onClosing(), config.maxPipelinedRequests()));
+        });
     }
 }

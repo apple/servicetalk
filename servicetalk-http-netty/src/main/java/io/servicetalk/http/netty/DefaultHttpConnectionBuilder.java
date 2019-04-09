@@ -114,17 +114,21 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> extends HttpCon
             filterFactory = null;
         }
 
-        if (filterFactory != null) {
-            filterFactory = filterFactory.append(
-                    new ConcurrentRequestsHttpConnectionFilter(roConfig.maxPipelinedRequests()));
-        } else {
-            filterFactory = new ConcurrentRequestsHttpConnectionFilter(roConfig.maxPipelinedRequests());
-        }
-
+        final StreamingHttpConnectionFilterFactory finalFilterFactory = filterFactory;
         return (reservedConnectionsPipelineEnabled(roConfig) ?
-               buildForPipelined(executionContext, resolvedAddress, roConfig, filterFactory, reqRespFactory, strategy) :
-                buildForNonPipelined(executionContext, resolvedAddress, roConfig, filterFactory, reqRespFactory,
-                        strategy)).map(DefaultStreamingHttpConnection::new);
+                buildStreaming(executionContext, resolvedAddress, roConfig).map(conn -> {
+                    FilterableStreamingHttpConnection limitedConn = new ConcurrentRequestsHttpConnectionFilter(
+                            new PipelinedStreamingHttpConnection(conn, roConfig, executionContext, reqRespFactory,
+                                    strategy), roConfig.maxPipelinedRequests());
+                    return finalFilterFactory == null ? limitedConn : finalFilterFactory.create(limitedConn);
+                }) :
+                buildStreaming(executionContext, resolvedAddress, roConfig).map(conn -> {
+                    FilterableStreamingHttpConnection limitedConn = new ConcurrentRequestsHttpConnectionFilter(
+                            new NonPipelinedStreamingHttpConnection(conn, roConfig, executionContext, reqRespFactory,
+                                    strategy), roConfig.maxPipelinedRequests());
+                    return finalFilterFactory == null ? limitedConn : finalFilterFactory.create(limitedConn);
+                })
+                ).map(DefaultStreamingHttpConnection::new);
     }
 
     // TODO(derek): Temporary, so we can re-enable the ability to create non-pipelined connections for perf testing.
@@ -133,31 +137,7 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> extends HttpCon
                 Boolean.valueOf(System.getProperty("io.servicetalk.http.netty.reserved.connections.pipeline", "true"));
     }
 
-    static <ResolvedAddress> Single<FilterableStreamingHttpConnection> buildForPipelined(
-            final ExecutionContext executionContext, ResolvedAddress resolvedAddress, ReadOnlyHttpClientConfig roConfig,
-            @Nullable final StreamingHttpConnectionFilterFactory connectionFilterFunction,
-            final StreamingHttpRequestResponseFactory reqRespFactory, final HttpExecutionStrategy strategy) {
-        return buildStreaming(executionContext, resolvedAddress, roConfig).map(conn -> {
-                    FilterableStreamingHttpConnection mappedConnection = new PipelinedStreamingHttpConnection(conn,
-                            roConfig, executionContext, reqRespFactory, strategy);
-                    return connectionFilterFunction != null ? connectionFilterFunction.create(mappedConnection) :
-                            mappedConnection;
-               });
-    }
-
-    static <ResolvedAddress> Single<FilterableStreamingHttpConnection> buildForNonPipelined(
-            final ExecutionContext executionContext, ResolvedAddress resolvedAddress, ReadOnlyHttpClientConfig roConfig,
-            @Nullable final StreamingHttpConnectionFilterFactory connectionFilterFunction,
-            final StreamingHttpRequestResponseFactory reqRespFactory, final HttpExecutionStrategy strategy) {
-        return buildStreaming(executionContext, resolvedAddress, roConfig).map(conn -> {
-                    FilterableStreamingHttpConnection mappedConnection = new NonPipelinedStreamingHttpConnection(conn,
-                            roConfig, executionContext, reqRespFactory, strategy);
-                    return connectionFilterFunction != null ? connectionFilterFunction.create(mappedConnection) :
-                            mappedConnection;
-                });
-    }
-
-    private static <ResolvedAddress> Single<? extends NettyConnection<Object, Object>> buildStreaming(
+    static <ResolvedAddress> Single<? extends NettyConnection<Object, Object>> buildStreaming(
             final ExecutionContext executionContext, ResolvedAddress resolvedAddress,
             ReadOnlyHttpClientConfig roConfig) {
         // This state is read only, so safe to keep a copy across Subscribers
