@@ -26,7 +26,7 @@ import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.client.api.internal.ReservableRequestConcurrencyControllers.newController;
-import static io.servicetalk.http.api.FilterableStreamingHttpConnection.SettingKey.MAX_CONCURRENCY;
+import static io.servicetalk.http.api.HttpEventKey.MAX_CONCURRENCY;
 import static io.servicetalk.http.netty.DefaultHttpConnectionBuilder.buildStreaming;
 
 final class PipelinedLBHttpConnectionFactory<ResolvedAddress> extends AbstractLBHttpConnectionFactory<ResolvedAddress> {
@@ -46,8 +46,8 @@ final class PipelinedLBHttpConnectionFactory<ResolvedAddress> extends AbstractLB
             FilterableStreamingHttpConnection filteredConnection = connectionFilterFunction != null ?
                     connectionFilterFunction.create(mappedConnection) : mappedConnection;
             return new LoadBalancedStreamingHttpConnection(filteredConnection, newController(
-                   filteredConnection.settingStream(MAX_CONCURRENCY), conn.onClosing(), config.maxPipelinedRequests()),
-                    executionContext.executionStrategy(), strategyInfluencer);
+                   filteredConnection.transportEventStream(MAX_CONCURRENCY), conn.onClosing(),
+                    config.maxPipelinedRequests()), executionContext.executionStrategy(), strategyInfluencer);
         });
     }
 }

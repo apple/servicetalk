@@ -21,6 +21,7 @@ import io.servicetalk.transport.api.IoExecutor;
 import java.net.SocketOption;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import javax.annotation.Nullable;
 
 import static io.servicetalk.http.api.StrategyInfluencerAwareConversions.toConditionalConnectionFilterFactory;
 
@@ -89,6 +90,32 @@ abstract class BaseHttpBuilder<ResolvedAddress> {
      * @return {@code this}.
      */
     public abstract BaseHttpBuilder<ResolvedAddress> headersFactory(HttpHeadersFactory headersFactory);
+
+    /**
+     * Set the {@link HttpHeadersFactory} to use when {@link HttpProtocolVersion#HTTP_2_0} is used.
+     *
+     * @param headersFactory the {@link HttpHeadersFactory} to use when {@link HttpProtocolVersion#HTTP_2_0} is used.
+     * @return {@code this.}
+     */
+    public abstract BaseHttpBuilder<ResolvedAddress> h2HeadersFactory(HttpHeadersFactory headersFactory);
+
+    /**
+     * Enable {@link HttpProtocolVersion#HTTP_2_0} via
+     * <a href="https://tools.ietf.org/html/rfc7540#section-3.4">Prior Knowledge</a>.
+     * @param h2PriorKnowledge {@code true} to enable {@link HttpProtocolVersion#HTTP_2_0} via
+     * <a href="https://tools.ietf.org/html/rfc7540#section-3.4">Prior Knowledge</a>.
+     *
+     * @return {@code this}.
+     */
+    public abstract BaseHttpBuilder<ResolvedAddress> h2PriorKnowledge(boolean h2PriorKnowledge);
+
+    /**
+     * Set the name of the frame logger when {@link HttpProtocolVersion#HTTP_2_0} is used.
+     *
+     * @param h2FrameLogger the name of the frame logger, or {@code null} to disable.
+     * @return {@code this}.
+     */
+    public abstract BaseHttpBuilder<ResolvedAddress> h2FrameLogger(@Nullable String h2FrameLogger);
 
     /**
      * Set the maximum size of the initial HTTP line for created connections.

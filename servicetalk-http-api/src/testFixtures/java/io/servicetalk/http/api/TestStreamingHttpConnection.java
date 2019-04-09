@@ -80,7 +80,7 @@ public final class TestStreamingHttpConnection {
                     }
 
                     @Override
-                    public <T> Publisher<T> settingStream(final SettingKey<T> settingKey) {
+                    public <T> Publisher<? extends T> transportEventStream(final HttpEventKey<T> eventKey) {
                         return Publisher.failed(new UnsupportedOperationException());
                     }
 
@@ -141,8 +141,8 @@ public final class TestStreamingHttpConnection {
             }
 
             @Override
-            public <T> Publisher<T> settingStream(final SettingKey<T> settingKey) {
-                return filterChain.settingStream(settingKey);
+            public <T> Publisher<? extends T> transportEventStream(final HttpEventKey<T> eventKey) {
+                return filterChain.transportEventStream(eventKey);
             }
 
             @Override

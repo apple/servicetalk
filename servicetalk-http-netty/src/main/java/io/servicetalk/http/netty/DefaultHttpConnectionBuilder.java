@@ -49,6 +49,8 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
+import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
 import static io.servicetalk.transport.netty.internal.CloseHandler.forPipelinedRequestResponse;
 import static java.util.Objects.requireNonNull;
 
@@ -101,8 +103,11 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> extends HttpCon
         ReadOnlyHttpClientConfig roConfig = config.asReadOnly();
         HttpExecutionContext executionContext = executionContextBuilder.build();
         final StreamingHttpRequestResponseFactory reqRespFactory =
-                new DefaultStreamingHttpRequestResponseFactory(executionContext.bufferAllocator(),
-                        roConfig.headersFactory());
+                roConfig.isH2PriorKnowledge() ?
+                    new DefaultStreamingHttpRequestResponseFactory(executionContext.bufferAllocator(),
+                        roConfig.h2ClientConfig().h2HeadersFactory(), HTTP_2_0) :
+                    new DefaultStreamingHttpRequestResponseFactory(executionContext.bufferAllocator(),
+                        roConfig.headersFactory(), HTTP_1_1);
         influencerChainBuilder.prepend(executionContext.executionStrategy()::merge);
         HttpExecutionStrategyInfluencer strategyInfluencer = influencerChainBuilder.build();
 
@@ -129,8 +134,8 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> extends HttpCon
                 }) :
                 buildStreaming(executionContext, resolvedAddress, roConfig).map(conn -> {
                     FilterableStreamingHttpConnection limitedConn = new ConcurrentRequestsHttpConnectionFilter(
-                            new NonPipelinedStreamingHttpConnection(conn, roConfig, executionContext, reqRespFactory
-                            ), roConfig.maxPipelinedRequests());
+                            new NonPipelinedStreamingHttpConnection(conn, executionContext, reqRespFactory),
+                            roConfig.maxPipelinedRequests());
                     return finalFilterFactory == null ? limitedConn : finalFilterFactory.create(limitedConn);
                 })
                 ).map(conn -> new FilterableConnectionToConnection(conn, executionContext.executionStrategy(),
@@ -194,6 +199,25 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> extends HttpCon
     @Override
     public DefaultHttpConnectionBuilder<ResolvedAddress> headersFactory(final HttpHeadersFactory headersFactory) {
         config.headersFactory(headersFactory);
+        return this;
+    }
+
+    @Override
+    public HttpConnectionBuilder<ResolvedAddress> h2HeadersFactory(final HttpHeadersFactory headersFactory) {
+        config.h2ClientConfig().h2HeadersFactory(headersFactory);
+        return this;
+    }
+
+    @Override
+    public HttpConnectionBuilder<ResolvedAddress> h2PriorKnowledge(final boolean h2PriorKnowledge) {
+        config.tcpClientConfig().autoRead(h2PriorKnowledge);
+        config.h2PriorKnowledge(h2PriorKnowledge);
+        return this;
+    }
+
+    @Override
+    public HttpConnectionBuilder<ResolvedAddress> h2FrameLogger(@Nullable final String h2FrameLogger) {
+        config.h2ClientConfig().h2FrameLogger(h2FrameLogger);
         return this;
     }
 

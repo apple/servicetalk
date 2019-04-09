@@ -15,10 +15,9 @@
  */
 package io.servicetalk.http.api;
 
-import io.servicetalk.concurrent.PublisherSource.Subscriber;
+import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.http.api.FilterableStreamingHttpConnection.SettingKey;
 import io.servicetalk.transport.api.ConnectionContext;
 
 /**
@@ -41,14 +40,17 @@ public interface HttpConnection extends HttpRequester {
     ConnectionContext connectionContext();
 
     /**
-     * Returns a {@link Publisher} that gives the current value of the setting as well as subsequent changes to the
-     * setting value as long as the {@link Subscriber} has expressed enough demand.
+     * Returns a {@link Publisher} that gives the current value of a transport event as well as subsequent changes to
+     * the event value as long as the {@link PublisherSource.Subscriber} has expressed enough demand.
+     * <p>
+     * This is designed for events produced by the transport, and consumed by filters interested in transport behavior
+     * which is not directly involved in the data path.
      *
-     * @param settingKey Name of the setting to fetch.
-     * @param <T> Type of the setting value.
-     * @return {@link Publisher} for the setting values.
+     * @param eventKey Name of the event to fetch.
+     * @param <T> Type of the event value.
+     * @return {@link Publisher} for the event values.
      */
-    <T> Publisher<T> settingStream(SettingKey<T> settingKey);
+    <T> Publisher<? extends T> transportEventStream(HttpEventKey<T> eventKey);
 
     /**
      * Convert this {@link HttpConnection} to the {@link StreamingHttpConnection} API.

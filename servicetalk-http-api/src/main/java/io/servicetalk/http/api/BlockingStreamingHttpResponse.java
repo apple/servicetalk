@@ -242,7 +242,7 @@ public interface BlockingStreamingHttpResponse extends HttpResponseMetaData {
     }
 
     @Override
-    default BlockingStreamingHttpResponse addCookie(final HttpCookie cookie) {
+    default BlockingStreamingHttpResponse addCookie(final HttpCookiePair cookie) {
         HttpResponseMetaData.super.addCookie(cookie);
         return this;
     }
@@ -254,7 +254,7 @@ public interface BlockingStreamingHttpResponse extends HttpResponseMetaData {
     }
 
     @Override
-    default BlockingStreamingHttpResponse addSetCookie(final HttpCookie cookie) {
+    default BlockingStreamingHttpResponse addSetCookie(final HttpSetCookie cookie) {
         HttpResponseMetaData.super.addSetCookie(cookie);
         return this;
     }

@@ -15,7 +15,7 @@
  */
 package io.servicetalk.http.router.predicate;
 
-import io.servicetalk.http.api.HttpCookie;
+import io.servicetalk.http.api.HttpSetCookie;
 import io.servicetalk.http.api.StreamingHttpService;
 
 import org.junit.Test;
@@ -28,7 +28,7 @@ import static org.mockito.Mockito.when;
 public class HttpPredicateRouterBuilderCookieTest extends BaseHttpPredicateRouterBuilderTest {
 
     @Mock
-    HttpCookie cookie1, cookie2;
+    HttpSetCookie cookie1, cookie2;
 
     @Test
     public void testWhenCookieIsPresent() {

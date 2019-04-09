@@ -15,6 +15,7 @@
  */
 package io.servicetalk.redis.netty;
 
+import io.servicetalk.client.api.internal.IgnoreConsumedEvent;
 import io.servicetalk.client.api.internal.ReservableRequestConcurrencyControllers;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.redis.api.RedisConnection;
@@ -47,7 +48,8 @@ public class LoadBalancedRedisConnectionTest {
         when(delegate.settingStream(any(SettingKey.class))).thenReturn(maxRequestsPublisher);
         when(delegate.request(any(), any(RedisRequest.class))).thenReturn(from(PONG));
         LoadBalancedRedisConnection connection = new LoadBalancedRedisConnection(delegate,
-                ReservableRequestConcurrencyControllers.newController(from(1), never(), 1));
+                ReservableRequestConcurrencyControllers.newController(from(1).map(IgnoreConsumedEvent::new),
+                        never(), 1));
         assertThat(connection.tryRequest(), is(Accepted));
         awaitIndefinitely(connection.request(newRequest(PING)));
         connection.requestFinished();

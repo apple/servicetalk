@@ -57,7 +57,7 @@ import static io.servicetalk.concurrent.api.BlockingTestUtils.awaitIndefinitelyN
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
-import static io.servicetalk.http.api.FilterableStreamingHttpConnection.SettingKey.MAX_CONCURRENCY;
+import static io.servicetalk.http.api.HttpEventKey.MAX_CONCURRENCY;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.netty.HttpClients.forSingleAddress;
@@ -231,7 +231,7 @@ public class HttpOffloadingTest {
     @Test
     public void clientSettingsStreamIsOffloaded() throws Exception {
         subscribeTo(inEventLoop(), errors,
-                httpConnection.settingStream(MAX_CONCURRENCY).afterFinally(terminated::countDown),
+                httpConnection.transportEventStream(MAX_CONCURRENCY).afterFinally(terminated::countDown),
                 "Client settings stream: ");
         httpConnection.closeAsyncGracefully().toFuture().get();
         terminated.await();

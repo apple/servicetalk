@@ -53,7 +53,7 @@ import static org.mockito.Mockito.when;
 public abstract class BaseHttpPredicateRouterBuilderTest {
     static final BufferAllocator allocator = ReadOnlyBufferAllocators.DEFAULT_RO_ALLOCATOR;
     static final StreamingHttpRequestResponseFactory reqRespFactory =
-            new DefaultStreamingHttpRequestResponseFactory(allocator, DefaultHttpHeadersFactory.INSTANCE);
+            new DefaultStreamingHttpRequestResponseFactory(allocator, DefaultHttpHeadersFactory.INSTANCE, HTTP_1_1);
 
     @Rule
     public final MockitoRule rule = MockitoJUnit.rule().silent();

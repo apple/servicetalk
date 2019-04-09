@@ -356,6 +356,18 @@ public final class HttpResponseStatus {
         return new HttpResponseStatus(statusCode, reasonPhrase);
     }
 
+    /**
+     * Convert from {@link CharSequence} to {@link HttpResponseStatus}.
+     *
+     * @param statusCode The {@link CharSequence} to convert.
+     * @return a {@link HttpResponseStatus} representation of {@code statusCode}.
+     */
+    public static HttpResponseStatus of(final CharSequence statusCode) {
+        int statusCodeInt = Integer.parseInt(statusCode.toString());
+        final HttpResponseStatus cached = valueOf(statusCodeInt);
+        return cached != null ? cached : new HttpResponseStatus(statusCodeInt, "unknown");
+    }
+
     @Nullable
     private static HttpResponseStatus valueOf(final int statusCode) {
         switch (statusCode) {

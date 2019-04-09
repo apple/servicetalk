@@ -48,6 +48,8 @@ import java.util.function.Function;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
+import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
+import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
 import static io.servicetalk.http.netty.DefaultHttpConnectionBuilder.reservedConnectionsPipelineEnabled;
 import static io.servicetalk.http.netty.GlobalDnsServiceDiscoverer.globalDnsServiceDiscoverer;
 import static io.servicetalk.loadbalancer.RoundRobinLoadBalancer.newRoundRobinFactory;
@@ -178,12 +180,17 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
             // closed by the LoadBalancer
             final ConnectionFactory<R, ? extends StreamingHttpConnection> connectionFactory =
                     connectionFactoryFilter.create(closeOnException.prepend(
-                            reservedConnectionsPipelineEnabled(roConfig) ?
-                            new NonPipelinedLBHttpConnectionFactory<>(roConfig, ctx.executionContext,
+                            roConfig.isH2PriorKnowledge() ?
+                            new H2LBHttpConnectionFactory<>(roConfig, ctx.executionContext,
                                     connectionFilterFactory, reqRespFactory,
                                     influencerChainBuilder.buildForConnectionFactory(
                                             ctx.executionContext.executionStrategy())) :
+                            reservedConnectionsPipelineEnabled(roConfig) ?
                             new PipelinedLBHttpConnectionFactory<>(roConfig, ctx.executionContext,
+                                    connectionFilterFactory, reqRespFactory,
+                                    influencerChainBuilder.buildForConnectionFactory(
+                                            ctx.executionContext.executionStrategy())) :
+                            new NonPipelinedLBHttpConnectionFactory<>(roConfig, ctx.executionContext,
                                     connectionFilterFactory, reqRespFactory,
                                     influencerChainBuilder.buildForConnectionFactory(
                                             ctx.executionContext.executionStrategy()))));
@@ -243,9 +250,11 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
 
         final DefaultSingleAddressHttpClientBuilder<U, R> clonedBuilder = address == null ? copy() : copy(address);
         final HttpExecutionContext exec = clonedBuilder.executionContextBuilder.build();
-        final StreamingHttpRequestResponseFactory reqRespFactory =
+        final StreamingHttpRequestResponseFactory reqRespFactory = clonedBuilder.config.isH2PriorKnowledge() ?
                 new DefaultStreamingHttpRequestResponseFactory(exec.bufferAllocator(),
-                        clonedBuilder.config.headersFactory());
+                        clonedBuilder.config.h2ClientConfig().h2HeadersFactory(), HTTP_2_0) :
+                new DefaultStreamingHttpRequestResponseFactory(exec.bufferAllocator(),
+                        clonedBuilder.config.headersFactory(), HTTP_1_1);
 
         return new HttpClientBuildContext<>(clonedBuilder, exec, reqRespFactory);
     }
@@ -299,6 +308,25 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
     @Override
     public DefaultSingleAddressHttpClientBuilder<U, R> headersFactory(final HttpHeadersFactory headersFactory) {
         config.headersFactory(headersFactory);
+        return this;
+    }
+
+    @Override
+    public SingleAddressHttpClientBuilder<U, R> h2HeadersFactory(final HttpHeadersFactory headersFactory) {
+        config.h2ClientConfig().h2HeadersFactory(headersFactory);
+        return this;
+    }
+
+    @Override
+    public SingleAddressHttpClientBuilder<U, R> h2PriorKnowledge(final boolean h2PriorKnowledge) {
+        config.tcpClientConfig().autoRead(h2PriorKnowledge);
+        config.h2PriorKnowledge(h2PriorKnowledge);
+        return this;
+    }
+
+    @Override
+    public SingleAddressHttpClientBuilder<U, R> h2FrameLogger(@Nullable final String h2FrameLogger) {
+        config.h2ClientConfig().h2FrameLogger(h2FrameLogger);
         return this;
     }
 

@@ -30,7 +30,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
-public class DefaultHttpCookiesTest {
+public class DefaultHttpSetCookiesTest {
     @Test
     public void decodeDuplicateNames() {
         final HttpHeaders headers = DefaultHttpHeadersFactory.INSTANCE.newHeaders();
@@ -51,12 +51,12 @@ public class DefaultHttpCookiesTest {
     }
 
     private static void decodeDuplicateNames(final HttpHeaders headers) {
-        final Iterator<? extends HttpCookie> cookieItr = headers.getSetCookies("qwerty");
+        final Iterator<? extends HttpSetCookie> cookieItr = headers.getSetCookies("qwerty");
         assertTrue(cookieItr.hasNext());
-        assertTrue(areCookiesEqual(new TestCookie("qwerty", "12345", "/", "somecompany.co.uk",
+        assertTrue(areSetCookiesEqual(new TestSetCookie("qwerty", "12345", "/", "somecompany.co.uk",
                 "Wed, 30 Aug 2019 00:00:00 GMT", null, false, false, false), cookieItr.next()));
         assertTrue(cookieItr.hasNext());
-        assertTrue(areCookiesEqual(new TestCookie("qwerty", "abcd", "/2", "somecompany2.co.uk",
+        assertTrue(areSetCookiesEqual(new TestSetCookie("qwerty", "abcd", "/2", "somecompany2.co.uk",
                 "Wed, 30 Aug 2019 00:00:00 GMT", null, false, false, false), cookieItr.next()));
         assertFalse(cookieItr.hasNext());
     }
@@ -76,9 +76,9 @@ public class DefaultHttpCookiesTest {
     }
 
     private static void decodeSecureCookieNames(final HttpHeaders headers) {
-        final Iterator<? extends HttpCookie> cookieItr = headers.getSetCookies("__Secure-ID");
+        final Iterator<? extends HttpSetCookie> cookieItr = headers.getSetCookies("__Secure-ID");
         assertTrue(cookieItr.hasNext());
-        assertTrue(areCookiesEqual(new TestCookie("__Secure-ID", "123", null, "example.com", null,
+        assertTrue(areSetCookiesEqual(new TestSetCookie("__Secure-ID", "123", null, "example.com", null,
                 null, false, true, false), cookieItr.next()));
         assertFalse(cookieItr.hasNext());
     }
@@ -101,14 +101,14 @@ public class DefaultHttpCookiesTest {
     }
 
     private static void decodeDifferentCookieNames(final HttpHeaders headers) {
-        Iterator<? extends HttpCookie> cookieItr = headers.getSetCookies("foo");
+        Iterator<? extends HttpSetCookie> cookieItr = headers.getSetCookies("foo");
         assertTrue(cookieItr.hasNext());
-        assertTrue(areCookiesEqual(new TestCookie("foo", "12345", "/", "somecompany.co.uk", null,
+        assertTrue(areSetCookiesEqual(new TestSetCookie("foo", "12345", "/", "somecompany.co.uk", null,
                 null, false, false, true), cookieItr.next()));
         assertFalse(cookieItr.hasNext());
         cookieItr = headers.getSetCookies("bar");
         assertTrue(cookieItr.hasNext());
-        assertTrue(areCookiesEqual(new TestCookie("bar", "abcd", "/2", "somecompany.co.uk", null,
+        assertTrue(areSetCookiesEqual(new TestSetCookie("bar", "abcd", "/2", "somecompany.co.uk", null,
                 3000L, false, false, false), cookieItr.next()));
         assertFalse(cookieItr.hasNext());
     }
@@ -121,14 +121,14 @@ public class DefaultHttpCookiesTest {
         assertTrue(headers.removeSetCookies("foo"));
         assertFalse(headers.getSetCookies("foo").hasNext());
         assertNull(headers.getSetCookie("foo"));
-        Iterator<? extends HttpCookie> cookieItr = headers.getSetCookies("bar");
+        Iterator<? extends HttpSetCookie> cookieItr = headers.getSetCookies("bar");
         assertTrue(cookieItr.hasNext());
-        assertTrue(areCookiesEqual(new TestCookie("bar", "abcd", "/2", "somecompany.co.uk", null,
+        assertTrue(areSetCookiesEqual(new TestSetCookie("bar", "abcd", "/2", "somecompany.co.uk", null,
                 3000L, false, false, false), cookieItr.next()));
         assertFalse(cookieItr.hasNext());
-        final HttpCookie barCookie = headers.getSetCookie("bar");
+        final HttpSetCookie barCookie = headers.getSetCookie("bar");
         assertNotNull(barCookie);
-        assertTrue(areCookiesEqual(new TestCookie("bar", "abcd", "/2", "somecompany.co.uk", null,
+        assertTrue(areSetCookiesEqual(new TestSetCookie("bar", "abcd", "/2", "somecompany.co.uk", null,
                 3000L, false, false, false), barCookie));
     }
 
@@ -147,33 +147,33 @@ public class DefaultHttpCookiesTest {
     @Test
     public void addMultipleCookiesSameName() {
         final HttpHeaders headers = DefaultHttpHeadersFactory.INSTANCE.newHeaders();
-        final TestCookie c1 = new TestCookie("qwerty", "12345", "/",
+        final TestSetCookie c1 = new TestSetCookie("qwerty", "12345", "/",
                 "somecompany.co.uk", "Wed, 30 Aug 2019 00:00:00 GMT", null, false, false, false);
         headers.addSetCookie(c1);
-        final TestCookie c2 = new TestCookie("qwerty", "abcd", "/2", "somecompany2.co.uk",
+        final TestSetCookie c2 = new TestSetCookie("qwerty", "abcd", "/2", "somecompany2.co.uk",
                 "Wed, 30 Aug 2019 00:00:00 GMT", null, false, false, false);
         headers.addSetCookie(c2);
-        final HttpCookie tmpCookie = headers.getSetCookie("qwerty");
+        final HttpSetCookie tmpCookie = headers.getSetCookie("qwerty");
         assertNotNull(tmpCookie);
-        assertTrue(areCookiesEqual(c1, tmpCookie));
+        assertTrue(areSetCookiesEqual(c1, tmpCookie));
         decodeDuplicateNames(headers);
     }
 
     @Test
     public void addMultipleCookiesDifferentName() {
         final HttpHeaders headers = DefaultHttpHeadersFactory.INSTANCE.newHeaders();
-        final TestCookie fooCookie = new TestCookie("foo", "12345", "/", "somecompany.co.uk", null,
+        final TestSetCookie fooCookie = new TestSetCookie("foo", "12345", "/", "somecompany.co.uk", null,
                 null, false, false, true);
         headers.addSetCookie(fooCookie);
-        final TestCookie barCookie = new TestCookie("bar", "abcd", "/2", "somecompany.co.uk", null,
+        final TestSetCookie barCookie = new TestSetCookie("bar", "abcd", "/2", "somecompany.co.uk", null,
                 3000L, false, false, false);
         headers.addSetCookie(barCookie);
-        HttpCookie tmpCookie = headers.getSetCookie("foo");
+        HttpSetCookie tmpCookie = headers.getSetCookie("foo");
         assertNotNull(tmpCookie);
-        assertTrue(areCookiesEqual(fooCookie, tmpCookie));
+        assertTrue(areSetCookiesEqual(fooCookie, tmpCookie));
         tmpCookie = headers.getSetCookie("bar");
         assertNotNull(tmpCookie);
-        assertTrue(areCookiesEqual(barCookie, tmpCookie));
+        assertTrue(areSetCookiesEqual(barCookie, tmpCookie));
     }
 
     @Test
@@ -191,12 +191,12 @@ public class DefaultHttpCookiesTest {
     }
 
     private void getCookieNameDomainEmptyPath(HttpHeaders headers) {
-        Iterator<? extends HttpCookie> cookieItr = headers.getSetCookies("qwerty", "somecompany.co.uk", "");
+        Iterator<? extends HttpSetCookie> cookieItr = headers.getSetCookies("qwerty", "somecompany.co.uk", "");
         assertFalse(cookieItr.hasNext());
 
         cookieItr = headers.getSetCookies("qwerty");
         assertTrue(cookieItr.hasNext());
-        assertTrue(areCookiesEqual(new TestCookie("qwerty", "12345", null, "somecompany.co.uk", null,
+        assertTrue(areSetCookiesEqual(new TestSetCookie("qwerty", "12345", null, "somecompany.co.uk", null,
                 null, false, false, false), cookieItr.next()));
         assertFalse(cookieItr.hasNext());
     }
@@ -212,21 +212,21 @@ public class DefaultHttpCookiesTest {
 
         // Removal now.
         assertTrue(headers.removeSetCookies("qwerty", "somecompany2.co.uk", "/2"));
-        Iterator<? extends HttpCookie> cookieItr = headers.getSetCookies("qwerty", "somecompany2.co.uk", "/2");
+        Iterator<? extends HttpSetCookie> cookieItr = headers.getSetCookies("qwerty", "somecompany2.co.uk", "/2");
         assertFalse(cookieItr.hasNext());
 
         // Encode again
         cookieItr = headers.getSetCookies("qwerty", "somecompany.co.uk", "/");
         assertTrue(cookieItr.hasNext());
-        assertTrue(areCookiesEqual(new TestCookie("qwerty", "12345", "/", "somecompany.co.uk",
+        assertTrue(areSetCookiesEqual(new TestSetCookie("qwerty", "12345", "/", "somecompany.co.uk",
                 "Wed, 30 Aug 2019 00:00:00 GMT", null, false, false, false), cookieItr.next()));
         assertFalse(cookieItr.hasNext());
     }
 
     private static void getCookiesNameDomainPath(final HttpHeaders headers) {
-        final Iterator<? extends HttpCookie> cookieItr = headers.getSetCookies("qwerty", "somecompany2.co.uk", "/2");
+        final Iterator<? extends HttpSetCookie> cookieItr = headers.getSetCookies("qwerty", "somecompany2.co.uk", "/2");
         assertTrue(cookieItr.hasNext());
-        assertTrue(areCookiesEqual(new TestCookie("qwerty", "abcd", "/2", "somecompany2.co.uk",
+        assertTrue(areSetCookiesEqual(new TestSetCookie("qwerty", "abcd", "/2", "somecompany2.co.uk",
                 "Wed, 30 Aug 2019 00:00:00 GMT", null, false, false, false), cookieItr.next()));
         assertFalse(cookieItr.hasNext());
     }
@@ -255,15 +255,15 @@ public class DefaultHttpCookiesTest {
     }
 
     private static void getAndRemoveCookiesNameSubDomainPath(HttpHeaders headers, boolean remove) {
-        Iterator<? extends HttpCookie> cookieItr = headers.getSetCookies("qwerty", "somecompany.co.uk.", "/2");
+        Iterator<? extends HttpSetCookie> cookieItr = headers.getSetCookies("qwerty", "somecompany.co.uk.", "/2");
         assertTrue(cookieItr.hasNext());
-        assertTrue(areCookiesEqual(new TestCookie("qwerty", "12345", "/2", "foo.somecompany.co.uk",
+        assertTrue(areSetCookiesEqual(new TestSetCookie("qwerty", "12345", "/2", "foo.somecompany.co.uk",
                 "Wed, 30 Aug 2019 00:00:00 GMT", null, false, false, false), cookieItr.next()));
         assertTrue(cookieItr.hasNext());
-        assertTrue(areCookiesEqual(new TestCookie("qwerty", "abcd", "/2", "bar.somecompany.co.uk", null,
+        assertTrue(areSetCookiesEqual(new TestSetCookie("qwerty", "abcd", "/2", "bar.somecompany.co.uk", null,
                 null, false, false, false), cookieItr.next()));
         assertTrue(cookieItr.hasNext());
-        assertTrue(areCookiesEqual(new TestCookie("qwerty", "xyz", "/2", "somecompany.co.uk", null,
+        assertTrue(areSetCookiesEqual(new TestSetCookie("qwerty", "xyz", "/2", "somecompany.co.uk", null,
                 null, false, false, false), cookieItr.next()));
         assertFalse(cookieItr.hasNext());
 
@@ -271,7 +271,7 @@ public class DefaultHttpCookiesTest {
             assertTrue(headers.removeSetCookies("qwerty", "somecompany.co.uk.", "/2"));
             cookieItr = headers.getSetCookies("qwerty");
             assertTrue(cookieItr.hasNext());
-            assertTrue(areCookiesEqual(new TestCookie("qwerty", "abxy", "/2", "somecompany2.co.uk", null,
+            assertTrue(areSetCookiesEqual(new TestSetCookie("qwerty", "abxy", "/2", "somecompany2.co.uk", null,
                     null, false, false, false), cookieItr.next()));
             assertFalse(cookieItr.hasNext());
         }
@@ -285,7 +285,7 @@ public class DefaultHttpCookiesTest {
         headers.add("set-cookie", "qwerty=abcd; Domain=bar.somecompany.co.uk; Path=/2");
         headers.add("set-cookie", "qwerty=abxy; Domain=somecompany2.co.uk; Path=/2");
         headers.add("set-cookie", "qwerty=xyz; Domain=somecompany.co.uk; Path=/2");
-        headers.add("cookie", "qwerty=xyz; Domain=foocompany.co.uk; Path=/2");
+        headers.add("cookie", "qwerty=xyz");
 
         getAllCookies(headers);
     }
@@ -297,31 +297,30 @@ public class DefaultHttpCookiesTest {
                 "set-cookie", "qwerty=abcd; Domain=bar.somecompany.co.uk; Path=/2",
                 "set-cookie", "qwerty=abxy; Domain=somecompany2.co.uk; Path=/2",
                 "set-cookie", "qwerty=xyz; Domain=somecompany.co.uk; Path=/2",
-                "cookie", "qwerty=xyz; Domain=foocompany.co.uk; Path=/2");
+                "cookie", "qwerty=xyz");
 
         getAllCookies(headers);
     }
 
     private static void getAllCookies(HttpHeaders headers) {
-        Iterator<? extends HttpCookie> cookieItr = headers.getSetCookies();
-        assertTrue(cookieItr.hasNext());
-        assertTrue(areCookiesEqual(new TestCookie("qwerty", "12345", "/2", "foo.somecompany.co.uk",
-                "Wed, 30 Aug 2019 00:00:00 GMT", null, false, false, false), cookieItr.next()));
-        assertTrue(cookieItr.hasNext());
-        assertTrue(areCookiesEqual(new TestCookie("qwerty", "abcd", "/2", "bar.somecompany.co.uk",
-                null, null, false, false, false), cookieItr.next()));
-        assertTrue(cookieItr.hasNext());
-        assertTrue(areCookiesEqual(new TestCookie("qwerty", "abxy", "/2", "somecompany2.co.uk",
-                null, null, false, false, false), cookieItr.next()));
-        assertTrue(cookieItr.hasNext());
-        assertTrue(areCookiesEqual(new TestCookie("qwerty", "xyz", "/2", "somecompany.co.uk",
-                null, null, false, false, false), cookieItr.next()));
-        assertFalse(cookieItr.hasNext());
+        Iterator<? extends HttpSetCookie> setCookieItr = headers.getSetCookies();
+        assertTrue(setCookieItr.hasNext());
+        assertTrue(areSetCookiesEqual(new TestSetCookie("qwerty", "12345", "/2", "foo.somecompany.co.uk",
+                "Wed, 30 Aug 2019 00:00:00 GMT", null, false, false, false), setCookieItr.next()));
+        assertTrue(setCookieItr.hasNext());
+        assertTrue(areSetCookiesEqual(new TestSetCookie("qwerty", "abcd", "/2", "bar.somecompany.co.uk",
+                null, null, false, false, false), setCookieItr.next()));
+        assertTrue(setCookieItr.hasNext());
+        assertTrue(areSetCookiesEqual(new TestSetCookie("qwerty", "abxy", "/2", "somecompany2.co.uk",
+                null, null, false, false, false), setCookieItr.next()));
+        assertTrue(setCookieItr.hasNext());
+        assertTrue(areSetCookiesEqual(new TestSetCookie("qwerty", "xyz", "/2", "somecompany.co.uk",
+                null, null, false, false, false), setCookieItr.next()));
+        assertFalse(setCookieItr.hasNext());
 
-        cookieItr = headers.getCookies();
+        Iterator<? extends HttpCookiePair> cookieItr = headers.getCookies();
         assertTrue(cookieItr.hasNext());
-        assertTrue(areCookiesEqual(new TestCookie("qwerty", "xyz", "/2", "foocompany.co.uk",
-                null, null, false, false, false), cookieItr.next()));
+        assertTrue(areCookiesEqual(new DefaultHttpCookiePair("qwerty", "xyz", false), cookieItr.next()));
         assertFalse(cookieItr.hasNext());
     }
 
@@ -349,15 +348,15 @@ public class DefaultHttpCookiesTest {
     }
 
     private static void getAndRemoveCookiesNameDomainSubPath(HttpHeaders headers, boolean remove) {
-        Iterator<? extends HttpCookie> cookieItr = headers.getSetCookies("qwerty", "somecompany.co.uk", "/foo/bar");
+        Iterator<? extends HttpSetCookie> cookieItr = headers.getSetCookies("qwerty", "somecompany.co.uk", "/foo/bar");
         assertTrue(cookieItr.hasNext());
-        assertTrue(areCookiesEqual(new TestCookie("qwerty", "12345", "foo/bar",
+        assertTrue(areSetCookiesEqual(new TestSetCookie("qwerty", "12345", "foo/bar",
                 "somecompany.co.uk", "Wed, 30 Aug 2019 00:00:00 GMT", null, false, false, false), cookieItr.next()));
         assertTrue(cookieItr.hasNext());
-        assertTrue(areCookiesEqual(new TestCookie("qwerty", "abcd", "/foo/bar/", "somecompany.co.uk", null,
+        assertTrue(areSetCookiesEqual(new TestSetCookie("qwerty", "abcd", "/foo/bar/", "somecompany.co.uk", null,
                 null, false, false, false), cookieItr.next()));
         assertTrue(cookieItr.hasNext());
-        assertTrue(areCookiesEqual(new TestCookie("qwerty", "abxy", "/foo/bar/baz", "somecompany.co.uk", null,
+        assertTrue(areSetCookiesEqual(new TestSetCookie("qwerty", "abxy", "/foo/bar/baz", "somecompany.co.uk", null,
                 null, false, false, false), cookieItr.next()));
         assertFalse(cookieItr.hasNext());
 
@@ -365,7 +364,7 @@ public class DefaultHttpCookiesTest {
             assertTrue(headers.removeSetCookies("qwerty", "somecompany.co.uk", "/foo/bar"));
             cookieItr = headers.getSetCookies("qwerty");
             assertTrue(cookieItr.hasNext());
-            assertTrue(areCookiesEqual(new TestCookie("qwerty", "xyz", "/foo/barnot", "somecompany.co.uk", null,
+            assertTrue(areSetCookiesEqual(new TestSetCookie("qwerty", "xyz", "/foo/barnot", "somecompany.co.uk", null,
                     null, false, false, false), cookieItr.next()));
             assertFalse(cookieItr.hasNext());
         }
@@ -385,14 +384,14 @@ public class DefaultHttpCookiesTest {
     }
 
     private static void percentEncodedValueCanBeDecoded(HttpHeaders headers) {
-        final HttpCookie cookie = headers.getSetCookie("qwerty");
+        final HttpSetCookie cookie = headers.getSetCookie("qwerty");
         assertNotNull(cookie);
-        assertTrue(areCookiesEqual(new TestCookie("qwerty", "%x21%x23", null, null, null,
+        assertTrue(areSetCookiesEqual(new TestSetCookie("qwerty", "%x21%x23", null, null, null,
                 null, false, false, false), cookie));
 
-        final Iterator<? extends HttpCookie> cookieItr = headers.getSetCookies("qwerty");
+        final Iterator<? extends HttpSetCookie> cookieItr = headers.getSetCookies("qwerty");
         assertTrue(cookieItr.hasNext());
-        assertTrue(areCookiesEqual(new TestCookie("qwerty", "%x21%x23", null, null, null,
+        assertTrue(areSetCookiesEqual(new TestSetCookie("qwerty", "%x21%x23", null, null, null,
                 null, false, false, false), cookieItr.next()));
         assertFalse(cookieItr.hasNext());
     }
@@ -411,15 +410,15 @@ public class DefaultHttpCookiesTest {
     }
 
     private static void percentEncodedNameCanBeDecoded(HttpHeaders headers) {
-        final HttpCookie cookie = headers.getSetCookie("%x21");
+        final HttpSetCookie cookie = headers.getSetCookie("%x21");
         assertNotNull(cookie);
-        assertTrue(areCookiesEqual(new TestCookie("%x21", "foo", null, null, null,
+        assertTrue(areSetCookiesEqual(new TestSetCookie("%x21", "foo", null, null, null,
                 null, false, false, false), cookie));
 
         // Encode now
-        final Iterator<? extends HttpCookie> cookieItr = headers.getSetCookies("%x21");
+        final Iterator<? extends HttpSetCookie> cookieItr = headers.getSetCookies("%x21");
         assertTrue(cookieItr.hasNext());
-        assertTrue(areCookiesEqual(new TestCookie("%x21", "foo", null, null, null,
+        assertTrue(areSetCookiesEqual(new TestSetCookie("%x21", "foo", null, null, null,
                 null, false, false, false), cookieItr.next()));
         assertFalse(cookieItr.hasNext());
     }
@@ -440,15 +439,15 @@ public class DefaultHttpCookiesTest {
     }
 
     private static void quotesInValuePreserved(HttpHeaders headers) {
-        final HttpCookie cookie = headers.getSetCookie("qwerty");
+        final HttpSetCookie cookie = headers.getSetCookie("qwerty");
         assertNotNull(cookie);
-        assertTrue(areCookiesEqual(new TestCookie("qwerty", "12345", "/",
+        assertTrue(areSetCookiesEqual(new TestSetCookie("qwerty", "12345", "/",
                 "somecompany.co.uk", "Wed, 30 Aug 2019 00:00:00 GMT", null, true, false, false), cookie));
 
         // Encode again
-        final Iterator<? extends HttpCookie> cookieItr = headers.getSetCookies("qwerty");
+        final Iterator<? extends HttpSetCookie> cookieItr = headers.getSetCookies("qwerty");
         assertTrue(cookieItr.hasNext());
-        assertTrue(areCookiesEqual(new TestCookie("qwerty", "12345", "/", "somecompany.co.uk",
+        assertTrue(areSetCookiesEqual(new TestSetCookie("qwerty", "12345", "/", "somecompany.co.uk",
                 "Wed, 30 Aug 2019 00:00:00 GMT", null, true, false, false), cookieItr.next()));
         assertFalse(cookieItr.hasNext());
 
@@ -467,7 +466,7 @@ public class DefaultHttpCookiesTest {
                 "qwerty=abcd; Domain=somecompany2.co.uk; Path=/2; Expires=Wed, 30 Aug 2019 00:00:00 GMT");
         headers.add("set-cookie", "baz=xxx");
 
-        Iterator<? extends HttpCookie> cookieItr = headers.getSetCookies("qwerty");
+        Iterator<? extends HttpSetCookie> cookieItr = headers.getSetCookies("qwerty");
         assertTrue(cookieItr.hasNext());
         cookieItr.next();
         cookieItr.remove();
@@ -479,13 +478,13 @@ public class DefaultHttpCookiesTest {
         cookieItr = headers.getSetCookies("qwerty");
         assertFalse(cookieItr.hasNext());
 
-        HttpCookie cookie = headers.getSetCookie("foo");
+        HttpSetCookie cookie = headers.getSetCookie("foo");
         assertNotNull(cookie);
-        assertTrue(areCookiesEqual(new TestCookie("foo", "bar", null, null, null,
+        assertTrue(areSetCookiesEqual(new TestSetCookie("foo", "bar", null, null, null,
                 null, false, false, false), cookie));
         cookie = headers.getSetCookie("baz");
         assertNotNull(cookie);
-        assertTrue(areCookiesEqual(new TestCookie("baz", "xxx", null, null, null,
+        assertTrue(areSetCookiesEqual(new TestSetCookie("baz", "xxx", null, null, null,
                 null, false, false, false), cookie));
     }
 
@@ -712,7 +711,7 @@ public class DefaultHttpCookiesTest {
     }
 
     private static void valueIteratorThrowsIfNoNextCall(HttpHeaders headers) {
-        final Iterator<? extends HttpCookie> itr = headers.getSetCookies("qwerty");
+        final Iterator<? extends HttpSetCookie> itr = headers.getSetCookies("qwerty");
         assertTrue(itr.hasNext());
         itr.remove();
     }
@@ -731,15 +730,15 @@ public class DefaultHttpCookiesTest {
     }
 
     private static void entryIteratorThrowsIfDoubleRemove(HttpHeaders headers) {
-        final Iterator<? extends HttpCookie> itr = headers.getSetCookies("qwerty");
+        final Iterator<? extends HttpSetCookie> itr = headers.getSetCookies("qwerty");
         assertTrue(itr.hasNext());
-        assertTrue(areCookiesEqual(new TestCookie("qwerty", "12345", null, null, null,
+        assertTrue(areSetCookiesEqual(new TestSetCookie("qwerty", "12345", null, null, null,
                 null, false, false, false), itr.next()));
         itr.remove();
         itr.remove();
     }
 
-    private static boolean areCookiesEqual(final HttpCookie cookie1, final HttpCookie cookie2) {
+    private static boolean areSetCookiesEqual(final HttpSetCookie cookie1, final HttpSetCookie cookie2) {
         return contentEqualsIgnoreCase(cookie1.name(), cookie2.name()) &&
                 cookie1.value().equals(cookie2.value()) &&
                 Objects.equals(cookie1.domain(), cookie2.domain()) &&
@@ -751,7 +750,13 @@ public class DefaultHttpCookiesTest {
                 cookie1.isWrapped() == cookie2.isWrapped();
     }
 
-    private static final class TestCookie implements HttpCookie {
+    private static boolean areCookiesEqual(final HttpCookiePair cookie1, final HttpCookiePair cookie2) {
+        return contentEqualsIgnoreCase(cookie1.name(), cookie2.name()) &&
+                cookie1.value().equals(cookie2.value()) &&
+                cookie1.isWrapped() == cookie2.isWrapped();
+    }
+
+    private static final class TestSetCookie implements HttpSetCookie {
         private final String name;
         private final String value;
         @Nullable
@@ -766,10 +771,10 @@ public class DefaultHttpCookiesTest {
         private final boolean isSecure;
         private final boolean isHttpOnly;
 
-        TestCookie(final String name, final String value, @Nullable final String path,
-                   @Nullable final String domain, @Nullable final String expires,
-                   @Nullable final Long maxAge, final boolean isWrapped, final boolean isSecure,
-                   final boolean isHttpOnly) {
+        TestSetCookie(final String name, final String value, @Nullable final String path,
+                      @Nullable final String domain, @Nullable final String expires,
+                      @Nullable final Long maxAge, final boolean isWrapped, final boolean isSecure,
+                      final boolean isHttpOnly) {
             this.name = name;
             this.value = value;
             this.path = path;
@@ -828,6 +833,12 @@ public class DefaultHttpCookiesTest {
         @Override
         public boolean isHttpOnly() {
             return isHttpOnly;
+        }
+
+        @Override
+        public CharSequence encoded() {
+            return new DefaultHttpSetCookie(name, value, path, domain, expires, maxAge, isWrapped, isSecure, isHttpOnly)
+                    .encoded();
         }
 
         @Override

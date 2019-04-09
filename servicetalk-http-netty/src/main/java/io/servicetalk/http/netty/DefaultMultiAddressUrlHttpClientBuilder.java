@@ -382,6 +382,26 @@ final class DefaultMultiAddressUrlHttpClientBuilder extends MultiAddressHttpClie
     }
 
     @Override
+    public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> h2HeadersFactory(
+            final HttpHeadersFactory headersFactory) {
+        builderTemplate.h2HeadersFactory(headersFactory);
+        return this;
+    }
+
+    @Override
+    public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> h2PriorKnowledge(
+            final boolean h2PriorKnowledge) {
+        builderTemplate.h2PriorKnowledge(h2PriorKnowledge);
+        return this;
+    }
+
+    @Override
+    public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> h2FrameLogger(final String h2FrameLogger) {
+        builderTemplate.h2FrameLogger(h2FrameLogger);
+        return this;
+    }
+
+    @Override
     public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> maxInitialLineLength(
             final int maxInitialLineLength) {
         builderTemplate.maxInitialLineLength(maxInitialLineLength);

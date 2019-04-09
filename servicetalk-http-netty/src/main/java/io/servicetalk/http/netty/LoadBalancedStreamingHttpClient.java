@@ -65,7 +65,7 @@ final class LoadBalancedStreamingHttpClient implements FilterableStreamingHttpCl
         // correct.
         return loadBalancer.selectConnection(SELECTOR_FOR_REQUEST)
                 .flatMap(c -> c.request(strategy, request)
-                        .liftSync(new BeforeFinallyOnHttpResponseOperator(c::requestFinished)));
+                        .liftSync(new BeforeFinallyOnHttpResponseOperator(c::requestFinished)).subscribeShareContext());
     }
 
     @Override

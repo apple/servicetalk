@@ -35,7 +35,7 @@ import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 /**
  * Implements {@link ListenableAsyncCloseable} using a netty {@link Channel}.
  */
-class NettyChannelListenableAsyncCloseable implements ListenableAsyncCloseable {
+public class NettyChannelListenableAsyncCloseable implements ListenableAsyncCloseable {
     private static final AtomicIntegerFieldUpdater<NettyChannelListenableAsyncCloseable> stateUpdater =
             newUpdater(NettyChannelListenableAsyncCloseable.class, "state");
     private final Channel channel;
@@ -50,7 +50,7 @@ class NettyChannelListenableAsyncCloseable implements ListenableAsyncCloseable {
      * @param offloadingExecutor {@link Executor} used to offload any signals to any asynchronous created by this
      * {@link NettyChannelListenableAsyncCloseable} which could interact with the EventLoop.
      */
-    NettyChannelListenableAsyncCloseable(Channel channel, Executor offloadingExecutor) {
+    protected NettyChannelListenableAsyncCloseable(Channel channel, Executor offloadingExecutor) {
         this.channel = requireNonNull(channel);
         onClose = new SubscribableCompletable() {
             @Override
@@ -94,11 +94,19 @@ class NettyChannelListenableAsyncCloseable implements ListenableAsyncCloseable {
         return onClose;
     }
 
-    final Channel channel() {
+    /**
+     * Get access to the underlying {@link Channel}.
+     *
+     * @return the underlying {@link Channel}.
+     */
+    protected final Channel channel() {
         return channel;
     }
 
-    void doCloseAsyncGracefully() {
+    /**
+     * Initiate graceful closure.
+     */
+    protected void doCloseAsyncGracefully() {
         channel.close();
     }
 }

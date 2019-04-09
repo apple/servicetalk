@@ -46,4 +46,11 @@ public interface HttpHeadersFactory {
     default HttpHeaders newEmptyTrailers() {
         return newTrailers();
     }
+
+    /**
+     * Determine if a cookies should be validated during parsing into {@link HttpSetCookie}s.
+     *
+     * @return {@code true} if a cookies should be validated during parsing into {@link HttpSetCookie}s.
+     */
+    boolean validateCookies();
 }

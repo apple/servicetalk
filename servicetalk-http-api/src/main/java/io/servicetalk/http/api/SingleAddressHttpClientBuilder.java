@@ -61,6 +61,15 @@ public abstract class SingleAddressHttpClientBuilder<U, R>
     public abstract SingleAddressHttpClientBuilder<U, R> headersFactory(HttpHeadersFactory headersFactory);
 
     @Override
+    public abstract SingleAddressHttpClientBuilder<U, R> h2HeadersFactory(HttpHeadersFactory headersFactory);
+
+    @Override
+    public abstract SingleAddressHttpClientBuilder<U, R> h2PriorKnowledge(boolean h2PriorKnowledge);
+
+    @Override
+    public abstract SingleAddressHttpClientBuilder<U, R> h2FrameLogger(@Nullable String h2FrameLogger);
+
+    @Override
     public abstract SingleAddressHttpClientBuilder<U, R> maxInitialLineLength(int maxInitialLineLength);
 
     @Override

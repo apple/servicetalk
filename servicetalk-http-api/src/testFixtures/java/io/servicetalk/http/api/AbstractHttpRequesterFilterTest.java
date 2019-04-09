@@ -47,6 +47,7 @@ import static io.servicetalk.http.api.AbstractHttpRequesterFilterTest.RequesterT
 import static io.servicetalk.http.api.AbstractHttpRequesterFilterTest.RequesterType.ReservedConnection;
 import static io.servicetalk.http.api.AbstractHttpRequesterFilterTest.SecurityType.Insecure;
 import static io.servicetalk.http.api.AbstractHttpRequesterFilterTest.SecurityType.Secure;
+import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static java.util.Arrays.asList;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -59,7 +60,8 @@ import static org.mockito.Mockito.when;
 public abstract class AbstractHttpRequesterFilterTest {
 
     private static final StreamingHttpRequestResponseFactory REQ_RES_FACTORY =
-            new DefaultStreamingHttpRequestResponseFactory(DEFAULT_ALLOCATOR, DefaultHttpHeadersFactory.INSTANCE);
+            new DefaultStreamingHttpRequestResponseFactory(DEFAULT_ALLOCATOR, DefaultHttpHeadersFactory.INSTANCE,
+                    HTTP_1_1);
 
     @Rule
     public final MockitoRule rule = MockitoJUnit.rule();
@@ -331,8 +333,8 @@ public abstract class AbstractHttpRequesterFilterTest {
             }
 
             @Override
-            public <T> Publisher<T> settingStream(final SettingKey<T> settingKey) {
-                return connection.settingStream(settingKey);
+            public <T> Publisher<? extends T> transportEventStream(final HttpEventKey<T> eventKey) {
+                return connection.transportEventStream(eventKey);
             }
 
             @Override

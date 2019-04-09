@@ -16,6 +16,7 @@
 package io.servicetalk.transport.netty.internal;
 
 import io.servicetalk.concurrent.CompletableSource.Processor;
+import io.servicetalk.concurrent.api.AsyncCloseable;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.LegacyMockedCompletableListenerRule;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
@@ -25,6 +26,7 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelId;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.DefaultChannelId;
+import io.netty.util.Attribute;
 import io.netty.util.concurrent.GenericFutureListener;
 import org.junit.Before;
 import org.junit.Rule;
@@ -39,6 +41,7 @@ import static io.servicetalk.concurrent.api.AsyncCloseables.closeAsyncGracefully
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Processors.newCompletableProcessor;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
+import static io.servicetalk.transport.netty.internal.ChannelSet.CHANNEL_CLOSABLE_KEY;
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.parseBoolean;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -46,6 +49,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assume.assumeThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -73,9 +77,9 @@ public class ChannelSetTest {
     @Mock
     private ChannelPipeline channelPipeline;
     @Mock
-    private AsyncCloseableHolderChannelHandler asyncCloseableHolder;
-    @Mock
     private NettyConnection nettyConnection;
+    @Mock
+    private Attribute<AsyncCloseable> mockClosableAttribute;
 
     private final ChannelId channelId = DefaultChannelId.newInstance();
     private final ChannelSet fixture = new ChannelSet(immediate());
@@ -93,8 +97,8 @@ public class ChannelSetTest {
         });
         when(channelCloseFuture.channel()).thenReturn(channel);
         when(channel.pipeline()).thenReturn(channelPipeline);
-        when(channelPipeline.get(AsyncCloseableHolderChannelHandler.class)).thenReturn(asyncCloseableHolder);
-        when(asyncCloseableHolder.asyncClosable()).thenReturn(nettyConnection);
+        when(channel.attr(eq(CHANNEL_CLOSABLE_KEY))).thenReturn(mockClosableAttribute);
+        when(mockClosableAttribute.getAndSet(any())).thenReturn(nettyConnection);
         when(nettyConnection.closeAsync()).thenReturn(fromSource(closeAsyncCompletable));
         when(nettyConnection.closeAsyncGracefully()).thenReturn(fromSource(closeAsyncGracefullyCompletable));
         when(channelCloseFuture.addListener(any())).then((invocation) -> {
@@ -129,7 +133,7 @@ public class ChannelSetTest {
 
     @Test
     public void closeAsyncGracefullyWithoutNettyConnectionChannelHandler() {
-        when(channelPipeline.get(AsyncCloseableHolderChannelHandler.class)).thenReturn(null);
+        when(mockClosableAttribute.getAndSet(any())).thenReturn(null);
         Completable completable = closeAsyncGracefully(fixture, 100, SECONDS);
         verify(channel, never()).close();
         subscriberRule1.listen(completable);

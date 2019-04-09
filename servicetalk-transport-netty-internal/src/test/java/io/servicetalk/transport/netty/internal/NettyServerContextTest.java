@@ -26,6 +26,7 @@ import io.servicetalk.transport.api.ServerContext;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelPipeline;
+import io.netty.util.Attribute;
 import io.netty.util.concurrent.GenericFutureListener;
 import org.junit.Before;
 import org.junit.Rule;
@@ -39,8 +40,10 @@ import java.util.List;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.closeAsyncGracefully;
 import static io.servicetalk.concurrent.api.Executors.immediate;
+import static io.servicetalk.transport.netty.internal.ChannelSet.CHANNEL_CLOSABLE_KEY;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -87,7 +90,7 @@ public class NettyServerContextTest {
     @Mock
     private ChannelPipeline channelPipeline;
     @Mock
-    private AsyncCloseableHolderChannelHandler asyncCloseableHolder;
+    private Attribute<AsyncCloseable> mockClosableAttribute;
 
     ListenableAsyncCloseable channelSetCloseable = AsyncCloseables.toListenableAsyncCloseable(new AsyncCloseable() {
         @Override
@@ -125,7 +128,8 @@ public class NettyServerContextTest {
             return channelCloseFuture;
         });
         when(channel.pipeline()).thenReturn(channelPipeline);
-        when(channelPipeline.get(AsyncCloseableHolderChannelHandler.class)).thenReturn(asyncCloseableHolder);
+        when(channel.attr(eq(CHANNEL_CLOSABLE_KEY))).thenReturn(mockClosableAttribute);
+        when(mockClosableAttribute.getAndSet(any())).thenReturn(null);
         fixture = NettyServerContext.wrap(channel, channelSetCloseable, closeBefore,
                 new ExecutionContextBuilder().executor(immediate()).build());
     }

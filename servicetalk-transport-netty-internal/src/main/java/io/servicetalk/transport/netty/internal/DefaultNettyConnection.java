@@ -20,7 +20,6 @@ import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.CompletableSource.Subscriber;
 import io.servicetalk.concurrent.SingleSource;
-import io.servicetalk.concurrent.api.AsyncCloseable;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
@@ -64,6 +63,7 @@ import static io.servicetalk.concurrent.api.Publisher.failed;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.ThrowableUtil.unknownStackTrace;
+import static io.servicetalk.transport.netty.internal.ChannelSet.CHANNEL_CLOSABLE_KEY;
 import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
 import static io.servicetalk.transport.netty.internal.Flush.composeFlushes;
 import static io.servicetalk.transport.netty.internal.NettyIoExecutors.fromNettyEventLoop;
@@ -185,6 +185,33 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
      * current message framing and will allow a resubscribe to consume the next framing.
      * @param closeHandler Manages the half closure of the {@link DefaultNettyConnection}.
      * @param flushStrategy Manages flushing of data for the {@link DefaultNettyConnection}.
+     * @param executionStrategy Used to derive the {@link #executionContext()}.
+     * @param <Read> Type of objects read from the {@link NettyConnection}.
+     * @param <Write> Type of objects written to the {@link NettyConnection}.
+     * @return A {@link Single} that completes with a {@link DefaultNettyConnection} after the channel is activated and
+     * ready to use.
+     */
+    public static <Read, Write> DefaultNettyConnection<Read, Write> initChildChannel(
+            Channel channel, BufferAllocator allocator, Executor executor, TerminalPredicate<Read> terminalMsgPredicate,
+            CloseHandler closeHandler, FlushStrategy flushStrategy, ExecutionStrategy executionStrategy) {
+        DefaultNettyConnection<Read, Write> connection = new DefaultNettyConnection<>(channel, allocator,
+                executor, terminalMsgPredicate, closeHandler, flushStrategy, executionStrategy);
+        channel.pipeline().addLast(new NettyToStChannelInboundHandler<>(connection, null,
+                null, false));
+        return connection;
+    }
+
+    /**
+     * Given a {@link Channel} this will initialize the {@link ChannelPipeline} and create a
+     * {@link DefaultNettyConnection}. The resulting single will complete after the TLS handshake has completed
+     * (if applicable) or otherwise after the channel is active and ready to use.
+     * @param channel A newly created {@link Channel}.
+     * @param allocator The {@link BufferAllocator} to use for the {@link DefaultNettyConnection}.
+     * @param executor The {@link Executor} to use for the {@link DefaultNettyConnection}.
+     * @param terminalMsgPredicate Used to determine which inbound signal on the {@link #read()} stream terminates the
+     * current message framing and will allow a resubscribe to consume the next framing.
+     * @param closeHandler Manages the half closure of the {@link DefaultNettyConnection}.
+     * @param flushStrategy Manages flushing of data for the {@link DefaultNettyConnection}.
      * @param initializer Synchronously initializes the pipeline upon subscribe.
      * @param executionStrategy {@link ExecutionStrategy} to use for this connection.
      * @param <Read> Type of objects read from the {@link NettyConnection}.
@@ -206,6 +233,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
                     delayedCancellable = new DelayedCancellable();
                     DefaultNettyConnection<Read, Write> connection = new DefaultNettyConnection<>(channel, allocator,
                             executor, terminalMsgPredicate, closeHandler, flushStrategy, executionStrategy);
+                    channel.attr(CHANNEL_CLOSABLE_KEY).set(connection);
                     // We need the NettyToStChannelInboundHandler to be last in the pipeline. We accomplish that by
                     // calling the ChannelInitializer before we do addLast for the NettyToStChannelInboundHandler.
                     // This could mean if there are any synchronous events generated via ChannelInitializer handlers
@@ -316,7 +344,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
     }
 
     @Override
-    void doCloseAsyncGracefully() {
+    protected void doCloseAsyncGracefully() {
         EventLoop eventLoop = channel().eventLoop();
         if (eventLoop.inEventLoop()) {
             invokeUserCloseHandler();
@@ -430,20 +458,22 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
         }
     }
 
-    private static final class NettyToStChannelInboundHandler<Read, Write> implements ChannelInboundHandler,
-                                                                                  AsyncCloseableHolderChannelHandler {
+    private static final class NettyToStChannelInboundHandler<Read, Write> implements ChannelInboundHandler {
         private final DefaultNettyConnection<Read, Write> connection;
         private final boolean waitForSslHandshake;
+        @Nullable
         private final DelayedCancellable delayedCancellable;
         @Nullable
         private SingleSource.Subscriber<? super DefaultNettyConnection<Read, Write>> subscriber;
 
         NettyToStChannelInboundHandler(DefaultNettyConnection<Read, Write> connection,
+                                       @Nullable
                                        SingleSource.Subscriber<? super DefaultNettyConnection<Read, Write>> subscriber,
+                                       @Nullable
                                        DelayedCancellable delayedCancellable,
                                        boolean waitForSslHandshake) {
             this.connection = connection;
-            this.subscriber = requireNonNull(subscriber);
+            this.subscriber = subscriber;
             this.delayedCancellable = delayedCancellable;
             this.waitForSslHandshake = waitForSslHandshake;
         }
@@ -459,7 +489,9 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
 
         @Override
         public void handlerAdded(ChannelHandlerContext ctx) {
-            delayedCancellable.delayedCancellable(ctx.channel()::close);
+            if (delayedCancellable != null) {
+                delayedCancellable.delayedCancellable(ctx.channel()::close);
+            }
             // Double check In the event of a late handler (or test utility like EmbeddedChannel) check activeness.
             if (ctx.channel().isActive()) {
                 doChannelActive(ctx);
@@ -471,9 +503,6 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
             tryFailSubscriber(CLOSED_HANDLER_REMOVED);
         }
 
-        // AsyncCloseableHolderChannelHandler brings in ChannelHandler which deprecates this API, but it is still
-        // useful for the ChannelInboundHandler.
-        @SuppressWarnings("deprecation")
         @Override
         public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
             connection.nettyChannelPublisher.exceptionCaught(cause);
@@ -567,15 +596,11 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
 
         private void tryFailSubscriber(Throwable cause) {
             if (subscriber != null) {
+                connection.channel().close();
                 SingleSource.Subscriber<? super DefaultNettyConnection<Read, Write>> subscriberCopy = subscriber;
                 subscriber = null;
                 subscriberCopy.onError(cause);
             }
-        }
-
-        @Override
-        public AsyncCloseable asyncClosable() {
-            return connection;
         }
     }
 }

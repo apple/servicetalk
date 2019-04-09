@@ -27,6 +27,7 @@ import io.servicetalk.transport.api.SslConfig;
 import java.net.SocketOption;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import javax.annotation.Nullable;
 
 import static io.servicetalk.http.api.StrategyInfluencerAwareConversions.toMultiAddressConditionalFilterFactory;
 import static java.util.Objects.requireNonNull;
@@ -63,6 +64,15 @@ public abstract class MultiAddressHttpClientBuilder<U, R>
 
     @Override
     public abstract MultiAddressHttpClientBuilder<U, R> headersFactory(HttpHeadersFactory headersFactory);
+
+    @Override
+    public abstract MultiAddressHttpClientBuilder<U, R> h2HeadersFactory(HttpHeadersFactory headersFactory);
+
+    @Override
+    public abstract MultiAddressHttpClientBuilder<U, R> h2PriorKnowledge(boolean h2PriorKnowledge);
+
+    @Override
+    public abstract MultiAddressHttpClientBuilder<U, R> h2FrameLogger(@Nullable String h2FrameLogger);
 
     @Override
     public abstract MultiAddressHttpClientBuilder<U, R> maxInitialLineLength(int maxInitialLineLength);

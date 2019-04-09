@@ -18,11 +18,14 @@ package io.servicetalk.http.netty;
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.http.api.CharSequences;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpMetaData;
 import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
+
+import io.netty.util.AsciiString;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -46,6 +49,11 @@ final class HeaderUtils {
 
     private HeaderUtils() {
         // no instances
+    }
+
+    static int indexOf(CharSequence sequence, char c, int fromIndex) {
+        return sequence instanceof AsciiString ? ((AsciiString) sequence).indexOf(c, fromIndex) :
+                CharSequences.indexOf(sequence, c, fromIndex);
     }
 
     static boolean isTransferEncodingChunked(final HttpHeaders headers) {
@@ -73,11 +81,7 @@ final class HeaderUtils {
 
     static boolean canAddResponseContentLength(final StreamingHttpResponse response,
                                                final HttpRequestMethod requestMethod) {
-        if (!canAddContentLength(response)) {
-            return false;
-        }
-        final int statusCode = response.status().code();
-        return !isEmptyResponseStatus(statusCode) && !isEmptyConnectResponse(requestMethod, statusCode);
+        return canAddContentLength(response) && shouldAddZeroContentLength(response, requestMethod);
     }
 
     static boolean canAddRequestTransferEncoding(final StreamingHttpRequest request) {
@@ -124,7 +128,7 @@ final class HeaderUtils {
         return request.payloadBody(payload);
     }
 
-    private static boolean shouldAddZeroContentLength(final StreamingHttpRequest request) {
+    static boolean shouldAddZeroContentLength(final StreamingHttpRequest request) {
         final HttpRequestMethod requestMethod = request.method();
         final String requestMethodName = requestMethod.name();
         // A user agent SHOULD NOT send a Content-Length header field when the request message does not contain a
@@ -133,6 +137,12 @@ final class HeaderUtils {
         return POST.name().equals(requestMethodName) ||
                 PUT.name().equals(requestMethodName) ||
                 PATCH.name().equals(requestMethodName);
+    }
+
+    static boolean shouldAddZeroContentLength(final StreamingHttpResponse response,
+                                              final HttpRequestMethod requestMethod) {
+        final int statusCode = response.status().code();
+        return !isEmptyResponseStatus(statusCode) && !isEmptyConnectResponse(requestMethod, statusCode);
     }
 
     private static StreamingHttpResponse responseContentLengthPayloadHandler(final StreamingHttpResponse response,

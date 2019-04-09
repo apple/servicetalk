@@ -15,6 +15,7 @@
  */
 package io.servicetalk.client.api.internal;
 
+import io.servicetalk.client.api.ConsumableEvent;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 
@@ -23,9 +24,9 @@ import static io.servicetalk.client.api.internal.RequestConcurrencyController.Re
 import static io.servicetalk.client.api.internal.RequestConcurrencyController.Result.RejectedTemporary;
 
 final class ReservableRequestConcurrencyControllerOnlySingle extends AbstractReservableRequestConcurrencyController {
-    ReservableRequestConcurrencyControllerOnlySingle(final Publisher<Integer> maxConcurrencySettingStream,
+    ReservableRequestConcurrencyControllerOnlySingle(final Publisher<? extends ConsumableEvent<Integer>> maxConcurrency,
                                                      final Completable onClosing) {
-        super(maxConcurrencySettingStream, onClosing);
+        super(maxConcurrency, onClosing);
     }
 
     @Override

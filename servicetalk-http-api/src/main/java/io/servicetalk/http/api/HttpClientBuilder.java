@@ -27,6 +27,7 @@ import io.servicetalk.transport.api.IoExecutor;
 
 import java.net.SocketOption;
 import java.util.function.Predicate;
+import javax.annotation.Nullable;
 
 import static io.servicetalk.http.api.StrategyInfluencerAwareConversions.toConditionalClientFilterFactory;
 
@@ -59,6 +60,15 @@ abstract class HttpClientBuilder<U, R, SDE extends ServiceDiscovererEvent<R>> ex
 
     @Override
     public abstract HttpClientBuilder<U, R, SDE> headersFactory(HttpHeadersFactory headersFactory);
+
+    @Override
+    public abstract HttpClientBuilder<U, R, SDE> h2HeadersFactory(HttpHeadersFactory headersFactory);
+
+    @Override
+    public abstract HttpClientBuilder<U, R, SDE> h2PriorKnowledge(boolean h2PriorKnowledge);
+
+    @Override
+    public abstract HttpClientBuilder<U, R, SDE> h2FrameLogger(@Nullable String h2FrameLogger);
 
     @Override
     public abstract HttpClientBuilder<U, R, SDE> maxInitialLineLength(int maxInitialLineLength);
