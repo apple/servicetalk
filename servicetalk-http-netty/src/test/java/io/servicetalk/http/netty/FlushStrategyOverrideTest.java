@@ -103,7 +103,7 @@ public class FlushStrategyOverrideTest {
         CountDownLatch reqWritten = new CountDownLatch(1);
         StreamingHttpRequest req = client.get("/flush").payloadBody(from(1, 2, 3)
                 .map(count -> ctx.bufferAllocator().fromAscii("" + count))
-                .doAfterFinally(reqWritten::countDown));
+                .afterFinally(reqWritten::countDown));
 
         Future<? extends Collection<Object>> clientResp = conn.request(req)
                 .flatMapPublisher(StreamingHttpResponse::payloadBodyAndTrailers).toFuture();
@@ -148,13 +148,13 @@ public class FlushStrategyOverrideTest {
                 NettyConnectionContext nctx = (NettyConnectionContext) ctx;
                 MockFlushStrategy strategy = new MockFlushStrategy();
                 Cancellable c = nctx.updateFlushStrategy(old -> strategy);
-                return succeeded(responseFactory.ok().payloadBody(request.payloadBody().doAfterFinally(() -> {
+                return succeeded(responseFactory.ok().payloadBody(request.payloadBody().afterFinally(() -> {
                     c.cancel();
                     flushStrategies.add(strategy);
                 })));
             } else {
                 return succeeded(responseFactory.ok().payloadBody(request.payloadBody()
-                        .doAfterFinally(() -> flushStrategies.add(new MockFlushStrategy()))));
+                        .afterFinally(() -> flushStrategies.add(new MockFlushStrategy()))));
             }
         }
 

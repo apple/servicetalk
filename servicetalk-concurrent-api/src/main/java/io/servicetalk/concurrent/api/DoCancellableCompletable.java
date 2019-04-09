@@ -17,7 +17,6 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.CompletableSource;
-import io.servicetalk.concurrent.CompletableSource.Subscriber;
 
 import static java.util.Objects.requireNonNull;
 
@@ -47,8 +46,8 @@ final class DoCancellableCompletable extends AbstractSynchronousCompletableOpera
 
         @Override
         public void onSubscribe(Cancellable originalCancellable) {
-            original.onSubscribe(parent.before ? new DoBeforeCancellable(parent.cancellable, originalCancellable) :
-                    new DoBeforeCancellable(originalCancellable, parent.cancellable));
+            original.onSubscribe(parent.before ? new BeforeCancellable(parent.cancellable, originalCancellable) :
+                    new BeforeCancellable(originalCancellable, parent.cancellable));
         }
 
         @Override

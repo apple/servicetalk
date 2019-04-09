@@ -122,7 +122,7 @@ public class PubToSingleFirstOrElseTest {
         final Thread testThread = currentThread();
         final CountDownLatch analyzed = new CountDownLatch(1);
         ConcurrentLinkedQueue<AssertionError> errors = new ConcurrentLinkedQueue<>();
-        from("Hello").doBeforeRequest(__ -> {
+        from("Hello").beforeRequest(__ -> {
             if (currentThread() == testThread) {
                 errors.add(new AssertionError("Invalid thread invoked request-n. Thread: " +
                         currentThread()));

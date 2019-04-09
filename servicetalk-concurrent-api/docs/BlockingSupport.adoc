@@ -141,10 +141,10 @@ to deadlock if they are executed in sequence.
 ----
     CountDownLatch latch = new CountDownLatch(1); # <1>
     Publisher.from(1, 2, 3, 4)
-            .doAfterNext(integer -> {
+            .afterNext(integer -> {
                 latch.countDown();  # <2>
             })
-            .doBeforeRequest(requestN -> {
+            .beforeRequest(requestN -> {
                 latch.await(); # <3>
             });
 ----
@@ -172,16 +172,16 @@ If these rules are followed the above example can be modified to:
 ----
     CountDownLatch latch = new CountDownLatch(1);
     Publisher.from(1, 2, 3, 4)
-            .doAfterNext(integer -> {
+            .afterNext(integer -> {
                 latch.countDown();
             })
-            .doAfterRequest(requestN -> { # <1>
+            .afterRequest(requestN -> { # <1>
                 latch.await();
             });
 ----
-<1> Use `doAfterRequest` which happens **after** `requestN` is delivered to the source.
+<1> Use `afterRequest` which happens **after** `requestN` is delivered to the source.
 
-In this modified example, since we now use `doAfterRequest`, instead of `doBeforeRequest`, we do not block `requestN` to
+In this modified example, since we now use `afterRequest`, instead of `beforeRequest`, we do not block `requestN` to
 go to the source and this code is safe.
 
 == Opt Out

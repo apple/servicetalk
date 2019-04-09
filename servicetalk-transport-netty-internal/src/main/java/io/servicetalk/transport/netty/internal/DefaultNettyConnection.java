@@ -357,8 +357,8 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
     }
 
     private Completable cleanupStateWhenDone(Completable completable) {
-        // This must happen before we actually trigger the original Subscribers methods so using doBefore* variants.
-        return completable.doBeforeFinally(this::cleanupOnWriteTerminated);
+        // This must happen before we actually trigger the original Subscribers methods so using before* variants.
+        return completable.beforeFinally(this::cleanupOnWriteTerminated);
     }
 
     private boolean failIfWriteActive(WritableListener newWritableListener, Subscriber subscriber) {

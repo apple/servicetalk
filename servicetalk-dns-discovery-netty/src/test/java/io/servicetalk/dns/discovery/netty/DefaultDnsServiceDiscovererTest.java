@@ -397,7 +397,7 @@ public class DefaultDnsServiceDiscovererTest {
         Publisher<ServiceDiscovererEvent<InetAddress>> publisher = discoverer.discover("apple.com");
         ServiceDiscovererTestSubscriber<InetAddress> subscriber =
                 new ServiceDiscovererTestSubscriber<>(latch1, throwableRef, Long.MAX_VALUE);
-        toSource(publisher.doBeforeOnNext(n -> latch2.countDown())).subscribe(subscriber);
+        toSource(publisher.beforeOnNext(n -> latch2.countDown())).subscribe(subscriber);
 
         latch1.await();
         assertNull(throwableRef.get());
@@ -430,7 +430,7 @@ public class DefaultDnsServiceDiscovererTest {
                                 ServiceDiscovererEvent<InetAddress>>(client) {
                             @Override
                             public Publisher<ServiceDiscovererEvent<InetAddress>> discover(final String s) {
-                                return super.discover(s).doOnError(t -> {
+                                return super.discover(s).whenOnError(t -> {
                                     if (t.getCause() instanceof DnsNameResolverTimeoutException) {
                                         timeoutLatch.countDown();
                                     } else {

@@ -129,19 +129,19 @@ public class HttpServerOverrideOffloadingTest {
                 errors.add(new AssertionError("Invalid thread called the service. Thread: " +
                         currentThread()));
             }
-            toSource(request.payloadBody().doBeforeOnNext(__ -> {
+            toSource(request.payloadBody().beforeOnNext(__ -> {
                 if (isInvalidThread.test(currentThread())) {
                     errors.add(new AssertionError("Invalid thread calling response payload onNext." +
                             "Thread: " + currentThread()));
                 }
-            }).doBeforeOnComplete(() -> {
+            }).beforeOnComplete(() -> {
                 if (isInvalidThread.test(currentThread())) {
                     errors.add(new AssertionError("Invalid thread calling response payload onComplete." +
                             "Thread: " + currentThread()));
                 }
             }).ignoreElements()).subscribe(cp);
             return succeeded(responseFactory.ok().payloadBody(from("Hello"), textSerializer())
-                    .transformPayloadBody(p -> p.doBeforeRequest(__ -> {
+                    .transformPayloadBody(p -> p.beforeRequest(__ -> {
                         if (isInvalidThread.test(currentThread())) {
                             errors.add(new AssertionError("Invalid thread calling response payload " +
                                     "request-n. Thread: " + currentThread()));

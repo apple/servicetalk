@@ -197,8 +197,8 @@ public class CancellationTest {
         final CountDownLatch cancelledLatch = new CountDownLatch(1);
 
         res.payloadBody()
-                .doBeforeOnError(errorRef::set)
-                .doBeforeCancel(cancelledLatch::countDown)
+                .beforeOnError(errorRef::set)
+                .beforeCancel(cancelledLatch::countDown)
                 .ignoreElements().subscribe().cancel();
 
         cancelledLatch.await();
@@ -221,8 +221,8 @@ public class CancellationTest {
             Single<StreamingHttpResponse> respSingle = execRule.executor().submit(() ->
                     jerseyRouter.handle(ctx, req, HTTP_REQ_RES_FACTORY)
             ).flatMap(identity())
-             .doBeforeOnError(errorRef::set)
-             .doAfterCancel(cancelledLatch::countDown);
+             .beforeOnError(errorRef::set)
+             .afterCancel(cancelledLatch::countDown);
 
             toSource(respSingle).subscribe(new SingleSource.Subscriber<StreamingHttpResponse>() {
                 @Override
@@ -236,7 +236,7 @@ public class CancellationTest {
                         errorRef.compareAndSet(null, new NullPointerException("result == null not expected."));
                         cancelledLatch.countDown();
                     } else {
-                        result.payloadBody().ignoreElements().doAfterFinally(cancelledLatch::countDown).subscribe();
+                        result.payloadBody().ignoreElements().afterFinally(cancelledLatch::countDown).subscribe();
                     }
                 }
 
@@ -248,8 +248,8 @@ public class CancellationTest {
             });
         } else {
             jerseyRouter.handle(ctx, req, HTTP_REQ_RES_FACTORY)
-                    .doBeforeOnError(errorRef::set)
-                    .doAfterCancel(cancelledLatch::countDown)
+                    .beforeOnError(errorRef::set)
+                    .afterCancel(cancelledLatch::countDown)
                     .ignoreElement().subscribe().cancel();
         }
 

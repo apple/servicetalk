@@ -150,7 +150,7 @@ final class NettyHttpServer {
         @Override
         public Completable closeAsync() {
             return asyncCloseable.closeAsync()
-                    .doFinally(() -> LOGGER.debug("Stopped HTTP server for address {}.", listenAddress()));
+                    .whenFinally(() -> LOGGER.debug("Stopped HTTP server for address {}.", listenAddress()));
         }
 
         @Override
@@ -221,7 +221,7 @@ final class NettyHttpServer {
                         // Cancellation is assumed to close the connection, or be ignored if this Subscriber has already
                         // terminated. That means we don't need to trigger the processor as completed because we don't
                         // care about processing more requests.
-                        payload -> payload.doAfterSubscriber(() -> new Subscriber<Object>() {
+                        payload -> payload.afterSubscriber(() -> new Subscriber<Object>() {
                             @Override
                             public void onSubscribe(final Subscription s) {
                             }

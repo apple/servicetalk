@@ -32,7 +32,7 @@ public class SimpleSubscribeTest {
     @Test
     public void noRunnable() throws Exception {
         CountDownLatch latch = new CountDownLatch(1);
-        completed().doAfterFinally(latch::countDown).subscribe();
+        completed().afterFinally(latch::countDown).subscribe();
         latch.await();
     }
 
@@ -41,7 +41,7 @@ public class SimpleSubscribeTest {
         Runnable onComplete = Mockito.mock(Runnable.class);
         doThrow(DELIBERATE_EXCEPTION).when(onComplete).run();
         CountDownLatch latch = new CountDownLatch(1);
-        completed().doAfterFinally(latch::countDown).subscribe(onComplete);
+        completed().afterFinally(latch::countDown).subscribe(onComplete);
         latch.await();
         verify(onComplete).run();
     }
@@ -50,7 +50,7 @@ public class SimpleSubscribeTest {
     public void runnableIsInvokedOnComplete() throws Exception {
         Runnable onComplete = Mockito.mock(Runnable.class);
         CountDownLatch latch = new CountDownLatch(1);
-        completed().doAfterFinally(latch::countDown).subscribe(onComplete);
+        completed().afterFinally(latch::countDown).subscribe(onComplete);
         latch.await();
         verify(onComplete).run();
     }
@@ -59,7 +59,7 @@ public class SimpleSubscribeTest {
     public void runnableIsNotInvokedOnError() throws Exception {
         Runnable onComplete = Mockito.mock(Runnable.class);
         CountDownLatch latch = new CountDownLatch(1);
-        failed(DELIBERATE_EXCEPTION).doAfterFinally(latch::countDown).subscribe(onComplete);
+        failed(DELIBERATE_EXCEPTION).afterFinally(latch::countDown).subscribe(onComplete);
         latch.await();
         verifyZeroInteractions(onComplete);
     }
@@ -68,7 +68,7 @@ public class SimpleSubscribeTest {
     public void runnableIsNotInvokedWhenCancelled() throws Exception {
         Runnable onComplete = Mockito.mock(Runnable.class);
         CountDownLatch latch = new CountDownLatch(1);
-        failed(DELIBERATE_EXCEPTION).doAfterFinally(latch::countDown).subscribe(onComplete).cancel();
+        failed(DELIBERATE_EXCEPTION).afterFinally(latch::countDown).subscribe(onComplete).cancel();
         latch.await();
         verifyZeroInteractions(onComplete);
     }

@@ -134,7 +134,7 @@ public class CompletionStageAsyncContextTest {
         CountDownLatch latch1 = new CountDownLatch(1);
         CountDownLatch latch2 = new CountDownLatch(1);
         CountDownLatch latch3 = new CountDownLatch(1);
-        source.doOnSuccess(v -> {
+        source.whenOnSuccess(v -> {
             actualK1Value1.compareAndSet(null, AsyncContext.get(K1));
             latch1.countDown();
         }).toCompletionStage().handle((s, t) -> {

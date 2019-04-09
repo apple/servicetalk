@@ -86,7 +86,7 @@ public class RedisClientTest extends BaseRedisClientTest {
     @Test
     public void gracefulTerminationOnQuit() throws Exception {
         assertThat(awaitIndefinitely(getEnv().client.reserveConnection(PING).flatMapPublisher(conn ->
-                conn.request(newRequest(QUIT)).doAfterFinally(() -> conn.releaseAsync()))),
+                conn.request(newRequest(QUIT)).afterFinally(() -> conn.releaseAsync()))),
                 contains(redisSimpleString("OK")));
     }
 

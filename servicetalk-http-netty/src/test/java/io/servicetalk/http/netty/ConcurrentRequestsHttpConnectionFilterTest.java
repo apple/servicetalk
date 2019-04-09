@@ -247,7 +247,7 @@ public class ConcurrentRequestsHttpConnectionFilterTest {
                     .toFuture().get();
 
             final Processor closedFinally = newCompletableProcessor();
-            connection.onClose().doAfterFinally(closedFinally::onComplete).subscribe();
+            connection.onClose().afterFinally(closedFinally::onComplete).subscribe();
 
             try {
                 fromSource(closedFinally).concat(resp2).toFuture().get();

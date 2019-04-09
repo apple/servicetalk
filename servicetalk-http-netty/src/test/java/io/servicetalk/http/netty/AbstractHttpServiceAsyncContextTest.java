@@ -177,11 +177,11 @@ public abstract class AbstractHttpServiceAsyncContextTest {
                     AsyncContext.put(K1, requestId);
                 }
                 final StreamingHttpRequest filteredRequest = request.transformRawPayloadBody(pub ->
-                        pub.doAfterSubscriber(assertAsyncContextSubscriber(requestId, errorQueue)));
+                        pub.afterSubscriber(assertAsyncContextSubscriber(requestId, errorQueue)));
                 return delegate().handle(ctx, filteredRequest, factory).map(resp -> {
                             assertAsyncContext(requestId, errorQueue);
                             return resp.transformRawPayloadBody(pub ->
-                                    pub.doAfterSubscriber(assertAsyncContextSubscriber(requestId, errorQueue)));
+                                    pub.afterSubscriber(assertAsyncContextSubscriber(requestId, errorQueue)));
                         }
                 );
             }

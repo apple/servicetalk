@@ -117,7 +117,7 @@ public class NettyHttpServerConnectionTest {
                                                                 final StreamingHttpRequest request,
                                                                 final StreamingHttpResponseFactory responseFactory) {
                         if (handledFirstRequest.compareAndSet(false, true)) {
-                            customStrategy.doAfterFirstWrite(FlushStrategy.FlushSender::flush);
+                            customStrategy.afterFirstWrite(FlushStrategy.FlushSender::flush);
                             return succeeded(responseFactory.ok().payloadBody(responsePublisher));
                         }
                         return succeeded(responseFactory.ok().payloadBody(responsePublisher2));

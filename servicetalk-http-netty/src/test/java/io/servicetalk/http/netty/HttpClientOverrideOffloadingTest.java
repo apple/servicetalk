@@ -105,7 +105,7 @@ public class HttpClientOverrideOffloadingTest {
     @Test
     public void reserveRespectsDisable() throws Exception {
         ConcurrentLinkedQueue<AssertionError> errors = new ConcurrentLinkedQueue<>();
-        client.reserveConnection(overridingStrategy, client.get("/")).doBeforeOnSuccess(__ -> {
+        client.reserveConnection(overridingStrategy, client.get("/")).beforeOnSuccess(__ -> {
             if (isInvalidThread()) {
                 errors.add(new AssertionError("Invalid thread found providing the connection. Thread: "
                         + currentThread()));
@@ -118,7 +118,7 @@ public class HttpClientOverrideOffloadingTest {
     public void requestRespectsDisable() throws Exception {
         ConcurrentLinkedQueue<AssertionError> errors = new ConcurrentLinkedQueue<>();
         client.request(overridingStrategy, client.get("/"))
-                .doBeforeOnSuccess(__ -> {
+                .beforeOnSuccess(__ -> {
                     if (isInvalidThread()) {
                         errors.add(new AssertionError("Invalid thread called response. " +
                                 "Thread: " + currentThread()));

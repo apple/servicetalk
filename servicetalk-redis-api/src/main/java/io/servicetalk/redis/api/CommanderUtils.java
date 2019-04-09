@@ -93,12 +93,12 @@ final class CommanderUtils {
     }
 
     static Single<String> abortSingles(final Single<String> result, final List<Processor<?, ?>> singles) {
-        return result.doBeforeOnSuccess(__ -> completeSinglesWithException(new TransactionAbortedException(), singles));
+        return result.beforeOnSuccess(__ -> completeSinglesWithException(new TransactionAbortedException(), singles));
     }
 
     static Completable completeSingles(final Single<List<Object>> results,
                                        final List<Processor<?, ?>> singles) {
-        return results.doBeforeOnSuccess(resultList -> {
+        return results.beforeOnSuccess(resultList -> {
             if (singles.size() != resultList.size()) {
                 throw new IllegalStateException("Result resultList size (" + resultList.size()
                         + ") and SingleProcessor resultList size (" + singles.size() + ") did not match");
@@ -193,7 +193,7 @@ final class CommanderUtils {
                         .concat(failed(discardThrowable))
                 ).concat(reservedCnx.releaseAsync()); // If discard succeeds, release the connection.
             }
-            toSource(discardSingle.doAfterCancel(() -> handleCancel(reservedCnx, singles,
+            toSource(discardSingle.afterCancel(() -> handleCancel(reservedCnx, singles,
                     "Connection closed due to discard() cancellation.")))
                     .subscribe(subscriber);
         }
@@ -241,7 +241,7 @@ final class CommanderUtils {
                         .concat(failed(discardThrowable))
                 ).concat(reservedCnx.releaseAsync()); // If exec succeeds, release the connection.
             }
-            toSource(execCompletable.doAfterCancel(() -> handleCancel(reservedCnx, singles,
+            toSource(execCompletable.afterCancel(() -> handleCancel(reservedCnx, singles,
                     "Connection closed due to exec() cancellation.")))
                     .subscribe(subscriber);
         }

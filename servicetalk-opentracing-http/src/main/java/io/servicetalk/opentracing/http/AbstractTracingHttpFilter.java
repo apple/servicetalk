@@ -20,7 +20,7 @@ import io.servicetalk.concurrent.api.TerminalSignalConsumer;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.http.api.StreamingHttpResponse;
-import io.servicetalk.http.utils.DoBeforeFinallyOnHttpResponseOperator;
+import io.servicetalk.http.utils.BeforeFinallyOnHttpResponseOperator;
 import io.servicetalk.opentracing.inmemory.api.InMemoryTraceStateFormat;
 
 import io.opentracing.Scope;
@@ -106,12 +106,12 @@ abstract class AbstractTracingHttpFilter {
         }
 
         Single<StreamingHttpResponse> track(Single<StreamingHttpResponse> responseSingle) {
-            return responseSingle.liftSync(new DoBeforeFinallyOnHttpResponseOperator(this))
-                    // DoBeforeFinallyOnHttpResponseOperator conditionally outputs a Single<Meta> with a failed
+            return responseSingle.liftSync(new BeforeFinallyOnHttpResponseOperator(this))
+                    // BeforeFinallyOnHttpResponseOperator conditionally outputs a Single<Meta> with a failed
                     // Publisher<Data> instead of the real Publisher<Data> in case a cancel signal is observed before
                     // completion of Meta. So in order for downstream operators to get a consistent view of the data
-                    // path doBeforeOnSuccess() needs to be applied last.
-                    .doBeforeOnSuccess(this::onResponseMeta);
+                    // path beforeOnSuccess() needs to be applied last.
+                    .beforeOnSuccess(this::onResponseMeta);
         }
 
         private void tagStatusCode() {

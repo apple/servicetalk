@@ -494,8 +494,8 @@ public class RedisCommanderTest extends BaseRedisClientTest {
 
         assertThat(subscriber
                 .subscribe(commandClient.monitor()
-                        .doAfterOnNext(__ -> awaitIndefinitelyUnchecked(commandClient.ping().ignoreElement()))
-                        .doAfterCancel(cancelled::countDown))
+                        .afterOnNext(__ -> awaitIndefinitelyUnchecked(commandClient.ping().ignoreElement()))
+                        .afterCancel(cancelled::countDown))
                 .request(2)
                 .awaitUntilAtLeastNReceived(2, DEFAULT_TIMEOUT_SECONDS, SECONDS), is(true));
 

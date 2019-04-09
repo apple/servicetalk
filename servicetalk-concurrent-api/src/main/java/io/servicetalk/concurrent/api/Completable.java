@@ -126,8 +126,8 @@ public abstract class Completable {
      * {@link Subscriber}s of the returned {@link Completable}.
      * <p>
      * The order in which {@code onComplete} will be invoked relative to {@link Subscriber#onComplete()} is
-     * undefined. If you need strict ordering see {@link #doBeforeOnComplete(Runnable)} and
-     * {@link #doAfterOnComplete(Runnable)}.
+     * undefined. If you need strict ordering see {@link #beforeOnComplete(Runnable)} and
+     * {@link #afterOnComplete(Runnable)}.
      * <p>
      * From a sequential programming point of view this method is roughly equivalent to the following:
      * <pre>{@code
@@ -139,11 +139,11 @@ public abstract class Completable {
      * @param onComplete Invoked when {@link Subscriber#onComplete()} is called for {@link Subscriber}s of the returned
      * {@link Completable}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Completable}.
-     * @see #doBeforeOnComplete(Runnable)
-     * @see #doAfterOnComplete(Runnable)
+     * @see #beforeOnComplete(Runnable)
+     * @see #afterOnComplete(Runnable)
      */
-    public final Completable doOnComplete(Runnable onComplete) {
-        return doAfterOnComplete(onComplete);
+    public final Completable whenOnComplete(Runnable onComplete) {
+        return afterOnComplete(onComplete);
     }
 
     /**
@@ -151,8 +151,8 @@ public abstract class Completable {
      * {@link Subscriber}s of the returned {@link Completable}.
      * <p>
      * The order in which {@code onError} will be invoked relative to {@link Subscriber#onError(Throwable)} is
-     * undefined. If you need strict ordering see {@link #doBeforeOnError(Consumer)} and
-     * {@link #doAfterOnError(Consumer)}.
+     * undefined. If you need strict ordering see {@link #beforeOnError(Consumer)} and
+     * {@link #afterOnError(Consumer)}.
      * <p>
      * From a sequential programming point of view this method is roughly equivalent to the following:
      * <pre>{@code
@@ -168,16 +168,16 @@ public abstract class Completable {
      * @param onError Invoked when {@link Subscriber#onError(Throwable)} is called for {@link Subscriber}s of the
      * returned {@link Completable}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Completable}.
-     * @see #doBeforeOnError(Consumer)
-     * @see #doAfterOnError(Consumer)
+     * @see #beforeOnError(Consumer)
+     * @see #afterOnError(Consumer)
      */
-    public final Completable doOnError(Consumer<Throwable> onError) {
-        return doAfterOnError(onError);
+    public final Completable whenOnError(Consumer<Throwable> onError) {
+        return afterOnError(onError);
     }
 
     /**
-     * Invokes the {@code doFinally} {@link Runnable} argument exactly once, when any of the following terminal methods
-     * are called:
+     * Invokes the {@code whenFinally} {@link Runnable} argument exactly once, when any of the following terminal
+     * methods are called:
      * <ul>
      *     <li>{@link Subscriber#onComplete()}</li>
      *     <li>{@link Subscriber#onError(Throwable)}</li>
@@ -185,8 +185,8 @@ public abstract class Completable {
      * </ul>
      * for Subscriptions/{@link Subscriber}s of the returned {@link Completable}.
      * <p>
-     * The order in which {@code doFinally} will be invoked relative to the above methods is undefined. If you need
-     * strict ordering see {@link #doBeforeFinally(Runnable)} and {@link #doAfterFinally(Runnable)}.
+     * The order in which {@code whenFinally} will be invoked relative to the above methods is undefined. If you need
+     * strict ordering see {@link #beforeFinally(Runnable)} and {@link #afterFinally(Runnable)}.
      * <p>
      * From a sequential programming point of view this method is roughly equivalent to the following:
      * <pre>{@code
@@ -195,7 +195,7 @@ public abstract class Completable {
      *  } finally {
      *      // NOTE: The order of operations here is not guaranteed by this method!
      *      nextOperation(); // Maybe notifying of cancellation, or termination
-     *      doFinally.run();
+     *      whenFinally.run();
      *  }
      * }</pre>
      *
@@ -207,28 +207,28 @@ public abstract class Completable {
      * </ul>
      * for Subscriptions/{@link Subscriber}s of the returned {@link Completable} <strong>MUST NOT</strong> throw.
      * @return The new {@link Completable}.
-     * @see #doAfterFinally(Runnable)
-     * @see #doBeforeFinally(Runnable)
+     * @see #afterFinally(Runnable)
+     * @see #beforeFinally(Runnable)
      */
-    public final Completable doFinally(Runnable doFinally) {
-        return doAfterFinally(doFinally);
+    public final Completable whenFinally(Runnable doFinally) {
+        return afterFinally(doFinally);
     }
 
     /**
      * Invokes the {@code onCancel} {@link Runnable} argument when {@link Cancellable#cancel()} is called for
      * Subscriptions of the returned {@link Completable}.
      * <p>
-     * The order in which {@code doFinally} will be invoked relative to {@link Cancellable#cancel()} is undefined. If
-     * you need strict ordering see {@link #doBeforeCancel(Runnable)} and {@link #doAfterCancel(Runnable)}.
+     * The order in which {@code whenFinally} will be invoked relative to {@link Cancellable#cancel()} is undefined. If
+     * you need strict ordering see {@link #beforeCancel(Runnable)} and {@link #afterCancel(Runnable)}.
 
      * @param onCancel Invoked when {@link Cancellable#cancel()} is called for Subscriptions of the
      * returned {@link Completable}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Completable}.
-     * @see #doBeforeCancel(Runnable)
-     * @see #doAfterCancel(Runnable)
+     * @see #beforeCancel(Runnable)
+     * @see #afterCancel(Runnable)
      */
-    public final Completable doOnCancel(Runnable onCancel) {
-        return doAfterCancel(onCancel);
+    public final Completable whenCancel(Runnable onCancel) {
+        return afterCancel(onCancel);
     }
 
     /**
@@ -673,8 +673,8 @@ public abstract class Completable {
      * {@link Subscriber}s of the returned {@link Completable}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Completable}.
      */
-    public final Completable doBeforeOnSubscribe(Consumer<Cancellable> onSubscribe) {
-        return doBeforeSubscriber(doOnSubscribeSupplier(onSubscribe));
+    public final Completable beforeOnSubscribe(Consumer<Cancellable> onSubscribe) {
+        return beforeSubscriber(doOnSubscribeSupplier(onSubscribe));
     }
 
     /**
@@ -692,8 +692,8 @@ public abstract class Completable {
      * {@link Subscriber}s of the returned {@link Completable}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Completable}.
      */
-    public final Completable doBeforeOnComplete(Runnable onComplete) {
-        return doBeforeSubscriber(doOnCompleteSupplier(onComplete));
+    public final Completable beforeOnComplete(Runnable onComplete) {
+        return beforeSubscriber(doOnCompleteSupplier(onComplete));
     }
 
     /**
@@ -714,8 +714,8 @@ public abstract class Completable {
      * {@link Subscriber}s of the returned {@link Completable}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Completable}.
      */
-    public final Completable doBeforeOnError(Consumer<Throwable> onError) {
-        return doBeforeSubscriber(doOnErrorSupplier(onError));
+    public final Completable beforeOnError(Consumer<Throwable> onError) {
+        return beforeSubscriber(doOnErrorSupplier(onError));
     }
 
     /**
@@ -726,12 +726,12 @@ public abstract class Completable {
      * returned {@link Completable}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Completable}.
      */
-    public final Completable doBeforeCancel(Runnable onCancel) {
+    public final Completable beforeCancel(Runnable onCancel) {
         return new DoCancellableCompletable(this, onCancel::run, true, executor);
     }
 
     /**
-     * Invokes the {@code doFinally} {@link Runnable} argument <strong>before</strong> any of the following terminal
+     * Invokes the {@code whenFinally} {@link Runnable} argument <strong>before</strong> any of the following terminal
      * methods are called:
      * <ul>
      *     <li>{@link Subscriber#onComplete()}</li>
@@ -743,7 +743,7 @@ public abstract class Completable {
      *  try {
      *      resultOfThisCompletable();
      *  } finally {
-     *      doFinally.run();
+     *      whenFinally.run();
      *      nextOperation(); // Maybe notifying of cancellation, or termination
      *  }
      * }</pre>
@@ -757,8 +757,8 @@ public abstract class Completable {
      * for Subscriptions/{@link Subscriber}s of the returned {@link Completable}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Completable}.
      */
-    public final Completable doBeforeFinally(Runnable doFinally) {
-        return new DoBeforeFinallyCompletable(this, doFinally, executor);
+    public final Completable beforeFinally(Runnable doFinally) {
+        return new BeforeFinallyCompletable(this, doFinally, executor);
     }
 
     /**
@@ -771,8 +771,8 @@ public abstract class Completable {
      * {@link Subscriber} methods <strong>MUST NOT</strong> throw.
      * @return The new {@link Completable}.
      */
-    public final Completable doBeforeSubscriber(Supplier<? extends Subscriber> subscriberSupplier) {
-        return new DoBeforeSubscriberCompletable(this, subscriberSupplier, executor);
+    public final Completable beforeSubscriber(Supplier<? extends Subscriber> subscriberSupplier) {
+        return new BeforeSubscriberCompletable(this, subscriberSupplier, executor);
     }
 
     /**
@@ -784,8 +784,8 @@ public abstract class Completable {
      * {@link Subscriber}s of the returned {@link Completable}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Completable}.
      */
-    public final Completable doAfterOnSubscribe(Consumer<Cancellable> onSubscribe) {
-        return doAfterSubscriber(doOnSubscribeSupplier(onSubscribe));
+    public final Completable afterOnSubscribe(Consumer<Cancellable> onSubscribe) {
+        return afterSubscriber(doOnSubscribeSupplier(onSubscribe));
     }
 
     /**
@@ -803,8 +803,8 @@ public abstract class Completable {
      * {@link Subscriber}s of the returned {@link Completable}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Completable}.
      */
-    public final Completable doAfterOnComplete(Runnable onComplete) {
-        return doAfterSubscriber(doOnCompleteSupplier(onComplete));
+    public final Completable afterOnComplete(Runnable onComplete) {
+        return afterSubscriber(doOnCompleteSupplier(onComplete));
     }
 
     /**
@@ -825,8 +825,8 @@ public abstract class Completable {
      * {@link Subscriber}s of the returned {@link Completable}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Completable}.
      */
-    public final Completable doAfterOnError(Consumer<Throwable> onError) {
-        return doAfterSubscriber(doOnErrorSupplier(onError));
+    public final Completable afterOnError(Consumer<Throwable> onError) {
+        return afterSubscriber(doOnErrorSupplier(onError));
     }
 
     /**
@@ -837,12 +837,12 @@ public abstract class Completable {
      * returned {@link Completable}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Completable}.
      */
-    public final Completable doAfterCancel(Runnable onCancel) {
+    public final Completable afterCancel(Runnable onCancel) {
         return new DoCancellableCompletable(this, onCancel::run, false, executor);
     }
 
     /**
-     * Invokes the {@code doFinally} {@link Runnable} argument <strong>after</strong> any of the following terminal
+     * Invokes the {@code whenFinally} {@link Runnable} argument <strong>after</strong> any of the following terminal
      * methods are called:
      * <ul>
      *     <li>{@link Subscriber#onComplete()}</li>
@@ -857,7 +857,7 @@ public abstract class Completable {
      *      resultOfThisCompletable();
      *  } finally {
      *      nextOperation(); // Maybe notifying of cancellation, or termination
-     *      doFinally.run();
+     *      whenFinally.run();
      *  }
      * }</pre>
      *
@@ -870,8 +870,8 @@ public abstract class Completable {
      * for Subscriptions/{@link Subscriber}s of the returned {@link Completable}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Completable}.
      */
-    public final Completable doAfterFinally(Runnable doFinally) {
-        return new DoAfterFinallyCompletable(this, doFinally, executor);
+    public final Completable afterFinally(Runnable doFinally) {
+        return new AfterFinallyCompletable(this, doFinally, executor);
     }
 
     /**
@@ -884,8 +884,8 @@ public abstract class Completable {
      * {@link Subscriber} methods <strong>MUST NOT</strong> throw.
      * @return The new {@link Completable}.
      */
-    public final Completable doAfterSubscriber(Supplier<? extends Subscriber> subscriberSupplier) {
-        return new DoAfterSubscriberCompletable(this, subscriberSupplier, executor);
+    public final Completable afterSubscriber(Supplier<? extends Subscriber> subscriberSupplier) {
+        return new AfterSubscriberCompletable(this, subscriberSupplier, executor);
     }
 
     /**
@@ -898,7 +898,7 @@ public abstract class Completable {
      *     Completable<X> pub = ...;
      *     pub.map(..) // A
      *        .liftSync(original -> modified)
-     *        .doAfterFinally(..) // B
+     *        .afterFinally(..) // B
      * }</pre>
      * The {@code original -> modified} "operator" <strong>MUST</strong> be "synchronous" in that it does not interact
      * with the original {@link Subscriber} from outside the modified {@link Subscriber} or {@link Cancellable}
@@ -927,7 +927,7 @@ public abstract class Completable {
      *     Publisher<X> pub = ...;
      *     pub.map(..) // A
      *        .liftAsync(original -> modified)
-     *        .doAfterFinally(..) // B
+     *        .afterFinally(..) // B
      * }</pre>
      *
      * The {@code original -> modified} "operator" MAY be "asynchronous" in that it may interact with the original

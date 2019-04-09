@@ -54,7 +54,7 @@ abstract class AbstractAsynchronousPublisherOperator<T, R> extends AbstractNoHan
                 contextProvider.wrapPublisherSubscriber(subscriber, contextMap));
         // Subscriber to use to subscribe to the original source. Since this is an asynchronous operator, it may call
         // Subscription methods from EventLoop (if the asynchronous source created/obtained inside this operator uses
-        // EventLoop) which may execute blocking code on EventLoop, eg: doBeforeRequest(). So, we should offload
+        // EventLoop) which may execute blocking code on EventLoop, eg: beforeRequest(). So, we should offload
         // Subscription methods here.
         //
         // We are introducing offloading on the Subscription, which means the AsyncContext may leak if we don't save

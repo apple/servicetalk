@@ -73,13 +73,13 @@ public class CompletableToPublisherTest {
         ConcurrentLinkedQueue<AssertionError> errors = new ConcurrentLinkedQueue<>();
         TestCompletable completable = new TestCompletable.Builder().disableAutoOnSubscribe().build();
         TestPublisherSubscriber<String> subscriber = new TestPublisherSubscriber<>();
-        toSource(completable.doBeforeCancel(() -> {
-                    if (currentThread() == testThread) {
-                        errors.add(new AssertionError("Invalid thread invoked cancel. Thread: " +
-                                currentThread()));
-                    }
-                })
-                .doAfterCancel(analyzed::countDown)
+        toSource(completable.beforeCancel(() -> {
+            if (currentThread() == testThread) {
+                errors.add(new AssertionError("Invalid thread invoked cancel. Thread: " +
+                        currentThread()));
+            }
+        })
+                .afterCancel(analyzed::countDown)
                 .subscribeOn(executorRule.executor())
                 .<String>toPublisher())
                 .subscribe(subscriber);
@@ -140,34 +140,34 @@ public class CompletableToPublisherTest {
         CountDownLatch analyzed = new CountDownLatch(1);
         CountDownLatch receivedOnSubscribe = new CountDownLatch(1);
         toSource(completable.publishOn(executorRule.executor())
-                .doBeforeOnComplete(() -> {
+                .beforeOnComplete(() -> {
                     if (currentThread() == testThread) {
                         errors.add(new AssertionError("Invalid thread invoked onComplete " +
                                 "(from Completable). Thread: " + currentThread()));
                     }
                 })
-                .doBeforeOnError(__ -> {
+                .beforeOnError(__ -> {
                     if (currentThread() == testThread) {
                         errors.add(new AssertionError("Invalid thread invoked onError" +
                                 "(from Completable). Thread: " + currentThread()));
                     }
                 })
                 .<String>toPublisher()
-                .doBeforeOnComplete(() -> {
+                .beforeOnComplete(() -> {
                     if (currentThread() == testThread) {
                         errors.add(new AssertionError("Invalid thread invoked onComplete " +
                                 "(from Publisher). Thread: " + currentThread()));
                     }
                 })
-                .doBeforeOnError(__ -> {
+                .beforeOnError(__ -> {
                     if (currentThread() == testThread) {
                         errors.add(new AssertionError("Invalid thread invoked onError " +
                                 "(from Publisher). Thread: " + currentThread()));
                     }
                 })
-                .doBeforeOnComplete(analyzed::countDown)
-                .doBeforeOnError(__ -> analyzed.countDown())
-                .doAfterOnSubscribe(__ -> receivedOnSubscribe.countDown())
+                .beforeOnComplete(analyzed::countDown)
+                .beforeOnError(__ -> analyzed.countDown())
+                .afterOnSubscribe(__ -> receivedOnSubscribe.countDown())
         )
                 .subscribe(subscriber);
         assertThat("Completable not subscribed.", completable.isSubscribed(), is(true));

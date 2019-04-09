@@ -97,7 +97,7 @@ public class ServiceTalkThreadContextMapTest {
                 assertEquals("2", MDC.get("b"));
                 MDC.put("b", "22");
                 return v;
-            }).doBeforeFinally(() -> {
+            }).beforeFinally(() -> {
                 logger.info("expected a=1 b=22"); // human inspection as sanity check
                 assertEquals("1", MDC.get("a"));
                 assertEquals("22", MDC.get("b"));

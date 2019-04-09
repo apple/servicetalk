@@ -241,7 +241,7 @@ public final class LimitingConnectionFactoryFilter<ResolvedAddress, C extends Li
                     original.onError(new ConnectException("Null connection received"));
                 }
             } else {
-                result.onClose().doFinally(this::sendCloseCallback).subscribe();
+                result.onClose().whenFinally(this::sendCloseCallback).subscribe();
                 original.onSuccess(result);
             }
         }

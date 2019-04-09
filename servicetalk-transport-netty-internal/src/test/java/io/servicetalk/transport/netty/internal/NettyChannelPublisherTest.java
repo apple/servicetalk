@@ -489,7 +489,7 @@ public class NettyChannelPublisherTest {
         assertFalse(channel.isOpen());
 
         AtomicReference<Throwable> exRef = new AtomicReference<>();
-        publisher.doBeforeOnError(exRef::set).forEach(__ -> { });
+        publisher.beforeOnError(exRef::set).forEach(__ -> { });
         assertThat("Subscriber active post channel error.", exRef.get(),
                 is(instanceOf(ClosedChannelException.class)));
     }
@@ -507,7 +507,7 @@ public class NettyChannelPublisherTest {
         fireChannelReadToBuffer(3, 4);
 
         toSource(publisher.
-                doAfterFinally(() -> {
+                afterFinally(() -> {
                     // re-subscribing from the previous completion event
                     toSource(publisher).subscribe(subscriber2);
                     subscriber2.request(2);
@@ -531,7 +531,7 @@ public class NettyChannelPublisherTest {
         channel.pipeline().fireExceptionCaught(DELIBERATE_EXCEPTION);
 
         toSource(publisher
-                .doAfterFinally(() -> {
+                .afterFinally(() -> {
                     // re-subscribing from the previous completion event
                     toSource(publisher).subscribe(subscriber2);
                     subscriber2.request(1);

@@ -292,7 +292,7 @@ public final class DefaultSerializer implements Serializer {
         // the concatMap should ensure there is no concurrency, and will ensure visibility when transitioning
         // between Buffers.
         toSource(source.flatMapConcatIterable(deSerializer::deserialize)
-                .doBeforeOnComplete(deSerializer::close))
+                .beforeOnComplete(deSerializer::close))
                 .subscribe(subscriber);
     }
 

@@ -95,14 +95,14 @@ public class RedisClientOffloadingTest {
     public void requestResponseIsOffloaded() throws Exception {
         final RequestRedisData ping = new CompleteBulkString(
                 connectionContext.executionContext().bufferAllocator().fromUtf8("Hello"));
-        final Publisher<RequestRedisData> reqContent = from(ping).doBeforeRequest(n -> {
+        final Publisher<RequestRedisData> reqContent = from(ping).beforeRequest(n -> {
             if (isInClientEventLoop(currentThread())) {
                 errors.add(new AssertionError("Request content: request-n not offloaded"));
             }
         });
         final RedisRequest request = newRequest(PING, reqContent);
         final Publisher<RedisData> response = env().client.request(request);
-        subscribeTo(RedisTestEnvironment::isInClientEventLoop, errors, response.doAfterFinally(terminated::countDown),
+        subscribeTo(RedisTestEnvironment::isInClientEventLoop, errors, response.afterFinally(terminated::countDown),
                 "Response content: ");
         terminated.await();
         assertThat("Unexpected errors.", errors, is(empty()));
@@ -110,7 +110,7 @@ public class RedisClientOffloadingTest {
 
     @Test
     public void reserveConnectionIsOffloaded() throws Exception {
-        toSource(env().client.reserveConnection(PING).doAfterFinally(terminated::countDown))
+        toSource(env().client.reserveConnection(PING).afterFinally(terminated::countDown))
                 .subscribe(new SingleSource.Subscriber<ReservedRedisConnection>() {
                     @Override
                     public void onSubscribe(final Cancellable cancellable) {
@@ -150,7 +150,7 @@ public class RedisClientOffloadingTest {
         final ReservedRedisConnection connection =
                 awaitIndefinitelyNonNull(env().client.reserveConnection(PING));
         subscribeTo(RedisTestEnvironment::isInClientEventLoop, errors,
-                connection.settingStream(MAX_CONCURRENCY).doAfterFinally(terminated::countDown),
+                connection.settingStream(MAX_CONCURRENCY).afterFinally(terminated::countDown),
                 "Client settings stream: ");
         connection.closeAsyncGracefully().toFuture().get();
         terminated.await();
@@ -160,7 +160,7 @@ public class RedisClientOffloadingTest {
     @Test
     public void closeAsyncIsOffloaded() throws Exception {
         subscribeTo(RedisTestEnvironment::isInClientEventLoop, errors,
-                connectionContext.closeAsync().doAfterFinally(terminated::countDown));
+                connectionContext.closeAsync().afterFinally(terminated::countDown));
         terminated.await();
         assertThat("Unexpected errors.", errors, is(empty()));
     }
@@ -168,7 +168,7 @@ public class RedisClientOffloadingTest {
     @Test
     public void closeAsyncGracefullyIsOffloaded() throws Exception {
         subscribeTo(RedisTestEnvironment::isInClientEventLoop, errors,
-                connectionContext.closeAsyncGracefully().doAfterFinally(terminated::countDown));
+                connectionContext.closeAsyncGracefully().afterFinally(terminated::countDown));
         terminated.await();
         assertThat("Unexpected errors.", errors, is(empty()));
     }
@@ -177,7 +177,7 @@ public class RedisClientOffloadingTest {
     public void onCloseIsOffloaded() throws Exception {
         connectionContext.closeAsync().toFuture().get();
         subscribeTo(RedisTestEnvironment::isInClientEventLoop, errors,
-                connectionContext.onClose().doAfterFinally(terminated::countDown));
+                connectionContext.onClose().afterFinally(terminated::countDown));
         terminated.await();
         assertThat("Unexpected errors.", errors, is(empty()));
     }

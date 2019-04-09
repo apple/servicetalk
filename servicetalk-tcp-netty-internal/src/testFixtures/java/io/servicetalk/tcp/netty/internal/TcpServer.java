@@ -105,11 +105,11 @@ public class TcpServer {
                         config.flushStrategy(), new TcpServerChannelInitializer(config)
                                 .andThen(getChannelInitializer(service, executionContext))),
                 serverConnection -> service.apply(serverConnection)
-                        .doBeforeOnError(throwable -> LOGGER.error("Error handling a connection.", throwable))
-                        .doBeforeFinally(() -> serverConnection.closeAsync().subscribe())
+                        .beforeOnError(throwable -> LOGGER.error("Error handling a connection.", throwable))
+                        .beforeFinally(() -> serverConnection.closeAsync().subscribe())
                         .subscribe())
-                .doBeforeOnSuccess(ctx -> LOGGER.info("Server started on port {}.", getServerPort(ctx)))
-                .doBeforeOnError(throwable -> LOGGER.error("Failed starting server on port {}.", port))
+                .beforeOnSuccess(ctx -> LOGGER.info("Server started on port {}.", getServerPort(ctx)))
+                .beforeOnError(throwable -> LOGGER.error("Failed starting server on port {}.", port))
                 .toFuture().get();
     }
 

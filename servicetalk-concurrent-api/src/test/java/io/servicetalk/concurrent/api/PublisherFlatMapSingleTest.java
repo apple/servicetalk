@@ -546,7 +546,7 @@ public class PublisherFlatMapSingleTest {
     public void testRequestAndEmitConcurrency() throws Exception {
         int totalToRequest = 1000;
         Set<Integer> received = new LinkedHashSet<>(totalToRequest);
-        toSource(source.flatMapMergeSingle(Single::succeeded, 2).doBeforeOnNext(received::add)).subscribe(subscriber);
+        toSource(source.flatMapMergeSingle(Single::succeeded, 2).beforeOnNext(received::add)).subscribe(subscriber);
         source.onSubscribe(subscription);
         CountDownLatch requestingStarting = new CountDownLatch(1);
         Future<?> submit = executorService.submit(() -> {

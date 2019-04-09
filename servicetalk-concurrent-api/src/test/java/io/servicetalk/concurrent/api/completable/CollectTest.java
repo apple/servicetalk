@@ -56,7 +56,7 @@ public class CollectTest {
     public void collectVarArgFailure() throws Exception {
         AtomicBoolean secondSubscribed = new AtomicBoolean();
         Future<Void> future = mergeAll(failed(DELIBERATE_EXCEPTION),
-                completed().doBeforeOnSubscribe(__ -> secondSubscribed.set(true))).toFuture();
+                completed().beforeOnSubscribe(__ -> secondSubscribed.set(true))).toFuture();
         try {
             future.get();
             fail();
@@ -70,7 +70,7 @@ public class CollectTest {
     public void collectVarArgDelayError() throws Exception {
         AtomicBoolean secondSubscribed = new AtomicBoolean();
         Future<Void> future = mergeAllDelayError(failed(DELIBERATE_EXCEPTION),
-                completed().doBeforeOnSubscribe(__ -> secondSubscribed.set(true))).toFuture();
+                completed().beforeOnSubscribe(__ -> secondSubscribed.set(true))).toFuture();
         try {
             future.get();
             fail();
@@ -85,7 +85,7 @@ public class CollectTest {
     public void collectVarArgDelayErrorMaxConcurrency() throws Exception {
         AtomicBoolean secondSubscribed = new AtomicBoolean();
         Future<Void> future = mergeAllDelayError(1, failed(DELIBERATE_EXCEPTION),
-                completed().doBeforeOnSubscribe(__ -> secondSubscribed.set(true))).toFuture();
+                completed().beforeOnSubscribe(__ -> secondSubscribed.set(true))).toFuture();
         try {
             future.get();
             fail();
@@ -111,7 +111,7 @@ public class CollectTest {
     public void collectIterableFailure() throws Exception {
         AtomicBoolean secondSubscribed = new AtomicBoolean();
         Future<Void> future = mergeAll(asList(failed(DELIBERATE_EXCEPTION),
-                completed().doBeforeOnSubscribe(__ -> secondSubscribed.set(true)))).toFuture();
+                completed().beforeOnSubscribe(__ -> secondSubscribed.set(true)))).toFuture();
         try {
             future.get();
             fail();
@@ -125,7 +125,7 @@ public class CollectTest {
     public void collectIterableDelayError() throws Exception {
         AtomicBoolean secondSubscribed = new AtomicBoolean();
         Future<Void> future = mergeAllDelayError(asList(failed(DELIBERATE_EXCEPTION),
-                completed().doBeforeOnSubscribe(__ -> secondSubscribed.set(true)))).toFuture();
+                completed().beforeOnSubscribe(__ -> secondSubscribed.set(true)))).toFuture();
         try {
             future.get();
             fail();
@@ -140,7 +140,7 @@ public class CollectTest {
     public void collectIterableDelayErrorMaxConcurrency() throws Exception {
         AtomicBoolean secondSubscribed = new AtomicBoolean();
         Future<Void> future = mergeAllDelayError(asList(failed(DELIBERATE_EXCEPTION),
-                completed().doBeforeOnSubscribe(__ -> secondSubscribed.set(true))), 1).toFuture();
+                completed().beforeOnSubscribe(__ -> secondSubscribed.set(true))), 1).toFuture();
         try {
             future.get();
             fail();

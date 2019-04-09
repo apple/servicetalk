@@ -119,7 +119,7 @@ public class SpScPublisherProcessorTest {
 
     @Test
     public void onNextThrows() {
-        toSource(publisher.doOnNext(i -> {
+        toSource(publisher.whenOnNext(i -> {
             throw DELIBERATE_EXCEPTION;
         })).subscribe(subscriber);
         subscriber.request(1);

@@ -27,7 +27,7 @@ import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
-import io.servicetalk.http.utils.DoBeforeFinallyOnHttpResponseOperator;
+import io.servicetalk.http.utils.BeforeFinallyOnHttpResponseOperator;
 import io.servicetalk.transport.api.ExecutionContext;
 
 import java.util.function.Function;
@@ -68,7 +68,7 @@ final class LoadBalancedStreamingHttpClient implements FilterableStreamingHttpCl
         // correct.
         return loadBalancer.selectConnection(SELECTOR_FOR_REQUEST)
                 .flatMap(c -> c.request(strategy, request)
-                        .liftSync(new DoBeforeFinallyOnHttpResponseOperator(c::requestFinished)));
+                        .liftSync(new BeforeFinallyOnHttpResponseOperator(c::requestFinished)));
     }
 
     @Override

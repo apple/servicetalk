@@ -158,12 +158,12 @@ public final class DefaultNettyPipelinedConnection<Req, Resp> implements NettyPi
                         // We should only trigger this on the read stream signals. Attaching them to the write+read
                         // stream will eagerly start the subsequent read (writeQueue.responseQueue::postTaskTermination)
                         // on cancellation.
-                        .doBeforeFinally(() -> {
+                        .beforeFinally(() -> {
                             if (terminalMsgPredicate != null) {
                                 this.terminalMsgPredicate.discardIfCurrent(terminalMsgPredicate);
                             }
                         })
-                        .doAfterFinally(writeQueue.responseQueue::postTaskTermination)
+                        .afterFinally(writeQueue.responseQueue::postTaskTermination)
         );
     }
 

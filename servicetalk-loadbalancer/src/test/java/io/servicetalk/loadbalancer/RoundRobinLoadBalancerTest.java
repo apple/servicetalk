@@ -134,7 +134,7 @@ public class RoundRobinLoadBalancerTest {
     public void streamEventJustClose() throws InterruptedException {
         CountDownLatch readyLatch = new CountDownLatch(1);
         CountDownLatch completeLatch = new CountDownLatch(1);
-        lb.eventStream().doAfterOnComplete(completeLatch::countDown).firstOrElse(() -> {
+        lb.eventStream().afterOnComplete(completeLatch::countDown).firstOrElse(() -> {
             throw new NoSuchElementException();
         }).subscribe(next -> readyLatch.countDown());
         lb.closeAsync().subscribe();
@@ -465,7 +465,7 @@ public class RoundRobinLoadBalancerTest {
 
         @Override
         public Completable closeAsync() {
-            return Completable.completed().doBeforeOnSubscribe(cancellable -> closed.set(true));
+            return Completable.completed().beforeOnSubscribe(cancellable -> closed.set(true));
         }
 
         boolean isClosed() {

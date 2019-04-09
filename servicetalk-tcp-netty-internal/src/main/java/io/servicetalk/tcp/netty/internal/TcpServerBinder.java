@@ -112,7 +112,7 @@ public final class TcpServerBinder {
                                     defer(() -> connectionAcceptor.accept(conn).concat(succeeded(conn)))
                                             // subscribeOn is required to offload calls to connectionAcceptor#accept
                                             .subscribeOn(executionContext.executor()))
-                            .doOnError(cause -> {
+                            .whenOnError(cause -> {
                                 // Getting the remote-address may involve volatile reads and potentially a
                                 // syscall, so guard it.
                                 if (LOGGER.isDebugEnabled()) {

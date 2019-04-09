@@ -49,7 +49,7 @@ abstract class AbstractMergeCompletableOperator extends AbstractNoHandleSubscrib
         MergeSubscriber mergeSubscriber = apply(operatorSubscriber);
         // Subscriber to use to subscribe to the original source. Since this is an asynchronous operator, it may call
         // Cancellable method from EventLoop (if the asynchronous source created/obtained inside this operator uses
-        // EventLoop) which may execute blocking code on EventLoop, eg: doBeforeCancel(). So, we should offload
+        // EventLoop) which may execute blocking code on EventLoop, eg: beforeCancel(). So, we should offload
         // Cancellable method here.
         //
         // We are introducing offloading on the Subscription, which means the AsyncContext may leak if we don't save

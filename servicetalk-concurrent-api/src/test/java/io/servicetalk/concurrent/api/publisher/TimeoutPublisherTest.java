@@ -268,7 +268,7 @@ public class TimeoutPublisherTest {
             public Cancellable execute(final Runnable task) throws RejectedExecutionException {
                 throw new UnsupportedOperationException();
             }
-        }).doOnError(cause -> {
+        }).whenOnError(cause -> {
             // Just in case the timer fires earlier than expected (after the first timer) we countdown the latch so the
             // test won't fail.
             if (!(cause instanceof TimeoutException)) {

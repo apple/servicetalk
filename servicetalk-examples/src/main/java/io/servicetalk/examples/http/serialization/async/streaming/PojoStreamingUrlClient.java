@@ -40,9 +40,9 @@ public final class PojoStreamingUrlClient {
             client.request(client.post("http://localhost:8080/pojos")
                     .payloadBody(from("value1", "value2", "value3").map(CreatePojoRequest::new),
                             serializer.serializerFor(CreatePojoRequest.class)))
-                    .doBeforeOnSuccess(response -> System.out.println(response.toString((name, value) -> value)))
+                    .beforeOnSuccess(response -> System.out.println(response.toString((name, value) -> value)))
                     .flatMapPublisher(resp -> resp.payloadBody(serializer.deserializerFor(PojoResponse.class)))
-                    .doFinally(responseProcessedLatch::countDown)
+                    .whenFinally(responseProcessedLatch::countDown)
                     .forEach(System.out::println);
 
             responseProcessedLatch.await();

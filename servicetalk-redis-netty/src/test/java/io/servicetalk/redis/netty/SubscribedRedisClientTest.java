@@ -254,7 +254,7 @@ public class SubscribedRedisClientTest extends BaseRedisClientTest {
         CountDownLatch latch = new CountDownLatch(1);
 
         final Publisher<RedisData> messages1 = cnx.request(subscribeRequest)
-                .doAfterOnSubscribe(__ -> latch.countDown());
+                .afterOnSubscribe(__ -> latch.countDown());
 
         final AccumulatingSubscriber<RedisData> messages1Subscriber = new AccumulatingSubscriber<RedisData>()
                 .subscribe(messages1);
@@ -373,7 +373,7 @@ public class SubscribedRedisClientTest extends BaseRedisClientTest {
 
         CountDownLatch latch = new CountDownLatch(1);
         cnx.request(subscribeRequest)
-                .doAfterOnSubscribe(__ -> latch.countDown())
+                .afterOnSubscribe(__ -> latch.countDown())
                 .map(msg -> (PatternPubSubRedisMessage) msg)
                 .groupBy(ChannelPubSubRedisMessage::channel, 32)
                 .forEach(grp -> {

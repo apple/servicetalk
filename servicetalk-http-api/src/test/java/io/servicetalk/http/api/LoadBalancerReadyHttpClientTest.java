@@ -126,8 +126,8 @@ public class LoadBalancerReadyHttpClientTest {
         AtomicReference<Throwable> causeRef = new AtomicReference<>();
 
         action.apply(client)
-                .doOnError(causeRef::set)
-                .doAfterFinally(latch::countDown)
+                .whenOnError(causeRef::set)
+                .afterFinally(latch::countDown)
                 .toCompletable()
                 .subscribe();
 
