@@ -26,9 +26,9 @@ final class ReservableRequestConcurrencyControllerMulti extends AbstractReservab
     private final int maxRequests;
 
     ReservableRequestConcurrencyControllerMulti(final Publisher<Integer> maxConcurrencySettingStream,
-                                                final Completable closeable,
+                                                final Completable onClosing,
                                                 int maxRequests) {
-        super(maxConcurrencySettingStream, closeable);
+        super(maxConcurrencySettingStream, onClosing);
         this.maxRequests = maxRequests;
     }
 

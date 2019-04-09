@@ -31,9 +31,9 @@ import static org.junit.Assert.assertTrue;
 public class ReservableRequestConcurrencyControllerMultiTest extends AbstractRequestConcurrencyControllerMultiTest {
     @Override
     protected ReservableRequestConcurrencyController newController(final Publisher<Integer> maxSetting,
-                                                                   final Completable onClose,
+                                                                   final Completable onClosing,
                                                                    final int init) {
-        return ReservableRequestConcurrencyControllers.newController(maxSetting, onClose, init);
+        return ReservableRequestConcurrencyControllers.newController(maxSetting, onClosing, init);
     }
 
     @Test

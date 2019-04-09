@@ -50,11 +50,10 @@ abstract class AbstractReservableRequestConcurrencyController implements Reserva
     private final LatestValueSubscriber<Integer> maxConcurrencyHolder;
 
     AbstractReservableRequestConcurrencyController(final Publisher<Integer> maxConcurrencySettingStream,
-                                                   final Completable onClose) {
+                                                   final Completable onClosing) {
         maxConcurrencyHolder = new LatestValueSubscriber<>();
-        toSource(maxConcurrencySettingStream
-                .publishAndSubscribeOnOverride(immediate())).subscribe(maxConcurrencyHolder);
-        toSource(onClose.publishAndSubscribeOnOverride(immediate())).subscribe(new Subscriber() {
+        toSource(maxConcurrencySettingStream).subscribe(maxConcurrencyHolder);
+        toSource(onClosing.publishAndSubscribeOnOverride(immediate())).subscribe(new Subscriber() {
             @Override
             public void onSubscribe(Cancellable cancellable) {
                 // No op

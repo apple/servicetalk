@@ -29,17 +29,17 @@ public final class ReservableRequestConcurrencyControllers {
     /**
      * Create a new instance of {@link ReservableRequestConcurrencyController}.
      * @param maxConcurrencySetting A {@link Publisher} that provides the maximum allowed concurrency updates.
-     * @param onClose A {@link Completable} that when terminated no more calls to
+     * @param onClosing A {@link Completable} that when terminated no more calls to
      * {@link RequestConcurrencyController#tryRequest()} are expected to succeed.
      * @param initialMaxConcurrency The initial maximum value for concurrency, until {@code maxConcurrencySetting}
      * provides data.
      * @return a new instance of {@link ReservableRequestConcurrencyController}.
      */
     public static ReservableRequestConcurrencyController newController(
-            final Publisher<Integer> maxConcurrencySetting, final Completable onClose,
+            final Publisher<Integer> maxConcurrencySetting, final Completable onClosing,
             final int initialMaxConcurrency) {
         return new ReservableRequestConcurrencyControllerMulti(maxConcurrencySetting,
-                onClose, initialMaxConcurrency);
+                onClosing, initialMaxConcurrency);
     }
 
     /**
@@ -49,12 +49,12 @@ public final class ReservableRequestConcurrencyControllers {
      * to be {@code 1} and only lesser values from {@code maxConcurrencySetting} will impact behavior.
      * @param maxConcurrencySetting A {@link Publisher} that provides the maximum allowed concurrency updates.
      * Only values of {@code <1} will impact behavior.
-     * @param onClose A {@link Completable} that when terminated no more calls to
+     * @param onClosing A {@link Completable} that when terminated no more calls to
      * {@link RequestConcurrencyController#tryRequest()} are expected to succeed.
      * @return a {@link ReservableRequestConcurrencyController} that only allows a single outstanding request.
      */
     public static ReservableRequestConcurrencyController newSingleController(
-            final Publisher<Integer> maxConcurrencySetting, final Completable onClose) {
-        return new ReservableRequestConcurrencyControllerOnlySingle(maxConcurrencySetting, onClose);
+            final Publisher<Integer> maxConcurrencySetting, final Completable onClosing) {
+        return new ReservableRequestConcurrencyControllerOnlySingle(maxConcurrencySetting, onClosing);
     }
 }
