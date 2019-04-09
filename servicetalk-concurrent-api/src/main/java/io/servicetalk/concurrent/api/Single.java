@@ -638,7 +638,7 @@ public abstract class Single<T> {
      * @return The new {@link Single}.
      */
     public final Single<T> beforeCancel(Runnable onCancel) {
-        return new DoCancellableSingle<>(this, onCancel::run, true, executor);
+        return new WhenCancellableSingle<>(this, onCancel::run, true, executor);
     }
 
     /**
@@ -670,7 +670,7 @@ public abstract class Single<T> {
      * @return The new {@link Single}.
      */
     public final Single<T> beforeFinally(Runnable doFinally) {
-        return new DoBeforeFinallySingle<>(this, doFinally, executor);
+        return new BeforeFinallySingle<>(this, doFinally, executor);
     }
 
     /**
@@ -684,7 +684,7 @@ public abstract class Single<T> {
      * @return The new {@link Single}.
      */
     public final Single<T> beforeSubscriber(Supplier<? extends Subscriber<? super T>> subscriberSupplier) {
-        return new DoBeforeSubscriberSingle<>(this, subscriberSupplier, executor);
+        return new BeforeSubscriberSingle<>(this, subscriberSupplier, executor);
     }
 
     /**
@@ -747,7 +747,7 @@ public abstract class Single<T> {
      * @return The new {@link Single}.
      */
     public final Single<T> afterCancel(Runnable onCancel) {
-        return new DoCancellableSingle<>(this, onCancel::run, false, executor);
+        return new WhenCancellableSingle<>(this, onCancel::run, false, executor);
     }
 
     /**
@@ -779,7 +779,7 @@ public abstract class Single<T> {
      * @return The new {@link Single}.
      */
     public final Single<T> afterFinally(Runnable doFinally) {
-        return new DoAfterFinallySingle<>(this, doFinally, executor);
+        return new AfterFinallySingle<>(this, doFinally, executor);
     }
 
     /**
@@ -793,7 +793,7 @@ public abstract class Single<T> {
      * @return The new {@link Single}.
      */
     public final Single<T> afterSubscriber(Supplier<? extends Subscriber<? super T>> subscriberSupplier) {
-        return new DoAfterSubscriberSingle<>(this, subscriberSupplier, executor);
+        return new AfterSubscriberSingle<>(this, subscriberSupplier, executor);
     }
 
     /**

@@ -1498,7 +1498,7 @@ public abstract class Publisher<T> {
      * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
     public final Publisher<T> beforeFinally(Runnable doFinally) {
-        return new DoBeforeFinallyPublisher<>(this, doFinally, executor);
+        return new BeforeFinallyPublisher<>(this, doFinally, executor);
     }
 
     /**
@@ -1514,7 +1514,7 @@ public abstract class Publisher<T> {
      * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
     public final Publisher<T> beforeSubscriber(Supplier<? extends Subscriber<? super T>> subscriberSupplier) {
-        return new DoBeforeSubscriberPublisher<>(this, subscriberSupplier, executor);
+        return new BeforeSubscriberPublisher<>(this, subscriberSupplier, executor);
     }
 
     /**
@@ -1530,7 +1530,7 @@ public abstract class Publisher<T> {
      * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
     public final Publisher<T> beforeSubscription(Supplier<? extends Subscription> subscriptionSupplier) {
-        return new DoSubscriptionPublisher<>(this, subscriptionSupplier, true, executor);
+        return new WhenSubscriptionPublisher<>(this, subscriptionSupplier, true, executor);
     }
 
     /**
@@ -1677,7 +1677,7 @@ public abstract class Publisher<T> {
      * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
     public final Publisher<T> afterFinally(Runnable doFinally) {
-        return new DoAfterFinallyPublisher<>(this, doFinally, executor);
+        return new AfterFinallyPublisher<>(this, doFinally, executor);
     }
 
     /**
@@ -1693,7 +1693,7 @@ public abstract class Publisher<T> {
      * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
     public final Publisher<T> afterSubscriber(Supplier<? extends Subscriber<? super T>> subscriberSupplier) {
-        return new DoAfterSubscriberPublisher<>(this, subscriberSupplier, executor);
+        return new AfterSubscriberPublisher<>(this, subscriberSupplier, executor);
     }
 
     /**
@@ -1709,7 +1709,7 @@ public abstract class Publisher<T> {
      * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
      */
     public final Publisher<T> afterSubscription(Supplier<? extends Subscription> subscriptionSupplier) {
-        return new DoSubscriptionPublisher<>(this, subscriptionSupplier, false, executor);
+        return new WhenSubscriptionPublisher<>(this, subscriptionSupplier, false, executor);
     }
 
     /**

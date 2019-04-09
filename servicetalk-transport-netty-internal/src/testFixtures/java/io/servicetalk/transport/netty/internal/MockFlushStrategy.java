@@ -115,7 +115,7 @@ public final class MockFlushStrategy implements FlushStrategy {
      * @param senderConsumer A {@link Consumer} that is given the {@link FlushSender} after
      * {@link WriteEventsListener#itemWritten()}.
      */
-    public void doAfterFirstWrite(Consumer<FlushSender> senderConsumer) {
+    public void afterFirstWrite(Consumer<FlushSender> senderConsumer) {
         doAnswer(new Answer<Void>() {
             private int count;
             @Override

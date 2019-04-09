@@ -758,7 +758,7 @@ public abstract class Completable {
      * @return The new {@link Completable}.
      */
     public final Completable beforeFinally(Runnable doFinally) {
-        return new DoBeforeFinallyCompletable(this, doFinally, executor);
+        return new BeforeFinallyCompletable(this, doFinally, executor);
     }
 
     /**
@@ -772,7 +772,7 @@ public abstract class Completable {
      * @return The new {@link Completable}.
      */
     public final Completable beforeSubscriber(Supplier<? extends Subscriber> subscriberSupplier) {
-        return new DoBeforeSubscriberCompletable(this, subscriberSupplier, executor);
+        return new BeforeSubscriberCompletable(this, subscriberSupplier, executor);
     }
 
     /**
@@ -871,7 +871,7 @@ public abstract class Completable {
      * @return The new {@link Completable}.
      */
     public final Completable afterFinally(Runnable doFinally) {
-        return new DoAfterFinallyCompletable(this, doFinally, executor);
+        return new AfterFinallyCompletable(this, doFinally, executor);
     }
 
     /**
@@ -885,7 +885,7 @@ public abstract class Completable {
      * @return The new {@link Completable}.
      */
     public final Completable afterSubscriber(Supplier<? extends Subscriber> subscriberSupplier) {
-        return new DoAfterSubscriberCompletable(this, subscriberSupplier, executor);
+        return new AfterSubscriberCompletable(this, subscriberSupplier, executor);
     }
 
     /**

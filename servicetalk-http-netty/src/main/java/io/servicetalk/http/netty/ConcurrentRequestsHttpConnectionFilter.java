@@ -29,7 +29,7 @@ import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
-import io.servicetalk.http.utils.DoBeforeFinallyOnHttpResponseOperator;
+import io.servicetalk.http.utils.BeforeFinallyOnHttpResponseOperator;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ExecutionContext;
 
@@ -84,7 +84,7 @@ final class ConcurrentRequestsHttpConnectionFilter implements FilterableStreamin
                 switch (result) {
                     case Accepted:
                         toSource(delegate.request(strategy, request)
-                                .liftSync(new DoBeforeFinallyOnHttpResponseOperator(
+                                .liftSync(new BeforeFinallyOnHttpResponseOperator(
                                         limiter::requestFinished)))
                                 .subscribe(subscriber);
                         return;
