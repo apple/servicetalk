@@ -28,12 +28,14 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.net.SocketOption;
 import java.util.Map;
+import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.http.api.BlockingUtils.blockingInvocation;
 import static io.servicetalk.http.api.HttpApiConversions.toStreamingHttpService;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.transport.api.ConnectionAcceptor.ACCEPT_ALL;
+import static java.util.Objects.requireNonNull;
 
 /**
  * A builder for building HTTP Servers.
@@ -251,6 +253,34 @@ public abstract class HttpServerBuilder {
             serviceFilter = serviceFilter.append(factory);
         }
         return this;
+    }
+
+    /**
+     * Append the filter to the chain of filters used to decorate the {@link StreamingHttpService} used by this builder,
+     * for every request that passes the provided {@link Predicate}.
+     * <p>
+     * Note this method will be used to decorate the {@link StreamingHttpService} passed to
+     * {@link #listenStreaming(StreamingHttpService)} before it is used by the server.
+     * <p>
+     * The order of execution of these filters are in order of append. If 3 filters are added as follows:
+     * <pre>
+     *     builder.append(filter1).append(filter2).append(filter3)
+     * </pre>
+     * accepting a request by a service wrapped by this filter chain, the order of invocation of these filters will be:
+     * <pre>
+     *     filter1 =&gt; filter2 =&gt; filter3 =&gt; service
+     * </pre>
+     * @param predicate the {@link Predicate} to test if the filter must be applied.
+     * @param factory {@link StreamingHttpServiceFilterFactory} to append.
+     * @return {@code this}
+     */
+    public final HttpServerBuilder appendServiceFilter(final Predicate<StreamingHttpRequest> predicate,
+                                                       final StreamingHttpServiceFilterFactory factory) {
+        requireNonNull(predicate);
+        requireNonNull(factory);
+
+        return appendServiceFilter(service ->
+                new ConditionalHttpServiceFilter(predicate, factory.create(service), service));
     }
 
     /**
