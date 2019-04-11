@@ -65,7 +65,7 @@ import static java.util.Objects.requireNonNull;
  */
 public final class HttpPredicateRouterBuilder implements RouteStarter {
 
-    private final List<PredicateServicePair> predicateServicePairs = new ArrayList<>();
+    private final List<Route> routes = new ArrayList<>();
     private final RouteContinuationImpl continuation = new RouteContinuationImpl();
     @Nullable
     private BiPredicate<ConnectionContext, StreamingHttpRequest> predicate;
@@ -157,7 +157,7 @@ public final class HttpPredicateRouterBuilder implements RouteStarter {
 
     @Override
     public StreamingHttpService buildStreaming() {
-        return new InOrderRouter(DefaultFallbackServiceStreaming.instance(), predicateServicePairs);
+        return new InOrderRouter(DefaultFallbackServiceStreaming.instance(), routes);
     }
 
     private void andPredicate(final BiPredicate<ConnectionContext, StreamingHttpRequest> newPredicate) {
@@ -271,7 +271,7 @@ public final class HttpPredicateRouterBuilder implements RouteStarter {
 
         private RouteStarter thenRouteTo0(final StreamingHttpService service) {
             assert predicate != null;
-            predicateServicePairs.add(new PredicateServicePair(predicate, service, strategy));
+            routes.add(new Route(predicate, service, strategy));
             // Reset shared state since we have finished current route construction
             predicate = null;
             strategy = null;

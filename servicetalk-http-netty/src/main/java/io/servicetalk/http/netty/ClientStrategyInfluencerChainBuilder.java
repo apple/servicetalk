@@ -27,19 +27,19 @@ import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
 
 import static io.servicetalk.http.api.HttpExecutionStrategyInfluencer.defaultStreamingInfluencer;
 
-final class ClientStrategyInfuencerChainBuilder {
+final class ClientStrategyInfluencerChainBuilder {
 
     private StrategyInfluencerChainBuilder connFactoryChain;
     private StrategyInfluencerChainBuilder connFilterChain;
     private StrategyInfluencerChainBuilder clientChain;
 
-    ClientStrategyInfuencerChainBuilder() {
+    ClientStrategyInfluencerChainBuilder() {
         connFactoryChain = new StrategyInfluencerChainBuilder();
         connFilterChain = new StrategyInfluencerChainBuilder();
         clientChain = new StrategyInfluencerChainBuilder();
     }
 
-    private ClientStrategyInfuencerChainBuilder(ClientStrategyInfuencerChainBuilder from) {
+    private ClientStrategyInfluencerChainBuilder(ClientStrategyInfluencerChainBuilder from) {
         connFactoryChain = from.connFactoryChain.copy();
         connFilterChain = from.connFilterChain.copy();
         clientChain = from.clientChain.copy();
@@ -94,7 +94,7 @@ final class ClientStrategyInfuencerChainBuilder {
         return forConnFactory.build();
     }
 
-    ClientStrategyInfuencerChainBuilder copy() {
-        return new ClientStrategyInfuencerChainBuilder(this);
+    ClientStrategyInfluencerChainBuilder copy() {
+        return new ClientStrategyInfluencerChainBuilder(this);
     }
 }

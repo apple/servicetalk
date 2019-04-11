@@ -74,7 +74,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
     private final U address;
     private final HttpClientConfig config;
     private final ExecutionContextBuilder executionContextBuilder;
-    private final ClientStrategyInfuencerChainBuilder influencerChainBuilder;
+    private final ClientStrategyInfluencerChainBuilder influencerChainBuilder;
     private HttpExecutionStrategy strategy = defaultStrategy();
     private LoadBalancerFactory<R, StreamingHttpConnection> loadBalancerFactory;
     private ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> serviceDiscoverer;
@@ -95,7 +95,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
         this.address = requireNonNull(address);
         config = new HttpClientConfig(new TcpClientConfig(false));
         executionContextBuilder = new ExecutionContextBuilder();
-        influencerChainBuilder = new ClientStrategyInfuencerChainBuilder();
+        influencerChainBuilder = new ClientStrategyInfluencerChainBuilder();
         this.loadBalancerFactory = new StrategyInfluencingLoadBalancerFactory<>();
         this.serviceDiscoverer = requireNonNull(serviceDiscoverer);
     }
@@ -105,7 +105,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
         address = null; // Unknown address - template builder pending override via: copy(address)
         config = new HttpClientConfig(new TcpClientConfig(false));
         executionContextBuilder = new ExecutionContextBuilder();
-        influencerChainBuilder = new ClientStrategyInfuencerChainBuilder();
+        influencerChainBuilder = new ClientStrategyInfluencerChainBuilder();
         this.loadBalancerFactory = newRoundRobinFactory();
         this.serviceDiscoverer = requireNonNull(serviceDiscoverer);
     }
