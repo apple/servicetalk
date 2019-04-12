@@ -25,7 +25,6 @@ import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.internal.ConnectablePayloadWriter;
 import io.servicetalk.concurrent.internal.ThreadInterruptingCancellable;
-import io.servicetalk.http.api.HttpApiConversions.StreamingServiceAdapter;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,23 +38,20 @@ import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.safeOnError;
 import static io.servicetalk.http.api.BlockingUtils.blockingToCompletable;
-import static io.servicetalk.http.api.HttpApiConversions.DEFAULT_BLOCKING_STREAMING_SERVICE_STRATEGY;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.StreamingHttpResponses.newResponseWithTrailers;
 import static java.lang.Thread.currentThread;
 import static java.util.Objects.requireNonNull;
 
-final class BlockingStreamingToStreamingService implements StreamingServiceAdapter {
+final class BlockingStreamingToStreamingService implements StreamingHttpService {
 
     private static final Logger LOGGER =
             LoggerFactory.getLogger(BlockingStreamingToStreamingService.class);
 
     private final BlockingStreamingHttpService original;
-    private final HttpExecutionStrategy strategy;
 
     BlockingStreamingToStreamingService(final BlockingStreamingHttpService original) {
         this.original = requireNonNull(original);
-        strategy = DEFAULT_BLOCKING_STREAMING_SERVICE_STRATEGY;
     }
 
     @Override
@@ -130,17 +126,6 @@ final class BlockingStreamingToStreamingService implements StreamingServiceAdapt
     @Override
     public Completable closeAsync() {
         return blockingToCompletable(original::close);
-    }
-
-    @Override
-    public HttpExecutionStrategy influenceStrategy(final HttpExecutionStrategy strategy) {
-        return original instanceof HttpExecutionStrategyInfluencer ?
-                ((HttpExecutionStrategyInfluencer) original).influenceStrategy(strategy) : strategy;
-    }
-
-    @Override
-    public HttpExecutionStrategy executionStrategy() {
-        return strategy;
     }
 
     private static final class BufferHttpPayloadWriter implements HttpPayloadWriter<Buffer> {

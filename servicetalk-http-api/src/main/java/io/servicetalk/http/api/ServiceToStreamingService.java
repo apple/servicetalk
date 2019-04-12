@@ -17,18 +17,14 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.http.api.HttpApiConversions.StreamingServiceAdapter;
 
-import static io.servicetalk.http.api.HttpApiConversions.DEFAULT_SERVICE_STRATEGY;
 import static java.util.Objects.requireNonNull;
 
-final class ServiceToStreamingService implements StreamingServiceAdapter {
+final class ServiceToStreamingService implements StreamingHttpService {
     private final HttpService original;
-    private final HttpExecutionStrategy strategy;
 
     ServiceToStreamingService(final HttpService original) {
         this.original = requireNonNull(original);
-        strategy = DEFAULT_SERVICE_STRATEGY;
     }
 
     @Override
@@ -47,16 +43,5 @@ final class ServiceToStreamingService implements StreamingServiceAdapter {
     @Override
     public Completable closeAsyncGracefully() {
         return original.closeAsyncGracefully();
-    }
-
-    @Override
-    public HttpExecutionStrategy influenceStrategy(final HttpExecutionStrategy strategy) {
-        return original instanceof HttpExecutionStrategyInfluencer ?
-                ((HttpExecutionStrategyInfluencer) original).influenceStrategy(strategy) : strategy;
-    }
-
-    @Override
-    public HttpExecutionStrategy executionStrategy() {
-        return strategy;
     }
 }

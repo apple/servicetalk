@@ -17,20 +17,16 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.http.api.HttpApiConversions.StreamingServiceAdapter;
 
 import static io.servicetalk.http.api.BlockingUtils.blockingToCompletable;
 import static io.servicetalk.http.api.BlockingUtils.blockingToSingle;
-import static io.servicetalk.http.api.HttpApiConversions.DEFAULT_BLOCKING_SERVICE_STRATEGY;
 import static java.util.Objects.requireNonNull;
 
-final class BlockingToStreamingService implements StreamingServiceAdapter {
+final class BlockingToStreamingService implements StreamingHttpService {
     private final BlockingHttpService original;
-    private final HttpExecutionStrategy strategy;
 
     BlockingToStreamingService(final BlockingHttpService original) {
         this.original = requireNonNull(original);
-        strategy = DEFAULT_BLOCKING_SERVICE_STRATEGY;
     }
 
     @Override
@@ -44,16 +40,5 @@ final class BlockingToStreamingService implements StreamingServiceAdapter {
     @Override
     public Completable closeAsync() {
         return blockingToCompletable(original::close);
-    }
-
-    @Override
-    public HttpExecutionStrategy influenceStrategy(final HttpExecutionStrategy strategy) {
-        return original instanceof HttpExecutionStrategyInfluencer ?
-                ((HttpExecutionStrategyInfluencer) original).influenceStrategy(strategy) : strategy;
-    }
-
-    @Override
-    public HttpExecutionStrategy executionStrategy() {
-        return strategy;
     }
 }

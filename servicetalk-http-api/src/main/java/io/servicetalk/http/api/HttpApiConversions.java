@@ -168,42 +168,85 @@ public final class HttpApiConversions {
      * Convert from a {@link HttpService} to a {@link StreamingHttpService}.
      *
      * @param service The {@link HttpService} to convert.
-     * @return The conversion result.
+     * @param influencer {@link HttpExecutionStrategyInfluencer} to influence the strategy for invoking the resulting
+     * {@link StreamingHttpService}.
+     * @return {@link ServiceAdapterHolder} containing the service adapted to the streaming programming model.
      */
-    public static StreamingServiceAdapter toStreamingHttpService(HttpService service) {
-        return new ServiceToStreamingService(service);
+    public static ServiceAdapterHolder toStreamingHttpService(HttpService service,
+                                                              HttpExecutionStrategyInfluencer influencer) {
+        return new DefaultServiceAdapterHolder(new ServiceToStreamingService(service),
+                influencer.influenceStrategy(DEFAULT_SERVICE_STRATEGY));
     }
 
     /**
      * Convert from a {@link BlockingStreamingHttpService} to a {@link StreamingHttpService}.
      *
-     * @param handler The {@link BlockingStreamingHttpService} to convert.
-     * @return The conversion result.
+     * @param service The {@link BlockingStreamingHttpService} to convert.
+     * @param influencer {@link HttpExecutionStrategyInfluencer} to influence the strategy for invoking the resulting
+     * {@link StreamingHttpService}.
+     * @return {@link ServiceAdapterHolder} containing the service adapted to the streaming programming model.
      */
-    public static StreamingServiceAdapter toStreamingHttpService(BlockingStreamingHttpService handler) {
-        return new BlockingStreamingToStreamingService(handler);
+    public static ServiceAdapterHolder toStreamingHttpService(BlockingStreamingHttpService service,
+                                                              HttpExecutionStrategyInfluencer influencer) {
+        return new DefaultServiceAdapterHolder(new BlockingStreamingToStreamingService(service),
+                influencer.influenceStrategy(DEFAULT_BLOCKING_STREAMING_SERVICE_STRATEGY));
     }
 
     /**
-     * Convert from a {@link BlockingHttpService} to a {@link StreamingHttpService}.
+     * Convert from a {@link BlockingStreamingHttpService} to a {@link StreamingHttpService}.
      *
-     * @param handler The {@link BlockingHttpService} to convert.
-     * @return The conversion result.
+     * @param service The {@link BlockingStreamingHttpService} to convert.
+     * @param influencer {@link HttpExecutionStrategyInfluencer} to influence the strategy for invoking the resulting
+     * {@link StreamingHttpService}.
+     * @return {@link ServiceAdapterHolder} containing the service adapted to the streaming programming model.
      */
-    public static StreamingServiceAdapter toStreamingHttpService(BlockingHttpService handler) {
-        return new BlockingToStreamingService(handler);
+    public static ServiceAdapterHolder toStreamingHttpService(BlockingHttpService service,
+                                                              HttpExecutionStrategyInfluencer influencer) {
+        return new DefaultServiceAdapterHolder(new BlockingToStreamingService(service),
+                influencer.influenceStrategy(DEFAULT_BLOCKING_SERVICE_STRATEGY));
     }
 
     /**
-     * An adapter from other programming models to {@link StreamingHttpService}.
+     * A holder for {@link StreamingHttpService} that adapts another {@code service} to the streaming programming model.
      */
-    public interface StreamingServiceAdapter extends StreamingHttpService, HttpExecutionStrategyInfluencer {
+    public interface ServiceAdapterHolder {
 
         /**
-         * Effective {@link HttpExecutionStrategy} for this adapter considering the original programming model.
+         * {@link StreamingHttpService} that adapts another {@code service} to the streaming programming model. This
+         * {@link StreamingHttpService} should only be invoked using the {@link HttpExecutionStrategy} returned from
+         * {@link #serviceInvocationStrategy()}.
+         *
+         * @return {@link StreamingHttpService} that adapts another {@code service} to the streaming programming model.
+         */
+        StreamingHttpService service();
+
+        /**
+         * {@link HttpExecutionStrategy} that should be used to invoke the service returned by {@link #service()}.
          *
          * @return {@link HttpExecutionStrategy} for this adapter.
          */
-        HttpExecutionStrategy executionStrategy();
+        HttpExecutionStrategy serviceInvocationStrategy();
+    }
+
+    private static final class DefaultServiceAdapterHolder implements ServiceAdapterHolder {
+
+        private final StreamingHttpService service;
+        private final HttpExecutionStrategy serviceInvocationStrategy;
+
+        DefaultServiceAdapterHolder(final StreamingHttpService service,
+                                    final HttpExecutionStrategy serviceInvocationStrategy) {
+            this.service = service;
+            this.serviceInvocationStrategy = serviceInvocationStrategy;
+        }
+
+        @Override
+        public StreamingHttpService service() {
+            return service;
+        }
+
+        @Override
+        public HttpExecutionStrategy serviceInvocationStrategy() {
+            return serviceInvocationStrategy;
+        }
     }
 }

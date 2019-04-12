@@ -17,7 +17,7 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.http.api.HttpApiConversions.StreamingServiceAdapter;
+import io.servicetalk.http.api.HttpApiConversions.ServiceAdapterHolder;
 import io.servicetalk.transport.api.ConnectionAcceptor;
 import io.servicetalk.transport.api.ConnectionAcceptorFactory;
 import io.servicetalk.transport.api.IoExecutor;
@@ -406,7 +406,8 @@ public abstract class HttpServerBuilder {
      * the server could not be started.
      */
     public final Single<ServerContext> listen(final HttpService service) {
-        return listenForAdapter(toStreamingHttpService(service));
+        influencerChainBuilder.addIfInfluencerAt(0, service);
+        return listenForAdapter(toStreamingHttpService(service, influencerChainBuilder.build(strategy)));
     }
 
     /**
@@ -434,7 +435,8 @@ public abstract class HttpServerBuilder {
      * the server could not be started.
      */
     public final Single<ServerContext> listenBlocking(final BlockingHttpService service) {
-        return listenForAdapter(toStreamingHttpService(service));
+        influencerChainBuilder.addIfInfluencerAt(0, service);
+        return listenForAdapter(toStreamingHttpService(service, influencerChainBuilder.build(strategy)));
     }
 
     /**
@@ -448,7 +450,8 @@ public abstract class HttpServerBuilder {
      * the server could not be started.
      */
     public final Single<ServerContext> listenBlockingStreaming(final BlockingStreamingHttpService service) {
-        return listenForAdapter(toStreamingHttpService(service));
+        influencerChainBuilder.addIfInfluencerAt(0, service);
+        return listenForAdapter(toStreamingHttpService(service, influencerChainBuilder.build(strategy)));
     }
 
     /**
@@ -469,10 +472,8 @@ public abstract class HttpServerBuilder {
                                                       HttpExecutionStrategy strategy,
                                                       boolean drainRequestPayloadBody);
 
-    private Single<ServerContext> listenForAdapter(StreamingServiceAdapter adapter) {
-        influencerChainBuilder.addAt(0, adapter);
-        return listenForService(adapter, influencerChainBuilder.build(strategy)
-                .influenceStrategy(adapter.executionStrategy()));
+    private Single<ServerContext> listenForAdapter(ServiceAdapterHolder adapterHolder) {
+        return listenForService(adapterHolder.service(), adapterHolder.serviceInvocationStrategy());
     }
 
     private Single<ServerContext> listenForService(StreamingHttpService rawService, HttpExecutionStrategy strategy) {
