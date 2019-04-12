@@ -96,7 +96,7 @@ final class NoOffloadsHttpExecutionStrategy implements HttpExecutionStrategy {
 
     @Override
     public HttpExecutionStrategy merge(final HttpExecutionStrategy other) {
-        return other == this ? this : other.merge(this);
+        return this;
     }
 
     @Override

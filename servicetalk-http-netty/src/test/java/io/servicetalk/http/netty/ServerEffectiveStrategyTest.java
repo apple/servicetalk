@@ -108,8 +108,6 @@ public class ServerEffectiveStrategyTest {
                 ServerEffectiveStrategyTest::userStrategyNoExecutorNoFilter));
         params.add(wrap("userStrategyNoExecutorWithFilter",
                 ServerEffectiveStrategyTest::userStrategyNoExecutorWithFilter));
-        // TODO (nkant): We are not yet sure how this should behave, will revisit
-        /*
         params.add(wrap("userStrategyNoOffloadsNoExecutorNoFilter",
                 ServerEffectiveStrategyTest::userStrategyNoOffloadsNoExecutorNoFilter));
         params.add(wrap("userStrategyNoOffloadsNoExecutorWithFilter",
@@ -118,7 +116,6 @@ public class ServerEffectiveStrategyTest {
                 ServerEffectiveStrategyTest::userStrategyNoOffloadsWithExecutorNoFilter));
         params.add(wrap("userStrategyNoOffloadsWithExecutorWithFilter",
                 ServerEffectiveStrategyTest::userStrategyNoOffloadsWithExecutorWithFilter));
-        */
         params.add(wrap("customUserStrategyNoFilter",
                 ServerEffectiveStrategyTest::customUserStrategyNoFilter));
         params.add(wrap("customUserStrategyWithFilter",

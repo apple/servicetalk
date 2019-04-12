@@ -37,25 +37,21 @@ public class BlockingStreamingHttpServiceAsyncContextTest extends AbstractHttpSe
     }
 
     private static BlockingStreamingHttpService newEmptyAsyncContextService() {
-        return new BlockingStreamingHttpService() {
-            @Override
-            public void handle(final HttpServiceContext ctx, final BlockingStreamingHttpRequest request,
-                               final BlockingStreamingHttpServerResponse response) throws Exception {
-                request.payloadBody().forEach(__ -> { });
+        return (ctx, request, response) -> {
+            request.payloadBody().forEach(__ -> { });
 
-                if (!AsyncContext.isEmpty()) {
-                    response.status(INTERNAL_SERVER_ERROR).sendMetaData().close();
-                    return;
-                }
-                CharSequence requestId = request.headers().getAndRemove(REQUEST_ID_HEADER);
-                if (requestId != null) {
-                    AsyncContext.put(K1, requestId);
-                    response.setHeader(REQUEST_ID_HEADER, requestId);
-                } else {
-                    response.status(BAD_REQUEST);
-                }
-                response.sendMetaData().close();
+            if (!AsyncContext.isEmpty()) {
+                response.status(INTERNAL_SERVER_ERROR).sendMetaData().close();
+                return;
             }
+            CharSequence requestId = request.headers().getAndRemove(REQUEST_ID_HEADER);
+            if (requestId != null) {
+                AsyncContext.put(K1, requestId);
+                response.setHeader(REQUEST_ID_HEADER, requestId);
+            } else {
+                response.status(BAD_REQUEST);
+            }
+            response.sendMetaData().close();
         };
     }
 

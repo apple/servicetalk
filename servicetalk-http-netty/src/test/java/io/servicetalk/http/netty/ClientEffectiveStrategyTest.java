@@ -113,17 +113,22 @@ public class ClientEffectiveStrategyTest {
                 ClientEffectiveStrategyTest::userStrategyNoExecutorWithLB));
         params.add(wrap("userStrategyNoExecutorWithCF",
                 ClientEffectiveStrategyTest::userStrategyNoExecutorWithCF));
-        // TODO (nkant): We are not yet sure how this should behave, will revisit
-        /*
         params.add(wrap("userStrategyNoOffloadsNoFilter",
                 ClientEffectiveStrategyTest::userStrategyNoOffloadsNoFilter));
         params.add(wrap("userStrategyNoOffloadsWithFilter",
                 ClientEffectiveStrategyTest::userStrategyNoOffloadsWithFilter));
+        params.add(wrap("userStrategyNoOffloadsWithLB",
+                ClientEffectiveStrategyTest::userStrategyNoOffloadsWithLB));
+        params.add(wrap("userStrategyNoOffloadsWithCF",
+                ClientEffectiveStrategyTest::userStrategyNoOffloadsWithCF));
         params.add(wrap("userStrategyNoOffloadsNoExecutorNoFilter",
                 ClientEffectiveStrategyTest::userStrategyNoOffloadsNoExecutorNoFilter));
         params.add(wrap("userStrategyNoOffloadsNoExecutorWithFilter",
                 ClientEffectiveStrategyTest::userStrategyNoOffloadsNoExecutorWithFilter));
-        */
+        params.add(wrap("userStrategyNoOffloadsNoExecutorWithLB",
+                ClientEffectiveStrategyTest::userStrategyNoOffloadsNoExecutorWithLB));
+        params.add(wrap("userStrategyNoOffloadsNoExecutorWithCF",
+                ClientEffectiveStrategyTest::userStrategyNoOffloadsNoExecutorWithCF));
         params.add(wrap("customUserStrategyNoFilter",
                 ClientEffectiveStrategyTest::customUserStrategyNoFilter));
         params.add(wrap("customUserStrategyWithFilter",
@@ -246,7 +251,21 @@ public class ClientEffectiveStrategyTest {
     private static Params userStrategyNoOffloadsWithFilter() {
         Params params = new Params();
         params.initStateHolderUserStrategyNoOffloads(true, false, false);
-        params.allPointsOffloadedForAllClients();
+        params.noPointsOffloadedForAllClients();
+        return params;
+    }
+
+    private static Params userStrategyNoOffloadsWithLB() {
+        Params params = new Params();
+        params.initStateHolderUserStrategyNoOffloads(false, true, false);
+        params.noPointsOffloadedForAllClients();
+        return params;
+    }
+
+    private static Params userStrategyNoOffloadsWithCF() {
+        Params params = new Params();
+        params.initStateHolderUserStrategyNoOffloads(false, false, true);
+        params.noPointsOffloadedForAllClients();
         return params;
     }
 
@@ -260,7 +279,21 @@ public class ClientEffectiveStrategyTest {
     private static Params userStrategyNoOffloadsNoExecutorWithFilter() {
         Params params = new Params();
         params.initStateHolderUserStrategyNoOffloadsNoExecutor(true, false, false);
-        params.allPointsOffloadedForAllClients();
+        params.noPointsOffloadedForAllClients();
+        return params;
+    }
+
+    private static Params userStrategyNoOffloadsNoExecutorWithLB() {
+        Params params = new Params();
+        params.initStateHolderUserStrategyNoOffloadsNoExecutor(false, true, false);
+        params.noPointsOffloadedForAllClients();
+        return params;
+    }
+
+    private static Params userStrategyNoOffloadsNoExecutorWithCF() {
+        Params params = new Params();
+        params.initStateHolderUserStrategyNoOffloadsNoExecutor(false, false, true);
+        params.noPointsOffloadedForAllClients();
         return params;
     }
 
