@@ -40,6 +40,10 @@ public interface StreamingHttpClient extends FilterableStreamingHttpClient {
      */
     Single<ReservedStreamingHttpConnection> reserveConnection(HttpRequestMetaData metaData);
 
+    @Override
+    Single<ReservedStreamingHttpConnection> reserveConnection(HttpExecutionStrategy strategy,
+                                                              HttpRequestMetaData metaData);
+
     /**
      * Convert this {@link StreamingHttpClient} to the {@link HttpClient} API.
      * <p>
