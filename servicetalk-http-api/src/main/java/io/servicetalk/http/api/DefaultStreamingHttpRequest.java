@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,16 +36,19 @@ import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.http.api.HttpDataSourceTranformations.aggregatePayloadAndTrailers;
 import static java.util.Objects.requireNonNull;
 
-class DefaultStreamingHttpRequest<P> extends DefaultHttpRequestMetaData implements StreamingHttpRequest {
+class DefaultStreamingHttpRequest<P> extends DefaultHttpRequestMetaData implements StreamingHttpRequest,
+                                                                                   EffectiveApiType {
     final Publisher<P> payloadBody;
     final BufferAllocator allocator;
     final Single<HttpHeaders> trailersSingle;
+    final ApiType effectiveApiType;
 
     DefaultStreamingHttpRequest(final HttpRequestMethod method, final String requestTarget,
                                 final HttpProtocolVersion version, final HttpHeaders headers,
                                 final HttpHeaders initialTrailers, final BufferAllocator allocator,
-                                final Publisher<P> payloadBody) {
-        this(method, requestTarget, version, headers, succeeded(initialTrailers), allocator, payloadBody);
+                                final Publisher<P> payloadBody, final ApiType effectiveApiType) {
+        this(method, requestTarget, version, headers, succeeded(initialTrailers), allocator, payloadBody,
+                effectiveApiType);
     }
 
     /**
@@ -54,30 +57,34 @@ class DefaultStreamingHttpRequest<P> extends DefaultHttpRequestMetaData implemen
      * @param requestTarget The request-target.
      * @param version The {@link HttpProtocolVersion}.
      * @param headers The initial {@link HttpHeaders}.
+     * @param trailersSingle The {@link Single} <strong>must</strong> support multiple subscribes, and it is assumed to
+     * provide the original data if re-used over transformation operations.
      * @param allocator The {@link BufferAllocator} to use for serialization (if required).
      * @param payloadBody A {@link Publisher} that provide only the payload body. The trailers <strong>must</strong>
      * not be included, and instead are represented by {@code trailersSingle}.
-     * @param trailersSingle The {@link Single} <strong>must</strong> support multiple subscribes, and it is assumed to
-     * provide the original data if re-used over transformation operations.
+     * @param effectiveApiType The type of API this request was originally created as.
      */
     DefaultStreamingHttpRequest(final HttpRequestMethod method, final String requestTarget,
                                 final HttpProtocolVersion version, final HttpHeaders headers,
                                 final Single<HttpHeaders> trailersSingle, final BufferAllocator allocator,
-                                final Publisher<P> payloadBody) {
+                                final Publisher<P> payloadBody, final ApiType effectiveApiType) {
         super(method, requestTarget, version, headers);
         this.allocator = requireNonNull(allocator);
         this.payloadBody = requireNonNull(payloadBody);
         this.trailersSingle = requireNonNull(trailersSingle);
+        this.effectiveApiType = effectiveApiType;
     }
 
     DefaultStreamingHttpRequest(final DefaultHttpRequestMetaData oldRequest,
                                 final BufferAllocator allocator,
                                 final Publisher<P> payloadBody,
-                                final Single<HttpHeaders> trailersSingle) {
+                                final Single<HttpHeaders> trailersSingle,
+                                final ApiType effectiveApiType) {
         super(oldRequest);
         this.allocator = allocator;
         this.payloadBody = payloadBody;
         this.trailersSingle = trailersSingle;
+        this.effectiveApiType = effectiveApiType;
     }
 
     @Override
@@ -173,7 +180,8 @@ class DefaultStreamingHttpRequest<P> extends DefaultHttpRequestMetaData implemen
     @Override
     public final StreamingHttpRequest payloadBody(Publisher<Buffer> payloadBody) {
         return new BufferStreamingHttpRequest(this, allocator,
-                payloadBody.liftSync(new BridgeFlowControlAndDiscardOperator(payloadBody())), trailersSingle);
+                payloadBody.liftSync(new BridgeFlowControlAndDiscardOperator(payloadBody())), trailersSingle,
+                effectiveApiType);
     }
 
     @Override
@@ -182,7 +190,7 @@ class DefaultStreamingHttpRequest<P> extends DefaultHttpRequestMetaData implemen
         return new BufferStreamingHttpRequest(this, allocator, serializer.serialize(headers(),
                     payloadBody.liftSync(new SerializeBridgeFlowControlAndDiscardOperator<>(payloadBody())),
                     allocator),
-                trailersSingle);
+                trailersSingle, effectiveApiType);
     }
 
     @Override
@@ -190,17 +198,19 @@ class DefaultStreamingHttpRequest<P> extends DefaultHttpRequestMetaData implemen
                                                                HttpSerializer<T> serializer) {
         return new BufferStreamingHttpRequest(this, allocator,
                 serializer.serialize(headers(), transformer.apply(payloadBody()), allocator),
-                trailersSingle);
+                trailersSingle, effectiveApiType);
     }
 
     @Override
     public final StreamingHttpRequest transformPayloadBody(UnaryOperator<Publisher<Buffer>> transformer) {
-        return new BufferStreamingHttpRequest(this, allocator, transformer.apply(payloadBody()), trailersSingle);
+        return new BufferStreamingHttpRequest(this, allocator, transformer.apply(payloadBody()), trailersSingle,
+                effectiveApiType);
     }
 
     @Override
     public final StreamingHttpRequest transformRawPayloadBody(UnaryOperator<Publisher<?>> transformer) {
-        return new DefaultStreamingHttpRequest<>(this, allocator, transformer.apply(payloadBody), trailersSingle);
+        return new DefaultStreamingHttpRequest<>(this, allocator, transformer.apply(payloadBody), trailersSingle,
+                effectiveApiType);
     }
 
     @Override
@@ -211,7 +221,7 @@ class DefaultStreamingHttpRequest<P> extends DefaultHttpRequestMetaData implemen
         return new BufferStreamingHttpRequest(this, allocator, payloadBody()
                 .liftSync(new HttpPayloadAndTrailersFromSingleOperator<>(stateSupplier, transformer,
                         trailersTransformer, trailersSingle, outTrailersSingle)),
-                fromSource(outTrailersSingle));
+                fromSource(outTrailersSingle), ApiTypes.STREAMING);
     }
 
     @Override
@@ -222,7 +232,7 @@ class DefaultStreamingHttpRequest<P> extends DefaultHttpRequestMetaData implemen
         return new DefaultStreamingHttpRequest<>(this, allocator, payloadBody
                 .liftSync(new HttpPayloadAndTrailersFromSingleOperator<>(stateSupplier, transformer,
                         trailersTransformer, trailersSingle, outTrailersSingle)),
-                fromSource(outTrailersSingle));
+                fromSource(outTrailersSingle), ApiTypes.STREAMING);
     }
 
     @Override
@@ -236,7 +246,13 @@ class DefaultStreamingHttpRequest<P> extends DefaultHttpRequestMetaData implemen
 
     @Override
     public BlockingStreamingHttpRequest toBlockingStreamingRequest() {
-        return new DefaultBlockingStreamingHttpRequest<>(this, allocator, payloadBody.toIterable(), trailersSingle);
+        return new DefaultBlockingStreamingHttpRequest<>(this, allocator, payloadBody.toIterable(), trailersSingle,
+                effectiveApiType);
+    }
+
+    @Override
+    public ApiType effectiveApiType() {
+        return effectiveApiType;
     }
 
     @Override

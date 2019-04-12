@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,21 +23,24 @@ import io.servicetalk.concurrent.api.Single;
 final class BufferStreamingHttpResponse extends DefaultStreamingHttpResponse<Buffer> {
     BufferStreamingHttpResponse(final HttpResponseStatus status, final HttpProtocolVersion version,
                                 final HttpHeaders headers, final HttpHeaders initialTrailers,
-                                final BufferAllocator allocator, Publisher<Buffer> payloadBody) {
-        super(status, version, headers, initialTrailers, allocator, payloadBody);
+                                final BufferAllocator allocator, Publisher<Buffer> payloadBody,
+                                final ApiType effectiveApiType) {
+        super(status, version, headers, initialTrailers, allocator, payloadBody, effectiveApiType);
     }
 
     BufferStreamingHttpResponse(final HttpResponseStatus status, final HttpProtocolVersion version,
                                 final HttpHeaders headers, final Single<HttpHeaders> trailersSingle,
-                                final BufferAllocator allocator, Publisher<Buffer> payloadBody) {
-        super(status, version, headers, trailersSingle, allocator, payloadBody);
+                                final BufferAllocator allocator, Publisher<Buffer> payloadBody,
+                                final ApiType effectiveApiType) {
+        super(status, version, headers, trailersSingle, allocator, payloadBody, effectiveApiType);
     }
 
     BufferStreamingHttpResponse(final DefaultHttpResponseMetaData oldRequest,
                                 final BufferAllocator allocator,
                                 final Publisher<Buffer> payloadBody,
-                                final Single<HttpHeaders> trailersSingle) {
-        super(oldRequest, allocator, payloadBody, trailersSingle);
+                                final Single<HttpHeaders> trailersSingle,
+                                final ApiType effectiveApiType) {
+        super(oldRequest, allocator, payloadBody, trailersSingle, effectiveApiType);
     }
 
     @Override
@@ -47,6 +50,7 @@ final class BufferStreamingHttpResponse extends DefaultStreamingHttpResponse<Buf
 
     @Override
     public BlockingStreamingHttpResponse toBlockingStreamingResponse() {
-        return new BufferBlockingStreamingHttpResponse(this, allocator, payloadBody.toIterable(), trailersSingle);
+        return new BufferBlockingStreamingHttpResponse(this, allocator, payloadBody.toIterable(), trailersSingle,
+                effectiveApiType);
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import io.servicetalk.concurrent.api.DefaultThreadFactory;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Executors;
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.HttpProtocolVersion;
 import io.servicetalk.http.api.HttpResponseStatus;
@@ -141,9 +142,8 @@ public abstract class AbstractNettyHttpServerTest {
                     .build();
             serverBuilder.sslConfig(sslConfig);
         }
-        serverContext = awaitIndefinitelyNonNull(serverBuilder.ioExecutor(serverIoExecutor)
-                .appendConnectionAcceptorFilter(original -> new DelegatingConnectionAcceptor(connectionAcceptor))
-                .listenStreaming(service)
+        serverContext = awaitIndefinitelyNonNull(listen(serverBuilder.ioExecutor(serverIoExecutor)
+                .appendConnectionAcceptorFilter(original -> new DelegatingConnectionAcceptor(connectionAcceptor)))
                 .beforeOnSuccess(ctx -> LOGGER.debug("Server started on {}.", ctx.listenAddress()))
                 .beforeOnError(throwable -> LOGGER.debug("Failed starting server on {}.", bindAddress)));
 
@@ -156,6 +156,10 @@ public abstract class AbstractNettyHttpServerTest {
         httpConnection = awaitIndefinitelyNonNull(httpConnectionBuilder.ioExecutor(clientIoExecutor)
                 .executionStrategy(defaultStrategy(clientExecutor))
                 .buildStreaming(serverContext.listenAddress()));
+    }
+
+    Single<ServerContext> listen(HttpServerBuilder builder) {
+        return builder.listenStreaming(service);
     }
 
     protected void ignoreTestWhen(ExecutorSupplier clientExecutorSupplier, ExecutorSupplier serverExecutorSupplier) {

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,15 +36,18 @@ import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.http.api.HttpDataSourceTranformations.aggregatePayloadAndTrailers;
 import static java.util.Objects.requireNonNull;
 
-class DefaultStreamingHttpResponse<P> extends DefaultHttpResponseMetaData implements StreamingHttpResponse {
+class DefaultStreamingHttpResponse<P> extends DefaultHttpResponseMetaData implements StreamingHttpResponse,
+                                                                                     EffectiveApiType {
     final Publisher<P> payloadBody;
     final BufferAllocator allocator;
     final Single<HttpHeaders> trailersSingle;
+    final ApiType effectiveApiType;
 
     DefaultStreamingHttpResponse(final HttpResponseStatus status, final HttpProtocolVersion version,
                                  final HttpHeaders headers, final HttpHeaders initialTrailers,
-                                 final BufferAllocator allocator, final Publisher<P> payloadBody) {
-        this(status, version, headers, succeeded(initialTrailers), allocator, payloadBody);
+                                 final BufferAllocator allocator, final Publisher<P> payloadBody,
+                                 final ApiType effectiveApiType) {
+        this(status, version, headers, succeeded(initialTrailers), allocator, payloadBody, effectiveApiType);
     }
 
     /**
@@ -52,29 +55,34 @@ class DefaultStreamingHttpResponse<P> extends DefaultHttpResponseMetaData implem
      * @param status The {@link HttpResponseStatus}.
      * @param version The {@link HttpProtocolVersion}.
      * @param headers The initial {@link HttpHeaders}.
+     * @param trailersSingle The {@link Single} <strong>must</strong> support multiple subscribes, and it is assumed to
+     * provide the original data if re-used over transformation operations.
      * @param allocator The {@link BufferAllocator} to use for serialization (if required).
      * @param payloadBody A {@link Publisher} that provide only the payload body. The trailers <strong>must</strong>
      * not be included, and instead are represented by {@code trailersSingle}.
-     * @param trailersSingle The {@link Single} <strong>must</strong> support multiple subscribes, and it is assumed to
-     * provide the original data if re-used over transformation operations.
+     * @param effectiveApiType The type of API this response was originally created as.
      */
     DefaultStreamingHttpResponse(final HttpResponseStatus status, final HttpProtocolVersion version,
                                  final HttpHeaders headers, final Single<HttpHeaders> trailersSingle,
-                                 final BufferAllocator allocator, final Publisher<P> payloadBody) {
+                                 final BufferAllocator allocator, final Publisher<P> payloadBody,
+                                 final ApiType effectiveApiType) {
         super(status, version, headers);
         this.allocator = requireNonNull(allocator);
         this.payloadBody = requireNonNull(payloadBody);
         this.trailersSingle = requireNonNull(trailersSingle);
+        this.effectiveApiType = effectiveApiType;
     }
 
     DefaultStreamingHttpResponse(final DefaultHttpResponseMetaData oldRequest,
                                  final BufferAllocator allocator,
                                  final Publisher<P> payloadBody,
-                                 final Single<HttpHeaders> trailersSingle) {
+                                 final Single<HttpHeaders> trailersSingle,
+                                 final ApiType effectiveApiType) {
         super(oldRequest);
         this.allocator = allocator;
         this.payloadBody = payloadBody;
         this.trailersSingle = trailersSingle;
+        this.effectiveApiType = effectiveApiType;
     }
 
     @Override
@@ -104,7 +112,8 @@ class DefaultStreamingHttpResponse<P> extends DefaultHttpResponseMetaData implem
     @Override
     public final StreamingHttpResponse payloadBody(final Publisher<Buffer> payloadBody) {
         return new BufferStreamingHttpResponse(this, allocator,
-                payloadBody.liftSync(new BridgeFlowControlAndDiscardOperator(payloadBody())), trailersSingle);
+                payloadBody.liftSync(new BridgeFlowControlAndDiscardOperator(payloadBody())), trailersSingle,
+                effectiveApiType);
     }
 
     @Override
@@ -113,7 +122,7 @@ class DefaultStreamingHttpResponse<P> extends DefaultHttpResponseMetaData implem
         return new BufferStreamingHttpResponse(this, allocator, serializer.serialize(headers(),
                     payloadBody.liftSync(new SerializeBridgeFlowControlAndDiscardOperator<>(payloadBody())),
                     allocator),
-                trailersSingle);
+                trailersSingle, effectiveApiType);
     }
 
     @Override
@@ -121,17 +130,19 @@ class DefaultStreamingHttpResponse<P> extends DefaultHttpResponseMetaData implem
             final Function<Publisher<Buffer>, Publisher<T>> transformer, final HttpSerializer<T> serializer) {
         return new BufferStreamingHttpResponse(this, allocator,
                 serializer.serialize(headers(), transformer.apply(payloadBody()), allocator),
-                trailersSingle);
+                trailersSingle, effectiveApiType);
     }
 
     @Override
     public final StreamingHttpResponse transformPayloadBody(final UnaryOperator<Publisher<Buffer>> transformer) {
-        return new BufferStreamingHttpResponse(this, allocator, transformer.apply(payloadBody()), trailersSingle);
+        return new BufferStreamingHttpResponse(this, allocator, transformer.apply(payloadBody()), trailersSingle,
+                effectiveApiType);
     }
 
     @Override
     public final StreamingHttpResponse transformRawPayloadBody(final UnaryOperator<Publisher<?>> transformer) {
-        return new DefaultStreamingHttpResponse<>(this, allocator, transformer.apply(payloadBody), trailersSingle);
+        return new DefaultStreamingHttpResponse<>(this, allocator, transformer.apply(payloadBody), trailersSingle,
+                effectiveApiType);
     }
 
     @Override
@@ -142,7 +153,7 @@ class DefaultStreamingHttpResponse<P> extends DefaultHttpResponseMetaData implem
         return new BufferStreamingHttpResponse(this, allocator, payloadBody()
                 .liftSync(new HttpPayloadAndTrailersFromSingleOperator<>(stateSupplier, transformer,
                         trailersTrans, trailersSingle, outTrailersSingle)),
-                fromSource(outTrailersSingle));
+                fromSource(outTrailersSingle), ApiTypes.STREAMING);
     }
 
     @Override
@@ -153,7 +164,7 @@ class DefaultStreamingHttpResponse<P> extends DefaultHttpResponseMetaData implem
         return new DefaultStreamingHttpResponse<>(this, allocator, payloadBody
                 .liftSync(new HttpPayloadAndTrailersFromSingleOperator<>(stateSupplier, transformer,
                         trailersTrans, trailersSingle, outTrailersSingle)),
-                fromSource(outTrailersSingle));
+                fromSource(outTrailersSingle), ApiTypes.STREAMING);
     }
 
     @Override
@@ -167,7 +178,13 @@ class DefaultStreamingHttpResponse<P> extends DefaultHttpResponseMetaData implem
 
     @Override
     public BlockingStreamingHttpResponse toBlockingStreamingResponse() {
-        return new DefaultBlockingStreamingHttpResponse<>(this, allocator, payloadBody.toIterable(), trailersSingle);
+        return new DefaultBlockingStreamingHttpResponse<>(this, allocator, payloadBody.toIterable(), trailersSingle,
+                effectiveApiType);
+    }
+
+    @Override
+    public ApiType effectiveApiType() {
+        return effectiveApiType;
     }
 
     @Override

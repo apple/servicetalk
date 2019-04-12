@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,12 +44,14 @@ class DefaultBlockingStreamingHttpRequest<P> extends DefaultHttpRequestMetaData 
     final BlockingIterable<P> payloadBody;
     final BufferAllocator allocator;
     final Single<HttpHeaders> trailersSingle;
+    final ApiType effectiveApiType;
 
     DefaultBlockingStreamingHttpRequest(
             final HttpRequestMethod method, final String requestTarget, final HttpProtocolVersion version,
             final HttpHeaders headers, final HttpHeaders initialTrailers, final BufferAllocator allocator,
-            final BlockingIterable<P> payloadBody) {
-        this(method, requestTarget, version, headers, succeeded(initialTrailers), allocator, payloadBody);
+            final BlockingIterable<P> payloadBody, final ApiType effectiveApiType) {
+        this(method, requestTarget, version, headers, succeeded(initialTrailers), allocator, payloadBody,
+                effectiveApiType);
     }
 
     /**
@@ -58,30 +60,34 @@ class DefaultBlockingStreamingHttpRequest<P> extends DefaultHttpRequestMetaData 
      * @param requestTarget The request-target.
      * @param version The {@link HttpProtocolVersion}.
      * @param headers The initial {@link HttpHeaders}.
+     * @param trailersSingle The {@link Single} <strong>must</strong> support multiple subscribes, and it is assumed to
+     * provide the original data if re-used over transformation operations.
      * @param allocator The {@link BufferAllocator} to use for serialization (if required).
      * @param payloadBody A {@link BlockingIterable} that provide only the payload body. The trailers
      * <strong>must</strong> not be included, and instead are represented by {@code trailersSingle}.
-     * @param trailersSingle The {@link Single} <strong>must</strong> support multiple subscribes, and it is assumed to
-     * provide the original data if re-used over transformation operations.
+     * @param effectiveApiType The type of API this request was originally created as.
      */
     DefaultBlockingStreamingHttpRequest(
             final HttpRequestMethod method, final String requestTarget, final HttpProtocolVersion version,
             final HttpHeaders headers, final Single<HttpHeaders> trailersSingle, final BufferAllocator allocator,
-            final BlockingIterable<P> payloadBody) {
+            final BlockingIterable<P> payloadBody, final ApiType effectiveApiType) {
         super(method, requestTarget, version, headers);
         this.allocator = requireNonNull(allocator);
         this.payloadBody = requireNonNull(payloadBody);
         this.trailersSingle = requireNonNull(trailersSingle);
+        this.effectiveApiType = effectiveApiType;
     }
 
     DefaultBlockingStreamingHttpRequest(final DefaultHttpRequestMetaData oldRequest,
                                         final BufferAllocator allocator,
                                         final BlockingIterable<P> payloadBody,
-                                        final Single<HttpHeaders> trailersSingle) {
+                                        final Single<HttpHeaders> trailersSingle,
+                                        final ApiType effectiveApiType) {
         super(oldRequest);
         this.allocator = allocator;
         this.payloadBody = payloadBody;
         this.trailersSingle = trailersSingle;
+        this.effectiveApiType = effectiveApiType;
     }
 
     @Override
@@ -195,21 +201,21 @@ class DefaultBlockingStreamingHttpRequest<P> extends DefaultHttpRequestMetaData 
             final HttpSerializer<T> serializer) {
         return new BufferBlockingStreamingHttpRequest(this, allocator,
                 serializer.serialize(headers(), transformer.apply(payloadBody()), allocator),
-                trailersSingle);
+                trailersSingle, effectiveApiType);
     }
 
     @Override
     public final BlockingStreamingHttpRequest transformPayloadBody(
             final UnaryOperator<BlockingIterable<Buffer>> transformer) {
         return new BufferBlockingStreamingHttpRequest(this, allocator, transformer.apply(payloadBody()),
-                trailersSingle);
+                trailersSingle, effectiveApiType);
     }
 
     @Override
     public final BlockingStreamingHttpRequest transformRawPayloadBody(
             final UnaryOperator<BlockingIterable<?>> transformer) {
         return new DefaultBlockingStreamingHttpRequest<>(this, allocator, transformer.apply(payloadBody),
-                trailersSingle);
+                trailersSingle, effectiveApiType);
     }
 
     @Override
@@ -220,7 +226,7 @@ class DefaultBlockingStreamingHttpRequest<P> extends DefaultHttpRequestMetaData 
         return new BufferBlockingStreamingHttpRequest(this, allocator,
                 new HttpBuffersAndTrailersIterable<>(payloadBody(), stateSupplier,
                         transformer, trailersTrans, trailersSingle, outTrailersSingle),
-                fromSource(outTrailersSingle));
+                fromSource(outTrailersSingle), effectiveApiType);
     }
 
     @Override
@@ -231,7 +237,7 @@ class DefaultBlockingStreamingHttpRequest<P> extends DefaultHttpRequestMetaData 
         return new DefaultBlockingStreamingHttpRequest<>(this, allocator,
                 new HttpObjectsAndTrailersIterable<>(payloadBody, stateSupplier,
                         transformer, trailersTrans, trailersSingle, outTrailersSingle),
-                fromSource(outTrailersSingle));
+                fromSource(outTrailersSingle), effectiveApiType);
     }
 
     @Override
@@ -242,7 +248,7 @@ class DefaultBlockingStreamingHttpRequest<P> extends DefaultHttpRequestMetaData 
     @Override
     public StreamingHttpRequest toStreamingRequest() {
         return new DefaultStreamingHttpRequest<>(method(), requestTarget(), version(), headers(),
-                trailersSingle, allocator, fromIterable(payloadBody));
+                trailersSingle, allocator, fromIterable(payloadBody), effectiveApiType);
     }
 
     @Override
