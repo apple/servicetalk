@@ -110,7 +110,7 @@ final class FilterableClientToClient implements StreamingHttpClient {
                 // Use the strategy from the client as the underlying ReservedStreamingHttpConnection may be user
                 // created and hence could have an incorrect default strategy. Doing this makes sure we never call the
                 // method without strategy just as we do for the regular connection.
-                return rc.request(strategy, request);
+                return rc.request(FilterableClientToClient.this.strategy, request);
             }
 
             @Override

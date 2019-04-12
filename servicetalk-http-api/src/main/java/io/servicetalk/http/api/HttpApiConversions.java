@@ -38,7 +38,8 @@ public final class HttpApiConversions {
     static final HttpExecutionStrategy DEFAULT_BLOCKING_STREAMING_SERVICE_STRATEGY = OFFLOAD_RECEIVE_META_STRATEGY;
 
     /**
-     * For aggregation, we invoke the service after the payload is completed, hence we need to offload data.
+     * For aggregation, we invoke the user callback (Single from client#request()) after the payload is completed,
+     * hence we need to offload data.
      */
     static final HttpExecutionStrategy DEFAULT_CLIENT_STRATEGY = OFFLOAD_RECEIVE_DATA_STRATEGY;
     static final HttpExecutionStrategy DEFAULT_BLOCKING_CLIENT_STRATEGY = OFFLOAD_NONE_STRATEGY;
