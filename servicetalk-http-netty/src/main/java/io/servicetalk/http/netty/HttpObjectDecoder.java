@@ -42,7 +42,6 @@ import io.servicetalk.transport.netty.internal.CloseHandler;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
-import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.DecoderException;
 import io.netty.handler.codec.PrematureChannelClosureException;
@@ -53,7 +52,6 @@ import io.netty.util.ByteProcessor;
 
 import javax.annotation.Nullable;
 
-import static io.netty.buffer.Unpooled.copiedBuffer;
 import static io.netty.handler.codec.http.HttpConstants.CR;
 import static io.netty.handler.codec.http.HttpConstants.LF;
 import static io.netty.util.ByteProcessor.FIND_LINEAR_WHITESPACE;
@@ -81,8 +79,6 @@ import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.util.Objects.requireNonNull;
 
 abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDecoder {
-    private static final ByteBuf HTTP_1_1_BUF = copiedBuffer("HTTP/1.1", US_ASCII);
-    private static final ByteBuf HTTP_1_0_BUF = copiedBuffer("HTTP/1.0", US_ASCII);
     private static final byte COLON_BYTE = (byte) ':';
     private static final byte SPACE_BYTE = (byte) ' ';
     private static final byte HTAB_BYTE = (byte) '\t';
@@ -156,17 +152,20 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
     protected abstract boolean isDecodingRequest();
 
     /**
-     * Create a new {@link HttpMetaData} because a new request/response has been parsed.
-     * @param first The first item in the
-     * <a href="https://tools.ietf.org/html/rfc7230.html#section-3.1">start line</a>.
-     * @param second The second item in the
-     * <a href="https://tools.ietf.org/html/rfc7230.html#section-3.1">start line</a>.
-     * @param third The third item in the
-     * <a href="https://tools.ietf.org/html/rfc7230.html#section-3.1">start line</a>.
-     * @return a new {@link HttpMetaData} that represents the parsed
-     * <a href="https://tools.ietf.org/html/rfc7230.html#section-3.1">start line</a>.
+     * Create a new {@link HttpMetaData} because a new request/response
+     * <a href="https://tools.ietf.org/html/rfc7230.html#section-3.1">start line</a> has been parsed.
+     *
+     * @param buffer The {@link ByteBuf} which contains a start line
+     * @param firstStart Start index of the first item in the start line
+     * @param firstEnd End index of the first item in the start line
+     * @param secondStart Start index of the second item in the start line
+     * @param secondEnd End index of the second item in the start line
+     * @param thirdStart Start index of the third item in the start line
+     * @param thirdEnd End index of the third item in the start line
+     * @return a new {@link HttpMetaData} that represents the parsed start line
      */
-    protected abstract T createMessage(ByteBuf first, ByteBuf second, ByteBuf third);
+    protected abstract T createMessage(ByteBuf buffer, int firstStart, int firstEnd, int secondStart, int secondEnd,
+                                       int thirdStart, int thirdEnd);
 
     @Override
     protected final void decode(ChannelHandlerContext ctx, ByteBuf buffer) {
@@ -220,9 +219,7 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
                 // Consume the initial line bytes from the buffer.
                 consumeCRLF(buffer, lfIndex);
 
-                message = createMessage(buffer.slice(aStart, aEnd - aStart),
-                                        buffer.slice(bStart, bEnd - bStart),
-                                        cEnd >= 0 ? buffer.slice(cStart, cEnd - cStart) : Unpooled.EMPTY_BUFFER);
+                message = createMessage(buffer, aStart, aEnd, bStart, bEnd, cStart, cEnd);
                 currentState = State.READ_HEADER;
                 closeHandler.protocolPayloadBeginInbound(ctx);
                 // fall-through
@@ -713,7 +710,7 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
         }
     }
 
-    private static void splitInitialLineError() {
+    static void splitInitialLineError() {
         throw new IllegalArgumentException("invalid initial line");
     }
 
@@ -759,11 +756,31 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
         return defaultValue;
     }
 
-    static HttpProtocolVersion nettyBufferToHttpVersion(ByteBuf buffer) {
-        // https://tools.ietf.org/html/rfc7230.html#appendix-A.2
-        // The HTTP-version ABNF production has been clarified to be case-sensitive
-        return buffer.equals(HTTP_1_1_BUF) ? HTTP_1_1 :
-                buffer.equals(HTTP_1_0_BUF) ? HTTP_1_0 :
-                        HttpProtocolVersion.of(newBufferFrom(buffer.retain()));
+    static HttpProtocolVersion nettyBufferToHttpVersion(ByteBuf buffer, int start, int end) {
+        final int length = end - start;
+
+        if (length < 8) {
+            httpVersionError(buffer, start, length);
+        }
+
+        if (buffer.getByte(start + 6) != (byte) '.') {
+            httpVersionError(buffer, start, length);
+        }
+
+        final int major = buffer.getByte(start + 5) - '0';
+        if (major < 0 || major > 9) {
+            httpVersionError(buffer, start, length);
+        }
+
+        final int minor = buffer.getByte(start + 7) - '0';
+        if (minor < 0 || minor > 9) {
+            httpVersionError(buffer, start, length);
+        }
+
+        return HttpProtocolVersion.of(major, minor);
+    }
+
+    private static void httpVersionError(ByteBuf buffer, int start, int length) {
+        throw new IllegalArgumentException("Incorrect http version: " + buffer.toString(start, length, US_ASCII));
     }
 }

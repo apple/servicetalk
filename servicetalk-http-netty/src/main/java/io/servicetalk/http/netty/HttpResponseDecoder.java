@@ -16,12 +16,14 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.http.api.HttpHeadersFactory;
+import io.servicetalk.http.api.HttpProtocolVersion;
 import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.transport.netty.internal.CloseHandler;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 
 import java.util.Queue;
 
@@ -61,8 +63,18 @@ final class HttpResponseDecoder extends HttpObjectDecoder<HttpResponseMetaData> 
     }
 
     @Override
-    protected HttpResponseMetaData createMessage(ByteBuf first, ByteBuf second, ByteBuf third) {
-        return newResponseMetaData(nettyBufferToHttpVersion(first),
+    protected HttpResponseMetaData createMessage(final ByteBuf buffer, final int firstStart, final int firstEnd,
+                                                 final int secondStart, final int secondEnd,
+                                                 final int thirdStart, final int thirdEnd) {
+        // keep slicing until we can measure client side performance to see the difference with toString
+        return createMessage(nettyBufferToHttpVersion(buffer, firstStart, firstEnd),
+                buffer.slice(secondStart, secondEnd - secondStart),
+                thirdEnd >= 0 ? buffer.slice(thirdStart, thirdEnd - thirdStart) : Unpooled.EMPTY_BUFFER);
+    }
+
+    private HttpResponseMetaData createMessage(final HttpProtocolVersion version,
+                                               final ByteBuf second, final ByteBuf third) {
+        return newResponseMetaData(version,
                 nettyBufferToHttpStatus(second, third),
                 headersFactory().newHeaders());
     }

@@ -19,6 +19,7 @@ import io.servicetalk.buffer.api.Buffer;
 
 import java.util.Arrays;
 import java.util.List;
+import javax.annotation.Nullable;
 
 import static io.servicetalk.buffer.api.ReadOnlyBufferAllocators.PREFER_DIRECT_RO_ALLOCATOR;
 import static io.servicetalk.http.api.HttpRequestMethod.Properties.CACHEABLE;
@@ -104,6 +105,15 @@ public final class HttpRequestMethod {
         this.nameString = name.toString(US_ASCII);
     }
 
+    private HttpRequestMethod(final String name, final Properties properties) {
+        if (name.isEmpty()) {
+            throw new IllegalArgumentException("Method name cannot be empty");
+        }
+        this.nameString = name;
+        this.properties = requireNonNull(properties);
+        this.name = PREFER_DIRECT_RO_ALLOCATOR.fromAscii(name);
+    }
+
     /**
      * Returns an {@link HttpRequestMethod} for the specified {@link Buffer} representation of
      * <a href="https://tools.ietf.org/html/rfc7231#section-4.1">method name</a> and {@link Properties}.
@@ -118,39 +128,66 @@ public final class HttpRequestMethod {
     }
 
     /**
-     * Returns an {@link HttpRequestMethod} for the specified {@link Buffer} representation of
-     * <a href="https://tools.ietf.org/html/rfc7231#section-4.1">method name</a>, with the default {@link Properties}
-     * for that method.
+     * Returns an {@link HttpRequestMethod} for the specified {@link String} representation of
+     * <a href="https://tools.ietf.org/html/rfc7231#section-4.1">method name</a> and {@link Properties}.
+     * Generally, the constants in {@link HttpRequestMethod} should be used.
      *
      * @param name a <a href="https://tools.ietf.org/html/rfc7231#section-4.1">method name</a>
+     * @param properties <a href="https://tools.ietf.org/html/rfc7231#section-4.2">Common HTTP Method Properties</a>
      * @return an {@link HttpRequestMethod}
-     * @throws IllegalArgumentException if the method name is not recognized
      */
+    public static HttpRequestMethod of(final String name, final Properties properties) {
+        return new HttpRequestMethod(name, properties);
+    }
+
+    /**
+     * Returns an {@link HttpRequestMethod} for the specified {@link Buffer} representation of
+     * <a href="https://tools.ietf.org/html/rfc7231#section-4.1">method name</a>.
+     *
+     * @param name a <a href="https://tools.ietf.org/html/rfc7231#section-4.1">method name</a>
+     * @return an {@link HttpRequestMethod} or {@code null} if the method name is unknown
+     */
+    @Nullable
     public static HttpRequestMethod of(final Buffer name) {
         for (final HttpRequestMethod httpRequestMethod : HTTP_REQUEST_METHODS) {
             if (httpRequestMethod.name.equals(name)) {
                 return httpRequestMethod;
             }
         }
-        throw new IllegalArgumentException("No HttpRequestMethod found for " + name.toString(US_ASCII));
+        return null;
     }
 
     /**
      * Returns an {@link HttpRequestMethod} for the specified
-     * <a href="https://tools.ietf.org/html/rfc7231#section-4.1">method name</a>, with the default {@link Properties}
-     * for that method.
+     * <a href="https://tools.ietf.org/html/rfc7231#section-4.1">method name</a>.
      *
      * @param name a <a href="https://tools.ietf.org/html/rfc7231#section-4.1">method name</a>
-     * @return an {@link HttpRequestMethod}
-     * @throws IllegalArgumentException if the method name is not recognized
+     * @return an {@link HttpRequestMethod} or {@code null} if the method name is unknown
      */
+    @Nullable
     public static HttpRequestMethod of(final String name) {
-        for (final HttpRequestMethod httpRequestMethod : HTTP_REQUEST_METHODS) {
-            if (httpRequestMethod.nameString.equals(name)) {
-                return httpRequestMethod;
-            }
+        switch (name) {
+            case "GET":
+                return GET;
+            case "HEAD":
+                return HEAD;
+            case "POST":
+                return POST;
+            case "PUT":
+                return PUT;
+            case "DELETE":
+                return DELETE;
+            case "CONNECT":
+                return CONNECT;
+            case "OPTIONS":
+                return OPTIONS;
+            case "TRACE":
+                return TRACE;
+            case "PATCH":
+                return PATCH;
+            default:
+                return null;
         }
-        throw new IllegalArgumentException("No HttpRequestMethod found for " + name);
     }
 
     /**

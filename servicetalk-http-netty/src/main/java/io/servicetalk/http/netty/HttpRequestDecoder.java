@@ -22,41 +22,15 @@ import io.servicetalk.transport.netty.internal.CloseHandler;
 
 import io.netty.buffer.ByteBuf;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Queue;
 
-import static io.netty.buffer.Unpooled.copiedBuffer;
-import static io.servicetalk.buffer.netty.BufferUtil.newBufferFrom;
 import static io.servicetalk.http.api.HttpRequestMetaDataFactory.newRequestMetaData;
-import static io.servicetalk.http.api.HttpRequestMethod.CONNECT;
-import static io.servicetalk.http.api.HttpRequestMethod.DELETE;
-import static io.servicetalk.http.api.HttpRequestMethod.GET;
-import static io.servicetalk.http.api.HttpRequestMethod.HEAD;
-import static io.servicetalk.http.api.HttpRequestMethod.OPTIONS;
-import static io.servicetalk.http.api.HttpRequestMethod.PATCH;
-import static io.servicetalk.http.api.HttpRequestMethod.POST;
-import static io.servicetalk.http.api.HttpRequestMethod.PUT;
 import static io.servicetalk.http.api.HttpRequestMethod.Properties.NONE;
-import static io.servicetalk.http.api.HttpRequestMethod.TRACE;
 import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.util.Objects.requireNonNull;
 
 final class HttpRequestDecoder extends HttpObjectDecoder<HttpRequestMetaData> {
-    private static final Map<ByteBuf, HttpRequestMethod> BUF_TO_METHOD_MAP = new HashMap<ByteBuf, HttpRequestMethod>() {
-        {
-            put(copiedBuffer("GET", US_ASCII), GET);
-            put(copiedBuffer("HEAD", US_ASCII), HEAD);
-            put(copiedBuffer("OPTIONS", US_ASCII), OPTIONS);
-            put(copiedBuffer("TRACE", US_ASCII), TRACE);
-            put(copiedBuffer("PUT", US_ASCII), PUT);
-            put(copiedBuffer("DELETE", US_ASCII), DELETE);
-            put(copiedBuffer("POST", US_ASCII), POST);
-            put(copiedBuffer("PATCH", US_ASCII), PATCH);
-            put(copiedBuffer("CONNECT", US_ASCII), CONNECT);
-        }
-    };
 
     private final Queue<HttpRequestMethod> methodQueue;
 
@@ -77,11 +51,23 @@ final class HttpRequestDecoder extends HttpObjectDecoder<HttpRequestMetaData> {
     }
 
     @Override
-    protected HttpRequestMetaData createMessage(ByteBuf first, ByteBuf second, ByteBuf third) {
-        return newRequestMetaData(nettyBufferToHttpVersion(third),
-                                  nettyBufferToHttpMethod(first),
-                                  second.toString(US_ASCII),
-                                  headersFactory().newHeaders());
+    protected HttpRequestMetaData createMessage(final ByteBuf buffer,
+                                                final int firstStart, final int firstEnd,
+                                                final int secondStart, final int secondEnd,
+                                                final int thirdStart, final int thirdEnd) {
+        if (thirdEnd < 0) {
+            splitInitialLineError();
+        }
+
+        return newRequestMetaData(nettyBufferToHttpVersion(buffer, thirdStart, thirdEnd),
+                parseHttpMethod(buffer.toString(firstStart, firstEnd - firstStart, US_ASCII)),
+                buffer.toString(secondStart, secondEnd - secondStart, US_ASCII),
+                headersFactory().newHeaders());
+    }
+
+    private static HttpRequestMethod parseHttpMethod(final String methodName) {
+        final HttpRequestMethod method = HttpRequestMethod.of(methodName);
+        return method != null ? method : HttpRequestMethod.of(methodName, NONE);
     }
 
     @Override
@@ -97,10 +83,5 @@ final class HttpRequestDecoder extends HttpObjectDecoder<HttpRequestMetaData> {
         // iterate a decoded list it makes some assumptions about the base class ordering of events.
         methodQueue.add(msg.method());
         return false;
-    }
-
-    private static HttpRequestMethod nettyBufferToHttpMethod(ByteBuf buf) {
-        HttpRequestMethod method = BUF_TO_METHOD_MAP.get(buf);
-        return method != null ? method : HttpRequestMethod.of(newBufferFrom(buf.retain()), NONE);
     }
 }
