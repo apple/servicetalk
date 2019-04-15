@@ -39,6 +39,7 @@ import static io.servicetalk.buffer.api.EmptyBuffer.EMPTY_BUFFER;
 import static io.servicetalk.http.api.CharSequences.contentEqualsIgnoreCaseUnknownTypes;
 import static io.servicetalk.http.api.CharSequences.contentEqualsUnknownTypes;
 import static java.nio.charset.StandardCharsets.US_ASCII;
+import static java.util.Objects.requireNonNull;
 
 final class AsciiBuffer implements CharSequence {
     static final CharSequence EMPTY_ASCII_BUFFER = new AsciiBuffer(EMPTY_BUFFER);
@@ -52,7 +53,7 @@ final class AsciiBuffer implements CharSequence {
     private int hash;
 
     AsciiBuffer(Buffer buffer) {
-        this.buffer = buffer.asReadOnly();
+        this.buffer = requireNonNull(buffer);
     }
 
     @Override
