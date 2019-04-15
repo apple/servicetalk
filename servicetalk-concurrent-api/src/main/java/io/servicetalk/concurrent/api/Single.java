@@ -424,7 +424,7 @@ public abstract class Single<T> {
      * terminates successfully.
      */
     public final Single<T> concat(Completable next) {
-        return toPublisher().concat(next).firstOrError();
+        return new SingleConcatWithCompletable<>(this, next, executor);
     }
 
     /**
