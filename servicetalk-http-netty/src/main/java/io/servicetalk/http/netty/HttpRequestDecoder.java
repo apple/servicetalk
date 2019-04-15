@@ -52,20 +52,20 @@ final class HttpRequestDecoder extends HttpObjectDecoder<HttpRequestMetaData> {
 
     @Override
     protected HttpRequestMetaData createMessage(final ByteBuf buffer,
-                                                final int firstStart, final int firstEnd,
-                                                final int secondStart, final int secondEnd,
-                                                final int thirdStart, final int thirdEnd) {
-        if (thirdEnd < 0) {
+                                                final int firstStart, final int firstLength,
+                                                final int secondStart, final int secondLength,
+                                                final int thirdStart, final int thirdLength) {
+        if (thirdLength < 0) {
             splitInitialLineError();
         }
 
-        return newRequestMetaData(nettyBufferToHttpVersion(buffer, thirdStart, thirdEnd),
-                parseHttpMethod(buffer.toString(firstStart, firstEnd - firstStart, US_ASCII)),
-                buffer.toString(secondStart, secondEnd - secondStart, US_ASCII),
+        return newRequestMetaData(nettyBufferToHttpVersion(buffer, thirdStart, thirdLength),
+                decodeHttpMethod(buffer.toString(firstStart, firstLength, US_ASCII)),
+                buffer.toString(secondStart, secondLength, US_ASCII),
                 headersFactory().newHeaders());
     }
 
-    private static HttpRequestMethod parseHttpMethod(final String methodName) {
+    private static HttpRequestMethod decodeHttpMethod(final String methodName) {
         final HttpRequestMethod method = HttpRequestMethod.of(methodName);
         return method != null ? method : HttpRequestMethod.of(methodName, NONE);
     }

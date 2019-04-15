@@ -27,6 +27,7 @@ import static io.servicetalk.http.api.HttpRequestMethod.PATCH;
 import static io.servicetalk.http.api.HttpRequestMethod.POST;
 import static io.servicetalk.http.api.HttpRequestMethod.PUT;
 import static io.servicetalk.http.api.HttpRequestMethod.TRACE;
+import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.Assert.assertThat;
@@ -61,11 +62,11 @@ public class HttpRequestMethodTest {
 
     @Test
     public void testOfBufferReturnsNullForUnknownMethod() {
-        assertThat(HttpRequestMethod.of(DEFAULT_RO_ALLOCATOR.fromAscii("UNKNOWN")), nullValue());
+        assertThat(HttpRequestMethod.of(DEFAULT_RO_ALLOCATOR.fromAscii("UNKNOWN")), is(nullValue()));
     }
 
     @Test
     public void testOfStringReturnsNullForUnknownMethod() {
-        assertThat(HttpRequestMethod.of("UNKNOWN"), nullValue());
+        assertThat(HttpRequestMethod.of("UNKNOWN"), is(nullValue()));
     }
 }

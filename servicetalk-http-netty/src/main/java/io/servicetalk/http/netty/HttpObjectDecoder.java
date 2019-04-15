@@ -157,15 +157,17 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
      *
      * @param buffer The {@link ByteBuf} which contains a start line
      * @param firstStart Start index of the first item in the start line
-     * @param firstEnd End index of the first item in the start line
+     * @param firstLength Length of the first item in the start line
      * @param secondStart Start index of the second item in the start line
-     * @param secondEnd End index of the second item in the start line
+     * @param secondLength Length of the second item in the start line
      * @param thirdStart Start index of the third item in the start line
-     * @param thirdEnd End index of the third item in the start line
+     * @param thirdLength Length of the third item in the start line, a negative value indicates the absence of the
+     * third component
      * @return a new {@link HttpMetaData} that represents the parsed start line
      */
-    protected abstract T createMessage(ByteBuf buffer, int firstStart, int firstEnd, int secondStart, int secondEnd,
-                                       int thirdStart, int thirdEnd);
+    protected abstract T createMessage(ByteBuf buffer, int firstStart, int firstLength,
+                                       int secondStart, int secondLength,
+                                       int thirdStart, int thirdLength);
 
     @Override
     protected final void decode(ChannelHandlerContext ctx, ByteBuf buffer) {
@@ -219,7 +221,8 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
                 // Consume the initial line bytes from the buffer.
                 consumeCRLF(buffer, lfIndex);
 
-                message = createMessage(buffer, aStart, aEnd, bStart, bEnd, cStart, cEnd);
+                message = createMessage(buffer, aStart, aEnd - aStart, bStart, bEnd - bStart, cStart,
+                        cEnd < 0 ? -1 : cEnd - cStart);
                 currentState = State.READ_HEADER;
                 closeHandler.protocolPayloadBeginInbound(ctx);
                 // fall-through
@@ -756,9 +759,7 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
         return defaultValue;
     }
 
-    static HttpProtocolVersion nettyBufferToHttpVersion(ByteBuf buffer, int start, int end) {
-        final int length = end - start;
-
+    static HttpProtocolVersion nettyBufferToHttpVersion(ByteBuf buffer, int start, int length) {
         if (length < 8) {
             httpVersionError(buffer, start, length);
         }
