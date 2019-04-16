@@ -17,8 +17,7 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.Buffer;
 
-import java.util.Arrays;
-import java.util.List;
+import javax.annotation.Nullable;
 
 import static io.servicetalk.buffer.api.ReadOnlyBufferAllocators.PREFER_DIRECT_RO_ALLOCATOR;
 import static io.servicetalk.http.api.HttpRequestMethod.Properties.CACHEABLE;
@@ -26,7 +25,6 @@ import static io.servicetalk.http.api.HttpRequestMethod.Properties.IDEMPOTENT;
 import static io.servicetalk.http.api.HttpRequestMethod.Properties.NONE;
 import static io.servicetalk.http.api.HttpRequestMethod.Properties.SAFE_IDEMPOTENT;
 import static io.servicetalk.http.api.HttpRequestMethod.Properties.SAFE_IDEMPOTENT_CACHEABLE;
-import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -37,75 +35,63 @@ public final class HttpRequestMethod {
     /**
      * HTTP <a href="https://tools.ietf.org/html/rfc7231#section-4.3.1">GET</a> method.
      */
-    public static final HttpRequestMethod GET =
-            new HttpRequestMethod(PREFER_DIRECT_RO_ALLOCATOR.fromAscii("GET"), SAFE_IDEMPOTENT_CACHEABLE);
+    public static final HttpRequestMethod GET = new HttpRequestMethod("GET", SAFE_IDEMPOTENT_CACHEABLE);
 
     /**
      * HTTP <a href="https://tools.ietf.org/html/rfc7231#section-4.3.2">HEAD</a> method.
      */
-    public static final HttpRequestMethod HEAD =
-            new HttpRequestMethod(PREFER_DIRECT_RO_ALLOCATOR.fromAscii("HEAD"), SAFE_IDEMPOTENT_CACHEABLE);
+    public static final HttpRequestMethod HEAD = new HttpRequestMethod("HEAD", SAFE_IDEMPOTENT_CACHEABLE);
 
     /**
      * HTTP <a href="https://tools.ietf.org/html/rfc7231#section-4.3.3">POST</a> method.
      */
-    public static final HttpRequestMethod POST =
-            new HttpRequestMethod(PREFER_DIRECT_RO_ALLOCATOR.fromAscii("POST"), CACHEABLE);
+    public static final HttpRequestMethod POST = new HttpRequestMethod("POST", CACHEABLE);
 
     /**
      * HTTP <a href="https://tools.ietf.org/html/rfc7231#section-4.3.4">PUT</a> method.
      */
-    public static final HttpRequestMethod PUT =
-            new HttpRequestMethod(PREFER_DIRECT_RO_ALLOCATOR.fromAscii("PUT"), IDEMPOTENT);
+    public static final HttpRequestMethod PUT = new HttpRequestMethod("PUT", IDEMPOTENT);
 
     /**
      * HTTP <a href="https://tools.ietf.org/html/rfc7231#section-4.3.5">DELETE</a> method.
      */
-    public static final HttpRequestMethod DELETE =
-            new HttpRequestMethod(PREFER_DIRECT_RO_ALLOCATOR.fromAscii("DELETE"), IDEMPOTENT);
+    public static final HttpRequestMethod DELETE = new HttpRequestMethod("DELETE", IDEMPOTENT);
 
     /**
      * HTTP <a href="https://tools.ietf.org/html/rfc7231#section-4.3.6">CONNECT</a> method.
      */
-    public static final HttpRequestMethod CONNECT =
-            new HttpRequestMethod(PREFER_DIRECT_RO_ALLOCATOR.fromAscii("CONNECT"), NONE);
+    public static final HttpRequestMethod CONNECT = new HttpRequestMethod("CONNECT", NONE);
 
     /**
      * HTTP <a href="https://tools.ietf.org/html/rfc7231#section-4.3.7">OPTIONS</a> method.
      */
-    public static final HttpRequestMethod OPTIONS =
-            new HttpRequestMethod(PREFER_DIRECT_RO_ALLOCATOR.fromAscii("OPTIONS"), SAFE_IDEMPOTENT);
+    public static final HttpRequestMethod OPTIONS = new HttpRequestMethod("OPTIONS", SAFE_IDEMPOTENT);
 
     /**
      * HTTP <a href="https://tools.ietf.org/html/rfc7231#section-4.3.8">TRACE</a> method.
      */
-    public static final HttpRequestMethod TRACE =
-            new HttpRequestMethod(PREFER_DIRECT_RO_ALLOCATOR.fromAscii("TRACE"), SAFE_IDEMPOTENT);
+    public static final HttpRequestMethod TRACE = new HttpRequestMethod("TRACE", SAFE_IDEMPOTENT);
 
     /**
      * HTTP <a href="https://tools.ietf.org/html/rfc5789#section-2">PATCH</a> method.
      */
-    public static final HttpRequestMethod PATCH =
-            new HttpRequestMethod(PREFER_DIRECT_RO_ALLOCATOR.fromAscii("PATCH"), NONE);
+    public static final HttpRequestMethod PATCH = new HttpRequestMethod("PATCH", NONE);
 
-    private static final List<HttpRequestMethod> HTTP_REQUEST_METHODS = Arrays.asList(GET, HEAD, POST, PUT, DELETE,
-            CONNECT, OPTIONS, TRACE, PATCH);
-
-    private final String nameString;
-    private final Buffer name;
+    private final String name;
+    private final Buffer nameBuffer;
     private final Properties properties;
 
-    private HttpRequestMethod(final Buffer name, final Properties properties) {
-        if (name.readableBytes() == 0) {
+    private HttpRequestMethod(final String name, final Properties properties) {
+        if (name.isEmpty()) {
             throw new IllegalArgumentException("Method name cannot be empty");
         }
         this.name = name;
         this.properties = requireNonNull(properties);
-        this.nameString = name.toString(US_ASCII);
+        this.nameBuffer = PREFER_DIRECT_RO_ALLOCATOR.fromAscii(name);
     }
 
     /**
-     * Returns an {@link HttpRequestMethod} for the specified {@link Buffer} representation of
+     * Returns an {@link HttpRequestMethod} for the specified {@link String} representation of
      * <a href="https://tools.ietf.org/html/rfc7231#section-4.1">method name</a> and {@link Properties}.
      * Generally, the constants in {@link HttpRequestMethod} should be used.
      *
@@ -113,44 +99,41 @@ public final class HttpRequestMethod {
      * @param properties <a href="https://tools.ietf.org/html/rfc7231#section-4.2">Common HTTP Method Properties</a>
      * @return an {@link HttpRequestMethod}
      */
-    public static HttpRequestMethod of(final Buffer name, final Properties properties) {
+    public static HttpRequestMethod of(final String name, final Properties properties) {
         return new HttpRequestMethod(name, properties);
     }
 
     /**
-     * Returns an {@link HttpRequestMethod} for the specified {@link Buffer} representation of
-     * <a href="https://tools.ietf.org/html/rfc7231#section-4.1">method name</a>, with the default {@link Properties}
-     * for that method.
-     *
-     * @param name a <a href="https://tools.ietf.org/html/rfc7231#section-4.1">method name</a>
-     * @return an {@link HttpRequestMethod}
-     * @throws IllegalArgumentException if the method name is not recognized
-     */
-    public static HttpRequestMethod of(final Buffer name) {
-        for (final HttpRequestMethod httpRequestMethod : HTTP_REQUEST_METHODS) {
-            if (httpRequestMethod.name.equals(name)) {
-                return httpRequestMethod;
-            }
-        }
-        throw new IllegalArgumentException("No HttpRequestMethod found for " + name.toString(US_ASCII));
-    }
-
-    /**
      * Returns an {@link HttpRequestMethod} for the specified
-     * <a href="https://tools.ietf.org/html/rfc7231#section-4.1">method name</a>, with the default {@link Properties}
-     * for that method.
+     * <a href="https://tools.ietf.org/html/rfc7231#section-4.1">method name</a>.
      *
      * @param name a <a href="https://tools.ietf.org/html/rfc7231#section-4.1">method name</a>
-     * @return an {@link HttpRequestMethod}
-     * @throws IllegalArgumentException if the method name is not recognized
+     * @return an {@link HttpRequestMethod} or {@code null} if the method name is unknown
      */
+    @Nullable
     public static HttpRequestMethod of(final String name) {
-        for (final HttpRequestMethod httpRequestMethod : HTTP_REQUEST_METHODS) {
-            if (httpRequestMethod.nameString.equals(name)) {
-                return httpRequestMethod;
-            }
+        switch (name) {
+            case "GET":
+                return GET;
+            case "HEAD":
+                return HEAD;
+            case "POST":
+                return POST;
+            case "PUT":
+                return PUT;
+            case "DELETE":
+                return DELETE;
+            case "CONNECT":
+                return CONNECT;
+            case "OPTIONS":
+                return OPTIONS;
+            case "TRACE":
+                return TRACE;
+            case "PATCH":
+                return PATCH;
+            default:
+                return null;
         }
-        throw new IllegalArgumentException("No HttpRequestMethod found for " + name);
     }
 
     /**
@@ -159,7 +142,7 @@ public final class HttpRequestMethod {
      * @param buffer the {@link Buffer} to write to
      */
     public void writeNameTo(final Buffer buffer) {
-        buffer.writeBytes(name, name.readerIndex(), name.readableBytes());
+        buffer.writeBytes(nameBuffer, nameBuffer.readerIndex(), nameBuffer.readableBytes());
     }
 
     /**
@@ -168,7 +151,7 @@ public final class HttpRequestMethod {
      * @return The <a href="https://tools.ietf.org/html/rfc7231#section-4.1">method name</a>
      */
     public String name() {
-        return nameString;
+        return name;
     }
 
     /**
@@ -191,23 +174,23 @@ public final class HttpRequestMethod {
 
         final HttpRequestMethod that = (HttpRequestMethod) o;
         /*
-         * - name Buffer is ignored for equals/hashCode because it represents nameString and the relationship is
+         * - name Buffer is ignored for equals/hashCode because it represents name and the relationship is
          *   idempotent
          *
          * - properties is ignored for equals/hashCode because they carry additional information which should not alter
          *   the meaning of the method name
          */
-        return nameString.equals(that.name());
+        return name.equals(that.name());
     }
 
     @Override
     public int hashCode() {
-        return nameString.hashCode();
+        return name.hashCode();
     }
 
     @Override
     public String toString() {
-        return nameString;
+        return name;
     }
 
     /**

@@ -53,35 +53,6 @@ public final class HttpProtocolVersion {
         this.httpVersion = PREFER_DIRECT_RO_ALLOCATOR.fromAscii("HTTP/" + major + '.' + minor);
     }
 
-    private HttpProtocolVersion(final Buffer httpVersion) {
-        // We could delay the parsing of major/minor but this is currently used during decode to validate the
-        // correct form of the request.
-        if (httpVersion.readableBytes() < 8) {
-            throw new IllegalArgumentException("Incorrect httpVersion: " + httpVersion.toString(US_ASCII) +
-                    ". Too small, expected 8 or more bytes.");
-        }
-
-        if (httpVersion.getByte(httpVersion.readerIndex() + 6) != (byte) '.') {
-            char ch = (char) httpVersion.getByte(httpVersion.readerIndex() + 6);
-            throw new IllegalArgumentException("Incorrect httpVersion: " + httpVersion.toString(US_ASCII) +
-                    ". Invalid character found '" + ch + "' at position 6 (expected '.')");
-        }
-
-        this.major = httpVersion.getByte(httpVersion.readerIndex() + 5) - '0';
-        if (major < 0 || major > 9) {
-            throw new IllegalArgumentException("Incorrect httpVersion: " + httpVersion.toString(US_ASCII) +
-                    ". Illegal major version: " + major + ", (expected [0-9])");
-        }
-
-        this.minor = httpVersion.getByte(httpVersion.readerIndex() + 7) - '0';
-        if (minor < 0 || minor > 9) {
-            throw new IllegalArgumentException("Incorrect httpVersion: " + httpVersion.toString(US_ASCII) +
-                    ". Illegal minor version: " + minor + ", (expected [0-9])");
-        }
-
-        this.httpVersion = httpVersion;
-    }
-
     /**
      * Returns an {@link HttpProtocolVersion} for the specified {@code major} and {@code minor}.
      * Generally, the constants in {@link HttpProtocolVersion} should be used.
@@ -103,19 +74,6 @@ public final class HttpProtocolVersion {
             }
         }
         return new HttpProtocolVersion(major, minor);
-    }
-
-    /**
-     * Returns an {@link HttpProtocolVersion} from its {@link Buffer} representation. The passed {@link Buffer} will
-     * be parsed to extract {@code major} and {@code minor} components of the version.
-     *
-     * @param httpVersion a {@link Buffer} representation of the
-     * <a href="https://tools.ietf.org/html/rfc7230.html#section-2.6">HTTP protocol version</a>
-     * @return an {@link HttpProtocolVersion}
-     * @throws IllegalArgumentException if {@code httpVersion} format is not {@code HTTP/DIGIT.DIGIT}
-     */
-    public static HttpProtocolVersion of(final Buffer httpVersion) {
-        return new HttpProtocolVersion(httpVersion);
     }
 
     /**
