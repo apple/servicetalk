@@ -17,7 +17,6 @@ package io.servicetalk.http.api;
 
 import org.junit.Test;
 
-import static io.servicetalk.buffer.api.ReadOnlyBufferAllocators.DEFAULT_RO_ALLOCATOR;
 import static io.servicetalk.http.api.HttpRequestMethod.CONNECT;
 import static io.servicetalk.http.api.HttpRequestMethod.DELETE;
 import static io.servicetalk.http.api.HttpRequestMethod.GET;
@@ -35,19 +34,6 @@ import static org.junit.Assert.assertThat;
 public class HttpRequestMethodTest {
 
     @Test
-    public void testOfBufferReturnsConstants() {
-        assertThat(HttpRequestMethod.of(DEFAULT_RO_ALLOCATOR.fromAscii("GET")), sameInstance(GET));
-        assertThat(HttpRequestMethod.of(DEFAULT_RO_ALLOCATOR.fromAscii("HEAD")), sameInstance(HEAD));
-        assertThat(HttpRequestMethod.of(DEFAULT_RO_ALLOCATOR.fromAscii("POST")), sameInstance(POST));
-        assertThat(HttpRequestMethod.of(DEFAULT_RO_ALLOCATOR.fromAscii("PUT")), sameInstance(PUT));
-        assertThat(HttpRequestMethod.of(DEFAULT_RO_ALLOCATOR.fromAscii("DELETE")), sameInstance(DELETE));
-        assertThat(HttpRequestMethod.of(DEFAULT_RO_ALLOCATOR.fromAscii("CONNECT")), sameInstance(CONNECT));
-        assertThat(HttpRequestMethod.of(DEFAULT_RO_ALLOCATOR.fromAscii("OPTIONS")), sameInstance(OPTIONS));
-        assertThat(HttpRequestMethod.of(DEFAULT_RO_ALLOCATOR.fromAscii("TRACE")), sameInstance(TRACE));
-        assertThat(HttpRequestMethod.of(DEFAULT_RO_ALLOCATOR.fromAscii("PATCH")), sameInstance(PATCH));
-    }
-
-    @Test
     public void testOfStringReturnsConstants() {
         assertThat(HttpRequestMethod.of("GET"), sameInstance(GET));
         assertThat(HttpRequestMethod.of("HEAD"), sameInstance(HEAD));
@@ -58,11 +44,6 @@ public class HttpRequestMethodTest {
         assertThat(HttpRequestMethod.of("OPTIONS"), sameInstance(OPTIONS));
         assertThat(HttpRequestMethod.of("TRACE"), sameInstance(TRACE));
         assertThat(HttpRequestMethod.of("PATCH"), sameInstance(PATCH));
-    }
-
-    @Test
-    public void testOfBufferReturnsNullForUnknownMethod() {
-        assertThat(HttpRequestMethod.of(DEFAULT_RO_ALLOCATOR.fromAscii("UNKNOWN")), is(nullValue()));
     }
 
     @Test
