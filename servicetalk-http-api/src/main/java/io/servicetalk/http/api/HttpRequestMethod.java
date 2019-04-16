@@ -77,17 +77,17 @@ public final class HttpRequestMethod {
      */
     public static final HttpRequestMethod PATCH = new HttpRequestMethod("PATCH", NONE);
 
-    private final String nameString;
-    private final Buffer name;
+    private final String name;
+    private final Buffer nameBuffer;
     private final Properties properties;
 
     private HttpRequestMethod(final String name, final Properties properties) {
         if (name.isEmpty()) {
             throw new IllegalArgumentException("Method name cannot be empty");
         }
-        this.nameString = name;
+        this.name = name;
         this.properties = requireNonNull(properties);
-        this.name = PREFER_DIRECT_RO_ALLOCATOR.fromAscii(name);
+        this.nameBuffer = PREFER_DIRECT_RO_ALLOCATOR.fromAscii(name);
     }
 
     /**
@@ -142,7 +142,7 @@ public final class HttpRequestMethod {
      * @param buffer the {@link Buffer} to write to
      */
     public void writeNameTo(final Buffer buffer) {
-        buffer.writeBytes(name, name.readerIndex(), name.readableBytes());
+        buffer.writeBytes(nameBuffer, nameBuffer.readerIndex(), nameBuffer.readableBytes());
     }
 
     /**
@@ -151,7 +151,7 @@ public final class HttpRequestMethod {
      * @return The <a href="https://tools.ietf.org/html/rfc7231#section-4.1">method name</a>
      */
     public String name() {
-        return nameString;
+        return name;
     }
 
     /**
@@ -174,23 +174,23 @@ public final class HttpRequestMethod {
 
         final HttpRequestMethod that = (HttpRequestMethod) o;
         /*
-         * - name Buffer is ignored for equals/hashCode because it represents nameString and the relationship is
+         * - name Buffer is ignored for equals/hashCode because it represents name and the relationship is
          *   idempotent
          *
          * - properties is ignored for equals/hashCode because they carry additional information which should not alter
          *   the meaning of the method name
          */
-        return nameString.equals(that.name());
+        return name.equals(that.name());
     }
 
     @Override
     public int hashCode() {
-        return nameString.hashCode();
+        return name.hashCode();
     }
 
     @Override
     public String toString() {
-        return nameString;
+        return name;
     }
 
     /**
