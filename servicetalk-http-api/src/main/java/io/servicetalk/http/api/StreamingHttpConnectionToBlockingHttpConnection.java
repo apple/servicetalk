@@ -20,17 +20,18 @@ import io.servicetalk.http.api.FilterableStreamingHttpConnection.SettingKey;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ExecutionContext;
 
-import static io.servicetalk.http.api.HttpApiConversions.DEFAULT_BLOCKING_CLIENT_STRATEGY;
+import static io.servicetalk.http.api.HttpExecutionStrategies.OFFLOAD_NONE_STRATEGY;
 import static io.servicetalk.http.api.RequestResponseFactories.toAggregated;
 
 final class StreamingHttpConnectionToBlockingHttpConnection implements BlockingHttpConnection {
+    static final HttpExecutionStrategy DEFAULT_BLOCKING_CONNECTION_STRATEGY = OFFLOAD_NONE_STRATEGY;
     private final StreamingHttpConnection connection;
     private final HttpExecutionStrategy strategy;
     private final HttpRequestResponseFactory reqRespFactory;
 
     StreamingHttpConnectionToBlockingHttpConnection(final StreamingHttpConnection connection,
                                                     final HttpExecutionStrategyInfluencer influencer) {
-        strategy = influencer.influenceStrategy(DEFAULT_BLOCKING_CLIENT_STRATEGY);
+        strategy = influencer.influenceStrategy(DEFAULT_BLOCKING_CONNECTION_STRATEGY);
         this.connection = connection;
         reqRespFactory = toAggregated(connection);
     }

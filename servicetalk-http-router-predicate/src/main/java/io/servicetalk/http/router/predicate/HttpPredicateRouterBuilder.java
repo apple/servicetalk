@@ -261,23 +261,23 @@ public final class HttpPredicateRouterBuilder implements RouteStarter {
         @Override
         public RouteStarter thenRouteTo(final HttpService service) {
             ServiceAdapterHolder adapterHolder = toStreamingHttpService(service, newInfluencer(service));
-            return thenRouteTo0(adapterHolder.service(), adapterHolder.serviceInvocationStrategy());
+            return thenRouteTo0(adapterHolder.adaptor(), adapterHolder.serviceInvocationStrategy());
         }
 
         @Override
         public RouteStarter thenRouteTo(final BlockingHttpService service) {
             ServiceAdapterHolder adapterHolder = toStreamingHttpService(service, newInfluencer(service));
-            return thenRouteTo0(adapterHolder.service(), adapterHolder.serviceInvocationStrategy());
+            return thenRouteTo0(adapterHolder.adaptor(), adapterHolder.serviceInvocationStrategy());
         }
 
         @Override
         public RouteStarter thenRouteTo(final BlockingStreamingHttpService service) {
             ServiceAdapterHolder adapterHolder = toStreamingHttpService(service, newInfluencer(service));
-            return thenRouteTo0(adapterHolder.service(), adapterHolder.serviceInvocationStrategy());
+            return thenRouteTo0(adapterHolder.adaptor(), adapterHolder.serviceInvocationStrategy());
         }
 
         private HttpExecutionStrategyInfluencer newInfluencer(final Object service) {
-            influencerChainBuilder.addIfInfluencerAt(0, service);
+            influencerChainBuilder.prependIfInfluencer(service);
             final HttpExecutionStrategyInfluencer strategyInfluencer;
             if (strategy != null) {
                 strategyInfluencer = influencerChainBuilder.build(strategy);

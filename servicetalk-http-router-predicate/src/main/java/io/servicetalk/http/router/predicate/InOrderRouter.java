@@ -67,6 +67,7 @@ final class InOrderRouter implements StreamingHttpService {
                 StreamingHttpService service = pair.service();
                 HttpExecutionStrategy strategy = pair.routeStrategy();
                 if (strategy != null) {
+                    // TODO(scott): combine the InOrderRouter strategy and the route strategy?
                     service = strategy.offloadService(ctx.executionContext().executor(), service);
                 }
                 return service.handle(ctx, request, factory);

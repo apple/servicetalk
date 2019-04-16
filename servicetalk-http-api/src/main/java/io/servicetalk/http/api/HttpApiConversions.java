@@ -19,31 +19,10 @@ import io.servicetalk.http.api.StreamingHttpClientToBlockingHttpClient.ReservedS
 import io.servicetalk.http.api.StreamingHttpClientToBlockingStreamingHttpClient.ReservedStreamingHttpConnectionToBlockingStreaming;
 import io.servicetalk.http.api.StreamingHttpClientToHttpClient.ReservedStreamingHttpConnectionToReservedHttpConnection;
 
-import static io.servicetalk.http.api.HttpExecutionStrategies.OFFLOAD_NONE_STRATEGY;
-import static io.servicetalk.http.api.HttpExecutionStrategies.OFFLOAD_RECEIVE_DATA_AND_SEND_STRATEGY;
-import static io.servicetalk.http.api.HttpExecutionStrategies.OFFLOAD_RECEIVE_DATA_STRATEGY;
-import static io.servicetalk.http.api.HttpExecutionStrategies.OFFLOAD_RECEIVE_META_STRATEGY;
-import static io.servicetalk.http.api.HttpExecutionStrategies.OFFLOAD_SEND_STRATEGY;
-
 /**
  * Conversion routines to {@link StreamingHttpService}.
  */
 public final class HttpApiConversions {
-
-    /**
-     * For aggregation, we invoke the service after the payload is completed, hence we need to offload data.
-     */
-    static final HttpExecutionStrategy DEFAULT_SERVICE_STRATEGY = OFFLOAD_RECEIVE_DATA_AND_SEND_STRATEGY;
-    static final HttpExecutionStrategy DEFAULT_BLOCKING_SERVICE_STRATEGY = OFFLOAD_RECEIVE_DATA_STRATEGY;
-    static final HttpExecutionStrategy DEFAULT_BLOCKING_STREAMING_SERVICE_STRATEGY = OFFLOAD_RECEIVE_META_STRATEGY;
-
-    /**
-     * For aggregation, we invoke the user callback (Single from client#request()) after the payload is completed,
-     * hence we need to offload data.
-     */
-    static final HttpExecutionStrategy DEFAULT_CLIENT_STRATEGY = OFFLOAD_RECEIVE_DATA_STRATEGY;
-    static final HttpExecutionStrategy DEFAULT_BLOCKING_CLIENT_STRATEGY = OFFLOAD_NONE_STRATEGY;
-    static final HttpExecutionStrategy DEFAULT_BLOCKING_STREAMING_CLIENT_STRATEGY = OFFLOAD_SEND_STRATEGY;
 
     private HttpApiConversions() {
         // no instances
@@ -175,8 +154,7 @@ public final class HttpApiConversions {
      */
     public static ServiceAdapterHolder toStreamingHttpService(HttpService service,
                                                               HttpExecutionStrategyInfluencer influencer) {
-        return new DefaultServiceAdapterHolder(new ServiceToStreamingService(service),
-                influencer.influenceStrategy(DEFAULT_SERVICE_STRATEGY));
+        return new ServiceToStreamingService(service, influencer);
     }
 
     /**
@@ -189,8 +167,7 @@ public final class HttpApiConversions {
      */
     public static ServiceAdapterHolder toStreamingHttpService(BlockingStreamingHttpService service,
                                                               HttpExecutionStrategyInfluencer influencer) {
-        return new DefaultServiceAdapterHolder(new BlockingStreamingToStreamingService(service),
-                influencer.influenceStrategy(DEFAULT_BLOCKING_STREAMING_SERVICE_STRATEGY));
+        return new BlockingStreamingToStreamingService(service, influencer);
     }
 
     /**
@@ -203,8 +180,7 @@ public final class HttpApiConversions {
      */
     public static ServiceAdapterHolder toStreamingHttpService(BlockingHttpService service,
                                                               HttpExecutionStrategyInfluencer influencer) {
-        return new DefaultServiceAdapterHolder(new BlockingToStreamingService(service),
-                influencer.influenceStrategy(DEFAULT_BLOCKING_SERVICE_STRATEGY));
+        return new BlockingToStreamingService(service, influencer);
     }
 
     /**
@@ -219,35 +195,13 @@ public final class HttpApiConversions {
          *
          * @return {@link StreamingHttpService} that adapts another {@code service} to the streaming programming model.
          */
-        StreamingHttpService service();
+        StreamingHttpService adaptor();
 
         /**
-         * {@link HttpExecutionStrategy} that should be used to invoke the service returned by {@link #service()}.
+         * {@link HttpExecutionStrategy} that should be used to invoke the service returned by {@link #adaptor()}.
          *
          * @return {@link HttpExecutionStrategy} for this adapter.
          */
         HttpExecutionStrategy serviceInvocationStrategy();
-    }
-
-    private static final class DefaultServiceAdapterHolder implements ServiceAdapterHolder {
-
-        private final StreamingHttpService service;
-        private final HttpExecutionStrategy serviceInvocationStrategy;
-
-        DefaultServiceAdapterHolder(final StreamingHttpService service,
-                                    final HttpExecutionStrategy serviceInvocationStrategy) {
-            this.service = service;
-            this.serviceInvocationStrategy = serviceInvocationStrategy;
-        }
-
-        @Override
-        public StreamingHttpService service() {
-            return service;
-        }
-
-        @Override
-        public HttpExecutionStrategy serviceInvocationStrategy() {
-            return serviceInvocationStrategy;
-        }
     }
 }

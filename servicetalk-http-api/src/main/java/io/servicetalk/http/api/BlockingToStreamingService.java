@@ -20,12 +20,15 @@ import io.servicetalk.concurrent.api.Single;
 
 import static io.servicetalk.http.api.BlockingUtils.blockingToCompletable;
 import static io.servicetalk.http.api.BlockingUtils.blockingToSingle;
+import static io.servicetalk.http.api.HttpExecutionStrategies.OFFLOAD_RECEIVE_DATA_STRATEGY;
 import static java.util.Objects.requireNonNull;
 
-final class BlockingToStreamingService implements StreamingHttpService {
+final class BlockingToStreamingService extends AbstractServiceAdapterHolder {
+    static final HttpExecutionStrategy DEFAULT_STRATEGY = OFFLOAD_RECEIVE_DATA_STRATEGY;
     private final BlockingHttpService original;
 
-    BlockingToStreamingService(final BlockingHttpService original) {
+    BlockingToStreamingService(final BlockingHttpService original, HttpExecutionStrategyInfluencer influencer) {
+        super(influencer.influenceStrategy(DEFAULT_STRATEGY));
         this.original = requireNonNull(original);
     }
 

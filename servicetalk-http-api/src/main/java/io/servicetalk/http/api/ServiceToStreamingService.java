@@ -18,12 +18,18 @@ package io.servicetalk.http.api;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 
+import static io.servicetalk.http.api.HttpExecutionStrategies.OFFLOAD_RECEIVE_DATA_AND_SEND_STRATEGY;
 import static java.util.Objects.requireNonNull;
 
-final class ServiceToStreamingService implements StreamingHttpService {
+final class ServiceToStreamingService extends AbstractServiceAdapterHolder {
+    /**
+     * For aggregation, we invoke the service after the payload is completed, hence we need to offload data.
+     */
+    private static final HttpExecutionStrategy DEFAULT_STRATEGY = OFFLOAD_RECEIVE_DATA_AND_SEND_STRATEGY;
     private final HttpService original;
 
-    ServiceToStreamingService(final HttpService original) {
+    ServiceToStreamingService(final HttpService original, HttpExecutionStrategyInfluencer influencer) {
+        super(influencer.influenceStrategy(DEFAULT_STRATEGY));
         this.original = requireNonNull(original);
     }
 

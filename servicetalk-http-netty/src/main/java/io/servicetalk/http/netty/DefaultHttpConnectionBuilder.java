@@ -112,7 +112,7 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> extends HttpCon
         final StreamingHttpRequestResponseFactory reqRespFactory =
                 new DefaultStreamingHttpRequestResponseFactory(executionContext.bufferAllocator(),
                         roConfig.headersFactory());
-        influencerChainBuilder.addAt(0, strategy::merge);
+        influencerChainBuilder.prepend(strategy::merge);
         HttpExecutionStrategyInfluencer strategyInfluencer = influencerChainBuilder.build();
 
         StreamingHttpConnectionFilterFactory filterFactory;
@@ -132,17 +132,17 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> extends HttpCon
         return (reservedConnectionsPipelineEnabled(roConfig) ?
                 buildStreaming(executionContext, resolvedAddress, roConfig).map(conn -> {
                     FilterableStreamingHttpConnection limitedConn = new ConcurrentRequestsHttpConnectionFilter(
-                            new PipelinedStreamingHttpConnection(conn, roConfig, executionContext, reqRespFactory,
-                                    strategy), roConfig.maxPipelinedRequests());
+                            new PipelinedStreamingHttpConnection(conn, roConfig, executionContext, reqRespFactory
+                            ), roConfig.maxPipelinedRequests());
                     return finalFilterFactory == null ? limitedConn : finalFilterFactory.create(limitedConn);
                 }) :
                 buildStreaming(executionContext, resolvedAddress, roConfig).map(conn -> {
                     FilterableStreamingHttpConnection limitedConn = new ConcurrentRequestsHttpConnectionFilter(
-                            new NonPipelinedStreamingHttpConnection(conn, roConfig, executionContext, reqRespFactory,
-                                    strategy), roConfig.maxPipelinedRequests());
+                            new NonPipelinedStreamingHttpConnection(conn, roConfig, executionContext, reqRespFactory
+                            ), roConfig.maxPipelinedRequests());
                     return finalFilterFactory == null ? limitedConn : finalFilterFactory.create(limitedConn);
                 })
-                ).map(conn -> new DefaultStreamingHttpConnection(conn, strategy, strategyInfluencer));
+                ).map(conn -> new FilterableConnectionToConnection(conn, strategy, strategyInfluencer));
     }
 
     // TODO(derek): Temporary, so we can re-enable the ability to create non-pipelined connections for perf testing.

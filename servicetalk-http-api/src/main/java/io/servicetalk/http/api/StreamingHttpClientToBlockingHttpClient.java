@@ -21,8 +21,8 @@ import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ExecutionContext;
 
 import static io.servicetalk.http.api.BlockingUtils.blockingInvocation;
-import static io.servicetalk.http.api.HttpApiConversions.DEFAULT_BLOCKING_CLIENT_STRATEGY;
 import static io.servicetalk.http.api.RequestResponseFactories.toAggregated;
+import static io.servicetalk.http.api.StreamingHttpConnectionToBlockingHttpConnection.DEFAULT_BLOCKING_CONNECTION_STRATEGY;
 import static java.util.Objects.requireNonNull;
 
 final class StreamingHttpClientToBlockingHttpClient implements BlockingHttpClient {
@@ -32,7 +32,7 @@ final class StreamingHttpClientToBlockingHttpClient implements BlockingHttpClien
 
     StreamingHttpClientToBlockingHttpClient(final StreamingHttpClient client,
                                             final HttpExecutionStrategyInfluencer influencer) {
-        strategy = influencer.influenceStrategy(DEFAULT_BLOCKING_CLIENT_STRATEGY);
+        strategy = influencer.influenceStrategy(DEFAULT_BLOCKING_CONNECTION_STRATEGY);
         this.client = client;
         reqRespFactory = toAggregated(client);
     }
@@ -93,7 +93,8 @@ final class StreamingHttpClientToBlockingHttpClient implements BlockingHttpClien
 
         ReservedStreamingHttpConnectionToReservedBlockingHttpConnection(
                 ReservedStreamingHttpConnection connection, final HttpExecutionStrategyInfluencer influencer) {
-            this(connection, influencer.influenceStrategy(DEFAULT_BLOCKING_CLIENT_STRATEGY), toAggregated(connection));
+            this(connection, influencer.influenceStrategy(DEFAULT_BLOCKING_CONNECTION_STRATEGY),
+                    toAggregated(connection));
         }
 
         ReservedStreamingHttpConnectionToReservedBlockingHttpConnection(ReservedStreamingHttpConnection connection,

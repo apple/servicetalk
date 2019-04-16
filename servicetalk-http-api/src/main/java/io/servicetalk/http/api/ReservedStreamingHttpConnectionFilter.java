@@ -23,9 +23,7 @@ import io.servicetalk.http.api.StreamingHttpClientToBlockingStreamingHttpClient.
 import io.servicetalk.http.api.StreamingHttpClientToHttpClient.ReservedStreamingHttpConnectionToReservedHttpConnection;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ExecutionContext;
-import io.servicetalk.transport.api.ExecutionStrategy;
 
-import static io.servicetalk.http.api.HttpExecutionStrategies.OFFLOAD_ALL_STRATEGY;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static java.util.Objects.requireNonNull;
 
@@ -156,17 +154,5 @@ public class ReservedStreamingHttpConnectionFilter implements ReservedStreamingH
                                                     final HttpExecutionStrategy strategy,
                                                     final StreamingHttpRequest request) {
         return delegate.request(strategy, request);
-    }
-
-    /**
-     * The {@link ExecutionStrategy} considering the programming constraints of this {@link StreamingHttpServiceFilter}
-     * in isolation. This strategy should be the "least common denominator" for example if any blocking is done this
-     * method should reflect that.
-     *
-     * @return The {@link ExecutionStrategy} considering the programming constraints of this
-     * {@link StreamingHttpServiceFilter} in isolation.
-     */
-    protected HttpExecutionStrategy executionStrategy() {
-        return OFFLOAD_ALL_STRATEGY;
     }
 }

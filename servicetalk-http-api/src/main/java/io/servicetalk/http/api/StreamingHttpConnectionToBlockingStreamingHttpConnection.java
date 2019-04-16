@@ -21,17 +21,18 @@ import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ExecutionContext;
 
 import static io.servicetalk.http.api.BlockingUtils.blockingInvocation;
-import static io.servicetalk.http.api.HttpApiConversions.DEFAULT_BLOCKING_STREAMING_CLIENT_STRATEGY;
+import static io.servicetalk.http.api.HttpExecutionStrategies.OFFLOAD_SEND_STRATEGY;
 import static io.servicetalk.http.api.RequestResponseFactories.toBlockingStreaming;
 
 final class StreamingHttpConnectionToBlockingStreamingHttpConnection implements BlockingStreamingHttpConnection {
+    static final HttpExecutionStrategy DEFAULT_BLOCKING_STREAMING_CONNECTION_STRATEGY = OFFLOAD_SEND_STRATEGY;
     private final StreamingHttpConnection connection;
     private final HttpExecutionStrategy strategy;
     private final BlockingStreamingHttpRequestResponseFactory reqRespFactory;
 
     StreamingHttpConnectionToBlockingStreamingHttpConnection(final StreamingHttpConnection connection,
                                                              final HttpExecutionStrategyInfluencer influencer) {
-        strategy = influencer.influenceStrategy(DEFAULT_BLOCKING_STREAMING_CLIENT_STRATEGY);
+        strategy = influencer.influenceStrategy(DEFAULT_BLOCKING_STREAMING_CONNECTION_STRATEGY);
         this.connection = connection;
         reqRespFactory = toBlockingStreaming(connection);
     }

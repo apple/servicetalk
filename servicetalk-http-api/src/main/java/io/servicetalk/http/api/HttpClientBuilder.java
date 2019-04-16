@@ -28,7 +28,6 @@ import io.servicetalk.transport.api.IoExecutor;
 import java.net.SocketOption;
 import java.util.function.Predicate;
 
-import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.StrategyInfluencerAwareConversions.toConditionalClientFilterFactory;
 
 /**
@@ -39,10 +38,6 @@ import static io.servicetalk.http.api.StrategyInfluencerAwareConversions.toCondi
  * @param <SDE> the type of {@link ServiceDiscovererEvent}
  */
 abstract class HttpClientBuilder<U, R, SDE extends ServiceDiscovererEvent<R>> extends BaseHttpBuilder<R> {
-    /**
-     * An {@link HttpExecutionStrategy} to use when there is none specified on the {@link HttpClientBuilder}.
-     */
-    static final HttpExecutionStrategy DEFAULT_BUILDER_STRATEGY = defaultStrategy();
 
     @Override
     public abstract HttpClientBuilder<U, R, SDE> ioExecutor(IoExecutor ioExecutor);

@@ -45,7 +45,7 @@ final class PipelinedLBHttpConnectionFactory<ResolvedAddress> extends AbstractLB
     public Single<StreamingHttpConnection> newConnection(final ResolvedAddress resolvedAddress) {
         return buildStreaming(executionContext, resolvedAddress, config).map(conn -> {
             FilterableStreamingHttpConnection mappedConnection = new PipelinedStreamingHttpConnection(conn,
-                    config, executionContext, reqRespFactory, streamingStrategy);
+                    config, executionContext, reqRespFactory);
             FilterableStreamingHttpConnection filteredConnection = connectionFilterFunction != null ?
                     connectionFilterFunction.create(mappedConnection) : mappedConnection;
             return new LoadBalancedStreamingHttpConnection(filteredConnection, newController(

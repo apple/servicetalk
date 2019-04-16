@@ -256,7 +256,7 @@ public abstract class HttpServerBuilder {
         } else {
             serviceFilter = serviceFilter.append(factory);
         }
-        if (influencerChainBuilder.appendIfInfluencer(factory) < 0) {
+        if (!influencerChainBuilder.appendIfInfluencer(factory)) {
             influencerChainBuilder.append(defaultStreamingInfluencer());
         }
         return this;
@@ -406,7 +406,7 @@ public abstract class HttpServerBuilder {
      * the server could not be started.
      */
     public final Single<ServerContext> listen(final HttpService service) {
-        influencerChainBuilder.addIfInfluencerAt(0, service);
+        influencerChainBuilder.prependIfInfluencer(service);
         return listenForAdapter(toStreamingHttpService(service, influencerChainBuilder.build(strategy)));
     }
 
@@ -435,7 +435,7 @@ public abstract class HttpServerBuilder {
      * the server could not be started.
      */
     public final Single<ServerContext> listenBlocking(final BlockingHttpService service) {
-        influencerChainBuilder.addIfInfluencerAt(0, service);
+        influencerChainBuilder.prependIfInfluencer(service);
         return listenForAdapter(toStreamingHttpService(service, influencerChainBuilder.build(strategy)));
     }
 
@@ -450,7 +450,7 @@ public abstract class HttpServerBuilder {
      * the server could not be started.
      */
     public final Single<ServerContext> listenBlockingStreaming(final BlockingStreamingHttpService service) {
-        influencerChainBuilder.addIfInfluencerAt(0, service);
+        influencerChainBuilder.prependIfInfluencer(service);
         return listenForAdapter(toStreamingHttpService(service, influencerChainBuilder.build(strategy)));
     }
 
@@ -473,7 +473,7 @@ public abstract class HttpServerBuilder {
                                                       boolean drainRequestPayloadBody);
 
     private Single<ServerContext> listenForAdapter(ServiceAdapterHolder adapterHolder) {
-        return listenForService(adapterHolder.service(), adapterHolder.serviceInvocationStrategy());
+        return listenForService(adapterHolder.adaptor(), adapterHolder.serviceInvocationStrategy());
     }
 
     private Single<ServerContext> listenForService(StreamingHttpService rawService, HttpExecutionStrategy strategy) {

@@ -29,9 +29,9 @@ import static io.servicetalk.http.api.HttpExecutionStrategyInfluencer.defaultStr
 
 final class ClientStrategyInfluencerChainBuilder {
 
-    private StrategyInfluencerChainBuilder connFactoryChain;
-    private StrategyInfluencerChainBuilder connFilterChain;
-    private StrategyInfluencerChainBuilder clientChain;
+    private final StrategyInfluencerChainBuilder connFactoryChain;
+    private final StrategyInfluencerChainBuilder connFilterChain;
+    private final StrategyInfluencerChainBuilder clientChain;
 
     ClientStrategyInfluencerChainBuilder() {
         connFactoryChain = new StrategyInfluencerChainBuilder();
@@ -46,35 +46,35 @@ final class ClientStrategyInfluencerChainBuilder {
     }
 
     void add(MultiAddressHttpClientFilterFactory<?> multiAddressHttpClientFilter) {
-        if (clientChain.appendIfInfluencer(multiAddressHttpClientFilter) < 0) {
+        if (!clientChain.appendIfInfluencer(multiAddressHttpClientFilter)) {
             // If the filter is not influencing strategy, then the default is to offload all.
             clientChain.append(defaultStreamingInfluencer());
         }
     }
 
     void add(StreamingHttpClientFilterFactory clientFilter) {
-        if (clientChain.appendIfInfluencer(clientFilter) < 0) {
+        if (!clientChain.appendIfInfluencer(clientFilter)) {
             // If the filter is not influencing strategy, then the default is to offload all.
             clientChain.append(defaultStreamingInfluencer());
         }
     }
 
     void add(LoadBalancerFactory<?, StreamingHttpConnection> lb) {
-        if (!clientChain.addIfInfluencerAt(0, lb)) {
+        if (!clientChain.prependIfInfluencer(lb)) {
             // If the load balancer is not influencing strategy, then the default is to offload all.
-            clientChain.addAt(0, defaultStreamingInfluencer());
+            clientChain.prepend(defaultStreamingInfluencer());
         }
     }
 
     void add(ConnectionFactoryFilter<?, StreamingHttpConnection> connectionFactoryFilter) {
-        if (connFactoryChain.appendIfInfluencer(connectionFactoryFilter) < 0) {
+        if (!connFactoryChain.appendIfInfluencer(connectionFactoryFilter)) {
             // If the filter is not influencing strategy, then the default is to offload all.
             connFactoryChain.append(defaultStreamingInfluencer());
         }
     }
 
     void add(StreamingHttpConnectionFilterFactory connectionFilter) {
-        if (connFilterChain.appendIfInfluencer(connectionFilter) < 0) {
+        if (!connFilterChain.appendIfInfluencer(connectionFilter)) {
             // If the filter is not influencing strategy, then the default is to offload all.
             connFilterChain.append(defaultStreamingInfluencer());
         }

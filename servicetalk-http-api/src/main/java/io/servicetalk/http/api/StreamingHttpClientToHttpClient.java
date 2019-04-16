@@ -22,8 +22,8 @@ import io.servicetalk.http.api.FilterableStreamingHttpConnection.SettingKey;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ExecutionContext;
 
-import static io.servicetalk.http.api.HttpApiConversions.DEFAULT_CLIENT_STRATEGY;
 import static io.servicetalk.http.api.RequestResponseFactories.toAggregated;
+import static io.servicetalk.http.api.StreamingHttpConnectionToHttpConnection.DEFAULT_CONNECTION_STRATEGY;
 import static java.util.Objects.requireNonNull;
 
 final class StreamingHttpClientToHttpClient implements HttpClient {
@@ -33,7 +33,7 @@ final class StreamingHttpClientToHttpClient implements HttpClient {
 
     StreamingHttpClientToHttpClient(final StreamingHttpClient client,
                                     final HttpExecutionStrategyInfluencer influencer) {
-        strategy = influencer.influenceStrategy(DEFAULT_CLIENT_STRATEGY);
+        strategy = influencer.influenceStrategy(DEFAULT_CONNECTION_STRATEGY);
         this.client = client;
         reqRespFactory = toAggregated(client);
     }
@@ -108,7 +108,7 @@ final class StreamingHttpClientToHttpClient implements HttpClient {
 
         ReservedStreamingHttpConnectionToReservedHttpConnection(ReservedStreamingHttpConnection connection,
                                                                 final HttpExecutionStrategyInfluencer influencer) {
-            this(connection, influencer.influenceStrategy(DEFAULT_CLIENT_STRATEGY),
+            this(connection, influencer.influenceStrategy(DEFAULT_CONNECTION_STRATEGY),
                     toAggregated(connection));
         }
 

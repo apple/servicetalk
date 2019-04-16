@@ -38,19 +38,23 @@ import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.safeOnError;
 import static io.servicetalk.http.api.BlockingUtils.blockingToCompletable;
+import static io.servicetalk.http.api.HttpExecutionStrategies.OFFLOAD_RECEIVE_META_STRATEGY;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.StreamingHttpResponses.newResponseWithTrailers;
 import static java.lang.Thread.currentThread;
 import static java.util.Objects.requireNonNull;
 
-final class BlockingStreamingToStreamingService implements StreamingHttpService {
+final class BlockingStreamingToStreamingService extends AbstractServiceAdapterHolder {
 
+    private static final HttpExecutionStrategy DEFAULT_STRATEGY = OFFLOAD_RECEIVE_META_STRATEGY;
     private static final Logger LOGGER =
             LoggerFactory.getLogger(BlockingStreamingToStreamingService.class);
 
     private final BlockingStreamingHttpService original;
 
-    BlockingStreamingToStreamingService(final BlockingStreamingHttpService original) {
+    BlockingStreamingToStreamingService(final BlockingStreamingHttpService original,
+                                        final HttpExecutionStrategyInfluencer influencer) {
+        super(influencer.influenceStrategy(DEFAULT_STRATEGY));
         this.original = requireNonNull(original);
     }
 

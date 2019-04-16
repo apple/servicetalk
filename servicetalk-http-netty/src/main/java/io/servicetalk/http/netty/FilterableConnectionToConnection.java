@@ -36,14 +36,14 @@ import static io.servicetalk.http.api.HttpApiConversions.toBlockingConnection;
 import static io.servicetalk.http.api.HttpApiConversions.toBlockingStreamingConnection;
 import static io.servicetalk.http.api.HttpApiConversions.toConnection;
 
-final class DefaultStreamingHttpConnection implements StreamingHttpConnection {
+final class FilterableConnectionToConnection implements StreamingHttpConnection {
     private final FilterableStreamingHttpConnection filteredConnection;
     private final HttpExecutionStrategy streamingStrategy;
     private final HttpExecutionStrategyInfluencer strategyInfluencer;
 
-    DefaultStreamingHttpConnection(final FilterableStreamingHttpConnection filteredConnection,
-                                   final HttpExecutionStrategy streamingStrategy,
-                                   final HttpExecutionStrategyInfluencer strategyInfluencer) {
+    FilterableConnectionToConnection(final FilterableStreamingHttpConnection filteredConnection,
+                                     final HttpExecutionStrategy streamingStrategy,
+                                     final HttpExecutionStrategyInfluencer strategyInfluencer) {
         this.filteredConnection = filteredConnection;
         this.streamingStrategy = streamingStrategy;
         this.strategyInfluencer = strategyInfluencer;
