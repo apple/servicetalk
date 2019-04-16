@@ -17,7 +17,6 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.concurrent.api.AsyncContext;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpServerBuilder;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpRequest;
@@ -30,7 +29,6 @@ import org.junit.Test;
 
 import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.concurrent.api.Single.succeeded;
-import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static java.lang.Thread.currentThread;
 
@@ -79,33 +77,26 @@ public class StreamingHttpServiceAsyncContextTest extends AbstractHttpServiceAsy
     @Override
     protected ServerContext serverWithEmptyAsyncContextService(HttpServerBuilder serverBuilder,
                                                                boolean useImmediate) throws Exception {
-        return serverBuilder.listenStreamingAndAwait(newEmptyAsyncContextService(useImmediate));
+        if (useImmediate) {
+            serverBuilder.executionStrategy(noOffloadsStrategy());
+        }
+        return serverBuilder.listenStreamingAndAwait(newEmptyAsyncContextService());
     }
 
-    private static StreamingHttpService newEmptyAsyncContextService(final boolean noOffloads) {
-        return new StreamingHttpService() {
-            @Override
-            public Single<StreamingHttpResponse> handle(
-                    final HttpServiceContext ctx, final StreamingHttpRequest request,
-                    final StreamingHttpResponseFactory factory) {
-                request.payloadBody().ignoreElements().subscribe();
+    private static StreamingHttpService newEmptyAsyncContextService() {
+        return (ctx, request, factory) -> {
+            request.payloadBody().ignoreElements().subscribe();
 
-                if (!AsyncContext.isEmpty()) {
-                    return succeeded(factory.internalServerError());
-                }
-                CharSequence requestId = request.headers().getAndRemove(REQUEST_ID_HEADER);
-                if (requestId != null) {
-                    AsyncContext.put(K1, requestId);
-                    return succeeded(factory.ok()
-                            .setHeader(REQUEST_ID_HEADER, requestId));
-                } else {
-                    return succeeded(factory.badRequest());
-                }
+            if (!AsyncContext.isEmpty()) {
+                return succeeded(factory.internalServerError());
             }
-
-            @Override
-            public HttpExecutionStrategy computeExecutionStrategy(HttpExecutionStrategy other) {
-                return other.merge(noOffloads ? noOffloadsStrategy() : defaultStrategy());
+            CharSequence requestId = request.headers().getAndRemove(REQUEST_ID_HEADER);
+            if (requestId != null) {
+                AsyncContext.put(K1, requestId);
+                return succeeded(factory.ok()
+                        .setHeader(REQUEST_ID_HEADER, requestId));
+            } else {
+                return succeeded(factory.badRequest());
             }
         };
     }
@@ -113,6 +104,9 @@ public class StreamingHttpServiceAsyncContextTest extends AbstractHttpServiceAsy
     @Override
     protected ServerContext serverWithService(HttpServerBuilder serverBuilder,
                                               boolean useImmediate, boolean asyncService) throws Exception {
+        if (useImmediate) {
+            serverBuilder.executionStrategy(noOffloadsStrategy());
+        }
         return serverBuilder.listenStreamingAndAwait(service(useImmediate, asyncService));
     }
 
@@ -124,11 +118,6 @@ public class StreamingHttpServiceAsyncContextTest extends AbstractHttpServiceAsy
                                                         final StreamingHttpResponseFactory responseFactory) {
                 return asyncService ? defer(() -> doHandle(request, responseFactory).subscribeShareContext()) :
                         doHandle(request, responseFactory);
-            }
-
-            @Override
-            public HttpExecutionStrategy computeExecutionStrategy(HttpExecutionStrategy other) {
-                return other.merge(useImmediate ? noOffloadsStrategy() : defaultStrategy());
             }
 
             private Single<StreamingHttpResponse> doHandle(final StreamingHttpRequest request,

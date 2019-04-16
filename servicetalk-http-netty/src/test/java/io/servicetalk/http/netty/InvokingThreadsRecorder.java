@@ -53,7 +53,7 @@ import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.startsWith;
 
 final class InvokingThreadsRecorder<T> {
-    private static final String IO_EXECUTOR_NAME_PREFIX = "io-executor";
+    static final String IO_EXECUTOR_NAME_PREFIX = "io-executor";
 
     @Nullable
     private final HttpExecutionStrategy strategy;
@@ -128,6 +128,11 @@ final class InvokingThreadsRecorder<T> {
         assert invokingThreads != null;
         assertThat("Unexpected thread for point: " + offloadPoint, invokingThreads.get(offloadPoint).getName(),
                 both(not(startsWith(IO_EXECUTOR_NAME_PREFIX))).and(startsWith(executorNamePrefix)));
+    }
+
+    Thread invokingThread(final T offloadPoint) {
+        assert invokingThreads != null;
+        return invokingThreads.get(offloadPoint);
     }
 
     void verifyOffloadCount() {

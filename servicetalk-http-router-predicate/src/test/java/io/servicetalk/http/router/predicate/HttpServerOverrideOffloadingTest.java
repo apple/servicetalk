@@ -21,7 +21,6 @@ import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.HttpClient;
-import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
@@ -76,15 +75,16 @@ public class HttpServerOverrideOffloadingTest {
         ioExecutor = createIoExecutor(new DefaultThreadFactory(IO_EXECUTOR_THREAD_NAME_PREFIX, true,
                 NORM_PRIORITY));
         executor = newCachedThreadExecutor();
-        service1 = new OffloadingTesterService(noOffloadsStrategy(), th -> !isInServerEventLoop(th));
-        service2 = new OffloadingTesterService(defaultStrategy(executor),
-                HttpServerOverrideOffloadingTest::isInServerEventLoop);
+        service1 = new OffloadingTesterService(th -> !isInServerEventLoop(th));
+        service2 = new OffloadingTesterService(HttpServerOverrideOffloadingTest::isInServerEventLoop);
         server = HttpServers.forAddress(localAddress(0))
                 .ioExecutor(ioExecutor)
+                .executionStrategy(noOffloadsStrategy())
                 .listenStreamingAndAwait(new HttpPredicateRouterBuilder()
-                        .executionStrategy(noOffloadsStrategy())
-                        .whenPathStartsWith("/service1").thenRouteTo(service1)
-                        .whenPathStartsWith("/service2").thenRouteTo(service2).buildStreaming());
+                        .whenPathStartsWith("/service1").executionStrategy(noOffloadsStrategy())
+                        .thenRouteTo(service1)
+                        .whenPathStartsWith("/service2").executionStrategy(defaultStrategy(executor))
+                        .thenRouteTo(service2).buildStreaming());
         client = HttpClients.forSingleAddress(serverHostAndPort(server)).build();
     }
 
@@ -110,12 +110,10 @@ public class HttpServerOverrideOffloadingTest {
     private static final class OffloadingTesterService implements StreamingHttpService {
 
         private final AtomicInteger invoked = new AtomicInteger();
-        private final HttpExecutionStrategy strategy;
         private final Predicate<Thread> isInvalidThread;
         private final ConcurrentLinkedQueue<AssertionError> errors;
 
-        private OffloadingTesterService(final HttpExecutionStrategy strategy, final Predicate<Thread> isInvalidThread) {
-            this.strategy = strategy;
+        private OffloadingTesterService(final Predicate<Thread> isInvalidThread) {
             this.isInvalidThread = isInvalidThread;
             errors = new ConcurrentLinkedQueue<>();
         }
@@ -147,11 +145,6 @@ public class HttpServerOverrideOffloadingTest {
                                     "request-n. Thread: " + currentThread()));
                         }
                     })));
-        }
-
-        @Override
-        public HttpExecutionStrategy computeExecutionStrategy(HttpExecutionStrategy other) {
-            return strategy.merge(other);
         }
     }
 }

@@ -23,6 +23,7 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
 
+import static io.servicetalk.http.api.StrategyInfluencerAwareConversions.toClientFactory;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -73,14 +74,7 @@ public interface MultiAddressHttpClientFilterFactory<U> {
      * @return a {@link StreamingHttpClientFilterFactory} function with a provided {@link GroupKey}
      */
     default StreamingHttpClientFilterFactory asClientFilter(U address) {
-        requireNonNull(address);
-        return (client, lbEvents) -> new StreamingHttpClientFilter(create(address, client, lbEvents)) {
-            @Override
-            public HttpExecutionStrategy computeExecutionStrategy(HttpExecutionStrategy other) {
-                // Since this filter does not have any blocking code, we do not need to alter the effective strategy.
-                return delegate().computeExecutionStrategy(other);
-            }
-        };
+        return toClientFactory(address, this);
     }
 
     /**

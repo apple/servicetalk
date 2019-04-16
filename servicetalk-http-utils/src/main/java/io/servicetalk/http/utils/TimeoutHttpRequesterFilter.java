@@ -21,6 +21,7 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpExecutionStrategy;
+import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
 import io.servicetalk.http.api.StreamingHttpClientFilter;
 import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
 import io.servicetalk.http.api.StreamingHttpConnectionFilter;
@@ -38,7 +39,8 @@ import static java.util.Objects.requireNonNull;
  * A filter to enable timeouts for HTTP requests.
  */
 public final class TimeoutHttpRequesterFilter implements StreamingHttpClientFilterFactory,
-                                                         StreamingHttpConnectionFilterFactory {
+                                                         StreamingHttpConnectionFilterFactory,
+                                                         HttpExecutionStrategyInfluencer {
     private final Duration duration;
     @Nullable
     private final Executor timeoutExecutor;
@@ -82,13 +84,7 @@ public final class TimeoutHttpRequesterFilter implements StreamingHttpClientFilt
                                                             final StreamingHttpRequest request) {
                 return TimeoutHttpRequesterFilter.this.request(delegate, strategy, request);
             }
-
-            @Override
-            public HttpExecutionStrategy computeExecutionStrategy(HttpExecutionStrategy other) {
-                // Since this filter does not have any blocking code, we do not need to alter the effective strategy.
-                return delegate().computeExecutionStrategy(other);
-            }
-        };
+       };
     }
 
     @Override
@@ -99,12 +95,12 @@ public final class TimeoutHttpRequesterFilter implements StreamingHttpClientFilt
                                                             final StreamingHttpRequest request) {
                 return TimeoutHttpRequesterFilter.this.request(delegate(), strategy, request);
             }
-
-            @Override
-            public HttpExecutionStrategy computeExecutionStrategy(HttpExecutionStrategy other) {
-                // Since this filter does not have any blocking code, we do not need to alter the effective strategy.
-                return delegate().computeExecutionStrategy(other);
-            }
         };
+    }
+
+    @Override
+    public HttpExecutionStrategy influenceStrategy(final HttpExecutionStrategy strategy) {
+        // No influence since we do not block.
+        return strategy;
     }
 }

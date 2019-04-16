@@ -23,7 +23,6 @@ import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
-import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.ReservedStreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpClient;
@@ -78,6 +77,7 @@ public class FlushStrategyOverrideTest {
         service = new FlushingService();
         serverCtx = HttpServers.forAddress(localAddress(0))
                 .ioExecutor(ctx.ioExecutor())
+                .executionStrategy(noOffloadsStrategy())
                 .listenStreaming(service)
                 .toFuture().get();
         InetSocketAddress serverAddr = (InetSocketAddress) serverCtx.listenAddress();
@@ -160,11 +160,6 @@ public class FlushStrategyOverrideTest {
 
         MockFlushStrategy getLastUsedStrategy() throws InterruptedException {
             return flushStrategies.take();
-        }
-
-        @Override
-        public HttpExecutionStrategy computeExecutionStrategy(HttpExecutionStrategy other) {
-            return noOffloadsStrategy();
         }
     }
 

@@ -18,6 +18,7 @@ package io.servicetalk.http.router.jersey;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.ExecutorRule;
 import io.servicetalk.http.api.HttpExecutionStrategy;
+import io.servicetalk.http.api.HttpServerBuilder;
 import io.servicetalk.http.router.jersey.resources.ExecutionStrategyResources.ResourceDefaultStrategy;
 import io.servicetalk.http.router.jersey.resources.ExecutionStrategyResources.ResourceRouteExecIdStrategy;
 import io.servicetalk.http.router.jersey.resources.ExecutionStrategyResources.ResourceRouteNoOffloadsStrategy;
@@ -88,24 +89,24 @@ public final class ExecutionStrategyTest extends AbstractJerseyStreamingHttpServ
     protected enum TestExecutorStrategy {
         DEFAULT {
             @Override
-            void configureRouterBuilder(final HttpJerseyRouterBuilder builder, final Executor ignored) {
+            void configureRouterBuilder(final HttpServerBuilder builder, final Executor ignored) {
                 // noop
             }
         },
         EXEC {
             @Override
-            void configureRouterBuilder(final HttpJerseyRouterBuilder builder, final Executor executor) {
+            void configureRouterBuilder(final HttpServerBuilder builder, final Executor executor) {
                 builder.executionStrategy(defaultStrategy(executor));
             }
         },
         NO_OFFLOADS {
             @Override
-            void configureRouterBuilder(final HttpJerseyRouterBuilder builder, final Executor ignored) {
+            void configureRouterBuilder(final HttpServerBuilder builder, final Executor ignored) {
                 builder.executionStrategy(noOffloadsStrategy());
             }
         };
 
-        abstract void configureRouterBuilder(HttpJerseyRouterBuilder builder, Executor executor);
+        abstract void configureRouterBuilder(HttpServerBuilder builder, Executor executor);
     }
 
     private static final Map<String, TestExecutorStrategy> ROOT_PATHS_EXEC_STRATS;
@@ -188,10 +189,11 @@ public final class ExecutionStrategyTest extends AbstractJerseyStreamingHttpServ
     }
 
     @Override
-    protected HttpJerseyRouterBuilder configureBuilder(final HttpJerseyRouterBuilder builder) {
-        routerExecutionStrategy.configureRouterBuilder(builder, ROUTER_EXEC.executor());
+    protected void configureBuilder(final HttpServerBuilder serverBuilder,
+                                    final HttpJerseyRouterBuilder jerseyRouterBuilder) {
+        routerExecutionStrategy.configureRouterBuilder(serverBuilder, ROUTER_EXEC.executor());
 
-        return builder.routeExecutionStrategyFactory(
+        jerseyRouterBuilder.routeExecutionStrategyFactory(
                 asFactory(singletonMap("test", defaultStrategy(ROUTE_EXEC.executor()))));
     }
 

@@ -20,6 +20,7 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpExecutionStrategy;
+import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.StreamingHttpClientFilter;
 import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
@@ -42,8 +43,9 @@ import static io.opentracing.tag.Tags.SPAN_KIND_CLIENT;
 /**
  * An HTTP filter that supports open tracing.
  */
-public class TracingHttpRequesterFilter extends AbstractTracingHttpFilter implements
-                                               StreamingHttpClientFilterFactory, StreamingHttpConnectionFilterFactory {
+public class TracingHttpRequesterFilter extends AbstractTracingHttpFilter
+        implements StreamingHttpClientFilterFactory, StreamingHttpConnectionFilterFactory,
+                   HttpExecutionStrategyInfluencer {
 
     /**
      * Create a new instance.
@@ -79,13 +81,7 @@ public class TracingHttpRequesterFilter extends AbstractTracingHttpFilter implem
                                                             final StreamingHttpRequest request) {
                 return Single.defer(() -> trackRequest(delegate, strategy, request));
             }
-
-            @Override
-            public HttpExecutionStrategy computeExecutionStrategy(final HttpExecutionStrategy other) {
-                // Since this filter does not have any blocking code, we do not need to alter the effective strategy.
-                return delegate().computeExecutionStrategy(other);
-            }
-        };
+       };
     }
 
     @Override
@@ -97,13 +93,13 @@ public class TracingHttpRequesterFilter extends AbstractTracingHttpFilter implem
                                                          final StreamingHttpRequest request) {
                 return Single.defer(() -> trackRequest(delegate(), strategy, request));
             }
+       };
+    }
 
-            @Override
-            public HttpExecutionStrategy computeExecutionStrategy(final HttpExecutionStrategy other) {
-                // Since this filter does not have any blocking code, we do not need to alter the effective strategy.
-                return delegate().computeExecutionStrategy(other);
-            }
-        };
+    @Override
+    public HttpExecutionStrategy influenceStrategy(final HttpExecutionStrategy strategy) {
+        // No influence since we do not block.
+        return strategy;
     }
 
     private Single<StreamingHttpResponse> trackRequest(final StreamingHttpRequester delegate,

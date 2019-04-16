@@ -18,39 +18,36 @@ package io.servicetalk.http.api;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 
-import static io.servicetalk.http.api.HttpExecutionStrategies.OFFLOAD_RECEIVE_META_AND_SEND_STRATEGY;
+import static io.servicetalk.http.api.HttpExecutionStrategies.OFFLOAD_RECEIVE_DATA_AND_SEND_STRATEGY;
 import static java.util.Objects.requireNonNull;
 
-final class HttpServiceToStreamingHttpService implements StreamingHttpService {
-    private final HttpService aggregatedService;
+final class ServiceToStreamingService extends AbstractServiceAdapterHolder {
+    /**
+     * For aggregation, we invoke the service after the payload is completed, hence we need to offload data.
+     */
+    private static final HttpExecutionStrategy DEFAULT_STRATEGY = OFFLOAD_RECEIVE_DATA_AND_SEND_STRATEGY;
+    private final HttpService original;
 
-    HttpServiceToStreamingHttpService(final HttpService aggregatedService) {
-        this.aggregatedService = requireNonNull(aggregatedService);
+    ServiceToStreamingService(final HttpService original, HttpExecutionStrategyInfluencer influencer) {
+        super(influencer.influenceStrategy(DEFAULT_STRATEGY));
+        this.original = requireNonNull(original);
     }
 
     @Override
     public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
                                                 final StreamingHttpRequest request,
                                                 final StreamingHttpResponseFactory responseFactory) {
-        return request.toRequest().flatMap(req -> aggregatedService.handle(ctx, req, ctx.responseFactory()))
+        return request.toRequest().flatMap(req -> original.handle(ctx, req, ctx.responseFactory()))
                 .map(HttpResponse::toStreamingResponse);
     }
 
     @Override
     public Completable closeAsync() {
-        return aggregatedService.closeAsync();
+        return original.closeAsync();
     }
 
     @Override
     public Completable closeAsyncGracefully() {
-        return aggregatedService.closeAsyncGracefully();
-    }
-
-    @Override
-    public HttpExecutionStrategy computeExecutionStrategy(HttpExecutionStrategy other) {
-        // Since we are converting to a different programming model, try altering the strategy for the returned service
-        // to contain an appropriate default. We achieve this by merging the expected strategy with the provided
-        // service strategy.
-        return aggregatedService.computeExecutionStrategy(other.merge(OFFLOAD_RECEIVE_META_AND_SEND_STRATEGY));
+        return original.closeAsyncGracefully();
     }
 }

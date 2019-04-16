@@ -22,16 +22,22 @@ import io.servicetalk.http.api.FilterableStreamingHttpConnection.SettingKey;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ExecutionContext;
 
-import static io.servicetalk.http.api.HttpExecutionStrategies.OFFLOAD_RECEIVE_META_STRATEGY;
+import static io.servicetalk.http.api.HttpExecutionStrategies.OFFLOAD_RECEIVE_DATA_STRATEGY;
 import static io.servicetalk.http.api.RequestResponseFactories.toAggregated;
 
 final class StreamingHttpConnectionToHttpConnection implements HttpConnection {
+    /**
+     * For aggregation, we invoke the user callback (Single from client#request()) after the payload is completed,
+     * hence we need to offload data.
+     */
+    static final HttpExecutionStrategy DEFAULT_CONNECTION_STRATEGY = OFFLOAD_RECEIVE_DATA_STRATEGY;
     private final StreamingHttpConnection connection;
     private final HttpExecutionStrategy strategy;
     private final HttpRequestResponseFactory reqRespFactory;
 
-    StreamingHttpConnectionToHttpConnection(final StreamingHttpConnection connection) {
-        strategy = connection.computeExecutionStrategy(OFFLOAD_RECEIVE_META_STRATEGY);
+    StreamingHttpConnectionToHttpConnection(final StreamingHttpConnection connection,
+                                            final HttpExecutionStrategyInfluencer influencer) {
+        strategy = influencer.influenceStrategy(DEFAULT_CONNECTION_STRATEGY);
         this.connection = connection;
         reqRespFactory = toAggregated(connection);
     }
@@ -74,12 +80,6 @@ final class StreamingHttpConnectionToHttpConnection implements HttpConnection {
     @Override
     public void close() throws Exception {
         connection.close();
-    }
-
-    @Override
-    public HttpExecutionStrategy computeExecutionStrategy(final HttpExecutionStrategy other) {
-        // TODO(scott): should we include the API strategy?
-        return connection.computeExecutionStrategy(other);
     }
 
     @Override

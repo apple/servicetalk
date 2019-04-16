@@ -37,9 +37,7 @@ public interface StreamingHttpConnection extends FilterableStreamingHttpConnecti
      * filters are implemented using the {@link StreamingHttpConnection} asynchronous API for maximum portability.
      * @return a {@link HttpConnection} representation of this {@link StreamingHttpConnection}.
      */
-    default HttpConnection asConnection() {
-        return new StreamingHttpConnectionToHttpConnection(this);
-    }
+    HttpConnection asConnection();
 
     /**
      * Convert this {@link StreamingHttpConnection} to the {@link BlockingStreamingHttpConnection} API.
@@ -48,9 +46,7 @@ public interface StreamingHttpConnection extends FilterableStreamingHttpConnecti
      * filters are implemented using the {@link StreamingHttpConnection} asynchronous API for maximum portability.
      * @return a {@link BlockingStreamingHttpConnection} representation of this {@link StreamingHttpConnection}.
      */
-    default BlockingStreamingHttpConnection asBlockingStreamingConnection() {
-        return new StreamingHttpConnectionToBlockingStreamingHttpConnection(this);
-    }
+    BlockingStreamingHttpConnection asBlockingStreamingConnection();
 
     /**
      * Convert this {@link StreamingHttpConnection} to the {@link BlockingHttpConnection} API.
@@ -59,7 +55,5 @@ public interface StreamingHttpConnection extends FilterableStreamingHttpConnecti
      * filters are implemented using the {@link StreamingHttpConnection} asynchronous API for maximum portability.
      * @return a {@link BlockingHttpConnection} representation of this {@link StreamingHttpConnection}.
      */
-    default BlockingHttpConnection asBlockingConnection() {
-        return new StreamingHttpConnectionToBlockingHttpConnection(this);
-    }
+    BlockingHttpConnection asBlockingConnection();
 }

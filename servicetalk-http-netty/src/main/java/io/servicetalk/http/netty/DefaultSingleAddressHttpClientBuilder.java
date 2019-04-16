@@ -27,8 +27,10 @@ import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.HttpExecutionStrategy;
+import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
 import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.LoadBalancerReadyStreamingHttpClientFilter;
+import io.servicetalk.http.api.MultiAddressHttpClientFilterFactory;
 import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
@@ -72,16 +74,17 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
     private final U address;
     private final HttpClientConfig config;
     private final ExecutionContextBuilder executionContextBuilder;
+    private final ClientStrategyInfluencerChainBuilder influencerChainBuilder;
     private HttpExecutionStrategy strategy = defaultStrategy();
     private LoadBalancerFactory<R, StreamingHttpConnection> loadBalancerFactory;
     private ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> serviceDiscoverer;
     @Nullable
-    private Function<U, StreamingHttpClientFilterFactory> hostHeaderFilterFactory =
+    private Function<U, StreamingHttpClientFilterFactory> hostHeaderFilterFactoryFunction =
             DefaultSingleAddressHttpClientBuilder::defaultHostHeaderFilterFactory;
     @Nullable
-    private StreamingHttpConnectionFilterFactory connectionFilterFunction;
+    private StreamingHttpConnectionFilterFactory connectionFilterFactory;
     @Nullable
-    private StreamingHttpClientFilterFactory clientFilterFunction;
+    private StreamingHttpClientFilterFactory clientFilterFactory;
     @Nullable
     private StreamingHttpClientFilterFactory lbReadyFilter = LB_READY_FILTER;
     private ConnectionFactoryFilter<R, StreamingHttpConnection> connectionFactoryFilter =
@@ -91,8 +94,9 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
             final U address, final ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> serviceDiscoverer) {
         this.address = requireNonNull(address);
         config = new HttpClientConfig(new TcpClientConfig(false));
-        this.executionContextBuilder = new ExecutionContextBuilder();
-        this.loadBalancerFactory = newRoundRobinFactory();
+        executionContextBuilder = new ExecutionContextBuilder();
+        influencerChainBuilder = new ClientStrategyInfluencerChainBuilder();
+        this.loadBalancerFactory = new StrategyInfluencingLoadBalancerFactory<>();
         this.serviceDiscoverer = requireNonNull(serviceDiscoverer);
     }
 
@@ -100,7 +104,8 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
             final ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> serviceDiscoverer) {
         address = null; // Unknown address - template builder pending override via: copy(address)
         config = new HttpClientConfig(new TcpClientConfig(false));
-        this.executionContextBuilder = new ExecutionContextBuilder();
+        executionContextBuilder = new ExecutionContextBuilder();
+        influencerChainBuilder = new ClientStrategyInfluencerChainBuilder();
         this.loadBalancerFactory = newRoundRobinFactory();
         this.serviceDiscoverer = requireNonNull(serviceDiscoverer);
     }
@@ -110,12 +115,13 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
         this.address = address;
         config = new HttpClientConfig(from.config);
         executionContextBuilder = new ExecutionContextBuilder(from.executionContextBuilder);
+        influencerChainBuilder = from.influencerChainBuilder.copy();
         this.strategy = from.strategy;
         this.loadBalancerFactory = from.loadBalancerFactory;
         this.serviceDiscoverer = from.serviceDiscoverer;
-        clientFilterFunction = from.clientFilterFunction;
-        connectionFilterFunction = from.connectionFilterFunction;
-        hostHeaderFilterFactory = from.hostHeaderFilterFactory;
+        clientFilterFactory = from.clientFilterFactory;
+        connectionFilterFactory = from.connectionFilterFactory;
+        hostHeaderFilterFactoryFunction = from.hostHeaderFilterFactoryFunction;
         lbReadyFilter = from.lbReadyFilter;
         connectionFactoryFilter = from.connectionFactoryFilter;
     }
@@ -183,9 +189,11 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
                     connectionFactoryFilter.create(closeOnException.prepend(
                             reservedConnectionsPipelineEnabled(roConfig) ?
                             new NonPipelinedLBHttpConnectionFactory<>(roConfig, ctx.executionContext,
-                                    connectionFilterFunction, reqRespFactory, strategy) :
+                                    connectionFilterFactory, reqRespFactory, strategy,
+                                    influencerChainBuilder.buildForConnectionFactory(strategy)) :
                             new PipelinedLBHttpConnectionFactory<>(roConfig, ctx.executionContext,
-                                    connectionFilterFunction, reqRespFactory, strategy)));
+                                    connectionFilterFactory, reqRespFactory, strategy,
+                                    influencerChainBuilder.buildForConnectionFactory(strategy))));
 
             final LoadBalancer<? extends StreamingHttpConnection> lbfUntypedForCast =
                     closeOnException.prepend(loadBalancerFactory.newLoadBalancer(sdEvents, connectionFactory));
@@ -193,30 +201,29 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
             final LoadBalancer<LoadBalancedStreamingHttpConnection> lb =
                     (LoadBalancer<LoadBalancedStreamingHttpConnection>) lbfUntypedForCast;
 
-            StreamingHttpClientFilterFactory currClientFilterFunction;
-            if (clientFilterFunction != null) {
-                currClientFilterFunction = clientFilterFunction;
-                if (lbReadyFilter != null) {
-                    currClientFilterFunction = currClientFilterFunction.append(lbReadyFilter);
+            StreamingHttpClientFilterFactory currClientFilterFactory = clientFilterFactory;
+            if (lbReadyFilter != null) {
+                if (currClientFilterFactory == null) {
+                    currClientFilterFactory = lbReadyFilter;
+                } else {
+                    currClientFilterFactory = currClientFilterFactory.append(lbReadyFilter);
                 }
-                if (hostHeaderFilterFactory != null) {
-                    currClientFilterFunction = currClientFilterFunction.append(hostHeaderFilterFactory.apply(address));
+            }
+            if (hostHeaderFilterFactoryFunction != null) {
+                StreamingHttpClientFilterFactory hostHeaderFilterFactory =
+                        hostHeaderFilterFactoryFunction.apply(address);
+                if (currClientFilterFactory == null) {
+                    currClientFilterFactory = hostHeaderFilterFactory;
+                } else {
+                    currClientFilterFactory = currClientFilterFactory.append(hostHeaderFilterFactory);
                 }
-            } else if (lbReadyFilter != null) {
-                currClientFilterFunction = lbReadyFilter;
-                if (hostHeaderFilterFactory != null) {
-                    currClientFilterFunction = currClientFilterFunction.append(hostHeaderFilterFactory.apply(address));
-                }
-            } else if (hostHeaderFilterFactory != null) {
-                currClientFilterFunction = hostHeaderFilterFactory.apply(address);
-            } else {
-                currClientFilterFunction = null;
             }
 
             final LoadBalancedStreamingHttpClient lbClient = closeOnException.prepend(
-                    new LoadBalancedStreamingHttpClient(ctx.executionContext, lb, strategy, reqRespFactory));
-            return new DefaultStreamingHttpClient(currClientFilterFunction != null ?
-                    currClientFilterFunction.create(lbClient, lb.eventStream()) : lbClient);
+                    new LoadBalancedStreamingHttpClient(ctx.executionContext, lb, reqRespFactory));
+            return new FilterableClientToClient(currClientFilterFactory != null ?
+                    currClientFilterFactory.create(lbClient, lb.eventStream()) : lbClient, strategy,
+                    influencerChainBuilder.buildForClient(strategy));
         } catch (final Throwable t) {
             closeOnException.closeAsync().subscribe();
             throw t;
@@ -241,13 +248,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
     private HttpClientBuildContext<U, R> buildContext0(@Nullable U address) {
 
         final DefaultSingleAddressHttpClientBuilder<U, R> clonedBuilder = address == null ? copy() : copy(address);
-
-        Executor executor = clonedBuilder.strategy.executor();
-        if (executor != null) {
-            clonedBuilder.executionContextBuilder.executor(executor);
-        }
         final ExecutionContext exec = clonedBuilder.executionContextBuilder.build();
-
         final StreamingHttpRequestResponseFactory reqRespFactory =
                 new DefaultStreamingHttpRequestResponseFactory(exec.bufferAllocator(),
                         clonedBuilder.config.headersFactory());
@@ -274,6 +275,10 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
     @Override
     public SingleAddressHttpClientBuilder<U, R> executionStrategy(final HttpExecutionStrategy strategy) {
         this.strategy = strategy;
+        Executor executor = strategy.executor();
+        if (executor != null) {
+            executionContextBuilder.executor(executor);
+        }
         return this;
     }
 
@@ -342,11 +347,12 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
     @Override
     public DefaultSingleAddressHttpClientBuilder<U, R> appendConnectionFilter(
             final StreamingHttpConnectionFilterFactory factory) {
-        if (connectionFilterFunction == null) {
-            connectionFilterFunction = requireNonNull(factory);
+        if (connectionFilterFactory == null) {
+            connectionFilterFactory = requireNonNull(factory);
         } else {
-            connectionFilterFunction = connectionFilterFunction.append(requireNonNull(factory));
+            connectionFilterFactory = connectionFilterFactory.append(requireNonNull(factory));
         }
+        influencerChainBuilder.add(factory);
         return this;
     }
 
@@ -354,12 +360,13 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
     public DefaultSingleAddressHttpClientBuilder<U, R> appendConnectionFactoryFilter(
             final ConnectionFactoryFilter<R, StreamingHttpConnection> factory) {
         connectionFactoryFilter = connectionFactoryFilter.append(factory);
+        influencerChainBuilder.add(factory);
         return this;
     }
 
     @Override
     public DefaultSingleAddressHttpClientBuilder<U, R> disableHostHeaderFallback() {
-        hostHeaderFilterFactory = null;
+        hostHeaderFilterFactoryFunction = null;
         return this;
     }
 
@@ -371,18 +378,19 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
 
     @Override
     public DefaultSingleAddressHttpClientBuilder<U, R> enableHostHeaderFallback(final CharSequence hostHeader) {
-        hostHeaderFilterFactory = address -> new HostHeaderHttpRequesterFilter(hostHeader);
+        hostHeaderFilterFactoryFunction = address -> new HostHeaderHttpRequesterFilter(hostHeader);
         return this;
     }
 
     @Override
     public DefaultSingleAddressHttpClientBuilder<U, R> appendClientFilter(
-            final StreamingHttpClientFilterFactory function) {
-        if (clientFilterFunction == null) {
-            clientFilterFunction = requireNonNull(function);
+            final StreamingHttpClientFilterFactory factory) {
+        if (clientFilterFactory == null) {
+            clientFilterFactory = requireNonNull(factory);
         } else {
-            clientFilterFunction = clientFilterFunction.append(function);
+            clientFilterFactory = clientFilterFactory.append(factory);
         }
+        influencerChainBuilder.add(factory);
         return this;
     }
 
@@ -397,6 +405,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
     public DefaultSingleAddressHttpClientBuilder<U, R> loadBalancerFactory(
             final LoadBalancerFactory<R, StreamingHttpConnection> loadBalancerFactory) {
         this.loadBalancerFactory = requireNonNull(loadBalancerFactory);
+        influencerChainBuilder.add(loadBalancerFactory);
         return this;
     }
 
@@ -404,5 +413,32 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
     public DefaultSingleAddressHttpClientBuilder<U, R> sslConfig(@Nullable final SslConfig sslConfig) {
         config.tcpClientConfig().sslConfig(sslConfig);
         return this;
+    }
+
+    void appendToStrategyInfluencer(MultiAddressHttpClientFilterFactory<U> multiAddressHttpClientFilterFactory) {
+        influencerChainBuilder.add(multiAddressHttpClientFilterFactory);
+    }
+
+    HttpExecutionStrategyInfluencer buildStrategyInfluencerForClient() {
+        return influencerChainBuilder.buildForClient(strategy);
+    }
+
+    private static final class StrategyInfluencingLoadBalancerFactory<R>
+            implements LoadBalancerFactory<R, StreamingHttpConnection>, HttpExecutionStrategyInfluencer {
+
+        private final LoadBalancerFactory<R, StreamingHttpConnection> delegate = newRoundRobinFactory();
+
+        @Override
+        public LoadBalancer<StreamingHttpConnection> newLoadBalancer(
+                final Publisher<? extends ServiceDiscovererEvent<R>> eventPublisher,
+                final ConnectionFactory<R, ? extends StreamingHttpConnection> connectionFactory) {
+            return delegate.newLoadBalancer(eventPublisher, connectionFactory);
+        }
+
+        @Override
+        public HttpExecutionStrategy influenceStrategy(final HttpExecutionStrategy strategy) {
+            // We know that round robin load balancer does not block.
+            return strategy;
+        }
     }
 }

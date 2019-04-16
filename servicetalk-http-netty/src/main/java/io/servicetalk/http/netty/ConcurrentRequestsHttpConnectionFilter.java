@@ -131,11 +131,6 @@ final class ConcurrentRequestsHttpConnectionFilter implements FilterableStreamin
     }
 
     @Override
-    public HttpExecutionStrategy computeExecutionStrategy(final HttpExecutionStrategy other) {
-        return delegate.computeExecutionStrategy(other);
-    }
-
-    @Override
     public Completable onClose() {
         return delegate.onClose();
     }

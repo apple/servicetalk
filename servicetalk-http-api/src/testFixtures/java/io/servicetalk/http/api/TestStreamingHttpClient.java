@@ -23,6 +23,9 @@ import io.servicetalk.transport.api.ExecutionContext;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.emptyAsyncCloseable;
 import static io.servicetalk.concurrent.api.Single.failed;
+import static io.servicetalk.http.api.HttpApiConversions.toBlockingClient;
+import static io.servicetalk.http.api.HttpApiConversions.toBlockingStreamingClient;
+import static io.servicetalk.http.api.HttpApiConversions.toClient;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 
 public final class TestStreamingHttpClient {
@@ -86,8 +89,6 @@ public final class TestStreamingHttpClient {
 
     public static StreamingHttpClient from(FilterableStreamingHttpClient filterChain) {
         return new StreamingHttpClient() {
-            private final HttpExecutionStrategy strategy = filterChain.computeExecutionStrategy(defaultStrategy());
-
             @Override
             public Single<ReservedStreamingHttpConnection> reserveConnection(final HttpExecutionStrategy strategy,
                                                                              final HttpRequestMetaData metaData) {
@@ -136,18 +137,28 @@ public final class TestStreamingHttpClient {
             }
 
             @Override
-            public HttpExecutionStrategy computeExecutionStrategy(final HttpExecutionStrategy other) {
-                return filterChain.computeExecutionStrategy(other);
-            }
-
-            @Override
             public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
-                return filterChain.request(strategy, request);
+                return filterChain.request(defaultStrategy(), request);
             }
 
             @Override
             public Single<ReservedStreamingHttpConnection> reserveConnection(final HttpRequestMetaData metaData) {
-                return filterChain.reserveConnection(strategy, metaData);
+                return filterChain.reserveConnection(defaultStrategy(), metaData);
+            }
+
+            @Override
+            public HttpClient asClient() {
+                return toClient(this, strategy -> strategy);
+            }
+
+            @Override
+            public BlockingStreamingHttpClient asBlockingStreamingClient() {
+                return toBlockingStreamingClient(this, strategy -> strategy);
+            }
+
+            @Override
+            public BlockingHttpClient asBlockingClient() {
+                return toBlockingClient(this, strategy -> strategy);
             }
         };
     }

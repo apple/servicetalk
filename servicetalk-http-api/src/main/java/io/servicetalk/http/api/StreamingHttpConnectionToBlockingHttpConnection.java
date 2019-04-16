@@ -24,12 +24,14 @@ import static io.servicetalk.http.api.HttpExecutionStrategies.OFFLOAD_NONE_STRAT
 import static io.servicetalk.http.api.RequestResponseFactories.toAggregated;
 
 final class StreamingHttpConnectionToBlockingHttpConnection implements BlockingHttpConnection {
+    static final HttpExecutionStrategy DEFAULT_BLOCKING_CONNECTION_STRATEGY = OFFLOAD_NONE_STRATEGY;
     private final StreamingHttpConnection connection;
     private final HttpExecutionStrategy strategy;
     private final HttpRequestResponseFactory reqRespFactory;
 
-    StreamingHttpConnectionToBlockingHttpConnection(final StreamingHttpConnection connection) {
-        strategy = connection.computeExecutionStrategy(OFFLOAD_NONE_STRATEGY);
+    StreamingHttpConnectionToBlockingHttpConnection(final StreamingHttpConnection connection,
+                                                    final HttpExecutionStrategyInfluencer influencer) {
+        strategy = influencer.influenceStrategy(DEFAULT_BLOCKING_CONNECTION_STRATEGY);
         this.connection = connection;
         reqRespFactory = toAggregated(connection);
     }
@@ -72,12 +74,6 @@ final class StreamingHttpConnectionToBlockingHttpConnection implements BlockingH
     @Override
     public void close() throws Exception {
         connection.close();
-    }
-
-    @Override
-    public HttpExecutionStrategy computeExecutionStrategy(final HttpExecutionStrategy other) {
-        // TODO(scott): should we include the API strategy?
-        return connection.computeExecutionStrategy(other);
     }
 
     @Override

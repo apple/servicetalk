@@ -46,16 +46,13 @@ final class LoadBalancedStreamingHttpClient implements FilterableStreamingHttpCl
     private final ExecutionContext executionContext;
     private final LoadBalancer<LoadBalancedStreamingHttpConnection> loadBalancer;
     private final StreamingHttpRequestResponseFactory reqRespFactory;
-    private final HttpExecutionStrategy strategy;
 
     LoadBalancedStreamingHttpClient(final ExecutionContext executionContext,
                                     final LoadBalancer<LoadBalancedStreamingHttpConnection> loadBalancer,
-                                    final HttpExecutionStrategy strategy,
                                     final StreamingHttpRequestResponseFactory reqRespFactory) {
         this.executionContext = requireNonNull(executionContext);
         this.loadBalancer = requireNonNull(loadBalancer);
         this.reqRespFactory = requireNonNull(reqRespFactory);
-        this.strategy = requireNonNull(strategy);
     }
 
     @Override
@@ -76,13 +73,6 @@ final class LoadBalancedStreamingHttpClient implements FilterableStreamingHttpCl
                                                                      final HttpRequestMetaData metaData) {
         return strategy.offloadReceive(executionContext.executor(),
                 loadBalancer.selectConnection(SELECTOR_FOR_RESERVE).map(c -> c));
-    }
-
-    @Override
-    public HttpExecutionStrategy computeExecutionStrategy(HttpExecutionStrategy other) {
-        // TODO(scott): this will not represent the strategy from the Connection. That means the computed strategy
-        // may not reflect the full execution path.
-        return strategy.merge(other);
     }
 
     @Override

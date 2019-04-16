@@ -44,15 +44,13 @@ abstract class AbstractStreamingHttpConnection<CC extends NettyConnectionContext
     final ExecutionContext executionContext;
     private final Publisher<Integer> maxConcurrencySetting;
     private final StreamingHttpRequestResponseFactory reqRespFactory;
-    private final HttpExecutionStrategy strategy;
 
     AbstractStreamingHttpConnection(
             CC conn, ReadOnlyHttpClientConfig config, ExecutionContext executionContext,
-            StreamingHttpRequestResponseFactory reqRespFactory, HttpExecutionStrategy strategy) {
+            StreamingHttpRequestResponseFactory reqRespFactory) {
         this.connection = requireNonNull(conn);
         this.executionContext = requireNonNull(executionContext);
         this.reqRespFactory = requireNonNull(reqRespFactory);
-        this.strategy = requireNonNull(strategy);
         maxConcurrencySetting = from(config.maxPipelinedRequests())
                 .concat(connection.onClosing()).concat(Single.succeeded(0));
     }
@@ -81,11 +79,6 @@ abstract class AbstractStreamingHttpConnection<CC extends NettyConnectionContext
                                                  final StreamingHttpRequest request) {
         addRequestTransferEncodingIfNecessary(request); // See https://tools.ietf.org/html/rfc7230#section-3.3.3
         return strategy.invokeClient(executionContext.executor(), request, this);
-    }
-
-    @Override
-    public final HttpExecutionStrategy computeExecutionStrategy(HttpExecutionStrategy other) {
-        return strategy.merge(other);
     }
 
     @Override

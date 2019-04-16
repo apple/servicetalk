@@ -25,7 +25,6 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
-import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.ReservedStreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpClient;
@@ -93,9 +92,10 @@ public class HttpOffloadingTest {
 
     @Before
     public void beforeTest() throws Exception {
-        service = new OffloadingVerifyingServiceStreaming(defaultStrategy(SERVER_CTX.executor()));
+        service = new OffloadingVerifyingServiceStreaming();
         serverContext = HttpServers.forAddress(localAddress(0))
                 .ioExecutor(SERVER_CTX.ioExecutor())
+                .executionStrategy(defaultStrategy(SERVER_CTX.executor()))
                 .listenStreamingAndAwait(service);
 
         errors = new ConcurrentLinkedQueue<>();
@@ -335,11 +335,6 @@ public class HttpOffloadingTest {
     private static final class OffloadingVerifyingServiceStreaming implements StreamingHttpService {
 
         private final Collection<Throwable> errors = new ConcurrentLinkedQueue<>();
-        private final HttpExecutionStrategy strategy;
-
-        OffloadingVerifyingServiceStreaming(final HttpExecutionStrategy strategy) {
-            this.strategy = strategy;
-        }
 
         @Override
         public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
@@ -366,11 +361,6 @@ public class HttpOffloadingTest {
                                 }
                             });
             return succeeded(factory.ok().payloadBody(responsePayload));
-        }
-
-        @Override
-        public HttpExecutionStrategy computeExecutionStrategy(HttpExecutionStrategy other) {
-            return strategy.merge(other);
         }
     }
 }

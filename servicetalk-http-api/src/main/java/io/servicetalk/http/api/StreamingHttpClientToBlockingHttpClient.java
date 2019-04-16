@@ -21,8 +21,8 @@ import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ExecutionContext;
 
 import static io.servicetalk.http.api.BlockingUtils.blockingInvocation;
-import static io.servicetalk.http.api.HttpExecutionStrategies.OFFLOAD_NONE_STRATEGY;
 import static io.servicetalk.http.api.RequestResponseFactories.toAggregated;
+import static io.servicetalk.http.api.StreamingHttpConnectionToBlockingHttpConnection.DEFAULT_BLOCKING_CONNECTION_STRATEGY;
 import static java.util.Objects.requireNonNull;
 
 final class StreamingHttpClientToBlockingHttpClient implements BlockingHttpClient {
@@ -30,8 +30,9 @@ final class StreamingHttpClientToBlockingHttpClient implements BlockingHttpClien
     private final HttpExecutionStrategy strategy;
     private final HttpRequestResponseFactory reqRespFactory;
 
-    StreamingHttpClientToBlockingHttpClient(final StreamingHttpClient client) {
-        strategy = client.computeExecutionStrategy(OFFLOAD_NONE_STRATEGY);
+    StreamingHttpClientToBlockingHttpClient(final StreamingHttpClient client,
+                                            final HttpExecutionStrategyInfluencer influencer) {
+        strategy = influencer.influenceStrategy(DEFAULT_BLOCKING_CONNECTION_STRATEGY);
         this.client = client;
         reqRespFactory = toAggregated(client);
     }
@@ -80,12 +81,6 @@ final class StreamingHttpClientToBlockingHttpClient implements BlockingHttpClien
     }
 
     @Override
-    public HttpExecutionStrategy computeExecutionStrategy(final HttpExecutionStrategy other) {
-        // TODO(scott): should we include the API strategy?
-        return client.computeExecutionStrategy(other);
-    }
-
-    @Override
     public HttpRequest newRequest(final HttpRequestMethod method, final String requestTarget) {
         return reqRespFactory.newRequest(method, requestTarget);
     }
@@ -96,8 +91,10 @@ final class StreamingHttpClientToBlockingHttpClient implements BlockingHttpClien
         private final HttpExecutionStrategy strategy;
         private final HttpRequestResponseFactory reqRespFactory;
 
-        ReservedStreamingHttpConnectionToReservedBlockingHttpConnection(ReservedStreamingHttpConnection connection) {
-            this(connection, connection.computeExecutionStrategy(OFFLOAD_NONE_STRATEGY), toAggregated(connection));
+        ReservedStreamingHttpConnectionToReservedBlockingHttpConnection(
+                ReservedStreamingHttpConnection connection, final HttpExecutionStrategyInfluencer influencer) {
+            this(connection, influencer.influenceStrategy(DEFAULT_BLOCKING_CONNECTION_STRATEGY),
+                    toAggregated(connection));
         }
 
         ReservedStreamingHttpConnectionToReservedBlockingHttpConnection(ReservedStreamingHttpConnection connection,
@@ -151,12 +148,6 @@ final class StreamingHttpClientToBlockingHttpClient implements BlockingHttpClien
         @Override
         public void close() throws Exception {
             connection.close();
-        }
-
-        @Override
-        public HttpExecutionStrategy computeExecutionStrategy(final HttpExecutionStrategy other) {
-            // TODO(scott): should we include the API strategy?
-            return connection.computeExecutionStrategy(other);
         }
 
         @Override

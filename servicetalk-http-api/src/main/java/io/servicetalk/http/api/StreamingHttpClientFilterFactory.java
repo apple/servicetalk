@@ -18,6 +18,7 @@ package io.servicetalk.http.api;
 import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.concurrent.api.Publisher;
 
+import static io.servicetalk.http.api.StrategyInfluencerAwareConversions.toMultiAddressClientFactory;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -64,12 +65,6 @@ public interface StreamingHttpClientFilterFactory {
      * @return a {@link MultiAddressHttpClientFilterFactory} function
      */
     default <U> MultiAddressHttpClientFilterFactory<U> asMultiAddressClientFilter() {
-        return (address, client, lbEvents) -> new StreamingHttpClientFilter(create(client, lbEvents)) {
-            @Override
-            public HttpExecutionStrategy computeExecutionStrategy(HttpExecutionStrategy other) {
-                // Since this filter does not have any blocking code, we do not need to alter the effective strategy.
-                return delegate().computeExecutionStrategy(other);
-            }
-        };
+        return toMultiAddressClientFactory(this);
     }
 }

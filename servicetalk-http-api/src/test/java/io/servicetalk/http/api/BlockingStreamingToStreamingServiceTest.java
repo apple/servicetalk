@@ -23,6 +23,7 @@ import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.ExecutorRule;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
+import io.servicetalk.http.api.HttpApiConversions.ServiceAdapterHolder;
 import io.servicetalk.oio.api.PayloadWriter;
 import io.servicetalk.transport.api.ExecutionContext;
 
@@ -55,7 +56,6 @@ import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.concurrent.internal.PlatformDependent.throwException;
 import static io.servicetalk.http.api.HttpApiConversions.toStreamingHttpService;
-import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpHeaderNames.TRAILER;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpResponseStatus.NO_CONTENT;
@@ -71,7 +71,7 @@ import static org.junit.Assert.fail;
 import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
-public class BlockingStreamingHttpServiceToStreamingHttpServiceTest {
+public class BlockingStreamingToStreamingServiceTest {
 
     private static final String X_TOTAL_LENGTH = "x-total-length";
     private static final String HELLO_WORLD = "Hello\nWorld\n";
@@ -98,14 +98,7 @@ public class BlockingStreamingHttpServiceToStreamingHttpServiceTest {
 
     @Test
     public void defaultResponseStatusNoPayload() throws Exception {
-        BlockingStreamingHttpService syncService = new BlockingStreamingHttpService() {
-            @Override
-            public void handle(final HttpServiceContext ctx,
-                               final BlockingStreamingHttpRequest request,
-                               final BlockingStreamingHttpServerResponse response) throws Exception {
-                response.sendMetaData().close();
-            }
-        };
+        BlockingStreamingHttpService syncService = (ctx, request, response) -> response.sendMetaData().close();
 
         List<Object> response = invokeService(syncService, reqRespFactory.get("/"));
         assertMetaData(OK, response);
@@ -115,14 +108,8 @@ public class BlockingStreamingHttpServiceToStreamingHttpServiceTest {
 
     @Test
     public void customResponseStatusNoPayload() throws Exception {
-        BlockingStreamingHttpService syncService = new BlockingStreamingHttpService() {
-            @Override
-            public void handle(final HttpServiceContext ctx,
-                               final BlockingStreamingHttpRequest request,
-                               final BlockingStreamingHttpServerResponse response) throws Exception {
+        BlockingStreamingHttpService syncService = (ctx, request, response) ->
                 response.status(NO_CONTENT).sendMetaData().close();
-            }
-        };
 
         List<Object> response = invokeService(syncService, reqRespFactory.get("/"));
         assertMetaData(NO_CONTENT, response);
@@ -133,14 +120,9 @@ public class BlockingStreamingHttpServiceToStreamingHttpServiceTest {
     @Test
     public void receivePayloadBody() throws Exception {
         StringBuilder receivedPayload = new StringBuilder();
-        BlockingStreamingHttpService syncService = new BlockingStreamingHttpService() {
-            @Override
-            public void handle(final HttpServiceContext ctx,
-                               final BlockingStreamingHttpRequest request,
-                               final BlockingStreamingHttpServerResponse response) throws Exception {
-                request.payloadBody().forEach(chunk -> receivedPayload.append(chunk.toString(US_ASCII)));
-                response.sendMetaData().close();
-            }
+        BlockingStreamingHttpService syncService = (ctx, request, response) -> {
+            request.payloadBody().forEach(chunk -> receivedPayload.append(chunk.toString(US_ASCII)));
+            response.sendMetaData().close();
         };
 
         List<Object> response = invokeService(syncService, reqRespFactory.post("/")
@@ -154,15 +136,10 @@ public class BlockingStreamingHttpServiceToStreamingHttpServiceTest {
 
     @Test
     public void respondWithPayloadBody() throws Exception {
-        BlockingStreamingHttpService syncService = new BlockingStreamingHttpService() {
-            @Override
-            public void handle(final HttpServiceContext ctx,
-                               final BlockingStreamingHttpRequest request,
-                               final BlockingStreamingHttpServerResponse response) throws Exception {
-                try (PayloadWriter<Buffer> pw = response.sendMetaData()) {
-                    pw.write(ctx.executionContext().bufferAllocator().fromAscii("Hello\n"));
-                    pw.write(ctx.executionContext().bufferAllocator().fromAscii("World\n"));
-                }
+        BlockingStreamingHttpService syncService = (ctx, request, response) -> {
+            try (PayloadWriter<Buffer> pw = response.sendMetaData()) {
+                pw.write(ctx.executionContext().bufferAllocator().fromAscii("Hello\n"));
+                pw.write(ctx.executionContext().bufferAllocator().fromAscii("World\n"));
             }
         };
 
@@ -174,70 +151,55 @@ public class BlockingStreamingHttpServiceToStreamingHttpServiceTest {
 
     @Test
     public void echoServiceUsingPayloadWriterWithTrailers() throws Exception {
-        echoService(new BlockingStreamingHttpService() {
-            @Override
-            public void handle(final HttpServiceContext ctx,
-                               final BlockingStreamingHttpRequest request,
-                               final BlockingStreamingHttpServerResponse response) throws Exception {
-                response.setHeader(TRAILER, X_TOTAL_LENGTH);
-                try (HttpPayloadWriter<Buffer> pw = response.sendMetaData()) {
-                    AtomicInteger totalLength = new AtomicInteger();
-                    request.payloadBody().forEach(chunk -> {
-                        try {
-                            totalLength.addAndGet(chunk.readableBytes());
-                            pw.write(chunk);
-                        } catch (IOException e) {
-                            throwException(e);
-                        }
-                    });
-                    pw.setTrailer(X_TOTAL_LENGTH, totalLength.toString());
-                }
+        echoService((ctx, request, response) -> {
+            response.setHeader(TRAILER, X_TOTAL_LENGTH);
+            try (HttpPayloadWriter<Buffer> pw = response.sendMetaData()) {
+                AtomicInteger totalLength = new AtomicInteger();
+                request.payloadBody().forEach(chunk -> {
+                    try {
+                        totalLength.addAndGet(chunk.readableBytes());
+                        pw.write(chunk);
+                    } catch (IOException e) {
+                        throwException(e);
+                    }
+                });
+                pw.setTrailer(X_TOTAL_LENGTH, totalLength.toString());
             }
         });
     }
 
     @Test
     public void echoServiceUsingPayloadWriterWithSerializerWithTrailers() throws Exception {
-        echoService(new BlockingStreamingHttpService() {
-            @Override
-            public void handle(final HttpServiceContext ctx,
-                               final BlockingStreamingHttpRequest request,
-                               final BlockingStreamingHttpServerResponse response) throws Exception {
-                response.setHeader(TRAILER, X_TOTAL_LENGTH);
-                try (HttpPayloadWriter<String> pw = response.sendMetaData(textSerializer())) {
-                    AtomicInteger totalLength = new AtomicInteger();
-                    request.payloadBody(textDeserializer()).forEach(chunk -> {
-                        try {
-                            totalLength.addAndGet(chunk.length());
-                            pw.write(chunk);
-                        } catch (IOException e) {
-                            throwException(e);
-                        }
-                    });
-                    pw.setTrailer(X_TOTAL_LENGTH, totalLength.toString());
-                }
+        echoService((ctx, request, response) -> {
+            response.setHeader(TRAILER, X_TOTAL_LENGTH);
+            try (HttpPayloadWriter<String> pw = response.sendMetaData(textSerializer())) {
+                AtomicInteger totalLength = new AtomicInteger();
+                request.payloadBody(textDeserializer()).forEach(chunk -> {
+                    try {
+                        totalLength.addAndGet(chunk.length());
+                        pw.write(chunk);
+                    } catch (IOException e) {
+                        throwException(e);
+                    }
+                });
+                pw.setTrailer(X_TOTAL_LENGTH, totalLength.toString());
             }
         });
     }
 
     @Test
     public void echoServiceUsingInputOutputStreamWithTrailers() throws Exception {
-        echoService(new BlockingStreamingHttpService() {
-            @Override
-            public void handle(final HttpServiceContext ctx,
-                               final BlockingStreamingHttpRequest request,
-                               final BlockingStreamingHttpServerResponse response) throws Exception {
-                response.setHeader(TRAILER, X_TOTAL_LENGTH);
-                try (HttpOutputStream out = response.sendMetaDataOutputStream();
-                     InputStream in = request.payloadBodyInputStream()) {
-                    AtomicInteger totalLength = new AtomicInteger();
-                    int ch;
-                    while ((ch = in.read()) != -1) {
-                        totalLength.incrementAndGet();
-                        out.write(ch);
-                    }
-                    out.setTrailer(X_TOTAL_LENGTH, totalLength.toString());
+        echoService((ctx, request, response) -> {
+            response.setHeader(TRAILER, X_TOTAL_LENGTH);
+            try (HttpOutputStream out = response.sendMetaDataOutputStream();
+                 InputStream in = request.payloadBodyInputStream()) {
+                AtomicInteger totalLength = new AtomicInteger();
+                int ch;
+                while ((ch = in.read()) != -1) {
+                    totalLength.incrementAndGet();
+                    out.write(ch);
                 }
+                out.setTrailer(X_TOTAL_LENGTH, totalLength.toString());
             }
         });
     }
@@ -258,7 +220,7 @@ public class BlockingStreamingHttpServiceToStreamingHttpServiceTest {
             @Override
             public void handle(final HttpServiceContext ctx,
                                final BlockingStreamingHttpRequest request,
-                               final BlockingStreamingHttpServerResponse response) throws Exception {
+                               final BlockingStreamingHttpServerResponse response) {
                 throw new IllegalStateException("shouldn't be called!");
             }
 
@@ -267,7 +229,7 @@ public class BlockingStreamingHttpServiceToStreamingHttpServiceTest {
                 closedCalled.set(true);
             }
         };
-        StreamingHttpService asyncService = toStreamingHttpService(syncService);
+        StreamingHttpService asyncService = toStreamingHttpService(syncService, strategy -> strategy).adaptor();
         asyncService.closeAsync().toFuture().get();
         assertThat(closedCalled.get(), is(true));
     }
@@ -279,21 +241,16 @@ public class BlockingStreamingHttpServiceToStreamingHttpServiceTest {
         CountDownLatch onErrorLatch = new CountDownLatch(1);
         AtomicReference<Throwable> throwableRef = new AtomicReference<>();
 
-        BlockingStreamingHttpService syncService = new BlockingStreamingHttpService() {
-            @Override
-            public void handle(final HttpServiceContext ctx,
-                               final BlockingStreamingHttpRequest request,
-                               final BlockingStreamingHttpServerResponse response) throws Exception {
-                handleLatch.countDown();
-                try {
-                    Thread.sleep(Long.MAX_VALUE);
-                } catch (Throwable t) {
-                    throwableRef.set(t);
-                    onErrorLatch.countDown();
-                }
+        BlockingStreamingHttpService syncService = (ctx, request, response) -> {
+            handleLatch.countDown();
+            try {
+                Thread.sleep(Long.MAX_VALUE);
+            } catch (Throwable t) {
+                throwableRef.set(t);
+                onErrorLatch.countDown();
             }
         };
-        StreamingHttpService asyncService = toStreamingHttpService(syncService);
+        StreamingHttpService asyncService = toStreamingHttpService(syncService, strategy -> strategy).adaptor();
         toSource(asyncService.handle(mockCtx, reqRespFactory.get("/"), reqRespFactory)
                 // Use subscribeOn(Executor) instead of HttpExecutionStrategy#invokeService which returns a flatten
                 // Publisher<Object> to verify that cancellation of Single<StreamingHttpResponse> interrupts the thread
@@ -329,23 +286,18 @@ public class BlockingStreamingHttpServiceToStreamingHttpServiceTest {
         CountDownLatch onErrorLatch = new CountDownLatch(1);
         AtomicReference<Throwable> throwableRef = new AtomicReference<>();
 
-        BlockingStreamingHttpService syncService = new BlockingStreamingHttpService() {
-            @Override
-            public void handle(final HttpServiceContext ctx,
-                               final BlockingStreamingHttpRequest request,
-                               final BlockingStreamingHttpServerResponse response) throws Exception {
-                response.sendMetaData();
-                try {
-                    Thread.sleep(Long.MAX_VALUE);
-                } catch (Throwable t) {
-                    throwableRef.set(t);
-                    onErrorLatch.countDown();
-                } finally {
-                    serviceTerminationLatch.countDown();
-                }
+        BlockingStreamingHttpService syncService = (ctx, request, response) -> {
+            response.sendMetaData();
+            try {
+                Thread.sleep(Long.MAX_VALUE);
+            } catch (Throwable t) {
+                throwableRef.set(t);
+                onErrorLatch.countDown();
+            } finally {
+                serviceTerminationLatch.countDown();
             }
         };
-        StreamingHttpService asyncService = toStreamingHttpService(syncService);
+        StreamingHttpService asyncService = toStreamingHttpService(syncService, strategy -> strategy).adaptor();
         StreamingHttpResponse asyncResponse = asyncService.handle(mockCtx, reqRespFactory.get("/"), reqRespFactory)
                 // Use subscribeOn(Executor) instead of HttpExecutionStrategy#invokeService which returns a flatten
                 // Publisher<Object> to verify that cancellation of Publisher<Buffer> interrupts the thread of handle
@@ -379,14 +331,9 @@ public class BlockingStreamingHttpServiceToStreamingHttpServiceTest {
 
     @Test
     public void sendMetaDataTwice() throws Exception {
-        BlockingStreamingHttpService syncService = new BlockingStreamingHttpService() {
-            @Override
-            public void handle(final HttpServiceContext ctx,
-                               final BlockingStreamingHttpRequest request,
-                               final BlockingStreamingHttpServerResponse response) throws Exception {
-                response.sendMetaData();
-                response.sendMetaData();
-            }
+        BlockingStreamingHttpService syncService = (ctx, request, response) -> {
+            response.sendMetaData();
+            response.sendMetaData();
         };
 
         try {
@@ -399,14 +346,9 @@ public class BlockingStreamingHttpServiceToStreamingHttpServiceTest {
 
     @Test
     public void modifyMetaDataAfterSend() throws Exception {
-        BlockingStreamingHttpService syncService = new BlockingStreamingHttpService() {
-            @Override
-            public void handle(final HttpServiceContext ctx,
-                               final BlockingStreamingHttpRequest request,
-                               final BlockingStreamingHttpServerResponse response) throws Exception {
-                response.sendMetaData();
-                response.status(NO_CONTENT);
-            }
+        BlockingStreamingHttpService syncService = (ctx, request, response) -> {
+            response.sendMetaData();
+            response.status(NO_CONTENT);
         };
 
         try {
@@ -423,15 +365,10 @@ public class BlockingStreamingHttpServiceToStreamingHttpServiceTest {
         CountDownLatch onErrorLatch = new CountDownLatch(1);
         AtomicReference<Throwable> throwableRef = new AtomicReference<>();
 
-        BlockingStreamingHttpService syncService = new BlockingStreamingHttpService() {
-            @Override
-            public void handle(final HttpServiceContext ctx,
-                               final BlockingStreamingHttpRequest request,
-                               final BlockingStreamingHttpServerResponse response) throws Exception {
-                throw DELIBERATE_EXCEPTION;
-            }
+        BlockingStreamingHttpService syncService = (ctx, request, response) -> {
+            throw DELIBERATE_EXCEPTION;
         };
-        StreamingHttpService asyncService = toStreamingHttpService(syncService);
+        StreamingHttpService asyncService = toStreamingHttpService(syncService, strategy -> strategy).adaptor();
         toSource(asyncService.handle(mockCtx, reqRespFactory.get("/"), reqRespFactory)
                 // Use subscribeOn(Executor) instead of HttpExecutionStrategy#invokeService which returns a flatten
                 // Publisher<Object> to verify that the Single<StreamingHttpResponse> of response meta-data terminates
@@ -462,16 +399,11 @@ public class BlockingStreamingHttpServiceToStreamingHttpServiceTest {
         CountDownLatch onErrorLatch = new CountDownLatch(1);
         AtomicReference<Throwable> throwableRef = new AtomicReference<>();
 
-        BlockingStreamingHttpService syncService = new BlockingStreamingHttpService() {
-            @Override
-            public void handle(final HttpServiceContext ctx,
-                               final BlockingStreamingHttpRequest request,
-                               final BlockingStreamingHttpServerResponse response) throws Exception {
-                response.sendMetaData();
-                throw DELIBERATE_EXCEPTION;
-            }
+        BlockingStreamingHttpService syncService = (ctx, request, response) -> {
+            response.sendMetaData();
+            throw DELIBERATE_EXCEPTION;
         };
-        StreamingHttpService asyncService = toStreamingHttpService(syncService);
+        StreamingHttpService asyncService = toStreamingHttpService(syncService, strategy -> strategy).adaptor();
         StreamingHttpResponse asyncResponse = asyncService.handle(mockCtx, reqRespFactory.get("/"), reqRespFactory)
                 // Use subscribeOn(Executor) instead of HttpExecutionStrategy#invokeService which returns a flatten
                 // Publisher<Object> to verify that the Publisher<Buffer> of payload body terminates with an error
@@ -502,14 +434,9 @@ public class BlockingStreamingHttpServiceToStreamingHttpServiceTest {
 
     @Test
     public void throwAfterPayloadWriterClosed() throws Exception {
-        BlockingStreamingHttpService syncService = new BlockingStreamingHttpService() {
-            @Override
-            public void handle(final HttpServiceContext ctx,
-                               final BlockingStreamingHttpRequest request,
-                               final BlockingStreamingHttpServerResponse response) throws Exception {
-                response.sendMetaData().close();
-                throw DELIBERATE_EXCEPTION;
-            }
+        BlockingStreamingHttpService syncService = (ctx, request, response) -> {
+            response.sendMetaData().close();
+            throw DELIBERATE_EXCEPTION;
         };
 
         List<Object> response = invokeService(syncService, reqRespFactory.get("/"));
@@ -520,11 +447,11 @@ public class BlockingStreamingHttpServiceToStreamingHttpServiceTest {
 
     private List<Object> invokeService(BlockingStreamingHttpService syncService,
                                        StreamingHttpRequest request) throws Exception {
-        StreamingHttpService asyncService = toStreamingHttpService(syncService);
+        ServiceAdapterHolder holder = toStreamingHttpService(syncService, strategy -> strategy);
 
-        Collection<Object> responseCollection = asyncService.computeExecutionStrategy(defaultStrategy())
+        Collection<Object> responseCollection = holder.serviceInvocationStrategy()
                 .invokeService(executorRule.executor(), request,
-                        req -> asyncService.handle(mockCtx, req, reqRespFactory), (t, e) -> failed(t))
+                        req -> holder.adaptor().handle(mockCtx, req, reqRespFactory), (t, e) -> failed(t))
                 .toFuture().get();
 
         return new ArrayList<>(responseCollection);

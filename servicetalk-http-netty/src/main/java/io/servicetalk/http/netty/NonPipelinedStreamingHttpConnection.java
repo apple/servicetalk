@@ -16,7 +16,6 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.netty.internal.NettyConnection;
@@ -27,9 +26,8 @@ final class NonPipelinedStreamingHttpConnection
     NonPipelinedStreamingHttpConnection(final NettyConnection<Object, Object> connection,
                                         final ReadOnlyHttpClientConfig config,
                                         final ExecutionContext executionContext,
-                                        final StreamingHttpRequestResponseFactory reqRespFactory,
-                                        final HttpExecutionStrategy strategy) {
-        super(connection, config, executionContext, reqRespFactory, strategy);
+                                        final StreamingHttpRequestResponseFactory reqRespFactory) {
+        super(connection, config, executionContext, reqRespFactory);
     }
 
     @Override

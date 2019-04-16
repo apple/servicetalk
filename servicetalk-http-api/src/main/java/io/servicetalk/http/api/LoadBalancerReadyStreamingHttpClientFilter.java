@@ -69,12 +69,6 @@ public final class LoadBalancerReadyStreamingHttpClientFilter extends StreamingH
         return delegate.request(strategy, request).retryWhen(retryWhenFunction());
     }
 
-    @Override
-    public HttpExecutionStrategy computeExecutionStrategy(final HttpExecutionStrategy other) {
-        // Since this filter does not have any blocking code, we do not need to alter the effective strategy.
-        return delegate().computeExecutionStrategy(other);
-    }
-
     private BiIntFunction<Throwable, Completable> retryWhenFunction() {
         return (count, cause) -> count <= maxRetryCount && cause instanceof NoAvailableHostException ?
                 loadBalancerReadySubscriber.onHostsAvailable() : failed(cause);

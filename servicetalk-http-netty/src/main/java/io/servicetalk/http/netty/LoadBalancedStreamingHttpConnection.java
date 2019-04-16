@@ -22,7 +22,11 @@ import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpExecutionStrategy;
+import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
 import io.servicetalk.http.api.HttpRequestMethod;
+import io.servicetalk.http.api.ReservedBlockingHttpConnection;
+import io.servicetalk.http.api.ReservedBlockingStreamingHttpConnection;
+import io.servicetalk.http.api.ReservedHttpConnection;
 import io.servicetalk.http.api.ReservedStreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpRequest;
@@ -31,23 +35,34 @@ import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ExecutionContext;
 
-import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
+import static io.servicetalk.http.api.HttpApiConversions.toReservedBlockingConnection;
+import static io.servicetalk.http.api.HttpApiConversions.toReservedBlockingStreamingConnection;
+import static io.servicetalk.http.api.HttpApiConversions.toReservedConnection;
 import static java.util.Objects.requireNonNull;
 
 /**
  * Makes the wrapped {@link StreamingHttpConnection} aware of the {@link LoadBalancer}.
  */
-final class LoadBalancedStreamingHttpConnection implements ReservedStreamingHttpConnection,
-                                                           ReservableRequestConcurrencyController {
+final class LoadBalancedStreamingHttpConnection
+        implements ReservedStreamingHttpConnection, ReservableRequestConcurrencyController,
+                   // Since we do not have filters for reserved connection, we rely on the original implementation to
+                   // be an influencer hence we can try to correctly delegate when possible.
+                   // Reserved connection given to the user will use the correct strategy and influencer chain since
+                   // we wrap before returning to the user.
+                   HttpExecutionStrategyInfluencer {
     private final ReservableRequestConcurrencyController limiter;
     private final FilterableStreamingHttpConnection filteredConnection;
-    private final HttpExecutionStrategy strategy;
+    private final HttpExecutionStrategy streamingStrategy;
+    private final HttpExecutionStrategyInfluencer strategyInfluencer;
 
     LoadBalancedStreamingHttpConnection(FilterableStreamingHttpConnection filteredConnection,
-                                        ReservableRequestConcurrencyController limiter) {
-        this.strategy = filteredConnection.computeExecutionStrategy(defaultStrategy());
+                                        ReservableRequestConcurrencyController limiter,
+                                        HttpExecutionStrategy streamingStrategy,
+                                        HttpExecutionStrategyInfluencer strategyInfluencer) {
         this.filteredConnection = filteredConnection;
         this.limiter = requireNonNull(limiter);
+        this.streamingStrategy = streamingStrategy;
+        this.strategyInfluencer = strategyInfluencer;
     }
 
     @Override
@@ -72,7 +87,7 @@ final class LoadBalancedStreamingHttpConnection implements ReservedStreamingHttp
 
     @Override
     public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
-        return filteredConnection.request(strategy, request);
+        return filteredConnection.request(streamingStrategy, request);
     }
 
     @Override
@@ -107,11 +122,6 @@ final class LoadBalancedStreamingHttpConnection implements ReservedStreamingHttp
     }
 
     @Override
-    public HttpExecutionStrategy computeExecutionStrategy(final HttpExecutionStrategy other) {
-        return filteredConnection.computeExecutionStrategy(other);
-    }
-
-    @Override
     public Completable onClose() {
         return filteredConnection.onClose();
     }
@@ -129,5 +139,25 @@ final class LoadBalancedStreamingHttpConnection implements ReservedStreamingHttp
     @Override
     public StreamingHttpRequest newRequest(final HttpRequestMethod method, final String requestTarget) {
         return filteredConnection.newRequest(method, requestTarget);
+    }
+
+    @Override
+    public ReservedHttpConnection asConnection() {
+        return toReservedConnection(this, strategyInfluencer);
+    }
+
+    @Override
+    public ReservedBlockingStreamingHttpConnection asBlockingStreamingConnection() {
+        return toReservedBlockingStreamingConnection(this, strategyInfluencer);
+    }
+
+    @Override
+    public ReservedBlockingHttpConnection asBlockingConnection() {
+        return toReservedBlockingConnection(this, strategyInfluencer);
+    }
+
+    @Override
+    public HttpExecutionStrategy influenceStrategy(final HttpExecutionStrategy strategy) {
+        return strategyInfluencer.influenceStrategy(strategy);
     }
 }

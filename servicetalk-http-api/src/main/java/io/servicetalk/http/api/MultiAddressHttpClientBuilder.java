@@ -28,6 +28,7 @@ import java.net.SocketOption;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
+import static io.servicetalk.http.api.StrategyInfluencerAwareConversions.toMultiAddressConditionalFilterFactory;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -166,8 +167,7 @@ public abstract class MultiAddressHttpClientBuilder<U, R>
         requireNonNull(predicate);
         requireNonNull(factory);
 
-        return appendClientFilter((address, client, lbEvents) ->
-                new ConditionalHttpClientFilter(predicate, factory.create(address, client, lbEvents), client));
+        return appendClientFilter(toMultiAddressConditionalFilterFactory(predicate, factory));
     }
 
     /**

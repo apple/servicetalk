@@ -33,12 +33,6 @@ import static io.servicetalk.http.api.BlockingUtils.blockingInvocation;
  * @param <ResolvedAddress> The type of resolved address that can be used for connecting.
  */
 public abstract class HttpConnectionBuilder<ResolvedAddress> extends BaseHttpBuilder<ResolvedAddress> {
-    /**
-     * An {@link HttpExecutionStrategy} to use when there is none specifed on the {@link HttpConnectionBuilder}.
-     */
-    public static final HttpExecutionStrategy DEFAULT_BUILDER_STRATEGY = HttpClientBuilder.DEFAULT_BUILDER_STRATEGY;
-
-    private HttpExecutionStrategy strategy = DEFAULT_BUILDER_STRATEGY;
 
     @Override
     public abstract HttpConnectionBuilder<ResolvedAddress> ioExecutor(IoExecutor ioExecutor);
@@ -47,10 +41,7 @@ public abstract class HttpConnectionBuilder<ResolvedAddress> extends BaseHttpBui
     public abstract HttpConnectionBuilder<ResolvedAddress> bufferAllocator(BufferAllocator allocator);
 
     @Override
-    public final HttpConnectionBuilder<ResolvedAddress> executionStrategy(HttpExecutionStrategy strategy) {
-        this.strategy = strategy;
-        return this;
-    }
+    public abstract HttpConnectionBuilder<ResolvedAddress> executionStrategy(HttpExecutionStrategy strategy);
 
     @Override
     public abstract <T> HttpConnectionBuilder<ResolvedAddress> socketOption(SocketOption<T> option, T value);
@@ -161,14 +152,5 @@ public abstract class HttpConnectionBuilder<ResolvedAddress> extends BaseHttpBui
             Predicate<StreamingHttpRequest> predicate, StreamingHttpConnectionFilterFactory factory) {
         super.appendConnectionFilter(predicate, factory);
         return this;
-    }
-
-    /**
-     * Returns the {@link HttpExecutionStrategy} used by this {@link HttpConnectionBuilder}.
-     *
-     * @return {@link HttpExecutionStrategy} used by this {@link HttpConnectionBuilder}.
-     */
-    protected final HttpExecutionStrategy executionStrategy() {
-        return strategy;
     }
 }

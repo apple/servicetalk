@@ -20,6 +20,7 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpExecutionStrategy;
+import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
 import io.servicetalk.http.api.HttpHeaderNames;
 import io.servicetalk.http.api.StreamingHttpClientFilter;
 import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
@@ -41,7 +42,8 @@ import static java.util.Objects.requireNonNull;
  * A filter which will apply a fallback value for the {@link HttpHeaderNames#HOST} header if one is not present.
  */
 final class HostHeaderHttpRequesterFilter implements StreamingHttpClientFilterFactory,
-                                                     StreamingHttpConnectionFilterFactory {
+                                                     StreamingHttpConnectionFilterFactory,
+                                                     HttpExecutionStrategyInfluencer {
     private final CharSequence fallbackHost;
 
     /**
@@ -82,12 +84,6 @@ final class HostHeaderHttpRequesterFilter implements StreamingHttpClientFilterFa
                                                             final StreamingHttpRequest request) {
                 return HostHeaderHttpRequesterFilter.this.request(delegate, strategy, request);
             }
-
-            @Override
-            public HttpExecutionStrategy computeExecutionStrategy(final HttpExecutionStrategy other) {
-                // Since this filter does not have any blocking code, we do not need to alter the effective strategy.
-                return delegate().computeExecutionStrategy(other);
-            }
         };
     }
 
@@ -99,13 +95,13 @@ final class HostHeaderHttpRequesterFilter implements StreamingHttpClientFilterFa
                                                             final StreamingHttpRequest request) {
                 return HostHeaderHttpRequesterFilter.this.request(delegate(), strategy, request);
             }
-
-            @Override
-            public HttpExecutionStrategy computeExecutionStrategy(final HttpExecutionStrategy other) {
-                // Since this filter does not have any blocking code, we do not need to alter the effective strategy.
-                return delegate().computeExecutionStrategy(other);
-            }
         };
+    }
+
+    @Override
+    public HttpExecutionStrategy influenceStrategy(final HttpExecutionStrategy strategy) {
+        // No influence since we do not block.
+        return strategy;
     }
 
     private Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,

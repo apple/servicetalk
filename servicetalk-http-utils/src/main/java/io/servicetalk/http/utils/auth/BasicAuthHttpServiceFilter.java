@@ -21,7 +21,6 @@ import io.servicetalk.concurrent.api.AsyncContextMap;
 import io.servicetalk.concurrent.api.AsyncContextMap.Key;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpHeaderNames;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpMetaData;
@@ -328,11 +327,6 @@ public final class BasicAuthHttpServiceFilter<UserInfo> implements StreamingHttp
         @Override
         public Completable closeAsyncGracefully() {
             return closeable.closeAsyncGracefully();
-        }
-
-        @Override
-        public HttpExecutionStrategy computeExecutionStrategy(HttpExecutionStrategy other) {
-            return delegate().computeExecutionStrategy(other);
         }
 
         private Single<StreamingHttpResponse> onAccessDenied(final HttpMetaData requestMetaData,

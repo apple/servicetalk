@@ -17,6 +17,7 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.http.api.HttpApiConversions.ServiceAdapterHolder;
 import io.servicetalk.transport.api.ConnectionAcceptor;
 import io.servicetalk.transport.api.ConnectionAcceptorFactory;
 import io.servicetalk.transport.api.IoExecutor;
@@ -34,8 +35,9 @@ import javax.annotation.Nullable;
 import static io.servicetalk.http.api.BlockingUtils.blockingInvocation;
 import static io.servicetalk.http.api.HttpApiConversions.toStreamingHttpService;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
+import static io.servicetalk.http.api.HttpExecutionStrategyInfluencer.defaultStreamingInfluencer;
+import static io.servicetalk.http.api.StrategyInfluencerAwareConversions.toConditionalServiceFilterFactory;
 import static io.servicetalk.transport.api.ConnectionAcceptor.ACCEPT_ALL;
-import static java.util.Objects.requireNonNull;
 
 /**
  * A builder for building HTTP Servers.
@@ -46,6 +48,8 @@ public abstract class HttpServerBuilder {
     private ConnectionAcceptorFactory connectionAcceptorFactory;
     @Nullable
     private StreamingHttpServiceFilterFactory serviceFilter;
+    private HttpExecutionStrategy strategy = defaultStrategy();
+    private final StrategyInfluencerChainBuilder influencerChainBuilder = new StrategyInfluencerChainBuilder();
     private boolean drainRequestPayloadBody = true;
 
     /**
@@ -252,6 +256,9 @@ public abstract class HttpServerBuilder {
         } else {
             serviceFilter = serviceFilter.append(factory);
         }
+        if (!influencerChainBuilder.appendIfInfluencer(factory)) {
+            influencerChainBuilder.append(defaultStreamingInfluencer());
+        }
         return this;
     }
 
@@ -276,11 +283,8 @@ public abstract class HttpServerBuilder {
      */
     public final HttpServerBuilder appendServiceFilter(final Predicate<StreamingHttpRequest> predicate,
                                                        final StreamingHttpServiceFilterFactory factory) {
-        requireNonNull(predicate);
-        requireNonNull(factory);
-
-        return appendServiceFilter(service ->
-                new ConditionalHttpServiceFilter(predicate, factory.create(service), service));
+        appendServiceFilter(toConditionalServiceFilterFactory(predicate, factory));
+        return this;
     }
 
     /**
@@ -318,6 +322,17 @@ public abstract class HttpServerBuilder {
      * @return {@code this}.
      */
     public abstract HttpServerBuilder bufferAllocator(BufferAllocator allocator);
+
+    /**
+     * Sets the {@link HttpExecutionStrategy} to be used by this server.
+     *
+     * @param strategy {@link HttpExecutionStrategy} to use by this server.
+     * @return {@code this}.
+     */
+    public final HttpServerBuilder executionStrategy(HttpExecutionStrategy strategy) {
+        this.strategy = strategy;
+        return this;
+    }
 
     /**
      * Starts this server and returns the {@link ServerContext} after the server has been successfully started.
@@ -385,13 +400,14 @@ public abstract class HttpServerBuilder {
      * <p>
      * If the underlying protocol (eg. TCP) supports it this will result in a socket bind/listen on {@code address}.
      *
-     * @param handler Service invoked for every request received by this server. The returned {@link ServerContext}
+     * @param service Service invoked for every request received by this server. The returned {@link ServerContext}
      * manages the lifecycle of the {@code service}, ensuring it is closed when the {@link ServerContext} is closed.
      * @return A {@link Single} that completes when the server is successfully started or terminates with an error if
      * the server could not be started.
      */
-    public final Single<ServerContext> listen(final HttpService handler) {
-        return listenStreaming0(toStreamingHttpService(handler));
+    public final Single<ServerContext> listen(final HttpService service) {
+        influencerChainBuilder.prependIfInfluencer(service);
+        return listenForAdapter(toStreamingHttpService(service, influencerChainBuilder.build(strategy)));
     }
 
     /**
@@ -399,13 +415,13 @@ public abstract class HttpServerBuilder {
      * <p>
      * If the underlying protocol (eg. TCP) supports it this will result in a socket bind/listen on {@code address}.
      *
-     * @param handler Service invoked for every request received by this server. The returned {@link ServerContext}
+     * @param service Service invoked for every request received by this server. The returned {@link ServerContext}
      * manages the lifecycle of the {@code service}, ensuring it is closed when the {@link ServerContext} is closed.
      * @return A {@link Single} that completes when the server is successfully started or terminates with an error if
      * the server could not be started.
      */
-    public final Single<ServerContext> listenStreaming(final StreamingHttpService handler) {
-        return listenStreaming0(handler);
+    public final Single<ServerContext> listenStreaming(final StreamingHttpService service) {
+        return listenForService(service, strategy);
     }
 
     /**
@@ -419,7 +435,8 @@ public abstract class HttpServerBuilder {
      * the server could not be started.
      */
     public final Single<ServerContext> listenBlocking(final BlockingHttpService service) {
-        return listenStreaming0(toStreamingHttpService(service));
+        influencerChainBuilder.prependIfInfluencer(service);
+        return listenForAdapter(toStreamingHttpService(service, influencerChainBuilder.build(strategy)));
     }
 
     /**
@@ -427,13 +444,14 @@ public abstract class HttpServerBuilder {
      * <p>
      * If the underlying protocol (eg. TCP) supports it this will result in a socket bind/listen on {@code address}.
      *
-     * @param handler Service invoked for every request received by this server. The returned {@link ServerContext}
+     * @param service Service invoked for every request received by this server. The returned {@link ServerContext}
      * manages the lifecycle of the {@code service}, ensuring it is closed when the {@link ServerContext} is closed.
      * @return A {@link Single} that completes when the server is successfully started or terminates with an error if
      * the server could not be started.
      */
-    public final Single<ServerContext> listenBlockingStreaming(final BlockingStreamingHttpService handler) {
-        return listenStreaming0(toStreamingHttpService(handler));
+    public final Single<ServerContext> listenBlockingStreaming(final BlockingStreamingHttpService service) {
+        influencerChainBuilder.prependIfInfluencer(service);
+        return listenForAdapter(toStreamingHttpService(service, influencerChainBuilder.build(strategy)));
     }
 
     /**
@@ -454,11 +472,14 @@ public abstract class HttpServerBuilder {
                                                       HttpExecutionStrategy strategy,
                                                       boolean drainRequestPayloadBody);
 
-    private Single<ServerContext> listenStreaming0(StreamingHttpService rawService) {
+    private Single<ServerContext> listenForAdapter(ServiceAdapterHolder adapterHolder) {
+        return listenForService(adapterHolder.adaptor(), adapterHolder.serviceInvocationStrategy());
+    }
+
+    private Single<ServerContext> listenForService(StreamingHttpService rawService, HttpExecutionStrategy strategy) {
         ConnectionAcceptor connectionAcceptor = connectionAcceptorFactory == null ? null :
                 connectionAcceptorFactory.create(ACCEPT_ALL);
         StreamingHttpService filteredService = serviceFilter != null ? serviceFilter.create(rawService) : rawService;
-        return doListen(connectionAcceptor, filteredService,
-                filteredService.computeExecutionStrategy(defaultStrategy()), drainRequestPayloadBody);
+        return doListen(connectionAcceptor, filteredService, strategy, drainRequestPayloadBody);
     }
 }

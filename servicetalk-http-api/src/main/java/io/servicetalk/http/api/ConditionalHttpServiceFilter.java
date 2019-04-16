@@ -58,9 +58,4 @@ final class ConditionalHttpServiceFilter extends StreamingHttpServiceFilter {
     public Completable closeAsyncGracefully() {
         return closeable.closeAsyncGracefully();
     }
-
-    @Override
-    public HttpExecutionStrategy computeExecutionStrategy(HttpExecutionStrategy other) {
-        return delegate().computeExecutionStrategy(predicatedFilter.computeExecutionStrategy(other));
-    }
 }

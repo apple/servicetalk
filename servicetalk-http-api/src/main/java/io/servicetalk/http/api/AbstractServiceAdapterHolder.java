@@ -15,19 +15,23 @@
  */
 package io.servicetalk.http.api;
 
-/**
- * A special type of {@link StreamingHttpConnection} for the exclusive use of the caller of
- * {@link StreamingHttpClient#reserveConnection(HttpRequestMetaData)} and
- * {@link StreamingHttpClient#reserveConnection(HttpExecutionStrategy, HttpRequestMetaData)}.
- */
-public interface ReservedStreamingHttpConnection extends StreamingHttpConnection,
-                                                         FilterableReservedStreamingHttpConnection {
-    @Override
-    ReservedHttpConnection asConnection();
+import io.servicetalk.http.api.HttpApiConversions.ServiceAdapterHolder;
+
+abstract class AbstractServiceAdapterHolder implements StreamingHttpService, ServiceAdapterHolder {
+
+    private final HttpExecutionStrategy serviceInvocationStrategy;
+
+    protected AbstractServiceAdapterHolder(final HttpExecutionStrategy serviceInvocationStrategy) {
+        this.serviceInvocationStrategy = serviceInvocationStrategy;
+    }
 
     @Override
-    ReservedBlockingStreamingHttpConnection asBlockingStreamingConnection();
+    public StreamingHttpService adaptor() {
+        return this;
+    }
 
     @Override
-    ReservedBlockingHttpConnection asBlockingConnection();
+    public HttpExecutionStrategy serviceInvocationStrategy() {
+        return serviceInvocationStrategy;
+    }
 }

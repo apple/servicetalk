@@ -18,8 +18,12 @@ package io.servicetalk.http.netty;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.http.api.BlockingHttpConnection;
+import io.servicetalk.http.api.BlockingStreamingHttpConnection;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
+import io.servicetalk.http.api.HttpConnection;
 import io.servicetalk.http.api.HttpExecutionStrategy;
+import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
 import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpRequest;
@@ -28,20 +32,41 @@ import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ExecutionContext;
 
-import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
+import static io.servicetalk.http.api.HttpApiConversions.toBlockingConnection;
+import static io.servicetalk.http.api.HttpApiConversions.toBlockingStreamingConnection;
+import static io.servicetalk.http.api.HttpApiConversions.toConnection;
 
-final class DefaultStreamingHttpConnection implements StreamingHttpConnection {
+final class FilterableConnectionToConnection implements StreamingHttpConnection {
     private final FilterableStreamingHttpConnection filteredConnection;
-    private final HttpExecutionStrategy strategy;
+    private final HttpExecutionStrategy streamingStrategy;
+    private final HttpExecutionStrategyInfluencer strategyInfluencer;
 
-    DefaultStreamingHttpConnection(final FilterableStreamingHttpConnection filteredConnection) {
-        strategy = filteredConnection.computeExecutionStrategy(defaultStrategy());
+    FilterableConnectionToConnection(final FilterableStreamingHttpConnection filteredConnection,
+                                     final HttpExecutionStrategy streamingStrategy,
+                                     final HttpExecutionStrategyInfluencer strategyInfluencer) {
         this.filteredConnection = filteredConnection;
+        this.streamingStrategy = streamingStrategy;
+        this.strategyInfluencer = strategyInfluencer;
     }
 
     @Override
     public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
-        return request(strategy, request);
+        return request(streamingStrategy, request);
+    }
+
+    @Override
+    public HttpConnection asConnection() {
+        return toConnection(this, strategyInfluencer);
+    }
+
+    @Override
+    public BlockingStreamingHttpConnection asBlockingStreamingConnection() {
+        return toBlockingStreamingConnection(this, strategyInfluencer);
+    }
+
+    @Override
+    public BlockingHttpConnection asBlockingConnection() {
+        return toBlockingConnection(this, strategyInfluencer);
     }
 
     @Override
@@ -73,11 +98,6 @@ final class DefaultStreamingHttpConnection implements StreamingHttpConnection {
     @Override
     public void close() throws Exception {
         filteredConnection.close();
-    }
-
-    @Override
-    public HttpExecutionStrategy computeExecutionStrategy(final HttpExecutionStrategy other) {
-        return filteredConnection.computeExecutionStrategy(other);
     }
 
     @Override

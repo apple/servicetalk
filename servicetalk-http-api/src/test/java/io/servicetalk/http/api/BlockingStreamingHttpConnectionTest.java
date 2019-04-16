@@ -27,6 +27,9 @@ import java.util.function.BiFunction;
 
 import static io.servicetalk.concurrent.api.Processors.newCompletableProcessor;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
+import static io.servicetalk.http.api.HttpApiConversions.toBlockingConnection;
+import static io.servicetalk.http.api.HttpApiConversions.toBlockingStreamingConnection;
+import static io.servicetalk.http.api.HttpApiConversions.toConnection;
 import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -118,6 +121,21 @@ public class BlockingStreamingHttpConnectionTest extends AbstractBlockingStreami
         @Override
         public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
             return request(noOffloadsStrategy(), request);
+        }
+
+        @Override
+        public HttpConnection asConnection() {
+            return toConnection(this, strategy -> strategy);
+        }
+
+        @Override
+        public BlockingStreamingHttpConnection asBlockingStreamingConnection() {
+            return toBlockingStreamingConnection(this, strategy -> strategy);
+        }
+
+        @Override
+        public BlockingHttpConnection asBlockingConnection() {
+            return toBlockingConnection(this, strategy -> strategy);
         }
     }
 }

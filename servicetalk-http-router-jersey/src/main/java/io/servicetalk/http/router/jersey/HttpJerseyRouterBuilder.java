@@ -26,7 +26,6 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import javax.ws.rs.core.Application;
 
-import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.utils.HttpRequestUriUtils.getBaseRequestUri;
 import static java.util.Objects.requireNonNull;
 
@@ -42,7 +41,6 @@ public final class HttpJerseyRouterBuilder {
     private int publisherInputStreamQueueCapacity = 16;
     private BiFunction<ConnectionContext, StreamingHttpRequest, String> baseUriFunction =
             (ctx, req) -> getBaseRequestUri(ctx, req, false);
-    private HttpExecutionStrategy strategy = defaultStrategy();
     private Function<String, HttpExecutionStrategy> routeStrategyFactory = __ -> null;
 
     /**
@@ -78,17 +76,6 @@ public final class HttpJerseyRouterBuilder {
     }
 
     /**
-     * Set the {@link HttpExecutionStrategy} for this router.
-     *
-     * @param strategy {@link HttpExecutionStrategy} to use.
-     * @return this
-     */
-    public HttpJerseyRouterBuilder executionStrategy(final HttpExecutionStrategy strategy) {
-        this.strategy = requireNonNull(strategy);
-        return this;
-    }
-
-    /**
      * Set a {@link Function Function&lt;String, HttpExecutionStrategy&gt;} used as a factory for
      * creating {@link HttpExecutionStrategy} instances that can be used for offloading the handling of request to
      * resource methods, as specified via {@link RouteExecutionStrategy} annotations.
@@ -111,7 +98,7 @@ public final class HttpJerseyRouterBuilder {
      */
     public StreamingHttpService build(final Application application) {
         return new DefaultJerseyStreamingHttpRouter(application, publisherInputStreamQueueCapacity, baseUriFunction,
-                routeStrategyFactory, strategy);
+                routeStrategyFactory);
     }
 
     /**
@@ -122,6 +109,6 @@ public final class HttpJerseyRouterBuilder {
      */
     public StreamingHttpService build(final Class<? extends Application> applicationClass) {
         return new DefaultJerseyStreamingHttpRouter(applicationClass, publisherInputStreamQueueCapacity,
-                baseUriFunction, routeStrategyFactory, strategy);
+                baseUriFunction, routeStrategyFactory);
     }
 }

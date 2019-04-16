@@ -17,17 +17,12 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.Cancellable;
-import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.api.TestSubscription;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.HttpExecutionStrategy;
-import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpClient;
-import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
-import io.servicetalk.http.api.StreamingHttpResponseFactory;
-import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.netty.internal.ExecutionContextRule;
 import io.servicetalk.transport.netty.internal.FlushStrategy;
@@ -111,22 +106,13 @@ public class NettyHttpServerConnectionTest {
                                     ((NettyConnectionContext) ctx).updateFlushStrategy(current -> customStrategy));
                             return completed();
                         }))
-                .listenStreaming(new StreamingHttpService() {
-                    @Override
-                    public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
-                                                                final StreamingHttpRequest request,
-                                                                final StreamingHttpResponseFactory responseFactory) {
-                        if (handledFirstRequest.compareAndSet(false, true)) {
-                            customStrategy.afterFirstWrite(FlushStrategy.FlushSender::flush);
-                            return succeeded(responseFactory.ok().payloadBody(responsePublisher));
-                        }
-                        return succeeded(responseFactory.ok().payloadBody(responsePublisher2));
+                .executionStrategy(serverExecutionStrategy)
+                .listenStreaming((ctx, request, responseFactory) -> {
+                    if (handledFirstRequest.compareAndSet(false, true)) {
+                        customStrategy.afterFirstWrite(FlushStrategy.FlushSender::flush);
+                        return succeeded(responseFactory.ok().payloadBody(responsePublisher));
                     }
-
-                    @Override
-                    public HttpExecutionStrategy computeExecutionStrategy(HttpExecutionStrategy other) {
-                        return serverExecutionStrategy.merge(other);
-                    }
+                    return succeeded(responseFactory.ok().payloadBody(responsePublisher2));
                 }).toFuture().get();
 
         client = HttpClients.forSingleAddress(serverHostAndPort(serverContext))

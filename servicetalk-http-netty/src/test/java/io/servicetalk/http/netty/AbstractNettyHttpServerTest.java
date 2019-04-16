@@ -126,12 +126,13 @@ public abstract class AbstractNettyHttpServerTest {
     @Before
     public void startServer() throws Exception {
         final InetSocketAddress bindAddress = localAddress(0);
-        service(new TestServiceStreaming(publisherSupplier, defaultStrategy(serverExecutor)));
+        service(new TestServiceStreaming(publisherSupplier));
 
         // A small SNDBUF is needed to test that the server defers closing the connection until writes are complete.
         // However, if it is too small, tests that expect certain chunks of data will see those chunks broken up
         // differently.
         final HttpServerBuilder serverBuilder = HttpServers.forAddress(bindAddress)
+                .executionStrategy(defaultStrategy(serverExecutor))
                 .socketOption(StandardSocketOptions.SO_SNDBUF, 100);
         if (sslEnabled) {
             final SslConfig sslConfig = SslConfigBuilder.forServer(

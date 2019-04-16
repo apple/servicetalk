@@ -16,7 +16,6 @@
 package io.servicetalk.opentracing.http;
 
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.http.api.HttpServiceContext;
@@ -74,11 +73,6 @@ public class TracingHttpServiceFilter extends AbstractTracingHttpFilter implemen
                                                         final StreamingHttpRequest request,
                                                         final StreamingHttpResponseFactory responseFactory) {
                 return trackRequest(delegate(), ctx, request, responseFactory);
-            }
-
-            @Override
-            public HttpExecutionStrategy computeExecutionStrategy(HttpExecutionStrategy other) {
-                return delegate().computeExecutionStrategy(other);
             }
         };
     }

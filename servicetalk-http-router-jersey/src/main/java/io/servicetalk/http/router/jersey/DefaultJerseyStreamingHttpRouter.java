@@ -85,33 +85,28 @@ final class DefaultJerseyStreamingHttpRouter implements StreamingHttpService {
     private final int publisherInputStreamQueueCapacity;
     private final BiFunction<ConnectionContext, StreamingHttpRequest, String> baseUriFunction;
     private final Container container;
-    private final HttpExecutionStrategy strategy;
 
     DefaultJerseyStreamingHttpRouter(final Application application,
                                      final int publisherInputStreamQueueCapacity,
                                      final BiFunction<ConnectionContext, StreamingHttpRequest, String> baseUriFunction,
-                                     final Function<String, HttpExecutionStrategy> routeStrategyFactory,
-                                     final HttpExecutionStrategy strategy) {
+                                     final Function<String, HttpExecutionStrategy> routeStrategyFactory) {
         this(new ApplicationHandler(application), publisherInputStreamQueueCapacity, baseUriFunction,
-                routeStrategyFactory, strategy);
+                routeStrategyFactory);
     }
 
     DefaultJerseyStreamingHttpRouter(final Class<? extends Application> applicationClass,
                                      final int publisherInputStreamQueueCapacity,
                                      final BiFunction<ConnectionContext, StreamingHttpRequest, String> baseUriFunction,
-                                     final Function<String, HttpExecutionStrategy> routeStrategyFactory,
-                                     final HttpExecutionStrategy strategy) {
+                                     final Function<String, HttpExecutionStrategy> routeStrategyFactory) {
         this(new ApplicationHandler(applicationClass), publisherInputStreamQueueCapacity, baseUriFunction,
-                routeStrategyFactory, strategy);
+                routeStrategyFactory);
     }
 
     private DefaultJerseyStreamingHttpRouter(final ApplicationHandler applicationHandler,
                                              final int publisherInputStreamQueueCapacity,
                                              final BiFunction<ConnectionContext, StreamingHttpRequest,
                                                      String> baseUriFunction,
-                                             final Function<String, HttpExecutionStrategy> routeStrategyFactory,
-                                             final HttpExecutionStrategy strategy) {
-        this.strategy = requireNonNull(strategy);
+                                             final Function<String, HttpExecutionStrategy> routeStrategyFactory) {
 
         if (!applicationHandler.getConfiguration().isEnabled(ServiceTalkFeature.class)) {
             throw new IllegalStateException("The " + ServiceTalkFeature.class.getSimpleName()
@@ -172,11 +167,6 @@ final class DefaultJerseyStreamingHttpRouter implements StreamingHttpService {
                 }
             }
         };
-    }
-
-    @Override
-    public HttpExecutionStrategy computeExecutionStrategy(HttpExecutionStrategy other) {
-        return strategy.merge(other);
     }
 
     private void handle0(final HttpServiceContext serviceCtx, final StreamingHttpRequest req,

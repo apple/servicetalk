@@ -21,8 +21,8 @@ import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ExecutionContext;
 
 import static io.servicetalk.http.api.BlockingUtils.blockingInvocation;
-import static io.servicetalk.http.api.HttpExecutionStrategies.OFFLOAD_SEND_STRATEGY;
 import static io.servicetalk.http.api.RequestResponseFactories.toBlockingStreaming;
+import static io.servicetalk.http.api.StreamingHttpConnectionToBlockingStreamingHttpConnection.DEFAULT_BLOCKING_STREAMING_CONNECTION_STRATEGY;
 import static java.util.Objects.requireNonNull;
 
 final class StreamingHttpClientToBlockingStreamingHttpClient implements BlockingStreamingHttpClient {
@@ -30,8 +30,9 @@ final class StreamingHttpClientToBlockingStreamingHttpClient implements Blocking
     private final HttpExecutionStrategy strategy;
     private final BlockingStreamingHttpRequestResponseFactory reqRespFactory;
 
-    StreamingHttpClientToBlockingStreamingHttpClient(final StreamingHttpClient client) {
-        strategy = client.computeExecutionStrategy(OFFLOAD_SEND_STRATEGY);
+    StreamingHttpClientToBlockingStreamingHttpClient(final StreamingHttpClient client,
+                                                     final HttpExecutionStrategyInfluencer influencer) {
+        strategy = influencer.influenceStrategy(DEFAULT_BLOCKING_STREAMING_CONNECTION_STRATEGY);
         this.client = client;
         reqRespFactory = toBlockingStreaming(client);
     }
@@ -84,12 +85,6 @@ final class StreamingHttpClientToBlockingStreamingHttpClient implements Blocking
     }
 
     @Override
-    public HttpExecutionStrategy computeExecutionStrategy(final HttpExecutionStrategy other) {
-        // TODO(scott): should we include the API strategy?
-        return client.computeExecutionStrategy(other);
-    }
-
-    @Override
     public BlockingStreamingHttpRequest newRequest(final HttpRequestMethod method, final String requestTarget) {
         return reqRespFactory.newRequest(method, requestTarget);
     }
@@ -100,8 +95,9 @@ final class StreamingHttpClientToBlockingStreamingHttpClient implements Blocking
         private final HttpExecutionStrategy strategy;
         private final BlockingStreamingHttpRequestResponseFactory reqRespFactory;
 
-        ReservedStreamingHttpConnectionToBlockingStreaming(ReservedStreamingHttpConnection connection) {
-            this(connection, connection.computeExecutionStrategy(OFFLOAD_SEND_STRATEGY),
+        ReservedStreamingHttpConnectionToBlockingStreaming(ReservedStreamingHttpConnection connection,
+                                                           final HttpExecutionStrategyInfluencer influencer) {
+            this(connection, influencer.influenceStrategy(DEFAULT_BLOCKING_STREAMING_CONNECTION_STRATEGY),
                     toBlockingStreaming(connection));
         }
 
@@ -158,12 +154,6 @@ final class StreamingHttpClientToBlockingStreamingHttpClient implements Blocking
         @Override
         public void close() throws Exception {
             connection.close();
-        }
-
-        @Override
-        public HttpExecutionStrategy computeExecutionStrategy(final HttpExecutionStrategy other) {
-            // TODO(scott): should we include the API strategy?
-            return connection.computeExecutionStrategy(other);
         }
 
         @Override

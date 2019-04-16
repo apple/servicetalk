@@ -38,21 +38,24 @@ import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.safeOnError;
 import static io.servicetalk.http.api.BlockingUtils.blockingToCompletable;
-import static io.servicetalk.http.api.HttpExecutionStrategies.OFFLOAD_RECEIVE_META_AND_SEND_STRATEGY;
+import static io.servicetalk.http.api.HttpExecutionStrategies.OFFLOAD_RECEIVE_META_STRATEGY;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.StreamingHttpResponses.newResponseWithTrailers;
 import static java.lang.Thread.currentThread;
 import static java.util.Objects.requireNonNull;
 
-final class BlockingStreamingHttpServiceToStreamingHttpService implements StreamingHttpService {
+final class BlockingStreamingToStreamingService extends AbstractServiceAdapterHolder {
 
+    private static final HttpExecutionStrategy DEFAULT_STRATEGY = OFFLOAD_RECEIVE_META_STRATEGY;
     private static final Logger LOGGER =
-            LoggerFactory.getLogger(BlockingStreamingHttpServiceToStreamingHttpService.class);
+            LoggerFactory.getLogger(BlockingStreamingToStreamingService.class);
 
-    private final BlockingStreamingHttpService service;
+    private final BlockingStreamingHttpService original;
 
-    BlockingStreamingHttpServiceToStreamingHttpService(final BlockingStreamingHttpService service) {
-        this.service = requireNonNull(service);
+    BlockingStreamingToStreamingService(final BlockingStreamingHttpService original,
+                                        final HttpExecutionStrategyInfluencer influencer) {
+        super(influencer.influenceStrategy(DEFAULT_STRATEGY));
+        this.original = requireNonNull(original);
     }
 
     @Override
@@ -107,7 +110,7 @@ final class BlockingStreamingHttpServiceToStreamingHttpService implements Stream
                     response = new DefaultBlockingStreamingHttpServerResponse(OK, request.version(),
                                     ctx.headersFactory().newHeaders(), payloadWriter,
                                     ctx.executionContext().bufferAllocator(), sendMeta);
-                    service.handle(ctx, request.toBlockingStreamingRequest(), response);
+                    original.handle(ctx, request.toBlockingStreamingRequest(), response);
                 } catch (Throwable cause) {
                     tiCancellable.setDone(cause);
                     if (response == null || response.markMetaSent()) {
@@ -126,15 +129,7 @@ final class BlockingStreamingHttpServiceToStreamingHttpService implements Stream
 
     @Override
     public Completable closeAsync() {
-        return blockingToCompletable(service::close);
-    }
-
-    @Override
-    public HttpExecutionStrategy computeExecutionStrategy(HttpExecutionStrategy other) {
-        // Since we are converting to a different programming model, try altering the strategy for the returned service
-        // to contain an appropriate default. We achieve this by merging the expected strategy with the provided
-        // service strategy.
-        return service.computeExecutionStrategy(other.merge(OFFLOAD_RECEIVE_META_AND_SEND_STRATEGY));
+        return blockingToCompletable(original::close);
     }
 
     private static final class BufferHttpPayloadWriter implements HttpPayloadWriter<Buffer> {

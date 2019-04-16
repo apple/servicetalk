@@ -18,9 +18,7 @@ package io.servicetalk.http.api;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.api.ExecutionContext;
-import io.servicetalk.transport.api.ExecutionStrategy;
 
-import static io.servicetalk.http.api.HttpExecutionStrategies.OFFLOAD_ALL_STRATEGY;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -48,11 +46,6 @@ public class StreamingHttpClientFilter implements FilterableStreamingHttpClient 
     public Single<ReservedStreamingHttpConnection> reserveConnection(final HttpExecutionStrategy strategy,
                                                                      final HttpRequestMetaData metaData) {
         return delegate.reserveConnection(strategy, metaData).map(ClientFilterToReservedConnectionFilter::new);
-    }
-
-    @Override
-    public HttpExecutionStrategy computeExecutionStrategy(HttpExecutionStrategy other) {
-        return delegate.computeExecutionStrategy(other.merge(executionStrategy()));
     }
 
     @Override
@@ -117,18 +110,6 @@ public class StreamingHttpClientFilter implements FilterableStreamingHttpClient 
                                                     final HttpExecutionStrategy strategy,
                                                     final StreamingHttpRequest request) {
         return delegate.request(strategy, request);
-    }
-
-    /**
-     * The {@link ExecutionStrategy} considering the programming constraints of this {@link StreamingHttpServiceFilter}
-     * in isolation. This strategy should be the "least common denominator" for example if any blocking is done this
-     * method should reflect that.
-     *
-     * @return The {@link ExecutionStrategy} considering the programming constraints of this
-     * {@link StreamingHttpServiceFilter} in isolation.
-     */
-    protected HttpExecutionStrategy executionStrategy() {
-        return OFFLOAD_ALL_STRATEGY;
     }
 
     private final class ClientFilterToReservedConnectionFilter extends ReservedStreamingHttpConnectionFilter {

@@ -135,11 +135,6 @@ class DefaultHttpExecutionStrategy implements HttpExecutionStrategy {
             }
 
             @Override
-            public HttpExecutionStrategy computeExecutionStrategy(HttpExecutionStrategy other) {
-                return DefaultHttpExecutionStrategy.this;
-            }
-
-            @Override
             public Completable closeAsync() {
                 return service.closeAsync();
             }

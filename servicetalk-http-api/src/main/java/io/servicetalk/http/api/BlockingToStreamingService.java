@@ -20,34 +20,28 @@ import io.servicetalk.concurrent.api.Single;
 
 import static io.servicetalk.http.api.BlockingUtils.blockingToCompletable;
 import static io.servicetalk.http.api.BlockingUtils.blockingToSingle;
-import static io.servicetalk.http.api.HttpExecutionStrategies.OFFLOAD_RECEIVE_META_STRATEGY;
+import static io.servicetalk.http.api.HttpExecutionStrategies.OFFLOAD_RECEIVE_DATA_STRATEGY;
 import static java.util.Objects.requireNonNull;
 
-final class BlockingHttpServiceToStreamingHttpService implements StreamingHttpService {
-    private final BlockingHttpService service;
+final class BlockingToStreamingService extends AbstractServiceAdapterHolder {
+    static final HttpExecutionStrategy DEFAULT_STRATEGY = OFFLOAD_RECEIVE_DATA_STRATEGY;
+    private final BlockingHttpService original;
 
-    BlockingHttpServiceToStreamingHttpService(final BlockingHttpService service) {
-        this.service = requireNonNull(service);
+    BlockingToStreamingService(final BlockingHttpService original, HttpExecutionStrategyInfluencer influencer) {
+        super(influencer.influenceStrategy(DEFAULT_STRATEGY));
+        this.original = requireNonNull(original);
     }
 
     @Override
     public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
                                                 final StreamingHttpRequest request,
                                                 final StreamingHttpResponseFactory responseFactory) {
-        return request.toRequest().flatMap(req -> blockingToSingle(() -> service.handle(
+        return request.toRequest().flatMap(req -> blockingToSingle(() -> original.handle(
                 ctx, req, ctx.responseFactory())).map(HttpResponse::toStreamingResponse));
     }
 
     @Override
     public Completable closeAsync() {
-        return blockingToCompletable(service::close);
-    }
-
-    @Override
-    public HttpExecutionStrategy computeExecutionStrategy(HttpExecutionStrategy other) {
-        // Since we are converting to a different programming model, try altering the strategy for the returned service
-        // to contain an appropriate default. We achieve this by merging the expected strategy with the provided
-        // service strategy.
-        return service.computeExecutionStrategy(other.merge(OFFLOAD_RECEIVE_META_STRATEGY));
+        return blockingToCompletable(original::close);
     }
 }

@@ -15,41 +15,193 @@
  */
 package io.servicetalk.http.api;
 
+import io.servicetalk.http.api.StreamingHttpClientToBlockingHttpClient.ReservedStreamingHttpConnectionToReservedBlockingHttpConnection;
+import io.servicetalk.http.api.StreamingHttpClientToBlockingStreamingHttpClient.ReservedStreamingHttpConnectionToBlockingStreaming;
+import io.servicetalk.http.api.StreamingHttpClientToHttpClient.ReservedStreamingHttpConnectionToReservedHttpConnection;
+
 /**
  * Conversion routines to {@link StreamingHttpService}.
  */
 public final class HttpApiConversions {
+
     private HttpApiConversions() {
         // no instances
+    }
+
+    /**
+     * Convert from {@link ReservedStreamingHttpConnection} to {@link ReservedHttpConnection}.
+     *
+     * @param original {@link ReservedStreamingHttpConnection} to convert.
+     * @param influencer {@link HttpExecutionStrategyInfluencer} to use to derive the strategy of the returned
+     * {@link ReservedHttpConnection}
+     * @return The conversion result.
+     */
+    public static ReservedHttpConnection toReservedConnection(ReservedStreamingHttpConnection original,
+                                                              HttpExecutionStrategyInfluencer influencer) {
+        return new ReservedStreamingHttpConnectionToReservedHttpConnection(original, influencer);
+    }
+
+    /**
+     * Convert from {@link ReservedStreamingHttpConnection} to {@link ReservedBlockingHttpConnection}.
+     *
+     * @param original {@link ReservedStreamingHttpConnection} to convert.
+     * @param influencer {@link HttpExecutionStrategyInfluencer} to use to derive the strategy of the returned
+     * {@link ReservedBlockingHttpConnection}
+     * @return The conversion result.
+     */
+    public static ReservedBlockingHttpConnection toReservedBlockingConnection(
+            ReservedStreamingHttpConnection original, HttpExecutionStrategyInfluencer influencer) {
+        return new ReservedStreamingHttpConnectionToReservedBlockingHttpConnection(original, influencer);
+    }
+
+    /**
+     * Convert from {@link ReservedStreamingHttpConnection} to {@link ReservedBlockingStreamingHttpConnection}.
+     *
+     * @param original {@link ReservedStreamingHttpConnection} to convert.
+     * @param influencer {@link HttpExecutionStrategyInfluencer} to use to derive the strategy of the returned
+     * {@link ReservedBlockingStreamingHttpConnection}
+     * @return The conversion result.
+     */
+    public static ReservedBlockingStreamingHttpConnection toReservedBlockingStreamingConnection(
+            ReservedStreamingHttpConnection original, HttpExecutionStrategyInfluencer influencer) {
+        return new ReservedStreamingHttpConnectionToBlockingStreaming(original, influencer);
+    }
+
+    /**
+     * Convert from {@link StreamingHttpConnection} to {@link HttpConnection}.
+     *
+     * @param original {@link StreamingHttpConnection} to convert.
+     * @param influencer {@link HttpExecutionStrategyInfluencer} to use to derive the strategy of the returned
+     * {@link HttpConnection}
+     * @return The conversion result.
+     */
+    public static HttpConnection toConnection(StreamingHttpConnection original,
+                                              HttpExecutionStrategyInfluencer influencer) {
+        return new StreamingHttpConnectionToHttpConnection(original, influencer);
+    }
+
+    /**
+     * Convert from {@link StreamingHttpConnection} to {@link BlockingHttpConnection}.
+     *
+     * @param original {@link StreamingHttpConnection} to convert.
+     * @param influencer {@link HttpExecutionStrategyInfluencer} to use to derive the strategy of the returned
+     * {@link BlockingHttpConnection}
+     * @return The conversion result.
+     */
+    public static BlockingHttpConnection toBlockingConnection(
+            StreamingHttpConnection original, HttpExecutionStrategyInfluencer influencer) {
+        return new StreamingHttpConnectionToBlockingHttpConnection(original, influencer);
+    }
+
+    /**
+     * Convert from {@link StreamingHttpConnection} to {@link BlockingStreamingHttpConnection}.
+     *
+     * @param original {@link StreamingHttpConnection} to convert.
+     * @param influencer {@link HttpExecutionStrategyInfluencer} to use to derive the strategy of the returned
+     * {@link BlockingStreamingHttpConnection}
+     * @return The conversion result.
+     */
+    public static BlockingStreamingHttpConnection toBlockingStreamingConnection(
+            StreamingHttpConnection original, HttpExecutionStrategyInfluencer influencer) {
+        return new StreamingHttpConnectionToBlockingStreamingHttpConnection(original, influencer);
+    }
+
+    /**
+     * Convert from {@link StreamingHttpClient} to {@link HttpClient}.
+     *
+     * @param original {@link StreamingHttpClient} to convert.
+     * @param influencer {@link HttpExecutionStrategyInfluencer} to use to derive the strategy of the returned
+     * {@link HttpClient}
+     * @return The conversion result.
+     */
+    public static HttpClient toClient(StreamingHttpClient original, HttpExecutionStrategyInfluencer influencer) {
+        return new StreamingHttpClientToHttpClient(original, influencer);
+    }
+
+    /**
+     * Convert from {@link StreamingHttpClient} to {@link BlockingHttpClient}.
+     *
+     * @param original {@link StreamingHttpClient} to convert.
+     * @param influencer {@link HttpExecutionStrategyInfluencer} to use to derive the strategy of the returned
+     * {@link BlockingHttpClient}
+     * @return The conversion result.
+     */
+    public static BlockingHttpClient toBlockingClient(StreamingHttpClient original,
+                                                      HttpExecutionStrategyInfluencer influencer) {
+        return new StreamingHttpClientToBlockingHttpClient(original, influencer);
+    }
+
+    /**
+     * Convert from {@link StreamingHttpClient} to {@link BlockingStreamingHttpClient}.
+     *
+     * @param original {@link StreamingHttpClient} to convert.
+     * @param influencer {@link HttpExecutionStrategyInfluencer} to use to derive the strategy of the returned
+     * {@link BlockingStreamingHttpClient}
+     * @return The conversion result.
+     */
+    public static BlockingStreamingHttpClient toBlockingStreamingClient(StreamingHttpClient original,
+                                                                        HttpExecutionStrategyInfluencer influencer) {
+        return new StreamingHttpClientToBlockingStreamingHttpClient(original, influencer);
     }
 
     /**
      * Convert from a {@link HttpService} to a {@link StreamingHttpService}.
      *
      * @param service The {@link HttpService} to convert.
-     * @return The conversion result.
+     * @param influencer {@link HttpExecutionStrategyInfluencer} to influence the strategy for invoking the resulting
+     * {@link StreamingHttpService}.
+     * @return {@link ServiceAdapterHolder} containing the service adapted to the streaming programming model.
      */
-    public static StreamingHttpService toStreamingHttpService(HttpService service) {
-        return new HttpServiceToStreamingHttpService(service);
+    public static ServiceAdapterHolder toStreamingHttpService(HttpService service,
+                                                              HttpExecutionStrategyInfluencer influencer) {
+        return new ServiceToStreamingService(service, influencer);
     }
 
     /**
      * Convert from a {@link BlockingStreamingHttpService} to a {@link StreamingHttpService}.
      *
-     * @param handler The {@link BlockingStreamingHttpService} to convert.
-     * @return The conversion result.
+     * @param service The {@link BlockingStreamingHttpService} to convert.
+     * @param influencer {@link HttpExecutionStrategyInfluencer} to influence the strategy for invoking the resulting
+     * {@link StreamingHttpService}.
+     * @return {@link ServiceAdapterHolder} containing the service adapted to the streaming programming model.
      */
-    public static StreamingHttpService toStreamingHttpService(BlockingStreamingHttpService handler) {
-        return new BlockingStreamingHttpServiceToStreamingHttpService(handler);
+    public static ServiceAdapterHolder toStreamingHttpService(BlockingStreamingHttpService service,
+                                                              HttpExecutionStrategyInfluencer influencer) {
+        return new BlockingStreamingToStreamingService(service, influencer);
     }
 
     /**
-     * Convert from a {@link BlockingHttpService} to a {@link StreamingHttpService}.
+     * Convert from a {@link BlockingStreamingHttpService} to a {@link StreamingHttpService}.
      *
-     * @param handler The {@link BlockingHttpService} to convert.
-     * @return The conversion result.
+     * @param service The {@link BlockingStreamingHttpService} to convert.
+     * @param influencer {@link HttpExecutionStrategyInfluencer} to influence the strategy for invoking the resulting
+     * {@link StreamingHttpService}.
+     * @return {@link ServiceAdapterHolder} containing the service adapted to the streaming programming model.
      */
-    public static StreamingHttpService toStreamingHttpService(BlockingHttpService handler) {
-        return new BlockingHttpServiceToStreamingHttpService(handler);
+    public static ServiceAdapterHolder toStreamingHttpService(BlockingHttpService service,
+                                                              HttpExecutionStrategyInfluencer influencer) {
+        return new BlockingToStreamingService(service, influencer);
+    }
+
+    /**
+     * A holder for {@link StreamingHttpService} that adapts another {@code service} to the streaming programming model.
+     */
+    public interface ServiceAdapterHolder {
+
+        /**
+         * {@link StreamingHttpService} that adapts another {@code service} to the streaming programming model. This
+         * {@link StreamingHttpService} should only be invoked using the {@link HttpExecutionStrategy} returned from
+         * {@link #serviceInvocationStrategy()}.
+         *
+         * @return {@link StreamingHttpService} that adapts another {@code service} to the streaming programming model.
+         */
+        StreamingHttpService adaptor();
+
+        /**
+         * {@link HttpExecutionStrategy} that should be used to invoke the service returned by {@link #adaptor()}.
+         *
+         * @return {@link HttpExecutionStrategy} for this adapter.
+         */
+        HttpExecutionStrategy serviceInvocationStrategy();
     }
 }
