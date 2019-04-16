@@ -51,7 +51,7 @@ public class JerseyDataJacksonTestSuite {
         // for our Jackson serializer. Thus we disable the test suite altogether if we're in this scenario to prevent
         // overwhelming developers with meaningless and puzzling failures.
         // To run this in an IDE, remove the jersey-media-json-jackson dependency from the module
-        // servicetalk-http-router-jersey.
+        // servicetalk-http-router-jersey. This will break some tests in servicetalk-http-router-jersey.
         assumeThat("Test suite disabled because Jersey's Jackson serializer is on the classpath",
                 jerseyJacksonOnClasspath, is(false));
     }
