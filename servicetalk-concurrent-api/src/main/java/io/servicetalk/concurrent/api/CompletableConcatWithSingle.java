@@ -15,9 +15,6 @@
  */
 package io.servicetalk.concurrent.api;
 
-import io.servicetalk.concurrent.Cancellable;
-import io.servicetalk.concurrent.CompletableSource;
-import io.servicetalk.concurrent.internal.SequentialCancellable;
 import io.servicetalk.concurrent.internal.SignalOffloader;
 
 import javax.annotation.Nullable;
@@ -29,7 +26,7 @@ import static java.util.Objects.requireNonNull;
  *
  * @param <T> Type of result of this {@link Single}.
  */
-final class CompletableConcatWithSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
+final class CompletableConcatWithSingle<T> extends AbstractCompletableAndSingleConcatenated<T> {
     private final Completable original;
     private final Single<? extends T> next;
 
@@ -40,72 +37,28 @@ final class CompletableConcatWithSingle<T> extends AbstractNoHandleSubscribeSing
     }
 
     @Override
-    protected void handleSubscribe(Subscriber<? super T> subscriber, SignalOffloader offloader,
-                                   AsyncContextMap contextMap, AsyncContextProvider contextProvider) {
-        // Since we use the same Subscriber for two sources we always need to offload it. We do not subscribe to the
-        // next source using the same offloader so we have the following cases:
-        //
-        //  (1) Original Completable was not using an Executor but the next Single uses an Executor.
-        //  (2) Original Completable uses an Executor but the next Single does not.
-        //  (3) None of the sources use an Executor.
-        //  (4) Both the sources use an Executor.
-        //
-        // SignalOffloader passed here is created from the Executor of the original Completable.
-        // While subscribing to the next Single, we do not pass any SignalOffloader so whatever is chosen for that
-        // Single will be used.
-        //
-        // The only interesting case is (2) above where for the first Subscriber we are running on an Executor thread
-        // but for the second we are not which changes the threading model such that blocking code could run on the
-        // eventloop. Important thing to note is that once the next Single is subscribed we never touch the Cancellable
-        // of the original Completable. So, we do not need to do anything special there.
-        // In order to cover for this case ((2) above) we always offload the passed Subscriber here.
-        Subscriber<? super T> offloadSubscriber = offloader.offloadSubscriber(
-                contextProvider.wrapSingleSubscriber(subscriber, contextMap));
-        original.delegateSubscribe(new ConcatWithSubscriber<>(offloadSubscriber, next), offloader,
-                contextMap, contextProvider);
+    void delegateSubscribeToOriginal(final Subscriber<? super T> offloadSubscriber, final SignalOffloader offloader,
+                                     final AsyncContextMap contextMap, final AsyncContextProvider contextProvider) {
+        original.delegateSubscribe(new ConcatWithSubscriber<>(offloadSubscriber, next), offloader, contextMap,
+                contextProvider);
     }
 
-    private static final class ConcatWithSubscriber<T> implements Subscriber<T>, CompletableSource.Subscriber {
-        private final Subscriber<? super T> target;
-        private final Single<? extends T> next;
-        @Nullable
-        private volatile SequentialCancellable sequentialCancellable;
+    private static final class ConcatWithSubscriber<T> extends AbstractConcatWithSubscriber<T> {
+        private final Single<T> next;
 
-        ConcatWithSubscriber(Subscriber<? super T> target, Single<? extends T> next) {
-            this.target = target;
+        ConcatWithSubscriber(Subscriber<? super T> target, Single<T> next) {
+            super(target);
             this.next = next;
         }
 
         @Override
         public void onComplete() {
-            // Do not use the same SignalOffloader as used for original as that may cause deadlock.
-            // Using a regular subscribe helps us to inherit the threading model for this next source. However, since
-            // we always offload the original Subscriber (in handleSubscribe above) we are assured that this Subscriber
-            // is not called unexpectedly on an eventloop if this source does not use an Executor.
-            //
-            // This is an asynchronous boundary, and so we should recapture the AsyncContext instead of propagating it.
-            next.subscribeInternal(this);
+            subscribeToNext(next);
         }
 
         @Override
-        public void onSubscribe(Cancellable cancellable) {
-            SequentialCancellable sequentialCancellable = this.sequentialCancellable;
-            if (sequentialCancellable == null) {
-                this.sequentialCancellable = sequentialCancellable = new SequentialCancellable(cancellable);
-                target.onSubscribe(sequentialCancellable);
-            } else {
-                sequentialCancellable.nextCancellable(cancellable);
-            }
-        }
-
-        @Override
-        public void onSuccess(@Nullable T result) {
-            target.onSuccess(result);
-        }
-
-        @Override
-        public void onError(Throwable t) {
-            target.onError(t);
+        public void onSuccess(@Nullable final T result) {
+            sendSuccessToTarget(result);
         }
     }
 }
