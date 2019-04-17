@@ -40,7 +40,6 @@ import org.junit.rules.Timeout;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
-import static io.servicetalk.buffer.api.EmptyBuffer.EMPTY_BUFFER;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.BlockingTestUtils.awaitIndefinitelyNonNull;
 import static io.servicetalk.concurrent.api.Single.succeeded;
@@ -119,8 +118,7 @@ public class MultiAddressUrlHttpClientTest {
                 return succeeded(resp);
             }
             try {
-                HttpResponseStatus status = HttpResponseStatus.of(parseInt(request.path().substring(1)),
-                        EMPTY_BUFFER);
+                HttpResponseStatus status = HttpResponseStatus.of(parseInt(request.path().substring(1)), "");
                 StreamingHttpResponse response = factory.newResponse(status);
                 response.headers().set(httpHeaders);
                 final CharSequence locationHeader = request.headers().get(X_REQUESTED_LOCATION);

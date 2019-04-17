@@ -44,7 +44,6 @@ import javax.annotation.Nullable;
 import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.Response.StatusType;
 
-import static io.servicetalk.buffer.api.ReadOnlyBufferAllocators.PREFER_DIRECT_RO_ALLOCATOR;
 import static io.servicetalk.http.api.CharSequences.emptyAsciiString;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderNames.TRANSFER_ENCODING;
@@ -68,9 +67,7 @@ final class DefaultContainerResponseWriter implements ContainerResponseWriter {
 
     private static final Map<Status, HttpResponseStatus> RESPONSE_STATUSES =
             unmodifiableMap(stream(Status.values())
-                    .collect(toMap(identity(),
-                            s -> HttpResponseStatus.of(s.getStatusCode(),
-                                    PREFER_DIRECT_RO_ALLOCATOR.fromAscii(s.getReasonPhrase())))));
+                    .collect(toMap(identity(), s -> HttpResponseStatus.of(s.getStatusCode(), s.getReasonPhrase()))));
 
     private static final int UNKNOWN_RESPONSE_LENGTH = -1;
 
@@ -264,11 +261,10 @@ final class DefaultContainerResponseWriter implements ContainerResponseWriter {
         responseSubscriber.onSuccess(response);
     }
 
-    private HttpResponseStatus getStatus(final ContainerResponse containerResponse) {
+    private static HttpResponseStatus getStatus(final ContainerResponse containerResponse) {
         final StatusType statusInfo = containerResponse.getStatusInfo();
         return statusInfo instanceof Status ? RESPONSE_STATUSES.get(statusInfo) :
-                HttpResponseStatus.of(statusInfo.getStatusCode(), serviceCtx.executionContext()
-                        .bufferAllocator().fromAscii(statusInfo.getReasonPhrase()));
+                HttpResponseStatus.of(statusInfo.getStatusCode(), statusInfo.getReasonPhrase());
     }
 
     private boolean isHeadRequest() {

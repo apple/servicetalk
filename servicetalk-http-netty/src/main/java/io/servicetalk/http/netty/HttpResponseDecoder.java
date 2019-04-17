@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,18 +16,15 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.http.api.HttpHeadersFactory;
-import io.servicetalk.http.api.HttpProtocolVersion;
 import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.transport.netty.internal.CloseHandler;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
 
 import java.util.Queue;
 
-import static io.servicetalk.buffer.netty.BufferUtil.newBufferFrom;
 import static io.servicetalk.http.api.HttpHeaderNames.SEC_WEBSOCKET_ACCEPT;
 import static io.servicetalk.http.api.HttpHeaderNames.UPGRADE;
 import static io.servicetalk.http.api.HttpHeaderValues.WEBSOCKET;
@@ -39,11 +36,14 @@ import static io.servicetalk.http.api.HttpResponseStatus.NO_CONTENT;
 import static io.servicetalk.http.api.HttpResponseStatus.SWITCHING_PROTOCOLS;
 import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.INFORMATIONAL_1XX;
 import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
-import static java.lang.Integer.parseInt;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.util.Objects.requireNonNull;
 
 final class HttpResponseDecoder extends HttpObjectDecoder<HttpResponseMetaData> {
+
+    private static final int ZERO = '0';
+    private static final int NINE = '9';
+
     private final Queue<HttpRequestMethod> methodQueue;
 
     HttpResponseDecoder(Queue<HttpRequestMethod> methodQueue, HttpHeadersFactory headersFactory,
@@ -66,16 +66,9 @@ final class HttpResponseDecoder extends HttpObjectDecoder<HttpResponseMetaData> 
     protected HttpResponseMetaData createMessage(final ByteBuf buffer, final int firstStart, final int firstLength,
                                                  final int secondStart, final int secondLength,
                                                  final int thirdStart, final int thirdLength) {
-        // TODO(idel): keep slicing until we can measure client side performance to see the difference with toString
-        return createMessage(nettyBufferToHttpVersion(buffer, firstStart, firstLength),
-                buffer.slice(secondStart, secondLength),
-                thirdLength >= 0 ? buffer.slice(thirdStart, thirdLength) : Unpooled.EMPTY_BUFFER);
-    }
-
-    private HttpResponseMetaData createMessage(final HttpProtocolVersion version,
-                                               final ByteBuf second, final ByteBuf third) {
-        return newResponseMetaData(version,
-                nettyBufferToHttpStatus(second, third),
+        return newResponseMetaData(nettyBufferToHttpVersion(buffer, firstStart, firstLength),
+                HttpResponseStatus.of(nettyBufferToStatusCode(buffer, secondStart, secondLength),
+                        thirdLength >= 0 ? buffer.toString(thirdStart, thirdLength, US_ASCII) : ""),
                 headersFactory().newHeaders());
     }
 
@@ -109,25 +102,21 @@ final class HttpResponseDecoder extends HttpObjectDecoder<HttpResponseMetaData> 
                 || msg.status().code() == NO_CONTENT.code() || msg.status().code() == NOT_MODIFIED.code();
     }
 
-    private static HttpResponseStatus nettyBufferToHttpStatus(ByteBuf statusCode, ByteBuf reasonPhrase) {
-        // Most status codes are 3 bytes long, and so it is worth a special case to optimize the conversion from bytes
-        // to integer and avoid String conversion and generic parseInt.
-        if (statusCode.readableBytes() == 3) {
-            final int medium = statusCode.getUnsignedMedium(statusCode.readerIndex());
-            return HttpResponseStatus.of(
-                    toDecimal((medium & 0xff0000) >> 16) * 100 +
-                            toDecimal((medium & 0xff00) >> 8) * 10 +
-                            toDecimal(medium & 0xff),
-                    newBufferFrom(reasonPhrase));
-        } else {
-            return HttpResponseStatus.of(parseInt(statusCode.toString(US_ASCII)), newBufferFrom(reasonPhrase));
+    private static int nettyBufferToStatusCode(final ByteBuf buffer, final int start, final int length) {
+        if (length != 3) {
+            splitInitialLineError();
         }
+
+        final int medium = buffer.getUnsignedMedium(start);
+        return toDecimal((medium & 0xff0000) >> 16) * 100 +
+                toDecimal((medium & 0xff00) >> 8) * 10 +
+                toDecimal(medium & 0xff);
     }
 
     private static int toDecimal(final int c) {
-        if (c < 48 || c > 57) {
+        if (c < ZERO || c > NINE) {
             throw new IllegalArgumentException("invalid status code");
         }
-        return c - 48;
+        return c - ZERO;
     }
 }
