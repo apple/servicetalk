@@ -21,6 +21,8 @@ import io.servicetalk.concurrent.api.AsyncContextMap;
 import io.servicetalk.concurrent.api.AsyncContextMap.Key;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.http.api.HttpExecutionStrategy;
+import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
 import io.servicetalk.http.api.HttpHeaderNames;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpMetaData;
@@ -45,6 +47,7 @@ import javax.annotation.Nullable;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.Single.succeeded;
+import static io.servicetalk.http.api.HttpExecutionStrategyInfluencer.defaultStreamingInfluencer;
 import static io.servicetalk.http.api.HttpHeaderNames.AUTHORIZATION;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderNames.PROXY_AUTHENTICATE;
@@ -63,7 +66,8 @@ import static java.util.Objects.requireNonNull;
  * @param <UserInfo> a type for authenticated user info object
  * @see Builder
  */
-public final class BasicAuthHttpServiceFilter<UserInfo> implements StreamingHttpServiceFilterFactory {
+public final class BasicAuthHttpServiceFilter<UserInfo>
+        implements StreamingHttpServiceFilterFactory, HttpExecutionStrategyInfluencer {
 
     /**
      * Verifies {@code user-id} and {@code password}, parsed from the 'Basic' HTTP Authentication Scheme credentials.
@@ -213,6 +217,7 @@ public final class BasicAuthHttpServiceFilter<UserInfo> implements StreamingHttp
     }
 
     private final CredentialsVerifier<UserInfo> credentialsVerifier;
+    private final HttpExecutionStrategyInfluencer influencer;
     private final String realm;
     private final boolean proxy;
     @Nullable
@@ -229,11 +234,19 @@ public final class BasicAuthHttpServiceFilter<UserInfo> implements StreamingHttp
         this.proxy = proxy;
         this.userInfoKey = userInfoKey;
         this.utf8 = utf8;
+        influencer = credentialsVerifier instanceof HttpExecutionStrategyInfluencer ?
+                (HttpExecutionStrategyInfluencer) credentialsVerifier :
+                defaultStreamingInfluencer();
     }
 
     @Override
     public StreamingHttpServiceFilter create(final StreamingHttpService service) {
         return new BasicAuthStreamingHttpService<>(this, service);
+    }
+
+    @Override
+    public HttpExecutionStrategy influenceStrategy(final HttpExecutionStrategy strategy) {
+        return influencer.influenceStrategy(strategy);
     }
 
     private static final class BasicAuthStreamingHttpService<UserInfo> extends StreamingHttpServiceFilter {
