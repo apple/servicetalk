@@ -19,6 +19,8 @@ import io.servicetalk.concurrent.internal.SignalOffloader;
 
 import javax.annotation.Nullable;
 
+import static java.util.Objects.requireNonNull;
+
 /**
  * As returned by {@link Single#concat(Completable)}.
  */
@@ -28,8 +30,8 @@ final class SingleConcatWithCompletable<T> extends AbstractCompletableAndSingleC
 
     SingleConcatWithCompletable(final Single<? extends T> original, final Completable next, final Executor executor) {
         super(executor);
-        this.original = original;
-        this.next = next;
+        this.original = requireNonNull(original);
+        this.next = requireNonNull(next);
     }
 
     @Override
