@@ -369,9 +369,8 @@ public abstract class AbstractHttpRequesterFilterTest {
                     }
 
                     @Override
-                    public Single<ReservedStreamingHttpConnection> reserveConnection(
-                            final HttpExecutionStrategy strategy,
-                            final HttpRequestMetaData metaData) {
+                    public Single<? extends FilterableReservedStreamingHttpConnection> reserveConnection(
+                            final HttpExecutionStrategy strategy, final HttpRequestMetaData metaData) {
                         return succeeded(newReservedConnection()).map(rc ->
                                 new ReservedStreamingHttpConnectionFilter(rc) {
                                     @Override

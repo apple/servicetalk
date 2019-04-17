@@ -57,9 +57,10 @@ public final class LoadBalancerReadyStreamingHttpClientFilter extends StreamingH
     }
 
     @Override
-    public Single<ReservedStreamingHttpConnection> reserveConnection(final HttpExecutionStrategy strategy,
-                                                                     final HttpRequestMetaData metaData) {
-        return delegate().reserveConnection(strategy, metaData).retryWhen(retryWhenFunction());
+    public Single<? extends FilterableReservedStreamingHttpConnection> reserveConnection(
+            final HttpExecutionStrategy strategy, final HttpRequestMetaData metaData) {
+        return delegate().reserveConnection(strategy, metaData)
+                .retryWhen(retryWhenFunction());
     }
 
     @Override

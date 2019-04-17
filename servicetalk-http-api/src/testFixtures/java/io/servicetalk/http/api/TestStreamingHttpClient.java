@@ -19,6 +19,7 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ExecutionContext;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.emptyAsyncCloseable;
@@ -26,6 +27,9 @@ import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.http.api.HttpApiConversions.toBlockingClient;
 import static io.servicetalk.http.api.HttpApiConversions.toBlockingStreamingClient;
 import static io.servicetalk.http.api.HttpApiConversions.toClient;
+import static io.servicetalk.http.api.HttpApiConversions.toReservedBlockingConnection;
+import static io.servicetalk.http.api.HttpApiConversions.toReservedBlockingStreamingConnection;
+import static io.servicetalk.http.api.HttpApiConversions.toReservedConnection;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 
 public final class TestStreamingHttpClient {
@@ -43,7 +47,7 @@ public final class TestStreamingHttpClient {
                     private final ListenableAsyncCloseable closeable = emptyAsyncCloseable();
 
                     @Override
-                    public Single<ReservedStreamingHttpConnection> reserveConnection(
+                    public Single<? extends FilterableReservedStreamingHttpConnection> reserveConnection(
                             final HttpExecutionStrategy strategy, final HttpRequestMetaData metaData) {
                         return failed(new UnsupportedOperationException());
                     }
@@ -92,7 +96,85 @@ public final class TestStreamingHttpClient {
             @Override
             public Single<ReservedStreamingHttpConnection> reserveConnection(final HttpExecutionStrategy strategy,
                                                                              final HttpRequestMetaData metaData) {
-                return filterChain.reserveConnection(strategy, metaData);
+                return filterChain.reserveConnection(strategy, metaData)
+                        .map(rc -> new ReservedStreamingHttpConnection() {
+                            @Override
+                            public ReservedHttpConnection asConnection() {
+                                return toReservedConnection(this, s -> s);
+                            }
+
+                            @Override
+                            public ReservedBlockingStreamingHttpConnection asBlockingStreamingConnection() {
+                                return toReservedBlockingStreamingConnection(this, s -> s);
+                            }
+
+                            @Override
+                            public ReservedBlockingHttpConnection asBlockingConnection() {
+                                return toReservedBlockingConnection(this, s -> s);
+                            }
+
+                            @Override
+                            public Completable releaseAsync() {
+                                return rc.releaseAsync();
+                            }
+
+                            @Override
+                            public Single<StreamingHttpResponse> request(final StreamingHttpRequest request) {
+                                return rc.request(strategy, request);
+                            }
+
+                            @Override
+                            public ConnectionContext connectionContext() {
+                                return rc.connectionContext();
+                            }
+
+                            @Override
+                            public <T> Publisher<T> settingStream(final SettingKey<T> settingKey) {
+                                return rc.settingStream(settingKey);
+                            }
+
+                            @Override
+                            public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
+                                                                         final StreamingHttpRequest request) {
+                                return rc.request(strategy, request);
+                            }
+
+                            @Override
+                            public ExecutionContext executionContext() {
+                                return rc.executionContext();
+                            }
+
+                            @Override
+                            public StreamingHttpResponseFactory httpResponseFactory() {
+                                return rc.httpResponseFactory();
+                            }
+
+                            @Override
+                            public Completable onClose() {
+                                return rc.onClose();
+                            }
+
+                            @Override
+                            public Completable closeAsync() {
+                                return rc.closeAsync();
+                            }
+
+                            @Override
+                            public void close() throws Exception {
+                                rc.close();
+                            }
+
+                            @Override
+                            public Completable closeAsyncGracefully() {
+                                return rc.closeAsyncGracefully();
+                            }
+
+                            @Override
+                            public StreamingHttpRequest newRequest(final HttpRequestMethod method,
+                                                                   final String requestTarget) {
+                                return rc.newRequest(method, requestTarget);
+                            }
+                        });
             }
 
             @Override
@@ -143,7 +225,7 @@ public final class TestStreamingHttpClient {
 
             @Override
             public Single<ReservedStreamingHttpConnection> reserveConnection(final HttpRequestMetaData metaData) {
-                return filterChain.reserveConnection(defaultStrategy(), metaData);
+                return reserveConnection(defaultStrategy(), metaData);
             }
 
             @Override

@@ -30,6 +30,6 @@ public interface FilterableStreamingHttpClient extends StreamingHttpRequester {
      * For example this may provide some insight into shard or other info.
      * @return a {@link Single} that provides the {@link ReservedStreamingHttpConnection} upon completion.
      */
-    Single<ReservedStreamingHttpConnection> reserveConnection(HttpExecutionStrategy strategy,
-                                                              HttpRequestMetaData metaData);
+    Single<? extends FilterableReservedStreamingHttpConnection> reserveConnection(HttpExecutionStrategy strategy,
+                                                                                  HttpRequestMetaData metaData);
 }

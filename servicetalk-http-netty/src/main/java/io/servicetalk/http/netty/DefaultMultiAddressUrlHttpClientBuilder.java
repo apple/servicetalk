@@ -27,6 +27,7 @@ import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.internal.SubscribableCompletable;
+import io.servicetalk.http.api.FilterableReservedStreamingHttpConnection;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpHeadersFactory;
@@ -34,7 +35,6 @@ import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.MultiAddressHttpClientBuilder;
 import io.servicetalk.http.api.MultiAddressHttpClientFilterFactory;
-import io.servicetalk.http.api.ReservedStreamingHttpConnection;
 import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.http.api.SslConfigProvider;
 import io.servicetalk.http.api.StreamingHttpClient;
@@ -294,8 +294,8 @@ final class DefaultMultiAddressUrlHttpClientBuilder extends MultiAddressHttpClie
         }
 
         @Override
-        public Single<ReservedStreamingHttpConnection> reserveConnection(final HttpExecutionStrategy strategy,
-                                                                         final HttpRequestMetaData metaData) {
+        public Single<? extends FilterableReservedStreamingHttpConnection> reserveConnection(
+                final HttpExecutionStrategy strategy, final HttpRequestMetaData metaData) {
             return defer(() -> selectClient(metaData).reserveConnection(strategy, metaData).subscribeShareContext());
         }
 
