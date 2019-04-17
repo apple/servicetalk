@@ -20,7 +20,6 @@ import io.servicetalk.client.api.NoAvailableHostException;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
-import io.servicetalk.transport.api.ExecutionContext;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -60,7 +59,7 @@ public class LoadBalancerReadyHttpClientTest {
     private final TestPublisher<Object> loadBalancerPublisher = new TestPublisher<>();
 
     @Mock
-    private ExecutionContext mockExecutionCtx;
+    private HttpExecutionContext mockExecutionCtx;
 
     @Mock
     private ReservedStreamingHttpConnection mockReservedConnection;

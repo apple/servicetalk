@@ -20,7 +20,6 @@ import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection.SettingKey;
 import io.servicetalk.transport.api.ConnectionContext;
-import io.servicetalk.transport.api.ExecutionContext;
 
 import static io.servicetalk.http.api.HttpExecutionStrategies.OFFLOAD_RECEIVE_DATA_STRATEGY;
 import static io.servicetalk.http.api.RequestResponseFactories.toAggregated;
@@ -68,7 +67,7 @@ final class StreamingHttpConnectionToHttpConnection implements HttpConnection {
     }
 
     @Override
-    public ExecutionContext executionContext() {
+    public HttpExecutionContext executionContext() {
         return connection.executionContext();
     }
 

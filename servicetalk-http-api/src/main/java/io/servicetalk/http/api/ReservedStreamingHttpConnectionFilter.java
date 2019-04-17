@@ -22,7 +22,6 @@ import io.servicetalk.http.api.StreamingHttpClientToBlockingHttpClient.ReservedS
 import io.servicetalk.http.api.StreamingHttpClientToBlockingStreamingHttpClient.ReservedStreamingHttpConnectionToBlockingStreaming;
 import io.servicetalk.http.api.StreamingHttpClientToHttpClient.ReservedStreamingHttpConnectionToReservedHttpConnection;
 import io.servicetalk.transport.api.ConnectionContext;
-import io.servicetalk.transport.api.ExecutionContext;
 
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static java.util.Objects.requireNonNull;
@@ -93,7 +92,7 @@ public class ReservedStreamingHttpConnectionFilter implements ReservedStreamingH
     }
 
     @Override
-    public ExecutionContext executionContext() {
+    public HttpExecutionContext executionContext() {
         return delegate.executionContext();
     }
 

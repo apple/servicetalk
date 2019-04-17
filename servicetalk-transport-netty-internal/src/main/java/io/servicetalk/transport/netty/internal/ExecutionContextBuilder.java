@@ -19,6 +19,7 @@ import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.transport.api.DefaultExecutionContext;
 import io.servicetalk.transport.api.ExecutionContext;
+import io.servicetalk.transport.api.ExecutionStrategy;
 import io.servicetalk.transport.api.IoExecutor;
 
 import javax.annotation.Nullable;
@@ -39,6 +40,8 @@ public final class ExecutionContextBuilder {
     private Executor executor;
     @Nullable
     private BufferAllocator allocator;
+    @Nullable
+    private ExecutionStrategy strategy;
 
     /**
      * New instance.
@@ -55,6 +58,7 @@ public final class ExecutionContextBuilder {
         ioExecutor = other.ioExecutor;
         executor = other.executor;
         allocator = other.allocator;
+        strategy = other.strategy;
     }
 
     /**
@@ -91,6 +95,17 @@ public final class ExecutionContextBuilder {
     }
 
     /**
+     * Sets the {@link ExecutionStrategy} to use.
+     *
+     * @param strategy {@link ExecutionStrategy} to use.
+     * @return {@code this}.
+     */
+    public ExecutionContextBuilder executionStrategy(ExecutionStrategy strategy) {
+        this.strategy = requireNonNull(strategy);
+        return this;
+    }
+
+    /**
      * Builds a new {@link ExecutionContext} or return {@link GlobalExecutionContext#globalExecutionContext()} if none
      * of the components are set in this builder.
      *
@@ -99,11 +114,15 @@ public final class ExecutionContextBuilder {
     public ExecutionContext build() {
         // Do not refer to globalExecutionContext() unless someone builds an ExecutionContext with defaults.
         // This is to make sure we do not eagerly initialize the resources used by the globalExecutionContext()
-        if (ioExecutor == null && executor == null && allocator == null) {
+        if (ioExecutor == null && executor == null && allocator == null && strategy == null) {
             return globalExecutionContext();
         }
+        Executor executor = this.executor == null ?
+                strategy != null ? strategy.executor() : null :
+                this.executor;
         return new DefaultExecutionContext(allocator == null ? globalExecutionContext().bufferAllocator() : allocator,
                 ioExecutor == null ? globalExecutionContext().ioExecutor() : ioExecutor,
-                executor == null ? globalExecutionContext().executor() : executor);
+                executor == null ? globalExecutionContext().executor() : executor,
+                strategy == null ? globalExecutionContext().executionStrategy() : strategy);
     }
 }

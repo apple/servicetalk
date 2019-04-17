@@ -16,11 +16,11 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.buffer.api.BufferAllocator;
-import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpConnectionBuilder;
+import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
 import io.servicetalk.http.api.HttpHeaders;
@@ -34,13 +34,11 @@ import io.servicetalk.tcp.netty.internal.ReadOnlyTcpClientConfig;
 import io.servicetalk.tcp.netty.internal.TcpClientChannelInitializer;
 import io.servicetalk.tcp.netty.internal.TcpClientConfig;
 import io.servicetalk.tcp.netty.internal.TcpConnector;
-import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.SslConfig;
 import io.servicetalk.transport.netty.internal.CloseHandler;
 import io.servicetalk.transport.netty.internal.DefaultNettyConnection;
-import io.servicetalk.transport.netty.internal.ExecutionContextBuilder;
 import io.servicetalk.transport.netty.internal.NettyConnection;
 import io.servicetalk.transport.netty.internal.NettyConnection.TerminalPredicate;
 
@@ -51,7 +49,6 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.transport.netty.internal.CloseHandler.forPipelinedRequestResponse;
 import static java.util.Objects.requireNonNull;
 
@@ -65,9 +62,8 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> extends HttpCon
     private static final Predicate<Object> LAST_CHUNK_PREDICATE = p -> p instanceof HttpHeaders;
 
     private final HttpClientConfig config;
-    private final ExecutionContextBuilder executionContextBuilder = new ExecutionContextBuilder();
+    private final HttpExecutionContextBuilder executionContextBuilder = new HttpExecutionContextBuilder();
     private final StrategyInfluencerChainBuilder influencerChainBuilder;
-    private HttpExecutionStrategy strategy = defaultStrategy();
     @Nullable
     private StreamingHttpConnectionFilterFactory connectionFilterFunction;
     @Nullable
@@ -96,23 +92,18 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> extends HttpCon
 
     @Override
     public DefaultHttpConnectionBuilder<ResolvedAddress> executionStrategy(final HttpExecutionStrategy strategy) {
-        this.strategy = requireNonNull(strategy);
+        executionContextBuilder.executionStrategy(strategy);
         return this;
     }
 
     @Override
     public Single<StreamingHttpConnection> buildStreaming(final ResolvedAddress resolvedAddress) {
         ReadOnlyHttpClientConfig roConfig = config.asReadOnly();
-        final HttpExecutionStrategy strategy = this.strategy;
-        Executor executor = strategy.executor();
-        if (executor != null) {
-            executionContextBuilder.executor(executor);
-        }
-        ExecutionContext executionContext = executionContextBuilder.build();
+        HttpExecutionContext executionContext = executionContextBuilder.build();
         final StreamingHttpRequestResponseFactory reqRespFactory =
                 new DefaultStreamingHttpRequestResponseFactory(executionContext.bufferAllocator(),
                         roConfig.headersFactory());
-        influencerChainBuilder.prepend(strategy::merge);
+        influencerChainBuilder.prepend(executionContext.executionStrategy()::merge);
         HttpExecutionStrategyInfluencer strategyInfluencer = influencerChainBuilder.build();
 
         StreamingHttpConnectionFilterFactory filterFactory;
@@ -142,7 +133,8 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> extends HttpCon
                             ), roConfig.maxPipelinedRequests());
                     return finalFilterFactory == null ? limitedConn : finalFilterFactory.create(limitedConn);
                 })
-                ).map(conn -> new FilterableConnectionToConnection(conn, strategy, strategyInfluencer));
+                ).map(conn -> new FilterableConnectionToConnection(conn, executionContext.executionStrategy(),
+                strategyInfluencer));
     }
 
     // TODO(derek): Temporary, so we can re-enable the ability to create non-pipelined connections for perf testing.
@@ -152,7 +144,7 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> extends HttpCon
     }
 
     static <ResolvedAddress> Single<? extends NettyConnection<Object, Object>> buildStreaming(
-            final ExecutionContext executionContext, ResolvedAddress resolvedAddress,
+            final HttpExecutionContext executionContext, ResolvedAddress resolvedAddress,
             ReadOnlyHttpClientConfig roConfig) {
         // This state is read only, so safe to keep a copy across Subscribers
         final ReadOnlyTcpClientConfig roTcpClientConfig = roConfig.tcpClientConfig();
@@ -163,7 +155,7 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> extends HttpCon
                             executionContext.executor(), new TerminalPredicate<>(LAST_CHUNK_PREDICATE), closeHandler,
                             roTcpClientConfig.flushStrategy(), new TcpClientChannelInitializer(
                                     roConfig.tcpClientConfig()).andThen(new HttpClientChannelInitializer(roConfig,
-                                    closeHandler)));
+                                    closeHandler)), executionContext.executionStrategy());
                 });
     }
 

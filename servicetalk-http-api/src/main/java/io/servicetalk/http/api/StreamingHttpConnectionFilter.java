@@ -19,7 +19,6 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.api.ConnectionContext;
-import io.servicetalk.transport.api.ExecutionContext;
 
 import static java.util.Objects.requireNonNull;
 
@@ -55,7 +54,7 @@ public class StreamingHttpConnectionFilter implements FilterableStreamingHttpCon
     }
 
     @Override
-    public ExecutionContext executionContext() {
+    public HttpExecutionContext executionContext() {
         return delegate.executionContext();
     }
 

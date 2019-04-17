@@ -21,6 +21,7 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.DefaultHttpHeadersFactory;
 import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
+import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.http.api.HttpServiceContext;
@@ -29,7 +30,6 @@ import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpService;
-import io.servicetalk.transport.api.ExecutionContext;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -67,7 +67,7 @@ public abstract class BaseHttpPredicateRouterBuilderTest {
     @Mock
     HttpServiceContext ctx;
     @Mock
-    ExecutionContext executionCtx;
+    HttpExecutionContext executionCtx;
     @Mock
     StreamingHttpRequest request;
     @Mock

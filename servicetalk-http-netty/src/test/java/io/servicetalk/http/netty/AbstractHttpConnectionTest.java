@@ -21,6 +21,7 @@ import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
+import io.servicetalk.http.api.ExecutionContextToHttpExecutionContext;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.HttpResponseMetaData;
@@ -47,6 +48,7 @@ import static io.servicetalk.concurrent.api.Completable.never;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.http.api.DefaultHttpHeadersFactory.INSTANCE;
 import static io.servicetalk.http.api.FilterableStreamingHttpConnection.SettingKey.MAX_CONCURRENCY;
+import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
 import static io.servicetalk.http.api.HttpHeaderValues.TEXT_PLAIN;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
@@ -88,7 +90,8 @@ public final class AbstractHttpConnectionTest {
             extends AbstractStreamingHttpConnection<NettyConnection<Object, Object>> {
         MockStreamingHttpConnection(final NettyConnection<Object, Object> connection,
                                     final ReadOnlyHttpClientConfig config) {
-            super(connection, config, ctx, reqRespFactory);
+            super(connection, config, new ExecutionContextToHttpExecutionContext(ctx, defaultStrategy()),
+                    reqRespFactory);
         }
 
         @Override

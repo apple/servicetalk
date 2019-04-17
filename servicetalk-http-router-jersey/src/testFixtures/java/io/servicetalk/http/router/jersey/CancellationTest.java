@@ -23,13 +23,13 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.DefaultHttpHeadersFactory;
 import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
+import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.router.jersey.resources.CancellableResources;
-import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.IoExecutor;
 
 import org.junit.Before;
@@ -109,7 +109,7 @@ public class CancellationTest {
 
     @Before
     public void setup() {
-        final ExecutionContext execCtx = mock(ExecutionContext.class);
+        final HttpExecutionContext execCtx = mock(HttpExecutionContext.class);
         when(ctx.executionContext()).thenReturn(execCtx);
         when(ctx.localAddress()).thenReturn(createUnresolved("localhost", 8080));
         when(execCtx.bufferAllocator()).thenReturn(DEFAULT_ALLOCATOR);

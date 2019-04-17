@@ -16,24 +16,28 @@
 package io.servicetalk.http.api;
 
 import io.servicetalk.concurrent.api.Executor;
-import io.servicetalk.transport.api.DelegatingExecutionContext;
-import io.servicetalk.transport.api.ExecutionContext;
 
 final class ExecutionContextOverridingServiceContext extends DelegatingHttpServiceContext {
-    private final ExecutionContext context;
+    private final HttpExecutionContext context;
 
-    ExecutionContextOverridingServiceContext(final HttpServiceContext ctx, final Executor e) {
+    ExecutionContextOverridingServiceContext(final HttpServiceContext ctx, final HttpExecutionStrategy strategy,
+                                             final Executor executor) {
         super(ctx);
-        context = new DelegatingExecutionContext(ctx.executionContext()) {
+        context = new DelegatingHttpExecutionContext(ctx.executionContext()) {
             @Override
             public Executor executor() {
-                return e;
+                return executor;
+            }
+
+            @Override
+            public HttpExecutionStrategy executionStrategy() {
+                return strategy;
             }
         };
     }
 
     @Override
-    public ExecutionContext executionContext() {
+    public HttpExecutionContext executionContext() {
         return context;
     }
 }

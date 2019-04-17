@@ -25,6 +25,8 @@ import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.RejectedSubscribeError;
+import io.servicetalk.http.api.DefaultHttpExecutionContext;
+import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpHeadersFactory;
@@ -87,11 +89,11 @@ final class NettyHttpServer {
         // No instances
     }
 
-    static Single<ServerContext> bind(final ExecutionContext executionContext, final ReadOnlyHttpServerConfig config,
+    static Single<ServerContext> bind(final HttpExecutionContext executionContext,
+                                      final ReadOnlyHttpServerConfig config,
                                       final SocketAddress address,
                                       @Nullable final ConnectionAcceptor connectionAcceptor,
                                       StreamingHttpService service,
-                                      HttpExecutionStrategy strategy,
                                       final boolean drainRequestPayloadBody) {
         // This state is read only, so safe to keep a copy across Subscribers
         final ReadOnlyTcpServerConfig tcpServerConfig = config.tcpConfig();
@@ -104,15 +106,16 @@ final class NettyHttpServer {
                             channel, executionContext.bufferAllocator(), executionContext.executor(),
                             new TerminalPredicate<>(LAST_HTTP_PAYLOAD_CHUNK_OBJECT_PREDICATE), closeHandler,
                             flushStrategy, new TcpServerChannelInitializer(tcpServerConfig)
-                                    .andThen(getChannelInitializer(config, closeHandler)))
-                        .map(conn -> new NettyHttpServerConnection(conn, service, strategy, flushStrategy,
-                                config.headersFactory(), drainRequestPayloadBody));
+                                    .andThen(getChannelInitializer(config, closeHandler)),
+                            executionContext.executionStrategy())
+                        .map(conn -> new NettyHttpServerConnection(conn, service, executionContext.executionStrategy(),
+                                flushStrategy, config.headersFactory(), drainRequestPayloadBody));
                 },
                 serverConnection -> serverConnection.process().subscribe())
             .map(delegate -> {
                 LOGGER.debug("Started HTTP server for address {}.", delegate.listenAddress());
                 // The ServerContext returned by TcpServerBinder takes care of closing the connectionAcceptor.
-                return new NettyHttpServerContext(delegate, service);
+                return new NettyHttpServerContext(delegate, service, executionContext.executionStrategy());
             });
     }
 
@@ -130,10 +133,13 @@ final class NettyHttpServer {
 
     private static final class NettyHttpServerContext implements ServerContext {
         private final ServerContext delegate;
+        private final HttpExecutionStrategy strategy;
         private final ListenableAsyncCloseable asyncCloseable;
 
-        NettyHttpServerContext(final ServerContext delegate, final StreamingHttpService service) {
+        NettyHttpServerContext(final ServerContext delegate, final StreamingHttpService service,
+                               final HttpExecutionStrategy strategy) {
             this.delegate = delegate;
+            this.strategy = strategy;
             asyncCloseable = toListenableAsyncCloseable(newCompositeCloseable().appendAll(service, delegate));
         }
 
@@ -174,6 +180,7 @@ final class NettyHttpServer {
         private final StreamingHttpService service;
         private final HttpExecutionStrategy strategy;
         private final NettyConnection<Object, Object> connection;
+        private final HttpExecutionContext executionContext;
         private final CompositeFlushStrategy compositeFlushStrategy;
         private final boolean drainRequestPayloadBody;
 
@@ -190,6 +197,9 @@ final class NettyHttpServer {
                     new DefaultBlockingStreamingHttpResponseFactory(headersFactory,
                             connection.executionContext().bufferAllocator()));
             this.connection = connection;
+            executionContext = new DefaultHttpExecutionContext(connection.executionContext().bufferAllocator(),
+                    connection.executionContext().ioExecutor(), connection.executionContext().executor(),
+                    strategy);
             this.service = service;
             this.strategy = strategy;
             this.compositeFlushStrategy = compositeFlushStrategy;
@@ -345,8 +355,8 @@ final class NettyHttpServer {
         }
 
         @Override
-        public ExecutionContext executionContext() {
-            return connection.executionContext();
+        public HttpExecutionContext executionContext() {
+            return executionContext;
         }
 
         @Override

@@ -16,7 +16,6 @@
 package io.servicetalk.http.api;
 
 import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.transport.api.ExecutionContext;
 
 import java.net.SocketAddress;
 import javax.annotation.Nullable;
@@ -57,7 +56,7 @@ public class DelegatingHttpServiceContext extends HttpServiceContext {
     }
 
     @Override
-    public ExecutionContext executionContext() {
+    public HttpExecutionContext executionContext() {
         return delegate.executionContext();
     }
 

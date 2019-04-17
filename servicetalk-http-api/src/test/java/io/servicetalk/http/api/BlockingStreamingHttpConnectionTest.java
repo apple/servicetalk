@@ -20,7 +20,6 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.api.ConnectionContext;
-import io.servicetalk.transport.api.ExecutionContext;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiFunction;
@@ -39,7 +38,7 @@ public class BlockingStreamingHttpConnectionTest extends AbstractBlockingStreami
     @Override
     protected <T extends StreamingHttpRequester & TestHttpRequester> T newAsyncRequester(
             StreamingHttpRequestResponseFactory factory,
-            final ExecutionContext ctx,
+            final HttpExecutionContext ctx,
             final BiFunction<HttpExecutionStrategy, StreamingHttpRequest, Single<StreamingHttpResponse>> doRequest) {
         return (T) new TestStreamingHttpConnection(factory, ctx) {
             @Override
@@ -58,12 +57,12 @@ public class BlockingStreamingHttpConnectionTest extends AbstractBlockingStreami
     private abstract static class TestStreamingHttpConnection implements StreamingHttpConnection, TestHttpRequester {
         private final AtomicBoolean closed = new AtomicBoolean();
         private final CompletableSource.Processor onClose = newCompletableProcessor();
-        private final ExecutionContext executionContext;
+        private final HttpExecutionContext executionContext;
         private final ConnectionContext connectionContext;
         private final StreamingHttpRequestResponseFactory factory;
 
         TestStreamingHttpConnection(StreamingHttpRequestResponseFactory factory,
-                                    ExecutionContext executionContext) {
+                                    HttpExecutionContext executionContext) {
             this.factory = factory;
             this.executionContext = executionContext;
             this.connectionContext = mock(ConnectionContext.class);
@@ -104,7 +103,7 @@ public class BlockingStreamingHttpConnectionTest extends AbstractBlockingStreami
         }
 
         @Override
-        public ExecutionContext executionContext() {
+        public HttpExecutionContext executionContext() {
             return executionContext;
         }
 

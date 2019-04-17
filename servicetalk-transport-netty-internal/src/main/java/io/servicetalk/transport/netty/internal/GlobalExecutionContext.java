@@ -27,6 +27,7 @@ import org.slf4j.LoggerFactory;
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
 import static io.servicetalk.transport.netty.internal.NettyIoExecutors.createIoExecutor;
+import static io.servicetalk.transport.netty.internal.OffloadAllExecutionStrategy.OFFLOAD_ALL_STRATEGY;
 import static java.lang.Thread.NORM_PRIORITY;
 
 /**
@@ -61,7 +62,7 @@ public final class GlobalExecutionContext {
                     "servicetalk-global-io-executor", true, NORM_PRIORITY));
             final Executor executor = newCachedThreadExecutor(
                     new DefaultThreadFactory("servicetalk-global-executor", true, NORM_PRIORITY));
-            INSTANCE = new DefaultExecutionContext(DEFAULT_ALLOCATOR, ioExecutor, executor);
+            INSTANCE = new DefaultExecutionContext(DEFAULT_ALLOCATOR, ioExecutor, executor, OFFLOAD_ALL_STRATEGY);
             LOGGER.debug("Initialized GlobalExecutionContext");
         }
 

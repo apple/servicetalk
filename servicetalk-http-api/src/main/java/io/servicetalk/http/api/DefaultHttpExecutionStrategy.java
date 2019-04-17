@@ -114,7 +114,8 @@ class DefaultHttpExecutionStrategy implements HttpExecutionStrategy {
             public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
                                                         StreamingHttpRequest request,
                                                         final StreamingHttpResponseFactory responseFactory) {
-                HttpServiceContext wrappedCtx = new ExecutionContextOverridingServiceContext(ctx, e);
+                HttpServiceContext wrappedCtx =
+                        new ExecutionContextOverridingServiceContext(ctx, DefaultHttpExecutionStrategy.this, e);
                 if (offloaded(OFFLOAD_RECEIVE_DATA)) {
                     request = request.transformRawPayloadBody(p -> p.publishOn(e));
                 }

@@ -55,6 +55,9 @@ public abstract class HttpServiceContext implements ConnectionContext {
         this(other.headersFactory, other.factory, other.streamingFactory, other.blockingFactory);
     }
 
+    @Override
+    public abstract HttpExecutionContext executionContext();
+
     /**
      * Returns the {@link HttpHeadersFactory} associated with this {@link HttpServiceContext}.
      *

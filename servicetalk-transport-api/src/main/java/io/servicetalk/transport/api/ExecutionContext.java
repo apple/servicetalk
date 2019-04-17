@@ -40,4 +40,11 @@ public interface ExecutionContext {
      * @return The {@link Executor} that is used to create any asynchronous sources.
      */
     Executor executor();
+
+    /**
+     * Returns the {@link ExecutionStrategy} associated with this context.
+     *
+     * @return The {@link ExecutionStrategy} associated with this context.
+     */
+    ExecutionStrategy executionStrategy();
 }

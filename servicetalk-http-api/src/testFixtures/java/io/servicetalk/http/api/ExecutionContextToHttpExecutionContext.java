@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,37 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.transport.api;
+package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Executor;
+import io.servicetalk.transport.api.ExecutionContext;
+import io.servicetalk.transport.api.IoExecutor;
 
-import static java.util.Objects.requireNonNull;
-
-/**
- * An {@link ExecutionContext} implementation that delegates all calls to a provided {@link ExecutionContext}. Any of
- * the methods can be overridden by implementations to change the behavior.
- */
-public class DelegatingExecutionContext implements ExecutionContext {
+public class ExecutionContextToHttpExecutionContext implements HttpExecutionContext {
 
     private final ExecutionContext delegate;
+    private final HttpExecutionStrategy strategy;
 
-    /**
-     * New instance.
-     *
-     * @param delegate {@link ExecutionContext} to delegate all calls.
-     */
-    public DelegatingExecutionContext(final ExecutionContext delegate) {
-        this.delegate = requireNonNull(delegate);
-    }
-
-    /**
-     * Get the {@link ExecutionContext} that this class delegates to.
-     *
-     * @return the {@link ExecutionContext} that this class delegates to.
-     */
-    protected final ExecutionContext delegate() {
-        return delegate;
+    public ExecutionContextToHttpExecutionContext(final ExecutionContext delegate,
+                                                  final HttpExecutionStrategy strategy) {
+        this.delegate = delegate;
+        this.strategy = strategy;
     }
 
     @Override
@@ -62,7 +47,7 @@ public class DelegatingExecutionContext implements ExecutionContext {
     }
 
     @Override
-    public ExecutionStrategy executionStrategy() {
-        return delegate.executionStrategy();
+    public HttpExecutionStrategy executionStrategy() {
+        return strategy;
     }
 }

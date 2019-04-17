@@ -19,6 +19,7 @@ import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.transport.api.ConnectionAcceptor;
 import io.servicetalk.transport.api.ExecutionContext;
+import io.servicetalk.transport.api.ExecutionStrategy;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.netty.internal.BufferHandler;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
@@ -70,14 +71,16 @@ public class TcpServer {
      * @param executionContext {@link ExecutionContext} to use for incoming connections.
      * @param port Port for the server.
      * @param service {@link Function} that is invoked for each accepted connection.
+     * @param executionStrategy {@link ExecutionStrategy} to use.
      * @return {@link ServerContext} for the started server.
      * @throws ExecutionException If the server start failed.
      * @throws InterruptedException If the calling thread was interrupted waiting for the server to start.
      */
     public ServerContext bind(ExecutionContext executionContext, int port,
-                              Function<NettyConnection<Buffer, Buffer>, Completable> service)
+                              Function<NettyConnection<Buffer, Buffer>, Completable> service,
+                              ExecutionStrategy executionStrategy)
             throws ExecutionException, InterruptedException {
-        return bind(executionContext, port, ACCEPT_ALL, service);
+        return bind(executionContext, port, ACCEPT_ALL, service, executionStrategy);
     }
 
     /**
@@ -89,13 +92,15 @@ public class TcpServer {
      * @param connectionAcceptor to use for filtering accepted connections. The returned {@link ServerContext} manages
      * the lifecycle of the {@code connectionAcceptor}, ensuring it is closed when the {@link ServerContext} is closed.
      * @param service {@link Function} that is invoked for each accepted connection.
+     * @param executionStrategy {@link ExecutionStrategy} to use.
      * @return {@link ServerContext} for the started server.
      * @throws ExecutionException If the server start failed.
      * @throws InterruptedException If the calling thread was interrupted waiting for the server to start.
      */
     public ServerContext bind(ExecutionContext executionContext, int port,
                               @Nullable ConnectionAcceptor connectionAcceptor,
-                              Function<NettyConnection<Buffer, Buffer>, Completable> service)
+                              Function<NettyConnection<Buffer, Buffer>, Completable> service,
+                              ExecutionStrategy executionStrategy)
             throws ExecutionException, InterruptedException {
         return TcpServerBinder.bind(localAddress(port), config,
                 executionContext, connectionAcceptor,
@@ -103,7 +108,7 @@ public class TcpServer {
                         executionContext.bufferAllocator(), executionContext.executor(),
                         new TerminalPredicate<>(buffer -> false), UNSUPPORTED_PROTOCOL_CLOSE_HANDLER,
                         config.flushStrategy(), new TcpServerChannelInitializer(config)
-                                .andThen(getChannelInitializer(service, executionContext))),
+                                .andThen(getChannelInitializer(service, executionContext)), executionStrategy),
                 serverConnection -> service.apply(serverConnection)
                         .beforeOnError(throwable -> LOGGER.error("Error handling a connection.", throwable))
                         .beforeFinally(() -> serverConnection.closeAsync().subscribe())

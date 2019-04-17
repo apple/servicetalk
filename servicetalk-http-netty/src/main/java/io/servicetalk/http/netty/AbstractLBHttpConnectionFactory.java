@@ -18,12 +18,11 @@ package io.servicetalk.http.netty;
 import io.servicetalk.client.api.ConnectionFactory;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
-import io.servicetalk.http.api.HttpExecutionStrategy;
+import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
 import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
-import io.servicetalk.transport.api.ExecutionContext;
 
 import javax.annotation.Nullable;
 
@@ -35,20 +34,17 @@ abstract class AbstractLBHttpConnectionFactory<ResolvedAddress>
     private final ListenableAsyncCloseable close = emptyAsyncCloseable();
     @Nullable
     final StreamingHttpConnectionFilterFactory connectionFilterFunction;
-    final HttpExecutionStrategy streamingStrategy;
     final ReadOnlyHttpClientConfig config;
-    final ExecutionContext executionContext;
+    final HttpExecutionContext executionContext;
     final StreamingHttpRequestResponseFactory reqRespFactory;
     final HttpExecutionStrategyInfluencer strategyInfluencer;
 
     AbstractLBHttpConnectionFactory(final ReadOnlyHttpClientConfig config,
-                                    final ExecutionContext executionContext,
+                                    final HttpExecutionContext executionContext,
                                     @Nullable final StreamingHttpConnectionFilterFactory connectionFilterFunction,
                                     final StreamingHttpRequestResponseFactory reqRespFactory,
-                                    final HttpExecutionStrategy streamingStrategy,
                                     final HttpExecutionStrategyInfluencer strategyInfluencer) {
         this.connectionFilterFunction = connectionFilterFunction;
-        this.streamingStrategy = requireNonNull(streamingStrategy);
         this.config = requireNonNull(config);
         this.executionContext = requireNonNull(executionContext);
         this.reqRespFactory = requireNonNull(reqRespFactory);

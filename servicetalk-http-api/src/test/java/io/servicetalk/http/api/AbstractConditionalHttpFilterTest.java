@@ -34,6 +34,7 @@ import java.util.function.Predicate;
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
+import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.transport.netty.internal.ExecutionContextRule.cached;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
@@ -73,6 +74,11 @@ public abstract class AbstractConditionalHttpFilterTest {
     protected abstract Single<StreamingHttpResponse> sendTestRequest(StreamingHttpRequest req);
 
     protected abstract AsyncCloseable returnConditionallyFilteredResource(AtomicBoolean closed);
+
+    protected static HttpExecutionContext testHttpExecutionContext() {
+        return new DefaultHttpExecutionContext(TEST_CTX.bufferAllocator(), TEST_CTX.ioExecutor(), TEST_CTX.executor(),
+                defaultStrategy());
+    }
 
     @Test
     public void predicateAccepts() throws Exception {

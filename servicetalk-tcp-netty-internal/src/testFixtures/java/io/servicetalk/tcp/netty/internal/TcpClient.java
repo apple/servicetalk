@@ -88,7 +88,7 @@ public final class TcpClient {
                                 .andThen((channel2, context) -> {
                             channel2.pipeline().addLast(BufferHandler.INSTANCE);
                             return context;
-                }))).toFuture().get();
+                }), executionContext.executionStrategy())).toFuture().get();
     }
 
     /**

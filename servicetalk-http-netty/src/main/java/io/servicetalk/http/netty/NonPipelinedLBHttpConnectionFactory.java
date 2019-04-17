@@ -17,12 +17,11 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
-import io.servicetalk.http.api.HttpExecutionStrategy;
+import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
 import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
-import io.servicetalk.transport.api.ExecutionContext;
 
 import javax.annotation.Nullable;
 
@@ -33,13 +32,11 @@ import static io.servicetalk.http.netty.DefaultHttpConnectionBuilder.buildStream
 final class NonPipelinedLBHttpConnectionFactory<ResolvedAddress>
         extends AbstractLBHttpConnectionFactory<ResolvedAddress> {
     NonPipelinedLBHttpConnectionFactory(final ReadOnlyHttpClientConfig config,
-                                        final ExecutionContext executionContext,
+                                        final HttpExecutionContext executionContext,
                                         @Nullable final StreamingHttpConnectionFilterFactory connectionFilterFunction,
                                         final StreamingHttpRequestResponseFactory reqRespFactory,
-                                        final HttpExecutionStrategy streamingStrategy,
                                         final HttpExecutionStrategyInfluencer strategyInfluencer) {
-        super(config, executionContext, connectionFilterFunction, reqRespFactory, streamingStrategy,
-                strategyInfluencer);
+        super(config, executionContext, connectionFilterFunction, reqRespFactory, strategyInfluencer);
     }
 
     @Override
@@ -51,8 +48,8 @@ final class NonPipelinedLBHttpConnectionFactory<ResolvedAddress>
             FilterableStreamingHttpConnection filteredConnection = connectionFilterFunction != null ?
                     connectionFilterFunction.create(mappedConnection) : mappedConnection;
             return new LoadBalancedStreamingHttpConnection(filteredConnection, newSingleController(
-                    filteredConnection.settingStream(MAX_CONCURRENCY), conn.onClosing()), streamingStrategy,
-                    strategyInfluencer);
+                    filteredConnection.settingStream(MAX_CONCURRENCY), conn.onClosing()),
+                    executionContext.executionStrategy(), strategyInfluencer);
         });
     }
 }

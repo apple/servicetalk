@@ -17,7 +17,6 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.transport.api.ExecutionContext;
 
 import static io.servicetalk.concurrent.internal.FutureUtils.awaitTermination;
 
@@ -35,14 +34,14 @@ public interface HttpRequester extends HttpRequestFactory, ListenableAsyncClosea
     Single<HttpResponse> request(HttpExecutionStrategy strategy, HttpRequest request);
 
     /**
-     * Get the {@link ExecutionContext} used during construction of this object.
+     * Get the {@link HttpExecutionContext} used during construction of this object.
      * <p>
-     * Note that the {@link ExecutionContext#ioExecutor()} will not necessarily be associated with a specific thread
+     * Note that the {@link HttpExecutionContext#ioExecutor()} will not necessarily be associated with a specific thread
      * unless that was how this object was built.
      *
-     * @return the {@link ExecutionContext} used during construction of this object.
+     * @return the {@link HttpExecutionContext} used during construction of this object.
      */
-    ExecutionContext executionContext();
+    HttpExecutionContext executionContext();
 
     /**
      * Get a {@link HttpResponseFactory}.

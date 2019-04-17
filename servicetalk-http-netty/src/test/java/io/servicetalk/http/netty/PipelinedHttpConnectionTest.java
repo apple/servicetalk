@@ -23,6 +23,7 @@ import io.servicetalk.concurrent.api.TestSingleSubscriber;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.DefaultHttpHeadersFactory;
 import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
+import io.servicetalk.http.api.ExecutionContextToHttpExecutionContext;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
@@ -41,6 +42,7 @@ import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Completable.never;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
+import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.transport.netty.internal.ExecutionContextRule.immediate;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -94,7 +96,9 @@ public class PipelinedHttpConnectionTest {
         });
         when(connection.read()).thenReturn(readPublisher1, readPublisher2);
         pipe = TestStreamingHttpConnection.from(
-                new PipelinedStreamingHttpConnection(connection, config.asReadOnly(), ctx, reqRespFactory
+                new PipelinedStreamingHttpConnection(connection, config.asReadOnly(),
+                        new ExecutionContextToHttpExecutionContext(ctx, defaultStrategy()),
+                        reqRespFactory
                 ));
     }
 

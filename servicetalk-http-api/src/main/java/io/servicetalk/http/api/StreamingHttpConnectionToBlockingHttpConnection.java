@@ -18,7 +18,6 @@ package io.servicetalk.http.api;
 import io.servicetalk.concurrent.BlockingIterable;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection.SettingKey;
 import io.servicetalk.transport.api.ConnectionContext;
-import io.servicetalk.transport.api.ExecutionContext;
 
 import static io.servicetalk.http.api.HttpExecutionStrategies.OFFLOAD_NONE_STRATEGY;
 import static io.servicetalk.http.api.RequestResponseFactories.toAggregated;
@@ -62,7 +61,7 @@ final class StreamingHttpConnectionToBlockingHttpConnection implements BlockingH
     }
 
     @Override
-    public ExecutionContext executionContext() {
+    public HttpExecutionContext executionContext() {
         return connection.executionContext();
     }
 

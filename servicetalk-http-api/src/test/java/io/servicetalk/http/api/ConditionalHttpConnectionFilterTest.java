@@ -67,8 +67,8 @@ public class ConditionalHttpConnectionFilterTest extends AbstractConditionalHttp
     }
 
     private StreamingHttpConnection newConnection(AtomicBoolean closed) {
-        return TestStreamingHttpConnection.from(REQ_RES_FACTORY, TEST_CTX, mock(ConnectionContext.class),
-                new TestCondFilterFactory(closed).append(REQ_FILTER));
+        return TestStreamingHttpConnection.from(REQ_RES_FACTORY, testHttpExecutionContext(),
+                mock(ConnectionContext.class), new TestCondFilterFactory(closed).append(REQ_FILTER));
     }
 
     @Override
