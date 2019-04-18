@@ -30,7 +30,7 @@ final class CompletableConcatWithSingle<T> extends AbstractCompletableAndSingleC
     private final Completable original;
     private final Single<? extends T> next;
 
-    CompletableConcatWithSingle(Completable original, Single<? extends T> next, Executor executor) {
+    CompletableConcatWithSingle(final Completable original, final Single<? extends T> next, final Executor executor) {
         super(executor);
         this.original = requireNonNull(original);
         this.next = requireNonNull(next);
@@ -46,7 +46,7 @@ final class CompletableConcatWithSingle<T> extends AbstractCompletableAndSingleC
     private static final class ConcatWithSubscriber<T> extends AbstractConcatWithSubscriber<T> {
         private final Single<T> next;
 
-        ConcatWithSubscriber(Subscriber<? super T> target, Single<T> next) {
+        ConcatWithSubscriber(final Subscriber<? super T> target, final Single<T> next) {
             super(target);
             this.next = next;
         }

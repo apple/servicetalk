@@ -23,6 +23,8 @@ import static java.util.Objects.requireNonNull;
 
 /**
  * As returned by {@link Single#concat(Completable)}.
+ *
+ * @param <T> Type of result of this {@link Single}.
  */
 final class SingleConcatWithCompletable<T> extends AbstractCompletableAndSingleConcatenated<T> {
     private final Single<? extends T> original;
@@ -46,20 +48,20 @@ final class SingleConcatWithCompletable<T> extends AbstractCompletableAndSingleC
         @Nullable
         private volatile T result;
 
-        ConcatWithSubscriber(Subscriber<? super T> target, Completable next) {
+        ConcatWithSubscriber(final Subscriber<? super T> target, final Completable next) {
             super(target);
             this.next = next;
-        }
-
-        @Override
-        public void onComplete() {
-            sendSuccessToTarget(result);
         }
 
         @Override
         public void onSuccess(@Nullable final T result) {
             this.result = result;
             subscribeToNext(next);
+        }
+
+        @Override
+        public void onComplete() {
+            sendSuccessToTarget(result);
         }
     }
 }
