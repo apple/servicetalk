@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,15 +22,15 @@ import javax.annotation.Nullable;
 import static java.util.Objects.requireNonNull;
 
 /**
- * As returned by {@link Completable#concat(Single)}.
+ * As returned by {@link Single#concat(Completable)}.
  *
  * @param <T> Type of result of this {@link Single}.
  */
-final class CompletableConcatWithSingle<T> extends AbstractCompletableAndSingleConcatenated<T> {
-    private final Completable original;
-    private final Single<? extends T> next;
+final class SingleConcatWithCompletable<T> extends AbstractCompletableAndSingleConcatenated<T> {
+    private final Single<? extends T> original;
+    private final Completable next;
 
-    CompletableConcatWithSingle(final Completable original, final Single<? extends T> next, final Executor executor) {
+    SingleConcatWithCompletable(final Single<? extends T> original, final Completable next, final Executor executor) {
         super(executor);
         this.original = requireNonNull(original);
         this.next = requireNonNull(next);
@@ -44,20 +44,23 @@ final class CompletableConcatWithSingle<T> extends AbstractCompletableAndSingleC
     }
 
     private static final class ConcatWithSubscriber<T> extends AbstractConcatWithSubscriber<T> {
-        private final Single<T> next;
+        private final Completable next;
+        @Nullable
+        private volatile T result;
 
-        ConcatWithSubscriber(final Subscriber<? super T> target, final Single<T> next) {
+        ConcatWithSubscriber(final Subscriber<? super T> target, final Completable next) {
             super(target);
             this.next = next;
         }
 
         @Override
-        public void onComplete() {
+        public void onSuccess(@Nullable final T result) {
+            this.result = result;
             subscribeToNext(next);
         }
 
         @Override
-        public void onSuccess(@Nullable final T result) {
+        public void onComplete() {
             sendSuccessToTarget(result);
         }
     }
