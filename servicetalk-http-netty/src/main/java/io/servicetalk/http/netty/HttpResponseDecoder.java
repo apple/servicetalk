@@ -41,9 +41,6 @@ import static java.util.Objects.requireNonNull;
 
 final class HttpResponseDecoder extends HttpObjectDecoder<HttpResponseMetaData> {
 
-    private static final int ZERO = '0';
-    private static final int NINE = '9';
-
     private final Queue<HttpRequestMethod> methodQueue;
 
     HttpResponseDecoder(Queue<HttpRequestMethod> methodQueue, HttpHeadersFactory headersFactory,
@@ -114,9 +111,9 @@ final class HttpResponseDecoder extends HttpObjectDecoder<HttpResponseMetaData> 
     }
 
     private static int toDecimal(final int c) {
-        if (c < ZERO || c > NINE) {
+        if (c < '0' || c > '9') {
             throw new IllegalArgumentException("invalid status code");
         }
-        return c - ZERO;
+        return c - '0';
     }
 }

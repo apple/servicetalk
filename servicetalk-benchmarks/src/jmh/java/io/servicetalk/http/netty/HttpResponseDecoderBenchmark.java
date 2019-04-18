@@ -47,7 +47,7 @@ import static java.nio.charset.StandardCharsets.US_ASCII;
 
 /*
  * This benchmark compares decoding of HTTP requests with different status codes (with short and long reason phrase,
- * known and unknown status coders):
+ * known and unknown status codes):
  *
  * Benchmark                                 (statusCode)   Mode  Cnt        Score       Error  Units
  * HttpResponseDecoderBenchmark.initialLine           200  thrpt    5  1039670.340 ± 16842.744  ops/s
