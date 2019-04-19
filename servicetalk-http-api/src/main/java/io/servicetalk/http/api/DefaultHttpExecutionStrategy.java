@@ -314,6 +314,16 @@ class DefaultHttpExecutionStrategy implements HttpExecutionStrategy {
         return result;
     }
 
+    @Override
+    public String toString() {
+        return "DefaultHttpExecutionStrategy{" +
+                "executor=" + executor +
+                ", offloads=" + offloads +
+                ", mergeStrategy=" + mergeStrategy +
+                ", threadAffinity=" + threadAffinity +
+                '}';
+    }
+
     static Publisher<Object> flatten(HttpMetaData metaData, Publisher<Object> payload) {
         return (Publisher.<Object>from(metaData)).concat(payload);
     }

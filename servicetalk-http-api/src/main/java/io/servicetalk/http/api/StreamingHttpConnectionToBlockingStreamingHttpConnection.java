@@ -18,6 +18,8 @@ package io.servicetalk.http.api;
 import io.servicetalk.concurrent.BlockingIterable;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection.SettingKey;
 import io.servicetalk.transport.api.ConnectionContext;
+import io.servicetalk.transport.api.DelegatingConnectionContext;
+import io.servicetalk.transport.api.ExecutionContext;
 
 import static io.servicetalk.http.api.BlockingUtils.blockingInvocation;
 import static io.servicetalk.http.api.HttpExecutionStrategies.OFFLOAD_SEND_STRATEGY;
@@ -27,12 +29,27 @@ final class StreamingHttpConnectionToBlockingStreamingHttpConnection implements 
     static final HttpExecutionStrategy DEFAULT_BLOCKING_STREAMING_CONNECTION_STRATEGY = OFFLOAD_SEND_STRATEGY;
     private final StreamingHttpConnection connection;
     private final HttpExecutionStrategy strategy;
+    private final ConnectionContext context;
+    private final HttpExecutionContext executionContext;
     private final BlockingStreamingHttpRequestResponseFactory reqRespFactory;
 
     StreamingHttpConnectionToBlockingStreamingHttpConnection(final StreamingHttpConnection connection,
                                                              final HttpExecutionStrategyInfluencer influencer) {
         strategy = influencer.influenceStrategy(DEFAULT_BLOCKING_STREAMING_CONNECTION_STRATEGY);
         this.connection = connection;
+        ConnectionContext originalCtx = connection.connectionContext();
+        executionContext = new DelegatingHttpExecutionContext(connection.executionContext()) {
+            @Override
+            public HttpExecutionStrategy executionStrategy() {
+                return strategy;
+            }
+        };
+        context = new DelegatingConnectionContext(originalCtx) {
+            @Override
+            public ExecutionContext executionContext() {
+                return executionContext;
+            }
+        };
         reqRespFactory = toBlockingStreaming(connection);
     }
 
@@ -43,7 +60,7 @@ final class StreamingHttpConnectionToBlockingStreamingHttpConnection implements 
 
     @Override
     public ConnectionContext connectionContext() {
-        return connection.connectionContext();
+        return context;
     }
 
     @Override
@@ -65,7 +82,7 @@ final class StreamingHttpConnectionToBlockingStreamingHttpConnection implements 
 
     @Override
     public HttpExecutionContext executionContext() {
-        return connection.executionContext();
+        return executionContext;
     }
 
     @Override
