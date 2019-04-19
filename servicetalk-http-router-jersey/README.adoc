@@ -308,6 +308,9 @@ public static class CustomSecurityFilter implements ContainerRequestFilter {
 }
 ----
 
+NOTE: ServiceTalk provides security filters that can be used with Basic authenticated requests.
+Refer to <<../servicetalk-http-basic-auth-jersey/README.adoc#,Basic Auth Support for Jersey Router>> for more information.
+
 === Exception Mappers
 
 Standard JAX-RS exception mappers can be used with ServiceTalk. On top
