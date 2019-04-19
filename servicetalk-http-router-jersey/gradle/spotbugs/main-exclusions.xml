@@ -41,6 +41,11 @@
       <Field name="routeStrategiesConfigProvider"/>
     </Or>
   </Match>
+  <Match>
+    <Class name="io.servicetalk.http.router.jersey.EndpointEnhancingRequestFilter$AbstractWrappedEndpoint"/>
+    <Bug pattern="NP_PARAMETER_MUST_BE_NONNULL_BUT_MARKED_AS_NULLABLE"/>
+    <Parameter name="effectiveRouteStrategy"/>
+  </Match>
 
   <!-- False positive. Everything involved has a default @NonNull from the package-info.java -->
   <Match>

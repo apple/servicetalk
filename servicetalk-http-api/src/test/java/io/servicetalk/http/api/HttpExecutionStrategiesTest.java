@@ -18,13 +18,17 @@ package io.servicetalk.http.api;
 import io.servicetalk.concurrent.api.Executor;
 
 import org.junit.Test;
-import org.mockito.Mockito;
 
 import static io.servicetalk.http.api.HttpExecutionStrategies.customStrategyBuilder;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
+import static io.servicetalk.http.api.HttpExecutionStrategies.difference;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class HttpExecutionStrategiesTest {
 
@@ -38,8 +42,99 @@ public class HttpExecutionStrategiesTest {
 
     @Test
     public void noOffloadsWithExecutor() {
-        Executor executor = Mockito.mock(Executor.class);
+        Executor executor = mock(Executor.class);
         HttpExecutionStrategy strategy = customStrategyBuilder().executor(executor).build();
         assertThat("Unexpected executor.", strategy.executor(), sameInstance(executor));
+    }
+
+    @Test
+    public void diffLeftAndRightEqual() {
+        HttpExecutionStrategy strat = customStrategyBuilder().offloadSend().build();
+        Executor executor = mock(Executor.class);
+        HttpExecutionStrategy result = difference(executor, strat, strat);
+        assertThat("Unexpected diff.", result, is(nullValue()));
+    }
+
+    @Test
+    public void diffLeftAndRightSameOffloadDiffExecutor() {
+        Executor executor1 = mock(Executor.class);
+        Executor executor2 = mock(Executor.class);
+        Executor fallback = mock(Executor.class);
+        HttpExecutionStrategy strat1 = customStrategyBuilder().offloadSend().executor(executor1).build();
+        HttpExecutionStrategy strat2 = customStrategyBuilder().offloadSend().executor(executor2).build();
+        HttpExecutionStrategy result = difference(fallback, strat1, strat2);
+        assertThat("Unexpected diff.", result, is(sameInstance(strat2)));
+    }
+
+    @Test
+    public void diffLeftAndRightDiffOffloadWithExecutor() {
+        Executor executor1 = mock(Executor.class);
+        Executor executor2 = mock(Executor.class);
+        Executor fallback = mock(Executor.class);
+        HttpExecutionStrategy strat1 = customStrategyBuilder().offloadReceiveData().executor(executor1).build();
+        HttpExecutionStrategy strat2 = customStrategyBuilder().offloadSend().executor(executor2).build();
+        HttpExecutionStrategy result = difference(fallback, strat1, strat2);
+        assertThat("Unexpected diff.", result, is(notNullValue()));
+        assertThat("Unexpected offload (send) in diff.", result.isSendOffloaded(), is(true));
+        assertThat("Unexpected offload (meta receive) in diff.", result.isMetadataReceiveOffloaded(), is(false));
+        assertThat("Unexpected offload (data receive) in diff.", result.isDataReceiveOffloaded(), is(false));
+        assertThat("Unexpected executor in diff.", result.executor(), is(sameInstance(executor2)));
+    }
+
+    @Test
+    public void diffLeftAndRightDiffOffloadNoExecutor() {
+        Executor fallback = mock(Executor.class);
+        HttpExecutionStrategy strat1 = customStrategyBuilder().offloadReceiveData().build();
+        HttpExecutionStrategy strat2 = customStrategyBuilder().offloadSend().build();
+        HttpExecutionStrategy result = difference(fallback, strat1, strat2);
+        assertThat("Unexpected diff.", result, is(notNullValue()));
+        assertThat("Unexpected offload (send) in diff.", result.isSendOffloaded(), is(true));
+        assertThat("Unexpected offload (meta receive) in diff.", result.isMetadataReceiveOffloaded(), is(false));
+        assertThat("Unexpected offload (data receive) in diff.", result.isDataReceiveOffloaded(), is(false));
+        assertThat("Unexpected executor in diff.", result.executor(), is(nullValue()));
+    }
+
+    @Test
+    public void diffLeftNoOffloadAndRightAllOffloads() {
+        Executor fallback = mock(Executor.class);
+        HttpExecutionStrategy strat1 = customStrategyBuilder().offloadNone().build();
+        HttpExecutionStrategy strat2 = customStrategyBuilder().offloadAll().build();
+        HttpExecutionStrategy result = difference(fallback, strat1, strat2);
+        assertThat("Unexpected diff.", result, is(notNullValue()));
+        assertThat("Unexpected offload (send) in diff.", result.isSendOffloaded(), is(true));
+        assertThat("Unexpected offload (meta receive) in diff.", result.isMetadataReceiveOffloaded(), is(true));
+        assertThat("Unexpected offload (data receive) in diff.", result.isDataReceiveOffloaded(), is(true));
+        assertThat("Unexpected executor in diff.", result.executor(), is(nullValue()));
+    }
+
+    @Test
+    public void diffRightExecutorMatchesFallback() {
+        Executor fallback = mock(Executor.class);
+        HttpExecutionStrategy strat1 = customStrategyBuilder().offloadNone().build();
+        HttpExecutionStrategy strat2 = customStrategyBuilder().offloadAll().executor(fallback).build();
+        HttpExecutionStrategy result = difference(fallback, strat1, strat2);
+        assertThat("Unexpected diff.", result, is(notNullValue()));
+        assertThat("Unexpected offload (send) in diff.", result.isSendOffloaded(), is(true));
+        assertThat("Unexpected offload (meta receive) in diff.", result.isMetadataReceiveOffloaded(), is(true));
+        assertThat("Unexpected offload (data receive) in diff.", result.isDataReceiveOffloaded(), is(true));
+        assertThat("Unexpected executor in diff.", result.executor(), is(fallback));
+    }
+
+    @Test
+    public void diffEqualButDifferentInstances() {
+        Executor fallback = mock(Executor.class);
+        HttpExecutionStrategy strat1 = customStrategyBuilder().offloadAll().build();
+        HttpExecutionStrategy strat2 = newMockStrategyOffloadAll();
+        HttpExecutionStrategy result = difference(fallback, strat1, strat2);
+        assertThat("Unexpected diff.", result, is(nullValue()));
+    }
+
+    private HttpExecutionStrategy newMockStrategyOffloadAll() {
+        HttpExecutionStrategy mock = mock(HttpExecutionStrategy.class);
+        when(mock.isSendOffloaded()).thenReturn(true);
+        when(mock.isDataReceiveOffloaded()).thenReturn(true);
+        when(mock.isMetadataReceiveOffloaded()).thenReturn(true);
+        when(mock.executor()).thenReturn(null);
+        return mock;
     }
 }

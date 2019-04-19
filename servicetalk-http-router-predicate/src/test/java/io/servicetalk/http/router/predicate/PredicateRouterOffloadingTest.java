@@ -20,6 +20,7 @@ import io.servicetalk.concurrent.api.DefaultThreadFactory;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.BlockingHttpClient;
+import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpServerBuilder;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpRequest;
@@ -46,6 +47,7 @@ import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
 import static io.servicetalk.concurrent.api.Single.succeeded;
+import static io.servicetalk.http.api.HttpExecutionStrategies.customStrategyBuilder;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
@@ -55,6 +57,8 @@ import static java.lang.Thread.NORM_PRIORITY;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.startsWith;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class PredicateRouterOffloadingTest {
     private static final String IO_EXECUTOR_NAME_PREFIX = "io-executor";
@@ -131,6 +135,21 @@ public class PredicateRouterOffloadingTest {
         HttpPredicateRouterBuilder routerBuilder = newRouteBuilder();
         builder.executionStrategy(noOffloadsStrategy());
         routerBuilder.when(newPredicate()).executionStrategy(noOffloadsStrategy())
+                .thenRouteTo(new RouteThreadRecorderService());
+        BlockingHttpClient client = buildServer(routerBuilder.buildStreaming());
+        client.request(client.get("/"));
+        verifyAllOffloadPointsRecorded();
+        assertRouteAndPredicateNotOffloaded();
+    }
+
+    @Test
+    public void routeStrategySameAsRouter() throws Exception {
+        HttpPredicateRouterBuilder routerBuilder = newRouteBuilder();
+        HttpExecutionStrategy routerStrat = customStrategyBuilder().offloadSend().build();
+        HttpExecutionStrategy routeStrat = mock(HttpExecutionStrategy.class);
+        when(routeStrat.isSendOffloaded()).thenReturn(true);
+        builder.executionStrategy(routerStrat);
+        routerBuilder.when(newPredicate()).executionStrategy(routeStrat)
                 .thenRouteTo(new RouteThreadRecorderService());
         BlockingHttpClient client = buildServer(routerBuilder.buildStreaming());
         client.request(client.get("/"));
