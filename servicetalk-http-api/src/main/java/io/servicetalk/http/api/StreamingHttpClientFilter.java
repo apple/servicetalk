@@ -42,8 +42,8 @@ public class StreamingHttpClientFilter implements FilterableStreamingHttpClient 
     }
 
     @Override
-    public Single<ReservedStreamingHttpConnection> reserveConnection(final HttpExecutionStrategy strategy,
-                                                                     final HttpRequestMetaData metaData) {
+    public Single<? extends FilterableReservedStreamingHttpConnection> reserveConnection(
+            final HttpExecutionStrategy strategy, final HttpRequestMetaData metaData) {
         return delegate.reserveConnection(strategy, metaData).map(ClientFilterToReservedConnectionFilter::new);
     }
 
@@ -112,7 +112,7 @@ public class StreamingHttpClientFilter implements FilterableStreamingHttpClient 
     }
 
     private final class ClientFilterToReservedConnectionFilter extends ReservedStreamingHttpConnectionFilter {
-        ClientFilterToReservedConnectionFilter(final ReservedStreamingHttpConnection delegate) {
+        ClientFilterToReservedConnectionFilter(final FilterableReservedStreamingHttpConnection delegate) {
             super(delegate);
         }
 

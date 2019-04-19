@@ -136,8 +136,7 @@ public abstract class AbstractHttpServiceAsyncContextTest {
         Queue<Throwable> errorQueue = new ConcurrentLinkedQueue<>();
 
         try (ServerContext ctx = serverWithService(HttpServers.forAddress(localAddress(0))
-                .appendServiceFilter(filterFactory(useImmediate, asyncFilter, errorQueue))
-                        .executionStrategy(noOffloadsStrategy()),
+                .appendServiceFilter(filterFactory(useImmediate, asyncFilter, errorQueue)),
                 useImmediate, asyncService);
 
              StreamingHttpConnection connection = new DefaultHttpConnectionBuilder<SocketAddress>()

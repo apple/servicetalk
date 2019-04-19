@@ -93,7 +93,7 @@ public class DefaultHttpExecutionStrategyMergeTest {
     public void mergeWithNoOffloads() {
         HttpExecutionStrategy strategy = customStrategyBuilder().offloadSend().executor(executor).build();
         HttpExecutionStrategy merged = strategy.merge(noOffloadsStrategy());
-        assertThat("Unexpected merge result.", merged, is(sameInstance(strategy)));
+        assertThat("Unexpected merge result.", merged, is(sameInstance(noOffloadsStrategy())));
     }
 
     @Test

@@ -17,6 +17,7 @@ package io.servicetalk.http.utils;
 
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.http.api.FilterableReservedStreamingHttpConnection;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpClient;
@@ -25,7 +26,6 @@ import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
 import io.servicetalk.http.api.HttpHeaderNames;
 import io.servicetalk.http.api.HttpRequestMetaData;
-import io.servicetalk.http.api.ReservedStreamingHttpConnection;
 import io.servicetalk.http.api.ReservedStreamingHttpConnectionFilter;
 import io.servicetalk.http.api.StreamingHttpClientFilter;
 import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
@@ -141,7 +141,7 @@ public final class RedirectingHttpRequesterFilter implements StreamingHttpClient
             }
 
             @Override
-            public Single<ReservedStreamingHttpConnection> reserveConnection(
+            public Single<? extends FilterableReservedStreamingHttpConnection> reserveConnection(
                     final HttpExecutionStrategy strategy,
                     final HttpRequestMetaData metaData) {
                 return delegate().reserveConnection(strategy, metaData)

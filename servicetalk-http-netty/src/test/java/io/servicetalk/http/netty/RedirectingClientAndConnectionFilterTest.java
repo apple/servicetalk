@@ -21,13 +21,13 @@ import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.BlockingHttpRequester;
+import io.servicetalk.http.api.FilterableReservedStreamingHttpConnection;
 import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpConnection;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpResponse;
-import io.servicetalk.http.api.ReservedStreamingHttpConnection;
 import io.servicetalk.http.api.ReservedStreamingHttpConnectionFilter;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpClientFilter;
@@ -97,9 +97,8 @@ public final class RedirectingClientAndConnectionFilterTest {
                     StreamingHttpClient client = closeables.prepend(HttpClients.forSingleAddress(serverHostAndPort)
                             .appendClientFilter((clientFilter, __) -> new StreamingHttpClientFilter(clientFilter) {
                                 @Override
-                                public Single<ReservedStreamingHttpConnection> reserveConnection(
-                                        final HttpExecutionStrategy strategy,
-                                        final HttpRequestMetaData metaData) {
+                                public Single<? extends FilterableReservedStreamingHttpConnection> reserveConnection(
+                                        final HttpExecutionStrategy strategy, final HttpRequestMetaData metaData) {
                                     return delegate().reserveConnection(strategy, metaData).map(r ->
                                             new ReservedStreamingHttpConnectionFilter(closeables.prepend(r)) {
                                                 @Override

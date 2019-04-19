@@ -192,7 +192,7 @@ class DefaultHttpExecutionStrategy implements HttpExecutionStrategy {
         }
 
         if (other instanceof NoOffloadsHttpExecutionStrategy) {
-            return this;
+            return other;
         }
 
         final Executor otherExecutor = other.executor();

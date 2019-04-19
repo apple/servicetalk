@@ -76,9 +76,8 @@ public class SimpleHttpRequesterFilterTest extends AbstractHttpRequesterFilterTe
                 }
 
                 @Override
-                public Single<ReservedStreamingHttpConnection> reserveConnection(
-                        final HttpExecutionStrategy strategy,
-                        final HttpRequestMetaData metaData) {
+                public Single<? extends FilterableReservedStreamingHttpConnection> reserveConnection(
+                        final HttpExecutionStrategy strategy, final HttpRequestMetaData metaData) {
                     return delegate().reserveConnection(strategy, metaData).map(r ->
                             new ReservedStreamingHttpConnectionFilter(r) {
                                 @Override
@@ -156,9 +155,8 @@ public class SimpleHttpRequesterFilterTest extends AbstractHttpRequesterFilterTe
                 }
 
                 @Override
-                public Single<ReservedStreamingHttpConnection> reserveConnection(
-                        final HttpExecutionStrategy strategy,
-                        final HttpRequestMetaData metaData) {
+                public Single<? extends FilterableReservedStreamingHttpConnection> reserveConnection(
+                        final HttpExecutionStrategy strategy, final HttpRequestMetaData metaData) {
                     return delegate().reserveConnection(strategy, metaData)
                             .map(r -> new ReservedStreamingHttpConnectionFilter(r) {
                                 @Override
@@ -217,9 +215,8 @@ public class SimpleHttpRequesterFilterTest extends AbstractHttpRequesterFilterTe
                                                 final Publisher<Object> lbEvents) {
             return new StreamingHttpClientFilter(client) {
                 @Override
-                public Single<ReservedStreamingHttpConnection> reserveConnection(
-                        final HttpExecutionStrategy strategy,
-                        final HttpRequestMetaData metaData) {
+                public Single<? extends FilterableReservedStreamingHttpConnection> reserveConnection(
+                        final HttpExecutionStrategy strategy, final HttpRequestMetaData metaData) {
                     return delegate().reserveConnection(strategy, metaData)
                             .map(r -> new ReservedStreamingHttpConnectionFilter(r) {
                                 @Override
