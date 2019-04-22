@@ -41,6 +41,7 @@ dependencies {
   compile "io.servicetalk:servicetalk-concurrent-api:$project.version"
   compile "io.servicetalk:servicetalk-concurrent-api-internal:$project.version"
   compile "io.servicetalk:servicetalk-http-api:$project.version"
+  compile "io.servicetalk:servicetalk-http-netty:$project.version"
   compile "io.servicetalk:servicetalk-redis-netty:$project.version"
   compile "org.openjdk.jmh:jmh-core:1.21"
 

@@ -20,7 +20,6 @@ import io.servicetalk.buffer.netty.BufferAllocators;
 
 import org.junit.Test;
 
-import static io.servicetalk.buffer.api.EmptyBuffer.EMPTY_BUFFER;
 import static io.servicetalk.buffer.api.ReadOnlyBufferAllocators.DEFAULT_RO_ALLOCATOR;
 import static io.servicetalk.http.api.HttpResponseStatus.NO_CONTENT;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
@@ -34,14 +33,14 @@ public class HttpResponseStatusTest {
 
     @Test
     public void testGetResponseStatusReturnsConstant() {
-        assertSame(OK, HttpResponseStatus.of(200, DEFAULT_RO_ALLOCATOR.fromAscii("OK")));
-        assertSame(OK, HttpResponseStatus.of(200, EMPTY_BUFFER));
+        assertSame(OK, HttpResponseStatus.of(200, "OK"));
+        assertSame(OK, HttpResponseStatus.of(200, ""));
     }
 
     @Test
     public void testGetResponseStatusReturnsNewInstance() {
         final HttpResponseStatus newStatusObject =
-                HttpResponseStatus.of(200, DEFAULT_RO_ALLOCATOR.fromAscii("YES"));
+                HttpResponseStatus.of(200, "YES");
         assertNotSame(OK, newStatusObject);
         assertEquals(OK, newStatusObject);    // reasonPhrase is ignored according to RFC
     }
@@ -59,8 +58,7 @@ public class HttpResponseStatusTest {
 
     @Test
     public void testNewObject() {
-        final HttpResponseStatus status = HttpResponseStatus.of(590, DEFAULT_RO_ALLOCATOR.fromAscii(
-                "My Own Status Code"));
+        final HttpResponseStatus status = HttpResponseStatus.of(590, "My Own Status Code");
 
         assertEquals(590, status.code());
         assertWriteCodeToBuffer(590, status);
@@ -83,11 +81,11 @@ public class HttpResponseStatusTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void test2DigitStatusCodeIsNotAllowed() {
-        HttpResponseStatus.of(99, DEFAULT_RO_ALLOCATOR.fromAscii("My Own Status Code"));
+        HttpResponseStatus.of(99, "My Own Status Code");
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void test4DigitStatusCodeIsNotAllowed() {
-        HttpResponseStatus.of(1000, DEFAULT_RO_ALLOCATOR.fromAscii("My Own Status Code"));
+        HttpResponseStatus.of(1000, "My Own Status Code");
     }
 }
