@@ -60,6 +60,7 @@ import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.BlockingTestUtils.awaitIndefinitely;
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
+import static io.servicetalk.redis.api.RedisExecutionStrategies.defaultStrategy;
 import static io.servicetalk.redis.api.RedisProtocolSupport.Command.DISCARD;
 import static io.servicetalk.redis.api.RedisProtocolSupport.Command.EXEC;
 import static io.servicetalk.redis.api.RedisProtocolSupport.Command.MULTI;
@@ -243,12 +244,12 @@ public class PingerTest {
                 });
 
         ExecutionContext executionContext =
-                new DefaultExecutionContext(DEFAULT_ALLOCATOR, nettyIoExecutor, immediate());
+                new DefaultExecutionContext(DEFAULT_ALLOCATOR, nettyIoExecutor, immediate(), defaultStrategy());
         return TcpConnector.connect(null, serverAddress, roTcpConfig, executionContext).flatMap(channel ->
                 DefaultNettyConnection.initChannel(channel,
                         executionContext.bufferAllocator(), executionContext.executor(),
                         new TerminalPredicate<>(o -> false), UNSUPPORTED_PROTOCOL_CLOSE_HANDLER,
-                        config.tcpClientConfig().flushStrategy(), initializer
+                        config.tcpClientConfig().flushStrategy(), initializer, executionContext.executionStrategy()
                 ));
     }
 }

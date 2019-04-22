@@ -28,6 +28,7 @@ public final class DefaultExecutionContext implements ExecutionContext {
     private final BufferAllocator bufferAllocator;
     private final IoExecutor ioExecutor;
     private final Executor executor;
+    private final ExecutionStrategy executionStrategy;
 
     /**
      * Create a new instance.
@@ -35,13 +36,16 @@ public final class DefaultExecutionContext implements ExecutionContext {
      * @param bufferAllocator The {@link BufferAllocator} to use for {@link #bufferAllocator()}.
      * @param ioExecutor The {@link IoExecutor} to use for {@link #ioExecutor()}.
      * @param executor The {@link Executor} to use for {@link #executor()}.
+     * @param executionStrategy {@link ExecutionStrategy} to use for {@link #executionStrategy()}.
      */
     public DefaultExecutionContext(final BufferAllocator bufferAllocator,
                                    final IoExecutor ioExecutor,
-                                   final Executor executor) {
+                                   final Executor executor,
+                                   final ExecutionStrategy executionStrategy) {
         this.bufferAllocator = requireNonNull(bufferAllocator);
         this.ioExecutor = requireNonNull(ioExecutor);
         this.executor = requireNonNull(executor);
+        this.executionStrategy = requireNonNull(executionStrategy);
     }
 
     @Override
@@ -60,6 +64,11 @@ public final class DefaultExecutionContext implements ExecutionContext {
     }
 
     @Override
+    public ExecutionStrategy executionStrategy() {
+        return executionStrategy;
+    }
+
+    @Override
     public boolean equals(final Object o) {
         if (this == o) {
             return true;
@@ -69,9 +78,17 @@ public final class DefaultExecutionContext implements ExecutionContext {
         }
 
         final DefaultExecutionContext that = (DefaultExecutionContext) o;
-        return bufferAllocator.equals(that.bufferAllocator)
-                && ioExecutor.equals(that.ioExecutor)
-                && executor.equals(that.executor);
+
+        if (!bufferAllocator.equals(that.bufferAllocator)) {
+            return false;
+        }
+        if (!ioExecutor.equals(that.ioExecutor)) {
+            return false;
+        }
+        if (!executor.equals(that.executor)) {
+            return false;
+        }
+        return executionStrategy.equals(that.executionStrategy);
     }
 
     @Override
@@ -79,6 +96,7 @@ public final class DefaultExecutionContext implements ExecutionContext {
         int result = bufferAllocator.hashCode();
         result = 31 * result + ioExecutor.hashCode();
         result = 31 * result + executor.hashCode();
+        result = 31 * result + executionStrategy.hashCode();
         return result;
     }
 }

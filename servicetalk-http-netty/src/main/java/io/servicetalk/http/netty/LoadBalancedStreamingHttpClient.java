@@ -19,6 +19,7 @@ import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
+import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpRequestMethod;
@@ -28,7 +29,6 @@ import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.utils.BeforeFinallyOnHttpResponseOperator;
-import io.servicetalk.transport.api.ExecutionContext;
 
 import java.util.function.Function;
 
@@ -43,11 +43,11 @@ final class LoadBalancedStreamingHttpClient implements FilterableStreamingHttpCl
             SELECTOR_FOR_RESERVE = conn -> conn.tryReserve() ? conn : null;
 
     // TODO Proto specific LB after upgrade and worry about SSL
-    private final ExecutionContext executionContext;
+    private final HttpExecutionContext executionContext;
     private final LoadBalancer<LoadBalancedStreamingHttpConnection> loadBalancer;
     private final StreamingHttpRequestResponseFactory reqRespFactory;
 
-    LoadBalancedStreamingHttpClient(final ExecutionContext executionContext,
+    LoadBalancedStreamingHttpClient(final HttpExecutionContext executionContext,
                                     final LoadBalancer<LoadBalancedStreamingHttpConnection> loadBalancer,
                                     final StreamingHttpRequestResponseFactory reqRespFactory) {
         this.executionContext = requireNonNull(executionContext);
@@ -76,7 +76,7 @@ final class LoadBalancedStreamingHttpClient implements FilterableStreamingHttpCl
     }
 
     @Override
-    public ExecutionContext executionContext() {
+    public HttpExecutionContext executionContext() {
         return executionContext;
     }
 

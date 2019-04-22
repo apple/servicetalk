@@ -34,6 +34,7 @@ import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.ServiceTalkTestTimeout.DEFAULT_TIMEOUT_SECONDS;
 import static io.servicetalk.transport.netty.internal.FlushStrategies.defaultFlushStrategy;
+import static io.servicetalk.transport.netty.internal.OffloadAllExecutionStrategy.OFFLOAD_ALL_STRATEGY;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
@@ -50,7 +51,7 @@ public class NettyChannelPublisherRefCountTest {
     public void setUp() throws Exception {
         channel = new EmbeddedChannel();
         publisher = DefaultNettyConnection.initChannel(channel, DEFAULT_ALLOCATOR, immediate(), defaultFlushStrategy(),
-                (channel, context) -> context).toFuture().get().read();
+                (channel, context) -> context, OFFLOAD_ALL_STRATEGY).toFuture().get().read();
     }
 
     @After

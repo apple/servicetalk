@@ -66,8 +66,8 @@ public class ConditionalHttpClientFilterTest extends AbstractConditionalHttpFilt
         }
     }
 
-    public static final StreamingHttpClient newClient(AtomicBoolean closed) {
-        return TestStreamingHttpClient.from(REQ_RES_FACTORY, TEST_CTX,
+    public static StreamingHttpClient newClient(AtomicBoolean closed) {
+        return TestStreamingHttpClient.from(REQ_RES_FACTORY, testHttpExecutionContext(),
                 new TestCondFilterFactory(closed).append(REQ_FILTER));
     }
 

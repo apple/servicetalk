@@ -25,7 +25,6 @@ import io.servicetalk.concurrent.api.ExecutorRule;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.HttpApiConversions.ServiceAdapterHolder;
 import io.servicetalk.oio.api.PayloadWriter;
-import io.servicetalk.transport.api.ExecutionContext;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -83,7 +82,7 @@ public class BlockingStreamingToStreamingServiceTest {
     public final ExecutorRule<Executor> executorRule = newRule();
 
     @Mock
-    private ExecutionContext mockExecutionCtx;
+    private HttpExecutionContext mockExecutionCtx;
 
     private final StreamingHttpRequestResponseFactory reqRespFactory = new DefaultStreamingHttpRequestResponseFactory(
             DEFAULT_ALLOCATOR, DefaultHttpHeadersFactory.INSTANCE);

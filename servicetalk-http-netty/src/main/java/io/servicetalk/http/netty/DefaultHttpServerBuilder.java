@@ -16,7 +16,6 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.buffer.api.BufferAllocator;
-import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpHeadersFactory;
@@ -26,7 +25,6 @@ import io.servicetalk.transport.api.ConnectionAcceptor;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.api.SslConfig;
-import io.servicetalk.transport.netty.internal.ExecutionContextBuilder;
 
 import java.net.SocketAddress;
 import java.net.SocketOption;
@@ -38,7 +36,7 @@ import static java.util.Objects.requireNonNull;
 final class DefaultHttpServerBuilder extends HttpServerBuilder {
 
     private final HttpServerConfig config = new HttpServerConfig();
-    private final ExecutionContextBuilder executionContextBuilder = new ExecutionContextBuilder();
+    private final HttpExecutionContextBuilder executionContextBuilder = new HttpExecutionContextBuilder();
     private SocketAddress address;
 
     DefaultHttpServerBuilder(SocketAddress address) {
@@ -141,11 +139,8 @@ final class DefaultHttpServerBuilder extends HttpServerBuilder {
                                              HttpExecutionStrategy strategy,
                                              boolean drainRequestPayloadBody) {
         ReadOnlyHttpServerConfig roConfig = this.config.asReadOnly();
-        Executor executor = strategy.executor();
-        if (executor != null) {
-            executionContextBuilder.executor(executor);
-        }
+        executionContextBuilder.executionStrategy(strategy);
         return NettyHttpServer.bind(executionContextBuilder.build(), roConfig, address, connectionAcceptor,
-                service, strategy, drainRequestPayloadBody);
+                service, drainRequestPayloadBody);
     }
 }

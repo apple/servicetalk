@@ -114,7 +114,8 @@ class DefaultHttpExecutionStrategy implements HttpExecutionStrategy {
             public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
                                                         StreamingHttpRequest request,
                                                         final StreamingHttpResponseFactory responseFactory) {
-                HttpServiceContext wrappedCtx = new ExecutionContextOverridingServiceContext(ctx, e);
+                HttpServiceContext wrappedCtx =
+                        new ExecutionContextOverridingServiceContext(ctx, DefaultHttpExecutionStrategy.this, e);
                 if (offloaded(OFFLOAD_RECEIVE_DATA)) {
                     request = request.transformRawPayloadBody(p -> p.publishOn(e));
                 }
@@ -311,6 +312,16 @@ class DefaultHttpExecutionStrategy implements HttpExecutionStrategy {
         result = 31 * result + mergeStrategy.hashCode();
         result = 31 * result + (threadAffinity ? 1 : 0);
         return result;
+    }
+
+    @Override
+    public String toString() {
+        return "DefaultHttpExecutionStrategy{" +
+                "executor=" + executor +
+                ", offloads=" + offloads +
+                ", mergeStrategy=" + mergeStrategy +
+                ", threadAffinity=" + threadAffinity +
+                '}';
     }
 
     static Publisher<Object> flatten(HttpMetaData metaData, Publisher<Object> payload) {

@@ -69,6 +69,7 @@ import static io.servicetalk.concurrent.api.Processors.newCompletableProcessor;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.http.api.DefaultHttpHeadersFactory.INSTANCE;
+import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpHeaderNames.CONNECTION;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderNames.TRANSFER_ENCODING;
@@ -417,7 +418,7 @@ public class HttpRequestEncoderTest {
                                                 serverChannelRef.compareAndSet(null, c);
                                                 serverChannelLatch.countDown();
                                                 return cc;
-                                            })),
+                                            }), defaultStrategy()),
                             connection -> { }).toFuture().get());
             HttpClientConfig cConfig = new HttpClientConfig(new TcpClientConfig(true));
 
@@ -444,7 +445,7 @@ public class HttpRequestEncoderTest {
                                     }
                                 });
                                 return context;
-                            }));
+                            }), defaultStrategy());
                     }
             ).toFuture().get());
 

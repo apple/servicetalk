@@ -20,6 +20,7 @@ import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection.SettingKey;
 import io.servicetalk.transport.api.ConnectionContext;
+import io.servicetalk.transport.api.DelegatingConnectionContext;
 import io.servicetalk.transport.api.ExecutionContext;
 
 import static io.servicetalk.http.api.HttpExecutionStrategies.OFFLOAD_RECEIVE_DATA_STRATEGY;
@@ -33,12 +34,27 @@ final class StreamingHttpConnectionToHttpConnection implements HttpConnection {
     static final HttpExecutionStrategy DEFAULT_CONNECTION_STRATEGY = OFFLOAD_RECEIVE_DATA_STRATEGY;
     private final StreamingHttpConnection connection;
     private final HttpExecutionStrategy strategy;
+    private final ConnectionContext context;
+    private final HttpExecutionContext executionContext;
     private final HttpRequestResponseFactory reqRespFactory;
 
     StreamingHttpConnectionToHttpConnection(final StreamingHttpConnection connection,
                                             final HttpExecutionStrategyInfluencer influencer) {
         strategy = influencer.influenceStrategy(DEFAULT_CONNECTION_STRATEGY);
         this.connection = connection;
+        ConnectionContext originalCtx = connection.connectionContext();
+        executionContext = new DelegatingHttpExecutionContext(connection.executionContext()) {
+            @Override
+            public HttpExecutionStrategy executionStrategy() {
+                return strategy;
+            }
+        };
+        context = new DelegatingConnectionContext(originalCtx) {
+            @Override
+            public ExecutionContext executionContext() {
+                return executionContext;
+            }
+        };
         reqRespFactory = toAggregated(connection);
     }
 
@@ -49,7 +65,7 @@ final class StreamingHttpConnectionToHttpConnection implements HttpConnection {
 
     @Override
     public ConnectionContext connectionContext() {
-        return connection.connectionContext();
+        return context;
     }
 
     @Override
@@ -68,8 +84,8 @@ final class StreamingHttpConnectionToHttpConnection implements HttpConnection {
     }
 
     @Override
-    public ExecutionContext executionContext() {
-        return connection.executionContext();
+    public HttpExecutionContext executionContext() {
+        return executionContext;
     }
 
     @Override

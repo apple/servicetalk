@@ -22,6 +22,7 @@ import io.servicetalk.http.api.BlockingHttpConnection;
 import io.servicetalk.http.api.BlockingStreamingHttpConnection;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpConnection;
+import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
 import io.servicetalk.http.api.HttpRequestMethod;
@@ -30,7 +31,6 @@ import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.transport.api.ConnectionContext;
-import io.servicetalk.transport.api.ExecutionContext;
 
 import static io.servicetalk.http.api.HttpApiConversions.toBlockingConnection;
 import static io.servicetalk.http.api.HttpApiConversions.toBlockingStreamingConnection;
@@ -86,7 +86,7 @@ final class FilterableConnectionToConnection implements StreamingHttpConnection 
     }
 
     @Override
-    public ExecutionContext executionContext() {
+    public HttpExecutionContext executionContext() {
         return filteredConnection.executionContext();
     }
 

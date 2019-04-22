@@ -56,6 +56,7 @@ import static io.servicetalk.transport.netty.internal.CloseHandler.forPipelinedR
 import static io.servicetalk.transport.netty.internal.FlushStrategies.batchFlush;
 import static io.servicetalk.transport.netty.internal.FlushStrategies.defaultFlushStrategy;
 import static io.servicetalk.transport.netty.internal.FlushStrategies.flushOnEnd;
+import static io.servicetalk.transport.netty.internal.OffloadAllExecutionStrategy.OFFLOAD_ALL_STRATEGY;
 import static java.lang.Integer.MAX_VALUE;
 import static java.nio.charset.Charset.defaultCharset;
 import static java.nio.charset.StandardCharsets.US_ASCII;
@@ -113,7 +114,8 @@ public class DefaultNettyConnectionTest {
             return true;
         });
         conn = DefaultNettyConnection.<Buffer, Buffer>initChannel(channel, allocator, executor, terminalPredicate,
-                closeHandler, defaultFlushStrategy(), (channel, context) -> context).toFuture().get();
+                closeHandler, defaultFlushStrategy(), (channel, context) -> context, OFFLOAD_ALL_STRATEGY)
+                .toFuture().get();
         publisher = new TestPublisher<>();
     }
 

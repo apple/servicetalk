@@ -39,6 +39,7 @@ import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
 import static io.servicetalk.transport.netty.internal.FlushStrategies.defaultFlushStrategy;
+import static io.servicetalk.transport.netty.internal.OffloadAllExecutionStrategy.OFFLOAD_ALL_STRATEGY;
 import static java.lang.Integer.MAX_VALUE;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.hasSize;
@@ -78,7 +79,7 @@ public class DefaultNettyPipelinedConnectionTest {
         connection = DefaultNettyConnection.<Integer, Integer>initChannel(channel, DEFAULT_ALLOCATOR,
                 immediate(), new TerminalPredicate<>(integer -> true),
                 UNSUPPORTED_PROTOCOL_CLOSE_HANDLER, defaultFlushStrategy(),
-                (channel2, context2) -> context2).toFuture().get();
+                (channel2, context2) -> context2, OFFLOAD_ALL_STRATEGY).toFuture().get();
         requester = new DefaultNettyPipelinedConnection<>(connection, MAX_PENDING_REQUESTS);
     }
 

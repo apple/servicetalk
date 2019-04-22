@@ -51,6 +51,7 @@ import static io.servicetalk.concurrent.internal.ServiceTalkTestTimeout.DEFAULT_
 import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
 import static io.servicetalk.transport.netty.internal.FlushStrategies.defaultFlushStrategy;
+import static io.servicetalk.transport.netty.internal.OffloadAllExecutionStrategy.OFFLOAD_ALL_STRATEGY;
 import static java.util.Objects.requireNonNull;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
@@ -98,7 +99,7 @@ public class NettyChannelPublisherTest {
                         }
                     });
                     return context;
-                }).toFuture().get();
+                }, OFFLOAD_ALL_STRATEGY).toFuture().get();
         publisher = connection.read();
         channel.config().setAutoRead(false);
     }

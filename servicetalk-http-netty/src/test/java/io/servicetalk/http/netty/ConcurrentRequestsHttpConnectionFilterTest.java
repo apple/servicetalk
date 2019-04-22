@@ -27,6 +27,7 @@ import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.DefaultHttpHeadersFactory;
 import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.HttpConnection;
+import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpHeaderNames;
 import io.servicetalk.http.api.HttpResponse;
@@ -36,7 +37,6 @@ import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.TestStreamingHttpConnection;
 import io.servicetalk.tcp.netty.internal.TcpClientConfig;
-import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.netty.internal.NettyConnection;
 
@@ -85,7 +85,7 @@ public class ConcurrentRequestsHttpConnectionFilterTest {
     @Rule
     public final MockitoRule rule = MockitoJUnit.rule();
     @Mock
-    private ExecutionContext executionContext;
+    private HttpExecutionContext executionContext;
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
 

@@ -23,6 +23,7 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.DefaultHttpHeadersFactory;
 import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
+import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
@@ -31,7 +32,6 @@ import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.api.StreamingHttpServiceFilter;
 import io.servicetalk.http.utils.auth.BasicAuthHttpServiceFilter.CredentialsVerifier;
-import io.servicetalk.transport.api.ExecutionContext;
 
 import org.junit.After;
 import org.junit.BeforeClass;
@@ -130,7 +130,7 @@ public class BasicAuthHttpServiceFilterTest {
 
     @BeforeClass
     public static void beforeClass() {
-        ExecutionContext ec = mock(ExecutionContext.class);
+        HttpExecutionContext ec = mock(HttpExecutionContext.class);
         when(ec.bufferAllocator()).thenReturn(DEFAULT_ALLOCATOR);
         when(CONN_CTX.executionContext()).thenReturn(ec);
     }

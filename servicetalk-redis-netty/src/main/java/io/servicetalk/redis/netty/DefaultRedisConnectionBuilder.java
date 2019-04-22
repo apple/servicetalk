@@ -271,7 +271,8 @@ public final class DefaultRedisConnectionBuilder<ResolvedAddress> implements Red
                     return DefaultNettyConnection.initChannel(channel, executionContext.bufferAllocator(),
                             executionContext.executor(), new TerminalPredicate<>(o -> false), closeHandler,
                             tcpClientConfig.flushStrategy(), new TcpClientChannelInitializer(
-                                    tcpClientConfig).andThen(new RedisClientChannelInitializer()));
+                                    tcpClientConfig).andThen(new RedisClientChannelInitializer()),
+                            executionContext.executionStrategy());
                 });
     }
 }

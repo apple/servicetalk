@@ -22,7 +22,6 @@ import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.transport.api.ConnectionContext;
-import io.servicetalk.transport.api.ExecutionContext;
 
 import org.junit.After;
 import org.junit.Before;
@@ -79,7 +78,7 @@ public abstract class AbstractHttpRequesterFilterTest {
     public final SecurityType security;
 
     @Mock
-    private ExecutionContext mockExecutionContext;
+    private HttpExecutionContext mockExecutionContext;
 
     @Mock
     private ConnectionContext mockConnectionContext;
@@ -312,7 +311,7 @@ public abstract class AbstractHttpRequesterFilterTest {
             }
 
             @Override
-            public ExecutionContext executionContext() {
+            public HttpExecutionContext executionContext() {
                 return connection.executionContext();
             }
 

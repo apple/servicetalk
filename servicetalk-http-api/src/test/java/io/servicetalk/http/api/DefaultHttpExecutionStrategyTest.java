@@ -169,21 +169,17 @@ public class DefaultHttpExecutionStrategyTest {
     @Test
     public void wrapService() throws Exception {
         ThreadAnalyzer analyzer = new ThreadAnalyzer();
-        StreamingHttpService svc = strategy.offloadService(executor, new StreamingHttpService() {
-            @Override
-            public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
-                                                        final StreamingHttpRequest request,
-                                                        final StreamingHttpResponseFactory responseFactory) {
-                analyzer.checkContext(ctx);
-                analyzer.checkServiceInvocation();
-                return succeeded(analyzer.createNewResponse()
-                        .payloadBody(analyzer.instrumentedRequestPayloadForServer(request.payloadBody())));
-            }
+        StreamingHttpService svc = strategy.offloadService(executor, (ctx, request, responseFactory) -> {
+            analyzer.checkContext(ctx);
+            analyzer.checkServiceInvocation();
+            return succeeded(analyzer.createNewResponse()
+                    .payloadBody(analyzer.instrumentedRequestPayloadForServer(request.payloadBody())));
         });
         StreamingHttpRequest req = analyzer.createNewRequest();
         DefaultStreamingHttpRequestResponseFactory respFactory =
                 new DefaultStreamingHttpRequestResponseFactory(DEFAULT_ALLOCATOR, INSTANCE);
-        TestHttpServiceContext ctx = new TestHttpServiceContext(INSTANCE, respFactory, contextRule);
+        TestHttpServiceContext ctx = new TestHttpServiceContext(INSTANCE, respFactory,
+                new ExecutionContextToHttpExecutionContext(contextRule, strategy));
         analyzer.instrumentedResponseForServer(svc.handle(ctx, req, ctx.streamingResponseFactory()))
                 .flatMapPublisher(StreamingHttpResponse::payloadBody)
                 .toFuture().get();

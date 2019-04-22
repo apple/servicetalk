@@ -36,6 +36,7 @@ import io.servicetalk.http.api.DefaultHttpHeadersFactory;
 import io.servicetalk.http.api.EmptyHttpHeaders;
 import io.servicetalk.http.api.FilterableReservedStreamingHttpConnection;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
+import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.HttpRequestMetaData;
@@ -53,7 +54,6 @@ import io.servicetalk.http.api.StreamingHttpRequests;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.netty.DefaultSingleAddressHttpClientBuilder.HttpClientBuildContext;
-import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.SslConfig;
 
@@ -105,8 +105,9 @@ class DefaultPartitionedHttpClientBuilder<U, R> extends PartitionedHttpClientBui
                 new DefaultPartitionedStreamingHttpClientFilter<>(psdEvents, serviceDiscoveryMaxQueueSize,
                         clientFactory, partitionAttributesBuilderFactory, buildContext.reqRespFactory,
                         buildContext.executionContext, partitionMapFactory);
-        return new FilterableClientToClient(partitionedClient, buildContext.executionStrategy(),
-                buildContext.builder.buildStrategyInfluencerForClient());
+        return new FilterableClientToClient(partitionedClient, buildContext.executionContext.executionStrategy(),
+                buildContext.builder.buildStrategyInfluencerForClient(
+                        buildContext.executionContext.executionStrategy()));
     }
 
     private static final class DefaultPartitionedStreamingHttpClientFilter<U, R> implements
@@ -119,7 +120,7 @@ class DefaultPartitionedHttpClientBuilder<U, R> extends PartitionedHttpClientBui
 
         private final ClientGroup<PartitionAttributes, FilterableStreamingHttpClient> group;
         private final Function<HttpRequestMetaData, PartitionAttributesBuilder> pabf;
-        private final ExecutionContext executionContext;
+        private final HttpExecutionContext executionContext;
         private final StreamingHttpRequestResponseFactory reqRespFactory;
 
         DefaultPartitionedStreamingHttpClientFilter(
@@ -128,7 +129,7 @@ class DefaultPartitionedHttpClientBuilder<U, R> extends PartitionedHttpClientBui
                 final PartitionedClientFactory<U, R, FilterableStreamingHttpClient> clientFactory,
                 final Function<HttpRequestMetaData, PartitionAttributesBuilder> pabf,
                 final StreamingHttpRequestResponseFactory reqRespFactory,
-                final ExecutionContext executionContext,
+                final HttpExecutionContext executionContext,
                 final PartitionMapFactory partitionMapFactory) {
             this.pabf = pabf;
             this.executionContext = executionContext;
@@ -155,7 +156,7 @@ class DefaultPartitionedHttpClientBuilder<U, R> extends PartitionedHttpClientBui
         }
 
         @Override
-        public ExecutionContext executionContext() {
+        public HttpExecutionContext executionContext() {
             return executionContext;
         }
 
@@ -204,7 +205,7 @@ class DefaultPartitionedHttpClientBuilder<U, R> extends PartitionedHttpClientBui
         }
 
         @Override
-        public ExecutionContext executionContext() {
+        public HttpExecutionContext executionContext() {
             throw ex;
         }
 

@@ -29,6 +29,7 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.internal.SubscribableCompletable;
 import io.servicetalk.http.api.FilterableReservedStreamingHttpConnection;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
+import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.HttpRequestMetaData;
@@ -47,7 +48,6 @@ import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.netty.DefaultSingleAddressHttpClientBuilder.HttpClientBuildContext;
 import io.servicetalk.http.utils.RedirectingHttpRequesterFilter;
-import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.SslConfig;
@@ -124,8 +124,9 @@ final class DefaultMultiAddressUrlHttpClientBuilder extends MultiAddressHttpClie
             urlClient = maxRedirects <= 0 ? urlClient :
                     new RedirectingHttpRequesterFilter(false, maxRedirects).create(urlClient, empty());
 
-            return new FilterableClientToClient(urlClient, buildContext.executionStrategy(),
-                    buildContext.builder.buildStrategyInfluencerForClient());
+            return new FilterableClientToClient(urlClient, buildContext.executionContext.executionStrategy(),
+                    buildContext.builder.buildStrategyInfluencerForClient(
+                            buildContext.executionContext.executionStrategy()));
         } catch (final Throwable t) {
             closeables.closeAsync().subscribe();
             throw t;
@@ -268,13 +269,13 @@ final class DefaultMultiAddressUrlHttpClientBuilder extends MultiAddressHttpClie
     }
 
     private static final class StreamingUrlHttpClient implements FilterableStreamingHttpClient {
-        private final ExecutionContext executionContext;
+        private final HttpExecutionContext executionContext;
         private final StreamingHttpRequestResponseFactory reqRespFactory;
         private final ClientGroup<UrlKey, FilterableStreamingHttpClient> group;
         private final CachingKeyFactory keyFactory;
         private final ListenableAsyncCloseable closeable;
 
-        StreamingUrlHttpClient(final ExecutionContext executionContext,
+        StreamingUrlHttpClient(final HttpExecutionContext executionContext,
                                final Function<UrlKey, FilterableStreamingHttpClient> clientFactory,
                                final CachingKeyFactory keyFactory,
                                final StreamingHttpRequestResponseFactory reqRespFactory) {
@@ -306,7 +307,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder extends MultiAddressHttpClie
         }
 
         @Override
-        public ExecutionContext executionContext() {
+        public HttpExecutionContext executionContext() {
             return executionContext;
         }
 

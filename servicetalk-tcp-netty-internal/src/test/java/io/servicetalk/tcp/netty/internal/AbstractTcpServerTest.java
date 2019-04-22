@@ -84,7 +84,7 @@ public abstract class AbstractTcpServerTest {
     @Before
     public void startServer() throws Exception {
         server = createServer();
-        serverContext = server.bind(SERVER_CTX, 0, connectionAcceptor, service);
+        serverContext = server.bind(SERVER_CTX, 0, connectionAcceptor, service, SERVER_CTX.executionStrategy());
         serverAddress = (InetSocketAddress) serverContext.listenAddress();
         client = createClient();
     }

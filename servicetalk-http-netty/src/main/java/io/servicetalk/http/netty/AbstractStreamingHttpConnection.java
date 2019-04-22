@@ -19,6 +19,7 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
+import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.HttpResponseMetaData;
@@ -26,7 +27,6 @@ import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
-import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.netty.internal.NettyConnectionContext;
 
 import java.util.function.Function;
@@ -41,12 +41,12 @@ abstract class AbstractStreamingHttpConnection<CC extends NettyConnectionContext
                        FilterableStreamingHttpConnection, Function<Publisher<Object>, Single<StreamingHttpResponse>> {
 
     final CC connection;
-    final ExecutionContext executionContext;
+    final HttpExecutionContext executionContext;
     private final Publisher<Integer> maxConcurrencySetting;
     private final StreamingHttpRequestResponseFactory reqRespFactory;
 
     AbstractStreamingHttpConnection(
-            CC conn, ReadOnlyHttpClientConfig config, ExecutionContext executionContext,
+            CC conn, ReadOnlyHttpClientConfig config, HttpExecutionContext executionContext,
             StreamingHttpRequestResponseFactory reqRespFactory) {
         this.connection = requireNonNull(conn);
         this.executionContext = requireNonNull(executionContext);
@@ -82,7 +82,7 @@ abstract class AbstractStreamingHttpConnection<CC extends NettyConnectionContext
     }
 
     @Override
-    public final ExecutionContext executionContext() {
+    public final HttpExecutionContext executionContext() {
         return executionContext;
     }
 

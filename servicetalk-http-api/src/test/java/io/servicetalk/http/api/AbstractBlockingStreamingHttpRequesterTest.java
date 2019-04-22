@@ -24,7 +24,6 @@ import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.api.TestSubscription;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.transport.api.ConnectionContext;
-import io.servicetalk.transport.api.ExecutionContext;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -54,7 +53,7 @@ public abstract class AbstractBlockingStreamingHttpRequesterTest {
     @Rule
     public final ServiceTalkTestTimeout timeout = new ServiceTalkTestTimeout();
     @Mock
-    private ExecutionContext mockExecutionCtx;
+    private HttpExecutionContext mockExecutionCtx;
     @Mock
     private ConnectionContext mockCtx;
     @Mock
@@ -68,7 +67,7 @@ public abstract class AbstractBlockingStreamingHttpRequesterTest {
             allocator, DefaultHttpHeadersFactory.INSTANCE);
 
     protected abstract <T extends StreamingHttpRequester & TestHttpRequester>
-    T newAsyncRequester(StreamingHttpRequestResponseFactory factory, ExecutionContext executionContext,
+    T newAsyncRequester(StreamingHttpRequestResponseFactory factory, HttpExecutionContext executionContext,
                         BiFunction<HttpExecutionStrategy, StreamingHttpRequest, Single<StreamingHttpResponse>>
                                 doRequest);
 

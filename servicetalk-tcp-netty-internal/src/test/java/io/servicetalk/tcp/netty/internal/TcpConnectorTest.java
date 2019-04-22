@@ -107,7 +107,7 @@ public final class TcpConnectorTest extends AbstractTcpServerTest {
                                 }
                             });
                             return context;
-                        })
+                        }, CLIENT_CTX.executionStrategy())
                 ).toFuture().get();
         connection.closeAsync().toFuture().get();
 

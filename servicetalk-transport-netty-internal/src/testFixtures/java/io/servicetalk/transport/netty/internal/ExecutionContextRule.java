@@ -21,6 +21,7 @@ import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Executors;
 import io.servicetalk.transport.api.DefaultExecutionContext;
 import io.servicetalk.transport.api.ExecutionContext;
+import io.servicetalk.transport.api.ExecutionStrategy;
 import io.servicetalk.transport.api.IoExecutor;
 
 import org.junit.ClassRule;
@@ -33,6 +34,7 @@ import java.util.function.Supplier;
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.transport.netty.internal.NettyIoExecutors.createIoExecutor;
+import static io.servicetalk.transport.netty.internal.OffloadAllExecutionStrategy.OFFLOAD_ALL_STRATEGY;
 
 /**
  * Test helper that creates and disposes an {@link ExecutionContext} for your test case or suite.
@@ -44,15 +46,24 @@ public final class ExecutionContextRule extends ExternalResource implements Exec
     private final Supplier<Executor> executorSupplier;
     private final Supplier<IoExecutor> ioExecutorSupplier;
     private final Supplier<BufferAllocator> allocatorSupplier;
+    private final Supplier<ExecutionStrategy> executionStrategySupplier;
 
     private ExecutionContext ctx;
 
     public ExecutionContextRule(final Supplier<BufferAllocator> allocatorSupplier,
                                 final Supplier<IoExecutor> ioExecutorSupplier,
                                 final Supplier<Executor> executorSupplier) {
+        this(allocatorSupplier, ioExecutorSupplier, executorSupplier, () -> OFFLOAD_ALL_STRATEGY);
+    }
+
+    public ExecutionContextRule(final Supplier<BufferAllocator> allocatorSupplier,
+                                final Supplier<IoExecutor> ioExecutorSupplier,
+                                final Supplier<Executor> executorSupplier,
+                                final Supplier<ExecutionStrategy> executionStrategySupplier) {
         this.executorSupplier = executorSupplier;
         this.ioExecutorSupplier = ioExecutorSupplier;
         this.allocatorSupplier = allocatorSupplier;
+        this.executionStrategySupplier = executionStrategySupplier;
     }
 
     public static ExecutionContextRule immediate() {
@@ -94,7 +105,8 @@ public final class ExecutionContextRule extends ExternalResource implements Exec
 
     @Override
     protected void before() {
-        ctx = new DefaultExecutionContext(allocatorSupplier.get(), ioExecutorSupplier.get(), executorSupplier.get());
+        ctx = new DefaultExecutionContext(allocatorSupplier.get(), ioExecutorSupplier.get(), executorSupplier.get(),
+                executionStrategySupplier.get());
     }
 
     @Override
@@ -119,6 +131,11 @@ public final class ExecutionContextRule extends ExternalResource implements Exec
     @Override
     public Executor executor() {
         return ctx.executor();
+    }
+
+    @Override
+    public ExecutionStrategy executionStrategy() {
+        return ctx.executionStrategy();
     }
 
     private static Supplier<IoExecutor> newIoExecutor(ThreadFactory threadFactory) {
