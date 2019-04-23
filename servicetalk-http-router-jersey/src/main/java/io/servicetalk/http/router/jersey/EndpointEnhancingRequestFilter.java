@@ -162,14 +162,7 @@ final class EndpointEnhancingRequestFilter implements ContainerRequestFilter {
                 throw new IllegalStateException("Failed to suspend request processing");
             }
 
-            HttpExecutionStrategy effectiveRouteStrategy = routeExecutionStrategy;
-            if (effectiveRouteStrategy != null && currentConnectionContext != null) {
-                ExecutionStrategy connectionStrategy = currentConnectionContext.executionContext().executionStrategy();
-                if (connectionStrategy instanceof HttpExecutionStrategy) {
-                    effectiveRouteStrategy = difference(currentConnectionContext.executionContext().executor(),
-                            ((HttpExecutionStrategy) connectionStrategy), effectiveRouteStrategy);
-                }
-            }
+            final HttpExecutionStrategy effectiveRouteStrategy = calculateEffectiveStrategy();
             final Single<Response> objectSingle = callOriginalEndpoint(requestProcessingCtx, effectiveRouteStrategy)
                     .flatMap(this::handleContainerResponse)
                     .beforeFinally(() -> uriRoutingContext.setEndpoint(originalEndpoint))
@@ -191,38 +184,50 @@ final class EndpointEnhancingRequestFilter implements ContainerRequestFilter {
             return null;
         }
 
+        @Nullable
+        private HttpExecutionStrategy calculateEffectiveStrategy() {
+            if (routeExecutionStrategy != null && currentConnectionContext != null) {
+                ExecutionStrategy connectionStrategy = currentConnectionContext.executionContext().executionStrategy();
+                if (connectionStrategy instanceof HttpExecutionStrategy) {
+                    return difference(currentConnectionContext.executionContext().executor(),
+                            ((HttpExecutionStrategy) connectionStrategy), routeExecutionStrategy);
+                }
+            }
+            return routeExecutionStrategy;
+        }
+
         private Single<ContainerResponse> callOriginalEndpoint(
                 final RequestProcessingContext requestProcessingCtx,
                 @Nullable final HttpExecutionStrategy effectiveRouteStrategy) {
-            if (effectiveRouteStrategy != null) {
-                final RequestContext requestContext = requestScope.referenceCurrent();
-                final ContainerRequest request = requestProcessingCtx.request();
-
-                assert currentConnectionContext != null : "currentConnectionContext can't be null";
-                final ExecutionContext currentExecutionContext = currentConnectionContext.executionContext();
-
-                return effectiveRouteStrategy.invokeService(currentExecutionContext.executor(),
-                        actualExecutor -> {
-                            assert ctxRef != null : "ctxRef can't be null";
-                            ctxRef.set(new ExecutorOverrideConnectionContext(currentConnectionContext, actualExecutor));
-                            return requestScope.runInScope(requestContext, () -> {
-                                getRequestBufferPublisherInputStream(request)
-                                        .offloadSourcePublisher(effectiveRouteStrategy,
-                                                currentExecutionContext.executor());
-                                setResponseExecutionStrategy(effectiveRouteStrategy, request);
-
-                                return originalEndpoint.apply(requestProcessingCtx);
-                            });
-                        });
+            if (effectiveRouteStrategy == null) {
+                return defer(() -> {
+                    try {
+                        return succeeded(originalEndpoint.apply(requestProcessingCtx));
+                    } catch (final Throwable t) {
+                        return failed(t);
+                    }
+                });
             }
 
-            return defer(() -> {
-                try {
-                    return succeeded(originalEndpoint.apply(requestProcessingCtx));
-                } catch (final Throwable t) {
-                    return failed(t);
-                }
-            });
+            final RequestContext requestContext = requestScope.referenceCurrent();
+            final ContainerRequest request = requestProcessingCtx.request();
+
+            assert currentConnectionContext != null : "currentConnectionContext can't be null";
+            final ExecutionContext currentExecutionContext = currentConnectionContext.executionContext();
+
+            return effectiveRouteStrategy.invokeService(currentExecutionContext.executor(),
+                    actualExecutor -> {
+                        assert ctxRef != null : "ctxRef can't be null";
+                        ctxRef.set(new ExecutorOverrideConnectionContext(currentConnectionContext, actualExecutor));
+                        return requestScope.runInScope(requestContext, () -> {
+                            getRequestBufferPublisherInputStream(request)
+                                    .offloadSourcePublisher(effectiveRouteStrategy,
+                                            currentExecutionContext.executor());
+                            setResponseExecutionStrategy(effectiveRouteStrategy, request);
+
+                            return originalEndpoint.apply(requestProcessingCtx);
+                        });
+                    });
         }
 
         protected Single<Response> handleContainerResponse(final ContainerResponse res) {

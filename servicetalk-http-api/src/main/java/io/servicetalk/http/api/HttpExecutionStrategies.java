@@ -103,6 +103,9 @@ public final class HttpExecutionStrategies {
      * transport. However, if {@code Entity 2} uses this method to find the {@link HttpExecutionStrategy} to
      * use for invoking {@code Entity 3}, the resulting {@link HttpExecutionStrategy} will only offload receiving of
      * metadata.
+     * <p>
+     * Effectively, using this method will remove redundant offloading when more than one entities provide their own
+     * {@link HttpExecutionStrategy}.
      *
      * @param fallback {@link Executor} used as fallback while invoking the strategies.
      * @param left {@link HttpExecutionStrategy} which is already in effect.
