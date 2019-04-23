@@ -89,14 +89,17 @@ final class BufferHttpResponse extends DefaultHttpResponseMetaData implements Ht
     @Override
     public StreamingHttpResponse toStreamingResponse() {
         return new BufferStreamingHttpResponse(status(), version(), headers(), succeeded(trailers), allocator,
-                from(payloadBody), trailers.isEmpty() ? ApiTypes.AGGREGATED : ApiTypes.STREAMING);
+                from(payloadBody), trailers.isEmpty());
+        // If there are trailers, we must send `transfer-encoding: chunked` not `content-length`, so force the
+        // API type to non-aggregated to indicate that.
     }
 
     @Override
     public BlockingStreamingHttpResponse toBlockingStreamingResponse() {
         return new BufferBlockingStreamingHttpResponse(status(), version(), headers(), succeeded(trailers),
-                allocator, singletonBlockingIterable(payloadBody),
-                trailers.isEmpty() ? ApiTypes.AGGREGATED : ApiTypes.STREAMING);
+                allocator, singletonBlockingIterable(payloadBody), trailers.isEmpty());
+        // If there are trailers, we must send `transfer-encoding: chunked` not `content-length`, so force the
+        // API type to non-aggregated to indicate that.
     }
 
     @Override

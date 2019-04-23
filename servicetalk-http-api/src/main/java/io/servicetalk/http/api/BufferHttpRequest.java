@@ -154,15 +154,17 @@ final class BufferHttpRequest extends DefaultHttpRequestMetaData implements Http
     @Override
     public StreamingHttpRequest toStreamingRequest() {
         return new BufferStreamingHttpRequest(method(), requestTarget(), version(),
-                headers(), succeeded(trailers), allocator, from(payloadBody),
-                trailers.isEmpty() ? ApiTypes.AGGREGATED : ApiTypes.STREAMING);
+                headers(), succeeded(trailers), allocator, from(payloadBody), trailers.isEmpty());
+        // If there are trailers, we must send `transfer-encoding: chunked` not `content-length`, so force the
+        // API type to non-aggregated to indicate that.
     }
 
     @Override
     public BlockingStreamingHttpRequest toBlockingStreamingRequest() {
         return new BufferBlockingStreamingHttpRequest(method(), requestTarget(), version(), headers(),
-                succeeded(trailers), allocator, singletonBlockingIterable(payloadBody),
-                trailers.isEmpty() ? ApiTypes.AGGREGATED : ApiTypes.STREAMING);
+                succeeded(trailers), allocator, singletonBlockingIterable(payloadBody), trailers.isEmpty());
+        // If there are trailers, we must send `transfer-encoding: chunked` not `content-length`, so force the
+        // API type to non-aggregated to indicate that.
     }
 
     @Override

@@ -41,14 +41,14 @@ class DefaultStreamingHttpRequest<P> extends DefaultHttpRequestMetaData implemen
     final Publisher<P> payloadBody;
     final BufferAllocator allocator;
     final Single<HttpHeaders> trailersSingle;
-    final ApiType effectiveApiType;
+    final boolean aggregated;
 
     DefaultStreamingHttpRequest(final HttpRequestMethod method, final String requestTarget,
                                 final HttpProtocolVersion version, final HttpHeaders headers,
                                 final HttpHeaders initialTrailers, final BufferAllocator allocator,
-                                final Publisher<P> payloadBody, final ApiType effectiveApiType) {
+                                final Publisher<P> payloadBody, final boolean aggregated) {
         this(method, requestTarget, version, headers, succeeded(initialTrailers), allocator, payloadBody,
-                effectiveApiType);
+                aggregated);
     }
 
     /**
@@ -62,29 +62,29 @@ class DefaultStreamingHttpRequest<P> extends DefaultHttpRequestMetaData implemen
      * @param allocator The {@link BufferAllocator} to use for serialization (if required).
      * @param payloadBody A {@link Publisher} that provide only the payload body. The trailers <strong>must</strong>
      * not be included, and instead are represented by {@code trailersSingle}.
-     * @param effectiveApiType The type of API this request was originally created as.
+     * @param aggregated The type of API this request was originally created as.
      */
     DefaultStreamingHttpRequest(final HttpRequestMethod method, final String requestTarget,
                                 final HttpProtocolVersion version, final HttpHeaders headers,
                                 final Single<HttpHeaders> trailersSingle, final BufferAllocator allocator,
-                                final Publisher<P> payloadBody, final ApiType effectiveApiType) {
+                                final Publisher<P> payloadBody, final boolean aggregated) {
         super(method, requestTarget, version, headers);
         this.allocator = requireNonNull(allocator);
         this.payloadBody = requireNonNull(payloadBody);
         this.trailersSingle = requireNonNull(trailersSingle);
-        this.effectiveApiType = effectiveApiType;
+        this.aggregated = aggregated;
     }
 
     DefaultStreamingHttpRequest(final DefaultHttpRequestMetaData oldRequest,
                                 final BufferAllocator allocator,
                                 final Publisher<P> payloadBody,
                                 final Single<HttpHeaders> trailersSingle,
-                                final ApiType effectiveApiType) {
+                                final boolean aggregated) {
         super(oldRequest);
         this.allocator = allocator;
         this.payloadBody = payloadBody;
         this.trailersSingle = trailersSingle;
-        this.effectiveApiType = effectiveApiType;
+        this.aggregated = aggregated;
     }
 
     @Override
@@ -181,7 +181,7 @@ class DefaultStreamingHttpRequest<P> extends DefaultHttpRequestMetaData implemen
     public final StreamingHttpRequest payloadBody(Publisher<Buffer> payloadBody) {
         return new BufferStreamingHttpRequest(this, allocator,
                 payloadBody.liftSync(new BridgeFlowControlAndDiscardOperator(payloadBody())), trailersSingle,
-                effectiveApiType);
+                aggregated);
     }
 
     @Override
@@ -190,7 +190,7 @@ class DefaultStreamingHttpRequest<P> extends DefaultHttpRequestMetaData implemen
         return new BufferStreamingHttpRequest(this, allocator, serializer.serialize(headers(),
                     payloadBody.liftSync(new SerializeBridgeFlowControlAndDiscardOperator<>(payloadBody())),
                     allocator),
-                trailersSingle, effectiveApiType);
+                trailersSingle, aggregated);
     }
 
     @Override
@@ -198,19 +198,19 @@ class DefaultStreamingHttpRequest<P> extends DefaultHttpRequestMetaData implemen
                                                                HttpSerializer<T> serializer) {
         return new BufferStreamingHttpRequest(this, allocator,
                 serializer.serialize(headers(), transformer.apply(payloadBody()), allocator),
-                trailersSingle, effectiveApiType);
+                trailersSingle, aggregated);
     }
 
     @Override
     public final StreamingHttpRequest transformPayloadBody(UnaryOperator<Publisher<Buffer>> transformer) {
         return new BufferStreamingHttpRequest(this, allocator, transformer.apply(payloadBody()), trailersSingle,
-                effectiveApiType);
+                aggregated);
     }
 
     @Override
     public final StreamingHttpRequest transformRawPayloadBody(UnaryOperator<Publisher<?>> transformer) {
         return new DefaultStreamingHttpRequest<>(this, allocator, transformer.apply(payloadBody), trailersSingle,
-                effectiveApiType);
+                aggregated);
     }
 
     @Override
@@ -221,7 +221,9 @@ class DefaultStreamingHttpRequest<P> extends DefaultHttpRequestMetaData implemen
         return new BufferStreamingHttpRequest(this, allocator, payloadBody()
                 .liftSync(new HttpPayloadAndTrailersFromSingleOperator<>(stateSupplier, transformer,
                         trailersTransformer, trailersSingle, outTrailersSingle)),
-                fromSource(outTrailersSingle), ApiTypes.STREAMING);
+                fromSource(outTrailersSingle), false);
+        // This transform may add trailers, and if there are trailers present we must send `transfer-encoding: chunked`
+        // not `content-length`, so force the API type to non-aggregated to indicate that.
     }
 
     @Override
@@ -232,7 +234,9 @@ class DefaultStreamingHttpRequest<P> extends DefaultHttpRequestMetaData implemen
         return new DefaultStreamingHttpRequest<>(this, allocator, payloadBody
                 .liftSync(new HttpPayloadAndTrailersFromSingleOperator<>(stateSupplier, transformer,
                         trailersTransformer, trailersSingle, outTrailersSingle)),
-                fromSource(outTrailersSingle), ApiTypes.STREAMING);
+                fromSource(outTrailersSingle), false);
+        // This transform may add trailers, and if there are trailers present we must send `transfer-encoding: chunked`
+        // not `content-length`, so force the API type to non-aggregated to indicate that.
     }
 
     @Override
@@ -247,12 +251,12 @@ class DefaultStreamingHttpRequest<P> extends DefaultHttpRequestMetaData implemen
     @Override
     public BlockingStreamingHttpRequest toBlockingStreamingRequest() {
         return new DefaultBlockingStreamingHttpRequest<>(this, allocator, payloadBody.toIterable(), trailersSingle,
-                effectiveApiType);
+                aggregated);
     }
 
     @Override
-    public ApiType effectiveApiType() {
-        return effectiveApiType;
+    public boolean isAggregated() {
+        return aggregated;
     }
 
     @Override

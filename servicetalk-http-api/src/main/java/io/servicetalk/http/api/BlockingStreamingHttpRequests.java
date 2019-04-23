@@ -67,6 +67,6 @@ public final class BlockingStreamingHttpRequests {
             final HttpHeaders headers, final HttpHeaders initialTrailers, final BufferAllocator allocator,
             final BlockingIterable<Buffer> payloadBody) {
         return new BufferBlockingStreamingHttpRequest(method, requestTarget, version, headers, initialTrailers,
-                allocator, payloadBody, ApiTypes.STREAMING);
+                allocator, payloadBody, false);
     }
 }

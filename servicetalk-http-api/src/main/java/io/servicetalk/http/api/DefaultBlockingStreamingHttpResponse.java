@@ -45,13 +45,13 @@ class DefaultBlockingStreamingHttpResponse<P> extends DefaultHttpResponseMetaDat
     final BlockingIterable<P> payloadBody;
     final BufferAllocator allocator;
     final Single<HttpHeaders> trailersSingle;
-    final ApiType effectiveApiType;
+    final boolean aggregated;
 
     DefaultBlockingStreamingHttpResponse(final HttpResponseStatus status, final HttpProtocolVersion version,
                                          final HttpHeaders headers, final HttpHeaders initialTrailers,
                                          final BufferAllocator allocator, BlockingIterable<P> payloadBody,
-                                         final ApiType effectiveApiType) {
-        this(status, version, headers, succeeded(initialTrailers), allocator, payloadBody, effectiveApiType);
+                                         final boolean aggregated) {
+        this(status, version, headers, succeeded(initialTrailers), allocator, payloadBody, aggregated);
     }
 
     /**
@@ -64,29 +64,29 @@ class DefaultBlockingStreamingHttpResponse<P> extends DefaultHttpResponseMetaDat
      * @param allocator The {@link BufferAllocator} to use for serialization (if required).
      * @param payloadBody A {@link BlockingIterable} that provide only the payload body.
      * The trailers <strong>must</strong> not be included, and instead are represented by {@code trailersSingle}.
-     * @param effectiveApiType The type of API this response was originally created as.
+     * @param aggregated The type of API this response was originally created as.
      */
     DefaultBlockingStreamingHttpResponse(final HttpResponseStatus status, final HttpProtocolVersion version,
                                          final HttpHeaders headers, final Single<HttpHeaders> trailersSingle,
                                          final BufferAllocator allocator, final BlockingIterable<P> payloadBody,
-                                         final ApiType effectiveApiType) {
+                                         final boolean aggregated) {
         super(status, version, headers);
         this.allocator = requireNonNull(allocator);
         this.payloadBody = requireNonNull(payloadBody);
         this.trailersSingle = requireNonNull(trailersSingle);
-        this.effectiveApiType = effectiveApiType;
+        this.aggregated = aggregated;
     }
 
     DefaultBlockingStreamingHttpResponse(final DefaultHttpResponseMetaData oldRequest,
                                          final BufferAllocator allocator,
                                          final BlockingIterable<P> payloadBody,
                                          final Single<HttpHeaders> trailersSingle,
-                                         final ApiType effectiveApiType) {
+                                         final boolean aggregated) {
         super(oldRequest);
         this.allocator = allocator;
         this.payloadBody = payloadBody;
         this.trailersSingle = trailersSingle;
-        this.effectiveApiType = effectiveApiType;
+        this.aggregated = aggregated;
     }
 
     @Override
@@ -122,21 +122,21 @@ class DefaultBlockingStreamingHttpResponse<P> extends DefaultHttpResponseMetaDat
             final HttpSerializer<T> serializer) {
         return new BufferBlockingStreamingHttpResponse(this, allocator,
                 serializer.serialize(headers(), transformer.apply(payloadBody()), allocator),
-                trailersSingle, effectiveApiType);
+                trailersSingle, aggregated);
     }
 
     @Override
     public final BlockingStreamingHttpResponse transformPayloadBody(
             final UnaryOperator<BlockingIterable<Buffer>> transformer) {
         return new BufferBlockingStreamingHttpResponse(this, allocator, transformer.apply(payloadBody()),
-                trailersSingle, effectiveApiType);
+                trailersSingle, aggregated);
     }
 
     @Override
     public final BlockingStreamingHttpResponse transformRawPayloadBody(
             final UnaryOperator<BlockingIterable<?>> transformer) {
         return new DefaultBlockingStreamingHttpResponse<>(this, allocator, transformer.apply(payloadBody),
-                trailersSingle, effectiveApiType);
+                trailersSingle, aggregated);
     }
 
     @Override
@@ -147,7 +147,7 @@ class DefaultBlockingStreamingHttpResponse<P> extends DefaultHttpResponseMetaDat
         return new BufferBlockingStreamingHttpResponse(this, allocator,
                 new HttpBuffersAndTrailersIterable<>(payloadBody(), stateSupplier,
                         transformer, trailersTrans, trailersSingle, outTrailersSingle),
-                fromSource(outTrailersSingle), effectiveApiType);
+                fromSource(outTrailersSingle), aggregated);
     }
 
     @Override
@@ -158,7 +158,7 @@ class DefaultBlockingStreamingHttpResponse<P> extends DefaultHttpResponseMetaDat
         return new DefaultBlockingStreamingHttpResponse<>(this, allocator,
                 new HttpObjectsAndTrailersIterable<>(payloadBody, stateSupplier,
                         transformer, trailersTrans, trailersSingle, outTrailersSingle),
-                fromSource(outTrailersSingle), effectiveApiType);
+                fromSource(outTrailersSingle), aggregated);
     }
 
     @Override
@@ -169,7 +169,7 @@ class DefaultBlockingStreamingHttpResponse<P> extends DefaultHttpResponseMetaDat
     @Override
     public StreamingHttpResponse toStreamingResponse() {
         return new DefaultStreamingHttpResponse<>(status(), version(), headers(), trailersSingle, allocator,
-                fromIterable(payloadBody), effectiveApiType);
+                fromIterable(payloadBody), aggregated);
     }
 
     @Override

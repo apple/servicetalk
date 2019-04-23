@@ -15,15 +15,7 @@
  */
 package io.servicetalk.http.api;
 
-/**
- * Interface for indicating that the API this type originated through is known.
- */
-public interface EffectiveApiType {
+interface EffectiveApiType {
 
-    /**
-     * Gets the {@link ApiType} that this instance originated from.
-     *
-     * @return the {@link ApiType} that this instance originated from.
-     */
-    ApiType effectiveApiType();
+    boolean isAggregated();
 }

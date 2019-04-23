@@ -26,22 +26,22 @@ final class BufferBlockingStreamingHttpRequest extends DefaultBlockingStreamingH
     BufferBlockingStreamingHttpRequest(final HttpRequestMethod method, final String requestTarget,
                                        final HttpProtocolVersion version, final HttpHeaders headers,
                                        final HttpHeaders initialTrailers, final BufferAllocator allocator,
-                                       final BlockingIterable<Buffer> payloadBody, final ApiType effectiveApiType) {
-        super(method, requestTarget, version, headers, initialTrailers, allocator, payloadBody, effectiveApiType);
+                                       final BlockingIterable<Buffer> payloadBody, final boolean aggregated) {
+        super(method, requestTarget, version, headers, initialTrailers, allocator, payloadBody, aggregated);
     }
 
     BufferBlockingStreamingHttpRequest(
             final HttpRequestMethod method, final String requestTarget, final HttpProtocolVersion version,
             final HttpHeaders headers, final Single<HttpHeaders> trailersSingle, final BufferAllocator allocator,
-            final BlockingIterable<Buffer> payloadBody, final ApiType effectiveApiType) {
-        super(method, requestTarget, version, headers, trailersSingle, allocator, payloadBody, effectiveApiType);
+            final BlockingIterable<Buffer> payloadBody, final boolean aggregated) {
+        super(method, requestTarget, version, headers, trailersSingle, allocator, payloadBody, aggregated);
     }
 
     BufferBlockingStreamingHttpRequest(final DefaultHttpRequestMetaData oldRequest,
                                        final BufferAllocator allocator,
                                        final BlockingIterable<Buffer> payloadBody,
-                                       final Single<HttpHeaders> trailersSingle, final ApiType effectiveApiType) {
-        super(oldRequest, allocator, payloadBody, trailersSingle, effectiveApiType);
+                                       final Single<HttpHeaders> trailersSingle, final boolean aggregated) {
+        super(oldRequest, allocator, payloadBody, trailersSingle, aggregated);
     }
 
     @Override
@@ -52,6 +52,6 @@ final class BufferBlockingStreamingHttpRequest extends DefaultBlockingStreamingH
     @Override
     public StreamingHttpRequest toStreamingRequest() {
         return new BufferStreamingHttpRequest(method(), requestTarget(), version(), headers(),
-                trailersSingle, allocator, fromIterable(payloadBody), effectiveApiType);
+                trailersSingle, allocator, fromIterable(payloadBody), aggregated);
     }
 }

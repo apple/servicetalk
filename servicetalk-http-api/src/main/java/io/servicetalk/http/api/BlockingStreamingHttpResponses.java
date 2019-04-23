@@ -63,6 +63,6 @@ public final class BlockingStreamingHttpResponses {
             final HttpHeaders initialTrailers, final BufferAllocator allocator,
             final BlockingIterable<Buffer> payloadBody) {
         return new BufferBlockingStreamingHttpResponse(status, version, headers, initialTrailers, allocator,
-                payloadBody, ApiTypes.STREAMING);
+                payloadBody, false);
     }
 }

@@ -40,16 +40,16 @@ final class TransportStreamingHttpRequest extends DefaultHttpRequestMetaData imp
                                                                                         EffectiveApiType {
     final Publisher<Object> payloadAndTrailers;
     final BufferAllocator allocator;
-    final ApiType effectiveApiType;
+    final boolean aggregated;
 
     TransportStreamingHttpRequest(final HttpRequestMethod method, final String requestTarget,
                                   final HttpProtocolVersion version, final HttpHeaders headers,
                                   final BufferAllocator allocator, final Publisher<Object> payloadAndTrailers,
-                                  final ApiType effectiveApiType) {
+                                  final boolean aggregated) {
         super(method, requestTarget, version, headers);
         this.allocator = requireNonNull(allocator);
         this.payloadAndTrailers = requireNonNull(payloadAndTrailers);
-        this.effectiveApiType = effectiveApiType;
+        this.aggregated = aggregated;
     }
 
     @Override
@@ -146,7 +146,7 @@ final class TransportStreamingHttpRequest extends DefaultHttpRequestMetaData imp
         return new BufferStreamingHttpRequest(this, allocator,
                 payloadBody.liftSync(new BridgeFlowControlAndDiscardOperator(payloadAndTrailers.liftSync(
                         new HttpBufferTrailersSpliceOperator(outTrailersSingle)))),
-                fromSource(outTrailersSingle), effectiveApiType);
+                fromSource(outTrailersSingle), aggregated);
     }
 
     @Override
@@ -156,7 +156,7 @@ final class TransportStreamingHttpRequest extends DefaultHttpRequestMetaData imp
                 payloadBody.liftSync(new SerializeBridgeFlowControlAndDiscardOperator<>(
                         payloadAndTrailers.liftSync(new HttpBufferTrailersSpliceOperator(outTrailersSingle)))),
                 allocator),
-                fromSource(outTrailersSingle), effectiveApiType);
+                fromSource(outTrailersSingle), aggregated);
     }
 
     @Override
@@ -166,7 +166,7 @@ final class TransportStreamingHttpRequest extends DefaultHttpRequestMetaData imp
         return new BufferStreamingHttpRequest(this, allocator, serializer.serialize(headers(),
                 transformer.apply(payloadAndTrailers.liftSync(new HttpBufferTrailersSpliceOperator(
                         outTrailersSingle))), allocator),
-                fromSource(outTrailersSingle), effectiveApiType);
+                fromSource(outTrailersSingle), aggregated);
     }
 
     @Override
@@ -174,7 +174,7 @@ final class TransportStreamingHttpRequest extends DefaultHttpRequestMetaData imp
         final Processor<HttpHeaders, HttpHeaders> outTrailersSingle = newSingleProcessor();
         return new BufferStreamingHttpRequest(this, allocator, transformer.apply(payloadAndTrailers.liftSync(
                 new HttpBufferTrailersSpliceOperator(outTrailersSingle))), fromSource(outTrailersSingle),
-                effectiveApiType);
+                aggregated);
     }
 
     @Override
@@ -182,7 +182,7 @@ final class TransportStreamingHttpRequest extends DefaultHttpRequestMetaData imp
         final Processor<HttpHeaders, HttpHeaders> outTrailersSingle = newSingleProcessor();
         return new DefaultStreamingHttpRequest<>(this, allocator, transformer.apply(payloadAndTrailers.liftSync(
                 new HttpObjectTrailersSpliceOperator(outTrailersSingle))), fromSource(outTrailersSingle),
-                effectiveApiType);
+                aggregated);
     }
 
     @Override
@@ -192,8 +192,9 @@ final class TransportStreamingHttpRequest extends DefaultHttpRequestMetaData imp
         final Processor<HttpHeaders, HttpHeaders> outTrailersSingle = newSingleProcessor();
         return new BufferStreamingHttpRequest(this, allocator, payloadAndTrailers.liftSync(
                 new HttpDataSourceTranformations.HttpRawBuffersAndTrailersOperator<>(stateSupplier, transformer,
-                        trailersTransformer, outTrailersSingle)),
-                fromSource(outTrailersSingle), ApiTypes.STREAMING);
+                        trailersTransformer, outTrailersSingle)), fromSource(outTrailersSingle), false);
+        // This transform may add trailers, and if there are trailers present we must send `transfer-encoding: chunked`
+        // not `content-length`, so force the API type to non-aggregated to indicate that.
     }
 
     @Override
@@ -203,8 +204,9 @@ final class TransportStreamingHttpRequest extends DefaultHttpRequestMetaData imp
         final Processor<HttpHeaders, HttpHeaders> outTrailersSingle = newSingleProcessor();
         return new DefaultStreamingHttpRequest<>(this, allocator, payloadAndTrailers.liftSync(
                 new HttpDataSourceTranformations.HttpRawObjectsAndTrailersOperator<>(stateSupplier, transformer,
-                        trailersTransformer, outTrailersSingle)),
-                fromSource(outTrailersSingle), ApiTypes.STREAMING);
+                        trailersTransformer, outTrailersSingle)), fromSource(outTrailersSingle), false);
+        // This transform may add trailers, and if there are trailers present we must send `transfer-encoding: chunked`
+        // not `content-length`, so force the API type to non-aggregated to indicate that.
     }
 
     @Override
@@ -221,12 +223,12 @@ final class TransportStreamingHttpRequest extends DefaultHttpRequestMetaData imp
         final Processor<HttpHeaders, HttpHeaders> outTrailersSingle = newSingleProcessor();
         return new DefaultBlockingStreamingHttpRequest<>(this, allocator, payloadAndTrailers.liftSync(
                 new HttpObjectTrailersSpliceOperator(outTrailersSingle)).toIterable(), fromSource(outTrailersSingle),
-                effectiveApiType);
+                aggregated);
     }
 
     @Override
-    public ApiType effectiveApiType() {
-        return effectiveApiType;
+    public boolean isAggregated() {
+        return aggregated;
     }
 
     @Override

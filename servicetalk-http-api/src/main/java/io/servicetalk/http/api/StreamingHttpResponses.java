@@ -62,7 +62,7 @@ public final class StreamingHttpResponses {
             final HttpResponseStatus status, final HttpProtocolVersion version, final HttpHeaders headers,
             final HttpHeaders initialTrailers, final BufferAllocator allocator, Publisher<Buffer> payloadBody) {
         return new BufferStreamingHttpResponse(status, version, headers, initialTrailers, allocator, payloadBody,
-                ApiTypes.STREAMING);
+                false);
     }
 
     /**
@@ -78,7 +78,6 @@ public final class StreamingHttpResponses {
     public static StreamingHttpResponse newResponseWithTrailers(
             final HttpResponseStatus status, final HttpProtocolVersion version, final HttpHeaders headers,
             final BufferAllocator allocator, final Publisher<Object> payloadAndTrailers) {
-        return new TransportStreamingHttpResponse(status, version, headers, allocator, payloadAndTrailers,
-                ApiTypes.STREAMING);
+        return new TransportStreamingHttpResponse(status, version, headers, allocator, payloadAndTrailers, false);
     }
 }

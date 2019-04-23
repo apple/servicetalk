@@ -24,23 +24,23 @@ final class BufferStreamingHttpResponse extends DefaultStreamingHttpResponse<Buf
     BufferStreamingHttpResponse(final HttpResponseStatus status, final HttpProtocolVersion version,
                                 final HttpHeaders headers, final HttpHeaders initialTrailers,
                                 final BufferAllocator allocator, Publisher<Buffer> payloadBody,
-                                final ApiType effectiveApiType) {
-        super(status, version, headers, initialTrailers, allocator, payloadBody, effectiveApiType);
+                                final boolean aggregated) {
+        super(status, version, headers, initialTrailers, allocator, payloadBody, aggregated);
     }
 
     BufferStreamingHttpResponse(final HttpResponseStatus status, final HttpProtocolVersion version,
                                 final HttpHeaders headers, final Single<HttpHeaders> trailersSingle,
                                 final BufferAllocator allocator, Publisher<Buffer> payloadBody,
-                                final ApiType effectiveApiType) {
-        super(status, version, headers, trailersSingle, allocator, payloadBody, effectiveApiType);
+                                final boolean aggregated) {
+        super(status, version, headers, trailersSingle, allocator, payloadBody, aggregated);
     }
 
     BufferStreamingHttpResponse(final DefaultHttpResponseMetaData oldRequest,
                                 final BufferAllocator allocator,
                                 final Publisher<Buffer> payloadBody,
                                 final Single<HttpHeaders> trailersSingle,
-                                final ApiType effectiveApiType) {
-        super(oldRequest, allocator, payloadBody, trailersSingle, effectiveApiType);
+                                final boolean aggregated) {
+        super(oldRequest, allocator, payloadBody, trailersSingle, aggregated);
     }
 
     @Override
@@ -51,6 +51,6 @@ final class BufferStreamingHttpResponse extends DefaultStreamingHttpResponse<Buf
     @Override
     public BlockingStreamingHttpResponse toBlockingStreamingResponse() {
         return new BufferBlockingStreamingHttpResponse(this, allocator, payloadBody.toIterable(), trailersSingle,
-                effectiveApiType);
+                aggregated);
     }
 }
