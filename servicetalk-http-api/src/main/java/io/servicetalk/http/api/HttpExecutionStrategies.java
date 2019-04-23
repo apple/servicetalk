@@ -88,6 +88,65 @@ public final class HttpExecutionStrategies {
     }
 
     /**
+     * Find the difference between two strategies and provide a resulting strategy if there are differences in between
+     * the strategies. The resulting strategy can then be used to offload the difference between two strategies. This
+     * is typically used if there is a call hierarchy and each entity in the hierarchy defines its own
+     * {@link HttpExecutionStrategy}. This method is useful to reduce duplicating work across these entities if the
+     * caller has already offloaded all the paths required to be offloaded by the callee.
+     * <pre>
+     *     Entities:         Entity 1      =&gt;    Entity 2      =&gt;      Entity 3
+     *                                  (calls)              (calls)
+     *     Strategies:     No offloads          Offload Send        Offload Send + Meta
+     * </pre>
+     * In the above call hierarchy, if {@code Entity 1} uses this method to find the {@link HttpExecutionStrategy} to
+     * use for invoking {@code Entity 2}, the resulting {@link HttpExecutionStrategy} will only offload sending to the
+     * transport. However, if {@code Entity 2} uses this method to find the {@link HttpExecutionStrategy} to
+     * use for invoking {@code Entity 3}, the resulting {@link HttpExecutionStrategy} will only offload receiving of
+     * metadata.
+     * <p>
+     * Effectively, using this method will remove redundant offloading when more than one entities provide their own
+     * {@link HttpExecutionStrategy}.
+     *
+     * @param fallback {@link Executor} used as fallback while invoking the strategies.
+     * @param left {@link HttpExecutionStrategy} which is already in effect.
+     * @param right {@link HttpExecutionStrategy} which is expected to be used.
+     * @return {@link HttpExecutionStrategy} if there are any differences between the two strategies. {@code null} if
+     * the two strategies are the same.
+     */
+    @Nullable
+    public static HttpExecutionStrategy difference(final Executor fallback,
+                                                   final HttpExecutionStrategy left,
+                                                   final HttpExecutionStrategy right) {
+        if (left == noOffloadsStrategy() || right == noOffloadsStrategy()) {
+            return right;
+        }
+        if (left.equals(right)) {
+            // No difference, so no offloading is required.
+            return null;
+        }
+        if (right.executor() != null && right.executor() != left.executor() && right.executor() != fallback) {
+            // Since the original offloads were done on a different executor, we need to offload again.
+            return right;
+        }
+
+        byte effectiveOffloads = 0;
+        if (right.isSendOffloaded() && !left.isSendOffloaded()) {
+            effectiveOffloads |= OFFLOAD_SEND;
+        }
+        if (right.isMetadataReceiveOffloaded() && !left.isMetadataReceiveOffloaded()) {
+            effectiveOffloads |= OFFLOAD_RECEIVE_META;
+        }
+        if (right.isDataReceiveOffloaded() && !left.isDataReceiveOffloaded()) {
+            effectiveOffloads |= OFFLOAD_RECEIVE_DATA;
+        }
+        if (effectiveOffloads != 0) {
+            return new DefaultHttpExecutionStrategy(effectiveOffloads, right);
+        }
+        // No extra offloads required
+        return null;
+    }
+
+    /**
      * A builder to build an {@link HttpExecutionStrategy}.
      */
     public static final class Builder {

@@ -28,6 +28,7 @@ import io.servicetalk.http.api.StreamingHttpService;
 import java.util.List;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
+import static io.servicetalk.http.api.HttpExecutionStrategies.difference;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toList;
 
@@ -67,8 +68,11 @@ final class InOrderRouter implements StreamingHttpService {
                 StreamingHttpService service = pair.service();
                 HttpExecutionStrategy strategy = pair.routeStrategy();
                 if (strategy != null) {
-                    // TODO(scott): combine the InOrderRouter strategy and the route strategy?
-                    service = strategy.offloadService(ctx.executionContext().executor(), service);
+                    strategy = difference(ctx.executionContext().executor(),
+                            ctx.executionContext().executionStrategy(), strategy);
+                    if (strategy != null) {
+                        service = strategy.offloadService(ctx.executionContext().executor(), service);
+                    }
                 }
                 return service.handle(ctx, request, factory);
             }

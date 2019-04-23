@@ -54,6 +54,19 @@ class DefaultHttpExecutionStrategy implements HttpExecutionStrategy {
         this.threadAffinity = threadAffinity;
     }
 
+    DefaultHttpExecutionStrategy(byte offloadOverride, HttpExecutionStrategy original) {
+        offloads = offloadOverride;
+        executor = original.executor();
+        if (original instanceof DefaultHttpExecutionStrategy) {
+            DefaultHttpExecutionStrategy originalAsDefault = (DefaultHttpExecutionStrategy) original;
+            mergeStrategy = originalAsDefault.mergeStrategy;
+            threadAffinity = originalAsDefault.threadAffinity;
+        } else {
+            mergeStrategy = Merge;
+            threadAffinity = false;
+        }
+    }
+
     @Nullable
     @Override
     public Executor executor() {

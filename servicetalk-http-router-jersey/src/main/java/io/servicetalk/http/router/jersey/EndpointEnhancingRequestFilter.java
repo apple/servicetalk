@@ -24,6 +24,7 @@ import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.DelegatingConnectionContext;
 import io.servicetalk.transport.api.DelegatingExecutionContext;
 import io.servicetalk.transport.api.ExecutionContext;
+import io.servicetalk.transport.api.ExecutionStrategy;
 
 import org.glassfish.jersey.internal.util.collection.Ref;
 import org.glassfish.jersey.message.internal.OutboundJaxrsResponse;
@@ -53,6 +54,7 @@ import javax.ws.rs.core.Response;
 import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.Single.succeeded;
+import static io.servicetalk.http.api.HttpExecutionStrategies.difference;
 import static io.servicetalk.http.router.jersey.RouteExecutionStrategyUtils.getRouteExecutionStrategy;
 import static io.servicetalk.http.router.jersey.internal.RequestProperties.getRequestBufferPublisherInputStream;
 import static io.servicetalk.http.router.jersey.internal.RequestProperties.setRequestCancellable;
@@ -160,16 +162,17 @@ final class EndpointEnhancingRequestFilter implements ContainerRequestFilter {
                 throw new IllegalStateException("Failed to suspend request processing");
             }
 
-            final Single<Response> objectSingle = callOriginalEndpoint(requestProcessingCtx)
+            final HttpExecutionStrategy effectiveRouteStrategy = calculateEffectiveStrategy();
+            final Single<Response> objectSingle = callOriginalEndpoint(requestProcessingCtx, effectiveRouteStrategy)
                     .flatMap(this::handleContainerResponse)
                     .beforeFinally(() -> uriRoutingContext.setEndpoint(originalEndpoint))
                     .afterOnError(asyncContext::resume)
                     .afterCancel(asyncContext::cancel);
 
             final Cancellable cancellable;
-            if (routeExecutionStrategy != null) {
+            if (effectiveRouteStrategy != null) {
                 assert currentConnectionContext != null : "currentConnectionContext can't be null";
-                cancellable = routeExecutionStrategy
+                cancellable = effectiveRouteStrategy
                         .offloadSend(currentConnectionContext.executionContext().executor(), objectSingle)
                         .subscribe(asyncContext::resume);
             } else {
@@ -181,36 +184,50 @@ final class EndpointEnhancingRequestFilter implements ContainerRequestFilter {
             return null;
         }
 
-        private Single<ContainerResponse> callOriginalEndpoint(final RequestProcessingContext requestProcessingCtx) {
-            if (routeExecutionStrategy != null) {
-                final RequestContext requestContext = requestScope.referenceCurrent();
-                final ContainerRequest request = requestProcessingCtx.request();
+        @Nullable
+        private HttpExecutionStrategy calculateEffectiveStrategy() {
+            if (routeExecutionStrategy != null && currentConnectionContext != null) {
+                ExecutionStrategy connectionStrategy = currentConnectionContext.executionContext().executionStrategy();
+                if (connectionStrategy instanceof HttpExecutionStrategy) {
+                    return difference(currentConnectionContext.executionContext().executor(),
+                            ((HttpExecutionStrategy) connectionStrategy), routeExecutionStrategy);
+                }
+            }
+            return routeExecutionStrategy;
+        }
 
-                assert currentConnectionContext != null : "currentConnectionContext can't be null";
-                final ExecutionContext currentExecutionContext = currentConnectionContext.executionContext();
-
-                return routeExecutionStrategy.invokeService(currentExecutionContext.executor(),
-                        actualExecutor -> {
-                            assert ctxRef != null : "ctxRef can't be null";
-                            ctxRef.set(new ExecutorOverrideConnectionContext(currentConnectionContext, actualExecutor));
-                            return requestScope.runInScope(requestContext, () -> {
-                                getRequestBufferPublisherInputStream(request)
-                                        .offloadSourcePublisher(routeExecutionStrategy,
-                                                currentExecutionContext.executor());
-                                setResponseExecutionStrategy(routeExecutionStrategy, request);
-
-                                return originalEndpoint.apply(requestProcessingCtx);
-                            });
-                        });
+        private Single<ContainerResponse> callOriginalEndpoint(
+                final RequestProcessingContext requestProcessingCtx,
+                @Nullable final HttpExecutionStrategy effectiveRouteStrategy) {
+            if (effectiveRouteStrategy == null) {
+                return defer(() -> {
+                    try {
+                        return succeeded(originalEndpoint.apply(requestProcessingCtx));
+                    } catch (final Throwable t) {
+                        return failed(t);
+                    }
+                });
             }
 
-            return defer(() -> {
-                try {
-                    return succeeded(originalEndpoint.apply(requestProcessingCtx));
-                } catch (final Throwable t) {
-                    return failed(t);
-                }
-            });
+            final RequestContext requestContext = requestScope.referenceCurrent();
+            final ContainerRequest request = requestProcessingCtx.request();
+
+            assert currentConnectionContext != null : "currentConnectionContext can't be null";
+            final ExecutionContext currentExecutionContext = currentConnectionContext.executionContext();
+
+            return effectiveRouteStrategy.invokeService(currentExecutionContext.executor(),
+                    actualExecutor -> {
+                        assert ctxRef != null : "ctxRef can't be null";
+                        ctxRef.set(new ExecutorOverrideConnectionContext(currentConnectionContext, actualExecutor));
+                        return requestScope.runInScope(requestContext, () -> {
+                            getRequestBufferPublisherInputStream(request)
+                                    .offloadSourcePublisher(effectiveRouteStrategy,
+                                            currentExecutionContext.executor());
+                            setResponseExecutionStrategy(effectiveRouteStrategy, request);
+
+                            return originalEndpoint.apply(requestProcessingCtx);
+                        });
+                    });
         }
 
         protected Single<Response> handleContainerResponse(final ContainerResponse res) {
