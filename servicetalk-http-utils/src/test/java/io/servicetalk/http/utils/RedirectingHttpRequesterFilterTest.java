@@ -39,7 +39,6 @@ import org.junit.Test;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.buffer.api.EmptyBuffer.EMPTY_BUFFER;
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.Single.succeeded;
@@ -98,7 +97,7 @@ public class RedirectingHttpRequesterFilterTest {
                 StreamingHttpRequest request = a.getArgument(1);
                 CharSequence statusHeader = request.headers().get(REQUESTED_STATUS);
                 HttpResponseStatus status = statusHeader == null ? OK
-                        : HttpResponseStatus.of(parseUnsignedInt(statusHeader.toString()), EMPTY_BUFFER);
+                        : HttpResponseStatus.of(parseUnsignedInt(statusHeader.toString()), "");
                 StreamingHttpResponse response = reqRespFactory.newResponse(status);
                 CharSequence redirectLocation = request.headers().get(REQUESTED_LOCATION);
                 response.headers().set(LOCATION, redirectLocation);
@@ -150,12 +149,12 @@ public class RedirectingHttpRequesterFilterTest {
 
     @Test
     public void requestWith306Status() throws Exception {
-        testNoRedirectWasDone(MAX_REDIRECTS, GET, HttpResponseStatus.of(306, EMPTY_BUFFER), "/new-location");
+        testNoRedirectWasDone(MAX_REDIRECTS, GET, HttpResponseStatus.of(306, ""), "/new-location");
     }
 
     @Test
     public void requestWith309Status() throws Exception {
-        testNoRedirectWasDone(MAX_REDIRECTS, GET, HttpResponseStatus.of(309, EMPTY_BUFFER), "/new-location");
+        testNoRedirectWasDone(MAX_REDIRECTS, GET, HttpResponseStatus.of(309, ""), "/new-location");
     }
 
     @Test
