@@ -25,6 +25,7 @@ import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.api.TestSubscription;
+import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.DefaultHttpHeadersFactory;
 import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
@@ -43,7 +44,9 @@ import io.servicetalk.transport.api.ServerContext;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.Timeout;
 
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
@@ -64,6 +67,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 public class PartitionedHttpClientTest {
+
+    @Rule
+    public final Timeout timeout = new ServiceTalkTestTimeout();
 
     private static final PartitionAttributes.Key<String> SRV_NAME = PartitionAttributes.Key.newKey();
     private static final PartitionAttributes.Key<Boolean> SRV_LEADER = PartitionAttributes.Key.newKey();

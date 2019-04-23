@@ -36,7 +36,6 @@ import javax.ws.rs.container.ContainerResponseFilter;
 import javax.ws.rs.core.Application;
 import javax.ws.rs.ext.Provider;
 
-import static io.servicetalk.buffer.api.EmptyBuffer.EMPTY_BUFFER;
 import static io.servicetalk.http.api.CharSequences.newAsciiString;
 import static io.servicetalk.http.api.HttpHeaderValues.APPLICATION_JSON;
 import static io.servicetalk.http.api.HttpHeaderValues.TEXT_PLAIN;
@@ -197,7 +196,7 @@ public abstract class AbstractResourceTest extends AbstractJerseyStreamingHttpSe
         assertThat(res.headers().get("X-Foo-Prop"), is(newAsciiString("barProp")));
 
         res = sendAndAssertNoResponse(withHeader(post("/filtered", "foo2", TEXT_PLAIN), "X-Abort-With-Status", "451"),
-                HttpResponseStatus.of(451, EMPTY_BUFFER));
+                HttpResponseStatus.of(451, ""));
         assertThat(res.headers().get("X-Foo-Prop"), is(newAsciiString("barProp")));
     }
 

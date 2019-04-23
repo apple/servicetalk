@@ -65,6 +65,7 @@ import static io.servicetalk.http.netty.InvokingThreadsRecorder.IO_EXECUTOR_NAME
 import static io.servicetalk.http.netty.InvokingThreadsRecorder.noStrategy;
 import static io.servicetalk.http.netty.InvokingThreadsRecorder.userStrategy;
 import static io.servicetalk.http.netty.InvokingThreadsRecorder.userStrategyNoVerify;
+import static java.lang.Character.isDigit;
 import static java.util.Arrays.asList;
 import static java.util.Objects.requireNonNull;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -500,8 +501,7 @@ public class ServerEffectiveStrategyTest {
                         Thread responseInvoker = invokingThreadsRecorder.invokingThread(ServerOffloadPoint.Response);
                         // If service#handle is offloaded, and response is not then response may be requested
                         // synchronously from service#handle
-                        String namePrefix = serviceInvoker.getName();
-                        namePrefix = namePrefix.substring(0, namePrefix.length() - 1);
+                        final String namePrefix = stripTrailingDigits(serviceInvoker.getName());
                         assertThat("Unexpected thread for response (not-offloaded)",
                                 responseInvoker.getName(), either(startsWith(namePrefix))
                                         .or(startsWith(IO_EXECUTOR_NAME_PREFIX)));
@@ -532,6 +532,14 @@ public class ServerEffectiveStrategyTest {
                 }
                 return serverStarter.apply(serverBuilder);
             }, (__, ___) -> { });
+        }
+
+        private static String stripTrailingDigits(final String str) {
+            String stripped = str;
+            while (isDigit(stripped.charAt(stripped.length() - 1))) {
+                stripped = stripped.substring(0, stripped.length() - 1);
+            }
+            return stripped;
         }
     }
 

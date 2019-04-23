@@ -19,7 +19,6 @@ import io.servicetalk.http.api.HttpResponseStatus;
 
 import org.junit.Test;
 
-import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.http.api.HttpHeaderValues.APPLICATION_JSON;
 import static io.servicetalk.http.api.HttpHeaderValues.TEXT_PLAIN;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_0;
@@ -45,8 +44,7 @@ public class SynchronousResourceTest extends AbstractResourceTest {
 
     @Test
     public void customResponseStatus() {
-        sendAndAssertNoResponse(get("/statuses/444"), HttpResponseStatus.of(444, DEFAULT_ALLOCATOR.fromAscii(
-                "Three fours!")));
+        sendAndAssertNoResponse(get("/statuses/444"), HttpResponseStatus.of(444, "Three fours!"));
     }
 
     @Test
