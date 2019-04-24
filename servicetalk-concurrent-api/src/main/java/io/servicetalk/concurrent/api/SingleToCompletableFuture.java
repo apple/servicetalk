@@ -43,12 +43,6 @@ final class SingleToCompletableFuture<T> extends CompletableFuture<T> implements
         return provider.wrapCompletableFuture(future, original.subscribeAndReturnContext(future, provider));
     }
 
-    static <X> CompletableFuture<X> createForFutureAndSubscribe(Single<X> original) {
-        SingleToCompletableFuture<X> future = new SingleToCompletableFuture<>();
-        original.subscribeInternal(future);
-        return future;
-    }
-
     // Subscriber begin
     @Override
     public void onSubscribe(final Cancellable cancellable) {

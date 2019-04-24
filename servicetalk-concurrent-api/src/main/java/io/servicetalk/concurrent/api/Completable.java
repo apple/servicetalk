@@ -18,6 +18,7 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.CompletableSource.Subscriber;
+import io.servicetalk.concurrent.api.SourceToFuture.CompletableToFuture;
 import io.servicetalk.concurrent.internal.SignalOffloader;
 
 import org.slf4j.Logger;
@@ -1118,7 +1119,7 @@ public abstract class Completable {
      * @return A {@link Future} that mirrors the terminal signal from this {@link Completable}.
      */
     public final Future<Void> toFuture() {
-        return toSingle().toFuture();
+        return CompletableToFuture.createAndSubscribe(this);
     }
 
     //

@@ -18,6 +18,7 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.SingleSource.Subscriber;
+import io.servicetalk.concurrent.api.SourceToFuture.SingleToFuture;
 import io.servicetalk.concurrent.internal.SignalOffloader;
 
 import org.slf4j.Logger;
@@ -45,8 +46,6 @@ import static io.servicetalk.concurrent.api.Publisher.fromIterable;
 import static io.servicetalk.concurrent.api.SingleDoOnUtils.doOnErrorSupplier;
 import static io.servicetalk.concurrent.api.SingleDoOnUtils.doOnSubscribeSupplier;
 import static io.servicetalk.concurrent.api.SingleDoOnUtils.doOnSuccessSupplier;
-import static io.servicetalk.concurrent.api.SingleToCompletableFuture.createAndSubscribe;
-import static io.servicetalk.concurrent.api.SingleToCompletableFuture.createForFutureAndSubscribe;
 import static io.servicetalk.concurrent.internal.SignalOffloaders.newOffloaderFor;
 import static java.util.Objects.requireNonNull;
 import static java.util.function.Function.identity;
@@ -1024,7 +1023,7 @@ public abstract class Single<T> {
      * @return A {@link CompletionStage} that mirrors the terminal signal from this {@link Single}.
      */
     public final CompletionStage<T> toCompletionStage() {
-        return createAndSubscribe(this);
+        return SingleToCompletableFuture.createAndSubscribe(this);
     }
 
     /**
@@ -1033,7 +1032,7 @@ public abstract class Single<T> {
      * @return A {@link Future} that mirrors the terminal signal from this {@link Single}.
      */
     public final Future<T> toFuture() {
-        return createForFutureAndSubscribe(this);
+        return SingleToFuture.createAndSubscribe(this);
     }
 
     //
