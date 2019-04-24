@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -89,13 +89,17 @@ final class BufferHttpResponse extends DefaultHttpResponseMetaData implements Ht
     @Override
     public StreamingHttpResponse toStreamingResponse() {
         return new BufferStreamingHttpResponse(status(), version(), headers(), succeeded(trailers), allocator,
-                from(payloadBody));
+                from(payloadBody), trailers.isEmpty());
+        // If there are trailers, we must send `transfer-encoding: chunked` not `content-length`, so force the
+        // API type to non-aggregated to indicate that.
     }
 
     @Override
     public BlockingStreamingHttpResponse toBlockingStreamingResponse() {
         return new BufferBlockingStreamingHttpResponse(status(), version(), headers(), succeeded(trailers),
-                allocator, singletonBlockingIterable(payloadBody));
+                allocator, singletonBlockingIterable(payloadBody), trailers.isEmpty());
+        // If there are trailers, we must send `transfer-encoding: chunked` not `content-length`, so force the
+        // API type to non-aggregated to indicate that.
     }
 
     @Override

@@ -70,7 +70,7 @@ import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpRequestMethod.GET;
 import static io.servicetalk.http.api.HttpResponseStatus.SWITCHING_PROTOCOLS;
 import static io.servicetalk.http.netty.HeaderUtils.isTransferEncodingChunked;
-import static io.servicetalk.http.netty.HeaderUtils.setTransferEncodingChunked;
+import static io.servicetalk.http.netty.HeaderUtils.removeTransferEncodingChunked;
 import static io.servicetalk.http.netty.HttpKeepAlive.shouldClose;
 import static java.lang.Character.isISOControl;
 import static java.lang.Character.isWhitespace;
@@ -587,7 +587,7 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
         }
 
         if (isContentAlwaysEmpty(message)) {
-            setTransferEncodingChunked(message.headers(), false);
+            removeTransferEncodingChunked(message.headers());
             return State.SKIP_CONTROL_CHARS;
         } else if (isTransferEncodingChunked(message.headers())) {
             return State.READ_CHUNK_SIZE;

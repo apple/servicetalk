@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -154,13 +154,17 @@ final class BufferHttpRequest extends DefaultHttpRequestMetaData implements Http
     @Override
     public StreamingHttpRequest toStreamingRequest() {
         return new BufferStreamingHttpRequest(method(), requestTarget(), version(),
-                headers(), succeeded(trailers), allocator, from(payloadBody));
+                headers(), succeeded(trailers), allocator, from(payloadBody), trailers.isEmpty());
+        // If there are trailers, we must send `transfer-encoding: chunked` not `content-length`, so force the
+        // API type to non-aggregated to indicate that.
     }
 
     @Override
     public BlockingStreamingHttpRequest toBlockingStreamingRequest() {
         return new BufferBlockingStreamingHttpRequest(method(), requestTarget(), version(), headers(),
-                succeeded(trailers), allocator, singletonBlockingIterable(payloadBody));
+                succeeded(trailers), allocator, singletonBlockingIterable(payloadBody), trailers.isEmpty());
+        // If there are trailers, we must send `transfer-encoding: chunked` not `content-length`, so force the
+        // API type to non-aggregated to indicate that.
     }
 
     @Override

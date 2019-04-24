@@ -184,6 +184,18 @@ public final class HttpApiConversions {
     }
 
     /**
+     * Checks whether a request/response payload is safe to aggregate, which may allow for writing a `content-length`
+     * header.
+     *
+     * @param metadata The request/response to check.
+     * @return {@code true} is the request/response payload is safe to aggregate, {@code false} otherwise.
+     */
+    public static boolean isSafeToAggregate(HttpMetaData metadata) {
+        return (metadata instanceof EffectiveApiType) &&
+                ((EffectiveApiType) metadata).isAggregated();
+    }
+
+    /**
      * A holder for {@link StreamingHttpService} that adapts another {@code service} to the streaming programming model.
      */
     public interface ServiceAdapterHolder {

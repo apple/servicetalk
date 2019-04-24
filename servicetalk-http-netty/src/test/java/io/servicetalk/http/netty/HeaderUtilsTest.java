@@ -18,7 +18,7 @@ package io.servicetalk.http.netty;
 import io.servicetalk.http.api.DefaultHttpHeadersFactory;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpHeadersFactory;
-import io.servicetalk.http.api.HttpRequest;
+import io.servicetalk.http.api.StreamingHttpRequest;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -29,10 +29,10 @@ import static io.servicetalk.http.api.HttpHeaderNames.TRANSFER_ENCODING;
 import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpRequestMethod.GET;
-import static io.servicetalk.http.api.HttpRequests.newRequest;
+import static io.servicetalk.http.api.StreamingHttpRequests.newRequest;
 import static io.servicetalk.http.netty.HeaderUtils.addRequestTransferEncodingIfNecessary;
 import static io.servicetalk.http.netty.HeaderUtils.isTransferEncodingChunked;
-import static io.servicetalk.http.netty.HeaderUtils.setTransferEncodingChunked;
+import static io.servicetalk.http.netty.HeaderUtils.removeTransferEncodingChunked;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
@@ -42,7 +42,7 @@ public class HeaderUtilsTest {
 
     private static final HttpHeadersFactory HTTP_HEADERS_FACTORY = DefaultHttpHeadersFactory.INSTANCE;
 
-    private HttpRequest httpRequest;
+    private StreamingHttpRequest httpRequest;
 
     @Before
     public void setUp() {
@@ -77,36 +77,15 @@ public class HeaderUtilsTest {
     }
 
     @Test
-    public void setTransferEncodingChunkedNoHeadersTrue() {
+    public void remoteTransferEncodingChunkedNoHeaders() {
         assertTrue(httpRequest.headers().isEmpty());
 
-        setTransferEncodingChunked(httpRequest.headers(), true);
-        assertOneTransferEncodingChunked(httpRequest.headers());
-        assertNull(httpRequest.headers().get(CONTENT_LENGTH));
-    }
-
-    @Test
-    public void setTransferEncodingChunkedNoHeadersFalse() {
-        assertTrue(httpRequest.headers().isEmpty());
-
-        setTransferEncodingChunked(httpRequest.headers(), false);
+        removeTransferEncodingChunked(httpRequest.headers());
         assertTrue(httpRequest.headers().isEmpty());
     }
 
     @Test
-    public void setTransferEncodingChunkedWithSomeHeaderTrue() {
-        assertTrue(httpRequest.headers().isEmpty());
-        httpRequest.headers().add("Some-Header", "Some-Value");
-        assertEquals(1, httpRequest.headers().size());
-
-        setTransferEncodingChunked(httpRequest.headers(), true);
-        assertTrue(isTransferEncodingChunked(httpRequest.headers()));
-        assertEquals(2, httpRequest.headers().size());
-        assertNull(httpRequest.headers().get(CONTENT_LENGTH));
-    }
-
-    @Test
-    public void setTransferEncodingChunkedWithSomeHeaderFalse() {
+    public void removeTransferEncodingChunkedWithSomeHeader() {
         assertTrue(httpRequest.headers().isEmpty());
         httpRequest.headers().add("Some-Header", "Some-Value")
                 .add(TRANSFER_ENCODING, "Some-Value")
@@ -115,58 +94,34 @@ public class HeaderUtilsTest {
                 .add(TRANSFER_ENCODING, "cHuNkEd");
         assertEquals(5, httpRequest.headers().size());
 
-        setTransferEncodingChunked(httpRequest.headers(), false);
+        removeTransferEncodingChunked(httpRequest.headers());
         assertFalse(isTransferEncodingChunked(httpRequest.headers()));
         assertEquals(2, httpRequest.headers().size());
         assertNull(httpRequest.headers().get(CONTENT_LENGTH));
     }
 
     @Test
-    public void setTransferEncodingChunkedWithContentLengthTrue() {
-        assertTrue(httpRequest.headers().isEmpty());
-        httpRequest.headers().add(CONTENT_LENGTH, "10");
-        assertEquals(1, httpRequest.headers().size());
-
-        setTransferEncodingChunked(httpRequest.headers(), true);
-        assertOneTransferEncodingChunked(httpRequest.headers());
-        assertNull(httpRequest.headers().get(CONTENT_LENGTH));
-    }
-
-    @Test
-    public void setTransferEncodingChunkedWithContentLengthFalse() {
+    public void removeTransferEncodingChunkedWithContentLength() {
         assertTrue(httpRequest.headers().isEmpty());
         httpRequest.headers().add(CONTENT_LENGTH, "10")
                 .add(TRANSFER_ENCODING, CHUNKED);
         assertEquals(2, httpRequest.headers().size());
 
-        setTransferEncodingChunked(httpRequest.headers(), false);
+        removeTransferEncodingChunked(httpRequest.headers());
         assertFalse(isTransferEncodingChunked(httpRequest.headers()));
         assertEquals(1, httpRequest.headers().size());
         assertEquals("10", httpRequest.headers().get(CONTENT_LENGTH));
     }
 
     @Test
-    public void setTransferEncodingChunkedWithMultipleContentLength() {
-        assertTrue(httpRequest.headers().isEmpty());
-        httpRequest.headers().add(CONTENT_LENGTH, "10")
-                .add(CONTENT_LENGTH, "20")
-                .add(CONTENT_LENGTH, "30");
-        assertEquals(3, httpRequest.headers().size());
-
-        setTransferEncodingChunked(httpRequest.headers(), true);
-        assertOneTransferEncodingChunked(httpRequest.headers());
-        assertNull(httpRequest.headers().get(CONTENT_LENGTH));
-    }
-
-    @Test
-    public void addRequestTransferEncodingIfNecessaryNoHeaders() {
+    public void addTransferEncodingIfNecessaryNoHeaders() {
         assertTrue(httpRequest.headers().isEmpty());
         addRequestTransferEncodingIfNecessary(httpRequest);
         assertOneTransferEncodingChunked(httpRequest.headers());
     }
 
     @Test
-    public void addRequestTransferEncodingIfNecessaryContentLength() {
+    public void addTransferEncodingIfNecessaryContentLength() {
         assertTrue(httpRequest.headers().isEmpty());
         httpRequest.headers().add(CONTENT_LENGTH, "10");
         assertEquals(1, httpRequest.headers().size());
@@ -179,7 +134,7 @@ public class HeaderUtilsTest {
     }
 
     @Test
-    public void addRequestTransferEncodingIfNecessaryTransferEncodingChunked() {
+    public void addTransferEncodingIfNecessaryTransferEncodingChunked() {
         assertTrue(httpRequest.headers().isEmpty());
         httpRequest.headers().add(TRANSFER_ENCODING, CHUNKED);
         assertEquals(1, httpRequest.headers().size());
@@ -189,7 +144,7 @@ public class HeaderUtilsTest {
     }
 
     @Test
-    public void addRequestTransferEncodingIfNecessaryTransferEncodingChunkedCapitalCase() {
+    public void addTransferEncodingIfNecessaryTransferEncodingChunkedCapitalCase() {
         assertTrue(httpRequest.headers().isEmpty());
         httpRequest.headers().add("Transfer-Encoding", "Chunked");
         assertEquals(1, httpRequest.headers().size());
@@ -199,7 +154,7 @@ public class HeaderUtilsTest {
     }
 
     @Test
-    public void addRequestTransferEncodingIfNecessaryTransferEncodingChunkedRandomCase() {
+    public void addTransferEncodingIfNecessaryTransferEncodingChunkedRandomCase() {
         assertTrue(httpRequest.headers().isEmpty());
         httpRequest.headers().add(TRANSFER_ENCODING, "cHuNkEd");
         assertEquals(1, httpRequest.headers().size());

@@ -76,6 +76,8 @@ import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderValues.ZERO;
 import static io.servicetalk.http.api.StreamingHttpRequests.newRequestWithTrailers;
 import static io.servicetalk.http.netty.HeaderUtils.addResponseTransferEncodingIfNecessary;
+import static io.servicetalk.http.netty.HeaderUtils.canAddResponseContentLength;
+import static io.servicetalk.http.netty.HeaderUtils.setResponseContentLength;
 import static io.servicetalk.transport.netty.internal.CloseHandler.forPipelinedRequestResponse;
 import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater;
 
@@ -262,10 +264,15 @@ final class NettyHttpServer {
                 Publisher<Object> objectPublisher = strategy
                         .invokeService(executionContext().executor(), request2,
                                 req -> service.handle(NettyHttpServerConnection.this, req, streamingResponseFactory())
-                                        .map(response -> {
-                                            addResponseTransferEncodingIfNecessary(response, requestMethod);
+                                        .flatMap(response -> {
                                             keepAlive.addConnectionHeaderIfNecessary(response);
-                                            return response;
+                                            if (!canAddResponseContentLength(response, requestMethod)) {
+                                                addResponseTransferEncodingIfNecessary(response, requestMethod);
+                                                return succeeded(response);
+                                            }
+                                            // Add the content-length if necessary, falling back to transfer-encoding
+                                            // otherwise.
+                                            return setResponseContentLength(response);
                                         }),
                                 (cause, executor) -> newErrorResponse(cause, executor, request2.version(), keepAlive));
 

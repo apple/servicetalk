@@ -67,7 +67,7 @@ public final class StreamingHttpRequests {
             final HttpHeaders headers, final HttpHeaders initialTrailers, final BufferAllocator allocator,
             final Publisher<Buffer> payloadBody) {
         return new BufferStreamingHttpRequest(method, requestTarget, version, headers, initialTrailers, allocator,
-                payloadBody);
+                payloadBody, false);
     }
 
     /**
@@ -86,6 +86,6 @@ public final class StreamingHttpRequests {
             final HttpRequestMethod method, final String requestTarget, final HttpProtocolVersion version,
             final HttpHeaders headers, final BufferAllocator allocator, final Publisher<Object> payloadAndTrailers) {
         return new TransportStreamingHttpRequest(method, requestTarget, version, headers, allocator,
-                payloadAndTrailers);
+                payloadAndTrailers, false);
     }
 }

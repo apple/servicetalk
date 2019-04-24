@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,6 +35,8 @@ import static io.servicetalk.concurrent.api.Publisher.failed;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.http.api.StreamingHttpResponses.newResponseWithTrailers;
 import static io.servicetalk.http.netty.HeaderUtils.addRequestTransferEncodingIfNecessary;
+import static io.servicetalk.http.netty.HeaderUtils.canAddRequestContentLength;
+import static io.servicetalk.http.netty.HeaderUtils.setRequestContentLength;
 import static java.util.Objects.requireNonNull;
 
 abstract class AbstractStreamingHttpConnection<CC extends NettyConnectionContext> implements
@@ -77,7 +79,12 @@ abstract class AbstractStreamingHttpConnection<CC extends NettyConnectionContext
     @Override
     public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
                                                  final StreamingHttpRequest request) {
-        addRequestTransferEncodingIfNecessary(request); // See https://tools.ietf.org/html/rfc7230#section-3.3.3
+        // See https://tools.ietf.org/html/rfc7230#section-3.3.3
+        if (canAddRequestContentLength(request)) {
+            return setRequestContentLength(request).flatMap(r ->
+                    strategy.invokeClient(executionContext.executor(), r, this));
+        }
+        addRequestTransferEncodingIfNecessary(request);
         return strategy.invokeClient(executionContext.executor(), request, this);
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,16 +38,19 @@ import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.http.api.HttpDataSourceTranformations.aggregatePayloadAndTrailers;
 import static java.util.Objects.requireNonNull;
 
-final class TransportStreamingHttpResponse extends DefaultHttpResponseMetaData implements StreamingHttpResponse {
+final class TransportStreamingHttpResponse extends DefaultHttpResponseMetaData implements StreamingHttpResponse,
+                                                                                          EffectiveApiType {
     final Publisher<Object> payloadAndTrailers;
     final BufferAllocator allocator;
+    final boolean aggregated;
 
     TransportStreamingHttpResponse(final HttpResponseStatus status, final HttpProtocolVersion version,
                                    final HttpHeaders headers, final BufferAllocator allocator,
-                                   final Publisher<Object> payloadAndTrailers) {
+                                   final Publisher<Object> payloadAndTrailers, final boolean aggregated) {
         super(status, version, headers);
         this.allocator = requireNonNull(allocator);
         this.payloadAndTrailers = requireNonNull(payloadAndTrailers);
+        this.aggregated = aggregated;
     }
 
     @Override
@@ -78,7 +81,7 @@ final class TransportStreamingHttpResponse extends DefaultHttpResponseMetaData i
         return new BufferStreamingHttpResponse(this, allocator,
                 payloadBody.liftSync(new BridgeFlowControlAndDiscardOperator(payloadAndTrailers.liftSync(
                         new HttpBufferTrailersSpliceOperator(outTrailersSingle)))),
-                fromSource(outTrailersSingle));
+                fromSource(outTrailersSingle), aggregated);
     }
 
     @Override
@@ -89,7 +92,7 @@ final class TransportStreamingHttpResponse extends DefaultHttpResponseMetaData i
                 payloadBody.liftSync(new SerializeBridgeFlowControlAndDiscardOperator<>(
                         payloadAndTrailers.liftSync(new HttpBufferTrailersSpliceOperator(outTrailersSingle)))),
                 allocator),
-                fromSource(outTrailersSingle));
+                fromSource(outTrailersSingle), aggregated);
     }
 
     @Override
@@ -99,21 +102,23 @@ final class TransportStreamingHttpResponse extends DefaultHttpResponseMetaData i
         return new BufferStreamingHttpResponse(this, allocator, serializer.serialize(headers(),
                 transformer.apply(payloadAndTrailers.liftSync(new HttpBufferTrailersSpliceOperator(
                         outTrailersSingle))), allocator),
-                fromSource(outTrailersSingle));
+                fromSource(outTrailersSingle), aggregated);
     }
 
     @Override
     public StreamingHttpResponse transformPayloadBody(final UnaryOperator<Publisher<Buffer>> transformer) {
         final Processor<HttpHeaders, HttpHeaders> outTrailersSingle = newSingleProcessor();
         return new BufferStreamingHttpResponse(this, allocator, transformer.apply(payloadAndTrailers.liftSync(
-                new HttpBufferTrailersSpliceOperator(outTrailersSingle))), fromSource(outTrailersSingle));
+                new HttpBufferTrailersSpliceOperator(outTrailersSingle))), fromSource(outTrailersSingle),
+                aggregated);
     }
 
     @Override
     public StreamingHttpResponse transformRawPayloadBody(final UnaryOperator<Publisher<?>> transformer) {
         final Processor<HttpHeaders, HttpHeaders> outTrailersSingle = newSingleProcessor();
         return new DefaultStreamingHttpResponse<>(this, allocator, transformer.apply(payloadAndTrailers.liftSync(
-                new HttpObjectTrailersSpliceOperator(outTrailersSingle))), fromSource(outTrailersSingle));
+                new HttpObjectTrailersSpliceOperator(outTrailersSingle))), fromSource(outTrailersSingle),
+                aggregated);
     }
 
     @Override
@@ -124,7 +129,9 @@ final class TransportStreamingHttpResponse extends DefaultHttpResponseMetaData i
         return new BufferStreamingHttpResponse(this, allocator, payloadAndTrailers.liftSync(
                 new HttpRawBuffersAndTrailersOperator<>(stateSupplier, transformer,
                         trailersTransformer, outTrailersSingle)),
-                fromSource(outTrailersSingle));
+                fromSource(outTrailersSingle), false);
+        // This transform may add trailers, and if there are trailers present we must send `transfer-encoding: chunked`
+        // not `content-length`, so force the API type to non-aggregated to indicate that.
     }
 
     @Override
@@ -135,7 +142,9 @@ final class TransportStreamingHttpResponse extends DefaultHttpResponseMetaData i
         return new DefaultStreamingHttpResponse<>(this, allocator, payloadAndTrailers.liftSync(
                 new HttpRawObjectsAndTrailersOperator<>(stateSupplier, transformer,
                         trailersTransformer, outTrailersSingle)),
-                fromSource(outTrailersSingle));
+                fromSource(outTrailersSingle), false);
+        // This transform may add trailers, and if there are trailers present we must send `transfer-encoding: chunked`
+        // not `content-length`, so force the API type to non-aggregated to indicate that.
     }
 
     @Override
@@ -151,7 +160,13 @@ final class TransportStreamingHttpResponse extends DefaultHttpResponseMetaData i
     public BlockingStreamingHttpResponse toBlockingStreamingResponse() {
         final Processor<HttpHeaders, HttpHeaders> outTrailersSingle = newSingleProcessor();
         return new DefaultBlockingStreamingHttpResponse<>(this, allocator, payloadAndTrailers.liftSync(
-                new HttpObjectTrailersSpliceOperator(outTrailersSingle)).toIterable(), fromSource(outTrailersSingle));
+                new HttpObjectTrailersSpliceOperator(outTrailersSingle)).toIterable(), fromSource(outTrailersSingle),
+                aggregated);
+    }
+
+    @Override
+    public boolean isAggregated() {
+        return aggregated;
     }
 
     @Override
