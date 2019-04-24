@@ -130,9 +130,9 @@ final class HeaderUtils {
         // A user agent SHOULD NOT send a Content-Length header field when the request message does not contain a
         // payload body and the method semantics do not anticipate such a body.
         // https://tools.ietf.org/html/rfc7230#section-3.3.2
-        return (POST.name().equals(requestMethodName) ||
+        return POST.name().equals(requestMethodName) ||
                 PUT.name().equals(requestMethodName) ||
-                PATCH.name().equals(requestMethodName));
+                PATCH.name().equals(requestMethodName);
     }
 
     private static StreamingHttpResponse responseContentLengthPayloadHandler(final StreamingHttpResponse response,
@@ -150,7 +150,8 @@ final class HeaderUtils {
             if (reduction == null) {
                 // avoid allocating a list if the Publisher emits only a single Buffer
                 return item;
-            } else if (reduction instanceof Buffer) {
+            }
+            if (reduction instanceof Buffer) {
                 buffers = new ArrayList<>();
                 buffers.add((Buffer) reduction);
             } else {

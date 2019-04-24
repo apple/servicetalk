@@ -17,7 +17,6 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.DefaultHttpHeadersFactory;
-import io.servicetalk.http.api.HttpHeaderNames;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpMetaData;
 import io.servicetalk.http.api.HttpRequest;
@@ -115,6 +114,8 @@ public class ContentHeadersTest extends AbstractNettyHttpServerTest {
 
                 new RequestTest(aggregatedRequest(GET), transferEncodingGzip(), HAVE_CONTENT_LENGTH),
                 new RequestTest(aggregatedRequest(GET), transferEncodingChunked(), HAVE_TRANSFER_ENCODING_CHUNKED),
+                new RequestTest(aggregatedRequest(GET), transferEncodingGzipAndChunked(),
+                        HAVE_TRANSFER_ENCODING_CHUNKED),
                 new RequestTest(aggregatedRequest(GET), contentLength(), HAVE_CONTENT_LENGTH),
                 new RequestTest(aggregatedRequest(GET), trailers(), HAVE_TRANSFER_ENCODING_CHUNKED),
                 new RequestTest(aggregatedRequestAsStreaming(GET), transform(), HAVE_TRANSFER_ENCODING_CHUNKED),
@@ -154,6 +155,8 @@ public class ContentHeadersTest extends AbstractNettyHttpServerTest {
 
                 new ResponseTest(aggregatedResponse(OK), GET, transferEncodingGzip(), HAVE_CONTENT_LENGTH),
                 new ResponseTest(aggregatedResponse(OK), GET, transferEncodingChunked(),
+                        HAVE_TRANSFER_ENCODING_CHUNKED),
+                new ResponseTest(aggregatedResponse(OK), GET, transferEncodingGzipAndChunked(),
                         HAVE_TRANSFER_ENCODING_CHUNKED),
                 new ResponseTest(aggregatedResponse(OK), GET, contentLength(), HAVE_CONTENT_LENGTH),
                 new ResponseTest(aggregatedResponse(OK), GET, trailers(), HAVE_TRANSFER_ENCODING_CHUNKED),
@@ -214,6 +217,14 @@ public class ContentHeadersTest extends AbstractNettyHttpServerTest {
         }, "TransferEncodingGzip");
     }
 
+    private static UnaryOperator<HttpMetaData> transferEncodingGzipAndChunked() {
+        return describe(input -> {
+            input.headers().set(TRANSFER_ENCODING, "gzip");
+            input.headers().add(TRANSFER_ENCODING, "chunked");
+            return input;
+        }, "TransferEncodingGzipAndChunked");
+    }
+
     private static UnaryOperator<HttpMetaData> transferEncodingChunked() {
         return describe(input -> {
             input.headers().set(TRANSFER_ENCODING, CHUNKED);
@@ -223,7 +234,7 @@ public class ContentHeadersTest extends AbstractNettyHttpServerTest {
 
     private static UnaryOperator<HttpMetaData> contentLength() {
         return describe(input -> {
-            input.headers().set(HttpHeaderNames.CONTENT_LENGTH, "100");
+            input.headers().set(CONTENT_LENGTH, "100");
             return input;
         }, "ContentLength");
     }
@@ -273,8 +284,8 @@ public class ContentHeadersTest extends AbstractNettyHttpServerTest {
             RequestTest definition = (RequestTest) testDefinition;
             // test needs to create the request
             final HttpMetaData metadata = definition.modifier.apply(definition.requestSupplier.get());
-            final StreamingHttpRequest request = ((metadata instanceof StreamingHttpRequest) ?
-                    (StreamingHttpRequest) metadata : ((HttpRequest) metadata).toStreamingRequest());
+            final StreamingHttpRequest request = metadata instanceof StreamingHttpRequest ?
+                    (StreamingHttpRequest) metadata : ((HttpRequest) metadata).toStreamingRequest();
             final StreamingHttpResponse response = streamingHttpConnection().request(request).toFuture().get();
             assertThat(response.toResponse().toFuture().get().payloadBody().toString(UTF_8),
                     response.status(), is(NO_CONTENT));
@@ -322,7 +333,7 @@ public class ContentHeadersTest extends AbstractNettyHttpServerTest {
     }
 
     @Nullable
-    private String checkHeaders(final Expectation expectation, final HttpHeaders headers) {
+    private static String checkHeaders(final Expectation expectation, final HttpHeaders headers) {
         final String failure;
         switch (expectation) {
             case HAVE_CONTENT_LENGTH:
@@ -431,7 +442,7 @@ public class ContentHeadersTest extends AbstractNettyHttpServerTest {
         final UnaryOperator<HttpMetaData> modifier;
         final Expectation expectation;
 
-        private TestType(final UnaryOperator<HttpMetaData> modifier, final Expectation expectation) {
+        TestType(final UnaryOperator<HttpMetaData> modifier, final Expectation expectation) {
             this.modifier = modifier;
             this.expectation = expectation;
         }

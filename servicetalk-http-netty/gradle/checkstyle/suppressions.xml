@@ -21,5 +21,4 @@
 <suppressions>
   <suppress checks="FallThrough" files="io/servicetalk/http/netty/HttpObjectDecoder.java"/>
   <suppress checks="FallThrough" files="io/servicetalk/http/netty/HttpObjectEncoder.java"/>
-  <suppress checks="FinalClassCheck" files="io/servicetalk/http/netty/ContentHeadersTest.java"/>
 </suppressions>

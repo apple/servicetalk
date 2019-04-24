@@ -25,10 +25,6 @@ import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
 
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-
-import java.util.Collection;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
@@ -39,24 +35,16 @@ import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
 import static io.servicetalk.http.netty.AbstractNettyHttpServerTest.ExecutorSupplier.CACHED;
 import static io.servicetalk.http.netty.HeaderUtils.setRequestContentLength;
 import static io.servicetalk.http.netty.HeaderUtils.setResponseContentLength;
-import static java.util.Collections.singletonList;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertThat;
 
-@RunWith(Parameterized.class)
 public class ContentLengthTest extends AbstractNettyHttpServerTest {
 
     private static final DefaultHttpHeadersFactory headersFactory = new DefaultHttpHeadersFactory(false, false);
 
-    public ContentLengthTest(final ExecutorSupplier clientExecutorSupplier,
-                             final ExecutorSupplier serverExecutorSupplier) {
-        super(clientExecutorSupplier, serverExecutorSupplier);
-    }
-
-    @Parameterized.Parameters
-    public static Collection<ExecutorSupplier[]> clientExecutors() {
-        return singletonList(new ExecutorSupplier[]{CACHED, CACHED});
+    public ContentLengthTest() {
+        super(CACHED, CACHED);
     }
 
     @Test
