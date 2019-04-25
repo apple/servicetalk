@@ -136,6 +136,13 @@ public abstract class AbstractToFutureTest<T> {
         verify(mockCancellable, never()).cancel();
     }
 
+    @Test(expected = NullPointerException.class)
+    public void testFailedWithNull() {
+        Future<T> future = toFuture();
+        assertThat(future.isDone(), is(false));
+        failSource(null);
+    }
+
     @Test
     public void testFailedAfterGet() throws Exception {
         Future<T> future = toFuture();

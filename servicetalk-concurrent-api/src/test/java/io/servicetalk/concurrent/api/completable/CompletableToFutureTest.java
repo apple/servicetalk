@@ -22,8 +22,6 @@ import io.servicetalk.concurrent.api.TestCompletable;
 
 import java.util.concurrent.Future;
 
-import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
-
 public class CompletableToFutureTest extends AbstractToFutureTest<Void> {
 
     private final TestCompletable source = new TestCompletable.Builder().build(subscriber -> {
@@ -63,7 +61,7 @@ public class CompletableToFutureTest extends AbstractToFutureTest<Void> {
 
     @Override
     protected void failSource(final Throwable t) {
-        source.onError(DELIBERATE_EXCEPTION);
+        source.onError(t);
     }
 
     @Override

@@ -70,7 +70,7 @@ public class SingleToFutureTest extends AbstractToFutureTest<Integer> {
 
     @Override
     protected void failSource(final Throwable t) {
-        source.onError(DELIBERATE_EXCEPTION);
+        source.onError(t);
     }
 
     @Override

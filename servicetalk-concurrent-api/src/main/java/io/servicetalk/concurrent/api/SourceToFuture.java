@@ -27,6 +27,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import javax.annotation.Nullable;
 
+import static java.util.Objects.requireNonNull;
+
 abstract class SourceToFuture<T> implements Future<T> {
 
     private static final Object NULL = new Object();
@@ -75,6 +77,7 @@ abstract class SourceToFuture<T> implements Future<T> {
     }
 
     public final void onError(final Throwable t) {
+        requireNonNull(t);
         if (isDone()) {
             return;
         }
