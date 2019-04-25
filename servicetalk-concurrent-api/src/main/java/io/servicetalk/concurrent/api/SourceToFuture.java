@@ -33,7 +33,7 @@ import static java.util.Objects.requireNonNull;
 
 abstract class SourceToFuture<T> implements Future<T> {
 
-    private static final Object NULL = new Object();
+    static final Object NULL = new Object();
     private static final Object CANCELLED = new Object();
 
     @SuppressWarnings("rawtypes")
@@ -53,33 +53,14 @@ abstract class SourceToFuture<T> implements Future<T> {
         this.cancellable.delayedCancellable(cancellable);
     }
 
-    final void onSuccessInternal(@Nullable final T result) {
-        if (isDone()) {
-            return;
-        }
-        final Object tmp;
-        if (result == null) {
-            tmp = NULL;
-        } else if (result instanceof Throwable) {
-            tmp = new ThrowableWrapper(result);
-        } else {
-            tmp = result;
-        }
-        if (valueUpdater.compareAndSet(this, null, tmp)) {
-            latch.countDown();
-        }
-    }
-
-    final void onCompleteInternal() {
-        if (valueUpdater.compareAndSet(this, null, NULL)) {
+    final void setValue(@Nullable final Object value) {
+        if (valueUpdater.compareAndSet(this, null, value)) {
             latch.countDown();
         }
     }
 
     public final void onError(final Throwable t) {
-        if (valueUpdater.compareAndSet(this, null, requireNonNull(t))) {
-            latch.countDown();
-        }
+        setValue(requireNonNull(t));
     }
 
     @Override
@@ -154,7 +135,18 @@ abstract class SourceToFuture<T> implements Future<T> {
 
         @Override
         public void onSuccess(@Nullable final T result) {
-            onSuccessInternal(result);
+            if (isDone()) {
+                return;
+            }
+            final Object value;
+            if (result == null) {
+                value = NULL;
+            } else if (result instanceof Throwable) {
+                value = new ThrowableWrapper(result);
+            } else {
+                value = result;
+            }
+            setValue(value);
         }
     }
 
@@ -171,7 +163,7 @@ abstract class SourceToFuture<T> implements Future<T> {
 
         @Override
         public void onComplete() {
-            onCompleteInternal();
+            setValue(NULL);
         }
     }
 
