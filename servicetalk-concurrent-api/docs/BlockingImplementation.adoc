@@ -40,14 +40,16 @@ image::ExecutorThreadSelection.jpg[Executor inference]
 The above interaction has a few important points:
 
 - All operators inherit the `Executor` from the source, unless overridden explicitly by the user.
-- An `Executor` thread is chosen when a `Subscriber` subscribes to a source decorated by zero or more operators.
-- The chosen `Executor` thread is passed to all operators and then to the source, per `Subscriber`.
+- A link:../../servicetalk-concurrent-internal//src/main/java/io/servicetalk/concurrent/internal/SignalOffloader.java[`SignalOffloader`]
+ is chosen when a `Subscriber` subscribes to a source decorated by zero or more operators.
+- The chosen link:../../servicetalk-concurrent-internal//src/main/java/io/servicetalk/concurrent/internal/SignalOffloader.java[`SignalOffloader`]
+ is passed to all operators and then to the source, per `Subscriber`.
 
-The above interaction provides all operators and the source an opportunity to piggy-back on the same thread for all
+The above interaction provides all operators and the source an opportunity to piggy-back on the same `Executor` for all
 interactions with the `Subscriber`. Any operator in a chain has two options while accepting a `Subscriber`:
 
 - Wrap the `Subscriber` such that all `Subscriber` and `Subscription` method calls are offloaded to the chosen
-`Executor` thread. This mode is for operators that process signals from the original `Publisher` asynchronously.
+`Executor`. This mode is for operators that process signals from the original `Publisher` asynchronously.
 - Do not wrap the `Subscriber` and forward all `Subscriber` and `Subscription` methods directly on the calling thread to
 avoid the overhead of wrapping each and every `Subscriber` and `Subscription` in a chain. This mode is for operators
 that process signals from the original `Publisher` synchronously.
@@ -60,7 +62,7 @@ Taking the same example from link:./BlockingSupport.adoc[BlockingSupport.adoc]
        .map(resp -> {
             return resp.toString(); # <2>
        })
-       .flatmap(stringResp -> { # <3>
+       .flatMap(stringResp -> { # <3>
             return client2.request(stringResp);
        })
        .filter(stringResp -> {
@@ -69,25 +71,25 @@ Taking the same example from link:./BlockingSupport.adoc[BlockingSupport.adoc]
 ----
 <1> A hypothetical client which provides a `request()` method that returns a `Single<Response>`.
 <2> Converting the response to a `String`.
-<3> Call another `client2` that provides a new `Single` which is returned from `flatmap`.
+<3> Call another `client2` that provides a new `Single` which is returned from `flatMap`.
 <4> Only allow "Hello World" messages to be emitted.
 
 In the above example the operators `map` and `filter` will not wrap `Subscriber` and `Subscription` since they do not do
 any asynchronous work. However, `flatmap` will wrap `Subscriber` and `Subscription` to offload the calls to the chosen
-`Executor` thread.
+`SignalOffloader`.
 
 == Why should we wrap `Subscriber` and `Subscription`?
 
 There are two places we would wrap `Subscriber` and `Subscription`:
 
 1. Original asynchronous sources.
-2. Asynchronous operators. eg: `flatmap`
+2. Asynchronous operators. eg: `flatMap`
 
 Since every asynchronous source is associated with an `Executor`, it is required to use the `Executor` for interacting
 with `Subscriber` and `Subscription`.
 
 If we do not wrap for asynchronous operators then in the above example, operator `filter` (4) will be invoked in the
-`Executor` thread defined by `client2` inside the `flatmap`. This may lead to inadvertent and not initially obvious
+`Executor` defined by `client2` inside the `flatmap`. This may lead to inadvertent and not initially obvious
 blocking of an event loop thread. Consider a scenario where `client2` executes user code on an event loop thread, but
 the original `client` executes user code on an application thread (which allows blocking). In this scenario it may look
 like blocking code is OK at point (4) above, but that will actually result in blocking `client2`'s event loop thread.
