@@ -25,11 +25,15 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import javax.annotation.Nullable;
 
 import static java.util.Objects.requireNonNull;
 
 abstract class SourceToFuture<T> implements Future<T> {
+
+    private static final AtomicReferenceFieldUpdater<SourceToFuture, Object> valueUpdater =
+            AtomicReferenceFieldUpdater.newUpdater(SourceToFuture.class, Object.class, "value");
 
     private static final Object NULL = new Object();
     private static final Object CANCELLED = new Object();
@@ -37,7 +41,7 @@ abstract class SourceToFuture<T> implements Future<T> {
     private final DelayedCancellable cancellable = new DelayedCancellable();
 
     @Nullable
-    private Object value;
+    private volatile Object value;
 
     private SourceToFuture() {
     }
@@ -50,27 +54,24 @@ abstract class SourceToFuture<T> implements Future<T> {
         if (isDone()) {
             return;
         }
-        synchronized (cancellable) {
-            if (!isDone()) {
-                if (result == null) {
-                    value = NULL;
-                } else if (result instanceof Throwable) {
-                    value = new ThrowableWrapper(result);
-                } else {
-                    value = result;
-                }
+        final Object tmp;
+        if (result == null) {
+            tmp = NULL;
+        } else if (result instanceof Throwable) {
+            tmp = new ThrowableWrapper(result);
+        } else {
+            tmp = result;
+        }
+        if (valueUpdater.compareAndSet(this, null, tmp)) {
+            synchronized (cancellable) {
                 cancellable.notifyAll();
             }
         }
     }
 
     final void onCompleteInternal() {
-        if (isDone()) {
-            return;
-        }
-        synchronized (cancellable) {
-            if (!isDone()) {
-                value = NULL;
+        if (valueUpdater.compareAndSet(this, null, NULL)) {
+            synchronized (cancellable) {
                 cancellable.notifyAll();
             }
         }
@@ -78,12 +79,8 @@ abstract class SourceToFuture<T> implements Future<T> {
 
     public final void onError(final Throwable t) {
         requireNonNull(t);
-        if (isDone()) {
-            return;
-        }
-        synchronized (cancellable) {
-            if (!isDone()) {
-                value = t;
+        if (valueUpdater.compareAndSet(this, null, t)) {
+            synchronized (cancellable) {
                 cancellable.notifyAll();
             }
         }
@@ -95,14 +92,13 @@ abstract class SourceToFuture<T> implements Future<T> {
             return false;
         }
         cancellable.cancel();
-        synchronized (cancellable) {
-            if (isDone()) {
-                return false;
+        if (valueUpdater.compareAndSet(this, null, CANCELLED)) {
+            synchronized (cancellable) {
+                cancellable.notifyAll();
             }
-            value = CANCELLED;
-            cancellable.notifyAll();
+            return true;
         }
-        return true;
+        return false;
     }
 
     @Override
