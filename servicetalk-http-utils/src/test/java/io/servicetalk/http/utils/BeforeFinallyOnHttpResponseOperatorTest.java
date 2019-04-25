@@ -34,13 +34,13 @@ import io.servicetalk.http.api.StreamingHttpResponse;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.junit.rules.Timeout;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
 import java.util.concurrent.CancellationException;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.annotation.Nullable;
 
@@ -66,6 +66,8 @@ public class BeforeFinallyOnHttpResponseOperatorTest {
             new DefaultStreamingHttpRequestResponseFactory(allocator, DefaultHttpHeadersFactory.INSTANCE);
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
+    @Rule
+    public final ExpectedException expectedException = ExpectedException.none();
 
     @Mock
     private TerminalSignalConsumer beforeFinally;
@@ -142,11 +144,8 @@ public class BeforeFinallyOnHttpResponseOperatorTest {
         subscriber.verifyResponseReceived();
         verifyNoMoreInteractions(beforeFinally);
         assert subscriber.response != null;
-        try {
-            subscriber.response.payloadBody().toFuture().get();
-        } catch (ExecutionException e) {
-            assertThat(e.getCause(), is(instanceOf(CancellationException.class)));
-        }
+        expectedException.expectCause(instanceOf(CancellationException.class));
+        subscriber.response.payloadBody().toFuture().get();
     }
 
     @Test
