@@ -106,7 +106,7 @@ public abstract class AbstractToFutureTest<T> {
         assertThat(future.isDone(), is(false));
         try {
             future.get(50, MILLISECONDS);
-            fail("Excepted TimeoutException");
+            fail("Expected TimeoutException");
         } catch (Exception e) {
             assertThat(e, is(instanceOf(TimeoutException.class)));
         }
@@ -123,13 +123,13 @@ public abstract class AbstractToFutureTest<T> {
         assertThat(future.isDone(), is(true));
         try {
             future.get();
-            fail("Excepted DeliberateException");
+            fail("Expected DeliberateException");
         } catch (ExecutionException e) {
             assertThat(e.getCause(), is(DELIBERATE_EXCEPTION));
         }
         try {
             future.get(100, MILLISECONDS);
-            fail("Excepted DeliberateException");
+            fail("Expected DeliberateException");
         } catch (ExecutionException e) {
             assertThat(e.getCause(), is(DELIBERATE_EXCEPTION));
         }
@@ -150,7 +150,7 @@ public abstract class AbstractToFutureTest<T> {
         assertThat(future.isDone(), is(false));
         try {
             future.get();
-            fail("Excepted DeliberateException");
+            fail("Expected DeliberateException");
         } catch (ExecutionException e) {
             assertThat(e.getCause(), is(DELIBERATE_EXCEPTION));
         }
@@ -164,7 +164,7 @@ public abstract class AbstractToFutureTest<T> {
         assertThat(future.isDone(), is(false));
         try {
             future.get(100, MILLISECONDS);
-            fail("Excepted DeliberateException");
+            fail("Expected DeliberateException");
         } catch (ExecutionException e) {
             assertThat(e.getCause(), is(DELIBERATE_EXCEPTION));
         }
@@ -247,7 +247,7 @@ public abstract class AbstractToFutureTest<T> {
         consumer.accept(future);
         try {
             future.get();
-            fail("Excepted CancellationException");
+            fail("Expected CancellationException");
         } catch (Exception e) {
             assertThat(e, is(instanceOf(CancellationException.class)));
         }
@@ -278,7 +278,7 @@ public abstract class AbstractToFutureTest<T> {
         assertThat(future.isDone(), is(true));
         try {
             future.get();
-            fail("Excepted DeliberateException");
+            fail("Expected DeliberateException");
         } catch (ExecutionException e) {
             assertThat(e.getCause(), is(DELIBERATE_EXCEPTION));
         }

@@ -86,25 +86,34 @@ abstract class SourceToFuture<T> implements Future<T> {
     @Nullable
     @Override
     public final T get() throws InterruptedException, ExecutionException {
-        if (!isDone()) {
+        final Object value = this.value;
+        if (value == null) {
             latch.await();
+            return reportGet(this.value);
+        } else {
+            return reportGet(value);
         }
-        return reportGet();
     }
 
     @Nullable
     @Override
     public final T get(final long timeout, final TimeUnit unit)
             throws InterruptedException, ExecutionException, TimeoutException {
-        if (!isDone() && !latch.await(timeout, unit)) {
-            throw new TimeoutException("Timed out waiting for the result");
+        final Object value = this.value;
+        if (value == null) {
+            if (latch.await(timeout, unit)) {
+                return reportGet(this.value);
+            } else {
+                throw new TimeoutException("Timed out waiting for the result");
+            }
+        } else {
+            return reportGet(value);
         }
-        return reportGet();
     }
 
     @Nullable
     @SuppressWarnings("unchecked")
-    private T reportGet() throws ExecutionException {
+    private T reportGet(@Nullable final Object value) throws ExecutionException {
         if (value == NULL) {
             return null;
         }
@@ -133,18 +142,13 @@ abstract class SourceToFuture<T> implements Future<T> {
 
         @Override
         public void onSuccess(@Nullable final T result) {
-            if (isDone()) {
-                return;
-            }
-            final Object value;
             if (result == null) {
-                value = NULL;
+                setValue(NULL);
             } else if (result instanceof Throwable) {
-                value = new ThrowableWrapper(result);
+                setValue(new ThrowableWrapper(result));
             } else {
-                value = result;
+                setValue(result);
             }
-            setValue(value);
         }
     }
 
@@ -165,6 +169,9 @@ abstract class SourceToFuture<T> implements Future<T> {
         }
     }
 
+    /**
+     * Used to distinguish succeeded {@code Single<Throwable>} vs failed {@code Single<T>}.
+     */
     private static final class ThrowableWrapper {
 
         private final Object throwable;
