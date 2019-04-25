@@ -96,10 +96,8 @@ abstract class SourceToFuture<T> implements Future<T> {
     @Override
     public final T get(final long timeout, final TimeUnit unit)
             throws InterruptedException, ExecutionException, TimeoutException {
-        if (!isDone()) {
-            if (!latch.await(timeout, unit)) {
-                throw new TimeoutException("Timed out waiting for the result");
-            }
+        if (!isDone() && !latch.await(timeout, unit)) {
+            throw new TimeoutException("Timed out waiting for the result");
         }
         return reportGet();
     }
