@@ -57,7 +57,7 @@ dependencies {
 }
 
 jmh {
-  include = ".*Benchmark"
+  include = "CountDownLatchBenchmark"
 //  iterations = 5
   jmhVersion = "$jmhVersion"
   jvmArgsPrepend = "-Dio.netty.maxDirectMemory=9223372036854775807 -Djmh.executor=CUSTOM -Djmh.executor.class=io.servicetalk.benchmark.concurrent.AsyncContextFriendlyExecutor"

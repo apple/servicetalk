@@ -21,6 +21,7 @@ import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.internal.DelayedCancellable;
 
 import java.util.concurrent.CancellationException;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -32,13 +33,15 @@ import static java.util.Objects.requireNonNull;
 
 abstract class SourceToFuture<T> implements Future<T> {
 
-    private static final AtomicReferenceFieldUpdater<SourceToFuture, Object> valueUpdater =
-            AtomicReferenceFieldUpdater.newUpdater(SourceToFuture.class, Object.class, "value");
-
     private static final Object NULL = new Object();
     private static final Object CANCELLED = new Object();
 
+    @SuppressWarnings("rawtypes")
+    private static final AtomicReferenceFieldUpdater<SourceToFuture, Object> valueUpdater =
+            AtomicReferenceFieldUpdater.newUpdater(SourceToFuture.class, Object.class, "value");
+
     private final DelayedCancellable cancellable = new DelayedCancellable();
+    private final CountDownLatch latch = new CountDownLatch(1);
 
     @Nullable
     private volatile Object value;
@@ -63,39 +66,27 @@ abstract class SourceToFuture<T> implements Future<T> {
             tmp = result;
         }
         if (valueUpdater.compareAndSet(this, null, tmp)) {
-            synchronized (cancellable) {
-                cancellable.notifyAll();
-            }
+            latch.countDown();
         }
     }
 
     final void onCompleteInternal() {
         if (valueUpdater.compareAndSet(this, null, NULL)) {
-            synchronized (cancellable) {
-                cancellable.notifyAll();
-            }
+            latch.countDown();
         }
     }
 
     public final void onError(final Throwable t) {
-        requireNonNull(t);
-        if (valueUpdater.compareAndSet(this, null, t)) {
-            synchronized (cancellable) {
-                cancellable.notifyAll();
-            }
+        if (valueUpdater.compareAndSet(this, null, requireNonNull(t))) {
+            latch.countDown();
         }
     }
 
     @Override
     public final boolean cancel(final boolean mayInterruptIfRunning) {
-        if (isDone()) {
-            return false;
-        }
-        cancellable.cancel();
         if (valueUpdater.compareAndSet(this, null, CANCELLED)) {
-            synchronized (cancellable) {
-                cancellable.notifyAll();
-            }
+            cancellable.cancel();
+            latch.countDown();
             return true;
         }
         return false;
@@ -115,11 +106,7 @@ abstract class SourceToFuture<T> implements Future<T> {
     @Override
     public final T get() throws InterruptedException, ExecutionException {
         if (!isDone()) {
-            synchronized (cancellable) {
-                while (!isDone()) {
-                    cancellable.wait();
-                }
-            }
+            latch.await();
         }
         return reportGet();
     }
@@ -128,29 +115,9 @@ abstract class SourceToFuture<T> implements Future<T> {
     @Override
     public final T get(final long timeout, final TimeUnit unit)
             throws InterruptedException, ExecutionException, TimeoutException {
-
         if (!isDone()) {
-            long timeoutNanos = unit.toNanos(timeout);
-            if (timeoutNanos <= 0L) {
-                throw new TimeoutException();
-            }
-            if (timeoutNanos < 1_000_000L) {
-                timeoutNanos = 1_000_000L;  // round up to 1 milli
-            }
-            long timeStampA = System.nanoTime();
-            long timeStampB;
-            synchronized (cancellable) {
-                while (!isDone()) {
-                    long timeoutMillis = timeoutNanos / 1_000_000L;
-                    if (timeoutMillis <= 0L) {  // avoid 0, otherwise it will wait until notified
-                        throw new TimeoutException("Timed out waiting for the result");
-                    }
-                    cancellable.wait(timeoutMillis);
-
-                    timeStampB = System.nanoTime();
-                    timeoutNanos -= timeStampB - timeStampA; // time to lock for the next iteration
-                    timeStampA = timeStampB;
-                }
+            if (!latch.await(timeout, unit)) {
+                throw new TimeoutException("Timed out waiting for the result");
             }
         }
         return reportGet();
