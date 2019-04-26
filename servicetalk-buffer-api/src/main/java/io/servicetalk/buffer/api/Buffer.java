@@ -34,6 +34,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
+import java.nio.ReadOnlyBufferException;
 import java.nio.charset.Charset;
 import java.nio.charset.UnsupportedCharsetException;
 
@@ -58,6 +59,7 @@ public interface Buffer {
      * @param newCapacity the new capacity.
      * @return itself.
      * @throws IllegalArgumentException if the {@code newCapacity} is greater than {@link #maxCapacity()}
+     * @throws ReadOnlyBufferException if this buffer is read-only
      */
     Buffer capacity(int newCapacity);
 
@@ -142,6 +144,7 @@ public interface Buffer {
      * @return this object.
      * @throws IndexOutOfBoundsException
      *         if {@link #writerIndex()} + {@code minWritableBytes} &gt; {@link #maxCapacity()}
+     * @throws ReadOnlyBufferException if this buffer is read-only
      */
     Buffer ensureWritable(int minWritableBytes);
 
@@ -594,6 +597,7 @@ public interface Buffer {
      * @throws IndexOutOfBoundsException
      *         if the specified {@code index} is less than {@code 0} or
      *         {@code index + 1} is greater than {@code this.capacity}
+     * @throws ReadOnlyBufferException if this buffer is read-only
      */
     Buffer setBoolean(int index, boolean value);
 
@@ -609,6 +613,7 @@ public interface Buffer {
      * @throws IndexOutOfBoundsException
      *         if the specified {@code index} is less than {@code 0} or
      *         {@code index + 1} is greater than {@code this.capacity}
+     * @throws ReadOnlyBufferException if this buffer is read-only
      */
     Buffer setByte(int index, int value);
 
@@ -625,6 +630,7 @@ public interface Buffer {
      * @throws IndexOutOfBoundsException
      *         if the specified {@code index} is less than {@code 0} or
      *         {@code index + 2} is greater than {@code this.capacity}
+     * @throws ReadOnlyBufferException if this buffer is read-only
      */
     Buffer setShort(int index, int value);
 
@@ -641,6 +647,7 @@ public interface Buffer {
      * @throws IndexOutOfBoundsException
      *         if the specified {@code index} is less than {@code 0} or
      *         {@code index + 2} is greater than {@code this.capacity}
+     * @throws ReadOnlyBufferException if this buffer is read-only
      */
     Buffer setShortLE(int index, int value);
 
@@ -657,6 +664,7 @@ public interface Buffer {
      * @throws IndexOutOfBoundsException
      *         if the specified {@code index} is less than {@code 0} or
      *         {@code index + 3} is greater than {@code this.capacity}
+     * @throws ReadOnlyBufferException if this buffer is read-only
      */
     Buffer setMedium(int index, int value);
 
@@ -674,6 +682,7 @@ public interface Buffer {
      * @throws IndexOutOfBoundsException
      *         if the specified {@code index} is less than {@code 0} or
      *         {@code index + 3} is greater than {@code this.capacity}
+     * @throws ReadOnlyBufferException if this buffer is read-only
      */
     Buffer setMediumLE(int index, int value);
 
@@ -689,6 +698,7 @@ public interface Buffer {
      * @throws IndexOutOfBoundsException
      *         if the specified {@code index} is less than {@code 0} or
      *         {@code index + 4} is greater than {@code this.capacity}
+     * @throws ReadOnlyBufferException if this buffer is read-only
      */
     Buffer setInt(int index, int value);
 
@@ -705,6 +715,7 @@ public interface Buffer {
      * @throws IndexOutOfBoundsException
      *         if the specified {@code index} is less than {@code 0} or
      *         {@code index + 4} is greater than {@code this.capacity}
+     * @throws ReadOnlyBufferException if this buffer is read-only
      */
     Buffer setIntLE(int index, int value);
 
@@ -720,6 +731,7 @@ public interface Buffer {
      * @throws IndexOutOfBoundsException
      *         if the specified {@code index} is less than {@code 0} or
      *         {@code index + 8} is greater than {@code this.capacity}
+     * @throws ReadOnlyBufferException if this buffer is read-only
      */
     Buffer setLong(int index, long value);
 
@@ -735,6 +747,7 @@ public interface Buffer {
      * @throws IndexOutOfBoundsException
      *         if the specified {@code index} is less than {@code 0} or
      *         {@code index + 8} is greater than {@code this.capacity}
+     * @throws ReadOnlyBufferException if this buffer is read-only
      */
     Buffer setLongLE(int index, long value);
 
@@ -751,6 +764,7 @@ public interface Buffer {
      * @throws IndexOutOfBoundsException
      *         if the specified {@code index} is less than {@code 0} or
      *         {@code index + 2} is greater than {@code this.capacity}
+     * @throws ReadOnlyBufferException if this buffer is read-only
      */
     Buffer setChar(int index, int value);
 
@@ -766,6 +780,7 @@ public interface Buffer {
      * @throws IndexOutOfBoundsException
      *         if the specified {@code index} is less than {@code 0} or
      *         {@code index + 4} is greater than {@code this.capacity}
+     * @throws ReadOnlyBufferException if this buffer is read-only
      */
     Buffer setFloat(int index, float value);
 
@@ -781,6 +796,7 @@ public interface Buffer {
      * @throws IndexOutOfBoundsException
      *         if the specified {@code index} is less than {@code 0} or
      *         {@code index + 8} is greater than {@code this.capacity}
+     * @throws ReadOnlyBufferException if this buffer is read-only
      */
     Buffer setDouble(int index, double value);
 
@@ -802,6 +818,7 @@ public interface Buffer {
      *         if the specified {@code index} is less than {@code 0} or
      *         if {@code index + src.readableBytes} is greater than
      *            {@code this.capacity}
+     * @throws ReadOnlyBufferException if this buffer is read-only
      */
     Buffer setBytes(int index, Buffer src);
 
@@ -824,6 +841,7 @@ public interface Buffer {
      *         if {@code index + length} is greater than
      *            {@code this.capacity}, or
      *         if {@code length} is greater than {@code src.readableBytes}
+     * @throws ReadOnlyBufferException if this buffer is read-only
      */
     Buffer setBytes(int index, Buffer src, int length);
 
@@ -845,6 +863,7 @@ public interface Buffer {
      *            {@code this.capacity}, or
      *         if {@code srcIndex + length} is greater than
      *            {@code src.capacity}
+     * @throws ReadOnlyBufferException if this buffer is read-only
      */
     Buffer setBytes(int index, Buffer src, int srcIndex, int length);
 
@@ -861,6 +880,7 @@ public interface Buffer {
      *         if the specified {@code index} is less than {@code 0} or
      *         if {@code index + src.length} is greater than
      *            {@code this.capacity}
+     * @throws ReadOnlyBufferException if this buffer is read-only
      */
     Buffer setBytes(int index, byte[] src);
 
@@ -881,6 +901,7 @@ public interface Buffer {
      *         if {@code index + length} is greater than
      *            {@code this.capacity}, or
      *         if {@code srcIndex + length} is greater than {@code src.length}
+     * @throws ReadOnlyBufferException if this buffer is read-only
      */
     Buffer setBytes(int index, byte[] src, int srcIndex, int length);
 
@@ -898,6 +919,7 @@ public interface Buffer {
      *         if the specified {@code index} is less than {@code 0} or
      *         if {@code index + src.remaining()} is greater than
      *            {@code this.capacity}
+     * @throws ReadOnlyBufferException if this buffer is read-only
      */
     Buffer setBytes(int index, ByteBuffer src);
 
@@ -919,6 +941,7 @@ public interface Buffer {
      *         if {@code index + src.remaining()} is greater than
      *            {@code this.capacity}
      * @throws IOException if the InputStream throws an exception while being read from.
+     * @throws ReadOnlyBufferException if this buffer is read-only
      */
     int setBytes(int index, InputStream src, int length) throws IOException;
 
@@ -940,6 +963,7 @@ public interface Buffer {
      *         if {@code index + src.remaining()} is greater than
      *            {@code this.capacity}
      * @throws IOException if the InputStream throws an exception while being read from.
+     * @throws ReadOnlyBufferException if this buffer is read-only
      */
     int setBytesUntilEndStream(int index, InputStream src, int chunkSize) throws IOException;
 
@@ -1290,6 +1314,7 @@ public interface Buffer {
      *
      * @param value the value to write.
      * @return self.
+     * @throws ReadOnlyBufferException if this buffer is read-only
      */
     Buffer writeBoolean(boolean value);
 
@@ -1302,6 +1327,7 @@ public interface Buffer {
      *
      * @param value the value to write.
      * @return self.
+     * @throws ReadOnlyBufferException if this buffer is read-only
      */
     Buffer writeByte(int value);
 
@@ -1314,6 +1340,7 @@ public interface Buffer {
      *
      * @param value the value to write.
      * @return self.
+     * @throws ReadOnlyBufferException if this buffer is read-only
      */
     Buffer writeShort(int value);
 
@@ -1327,6 +1354,7 @@ public interface Buffer {
      *
      * @param value the value to write.
      * @return self.
+     * @throws ReadOnlyBufferException if this buffer is read-only
      */
     Buffer writeShortLE(int value);
 
@@ -1339,6 +1367,7 @@ public interface Buffer {
      *
      * @param value the value to write.
      * @return self.
+     * @throws ReadOnlyBufferException if this buffer is read-only
      */
     Buffer writeMedium(int value);
 
@@ -1352,6 +1381,7 @@ public interface Buffer {
      *
      * @param value the value to write.
      * @return self.
+     * @throws ReadOnlyBufferException if this buffer is read-only
      */
     Buffer writeMediumLE(int value);
 
@@ -1363,6 +1393,7 @@ public interface Buffer {
      *
      * @param value the value to write.
      * @return self.
+     * @throws ReadOnlyBufferException if this buffer is read-only
      */
     Buffer writeInt(int value);
 
@@ -1375,6 +1406,7 @@ public interface Buffer {
      *
      * @param value the value to write.
      * @return self.
+     * @throws ReadOnlyBufferException if this buffer is read-only
      */
     Buffer writeIntLE(int value);
 
@@ -1387,6 +1419,7 @@ public interface Buffer {
      *
      * @param value the value to write.
      * @return self.
+     * @throws ReadOnlyBufferException if this buffer is read-only
      */
     Buffer writeLong(long value);
 
@@ -1400,6 +1433,7 @@ public interface Buffer {
      *
      * @param value the value to write.
      * @return self.
+     * @throws ReadOnlyBufferException if this buffer is read-only
      */
     Buffer writeLongLE(long value);
 
@@ -1412,6 +1446,7 @@ public interface Buffer {
      *
      * @param value the value to write.
      * @return self.
+     * @throws ReadOnlyBufferException if this buffer is read-only
      */
     Buffer writeChar(int value);
 
@@ -1424,6 +1459,7 @@ public interface Buffer {
      *
      * @param value the value to write.
      * @return self.
+     * @throws ReadOnlyBufferException if this buffer is read-only
      */
     Buffer writeFloat(float value);
 
@@ -1436,6 +1472,7 @@ public interface Buffer {
      *
      * @param value the value to write.
      * @return self.
+     * @throws ReadOnlyBufferException if this buffer is read-only
      */
     Buffer writeDouble(double value);
 
@@ -1454,6 +1491,7 @@ public interface Buffer {
      *
      * @param src the buffer to write.
      * @return self.
+     * @throws ReadOnlyBufferException if this buffer is read-only
      */
     Buffer writeBytes(Buffer src);
 
@@ -1472,6 +1510,7 @@ public interface Buffer {
      * @param length the number of bytes to transfer
      * @return self.
      * @throws IndexOutOfBoundsException if {@code length} is greater then {@code src.readableBytes}
+     * @throws ReadOnlyBufferException if this buffer is read-only
      */
     Buffer writeBytes(Buffer src, int length);
 
@@ -1489,6 +1528,7 @@ public interface Buffer {
      * @throws IndexOutOfBoundsException
      *         if the specified {@code srcIndex} is less than {@code 0}, or
      *         if {@code srcIndex + length} is greater than {@code src.capacity}
+     * @throws ReadOnlyBufferException if this buffer is read-only
      */
     Buffer writeBytes(Buffer src, int srcIndex, int length);
 
@@ -1501,6 +1541,7 @@ public interface Buffer {
      *
      * @param src the array to write.
      * @return self.
+     * @throws ReadOnlyBufferException if this buffer is read-only
      */
     Buffer writeBytes(byte[] src);
 
@@ -1518,6 +1559,7 @@ public interface Buffer {
      * @throws IndexOutOfBoundsException
      *         if the specified {@code srcIndex} is less than {@code 0}, or
      *         if {@code srcIndex + length} is greater than {@code src.length}
+     * @throws ReadOnlyBufferException if this buffer is read-only
      */
     Buffer writeBytes(byte[] src, int srcIndex, int length);
 
@@ -1532,6 +1574,7 @@ public interface Buffer {
      *
      * @param src the source buffer to write.
      * @return self.
+     * @throws ReadOnlyBufferException if this buffer is read-only
      */
     Buffer writeBytes(ByteBuffer src);
 
@@ -1551,6 +1594,7 @@ public interface Buffer {
      * @return the actual number of bytes read in from {@code src}.
      *         {@code -1} if the specified channel is closed.
      * @throws IOException if the {@link InputStream} throws an exception while being read from.
+     * @throws ReadOnlyBufferException if this buffer is read-only
      */
     int writeBytes(InputStream src, int length) throws IOException;
 
@@ -1571,6 +1615,7 @@ public interface Buffer {
      *         {@code -1} if no bytes were read because the specified {@link InputStream} was closed when this method
      *         was called.
      * @throws IOException if the {@link InputStream} throws an exception while being read from.
+     * @throws ReadOnlyBufferException if this buffer is read-only
      */
     int writeBytesUntilEndStream(InputStream src, int chunkSize) throws IOException;
 
@@ -1583,6 +1628,7 @@ public interface Buffer {
 
      * @param seq the source of the data.
      * @return self.
+     * @throws ReadOnlyBufferException if this buffer is read-only
      */
     Buffer writeAscii(CharSequence seq);
 
@@ -1595,6 +1641,7 @@ public interface Buffer {
 
      * @param seq the source of the data.
      * @return self.
+     * @throws ReadOnlyBufferException if this buffer is read-only
      */
     Buffer writeUtf8(CharSequence seq);
 
@@ -1606,6 +1653,7 @@ public interface Buffer {
      * @param seq the source of the data.
      * @param ensureWritable the number of bytes to ensure are writeable.
      * @return self.
+     * @throws ReadOnlyBufferException if this buffer is read-only
      */
     Buffer writeUtf8(CharSequence seq, int ensureWritable);
 
@@ -1854,7 +1902,7 @@ public interface Buffer {
      * If this method returns true, you can safely call {@link #array()} and
      * {@link #arrayOffset()}.
      *
-     * @return {@code true} if backed by an byte array.
+     * @return {@code true} if backed by an byte array and is not read-only
      */
     boolean hasArray();
 
@@ -1864,6 +1912,7 @@ public interface Buffer {
      * @return byte array.
      * @throws UnsupportedOperationException
      *         if there no accessible backing byte array
+     * @throws ReadOnlyBufferException if this buffer is read-only
      */
     byte[] array();
 
@@ -1874,6 +1923,7 @@ public interface Buffer {
      * @return the offset in the array.
      * @throws UnsupportedOperationException
      *         if there no accessible backing byte array
+     * @throws ReadOnlyBufferException if this buffer is read-only
      */
     int arrayOffset();
 
