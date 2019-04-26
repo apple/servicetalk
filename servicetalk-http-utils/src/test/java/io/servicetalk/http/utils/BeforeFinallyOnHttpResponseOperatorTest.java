@@ -144,7 +144,7 @@ public class BeforeFinallyOnHttpResponseOperatorTest {
         subscriber.verifyResponseReceived();
         verifyNoMoreInteractions(beforeFinally);
         assert subscriber.response != null;
-        expectedException.expect(instanceOf(CancellationException.class));
+        expectedException.expectCause(instanceOf(CancellationException.class));
         subscriber.response.payloadBody().toFuture().get();
     }
 
