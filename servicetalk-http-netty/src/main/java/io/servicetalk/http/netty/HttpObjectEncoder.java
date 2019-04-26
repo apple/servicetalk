@@ -37,6 +37,7 @@ import io.servicetalk.transport.netty.internal.CloseHandler;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
+import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelOutboundHandlerAdapter;
 import io.netty.channel.ChannelPromise;
@@ -55,7 +56,7 @@ import static io.netty.handler.codec.http.HttpConstants.CR;
 import static io.netty.handler.codec.http.HttpConstants.LF;
 import static io.netty.handler.codec.http.HttpConstants.SP;
 import static io.netty.util.internal.StringUtil.simpleClassName;
-import static io.servicetalk.buffer.netty.BufferUtil.PREFER_DIRECT_ALLOCATOR;
+import static io.servicetalk.buffer.netty.BufferUtil.newBufferFrom;
 import static io.servicetalk.buffer.netty.BufferUtil.toByteBufNoThrow;
 import static io.servicetalk.http.api.CharSequences.unwrapBuffer;
 import static io.servicetalk.http.netty.HeaderUtils.isTransferEncodingChunked;
@@ -123,12 +124,11 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelOutbound
             // We prefer a direct allocation here because it is expected the resulted encoded Buffer will be written
             // to a socket. In order to do the write to the socket the memory typically needs to be allocated in direct
             // memory and will be copied to direct memory if not. Using a direct buffer will avoid the copy.
-            Buffer stBuffer = PREFER_DIRECT_ALLOCATOR.newBuffer((int) headersEncodedSizeAccumulator);
-            ByteBuf byteBuf = toByteBufNoThrow(stBuffer);
-            assert byteBuf != null;
+            ByteBuf byteBuf = PooledByteBufAllocator.DEFAULT.buffer((int) headersEncodedSizeAccumulator);
+            Buffer stBuf = newBufferFrom(byteBuf);
 
             // Encode the message.
-            encodeInitialLine(stBuffer, metaData);
+            encodeInitialLine(stBuf, metaData);
             state = isContentAlwaysEmpty(metaData) ? ST_CONTENT_ALWAYS_EMPTY :
                     isTransferEncodingChunked(metaData.headers()) ? ST_CONTENT_CHUNK : ST_CONTENT_NON_CHUNK;
 
@@ -245,7 +245,7 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelOutbound
                                       PromiseCombiner promiseCombiner) {
         if (contentLength > 0) {
             String lengthHex = toHexString(contentLength);
-            ByteBuf buf = ctx.alloc().buffer(lengthHex.length() + 2);
+            ByteBuf buf = PooledByteBufAllocator.DEFAULT.buffer(lengthHex.length() + 2);
             buf.writeCharSequence(lengthHex, US_ASCII);
             writeShortBE(buf, CRLF_SHORT);
             promiseCombiner.add(ctx.write(buf));
@@ -263,7 +263,7 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelOutbound
         if (headers.isEmpty()) {
             ctx.write(ZERO_CRLF_CRLF_BUF.duplicate(), promise);
         } else {
-            ByteBuf buf = ctx.alloc().buffer((int) trailersEncodedSizeAccumulator);
+            ByteBuf buf = PooledByteBufAllocator.DEFAULT.buffer((int) trailersEncodedSizeAccumulator);
             writeMediumBE(buf, ZERO_CRLF_MEDIUM);
             encodeHeaders(headers, buf);
             writeShortBE(buf, CRLF_SHORT);
