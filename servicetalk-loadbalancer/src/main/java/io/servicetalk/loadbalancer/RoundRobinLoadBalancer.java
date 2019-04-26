@@ -41,8 +41,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map.Entry;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Function;
@@ -98,6 +97,9 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends ListenableA
             newUpdater(RoundRobinLoadBalancer.class, List.class, "activeHosts");
     private static final AtomicIntegerFieldUpdater<RoundRobinLoadBalancer> indexUpdater =
             newUpdater(RoundRobinLoadBalancer.class, "index");
+    // For hosts with a small number of connections the overhead of exhausting the full search space is minimal, and
+    // thus we can minimize excessive connection creation under low to moderate load.
+    public static final int MIN_SEARCH_SPACE = 64;
 
     private volatile boolean closed;
     @SuppressWarnings("unused")
@@ -108,6 +110,7 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends ListenableA
     private final SequentialCancellable discoveryCancellable = new SequentialCancellable();
     private final ConnectionFactory<ResolvedAddress, ? extends C> connectionFactory;
     private final ListenableAsyncCloseable asyncCloseable;
+    private final float searchFactor;
 
     /**
      * Creates a new instance.
@@ -119,8 +122,30 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends ListenableA
     public RoundRobinLoadBalancer(final Publisher<? extends ServiceDiscovererEvent<ResolvedAddress>> eventPublisher,
                                   final ConnectionFactory<ResolvedAddress, ? extends C> connectionFactory,
                                   final Comparator<ResolvedAddress> comparator) {
+        // 75% is a good balance between latency and connection usage
+        this(eventPublisher, connectionFactory, comparator, 0.75f);
+    }
+
+    /**
+     * Creates a new instance.
+     *
+     * @param eventPublisher    provides a stream of addresses to connect to.
+     * @param connectionFactory a function which creates new connections.
+     * @param comparator        used to compare addresses for lookup/iteration during the connection attempt phase.
+     * @param searchFactor      percentage of active connections to attempt to select before falling back to a creating
+     * a new connection, when calling {@link #selectConnection(Function)}, this may trade off lower latencies for higher
+     * connection count under higher load.
+     */
+    public RoundRobinLoadBalancer(final Publisher<? extends ServiceDiscovererEvent<ResolvedAddress>> eventPublisher,
+                                  final ConnectionFactory<ResolvedAddress, ? extends C> connectionFactory,
+                                  final Comparator<ResolvedAddress> comparator,
+                                  final float searchFactor) {
 
         this.connectionFactory = requireNonNull(connectionFactory);
+        if (searchFactor <= 0.01f || searchFactor > 1.0f) {
+            throw new IllegalArgumentException("searchFactor must be in range [0.01 .. 1.00]: " + searchFactor);
+        }
+        this.searchFactor = searchFactor;
 
         final Comparator<Host<ResolvedAddress, C>> activeAddressComparator =
                 comparing(host -> host instanceof MutableAddressHost ?
@@ -249,7 +274,12 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends ListenableA
         assert host.address != null : "Host address can't be null.";
 
         // Try first to see if an existing connection can be used
-        for (final C connection : host.connections) {
+
+        List<C> connections = host.connections;
+        int size = connections.size();
+        int attempts = size < MIN_SEARCH_SPACE ? size : (int) (size * searchFactor);
+        for (int i = 0; i < attempts; i++) {
+            C connection = connections.get(ThreadLocalRandom.current().nextInt(size));
             CC selection = selector.apply(connection);
             if (selection != null) {
                 return succeeded(selection);
@@ -302,71 +332,91 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends ListenableA
     }
 
     private static class Host<Addr, C extends ListenableAsyncCloseable> implements AsyncCloseable {
+        private static final AtomicReferenceFieldUpdater<Host, List> connectionsUpdater =
+                AtomicReferenceFieldUpdater.newUpdater(Host.class, List.class, "connections");
 
         @Nullable
         final Addr address;
-        @Nullable
-        final Queue<C> connections;
         private volatile boolean removed;
+        private volatile List<C> connections = Collections.emptyList();
 
         Host() {
             address = null;
-            connections = null;
         }
 
         Host(Addr address) {
             this.address = address;
-            this.connections = new ConcurrentLinkedQueue<>();
         }
 
         void markInactive() {
             removed = true;
-            assert connections != null;
-            for (;;) {
-                C next = connections.poll();
-                if (next == null) {
+            List<C> toRemove = connections;
+            while (!toRemove.isEmpty()) {
+                for (C conn : toRemove) {
+                    conn.closeAsync().subscribe();
+                }
+                if (connectionsUpdater.compareAndSet(this, toRemove, emptyList())) {
                     return;
                 }
-                next.closeAsync().subscribe();
+                toRemove = connections;
             }
         }
 
         boolean addConnection(C connection) {
-            assert connections != null;
-            final boolean added = connections.offer(connection);
-            if (!added || removed) {
-                // It could be that this host was removed concurrently and was not closed by markInactive().
-                // So, we check removed again and remove from the queue + close.
-                if (!added || connections.remove(connection)) {
-                    connection.closeAsync().subscribe();
+
+            for (;;) {
+                List<C> existing = this.connections;
+                ArrayList<C> connectionAdded = new ArrayList<>(existing);
+                connectionAdded.add(connection);
+                if (connectionsUpdater.compareAndSet(this, existing, connectionAdded)) {
+                    if (removed) {
+                        existing = connectionAdded;
+                        for (;;) {
+                            ArrayList<C> connectionRemoved = new ArrayList<>(existing);
+                            connectionRemoved.remove(connection);
+                            if (connectionsUpdater.compareAndSet(this, existing, connectionRemoved)) {
+                                connection.closeAsync().subscribe();
+                                return false;
+                            }
+                            existing = connections;
+                        }
+                    }
+                    break;
                 }
-                return false;
             }
 
             // Instrument the new connection so we prune it on close
-            connection.onClose().beforeFinally(() -> connections.remove(connection)).subscribe();
+            connection.onClose().beforeFinally(() -> {
+                List<C> existing = connections;
+                for (;;) {
+                    ArrayList<C> connectionRemoved = new ArrayList<>(existing);
+                    connectionRemoved.remove(connection);
+                    if (connectionsUpdater.compareAndSet(this, existing, connectionRemoved)) {
+                        connection.closeAsync().subscribe();
+                        return;
+                    }
+                    existing = connections;
+                }
+            }).subscribe();
             return true;
         }
 
         // Used for testing only
         Entry<Addr, List<C>> asEntry() {
             assert address != null;
-            assert connections != null;
             return new SimpleImmutableEntry<>(address, new ArrayList<>(connections));
         }
 
         @Override
         public Completable closeAsync() {
-            return connections == null ? completed() :
-                    completed().mergeDelayError(connections.stream()
-                            .map(AsyncCloseable::closeAsync)::iterator);
+            return completed().mergeDelayError(connections.stream()
+                    .map(AsyncCloseable::closeAsync)::iterator);
         }
 
         @Override
         public Completable closeAsyncGracefully() {
-            return connections == null ? completed() :
-                    completed().mergeDelayError(connections.stream()
-                            .map(AsyncCloseable::closeAsyncGracefully)::iterator);
+            return completed().mergeDelayError(connections.stream()
+                    .map(AsyncCloseable::closeAsyncGracefully)::iterator);
         }
 
         @Override
