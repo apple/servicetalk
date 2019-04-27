@@ -61,12 +61,15 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.ChannelPromise;
+import io.netty.channel.EventLoop;
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpHeaderValues;
 import io.netty.handler.codec.http.HttpScheme;
 import io.netty.handler.codec.http2.DefaultHttp2DataFrame;
+import io.netty.handler.codec.http2.DefaultHttp2GoAwayFrame;
 import io.netty.handler.codec.http2.DefaultHttp2Headers;
 import io.netty.handler.codec.http2.DefaultHttp2HeadersFrame;
+import io.netty.handler.codec.http2.DefaultHttp2PingFrame;
 import io.netty.handler.codec.http2.Http2DataFrame;
 import io.netty.handler.codec.http2.Http2FrameLogger;
 import io.netty.handler.codec.http2.Http2GoAwayFrame;
@@ -75,6 +78,7 @@ import io.netty.handler.codec.http2.Http2Headers.PseudoHeaderName;
 import io.netty.handler.codec.http2.Http2HeadersFrame;
 import io.netty.handler.codec.http2.Http2MultiplexCodec;
 import io.netty.handler.codec.http2.Http2MultiplexCodecBuilder;
+import io.netty.handler.codec.http2.Http2PingFrame;
 import io.netty.handler.codec.http2.Http2SettingsAckFrame;
 import io.netty.handler.codec.http2.Http2SettingsFrame;
 import io.netty.handler.codec.http2.Http2StreamChannel;
@@ -95,6 +99,11 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map.Entry;
+import java.util.concurrent.Delayed;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Predicate;
@@ -107,6 +116,7 @@ import static io.netty.handler.codec.http.HttpHeaderNames.EXPECT;
 import static io.netty.handler.codec.http.HttpHeaderNames.TE;
 import static io.netty.handler.codec.http.HttpHeaderValues.CONTINUE;
 import static io.netty.handler.codec.http.HttpHeaderValues.TRAILERS;
+import static io.netty.handler.codec.http2.Http2Error.NO_ERROR;
 import static io.netty.handler.codec.http2.Http2Headers.PseudoHeaderName.AUTHORITY;
 import static io.netty.handler.codec.http2.Http2Headers.PseudoHeaderName.METHOD;
 import static io.netty.handler.codec.http2.Http2Headers.PseudoHeaderName.PATH;
@@ -144,6 +154,7 @@ import static io.servicetalk.transport.netty.internal.ChannelSet.CHANNEL_CLOSABL
 import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
 import static io.servicetalk.transport.netty.internal.NettyIoExecutors.fromNettyEventLoop;
 import static java.util.Objects.requireNonNull;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater;
 
 final class H2ClientParentConnectionContext extends NettyChannelListenableAsyncCloseable implements
@@ -158,12 +169,16 @@ final class H2ClientParentConnectionContext extends NettyChannelListenableAsyncC
     private static final AtomicReferenceFieldUpdater<H2ClientParentConnectionContext, FlushStrategy>
             flushStrategyUpdater = newUpdater(H2ClientParentConnectionContext.class, FlushStrategy.class,
             "flushStrategy");
+    private static final long GRACEFUL_CLOSE_PING_CONTENT = 34213531352L;
+    private static final long GRACEFUL_CLOSE_PING_ACK_TIMEOUT_MS = 10000;
     private volatile FlushStrategy flushStrategy;
     private final HttpExecutionContext executionContext;
     private final SingleSource.Processor<Throwable, Throwable> transportError = newSingleProcessor();
     private final CompletableSource.Processor onClosing = newCompletableProcessor();
     @Nullable
     private SSLSession sslSession;
+    @Nullable
+    private ScheduledFuture<?> gracefulClosePingAckTimeoutFuture;
 
     private H2ClientParentConnectionContext(Channel channel, BufferAllocator allocator,
                                             Executor executor, FlushStrategy flushStrategy,
@@ -274,6 +289,58 @@ final class H2ClientParentConnectionContext extends NettyChannelListenableAsyncC
         return executionContext;
     }
 
+    @Override
+    protected void doCloseAsyncGracefully() {
+        // TODO(scott): invoked from multiple threads?
+        EventLoop eventLoop = channel().eventLoop();
+        if (eventLoop.inEventLoop()) {
+            doCloseAsyncGracefully0();
+        } else {
+            try {
+                eventLoop.execute(this::doCloseAsyncGracefully0);
+            } catch (Throwable cause) {
+                channel().close();
+                LOGGER.warn("channel={} EventLoop rejected a task for graceful shutdown, force closing connection",
+                        channel(), cause);
+            }
+        }
+    }
+
+    private void doCloseAsyncGracefully0() {
+        if (gracefulClosePingAckTimeoutFuture == null) {
+            // Set the gracefulClosePingAckTimeoutFuture before doing the write, because we will reference the state
+            // when we receive the PING(ACK) to determine if action is necessary, and it is conceivable that the
+            // write future may not be executed which sets the timer.
+            gracefulClosePingAckTimeoutFuture = NoopScheduledFuture.INSTANCE;
+
+            onClosing.onComplete();
+
+            // The graceful close process is described in [1]. In general it involves sending 2 GOAWAY frames. The first
+            // GOAWAY has last-stream-id=<maximum stream ID> to indicate no new streams can be created, wait for 2 RTT time
+            // duration for inflight frames to land, and the second GOAWAY includes the maximum known stream ID.
+            // To account for 2 RTTs we can send a PING and when the PING(ACK) comes back we can send the second GOAWAY.
+            // https://tools.ietf.org/html/rfc7540#section-6.8
+            DefaultHttp2GoAwayFrame goAwayFrame = new DefaultHttp2GoAwayFrame(NO_ERROR);
+            goAwayFrame.setExtraStreamIds(Integer.MAX_VALUE);
+            channel().write(goAwayFrame);
+            channel().writeAndFlush(new DefaultHttp2PingFrame(GRACEFUL_CLOSE_PING_CONTENT)).addListener(
+                    future -> {
+                        // If gracefulClosePingAckTimeoutFuture is not null that means we have already received the
+                        // PING(ACK) and there is no need to apply the timeout.
+                        if (gracefulClosePingAckTimeoutFuture == null) {
+                            gracefulClosePingAckTimeoutFuture = channel().eventLoop().schedule(() -> {
+                                // If the PING(ACK) times out we may have under estimated the 2RTT time so we
+                                // optimistically keep the connection open and rely upon higher level timeouts to tear
+                                // down the connection.
+                                channel().writeAndFlush(new DefaultHttp2GoAwayFrame(NO_ERROR));
+                                LOGGER.debug("channel={} timeout {}ms waiting for PING(ACK) during graceful close",
+                                        channel(), GRACEFUL_CLOSE_PING_ACK_TIMEOUT_MS);
+                            }, GRACEFUL_CLOSE_PING_ACK_TIMEOUT_MS, MILLISECONDS);
+                        }
+                    });
+        }
+    }
+
     private static final class H2ParentClientConnection extends ChannelInboundHandlerAdapter implements
                                                                                              Http2ParentConnection {
         private final Http2StreamChannelBootstrap bs;
@@ -377,6 +444,19 @@ final class H2ClientParentConnectionContext extends NettyChannelListenableAsyncC
                 Http2GoAwayFrame goAwayFrame = (Http2GoAwayFrame) msg;
                 goAwayFrame.release();
                 connection.onClosing.onComplete();
+
+                // We trigger the graceful close process here (with no timeout) to make sure the socket is closed once
+                // the existing streams are closed. The MultiplexCodec may simulate a GOAWAY when the stream IDs are
+                // exhausted so we shouldn't rely upon our peer to close the transport.
+                connection.doCloseAsyncGracefully0();
+            } else if (msg instanceof Http2PingFrame) {
+              Http2PingFrame pingFrame = (Http2PingFrame) msg;
+              if (pingFrame.ack() && pingFrame.content() == GRACEFUL_CLOSE_PING_CONTENT &&
+                      connection.gracefulClosePingAckTimeoutFuture != null) {
+                  connection.gracefulClosePingAckTimeoutFuture.cancel(true);
+                  connection.gracefulClosePingAckTimeoutFuture = NoopScheduledFuture.INSTANCE;
+                  ctx.writeAndFlush(new DefaultHttp2GoAwayFrame(NO_ERROR));
+              }
             } else {
                 ctx.fireChannelRead(msg);
             }
@@ -992,6 +1072,50 @@ final class H2ClientParentConnectionContext extends NettyChannelListenableAsyncC
             if (completedUpdater.compareAndSet(this, 0, 1)) {
                 channel.writeAndFlush(Http2SettingsAckFrame.INSTANCE);
             }
+        }
+    }
+
+    private static final class NoopScheduledFuture implements ScheduledFuture<Object> {
+        static final ScheduledFuture<?> INSTANCE = new NoopScheduledFuture();
+
+        private NoopScheduledFuture() {
+            // singleton
+        }
+
+        @Override
+        public long getDelay(final TimeUnit unit) {
+            return 0;
+        }
+
+        @Override
+        public int compareTo(final Delayed o) {
+            return 0;
+        }
+
+        @Override
+        public boolean cancel(final boolean mayInterruptIfRunning) {
+            return false;
+        }
+
+        @Override
+        public boolean isCancelled() {
+            return false;
+        }
+
+        @Override
+        public boolean isDone() {
+            return false;
+        }
+
+        @Override
+        public Object get() throws InterruptedException, ExecutionException {
+            return null;
+        }
+
+        @Override
+        public Object get(final long timeout, final TimeUnit unit)
+                throws InterruptedException, ExecutionException, TimeoutException {
+            return null;
         }
     }
 }
