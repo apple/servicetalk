@@ -14,11 +14,12 @@ for the whole ServiceTalk HTTP server or to specific paths with the `HttpPredica
 
 TIP: This is similar to configuring security at JavaEE container level in `web.xml`.
 
-`BasicAuthSecurityContextFilters` provides factory methods for the two main types of JAX-RS filters:
+link:src/main/java/io/servicetalk/apple/http/basic/auth/jersey/BasicAuthSecurityContextFilters.java[`BasicAuthSecurityContextFilters`]
+provides factory methods for the two main types of JAX-RS filters:
 
-* Globally bound filters, which are applied to all resources of the JAX-RS `Application`,
-* Name bound filters, which needs to be manually applied to specific resources via the provided `BasicAuthenticated`
-annotation.
+* Globally bound filters, which are applied to all resources of the JAX-RS `javax.ws.rs.core.Application`,
+* Name bound filters, which needs to be manually applied to specific resources via the provided
+link:src/main/java/io/servicetalk/apple/http/basic/auth/jersey/BasicAuthenticated.java[`@BasicAuthenticated`] annotation.
 
 Each of these main types come in two different flavors:
 
