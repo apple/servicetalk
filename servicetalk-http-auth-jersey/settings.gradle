@@ -14,4 +14,4 @@
  * limitations under the License.
  */
 enableFeaturePreview("IMPROVED_POM_SUPPORT")
-rootProject.name = "servicetalk-http-basic-auth-jersey"
+rootProject.name = "servicetalk-http-auth-jersey"
