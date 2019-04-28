@@ -1,6 +1,6 @@
 = Basic Auth Support for Jersey Router
 
-This module provides JAX-RS filters that set `SecurityContext` for requests authenticated with
+This module provides JAX-RS filters that set `javax.ws.rs.core.SecurityContext` for requests authenticated with
 the `Basic` HTTP Authentication Scheme (link:https://tools.ietf.org/html/rfc7617[RFC7617]).
 
 == Usage
@@ -24,7 +24,7 @@ Each of these main types come in two different flavors:
 
 * User info filters, which require the upstream `BasicAuthHttpServiceFilter` to have set an object containing
 user information in the ServiceTalk `AsyncContext`.
-These filters convert the user info into a `Principal` (unless it is already a `Principal` instance)
+These filters convert the user info into a `java.security.Principal` (unless it is already a `Principal` instance)
 and establish a request `SecurityContext` using this `Principal`.
 * No user info filters, which do not expect any user information in the `AsyncContext`.
 These filters use an anonymous `Principal` when setting the request `SecurityContext`.
