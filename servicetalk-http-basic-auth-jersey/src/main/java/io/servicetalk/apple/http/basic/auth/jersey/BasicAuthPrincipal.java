@@ -24,10 +24,15 @@ import static java.util.Objects.requireNonNull;
  *
  * @param <UserInfo> the type of user info objects wrapped by this instance
  */
-public final class BasicAuthPrincipal<UserInfo> implements Principal {
+public class BasicAuthPrincipal<UserInfo> implements Principal {
     private final UserInfo userInfo;
 
-    BasicAuthPrincipal(final UserInfo userInfo) {
+    /**
+     * Create a new instance.
+     *
+     * @param userInfo the wrapped {@code UserInfo}
+     */
+    public BasicAuthPrincipal(final UserInfo userInfo) {
         this.userInfo = requireNonNull(userInfo);
     }
 
