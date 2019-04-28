@@ -49,7 +49,7 @@ dependencies {
   implementation "io.servicetalk:servicetalk-transport-netty"
   implementation "org.apache.logging.log4j:log4j-core:$log4jVersion"
   implementation "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
-  implementation "org.glassfish.jersey.inject:jersey-hk2:$jerseyVersion"
+  implementation "org.glassfish.jersey.inject:jersey-hk2"
 
   // Applications should not depend on bom-internal as it is intended for _internal_ ServiceTalk use cases only:
   // This is necessary here due to quirks in how the Gradle composite buildStreaming works.
