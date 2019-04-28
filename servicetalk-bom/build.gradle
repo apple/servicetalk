@@ -61,6 +61,7 @@ dependencyManagement {
     dependency "io.servicetalk:servicetalk-http-all-netty:$project.version"
     dependency "io.servicetalk:servicetalk-http-api:$project.version"
     dependency "io.servicetalk:servicetalk-http-api-testFixtures:$project.version"
+    dependency "io.servicetalk:servicetalk-http-auth-jersey:$project.version"
     dependency "io.servicetalk:servicetalk-http-netty:$project.version"
     dependency "io.servicetalk:servicetalk-http-router-jersey:$project.version"
     dependency "io.servicetalk:servicetalk-http-router-jersey-testFixtures:$project.version"
