@@ -291,7 +291,6 @@ final class H2ClientParentConnectionContext extends NettyChannelListenableAsyncC
 
     @Override
     protected void doCloseAsyncGracefully() {
-        // TODO(scott): invoked from multiple threads?
         EventLoop eventLoop = channel().eventLoop();
         if (eventLoop.inEventLoop()) {
             doCloseAsyncGracefully0();
@@ -323,8 +322,7 @@ final class H2ClientParentConnectionContext extends NettyChannelListenableAsyncC
             DefaultHttp2GoAwayFrame goAwayFrame = new DefaultHttp2GoAwayFrame(NO_ERROR);
             goAwayFrame.setExtraStreamIds(Integer.MAX_VALUE);
             channel().write(goAwayFrame);
-            channel().writeAndFlush(new DefaultHttp2PingFrame(GRACEFUL_CLOSE_PING_CONTENT)).addListener(
-                    future -> {
+            channel().writeAndFlush(new DefaultHttp2PingFrame(GRACEFUL_CLOSE_PING_CONTENT)).addListener(future -> {
                         // If gracefulClosePingAckTimeoutFuture is not null that means we have already received the
                         // PING(ACK) and there is no need to apply the timeout.
                         if (gracefulClosePingAckTimeoutFuture == null) {
@@ -1108,13 +1106,12 @@ final class H2ClientParentConnectionContext extends NettyChannelListenableAsyncC
         }
 
         @Override
-        public Object get() throws InterruptedException, ExecutionException {
+        public Object get() {
             return null;
         }
 
         @Override
-        public Object get(final long timeout, final TimeUnit unit)
-                throws InterruptedException, ExecutionException, TimeoutException {
+        public Object get(final long timeout, final TimeUnit unit) {
             return null;
         }
     }

@@ -220,9 +220,6 @@ public class H2ClientPriorKnowledgeFeatureParityTest {
 
     @Test
     public void headerCookieRemovalAndIteration() throws Exception {
-        // TODO(scott): Netty bug https://github.com/netty/netty/pull/9090 prevents this test from passing.
-        assumeFalse(h2PriorKnowledge);
-
         InetSocketAddress serverAddress = h2PriorKnowledge ? bindH2EchoServer() : bindHttpEchoServer();
         try (BlockingHttpClient client = forSingleAddress(HostAndPort.of(serverAddress))
                 .h2PriorKnowledge(h2PriorKnowledge).executionStrategy(clientExecutionStrategy).buildBlocking()) {
