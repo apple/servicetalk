@@ -52,6 +52,7 @@ import java.util.function.UnaryOperator;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
+import static io.servicetalk.concurrent.api.Publisher.empty;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
@@ -133,11 +134,13 @@ public class ContentHeadersTest extends AbstractNettyHttpServerTest {
                 new RequestTest(aggregatedRequestAsStreaming(GET), transform(), HAVE_TRANSFER_ENCODING_CHUNKED),
                 new RequestTest(aggregatedRequestAsStreaming(GET), transformRaw(), HAVE_TRANSFER_ENCODING_CHUNKED),
                 new RequestTest(streamingRequest(GET), defaults(), HAVE_TRANSFER_ENCODING_CHUNKED),
+                new RequestTest(streamingRequest(GET), withoutPayload(), HAVE_TRANSFER_ENCODING_CHUNKED),
 
                 new BlockingRequestTest(aggregatedRequest(GET), defaults(), HAVE_CONTENT_LENGTH),
                 new BlockingRequestTest(aggregatedRequestAsStreaming(GET), defaults(), HAVE_CONTENT_LENGTH),
                 new BlockingRequestTest(streamingRequest(GET), defaults(), HAVE_TRANSFER_ENCODING_CHUNKED),
                 new BlockingRequestTest(aggregatedRequest(GET), trailers(), HAVE_TRANSFER_ENCODING_CHUNKED),
+                new BlockingRequestTest(streamingRequest(GET), withoutPayload(), HAVE_TRANSFER_ENCODING_CHUNKED),
 
                 // ----- Response -----
                 new ResponseTest(aggregatedResponse(OK), GET, defaults(), HAVE_CONTENT_LENGTH),
@@ -182,11 +185,13 @@ public class ContentHeadersTest extends AbstractNettyHttpServerTest {
                 new ResponseTest(aggregatedResponseAsStreaming(OK), GET, transformRaw(),
                         HAVE_TRANSFER_ENCODING_CHUNKED),
                 new ResponseTest(streamingResponse(OK), GET, defaults(), HAVE_TRANSFER_ENCODING_CHUNKED),
+                new ResponseTest(streamingResponse(OK), GET, withoutPayload(), HAVE_TRANSFER_ENCODING_CHUNKED),
 
                 new BlockingResponseTest(aggregatedResponse(OK), GET, defaults(), HAVE_CONTENT_LENGTH),
                 new BlockingResponseTest(aggregatedResponseAsStreaming(OK), GET, defaults(), HAVE_CONTENT_LENGTH),
                 new BlockingResponseTest(streamingResponse(OK), GET, defaults(), HAVE_TRANSFER_ENCODING_CHUNKED),
-                new BlockingResponseTest(aggregatedResponse(OK), GET, trailers(), HAVE_TRANSFER_ENCODING_CHUNKED)
+                new BlockingResponseTest(aggregatedResponse(OK), GET, trailers(), HAVE_TRANSFER_ENCODING_CHUNKED),
+                new BlockingResponseTest(streamingResponse(OK), GET, withoutPayload(), HAVE_TRANSFER_ENCODING_CHUNKED)
         );
     }
 
@@ -225,6 +230,10 @@ public class ContentHeadersTest extends AbstractNettyHttpServerTest {
                 return ((HttpRequest) input).payloadBody(DEFAULT_ALLOCATOR.newBuffer(0));
             } else if (input instanceof HttpResponse) {
                 return ((HttpResponse) input).payloadBody(DEFAULT_ALLOCATOR.newBuffer(0));
+            } else if (input instanceof StreamingHttpRequest) {
+                return ((StreamingHttpRequest) input).payloadBody(empty());
+            } else if (input instanceof StreamingHttpResponse) {
+                return ((StreamingHttpResponse) input).payloadBody(empty());
             } else {
                 fail("Unexpected metadata type: " + input.getClass());
                 throw new IllegalStateException();
