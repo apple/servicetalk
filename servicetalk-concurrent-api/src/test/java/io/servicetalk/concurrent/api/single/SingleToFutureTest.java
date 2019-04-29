@@ -15,15 +15,12 @@
  */
 package io.servicetalk.concurrent.api.single;
 
-import io.servicetalk.concurrent.Cancellable;
-import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.api.AbstractToFutureTest;
 import io.servicetalk.concurrent.api.TestSingle;
 
 import org.junit.Test;
 
 import java.util.concurrent.Future;
-import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -35,22 +32,7 @@ public class SingleToFutureTest extends AbstractToFutureTest<Integer> {
 
     private final TestSingle<Integer> source = new TestSingle.Builder<Integer>().build(subscriber -> {
         subscriber.onSubscribe(mockCancellable);
-        return new SingleSource.Subscriber<Integer>() {
-            @Override
-            public void onSubscribe(final Cancellable cancellable) {
-                subscriber.onSubscribe(cancellable);
-            }
-
-            @Override
-            public void onSuccess(@Nullable final Integer result) {
-                subscriber.onSuccess(result);
-            }
-
-            @Override
-            public void onError(final Throwable t) {
-                subscriber.onError(t);
-            }
-        };
+        return subscriber;
     });
 
     @Override

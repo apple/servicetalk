@@ -15,8 +15,6 @@
  */
 package io.servicetalk.concurrent.api.completable;
 
-import io.servicetalk.concurrent.Cancellable;
-import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.api.AbstractToFutureTest;
 import io.servicetalk.concurrent.api.TestCompletable;
 
@@ -26,22 +24,7 @@ public class CompletableToFutureTest extends AbstractToFutureTest<Void> {
 
     private final TestCompletable source = new TestCompletable.Builder().build(subscriber -> {
         subscriber.onSubscribe(mockCancellable);
-        return new CompletableSource.Subscriber() {
-            @Override
-            public void onSubscribe(final Cancellable cancellable) {
-                subscriber.onSubscribe(cancellable);
-            }
-
-            @Override
-            public void onComplete() {
-                subscriber.onComplete();
-            }
-
-            @Override
-            public void onError(final Throwable t) {
-                subscriber.onError(t);
-            }
-        };
+        return subscriber;
     });
 
     @Override
