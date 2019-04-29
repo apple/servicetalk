@@ -18,6 +18,7 @@ package io.servicetalk.http.netty;
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.client.api.ConsumableEvent;
+import io.servicetalk.client.api.RetryableException;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.SingleSource;
@@ -79,6 +80,7 @@ import io.netty.handler.codec.http2.Http2HeadersFrame;
 import io.netty.handler.codec.http2.Http2MultiplexCodec;
 import io.netty.handler.codec.http2.Http2MultiplexCodecBuilder;
 import io.netty.handler.codec.http2.Http2PingFrame;
+import io.netty.handler.codec.http2.Http2ResetFrame;
 import io.netty.handler.codec.http2.Http2SettingsAckFrame;
 import io.netty.handler.codec.http2.Http2SettingsFrame;
 import io.netty.handler.codec.http2.Http2StreamChannel;
@@ -86,6 +88,7 @@ import io.netty.handler.codec.http2.Http2StreamChannelBootstrap;
 import io.netty.handler.ssl.SniHandler;
 import io.netty.handler.ssl.SslHandler;
 import io.netty.handler.ssl.SslHandshakeCompletionEvent;
+import io.netty.util.ReferenceCountUtil;
 import io.netty.util.concurrent.EventExecutor;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
@@ -100,10 +103,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.concurrent.Delayed;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Predicate;
@@ -117,6 +118,7 @@ import static io.netty.handler.codec.http.HttpHeaderNames.TE;
 import static io.netty.handler.codec.http.HttpHeaderValues.CONTINUE;
 import static io.netty.handler.codec.http.HttpHeaderValues.TRAILERS;
 import static io.netty.handler.codec.http2.Http2Error.NO_ERROR;
+import static io.netty.handler.codec.http2.Http2Error.REFUSED_STREAM;
 import static io.netty.handler.codec.http2.Http2Headers.PseudoHeaderName.AUTHORITY;
 import static io.netty.handler.codec.http2.Http2Headers.PseudoHeaderName.METHOD;
 import static io.netty.handler.codec.http2.Http2Headers.PseudoHeaderName.PATH;
@@ -148,6 +150,8 @@ import static io.servicetalk.http.api.HttpRequestMethod.CONNECT;
 import static io.servicetalk.http.api.HttpRequestMethod.Properties.NONE;
 import static io.servicetalk.http.api.StreamingHttpRequests.newRequest;
 import static io.servicetalk.http.api.StreamingHttpResponses.newResponse;
+import static io.servicetalk.http.netty.HeaderUtils.canAddRequestTransferEncodingProtocol;
+import static io.servicetalk.http.netty.HeaderUtils.canAddResponseTransferEncodingProtocol;
 import static io.servicetalk.http.netty.HeaderUtils.indexOf;
 import static io.servicetalk.http.netty.HeaderUtils.shouldAddZeroContentLength;
 import static io.servicetalk.transport.netty.internal.ChannelSet.CHANNEL_CLOSABLE_KEY;
@@ -315,8 +319,8 @@ final class H2ClientParentConnectionContext extends NettyChannelListenableAsyncC
             onClosing.onComplete();
 
             // The graceful close process is described in [1]. In general it involves sending 2 GOAWAY frames. The first
-            // GOAWAY has last-stream-id=<maximum stream ID> to indicate no new streams can be created, wait for 2 RTT time
-            // duration for inflight frames to land, and the second GOAWAY includes the maximum known stream ID.
+            // GOAWAY has last-stream-id=<maximum stream ID> to indicate no new streams can be created, wait for 2 RTT
+            // time duration for inflight frames to land, and the second GOAWAY includes the maximum known stream ID.
             // To account for 2 RTTs we can send a PING and when the PING(ACK) comes back we can send the second GOAWAY.
             // https://tools.ietf.org/html/rfc7540#section-6.8
             DefaultHttp2GoAwayFrame goAwayFrame = new DefaultHttp2GoAwayFrame(NO_ERROR);
@@ -742,44 +746,58 @@ final class H2ClientParentConnectionContext extends NettyChannelListenableAsyncC
                     if (status != null) {
                         fireFullResponse(ctx, h2Headers, status);
                     } else {
-                        ctx.fireChannelRead(h2HeadersToH1HeadersClient(h2Headers));
+                        ctx.fireChannelRead(h2HeadersToH1HeadersClient(h2Headers, null));
                     }
                 } else if (status == null) {
                     throw new IllegalArgumentException("a response must have " + STATUS + " header");
                 } else {
-                    if (!h2Headers.contains(HttpHeaderNames.CONTENT_LENGTH)) {
-                        h2Headers.add(HttpHeaderNames.TRANSFER_ENCODING, HttpHeaderValues.CHUNKED);
-                    }
-                    StreamingHttpResponse response = newResponse(HttpResponseStatus.of(status), HTTP_2_0,
-                            h2HeadersToH1HeadersClient(h2Headers), headersFactory.newEmptyTrailers(), allocator);
+                    HttpResponseStatus httpStatus = HttpResponseStatus.of(status);
+                    StreamingHttpResponse response = newResponse(httpStatus, HTTP_2_0,
+                            h2HeadersToH1HeadersClient(h2Headers, httpStatus), headersFactory.newEmptyTrailers(),
+                            allocator);
                     ctx.fireChannelRead(response);
                 }
             } else if (msg instanceof Http2DataFrame) {
                 Http2DataFrame dataFrame = (Http2DataFrame) msg;
                 if (dataFrame.content().isReadable()) {
                     ctx.fireChannelRead(newBufferFrom(dataFrame.content()));
+                } else {
+                    dataFrame.release();
                 }
                 if (dataFrame.isEndStream()) {
                     ctx.fireChannelRead(headersFactory.newEmptyTrailers());
                 }
+            } else if (msg instanceof Http2ResetFrame) {
+                Http2ResetFrame resetFrame = (Http2ResetFrame) msg;
+                if (resetFrame.errorCode() == REFUSED_STREAM.code()) {
+                    ctx.fireExceptionCaught(new StreamRefusedException("stream refused"));
+                }
+                ReferenceCountUtil.release(msg);
             } else {
                 ctx.fireChannelRead(msg);
             }
         }
 
         private void fireFullResponse(ChannelHandlerContext ctx, final Http2Headers h2Headers, CharSequence status) {
-            StreamingHttpResponse response = newResponse(HttpResponseStatus.of(status), HTTP_2_0,
-                    h2HeadersToH1HeadersClient(h2Headers), headersFactory.newEmptyTrailers(), allocator);
             assert method != null;
-            if (shouldAddZeroContentLength(response, method)) {
-                h2Headers.add(CONTENT_LENGTH, ZERO);
+            HttpResponseStatus httpStatus = HttpResponseStatus.of(status);
+            if (shouldAddZeroContentLength(httpStatus.code(), method)) {
+                h2Headers.set(CONTENT_LENGTH, ZERO);
             }
+            StreamingHttpResponse response = newResponse(httpStatus, HTTP_2_0,
+                    h2HeadersToH1HeadersClient(h2Headers, httpStatus), headersFactory.newEmptyTrailers(), allocator);
             ctx.fireChannelRead(response);
             ctx.fireChannelRead(headersFactory.newEmptyTrailers());
         }
 
-        private NettyH2HeadersToHttpHeaders h2HeadersToH1HeadersClient(Http2Headers h2Headers) {
+        private NettyH2HeadersToHttpHeaders h2HeadersToH1HeadersClient(Http2Headers h2Headers,
+                                                                       @Nullable HttpResponseStatus httpStatus) {
+            assert method != null;
             h2HeadersSanitizeForH1(h2Headers);
+            if (httpStatus != null && !h2Headers.contains(HttpHeaderNames.CONTENT_LENGTH) &&
+                    canAddResponseTransferEncodingProtocol(httpStatus.code(), method)) {
+                h2Headers.add(HttpHeaderNames.TRANSFER_ENCODING, HttpHeaderValues.CHUNKED);
+            }
             return new NettyH2HeadersToHttpHeaders(h2Headers, headersFactory.validateCookies());
         }
     }
@@ -857,18 +875,18 @@ final class H2ClientParentConnectionContext extends NettyChannelListenableAsyncC
                     throw new IllegalArgumentException("a request must have " + METHOD + " and " +
                             PATH + " headers");
                 } else {
-                    if (!h2Headers.contains(HttpHeaderNames.CONTENT_LENGTH)) {
-                        h2Headers.add(HttpHeaderNames.TRANSFER_ENCODING, HttpHeaderValues.CHUNKED);
-                    }
-                    StreamingHttpRequest request = newRequest(
-                            sequenceToHttpRequestMethod(method), path.toString(), HTTP_2_0,
-                            h2HeadersToH1HeadersServer(h2Headers), headersFactory.newEmptyTrailers(), allocator);
+                    HttpRequestMethod httpMethod = sequenceToHttpRequestMethod(method);
+                    StreamingHttpRequest request = newRequest(httpMethod, path.toString(), HTTP_2_0,
+                            h2HeadersToH1HeadersServer(h2Headers, httpMethod), headersFactory.newEmptyTrailers(),
+                            allocator);
                     ctx.fireChannelRead(request);
                 }
             } else if (msg instanceof Http2DataFrame) {
                 Http2DataFrame dataFrame = (Http2DataFrame) msg;
                 if (dataFrame.content().isReadable()) {
                     ctx.fireChannelRead(newBufferFrom(dataFrame.content()));
+                } else {
+                    dataFrame.release();
                 }
                 if (dataFrame.isEndStream()) {
                     ctx.fireChannelRead(headersFactory.newEmptyTrailers());
@@ -880,23 +898,28 @@ final class H2ClientParentConnectionContext extends NettyChannelListenableAsyncC
 
         private void fireFullRequest(ChannelHandlerContext ctx, final Http2Headers h2Headers,
                                      CharSequence method, CharSequence path) {
-            StreamingHttpRequest request = newRequest(
-                    sequenceToHttpRequestMethod(method), path.toString(), HTTP_2_0,
-                    h2HeadersToH1HeadersServer(h2Headers), headersFactory.newEmptyTrailers(), allocator);
-            if (shouldAddZeroContentLength(request)) {
-                h2Headers.add(CONTENT_LENGTH, ZERO);
+            HttpRequestMethod httpMethod = sequenceToHttpRequestMethod(method);
+            if (shouldAddZeroContentLength(httpMethod)) {
+                h2Headers.set(CONTENT_LENGTH, ZERO);
             }
+            StreamingHttpRequest request = newRequest(httpMethod, path.toString(), HTTP_2_0,
+                    h2HeadersToH1HeadersServer(h2Headers, httpMethod), headersFactory.newEmptyTrailers(), allocator);
             ctx.fireChannelRead(request);
             ctx.fireChannelRead(headersFactory.newEmptyTrailers());
         }
 
-        private NettyH2HeadersToHttpHeaders h2HeadersToH1HeadersServer(Http2Headers h2Headers) {
+        private NettyH2HeadersToHttpHeaders h2HeadersToH1HeadersServer(Http2Headers h2Headers,
+                                                                       @Nullable HttpRequestMethod httpMethod) {
             CharSequence value = h2Headers.getAndRemove(AUTHORITY.value());
             if (value != null) {
                 h2Headers.set(HOST, value);
             }
             h2Headers.remove(PseudoHeaderName.SCHEME.value());
             h2HeadersSanitizeForH1(h2Headers);
+            if (httpMethod != null && !h2Headers.contains(HttpHeaderNames.CONTENT_LENGTH) &&
+                    canAddRequestTransferEncodingProtocol(httpMethod)) {
+                h2Headers.add(HttpHeaderNames.TRANSFER_ENCODING, HttpHeaderValues.CHUNKED);
+            }
             return new NettyH2HeadersToHttpHeaders(h2Headers, headersFactory.validateCookies());
         }
 
@@ -912,8 +935,6 @@ final class H2ClientParentConnectionContext extends NettyChannelListenableAsyncC
     }
 
     private static void h2HeadersSanitizeForH1(Http2Headers h2Headers) {
-        h2Headers.remove(HttpHeaderNames.TRANSFER_ENCODING);
-        h2Headers.remove(HttpHeaderNames.TRAILER);
         h2HeadersCompressCookieCrumbs(h2Headers);
     }
 
@@ -1087,7 +1108,7 @@ final class H2ClientParentConnectionContext extends NettyChannelListenableAsyncC
 
         @Override
         public int compareTo(final Delayed o) {
-            return 0;
+            return o == this ? 0 : 1;
         }
 
         @Override
@@ -1113,6 +1134,25 @@ final class H2ClientParentConnectionContext extends NettyChannelListenableAsyncC
         @Override
         public Object get(final long timeout, final TimeUnit unit) {
             return null;
+        }
+
+        @Override
+        public int hashCode() {
+            return 0;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            return o == this;
+        }
+    }
+
+    /**
+     * <a href="https://tools.ietf.org/html/rfc7540#section-8.1.4">REFUSED_STREAM</a> is always retryable.
+     */
+    private static final class StreamRefusedException extends RuntimeException implements RetryableException {
+        StreamRefusedException(String message) {
+            super(message);
         }
     }
 }

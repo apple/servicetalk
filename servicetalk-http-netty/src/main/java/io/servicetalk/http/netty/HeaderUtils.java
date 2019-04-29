@@ -81,14 +81,14 @@ final class HeaderUtils {
 
     static boolean canAddResponseContentLength(final StreamingHttpResponse response,
                                                final HttpRequestMethod requestMethod) {
-        return canAddContentLength(response) && shouldAddZeroContentLength(response, requestMethod);
+        return canAddContentLength(response) && shouldAddZeroContentLength(response.status().code(), requestMethod);
     }
 
     static boolean canAddRequestTransferEncoding(final StreamingHttpRequest request) {
-        if (hasContentHeaders(request.headers())) {
-            return false;
-        }
-        final HttpRequestMethod requestMethod = request.method();
+        return !hasContentHeaders(request.headers()) && canAddRequestTransferEncodingProtocol(request.method());
+    }
+
+    static boolean canAddRequestTransferEncodingProtocol(final HttpRequestMethod requestMethod) {
         // A client MUST NOT send a message body in a TRACE request.
         // https://tools.ietf.org/html/rfc7231#section-4.3.8
         return !TRACE.name().equals(requestMethod.name());
@@ -96,10 +96,12 @@ final class HeaderUtils {
 
     static boolean canAddResponseTransferEncoding(final StreamingHttpResponse response,
                                                   final HttpRequestMethod requestMethod) {
-        if (hasContentHeaders(response.headers())) {
-            return false;
-        }
-        final int statusCode = response.status().code();
+        return !hasContentHeaders(response.headers()) &&
+                canAddResponseTransferEncodingProtocol(response.status().code(), requestMethod);
+    }
+
+    static boolean canAddResponseTransferEncodingProtocol(final int statusCode,
+                                                          final HttpRequestMethod requestMethod) {
         // (for HEAD) the server MUST NOT send a message body in the response.
         // https://tools.ietf.org/html/rfc7231#section-4.3.2
         return !HEAD.name().equals(requestMethod.name()) && !isEmptyResponseStatus(statusCode)
@@ -122,26 +124,21 @@ final class HeaderUtils {
     private static StreamingHttpRequest requestContentLengthPayloadHandler(final StreamingHttpRequest request,
                                                                            final int contentLength,
                                                                            final Publisher<Buffer> payload) {
-        if (contentLength > 0 || shouldAddZeroContentLength(request)) {
+        if (contentLength > 0 || shouldAddZeroContentLength(request.method())) {
             request.headers().set(CONTENT_LENGTH, Integer.toString(contentLength));
         }
         return request.payloadBody(payload);
     }
 
-    static boolean shouldAddZeroContentLength(final StreamingHttpRequest request) {
-        final HttpRequestMethod requestMethod = request.method();
-        final String requestMethodName = requestMethod.name();
+    static boolean shouldAddZeroContentLength(final HttpRequestMethod requestMethod) {
         // A user agent SHOULD NOT send a Content-Length header field when the request message does not contain a
         // payload body and the method semantics do not anticipate such a body.
         // https://tools.ietf.org/html/rfc7230#section-3.3.2
-        return POST.name().equals(requestMethodName) ||
-                PUT.name().equals(requestMethodName) ||
-                PATCH.name().equals(requestMethodName);
+        return POST.equals(requestMethod) || PUT.equals(requestMethod) || PATCH.equals(requestMethod);
     }
 
-    static boolean shouldAddZeroContentLength(final StreamingHttpResponse response,
+    static boolean shouldAddZeroContentLength(final int statusCode,
                                               final HttpRequestMethod requestMethod) {
-        final int statusCode = response.status().code();
         return !isEmptyResponseStatus(statusCode) && !isEmptyConnectResponse(requestMethod, statusCode);
     }
 
