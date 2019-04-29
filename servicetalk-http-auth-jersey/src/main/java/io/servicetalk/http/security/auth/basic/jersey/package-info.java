@@ -14,6 +14,6 @@
  * limitations under the License.
  */
 @ElementsAreNonnullByDefault
-package io.servicetalk.apple.http.basic.auth.jersey;
+package io.servicetalk.http.security.auth.basic.jersey;
 
 import io.servicetalk.annotations.ElementsAreNonnullByDefault;

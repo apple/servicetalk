@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.apple.http.basic.auth.jersey.resources;
+package io.servicetalk.http.security.auth.basic.jersey.resources;
 
-import io.servicetalk.apple.http.basic.auth.jersey.BasicAuthenticated;
+import io.servicetalk.http.security.auth.basic.jersey.BasicAuthenticated;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -23,7 +23,7 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.SecurityContext;
 
-import static io.servicetalk.apple.http.basic.auth.jersey.resources.AnnotatedResource.PATH;
+import static io.servicetalk.http.security.auth.basic.jersey.resources.AnnotatedResource.PATH;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 
 @Path(PATH)

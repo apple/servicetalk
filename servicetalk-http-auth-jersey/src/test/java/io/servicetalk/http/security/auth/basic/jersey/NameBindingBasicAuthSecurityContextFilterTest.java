@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.apple.http.basic.auth.jersey;
+package io.servicetalk.http.security.auth.basic.jersey;
 
-import io.servicetalk.apple.http.basic.auth.jersey.resources.AnnotatedResource;
-import io.servicetalk.apple.http.basic.auth.jersey.resources.NotAnnotatedResource;
 import io.servicetalk.concurrent.api.AsyncContextMap.Key;
+import io.servicetalk.http.security.auth.basic.jersey.resources.AnnotatedResource;
+import io.servicetalk.http.security.auth.basic.jersey.resources.NotAnnotatedResource;
 
 import org.junit.Test;
 
@@ -27,8 +27,8 @@ import javax.ws.rs.core.Application;
 
 import static java.util.Collections.singleton;
 
-public class GlobalBindingBasicAuthSecurityContextFilterTest extends AbstractBasicAuthSecurityContextFilterTest {
-    public GlobalBindingBasicAuthSecurityContextFilterTest(final boolean withUserInfo) {
+public class NameBindingBasicAuthSecurityContextFilterTest extends AbstractBasicAuthSecurityContextFilterTest {
+    public NameBindingBasicAuthSecurityContextFilterTest(final boolean withUserInfo) {
         super(withUserInfo);
     }
 
@@ -38,8 +38,8 @@ public class GlobalBindingBasicAuthSecurityContextFilterTest extends AbstractBas
             @Override
             public Set<Object> getSingletons() {
                 return singleton(userInfoKey != null ?
-                        BasicAuthSecurityContextFilters.forGlobalBinding(userInfoKey).build() :
-                        BasicAuthSecurityContextFilters.forGlobalBinding().build()
+                        BasicAuthSecurityContextFilters.forNameBinding(userInfoKey).build() :
+                        BasicAuthSecurityContextFilters.forNameBinding().build()
                 );
             }
         };
@@ -48,7 +48,7 @@ public class GlobalBindingBasicAuthSecurityContextFilterTest extends AbstractBas
     @Test
     public void authenticated() throws Exception {
         assertBasicAuthSecurityContextPresent(AnnotatedResource.PATH);
-        assertBasicAuthSecurityContextPresent(NotAnnotatedResource.PATH);
+        assertBasicAuthSecurityContextAbsent(NotAnnotatedResource.PATH, true);
     }
 
     @Test

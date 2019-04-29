@@ -13,12 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.apple.http.basic.auth.jersey;
+package io.servicetalk.http.security.auth.basic.jersey;
 
-import io.servicetalk.apple.http.basic.auth.jersey.BasicAuthSecurityContextFilters.NoUserInfoBuilder;
-import io.servicetalk.apple.http.basic.auth.jersey.BasicAuthSecurityContextFilters.UserInfoBuilder;
 import io.servicetalk.concurrent.api.AsyncContext;
 import io.servicetalk.concurrent.api.AsyncContextMap.Key;
+import io.servicetalk.http.security.auth.basic.jersey.BasicAuthSecurityContextFilters.NoUserInfoBuilder;
+import io.servicetalk.http.security.auth.basic.jersey.BasicAuthSecurityContextFilters.UserInfoBuilder;
 
 import org.junit.After;
 import org.junit.Before;
@@ -39,8 +39,8 @@ import javax.ws.rs.container.ContainerRequestFilter;
 import javax.ws.rs.core.SecurityContext;
 import javax.ws.rs.core.UriInfo;
 
-import static io.servicetalk.apple.http.basic.auth.jersey.BasicAuthSecurityContextFilters.ANONYMOUS_PRINCIPAL;
 import static io.servicetalk.concurrent.api.AsyncContextMap.Key.newKey;
+import static io.servicetalk.http.security.auth.basic.jersey.BasicAuthSecurityContextFilters.ANONYMOUS_PRINCIPAL;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.Assert.assertThat;

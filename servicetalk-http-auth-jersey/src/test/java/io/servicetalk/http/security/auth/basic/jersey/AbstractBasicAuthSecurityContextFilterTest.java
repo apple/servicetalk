@@ -13,10 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.apple.http.basic.auth.jersey;
+package io.servicetalk.http.security.auth.basic.jersey;
 
-import io.servicetalk.apple.http.basic.auth.jersey.resources.AnnotatedResource;
-import io.servicetalk.apple.http.basic.auth.jersey.resources.NotAnnotatedResource;
 import io.servicetalk.concurrent.api.AsyncContextMap.Key;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
@@ -27,6 +25,8 @@ import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.netty.HttpClients;
 import io.servicetalk.http.netty.HttpServers;
 import io.servicetalk.http.router.jersey.HttpJerseyRouterBuilder;
+import io.servicetalk.http.security.auth.basic.jersey.resources.AnnotatedResource;
+import io.servicetalk.http.security.auth.basic.jersey.resources.NotAnnotatedResource;
 import io.servicetalk.http.utils.auth.AuthenticationException;
 import io.servicetalk.http.utils.auth.BasicAuthHttpServiceFilter.Builder;
 import io.servicetalk.http.utils.auth.BasicAuthHttpServiceFilter.CredentialsVerifier;
