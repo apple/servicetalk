@@ -18,7 +18,6 @@ package io.servicetalk.http.netty;
 final class H2ClientConfig extends ReadOnlyH2ClientConfig {
 
     H2ClientConfig() {
-        super();
     }
 
     H2ClientConfig(H2ClientConfig rhs) {

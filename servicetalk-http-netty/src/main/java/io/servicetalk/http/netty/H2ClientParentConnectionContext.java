@@ -706,8 +706,8 @@ final class H2ClientParentConnectionContext extends NettyChannelListenableAsyncC
             } else if (msg instanceof Buffer) {
                 ByteBuf byteBuf = toByteBufNoThrow((Buffer) msg);
                 if (byteBuf == null) {
-                    ctx.close();
                     promise.setFailure(new IllegalArgumentException("unsupported Buffer type:" + msg));
+                    ctx.close();
                 } else {
                     ctx.write(new DefaultHttp2DataFrame(byteBuf.retain(), false), promise);
                 }
@@ -826,8 +826,8 @@ final class H2ClientParentConnectionContext extends NettyChannelListenableAsyncC
             } else if (msg instanceof Buffer) {
                 ByteBuf byteBuf = toByteBufNoThrow((Buffer) msg);
                 if (byteBuf == null) {
-                    ctx.close();
                     promise.setFailure(new IllegalArgumentException("unsupported Buffer type:" + msg));
+                    ctx.close();
                 } else {
                     ctx.write(new DefaultHttp2DataFrame(byteBuf.retain(), false), promise);
                 }
