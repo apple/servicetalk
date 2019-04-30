@@ -91,10 +91,8 @@ final class RedisRequesterUtils {
                         if (aggregator == null) {
                             aggregator = redisData.bufferValue();
                             if (!(redisData instanceof LastBulkStringChunk)) {
-                                assert redisData instanceof FirstBulkStringChunk;
-                                // FirstBulkStringChunk includes the number of bytes we expect to read, so proactively
-                                // ensure the buffer is large enough to accumulate all the data.
-                                final int expectedBytes = ((FirstBulkStringChunk) redisData).bulkStringLength();
+                                // Proactively ensure the buffer is large enough to accumulate all the data
+                                final int expectedBytes = calculateExpectedBytes(redisData);
                                 if (!aggregator.tryEnsureWritable(expectedBytes, true)) {
                                     aggregator = requester.executionContext().bufferAllocator().newBuffer(
                                             expectedBytes + aggregator.readableBytes()).writeBytes(aggregator);
@@ -159,10 +157,8 @@ final class RedisRequesterUtils {
                         if (aggregator == null) {
                             aggregator = redisData.bufferValue();
                             if (!(redisData instanceof LastBulkStringChunk)) {
-                                assert redisData instanceof FirstBulkStringChunk;
-                                // FirstBulkStringChunk includes the number of bytes we expect to read, so proactively
-                                // ensure the buffer is large enough to accumulate all the data.
-                                final int expectedBytes = ((FirstBulkStringChunk) redisData).bulkStringLength();
+                                // Proactively ensure the buffer is large enough to accumulate all the data
+                                final int expectedBytes = calculateExpectedBytes(redisData);
                                 if (!aggregator.tryEnsureWritable(expectedBytes, true)) {
                                     aggregator = requester.executionContext().bufferAllocator().newBuffer(
                                             expectedBytes + aggregator.readableBytes()).writeBytes(aggregator);
@@ -291,10 +287,8 @@ final class RedisRequesterUtils {
                                         redisData.bufferValue());
                             } else {
                                 aggregator = redisData.bufferValue();
-                                assert redisData instanceof FirstBulkStringChunk;
-                                // FirstBulkStringChunk includes the number of bytes we expect to read, so proactively
-                                // ensure the buffer is large enough to accumulate all the data.
-                                final int expectedBytes = ((FirstBulkStringChunk) redisData).bulkStringLength();
+                                // Proactively ensure the buffer is large enough to accumulate all the data
+                                final int expectedBytes = calculateExpectedBytes(redisData);
                                 if (!aggregator.tryEnsureWritable(expectedBytes, true)) {
                                     aggregator = requester.executionContext().bufferAllocator().newBuffer(
                                             expectedBytes + aggregator.readableBytes()).writeBytes(aggregator);
@@ -411,5 +405,11 @@ final class RedisRequesterUtils {
             this.length = length;
             this.children = new ArrayList<>(length);
         }
+    }
+
+    private static int calculateExpectedBytes(RedisData redisData) {
+        // FirstBulkStringChunk includes the number of bytes we expect to read
+        assert redisData instanceof FirstBulkStringChunk;
+        return ((FirstBulkStringChunk) redisData).bulkStringLength() - redisData.bufferValue().readableBytes();
     }
 }
