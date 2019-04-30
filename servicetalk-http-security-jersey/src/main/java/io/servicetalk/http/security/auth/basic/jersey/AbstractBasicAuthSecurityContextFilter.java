@@ -39,11 +39,9 @@ abstract class AbstractBasicAuthSecurityContextFilter<UserInfo> implements Conta
     @Override
     public void filter(final ContainerRequestContext requestCtx) {
         final SecurityContext securityContext = securityContext(requestCtx);
-        if (securityContext == null) {
-            return;
+        if (securityContext != null) {
+            requestCtx.setSecurityContext(securityContext);
         }
-
-        requestCtx.setSecurityContext(securityContext);
     }
 
     @Nullable
