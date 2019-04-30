@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,27 +17,14 @@ package io.servicetalk.buffer.netty;
 
 import io.servicetalk.buffer.api.Buffer;
 
-import io.netty.buffer.ByteBuf;
-
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.ReadOnlyBufferException;
 
-import static io.servicetalk.buffer.netty.BufferUtil.toByteBufNoThrow;
-
 final class ReadOnlyBuffer extends WrappedBuffer {
 
     ReadOnlyBuffer(Buffer buffer) {
-        super(preserveNettyInvariants(buffer));
-    }
-
-    private static Buffer preserveNettyInvariants(Buffer buffer) {
-        ByteBuf buf = toByteBufNoThrow(buffer);
-        if (buf == null) {
-            return buffer;
-        }
-        buf = buf.asReadOnly();
-        return new NettyBuffer<>(buf);
+        super(buffer);
     }
 
     @Override
@@ -322,49 +309,52 @@ final class ReadOnlyBuffer extends WrappedBuffer {
 
     @Override
     public Buffer readSlice(int length) {
-        return new ReadOnlyBuffer(buffer.readSlice(length));
+        return buffer.readSlice(length).asReadOnly();
     }
 
     @Override
     public Buffer duplicate() {
-        return new ReadOnlyBuffer(buffer.duplicate());
+        return buffer.duplicate().asReadOnly();
     }
 
     @Override
     public Buffer slice() {
-        return new ReadOnlyBuffer(buffer.slice());
+        return buffer.slice().asReadOnly();
     }
 
     @Override
     public Buffer slice(int index, int length) {
-        return new ReadOnlyBuffer(buffer.slice(index, length));
+        return buffer.slice(index, length).asReadOnly();
     }
 
     @Override
     public ByteBuffer toNioBuffer() {
-        return buffer.toNioBuffer().asReadOnlyBuffer();
+        return asReadOnlyByteBuffer(buffer.toNioBuffer());
     }
 
     @Override
     public ByteBuffer toNioBuffer(int index, int length) {
-        return buffer.toNioBuffer(index, length).asReadOnlyBuffer();
+        return asReadOnlyByteBuffer(buffer.toNioBuffer(index, length));
     }
 
     @Override
     public ByteBuffer[] toNioBuffers() {
-        return asReadOnlyBuffers(buffer.toNioBuffers());
+        return asReadOnlyByteBuffers(buffer.toNioBuffers());
     }
 
     @Override
     public ByteBuffer[] toNioBuffers(int index, int length) {
-        return asReadOnlyBuffers(buffer.toNioBuffers(index, length));
+        return asReadOnlyByteBuffers(buffer.toNioBuffers(index, length));
     }
 
-    private static ByteBuffer[] asReadOnlyBuffers(ByteBuffer[] buffers) {
-        ByteBuffer[] readonlyBuffers = new ByteBuffer[buffers.length];
+    private static ByteBuffer asReadOnlyByteBuffer(ByteBuffer buffer) {
+        return buffer.isReadOnly() ? buffer : buffer.asReadOnlyBuffer();
+    }
+
+    private static ByteBuffer[] asReadOnlyByteBuffers(ByteBuffer[] buffers) {
         for (int i = 0; i < buffers.length; ++i) {
-            readonlyBuffers[i] = buffers[i].asReadOnlyBuffer();
+            buffers[i] = asReadOnlyByteBuffer(buffers[i]);
         }
-        return readonlyBuffers;
+        return buffers;
     }
 }
