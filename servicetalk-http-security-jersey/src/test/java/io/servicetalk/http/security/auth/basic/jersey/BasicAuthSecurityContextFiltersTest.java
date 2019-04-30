@@ -20,7 +20,6 @@ import io.servicetalk.concurrent.api.AsyncContextMap.Key;
 import io.servicetalk.http.security.auth.basic.jersey.BasicAuthSecurityContextFilters.NoUserInfoBuilder;
 import io.servicetalk.http.security.auth.basic.jersey.BasicAuthSecurityContextFilters.UserInfoBuilder;
 
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -77,12 +76,6 @@ public class BasicAuthSecurityContextFiltersTest {
     public void setupMocks() {
         when(uriInfo.getRequestUri()).thenReturn(URI.create("https://0.0.0.0"));
         when(requestCtx.getUriInfo()).thenReturn(uriInfo);
-    }
-
-    @Before
-    @After
-    public void cleanUp() {
-        AsyncContext.clear();
     }
 
     @Test
