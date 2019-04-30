@@ -82,7 +82,7 @@ final class ReadOnlyBuffer extends WrappedBuffer {
 
     @Override
     public int ensureWritable(int minWritableBytes, boolean force) {
-        return minWritableBytes == 0 ? 0 : 1;
+        return 1;
     }
 
     @Override
