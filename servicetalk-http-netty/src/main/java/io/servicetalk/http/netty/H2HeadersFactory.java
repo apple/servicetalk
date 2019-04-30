@@ -17,12 +17,11 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpHeadersFactory;
-import io.servicetalk.http.api.HttpProtocolVersion;
 
 import io.netty.handler.codec.http2.DefaultHttp2Headers;
 
 /**
- * A {@link HttpHeadersFactory} optimized for {@link HttpProtocolVersion#HTTP_2_0}.
+ * A {@link HttpHeadersFactory} optimized for HTTP/2.
  */
 public final class H2HeadersFactory implements HttpHeadersFactory {
     public static final HttpHeadersFactory INSTANCE = new H2HeadersFactory(true, true);

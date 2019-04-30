@@ -40,7 +40,7 @@ import java.util.List;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.closeAsyncGracefully;
 import static io.servicetalk.concurrent.api.Executors.immediate;
-import static io.servicetalk.transport.netty.internal.ChannelSet.CHANNEL_CLOSABLE_KEY;
+import static io.servicetalk.transport.netty.internal.ChannelSet.CHANNEL_CLOSEABLE_KEY;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -128,7 +128,7 @@ public class NettyServerContextTest {
             return channelCloseFuture;
         });
         when(channel.pipeline()).thenReturn(channelPipeline);
-        when(channel.attr(eq(CHANNEL_CLOSABLE_KEY))).thenReturn(mockClosableAttribute);
+        when(channel.attr(eq(CHANNEL_CLOSEABLE_KEY))).thenReturn(mockClosableAttribute);
         when(mockClosableAttribute.getAndSet(any())).thenReturn(null);
         fixture = NettyServerContext.wrap(channel, channelSetCloseable, closeBefore,
                 new ExecutionContextBuilder().executor(immediate()).build());

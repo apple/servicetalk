@@ -35,7 +35,6 @@ import static java.util.Collections.unmodifiableMap;
  */
 public class ReadOnlyTcpClientConfig {
 
-    //TODO 3.x: Add back attributes
     @SuppressWarnings("rawtypes")
     protected final Map<ChannelOption, Object> options;
     protected boolean autoRead;

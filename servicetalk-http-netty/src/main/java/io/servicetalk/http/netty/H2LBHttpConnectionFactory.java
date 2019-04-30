@@ -50,7 +50,8 @@ final class H2LBHttpConnectionFactory<ResolvedAddress> extends AbstractLBHttpCon
                         executionContext.bufferAllocator(), executionContext.executor(),
                         config.h2ClientConfig(), reqRespFactory, roTcpClientConfig.flushStrategy(),
                         executionContext.executionStrategy(),
-                        new TcpClientChannelInitializer(roTcpClientConfig)))
+                        new TcpClientChannelInitializer(roTcpClientConfig).andThen(
+                                new H2ClientParentChannelInitializer(config.h2ClientConfig()))))
                 .map(filterableConnection -> {
                     FilterableStreamingHttpConnection filteredConnection = connectionFilterFunction != null ?
                             connectionFilterFunction.create(filterableConnection) : filterableConnection;

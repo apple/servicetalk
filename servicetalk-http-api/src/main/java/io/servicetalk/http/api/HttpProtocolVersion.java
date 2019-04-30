@@ -25,11 +25,6 @@ import static java.nio.charset.StandardCharsets.US_ASCII;
  */
 public final class HttpProtocolVersion {
     /**
-     * HTTP/1.1 version described in <a href="https://tools.ietf.org/html/rfc7540">RFC 7540</a>.
-     */
-    public static final HttpProtocolVersion HTTP_2_0 = new HttpProtocolVersion(2, 0);
-
-    /**
      * HTTP/1.1 version described in <a href="https://tools.ietf.org/html/rfc7230">RFC 7230</a>.
      */
     public static final HttpProtocolVersion HTTP_1_1 = new HttpProtocolVersion(1, 1);
@@ -76,8 +71,6 @@ public final class HttpProtocolVersion {
             if (minor == 0) {
                 return HTTP_1_0;
             }
-        } else if (major == 2 && minor == 0) {
-            return HTTP_2_0;
         }
         return new HttpProtocolVersion(major, minor);
     }

@@ -49,9 +49,9 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
-import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
 import static io.servicetalk.http.netty.DefaultHttpConnectionBuilder.reservedConnectionsPipelineEnabled;
 import static io.servicetalk.http.netty.GlobalDnsServiceDiscoverer.globalDnsServiceDiscoverer;
+import static io.servicetalk.http.netty.H2ToStH1Utils.HTTP_2_0;
 import static io.servicetalk.loadbalancer.RoundRobinLoadBalancer.newRoundRobinFactory;
 import static java.util.Objects.requireNonNull;
 
@@ -178,22 +178,25 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
             final StreamingHttpRequestResponseFactory reqRespFactory = ctx.reqRespFactory;
 
             // closed by the LoadBalancer
+            final ConnectionFactory<R, StreamingHttpConnection> rawConnectionFactory;
+            if (roConfig.isH2PriorKnowledge()) {
+                rawConnectionFactory = new H2LBHttpConnectionFactory<>(roConfig, ctx.executionContext,
+                        connectionFilterFactory, reqRespFactory,
+                        influencerChainBuilder.buildForConnectionFactory(
+                                ctx.executionContext.executionStrategy()));
+            } else {
+                rawConnectionFactory = reservedConnectionsPipelineEnabled(roConfig) ?
+                        new PipelinedLBHttpConnectionFactory<>(roConfig, ctx.executionContext,
+                                connectionFilterFactory, reqRespFactory,
+                                influencerChainBuilder.buildForConnectionFactory(
+                                        ctx.executionContext.executionStrategy())) :
+                        new NonPipelinedLBHttpConnectionFactory<>(roConfig, ctx.executionContext,
+                                connectionFilterFactory, reqRespFactory,
+                                influencerChainBuilder.buildForConnectionFactory(
+                                        ctx.executionContext.executionStrategy()));
+            }
             final ConnectionFactory<R, ? extends StreamingHttpConnection> connectionFactory =
-                    connectionFactoryFilter.create(closeOnException.prepend(
-                            roConfig.isH2PriorKnowledge() ?
-                            new H2LBHttpConnectionFactory<>(roConfig, ctx.executionContext,
-                                    connectionFilterFactory, reqRespFactory,
-                                    influencerChainBuilder.buildForConnectionFactory(
-                                            ctx.executionContext.executionStrategy())) :
-                            reservedConnectionsPipelineEnabled(roConfig) ?
-                            new PipelinedLBHttpConnectionFactory<>(roConfig, ctx.executionContext,
-                                    connectionFilterFactory, reqRespFactory,
-                                    influencerChainBuilder.buildForConnectionFactory(
-                                            ctx.executionContext.executionStrategy())) :
-                            new NonPipelinedLBHttpConnectionFactory<>(roConfig, ctx.executionContext,
-                                    connectionFilterFactory, reqRespFactory,
-                                    influencerChainBuilder.buildForConnectionFactory(
-                                            ctx.executionContext.executionStrategy()))));
+                    connectionFactoryFilter.create(closeOnException.prepend(rawConnectionFactory));
 
             final LoadBalancer<? extends StreamingHttpConnection> lbfUntypedForCast =
                     closeOnException.prepend(loadBalancerFactory.newLoadBalancer(sdEvents, connectionFactory));

@@ -63,10 +63,11 @@ import static io.servicetalk.concurrent.api.Publisher.failed;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.ThrowableUtil.unknownStackTrace;
-import static io.servicetalk.transport.netty.internal.ChannelSet.CHANNEL_CLOSABLE_KEY;
+import static io.servicetalk.transport.netty.internal.ChannelSet.CHANNEL_CLOSEABLE_KEY;
 import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
 import static io.servicetalk.transport.netty.internal.Flush.composeFlushes;
 import static io.servicetalk.transport.netty.internal.NettyIoExecutors.fromNettyEventLoop;
+import static io.servicetalk.transport.netty.internal.NettyPipelineSslUtils.extractSslSession;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater;
 
@@ -233,7 +234,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
                     delayedCancellable = new DelayedCancellable();
                     DefaultNettyConnection<Read, Write> connection = new DefaultNettyConnection<>(channel, allocator,
                             executor, terminalMsgPredicate, closeHandler, flushStrategy, executionStrategy);
-                    channel.attr(CHANNEL_CLOSABLE_KEY).set(connection);
+                    channel.attr(CHANNEL_CLOSEABLE_KEY).set(connection);
                     // We need the NettyToStChannelInboundHandler to be last in the pipeline. We accomplish that by
                     // calling the ChannelInitializer before we do addLast for the NettyToStChannelInboundHandler.
                     // This could mean if there are any synchronous events generated via ChannelInitializer handlers
@@ -534,22 +535,11 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
                     // the current netty version) gets triggered reliably at the appropriate time.
                     connection.nettyChannelPublisher.channelInboundClosed();
                 } else if (evt instanceof SslHandshakeCompletionEvent) {
-                    SslHandshakeCompletionEvent sslEvent = ((SslHandshakeCompletionEvent) evt);
-                    if (sslEvent.isSuccess()) {
-                        final SslHandler sslHandler = ctx.pipeline().get(SslHandler.class);
-                        if (sslHandler != null) {
-                            connection.sslSession = sslHandler.engine().getSession();
-                            if (subscriber != null) {
-                                assert waitForSslHandshake;
-                                completeSubscriber();
-                            }
-                        } else {
-                            final String errMsg = "Unable to find " + SslHandler.class.getName() + " in the pipeline.";
-                            tryFailSubscriber(new IllegalStateException(errMsg));
-                            LOGGER.error(errMsg);
-                        }
-                    } else {
-                        tryFailSubscriber(sslEvent.cause());
+                    connection.sslSession = extractSslSession(ctx.pipeline(), (SslHandshakeCompletionEvent) evt,
+                            this::tryFailSubscriber);
+                    if (subscriber != null) {
+                        assert waitForSslHandshake;
+                        completeSubscriber();
                     }
                 }
             } finally {

@@ -316,16 +316,21 @@ public class H2ClientPriorKnowledgeFeatureParityTest {
     }
 
     @Test
-    public void reserveConnection() throws Exception {
-        String responseBody = "hello world";
+    public void reserveConnectionMultipleRequests() throws Exception {
+        String responseBody1 = "1.hello world.1";
+        String responseBody2 = "2.hello world.2";
         InetSocketAddress serverAddress = h2PriorKnowledge ? bindH2EchoServer() : bindHttpEchoServer();
         try (BlockingHttpClient client = forSingleAddress(HostAndPort.of(serverAddress))
                 .h2PriorKnowledge(h2PriorKnowledge).executionStrategy(clientExecutionStrategy).buildBlocking()) {
             HttpRequest request = client.get("/");
             ReservedBlockingHttpConnection reservedConnection = client.reserveConnection(request);
             try {
-                HttpResponse response = client.request(request.payloadBody(responseBody, textSerializer()));
-                assertEquals(responseBody, response.payloadBody(textDeserializer()));
+                // We interleave the requests intentionally to make sure the internal transport sequences the
+                // reads and writes correctly.
+                HttpResponse response1 = client.request(request.payloadBody(responseBody1, textSerializer()));
+                HttpResponse response2 = client.request(request.payloadBody(responseBody2, textSerializer()));
+                assertEquals(responseBody1, response1.payloadBody(textDeserializer()));
+                assertEquals(responseBody2, response2.payloadBody(textDeserializer()));
             } finally {
                 reservedConnection.release();
             }
@@ -379,8 +384,7 @@ public class H2ClientPriorKnowledgeFeatureParityTest {
         InetSocketAddress serverAddress = h2PriorKnowledge ? bindH2EchoServer() : bindHttpEchoServer();
         final Queue<Throwable> errorQueue = new ConcurrentLinkedQueue<>();
         try (BlockingHttpClient client = forSingleAddress(HostAndPort.of(serverAddress))
-                .h2PriorKnowledge(h2PriorKnowledge)
-                .executionStrategy(clientExecutionStrategy)
+                .h2PriorKnowledge(h2PriorKnowledge).executionStrategy(clientExecutionStrategy)
                 .appendConnectionFilter(connection -> new StreamingHttpConnectionFilter(connection) {
                     @Override
                     public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
@@ -404,28 +408,24 @@ public class H2ClientPriorKnowledgeFeatureParityTest {
         InetSocketAddress serverAddress = h2PriorKnowledge ? bindH2EchoServer() : bindHttpEchoServer();
         StreamingHttpClient client = forSingleAddress(HostAndPort.of(serverAddress))
                 .h2PriorKnowledge(h2PriorKnowledge).executionStrategy(clientExecutionStrategy).buildStreaming();
-        try {
-            CountDownLatch onCloseLatch = new CountDownLatch(1);
-            SpScPublisherProcessor<Buffer> requestBody = new SpScPublisherProcessor<>(16);
+        CountDownLatch onCloseLatch = new CountDownLatch(1);
+        SpScPublisherProcessor<Buffer> requestBody = new SpScPublisherProcessor<>(16);
 
-            client.onClose().subscribe(onCloseLatch::countDown);
+        client.onClose().subscribe(onCloseLatch::countDown);
 
-            // We want to make a request, and intentionally not complete it. While the request is in process we invoke
-            // closeAsyncGracefully and verify that we wait until the request has completed before the underlying
-            // transport is closed.
-            StreamingHttpRequest request = client.post("/").payloadBody(requestBody);
-            client.request(request).toFuture().get();
+        // We want to make a request, and intentionally not complete it. While the request is in process we invoke
+        // closeAsyncGracefully and verify that we wait until the request has completed before the underlying
+        // transport is closed.
+        StreamingHttpRequest request = client.post("/").payloadBody(requestBody);
+        client.request(request).toFuture().get();
 
-            client.closeAsyncGracefully().subscribe();
+        client.closeAsyncGracefully().subscribe();
 
-            // We expect this to timeout, because we have not completed the outstanding request.
-            assertFalse(onCloseLatch.await(300, MILLISECONDS));
+        // We expect this to timeout, because we have not completed the outstanding request.
+        assertFalse(onCloseLatch.await(300, MILLISECONDS));
 
-            requestBody.sendOnComplete();
-            onCloseLatch.await();
-        } finally {
-            client.closeAsync().subscribe();
-        }
+        requestBody.sendOnComplete();
+        onCloseLatch.await();
     }
 
     @Test

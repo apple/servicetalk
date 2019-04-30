@@ -17,7 +17,6 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.Cancellable;
-import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.api.TestSubscription;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
@@ -49,7 +48,6 @@ import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.http.api.HttpRequestMethod.GET;
-import static io.servicetalk.http.api.HttpRequestMethod.POST;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static io.servicetalk.transport.netty.internal.ExecutionContextRule.immediate;
@@ -120,8 +118,7 @@ public class NettyHttpServerConnectionTest {
         client = HttpClients.forSingleAddress(serverHostAndPort(serverContext))
                 .executionStrategy(clientExecutionStrategy)
                 .buildStreaming();
-        StreamingHttpResponse response = client.request(client.newRequest(POST, "/1").payloadBody(Publisher.empty()))
-                .toFuture().get();
+        StreamingHttpResponse response = client.request(client.newRequest(GET, "/1")).toFuture().get();
         FlushStrategy.FlushSender customFlushSender = customStrategy.verifyApplied();
         Cancellable customCancellable = customCancellableRef.get();
         assertNotNull(customCancellable);

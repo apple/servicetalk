@@ -41,7 +41,7 @@ import static io.servicetalk.concurrent.api.AsyncCloseables.closeAsyncGracefully
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Processors.newCompletableProcessor;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
-import static io.servicetalk.transport.netty.internal.ChannelSet.CHANNEL_CLOSABLE_KEY;
+import static io.servicetalk.transport.netty.internal.ChannelSet.CHANNEL_CLOSEABLE_KEY;
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.parseBoolean;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -97,7 +97,7 @@ public class ChannelSetTest {
         });
         when(channelCloseFuture.channel()).thenReturn(channel);
         when(channel.pipeline()).thenReturn(channelPipeline);
-        when(channel.attr(eq(CHANNEL_CLOSABLE_KEY))).thenReturn(mockClosableAttribute);
+        when(channel.attr(eq(CHANNEL_CLOSEABLE_KEY))).thenReturn(mockClosableAttribute);
         when(mockClosableAttribute.getAndSet(any())).thenReturn(nettyConnection);
         when(nettyConnection.closeAsync()).thenReturn(fromSource(closeAsyncCompletable));
         when(nettyConnection.closeAsyncGracefully()).thenReturn(fromSource(closeAsyncGracefullyCompletable));

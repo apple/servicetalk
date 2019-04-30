@@ -65,7 +65,11 @@ final class LoadBalancedStreamingHttpClient implements FilterableStreamingHttpCl
         // correct.
         return loadBalancer.selectConnection(SELECTOR_FOR_REQUEST)
                 .flatMap(c -> c.request(strategy, request)
-                        .liftSync(new BeforeFinallyOnHttpResponseOperator(c::requestFinished)).subscribeShareContext());
+                        .liftSync(new BeforeFinallyOnHttpResponseOperator(c::requestFinished))
+                        // subscribeShareContext is used because otherwise the AsyncContext modified during response
+                        // meta data processing will not be visible during processing of the response payload for
+                        // ConnectionFilters (it already is visible on ClientFilters).
+                        .subscribeShareContext());
     }
 
     @Override

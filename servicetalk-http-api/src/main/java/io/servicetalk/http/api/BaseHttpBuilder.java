@@ -92,30 +92,30 @@ abstract class BaseHttpBuilder<ResolvedAddress> {
     public abstract BaseHttpBuilder<ResolvedAddress> headersFactory(HttpHeadersFactory headersFactory);
 
     /**
-     * Set the {@link HttpHeadersFactory} to use when {@link HttpProtocolVersion#HTTP_2_0} is used.
+     * Set the {@link HttpHeadersFactory} to use when HTTP/2 is used.
      *
-     * @param headersFactory the {@link HttpHeadersFactory} to use when {@link HttpProtocolVersion#HTTP_2_0} is used.
+     * @param headersFactory the {@link HttpHeadersFactory} to use when HTTP/2 is used.
      * @return {@code this.}
      */
-    public abstract BaseHttpBuilder<ResolvedAddress> h2HeadersFactory(HttpHeadersFactory headersFactory);
+    abstract BaseHttpBuilder<ResolvedAddress> h2HeadersFactory(HttpHeadersFactory headersFactory);
 
     /**
-     * Enable {@link HttpProtocolVersion#HTTP_2_0} via
+     * Enable HTTP/2 via
      * <a href="https://tools.ietf.org/html/rfc7540#section-3.4">Prior Knowledge</a>.
-     * @param h2PriorKnowledge {@code true} to enable {@link HttpProtocolVersion#HTTP_2_0} via
+     * @param h2PriorKnowledge {@code true} to enable HTTP/2 via
      * <a href="https://tools.ietf.org/html/rfc7540#section-3.4">Prior Knowledge</a>.
      *
      * @return {@code this}.
      */
-    public abstract BaseHttpBuilder<ResolvedAddress> h2PriorKnowledge(boolean h2PriorKnowledge);
+    abstract BaseHttpBuilder<ResolvedAddress> h2PriorKnowledge(boolean h2PriorKnowledge);
 
     /**
-     * Set the name of the frame logger when {@link HttpProtocolVersion#HTTP_2_0} is used.
+     * Set the name of the frame logger when HTTP/2 is used.
      *
      * @param h2FrameLogger the name of the frame logger, or {@code null} to disable.
      * @return {@code this}.
      */
-    public abstract BaseHttpBuilder<ResolvedAddress> h2FrameLogger(@Nullable String h2FrameLogger);
+    abstract BaseHttpBuilder<ResolvedAddress> h2FrameLogger(@Nullable String h2FrameLogger);
 
     /**
      * Set the maximum size of the initial HTTP line for created connections.

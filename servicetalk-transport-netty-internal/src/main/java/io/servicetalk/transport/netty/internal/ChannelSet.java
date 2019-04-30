@@ -61,7 +61,7 @@ public final class ChannelSet implements ListenableAsyncCloseable {
             }
         }
     };
-    public static final AttributeKey<AsyncCloseable> CHANNEL_CLOSABLE_KEY = AttributeKey.newInstance("closable");
+    public static final AttributeKey<AsyncCloseable> CHANNEL_CLOSEABLE_KEY = AttributeKey.newInstance("closeable");
 
     private final Map<ChannelId, Channel> channelMap = new ConcurrentHashMap<>();
     private final Processor onCloseProcessor = newCompletableProcessor();
@@ -143,7 +143,7 @@ public final class ChannelSet implements ListenableAsyncCloseable {
                 CompositeCloseable closeable = newCompositeCloseable().appendAll(() -> onClose);
 
                 for (final Channel channel : channelMap.values()) {
-                    Attribute<AsyncCloseable> closeableAttribute = channel.attr(CHANNEL_CLOSABLE_KEY);
+                    Attribute<AsyncCloseable> closeableAttribute = channel.attr(CHANNEL_CLOSEABLE_KEY);
                     AsyncCloseable channelCloseable = closeableAttribute.getAndSet(null);
                     if (channelCloseable != null) {
                         // Upon shutdown of the set, we will close all live channels. If close of individual channels

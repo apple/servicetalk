@@ -62,13 +62,13 @@ abstract class HttpClientBuilder<U, R, SDE extends ServiceDiscovererEvent<R>> ex
     public abstract HttpClientBuilder<U, R, SDE> headersFactory(HttpHeadersFactory headersFactory);
 
     @Override
-    public abstract HttpClientBuilder<U, R, SDE> h2HeadersFactory(HttpHeadersFactory headersFactory);
+    protected abstract HttpClientBuilder<U, R, SDE> h2HeadersFactory(HttpHeadersFactory headersFactory);
 
     @Override
-    public abstract HttpClientBuilder<U, R, SDE> h2PriorKnowledge(boolean h2PriorKnowledge);
+    protected abstract HttpClientBuilder<U, R, SDE> h2PriorKnowledge(boolean h2PriorKnowledge);
 
     @Override
-    public abstract HttpClientBuilder<U, R, SDE> h2FrameLogger(@Nullable String h2FrameLogger);
+    protected abstract HttpClientBuilder<U, R, SDE> h2FrameLogger(@Nullable String h2FrameLogger);
 
     @Override
     public abstract HttpClientBuilder<U, R, SDE> maxInitialLineLength(int maxInitialLineLength);
