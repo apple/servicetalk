@@ -155,7 +155,6 @@ public abstract class AbstractBasicAuthSecurityContextFilterTest {
 
     protected void assertBasicAuthSecurityContextPresent(final String path) throws Exception {
         final String json = getSecurityContextJson(path, true);
-        System.err.println(">>>> " + json);
         assertThatJson(json)
                 .node("authenticationScheme").isStringEqualTo(BASIC_AUTH)
                 .node("userPrincipal.name").isPresent()
