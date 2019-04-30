@@ -144,13 +144,12 @@ public abstract class AbstractBasicAuthSecurityContextFilterTest {
     protected abstract Application application(@Nullable Key<BasicUserInfo> userInfoKey);
 
     @After
-    public void stopClient() throws Exception {
-        httpClient.close();
-    }
-
-    @After
-    public void stopServer() {
-        serverContext.close();
+    public void teardown() throws Exception {
+        try {
+            httpClient.close();
+        } finally {
+            serverContext.close();
+        }
     }
 
     protected void assertBasicAuthSecurityContextPresent(final String path) throws Exception {
