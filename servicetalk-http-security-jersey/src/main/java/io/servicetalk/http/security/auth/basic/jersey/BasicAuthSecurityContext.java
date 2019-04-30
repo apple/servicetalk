@@ -16,15 +16,50 @@
 package io.servicetalk.http.security.auth.basic.jersey;
 
 import java.security.Principal;
+import java.util.function.Predicate;
+import javax.annotation.Nullable;
 import javax.ws.rs.core.SecurityContext;
 
-final class BasicAuthSecurityContext implements SecurityContext {
+import static java.util.Objects.requireNonNull;
+
+/**
+ * A generic {@link SecurityContext} that wraps a user provided {@link Principal},
+ * and which is designed for the {@link SecurityContext#BASIC_AUTH} authentication scheme.
+ */
+public final class BasicAuthSecurityContext implements SecurityContext {
     private final Principal principal;
     private final boolean secure;
 
-    BasicAuthSecurityContext(final Principal principal, final boolean secure) {
-        this.principal = principal;
+    @Nullable
+    private final Predicate<String> userInRolePredicate;
+
+    /**
+     * Creates a new instance, which has no support for roles.
+     *
+     * @param principal the wrapped {@link Principal}
+     * @param secure {@code true} if the request was received over a secure channel
+     * @see SecurityContext#isSecure()
+     */
+    public BasicAuthSecurityContext(final Principal principal,
+                                    final boolean secure) {
+        this(principal, secure, null);
+    }
+
+    /**
+     * Creates a new instance.
+     *
+     * @param principal the wrapped {@link Principal}.
+     * @param secure {@code true} if the request was received over a secure channel
+     * @param userInRolePredicate the {@link Predicate} used to check if the user is in a role
+     * @see SecurityContext#isSecure()
+     */
+    public BasicAuthSecurityContext(final Principal principal,
+                                    final boolean secure,
+                                    @Nullable final Predicate<String> userInRolePredicate) {
+
+        this.principal = requireNonNull(principal);
         this.secure = secure;
+        this.userInRolePredicate = userInRolePredicate;
     }
 
     @Override
@@ -34,7 +69,7 @@ final class BasicAuthSecurityContext implements SecurityContext {
 
     @Override
     public boolean isUserInRole(final String role) {
-        return false;
+        return userInRolePredicate != null && userInRolePredicate.test(role);
     }
 
     @Override

@@ -21,12 +21,12 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.SecurityContext;
 
-import static io.servicetalk.http.security.auth.basic.jersey.resources.NotAnnotatedResource.PATH;
+import static io.servicetalk.http.security.auth.basic.jersey.resources.GlobalBindingResource.PATH;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 
 @Path(PATH)
-public class NotAnnotatedResource {
-    public static final String PATH = "/not-annotated";
+public class GlobalBindingResource {
+    public static final String PATH = "/global-binding";
 
     @Produces(APPLICATION_JSON)
     @Path("/security-context")

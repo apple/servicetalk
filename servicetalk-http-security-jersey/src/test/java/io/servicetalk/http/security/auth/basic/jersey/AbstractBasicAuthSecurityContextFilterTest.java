@@ -22,11 +22,12 @@ import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpResponse;
+import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.http.netty.HttpClients;
 import io.servicetalk.http.netty.HttpServers;
 import io.servicetalk.http.router.jersey.HttpJerseyRouterBuilder;
-import io.servicetalk.http.security.auth.basic.jersey.resources.AnnotatedResource;
-import io.servicetalk.http.security.auth.basic.jersey.resources.NotAnnotatedResource;
+import io.servicetalk.http.security.auth.basic.jersey.resources.GlobalBindingResource;
+import io.servicetalk.http.security.auth.basic.jersey.resources.NameBindingResource;
 import io.servicetalk.http.utils.auth.AuthenticationException;
 import io.servicetalk.http.utils.auth.BasicAuthHttpServiceFilter.Builder;
 import io.servicetalk.http.utils.auth.BasicAuthHttpServiceFilter.CredentialsVerifier;
@@ -50,17 +51,18 @@ import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.HttpHeaderNames.AUTHORIZATION;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
+import static io.servicetalk.http.api.HttpResponseStatus.UNAUTHORIZED;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static java.nio.charset.StandardCharsets.ISO_8859_1;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Arrays.asList;
 import static java.util.Base64.getEncoder;
+import static java.util.Collections.singleton;
 import static java.util.Objects.requireNonNull;
 import static javax.ws.rs.core.SecurityContext.BASIC_AUTH;
 import static net.javacrumbs.jsonunit.fluent.JsonFluentAssert.assertThatJson;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertThat;
 
 @RunWith(Parameterized.class)
@@ -99,21 +101,25 @@ public abstract class AbstractBasicAuthSecurityContextFilterTest {
         public String userId() {
             return userId;
         }
+
+        public Set<String> roles() {
+            return singleton("USER");
+        }
     }
 
     protected static class TestApplication extends Application {
         @Override
         public Set<Class<?>> getClasses() {
             return new HashSet<>(asList(
-                    AnnotatedResource.class,
-                    NotAnnotatedResource.class
+                    GlobalBindingResource.class,
+                    NameBindingResource.class
             ));
         }
     }
 
     private static final Key<BasicUserInfo> TEST_USER_INFO_KEY = newKey("basicUserInfo");
 
-    private final boolean withUserInfo;
+    protected final boolean withUserInfo;
 
     private ServerContext serverContext;
     private BlockingHttpClient httpClient;
@@ -153,7 +159,7 @@ public abstract class AbstractBasicAuthSecurityContextFilterTest {
     }
 
     protected void assertBasicAuthSecurityContextPresent(final String path) throws Exception {
-        final String json = getSecurityContextJson(path, true);
+        final String json = getSecurityContextJson(path, true, OK);
         assertThatJson(json)
                 .node("authenticationScheme").isStringEqualTo(BASIC_AUTH)
                 .node("userPrincipal.name").isPresent()
@@ -162,25 +168,36 @@ public abstract class AbstractBasicAuthSecurityContextFilterTest {
 
     protected void assertBasicAuthSecurityContextAbsent(final String path,
                                                         final boolean authenticated) throws Exception {
-        final String json = getSecurityContextJson(path, authenticated);
-        if (!authenticated) {
-            assertThat(json, is(nullValue()));
-            return;
+        assertBasicAuthSecurityContextAbsent(path, authenticated, authenticated ? OK : UNAUTHORIZED);
+    }
+
+    protected void assertBasicAuthSecurityContextAbsent(final String path,
+                                                        final boolean authenticated,
+                                                        final HttpResponseStatus expectedStatus) throws Exception {
+
+        final String json = getSecurityContextJson(path, authenticated, expectedStatus);
+
+        if (json != null) {
+            assertThatJson(json)
+                    .node("authenticationScheme").isEqualTo(null)
+                    .node("userPrincipal").isEqualTo(null)
+                    .node("secure").isEqualTo(false);
         }
-        assertThatJson(json)
-                .node("authenticationScheme").isEqualTo(null)
-                .node("userPrincipal").isEqualTo(null)
-                .node("secure").isEqualTo(false);
     }
 
     @Nullable
-    private String getSecurityContextJson(final String path, final boolean authenticated) throws Exception {
+    private String getSecurityContextJson(final String path,
+                                          final boolean authenticated,
+                                          final HttpResponseStatus expectedStatus) throws Exception {
+
         final HttpRequest req = httpClient.get(path).appendPathSegments("security-context");
         if (authenticated) {
             req.setHeader(AUTHORIZATION, TEST_AUTHORIZATION);
         }
 
         final HttpResponse res = httpClient.request(req);
+        assertThat(res.status(), is(expectedStatus));
+
         return res.status() == OK ? res.payloadBody().toString(UTF_8) : null;
     }
 }

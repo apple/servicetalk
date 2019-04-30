@@ -23,12 +23,12 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.SecurityContext;
 
-import static io.servicetalk.http.security.auth.basic.jersey.resources.AnnotatedResource.PATH;
+import static io.servicetalk.http.security.auth.basic.jersey.resources.NameBindingResource.PATH;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 
 @Path(PATH)
-public class AnnotatedResource {
-    public static final String PATH = "/annotated";
+public class NameBindingResource {
+    public static final String PATH = "/name-binding";
 
     @BasicAuthenticated
     @Produces(APPLICATION_JSON)

@@ -16,8 +16,8 @@
 package io.servicetalk.http.security.auth.basic.jersey;
 
 import io.servicetalk.concurrent.api.AsyncContextMap.Key;
-import io.servicetalk.http.security.auth.basic.jersey.resources.AnnotatedResource;
-import io.servicetalk.http.security.auth.basic.jersey.resources.NotAnnotatedResource;
+import io.servicetalk.http.security.auth.basic.jersey.resources.GlobalBindingResource;
+import io.servicetalk.http.security.auth.basic.jersey.resources.NameBindingResource;
 
 import org.junit.Test;
 
@@ -47,13 +47,13 @@ public class NameBindingBasicAuthSecurityContextFilterTest extends AbstractBasic
 
     @Test
     public void authenticated() throws Exception {
-        assertBasicAuthSecurityContextPresent(AnnotatedResource.PATH);
-        assertBasicAuthSecurityContextAbsent(NotAnnotatedResource.PATH, true);
+        assertBasicAuthSecurityContextAbsent(GlobalBindingResource.PATH, true);
+        assertBasicAuthSecurityContextPresent(NameBindingResource.PATH);
     }
 
     @Test
     public void notAuthenticated() throws Exception {
-        assertBasicAuthSecurityContextAbsent(AnnotatedResource.PATH, false);
-        assertBasicAuthSecurityContextAbsent(NotAnnotatedResource.PATH, false);
+        assertBasicAuthSecurityContextAbsent(GlobalBindingResource.PATH, false);
+        assertBasicAuthSecurityContextAbsent(NameBindingResource.PATH, false);
     }
 }

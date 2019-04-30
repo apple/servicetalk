@@ -47,6 +47,7 @@ dependencies {
   testImplementation "io.servicetalk:servicetalk-transport-netty-internal-testFixtures:$project.version"
   testImplementation "junit:junit"
   testImplementation "net.javacrumbs.json-unit:json-unit-fluent"
+  testImplementation "org.glassfish.jersey.core:jersey-server"
   testImplementation "org.glassfish.jersey.inject:jersey-hk2"
   testImplementation "org.hamcrest:hamcrest-library"
   testImplementation "org.mockito:mockito-core"
