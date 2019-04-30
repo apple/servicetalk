@@ -21,6 +21,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.buffer.api.EmptyBuffer.EMPTY_BUFFER;
 import static io.servicetalk.buffer.api.ReadOnlyBufferAllocators.PREFER_HEAP_RO_ALLOCATOR;
+import static io.servicetalk.http.api.BufferUtils.writeReadOnlyBuffer;
 import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.fromStatusCode;
 import static java.util.Objects.requireNonNull;
 
@@ -493,7 +494,7 @@ public final class HttpResponseStatus {
      * @param buffer The {@link Buffer} to write to
      */
     public void writeCodeTo(final Buffer buffer) {
-        buffer.writeBytes(statusCodeBuffer, statusCodeBuffer.readerIndex(), statusCodeBuffer.readableBytes());
+        writeReadOnlyBuffer(statusCodeBuffer, buffer);
     }
 
     /**
@@ -510,7 +511,7 @@ public final class HttpResponseStatus {
      * @param buffer The {@link Buffer} to write to
      */
     public void writeReasonPhraseTo(final Buffer buffer) {
-        buffer.writeBytes(reasonPhraseBuffer, reasonPhraseBuffer.readerIndex(), reasonPhraseBuffer.readableBytes());
+        writeReadOnlyBuffer(reasonPhraseBuffer, buffer);
     }
 
     /**

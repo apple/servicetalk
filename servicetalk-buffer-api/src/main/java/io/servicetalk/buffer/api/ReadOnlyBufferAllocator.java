@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.CharsetEncoder;
 import java.nio.charset.CoderResult;
 
-import static io.servicetalk.buffer.api.ReadOnlyByteBuffer.newBufferFromModifiable;
+import static io.servicetalk.buffer.api.ReadOnlyByteBuffer.newReadOnlyBuffer;
 import static java.nio.ByteBuffer.allocate;
 import static java.nio.ByteBuffer.allocateDirect;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -33,7 +33,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 final class ReadOnlyBufferAllocator implements BufferAllocator {
     static final BufferAllocator PREFER_DIRECT_ALLOCATOR = new ReadOnlyBufferAllocator(true);
     static final BufferAllocator PREFER_HEAP_ALLOCATOR = new ReadOnlyBufferAllocator(false);
-    private boolean preferDirect;
+    private final boolean preferDirect;
 
     private ReadOnlyBufferAllocator(boolean preferDirect) {
         this.preferDirect = preferDirect;
@@ -83,7 +83,7 @@ final class ReadOnlyBufferAllocator implements BufferAllocator {
             throw new IllegalArgumentException(e);
         }
         byteBuffer.flip();
-        return newBufferFromModifiable(byteBuffer);
+        return newReadOnlyBuffer(byteBuffer);
     }
 
     @Override
@@ -108,16 +108,16 @@ final class ReadOnlyBufferAllocator implements BufferAllocator {
         // possible.
         data.codePoints().forEach(c -> byteBuffer.put((byte) c));
         byteBuffer.flip();
-        return newBufferFromModifiable(byteBuffer);
+        return newReadOnlyBuffer(byteBuffer);
     }
 
     @Override
     public Buffer wrap(byte[] bytes) {
-        return newBufferFromModifiable(ByteBuffer.wrap(bytes));
+        return newReadOnlyBuffer(ByteBuffer.wrap(bytes));
     }
 
     @Override
     public Buffer wrap(ByteBuffer buffer) {
-        return ReadOnlyByteBuffer.newBuffer(buffer);
+        return newReadOnlyBuffer(buffer);
     }
 }

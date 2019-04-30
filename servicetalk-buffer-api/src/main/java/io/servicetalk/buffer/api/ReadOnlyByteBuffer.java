@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,12 +48,8 @@ final class ReadOnlyByteBuffer extends AbstractBuffer {
         this.buffer = buffer;
     }
 
-    static ReadOnlyByteBuffer newBuffer(ByteBuffer buffer) {
-        return new ReadOnlyByteBuffer(buffer.isReadOnly() ? buffer : buffer.asReadOnlyBuffer());
-    }
-
-    static ReadOnlyByteBuffer newBufferFromModifiable(ByteBuffer buffer) {
-        return new ReadOnlyByteBuffer(buffer.asReadOnlyBuffer());
+    static ReadOnlyByteBuffer newReadOnlyBuffer(ByteBuffer buffer) {
+        return new ReadOnlyByteBuffer(buffer);
     }
 
     @Override
@@ -119,16 +115,13 @@ final class ReadOnlyByteBuffer extends AbstractBuffer {
     @Override
     public Buffer getBytes(int index, Buffer dst, int dstIndex, int length) {
         checkDstIndex(index, length, dstIndex, dst.capacity());
+
         if (dst.hasArray()) {
-            getBytes(index, dst.array(), dst.arrayOffset() + dstIndex, length);
-        } else if (dst.nioBufferCount() > 0) {
-            for (ByteBuffer bb : dst.toNioBuffers(dstIndex, length)) {
-                int bbLen = bb.remaining();
-                getBytes(index, bb);
-                index += bbLen;
-            }
+            getBytes0(index, dst.array(), dst.arrayOffset() + dstIndex, length);
+        } else if (buffer.hasArray()) {
+            dst.setBytes(dstIndex, buffer.array(), buffer.arrayOffset() + index, length);
         } else {
-            dst.setBytes(dstIndex, this, index, length);
+            dst.setBytes(dstIndex, (ByteBuffer) buffer.duplicate().position(index).limit(index + length));
         }
         return this;
     }
@@ -136,29 +129,33 @@ final class ReadOnlyByteBuffer extends AbstractBuffer {
     @Override
     public Buffer getBytes(int index, byte[] dst, int dstIndex, int length) {
         checkDstIndex(index, length, dstIndex, dst.length);
+        getBytes0(index, dst, dstIndex, length);
+        return this;
+    }
 
-        if (dstIndex < 0 || dstIndex > dst.length - length) {
-            throw new IndexOutOfBoundsException(String.format(
-                    "dstIndex: %d, length: %d (expected: range(0, %d))", dstIndex, length, dst.length));
+    private Buffer getBytes0(int index, byte[] dst, int dstIndex, int length) {
+        if (buffer.hasArray()) {
+            System.arraycopy(buffer.array(), buffer.arrayOffset() + index, dst, dstIndex, length);
+        } else {
+            ByteBuffer tmpBuf = buffer.duplicate();
+            tmpBuf.position(index).limit(index + length);
+            tmpBuf.get(dst, dstIndex, length);
         }
-
-        ByteBuffer tmpBuf = buffer.duplicate();
-        tmpBuf.position(index).limit(index + length);
-        tmpBuf.get(dst, dstIndex, length);
         return this;
     }
 
     @Override
     public Buffer getBytes(int index, ByteBuffer dst) {
-        checkIndex0(index, dst.capacity());
-        if (dst == null) {
-            throw new NullPointerException("dst");
-        }
-
         int bytesToCopy = Math.min(capacity() - index, dst.remaining());
-        ByteBuffer tmpBuf = buffer.duplicate();
-        tmpBuf.position(index).limit(index + bytesToCopy);
-        dst.put(tmpBuf);
+        checkIndex0(index, bytesToCopy);
+
+        if (buffer.hasArray()) {
+            dst.put(buffer.array(), buffer.arrayOffset() + index, bytesToCopy);
+        } else {
+            ByteBuffer tmpBuf = buffer.duplicate();
+            tmpBuf.position(index).limit(index + bytesToCopy);
+            dst.put(tmpBuf);
+        }
         return this;
     }
 
@@ -406,7 +403,7 @@ final class ReadOnlyByteBuffer extends AbstractBuffer {
     private Buffer copy(ByteBuffer byteBufferSlice, int length) {
         ByteBuffer tmpBuf = isDirect() ? allocateDirect(length) : allocate(length);
         tmpBuf.put(byteBufferSlice);
-        return new ReadOnlyByteBuffer(tmpBuf.asReadOnlyBuffer());
+        return new ReadOnlyByteBuffer(tmpBuf);
     }
 
     @Override
@@ -435,12 +432,16 @@ final class ReadOnlyByteBuffer extends AbstractBuffer {
 
     @Override
     public ByteBuffer toNioBuffer() {
-        return sliceByteBuffer0(readerIndex(), readableBytes());
+        return asReadOnlyByteBuffer(sliceByteBuffer0(readerIndex(), readableBytes()));
     }
 
     @Override
     public ByteBuffer toNioBuffer(int index, int length) {
-        return sliceByteBuffer(index, length);
+        return asReadOnlyByteBuffer(sliceByteBuffer(index, length));
+    }
+
+    private static ByteBuffer asReadOnlyByteBuffer(ByteBuffer buffer) {
+        return buffer.isReadOnly() ? buffer : buffer.asReadOnlyBuffer();
     }
 
     @Override

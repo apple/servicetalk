@@ -17,7 +17,8 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.Buffer;
 
-import static io.servicetalk.buffer.api.ReadOnlyBufferAllocators.PREFER_DIRECT_RO_ALLOCATOR;
+import static io.servicetalk.buffer.api.ReadOnlyBufferAllocators.PREFER_HEAP_RO_ALLOCATOR;
+import static io.servicetalk.http.api.BufferUtils.writeReadOnlyBuffer;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 
 /**
@@ -50,7 +51,7 @@ public final class HttpProtocolVersion {
         }
         this.minor = minor;
 
-        this.httpVersion = PREFER_DIRECT_RO_ALLOCATOR.fromAscii("HTTP/" + major + '.' + minor);
+        this.httpVersion = PREFER_HEAP_RO_ALLOCATOR.fromAscii("HTTP/" + major + '.' + minor);
     }
 
     /**
@@ -105,7 +106,7 @@ public final class HttpProtocolVersion {
      * <a href="https://tools.ietf.org/html/rfc7230.html#section-2.6">HTTP-version</a>
      */
     public void writeVersionTo(final Buffer buffer) {
-        buffer.writeBytes(httpVersion, httpVersion.readerIndex(), httpVersion.readableBytes());
+        writeReadOnlyBuffer(httpVersion, buffer);
     }
 
     @Override
