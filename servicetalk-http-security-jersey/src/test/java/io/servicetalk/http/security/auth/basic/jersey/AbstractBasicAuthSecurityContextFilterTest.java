@@ -128,7 +128,7 @@ public abstract class AbstractBasicAuthSecurityContextFilterTest {
     }
 
     @Before
-    public void startServer() throws Exception {
+    public void setup() throws Exception {
         final Builder<BasicUserInfo> builder = new Builder<>(CREDENTIALS_VERIFIER, "test-realm");
         if (withUserInfo) {
             builder.userInfoKey(TEST_USER_INFO_KEY);
