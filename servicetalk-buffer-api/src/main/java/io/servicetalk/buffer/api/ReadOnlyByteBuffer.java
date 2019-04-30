@@ -385,7 +385,7 @@ final class ReadOnlyByteBuffer extends AbstractBuffer {
     }
 
     @Override
-    public Buffer readBytes(int length) {
+    public Buffer readSlice(int length) {
         if (length == 0) {
             return EMPTY_BUFFER;
         }
@@ -393,6 +393,12 @@ final class ReadOnlyByteBuffer extends AbstractBuffer {
         Buffer buf = new ReadOnlyByteBuffer(sliceByteBuffer0(readerIndex(), length));
         skipBytes0(length);
         return buf;
+    }
+
+    @Override
+    public Buffer readBytes(int length) {
+        // Return readSlice(length) instead of creating a new `Buffer` because this is a read-only `Buffer`
+        return readSlice(length);
     }
 
     @Override
