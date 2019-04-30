@@ -43,12 +43,16 @@ public final class BasicAuthSecurityContextFilters {
     public abstract static class AbstractBuilder<B extends AbstractBuilder, PF, SCF> {
         private final Function<PF, SCF> principalToSecurityContextFunction;
 
-        protected SCF securityContextFunction;
+        private SCF securityContextFunction;
 
         AbstractBuilder(final Function<PF, SCF> principalToSecurityContextFunction,
                         final SCF securityContextFunction) {
             this.principalToSecurityContextFunction = principalToSecurityContextFunction;
             this.securityContextFunction = securityContextFunction;
+        }
+
+        SCF securityContextFunction() {
+            return securityContextFunction;
         }
 
         /**
@@ -139,7 +143,7 @@ public final class BasicAuthSecurityContextFilters {
         return new UserInfoBuilder<UserInfo>() {
             @Override
             public ContainerRequestFilter build() {
-                return new GlobalBindingBasicAuthSecurityContextFilter<>(userInfoKey, securityContextFunction);
+                return new GlobalBindingBasicAuthSecurityContextFilter<>(userInfoKey, securityContextFunction());
             }
         };
     }
@@ -155,7 +159,7 @@ public final class BasicAuthSecurityContextFilters {
             @Override
             public ContainerRequestFilter build() {
                 return new GlobalBindingBasicAuthSecurityContextFilter<Void>(null,
-                        asSecurityContextBiFunction(securityContextFunction));
+                        asSecurityContextBiFunction(securityContextFunction()));
             }
         };
     }
@@ -175,7 +179,7 @@ public final class BasicAuthSecurityContextFilters {
         return new UserInfoBuilder<UserInfo>() {
             @Override
             public ContainerRequestFilter build() {
-                return new NameBindingBasicAuthSecurityContextFilter<>(userInfoKey, securityContextFunction);
+                return new NameBindingBasicAuthSecurityContextFilter<>(userInfoKey, securityContextFunction());
             }
         };
     }
@@ -191,7 +195,7 @@ public final class BasicAuthSecurityContextFilters {
             @Override
             public ContainerRequestFilter build() {
                 return new NameBindingBasicAuthSecurityContextFilter<Void>(null,
-                        asSecurityContextBiFunction(securityContextFunction));
+                        asSecurityContextBiFunction(securityContextFunction()));
             }
         };
     }
