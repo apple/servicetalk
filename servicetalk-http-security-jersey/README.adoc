@@ -8,8 +8,7 @@ various authentication schemes.
 This module establishes a JAX-RS `SecurityContext` for requests that have been authenticated with
 the `Basic` HTTP Authentication Scheme (link:https://tools.ietf.org/html/rfc7617[RFC7617]),
 via the `BasicAuthHttpServiceFilter` from `servicetalk-http-utils`.
-Therefore a `BasicAuthHttpServiceFilter` **must be configured** for all requests that will be filtered with the filters
-created by this module.
+Therefore a `BasicAuthHttpServiceFilter` **must be configured** for all requests that are filtered by this module.
 This can be achieved by configuring the `BasicAuthHttpServiceFilter` either globally
 for the whole ServiceTalk HTTP server or to specific paths with the `HttpPredicateRouterBuilder`.
 
