@@ -309,7 +309,7 @@ public static class CustomSecurityFilter implements ContainerRequestFilter {
 ----
 
 NOTE: ServiceTalk provides security filters that can be used with Basic authenticated requests.
-Refer to link:../servicetalk-http-auth-jersey/README.adoc[Auth Support for Jersey Router] for more information.
+Refer to link:../servicetalk-http-auth-jersey/README.adoc#auth-basic[Basic Auth for Jersey Router] for more information.
 
 === Exception Mappers
 
@@ -392,7 +392,7 @@ ServerContext serverContext = HttpServers.forPort(8080)
 
 TIP: It is important to have a good understanding of ServiceTalk's threading model
 before considering tuning execution strategies.
-Refer to ServiceTalk's https://github.com/servicetalk/servicetalk/blob/master/README.md[main documentation]
+Refer to ServiceTalk's link:../README.adoc[main documentation]
 to learn more about it.
 
 By default, the Jersey router uses ServiceTalk’s global executor to

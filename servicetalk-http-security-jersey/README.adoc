@@ -1,8 +1,9 @@
-= Auth Support for Jersey Router
+= Security Utils for Jersey Router
 
 This module provides JAX-RS filters that set `javax.ws.rs.core.SecurityContext` for requests authenticated with
 various authentication schemes.
 
+[[auth-basic]]
 == Basic Authentication
 
 This module establishes a JAX-RS `SecurityContext` for requests that have been authenticated with
