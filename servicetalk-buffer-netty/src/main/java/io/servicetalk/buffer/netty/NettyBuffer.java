@@ -389,9 +389,6 @@ class NettyBuffer<T extends ByteBuf> implements Buffer {
 
     @Override
     public int setBytes(int index, InputStream src, int length) throws IOException {
-        if (length <= 0) {
-            return length;
-        }
         return buffer.setBytes(index, src, length);
     }
 
@@ -707,9 +704,6 @@ class NettyBuffer<T extends ByteBuf> implements Buffer {
 
     @Override
     public int writeBytes(InputStream src, int length) throws IOException {
-        if (length <= 0) {
-            return length;
-        }
         return buffer.writeBytes(src, length);
     }
 
