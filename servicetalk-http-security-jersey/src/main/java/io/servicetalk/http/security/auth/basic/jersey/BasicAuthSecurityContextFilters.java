@@ -119,8 +119,6 @@ public final class BasicAuthSecurityContextFilters {
         }
     }
 
-    private static final String HTTPS = "https";
-
     // Visible for testing
     static final Principal ANONYMOUS_PRINCIPAL = () -> "ANONYMOUS";
 
@@ -234,7 +232,6 @@ public final class BasicAuthSecurityContextFilters {
     }
 
     private static boolean isRequestSecure(final ContainerRequestContext requestCtx) {
-        return HTTPS.equals(requestCtx.getUriInfo().getRequestUri().getScheme()) ||
-                HTTPS.equals(requestCtx.getHeaderString("X-Forwarded-Proto"));
+        return "https".equalsIgnoreCase(requestCtx.getUriInfo().getRequestUri().getScheme());
     }
 }
