@@ -447,7 +447,7 @@ abstract class AbstractBuffer implements Buffer {
     }
 
     final void skipBytes0(int length) {
-        this.readerIndex += length;
+        readerIndex += length;
     }
 
     @Override

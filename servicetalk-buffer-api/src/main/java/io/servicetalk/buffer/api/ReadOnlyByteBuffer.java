@@ -43,13 +43,9 @@ import static java.nio.ByteBuffer.allocateDirect;
 final class ReadOnlyByteBuffer extends AbstractBuffer {
     private final ByteBuffer buffer;
 
-    private ReadOnlyByteBuffer(ByteBuffer buffer) {
+    ReadOnlyByteBuffer(ByteBuffer buffer) {
         super(buffer.position(), buffer.limit());
         this.buffer = buffer;
-    }
-
-    static ReadOnlyByteBuffer newReadOnlyBuffer(ByteBuffer buffer) {
-        return new ReadOnlyByteBuffer(buffer);
     }
 
     @Override
@@ -397,7 +393,8 @@ final class ReadOnlyByteBuffer extends AbstractBuffer {
 
     @Override
     public Buffer readBytes(int length) {
-        // Return readSlice(length) instead of creating a new `Buffer` because this is a read-only `Buffer`
+        // Return readSlice(length) instead of allocating a new `Buffer` because for a read-only `Buffer` it doesn't
+        // mater if the underlying bytes storage will be copied or shared.
         return readSlice(length);
     }
 
