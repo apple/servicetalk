@@ -32,13 +32,25 @@ apply plugin: "servicetalk-library"
 dependencies {
   implementation "io.servicetalk:servicetalk-bom-internal:$project.version"
 
-  api "io.servicetalk:servicetalk-http-api:$project.version"
   api "javax.ws.rs:javax.ws.rs-api"
 
   implementation "com.google.code.findbugs:jsr305"
   implementation "io.servicetalk:servicetalk-annotations:$project.version"
-  implementation "io.servicetalk:servicetalk-concurrent-api-internal:$project.version"
-  implementation "io.servicetalk:servicetalk-concurrent-internal:$project.version"
-  implementation "io.servicetalk:servicetalk-http-utils:$project.version"
+  implementation "io.servicetalk:servicetalk-concurrent-api:$project.version"
   implementation "org.glassfish.jersey.core:jersey-common"
+
+  testImplementation "io.servicetalk:servicetalk-concurrent-internal-testFixtures:$project.version"
+  testImplementation "io.servicetalk:servicetalk-data-jackson-jersey:$project.version"
+  testImplementation "io.servicetalk:servicetalk-http-netty:$project.version"
+  testImplementation "io.servicetalk:servicetalk-http-router-jersey:$project.version"
+  testImplementation "io.servicetalk:servicetalk-http-utils:$project.version"
+  testImplementation "io.servicetalk:servicetalk-transport-netty-internal-testFixtures:$project.version"
+  testImplementation "junit:junit"
+  testImplementation "net.javacrumbs.json-unit:json-unit-fluent"
+  testImplementation "org.glassfish.jersey.core:jersey-server"
+  testImplementation "org.glassfish.jersey.inject:jersey-hk2"
+  testImplementation "org.hamcrest:hamcrest-library"
+  testImplementation "org.mockito:mockito-core"
+
+  testRuntime "io.servicetalk:servicetalk-test-resources:$project.version"
 }
