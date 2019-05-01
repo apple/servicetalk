@@ -23,6 +23,6 @@ public class RequestConcurrencyControllerMultiTest extends AbstractRequestConcur
     protected RequestConcurrencyController newController(final Publisher<Integer> maxSetting,
                                                          final Completable onClose,
                                                          final int init) {
-        return RequestConcurrencyControllers.newController(maxSetting, onClose, init);
+        return RequestConcurrencyControllers.newController(maxSetting.map(IgnoreConsumedEvent::new), onClose, init);
     }
 }

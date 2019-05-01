@@ -22,6 +22,7 @@ import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.BlockingStreamingHttpClient;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
 import io.servicetalk.http.api.HttpClient;
+import io.servicetalk.http.api.HttpEventKey;
 import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
@@ -119,8 +120,8 @@ final class FilterableClientToClient implements StreamingHttpClient {
             }
 
             @Override
-            public <T> Publisher<T> settingStream(final SettingKey<T> settingKey) {
-                return rc.settingStream(settingKey);
+            public <T> Publisher<? extends T> transportEventStream(final HttpEventKey<T> eventKey) {
+                return rc.transportEventStream(eventKey);
             }
 
             @Override

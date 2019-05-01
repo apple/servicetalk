@@ -36,7 +36,6 @@ import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.TestStreamingHttpConnection;
-import io.servicetalk.tcp.netty.internal.TcpClientConfig;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.netty.internal.NettyConnection;
 
@@ -66,6 +65,7 @@ import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.http.api.HttpExecutionStrategies.customStrategyBuilder;
+import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
@@ -80,7 +80,7 @@ public class ConcurrentRequestsHttpConnectionFilterTest {
 
     private static final BufferAllocator allocator = DEFAULT_ALLOCATOR;
     private static final StreamingHttpRequestResponseFactory reqRespFactory =
-            new DefaultStreamingHttpRequestResponseFactory(allocator, DefaultHttpHeadersFactory.INSTANCE);
+            new DefaultStreamingHttpRequestResponseFactory(allocator, DefaultHttpHeadersFactory.INSTANCE, HTTP_1_1);
 
     @Rule
     public final MockitoRule rule = MockitoJUnit.rule();
@@ -101,15 +101,14 @@ public class ConcurrentRequestsHttpConnectionFilterTest {
     public void decrementWaitsUntilResponsePayloadIsComplete() throws Exception {
         @SuppressWarnings("unchecked")
         Function<Publisher<Object>, Publisher<Object>> reqResp = mock(Function.class);
-        HttpClientConfig config = new HttpClientConfig(new TcpClientConfig(true));
-        config.maxPipelinedRequests(2);
-        ReadOnlyHttpClientConfig roConfig = config.asReadOnly();
+        final int maxPipelinedReqeusts = 2;
         NettyConnection conn = mock(NettyConnection.class);
         when(conn.onClose()).thenReturn(never());
         when(conn.onClosing()).thenReturn(never());
         when(conn.transportError()).thenReturn(Single.never());
         AbstractStreamingHttpConnection<NettyConnection> mockConnection =
-                new AbstractStreamingHttpConnection<NettyConnection>(conn, roConfig, executionContext, reqRespFactory) {
+                new AbstractStreamingHttpConnection<NettyConnection>(conn,
+                        maxPipelinedReqeusts, executionContext, reqRespFactory) {
                     private final AtomicInteger reqCount = new AtomicInteger(0);
 
                     @Override
@@ -130,7 +129,7 @@ public class ConcurrentRequestsHttpConnectionFilterTest {
         };
 
         StreamingHttpConnection limitedConnection = TestStreamingHttpConnection.from(
-                new ConcurrentRequestsHttpConnectionFilter(mockConnection, roConfig.maxPipelinedRequests()));
+                new ConcurrentRequestsHttpConnectionFilter(mockConnection, maxPipelinedReqeusts));
 
         StreamingHttpResponse resp1 = awaitIndefinitelyNonNull(
                 limitedConnection.request(limitedConnection.get("/foo")));

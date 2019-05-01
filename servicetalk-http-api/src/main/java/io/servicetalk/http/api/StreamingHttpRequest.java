@@ -235,7 +235,7 @@ public interface StreamingHttpRequest extends HttpRequestMetaData {
     }
 
     @Override
-    default StreamingHttpRequest addCookie(final HttpCookie cookie) {
+    default StreamingHttpRequest addCookie(final HttpCookiePair cookie) {
         HttpRequestMetaData.super.addCookie(cookie);
         return this;
     }
@@ -247,7 +247,7 @@ public interface StreamingHttpRequest extends HttpRequestMetaData {
     }
 
     @Override
-    default StreamingHttpRequest addSetCookie(final HttpCookie cookie) {
+    default StreamingHttpRequest addSetCookie(final HttpSetCookie cookie) {
         HttpRequestMetaData.super.addSetCookie(cookie);
         return this;
     }

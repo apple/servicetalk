@@ -85,7 +85,7 @@ public class BlockingStreamingToStreamingServiceTest {
     private HttpExecutionContext mockExecutionCtx;
 
     private final StreamingHttpRequestResponseFactory reqRespFactory = new DefaultStreamingHttpRequestResponseFactory(
-            DEFAULT_ALLOCATOR, DefaultHttpHeadersFactory.INSTANCE);
+            DEFAULT_ALLOCATOR, DefaultHttpHeadersFactory.INSTANCE, HTTP_1_1);
     private HttpServiceContext mockCtx;
 
     @Before

@@ -23,8 +23,6 @@ import java.util.Spliterators;
 import java.util.function.BiFunction;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.http.api.HttpCookie.newCookie;
-
 /**
  * HTTP <a href="https://tools.ietf.org/html/rfc7230.html#section-3.2">Header Fields</a>.
  * <p>
@@ -104,7 +102,9 @@ public interface HttpHeaders extends Iterable<Entry<CharSequence, CharSequence>>
      * @param value the header value of the header to find.
      * @return {@code true} if a {@code name}, {@code value} pair exists.
      */
-    boolean contains(CharSequence name, CharSequence value);
+    default boolean contains(CharSequence name, CharSequence value) {
+        return contains(name, value, false);
+    }
 
     /**
      * Returns {@code true} if a header with the {@code name} and {@code value} exists, {@code false} otherwise.
@@ -169,6 +169,26 @@ public interface HttpHeaders extends Iterable<Entry<CharSequence, CharSequence>>
      * Adds new headers with the specified {@code name} and {@code values}. This method is semantically equivalent to:
      *
      * <pre>
+     * while (valueItr.hasNext()) {
+     *     headers.add(name, valueItr.next());
+     * }
+     * </pre>
+     *
+     * @param name the name of the header.
+     * @param valuesItr the values of the header.
+     * @return {@code this}.
+     */
+    default HttpHeaders add(CharSequence name, Iterator<? extends CharSequence> valuesItr) {
+        while (valuesItr.hasNext()) {
+            add(name, valuesItr.next());
+        }
+        return this;
+    }
+
+    /**
+     * Adds new headers with the specified {@code name} and {@code values}. This method is semantically equivalent to:
+     *
+     * <pre>
      * for (T value : values) {
      *     headers.add(name, value);
      * }
@@ -213,6 +233,28 @@ public interface HttpHeaders extends Iterable<Entry<CharSequence, CharSequence>>
      * @return {@code this}.
      */
     HttpHeaders set(CharSequence name, Iterable<? extends CharSequence> values);
+
+    /**
+     * Sets a new header with the specified {@code name} and {@code values}. This method is equivalent to:
+     *
+     * <pre>
+     * headers.remove(name);
+     * while (valueItr.hasNext()) {
+     *     headers.add(name, valueItr.next());
+     * }
+     * </pre>
+     *
+     * @param name the name of the header.
+     * @param valueItr the values of the header.
+     * @return {@code this}.
+     */
+    default HttpHeaders set(CharSequence name, Iterator<? extends CharSequence> valueItr) {
+        remove(name);
+        while (valueItr.hasNext()) {
+            add(name, valueItr.next());
+        }
+        return this;
+    }
 
     /**
      * Sets a header with the specified {@code name} and {@code values}. Any existing headers with this name are
@@ -280,7 +322,9 @@ public interface HttpHeaders extends Iterable<Entry<CharSequence, CharSequence>>
      * @return {@code true} if at least one value has been removed.
      * @see #remove(CharSequence, CharSequence, boolean)
      */
-    boolean remove(CharSequence name, CharSequence value);
+    default boolean remove(CharSequence name, CharSequence value) {
+        return remove(name, value, false);
+    }
 
     /**
      * Removes specific value(s) from the specified header {@code name}. If the header has more than one identical
@@ -312,14 +356,6 @@ public interface HttpHeaders extends Iterable<Entry<CharSequence, CharSequence>>
     }
 
     /**
-     * Creates a deep copy of this {@link HttpHeaders} object.
-     *
-     * @return a deep copy of this {@link HttpHeaders} object. For special header types this may be the same instance as
-     * this.
-     */
-    HttpHeaders copy();
-
-    /**
      * Returns a {@link String} representation of this {@link HttpHeaders}. To avoid accidentally logging sensitive
      * information, implementations should be cautious about logging header content and consider using
      * {@link #toString(BiFunction)}.
@@ -336,44 +372,46 @@ public interface HttpHeaders extends Iterable<Entry<CharSequence, CharSequence>>
      * @param filter a function that accepts the header name and value and returns the filtered value.
      * @return string representation of this {@link HttpHeaders}.
      */
-    String toString(BiFunction<? super CharSequence, ? super CharSequence, CharSequence> filter);
+    default String toString(BiFunction<? super CharSequence, ? super CharSequence, CharSequence> filter) {
+        return HeaderUtils.toString(this, filter);
+    }
 
     /**
      * Gets a <a href="https://tools.ietf.org/html/rfc6265#section-4.2">cookie</a> identified by {@code name}. If there
-     * is more than one {@link HttpCookie} for the specified name, the first {@link HttpCookie} in insertion order is
-     * returned.
-     *
-     * @param name the cookie-name to look for.
-     * @return a {@link HttpCookie} identified by {@code name}.
-     */
-    @Nullable
-    HttpCookie getCookie(CharSequence name);
-
-    /**
-     * Gets a <a href="https://tools.ietf.org/html/rfc6265#section-4.1">set-cookie</a> identified by {@code name}. If
-     * there is more than one {@link HttpCookie} for the specified name, the first {@link HttpCookie} in insertion order
+     * is more than one {@link HttpSetCookie} for the specified name, the first {@link HttpSetCookie} in insertion order
      * is returned.
      *
      * @param name the cookie-name to look for.
-     * @return a {@link HttpCookie} identified by {@code name}.
+     * @return a {@link HttpSetCookie} identified by {@code name}.
      */
     @Nullable
-    HttpCookie getSetCookie(CharSequence name);
+    HttpCookiePair getCookie(CharSequence name);
+
+    /**
+     * Gets a <a href="https://tools.ietf.org/html/rfc6265#section-4.1">set-cookie</a> identified by {@code name}. If
+     * there is more than one {@link HttpSetCookie} for the specified name, the first {@link HttpSetCookie} in insertion
+     * order is returned.
+     *
+     * @param name the cookie-name to look for.
+     * @return a {@link HttpSetCookie} identified by {@code name}.
+     */
+    @Nullable
+    HttpSetCookie getSetCookie(CharSequence name);
 
     /**
      * Gets all the <a href="https://tools.ietf.org/html/rfc6265#section-4.2">cookie</a>s.
      *
      * @return An {@link Iterator} with all the <a href="https://tools.ietf.org/html/rfc6265#section-4.2">cookie</a>s.
      */
-    Iterator<? extends HttpCookie> getCookies();
+    Iterator<? extends HttpCookiePair> getCookies();
 
     /**
      * Gets the <a href="https://tools.ietf.org/html/rfc6265#section-4.2">cookie</a>s with the same name.
      *
-     * @param name the cookie-name of the {@link HttpCookie}s to get.
-     * @return An {@link Iterator} where all the {@link HttpCookie}s have the same name.
+     * @param name the cookie-name of the {@link HttpSetCookie}s to get.
+     * @return An {@link Iterator} where all the {@link HttpSetCookie}s have the same name.
      */
-    Iterator<? extends HttpCookie> getCookies(CharSequence name);
+    Iterator<? extends HttpCookiePair> getCookies(CharSequence name);
 
     /**
      * Gets all the <a href="https://tools.ietf.org/html/rfc6265#section-4.1">set-cookie</a>s.
@@ -381,94 +419,82 @@ public interface HttpHeaders extends Iterable<Entry<CharSequence, CharSequence>>
      * @return An {@link Iterator} with all the
      * <a href="https://tools.ietf.org/html/rfc6265#section-4.1">set-cookie</a>s.
      */
-    Iterator<? extends HttpCookie> getSetCookies();
+    Iterator<? extends HttpSetCookie> getSetCookies();
 
     /**
      * Gets the <a href="https://tools.ietf.org/html/rfc6265#section-4.1">set-cookie</a>s with the same name.
      *
-     * @param name the cookie-name of the {@link HttpCookie}s to get.
-     * @return An {@link Iterator} where all the {@link HttpCookie}s have the same name.
+     * @param name the cookie-name of the {@link HttpSetCookie}s to get.
+     * @return An {@link Iterator} where all the {@link HttpSetCookie}s have the same name.
      */
-    Iterator<? extends HttpCookie> getSetCookies(CharSequence name);
-
-    /**
-     * Gets the <a href="https://tools.ietf.org/html/rfc6265#section-4.2">cookie</a>s with the same name.
-     *
-     * @param name the cookie-name of the {@link HttpCookie}s to get.
-     * @param domain the domain-value of the {@link HttpCookie}s to get. This value may be matched according
-     * to the <a href="https://tools.ietf.org/html/rfc6265#section-5.1.3">Domain Matching</a> algorithm.
-     * @param path the path-av of the {@link HttpCookie}s to get. This value may be matched according
-     * to the <a href="https://tools.ietf.org/html/rfc6265#section-5.1.4">Path Matching</a> algorithm.
-     * @return An {@link Iterator} where all the {@link HttpCookie}s match the parameter values.
-     */
-    Iterator<? extends HttpCookie> getCookies(CharSequence name, CharSequence domain, CharSequence path);
+    Iterator<? extends HttpSetCookie> getSetCookies(CharSequence name);
 
     /**
      * Gets the <a href="https://tools.ietf.org/html/rfc6265#section-4.1">set-cookie</a>s with the same name.
      *
-     * @param name the cookie-name of the {@link HttpCookie}s to get.
-     * @param domain the domain-value of the {@link HttpCookie}s to get. This value may be matched according
+     * @param name the cookie-name of the {@link HttpSetCookie}s to get.
+     * @param domain the domain-value of the {@link HttpSetCookie}s to get. This value may be matched according
      * to the <a href="https://tools.ietf.org/html/rfc6265#section-5.1.3">Domain Matching</a> algorithm.
-     * @param path the path-av of the {@link HttpCookie}s to get. This value may be matched according
+     * @param path the path-av of the {@link HttpSetCookie}s to get. This value may be matched according
      * to the <a href="https://tools.ietf.org/html/rfc6265#section-5.1.4">Path Matching</a> algorithm.
-     * @return An {@link Iterator} where all the {@link HttpCookie}s match the parameter values.
+     * @return An {@link Iterator} where all the {@link HttpSetCookie}s match the parameter values.
      */
-    Iterator<? extends HttpCookie> getSetCookies(CharSequence name, CharSequence domain, CharSequence path);
+    Iterator<? extends HttpSetCookie> getSetCookies(CharSequence name, CharSequence domain, CharSequence path);
 
     /**
      * Adds a <a href="https://tools.ietf.org/html/rfc6265#section-4.2">cookie</a>.
      * <p>
-     * This may result in multiple {@link HttpCookie}s with same name.
+     * This may result in multiple {@link HttpCookiePair}s with same name.
      *
      * @param cookie the cookie to add.
      * @return {@code this}.
      */
-    HttpHeaders addCookie(HttpCookie cookie);
+    HttpHeaders addCookie(HttpCookiePair cookie);
 
     /**
      * Adds a <a href="https://tools.ietf.org/html/rfc6265#section-4.2">cookie</a> with the specified {@code name} and
      * {@code value}.
      * <p>
-     * This may result in multiple {@link HttpCookie}s with same name. Added cookie will not be wrapped, not secure, and
-     * not HTTP-only, with no path, domain, expire date and maximum age.
+     * This may result in multiple {@link HttpSetCookie}s with same name. Added cookie will not be wrapped, not secure,
+     * and not HTTP-only, with no path, domain, expire date and maximum age.
      *
      * @param name the name of the cookie.
      * @param value the value of the cookie.
      * @return {@code this}.
      */
     default HttpHeaders addCookie(final CharSequence name, final CharSequence value) {
-        return addCookie(newCookie(name, value));
+        return addCookie(new DefaultHttpCookiePair(name, value));
     }
 
     /**
      * Adds a <a href="https://tools.ietf.org/html/rfc6265#section-4.1">set-cookie</a>.
      * <p>
-     * This may result in multiple {@link HttpCookie}s with same name.
+     * This may result in multiple {@link HttpSetCookie}s with same name.
      *
      * @param cookie the cookie to add.
      * @return {@code this}.
      */
-    HttpHeaders addSetCookie(HttpCookie cookie);
+    HttpHeaders addSetCookie(HttpSetCookie cookie);
 
     /**
      * Adds a <a href="https://tools.ietf.org/html/rfc6265#section-4.1">set-cookie</a> with the specified {@code name}
      * and {@code value}.
      * <p>
-     * This may result in multiple {@link HttpCookie}s with same name. Added cookie will not be wrapped, not secure, and
-     * not HTTP-only, with no path, domain, expire date and maximum age.
+     * This may result in multiple {@link HttpSetCookie}s with same name. Added cookie will not be wrapped, not secure,
+     * and not HTTP-only, with no path, domain, expire date and maximum age.
      *
      * @param name the name of the cookie.
      * @param value the value of the cookie.
      * @return {@code this}.
      */
     default HttpHeaders addSetCookie(final CharSequence name, final CharSequence value) {
-        return addSetCookie(newCookie(name, value));
+        return addSetCookie(new DefaultHttpSetCookie(name, value));
     }
 
     /**
      * Removes all <a href="https://tools.ietf.org/html/rfc6265#section-4.2">cookie</a> identified by {@code name}.
      *
-     * @param name the cookie-name of the {@link HttpCookie}s to remove.
+     * @param name the cookie-name of the {@link HttpSetCookie}s to remove.
      * @return {@code true} if at least one entry has been removed.
      */
     boolean removeCookies(CharSequence name);
@@ -476,30 +502,18 @@ public interface HttpHeaders extends Iterable<Entry<CharSequence, CharSequence>>
     /**
      * Removes all <a href="https://tools.ietf.org/html/rfc6265#section-4.1">set-cookie</a> identified by {@code name}.
      *
-     * @param name the cookie-name of the {@link HttpCookie}s to remove.
+     * @param name the cookie-name of the {@link HttpSetCookie}s to remove.
      * @return {@code true} if at least one entry has been removed.
      */
     boolean removeSetCookies(CharSequence name);
 
     /**
-     * Removes all <a href="https://tools.ietf.org/html/rfc6265#section-4.2">cookie</a> identified by {@code name}.
-     *
-     * @param name the cookie-name of the {@link HttpCookie}s to remove.
-     * @param domain the domain-value of the {@link HttpCookie}s to remove. This value may be matched according
-     * to the <a href="https://tools.ietf.org/html/rfc6265#section-5.1.3">Domain Matching</a> algorithm.
-     * @param path the path-av of the {@link HttpCookie}s to remove. This value may be matched according
-     * to the <a href="https://tools.ietf.org/html/rfc6265#section-5.1.4">Path Matching</a> algorithm.
-     * @return {@code true} if at least one entry has been removed.
-     */
-    boolean removeCookies(CharSequence name, CharSequence domain, CharSequence path);
-
-    /**
      * Removes all <a href="https://tools.ietf.org/html/rfc6265#section-4.1">set-cookie</a> identified by {@code name}.
      *
-     * @param name the cookie-name of the {@link HttpCookie}s to remove.
-     * @param domain the domain-value of the {@link HttpCookie}s to remove. This value may be matched according
+     * @param name the cookie-name of the {@link HttpSetCookie}s to remove.
+     * @param domain the domain-value of the {@link HttpSetCookie}s to remove. This value may be matched according
      * to the <a href="https://tools.ietf.org/html/rfc6265#section-5.1.3">Domain Matching</a> algorithm.
-     * @param path the path-av of the {@link HttpCookie}s to remove. This value may be matched according
+     * @param path the path-av of the {@link HttpSetCookie}s to remove. This value may be matched according
      * to the <a href="https://tools.ietf.org/html/rfc6265#section-5.1.4">Path Matching</a> algorithm.
      * @return {@code true} if at least one entry has been removed.
      */

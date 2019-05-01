@@ -15,6 +15,7 @@
  */
 package io.servicetalk.client.api.internal;
 
+import io.servicetalk.client.api.ConsumableEvent;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.api.Completable;
@@ -23,6 +24,7 @@ import io.servicetalk.concurrent.internal.LatestValueSubscriber;
 
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
+import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 
@@ -37,12 +39,13 @@ abstract class AbstractRequestConcurrencyController implements RequestConcurrenc
     private volatile int pendingRequests;
     private final LatestValueSubscriber<Integer> maxConcurrencyHolder;
 
-    AbstractRequestConcurrencyController(final Publisher<Integer> maxConcurrencySettingStream,
-                                         final Completable onClose) {
-        // Subscribe to onClose() before maxConcurrencySettingStream, this order increases the chances of capturing the
-        // STATE_QUIT before observing 0 from maxConcurrencySettingStream which could lead to more ambiguous max
-        // concurrency error messages for the users on connection tear-down.
-        toSource(onClose).subscribe(new CompletableSource.Subscriber() {
+    AbstractRequestConcurrencyController(final Publisher<? extends ConsumableEvent<Integer>> maxConcurrency,
+                                         final Completable onClosing) {
+        maxConcurrencyHolder = new LatestValueSubscriber<>();
+        // Subscribe to onClosing() before maxConcurrency, this order increases the chances of capturing the STATE_QUIT
+        // before observing 0 from maxConcurrency which could lead to more ambiguous max concurrency error messages for
+        // the users on connection tear-down.
+        toSource(onClosing.publishAndSubscribeOnOverride(immediate())).subscribe(new CompletableSource.Subscriber() {
             @Override
             public void onSubscribe(Cancellable cancellable) {
                 // No op
@@ -58,8 +61,10 @@ abstract class AbstractRequestConcurrencyController implements RequestConcurrenc
                 pendingRequests = STATE_QUIT;
             }
         });
-        maxConcurrencyHolder = new LatestValueSubscriber<>();
-        toSource(maxConcurrencySettingStream).subscribe(maxConcurrencyHolder);
+        toSource(maxConcurrency
+                .afterOnNext(ConsumableEvent::eventConsumed)
+                .map(ConsumableEvent::event)
+        ).subscribe(maxConcurrencyHolder);
     }
 
     @Override

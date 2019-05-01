@@ -33,7 +33,8 @@ public class ReservableRequestConcurrencyControllerMultiTest extends AbstractReq
     protected ReservableRequestConcurrencyController newController(final Publisher<Integer> maxSetting,
                                                                    final Completable onClosing,
                                                                    final int init) {
-        return ReservableRequestConcurrencyControllers.newController(maxSetting, onClosing, init);
+        return ReservableRequestConcurrencyControllers.newController(maxSetting.map(IgnoreConsumedEvent::new),
+                onClosing, init);
     }
 
     @Test

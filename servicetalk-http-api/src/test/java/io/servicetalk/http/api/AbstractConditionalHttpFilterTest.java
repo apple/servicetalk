@@ -43,7 +43,8 @@ public abstract class AbstractConditionalHttpFilterTest {
     protected static final String FILTERED_HEADER = "X-Filtered";
 
     protected static final StreamingHttpRequestResponseFactory REQ_RES_FACTORY =
-            new DefaultStreamingHttpRequestResponseFactory(DEFAULT_ALLOCATOR, DefaultHttpHeadersFactory.INSTANCE);
+            new DefaultStreamingHttpRequestResponseFactory(DEFAULT_ALLOCATOR, DefaultHttpHeadersFactory.INSTANCE,
+                    HttpProtocolVersion.HTTP_1_1);
 
     @ClassRule
     public static final ExecutionContextRule TEST_CTX = cached();

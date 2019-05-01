@@ -54,6 +54,7 @@ import java.util.function.Function;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
+import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
@@ -335,7 +336,7 @@ public class PartitionedHttpClientTest {
             udClient = HttpClients.forSingleAddress(serverHostAndPort(disco)).build();
 
             requestFactory = new DefaultStreamingHttpRequestResponseFactory(
-                    udClient.executionContext().bufferAllocator(), DefaultHttpHeadersFactory.INSTANCE);
+                    udClient.executionContext().bufferAllocator(), DefaultHttpHeadersFactory.INSTANCE, HTTP_1_1);
 
             clients = ClientGroup.from(group ->
                     HttpClients.forSingleAddress(group.address())

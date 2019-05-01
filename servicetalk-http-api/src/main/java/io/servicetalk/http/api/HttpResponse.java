@@ -102,7 +102,7 @@ public interface HttpResponse extends HttpResponseMetaData, TrailersHolder {
     }
 
     @Override
-    default HttpResponse addCookie(final HttpCookie cookie) {
+    default HttpResponse addCookie(final HttpCookiePair cookie) {
         HttpResponseMetaData.super.addCookie(cookie);
         return this;
     }
@@ -114,7 +114,7 @@ public interface HttpResponse extends HttpResponseMetaData, TrailersHolder {
     }
 
     @Override
-    default HttpResponse addSetCookie(final HttpCookie cookie) {
+    default HttpResponse addSetCookie(final HttpSetCookie cookie) {
         HttpResponseMetaData.super.addSetCookie(cookie);
         return this;
     }

@@ -61,6 +61,7 @@ import static org.apache.directory.server.dns.messages.RecordType.AAAA;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.lessThan;
 import static org.junit.Assert.assertNull;
@@ -473,7 +474,7 @@ public class DefaultDnsServiceDiscovererTest {
         recordStore.addResponse("apple.com", A, ipv4);
         recordStore.addResponse("apple.com", AAAA, nextIp6());
 
-        final int expectedActiveCount = 1;
+        final int expectedActiveCount = 2;
         final int expectedInactiveCount = 0;
 
         CountDownLatch latch = new CountDownLatch(expectedActiveCount + expectedInactiveCount);
@@ -485,7 +486,7 @@ public class DefaultDnsServiceDiscovererTest {
         latch.await();
         assertNull(throwableRef.get());
         assertThat(subscriber.activeEventAddresses.size(), greaterThanOrEqualTo(expectedActiveCount));
-        assertThat(subscriber.activeEventAddresses.get(0), equalTo(ipv4));
+        assertThat(subscriber.activeEventAddresses, hasItem(ipv4));
         assertThat(subscriber.inactiveEventAddresses.size(), equalTo(expectedInactiveCount));
     }
 

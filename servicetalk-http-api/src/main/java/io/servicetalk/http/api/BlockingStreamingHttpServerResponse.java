@@ -128,7 +128,7 @@ public abstract class BlockingStreamingHttpServerResponse extends DefaultHttpRes
     }
 
     @Override
-    public BlockingStreamingHttpServerResponse addCookie(final HttpCookie cookie) {
+    public BlockingStreamingHttpServerResponse addCookie(final HttpCookiePair cookie) {
         super.addCookie(cookie);
         return this;
     }
@@ -140,7 +140,7 @@ public abstract class BlockingStreamingHttpServerResponse extends DefaultHttpRes
     }
 
     @Override
-    public BlockingStreamingHttpServerResponse addSetCookie(final HttpCookie cookie) {
+    public BlockingStreamingHttpServerResponse addSetCookie(final HttpSetCookie cookie) {
         super.addSetCookie(cookie);
         return this;
     }

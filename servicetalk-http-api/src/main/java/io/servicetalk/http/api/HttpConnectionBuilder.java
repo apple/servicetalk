@@ -24,6 +24,7 @@ import io.servicetalk.transport.api.IoExecutor;
 
 import java.net.SocketOption;
 import java.util.function.Predicate;
+import javax.annotation.Nullable;
 
 import static io.servicetalk.http.api.BlockingUtils.blockingInvocation;
 
@@ -54,6 +55,15 @@ public abstract class HttpConnectionBuilder<ResolvedAddress> extends BaseHttpBui
 
     @Override
     public abstract HttpConnectionBuilder<ResolvedAddress> headersFactory(HttpHeadersFactory headersFactory);
+
+    @Override
+    public abstract HttpConnectionBuilder<ResolvedAddress> h2HeadersFactory(HttpHeadersFactory headersFactory);
+
+    @Override
+    public abstract HttpConnectionBuilder<ResolvedAddress> h2PriorKnowledge(boolean h2PriorKnowledge);
+
+    @Override
+    public abstract HttpConnectionBuilder<ResolvedAddress> h2FrameLogger(@Nullable String h2FrameLogger);
 
     @Override
     public abstract HttpConnectionBuilder<ResolvedAddress> maxInitialLineLength(int maxInitialLineLength);

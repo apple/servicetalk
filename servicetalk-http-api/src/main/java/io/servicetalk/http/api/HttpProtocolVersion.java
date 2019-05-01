@@ -24,7 +24,6 @@ import static java.nio.charset.StandardCharsets.US_ASCII;
  * HTTP <a href="https://tools.ietf.org/html/rfc7230.html#section-2.6">protocol versioning</a>.
  */
 public final class HttpProtocolVersion {
-
     /**
      * HTTP/1.1 version described in <a href="https://tools.ietf.org/html/rfc7230">RFC 7230</a>.
      */

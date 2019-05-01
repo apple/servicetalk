@@ -17,7 +17,6 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.BufferAllocator;
 
-import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -26,27 +25,31 @@ import static java.util.Objects.requireNonNull;
 public final class DefaultStreamingHttpRequestResponseFactory implements StreamingHttpRequestResponseFactory {
     private final BufferAllocator allocator;
     private final HttpHeadersFactory headersFactory;
+    private final HttpProtocolVersion protocolVersion;
 
     /**
      * Create a new instance.
      * @param allocator The {@link BufferAllocator} to use for serialization.
      * @param headersFactory The {@link HttpHeadersFactory} to use for request/response creation.
+     * @param protocolVersion The {@link HttpProtocolVersion} to use for new requests/responses.
      */
     public DefaultStreamingHttpRequestResponseFactory(final BufferAllocator allocator,
-                                                      final HttpHeadersFactory headersFactory) {
+                                                      final HttpHeadersFactory headersFactory,
+                                                      final HttpProtocolVersion protocolVersion) {
         this.allocator = requireNonNull(allocator);
         this.headersFactory = requireNonNull(headersFactory);
+        this.protocolVersion = requireNonNull(protocolVersion);
     }
 
     @Override
     public StreamingHttpRequest newRequest(final HttpRequestMethod method, final String requestTarget) {
-        return StreamingHttpRequests.newRequest(method, requestTarget, HTTP_1_1, headersFactory.newHeaders(),
+        return StreamingHttpRequests.newRequest(method, requestTarget, protocolVersion, headersFactory.newHeaders(),
                 headersFactory.newTrailers(), allocator);
     }
 
     @Override
     public StreamingHttpResponse newResponse(final HttpResponseStatus status) {
-        return StreamingHttpResponses.newResponse(status, HTTP_1_1, headersFactory.newHeaders(),
+        return StreamingHttpResponses.newResponse(status, protocolVersion, headersFactory.newHeaders(),
                 headersFactory.newTrailers(), allocator);
     }
 }
