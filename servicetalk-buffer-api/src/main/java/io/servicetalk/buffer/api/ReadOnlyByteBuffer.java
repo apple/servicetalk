@@ -406,6 +406,7 @@ final class ReadOnlyByteBuffer extends AbstractBuffer {
     private Buffer copy(ByteBuffer byteBufferSlice, int length) {
         ByteBuffer tmpBuf = isDirect() ? allocateDirect(length) : allocate(length);
         tmpBuf.put(byteBufferSlice);
+        tmpBuf.flip();
         return new ReadOnlyByteBuffer(tmpBuf.asReadOnlyBuffer());
     }
 

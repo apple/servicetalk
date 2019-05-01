@@ -53,4 +53,11 @@ public class ReadOnlyByteBufferTest {
         Buffer buffer1 = DEFAULT_RO_ALLOCATOR.wrap(expectedBuffer);
         assertEquals(Long.MAX_VALUE, buffer1.getLong(buffer1.readerIndex()));
     }
+
+    @Test
+    public void copy() {
+        byte[] bytes = "test".getBytes(US_ASCII);
+        Buffer buffer = DEFAULT_RO_ALLOCATOR.wrap(bytes);
+        assertEquals(buffer, buffer.copy());
+    }
 }
