@@ -12,7 +12,7 @@ calculation is done for those inputs.
 === Streaming core
 
 ServiceTalk core is based on the asynchronous streaming programming model and hence exposes different points where user
-code may interact with the eventloop.
+code may interact with the event loop.
 
 (Refer to link:../../docs/Blocking.adoc#user-code-and-eventloop[User code and Eventloop] to understand data and control
 signals terminology)
@@ -51,7 +51,7 @@ we have the following points that require offloads:
 
 link:../../README.adoc#programming-paradigms[Programming model] plays an important role in determining an appropriate
 offloading strategy since they naturally omit some paths that user code can not interact with the event loop. The
-following matrix elaborates the paths which require offloading with a (✓) and which do not with a (X).
+following matrix elaborates the paths which require offloading with a (✓) and which do not with a (✗).
 
 ==== Client
 
@@ -65,18 +65,18 @@ following matrix elaborates the paths which require offloading with a (✓) and 
 
 |link:../README.adoc#asynchronous-and-aggregated-1[asynchronous and aggregated]
 ^|✓
-^|X
-^|X
+^|✗
+^|✗
 
 |link:../README.adoc#blocking-and-streaming-1[blocking and streaming]
-^|X
-^|X
+^|✗
+^|✗
 ^|✓
 
 |link:../README.adoc#client-blocking-and-aggregated[blocking and aggregated]
-^|X
-^|X
-^|X
+^|✗
+^|✗
+^|✗
 |===
 
 ==== Server
@@ -92,20 +92,20 @@ following matrix elaborates the paths which require offloading with a (✓) and 
 |link:../README.adoc#asynchronous-and-aggregated[asynchronous and aggregated]
 ^|✓
 ^|✓
-^|X
-^|X
+^|✗
+^|✗
 
 |link:../README.adoc#blocking-and-streaming[blocking and streaming]
 ^|✓
-^|X
-^|X
-^|X
+^|✗
+^|✗
+^|✗
 
 |link:../README.adoc#blocking-and-aggregated[blocking and aggregated]
 ^|✓
-^|X
-^|X
-^|X
+^|✗
+^|✗
+^|✗
 |===
 
 === User code
@@ -149,12 +149,12 @@ client.request(HttpExecutionStrategies.noOffloadsStrategy(), client.get("/non-bl
 
 // Processing of this request has blocking code
 client.request(client.get("/blocking"))
-        .map(resp -> blockingCall());
+        .map(resp -> aBlockingCall());
 ----
 
 === Server
 
 ServiceTalk only associates a single service with an HTTP server but it additionally provides ways to do routing from
-within a service. A link:../../servicetalk-http-router-jersey/README.adoc[jersey router] is one such router which
+within a service. A link:../../servicetalk-http-router-jersey/README.adoc[Jersey router] is one such router which
 provides ways to specify different
 link:../../servicetalk-http-router-jersey/README.adoc#execution-strategies[execution strategies] per route.

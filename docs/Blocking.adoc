@@ -1,14 +1,14 @@
 = May I block?
 
-`TL;DR; By default, users are free to write blocking code when using ServiceTalk.`
+IMPORTANT: By default, users are free to write blocking code when using ServiceTalk.
 
 == Background
 
 ServiceTalk uses link:https://netty.io[Netty] under the hood which uses the
-link:https://en.wikipedia.org/wiki/Event_loop[EventLoop programming construct]. A drawback of this construct is that
-any potentially long running work (blocking calls, intensive computations, etc) that is done on the `EventLoop`
+link:https://en.wikipedia.org/wiki/Event_loop[Event loop programming construct]. A drawback of this construct is that
+any potentially long running work (blocking calls, intensive computations, etc) that is done on the event loop
 negatively impacts the processing of all subsequent tasks. This is the reason why writing blocking code is usually
-discouraged when using netty.
+discouraged when using Netty.
 
 == Reality
 
@@ -36,18 +36,18 @@ Simply put, ServiceTalk makes sure that no user code is called on the event loop
 link:../servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Executor.java[Executor] to __offload__
 invocation of user code out of the event loop to a different thread.
 
-=== User code and Eventloop
+=== User code and event loop
 
-Although the outcome is simple that no user code should run on the eventloop, implementation of this offloading is
+Although the outcome is simple that no user code should run on the event loop, implementation of this offloading is
 either naive hence sub-optimal or fairly complex. ServiceTalk internally does the heavy lifting to make sure that it
 does not offload more than what is required. In other words, it reduces offloading when it can deduce that no user code
 can interact with the event loop on a certain path.
 
-ServiceTalk abstracts interaction with the event loop using its
+ServiceTalk abstracts interactions with the event loop using its
 link:../README.adoc#asynchronous-primitives[asynchronous primitives] and hence those interactions can be expressed as
-the signals that are exchanged on those asynchronous primitives as elaborated in the diagram below:
+the signals that are exchanged on those asynchronous primitives, as elaborated in the diagram below:
 
-image::BlockingScenarios.jpg[Data and control flow in an execution chain]
+image::BlockingScenarios.png[Data and control flow in an execution chain]
 
 
 ServiceTalk uses different `publishOn` and `subscribeOn` operators on these asynchronous primitives to implement
@@ -78,9 +78,9 @@ As explained above, ServiceTalk does the heavy lifting of determining the optima
 strategy is determined based on different inputs as outlined below:
 
 . __link:../README.adoc#programming-paradigms[Programming model]__: A certain programming model may reduce the paths
-user code can interact with event loop and hence make some offloading redundant.
+user code can interact with the event loop and hence make some offloading redundant.
 . __Presence of user code__: ServiceTalk is flexible and allows users to add code at different places.
-Presence of any user code is deemed as unsafe and hence require offloading. If users are sure the added code does not
+Presence of any user code is deemed as unsafe and hence requires offloading. If users are sure the added code does not
 block, they can declare so through the constructs provided at the
 link:../servicetalk-http-api/docs/Blocking.adoc[protocol level].
 . __Override execution strategy__: ServiceTalk provides a way for users to override the
@@ -91,13 +91,14 @@ strategy.
 ==== Opt-in to run on event loop
 
 ServiceTalk acknowledges that [.underline]#writing completely asynchronous code is hard and is __not__ an
-"all or nothing" decision.#
+"all or nothing" decision#
 Practically, applications will have a mixed profile such that some paths are completely asynchronous and some paths have
 blocking code. This is the reason it provides ways to selectively opt-in for disabling offloading for the same
-client/server. This selective opt-ins are specific to protocols and hence elaborated under
+client/server. This selective opt-ins are specific to protocols, for example as elaborated under
 link:../servicetalk-http-api/docs/Blocking.adoc[HTTP]. In additional there is a way to override the strategy for a
  client/server but it comes with additional responsibility from the user assuming "you know what you are doing".
 
 === ServiceTalk developers
 
 Internals of ServiceTalk still discourages blocking code and hence should be avoided while contributing to ServiceTalk.
+Unless there is a valid reason to do it, ServiceTalk internals are always non-blocking.

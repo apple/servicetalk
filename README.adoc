@@ -90,7 +90,7 @@ and are permitted to break API/ABI.
 
 == Basic Architecture
 
-=== Blocking safe by default
+=== Blocking Safe By Default
 
 ServiceTalk supports different <<Programming Paradigms, programming models>> for users to work with. However the freedom
 to write blocking code is not just limited to blocking APIs. Users may write blocking code while interacting

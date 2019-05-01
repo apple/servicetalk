@@ -35,7 +35,7 @@ ServiceTalk enforces that each asynchronous source **MUST** be associated with a
 with its `Subscriber`. The below diagram illustrates the interaction between an asynchronous source, its `Subscriber`,
 its operators, and the `Executor`.
 
-image::ExecutorThreadSelection.jpg[Executor inference]
+image::ExecutorThreadSelection.png[Executor inference]
 
 The above interaction has a few important points:
 
