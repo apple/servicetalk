@@ -15,10 +15,13 @@
  */
 package io.servicetalk.http.netty;
 
+import io.servicetalk.client.api.ConsumableEvent;
+import io.servicetalk.client.api.internal.IgnoreConsumedEvent;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
+import io.servicetalk.http.api.HttpEventKey;
 import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpRequestMethod;
@@ -44,17 +47,17 @@ abstract class AbstractStreamingHttpConnection<CC extends NettyConnectionContext
 
     final CC connection;
     final HttpExecutionContext executionContext;
-    private final Publisher<Integer> maxConcurrencySetting;
+    private final Publisher<? extends ConsumableEvent<Integer>> maxConcurrencySetting;
     private final StreamingHttpRequestResponseFactory reqRespFactory;
 
     AbstractStreamingHttpConnection(
-            CC conn, ReadOnlyHttpClientConfig config, HttpExecutionContext executionContext,
+            CC conn, final int maxPipelinedRequests, HttpExecutionContext executionContext,
             StreamingHttpRequestResponseFactory reqRespFactory) {
         this.connection = requireNonNull(conn);
         this.executionContext = requireNonNull(executionContext);
         this.reqRespFactory = requireNonNull(reqRespFactory);
-        maxConcurrencySetting = from(config.maxPipelinedRequests())
-                .concat(connection.onClosing()).concat(Single.succeeded(0));
+        maxConcurrencySetting = from(new IgnoreConsumedEvent<>(maxPipelinedRequests))
+                .concat(connection.onClosing()).concat(Single.succeeded(new IgnoreConsumedEvent<>(0)));
     }
 
     @Override
@@ -64,11 +67,9 @@ abstract class AbstractStreamingHttpConnection<CC extends NettyConnectionContext
 
     @SuppressWarnings("unchecked")
     @Override
-    public final <T> Publisher<T> settingStream(final SettingKey<T> settingKey) {
-        if (settingKey == SettingKey.MAX_CONCURRENCY) {
-            return (Publisher<T>) maxConcurrencySetting;
-        }
-        return failed(new IllegalArgumentException("Unknown setting: " + settingKey));
+    public final <T> Publisher<? extends T> transportEventStream(final HttpEventKey<T> eventKey) {
+        return eventKey == HttpEventKey.MAX_CONCURRENCY ? (Publisher<? extends T>) maxConcurrencySetting :
+                failed(new IllegalArgumentException("Unknown key: " + eventKey));
     }
 
     @Override

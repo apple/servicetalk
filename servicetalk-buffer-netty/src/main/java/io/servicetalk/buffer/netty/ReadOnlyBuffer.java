@@ -76,6 +76,11 @@ final class ReadOnlyBuffer extends WrappedBuffer {
     }
 
     @Override
+    public Buffer writerIndex(int writerIndex) {
+        throw new ReadOnlyBufferException();
+    }
+
+    @Override
     public Buffer capacity(int newCapacity) {
         throw new ReadOnlyBufferException();
     }

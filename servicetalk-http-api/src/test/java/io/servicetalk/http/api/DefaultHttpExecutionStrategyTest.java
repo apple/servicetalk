@@ -177,7 +177,7 @@ public class DefaultHttpExecutionStrategyTest {
         });
         StreamingHttpRequest req = analyzer.createNewRequest();
         DefaultStreamingHttpRequestResponseFactory respFactory =
-                new DefaultStreamingHttpRequestResponseFactory(DEFAULT_ALLOCATOR, INSTANCE);
+                new DefaultStreamingHttpRequestResponseFactory(DEFAULT_ALLOCATOR, INSTANCE, HTTP_1_1);
         TestHttpServiceContext ctx = new TestHttpServiceContext(INSTANCE, respFactory,
                 new ExecutionContextToHttpExecutionContext(contextRule, strategy));
         analyzer.instrumentedResponseForServer(svc.handle(ctx, req, ctx.streamingResponseFactory()))

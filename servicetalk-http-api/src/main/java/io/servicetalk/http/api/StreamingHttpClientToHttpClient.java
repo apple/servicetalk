@@ -18,7 +18,6 @@ package io.servicetalk.http.api;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.http.api.FilterableStreamingHttpConnection.SettingKey;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.DelegatingConnectionContext;
 import io.servicetalk.transport.api.ExecutionContext;
@@ -164,8 +163,8 @@ final class StreamingHttpClientToHttpClient implements HttpClient {
         }
 
         @Override
-        public <T> Publisher<T> settingStream(final SettingKey<T> settingKey) {
-            return connection.settingStream(settingKey);
+        public <T> Publisher<? extends T> transportEventStream(final HttpEventKey<T> eventKey) {
+            return connection.transportEventStream(eventKey);
         }
 
         @Override

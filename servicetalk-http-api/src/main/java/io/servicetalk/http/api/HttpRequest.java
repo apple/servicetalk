@@ -135,7 +135,7 @@ public interface HttpRequest extends HttpRequestMetaData, TrailersHolder {
     }
 
     @Override
-    default HttpRequest addCookie(final HttpCookie cookie) {
+    default HttpRequest addCookie(final HttpCookiePair cookie) {
         HttpRequestMetaData.super.addCookie(cookie);
         return this;
     }
@@ -147,7 +147,7 @@ public interface HttpRequest extends HttpRequestMetaData, TrailersHolder {
     }
 
     @Override
-    default HttpRequest addSetCookie(final HttpCookie cookie) {
+    default HttpRequest addSetCookie(final HttpSetCookie cookie) {
         HttpRequestMetaData.super.addSetCookie(cookie);
         return this;
     }

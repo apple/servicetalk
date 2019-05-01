@@ -64,7 +64,7 @@ public interface HttpResponseMetaData extends HttpMetaData {
     }
 
     @Override
-    default HttpResponseMetaData addCookie(final HttpCookie cookie) {
+    default HttpResponseMetaData addCookie(final HttpCookiePair cookie) {
         HttpMetaData.super.addCookie(cookie);
         return this;
     }
@@ -76,7 +76,7 @@ public interface HttpResponseMetaData extends HttpMetaData {
     }
 
     @Override
-    default HttpResponseMetaData addSetCookie(final HttpCookie cookie) {
+    default HttpResponseMetaData addSetCookie(final HttpSetCookie cookie) {
         HttpMetaData.super.addSetCookie(cookie);
         return this;
     }

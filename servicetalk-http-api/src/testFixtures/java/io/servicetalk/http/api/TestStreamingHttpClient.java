@@ -128,8 +128,8 @@ public final class TestStreamingHttpClient {
                             }
 
                             @Override
-                            public <T> Publisher<T> settingStream(final SettingKey<T> settingKey) {
-                                return rc.settingStream(settingKey);
+                            public <T> Publisher<? extends T> transportEventStream(final HttpEventKey<T> settingKey) {
+                                return rc.transportEventStream(settingKey);
                             }
 
                             @Override

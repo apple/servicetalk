@@ -1,0 +1,35 @@
+= Security Utils for Jersey Router
+
+This module provides JAX-RS filters that set `javax.ws.rs.core.SecurityContext` for requests authenticated with
+various authentication schemes.
+
+[[auth-basic]]
+== Basic Authentication
+
+This module establishes a JAX-RS `SecurityContext` for requests that have been authenticated with
+the `Basic` HTTP Authentication Scheme (link:https://tools.ietf.org/html/rfc7617[RFC7617]),
+via the `BasicAuthHttpServiceFilter` from `servicetalk-http-utils`.
+Therefore a `BasicAuthHttpServiceFilter` **must be configured** for all requests that are filtered by this module.
+This can be achieved by configuring the `BasicAuthHttpServiceFilter` either globally
+for the whole ServiceTalk HTTP server or to specific paths with the `HttpPredicateRouterBuilder`.
+
+TIP: This is similar to configuring security at JavaEE container level in `web.xml`.
+
+link:src/main/java/io/servicetalk/apple/http/basic/auth/jersey/BasicAuthSecurityContextFilters.java[`BasicAuthSecurityContextFilters`]
+provides factory methods for the two main types of JAX-RS filters:
+
+* Globally bound filters, which are applied to all resources of the JAX-RS `javax.ws.rs.core.Application`,
+* Name bound filters, which needs to be manually applied to specific resources via the provided
+link:src/main/java/io/servicetalk/apple/http/basic/auth/jersey/BasicAuthenticated.java[`@BasicAuthenticated`] annotation.
+
+Each of these main types come in two different flavors:
+
+* User info filters, which require the upstream `BasicAuthHttpServiceFilter` to have set an object containing
+user information in the ServiceTalk `AsyncContext`.
+These filters convert the user info into a `java.security.Principal` (unless it is already a `Principal` instance)
+and establish a request `SecurityContext` using this `Principal`.
+* No user info filters, which do not expect any user information in the `AsyncContext`.
+These filters use an anonymous `Principal` when setting the request `SecurityContext`.
+
+Filter builders allow configuring the strategies used for creating `Principal` and `SecurityContext` instances,
+in case the default strategies described above are not sufficient.

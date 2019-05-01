@@ -270,7 +270,7 @@ public abstract class AbstractHttpHeadersTest {
         final HttpHeaders headers = newHeaders();
         headers.add("name", "value");
 
-        final HttpHeaders copy = headers.copy();
+        final HttpHeaders copy = newHeaders().add(headers);
 
         assertNotSame(headers, copy);
         assertTrue(copy.contains("name", "value"));

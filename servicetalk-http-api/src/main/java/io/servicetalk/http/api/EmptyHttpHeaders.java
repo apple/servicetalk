@@ -57,11 +57,6 @@ public final class EmptyHttpHeaders implements HttpHeaders {
     }
 
     @Override
-    public boolean contains(CharSequence name, CharSequence value) {
-        return false;
-    }
-
-    @Override
     public boolean contains(CharSequence name, CharSequence value, boolean caseInsensitive) {
         return false;
     }
@@ -132,11 +127,6 @@ public final class EmptyHttpHeaders implements HttpHeaders {
     }
 
     @Override
-    public boolean remove(final CharSequence name, final CharSequence value) {
-        return false;
-    }
-
-    @Override
     public boolean remove(CharSequence name, CharSequence value, boolean caseInsensitive) {
         return false;
     }
@@ -149,11 +139,6 @@ public final class EmptyHttpHeaders implements HttpHeaders {
     @Override
     public Iterator<Map.Entry<CharSequence, CharSequence>> iterator() {
         return emptyIterator();
-    }
-
-    @Override
-    public HttpHeaders copy() {
-        return this;
     }
 
     @Override
@@ -183,55 +168,49 @@ public final class EmptyHttpHeaders implements HttpHeaders {
 
     @Nullable
     @Override
-    public HttpCookie getCookie(final CharSequence name) {
+    public HttpCookiePair getCookie(final CharSequence name) {
         return null;
     }
 
     @Nullable
     @Override
-    public HttpCookie getSetCookie(final CharSequence name) {
+    public HttpSetCookie getSetCookie(final CharSequence name) {
         return null;
     }
 
     @Override
-    public Iterator<? extends HttpCookie> getCookies() {
+    public Iterator<? extends HttpCookiePair> getCookies() {
         return emptyIterator();
     }
 
     @Override
-    public Iterator<? extends HttpCookie> getCookies(final CharSequence name) {
+    public Iterator<? extends HttpCookiePair> getCookies(final CharSequence name) {
         return emptyIterator();
     }
 
     @Override
-    public Iterator<? extends HttpCookie> getSetCookies() {
+    public Iterator<? extends HttpSetCookie> getSetCookies() {
         return emptyIterator();
     }
 
     @Override
-    public Iterator<? extends HttpCookie> getSetCookies(final CharSequence name) {
+    public Iterator<? extends HttpSetCookie> getSetCookies(final CharSequence name) {
         return emptyIterator();
     }
 
     @Override
-    public Iterator<? extends HttpCookie> getCookies(final CharSequence name, final CharSequence domain,
-                                                     final CharSequence path) {
+    public Iterator<? extends HttpSetCookie> getSetCookies(final CharSequence name, final CharSequence domain,
+                                                           final CharSequence path) {
         return emptyIterator();
     }
 
     @Override
-    public Iterator<? extends HttpCookie> getSetCookies(final CharSequence name, final CharSequence domain,
-                                                        final CharSequence path) {
-        return emptyIterator();
-    }
-
-    @Override
-    public HttpHeaders addCookie(final HttpCookie cookie) {
+    public HttpHeaders addCookie(final HttpCookiePair cookie) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public HttpHeaders addSetCookie(final HttpCookie cookie) {
+    public HttpHeaders addSetCookie(final HttpSetCookie cookie) {
         throw new UnsupportedOperationException();
     }
 
@@ -242,11 +221,6 @@ public final class EmptyHttpHeaders implements HttpHeaders {
 
     @Override
     public boolean removeSetCookies(final CharSequence name) {
-        return false;
-    }
-
-    @Override
-    public boolean removeCookies(final CharSequence name, final CharSequence domain, final CharSequence path) {
         return false;
     }
 

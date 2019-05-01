@@ -21,16 +21,20 @@ import io.servicetalk.tcp.netty.internal.ReadOnlyTcpClientConfig;
 final class ReadOnlyHttpClientConfig {
 
     private final ReadOnlyTcpClientConfig tcpClientConfig;
+    private final ReadOnlyH2ClientConfig h2ClientConfig;
     private final HttpHeadersFactory headersFactory;
     private final int maxInitialLineLength;
     private final int maxHeaderSize;
     private final int maxPipelinedRequests;
     private final int headersEncodedSizeEstimate;
     private final int trailersEncodedSizeEstimate;
+    private final boolean h2PriorKnowledge;
 
     ReadOnlyHttpClientConfig(final HttpClientConfig from) {
         tcpClientConfig = from.tcpClientConfig().asReadOnly();
+        h2ClientConfig = from.h2ClientConfig().asReadOnly();
         headersFactory = from.headersFactory();
+        h2PriorKnowledge = from.isH2PriorKnowledge();
         maxInitialLineLength = from.maxInitialLineLength();
         maxHeaderSize = from.maxHeaderSize();
         maxPipelinedRequests = from.maxPipelinedRequests();
@@ -42,8 +46,16 @@ final class ReadOnlyHttpClientConfig {
         return tcpClientConfig;
     }
 
+    ReadOnlyH2ClientConfig h2ClientConfig() {
+        return h2ClientConfig;
+    }
+
     HttpHeadersFactory headersFactory() {
         return headersFactory;
+    }
+
+    boolean isH2PriorKnowledge() {
+        return h2PriorKnowledge;
     }
 
     int maxInitialLineLength() {

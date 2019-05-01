@@ -346,7 +346,6 @@ public final class HttpResponseStatus {
      * @param reasonPhrase the <a href="https://tools.ietf.org/html/rfc7230.html#section-3.1.2">reason-phrase</a>
      * portion of the response
      * @return an {@link HttpResponseStatus}
-     * @throws IllegalArgumentException if {@code statusCode} is not a 3-digit integer
      */
     public static HttpResponseStatus of(final int statusCode, final String reasonPhrase) {
         final HttpResponseStatus cached = valueOf(statusCode);
@@ -354,6 +353,18 @@ public final class HttpResponseStatus {
             return cached;
         }
         return new HttpResponseStatus(statusCode, reasonPhrase);
+    }
+
+    /**
+     * Convert from {@link CharSequence} to {@link HttpResponseStatus}.
+     *
+     * @param statusCode The {@link CharSequence} to convert, this is expected to be an integer value.
+     * @return a {@link HttpResponseStatus} representation of {@code statusCode}.
+     */
+    public static HttpResponseStatus of(final CharSequence statusCode) {
+        int statusCodeInt = Integer.parseInt(statusCode.toString());
+        final HttpResponseStatus cached = valueOf(statusCodeInt);
+        return cached != null ? cached : new HttpResponseStatus(statusCodeInt, "unknown");
     }
 
     @Nullable

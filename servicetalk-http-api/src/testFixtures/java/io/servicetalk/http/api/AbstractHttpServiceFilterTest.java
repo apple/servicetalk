@@ -37,6 +37,7 @@ import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.internal.FutureUtils.awaitTermination;
 import static io.servicetalk.http.api.AbstractHttpServiceFilterTest.SecurityType.Insecure;
 import static io.servicetalk.http.api.AbstractHttpServiceFilterTest.SecurityType.Secure;
+import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static java.util.Arrays.asList;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -49,7 +50,8 @@ import static org.mockito.Mockito.when;
 public abstract class AbstractHttpServiceFilterTest {
 
     private static final StreamingHttpRequestResponseFactory REQ_RES_FACTORY =
-            new DefaultStreamingHttpRequestResponseFactory(DEFAULT_ALLOCATOR, DefaultHttpHeadersFactory.INSTANCE);
+            new DefaultStreamingHttpRequestResponseFactory(DEFAULT_ALLOCATOR, DefaultHttpHeadersFactory.INSTANCE,
+                    HTTP_1_1);
 
     @Rule
     public final MockitoRule rule = MockitoJUnit.rule();

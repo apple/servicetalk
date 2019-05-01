@@ -31,6 +31,7 @@ import org.mockito.junit.MockitoRule;
 import javax.net.ssl.SSLSession;
 
 import static io.servicetalk.http.api.HttpHeaderNames.HOST;
+import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpRequestMethod.CONNECT;
 import static io.servicetalk.http.api.HttpRequestMethod.OPTIONS;
 import static io.servicetalk.http.utils.HttpRequestUriUtils.getBaseRequestUri;
@@ -49,7 +50,7 @@ public class HttpRequestUriUtilsTest {
     private ConnectionContext ctx;
 
     private final StreamingHttpRequestResponseFactory reqRespFactory = new DefaultStreamingHttpRequestResponseFactory(
-            BufferAllocators.DEFAULT_ALLOCATOR, DefaultHttpHeadersFactory.INSTANCE);
+            BufferAllocators.DEFAULT_ALLOCATOR, DefaultHttpHeadersFactory.INSTANCE, HTTP_1_1);
 
     @Test
     public void originForm() {

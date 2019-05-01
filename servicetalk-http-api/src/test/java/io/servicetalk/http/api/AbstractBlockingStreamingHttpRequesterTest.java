@@ -64,7 +64,7 @@ public abstract class AbstractBlockingStreamingHttpRequesterTest {
     private final TestPublisher<Buffer> publisher = new TestPublisher<>();
     private final BufferAllocator allocator = DEFAULT_ALLOCATOR;
     private final StreamingHttpRequestResponseFactory reqRespFactory = new DefaultStreamingHttpRequestResponseFactory(
-            allocator, DefaultHttpHeadersFactory.INSTANCE);
+            allocator, DefaultHttpHeadersFactory.INSTANCE, HTTP_1_1);
 
     protected abstract <T extends StreamingHttpRequester & TestHttpRequester>
     T newAsyncRequester(StreamingHttpRequestResponseFactory factory, HttpExecutionContext executionContext,

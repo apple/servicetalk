@@ -53,6 +53,7 @@ import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
 import static io.servicetalk.http.api.HttpHeaderValues.TEXT_PLAIN;
+import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.router.jersey.ExecutionStrategyTest.asFactory;
 import static io.servicetalk.http.router.jersey.TestUtils.newLargePayload;
@@ -85,7 +86,8 @@ public class CancellationTest {
     }
 
     private static final StreamingHttpRequestResponseFactory HTTP_REQ_RES_FACTORY =
-            new DefaultStreamingHttpRequestResponseFactory(DEFAULT_ALLOCATOR, DefaultHttpHeadersFactory.INSTANCE);
+            new DefaultStreamingHttpRequestResponseFactory(DEFAULT_ALLOCATOR, DefaultHttpHeadersFactory.INSTANCE,
+                    HTTP_1_1);
 
     private static final CharSequence TEST_DATA = newLargePayload();
 

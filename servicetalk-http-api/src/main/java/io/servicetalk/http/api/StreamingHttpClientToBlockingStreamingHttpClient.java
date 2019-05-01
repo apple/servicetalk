@@ -16,7 +16,6 @@
 package io.servicetalk.http.api;
 
 import io.servicetalk.concurrent.BlockingIterable;
-import io.servicetalk.http.api.FilterableStreamingHttpConnection.SettingKey;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.DelegatingConnectionContext;
 import io.servicetalk.transport.api.ExecutionContext;
@@ -153,8 +152,8 @@ final class StreamingHttpClientToBlockingStreamingHttpClient implements Blocking
         }
 
         @Override
-        public <T> BlockingIterable<T> settingIterable(final SettingKey<T> settingKey) {
-            return connection.settingStream(settingKey).toIterable();
+        public <T> BlockingIterable<? extends T> transportEventIterable(final HttpEventKey<T> eventKey) {
+            return connection.transportEventStream(eventKey).toIterable();
         }
 
         @Override

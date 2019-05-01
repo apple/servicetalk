@@ -80,7 +80,7 @@ public class BlockingStreamingHttpConnectionTest extends AbstractBlockingStreami
         }
 
         @Override
-        public final <T> Publisher<T> settingStream(final SettingKey<T> settingKey) {
+        public final <T> Publisher<? extends T> transportEventStream(final HttpEventKey<T> eventKey) {
             return Publisher.failed(new IllegalStateException("unsupported"));
         }
 

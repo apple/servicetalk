@@ -102,7 +102,7 @@ import static org.mockito.Mockito.verify;
 public class HttpRequestEncoderTest {
     private static final BufferAllocator allocator = DEFAULT_ALLOCATOR;
     private static final StreamingHttpRequestResponseFactory reqRespFactory =
-            new DefaultStreamingHttpRequestResponseFactory(allocator, DefaultHttpHeadersFactory.INSTANCE);
+            new DefaultStreamingHttpRequestResponseFactory(allocator, DefaultHttpHeadersFactory.INSTANCE, HTTP_1_1);
 
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();

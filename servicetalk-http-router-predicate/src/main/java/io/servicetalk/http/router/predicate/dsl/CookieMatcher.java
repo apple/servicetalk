@@ -15,7 +15,7 @@
  */
 package io.servicetalk.http.router.predicate.dsl;
 
-import io.servicetalk.http.api.HttpCookie;
+import io.servicetalk.http.api.HttpCookiePair;
 
 import java.util.Iterator;
 import java.util.function.Predicate;
@@ -35,12 +35,12 @@ public interface CookieMatcher {
      * @param predicate the {@link Predicate} to match against the values.
      * @return {@link RouteContinuation} for the next steps of building a route.
      */
-    RouteContinuation value(Predicate<HttpCookie> predicate);
+    RouteContinuation value(Predicate<HttpCookiePair> predicate);
 
     /**
      * Matches requests where the list of cookies for the specified name matches the predicate.
      * @param predicate the {@link Predicate} to match against the list of cookies.
      * @return {@link RouteContinuation} for the next steps of building a route.
      */
-    RouteContinuation values(Predicate<Iterator<? extends HttpCookie>> predicate);
+    RouteContinuation values(Predicate<Iterator<? extends HttpCookiePair>> predicate);
 }

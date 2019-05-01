@@ -51,6 +51,15 @@ abstract class BaseSingleAddressHttpClientBuilder<U, R, SDE extends ServiceDisco
     public abstract BaseSingleAddressHttpClientBuilder<U, R, SDE> headersFactory(HttpHeadersFactory headersFactory);
 
     @Override
+    public abstract BaseSingleAddressHttpClientBuilder<U, R, SDE> h2HeadersFactory(HttpHeadersFactory headersFactory);
+
+    @Override
+    public abstract BaseSingleAddressHttpClientBuilder<U, R, SDE> h2PriorKnowledge(boolean h2PriorKnowledge);
+
+    @Override
+    public abstract BaseSingleAddressHttpClientBuilder<U, R, SDE> h2FrameLogger(@Nullable String h2FrameLogger);
+
+    @Override
     public abstract BaseSingleAddressHttpClientBuilder<U, R, SDE> maxInitialLineLength(int maxInitialLineLength);
 
     @Override

@@ -17,6 +17,7 @@ package io.servicetalk.redis.netty;
 
 import io.servicetalk.client.api.ConnectionClosedException;
 import io.servicetalk.client.api.LoadBalancer;
+import io.servicetalk.client.api.internal.IgnoreConsumedEvent;
 import io.servicetalk.client.api.internal.MaxRequestLimitExceededRejectedSubscribeException;
 import io.servicetalk.client.api.internal.RequestConcurrencyController;
 import io.servicetalk.concurrent.api.Publisher;
@@ -56,8 +57,9 @@ final class RedisConnectionConcurrentRequestsFilter extends RedisConnectionFilte
         }
 
         limiter = defaultMaxPipelinedRequests == 1 ?
-                newSingleController(next.settingStream(MAX_CONCURRENCY), next.onClose()) :
-                newController(next.settingStream(MAX_CONCURRENCY), next.onClose(), defaultMaxPipelinedRequests);
+                newSingleController(next.settingStream(MAX_CONCURRENCY).map(IgnoreConsumedEvent::new), next.onClose()) :
+                newController(next.settingStream(MAX_CONCURRENCY).map(IgnoreConsumedEvent::new), next.onClose(),
+                        defaultMaxPipelinedRequests);
     }
 
     @Override

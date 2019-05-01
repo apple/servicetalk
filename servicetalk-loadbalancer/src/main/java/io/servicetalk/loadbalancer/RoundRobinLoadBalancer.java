@@ -296,6 +296,11 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends ListenableA
         return asyncCloseable.closeAsync();
     }
 
+    @Override
+    public Completable closeAsyncGracefully() {
+        return asyncCloseable.closeAsyncGracefully();
+    }
+
     // Visible for testing
     List<Entry<ResolvedAddress, List<C>>> activeAddresses() {
         return activeHosts.stream().map(Host::asEntry).collect(toList());

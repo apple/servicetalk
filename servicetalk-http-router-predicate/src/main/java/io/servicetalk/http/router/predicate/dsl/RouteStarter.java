@@ -15,7 +15,7 @@
  */
 package io.servicetalk.http.router.predicate.dsl;
 
-import io.servicetalk.http.api.HttpCookie;
+import io.servicetalk.http.api.HttpCookiePair;
 import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpService;
@@ -105,7 +105,8 @@ public interface RouteStarter {
     StringMultiValueMatcher whenHeader(CharSequence name);
 
     /**
-     * Begin a route with a {@link CookieMatcher} that matches against {@link HttpCookie}s with the name {@code name}.
+     * Begin a route with a {@link CookieMatcher} that matches against {@link HttpCookiePair}s with the name
+     * {@code name}.
      *
      * @param name the cookie name that must be present in the request in order to continue evaluation of this route.
      * @return {@link CookieMatcher} for the next steps of building a route.
