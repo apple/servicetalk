@@ -24,14 +24,13 @@ final class NonPipelinedStreamingHttpConnection
         extends AbstractStreamingHttpConnection<NettyConnection<Object, Object>> {
 
     NonPipelinedStreamingHttpConnection(final NettyConnection<Object, Object> connection,
-                                        final ReadOnlyHttpClientConfig config,
                                         final HttpExecutionContext executionContext,
                                         final StreamingHttpRequestResponseFactory reqRespFactory) {
-        super(connection, config, executionContext, reqRespFactory);
+        super(connection, 1, executionContext, reqRespFactory);
     }
 
     @Override
     protected Publisher<Object> writeAndRead(final Publisher<Object> requestStream) {
-        return connection.write(requestStream).concat(connection.read());
+        return connection.write(requestStream).merge(connection.read());
     }
 }

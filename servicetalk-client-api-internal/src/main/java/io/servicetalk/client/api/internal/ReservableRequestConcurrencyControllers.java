@@ -15,6 +15,7 @@
  */
 package io.servicetalk.client.api.internal;
 
+import io.servicetalk.client.api.ConsumableEvent;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 
@@ -28,7 +29,7 @@ public final class ReservableRequestConcurrencyControllers {
 
     /**
      * Create a new instance of {@link ReservableRequestConcurrencyController}.
-     * @param maxConcurrencySetting A {@link Publisher} that provides the maximum allowed concurrency updates.
+     * @param maxConcurrency A {@link Publisher} that provides the maximum allowed concurrency updates.
      * @param onClosing A {@link Completable} that when terminated no more calls to
      * {@link RequestConcurrencyController#tryRequest()} are expected to succeed.
      * @param initialMaxConcurrency The initial maximum value for concurrency, until {@code maxConcurrencySetting}
@@ -36,9 +37,9 @@ public final class ReservableRequestConcurrencyControllers {
      * @return a new instance of {@link ReservableRequestConcurrencyController}.
      */
     public static ReservableRequestConcurrencyController newController(
-            final Publisher<Integer> maxConcurrencySetting, final Completable onClosing,
+            final Publisher<? extends ConsumableEvent<Integer>> maxConcurrency, final Completable onClosing,
             final int initialMaxConcurrency) {
-        return new ReservableRequestConcurrencyControllerMulti(maxConcurrencySetting,
+        return new ReservableRequestConcurrencyControllerMulti(maxConcurrency,
                 onClosing, initialMaxConcurrency);
     }
 
@@ -47,14 +48,14 @@ public final class ReservableRequestConcurrencyControllers {
      * if {@code maxConcurrencySetting} increases beyond {@code 1} only a single
      * {@link RequestConcurrencyController#tryRequest()} will succeed at any given time. The initial value is assumed
      * to be {@code 1} and only lesser values from {@code maxConcurrencySetting} will impact behavior.
-     * @param maxConcurrencySetting A {@link Publisher} that provides the maximum allowed concurrency updates.
+     * @param maxConcurrency A {@link Publisher} that provides the maximum allowed concurrency updates.
      * Only values of {@code <1} will impact behavior.
      * @param onClosing A {@link Completable} that when terminated no more calls to
      * {@link RequestConcurrencyController#tryRequest()} are expected to succeed.
      * @return a {@link ReservableRequestConcurrencyController} that only allows a single outstanding request.
      */
     public static ReservableRequestConcurrencyController newSingleController(
-            final Publisher<Integer> maxConcurrencySetting, final Completable onClosing) {
-        return new ReservableRequestConcurrencyControllerOnlySingle(maxConcurrencySetting, onClosing);
+            final Publisher<? extends ConsumableEvent<Integer>> maxConcurrency, final Completable onClosing) {
+        return new ReservableRequestConcurrencyControllerOnlySingle(maxConcurrency, onClosing);
     }
 }

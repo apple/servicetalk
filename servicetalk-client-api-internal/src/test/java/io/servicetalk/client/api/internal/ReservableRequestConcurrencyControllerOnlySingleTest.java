@@ -34,7 +34,7 @@ public class ReservableRequestConcurrencyControllerOnlySingleTest
     @Override
     protected ReservableRequestConcurrencyController newController(final Publisher<Integer> maxSetting,
                                                                    final Completable onClose) {
-        return newSingleController(maxSetting, onClose);
+        return newSingleController(maxSetting.map(IgnoreConsumedEvent::new), onClose);
     }
 
     @Test

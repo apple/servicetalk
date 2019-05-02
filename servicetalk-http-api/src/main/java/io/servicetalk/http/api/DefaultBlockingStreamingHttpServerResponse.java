@@ -74,7 +74,7 @@ final class DefaultBlockingStreamingHttpServerResponse extends BlockingStreaming
     }
 
     @Override
-    public BlockingStreamingHttpServerResponse addCookie(final HttpCookie cookie) {
+    public BlockingStreamingHttpServerResponse addCookie(final HttpCookiePair cookie) {
         checkSent();
         return super.addCookie(cookie);
     }
@@ -86,7 +86,7 @@ final class DefaultBlockingStreamingHttpServerResponse extends BlockingStreaming
     }
 
     @Override
-    public BlockingStreamingHttpServerResponse addSetCookie(final HttpCookie cookie) {
+    public BlockingStreamingHttpServerResponse addSetCookie(final HttpSetCookie cookie) {
         checkSent();
         return super.addSetCookie(cookie);
     }

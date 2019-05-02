@@ -16,9 +16,11 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.client.api.ConnectionFactory;
+import io.servicetalk.client.api.ConsumableEvent;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
+import io.servicetalk.http.api.HttpEventKey;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpConnectionFilter;
@@ -32,7 +34,7 @@ import java.util.concurrent.ExecutionException;
 import javax.annotation.Nonnull;
 
 import static io.servicetalk.concurrent.api.BlockingTestUtils.awaitIndefinitelyNonNull;
-import static io.servicetalk.http.api.FilterableStreamingHttpConnection.SettingKey.MAX_CONCURRENCY;
+import static io.servicetalk.http.api.HttpEventKey.MAX_CONCURRENCY;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
@@ -76,12 +78,24 @@ public class DefaultHttpConnectionBuilderTest extends AbstractEchoServerBasedHtt
 
         @Override
         @SuppressWarnings("unchecked")
-        public <T> Publisher<T> settingStream(final SettingKey<T> settingKey) {
-            if (settingKey == MAX_CONCURRENCY) {
+        public <T> Publisher<? extends T> transportEventStream(final HttpEventKey<T> eventKey) {
+            if (eventKey == MAX_CONCURRENCY) {
                 // Compensate for the extra request
-                return (Publisher<T>) super.settingStream(MAX_CONCURRENCY).map(i -> i - 1);
+                return (Publisher<T>) super.transportEventStream(MAX_CONCURRENCY)
+                        .map(event -> new ConsumableEvent<Integer>() {
+                            private final int filterValue = event.event() - 1;
+                            @Override
+                            public Integer event() {
+                                return filterValue;
+                            }
+
+                            @Override
+                            public void eventConsumed() {
+                                event.eventConsumed();
+                            }
+                        });
             }
-            return super.settingStream(settingKey);
+            return super.transportEventStream(eventKey);
         }
     }
 
@@ -97,7 +111,10 @@ public class DefaultHttpConnectionBuilderTest extends AbstractEchoServerBasedHtt
 
         StreamingHttpConnection connection = awaitIndefinitelyNonNull(connectionSingle);
 
-        Integer maxConcurrent = connection.settingStream(MAX_CONCURRENCY).firstOrElse(() -> null).toFuture().get();
+        Integer maxConcurrent = connection.transportEventStream(MAX_CONCURRENCY)
+                .afterOnNext(ConsumableEvent::eventConsumed)
+                .map(ConsumableEvent::event)
+                .firstOrElse(() -> null).toFuture().get();
         assertThat(maxConcurrent, equalTo(9));
 
         makeRequestValidateResponseAndClose(connection);

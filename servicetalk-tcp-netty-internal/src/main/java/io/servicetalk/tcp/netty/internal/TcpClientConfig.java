@@ -51,6 +51,17 @@ public final class TcpClientConfig extends ReadOnlyTcpClientConfig {
     }
 
     /**
+     * Determine if auto read should be enabled.
+     *
+     * @param autoRead {@code true} to enable auto read.
+     * @return this.
+     */
+    public TcpClientConfig autoRead(boolean autoRead) {
+        super.autoRead = autoRead;
+        return this;
+    }
+
+    /**
      * Enable SSL/TLS using the provided {@link SslConfig}. To disable it pass in {@code null}.
      *
      * @param config the {@link SslConfig}.

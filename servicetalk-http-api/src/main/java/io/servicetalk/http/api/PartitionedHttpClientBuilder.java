@@ -67,6 +67,15 @@ public abstract class PartitionedHttpClientBuilder<U, R>
     public abstract PartitionedHttpClientBuilder<U, R> headersFactory(HttpHeadersFactory headersFactory);
 
     @Override
+    public abstract PartitionedHttpClientBuilder<U, R> h2HeadersFactory(HttpHeadersFactory headersFactory);
+
+    @Override
+    public abstract PartitionedHttpClientBuilder<U, R> h2PriorKnowledge(boolean h2PriorKnowledge);
+
+    @Override
+    public abstract PartitionedHttpClientBuilder<U, R> h2FrameLogger(@Nullable String h2FrameLogger);
+
+    @Override
     public abstract PartitionedHttpClientBuilder<U, R> maxInitialLineLength(int maxInitialLineLength);
 
     @Override

@@ -16,7 +16,7 @@
 package io.servicetalk.http.api;
 
 import io.servicetalk.concurrent.BlockingIterable;
-import io.servicetalk.http.api.FilterableStreamingHttpConnection.SettingKey;
+import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.transport.api.ConnectionContext;
 
 /**
@@ -41,13 +41,16 @@ public interface BlockingStreamingHttpConnection extends BlockingStreamingHttpRe
 
     /**
      * Returns a {@link BlockingIterable} that gives the current value of the setting as well as subsequent changes to
-     * the setting value.
+     * the setting value as long as the {@link PublisherSource.Subscriber} has expressed enough demand.
+     * <p>
+     * This is designed for events produced by the transport, and consumed by filters interested in transport behavior
+     * which is not directly involved in the data path.
      *
-     * @param settingKey Name of the setting to fetch.
+     * @param eventKey Name of the event to fetch.
      * @param <T> Type of the setting value.
      * @return {@link BlockingIterable} for the setting values.
      */
-    <T> BlockingIterable<T> settingIterable(SettingKey<T> settingKey);
+    <T> BlockingIterable<? extends T> transportEventIterable(HttpEventKey<T> eventKey);
 
     /**
      * Convert this {@link BlockingStreamingHttpConnection} to the {@link StreamingHttpConnection} API.

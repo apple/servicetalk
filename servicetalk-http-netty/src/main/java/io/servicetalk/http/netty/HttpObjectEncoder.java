@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -134,7 +134,7 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelOutbound
 
             sanitizeHeadersBeforeEncode(metaData, state == ST_CONTENT_ALWAYS_EMPTY);
 
-            encodeHeaders(metaData.headers(), byteBuf);
+            encodeHeaders(metaData.headers(), byteBuf, stBuf);
             writeShortBE(byteBuf, CRLF_SHORT);
             closeHandler.protocolPayloadBeginOutbound(ctx);
             if (shouldClose(metaData)) {
@@ -235,14 +235,23 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelOutbound
     /**
      * Encode the {@link HttpHeaders} into a {@link ByteBuf}.
      */
-    private static void encodeHeaders(HttpHeaders headers, ByteBuf buf) {
+    private static void encodeHeaders(HttpHeaders headers, ByteBuf byteBuf) {
+        encodeHeaders(headers, byteBuf, newBufferFrom(byteBuf));
+    }
+
+    /**
+     * Encode the {@link HttpHeaders} into a buffer represented by two references: {@link ByteBuf} and {@link Buffer}.
+     * We reference the same buffer as {@link ByteBuf} and {@link Buffer} to avoid allocation of wrapping layer if
+     * necessary for optimized data transfer to have an instance of {@link Buffer}.
+     */
+    private static void encodeHeaders(HttpHeaders headers, ByteBuf byteBuf, Buffer buffer) {
         for (Map.Entry<CharSequence, CharSequence> header : headers) {
-            encoderHeader(header.getKey(), header.getValue(), buf);
+            encodeHeader(header.getKey(), header.getValue(), byteBuf, buffer);
         }
     }
 
-    private void encodeChunkedContent(ChannelHandlerContext ctx, Buffer msg, long contentLength,
-                                      PromiseCombiner promiseCombiner) {
+    private static void encodeChunkedContent(ChannelHandlerContext ctx, Buffer msg, long contentLength,
+                                             PromiseCombiner promiseCombiner) {
         if (contentLength > 0) {
             String lengthHex = toHexString(contentLength);
             ByteBuf buf = PooledByteBufAllocator.DEFAULT.buffer(lengthHex.length() + 2);
@@ -283,42 +292,43 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelOutbound
         return (readableBytes << 2) / 3;
     }
 
-    private static void encoderHeader(CharSequence name, CharSequence value, ByteBuf buf) {
+    private static void encodeHeader(CharSequence name, CharSequence value, ByteBuf byteBuf, Buffer buffer) {
         final int nameLen = name.length();
         final int valueLen = value.length();
         final int entryLen = nameLen + valueLen + 4;
-        buf.ensureWritable(entryLen);
-        int offset = buf.writerIndex();
-        writeAscii(buf, offset, name);
+        byteBuf.ensureWritable(entryLen);
+        int offset = byteBuf.writerIndex();
+        writeAscii(name, byteBuf, buffer, offset);
         offset += nameLen;
-        ByteBufUtil.setShortBE(buf, offset, COLON_AND_SPACE_SHORT);
+        ByteBufUtil.setShortBE(byteBuf, offset, COLON_AND_SPACE_SHORT);
         offset += 2;
-        writeAscii(buf, offset, value);
+        writeAscii(value, byteBuf, buffer, offset);
         offset += valueLen;
-        ByteBufUtil.setShortBE(buf, offset, CRLF_SHORT);
+        ByteBufUtil.setShortBE(byteBuf, offset, CRLF_SHORT);
         offset += 2;
-        buf.writerIndex(offset);
+        byteBuf.writerIndex(offset);
     }
 
-    private static void writeAscii(ByteBuf dst, int dstOffset, CharSequence value) {
-        Buffer buffer = unwrapBuffer(value);
-        if (buffer != null) {
-            writeBufferToByteBuf(buffer, dstOffset, dst);
+    private static void writeAscii(CharSequence value, ByteBuf dstByteBuf, Buffer dstBuffer, int dstOffset) {
+        Buffer valueBuffer = unwrapBuffer(value);
+        if (valueBuffer != null) {
+            writeBufferToByteBuf(valueBuffer, dstByteBuf, dstBuffer, dstOffset);
         } else {
-            dst.setCharSequence(dstOffset, value, US_ASCII);
+            dstByteBuf.setCharSequence(dstOffset, value, US_ASCII);
         }
     }
 
-    private static void writeBufferToByteBuf(Buffer src, int dstOffset, ByteBuf dst) {
+    private static void writeBufferToByteBuf(Buffer src, ByteBuf dstByteBuf, Buffer dstBuffer, int dstOffset) {
         ByteBuf byteBuf = toByteBufNoThrow(src);
         if (byteBuf != null) {
-            // We don't want to modify either src or byteBuf's reader/writer indexes so use the setBytes method which
+            // We don't want to modify either src or dst's reader/writer indexes so use the setBytes method which
             // doesn't modify indexes.
-            dst.setBytes(dstOffset, byteBuf, byteBuf.readerIndex(), byteBuf.readableBytes());
+            dstByteBuf.setBytes(dstOffset, byteBuf, byteBuf.readerIndex(), byteBuf.readableBytes());
         } else {
-            // This will modify the position of the src's NIO ByteBuffer, however the API of toNioBuffer says that the
-            // indexes of the ByteBuffer and the Buffer are independent.
-            dst.setBytes(dstOffset, src.toNioBuffer());
+            // Use src.getBytes instead of dstByteBuf.setBytes to utilize internal optimizations of ReadOnlyByteBuffer.
+            // We don't want to modify either src or dst's reader/writer indexes so use the getBytes method which
+            // doesn't modify indexes.
+            src.getBytes(src.readerIndex(), dstBuffer, dstOffset, src.readableBytes());
         }
     }
 

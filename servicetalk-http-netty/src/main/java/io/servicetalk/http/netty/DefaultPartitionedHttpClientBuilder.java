@@ -278,6 +278,24 @@ class DefaultPartitionedHttpClientBuilder<U, R> extends PartitionedHttpClientBui
     }
 
     @Override
+    public PartitionedHttpClientBuilder<U, R> h2HeadersFactory(final HttpHeadersFactory headersFactory) {
+        builderTemplate.h2HeadersFactory(headersFactory);
+        return this;
+    }
+
+    @Override
+    public PartitionedHttpClientBuilder<U, R> h2PriorKnowledge(final boolean h2PriorKnowledge) {
+        builderTemplate.h2PriorKnowledge(h2PriorKnowledge);
+        return this;
+    }
+
+    @Override
+    public PartitionedHttpClientBuilder<U, R> h2FrameLogger(@Nullable final String h2FrameLogger) {
+        builderTemplate.h2FrameLogger(h2FrameLogger);
+        return this;
+    }
+
+    @Override
     public PartitionedHttpClientBuilder<U, R> maxInitialLineLength(final int maxInitialLineLength) {
         builderTemplate.maxInitialLineLength(maxInitialLineLength);
         return this;

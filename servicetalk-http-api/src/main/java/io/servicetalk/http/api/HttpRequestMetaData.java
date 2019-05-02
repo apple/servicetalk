@@ -395,7 +395,7 @@ public interface HttpRequestMetaData extends HttpMetaData {
     }
 
     @Override
-    default HttpRequestMetaData addCookie(final HttpCookie cookie) {
+    default HttpRequestMetaData addCookie(final HttpCookiePair cookie) {
         HttpMetaData.super.addCookie(cookie);
         return this;
     }
@@ -407,7 +407,7 @@ public interface HttpRequestMetaData extends HttpMetaData {
     }
 
     @Override
-    default HttpRequestMetaData addSetCookie(final HttpCookie cookie) {
+    default HttpRequestMetaData addSetCookie(final HttpSetCookie cookie) {
         HttpMetaData.super.addSetCookie(cookie);
         return this;
     }

@@ -49,8 +49,8 @@ public class ReservedStreamingHttpConnectionFilter implements FilterableReserved
     }
 
     @Override
-    public <T> Publisher<T> settingStream(final SettingKey<T> settingKey) {
-        return delegate.settingStream(settingKey);
+    public <T> Publisher<? extends T> transportEventStream(final HttpEventKey<T> eventKey) {
+        return delegate.transportEventStream(eventKey);
     }
 
     @Override

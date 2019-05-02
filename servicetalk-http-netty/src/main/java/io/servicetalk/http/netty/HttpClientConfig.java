@@ -25,6 +25,8 @@ final class HttpClientConfig {
 
     private final TcpClientConfig tcpClientConfig;
     private HttpHeadersFactory headersFactory = DefaultHttpHeadersFactory.INSTANCE;
+    private H2ClientConfig h2ClientConfig = new H2ClientConfig();
+    private boolean h2PriorKnowledge;
     private int maxInitialLineLength = 4096;
     private int maxHeaderSize = 8192;
     private int maxPipelinedRequests = 1;
@@ -36,8 +38,10 @@ final class HttpClientConfig {
     }
 
     HttpClientConfig(final HttpClientConfig from) {
-        this.tcpClientConfig = new TcpClientConfig(from.tcpClientConfig);
+        tcpClientConfig = new TcpClientConfig(from.tcpClientConfig);
+        h2ClientConfig = new H2ClientConfig(from.h2ClientConfig);
         headersFactory = from.headersFactory;
+        h2PriorKnowledge = from.h2PriorKnowledge;
         maxInitialLineLength = from.maxInitialLineLength;
         maxHeaderSize = from.maxHeaderSize;
         maxPipelinedRequests = from.maxPipelinedRequests;
@@ -49,12 +53,24 @@ final class HttpClientConfig {
         return tcpClientConfig;
     }
 
+    H2ClientConfig h2ClientConfig() {
+        return h2ClientConfig;
+    }
+
     HttpHeadersFactory headersFactory() {
         return headersFactory;
     }
 
     void headersFactory(final HttpHeadersFactory headersFactory) {
         this.headersFactory = requireNonNull(headersFactory);
+    }
+
+    boolean isH2PriorKnowledge() {
+        return h2PriorKnowledge;
+    }
+
+    void h2PriorKnowledge(boolean h2PriorKnowledge) {
+        this.h2PriorKnowledge = h2PriorKnowledge;
     }
 
     int maxInitialLineLength() {

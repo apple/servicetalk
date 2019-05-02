@@ -22,6 +22,7 @@ import io.servicetalk.http.api.BlockingHttpConnection;
 import io.servicetalk.http.api.BlockingStreamingHttpConnection;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpConnection;
+import io.servicetalk.http.api.HttpEventKey;
 import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
@@ -75,8 +76,8 @@ final class FilterableConnectionToConnection implements StreamingHttpConnection 
     }
 
     @Override
-    public <T> Publisher<T> settingStream(final SettingKey<T> settingKey) {
-        return filteredConnection.settingStream(settingKey);
+    public <T> Publisher<? extends T> transportEventStream(final HttpEventKey<T> eventKey) {
+        return filteredConnection.transportEventStream(eventKey);
     }
 
     @Override

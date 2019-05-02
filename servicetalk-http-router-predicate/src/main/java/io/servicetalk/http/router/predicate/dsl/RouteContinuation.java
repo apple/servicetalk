@@ -17,10 +17,10 @@ package io.servicetalk.http.router.predicate.dsl;
 
 import io.servicetalk.http.api.BlockingHttpService;
 import io.servicetalk.http.api.BlockingStreamingHttpService;
-import io.servicetalk.http.api.HttpCookie;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.HttpService;
+import io.servicetalk.http.api.HttpSetCookie;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.transport.api.ConnectionContext;
@@ -111,7 +111,7 @@ public interface RouteContinuation {
     StringMultiValueMatcher andHeader(CharSequence name);
 
     /**
-     * Extends the current route with a {@link CookieMatcher} that matches against {@link HttpCookie}s with the name
+     * Extends the current route with a {@link CookieMatcher} that matches against {@link HttpSetCookie}s with the name
      * {@code name}.
      *
      * @param name the cookie name that must be present in the request in order to continue evaluation of this route.

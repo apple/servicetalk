@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,9 +30,9 @@
  */
 package io.servicetalk.buffer.api;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
+import java.nio.ReadOnlyBufferException;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
 
@@ -43,17 +43,9 @@ import static java.nio.ByteBuffer.allocateDirect;
 final class ReadOnlyByteBuffer extends AbstractBuffer {
     private final ByteBuffer buffer;
 
-    private ReadOnlyByteBuffer(ByteBuffer buffer) {
+    ReadOnlyByteBuffer(ByteBuffer buffer) {
         super(buffer.position(), buffer.limit());
         this.buffer = buffer;
-    }
-
-    static ReadOnlyByteBuffer newBuffer(ByteBuffer buffer) {
-        return new ReadOnlyByteBuffer(buffer.isReadOnly() ? buffer : buffer.asReadOnlyBuffer());
-    }
-
-    static ReadOnlyByteBuffer newBufferFromModifiable(ByteBuffer buffer) {
-        return new ReadOnlyByteBuffer(buffer.asReadOnlyBuffer());
     }
 
     @Override
@@ -63,7 +55,7 @@ final class ReadOnlyByteBuffer extends AbstractBuffer {
 
     @Override
     public Buffer capacity(int newCapacity) {
-        throw new UnsupportedOperationException();
+        throw new ReadOnlyBufferException();
     }
 
     @Override
@@ -73,27 +65,22 @@ final class ReadOnlyByteBuffer extends AbstractBuffer {
 
     @Override
     public int writableBytes() {
-        // TODO(scott): this buffer is not writable, so returning 0 seems more correct, but Netty doesn't do this
         return 0;
     }
 
     @Override
     public int maxWritableBytes() {
-        // TODO(scott): this buffer is not writable, so returning 0 seems more correct, but Netty doesn't do this
         return 0;
     }
 
     @Override
     public Buffer ensureWritable(int minWritableBytes) {
-        if (minWritableBytes == 0) {
-            return this;
-        }
-        throw new IllegalArgumentException("read only buffer");
+        throw new ReadOnlyBufferException();
     }
 
     @Override
     public int ensureWritable(int minWritableBytes, boolean force) {
-        return minWritableBytes == 0 ? 0 : 1;
+        return 1;
     }
 
     @Override
@@ -119,16 +106,13 @@ final class ReadOnlyByteBuffer extends AbstractBuffer {
     @Override
     public Buffer getBytes(int index, Buffer dst, int dstIndex, int length) {
         checkDstIndex(index, length, dstIndex, dst.capacity());
+
         if (dst.hasArray()) {
-            getBytes(index, dst.array(), dst.arrayOffset() + dstIndex, length);
-        } else if (dst.nioBufferCount() > 0) {
-            for (ByteBuffer bb : dst.toNioBuffers(dstIndex, length)) {
-                int bbLen = bb.remaining();
-                getBytes(index, bb);
-                index += bbLen;
-            }
+            getBytes0(index, dst.array(), dst.arrayOffset() + dstIndex, length);
+        } else if (buffer.hasArray()) {
+            dst.setBytes(dstIndex, buffer.array(), buffer.arrayOffset() + index, length);
         } else {
-            dst.setBytes(dstIndex, this, index, length);
+            dst.setBytes(dstIndex, (ByteBuffer) buffer.duplicate().position(index).limit(index + length));
         }
         return this;
     }
@@ -136,259 +120,263 @@ final class ReadOnlyByteBuffer extends AbstractBuffer {
     @Override
     public Buffer getBytes(int index, byte[] dst, int dstIndex, int length) {
         checkDstIndex(index, length, dstIndex, dst.length);
+        getBytes0(index, dst, dstIndex, length);
+        return this;
+    }
 
-        if (dstIndex < 0 || dstIndex > dst.length - length) {
-            throw new IndexOutOfBoundsException(String.format(
-                    "dstIndex: %d, length: %d (expected: range(0, %d))", dstIndex, length, dst.length));
+    private Buffer getBytes0(int index, byte[] dst, int dstIndex, int length) {
+        if (buffer.hasArray()) {
+            System.arraycopy(buffer.array(), buffer.arrayOffset() + index, dst, dstIndex, length);
+        } else {
+            ByteBuffer tmpBuf = buffer.duplicate();
+            tmpBuf.position(index).limit(index + length);
+            tmpBuf.get(dst, dstIndex, length);
         }
-
-        ByteBuffer tmpBuf = buffer.duplicate();
-        tmpBuf.position(index).limit(index + length);
-        tmpBuf.get(dst, dstIndex, length);
         return this;
     }
 
     @Override
     public Buffer getBytes(int index, ByteBuffer dst) {
-        checkIndex0(index, dst.capacity());
-        if (dst == null) {
-            throw new NullPointerException("dst");
-        }
-
         int bytesToCopy = Math.min(capacity() - index, dst.remaining());
-        ByteBuffer tmpBuf = buffer.duplicate();
-        tmpBuf.position(index).limit(index + bytesToCopy);
-        dst.put(tmpBuf);
+        checkIndex0(index, bytesToCopy);
+
+        if (buffer.hasArray()) {
+            dst.put(buffer.array(), buffer.arrayOffset() + index, bytesToCopy);
+        } else {
+            ByteBuffer tmpBuf = buffer.duplicate();
+            tmpBuf.position(index).limit(index + bytesToCopy);
+            dst.put(tmpBuf);
+        }
         return this;
     }
 
     @Override
     public Buffer setBoolean(int index, boolean value) {
-        throw new UnsupportedOperationException();
+        throw new ReadOnlyBufferException();
     }
 
     @Override
     public Buffer setByte(int index, int value) {
-        throw new UnsupportedOperationException();
+        throw new ReadOnlyBufferException();
     }
 
     @Override
     public Buffer setShort(int index, int value) {
-        throw new UnsupportedOperationException();
+        throw new ReadOnlyBufferException();
     }
 
     @Override
     public Buffer setShortLE(int index, int value) {
-        throw new UnsupportedOperationException();
+        throw new ReadOnlyBufferException();
     }
 
     @Override
     public Buffer setMedium(int index, int value) {
-        throw new UnsupportedOperationException();
+        throw new ReadOnlyBufferException();
     }
 
     @Override
     public Buffer setMediumLE(int index, int value) {
-        throw new UnsupportedOperationException();
+        throw new ReadOnlyBufferException();
     }
 
     @Override
     public Buffer setInt(int index, int value) {
-        throw new UnsupportedOperationException();
+        throw new ReadOnlyBufferException();
     }
 
     @Override
     public Buffer setIntLE(int index, int value) {
-        throw new UnsupportedOperationException();
+        throw new ReadOnlyBufferException();
     }
 
     @Override
     public Buffer setLong(int index, long value) {
-        throw new UnsupportedOperationException();
+        throw new ReadOnlyBufferException();
     }
 
     @Override
     public Buffer setLongLE(int index, long value) {
-        throw new UnsupportedOperationException();
+        throw new ReadOnlyBufferException();
     }
 
     @Override
     public Buffer setChar(int index, int value) {
-        throw new UnsupportedOperationException();
+        throw new ReadOnlyBufferException();
     }
 
     @Override
     public Buffer setFloat(int index, float value) {
-        throw new UnsupportedOperationException();
+        throw new ReadOnlyBufferException();
     }
 
     @Override
     public Buffer setDouble(int index, double value) {
-        throw new UnsupportedOperationException();
+        throw new ReadOnlyBufferException();
     }
 
     @Override
     public Buffer setBytes(int index, Buffer src) {
-        throw new UnsupportedOperationException();
+        throw new ReadOnlyBufferException();
     }
 
     @Override
     public Buffer setBytes(int index, Buffer src, int length) {
-        throw new UnsupportedOperationException();
+        throw new ReadOnlyBufferException();
     }
 
     @Override
     public Buffer setBytes(int index, Buffer src, int srcIndex, int length) {
-        throw new UnsupportedOperationException();
+        throw new ReadOnlyBufferException();
     }
 
     @Override
     public Buffer setBytes(int index, byte[] src) {
-        throw new UnsupportedOperationException();
+        throw new ReadOnlyBufferException();
     }
 
     @Override
     public Buffer setBytes(int index, byte[] src, int srcIndex, int length) {
-        throw new UnsupportedOperationException();
+        throw new ReadOnlyBufferException();
     }
 
     @Override
     public Buffer setBytes(int index, ByteBuffer src) {
-        throw new UnsupportedOperationException();
+        throw new ReadOnlyBufferException();
     }
 
     @Override
-    public int setBytes(int index, InputStream src, int length) throws IOException {
-        throw new UnsupportedOperationException();
+    public int setBytes(int index, InputStream src, int length) {
+        throw new ReadOnlyBufferException();
     }
 
     @Override
-    public int setBytesUntilEndStream(int index, InputStream src, int chunkSize) throws IOException {
-        throw new UnsupportedOperationException();
+    public int setBytesUntilEndStream(int index, InputStream src, int chunkSize) {
+        throw new ReadOnlyBufferException();
     }
 
     @Override
     public Buffer writeBoolean(boolean value) {
-        throw new UnsupportedOperationException();
+        throw new ReadOnlyBufferException();
     }
 
     @Override
     public Buffer writeByte(int value) {
-        throw new UnsupportedOperationException();
+        throw new ReadOnlyBufferException();
     }
 
     @Override
     public Buffer writeShort(int value) {
-        throw new UnsupportedOperationException();
+        throw new ReadOnlyBufferException();
     }
 
     @Override
     public Buffer writeShortLE(int value) {
-        throw new UnsupportedOperationException();
+        throw new ReadOnlyBufferException();
     }
 
     @Override
     public Buffer writeMedium(int value) {
-        throw new UnsupportedOperationException();
+        throw new ReadOnlyBufferException();
     }
 
     @Override
     public Buffer writeMediumLE(int value) {
-        throw new UnsupportedOperationException();
+        throw new ReadOnlyBufferException();
     }
 
     @Override
     public Buffer writeInt(int value) {
-        throw new UnsupportedOperationException();
+        throw new ReadOnlyBufferException();
     }
 
     @Override
     public Buffer writeIntLE(int value) {
-        throw new UnsupportedOperationException();
+        throw new ReadOnlyBufferException();
     }
 
     @Override
     public Buffer writeLong(long value) {
-        throw new UnsupportedOperationException();
+        throw new ReadOnlyBufferException();
     }
 
     @Override
     public Buffer writeLongLE(long value) {
-        throw new UnsupportedOperationException();
+        throw new ReadOnlyBufferException();
     }
 
     @Override
     public Buffer writeChar(int value) {
-        throw new UnsupportedOperationException();
+        throw new ReadOnlyBufferException();
     }
 
     @Override
     public Buffer writeFloat(float value) {
-        throw new UnsupportedOperationException();
+        throw new ReadOnlyBufferException();
     }
 
     @Override
     public Buffer writeDouble(double value) {
-        throw new UnsupportedOperationException();
+        throw new ReadOnlyBufferException();
     }
 
     @Override
     public Buffer writeBytes(Buffer src) {
-        throw new UnsupportedOperationException();
+        throw new ReadOnlyBufferException();
     }
 
     @Override
     public Buffer writeBytes(Buffer src, int length) {
-        throw new UnsupportedOperationException();
+        throw new ReadOnlyBufferException();
     }
 
     @Override
     public Buffer writeBytes(Buffer src, int srcIndex, int length) {
-        throw new UnsupportedOperationException();
+        throw new ReadOnlyBufferException();
     }
 
     @Override
     public Buffer writeBytes(byte[] src) {
-        throw new UnsupportedOperationException();
+        throw new ReadOnlyBufferException();
     }
 
     @Override
     public Buffer writeBytes(byte[] src, int srcIndex, int length) {
-        throw new UnsupportedOperationException();
+        throw new ReadOnlyBufferException();
     }
 
     @Override
     public Buffer writeBytes(ByteBuffer src) {
-        throw new UnsupportedOperationException();
+        throw new ReadOnlyBufferException();
     }
 
     @Override
-    public int writeBytes(InputStream src, int length) throws IOException {
-        throw new UnsupportedOperationException();
+    public int writeBytes(InputStream src, int length) {
+        throw new ReadOnlyBufferException();
     }
 
     @Override
-    public int writeBytesUntilEndStream(InputStream src, int chunkSize) throws IOException {
-        throw new UnsupportedOperationException();
+    public int writeBytesUntilEndStream(InputStream src, int chunkSize) {
+        throw new ReadOnlyBufferException();
     }
 
     @Override
     public Buffer writeAscii(CharSequence seq) {
-        throw new UnsupportedOperationException();
+        throw new ReadOnlyBufferException();
     }
 
     @Override
     public Buffer writeUtf8(CharSequence seq) {
-        throw new UnsupportedOperationException();
+        throw new ReadOnlyBufferException();
     }
 
     @Override
     public Buffer writeUtf8(CharSequence seq, int ensureWritable) {
-        throw new UnsupportedOperationException();
+        throw new ReadOnlyBufferException();
     }
 
     @Override
-    public Buffer readBytes(int length) {
+    public Buffer readSlice(int length) {
         if (length == 0) {
             return EMPTY_BUFFER;
         }
@@ -399,6 +387,13 @@ final class ReadOnlyByteBuffer extends AbstractBuffer {
     }
 
     @Override
+    public Buffer readBytes(int length) {
+        // Return readSlice(length) instead of allocating a new `Buffer` because for a read-only `Buffer` it doesn't
+        // mater if the underlying bytes storage will be copied or shared.
+        return readSlice(length);
+    }
+
+    @Override
     public Buffer copy(int index, int length) {
         return copy(sliceByteBuffer(index, length), length);
     }
@@ -406,7 +401,7 @@ final class ReadOnlyByteBuffer extends AbstractBuffer {
     private Buffer copy(ByteBuffer byteBufferSlice, int length) {
         ByteBuffer tmpBuf = isDirect() ? allocateDirect(length) : allocate(length);
         tmpBuf.put(byteBufferSlice);
-        return new ReadOnlyByteBuffer(tmpBuf.asReadOnlyBuffer());
+        return new ReadOnlyByteBuffer(tmpBuf);
     }
 
     @Override
@@ -435,12 +430,16 @@ final class ReadOnlyByteBuffer extends AbstractBuffer {
 
     @Override
     public ByteBuffer toNioBuffer() {
-        return sliceByteBuffer0(readerIndex(), readableBytes());
+        return asReadOnlyByteBuffer(sliceByteBuffer0(readerIndex(), readableBytes()));
     }
 
     @Override
     public ByteBuffer toNioBuffer(int index, int length) {
-        return sliceByteBuffer(index, length);
+        return asReadOnlyByteBuffer(sliceByteBuffer(index, length));
+    }
+
+    private static ByteBuffer asReadOnlyByteBuffer(ByteBuffer buffer) {
+        return buffer.isReadOnly() ? buffer : buffer.asReadOnlyBuffer();
     }
 
     @Override
@@ -465,17 +464,17 @@ final class ReadOnlyByteBuffer extends AbstractBuffer {
 
     @Override
     public boolean hasArray() {
-        return buffer.hasArray();
+        return false;
     }
 
     @Override
     public byte[] array() {
-        return buffer.array();
+        throw new ReadOnlyBufferException();
     }
 
     @Override
     public int arrayOffset() {
-        return buffer.arrayOffset();
+        throw new ReadOnlyBufferException();
     }
 
     @Override

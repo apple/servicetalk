@@ -140,9 +140,6 @@ public final class TcpConnector {
 
         // we disable auto read so we can handle stuff in the ConnectionFilter before we accept any content.
         bs.option(ChannelOption.AUTO_READ, config.isAutoRead());
-        if (!config.isAutoRead()) {
-            bs.option(ChannelOption.MAX_MESSAGES_PER_READ, 1);
-        }
 
         // Set the correct ByteBufAllocator based on our BufferAllocator to minimize memory copies.
         bs.option(ChannelOption.ALLOCATOR, BufferUtil.getByteBufAllocator(bufferAllocator));
@@ -161,9 +158,6 @@ public final class TcpConnector {
 
         // we disable auto read so we can handle stuff in the ConnectionFilter before we accept any content.
         channel.config().setOption(ChannelOption.AUTO_READ, config.isAutoRead());
-        if (!config.isAutoRead()) {
-            channel.config().setOption(ChannelOption.MAX_MESSAGES_PER_READ, 1);
-        }
 
         // Set the correct ByteBufAllocator based on our BufferAllocator to minimize memory copies.
         channel.config().setAllocator(BufferUtil.getByteBufAllocator(bufferAllocator));

@@ -40,6 +40,7 @@ import org.junit.runners.Parameterized;
 import java.io.IOException;
 import java.nio.channels.ClosedChannelException;
 import java.util.Collection;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
@@ -95,9 +96,10 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
     public final LegacyMockedCompletableListenerRule completableListenerRule =
             new LegacyMockedCompletableListenerRule();
     private final StreamingHttpRequestResponseFactory reqRespFactory =
-            new DefaultStreamingHttpRequestResponseFactory(DEFAULT_ALLOCATOR, INSTANCE);
+            new DefaultStreamingHttpRequestResponseFactory(DEFAULT_ALLOCATOR, INSTANCE, HTTP_1_1);
 
     private final TestPublisher<Buffer> publisher = new TestPublisher<>();
+    private final CountDownLatch serviceHandleLatch = new CountDownLatch(1);
     private AtomicReference<Single<Throwable>> capturedServiceTransportErrorRef = new AtomicReference<>();
 
     public NettyHttpServerTest(final ExecutorSupplier clientExecutorSupplier,
@@ -310,6 +312,7 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
         final StreamingHttpRequest request1 = reqRespFactory.newRequest(GET, SVC_TEST_PUBLISHER);
         final StreamingHttpResponse response1 = makeRequest(request1);
 
+        serviceHandleLatch.await();
         closeAsyncGracefully(serverContext(), 1000, SECONDS).subscribe();
         publisher.onNext(getChunkFromString("Hello"));
         publisher.onComplete();
@@ -520,7 +523,8 @@ public class NettyHttpServerTest extends AbstractNettyHttpServerTest {
                                                         final StreamingHttpResponseFactory responseFactory) {
                 // Capture for future assertions on the transport errors
                 capturedServiceTransportErrorRef.set(((NettyConnectionContext) ctx).transportError());
-                return delegate().handle(ctx, request, responseFactory);
+                return delegate().handle(ctx, request, responseFactory)
+                        .afterOnSubscribe(c -> serviceHandleLatch.countDown());
             }
         });
     }

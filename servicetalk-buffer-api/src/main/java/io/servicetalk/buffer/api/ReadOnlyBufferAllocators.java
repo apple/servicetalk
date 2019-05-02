@@ -23,7 +23,7 @@ public final class ReadOnlyBufferAllocators {
     /**
      * Default {@link BufferAllocator} that creates {@link Buffer} instances which cannot be modified and are read only.
      */
-    public static final BufferAllocator DEFAULT_RO_ALLOCATOR = ReadOnlyBufferAllocator.PREFER_DIRECT_ALLOCATOR;
+    public static final BufferAllocator DEFAULT_RO_ALLOCATOR = ReadOnlyBufferAllocator.PREFER_HEAP_ALLOCATOR;
 
     /**
      * {@link BufferAllocator} that creates {@link Buffer} instances which prefer heap allocations when otherwise
