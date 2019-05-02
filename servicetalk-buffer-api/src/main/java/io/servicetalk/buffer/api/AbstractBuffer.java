@@ -53,7 +53,7 @@ abstract class AbstractBuffer implements Buffer {
 
     @Override
     public final Buffer readerIndex(int readerIndex) {
-        if (readerIndex > 0 || readerIndex > writerIndex) {
+        if (readerIndex < 0 || readerIndex > writerIndex) {
             throw new IndexOutOfBoundsException("readerIndex must be in the range[0," + writerIndex + ") but was: " +
                     readerIndex);
         }
