@@ -21,6 +21,7 @@ import io.servicetalk.redis.api.RedisClient;
 import io.servicetalk.redis.api.RedisClient.ReservedRedisConnection;
 import io.servicetalk.redis.api.RedisData.CompleteBulkString;
 import io.servicetalk.redis.api.RedisProtocolSupport.BufferFieldValue;
+import io.servicetalk.redis.api.RedisProtocolSupport.BufferKeyValue;
 import io.servicetalk.redis.api.RedisProtocolSupport.Command;
 import io.servicetalk.redis.api.RedisProtocolSupport.FieldValue;
 
@@ -47,6 +48,7 @@ import static io.servicetalk.concurrent.internal.PlatformDependent.throwExceptio
 import static io.servicetalk.redis.api.RedisProtocolSupport.Command.PUBLISH;
 import static io.servicetalk.redis.api.RedisRequests.newRequest;
 import static io.servicetalk.redis.netty.RedisDataMatcher.redisInteger;
+import static java.util.stream.Collectors.toList;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.either;
 import static org.hamcrest.Matchers.is;
@@ -186,5 +188,17 @@ public abstract class BaseRedisClientTest {
             result.add(new BufferFieldValue(iterator.next(), iterator.next()));
         }
         return result;
+    }
+
+    static List<BufferFieldValue> duplicateBufferFieldValue(final List<BufferFieldValue> list) {
+        return list.stream()
+                .map(fv -> new BufferFieldValue(fv.field.duplicate(), fv.value.duplicate()))
+                .collect(toList());
+    }
+
+    static List<BufferKeyValue> duplicateBufferKeyValue(final List<BufferKeyValue> list) {
+        return list.stream()
+                .map(kv -> new BufferKeyValue(kv.key.duplicate(), kv.value.duplicate()))
+                .collect(toList());
     }
 }

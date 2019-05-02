@@ -143,17 +143,17 @@ public class BlockingBufferRedisCommanderTest extends BaseRedisClientTest {
     public void dataSpreadAcrossMultipleSocketReadWriteOperations() throws Exception {
         Buffer expectedValue = buf(randomCharSequenceOfByteLength(5 * 1024 * 1024)); // 5 MB
         Buffer largeKey = key("a-set-large-buffer-1");
-        assertThat(commandClient.set(largeKey, expectedValue), is("OK"));
-        assertThat(commandClient.get(largeKey), is(expectedValue));
-        commandClient.del(largeKey);
+        assertThat(commandClient.set(largeKey.duplicate(), expectedValue.duplicate()), is("OK"));
+        assertThat(commandClient.get(largeKey.duplicate()), is(expectedValue));
+        commandClient.del(largeKey.duplicate());
     }
 
     @Test
     public void emptyGet() throws Exception {
         Buffer emptyKey = key("a-empty-key");
-        assertThat(commandClient.set(emptyKey, buf("")), is("OK"));
-        assertThat(commandClient.get(emptyKey), is(EMPTY_BUFFER));
-        commandClient.del(emptyKey);
+        assertThat(commandClient.set(emptyKey.duplicate(), buf("")), is("OK"));
+        assertThat(commandClient.get(emptyKey.duplicate()), is(EMPTY_BUFFER));
+        commandClient.del(emptyKey.duplicate());
     }
 
     @Test
@@ -165,7 +165,7 @@ public class BlockingBufferRedisCommanderTest extends BaseRedisClientTest {
         final List<BufferKeyValue> keyValues = IntStream.range(4, 10)
                 .mapToObj(i -> new BufferKeyValue(key("key" + i), buf("val" + i)))
                 .collect(toList());
-        assertThat(commandClient.mset(keyValues), is("OK"));
+        assertThat(commandClient.mset(duplicateBufferKeyValue(keyValues)), is("OK"));
 
         assertThat(commandClient.mget(key("key0")), contains(buf("val0")));
         assertThat(commandClient.mget(key("key1"), key("key2"), key("key3")),
@@ -290,7 +290,7 @@ public class BlockingBufferRedisCommanderTest extends BaseRedisClientTest {
         fields.add(new BufferFieldValue(buf("f"), buf("v")));
         fields.add(new BufferFieldValue(buf("f1"), buf("v1")));
         fields.add(new BufferFieldValue(buf("f2"), buf("v2")));
-        commandClient.hmset(buf(testKey), fields);
+        commandClient.hmset(buf(testKey), duplicateBufferFieldValue(fields));
         final List<Buffer> result = commandClient.hgetall(buf(testKey));
         assertThat(new HashSet<>(toBufferFieldValues(result)), is(new HashSet<>(fields)));
         final List<Buffer> values = commandClient.hmget(buf(testKey), buf("f"), buf("f1"), buf("f2"));
@@ -313,7 +313,7 @@ public class BlockingBufferRedisCommanderTest extends BaseRedisClientTest {
         fields.add(new BufferFieldValue(buf("f8"), buf("v8")));
         fields.add(new BufferFieldValue(buf("f9"), buf("v9")));
         fields.add(new BufferFieldValue(buf("f10"), buf("v10")));
-        commandClient.hmset(buf(testKey), fields);
+        commandClient.hmset(buf(testKey), duplicateBufferFieldValue(fields));
         final List<Buffer> values = commandClient.hmget(buf(testKey), asList(buf("f"), buf("f1"), buf("f2"), buf("f3"),
                 buf("f4"), buf("f5"), buf("f6"), buf("f7"), buf("f8"), buf("f9"), buf("f10")));
         assertThat(values, is(fields.stream().map(fv -> fv.value).collect(toList())));

@@ -270,7 +270,7 @@ public class RedisClientTest extends BaseRedisClientTest {
 
         for (Class<?> coercionType : coercionTypes) {
             try {
-                awaitIndefinitely(getEnv().client.request(newRequest(PING, reqBuf), coercionType));
+                awaitIndefinitely(getEnv().client.request(newRequest(PING, reqBuf.duplicate()), coercionType));
                 fail();
             } catch (ExecutionException e) {
                 assertThat(e.getCause(), is(instanceOf(RedisServerException.class)));
@@ -334,7 +334,9 @@ public class RedisClientTest extends BaseRedisClientTest {
         RedisCommander commander = getEnv().client.asCommander();
         final String key = "foo";
         awaitIndefinitely(commander.del(key));
-        assertThat(awaitIndefinitely(commander.append(key, "bar").repeat(times -> times < 2)
+        // Use Single.defer(...) to construct a new request for each repeat invocation. Otherwise, Single.repeat
+        // will reuse the same RedisRequest object which is not reusable.
+        assertThat(awaitIndefinitely(Single.defer(() -> commander.append(key, "bar")).repeat(times -> times < 2)
                         .collect(() -> new ArrayList<>(2), (list, value) -> {
                             list.add(value);
                             return list;
@@ -345,7 +347,9 @@ public class RedisClientTest extends BaseRedisClientTest {
     @Test
     public void requestSingleStringIsRepeatable() throws Exception {
         RedisCommander commander = getEnv().client.asCommander();
-        assertThat(awaitIndefinitely(commander.set("foo", "value").repeat(times -> times < 2)
+        // Use Single.defer(...) to construct a new request for each repeat invocation. Otherwise, Single.repeat
+        // will reuse the same RedisRequest object which is not reusable.
+        assertThat(awaitIndefinitely(Single.defer(() -> commander.set("foo", "value")).repeat(times -> times < 2)
                         .collect(() -> new ArrayList<>(2), (list, value) -> {
                             list.add(value);
                             return list;
@@ -363,7 +367,9 @@ public class RedisClientTest extends BaseRedisClientTest {
         awaitIndefinitely(commander.del(key.slice()));
         assertThat(awaitIndefinitely(commander.sadd(key.slice(), v1.slice())), is(1L));
         assertThat(awaitIndefinitely(commander.sadd(key.slice(), v2.slice())), is(1L));
-        assertThat(awaitIndefinitely(commander.spop(key.slice()).repeat(times -> times < 2)
+        // Use Single.defer(...) to construct a new request for each repeat invocation. Otherwise, Single.repeat
+        // will reuse the same RedisRequest object which is not reusable.
+        assertThat(awaitIndefinitely(Single.defer(() -> commander.spop(key.slice())).repeat(times -> times < 2)
                         .collect(() -> new ArrayList<>(2), (list, value) -> {
                             list.add(value);
                             return list;
@@ -387,7 +393,10 @@ public class RedisClientTest extends BaseRedisClientTest {
         assertThat(awaitIndefinitely(commander.sadd(key1.slice(), v2.slice())), is(1L));
         assertThat(awaitIndefinitely(commander.sadd(key2.slice(), v3.slice())), is(1L));
         assertThat(awaitIndefinitely(commander.sadd(key2.slice(), v4.slice())), is(1L));
-        assertThat(awaitIndefinitely(commander.sunion(key1.slice(), key2.slice()).repeat(times -> times < 2)
+        // Use Single.defer(...) to construct a new request for each repeat invocation. Otherwise, Single.repeat
+        // will reuse the same RedisRequest object which is not reusable.
+        assertThat(awaitIndefinitely(Single.defer(() -> commander.sunion(key1.slice(), key2.slice()))
+                        .repeat(times -> times < 2)
                         .collect(() -> new ArrayList<Object>(4), (aggregator, value) -> {
                             aggregator.addAll(value);
                             return aggregator;
