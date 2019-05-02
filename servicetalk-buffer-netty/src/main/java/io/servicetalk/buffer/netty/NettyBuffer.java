@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
+
+import static io.servicetalk.buffer.netty.BufferUtil.toByteBufNoThrow;
 
 class NettyBuffer<T extends ByteBuf> implements Buffer {
 
@@ -211,8 +213,7 @@ class NettyBuffer<T extends ByteBuf> implements Buffer {
 
     @Override
     public Buffer getBytes(int index, Buffer dst) {
-        getBytes(index, dst, dst.writableBytes());
-        return this;
+        return getBytes(index, dst, dst.writableBytes());
     }
 
     @Override
@@ -224,10 +225,13 @@ class NettyBuffer<T extends ByteBuf> implements Buffer {
 
     @Override
     public Buffer getBytes(int index, Buffer dst, int dstIndex, int length) {
-        if (dst instanceof NettyBuffer) {
-            buffer.getBytes(index, ((NettyBuffer) dst).buffer, dstIndex, length);
+        ByteBuf dstByteBuf = toByteBufNoThrow(dst);
+        if (dstByteBuf != null) {
+            buffer.getBytes(index, dstByteBuf, dstIndex, length);
+        } else if (dst.hasArray()) {
+            buffer.getBytes(index, dst.array(), dst.arrayOffset() + dstIndex, length);
         } else {
-            ByteBuffer nioBuffer = buffer.nioBuffer(dstIndex, length);
+            ByteBuffer nioBuffer = dst.toNioBuffer(dstIndex, length);
             buffer.getBytes(index, nioBuffer);
         }
         return this;
@@ -235,8 +239,7 @@ class NettyBuffer<T extends ByteBuf> implements Buffer {
 
     @Override
     public Buffer getBytes(int index, byte[] dst) {
-        buffer.getBytes(index, dst);
-        return this;
+        return getBytes(index, dst, 0, dst.length);
     }
 
     @Override
@@ -331,8 +334,7 @@ class NettyBuffer<T extends ByteBuf> implements Buffer {
 
     @Override
     public Buffer setBytes(int index, Buffer src) {
-        setBytes(index, src, src.readableBytes());
-        return this;
+        return setBytes(index, src, src.readableBytes());
     }
 
     @Override
@@ -344,8 +346,11 @@ class NettyBuffer<T extends ByteBuf> implements Buffer {
 
     @Override
     public Buffer setBytes(int index, Buffer src, int srcIndex, int length) {
-        if (src instanceof NettyBuffer) {
-            buffer.setBytes(index, ((NettyBuffer) src).buffer, srcIndex, length);
+        ByteBuf srcByteBuf = toByteBufNoThrow(src);
+        if (srcByteBuf != null) {
+            buffer.setBytes(index, srcByteBuf, srcIndex, length);
+        } else if (src.hasArray()) {
+            buffer.setBytes(index, src.array(), src.arrayOffset() + srcIndex, length);
         } else {
             ByteBuffer nioBuffer = src.toNioBuffer(srcIndex, length);
             buffer.setBytes(index, nioBuffer);
@@ -355,8 +360,7 @@ class NettyBuffer<T extends ByteBuf> implements Buffer {
 
     @Override
     public Buffer setBytes(int index, byte[] src) {
-        buffer.setBytes(index, src);
-        return this;
+        return setBytes(index, src, 0, src.length);
     }
 
     @Override
@@ -506,36 +510,33 @@ class NettyBuffer<T extends ByteBuf> implements Buffer {
 
     @Override
     public Buffer readBytes(Buffer dst) {
-        if (dst instanceof NettyBuffer) {
-            buffer.readBytes(((NettyBuffer) dst).buffer);
-        } else {
-            buffer.readBytes(dst.toNioBuffer());
-        }
-        return this;
+        return readBytes(dst, dst.writableBytes());
     }
 
     @Override
     public Buffer readBytes(Buffer dst, int length) {
-        readBytes(dst, dst.readerIndex(), length);
+        readBytes(dst, dst.writerIndex(), length);
+        dst.writerIndex(dst.writerIndex() + length);
         return this;
     }
 
     @Override
     public Buffer readBytes(Buffer dst, int dstIndex, int length) {
-        if (dst instanceof NettyBuffer) {
-            buffer.readBytes(((NettyBuffer) dst).buffer, dstIndex, length);
+        ByteBuf dstByteBuf = toByteBufNoThrow(dst);
+        if (dstByteBuf != null) {
+            buffer.readBytes(dstByteBuf, dstIndex, length);
+        } else if (dst.hasArray()) {
+            buffer.readBytes(dst.array(), dst.arrayOffset() + dstIndex, length);
         } else {
             ByteBuffer nioBuffer = dst.toNioBuffer(dstIndex, length);
-            nioBuffer.put(buffer.nioBuffer());
-            buffer.writerIndex(buffer.writerIndex() + length);
+            buffer.readBytes(nioBuffer);
         }
         return this;
     }
 
     @Override
     public Buffer readBytes(byte[] dst) {
-        buffer.readBytes(dst);
-        return this;
+        return readBytes(dst, 0, dst.length);
     }
 
     @Override
@@ -636,20 +637,23 @@ class NettyBuffer<T extends ByteBuf> implements Buffer {
 
     @Override
     public Buffer writeBytes(Buffer src) {
-        writeBytes(src, src.readableBytes());
-        return this;
+        return writeBytes(src, src.readableBytes());
     }
 
     @Override
     public Buffer writeBytes(Buffer src, int length) {
         writeBytes(src, src.readerIndex(), length);
+        src.readerIndex(src.readerIndex() + length);
         return this;
     }
 
     @Override
     public Buffer writeBytes(Buffer src, int srcIndex, int length) {
-        if (src instanceof NettyBuffer) {
-            buffer.writeBytes(((NettyBuffer) src).buffer, srcIndex, length);
+        ByteBuf srcByteBuf = toByteBufNoThrow(src);
+        if (srcByteBuf != null) {
+            buffer.writeBytes(srcByteBuf, srcIndex, length);
+        } else if (src.hasArray()) {
+            buffer.writeBytes(src.array(), src.arrayOffset() + srcIndex, length);
         } else {
             ByteBuffer nioBuffer = src.toNioBuffer(srcIndex, length);
             buffer.writeBytes(nioBuffer);
@@ -659,8 +663,7 @@ class NettyBuffer<T extends ByteBuf> implements Buffer {
 
     @Override
     public Buffer writeBytes(byte[] src) {
-        buffer.writeBytes(src);
-        return this;
+        return writeBytes(src, 0, src.length);
     }
 
     @Override
@@ -834,10 +837,12 @@ class NettyBuffer<T extends ByteBuf> implements Buffer {
 
     @Override
     public boolean equals(Object obj) {
-        if (obj instanceof NettyBuffer) {
-            return buffer.equals(((NettyBuffer) obj).buffer);
+        if (obj instanceof Buffer) {
+            Buffer other = (Buffer) obj;
+            ByteBuf byteBuf = toByteBufNoThrow(other);
+            return byteBuf != null ? buffer.equals(byteBuf) : buffer.nioBuffer().equals(other.toNioBuffer());
         }
-        return obj instanceof Buffer && buffer.nioBuffer().equals(((Buffer) obj).toNioBuffer());
+        return false;
     }
 
     @Override
