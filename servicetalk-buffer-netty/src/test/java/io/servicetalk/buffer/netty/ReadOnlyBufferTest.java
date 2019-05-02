@@ -20,14 +20,13 @@ import io.servicetalk.buffer.api.Buffer;
 import org.junit.Test;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
-import static java.nio.charset.StandardCharsets.US_ASCII;
 import static org.junit.Assert.assertEquals;
 
 public class ReadOnlyBufferTest {
 
     @Test
     public void changeReaderIndexViaReadOnlyView() {
-        Buffer buffer = DEFAULT_ALLOCATOR.newBuffer(10).writeBytes("test".getBytes(US_ASCII));
+        Buffer buffer = DEFAULT_ALLOCATOR.fromAscii("test");
         Buffer readOnly = buffer.asReadOnly();
         assertEquals(buffer.readerIndex(), readOnly.readerIndex());
         readOnly.skipBytes(2);
@@ -37,7 +36,7 @@ public class ReadOnlyBufferTest {
 
     @Test
     public void changeWriterIndexViaReadOnlyView() {
-        Buffer buffer = DEFAULT_ALLOCATOR.newBuffer(10).writeBytes("test".getBytes(US_ASCII));
+        Buffer buffer = DEFAULT_ALLOCATOR.fromAscii("test");
         Buffer readOnly = buffer.asReadOnly();
         assertEquals(buffer.writerIndex(), readOnly.writerIndex());
         readOnly.writerIndex(2);

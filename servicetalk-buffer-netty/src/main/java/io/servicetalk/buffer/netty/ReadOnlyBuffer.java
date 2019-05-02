@@ -25,20 +25,15 @@ import static io.servicetalk.buffer.api.EmptyBuffer.EMPTY_BUFFER;
 
 final class ReadOnlyBuffer extends WrappedBuffer {
 
-    private int readerIndex;
-    private int writerIndex;
-
     private ReadOnlyBuffer(Buffer buffer) {
         super(buffer);
-        readerIndex = buffer.readerIndex();
-        writerIndex = buffer.writerIndex();
     }
 
     static Buffer newReadOnlyBuffer(Buffer buffer) {
         if (buffer.readableBytes() == 0) {
             return EMPTY_BUFFER;
         }
-        return new ReadOnlyBuffer(buffer);
+        return new ReadOnlyBuffer(buffer.duplicate());
     }
 
     @Override
