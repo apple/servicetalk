@@ -225,16 +225,14 @@ class NettyBuffer<T extends ByteBuf> implements Buffer {
 
     @Override
     public Buffer getBytes(int index, Buffer dst, int dstIndex, int length) {
-        if (length > 0) {
-            ByteBuf dstByteBuf = toByteBufNoThrow(dst);
-            if (dstByteBuf != null) {
-                buffer.getBytes(index, dstByteBuf, dstIndex, length);
-            } else if (dst.hasArray()) {
-                buffer.getBytes(index, dst.array(), dst.arrayOffset() + dstIndex, length);
-            } else {
-                ByteBuffer nioBuffer = dst.toNioBuffer(dstIndex, length);
-                buffer.getBytes(index, nioBuffer);
-            }
+        ByteBuf dstByteBuf = toByteBufNoThrow(dst);
+        if (dstByteBuf != null) {
+            buffer.getBytes(index, dstByteBuf, dstIndex, length);
+        } else if (dst.hasArray()) {
+            buffer.getBytes(index, dst.array(), dst.arrayOffset() + dstIndex, length);
+        } else {
+            ByteBuffer nioBuffer = dst.toNioBuffer(dstIndex, length);
+            buffer.getBytes(index, nioBuffer);
         }
         return this;
     }
@@ -246,17 +244,13 @@ class NettyBuffer<T extends ByteBuf> implements Buffer {
 
     @Override
     public Buffer getBytes(int index, byte[] dst, int dstIndex, int length) {
-        if (length > 0) {
-            buffer.getBytes(index, dst, dstIndex, length);
-        }
+        buffer.getBytes(index, dst, dstIndex, length);
         return this;
     }
 
     @Override
     public Buffer getBytes(int index, ByteBuffer dst) {
-        if (dst.remaining() > 0) {
-            buffer.getBytes(index, dst);
-        }
+        buffer.getBytes(index, dst);
         return this;
     }
 
@@ -352,16 +346,14 @@ class NettyBuffer<T extends ByteBuf> implements Buffer {
 
     @Override
     public Buffer setBytes(int index, Buffer src, int srcIndex, int length) {
-        if (length > 0) {
-            ByteBuf srcByteBuf = toByteBufNoThrow(src);
-            if (srcByteBuf != null) {
-                buffer.setBytes(index, srcByteBuf, srcIndex, length);
-            } else if (src.hasArray()) {
-                buffer.setBytes(index, src.array(), src.arrayOffset() + srcIndex, length);
-            } else {
-                ByteBuffer nioBuffer = src.toNioBuffer(srcIndex, length);
-                buffer.setBytes(index, nioBuffer);
-            }
+        ByteBuf srcByteBuf = toByteBufNoThrow(src);
+        if (srcByteBuf != null) {
+            buffer.setBytes(index, srcByteBuf, srcIndex, length);
+        } else if (src.hasArray()) {
+            buffer.setBytes(index, src.array(), src.arrayOffset() + srcIndex, length);
+        } else {
+            ByteBuffer nioBuffer = src.toNioBuffer(srcIndex, length);
+            buffer.setBytes(index, nioBuffer);
         }
         return this;
     }
@@ -373,17 +365,13 @@ class NettyBuffer<T extends ByteBuf> implements Buffer {
 
     @Override
     public Buffer setBytes(int index, byte[] src, int srcIndex, int length) {
-        if (length > 0) {
-            buffer.setBytes(index, src, srcIndex, length);
-        }
+        buffer.setBytes(index, src, srcIndex, length);
         return this;
     }
 
     @Override
     public Buffer setBytes(int index, ByteBuffer src) {
-        if (src.remaining() > 0) {
-            buffer.setBytes(index, src);
-        }
+        buffer.setBytes(index, src);
         return this;
     }
 
@@ -534,16 +522,14 @@ class NettyBuffer<T extends ByteBuf> implements Buffer {
 
     @Override
     public Buffer readBytes(Buffer dst, int dstIndex, int length) {
-        if (length > 0) {
-            ByteBuf dstByteBuf = toByteBufNoThrow(dst);
-            if (dstByteBuf != null) {
-                buffer.readBytes(dstByteBuf, dstIndex, length);
-            } else if (dst.hasArray()) {
-                buffer.readBytes(dst.array(), dst.arrayOffset() + dstIndex, length);
-            } else {
-                ByteBuffer nioBuffer = dst.toNioBuffer(dstIndex, length);
-                buffer.readBytes(nioBuffer);
-            }
+        ByteBuf dstByteBuf = toByteBufNoThrow(dst);
+        if (dstByteBuf != null) {
+            buffer.readBytes(dstByteBuf, dstIndex, length);
+        } else if (dst.hasArray()) {
+            buffer.readBytes(dst.array(), dst.arrayOffset() + dstIndex, length);
+        } else {
+            ByteBuffer nioBuffer = dst.toNioBuffer(dstIndex, length);
+            buffer.readBytes(nioBuffer);
         }
         return this;
     }
@@ -555,17 +541,13 @@ class NettyBuffer<T extends ByteBuf> implements Buffer {
 
     @Override
     public Buffer readBytes(byte[] dst, int dstIndex, int length) {
-        if (length > 0) {
-            buffer.readBytes(dst, dstIndex, length);
-        }
+        buffer.readBytes(dst, dstIndex, length);
         return this;
     }
 
     @Override
     public Buffer readBytes(ByteBuffer dst) {
-        if (dst.remaining() > 0) {
-            buffer.readBytes(dst);
-        }
+        buffer.readBytes(dst);
         return this;
     }
 
@@ -667,16 +649,14 @@ class NettyBuffer<T extends ByteBuf> implements Buffer {
 
     @Override
     public Buffer writeBytes(Buffer src, int srcIndex, int length) {
-        if (length > 0) {
-            ByteBuf srcByteBuf = toByteBufNoThrow(src);
-            if (srcByteBuf != null) {
-                buffer.writeBytes(srcByteBuf, srcIndex, length);
-            } else if (src.hasArray()) {
-                buffer.writeBytes(src.array(), src.arrayOffset() + srcIndex, length);
-            } else {
-                ByteBuffer nioBuffer = src.toNioBuffer(srcIndex, length);
-                buffer.writeBytes(nioBuffer);
-            }
+        ByteBuf srcByteBuf = toByteBufNoThrow(src);
+        if (srcByteBuf != null) {
+            buffer.writeBytes(srcByteBuf, srcIndex, length);
+        } else if (src.hasArray()) {
+            buffer.writeBytes(src.array(), src.arrayOffset() + srcIndex, length);
+        } else {
+            ByteBuffer nioBuffer = src.toNioBuffer(srcIndex, length);
+            buffer.writeBytes(nioBuffer);
         }
         return this;
     }
@@ -688,17 +668,13 @@ class NettyBuffer<T extends ByteBuf> implements Buffer {
 
     @Override
     public Buffer writeBytes(byte[] src, int srcIndex, int length) {
-        if (length > 0) {
-            buffer.writeBytes(src, srcIndex, length);
-        }
+        buffer.writeBytes(src, srcIndex, length);
         return this;
     }
 
     @Override
     public Buffer writeBytes(ByteBuffer src) {
-        if (src.remaining() > 0) {
-            buffer.writeBytes(src);
-        }
+        buffer.writeBytes(src);
         return this;
     }
 
@@ -718,17 +694,13 @@ class NettyBuffer<T extends ByteBuf> implements Buffer {
 
     @Override
     public Buffer writeAscii(CharSequence seq) {
-        if (seq.length() > 0) {
-            ByteBufUtil.writeAscii(buffer, seq);
-        }
+        ByteBufUtil.writeAscii(buffer, seq);
         return this;
     }
 
     @Override
     public Buffer writeUtf8(CharSequence seq) {
-        if (seq.length() > 0) {
-            ByteBufUtil.writeUtf8(buffer, seq);
-        }
+        ByteBufUtil.writeUtf8(buffer, seq);
         return this;
     }
 
