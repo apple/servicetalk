@@ -38,10 +38,10 @@ invocation of user code out of the event loop to a different thread.
 
 === User code and event loop
 
-Although the outcome is simple that no user code should run on the event loop, implementation of this offloading is
-either naive hence sub-optimal or fairly complex. ServiceTalk internally does the heavy lifting to make sure that it
-does not offload more than what is required. In other words, it reduces offloading when it can deduce that no user code
-can interact with the event loop on a certain path.
+Although the outcome is simple that no user code should run on the event loop, implementations of this offloading are
+often either naive hence sub-optimal or fairly complex. ServiceTalk internally does the heavy lifting to make sure that
+it does not offload more than what is required. In other words, it reduces offloading when it can deduce that no user
+code can interact with the event loop on a certain path.
 
 ServiceTalk abstracts interactions with the event loop using its
 link:../README.adoc#asynchronous-primitives[asynchronous primitives] and hence those interactions can be expressed as
@@ -91,10 +91,10 @@ strategy.
 ==== Opt-in to run on event loop
 
 ServiceTalk acknowledges that [.underline]#writing completely asynchronous code is hard and is __not__ an
-"all or nothing" decision#
+"all or nothing" decision#.
 Practically, applications will have a mixed profile such that some paths are completely asynchronous and some paths have
 blocking code. This is the reason it provides ways to selectively opt-in for disabling offloading for the same
-client/server. This selective opt-ins are specific to protocols, for example as elaborated under
+client/server. These selective opt-ins are specific to protocols, for example as elaborated under
 link:../servicetalk-http-api/docs/Blocking.adoc[HTTP]. In addition there is a way to override the strategy for a
 client/server but it comes with additional responsibility from the user assuming "you know what you are doing".
 
