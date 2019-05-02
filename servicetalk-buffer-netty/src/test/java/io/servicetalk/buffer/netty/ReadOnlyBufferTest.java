@@ -20,9 +20,24 @@ import io.servicetalk.buffer.api.Buffer;
 import org.junit.Test;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
+import static java.nio.charset.StandardCharsets.US_ASCII;
 import static org.junit.Assert.assertEquals;
 
 public class ReadOnlyBufferTest {
+
+    @Test
+    public void capacity() {
+        Buffer buffer = DEFAULT_ALLOCATOR.newBuffer(10).writeBytes("test".getBytes(US_ASCII));
+        Buffer readOnly = buffer.asReadOnly();
+        assertEquals(buffer.capacity(), readOnly.capacity());
+    }
+
+    @Test
+    public void maxCapacity() {
+        Buffer buffer = DEFAULT_ALLOCATOR.newBuffer(10).writeBytes("test".getBytes(US_ASCII));
+        Buffer readOnly = buffer.asReadOnly();
+        assertEquals(buffer.maxCapacity(), readOnly.maxCapacity());
+    }
 
     @Test
     public void changeReaderIndexViaReadOnlyView() {

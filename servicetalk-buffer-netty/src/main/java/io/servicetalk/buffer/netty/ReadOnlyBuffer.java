@@ -87,16 +87,6 @@ final class ReadOnlyBuffer extends WrappedBuffer {
     }
 
     @Override
-    public int capacity() {
-        return writerIndex();
-    }
-
-    @Override
-    public int maxCapacity() {
-        return capacity();
-    }
-
-    @Override
     public Buffer setBoolean(int index, boolean value) {
         throw new ReadOnlyBufferException();
     }
