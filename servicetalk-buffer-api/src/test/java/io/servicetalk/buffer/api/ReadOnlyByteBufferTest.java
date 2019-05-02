@@ -56,8 +56,31 @@ public class ReadOnlyByteBufferTest {
 
     @Test
     public void copy() {
-        byte[] bytes = "test".getBytes(US_ASCII);
-        Buffer buffer = DEFAULT_RO_ALLOCATOR.wrap(bytes);
+        Buffer buffer = DEFAULT_RO_ALLOCATOR.fromAscii("test");
         assertEquals(buffer, buffer.copy());
+    }
+
+    @Test(expected = IndexOutOfBoundsException.class)
+    public void setNegativeReaderIndex() {
+        Buffer buffer = DEFAULT_RO_ALLOCATOR.fromAscii("test");
+        buffer.readerIndex(-1);
+    }
+
+    @Test(expected = IndexOutOfBoundsException.class)
+    public void setReaderIndexHigherThanWriterIndex() {
+        Buffer buffer = DEFAULT_RO_ALLOCATOR.fromAscii("test");
+        buffer.readerIndex(buffer.writerIndex() + 1);
+    }
+
+    @Test(expected = IndexOutOfBoundsException.class)
+    public void setWriterIndexLowerThanReaderIndex() {
+        Buffer buffer = DEFAULT_RO_ALLOCATOR.fromAscii("test");
+        buffer.writerIndex(buffer.readerIndex() - 1);
+    }
+
+    @Test(expected = IndexOutOfBoundsException.class)
+    public void setWriterIndexHigherThanCapacity() {
+        Buffer buffer = DEFAULT_RO_ALLOCATOR.fromAscii("test");
+        buffer.writerIndex(buffer.capacity() + 1);
     }
 }
