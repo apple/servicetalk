@@ -392,14 +392,6 @@ abstract class AbstractBuffer implements Buffer {
     }
 
     @Override
-    public final Buffer readSlice(int length) {
-        checkReadableBytes0(length);
-        Buffer slice = slice(readerIndex, length);
-        readerIndex += length;
-        return slice;
-    }
-
-    @Override
     public final Buffer readBytes(byte[] dst, int dstIndex, int length) {
         checkReadableBytes0(length);
         getBytes(readerIndex, dst, dstIndex, length);
@@ -450,12 +442,12 @@ abstract class AbstractBuffer implements Buffer {
     @Override
     public final Buffer skipBytes(int length) {
         checkReadableBytes0(length);
-        readerIndex += length;
+        skipBytes0(length);
         return this;
     }
 
-    final void skipBytes0(int readerIndex) {
-        this.readerIndex += readerIndex;
+    final void skipBytes0(int length) {
+        readerIndex += length;
     }
 
     @Override

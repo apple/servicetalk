@@ -45,19 +45,19 @@ import static io.servicetalk.http.netty.HttpUtils.status;
  * This benchmark compares encoding of HTTP requests with different status codes (with short and long reason phrase,
  * known and unknown status coders):
  *
- * Benchmark                                 (statusCode)   Mode  Cnt        Score       Error  Units
- * HttpResponseEncoderBenchmark.initialLine           200  thrpt    5  1223169.131 ± 83611.469  ops/s
- * HttpResponseEncoderBenchmark.initialLine           431  thrpt    5  1236201.596 ± 22024.710  ops/s
- * HttpResponseEncoderBenchmark.initialLine           500  thrpt    5  1259922.772 ± 23745.487  ops/s
- * HttpResponseEncoderBenchmark.initialLine           600  thrpt    5  1271252.139 ± 17791.329  ops/s
- * HttpResponseEncoderBenchmark.initialLine           700  thrpt    5  1220163.698 ± 43243.342  ops/s
+ * Benchmark                                            (statusCode)   Mode  Cnt        Score       Error  Units
+ * HttpResponseEncoderInitialLineBenchmark.initialLine           200  thrpt    5  1223169.131 ± 83611.469  ops/s
+ * HttpResponseEncoderInitialLineBenchmark.initialLine           431  thrpt    5  1236201.596 ± 22024.710  ops/s
+ * HttpResponseEncoderInitialLineBenchmark.initialLine           500  thrpt    5  1259922.772 ± 23745.487  ops/s
+ * HttpResponseEncoderInitialLineBenchmark.initialLine           600  thrpt    5  1271252.139 ± 17791.329  ops/s
+ * HttpResponseEncoderInitialLineBenchmark.initialLine           700  thrpt    5  1220163.698 ± 43243.342  ops/s
  */
 @Fork(value = 1)
 @State(Scope.Benchmark)
 @Warmup(iterations = 5, time = 3)
 @Measurement(iterations = 5, time = 3)
 @BenchmarkMode(Mode.Throughput)
-public class HttpResponseEncoderBenchmark {
+public class HttpResponseEncoderInitialLineBenchmark {
 
     @Param({"200", "431", "500", "600", "700"})
     private int statusCode;

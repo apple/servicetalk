@@ -19,7 +19,8 @@ import io.servicetalk.buffer.api.Buffer;
 
 import javax.annotation.Nullable;
 
-import static io.servicetalk.buffer.api.ReadOnlyBufferAllocators.PREFER_DIRECT_RO_ALLOCATOR;
+import static io.servicetalk.buffer.api.ReadOnlyBufferAllocators.PREFER_HEAP_RO_ALLOCATOR;
+import static io.servicetalk.http.api.BufferUtils.writeReadOnlyBuffer;
 import static io.servicetalk.http.api.HttpRequestMethod.Properties.CACHEABLE;
 import static io.servicetalk.http.api.HttpRequestMethod.Properties.IDEMPOTENT;
 import static io.servicetalk.http.api.HttpRequestMethod.Properties.NONE;
@@ -87,7 +88,7 @@ public final class HttpRequestMethod {
         }
         this.name = name;
         this.properties = requireNonNull(properties);
-        this.nameBuffer = PREFER_DIRECT_RO_ALLOCATOR.fromAscii(name);
+        this.nameBuffer = PREFER_HEAP_RO_ALLOCATOR.fromAscii(name);
     }
 
     /**
@@ -142,7 +143,7 @@ public final class HttpRequestMethod {
      * @param buffer the {@link Buffer} to write to
      */
     public void writeNameTo(final Buffer buffer) {
-        buffer.writeBytes(nameBuffer, nameBuffer.readerIndex(), nameBuffer.readableBytes());
+        writeReadOnlyBuffer(nameBuffer, buffer);
     }
 
     /**

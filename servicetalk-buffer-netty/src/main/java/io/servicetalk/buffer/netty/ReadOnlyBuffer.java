@@ -76,6 +76,16 @@ final class ReadOnlyBuffer extends WrappedBuffer {
     }
 
     @Override
+    public Buffer ensureWritable(int minWritableBytes) {
+        throw new ReadOnlyBufferException();
+    }
+
+    @Override
+    public int ensureWritable(int minWritableBytes, boolean force) {
+        return 1;
+    }
+
+    @Override
     public Buffer capacity(int newCapacity) {
         throw new ReadOnlyBufferException();
     }
@@ -297,6 +307,11 @@ final class ReadOnlyBuffer extends WrappedBuffer {
 
     @Override
     public Buffer writeUtf8(CharSequence seq) {
+        throw new ReadOnlyBufferException();
+    }
+
+    @Override
+    public Buffer writeUtf8(CharSequence seq, int ensureWritable) {
         throw new ReadOnlyBufferException();
     }
 
