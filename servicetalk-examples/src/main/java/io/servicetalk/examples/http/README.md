@@ -100,7 +100,18 @@ curl http://localhost:8080/greetings/hello
 More examples of how to use the resource can be found in the
 [HelloWorldJaxRsResource](jaxrs/HelloWorldJaxRsResource.java) javadocs.
 
+### MetaData
 
+This example demonstrates some of the basic functionality of the Http MetaData classes:
+
+- Setting and getting response status.
+- Setting and getting query parameters.
+- Setting, checking, and getting headers.
+- Printing headers without redaction/filtering.
+
+Using the following classes:
+- [MetaDataDemoServer](metadata/MetaDataDemoServer.java) - A server that provides greetings in various languages.
+- [MetaDataDemoClient](metadata/MetaDataDemoClient.java) - A client that requests greetings in various languages.
 
 ### Service Composition
 
