@@ -79,7 +79,7 @@ public final class HttpRequestMethod {
     public static final HttpRequestMethod PATCH = new HttpRequestMethod("PATCH", NONE);
 
     private final String name;
-    private final Buffer nameBuffer;
+    private final Buffer buffer;
     private final Properties properties;
 
     private HttpRequestMethod(final String name, final Properties properties) {
@@ -88,7 +88,7 @@ public final class HttpRequestMethod {
         }
         this.name = name;
         this.properties = requireNonNull(properties);
-        this.nameBuffer = PREFER_HEAP_RO_ALLOCATOR.fromAscii(name);
+        this.buffer = PREFER_HEAP_RO_ALLOCATOR.fromAscii(name);
     }
 
     /**
@@ -138,12 +138,12 @@ public final class HttpRequestMethod {
     }
 
     /**
-     * Write the equivalent of {@link #name()} to a {@link Buffer}.
+     * Write the equivalent of this {@link HttpRequestMethod} to a {@link Buffer}.
      *
      * @param buffer the {@link Buffer} to write to
      */
-    public void writeNameTo(final Buffer buffer) {
-        writeReadOnlyBuffer(nameBuffer, buffer);
+    public void writeTo(final Buffer buffer) {
+        writeReadOnlyBuffer(this.buffer, buffer);
     }
 
     /**
