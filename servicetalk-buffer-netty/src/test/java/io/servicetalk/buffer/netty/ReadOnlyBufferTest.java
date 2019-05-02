@@ -21,7 +21,7 @@ import org.junit.Test;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static java.nio.charset.StandardCharsets.US_ASCII;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 public class ReadOnlyBufferTest {
 
