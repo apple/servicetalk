@@ -1885,7 +1885,13 @@ public interface Buffer {
     boolean isReadOnly();
 
     /**
-     * Create a buffer whose contents cannot be modified.
+     * Create a read-only view for this buffer.
+     * <p>
+     * The returned read-only view shares indexes and content with the original {@link Buffer}. All methods that try
+     * to change the content will throw {@link ReadOnlyBufferException}. Modifications for indexes are allowed and will
+     * be propagated to the original {@link Buffer}. To prevent changes of indexes for the original {@link Buffer} use
+     * {@link #duplicate()} before converting to a read-only view.
+     *
      * @return a buffer whose contents cannot be modified.
      */
     Buffer asReadOnly();

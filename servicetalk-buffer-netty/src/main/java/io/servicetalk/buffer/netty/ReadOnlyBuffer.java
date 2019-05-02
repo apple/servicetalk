@@ -33,7 +33,7 @@ final class ReadOnlyBuffer extends WrappedBuffer {
         if (buffer.readableBytes() == 0) {
             return EMPTY_BUFFER;
         }
-        return new ReadOnlyBuffer(buffer.duplicate());
+        return new ReadOnlyBuffer(buffer);
     }
 
     @Override

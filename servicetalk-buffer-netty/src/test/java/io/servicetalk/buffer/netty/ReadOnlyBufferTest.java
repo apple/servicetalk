@@ -31,7 +31,7 @@ public class ReadOnlyBufferTest {
         assertEquals(buffer.readerIndex(), readOnly.readerIndex());
         readOnly.skipBytes(2);
         assertEquals(2, readOnly.readerIndex());
-        assertEquals(0, buffer.readerIndex());
+        assertEquals(buffer.readerIndex(), readOnly.readerIndex());
     }
 
     @Test
@@ -41,6 +41,6 @@ public class ReadOnlyBufferTest {
         assertEquals(buffer.writerIndex(), readOnly.writerIndex());
         readOnly.writerIndex(2);
         assertEquals(2, readOnly.writerIndex());
-        assertEquals(4, buffer.writerIndex());
+        assertEquals(buffer.writerIndex(), readOnly.writerIndex());
     }
 }
