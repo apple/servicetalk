@@ -17,6 +17,7 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
+import io.servicetalk.client.api.ConsumableEvent;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
@@ -30,7 +31,6 @@ import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.TestStreamingHttpConnection;
-import io.servicetalk.tcp.netty.internal.TcpClientConfig;
 import io.servicetalk.transport.netty.internal.ExecutionContextRule;
 import io.servicetalk.transport.netty.internal.NettyConnection;
 
@@ -47,7 +47,7 @@ import static io.servicetalk.concurrent.api.BlockingTestUtils.awaitIndefinitelyN
 import static io.servicetalk.concurrent.api.Completable.never;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.http.api.DefaultHttpHeadersFactory.INSTANCE;
-import static io.servicetalk.http.api.FilterableStreamingHttpConnection.SettingKey.MAX_CONCURRENCY;
+import static io.servicetalk.http.api.HttpEventKey.MAX_CONCURRENCY;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
 import static io.servicetalk.http.api.HttpHeaderValues.TEXT_PLAIN;
@@ -80,17 +80,16 @@ public final class AbstractHttpConnectionTest {
     private Function<Publisher<Object>, Publisher<Object>> reqResp;
 
     private StreamingHttpConnection http;
-    private HttpClientConfig config = new HttpClientConfig(new TcpClientConfig(true));
     private final BufferAllocator allocator = DEFAULT_ALLOCATOR;
     private final HttpHeadersFactory headersFactory = INSTANCE;
     private final StreamingHttpRequestResponseFactory reqRespFactory =
-            new DefaultStreamingHttpRequestResponseFactory(allocator, headersFactory);
+            new DefaultStreamingHttpRequestResponseFactory(allocator, headersFactory, HTTP_1_1);
 
     private class MockStreamingHttpConnection
             extends AbstractStreamingHttpConnection<NettyConnection<Object, Object>> {
         MockStreamingHttpConnection(final NettyConnection<Object, Object> connection,
-                                    final ReadOnlyHttpClientConfig config) {
-            super(connection, config, new ExecutionContextToHttpExecutionContext(ctx, defaultStrategy()),
+                                    final int maxPipelinedRequests) {
+            super(connection, maxPipelinedRequests, new ExecutionContextToHttpExecutionContext(ctx, defaultStrategy()),
                     reqRespFactory);
         }
 
@@ -104,17 +103,18 @@ public final class AbstractHttpConnectionTest {
     @Before
     public void setup() {
         reqResp = mock(Function.class);
-        config.maxPipelinedRequests(101);
         NettyConnection conn = mock(NettyConnection.class);
         when(conn.onClose()).thenReturn(never());
         when(conn.onClosing()).thenReturn(never());
         when(conn.transportError()).thenReturn(Single.never());
-        http = TestStreamingHttpConnection.from(new MockStreamingHttpConnection(conn, config.asReadOnly()));
+        http = TestStreamingHttpConnection.from(new MockStreamingHttpConnection(conn, 101));
     }
 
     @Test
-    public void shouldEmitMaxConcurrencyInSettingStream() throws Exception {
-        Integer max = http.settingStream(MAX_CONCURRENCY).firstOrElse(() -> null).toFuture().get();
+    public void shouldEmitMaxConcurrencyInEventStream() throws Exception {
+        Integer max = http.transportEventStream(MAX_CONCURRENCY)
+                .afterOnNext(ConsumableEvent::eventConsumed).map(ConsumableEvent::event)
+                .firstOrElse(() -> null).toFuture().get();
         assertThat(max, equalTo(101));
     }
 

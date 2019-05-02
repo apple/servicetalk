@@ -57,6 +57,7 @@ import static io.servicetalk.http.api.HttpHeaderNames.PROXY_AUTHENTICATE;
 import static io.servicetalk.http.api.HttpHeaderNames.PROXY_AUTHORIZATION;
 import static io.servicetalk.http.api.HttpHeaderNames.WWW_AUTHENTICATE;
 import static io.servicetalk.http.api.HttpHeaderValues.ZERO;
+import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.HttpResponseStatus.PROXY_AUTHENTICATION_REQUIRED;
 import static io.servicetalk.http.api.HttpResponseStatus.UNAUTHORIZED;
@@ -123,7 +124,7 @@ public class BasicAuthHttpServiceFilterTest {
     private static final HttpServiceContext CONN_CTX = mock(HttpServiceContext.class);
     private static final BufferAllocator allocator = DEFAULT_ALLOCATOR;
     private static final StreamingHttpRequestResponseFactory reqRespFactory =
-            new DefaultStreamingHttpRequestResponseFactory(allocator, DefaultHttpHeadersFactory.INSTANCE);
+            new DefaultStreamingHttpRequestResponseFactory(allocator, DefaultHttpHeadersFactory.INSTANCE, HTTP_1_1);
 
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();

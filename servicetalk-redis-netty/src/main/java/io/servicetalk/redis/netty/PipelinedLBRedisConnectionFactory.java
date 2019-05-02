@@ -15,6 +15,7 @@
  */
 package io.servicetalk.redis.netty;
 
+import io.servicetalk.client.api.internal.IgnoreConsumedEvent;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.redis.api.RedisConnection;
 import io.servicetalk.redis.api.RedisConnectionFilterFactory;
@@ -43,7 +44,7 @@ final class PipelinedLBRedisConnectionFactory<ResolvedAddress>
                                           final RedisConnectionFilterFactory connectionFilterFactory) {
         return buildForPipelined(executionContext, resolvedAddress, config, connectionFilterFactory)
                 .map(filteredConnection -> new LoadBalancedRedisConnection(filteredConnection,
-                        newController(filteredConnection.settingStream(MAX_CONCURRENCY),
+                        newController(filteredConnection.settingStream(MAX_CONCURRENCY).map(IgnoreConsumedEvent::new),
                                    filteredConnection.onClose(),
                                    config.maxPipelinedRequests())));
     }

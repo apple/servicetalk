@@ -96,12 +96,12 @@ public interface HttpMetaData {
     /**
      * Adds a <a href="https://tools.ietf.org/html/rfc6265#section-4.2">cookie</a>.
      * <p>
-     * This may result in multiple {@link HttpCookie}s with same name.
+     * This may result in multiple {@link HttpCookiePair}s with same name.
      *
      * @param cookie the cookie to add.
      * @return {@code this}.
      */
-    default HttpMetaData addCookie(final HttpCookie cookie) {
+    default HttpMetaData addCookie(final HttpCookiePair cookie) {
         headers().addCookie(cookie);
         return this;
     }
@@ -110,8 +110,8 @@ public interface HttpMetaData {
      * Adds a <a href="https://tools.ietf.org/html/rfc6265#section-4.2">cookie</a> with the specified {@code name} and
      * {@code value}.
      * <p>
-     * This may result in multiple {@link HttpCookie}s with same name. Added cookie will not be wrapped, not secure, and
-     * not HTTP-only, with no path, domain, expire date and maximum age.
+     * This may result in multiple {@link HttpSetCookie}s with same name. Added cookie will not be wrapped, not secure,
+     * and not HTTP-only, with no path, domain, expire date and maximum age.
      *
      * @param name the name of the cookie.
      * @param value the value of the cookie.
@@ -125,12 +125,12 @@ public interface HttpMetaData {
     /**
      * Adds a <a href="https://tools.ietf.org/html/rfc6265#section-4.1">set-cookie</a>.
      * <p>
-     * This may result in multiple {@link HttpCookie}s with same name.
+     * This may result in multiple {@link HttpSetCookie}s with same name.
      *
      * @param cookie the cookie to add.
      * @return {@code this}.
      */
-    default HttpMetaData addSetCookie(final HttpCookie cookie) {
+    default HttpMetaData addSetCookie(final HttpSetCookie cookie) {
         headers().addSetCookie(cookie);
         return this;
     }
@@ -139,8 +139,8 @@ public interface HttpMetaData {
      * Adds a <a href="https://tools.ietf.org/html/rfc6265#section-4.1">set-cookie</a> with the specified {@code name}
      * and {@code value}.
      * <p>
-     * This may result in multiple {@link HttpCookie}s with same name. Added cookie will not be wrapped, not secure, and
-     * not HTTP-only, with no path, domain, expire date and maximum age.
+     * This may result in multiple {@link HttpSetCookie}s with same name. Added cookie will not be wrapped, not secure,
+     * and not HTTP-only, with no path, domain, expire date and maximum age.
      *
      * @param name the name of the cookie.
      * @param value the value of the cookie.

@@ -67,4 +67,9 @@ public final class DefaultHttpHeadersFactory implements HttpHeadersFactory {
     public HttpHeaders newEmptyTrailers() {
         return new DefaultHttpHeaders(0, validateNames, validateCookies);
     }
+
+    @Override
+    public boolean validateCookies() {
+        return validateCookies;
+    }
 }

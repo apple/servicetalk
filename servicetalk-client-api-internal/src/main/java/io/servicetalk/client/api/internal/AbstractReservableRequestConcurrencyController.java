@@ -15,6 +15,7 @@
  */
 package io.servicetalk.client.api.internal;
 
+import io.servicetalk.client.api.ConsumableEvent;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.CompletableSource.Subscriber;
 import io.servicetalk.concurrent.api.Completable;
@@ -49,10 +50,12 @@ abstract class AbstractReservableRequestConcurrencyController implements Reserva
     private volatile int pendingRequests;
     private final LatestValueSubscriber<Integer> maxConcurrencyHolder;
 
-    AbstractReservableRequestConcurrencyController(final Publisher<Integer> maxConcurrencySettingStream,
+    AbstractReservableRequestConcurrencyController(final Publisher<? extends ConsumableEvent<Integer>> maxConcurrency,
                                                    final Completable onClosing) {
         maxConcurrencyHolder = new LatestValueSubscriber<>();
-        toSource(maxConcurrencySettingStream).subscribe(maxConcurrencyHolder);
+        // Subscribe to onClosing() before maxConcurrency, this order increases the chances of capturing the STATE_QUIT
+        // before observing 0 from maxConcurrency which could lead to more ambiguous max concurrency error messages for
+        // the users on connection tear-down.
         toSource(onClosing.publishAndSubscribeOnOverride(immediate())).subscribe(new Subscriber() {
             @Override
             public void onSubscribe(Cancellable cancellable) {
@@ -69,6 +72,10 @@ abstract class AbstractReservableRequestConcurrencyController implements Reserva
                 pendingRequests = STATE_QUIT;
             }
         });
+        toSource(maxConcurrency
+                .afterOnNext(ConsumableEvent::eventConsumed)
+                .map(ConsumableEvent::event)
+        ).subscribe(maxConcurrencyHolder);
     }
 
     @Override

@@ -45,12 +45,15 @@ import static java.util.regex.Pattern.compile;
 import static java.util.regex.Pattern.quote;
 import static java.util.stream.Collectors.toMap;
 
-final class HeaderUtils {
+/**
+ * Utilities to use for {@link HttpHeaders} implementations.
+ */
+public final class HeaderUtils {
     /**
      * Constant used to seed the hash code generation. Could be anything but this was borrowed from murmur3.
      */
     static final int HASH_CODE_SEED = 0xc2b2ae35;
-    static final BiFunction<? super CharSequence, ? super CharSequence, CharSequence> DEFAULT_HEADER_FILTER =
+    public static final BiFunction<? super CharSequence, ? super CharSequence, CharSequence> DEFAULT_HEADER_FILTER =
             (k, v) -> "<filtered>";
     private static final ByteProcessor HEADER_NAME_VALIDATOR = value -> {
         validateHeaderNameToken(value);
@@ -160,7 +163,7 @@ final class HeaderUtils {
      * @param cookieDomain The domain from the cookie.
      * @return {@code true} if there is a match.
      */
-    static boolean domainMatches(final CharSequence requestDomain, @Nullable final CharSequence cookieDomain) {
+    public static boolean domainMatches(final CharSequence requestDomain, @Nullable final CharSequence cookieDomain) {
         if (cookieDomain == null || requestDomain.length() == 0) {
             return false;
         }
@@ -187,7 +190,7 @@ final class HeaderUtils {
      * @param cookiePath The path from the cookie.
      * @return {@code true} if there is a match.
      */
-    static boolean pathMatches(final CharSequence requestPath, @Nullable final CharSequence cookiePath) {
+    public static boolean pathMatches(final CharSequence requestPath, @Nullable final CharSequence cookiePath) {
         // cookiePath cannot be empty, but we check for 0 length to protect against IIOBE below.
         if (cookiePath == null || cookiePath.length() == 0 || requestPath.length() == 0) {
             return false;

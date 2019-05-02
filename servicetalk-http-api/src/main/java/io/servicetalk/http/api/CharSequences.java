@@ -104,6 +104,47 @@ public final class CharSequences {
         return contentEqualsIgnoreCaseUnknownTypes(a, b);
     }
 
+    /**
+     * Returns {@code true} if the content of both {@link CharSequence}'s are equals. This only supports 8-bit ASCII.
+     * @param a left hand side of comparison.
+     * @param b right hand side of comparison.
+     * @return {@code true} if {@code a}'s content equals {@code b}.
+     */
+    public static boolean contentEquals(final CharSequence a, final CharSequence b) {
+        if (a == b) {
+            return true;
+        }
+        if (a.length() != b.length()) {
+            return false;
+        }
+        if (a.getClass() == AsciiBuffer.class) {
+            return ((AsciiBuffer) a).contentEquals(b);
+        }
+        return contentEqualsUnknownTypes(a, b);
+    }
+
+    /**
+     * Find the index of {@code c} within {@code sequence} starting at index {@code fromIndex}.
+     *
+     * @param sequence The {@link CharSequence} to search in.
+     * @param c The character to find.
+     * @param fromIndex The index to start searching (inclusive).
+     * @return The index of {@code c} or {@code -1} otherwise.
+     */
+    public static int indexOf(CharSequence sequence, char c, int fromIndex) {
+        if (sequence instanceof String) {
+            return ((String) sequence).indexOf(c, fromIndex);
+        } else if (sequence instanceof AsciiBuffer) {
+            return ((AsciiBuffer) sequence).indexOf(c, fromIndex);
+        }
+        for (int i = fromIndex; i < sequence.length(); ++i) {
+            if (sequence.charAt(i) == c) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
     static boolean contentEqualsIgnoreCaseUnknownTypes(final CharSequence a, final CharSequence b) {
         for (int i = 0; i < a.length(); ++i) {
             if (!equalsIgnoreCase(a.charAt(i), b.charAt(i))) {
@@ -136,7 +177,7 @@ public final class CharSequences {
      * @param length     the number of characters to compare.
      * @return {@code true} if the ranges of characters are equal, {@code false} otherwise.
      */
-    static boolean regionMatches(final CharSequence cs, final boolean ignoreCase, final int csStart,
+    public static boolean regionMatches(final CharSequence cs, final boolean ignoreCase, final int csStart,
                                  final CharSequence string, final int start, final int length) {
         if (cs instanceof String && string instanceof String) {
             return ((String) cs).regionMatches(ignoreCase, csStart, (String) string, start, length);
@@ -210,22 +251,6 @@ public final class CharSequences {
      */
     static int caseInsensitiveHashCode(CharSequence seq) {
         return seq.getClass() == AsciiBuffer.class ? seq.hashCode() : hashCodeAscii(seq);
-    }
-
-    /**
-     * Returns {@code true} if the content of both {@link CharSequence}'s are equals. This only supports 8-bit ASCII.
-     */
-    static boolean contentEquals(final CharSequence a, final CharSequence b) {
-        if (a == b) {
-            return true;
-        }
-        if (a.length() != b.length()) {
-            return false;
-        }
-        if (a.getClass() == AsciiBuffer.class) {
-            return ((AsciiBuffer) a).contentEquals(b);
-        }
-        return contentEqualsUnknownTypes(a, b);
     }
 
     static boolean contentEqualsUnknownTypes(final CharSequence a, final CharSequence b) {

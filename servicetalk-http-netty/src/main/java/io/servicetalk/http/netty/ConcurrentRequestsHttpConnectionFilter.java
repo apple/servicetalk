@@ -24,6 +24,7 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.internal.SubscribableSingle;
 import io.servicetalk.concurrent.internal.LatestValueSubscriber;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
+import io.servicetalk.http.api.HttpEventKey;
 import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpRequestMethod;
@@ -38,7 +39,7 @@ import static io.servicetalk.client.api.internal.RequestConcurrencyControllers.n
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
-import static io.servicetalk.http.api.FilterableStreamingHttpConnection.SettingKey.MAX_CONCURRENCY;
+import static io.servicetalk.http.api.HttpEventKey.MAX_CONCURRENCY;
 
 final class ConcurrentRequestsHttpConnectionFilter implements FilterableStreamingHttpConnection {
     private static final Throwable NONE = new Throwable() {
@@ -58,8 +59,9 @@ final class ConcurrentRequestsHttpConnectionFilter implements FilterableStreamin
                 .publishAndSubscribeOnOverride(immediate()).toPublisher()).subscribe(transportError);
 
         limiter = defaultMaxPipelinedRequests == 1 ?
-                newSingleController(delegate.settingStream(MAX_CONCURRENCY), delegate.connectionContext().onClosing()) :
-                newController(delegate.settingStream(MAX_CONCURRENCY), delegate.connectionContext().onClosing(),
+                newSingleController(delegate.transportEventStream(MAX_CONCURRENCY),
+                        delegate.connectionContext().onClosing()) :
+                newController(delegate.transportEventStream(MAX_CONCURRENCY), delegate.connectionContext().onClosing(),
                         defaultMaxPipelinedRequests);
     }
 
@@ -69,8 +71,8 @@ final class ConcurrentRequestsHttpConnectionFilter implements FilterableStreamin
     }
 
     @Override
-    public <T> Publisher<T> settingStream(final SettingKey<T> settingKey) {
-        return delegate.settingStream(settingKey);
+    public <T> Publisher<? extends T> transportEventStream(final HttpEventKey<T> eventKey) {
+        return delegate.transportEventStream(eventKey);
     }
 
     @Override

@@ -18,7 +18,7 @@ package io.servicetalk.http.router.predicate;
 import io.servicetalk.http.api.BlockingHttpService;
 import io.servicetalk.http.api.BlockingStreamingHttpService;
 import io.servicetalk.http.api.HttpApiConversions.ServiceAdapterHolder;
-import io.servicetalk.http.api.HttpCookie;
+import io.servicetalk.http.api.HttpCookiePair;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
 import io.servicetalk.http.api.HttpRequestMethod;
@@ -300,9 +300,9 @@ public final class HttpPredicateRouterBuilder implements RouteStarter {
     }
 
     private class CookieMatcherImpl implements CookieMatcher {
-        private final Function<StreamingHttpRequest, Iterator<? extends HttpCookie>> itemsSource;
+        private final Function<StreamingHttpRequest, Iterator<? extends HttpCookiePair>> itemsSource;
 
-        CookieMatcherImpl(final Function<StreamingHttpRequest, Iterator<? extends HttpCookie>> itemsSource) {
+        CookieMatcherImpl(final Function<StreamingHttpRequest, Iterator<? extends HttpCookiePair>> itemsSource) {
             this.itemsSource = itemsSource;
         }
 
@@ -312,7 +312,7 @@ public final class HttpPredicateRouterBuilder implements RouteStarter {
         }
 
         @Override
-        public RouteContinuation value(final Predicate<HttpCookie> predicate) {
+        public RouteContinuation value(final Predicate<HttpCookiePair> predicate) {
             return values((cookies) -> {
                 while (cookies.hasNext()) {
                     if (predicate.test(cookies.next())) {
@@ -324,7 +324,7 @@ public final class HttpPredicateRouterBuilder implements RouteStarter {
         }
 
         @Override
-        public RouteContinuation values(final Predicate<Iterator<? extends HttpCookie>> predicate) {
+        public RouteContinuation values(final Predicate<Iterator<? extends HttpCookiePair>> predicate) {
             andPredicate((ctx, req) -> predicate.test(itemsSource.apply(req)));
             return continuation;
         }

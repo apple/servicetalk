@@ -33,12 +33,12 @@ dependencies {
   implementation "io.servicetalk:servicetalk-bom-internal:$project.version"
 
   api "io.servicetalk:servicetalk-http-api:$project.version"
-  api "javax.ws.rs:javax.ws.rs-api:$jaxRsVersion"
+  api "javax.ws.rs:javax.ws.rs-api"
 
   implementation "com.google.code.findbugs:jsr305"
   implementation "io.servicetalk:servicetalk-annotations:$project.version"
   implementation "io.servicetalk:servicetalk-concurrent-api-internal:$project.version"
   implementation "io.servicetalk:servicetalk-concurrent-internal:$project.version"
   implementation "io.servicetalk:servicetalk-http-utils:$project.version"
-  implementation "org.glassfish.jersey.core:jersey-common:$jerseyVersion"
+  implementation "org.glassfish.jersey.core:jersey-common"
 }

@@ -45,6 +45,7 @@ import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpHeaderNames.HOST;
 import static io.servicetalk.http.api.HttpHeaderNames.LOCATION;
+import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpRequestMethod.DELETE;
 import static io.servicetalk.http.api.HttpRequestMethod.GET;
 import static io.servicetalk.http.api.HttpRequestMethod.HEAD;
@@ -83,7 +84,7 @@ public class RedirectingHttpRequesterFilterTest {
     private static final int MAX_REDIRECTS = 5;
     private static final BufferAllocator allocator = DEFAULT_ALLOCATOR;
     private static final StreamingHttpRequestResponseFactory reqRespFactory =
-            new DefaultStreamingHttpRequestResponseFactory(allocator, DefaultHttpHeadersFactory.INSTANCE);
+            new DefaultStreamingHttpRequestResponseFactory(allocator, DefaultHttpHeadersFactory.INSTANCE, HTTP_1_1);
 
     @Rule
     public final ServiceTalkTestTimeout timeout = new ServiceTalkTestTimeout();

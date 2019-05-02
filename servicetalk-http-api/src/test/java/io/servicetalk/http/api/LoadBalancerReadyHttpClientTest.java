@@ -52,7 +52,7 @@ import static org.mockito.MockitoAnnotations.initMocks;
 public class LoadBalancerReadyHttpClientTest {
     private static final BufferAllocator allocator = DEFAULT_ALLOCATOR;
     private final StreamingHttpRequestResponseFactory reqRespFactory = new DefaultStreamingHttpRequestResponseFactory(
-            allocator, INSTANCE);
+            allocator, INSTANCE, HTTP_1_1);
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
 

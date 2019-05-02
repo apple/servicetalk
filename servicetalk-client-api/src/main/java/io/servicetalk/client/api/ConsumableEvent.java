@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,20 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.transport.netty.internal;
-
-import io.servicetalk.concurrent.api.AsyncCloseable;
-
-import io.netty.channel.ChannelHandler;
+package io.servicetalk.client.api;
 
 /**
- * A holder of a {@link AsyncCloseable} object.
+ * A container for an event that requires acknowledgement when the event is consumed via {@link #eventConsumed()}.
+ *
+ * @param <T> The type of event.
  */
-public interface AsyncCloseableHolderChannelHandler extends ChannelHandler {
+public interface ConsumableEvent<T> {
     /**
-     * Get the {@link AsyncCloseable} associated with this object.
+     * Get the event.
      *
-     * @return the {@link AsyncCloseable} associated with this object.
+     * @return the event.
      */
-    AsyncCloseable asyncClosable();
+    T event();
+
+    /**
+     * Signify the {@link #event()} has been consumed and any side effects have taken place.
+     */
+    void eventConsumed();
 }

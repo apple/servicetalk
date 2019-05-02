@@ -15,6 +15,7 @@
  */
 package io.servicetalk.client.api.internal;
 
+import io.servicetalk.client.api.ConsumableEvent;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 
@@ -25,10 +26,10 @@ import static io.servicetalk.client.api.internal.RequestConcurrencyController.Re
 final class RequestConcurrencyControllerMulti extends AbstractRequestConcurrencyController {
     private final int maxRequests;
 
-    RequestConcurrencyControllerMulti(final Publisher<Integer> maxConcurrencySettingStream,
-                                      final Completable closeable,
+    RequestConcurrencyControllerMulti(final Publisher<? extends ConsumableEvent<Integer>> maxConcurrency,
+                                      final Completable onClosing,
                                       int maxRequests) {
-        super(maxConcurrencySettingStream, closeable);
+        super(maxConcurrency, onClosing);
         this.maxRequests = maxRequests;
     }
 
