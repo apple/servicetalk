@@ -89,6 +89,14 @@ public class RequestRedisDataTest {
     public static final Buffer BUFFER_ABCDE = DEFAULT_ALLOCATOR.fromAscii("abcde");
     public static final Buffer BUFFER_FGHIJ = DEFAULT_ALLOCATOR.fromAscii("fghij");
 
+    private static Buffer bufferAbcde() {
+        return BUFFER_ABCDE.duplicate();
+    }
+
+    private static Buffer bufferFghij() {
+        return BUFFER_FGHIJ.duplicate();
+    }
+
     @Test
     public void testSimpleString() {
         assertWritten(new SimpleString("abcde"), "+abcde\r\n");
@@ -101,7 +109,7 @@ public class RequestRedisDataTest {
 
     @Test
     public void testFirstBulkStringChunk() {
-        assertWritten(new DefaultFirstBulkStringChunk(BUFFER_ABCDE.duplicate(), 42), "$42\r\nabcde");
+        assertWritten(new DefaultFirstBulkStringChunk(bufferAbcde(), 42), "$42\r\nabcde");
     }
 
     @Test
@@ -111,12 +119,12 @@ public class RequestRedisDataTest {
 
     @Test
     public void testBulkStringChunk() {
-        assertWritten(new DefaultBulkStringChunk(BUFFER_ABCDE.duplicate()), "abcde");
+        assertWritten(new DefaultBulkStringChunk(bufferAbcde()), "abcde");
     }
 
     @Test
     public void testCompleteBulkString() {
-        assertWritten(new CompleteBulkString(BUFFER_ABCDE.duplicate()), "$5\r\nabcde\r\n");
+        assertWritten(new CompleteBulkString(bufferAbcde()), "$5\r\nabcde\r\n");
     }
 
     @Test
@@ -332,7 +340,7 @@ public class RequestRedisDataTest {
 
     @Test
     public void testBufferFieldValue() {
-        assertWritten(new BufferFieldValue(BUFFER_ABCDE, BUFFER_FGHIJ), "$5\r\nabcde\r\n$5\r\nfghij\r\n");
+        assertWritten(new BufferFieldValue(bufferAbcde(), bufferFghij()), "$5\r\nabcde\r\n$5\r\nfghij\r\n");
     }
 
     @Test
@@ -342,7 +350,7 @@ public class RequestRedisDataTest {
 
     @Test
     public void testBufferGroupConsumer() {
-        assertWritten(new BufferGroupConsumer(BUFFER_ABCDE, BUFFER_FGHIJ),
+        assertWritten(new BufferGroupConsumer(bufferAbcde(), bufferFghij()),
                 "$5\r\nGROUP\r\n$5\r\nabcde\r\n$5\r\nfghij\r\n");
     }
 
@@ -353,7 +361,7 @@ public class RequestRedisDataTest {
 
     @Test
     public void testBufferKeyValue() {
-        assertWritten(new BufferKeyValue(BUFFER_ABCDE, BUFFER_FGHIJ), "$5\r\nabcde\r\n$5\r\nfghij\r\n");
+        assertWritten(new BufferKeyValue(bufferAbcde(), bufferFghij()), "$5\r\nabcde\r\n$5\r\nfghij\r\n");
     }
 
     @Test
@@ -363,7 +371,7 @@ public class RequestRedisDataTest {
 
     @Test
     public void testBufferLongitudeLatitudeMember() {
-        assertWritten(new BufferLongitudeLatitudeMember(-123.1, 49.25, BUFFER_ABCDE),
+        assertWritten(new BufferLongitudeLatitudeMember(-123.1, 49.25, bufferAbcde()),
                 "$6\r\n-123.1\r\n$5\r\n49.25\r\n$5\r\nabcde\r\n");
     }
 
@@ -375,7 +383,7 @@ public class RequestRedisDataTest {
 
     @Test
     public void testBufferScoreMember() {
-        assertWritten(new BufferScoreMember(123.45, BUFFER_ABCDE), "$6\r\n123.45\r\n$5\r\nabcde\r\n");
+        assertWritten(new BufferScoreMember(123.45, bufferAbcde()), "$6\r\n123.45\r\n$5\r\nabcde\r\n");
     }
 
     @Test
@@ -410,13 +418,13 @@ public class RequestRedisDataTest {
         assertWritten(new BitfieldOperations.Overflow(BitfieldOverflow.FAIL), "$8\r\nOVERFLOW\r\n$4\r\nFAIL\r\n");
     }
 
-    private void assertWritten(final RequestRedisData data, final String expected) {
-        Buffer buffer = DEFAULT_ALLOCATOR.newBuffer(data.encodedByteCount());
+    private static void assertWritten(final RequestRedisData data, final String expected) {
+        final int expectedLength = expected.length();
+        final int encodedByteCount = data.encodedByteCount();
+        Buffer buffer = DEFAULT_ALLOCATOR.newBuffer(encodedByteCount);
         data.encodeTo(buffer);
         assertThat(buffer.toString(UTF_8), equalTo(expected));
-        int expectedLength = expected.length();
-        assertThat("encodedByteCount() did not calculate correct length", data.encodedByteCount(),
-                equalTo(expectedLength));
+        assertThat("encodedByteCount() did not calculate correct length", encodedByteCount, equalTo(expectedLength));
         assertThat("buffer.readableBytes() was not as expected", buffer.readableBytes(), equalTo(expectedLength));
         assertThat("buffer capacity was not as expected", buffer.capacity(), equalTo(expectedLength));
     }
