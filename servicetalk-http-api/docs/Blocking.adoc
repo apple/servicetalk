@@ -158,3 +158,15 @@ ServiceTalk only associates a single service with an HTTP server but it addition
 within a service. A link:../../servicetalk-http-router-jersey/README.adoc[Jersey router] is one such router which
 provides ways to specify different
 link:../../servicetalk-http-router-jersey/README.adoc#execution-strategies[execution strategies] per route.
+
+=== Global override
+
+In addition to overriding the execution strategy per request/route, one can also specify a strategy for a client/server
+using the respective builders.
+
+[source,java]
+----
+aBuilder.executionStrategy(HttpExecutionStrategies.noOffloadsStrategy());
+----
+
+This strategy will be used for all requests/routes that do not explicitly specify a strategy.

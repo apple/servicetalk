@@ -92,8 +92,8 @@ and are permitted to break API/ABI.
 
 === Blocking Safe By Default
 
-ServiceTalk supports different <<Programming Paradigms, programming models>> for users to work with. However the freedom
-to write blocking code is not just limited to blocking APIs. Users may write blocking code while interacting
+ServiceTalk supports different <<Programming Paradigms, programming models>> for users to work with. However, the
+freedom to write blocking code is not just limited to blocking APIs. Users may write blocking code while interacting
 with asynchronous APIs as well. Reasons and details about this architecture detail can be found
 link:./docs/Blocking.adoc[here].
 
