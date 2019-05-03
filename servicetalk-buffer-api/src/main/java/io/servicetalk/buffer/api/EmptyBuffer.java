@@ -354,7 +354,6 @@ public final class EmptyBuffer implements Buffer {
 
     @Override
     public int setBytes(int index, InputStream src, int length) throws IOException {
-        checkIndex(src.available());
         checkIndex(index, length);
         return 0;
     }
@@ -484,14 +483,12 @@ public final class EmptyBuffer implements Buffer {
 
     @Override
     public Buffer readBytes(Buffer dst, int length) {
-        checkLength(dst.writableBytes());
         checkLength(length);
         return this;
     }
 
     @Override
     public Buffer readBytes(Buffer dst, int dstIndex, int length) {
-        checkLength(dst.writableBytes());
         checkLength(length);
         return this;
     }
@@ -504,7 +501,6 @@ public final class EmptyBuffer implements Buffer {
 
     @Override
     public Buffer readBytes(byte[] dst, int dstIndex, int length) {
-        checkLength(dst.length);
         checkLength(length);
         return this;
     }
@@ -594,14 +590,12 @@ public final class EmptyBuffer implements Buffer {
 
     @Override
     public Buffer writeBytes(Buffer src, int length) {
-        checkLength(src.readableBytes());
         checkLength(length);
         return this;
     }
 
     @Override
     public Buffer writeBytes(Buffer src, int srcIndex, int length) {
-        checkLength(src.readableBytes());
         checkLength(length);
         return this;
     }
@@ -614,7 +608,6 @@ public final class EmptyBuffer implements Buffer {
 
     @Override
     public Buffer writeBytes(byte[] src, int srcIndex, int length) {
-        checkLength(src.length);
         checkLength(length);
         return this;
     }
@@ -795,19 +788,13 @@ public final class EmptyBuffer implements Buffer {
 
     private static void checkIndex(int index) {
         if (index != 0) {
-            throw new IndexOutOfBoundsException();
+            throw new IndexOutOfBoundsException("index: " + index + " (expected: 0)");
         }
     }
 
     private static void checkIndex(int index, int length) {
-        if (length < 0) {
-            throw new IllegalArgumentException("Length: " + length + " (expected: 0)");
-        }
-        if (index != 0) {
-            throw new IndexOutOfBoundsException("Index > 0 (expected: 0)");
-        } else if (length != 0) {
-            throw new IndexOutOfBoundsException("Length > 0 (expected: 0)");
-        }
+        checkIndex(index);
+        checkLength(length);
         // allow empty to empty transfer!
     }
 
@@ -816,7 +803,7 @@ public final class EmptyBuffer implements Buffer {
             throw new IllegalArgumentException("length: " + length + " (expected: 0)");
         }
         if (length != 0) {
-            throw new IndexOutOfBoundsException();
+            throw new IndexOutOfBoundsException("length: " + length + " (expected: 0)");
         }
     }
 }
