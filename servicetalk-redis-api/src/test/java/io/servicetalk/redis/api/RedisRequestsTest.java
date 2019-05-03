@@ -116,7 +116,7 @@ public class RedisRequestsTest {
         Buffer arg = DEFAULT_ALLOCATOR.fromUtf8("abcde");
         assertWritten(
                 () -> RedisRequests.calculateRequestArgumentSize(arg),
-                buf -> RedisRequests.writeRequestArgument(buf, arg),
+                buf -> RedisRequests.writeRequestArgument(buf, arg.duplicate()),
                 "$5\r\nabcde\r\n");
     }
 
