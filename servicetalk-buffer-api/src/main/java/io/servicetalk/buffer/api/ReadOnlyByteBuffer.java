@@ -377,9 +377,6 @@ final class ReadOnlyByteBuffer extends AbstractBuffer {
 
     @Override
     public Buffer readSlice(int length) {
-        if (length == 0) {
-            return EMPTY_BUFFER;
-        }
         checkReadableBytes0(length);
         Buffer buf = new ReadOnlyByteBuffer(sliceByteBuffer0(readerIndex(), length));
         skipBytes0(length);
@@ -388,6 +385,9 @@ final class ReadOnlyByteBuffer extends AbstractBuffer {
 
     @Override
     public Buffer readBytes(int length) {
+        if (length == 0) {
+            return EMPTY_BUFFER;
+        }
         // Return readSlice(length) instead of allocating a new `Buffer` because for a read-only `Buffer` it doesn't
         // mater if the underlying bytes storage will be copied or shared.
         return readSlice(length);

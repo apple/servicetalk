@@ -21,8 +21,6 @@ import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.ReadOnlyBufferException;
 
-import static io.servicetalk.buffer.api.EmptyBuffer.EMPTY_BUFFER;
-
 final class ReadOnlyBuffer extends WrappedBuffer {
 
     ReadOnlyBuffer(Buffer buffer) {
@@ -306,9 +304,6 @@ final class ReadOnlyBuffer extends WrappedBuffer {
 
     @Override
     public Buffer readSlice(int length) {
-        if (length == 0) {
-            return EMPTY_BUFFER;
-        }
         return buffer.readSlice(length).asReadOnly();
     }
 
