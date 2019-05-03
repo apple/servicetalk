@@ -344,7 +344,7 @@ public class SubscribedRedisClientTest extends BaseRedisClientTest {
         for (int i = 0; i < 10; i++) {
             Buffer pingData = buf("ping-" + i);
             final AccumulatingSubscriber<RedisData> pingSubscriber = new AccumulatingSubscriber<RedisData>()
-                    .subscribe(cnx.request(newRequest(PING, new CompleteBulkString(pingData))));
+                    .subscribe(cnx.request(newRequest(PING, new CompleteBulkString(pingData.duplicate()))));
             assertThat(pingSubscriber.awaitSubscription(DEFAULT_TIMEOUT_SECONDS, SECONDS), is(true));
             pingSubscribers.put(pingData, pingSubscriber);
         }
@@ -488,12 +488,14 @@ public class SubscribedRedisClientTest extends BaseRedisClientTest {
             final String pingMessage = "ping-" + currentThread().getName() + "-" + i;
             final Buffer ping = buf(pingMessage);
 
+            final Publisher<RedisData> response =
+                    cnx.request(newRequest(PING, new CompleteBulkString(ping.duplicate())));
             // Check that interleaved requests work both with and without "first"
             final RedisData pong;
             if (i % 2 == 0) {
-                pong = awaitIndefinitely(cnx.request(newRequest(PING, new CompleteBulkString(ping))).firstOrError());
+                pong = awaitIndefinitely(response.firstOrError());
             } else {
-                pong = awaitIndefinitely(cnx.request(newRequest(PING, new CompleteBulkString(ping)))).get(0);
+                pong = awaitIndefinitely(response).get(0);
             }
             checkValidPing(pong, ping);
         }
