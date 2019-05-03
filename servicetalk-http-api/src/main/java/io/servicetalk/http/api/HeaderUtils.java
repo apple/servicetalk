@@ -20,6 +20,7 @@ import io.servicetalk.buffer.api.ByteProcessor;
 import java.nio.charset.Charset;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.function.BiFunction;
 import java.util.regex.Pattern;
 import javax.annotation.Nullable;
@@ -27,6 +28,7 @@ import javax.annotation.Nullable;
 import static io.servicetalk.http.api.CharSequences.caseInsensitiveHashCode;
 import static io.servicetalk.http.api.CharSequences.contentEquals;
 import static io.servicetalk.http.api.CharSequences.contentEqualsIgnoreCase;
+import static io.servicetalk.http.api.CharSequences.indexOf;
 import static io.servicetalk.http.api.CharSequences.regionMatches;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
 import static io.servicetalk.http.api.HttpHeaderValues.APPLICATION_X_WWW_FORM_URLENCODED;
@@ -205,6 +207,339 @@ public final class HeaderUtils {
         return regionMatches(requestPath, false, requestPath.charAt(0) == '/' &&
                 !actualStartsWithSlash ? 1 : 0, cookiePath, 0, length) &&
                 (requestPath.length() > cookiePath.length() || cookiePath.charAt(length) == '/');
+    }
+
+    /**
+     * Determine if a <a href="https://tools.ietf.org/html/rfc6265#section-4.1.1">set-cookie-string</a>'s
+     * <a href="https://tools.ietf.org/html/rfc6265#section-4.1.1">cookie-name</a> matches {@code setCookieName}.
+     *
+     * @param setCookieString The <a href="https://tools.ietf.org/html/rfc6265#section-4.1.1">set-cookie-string</a>.
+     * @param setCookieName The <a href="https://tools.ietf.org/html/rfc6265#section-4.1.1">cookie-name</a>.
+     * @return {@code true} if a <a href="https://tools.ietf.org/html/rfc6265#section-4.1.1">set-cookie-string</a>'s
+     * <a href="https://tools.ietf.org/html/rfc6265#section-4.1.1">cookie-name</a> matches {@code setCookieName}.
+     */
+    public static boolean isSetCookieNameMatches(final CharSequence setCookieString,
+                                                 final CharSequence setCookieName) {
+        int equalsIndex = indexOf(setCookieString, '=', 0);
+        return equalsIndex > 0 && setCookieString.length() - 1 > equalsIndex &&
+                equalsIndex == setCookieName.length() &&
+                regionMatches(setCookieName, true, 0, setCookieString, 0, equalsIndex);
+    }
+
+    /**
+     * Parse a {@link HttpSetCookie} from a
+     * <a href="https://tools.ietf.org/html/rfc6265#section-4.1.1">set-cookie-string</a>.
+     *
+     * @param setCookieString The <a href="https://tools.ietf.org/html/rfc6265#section-4.1.1">set-cookie-string</a>.
+     * @param setCookieName The <a href="https://tools.ietf.org/html/rfc6265#section-4.1.1">cookie-name</a>.
+     * @param validate {@code true} to attempt extra validation.
+     * @return a {@link HttpSetCookie} from a
+     * <a href="https://tools.ietf.org/html/rfc6265#section-4.1.1">set-cookie-string</a>.
+     */
+    @Nullable
+    public static HttpSetCookie parseSetCookie(final CharSequence setCookieString,
+                                               final CharSequence setCookieName,
+                                               final boolean validate) {
+        if (isSetCookieNameMatches(setCookieString, setCookieName)) {
+            return DefaultHttpSetCookie.parseSetCookie(setCookieString, validate,
+                    setCookieString.subSequence(0, setCookieName.length()), setCookieName.length() + 1);
+        }
+        return null;
+    }
+
+    /**
+     * Parse a single <a href="https://tools.ietf.org/html/rfc6265#section-4.2">cookie-pair</a> from a
+     * <a href="https://tools.ietf.org/html/rfc6265#section-4.2">cookie-string</a>.
+     *
+     * @param cookieString The <a href="https://tools.ietf.org/html/rfc6265#section-4.2">cookie-string</a> that may
+     * contain multiple <a href="https://tools.ietf.org/html/rfc6265#section-4.2">cookie-pair</a>s.
+     * @param cookiePairName The <a href="https://tools.ietf.org/html/rfc6265#section-4.1.1">cookie-name</a> identifying
+     * the <a href="https://tools.ietf.org/html/rfc6265#section-4.2">cookie-pair</a>s to parse.
+     * @return
+     * <ul>
+     * <li>The first <a href="https://tools.ietf.org/html/rfc6265#section-4.2">cookie-pair</a> from a
+     * <a href="https://tools.ietf.org/html/rfc6265#section-4.2">cookie-string</a> whose
+     * <a href="https://tools.ietf.org/html/rfc6265#section-4.1.1">cookie-name</a> matched {@code cookiePairName}</li>
+     * <li>{@code null} if no matches were found</li>
+     * </ul>
+     */
+    @Nullable
+    public static HttpCookiePair parseCookiePair(final CharSequence cookieString,
+                                                 final CharSequence cookiePairName) {
+        int start = 0;
+        for (;;) {
+            int equalsIndex = indexOf(cookieString, '=', start);
+            if (equalsIndex <= 0 || cookieString.length() - 1 <= equalsIndex) {
+                break;
+            }
+            int nameLen = equalsIndex - start;
+            int semiIndex = indexOf(cookieString, ';', equalsIndex + 1);
+            if (nameLen == cookiePairName.length() &&
+                    regionMatches(cookiePairName, true, 0, cookieString, start, nameLen)) {
+                return DefaultHttpCookiePair.parseCookiePair(cookieString, start, nameLen, semiIndex);
+            }
+
+            if (semiIndex < 0 || cookieString.length() - 2 <= semiIndex) {
+                break;
+            }
+            // skip 2 characters "; " (see https://tools.ietf.org/html/rfc6265#section-4.2.1)
+            start = semiIndex + 2;
+        }
+        return null;
+    }
+
+    /**
+     * Remove a single <a href="https://tools.ietf.org/html/rfc6265#section-4.2">cookie-pair</a> for a
+     * <a href="https://tools.ietf.org/html/rfc6265#section-4.2">cookie-string</a>.
+     *
+     * @param cookieString The <a href="https://tools.ietf.org/html/rfc6265#section-4.2">cookie-string</a> that may
+     * contain multiple <a href="https://tools.ietf.org/html/rfc6265#section-4.2">cookie-pair</a>s.
+     * @param cookiePairName The <a href="https://tools.ietf.org/html/rfc6265#section-4.1.1">cookie-name</a> identifying
+     * the <a href="https://tools.ietf.org/html/rfc6265#section-4.2">cookie-pair</a>s to remove.
+     * @return
+     * <ul>
+     * <li>The <a href="https://tools.ietf.org/html/rfc6265#section-4.2">cookie-string</a> value with all
+     * <a href="https://tools.ietf.org/html/rfc6265#section-4.2">cookie-pair</a>s removed whose
+     * <a href="https://tools.ietf.org/html/rfc6265#section-4.1.1">cookie-name</a> matches {@code cookiePairName}</li>
+     * <li>Empty if all the <a href="https://tools.ietf.org/html/rfc6265#section-4.2">cookie-pair</a>s matched
+     * {@code cookiePairName}</li>
+     * <li>{@code null} if none of the <a href="https://tools.ietf.org/html/rfc6265#section-4.2">cookie-pair</a>s
+     * matched {@code cookiePairName}</li>
+     * </ul>
+     */
+    @Nullable
+    public static CharSequence removeCookiePairs(final CharSequence cookieString,
+                                                 final CharSequence cookiePairName) {
+        int start = 0;
+        int beginCopyIndex = 0;
+        StringBuilder sb = null;
+        for (;;) {
+            int equalsIndex = indexOf(cookieString, '=', start);
+            if (equalsIndex <= 0 || cookieString.length() - 1 <= equalsIndex) {
+                break;
+            }
+            int nameLen = equalsIndex - start;
+            int semiIndex = indexOf(cookieString, ';', equalsIndex + 1);
+            if (nameLen == cookiePairName.length() &&
+                    regionMatches(cookiePairName, true, 0, cookieString, start, nameLen)) {
+                if (beginCopyIndex != start) {
+                    if (sb == null) {
+                        sb = new StringBuilder(cookieString.length() - beginCopyIndex);
+                    } else {
+                        sb.append("; ");
+                    }
+                    sb.append(cookieString.subSequence(beginCopyIndex, start - 2));
+                }
+                if (semiIndex < 0 || cookieString.length() - 2 <= semiIndex) {
+                    // start is used after the loop to know if a match was found and therefore the entire header
+                    // may need removal.
+                    start = cookieString.length();
+                    break;
+                }
+                // skip 2 characters "; " (see https://tools.ietf.org/html/rfc6265#section-4.2.1)
+                start = semiIndex + 2;
+                beginCopyIndex = start;
+            } else if (semiIndex > 0) {
+                if (cookieString.length() - 2 <= semiIndex) {
+                    throw new IllegalArgumentException("cookie is not allowed to end with ;");
+                }
+                // skip 2 characters "; " (see https://tools.ietf.org/html/rfc6265#section-4.2.1)
+                start = semiIndex + 2;
+            } else {
+                if (beginCopyIndex != 0) {
+                    if (sb == null) {
+                        sb = new StringBuilder(cookieString.length() - beginCopyIndex);
+                    } else {
+                        sb.append("; ");
+                    }
+                    sb.append(cookieString.subSequence(beginCopyIndex, cookieString.length()));
+                }
+                break;
+            }
+        }
+
+        return sb == null ? start == cookieString.length() ? "" : null : sb.toString();
+    }
+
+    /**
+     * An {@link Iterator} of {@link HttpCookiePair} designed to iterate across multiple values of
+     * {@link HttpHeaderNames#COOKIE}.
+     */
+    public abstract static class CookiesIterator implements Iterator<HttpCookiePair> {
+        @Nullable
+        private HttpCookiePair next;
+        private int nextNextStart;
+
+        @Override
+        public final boolean hasNext() {
+            return next != null;
+        }
+
+        @Override
+        public final HttpCookiePair next() {
+            if (next == null) {
+                throw new NoSuchElementException();
+            }
+            HttpCookiePair current = next;
+            CharSequence cookieHeaderValue = cookieHeaderValue();
+            next = cookieHeaderValue == null ? null : findNext(cookieHeaderValue);
+            return current;
+        }
+
+        /**
+         * Get the current value for {@link HttpHeaderNames#COOKIE}. This value may change during iteration.
+         *
+         * @return the current value for {@link HttpHeaderNames#COOKIE}, or {@code null} if all have been iterated.
+         */
+        @Nullable
+        protected abstract CharSequence cookieHeaderValue();
+
+        /**
+         * Advance the {@link #cookieHeaderValue()} to the next {@link HttpHeaderNames#COOKIE} header value.
+         */
+        protected abstract void advanceCookieHeaderValue();
+
+        /**
+         * Initialize the next {@link HttpCookiePair} value for {@link #next()}.
+         *
+         * @param cookieHeaderValue The initial value for {@link HttpHeaderNames#COOKIE}.
+         */
+        protected final void initNext(CharSequence cookieHeaderValue) {
+            next = findNext(cookieHeaderValue);
+        }
+
+        /**
+         * Find the next {@link HttpCookiePair} value for {@link #next()}.
+         *
+         * @param cookieHeaderValue The current value for {@link HttpHeaderNames#COOKIE}.
+         * @return the next {@link HttpCookiePair} value for {@link #next()}, or {@code null} if all have been parsed.
+         */
+        private HttpCookiePair findNext(CharSequence cookieHeaderValue) {
+            int semiIndex = indexOf(cookieHeaderValue, ';', nextNextStart);
+            HttpCookiePair next = DefaultHttpCookiePair.parseCookiePair(cookieHeaderValue, nextNextStart, semiIndex);
+            if (semiIndex > 0) {
+                if (cookieHeaderValue.length() - 2 <= semiIndex) {
+                    advanceCookieHeaderValue();
+                    nextNextStart = 0;
+                } else {
+                    // skip 2 characters "; " (see https://tools.ietf.org/html/rfc6265#section-4.2.1)
+                    nextNextStart = semiIndex + 2;
+                }
+            } else {
+                advanceCookieHeaderValue();
+                nextNextStart = 0;
+            }
+            return next;
+        }
+    }
+
+    /**
+     * An {@link Iterator} of {@link HttpCookiePair} designed to iterate across multiple values of
+     * {@link HttpHeaderNames#COOKIE} for a specific {@link HttpCookiePair#name() cookie-name}.
+     */
+    public abstract static class CookiesByNameIterator implements Iterator<HttpCookiePair> {
+        private final CharSequence cookiePairName;
+        private int nextNextStart;
+        @Nullable
+        private HttpCookiePair next;
+
+        /**
+         * Create a new instance.
+         *
+         * @param cookiePairName Each return value of {@link #next()} will have {@link HttpCookiePair#name()} equivalent
+         * to this value.
+         */
+        protected CookiesByNameIterator(final CharSequence cookiePairName) {
+            this.cookiePairName = cookiePairName;
+        }
+
+        @Override
+        public final boolean hasNext() {
+            return next != null;
+        }
+
+        @Override
+        public final HttpCookiePair next() {
+            if (next == null) {
+                throw new NoSuchElementException();
+            }
+            HttpCookiePair current = next;
+            CharSequence cookieHeaderValue = cookieHeaderValue();
+            next = cookieHeaderValue == null ? null : findNext(cookieHeaderValue);
+            return current;
+        }
+
+        /**
+         * Get the current value for {@link HttpHeaderNames#COOKIE}. This value may change during iteration.
+         *
+         * @return the current value for {@link HttpHeaderNames#COOKIE}, or {@code null} if all have been iterated.
+         */
+        @Nullable
+        protected abstract CharSequence cookieHeaderValue();
+
+        /**
+         * Advance the {@link #cookieHeaderValue()} to the next {@link HttpHeaderNames#COOKIE} header value.
+         */
+        protected abstract void advanceCookieHeaderValue();
+
+        /**
+         * Initialize the next {@link HttpCookiePair} value for {@link #next()}.
+         *
+         * @param cookieHeaderValue The initial value for {@link HttpHeaderNames#COOKIE}.
+         */
+        protected final void initNext(CharSequence cookieHeaderValue) {
+            next = findNext(cookieHeaderValue);
+        }
+
+        /**
+         * Find the next {@link HttpCookiePair} value for {@link #next()}.
+         *
+         * @param cookieHeaderValue The current value for {@link HttpHeaderNames#COOKIE}.
+         * @return the next {@link HttpCookiePair} value for {@link #next()}, or {@code null} if all have been parsed.
+         */
+        @Nullable
+        private HttpCookiePair findNext(CharSequence cookieHeaderValue) {
+            for (;;) {
+                int equalsIndex = indexOf(cookieHeaderValue, '=', nextNextStart);
+                if (equalsIndex <= 0 || cookieHeaderValue.length() - 1 <= equalsIndex) {
+                    break;
+                }
+                int nameLen = equalsIndex - nextNextStart;
+                int semiIndex = indexOf(cookieHeaderValue, ';', equalsIndex + 1);
+                if (nameLen == cookiePairName.length() &&
+                        regionMatches(cookiePairName, true, 0, cookieHeaderValue, nextNextStart, nameLen)) {
+                    HttpCookiePair next = DefaultHttpCookiePair.parseCookiePair(cookieHeaderValue, nextNextStart,
+                            nameLen, semiIndex);
+                    if (semiIndex > 0) {
+                        if (cookieHeaderValue.length() - 2 <= semiIndex) {
+                            advanceCookieHeaderValue();
+                            nextNextStart = 0;
+                        } else {
+                            // skip 2 characters "; " (see https://tools.ietf.org/html/rfc6265#section-4.2.1)
+                            nextNextStart = semiIndex + 2;
+                        }
+                    } else {
+                        advanceCookieHeaderValue();
+                        nextNextStart = 0;
+                    }
+                    return next;
+                } else if (semiIndex > 0) {
+                    if (cookieHeaderValue.length() - 2 <= semiIndex) {
+                        throw new IllegalArgumentException("cookie is not allowed to end with ;");
+                    }
+                    // skip 2 characters "; " (see https://tools.ietf.org/html/rfc6265#section-4.2.1)
+                    nextNextStart = semiIndex + 2;
+                } else {
+                    advanceCookieHeaderValue();
+                    cookieHeaderValue = cookieHeaderValue();
+                    if (cookieHeaderValue == null) {
+                        break;
+                    }
+                    nextNextStart = 0;
+                }
+            }
+            return null;
+        }
     }
 
     /**

@@ -37,6 +37,7 @@ import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.HttpResponseStatus;
+import io.servicetalk.http.api.HttpSetCookie;
 import io.servicetalk.http.api.ReservedBlockingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpClientFilter;
@@ -101,6 +102,7 @@ import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.HttpEventKey.MAX_CONCURRENCY;
 import static io.servicetalk.http.api.HttpHeaderNames.COOKIE;
 import static io.servicetalk.http.api.HttpHeaderNames.EXPECT;
+import static io.servicetalk.http.api.HttpHeaderNames.SET_COOKIE;
 import static io.servicetalk.http.api.HttpHeaderValues.CONTINUE;
 import static io.servicetalk.http.api.HttpResponseStatus.EXPECTATION_FAILED;
 import static io.servicetalk.http.api.HttpSerializationProviders.textDeserializer;
@@ -121,6 +123,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
@@ -312,7 +315,80 @@ public class H2ClientPriorKnowledgeFeatureParityTest {
             assertEmptyIterator(headers.getCookies("name2"));
             assertEmptyIterator(headers.getCookies("name3"));
             assertEmptyIterator(headers.values(COOKIE));
+
+            // Test partial name matches don't inadvertently match.
+            headers.add(COOKIE, "foo=bar");
+
+            assertEquals(headers.getCookie("foo"), new DefaultHttpCookiePair("foo", "bar"));
+            assertNull(headers.getCookie("baz"));
+            assertNull(headers.getCookie("foo="));
+            assertNull(headers.getCookie("fo"));
+            assertNull(headers.getCookie("f"));
+
+            assertFalse(headers.removeCookies("foo="));
+            assertFalse(headers.removeCookies("fo"));
+            assertFalse(headers.removeCookies("f"));
+            assertEquals(headers.getCookie("foo"), new DefaultHttpCookiePair("foo", "bar"));
+
+            assertEmptyIterator(headers.getCookies("foo="));
+            assertEmptyIterator(headers.getCookies("fo"));
+            assertEmptyIterator(headers.getCookies("f"));
+
+            assertTrue(headers.removeCookies("foo"));
+            assertNull(headers.getCookie("foo"));
+            assertEmptyIterator(headers.getCookies("foo"));
+            assertEmptyIterator(headers.values(COOKIE));
         }
+    }
+
+    @Test
+    public void headerSetCookieRemovalAndIteration() throws Exception {
+        InetSocketAddress serverAddress = h2PriorKnowledge ? bindH2EchoServer() : bindHttpEchoServer();
+        try (BlockingHttpClient client = forSingleAddress(HostAndPort.of(serverAddress))
+                .h2PriorKnowledge(h2PriorKnowledge).executionStrategy(clientExecutionStrategy).buildBlocking()) {
+            HttpRequest request = client.get("/");
+            HttpHeaders headers = request.headers();
+
+            headers.add(SET_COOKIE, "qwerty=12345; Domain=somecompany.co.uk; Path=/1; " +
+                    "Expires=Wed, 30 Aug 2019 00:00:00 GMT");
+
+            assertFalse(headers.removeCookies("qwerty="));
+            assertFalse(headers.removeCookies("qwert"));
+            assertNull(headers.getSetCookie("qwerty="));
+            assertNull(headers.getSetCookie("qwert"));
+            assertFalse(headers.getSetCookies("qwerty=").hasNext());
+            assertFalse(headers.getSetCookies("qwert").hasNext());
+            assertEmptyIterator(headers.getSetCookies("qwerty=", "somecompany.co.uk", "/1"));
+            assertEmptyIterator(headers.getSetCookies("qwert", "somecompany.co.uk", "/1"));
+
+            assertSetCookie1(headers.getSetCookie("qwerty"));
+            Iterator<? extends HttpSetCookie> itr = headers.getSetCookies("qwerty");
+            assertTrue(itr.hasNext());
+            assertSetCookie1(itr.next());
+            assertFalse(itr.hasNext());
+
+            itr = headers.getSetCookies("qwerty", "somecompany.co.uk", "/1");
+            assertTrue(itr.hasNext());
+            assertSetCookie1(itr.next());
+            assertFalse(itr.hasNext());
+
+            assertTrue(headers.removeSetCookies("qwerty", "somecompany.co.uk", "/1"));
+            assertNull(headers.getSetCookie("qwerty"));
+
+            headers.add(SET_COOKIE, "qwerty=12345; Domain=somecompany.co.uk; Path=/1; " +
+                    "Expires=Wed, 30 Aug 2019 00:00:00 GMT");
+            assertTrue(headers.removeSetCookies("qwerty"));
+            assertNull(headers.getSetCookie("qwerty"));
+        }
+    }
+
+    private static void assertSetCookie1(@Nullable HttpSetCookie setCookie) {
+        assertNotNull(setCookie);
+        assertEquals("qwerty", setCookie.name());
+        assertEquals("12345", setCookie.value());
+        assertEquals("somecompany.co.uk", setCookie.domain());
+        assertEquals("/1", setCookie.path());
+        assertEquals("Wed, 30 Aug 2019 00:00:00 GMT", setCookie.expires());
     }
 
     @Test
