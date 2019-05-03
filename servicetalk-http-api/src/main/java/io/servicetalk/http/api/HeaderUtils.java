@@ -358,7 +358,7 @@ public final class HeaderUtils {
             }
         }
 
-        return sb == null ? start == cookieString.length() ? "" : null : sb.toString();
+        return sb == null ? (start == cookieString.length() ? "" : null) : sb.toString();
     }
 
     /**
