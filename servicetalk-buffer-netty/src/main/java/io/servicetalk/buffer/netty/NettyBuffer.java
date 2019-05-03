@@ -27,7 +27,6 @@ import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 
 import static io.servicetalk.buffer.netty.BufferUtil.toByteBufNoThrow;
-import static io.servicetalk.buffer.netty.ReadOnlyBuffer.newReadOnlyBuffer;
 
 class NettyBuffer<T extends ByteBuf> implements Buffer {
 
@@ -788,7 +787,7 @@ class NettyBuffer<T extends ByteBuf> implements Buffer {
 
     @Override
     public Buffer asReadOnly() {
-        return newReadOnlyBuffer(this);
+        return new ReadOnlyBuffer(this);
     }
 
     @Override

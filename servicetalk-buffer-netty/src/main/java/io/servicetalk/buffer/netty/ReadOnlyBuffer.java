@@ -25,15 +25,8 @@ import static io.servicetalk.buffer.api.EmptyBuffer.EMPTY_BUFFER;
 
 final class ReadOnlyBuffer extends WrappedBuffer {
 
-    private ReadOnlyBuffer(Buffer buffer) {
+    ReadOnlyBuffer(Buffer buffer) {
         super(buffer);
-    }
-
-    static Buffer newReadOnlyBuffer(Buffer buffer) {
-        if (buffer.readableBytes() == 0) {
-            return EMPTY_BUFFER;
-        }
-        return new ReadOnlyBuffer(buffer);
     }
 
     @Override
