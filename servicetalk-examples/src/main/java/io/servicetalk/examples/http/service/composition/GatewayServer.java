@@ -66,13 +66,13 @@ public final class GatewayServer {
 
             // Create clients for the different backends we are going to use in the gateway.
             StreamingHttpClient recommendationsClient =
-                    newClient(ioExecutor, RECOMMENDATIONS_BACKEND_ADDRESS, resources);
+                    newClient(ioExecutor, RECOMMENDATIONS_BACKEND_ADDRESS, resources, "recommendations backend");
             HttpClient metadataClient =
-                    newClient(ioExecutor, METADATA_BACKEND_ADDRESS, resources).asClient();
+                    newClient(ioExecutor, METADATA_BACKEND_ADDRESS, resources, "metadata backend").asClient();
             HttpClient userClient =
-                    newClient(ioExecutor, USER_BACKEND_ADDRESS, resources).asClient();
+                    newClient(ioExecutor, USER_BACKEND_ADDRESS, resources, "user backend").asClient();
             HttpClient ratingsClient =
-                    newClient(ioExecutor, RATINGS_BACKEND_ADDRESS, resources).asClient();
+                    newClient(ioExecutor, RATINGS_BACKEND_ADDRESS, resources, "ratings backend").asClient();
 
             // Use Jackson for serialization and deserialization.
             // HttpSerializer validates HTTP metadata for serialization/deserialization and also provides higher level
@@ -111,7 +111,8 @@ public final class GatewayServer {
 
     private static StreamingHttpClient newClient(final IoExecutor ioExecutor,
                                                  final HostAndPort serviceAddress,
-                                                 final CompositeCloseable resources) {
+                                                 final CompositeCloseable resources,
+                                                 final String backendName) {
         return resources.prepend(
                 HttpClients.forSingleAddress(serviceAddress)
                         // Set retry and timeout filters for all clients.
@@ -120,6 +121,8 @@ public final class GatewayServer {
                                 .buildWithExponentialBackoffAndJitter(ofMillis(100)))
                         // Apply a timeout filter for the client to guard against latent clients.
                         .appendClientFilter(new TimeoutHttpRequesterFilter(ofMillis(500)))
+                        // Apply a filter that returns an error if any response status code is not 200 OK
+                        .appendClientFilter(new ResponseCheckingFilter(backendName))
                         .ioExecutor(ioExecutor)
                         .buildStreaming());
     }

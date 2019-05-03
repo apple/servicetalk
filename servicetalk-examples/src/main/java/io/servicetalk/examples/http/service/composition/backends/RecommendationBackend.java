@@ -37,6 +37,13 @@ import java.util.concurrent.ThreadLocalRandom;
 
 import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.concurrent.api.Single.succeeded;
+import static io.servicetalk.examples.http.service.composition.backends.ErrorConstants.METADATA_ERROR_ENTITY_ID;
+import static io.servicetalk.examples.http.service.composition.backends.ErrorConstants.METADATA_ERROR_USER_ID;
+import static io.servicetalk.examples.http.service.composition.backends.ErrorConstants.RATING_ERROR_ENTITY_ID;
+import static io.servicetalk.examples.http.service.composition.backends.ErrorConstants.RATING_ERROR_USER_ID;
+import static io.servicetalk.examples.http.service.composition.backends.ErrorConstants.RECOMMENDATION_ERROR_USER_ID;
+import static io.servicetalk.examples.http.service.composition.backends.ErrorConstants.USER_ERROR_ENTITY_ID;
+import static io.servicetalk.examples.http.service.composition.backends.ErrorConstants.USER_ERROR_USER_ID;
 import static java.lang.Integer.parseInt;
 import static java.lang.String.valueOf;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -64,10 +71,25 @@ final class RecommendationBackend {
         return routerBuilder.buildStreaming();
     }
 
-    private static Recommendation newRecommendation() {
+    private static Recommendation newRecommendation(final String userId) {
         final ThreadLocalRandom random = ThreadLocalRandom.current();
         // Generate random IDs for recommended entity IDs
-        final int entityId = random.nextInt();
+        final int entityId;
+
+        switch (userId) {
+            case METADATA_ERROR_USER_ID:
+                entityId = METADATA_ERROR_ENTITY_ID;
+                break;
+            case USER_ERROR_USER_ID:
+                entityId = USER_ERROR_ENTITY_ID;
+                break;
+            case RATING_ERROR_USER_ID:
+                entityId = RATING_ERROR_ENTITY_ID;
+                break;
+            default:
+                entityId = random.nextInt();
+        }
+
         // Generate random ID for recommended by user Id.
         return new Recommendation(valueOf(entityId), valueOf(random.nextInt(1000)));
     }
@@ -87,13 +109,16 @@ final class RecommendationBackend {
             if (userId == null) {
                 return succeeded(responseFactory.badRequest());
             }
+            if (userId.equals(RECOMMENDATION_ERROR_USER_ID)) {
+                return succeeded(responseFactory.internalServerError());
+            }
 
             // Create a new random recommendation every 1 SECOND.
             Publisher<Recommendation> recommendations = ctx.executionContext().executor().timer(1, SECONDS)
                     // We use defer() here so that we do not eagerly create a Recommendation which will get emitted for
                     // every schedule. defer() helps us lazily create a new Recommendation object every time we the
                     // scheduler emits a tick.
-                    .concat(defer(() -> succeeded(newRecommendation())))
+                    .concat(defer(() -> succeeded(newRecommendation(userId))))
                     // Since schedule() only schedules a single tick, we repeat the ticks to generate infinite
                     // recommendations. This simulates a push based API which pushes new recommendations as and when
                     // they are available.
@@ -126,7 +151,7 @@ final class RecommendationBackend {
             }
             List<Recommendation> recommendations = new ArrayList<>(expectedEntitiesCount);
             for (int i = 0; i < expectedEntitiesCount; i++) {
-                recommendations.add(newRecommendation());
+                recommendations.add(newRecommendation(userId));
             }
 
             // Serialize the Recommendation list to a single Buffer containing JSON and use it as the response payload.

@@ -29,6 +29,7 @@ import io.servicetalk.http.router.predicate.HttpPredicateRouterBuilder;
 import java.util.concurrent.ThreadLocalRandom;
 
 import static io.servicetalk.concurrent.api.Single.succeeded;
+import static io.servicetalk.examples.http.service.composition.backends.ErrorConstants.RATING_ERROR_ENTITY_ID;
 
 /**
  * A service that returns {@link Rating}s for an entity.
@@ -48,6 +49,9 @@ final class RatingBackend implements HttpService {
         final String entityId = request.queryParameter(ENTITY_ID_QP_NAME);
         if (entityId == null) {
             return succeeded(responseFactory.badRequest());
+        }
+        if (entityId.equals(Integer.toString(RATING_ERROR_ENTITY_ID))) {
+            return succeeded(responseFactory.internalServerError());
         }
 
         // Create a random rating

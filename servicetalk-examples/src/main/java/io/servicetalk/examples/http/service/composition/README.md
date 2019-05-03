@@ -90,6 +90,8 @@ This endpoint is implemented as a fully asynchronous `HttpService` and can be qu
 http://localhost:8080/recommendations/streaming?userId=1
 ```
 
+Note: If using `curl`, add `-N` to disable buffering in order to see the streaming.
+
 ### Asynchronous aggregated
 
 This is an [endpoint](GatewayService.java) that creates a single JSON array containing one or more
@@ -113,11 +115,15 @@ This endpoint can be queried using the following endpoint:
 http://localhost:8080/recommendations/blocking?userId=1
 ```
 
-## Missing ServiceTalk features.
+## Error Handling
 
-This example demonstrates a complex usecase and few of the capabilities required are not available in ServiceTalk yet.
-Below is a list of features that will soon be provided in ServiceTalk to remove boiler plate code from here:
+This example also demonstrates checking the response status, and handling unexpected status codes. Making a request
+with specific values of `userId` will trigger a `500 Internal Server Error` response from the appropriate backend
+service:
+- `recommendation_error`
+- `metadata_error`
+- `user_error`
+- `rating_error`
 
-- [ ] ServiceTalk `Executor` does not provide a way to do blocking execute, i.e. a way to execute task and return. This
-makes it hard for blocking usecases to do timeouts since timeout requires another thread. Users can use JDK
-`ExecutorService` but that means they have to manage threadpools at two places: ServiceTalk and `ExecutorService`.
+The Gateway services implement a "fallback" for the Rating service only. Modifying
+[BackendsStarter](backends/BackendsStarter.java) to skip starting the Rating service can demonstrate this.

@@ -16,6 +16,7 @@
 package io.servicetalk.examples.http.service.composition;
 
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.examples.http.service.composition.ResponseCheckingFilter.BadResponseStatusException;
 import io.servicetalk.examples.http.service.composition.pojo.FullRecommendation;
 import io.servicetalk.examples.http.service.composition.pojo.Metadata;
 import io.servicetalk.examples.http.service.composition.pojo.Rating;
@@ -34,8 +35,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static io.servicetalk.concurrent.api.Publisher.fromIterable;
+import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.examples.http.service.composition.AsyncUtils.zip;
+import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
 
 /**
  * This service provides an API that fetches recommendations in parallel but provides an aggregated JSON array as a
@@ -80,7 +83,16 @@ final class GatewayService implements HttpService {
                 .map(response -> response.payloadBody(serializers.deserializerFor(typeOfRecommendation)))
                 .flatMap(this::queryRecommendationDetails)
                 .map(fullRecommendations -> responseFactory.ok()
-                        .payloadBody(fullRecommendations, serializers.serializerFor(typeOfFullRecommendation)));
+                        .payloadBody(fullRecommendations, serializers.serializerFor(typeOfFullRecommendation)))
+                .recoverWith(cause -> {
+                    if (cause instanceof BadResponseStatusException) {
+                        // It's useful to include the exception message in the payload for demonstration purposes, but
+                        // this is not recommended in production as it may leak internal information.
+                        return succeeded(responseFactory.internalServerError()
+                                .payloadBody(cause.getMessage(), textSerializer()));
+                    }
+                    return failed(cause);
+                });
     }
 
     private Single<List<FullRecommendation>> queryRecommendationDetails(List<Recommendation> recommendations) {

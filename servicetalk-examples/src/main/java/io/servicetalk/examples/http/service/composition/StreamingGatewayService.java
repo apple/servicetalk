@@ -17,6 +17,7 @@ package io.servicetalk.examples.http.service.composition;
 
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.examples.http.service.composition.ResponseCheckingFilter.BadResponseStatusException;
 import io.servicetalk.examples.http.service.composition.pojo.FullRecommendation;
 import io.servicetalk.examples.http.service.composition.pojo.Metadata;
 import io.servicetalk.examples.http.service.composition.pojo.Rating;
@@ -34,8 +35,11 @@ import io.servicetalk.http.api.StreamingHttpService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static io.servicetalk.concurrent.api.Publisher.from;
+import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.examples.http.service.composition.AsyncUtils.zip;
+import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
 
 /**
  * This service provides an API that fetches recommendations in parallel and responds with a stream of
@@ -72,9 +76,18 @@ final class StreamingGatewayService implements StreamingHttpService {
         }
 
         return recommendationsClient.request(recommendationsClient.get("/recommendations/stream?userId=" + userId))
-                .map(recommendations -> recommendations.transformPayloadBody(this::queryRecommendationDetails,
+                .map(response -> response.transformPayloadBody(this::queryRecommendationDetails,
                         serializers.deserializerFor(Recommendation.class),
-                        serializers.serializerFor(FullRecommendation.class)));
+                        serializers.serializerFor(FullRecommendation.class)))
+                .recoverWith(cause -> {
+                    if (cause instanceof BadResponseStatusException) {
+                        // It's useful to include the exception message in the payload for demonstration purposes, but
+                        // this is not recommended in production as it may leak internal information.
+                        return succeeded(responseFactory.internalServerError()
+                                .payloadBody(from(cause.getMessage()), textSerializer()));
+                    }
+                    return failed(cause);
+                });
     }
 
     private Publisher<FullRecommendation> queryRecommendationDetails(Publisher<Recommendation> recommendations) {
@@ -82,17 +95,17 @@ final class StreamingGatewayService implements StreamingHttpService {
             Single<Metadata> metadata =
                     metadataClient.request(metadataClient.get("/metadata?entityId=" + recommendation.getEntityId()))
                             // Since HTTP payload is a buffer, we deserialize into Metadata.
-                            .map(resp -> resp.payloadBody(serializers.deserializerFor(Metadata.class)));
+                            .map(response -> response.payloadBody(serializers.deserializerFor(Metadata.class)));
 
             Single<User> user =
                     userClient.request(userClient.get("/user?userId=" + recommendation.getEntityId()))
                             // Since HTTP payload is a buffer, we deserialize into User.
-                            .map(resp -> resp.payloadBody(serializers.deserializerFor(User.class)));
+                            .map(response -> response.payloadBody(serializers.deserializerFor(User.class)));
 
             Single<Rating> rating =
                     ratingsClient.request(ratingsClient.get("/rating?entityId=" + recommendation.getEntityId()))
                             // Since HTTP payload is a buffer, we deserialize into Rating.
-                            .map(resp -> resp.payloadBody(serializers.deserializerFor(Rating.class)))
+                            .map(response -> response.payloadBody(serializers.deserializerFor(Rating.class)))
                             // We consider ratings to be a non-critical data and hence we substitute the response
                             // with a static "unavailable" rating when the rating service is unavailable or provides
                             // a bad response. This is typically referred to as a "fallback".

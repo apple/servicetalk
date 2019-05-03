@@ -27,6 +27,7 @@ import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.router.predicate.HttpPredicateRouterBuilder;
 
 import static io.servicetalk.concurrent.api.Single.succeeded;
+import static io.servicetalk.examples.http.service.composition.backends.ErrorConstants.METADATA_ERROR_ENTITY_ID;
 import static io.servicetalk.examples.http.service.composition.backends.StringUtils.randomString;
 
 /**
@@ -47,6 +48,9 @@ final class MetadataBackend implements HttpService {
         final String entityId = request.queryParameter(ENTITY_ID_QP_NAME);
         if (entityId == null) {
             return succeeded(responseFactory.badRequest());
+        }
+        if (entityId.equals(Integer.toString(METADATA_ERROR_ENTITY_ID))) {
+            return succeeded(responseFactory.internalServerError());
         }
 
         // Create random names and author for the metadata

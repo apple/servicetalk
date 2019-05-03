@@ -27,6 +27,7 @@ import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.router.predicate.HttpPredicateRouterBuilder;
 
 import static io.servicetalk.concurrent.api.Single.succeeded;
+import static io.servicetalk.examples.http.service.composition.backends.ErrorConstants.USER_ERROR_ENTITY_ID;
 import static io.servicetalk.examples.http.service.composition.backends.StringUtils.randomString;
 
 /**
@@ -47,6 +48,9 @@ final class UserBackend implements HttpService {
         final String userId = request.queryParameter(USER_ID_QP_NAME);
         if (userId == null) {
             return succeeded(responseFactory.badRequest());
+        }
+        if (userId.equals(Integer.toString(USER_ERROR_ENTITY_ID))) {
+            return succeeded(responseFactory.internalServerError());
         }
 
         // Create a random rating
