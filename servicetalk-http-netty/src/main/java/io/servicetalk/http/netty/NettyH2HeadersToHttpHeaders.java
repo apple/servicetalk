@@ -15,6 +15,7 @@
  */
 package io.servicetalk.http.netty;
 
+import io.servicetalk.http.api.HeaderUtils;
 import io.servicetalk.http.api.HttpCookiePair;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpSetCookie;
@@ -32,13 +33,13 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.http.api.CharSequences.contentEquals;
 import static io.servicetalk.http.api.CharSequences.contentEqualsIgnoreCase;
-import static io.servicetalk.http.api.CharSequences.indexOf;
-import static io.servicetalk.http.api.CharSequences.regionMatches;
-import static io.servicetalk.http.api.DefaultHttpCookiePair.parseCookiePair;
 import static io.servicetalk.http.api.DefaultHttpSetCookie.parseSetCookie;
 import static io.servicetalk.http.api.HeaderUtils.DEFAULT_HEADER_FILTER;
 import static io.servicetalk.http.api.HeaderUtils.domainMatches;
+import static io.servicetalk.http.api.HeaderUtils.isSetCookieNameMatches;
+import static io.servicetalk.http.api.HeaderUtils.parseCookiePair;
 import static io.servicetalk.http.api.HeaderUtils.pathMatches;
+import static io.servicetalk.http.api.HeaderUtils.removeCookiePairs;
 import static io.servicetalk.http.api.HttpHeaderNames.COOKIE;
 import static io.servicetalk.http.api.HttpHeaderNames.SET_COOKIE;
 import static java.util.Collections.emptyIterator;
@@ -186,18 +187,9 @@ final class NettyH2HeadersToHttpHeaders implements HttpHeaders {
     public HttpCookiePair getCookie(final CharSequence name) {
         Iterator<CharSequence> valueItr = nettyHeaders.valueIterator(HttpHeaderNames.COOKIE);
         while (valueItr.hasNext()) {
-            CharSequence value = valueItr.next();
-            int start = 0;
-            for (;;) {
-                int i = indexOf(value, ';', start);
-                // Check if the name of the cookie matches before doing a full parse of the cookie.
-                if (regionMatches(name, true, 0, value, start, name.length())) {
-                    return parseCookiePair(value, start, name.length(), i);
-                } else if (i < 0 || value.length() - 2 <= i) {
-                    break;
-                }
-                // skip 2 characters "; " (see https://tools.ietf.org/html/rfc6265#section-4.2.1)
-                start = i + 2;
+            HttpCookiePair cookiePair = parseCookiePair(valueItr.next(), name);
+            if (cookiePair != null) {
+                return cookiePair;
             }
         }
         return null;
@@ -208,10 +200,9 @@ final class NettyH2HeadersToHttpHeaders implements HttpHeaders {
     public HttpSetCookie getSetCookie(final CharSequence name) {
         Iterator<CharSequence> valueItr = nettyHeaders.valueIterator(HttpHeaderNames.SET_COOKIE);
         while (valueItr.hasNext()) {
-            CharSequence value = valueItr.next();
-            // Check if the name of the cookie matches before doing a full parse of the cookie.
-            if (regionMatches(name, true, 0, value, 0, name.length())) {
-                return parseSetCookie(value, validateCookies);
+            HttpSetCookie setCookie = HeaderUtils.parseSetCookie(valueItr.next(), name, validateCookies);
+            if (setCookie != null) {
+                return setCookie;
             }
         }
         return null;
@@ -238,9 +229,9 @@ final class NettyH2HeadersToHttpHeaders implements HttpHeaders {
     public Iterator<? extends HttpSetCookie> getSetCookies(final CharSequence name) {
         Iterator<CharSequence> valueItr = nettyHeaders.valueIterator(HttpHeaderNames.SET_COOKIE);
         while (valueItr.hasNext()) {
-            CharSequence value = valueItr.next();
-            if (regionMatches(name, true, 0, value, 0, name.length())) {
-                return new SetCookiesByNameIterator(valueItr, name, value);
+            HttpSetCookie setCookie = HeaderUtils.parseSetCookie(valueItr.next(), name, validateCookies);
+            if (setCookie != null) {
+                return new SetCookiesByNameIterator(valueItr, setCookie);
             }
         }
         return emptyIterator();
@@ -251,14 +242,12 @@ final class NettyH2HeadersToHttpHeaders implements HttpHeaders {
                                                            final CharSequence path) {
         Iterator<CharSequence> valueItr = nettyHeaders.valueIterator(HttpHeaderNames.SET_COOKIE);
         while (valueItr.hasNext()) {
-            CharSequence value = valueItr.next();
-            if (regionMatches(name, true, 0, value, 0, name.length())) {
-                // In the future we could attempt to delay full parsing of the cookie until after the domain/path have
-                // been matched, but for simplicity just do the parsing ahead of time.
-                HttpSetCookie cookie = parseSetCookie(value, validateCookies);
-                if (domainMatches(domain, cookie.domain()) && pathMatches(path, cookie.path())) {
-                    return new SetCookiesByNameDomainPathIterator(valueItr, name, domain, path, cookie);
-                }
+            // In the future we could attempt to delay full parsing of the cookie until after the domain/path have
+            // been matched, but for simplicity just do the parsing ahead of time.
+            HttpSetCookie setCookie = HeaderUtils.parseSetCookie(valueItr.next(), name, validateCookies);
+            if (setCookie != null && domainMatches(domain, setCookie.domain()) &&
+                    pathMatches(path, setCookie.path())) {
+                return new SetCookiesByNameDomainPathIterator(valueItr, setCookie, domain, path);
             }
         }
         return emptyIterator();
@@ -282,57 +271,14 @@ final class NettyH2HeadersToHttpHeaders implements HttpHeaders {
         List<CharSequence> cookiesToAdd = null;
         final int sizeBefore = size();
         while (valuesItr.hasNext()) {
-            CharSequence headerValue = valuesItr.next();
-            int start = 0;
-            int beginCopyIndex = 0;
-            StringBuilder sb = null;
-
-            for (;;) {
-                int end = HeaderUtils.indexOf(headerValue, ';', start);
-                if (regionMatches(name, true, 0, headerValue, start, name.length())) {
-                    if (beginCopyIndex != start) {
-                        if (sb == null) {
-                            sb = new StringBuilder(headerValue.length() - beginCopyIndex);
-                        } else {
-                            sb.append("; ");
-                        }
-                        sb.append(headerValue.subSequence(beginCopyIndex, start - 2));
+            CharSequence newHeaderValue = removeCookiePairs(valuesItr.next(), name);
+            if (newHeaderValue != null) {
+                if (newHeaderValue.length() != 0) {
+                    if (cookiesToAdd == null) {
+                        cookiesToAdd = new ArrayList<>(4);
                     }
-
-                    if (end < 0 || headerValue.length() - 2 <= end) {
-                        // start is used after the loop to know if a match was found and therefore the entire header
-                        // may need removal.
-                        start = headerValue.length();
-                        break;
-                    }
-                    // skip 2 characters "; " (see https://tools.ietf.org/html/rfc6265#section-4.2.1)
-                    start = end + 2;
-                    beginCopyIndex = start;
-                } else if (end > 0) {
-                    if (headerValue.length() - 2 <= end) {
-                        throw new IllegalArgumentException("cookie is not allowed to end with ;");
-                    }
-                    // skip 2 characters "; " (see https://tools.ietf.org/html/rfc6265#section-4.2.1)
-                    start = end + 2;
-                } else {
-                    if (beginCopyIndex != 0) {
-                        if (sb == null) {
-                            sb = new StringBuilder(headerValue.length() - beginCopyIndex);
-                        } else {
-                            sb.append("; ");
-                        }
-                        sb.append(headerValue.subSequence(beginCopyIndex, headerValue.length()));
-                    }
-                    break;
+                    cookiesToAdd.add(newHeaderValue);
                 }
-            }
-            if (sb != null) {
-                if (cookiesToAdd == null) {
-                    cookiesToAdd = new ArrayList<>(4);
-                }
-                cookiesToAdd.add(sb.toString());
-                valuesItr.remove();
-            } else if (start == headerValue.length()) {
                 valuesItr.remove();
             }
         }
@@ -348,11 +294,10 @@ final class NettyH2HeadersToHttpHeaders implements HttpHeaders {
     @Override
     public boolean removeSetCookies(final CharSequence name) {
         final int sizeBefore = size();
-        Iterator<? extends CharSequence> valuesItr = nettyHeaders.valueIterator(HttpHeaderNames.SET_COOKIE);
-        while (valuesItr.hasNext()) {
-            CharSequence next = valuesItr.next();
-            if (regionMatches(name, true, 0, next, 0, name.length())) {
-                valuesItr.remove();
+        Iterator<? extends CharSequence> valueItr = nettyHeaders.valueIterator(HttpHeaderNames.SET_COOKIE);
+        while (valueItr.hasNext()) {
+            if (isSetCookieNameMatches(valueItr.next(), name)) {
+                valueItr.remove();
             }
         }
         return sizeBefore != size();
@@ -361,160 +306,67 @@ final class NettyH2HeadersToHttpHeaders implements HttpHeaders {
     @Override
     public boolean removeSetCookies(final CharSequence name, final CharSequence domain, final CharSequence path) {
         final int sizeBefore = size();
-        Iterator<? extends CharSequence> valuesItr = nettyHeaders.valueIterator(HttpHeaderNames.SET_COOKIE);
-        while (valuesItr.hasNext()) {
-            CharSequence next = valuesItr.next();
-            if (regionMatches(name, true, 0, next, 0, name.length())) {
-                // In the future we could attempt to delay full parsing of the cookie until after the domain/path have
-                // been matched, but for simplicity just do the parsing ahead of time.
-                HttpSetCookie cookie = parseSetCookie(next, false);
-                if (domainMatches(domain, cookie.domain()) && pathMatches(path, cookie.path())) {
-                    valuesItr.remove();
-                }
+        Iterator<? extends CharSequence> valueItr = nettyHeaders.valueIterator(HttpHeaderNames.SET_COOKIE);
+        while (valueItr.hasNext()) {
+            // In the future we could attempt to delay full parsing of the cookie until after the domain/path have
+            // been matched, but for simplicity just do the parsing ahead of time.
+            HttpSetCookie setCookie = HeaderUtils.parseSetCookie(valueItr.next(), name, false);
+            if (setCookie != null && domainMatches(domain, setCookie.domain()) &&
+                    pathMatches(path, setCookie.path())) {
+                valueItr.remove();
             }
         }
         return sizeBefore != size();
     }
 
-    private static final class CookiesIterator implements Iterator<HttpCookiePair> {
+    private static final class CookiesIterator extends HeaderUtils.CookiesIterator {
         private final Iterator<CharSequence> valueItr;
         @Nullable
         private CharSequence headerValue;
-        @Nullable
-        private HttpCookiePair next;
-        private int nextNextStart;
 
         CookiesIterator(final Iterator<CharSequence> valueItr) {
             this.valueItr = valueItr;
-            assert valueItr.hasNext(); // this condition is checked before construction
-            headerValue = valueItr.next();
-            findNext0();
+            if (valueItr.hasNext()) {
+                headerValue = valueItr.next();
+                initNext(headerValue);
+            }
+        }
+
+        @Nullable
+        @Override
+        protected CharSequence cookieHeaderValue() {
+            return headerValue;
         }
 
         @Override
-        public boolean hasNext() {
-            return next != null;
-        }
-
-        @Override
-        public HttpCookiePair next() {
-            if (next == null) {
-                throw new NoSuchElementException();
-            }
-            HttpCookiePair current = next;
-            findNext();
-            return current;
-        }
-
-        private void findNext() {
-            if (headerValue == null) {
-                if (valueItr.hasNext()) {
-                    headerValue = valueItr.next();
-                    nextNextStart = 0;
-                } else {
-                    next = null;
-                    return;
-                }
-            }
-            findNext0();
-        }
-
-        private void findNext0() {
-            assert headerValue != null;
-            int end = HeaderUtils.indexOf(headerValue, ';', nextNextStart);
-            next = parseCookiePair(headerValue, nextNextStart, end);
-            if (end > 0) {
-                if (headerValue.length() - 2 <= end) {
-                    headerValue = null;
-                } else {
-                    // skip 2 characters "; " (see https://tools.ietf.org/html/rfc6265#section-4.2.1)
-                    nextNextStart = end + 2;
-                }
-            } else {
-                headerValue = null;
-            }
+        protected void advanceCookieHeaderValue() {
+            headerValue = valueItr.hasNext() ? valueItr.next() : null;
         }
     }
 
-    private static final class CookiesByNameIterator implements Iterator<HttpCookiePair> {
+    private static final class CookiesByNameIterator extends HeaderUtils.CookiesByNameIterator {
         private final Iterator<CharSequence> valueItr;
-        private final CharSequence name;
         @Nullable
         private CharSequence headerValue;
-        @Nullable
-        private HttpCookiePair next;
-        private int nextNextStart;
 
         CookiesByNameIterator(final Iterator<CharSequence> valueItr, final CharSequence name) {
+            super(name);
             this.valueItr = valueItr;
-            this.name = name;
             if (valueItr.hasNext()) {
                 headerValue = valueItr.next();
-                findNext0();
+                initNext(headerValue);
             }
+        }
+
+        @Nullable
+        @Override
+        protected CharSequence cookieHeaderValue() {
+            return headerValue;
         }
 
         @Override
-        public boolean hasNext() {
-            return next != null;
-        }
-
-        @Override
-        public HttpCookiePair next() {
-            if (next == null) {
-                throw new NoSuchElementException();
-            }
-            HttpCookiePair current = next;
-            findNext();
-            return current;
-        }
-
-        private void findNext() {
-            if (headerValue == null) {
-                if (valueItr.hasNext()) {
-                    headerValue = valueItr.next();
-                    nextNextStart = 0;
-                } else {
-                    next = null;
-                    return;
-                }
-            }
-            findNext0();
-        }
-
-        private void findNext0() {
-            assert headerValue != null;
-            for (;;) {
-                int end = HeaderUtils.indexOf(headerValue, ';', nextNextStart);
-                if (regionMatches(name, true, 0, headerValue, nextNextStart, name.length())) {
-                    next = parseCookiePair(headerValue, nextNextStart, name.length(), end);
-                    if (end > 0) {
-                        // skip 2 characters "; " (see https://tools.ietf.org/html/rfc6265#section-4.2.1)
-                        if (headerValue.length() - 2 <= end) {
-                            headerValue = null;
-                        } else {
-                            // skip 2 characters "; " (see https://tools.ietf.org/html/rfc6265#section-4.2.1)
-                            nextNextStart = end + 2;
-                        }
-                    } else {
-                        headerValue = null;
-                    }
-                    break;
-                } else if (end > 0) {
-                    if (headerValue.length() - 2 <= end) {
-                        throw new IllegalArgumentException("cookie is not allowed to end with ;");
-                    }
-                    // skip 2 characters "; " (see https://tools.ietf.org/html/rfc6265#section-4.2.1)
-                    nextNextStart = end + 2;
-                } else if (valueItr.hasNext()) {
-                    headerValue = valueItr.next();
-                    nextNextStart = 0;
-                } else {
-                    headerValue = null;
-                    next = null;
-                    break;
-                }
-            }
+        protected void advanceCookieHeaderValue() {
+            headerValue = valueItr.hasNext() ? valueItr.next() : null;
         }
     }
 
@@ -543,81 +395,86 @@ final class NettyH2HeadersToHttpHeaders implements HttpHeaders {
 
     private final class SetCookiesByNameIterator implements Iterator<HttpSetCookie> {
         private final Iterator<CharSequence> valueItr;
-        private final CharSequence cookieName;
         @Nullable
-        private CharSequence nextValue;
+        private HttpSetCookie next;
 
-        SetCookiesByNameIterator(final Iterator<CharSequence> valueItr, final CharSequence cookieName,
-                                 final CharSequence nextValue) {
+        SetCookiesByNameIterator(final Iterator<CharSequence> valueItr, final HttpSetCookie next) {
             this.valueItr = valueItr;
-            this.cookieName = cookieName;
-            this.nextValue = nextValue;
+            this.next = next;
         }
 
         @Override
         public boolean hasNext() {
-            return nextValue != null;
+            return next != null;
         }
 
         @Override
         public HttpSetCookie next() {
-            if (nextValue == null) {
+            if (next == null) {
                 throw new NoSuchElementException();
             }
-            HttpSetCookie currCookie = parseSetCookie(nextValue, validateCookies);
-            nextValue = null;
+            HttpSetCookie currentCookie = next;
+            next = null;
             while (valueItr.hasNext()) {
-                CharSequence value = valueItr.next();
-                if (regionMatches(cookieName, true, 0, value, 0, cookieName.length())) {
-                    nextValue = value;
+                next = HeaderUtils.parseSetCookie(valueItr.next(), currentCookie.name(), validateCookies);
+                if (next != null) {
                     break;
                 }
             }
-            return currCookie;
+            return currentCookie;
+        }
+
+        @Override
+        public void remove() {
+            valueItr.remove();
         }
     }
 
     private final class SetCookiesByNameDomainPathIterator implements Iterator<HttpSetCookie> {
         private final Iterator<CharSequence> valueItr;
-        private final CharSequence cookieName;
         private final CharSequence domain;
         private final CharSequence path;
         @Nullable
-        private HttpSetCookie nextValue;
+        private HttpSetCookie next;
 
         SetCookiesByNameDomainPathIterator(final Iterator<CharSequence> valueItr,
-                                           final CharSequence cookieName, final CharSequence domain,
-                                           final CharSequence path, @Nullable final HttpSetCookie nextValue) {
+                                           final HttpSetCookie next, final CharSequence domain,
+                                           final CharSequence path) {
             this.valueItr = valueItr;
-            this.cookieName = cookieName;
             this.domain = domain;
             this.path = path;
-            this.nextValue = nextValue;
+            this.next = next;
         }
 
         @Override
         public boolean hasNext() {
-            return nextValue != null;
+            return next != null;
         }
 
         @Override
         public HttpSetCookie next() {
-            if (nextValue == null) {
+            if (next == null) {
                 throw new NoSuchElementException();
             }
-            HttpSetCookie currCookie = nextValue;
-            nextValue = null;
+            HttpSetCookie currentCookie = next;
+            next = null;
             while (valueItr.hasNext()) {
-                CharSequence value = valueItr.next();
-                if (regionMatches(cookieName, true, 0, value, 0, cookieName.length())) {
-                    HttpSetCookie cookie = parseSetCookie(value, validateCookies);
-                    if (domainMatches(domain, cookie.domain()) && pathMatches(path, cookie.path())) {
-                        nextValue = cookie;
-                        break;
-                    }
+                // In the future we could attempt to delay full parsing of the cookie until after the domain/path have
+                // been matched, but for simplicity just do the parsing ahead of time.
+                HttpSetCookie setCookie = HeaderUtils.parseSetCookie(valueItr.next(), currentCookie.name(),
+                        validateCookies);
+                if (setCookie != null && domainMatches(domain, setCookie.domain()) &&
+                        pathMatches(path, setCookie.path())) {
+                    next = setCookie;
+                    break;
                 }
             }
-            return currCookie;
+            return currentCookie;
+        }
+
+        @Override
+        public void remove() {
+            valueItr.remove();
         }
     }
 }

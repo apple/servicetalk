@@ -26,12 +26,11 @@ import javax.annotation.Nullable;
 import static io.servicetalk.http.api.CharSequences.caseInsensitiveHashCode;
 import static io.servicetalk.http.api.CharSequences.contentEquals;
 import static io.servicetalk.http.api.CharSequences.contentEqualsIgnoreCase;
-import static io.servicetalk.http.api.CharSequences.indexOf;
-import static io.servicetalk.http.api.CharSequences.regionMatches;
-import static io.servicetalk.http.api.DefaultHttpCookiePair.parseCookiePair;
 import static io.servicetalk.http.api.DefaultHttpSetCookie.parseSetCookie;
 import static io.servicetalk.http.api.HeaderUtils.DEFAULT_HEADER_FILTER;
 import static io.servicetalk.http.api.HeaderUtils.domainMatches;
+import static io.servicetalk.http.api.HeaderUtils.isSetCookieNameMatches;
+import static io.servicetalk.http.api.HeaderUtils.parseCookiePair;
 import static io.servicetalk.http.api.HeaderUtils.pathMatches;
 import static io.servicetalk.http.api.HeaderUtils.validateCookieTokenAndHeaderName;
 import static io.servicetalk.http.api.HttpHeaderNames.COOKIE;
@@ -87,17 +86,9 @@ final class DefaultHttpHeaders extends MultiMap<CharSequence, CharSequence> impl
         assert e != null;
         do {
             if (e.keyHash == keyHash && contentEqualsIgnoreCase(COOKIE, e.getKey())) {
-                int start = 0;
-                for (;;) {
-                    int i = indexOf(e.value, ';', start);
-                    // Check if the name of the cookie matches before doing a full parse of the cookie.
-                    if (regionMatches(name, true, 0, e.value, start, name.length())) {
-                        return parseCookiePair(e.value, start, name.length(), i);
-                    } else if (i < 0 || e.value.length() - 2 <= i) {
-                        break;
-                    }
-                    // skip 2 characters "; " (see https://tools.ietf.org/html/rfc6265#section-4.2.1)
-                    start = i + 2;
+                HttpCookiePair cookiePair = parseCookiePair(e.value, name);
+                if (cookiePair != null) {
+                    return cookiePair;
                 }
             }
             e = e.bucketNext;
@@ -115,8 +106,11 @@ final class DefaultHttpHeaders extends MultiMap<CharSequence, CharSequence> impl
             MultiMapEntry<CharSequence, CharSequence> e = bucketHead.entry;
             assert e != null;
             do {
-                if (setCookieEntryMatches(e, keyHash, name)) {
-                    return parseSetCookie(e.value, validateCookies);
+                if (e.keyHash == keyHash && contentEqualsIgnoreCase(SET_COOKIE, e.getKey())) {
+                    HttpSetCookie setCookie = HeaderUtils.parseSetCookie(e.value, name, validateCookies);
+                    if (setCookie != null) {
+                        return setCookie;
+                    }
                 }
                 e = e.bucketNext;
             } while (e != null);
@@ -171,7 +165,7 @@ final class DefaultHttpHeaders extends MultiMap<CharSequence, CharSequence> impl
         assert e != null;
         do {
             if (e.keyHash == keyHash && contentEqualsIgnoreCase(SET_COOKIE, e.getKey())) {
-                return new SetCookiesIterator(keyHash, e);
+                return new SetCookiesIterator(e);
             }
             e = e.bucketNext;
         } while (e != null);
@@ -188,8 +182,11 @@ final class DefaultHttpHeaders extends MultiMap<CharSequence, CharSequence> impl
         MultiMapEntry<CharSequence, CharSequence> e = bucketHead.entry;
         assert e != null;
         do {
-            if (setCookieEntryMatches(e, keyHash, name)) {
-                return new SetCookiesByNameIterator(keyHash, name, e);
+            if (e.keyHash == keyHash && contentEqualsIgnoreCase(SET_COOKIE, e.getKey())) {
+                HttpSetCookie setCookie = HeaderUtils.parseSetCookie(e.value, name, validateCookies);
+                if (setCookie != null) {
+                    return new SetCookiesByNameIterator(e, setCookie);
+                }
             }
             e = e.bucketNext;
         } while (e != null);
@@ -207,12 +204,13 @@ final class DefaultHttpHeaders extends MultiMap<CharSequence, CharSequence> impl
         MultiMapEntry<CharSequence, CharSequence> e = bucketHead.entry;
         assert e != null;
         do {
-            if (setCookieEntryMatches(e, keyHash, name)) {
+            if (e.keyHash == keyHash && contentEqualsIgnoreCase(SET_COOKIE, e.getKey())) {
                 // In the future we could attempt to delay full parsing of the cookie until after the domain/path have
                 // been matched, but for simplicity just do the parsing ahead of time.
-                HttpSetCookie cookie = parseSetCookie(e.value, validateCookies);
-                if (domainMatches(domain, cookie.domain()) && pathMatches(path, cookie.path())) {
-                    return new SetCookiesByNameDomainPathIterator(keyHash, name, domain, path, cookie, e);
+                HttpSetCookie setCookie = HeaderUtils.parseSetCookie(e.value, name, validateCookies);
+                if (setCookie != null && domainMatches(domain, setCookie.domain()) &&
+                        pathMatches(path, setCookie.path())) {
+                    return new SetCookiesByNameDomainPathIterator(e, setCookie, domain, path);
                 }
             }
             e = e.bucketNext;
@@ -263,59 +261,14 @@ final class DefaultHttpHeaders extends MultiMap<CharSequence, CharSequence> impl
         assert e != null;
         do {
             if (e.keyHash == keyHash && contentEqualsIgnoreCase(COOKIE, e.getKey())) {
-                CharSequence headerValue = e.value;
-                int start = 0;
-                int beginCopyIndex = 0;
-                StringBuilder sb = null;
-
-                for (;;) {
-                    int end = indexOf(headerValue, ';', start);
-                    if (regionMatches(name, true, 0, headerValue, start, name.length())) {
-                        if (beginCopyIndex != start) {
-                            if (sb == null) {
-                                sb = new StringBuilder(headerValue.length() - beginCopyIndex);
-                            } else {
-                                sb.append("; ");
-                            }
-                            sb.append(headerValue.subSequence(beginCopyIndex, start - 2));
+                CharSequence newHeaderValue = HeaderUtils.removeCookiePairs(e.value, name);
+                if (newHeaderValue != null) {
+                    if (newHeaderValue.length() != 0) {
+                        if (cookiesToAdd == null) {
+                            cookiesToAdd = new ArrayList<>(4);
                         }
-
-                        if (end < 0 || headerValue.length() - 2 <= end) {
-                            // start is used after the loop to know if a match was found and therefore the entire header
-                            // may need removal.
-                            start = headerValue.length();
-                            break;
-                        }
-                        // skip 2 characters "; " (see https://tools.ietf.org/html/rfc6265#section-4.2.1)
-                        start = end + 2;
-                        beginCopyIndex = start;
-                    } else if (end > 0) {
-                        if (headerValue.length() - 2 <= end) {
-                            throw new IllegalArgumentException("cookie is not allowed to end with ;");
-                        }
-                        // skip 2 characters "; " (see https://tools.ietf.org/html/rfc6265#section-4.2.1)
-                        start = end + 2;
-                    } else {
-                        if (beginCopyIndex != 0) {
-                            if (sb == null) {
-                                sb = new StringBuilder(headerValue.length() - beginCopyIndex);
-                            } else {
-                                sb.append("; ");
-                            }
-                            sb.append(headerValue.subSequence(beginCopyIndex, headerValue.length()));
-                        }
-                        break;
+                        cookiesToAdd.add(newHeaderValue);
                     }
-                }
-                if (sb != null) {
-                    if (cookiesToAdd == null) {
-                        cookiesToAdd = new ArrayList<>(4);
-                    }
-                    cookiesToAdd.add(sb.toString());
-                    final MultiMapEntry<CharSequence, CharSequence> tmpEntry = e;
-                    e = e.bucketNext;
-                    removeEntry(bucketHead, tmpEntry, bucketIndex);
-                } else if (start == headerValue.length()) {
                     final MultiMapEntry<CharSequence, CharSequence> tmpEntry = e;
                     e = e.bucketNext;
                     removeEntry(bucketHead, tmpEntry, bucketIndex);
@@ -348,7 +301,8 @@ final class DefaultHttpHeaders extends MultiMap<CharSequence, CharSequence> impl
         MultiMapEntry<CharSequence, CharSequence> e = bucketHead.entry;
         assert e != null;
         do {
-            if (setCookieEntryMatches(e, keyHash, name)) {
+            if (e.keyHash == keyHash && contentEqualsIgnoreCase(SET_COOKIE, e.getKey()) &&
+                    isSetCookieNameMatches(e.value, name)) {
                 final MultiMapEntry<CharSequence, CharSequence> tmpEntry = e;
                 e = e.bucketNext;
                 removeEntry(bucketHead, tmpEntry, bucketIndex);
@@ -371,11 +325,12 @@ final class DefaultHttpHeaders extends MultiMap<CharSequence, CharSequence> impl
         MultiMapEntry<CharSequence, CharSequence> e = bucketHead.entry;
         assert e != null;
         do {
-            if (setCookieEntryMatches(e, keyHash, name)) {
+            if (e.keyHash == keyHash && contentEqualsIgnoreCase(SET_COOKIE, e.getKey())) {
                 // In the future we could attempt to delay full parsing of the cookie until after the domain/path have
                 // been matched, but for simplicity just do the parsing ahead of time.
-                HttpSetCookie cookie = parseSetCookie(e.value, false);
-                if (domainMatches(domain, cookie.domain()) && pathMatches(path, cookie.path())) {
+                HttpSetCookie setCookie = HeaderUtils.parseSetCookie(e.value, name, false);
+                if (setCookie != null && domainMatches(domain, setCookie.domain()) &&
+                        pathMatches(path, setCookie.path())) {
                     final MultiMapEntry<CharSequence, CharSequence> tmpEntry = e;
                     e = e.bucketNext;
                     removeEntry(bucketHead, tmpEntry, bucketIndex);
@@ -389,179 +344,75 @@ final class DefaultHttpHeaders extends MultiMap<CharSequence, CharSequence> impl
         return sizeBefore != size();
     }
 
-    private static boolean setCookieEntryMatches(MultiMapEntry<CharSequence, CharSequence> e, int cookieHeaderNameHash,
-                                                 CharSequence cookieName) {
-        return e.keyHash == cookieHeaderNameHash && contentEqualsIgnoreCase(SET_COOKIE, e.getKey()) &&
-                // Check if the name of the cookie matches before doing a full parse of the cookie.
-                regionMatches(cookieName, true, 0, e.value, 0, cookieName.length());
-    }
-
-    private static final class CookiesIterator implements Iterator<HttpCookiePair> {
+    private static final class CookiesIterator extends HeaderUtils.CookiesIterator {
         private final int cookieHeaderNameHash;
         @Nullable
         private MultiMapEntry<CharSequence, CharSequence> current;
-        @Nullable
-        private HttpCookiePair next;
-        private int nextNextStart;
 
         CookiesIterator(final int cookieHeaderNameHash, final MultiMapEntry<CharSequence, CharSequence> first) {
             this.cookieHeaderNameHash = cookieHeaderNameHash;
             this.current = first;
-            findNext0();
-        }
-
-        @Override
-        public boolean hasNext() {
-            return next != null;
-        }
-
-        @Override
-        public HttpCookiePair next() {
-            if (next == null) {
-                throw new NoSuchElementException();
-            }
-            HttpCookiePair current = next;
-            findNext();
-            return current;
-        }
-
-        private void findNext() {
-            if (current == null) {
-                next = null;
-            } else {
-                findNext0();
-            }
-        }
-
-        private void findNext0() {
-            assert current != null;
-            int end = indexOf(current.value, ';', nextNextStart);
-            next = parseCookiePair(current.value, nextNextStart, end);
-            if (end > 0) {
-                if (current.value.length() - 2 <= end) {
-                    current = findNextCookieHeader(current.bucketNext);
-                    nextNextStart = 0;
-                } else {
-                    // skip 2 characters "; " (see https://tools.ietf.org/html/rfc6265#section-4.2.1)
-                    nextNextStart = end + 2;
-                }
-            } else {
-                current = findNextCookieHeader(current.bucketNext);
-                nextNextStart = 0;
-            }
+            initNext(current.value);
         }
 
         @Nullable
-        private MultiMapEntry<CharSequence, CharSequence> findNextCookieHeader(
-                @Nullable MultiMapEntry<CharSequence, CharSequence> e) {
-            while (e != null) {
-                if (e.keyHash == cookieHeaderNameHash && contentEqualsIgnoreCase(COOKIE, e.getKey())) {
-                    return e;
-                }
-                e = e.bucketNext;
-            }
-            return null;
+        @Override
+        protected CharSequence cookieHeaderValue() {
+            return current == null ? null : current.value;
+        }
+
+        @Override
+        protected void advanceCookieHeaderValue() {
+            assert current != null;
+            current = findCookieHeader(cookieHeaderNameHash, current.bucketNext);
         }
     }
 
-    private static final class CookiesByNameIterator implements Iterator<HttpCookiePair> {
+    private static final class CookiesByNameIterator extends HeaderUtils.CookiesByNameIterator {
         private final int cookieHeaderNameHash;
-        private final CharSequence name;
         @Nullable
         private MultiMapEntry<CharSequence, CharSequence> current;
-        @Nullable
-        private HttpCookiePair next;
-        private int nextNextStart;
 
         CookiesByNameIterator(final int cookieHeaderNameHash, final MultiMapEntry<CharSequence, CharSequence> first,
                               final CharSequence name) {
+            super(name);
             this.cookieHeaderNameHash = cookieHeaderNameHash;
             this.current = first;
-            this.name = name;
-            findNext0();
-        }
-
-        @Override
-        public boolean hasNext() {
-            return next != null;
-        }
-
-        @Override
-        public HttpCookiePair next() {
-            if (next == null) {
-                throw new NoSuchElementException();
-            }
-            HttpCookiePair current = next;
-            findNext();
-            return current;
-        }
-
-        private void findNext() {
-            if (current == null) {
-                next = null;
-            } else {
-                findNext0();
-            }
-        }
-
-        private void findNext0() {
-            assert current != null;
-            for (;;) {
-                int end = indexOf(current.value, ';', nextNextStart);
-                if (regionMatches(name, true, 0, current.value, nextNextStart, name.length())) {
-                    next = parseCookiePair(current.value, nextNextStart, name.length(), end);
-                    if (end > 0) {
-                        // skip 2 characters "; " (see https://tools.ietf.org/html/rfc6265#section-4.2.1)
-                        if (current.value.length() - 2 <= end) {
-                            current = findNextCookieHeader(current.bucketNext);
-                            nextNextStart = 0;
-                        } else {
-                            // skip 2 characters "; " (see https://tools.ietf.org/html/rfc6265#section-4.2.1)
-                            nextNextStart = end + 2;
-                        }
-                    } else {
-                        current = findNextCookieHeader(current.bucketNext);
-                        nextNextStart = 0;
-                    }
-                    break;
-                } else if (end > 0) {
-                    if (current.value.length() - 2 <= end) {
-                        throw new IllegalArgumentException("cookie is not allowed to end with ;");
-                    }
-                    // skip 2 characters "; " (see https://tools.ietf.org/html/rfc6265#section-4.2.1)
-                    nextNextStart = end + 2;
-                } else {
-                    current = findNextCookieHeader(current.bucketNext);
-                    if (current == null) {
-                        break;
-                    }
-                    nextNextStart = 0;
-                }
-            }
+            initNext(current.value);
         }
 
         @Nullable
-        private MultiMapEntry<CharSequence, CharSequence> findNextCookieHeader(
-                @Nullable MultiMapEntry<CharSequence, CharSequence> e) {
-            while (e != null) {
-                if (e.keyHash == cookieHeaderNameHash && contentEqualsIgnoreCase(COOKIE, e.getKey())) {
-                    return e;
-                }
-                e = e.bucketNext;
-            }
-            return null;
+        @Override
+        protected CharSequence cookieHeaderValue() {
+            return current == null ? null : current.value;
+        }
+
+        @Override
+        protected void advanceCookieHeaderValue() {
+            assert current != null;
+            current = findCookieHeader(cookieHeaderNameHash, current.bucketNext);
         }
     }
 
+    @Nullable
+    private static MultiMapEntry<CharSequence, CharSequence> findCookieHeader(
+            int cookieHeaderNameHash, @Nullable MultiMapEntry<CharSequence, CharSequence> current) {
+        while (current != null) {
+            if (current.keyHash == cookieHeaderNameHash && contentEqualsIgnoreCase(COOKIE, current.getKey())) {
+                return current;
+            }
+            current = current.bucketNext;
+        }
+        return null;
+    }
+
     private final class SetCookiesIterator implements Iterator<HttpSetCookie> {
-        private final int cookieHeaderNameHash;
         @Nullable
         private MultiMapEntry<CharSequence, CharSequence> current;
         @Nullable
         private MultiMapEntry<CharSequence, CharSequence> previous;
 
-        SetCookiesIterator(final int cookieHeaderNameHash, final MultiMapEntry<CharSequence, CharSequence> first) {
-            this.cookieHeaderNameHash = cookieHeaderNameHash;
+        SetCookiesIterator(final MultiMapEntry<CharSequence, CharSequence> first) {
             this.current = first;
         }
 
@@ -585,7 +436,7 @@ final class DefaultHttpHeaders extends MultiMap<CharSequence, CharSequence> impl
             if (previous == null) {
                 throw new IllegalStateException();
             }
-            final int i = index(cookieHeaderNameHash);
+            final int i = index(previous.keyHash);
             removeEntry(entries[i], previous, i);
             previous = null;
         }
@@ -593,8 +444,9 @@ final class DefaultHttpHeaders extends MultiMap<CharSequence, CharSequence> impl
         @Nullable
         private MultiMapEntry<CharSequence, CharSequence> findNext(
                 @Nullable MultiMapEntry<CharSequence, CharSequence> e) {
+            assert previous != null;
             while (e != null) {
-                if (e.keyHash == cookieHeaderNameHash && contentEqualsIgnoreCase(SET_COOKIE, e.getKey())) {
+                if (e.keyHash == previous.keyHash && contentEqualsIgnoreCase(SET_COOKIE, e.getKey())) {
                     return e;
                 }
                 e = e.bucketNext;
@@ -604,33 +456,45 @@ final class DefaultHttpHeaders extends MultiMap<CharSequence, CharSequence> impl
     }
 
     private final class SetCookiesByNameIterator implements Iterator<HttpSetCookie> {
-        private final int cookieHeaderNameHash;
-        private final CharSequence cookieName;
         @Nullable
-        private MultiMapEntry<CharSequence, CharSequence> current;
+        private HttpSetCookie next;
+        @Nullable
+        private MultiMapEntry<CharSequence, CharSequence> nextEntry;
         @Nullable
         private MultiMapEntry<CharSequence, CharSequence> previous;
 
-        SetCookiesByNameIterator(final int cookieHeaderNameHash, final CharSequence cookieName,
-                                 final MultiMapEntry<CharSequence, CharSequence> first) {
-            this.cookieHeaderNameHash = cookieHeaderNameHash;
-            this.cookieName = cookieName;
-            this.current = first;
+        SetCookiesByNameIterator(final MultiMapEntry<CharSequence, CharSequence> first, final HttpSetCookie next) {
+            this.next = next;
+            this.nextEntry = first;
         }
 
         @Override
         public boolean hasNext() {
-            return current != null;
+            return next != null;
         }
 
         @Override
         public HttpSetCookie next() {
-            if (current == null) {
+            if (next == null) {
                 throw new NoSuchElementException();
             }
-            previous = current;
-            current = findNext(current.bucketNext);
-            return parseSetCookie(previous.value, validateCookies);
+            assert nextEntry != null;
+            HttpSetCookie currentCookie = next;
+            previous = nextEntry;
+            next = null;
+            nextEntry = nextEntry.bucketNext;
+            while (nextEntry != null) {
+                if (nextEntry.keyHash == previous.keyHash &&
+                        contentEqualsIgnoreCase(SET_COOKIE, nextEntry.getKey())) {
+                    next = HeaderUtils.parseSetCookie(nextEntry.value, currentCookie.name(), validateCookies);
+                    if (next != null) {
+                        break;
+                    }
+                }
+                nextEntry = nextEntry.bucketNext;
+            }
+
+            return currentCookie;
         }
 
         @Override
@@ -638,64 +502,59 @@ final class DefaultHttpHeaders extends MultiMap<CharSequence, CharSequence> impl
             if (previous == null) {
                 throw new IllegalStateException();
             }
-            final int i = index(cookieHeaderNameHash);
+            final int i = index(previous.keyHash);
             removeEntry(entries[i], previous, i);
             previous = null;
-        }
-
-        @Nullable
-        private MultiMapEntry<CharSequence, CharSequence> findNext(
-                @Nullable MultiMapEntry<CharSequence, CharSequence> entry) {
-            while (entry != null) {
-                if (setCookieEntryMatches(entry, cookieHeaderNameHash, cookieName)) {
-                    return entry;
-                }
-                entry = entry.bucketNext;
-            }
-            return null;
         }
     }
 
     private final class SetCookiesByNameDomainPathIterator implements Iterator<HttpSetCookie> {
-        private final int cookieHeaderNameHash;
-        private final CharSequence cookieName;
-        private final CharSequence cookieDomain;
-        private final CharSequence cookiePath;
+        private final CharSequence domain;
+        private final CharSequence path;
         @Nullable
-        private HttpSetCookie cookie;
+        private HttpSetCookie next;
         @Nullable
-        private MultiMapEntry<CharSequence, CharSequence> current;
+        private MultiMapEntry<CharSequence, CharSequence> nextEntry;
         @Nullable
         private MultiMapEntry<CharSequence, CharSequence> previous;
 
-        SetCookiesByNameDomainPathIterator(final int cookieHeaderNameHash, final CharSequence cookieName,
-                                           final CharSequence cookieDomain, final CharSequence cookiePath,
-                                           final HttpSetCookie cookie,
-                                           final MultiMapEntry<CharSequence, CharSequence> first) {
-            this.cookieHeaderNameHash = cookieHeaderNameHash;
-            this.cookieName = cookieName;
-            this.cookieDomain = cookieDomain;
-            this.cookiePath = cookiePath;
-            this.cookie = cookie;
-            this.current = first;
+        SetCookiesByNameDomainPathIterator(final MultiMapEntry<CharSequence, CharSequence> first,
+                                           final HttpSetCookie next, final CharSequence domain,
+                                           final CharSequence path) {
+            this.domain = domain;
+            this.path = path;
+            this.next = next;
+            this.nextEntry = first;
         }
 
         @Override
         public boolean hasNext() {
-            return current != null;
+            return next != null;
         }
 
         @Override
         public HttpSetCookie next() {
-            if (current == null) {
+            if (next == null) {
                 throw new NoSuchElementException();
             }
-            assert cookie != null;
-            HttpSetCookie next = cookie;
-            previous = current;
-            cookie = null;
-            current = findNext(current.bucketNext);
-            return next;
+            assert nextEntry != null;
+            HttpSetCookie currentCookie = next;
+            previous = nextEntry;
+            next = null;
+            nextEntry = nextEntry.bucketNext;
+            while (nextEntry != null) {
+                if (nextEntry.keyHash == previous.keyHash && contentEqualsIgnoreCase(SET_COOKIE, nextEntry.getKey())) {
+                    // In the future we could attempt to delay full parsing of the cookie until after the domain/path
+                    // have been matched, but for simplicity just do the parsing ahead of time.
+                    next = HeaderUtils.parseSetCookie(nextEntry.value, currentCookie.name(), validateCookies);
+                    if (next != null && domainMatches(domain, next.domain()) && pathMatches(path, next.path())) {
+                        break;
+                    }
+                }
+                nextEntry = nextEntry.bucketNext;
+            }
+
+            return currentCookie;
         }
 
         @Override
@@ -703,27 +562,9 @@ final class DefaultHttpHeaders extends MultiMap<CharSequence, CharSequence> impl
             if (previous == null) {
                 throw new IllegalStateException();
             }
-            final int i = index(cookieHeaderNameHash);
+            final int i = index(previous.keyHash);
             removeEntry(entries[i], previous, i);
             previous = null;
-        }
-
-        @Nullable
-        private MultiMapEntry<CharSequence, CharSequence> findNext(
-                @Nullable MultiMapEntry<CharSequence, CharSequence> e) {
-            while (e != null) {
-                if (setCookieEntryMatches(e, cookieHeaderNameHash, cookieName)) {
-                    // In the future we could attempt to delay full parsing of the cookie until after the domain/path
-                    // have been matched, but for simplicity just do the parsing ahead of time.
-                    HttpSetCookie tmp = parseSetCookie(e.value, validateCookies);
-                    if (domainMatches(cookieDomain, tmp.domain()) && pathMatches(cookiePath, tmp.path())) {
-                        cookie = tmp;
-                        return e;
-                    }
-                }
-                e = e.bucketNext;
-            }
-            return null;
         }
     }
 

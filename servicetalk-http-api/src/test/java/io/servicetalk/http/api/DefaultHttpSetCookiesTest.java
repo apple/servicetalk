@@ -615,47 +615,47 @@ public class DefaultHttpSetCookiesTest {
         assertFalse(cookieItr.hasNext());
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void noEqualsButQuotedValueThrows() {
+    @Test
+    public void noEqualsButQuotedValueReturnsNull() {
         final HttpHeaders headers = DefaultHttpHeadersFactory.INSTANCE.newHeaders();
         headers.add("set-cookie",
                 "qwerty\"12345\"; Domain=somecompany.co.uk; Path=/; Expires=Wed, 30 Aug 2019 00:00:00 GMT");
-        headers.getSetCookie("qwerty\"12345\"");
+        assertNull(headers.getSetCookie("qwerty\"12345\""));
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void noEqualsButQuotedValueThrowsRO() {
+    @Test
+    public void noEqualsButQuotedValueReturnsNullRO() {
         final HttpHeaders headers = new ReadOnlyHttpHeaders("set-cookie",
                 "qwerty\"12345\"; Domain=somecompany.co.uk; Path=/; Expires=Wed, 30 Aug 2019 00:00:00 GMT");
-        headers.getSetCookie("qwerty\"12345\"");
+        assertNull(headers.getSetCookie("qwerty\"12345\""));
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void noEqualsValueWithAttributesThrows() {
+    @Test
+    public void noEqualsValueWithAttributesReturnsNull() {
         final HttpHeaders headers = DefaultHttpHeadersFactory.INSTANCE.newHeaders();
         headers.add("set-cookie",
                 "qwerty12345; Domain=somecompany.co.uk; Path=/; Expires=Wed, 30 Aug 2019 00:00:00 GMT");
-        headers.getSetCookie("qwerty12345");
+        assertNull(headers.getSetCookie("qwerty12345"));
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void noEqualsValueWithAttributesThrowsRO() {
+    @Test
+    public void noEqualsValueWithAttributesReturnsNullRO() {
         final HttpHeaders headers = new ReadOnlyHttpHeaders("set-cookie",
                 "qwerty12345; Domain=somecompany.co.uk; Path=/; Expires=Wed, 30 Aug 2019 00:00:00 GMT");
-        headers.getSetCookie("qwerty12345");
+        assertNull(headers.getSetCookie("qwerty12345"));
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void noEqualsValueThrows() {
+    @Test
+    public void noEqualsValueReturnsNull() {
         final HttpHeaders headers = DefaultHttpHeadersFactory.INSTANCE.newHeaders();
         headers.add("set-cookie", "qwerty12345");
-        headers.getSetCookie("qwerty12345");
+        assertNull(headers.getSetCookie("qwerty12345"));
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void noEqualsValueThrowsRO() {
+    @Test
+    public void noEqualsValueReturnsNullRO() {
         final HttpHeaders headers = new ReadOnlyHttpHeaders("set-cookie", "qwerty12345");
-        headers.getSetCookie("qwerty12345");
+        assertNull(headers.getSetCookie("qwerty12345"));
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -671,28 +671,28 @@ public class DefaultHttpSetCookiesTest {
         headers.getSetCookie("qwerty");
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void invalidCookieName() {
+    @Test
+    public void invalidCookieNameReturnsNull() {
         final HttpHeaders headers = DefaultHttpHeadersFactory.INSTANCE.newHeaders();
         headers.add("set-cookie", "q@werty=12345");
-        headers.getSetCookie("q@werty");
-    }
-
-    @Test(expected = IllegalArgumentException.class)
-    public void invalidCookieNameRO() {
-        final HttpHeaders headers = new ReadOnlyHttpHeaders("set-cookie", "q@werty=12345");
-        headers.getSetCookie("q@werty");
+        assertNotNull(headers.getSetCookie("q@werty"));
     }
 
     @Test
-    public void invalidCookieNameNoThowIfNoValidate() {
+    public void invalidCookieNameReturnsNullRO() {
+        final HttpHeaders headers = new ReadOnlyHttpHeaders("set-cookie", "q@werty=12345");
+        assertNotNull(headers.getSetCookie("q@werty"));
+    }
+
+    @Test
+    public void invalidCookieNameNoThrowIfNoValidate() {
         final HttpHeaders headers = new DefaultHttpHeadersFactory(false, false).newHeaders();
         headers.add("set-cookie", "q@werty=12345");
         headers.getSetCookie("q@werty");
     }
 
     @Test
-    public void invalidCookieNameNoThowIfNoValidateRO() {
+    public void invalidCookieNameNoThrowIfNoValidateRO() {
         final HttpHeaders headers = new ReadOnlyHttpHeaders(false, "set-cookie", "q@werty=12345");
         headers.getSetCookie("q@werty");
     }

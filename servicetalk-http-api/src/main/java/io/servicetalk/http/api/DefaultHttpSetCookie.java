@@ -127,16 +127,8 @@ public final class DefaultHttpSetCookie implements HttpSetCookie {
         this.httpOnly = httpOnly;
     }
 
-    /**
-     * Parse a {@code setCookie} {@link CharSequence} into a {@link HttpSetCookie}.
-     *
-     * @param setCookieString The <a href="https://tools.ietf.org/html/rfc6265#section-4.1.1">set-cookie-string</a>
-     * value.
-     * @param validateContent {@code true} to make a best effort to validate the contents of the SetCookie.
-     * @return a {@link HttpSetCookie} representation of {@code setCookie}.
-     */
-    public static HttpSetCookie parseSetCookie(final CharSequence setCookieString, boolean validateContent) {
-        CharSequence name = null;
+    static HttpSetCookie parseSetCookie(final CharSequence setCookieString, boolean validateContent,
+                                        @Nullable CharSequence name, int i) {
         CharSequence value = null;
         CharSequence path = null;
         CharSequence domain = null;
@@ -145,9 +137,16 @@ public final class DefaultHttpSetCookie implements HttpSetCookie {
         boolean isWrapped = false;
         boolean isSecure = false;
         boolean isHttpOnly = false;
-        ParseState parseState = ParseState.Unknown;
-        int begin = 0;
-        int i = 0;
+        int begin;
+        ParseState parseState;
+        if (name != null) {
+            parseState = ParseState.ParsingValue;
+            begin = i;
+        } else {
+            parseState = ParseState.Unknown;
+            begin = 0;
+        }
+
         while (i < setCookieString.length()) {
             final char c = setCookieString.charAt(i);
             switch (c) {
@@ -278,6 +277,18 @@ public final class DefaultHttpSetCookie implements HttpSetCookie {
         }
 
         return new DefaultHttpSetCookie(name, value, path, domain, expires, maxAge, isWrapped, isSecure, isHttpOnly);
+    }
+
+    /**
+     * Parse a {@code setCookie} {@link CharSequence} into a {@link HttpSetCookie}.
+     *
+     * @param setCookieString The <a href="https://tools.ietf.org/html/rfc6265#section-4.1.1">set-cookie-string</a>
+     * value.
+     * @param validateContent {@code true} to make a best effort to validate the contents of the SetCookie.
+     * @return a {@link HttpSetCookie} representation of {@code setCookie}.
+     */
+    public static HttpSetCookie parseSetCookie(final CharSequence setCookieString, boolean validateContent) {
+        return parseSetCookie(setCookieString, validateContent, null, 0);
     }
 
     @Override

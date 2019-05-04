@@ -15,6 +15,8 @@
  */
 package io.servicetalk.http.api;
 
+import io.servicetalk.http.api.HeaderUtils.CookiesByNameIterator;
+
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
@@ -25,12 +27,10 @@ import javax.annotation.Nullable;
 import static io.servicetalk.http.api.CharSequences.caseInsensitiveHashCode;
 import static io.servicetalk.http.api.CharSequences.contentEquals;
 import static io.servicetalk.http.api.CharSequences.contentEqualsIgnoreCase;
-import static io.servicetalk.http.api.CharSequences.indexOf;
-import static io.servicetalk.http.api.CharSequences.regionMatches;
-import static io.servicetalk.http.api.DefaultHttpCookiePair.parseCookiePair;
 import static io.servicetalk.http.api.DefaultHttpSetCookie.parseSetCookie;
 import static io.servicetalk.http.api.HeaderUtils.DEFAULT_HEADER_FILTER;
 import static io.servicetalk.http.api.HeaderUtils.domainMatches;
+import static io.servicetalk.http.api.HeaderUtils.parseCookiePair;
 import static io.servicetalk.http.api.HeaderUtils.pathMatches;
 import static io.servicetalk.http.api.HttpHeaderNames.COOKIE;
 import static io.servicetalk.http.api.HttpHeaderNames.SET_COOKIE;
@@ -225,17 +225,9 @@ final class ReadOnlyHttpHeaders implements HttpHeaders {
             final CharSequence currentName = keyValuePairs[i];
             final CharSequence currentValue = keyValuePairs[i + 1];
             if (nameHash == hashCode(currentName) && equals(currentName, COOKIE)) {
-                int start = 0;
-                for (;;) {
-                    int j = indexOf(currentValue, ';', start);
-                    // Check if the name of the cookie matches before doing a full parse of the cookie.
-                    if (regionMatches(name, true, 0, currentValue, start, name.length())) {
-                        return parseCookiePair(currentValue, start, name.length(), j);
-                    } else if (j < 0 || currentValue.length() - 2 <= j) {
-                        break;
-                    }
-                    // skip 2 characters "; " (see https://tools.ietf.org/html/rfc6265#section-4.2.1)
-                    start = j + 2;
+                HttpCookiePair cookiePair = parseCookiePair(currentValue, name);
+                if (cookiePair != null) {
+                    return cookiePair;
                 }
             }
         }
@@ -250,10 +242,11 @@ final class ReadOnlyHttpHeaders implements HttpHeaders {
         for (int i = 0; i < end; i += 2) {
             final CharSequence currentName = keyValuePairs[i];
             final CharSequence currentValue = keyValuePairs[i + 1];
-            if (nameHash == hashCode(currentName) && equals(currentName, SET_COOKIE) &&
-                    // Check if the name of the cookie matches before doing a full parse of the cookie.
-                    regionMatches(name, true, 0, currentValue, 0, name.length())) {
-                return parseSetCookie(currentValue, validateCookies);
+            if (nameHash == hashCode(currentName) && equals(currentName, SET_COOKIE)) {
+                HttpSetCookie setCookie = HeaderUtils.parseSetCookie(currentValue, name, validateCookies);
+                if (setCookie != null) {
+                    return setCookie;
+                }
             }
         }
         return null;
@@ -290,10 +283,11 @@ final class ReadOnlyHttpHeaders implements HttpHeaders {
         for (int i = 0; i < end; i += 2) {
             final CharSequence currentName = keyValuePairs[i];
             final CharSequence currentValue = keyValuePairs[i + 1];
-            if (nameHash == hashCode(currentName) && equals(currentName, SET_COOKIE) &&
-                    // Check if the name of the cookie matches before doing a full parse of the cookie.
-                    regionMatches(name, true, 0, currentValue, 0, name.length())) {
-                return new ReadOnlySetCookieNameIterator(i, nameHash, name, validateCookies);
+            if (nameHash == hashCode(currentName) && equals(currentName, SET_COOKIE)) {
+                HttpSetCookie setCookie = HeaderUtils.parseSetCookie(currentValue, name, validateCookies);
+                if (setCookie != null) {
+                    return new ReadOnlySetCookieNameIterator(i, nameHash, setCookie);
+                }
             }
         }
         return emptyIterator();
@@ -307,15 +301,13 @@ final class ReadOnlyHttpHeaders implements HttpHeaders {
         for (int i = 0; i < end; i += 2) {
             final CharSequence currentName = keyValuePairs[i];
             final CharSequence currentValue = keyValuePairs[i + 1];
-            if (nameHash == hashCode(currentName) && equals(currentName, SET_COOKIE) &&
-                    // Check if the name of the cookie matches before doing a full parse of the cookie.
-                    regionMatches(name, true, 0, currentValue, 0, name.length())) {
+            if (nameHash == hashCode(currentName) && equals(currentName, SET_COOKIE)) {
                 // In the future we could attempt to delay full parsing of the cookie until after the domain/path have
                 // been matched, but for simplicity just do the parsing ahead of time.
-                HttpSetCookie cookie = parseSetCookie(currentValue, validateCookies);
-                if (domainMatches(domain, cookie.domain()) && pathMatches(path, cookie.path())) {
-                    return new ReadOnlySetCookieNameDomainPathIterator(i, nameHash, cookie, name,
-                            domain, path, validateCookies);
+                HttpSetCookie setCookie = HeaderUtils.parseSetCookie(currentValue, name, validateCookies);
+                if (setCookie != null && domainMatches(domain, setCookie.domain()) &&
+                        pathMatches(path, setCookie.path())) {
+                    return new ReadOnlySetCookieNameDomainPathIterator(i, nameHash, setCookie, domain, path);
                 }
             }
         }
@@ -347,145 +339,54 @@ final class ReadOnlyHttpHeaders implements HttpHeaders {
         return false;
     }
 
-    private static final class ReadOnlyCookiesIterator implements Iterator<HttpCookiePair> {
+    private static final class ReadOnlyCookiesIterator extends HeaderUtils.CookiesIterator {
         private final Iterator<? extends CharSequence> valueItr;
         @Nullable
         private CharSequence headerValue;
-        @Nullable
-        private HttpCookiePair next;
-        private int nextNextStart;
 
         ReadOnlyCookiesIterator(final Iterator<? extends CharSequence> valueItr) {
             this.valueItr = valueItr;
-            assert valueItr.hasNext(); // this condition is checked before construction
-            headerValue = valueItr.next();
-            findNext0();
+            if (valueItr.hasNext()) {
+                headerValue = valueItr.next();
+                initNext(headerValue);
+            }
+        }
+
+        @Nullable
+        @Override
+        protected CharSequence cookieHeaderValue() {
+            return headerValue;
         }
 
         @Override
-        public boolean hasNext() {
-            return next != null;
-        }
-
-        @Override
-        public HttpCookiePair next() {
-            if (next == null) {
-                throw new NoSuchElementException();
-            }
-            HttpCookiePair current = next;
-            findNext();
-            return current;
-        }
-
-        private void findNext() {
-            if (headerValue == null) {
-                if (valueItr.hasNext()) {
-                    headerValue = valueItr.next();
-                    nextNextStart = 0;
-                } else {
-                    next = null;
-                    return;
-                }
-            }
-            findNext0();
-        }
-
-        private void findNext0() {
-            assert headerValue != null;
-            int end = indexOf(headerValue, ';', nextNextStart);
-            next = parseCookiePair(headerValue, nextNextStart, end);
-            if (end > 0) {
-                if (headerValue.length() - 2 <= end) {
-                    headerValue = null;
-                } else {
-                    // skip 2 characters "; " (see https://tools.ietf.org/html/rfc6265#section-4.2.1)
-                    nextNextStart = end + 2;
-                }
-            } else {
-                headerValue = null;
-            }
+        protected void advanceCookieHeaderValue() {
+            headerValue = valueItr.hasNext() ? valueItr.next() : null;
         }
     }
 
-    private static final class ReadOnlyCookiesByNameIterator implements Iterator<HttpCookiePair> {
+    private static final class ReadOnlyCookiesByNameIterator extends CookiesByNameIterator {
         private final Iterator<? extends CharSequence> valueItr;
-        private final CharSequence name;
         @Nullable
         private CharSequence headerValue;
-        @Nullable
-        private HttpCookiePair next;
-        private int nextNextStart;
 
         ReadOnlyCookiesByNameIterator(final Iterator<? extends CharSequence> valueItr, final CharSequence name) {
+            super(name);
             this.valueItr = valueItr;
-            this.name = name;
             if (valueItr.hasNext()) {
                 headerValue = valueItr.next();
-                findNext0();
+                initNext(headerValue);
             }
+        }
+
+        @Nullable
+        @Override
+        protected CharSequence cookieHeaderValue() {
+            return headerValue;
         }
 
         @Override
-        public boolean hasNext() {
-            return next != null;
-        }
-
-        @Override
-        public HttpCookiePair next() {
-            if (next == null) {
-                throw new NoSuchElementException();
-            }
-            HttpCookiePair current = next;
-            findNext();
-            return current;
-        }
-
-        private void findNext() {
-            if (headerValue == null) {
-                if (valueItr.hasNext()) {
-                    headerValue = valueItr.next();
-                    nextNextStart = 0;
-                } else {
-                    next = null;
-                    return;
-                }
-            }
-            findNext0();
-        }
-
-        private void findNext0() {
-            assert headerValue != null;
-            for (;;) {
-                int end = indexOf(headerValue, ';', nextNextStart);
-                if (regionMatches(name, true, 0, headerValue, nextNextStart, name.length())) {
-                    next = parseCookiePair(headerValue, nextNextStart, name.length(), end);
-                    if (end > 0) {
-                        // skip 2 characters "; " (see https://tools.ietf.org/html/rfc6265#section-4.2.1)
-                        if (headerValue.length() - 2 <= end) {
-                            headerValue = null;
-                        } else {
-                            // skip 2 characters "; " (see https://tools.ietf.org/html/rfc6265#section-4.2.1)
-                            nextNextStart = end + 2;
-                        }
-                    } else {
-                        headerValue = null;
-                    }
-                    break;
-                } else if (end > 0) {
-                    if (headerValue.length() - 2 <= end) {
-                        throw new IllegalArgumentException("cookie is not allowed to end with ;");
-                    }
-                    // skip 2 characters "; " (see https://tools.ietf.org/html/rfc6265#section-4.2.1)
-                    nextNextStart = end + 2;
-                } else if (valueItr.hasNext()) {
-                    headerValue = valueItr.next();
-                    nextNextStart = 0;
-                } else {
-                    headerValue = null;
-                    next = null;
-                    break;
-                }
-            }
+        protected void advanceCookieHeaderValue() {
+            headerValue = valueItr.hasNext() ? valueItr.next() : null;
         }
     }
 
@@ -526,97 +427,93 @@ final class ReadOnlyHttpHeaders implements HttpHeaders {
 
     private final class ReadOnlySetCookieNameIterator implements Iterator<HttpSetCookie> {
         private final int nameHash;
-        private final CharSequence cookieName;
-        private final boolean validate;
+        @Nullable
+        private HttpSetCookie next;
         private int i;
 
-        ReadOnlySetCookieNameIterator(int keyIndex, int nameHash, CharSequence cookieName, boolean validate) {
+        ReadOnlySetCookieNameIterator(int keyIndex, int nameHash, final HttpSetCookie next) {
             this.i = keyIndex;
             this.nameHash = nameHash;
-            this.cookieName = cookieName;
-            this.validate = validate;
+            this.next = next;
         }
 
         @Override
         public boolean hasNext() {
-            return i < keyValuePairs.length;
+            return next != null;
         }
 
         @Override
         public HttpSetCookie next() {
-            final int end = keyValuePairs.length - 1;
-            if (i >= end) {
+            if (next == null) {
                 throw new NoSuchElementException();
             }
-            final HttpSetCookie next = parseSetCookie(keyValuePairs[i + 1], validate);
+            HttpSetCookie currentCookie = next;
+            next = null;
             i += 2;
+            final int end = keyValuePairs.length - 1;
             for (; i < end; i += 2) {
                 final CharSequence currentName = keyValuePairs[i];
                 final CharSequence currentValue = keyValuePairs[i + 1];
                 if (nameHash == caseInsensitiveHashCode(currentName) &&
-                        contentEqualsIgnoreCase(currentName, SET_COOKIE) &&
-                        // Check if the name of the cookie matches before doing a full parse of the cookie.
-                        regionMatches(cookieName, true, 0, currentValue, 0, cookieName.length())) {
-                    break;
+                        contentEqualsIgnoreCase(currentName, SET_COOKIE)) {
+                    next = HeaderUtils.parseSetCookie(currentValue, currentCookie.name(), validateCookies);
+                    if (next != null) {
+                        break;
+                    }
                 }
             }
-            return next;
+            return currentCookie;
         }
     }
 
     private final class ReadOnlySetCookieNameDomainPathIterator implements Iterator<HttpSetCookie> {
         private final int nameHash;
-        private final CharSequence cookieName;
         private final CharSequence domain;
         private final CharSequence path;
-        private final boolean validate;
-        private int i;
         @Nullable
-        private HttpSetCookie cookie;
+        private HttpSetCookie next;
+        private int i;
 
-        ReadOnlySetCookieNameDomainPathIterator(int keyIndex, int nameHash, HttpSetCookie cookie,
-                                                final CharSequence cookieName, final CharSequence domain,
-                                                final CharSequence path, boolean validate) {
+        ReadOnlySetCookieNameDomainPathIterator(int keyIndex, int nameHash, HttpSetCookie next,
+                                                final CharSequence domain, final CharSequence path) {
             this.i = keyIndex;
             this.nameHash = nameHash;
-            this.cookieName = cookieName;
             this.domain = domain;
             this.path = path;
-            this.cookie = cookie;
-            this.validate = validate;
+            this.next = next;
         }
 
         @Override
         public boolean hasNext() {
-            return cookie != null;
+            return next != null;
         }
 
         @Override
         public HttpSetCookie next() {
-            if (cookie == null) {
+            if (next == null) {
                 throw new NoSuchElementException();
             }
-            final HttpSetCookie next = cookie;
+            HttpSetCookie currentCookie = next;
+            next = null;
             i += 2;
-            cookie = null;
             final int end = keyValuePairs.length - 1;
             for (; i < end; i += 2) {
                 final CharSequence currentName = keyValuePairs[i];
                 final CharSequence currentValue = keyValuePairs[i + 1];
                 if (nameHash == caseInsensitiveHashCode(currentName) &&
-                        contentEqualsIgnoreCase(currentName, SET_COOKIE) &&
-                        // Check if the name of the cookie matches before doing a full parse of the cookie.
-                        regionMatches(cookieName, true, 0, currentValue, 0, cookieName.length())) {
+                        contentEqualsIgnoreCase(currentName, SET_COOKIE)) {
                     // In the future we could attempt to delay full parsing of the cookie until after the domain/path
                     // have been matched, but for simplicity just do the parsing ahead of time.
-                    HttpSetCookie tmp = parseSetCookie(currentValue, validate);
-                    if (domainMatches(domain, tmp.domain()) && pathMatches(path, tmp.path())) {
-                        cookie = tmp;
+                    HttpSetCookie setCookie = HeaderUtils.parseSetCookie(currentValue, currentCookie.name(),
+                            validateCookies);
+                    if (setCookie != null && domainMatches(domain, setCookie.domain()) &&
+                            pathMatches(path, setCookie.path())) {
+                        next = setCookie;
                         break;
                     }
                 }
             }
-            return next;
+            return currentCookie;
         }
     }
 
