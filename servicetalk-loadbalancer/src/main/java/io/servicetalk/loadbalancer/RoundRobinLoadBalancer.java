@@ -99,8 +99,9 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends ListenableA
             newUpdater(RoundRobinLoadBalancer.class, "index");
 
     /**
-     * With a relatively small number of connections we can minimize connection creation under low to moderate
-     * concurrency, without sacrificing too much latency due to the cost of a CAS operation per selection attempt.
+     * With a relatively small number of connections we can minimize connection creation under moderate concurrency by
+     * exhausting the full search space without sacrificing too much latency caused by the cost of a CAS operation per
+     * selection attempt.
      */
     private static final int MIN_SEARCH_SPACE = 64;
 
