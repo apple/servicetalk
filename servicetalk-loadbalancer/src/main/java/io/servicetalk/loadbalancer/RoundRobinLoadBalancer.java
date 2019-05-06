@@ -41,8 +41,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map.Entry;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Function;
@@ -52,7 +51,7 @@ import static io.servicetalk.client.api.LoadBalancerReadyEvent.LOAD_BALANCER_NOT
 import static io.servicetalk.client.api.LoadBalancerReadyEvent.LOAD_BALANCER_READY_EVENT;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.AsyncCloseables.toAsyncCloseable;
-import static io.servicetalk.concurrent.api.Completable.completed;
+import static io.servicetalk.concurrent.api.Completable.mergeAllDelayError;
 import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.Single.succeeded;
@@ -98,6 +97,23 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends ListenableA
             newUpdater(RoundRobinLoadBalancer.class, List.class, "activeHosts");
     private static final AtomicIntegerFieldUpdater<RoundRobinLoadBalancer> indexUpdater =
             newUpdater(RoundRobinLoadBalancer.class, "index");
+
+    /**
+     * With a relatively small number of connections we can minimize connection creation under moderate concurrency by
+     * exhausting the full search space without sacrificing too much latency caused by the cost of a CAS operation per
+     * selection attempt.
+     */
+    private static final int MIN_SEARCH_SPACE = 64;
+
+    /**
+     * For larger search spaces, due to the cost of a CAS operation per selection attempt we see diminishing returns for
+     * trying to locate an available connection when most connections are in use. This increases tail latencies, thus
+     * after some number of failed attempts it appears to be more beneficial to open a new connection instead.
+     * <p>
+     * The current heuristics were chosen based on a set of benchmarks under various circumstances, low connection
+     * counts, larger connection counts, low connection churn, high connection churn.
+     */
+    private static final float SEARCH_FACTOR = 0.75f;
 
     private volatile boolean closed;
     @SuppressWarnings("unused")
@@ -245,12 +261,18 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends ListenableA
         final int cursor = indexUpdater.getAndUpdate(this, i -> (++i & Integer.MAX_VALUE)) % activeHosts.size();
         final Host<ResolvedAddress, C> host = activeHosts.get(cursor);
         assert host != null : "Host can't be null.";
-        assert host.connections != null : "Host connections queue can't be null.";
         assert host.address != null : "Host address can't be null.";
+        final ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
         // Try first to see if an existing connection can be used
-        for (final C connection : host.connections) {
-            CC selection = selector.apply(connection);
+        final List<C> connections = host.connections;
+        final int size = connections.size();
+        // With small enough search space, attempt all connections.
+        // Back off after exploring most of the search space, it gives diminishing returns.
+        final int attempts = size < MIN_SEARCH_SPACE ? size : (int) (size * SEARCH_FACTOR);
+        for (int i = 0; i < attempts; i++) {
+            final C connection = connections.get(rnd.nextInt(size));
+            final CC selection = selector.apply(connection);
             if (selection != null) {
                 return succeeded(selection);
             }
@@ -274,15 +296,29 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends ListenableA
                         // If we can't remove it, it means it's been removed concurrently and we assume that whoever
                         // removed it also closed it or that it has been removed as a consequence of closing.
                         if (closed) {
-                            if (host.connections.remove(newCnx)) {
-                                newCnx.closeAsync().subscribe();
+
+                            List<C> existing = connections;
+                            for (;;) {
+                                if (existing == Host.INACTIVE) {
+                                    break;
+                                }
+                                ArrayList<C> connectionRemoved = new ArrayList<>(existing);
+                                if (!connectionRemoved.remove(newCnx)) {
+                                    break;
+                                }
+                                if (Host.connectionsUpdater.compareAndSet(host, existing, connectionRemoved)) {
+                                    newCnx.closeAsync().subscribe();
+                                    break;
+                                }
+                                existing = connections;
                             }
+
                             return failed(LB_CLOSED_SELECT_CNX_EXCEPTION);
                         }
                         return succeeded(selection);
                     }
                     return failed(new ConnectionRejectedException("Failed to add newly created connection for host: " +
-                            host.address + ", host inactive? " + host.removed));
+                            host.address + ", host inactive? " + (host.connections == Host.INACTIVE)));
                 });
     }
 
@@ -307,78 +343,89 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends ListenableA
     }
 
     private static class Host<Addr, C extends ListenableAsyncCloseable> implements AsyncCloseable {
+        private static final AtomicReferenceFieldUpdater<Host, List> connectionsUpdater =
+                AtomicReferenceFieldUpdater.newUpdater(Host.class, List.class, "connections");
+
+        static final List INACTIVE = emptyList();
+        private static final List NO_CONNECTIONS = new ArrayList(0);
 
         @Nullable
         final Addr address;
-        @Nullable
-        final Queue<C> connections;
-        private volatile boolean removed;
+        @SuppressWarnings("unchecked")
+        private volatile List<C> connections = NO_CONNECTIONS;
 
         Host() {
             address = null;
-            connections = null;
         }
 
         Host(Addr address) {
             this.address = address;
-            this.connections = new ConcurrentLinkedQueue<>();
         }
 
         void markInactive() {
-            removed = true;
-            assert connections != null;
-            for (;;) {
-                C next = connections.poll();
-                if (next == null) {
-                    return;
-                }
-                next.closeAsync().subscribe();
+            @SuppressWarnings("unchecked")
+            List<C> toRemove = connectionsUpdater.getAndSet(this, INACTIVE);
+            for (C conn : toRemove) {
+                conn.closeAsync().subscribe();
             }
         }
 
         boolean addConnection(C connection) {
-            assert connections != null;
-            final boolean added = connections.offer(connection);
-            if (!added || removed) {
-                // It could be that this host was removed concurrently and was not closed by markInactive().
-                // So, we check removed again and remove from the queue + close.
-                if (!added || connections.remove(connection)) {
+
+            for (;;) {
+                List<C> existing = this.connections;
+                if (existing == INACTIVE) {
                     connection.closeAsync().subscribe();
+                    return false;
                 }
-                return false;
+                ArrayList<C> connectionAdded = new ArrayList<>(existing);
+                connectionAdded.add(connection);
+                if (connectionsUpdater.compareAndSet(this, existing, connectionAdded)) {
+                    break;
+                }
             }
 
             // Instrument the new connection so we prune it on close
-            connection.onClose().beforeFinally(() -> connections.remove(connection)).subscribe();
+            connection.onClose().beforeFinally(() -> {
+                List<C> existing = connections;
+                for (;;) {
+                    if (existing == INACTIVE) {
+                        break;
+                    }
+                    ArrayList<C> connectionRemoved = new ArrayList<>(existing);
+                    if (!connectionRemoved.remove(connection) ||
+                            connectionsUpdater.compareAndSet(this, existing, connectionRemoved)) {
+                        break;
+                    }
+                    existing = connections;
+                }
+            }).subscribe();
             return true;
         }
 
         // Used for testing only
         Entry<Addr, List<C>> asEntry() {
             assert address != null;
-            assert connections != null;
             return new SimpleImmutableEntry<>(address, new ArrayList<>(connections));
         }
 
         @Override
         public Completable closeAsync() {
-            return connections == null ? completed() :
-                    completed().mergeDelayError(connections.stream()
-                            .map(AsyncCloseable::closeAsync)::iterator);
+            return mergeAllDelayError(connections.stream()
+                    .map(AsyncCloseable::closeAsync)::iterator);
         }
 
         @Override
         public Completable closeAsyncGracefully() {
-            return connections == null ? completed() :
-                    completed().mergeDelayError(connections.stream()
-                            .map(AsyncCloseable::closeAsyncGracefully)::iterator);
+            return mergeAllDelayError(connections.stream()
+                    .map(AsyncCloseable::closeAsyncGracefully)::iterator);
         }
 
         @Override
         public String toString() {
             return "Host{" +
                     "address=" + address +
-                    ", removed=" + removed +
+                    ", removed=" + (connections == INACTIVE) +
                     '}';
         }
     }
