@@ -30,13 +30,13 @@ import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 
 /**
- * Example filter that returns an error if the response status code is not 200 OK.
+ * Example client filter that returns an error if the response status code is not 200 OK.
  */
-class ResponseCheckingFilter implements StreamingHttpClientFilterFactory {
+final class ResponseCheckingClientFilter implements StreamingHttpClientFilterFactory {
 
     private final String backendName;
 
-    public ResponseCheckingFilter(final String backendName) {
+    ResponseCheckingClientFilter(final String backendName) {
         this.backendName = backendName;
     }
 
@@ -49,7 +49,7 @@ class ResponseCheckingFilter implements StreamingHttpClientFilterFactory {
                                                             final HttpExecutionStrategy strategy,
                                                             final StreamingHttpRequest request) {
                 return delegate.request(strategy, request).flatMap(response -> {
-                    if (!response.status().equals(OK)) {
+                    if (!OK.equals(response.status())) {
                         return failed(new BadResponseStatusException("Bad response status from " + backendName + ": " +
                                 response.status()));
                     }
@@ -59,8 +59,10 @@ class ResponseCheckingFilter implements StreamingHttpClientFilterFactory {
         };
     }
 
-    public class BadResponseStatusException extends RuntimeException {
-        BadResponseStatusException(final String message) {
+    public static final class BadResponseStatusException extends RuntimeException {
+        private static final long serialVersionUID = 8814491402570517144L;
+
+        private BadResponseStatusException(final String message) {
             super(message);
         }
     }

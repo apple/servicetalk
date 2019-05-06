@@ -1,0 +1,66 @@
+/*
+ * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package io.servicetalk.examples.http.service.composition;
+
+import io.servicetalk.concurrent.api.Completable;
+import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.examples.http.service.composition.ResponseCheckingClientFilter.BadResponseStatusException;
+import io.servicetalk.http.api.HttpServiceContext;
+import io.servicetalk.http.api.StreamingHttpRequest;
+import io.servicetalk.http.api.StreamingHttpResponse;
+import io.servicetalk.http.api.StreamingHttpResponseFactory;
+import io.servicetalk.http.api.StreamingHttpService;
+
+import static io.servicetalk.concurrent.api.Publisher.from;
+import static io.servicetalk.concurrent.api.Single.failed;
+import static io.servicetalk.concurrent.api.Single.succeeded;
+import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
+
+/**
+ * Example service filter that returns a response with the exception message if the wrapped service completes with a
+ * {@link BadResponseStatusException}.
+ */
+final class BadResponseHandlingServiceFilter implements StreamingHttpService {
+
+    private final StreamingHttpService service;
+
+    BadResponseHandlingServiceFilter(final StreamingHttpService service) {
+        this.service = service;
+    }
+
+    @Override
+    public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx, final StreamingHttpRequest request, final StreamingHttpResponseFactory responseFactory) {
+        return service.handle(ctx, request, responseFactory).recoverWith(cause -> {
+            if (cause instanceof BadResponseStatusException) {
+                // It's useful to include the exception message in the payload for demonstration purposes, but
+                // this is not recommended in production as it may leak internal information.
+                return succeeded(responseFactory.internalServerError()
+                        .payloadBody(from(cause.getMessage()), textSerializer()));
+            }
+            return failed(cause);
+        });
+    }
+
+    @Override
+    public Completable closeAsync() {
+        return service.closeAsync();
+    }
+
+    @Override
+    public Completable closeAsyncGracefully() {
+        return service.closeAsyncGracefully();
+    }
+}

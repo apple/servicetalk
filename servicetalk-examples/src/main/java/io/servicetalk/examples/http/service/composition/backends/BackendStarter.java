@@ -43,10 +43,13 @@ final class BackendStarter {
     }
 
     ServerContext start(int listenPort, String name, StreamingHttpService service) throws Exception {
+        // Wrap the service with a filter that simulates errors.
+        StreamingHttpService filteredService = new ErrorResponseGeneratingServiceFilter(service, name);
+
         // Starting the server will start listening for incoming client requests.
         final ServerContext ctx = HttpServers.forPort(listenPort)
                 .ioExecutor(ioExecutor)
-                .listenStreamingAndAwait(service);
+                .listenStreamingAndAwait(filteredService);
         LOGGER.info("Started {} listening on {}.", name, ctx.listenAddress());
         return ctx;
     }

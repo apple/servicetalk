@@ -17,7 +17,6 @@ package io.servicetalk.examples.http.service.composition;
 
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.examples.http.service.composition.ResponseCheckingFilter.BadResponseStatusException;
 import io.servicetalk.examples.http.service.composition.pojo.FullRecommendation;
 import io.servicetalk.examples.http.service.composition.pojo.Metadata;
 import io.servicetalk.examples.http.service.composition.pojo.Rating;
@@ -35,11 +34,9 @@ import io.servicetalk.http.api.StreamingHttpService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static io.servicetalk.concurrent.api.Publisher.from;
-import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.examples.http.service.composition.AsyncUtils.zip;
-import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
+import static io.servicetalk.examples.http.service.composition.backends.ErrorResponseGeneratingServiceFilter.ERROR_QP_NAME;
 
 /**
  * This service provides an API that fetches recommendations in parallel and responds with a stream of
@@ -75,35 +72,37 @@ final class StreamingGatewayService implements StreamingHttpService {
             return succeeded(responseFactory.badRequest());
         }
 
-        return recommendationsClient.request(recommendationsClient.get("/recommendations/stream?userId=" + userId))
-                .map(response -> response.transformPayloadBody(this::queryRecommendationDetails,
+        final Iterable<String> errorQpValues = () -> request.queryParameters(ERROR_QP_NAME);
+        return recommendationsClient.request(recommendationsClient.get("/recommendations/stream")
+                .addQueryParameter(USER_ID_QP_NAME, userId)
+                .addQueryParameters(ERROR_QP_NAME, errorQpValues))
+                .map(response -> response.transformPayloadBody(recommendations ->
+                                queryRecommendationDetails(recommendations, errorQpValues),
                         serializers.deserializerFor(Recommendation.class),
-                        serializers.serializerFor(FullRecommendation.class)))
-                .recoverWith(cause -> {
-                    if (cause instanceof BadResponseStatusException) {
-                        // It's useful to include the exception message in the payload for demonstration purposes, but
-                        // this is not recommended in production as it may leak internal information.
-                        return succeeded(responseFactory.internalServerError()
-                                .payloadBody(from(cause.getMessage()), textSerializer()));
-                    }
-                    return failed(cause);
-                });
+                        serializers.serializerFor(FullRecommendation.class)));
     }
 
-    private Publisher<FullRecommendation> queryRecommendationDetails(Publisher<Recommendation> recommendations) {
+    private Publisher<FullRecommendation> queryRecommendationDetails(Publisher<Recommendation> recommendations,
+                                                                     Iterable<String> errorQpValues) {
         return recommendations.flatMapMergeSingle(recommendation -> {
             Single<Metadata> metadata =
-                    metadataClient.request(metadataClient.get("/metadata?entityId=" + recommendation.getEntityId()))
+                    metadataClient.request(metadataClient.get("/metadata")
+                            .addQueryParameter("entityId", recommendation.getEntityId())
+                            .addQueryParameters(ERROR_QP_NAME, errorQpValues))
                             // Since HTTP payload is a buffer, we deserialize into Metadata.
                             .map(response -> response.payloadBody(serializers.deserializerFor(Metadata.class)));
 
             Single<User> user =
-                    userClient.request(userClient.get("/user?userId=" + recommendation.getEntityId()))
+                    userClient.request(userClient.get("/user")
+                            .addQueryParameter(USER_ID_QP_NAME, recommendation.getEntityId())
+                            .addQueryParameters(ERROR_QP_NAME, errorQpValues))
                             // Since HTTP payload is a buffer, we deserialize into User.
                             .map(response -> response.payloadBody(serializers.deserializerFor(User.class)));
 
             Single<Rating> rating =
-                    ratingsClient.request(ratingsClient.get("/rating?entityId=" + recommendation.getEntityId()))
+                    ratingsClient.request(ratingsClient.get("/rating")
+                            .addQueryParameter("entityId", recommendation.getEntityId())
+                            .addQueryParameters(ERROR_QP_NAME, errorQpValues))
                             // Since HTTP payload is a buffer, we deserialize into Rating.
                             .map(response -> response.payloadBody(serializers.deserializerFor(Rating.class)))
                             // We consider ratings to be a non-critical data and hence we substitute the response

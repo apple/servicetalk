@@ -15,7 +15,6 @@
  */
 package io.servicetalk.examples.http.service.composition;
 
-import io.servicetalk.examples.http.service.composition.ResponseCheckingFilter.BadResponseStatusException;
 import io.servicetalk.examples.http.service.composition.pojo.FullRecommendation;
 import io.servicetalk.examples.http.service.composition.pojo.Metadata;
 import io.servicetalk.examples.http.service.composition.pojo.Rating;
@@ -36,7 +35,7 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.List;
 
-import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
+import static io.servicetalk.examples.http.service.composition.backends.ErrorResponseGeneratingServiceFilter.ERROR_QP_NAME;
 
 /**
  * This service provides an API that fetches recommendations serially using blocking APIs. Returned response is a single
@@ -78,46 +77,47 @@ final class BlockingGatewayService implements BlockingHttpService {
         if (userId == null) {
             return responseFactory.badRequest();
         }
-        try {
-            List<Recommendation> recommendations =
-                    recommendationClient.request(
-                            recommendationClient.get("/recommendations/aggregated?userId=" + userId))
-                            .payloadBody(serializers.deserializerFor(typeOfRecommendation));
 
-            List<FullRecommendation> fullRecommendations = new ArrayList<>(recommendations.size());
-            for (Recommendation recommendation : recommendations) {
-                // For each recommendation, fetch the details.
-                final Metadata metadata =
-                        metadataClient.request(
-                                metadataClient.get("/metadata?entityId=" + recommendation.getEntityId()))
-                                .payloadBody(serializers.deserializerFor(Metadata.class));
+        final Iterable<String> errorQpValues = () -> request.queryParameters(ERROR_QP_NAME);
+        List<Recommendation> recommendations =
+                recommendationClient.request(recommendationClient.get("/recommendations/aggregated")
+                        .addQueryParameter(USER_ID_QP_NAME, userId)
+                        .addQueryParameters(ERROR_QP_NAME, errorQpValues))
+                        .payloadBody(serializers.deserializerFor(typeOfRecommendation));
 
-                final User user =
-                        userClient.request(userClient.get("/user?userId=" + recommendation.getEntityId()))
-                                .payloadBody(serializers.deserializerFor(User.class));
+        List<FullRecommendation> fullRecommendations = new ArrayList<>(recommendations.size());
+        for (Recommendation recommendation : recommendations) {
+            // For each recommendation, fetch the details.
+            final Metadata metadata =
+                    metadataClient.request(metadataClient.get("/metadata")
+                            .addQueryParameter("entityId", recommendation.getEntityId())
+                            .addQueryParameters(ERROR_QP_NAME, errorQpValues))
+                            .payloadBody(serializers.deserializerFor(Metadata.class));
 
-                Rating rating;
-                try {
-                    rating = ratingClient.request(
-                            ratingClient.get("/rating?entityId=" + recommendation.getEntityId()))
-                            .payloadBody(serializers.deserializerFor(Rating.class));
-                } catch (Exception cause) {
-                    // We consider ratings to be a non-critical data and hence we substitute the response
-                    // with a static "unavailable" rating when the rating service is unavailable or provides
-                    // a bad response. This is typically referred to as a "fallback".
-                    LOGGER.error("Error querying ratings service. Ignoring and providing a fallback.", cause);
-                    rating = new Rating(recommendation.getEntityId(), -1);
-                }
+            final User user =
+                    userClient.request(userClient.get("/user")
+                            .addQueryParameter(USER_ID_QP_NAME, recommendation.getEntityId())
+                            .addQueryParameters(ERROR_QP_NAME, errorQpValues))
+                            .payloadBody(serializers.deserializerFor(User.class));
 
-                fullRecommendations.add(new FullRecommendation(metadata, user, rating));
+            Rating rating;
+            try {
+                rating = ratingClient.request(ratingClient.get("/rating")
+                        .addQueryParameter("entityId", recommendation.getEntityId())
+                        .addQueryParameters(ERROR_QP_NAME, errorQpValues))
+                        .payloadBody(serializers.deserializerFor(Rating.class));
+            } catch (Exception cause) {
+                // We consider ratings to be a non-critical data and hence we substitute the response
+                // with a static "unavailable" rating when the rating service is unavailable or provides
+                // a bad response. This is typically referred to as a "fallback".
+                LOGGER.error("Error querying ratings service. Ignoring and providing a fallback.", cause);
+                rating = new Rating(recommendation.getEntityId(), -1);
             }
 
-            return responseFactory.ok()
-                    .payloadBody(fullRecommendations, serializers.serializerFor(typeOfFullRecommendations));
-        } catch (BadResponseStatusException cause) {
-            // It's useful to include the exception message in the payload for demonstration purposes, but this is not
-            // recommended in production as it may leak internal information.
-            return responseFactory.internalServerError().payloadBody(cause.getMessage(), textSerializer());
+            fullRecommendations.add(new FullRecommendation(metadata, user, rating));
         }
+
+        return responseFactory.ok()
+                .payloadBody(fullRecommendations, serializers.serializerFor(typeOfFullRecommendations));
     }
 }

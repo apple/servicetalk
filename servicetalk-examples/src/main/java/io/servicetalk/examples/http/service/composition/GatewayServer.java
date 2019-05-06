@@ -96,11 +96,13 @@ public final class GatewayServer {
                                     userClient.asBlockingClient(), httpSerializer))
                             .buildStreaming();
 
+            final StreamingHttpService filteredService = new BadResponseHandlingServiceFilter(gatewayService);
+
             // Create configurable starter for HTTP server.
             // Starting the server will start listening for incoming client requests.
             ServerContext serverContext = HttpServers.forPort(8080)
                     .ioExecutor(ioExecutor)
-                    .listenStreamingAndAwait(gatewayService);
+                    .listenStreamingAndAwait(filteredService);
 
             LOGGER.info("Listening on {}", serverContext.listenAddress());
 
@@ -122,7 +124,7 @@ public final class GatewayServer {
                         // Apply a timeout filter for the client to guard against latent clients.
                         .appendClientFilter(new TimeoutHttpRequesterFilter(ofMillis(500)))
                         // Apply a filter that returns an error if any response status code is not 200 OK
-                        .appendClientFilter(new ResponseCheckingFilter(backendName))
+                        .appendClientFilter(new ResponseCheckingClientFilter(backendName))
                         .ioExecutor(ioExecutor)
                         .buildStreaming());
     }

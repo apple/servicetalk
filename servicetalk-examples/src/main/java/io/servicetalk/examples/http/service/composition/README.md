@@ -118,12 +118,12 @@ http://localhost:8080/recommendations/blocking?userId=1
 ## Error Handling
 
 This example also demonstrates checking the response status, and handling unexpected status codes. Making a request
-with specific values of `userId` will trigger a `500 Internal Server Error` response from the appropriate backend
+with specific values of `simulateError` will trigger a `500 Internal Server Error` response from the appropriate backend
 service:
-- `recommendation_error`
-- `metadata_error`
-- `user_error`
-- `rating_error`
+- `recommendation-service`
+- `metadata-service`
+- `user-service`
+- `rating-service`
 
-The Gateway services implement a "fallback" for the Rating service only. Modifying
-[BackendsStarter](backends/BackendsStarter.java) to skip starting the Rating service can demonstrate this.
+The Gateway services implement a "fallback" for the Rating service only, which can be seen as `-1` ratings in the
+response.

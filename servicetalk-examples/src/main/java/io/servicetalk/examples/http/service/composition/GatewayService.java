@@ -16,7 +16,6 @@
 package io.servicetalk.examples.http.service.composition;
 
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.examples.http.service.composition.ResponseCheckingFilter.BadResponseStatusException;
 import io.servicetalk.examples.http.service.composition.pojo.FullRecommendation;
 import io.servicetalk.examples.http.service.composition.pojo.Metadata;
 import io.servicetalk.examples.http.service.composition.pojo.Rating;
@@ -35,10 +34,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static io.servicetalk.concurrent.api.Publisher.fromIterable;
-import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.examples.http.service.composition.AsyncUtils.zip;
-import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
+import static io.servicetalk.examples.http.service.composition.backends.ErrorResponseGeneratingServiceFilter.ERROR_QP_NAME;
 
 /**
  * This service provides an API that fetches recommendations in parallel but provides an aggregated JSON array as a
@@ -78,47 +76,48 @@ final class GatewayService implements HttpService {
             return succeeded(responseFactory.badRequest());
         }
 
-        return recommendationsClient.request(recommendationsClient.get("/recommendations/aggregated?userId=" + userId))
+        final Iterable<String> errorQpValues = () -> request.queryParameters(ERROR_QP_NAME);
+        return recommendationsClient.request(recommendationsClient.get("/recommendations/aggregated")
+                .addQueryParameter(USER_ID_QP_NAME, userId)
+                .addQueryParameters(ERROR_QP_NAME, errorQpValues))
                 // Since HTTP payload is a buffer, we deserialize into List<Recommendation>>.
                 .map(response -> response.payloadBody(serializers.deserializerFor(typeOfRecommendation)))
-                .flatMap(this::queryRecommendationDetails)
+                .flatMap(recommendations -> queryRecommendationDetails(recommendations, errorQpValues))
                 .map(fullRecommendations -> responseFactory.ok()
-                        .payloadBody(fullRecommendations, serializers.serializerFor(typeOfFullRecommendation)))
-                .recoverWith(cause -> {
-                    if (cause instanceof BadResponseStatusException) {
-                        // It's useful to include the exception message in the payload for demonstration purposes, but
-                        // this is not recommended in production as it may leak internal information.
-                        return succeeded(responseFactory.internalServerError()
-                                .payloadBody(cause.getMessage(), textSerializer()));
-                    }
-                    return failed(cause);
-                });
+                        .payloadBody(fullRecommendations, serializers.serializerFor(typeOfFullRecommendation)));
     }
 
-    private Single<List<FullRecommendation>> queryRecommendationDetails(List<Recommendation> recommendations) {
+    private Single<List<FullRecommendation>> queryRecommendationDetails(List<Recommendation> recommendations,
+                                                                        Iterable<String> errorQpValues) {
         // Recommendations are a List and we want to query details for each recommendation in parallel.
         // Turning the List into a Publisher helps us use relevant operators to do so.
         return fromIterable(recommendations)
-                .flatMapMergeSingle(reco -> {
+                .flatMapMergeSingle(recommendation -> {
                     Single<Metadata> metadata =
-                            metadataClient.request(metadataClient.get("/metadata?entityId=" + reco.getEntityId()))
+                            metadataClient.request(metadataClient.get("/metadata")
+                                    .addQueryParameter("entityId", recommendation.getEntityId())
+                                    .addQueryParameters(ERROR_QP_NAME, errorQpValues))
                                     // Since HTTP payload is a buffer, we deserialize into Metadata.
                                     .map(response -> response.payloadBody(serializers.deserializerFor(Metadata.class)));
 
                     Single<User> user =
-                            userClient.request(userClient.get("/user?userId=" + reco.getEntityId()))
+                            userClient.request(userClient.get("/user")
+                                    .addQueryParameter(USER_ID_QP_NAME, recommendation.getEntityId())
+                                    .addQueryParameters(ERROR_QP_NAME, errorQpValues))
                                     // Since HTTP payload is a buffer, we deserialize into User.
                                     .map(response -> response.payloadBody(serializers.deserializerFor(User.class)));
 
                     Single<Rating> rating =
-                            ratingsClient.request(ratingsClient.get("/rating?entityId=" + reco.getEntityId()))
+                            ratingsClient.request(ratingsClient.get("/rating")
+                                    .addQueryParameter("entityId", recommendation.getEntityId())
+                                    .addQueryParameters(ERROR_QP_NAME, errorQpValues))
                                     // Since HTTP payload is a buffer, we deserialize into Rating.
                                     .map(response -> response.payloadBody(serializers.deserializerFor(Rating.class)))
                                     // We consider ratings to be a non-critical data and hence we substitute the
                                     // response with a static "unavailable" rating when the rating service is
                                     // unavailable or provides a bad response. This is typically referred to as a
                                     // "fallback".
-                                    .recoverWith(cause -> succeeded(new Rating(reco.getEntityId(), -1)));
+                                    .recoverWith(cause -> succeeded(new Rating(recommendation.getEntityId(), -1)));
 
                     // The below asynchronously queries metadata, user and rating backends and zips them into a single
                     // FullRecommendation instance.
