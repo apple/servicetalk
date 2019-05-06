@@ -264,15 +264,14 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends ListenableA
         final ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
         // Try first to see if an existing connection can be used
-
-        List<C> connections = host.connections;
-        int size = connections.size();
+        final List<C> connections = host.connections;
+        final int size = connections.size();
         // With small enough search space, attempt all connections.
-        // Back off after exploring most of the search space, it gives diminishing returns
-        int attempts = size < MIN_SEARCH_SPACE ? size : (int) (size * SEARCH_FACTOR);
+        // Back off after exploring most of the search space, it gives diminishing returns.
+        final int attempts = size < MIN_SEARCH_SPACE ? size : (int) (size * SEARCH_FACTOR);
         for (int i = 0; i < attempts; i++) {
-            C connection = connections.get(rnd.nextInt(size));
-            CC selection = selector.apply(connection);
+            final C connection = connections.get(rnd.nextInt(size));
+            final CC selection = selector.apply(connection);
             if (selection != null) {
                 return succeeded(selection);
             }
@@ -296,9 +295,23 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends ListenableA
                         // If we can't remove it, it means it's been removed concurrently and we assume that whoever
                         // removed it also closed it or that it has been removed as a consequence of closing.
                         if (closed) {
-                            if (host.connections.remove(newCnx)) {
-                                newCnx.closeAsync().subscribe();
+
+                            List<C> existing = connections;
+                            for (;;) {
+                                if (existing == Host.INACTIVE) {
+                                    break;
+                                }
+                                ArrayList<C> connectionRemoved = new ArrayList<>(existing);
+                                if (!connectionRemoved.remove(newCnx)) {
+                                    break;
+                                }
+                                if (Host.connectionsUpdater.compareAndSet(host, existing, connectionRemoved)) {
+                                    newCnx.closeAsync().subscribe();
+                                    break;
+                                }
+                                existing = connections;
                             }
+
                             return failed(LB_CLOSED_SELECT_CNX_EXCEPTION);
                         }
                         return succeeded(selection);
