@@ -98,14 +98,20 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends ListenableA
     private static final AtomicIntegerFieldUpdater<RoundRobinLoadBalancer> indexUpdater =
             newUpdater(RoundRobinLoadBalancer.class, "index");
 
-    // With a relatively small number of connections we can minimize connection creation under low to moderate
-    // concurrency, without sacrificing too much latency due to the cost of a CAS operation per selection attempt.
+    /**
+     * With a relatively small number of connections we can minimize connection creation under low to moderate
+     * concurrency, without sacrificing too much latency due to the cost of a CAS operation per selection attempt.
+     */
     private static final int MIN_SEARCH_SPACE = 64;
-    // For larger search spaces, due to the cost of a CAS operation per selection attempt we see diminishing returns for
-    // trying to locate an available connection when most connections are in use. This increases tail latencies, thus
-    // after some number of failed attempts it appears to be more beneficial to open a new connection instead. The
-    // current heuristics were chosen based on a set of benchmarks under various circumstances, low connection counts,
-    // larger connection counts, low connection churn, high connection churn.
+
+    /**
+     * For larger search spaces, due to the cost of a CAS operation per selection attempt we see diminishing returns for
+     * trying to locate an available connection when most connections are in use. This increases tail latencies, thus
+     * after some number of failed attempts it appears to be more beneficial to open a new connection instead.
+     * <p>
+     * The current heuristics were chosen based on a set of benchmarks under various circumstances, low connection
+     * counts, larger connection counts, low connection churn, high connection churn.
+     */
     private static final float SEARCH_FACTOR = 0.75f;
 
     private volatile boolean closed;
@@ -321,11 +327,13 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends ListenableA
         private static final AtomicReferenceFieldUpdater<Host, List> connectionsUpdater =
                 AtomicReferenceFieldUpdater.newUpdater(Host.class, List.class, "connections");
 
-        static final List INACTIVE = new ArrayList(0);
+        static final List INACTIVE = emptyList();
+        private static final List NO_CONNECTIONS = new ArrayList(0);
 
         @Nullable
         final Addr address;
-        private volatile List<C> connections = Collections.emptyList();
+        @SuppressWarnings("unchecked")
+        private volatile List<C> connections = NO_CONNECTIONS;
 
         Host() {
             address = null;
@@ -339,7 +347,7 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends ListenableA
             @SuppressWarnings("unchecked")
             List<C> toRemove = connectionsUpdater.getAndSet(this, INACTIVE);
             for (C conn : toRemove) {
-                conn.closeAsyncGracefully().subscribe();
+                conn.closeAsync().subscribe();
             }
         }
 
