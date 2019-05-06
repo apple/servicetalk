@@ -15,6 +15,10 @@
  */
 package io.servicetalk.examples.http.service.composition;
 
+import io.servicetalk.examples.http.service.composition.backends.MetadataBackend;
+import io.servicetalk.examples.http.service.composition.backends.RatingBackend;
+import io.servicetalk.examples.http.service.composition.backends.RecommendationBackend;
+import io.servicetalk.examples.http.service.composition.backends.UserBackend;
 import io.servicetalk.examples.http.service.composition.pojo.FullRecommendation;
 import io.servicetalk.examples.http.service.composition.pojo.Metadata;
 import io.servicetalk.examples.http.service.composition.pojo.Rating;
@@ -81,7 +85,7 @@ final class BlockingGatewayService implements BlockingHttpService {
         final Iterable<String> errorQpValues = () -> request.queryParameters(ERROR_QP_NAME);
         List<Recommendation> recommendations =
                 recommendationClient.request(recommendationClient.get("/recommendations/aggregated")
-                        .addQueryParameter(USER_ID_QP_NAME, userId)
+                        .addQueryParameter(RecommendationBackend.USER_ID_QP_NAME, userId)
                         .addQueryParameters(ERROR_QP_NAME, errorQpValues))
                         .payloadBody(serializers.deserializerFor(typeOfRecommendation));
 
@@ -90,20 +94,20 @@ final class BlockingGatewayService implements BlockingHttpService {
             // For each recommendation, fetch the details.
             final Metadata metadata =
                     metadataClient.request(metadataClient.get("/metadata")
-                            .addQueryParameter("entityId", recommendation.getEntityId())
+                            .addQueryParameter(MetadataBackend.ENTITY_ID_QP_NAME, recommendation.getEntityId())
                             .addQueryParameters(ERROR_QP_NAME, errorQpValues))
                             .payloadBody(serializers.deserializerFor(Metadata.class));
 
             final User user =
                     userClient.request(userClient.get("/user")
-                            .addQueryParameter(USER_ID_QP_NAME, recommendation.getEntityId())
+                            .addQueryParameter(UserBackend.USER_ID_QP_NAME, recommendation.getEntityId())
                             .addQueryParameters(ERROR_QP_NAME, errorQpValues))
                             .payloadBody(serializers.deserializerFor(User.class));
 
             Rating rating;
             try {
                 rating = ratingClient.request(ratingClient.get("/rating")
-                        .addQueryParameter("entityId", recommendation.getEntityId())
+                        .addQueryParameter(RatingBackend.ENTITY_ID_QP_NAME, recommendation.getEntityId())
                         .addQueryParameters(ERROR_QP_NAME, errorQpValues))
                         .payloadBody(serializers.deserializerFor(Rating.class));
             } catch (Exception cause) {

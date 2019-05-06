@@ -15,7 +15,6 @@
  */
 package io.servicetalk.examples.http.service.composition;
 
-import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.examples.http.service.composition.ResponseCheckingClientFilter.BadResponseStatusException;
 import io.servicetalk.http.api.HttpServiceContext;
@@ -23,6 +22,8 @@ import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpService;
+import io.servicetalk.http.api.StreamingHttpServiceFilter;
+import io.servicetalk.http.api.StreamingHttpServiceFilterFactory;
 
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.failed;
@@ -33,34 +34,23 @@ import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
  * Example service filter that returns a response with the exception message if the wrapped service completes with a
  * {@link BadResponseStatusException}.
  */
-final class BadResponseHandlingServiceFilter implements StreamingHttpService {
-
-    private final StreamingHttpService service;
-
-    BadResponseHandlingServiceFilter(final StreamingHttpService service) {
-        this.service = service;
-    }
-
+final class BadResponseHandlingServiceFilter implements StreamingHttpServiceFilterFactory {
     @Override
-    public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx, final StreamingHttpRequest request, final StreamingHttpResponseFactory responseFactory) {
-        return service.handle(ctx, request, responseFactory).recoverWith(cause -> {
-            if (cause instanceof BadResponseStatusException) {
-                // It's useful to include the exception message in the payload for demonstration purposes, but
-                // this is not recommended in production as it may leak internal information.
-                return succeeded(responseFactory.internalServerError()
-                        .payloadBody(from(cause.getMessage()), textSerializer()));
+    public StreamingHttpServiceFilter create(final StreamingHttpService service) {
+        return new StreamingHttpServiceFilter(service) {
+            @Override
+            public Single<StreamingHttpResponse> handle(HttpServiceContext ctx, StreamingHttpRequest request,
+                                                        StreamingHttpResponseFactory responseFactory) {
+                return super.handle(ctx, request, responseFactory).recoverWith(cause -> {
+                    if (cause instanceof BadResponseStatusException) {
+                        // It's useful to include the exception message in the payload for demonstration purposes, but
+                        // this is not recommended in production as it may leak internal information.
+                        return succeeded(responseFactory.internalServerError()
+                                .payloadBody(from(cause.getMessage()), textSerializer()));
+                    }
+                    return failed(cause);
+                });
             }
-            return failed(cause);
-        });
-    }
-
-    @Override
-    public Completable closeAsync() {
-        return service.closeAsync();
-    }
-
-    @Override
-    public Completable closeAsyncGracefully() {
-        return service.closeAsyncGracefully();
+        };
     }
 }

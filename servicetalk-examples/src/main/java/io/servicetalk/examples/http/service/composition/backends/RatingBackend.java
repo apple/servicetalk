@@ -33,9 +33,10 @@ import static io.servicetalk.concurrent.api.Single.succeeded;
 /**
  * A service that returns {@link Rating}s for an entity.
  */
-final class RatingBackend implements HttpService {
+public final class RatingBackend implements HttpService {
 
-    private static final String ENTITY_ID_QP_NAME = "entityId";
+    public static final String ENTITY_ID_QP_NAME = "entityId";
+
     private final HttpSerializationProvider serializer;
 
     private RatingBackend(HttpSerializationProvider serializer) {

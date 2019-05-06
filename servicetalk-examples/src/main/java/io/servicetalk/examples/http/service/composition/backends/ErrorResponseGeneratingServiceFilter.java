@@ -15,13 +15,14 @@
  */
 package io.servicetalk.examples.http.service.composition.backends;
 
-import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpService;
+import io.servicetalk.http.api.StreamingHttpServiceFilter;
+import io.servicetalk.http.api.StreamingHttpServiceFilterFactory;
 
 import java.util.Iterator;
 
@@ -30,36 +31,29 @@ import static io.servicetalk.concurrent.api.Single.succeeded;
 /**
  * A service filter that simulates errors based on a query parameter value.
  */
-public final class ErrorResponseGeneratingServiceFilter implements StreamingHttpService {
+public final class ErrorResponseGeneratingServiceFilter implements StreamingHttpServiceFilterFactory {
 
     public static final String ERROR_QP_NAME = "simulateError";
 
-    private final StreamingHttpService service;
     private final String serviceName;
 
-    ErrorResponseGeneratingServiceFilter(final StreamingHttpService service, final String serviceName) {
-        this.service = service;
+    public ErrorResponseGeneratingServiceFilter(final String serviceName) {
         this.serviceName = serviceName;
     }
 
     @Override
-    public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx, final StreamingHttpRequest request, final StreamingHttpResponseFactory responseFactory) {
-        final Iterator<String> parameters = request.queryParameters(ERROR_QP_NAME);
-        while (parameters.hasNext()) {
-            if (parameters.next().equals(serviceName)) {
-                return succeeded(responseFactory.internalServerError());
+    public StreamingHttpServiceFilter create(final StreamingHttpService service) {
+        return new StreamingHttpServiceFilter(service) {
+            @Override
+            public Single<StreamingHttpResponse> handle(HttpServiceContext ctx, StreamingHttpRequest request,
+                                                        StreamingHttpResponseFactory responseFactory) {
+                for (Iterator<String> parameters = request.queryParameters(ERROR_QP_NAME); parameters.hasNext(); ) {
+                    if (parameters.next().equals(serviceName)) {
+                        return succeeded(responseFactory.internalServerError());
+                    }
+                }
+                return super.handle(ctx, request, responseFactory);
             }
-        }
-        return service.handle(ctx, request, responseFactory);
-    }
-
-    @Override
-    public Completable closeAsync() {
-        return service.closeAsync();
-    }
-
-    @Override
-    public Completable closeAsyncGracefully() {
-        return service.closeAsyncGracefully();
+        };
     }
 }

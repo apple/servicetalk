@@ -96,13 +96,12 @@ public final class GatewayServer {
                                     userClient.asBlockingClient(), httpSerializer))
                             .buildStreaming();
 
-            final StreamingHttpService filteredService = new BadResponseHandlingServiceFilter(gatewayService);
-
             // Create configurable starter for HTTP server.
             // Starting the server will start listening for incoming client requests.
             ServerContext serverContext = HttpServers.forPort(8080)
                     .ioExecutor(ioExecutor)
-                    .listenStreamingAndAwait(filteredService);
+                    .appendServiceFilter(new BadResponseHandlingServiceFilter())
+                    .listenStreamingAndAwait(gatewayService);
 
             LOGGER.info("Listening on {}", serverContext.listenAddress());
 
