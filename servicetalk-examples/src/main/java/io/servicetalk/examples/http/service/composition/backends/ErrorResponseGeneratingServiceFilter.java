@@ -30,7 +30,7 @@ import static io.servicetalk.concurrent.api.Single.succeeded;
 /**
  * A service filter that simulates errors based on a query parameter value.
  */
-final class ErrorResponseGeneratingServiceFilter implements StreamingHttpService {
+public final class ErrorResponseGeneratingServiceFilter implements StreamingHttpService {
 
     public static final String ERROR_QP_NAME = "simulateError";
 
