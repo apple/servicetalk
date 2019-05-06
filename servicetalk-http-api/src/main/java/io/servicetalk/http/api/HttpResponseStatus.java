@@ -325,13 +325,14 @@ public final class HttpResponseStatus {
     private final int statusCode;
     private final String reasonPhrase;
     private final StatusClass statusClass;
-    private final Buffer buffer;
+    private final Buffer encodedAsBuffer;
 
     private HttpResponseStatus(final int statusCode, final String reasonPhrase) {
         this.statusCode = statusCode;
         this.reasonPhrase = requireNonNull(reasonPhrase);
-        this.statusClass = fromStatusCode(statusCode);
-        this.buffer = PREFER_HEAP_RO_ALLOCATOR.fromAscii(statusCode + " " + reasonPhrase);
+
+        statusClass = fromStatusCode(statusCode);
+        encodedAsBuffer = PREFER_HEAP_RO_ALLOCATOR.fromAscii(statusCode + " " + reasonPhrase);
     }
 
     /**
@@ -512,7 +513,7 @@ public final class HttpResponseStatus {
      * @param buffer The {@link Buffer} to write to
      */
     public void writeTo(final Buffer buffer) {
-        writeReadOnlyBuffer(this.buffer, buffer);
+        writeReadOnlyBuffer(encodedAsBuffer, buffer);
     }
 
     /**

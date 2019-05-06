@@ -37,7 +37,7 @@ public final class HttpProtocolVersion {
     private final int major;
     private final int minor;
     private final String httpVersion;
-    private final Buffer buffer;
+    private final Buffer encodedAsBuffer;
 
     private HttpProtocolVersion(final int major, final int minor) {
         if (major < 0 || major > 9) {
@@ -51,7 +51,7 @@ public final class HttpProtocolVersion {
         this.minor = minor;
 
         httpVersion = "HTTP/" + major + '.' + minor;
-        buffer = PREFER_HEAP_RO_ALLOCATOR.fromAscii(httpVersion);
+        encodedAsBuffer = PREFER_HEAP_RO_ALLOCATOR.fromAscii(httpVersion);
     }
 
     /**
@@ -105,7 +105,7 @@ public final class HttpProtocolVersion {
      * @param buffer the {@link Buffer} to write to
      */
     public void writeTo(final Buffer buffer) {
-        writeReadOnlyBuffer(this.buffer, buffer);
+        writeReadOnlyBuffer(encodedAsBuffer, buffer);
     }
 
     @Override
