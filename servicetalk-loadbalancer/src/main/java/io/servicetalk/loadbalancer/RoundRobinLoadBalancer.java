@@ -51,7 +51,7 @@ import static io.servicetalk.client.api.LoadBalancerReadyEvent.LOAD_BALANCER_NOT
 import static io.servicetalk.client.api.LoadBalancerReadyEvent.LOAD_BALANCER_READY_EVENT;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.AsyncCloseables.toAsyncCloseable;
-import static io.servicetalk.concurrent.api.Completable.completed;
+import static io.servicetalk.concurrent.api.Completable.mergeAllDelayError;
 import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.Single.succeeded;
@@ -97,9 +97,16 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends ListenableA
             newUpdater(RoundRobinLoadBalancer.class, List.class, "activeHosts");
     private static final AtomicIntegerFieldUpdater<RoundRobinLoadBalancer> indexUpdater =
             newUpdater(RoundRobinLoadBalancer.class, "index");
-    // For hosts with a small number of connections the overhead of exhausting the full search space is minimal, and
-    // thus we can minimize excessive connection creation under low to moderate load.
-    public static final int MIN_SEARCH_SPACE = 64;
+
+    // With a relatively small number of connections we can minimize connection creation under low to moderate
+    // concurrency, without sacrificing too much latency due to the cost of a CAS operation per selection attempt.
+    private static final int MIN_SEARCH_SPACE = 64;
+    // For larger search spaces, due to the cost of a CAS operation per selection attempt we see diminishing returns for
+    // trying to locate an available connection when most connections are in use. This increases tail latencies, thus
+    // after some number of failed attempts it appears to be more beneficial to open a new connection instead. The
+    // current heuristics were chosen based on a set of benchmarks under various circumstances, low connection counts,
+    // larger connection counts, low connection churn, high connection churn.
+    private static final float SEARCH_FACTOR = 0.75f;
 
     private volatile boolean closed;
     @SuppressWarnings("unused")
@@ -110,7 +117,6 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends ListenableA
     private final SequentialCancellable discoveryCancellable = new SequentialCancellable();
     private final ConnectionFactory<ResolvedAddress, ? extends C> connectionFactory;
     private final ListenableAsyncCloseable asyncCloseable;
-    private final float searchFactor;
 
     /**
      * Creates a new instance.
@@ -122,30 +128,8 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends ListenableA
     public RoundRobinLoadBalancer(final Publisher<? extends ServiceDiscovererEvent<ResolvedAddress>> eventPublisher,
                                   final ConnectionFactory<ResolvedAddress, ? extends C> connectionFactory,
                                   final Comparator<ResolvedAddress> comparator) {
-        // 75% is a good balance between latency and connection usage
-        this(eventPublisher, connectionFactory, comparator, 0.75f);
-    }
-
-    /**
-     * Creates a new instance.
-     *
-     * @param eventPublisher    provides a stream of addresses to connect to.
-     * @param connectionFactory a function which creates new connections.
-     * @param comparator        used to compare addresses for lookup/iteration during the connection attempt phase.
-     * @param searchFactor      percentage of active connections to attempt to select before falling back to a creating
-     * a new connection, when calling {@link #selectConnection(Function)}, this may trade off lower latencies for higher
-     * connection count under higher load.
-     */
-    public RoundRobinLoadBalancer(final Publisher<? extends ServiceDiscovererEvent<ResolvedAddress>> eventPublisher,
-                                  final ConnectionFactory<ResolvedAddress, ? extends C> connectionFactory,
-                                  final Comparator<ResolvedAddress> comparator,
-                                  final float searchFactor) {
 
         this.connectionFactory = requireNonNull(connectionFactory);
-        if (searchFactor <= 0.01f || searchFactor > 1.0f) {
-            throw new IllegalArgumentException("searchFactor must be in range [0.01 .. 1.00]: " + searchFactor);
-        }
-        this.searchFactor = searchFactor;
 
         final Comparator<Host<ResolvedAddress, C>> activeAddressComparator =
                 comparing(host -> host instanceof MutableAddressHost ?
@@ -270,16 +254,18 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends ListenableA
         final int cursor = indexUpdater.getAndUpdate(this, i -> (++i & Integer.MAX_VALUE)) % activeHosts.size();
         final Host<ResolvedAddress, C> host = activeHosts.get(cursor);
         assert host != null : "Host can't be null.";
-        assert host.connections != null : "Host connections queue can't be null.";
         assert host.address != null : "Host address can't be null.";
+        final ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
         // Try first to see if an existing connection can be used
 
         List<C> connections = host.connections;
         int size = connections.size();
-        int attempts = size < MIN_SEARCH_SPACE ? size : (int) (size * searchFactor);
+        // With small enough search space, attempt all connections.
+        // Back off after exploring most of the search space, it gives diminishing returns
+        int attempts = size < MIN_SEARCH_SPACE ? size : (int) (size * SEARCH_FACTOR);
         for (int i = 0; i < attempts; i++) {
-            C connection = connections.get(ThreadLocalRandom.current().nextInt(size));
+            C connection = connections.get(rnd.nextInt(size));
             CC selection = selector.apply(connection);
             if (selection != null) {
                 return succeeded(selection);
@@ -312,7 +298,7 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends ListenableA
                         return succeeded(selection);
                     }
                     return failed(new ConnectionRejectedException("Failed to add newly created connection for host: " +
-                            host.address + ", host inactive? " + host.removed));
+                            host.address + ", host inactive? " + (host.connections == Host.INACTIVE)));
                 });
     }
 
@@ -335,9 +321,10 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends ListenableA
         private static final AtomicReferenceFieldUpdater<Host, List> connectionsUpdater =
                 AtomicReferenceFieldUpdater.newUpdater(Host.class, List.class, "connections");
 
+        static final List INACTIVE = new ArrayList(0);
+
         @Nullable
         final Addr address;
-        private volatile boolean removed;
         private volatile List<C> connections = Collections.emptyList();
 
         Host() {
@@ -349,16 +336,10 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends ListenableA
         }
 
         void markInactive() {
-            removed = true;
-            List<C> toRemove = connections;
-            while (!toRemove.isEmpty()) {
-                for (C conn : toRemove) {
-                    conn.closeAsync().subscribe();
-                }
-                if (connectionsUpdater.compareAndSet(this, toRemove, emptyList())) {
-                    return;
-                }
-                toRemove = connections;
+            @SuppressWarnings("unchecked")
+            List<C> toRemove = connectionsUpdater.getAndSet(this, INACTIVE);
+            for (C conn : toRemove) {
+                conn.closeAsyncGracefully().subscribe();
             }
         }
 
@@ -366,21 +347,13 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends ListenableA
 
             for (;;) {
                 List<C> existing = this.connections;
+                if (existing == INACTIVE) {
+                    connection.closeAsync().subscribe();
+                    return false;
+                }
                 ArrayList<C> connectionAdded = new ArrayList<>(existing);
                 connectionAdded.add(connection);
                 if (connectionsUpdater.compareAndSet(this, existing, connectionAdded)) {
-                    if (removed) {
-                        existing = connectionAdded;
-                        for (;;) {
-                            ArrayList<C> connectionRemoved = new ArrayList<>(existing);
-                            connectionRemoved.remove(connection);
-                            if (connectionsUpdater.compareAndSet(this, existing, connectionRemoved)) {
-                                connection.closeAsync().subscribe();
-                                return false;
-                            }
-                            existing = connections;
-                        }
-                    }
                     break;
                 }
             }
@@ -389,11 +362,13 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends ListenableA
             connection.onClose().beforeFinally(() -> {
                 List<C> existing = connections;
                 for (;;) {
+                    if (existing == INACTIVE) {
+                        break;
+                    }
                     ArrayList<C> connectionRemoved = new ArrayList<>(existing);
-                    connectionRemoved.remove(connection);
-                    if (connectionsUpdater.compareAndSet(this, existing, connectionRemoved)) {
-                        connection.closeAsync().subscribe();
-                        return;
+                    if (!connectionRemoved.remove(connection) ||
+                            connectionsUpdater.compareAndSet(this, existing, connectionRemoved)) {
+                        break;
                     }
                     existing = connections;
                 }
@@ -409,13 +384,13 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends ListenableA
 
         @Override
         public Completable closeAsync() {
-            return completed().mergeDelayError(connections.stream()
+            return mergeAllDelayError(connections.stream()
                     .map(AsyncCloseable::closeAsync)::iterator);
         }
 
         @Override
         public Completable closeAsyncGracefully() {
-            return completed().mergeDelayError(connections.stream()
+            return mergeAllDelayError(connections.stream()
                     .map(AsyncCloseable::closeAsyncGracefully)::iterator);
         }
 
@@ -423,7 +398,7 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends ListenableA
         public String toString() {
             return "Host{" +
                     "address=" + address +
-                    ", removed=" + removed +
+                    ", removed=" + (connections == INACTIVE) +
                     '}';
         }
     }
