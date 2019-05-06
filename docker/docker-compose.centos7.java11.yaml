@@ -34,12 +34,6 @@ services:
   test:
     image: servicetalk:centos-7-1.11
 
-  test-redis-2:
-    image: servicetalk:centos-7-1.11
-
-  test-redis-3:
-    image: servicetalk:centos-7-1.11
-
   publish-snapshot:
     image: servicetalk:centos-7-1.11
 
