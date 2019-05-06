@@ -118,12 +118,17 @@ http://localhost:8080/recommendations/blocking?userId=1
 ## Error Handling
 
 This example also demonstrates checking the response status, and handling unexpected status codes. Making a request
-with specific values of `simulateError` will trigger a `500 Internal Server Error` response from the appropriate backend
-service:
+with with the `simulateError` query parameter will trigger a `500 Internal Server Error` response from the appropriate backend
+service for the following values:
 - `recommendation-service`
 - `metadata-service`
 - `user-service`
 - `rating-service`
+
+eg.
+```
+http://localhost:8080/recommendations/aggregated?userId=1&simulateError=metadata-service
+```
 
 The Gateway services implement a "fallback" for the Rating service only, which can be seen as `-1` ratings in the
 response.
