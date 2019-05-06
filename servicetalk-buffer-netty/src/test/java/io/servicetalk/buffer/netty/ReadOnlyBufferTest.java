@@ -38,4 +38,24 @@ public class ReadOnlyBufferTest {
         Buffer readOnly = buffer.asReadOnly();
         assertEquals(buffer.maxCapacity(), readOnly.maxCapacity());
     }
+
+    @Test
+    public void changeReaderIndexViaReadOnlyView() {
+        Buffer buffer = DEFAULT_ALLOCATOR.fromAscii("test");
+        Buffer readOnly = buffer.asReadOnly();
+        assertEquals(buffer.readerIndex(), readOnly.readerIndex());
+        readOnly.skipBytes(2);
+        assertEquals(2, readOnly.readerIndex());
+        assertEquals(buffer.readerIndex(), readOnly.readerIndex());
+    }
+
+    @Test
+    public void changeWriterIndexViaReadOnlyView() {
+        Buffer buffer = DEFAULT_ALLOCATOR.fromAscii("test");
+        Buffer readOnly = buffer.asReadOnly();
+        assertEquals(buffer.writerIndex(), readOnly.writerIndex());
+        readOnly.writerIndex(2);
+        assertEquals(2, readOnly.writerIndex());
+        assertEquals(buffer.writerIndex(), readOnly.writerIndex());
+    }
 }
