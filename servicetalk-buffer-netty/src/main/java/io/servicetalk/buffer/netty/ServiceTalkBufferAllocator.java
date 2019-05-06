@@ -135,9 +135,7 @@ final class ServiceTalkBufferAllocator extends AbstractByteBufAllocator implemen
     @Override
     public Buffer wrap(ByteBuffer buffer) {
         final Buffer buf;
-        if (!buffer.hasRemaining()) {
-            buf = EMPTY_BUFFER;
-        } else if (buffer.hasArray()) {
+        if (buffer.hasArray()) {
             buf = wrap(buffer.array(), buffer.arrayOffset() + buffer.position(), buffer.remaining());
         } else if (buffer.isDirect() && PlatformDependent.hasUnsafe()) {
             buf = new NettyBuffer<>(new UnreleasableUnsafeDirectByteBuf(this, buffer, buffer.remaining()));

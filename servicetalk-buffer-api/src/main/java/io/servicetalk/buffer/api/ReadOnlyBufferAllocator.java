@@ -132,9 +132,6 @@ final class ReadOnlyBufferAllocator implements BufferAllocator {
 
     @Override
     public Buffer wrap(ByteBuffer buffer) {
-        if (!buffer.hasRemaining()) {
-            return EMPTY_BUFFER;
-        }
         return new ReadOnlyByteBuffer(buffer);
     }
 }
