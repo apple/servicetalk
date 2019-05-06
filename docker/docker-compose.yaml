@@ -34,80 +34,43 @@ services:
     working_dir: /code
     environment: &environment
       - CI
-      - REDIS_PORT=6379
-      - REDIS_AUTH_PORT=6378
     networks: [test-net]
 
   build:
     << : *common
-    depends_on: [runtime-setup, redis-4]
+    depends_on: [runtime-setup]
     environment:
       - CI
-      - REDIS_PORT=6379
-      - REDIS_AUTH_PORT=6378
-      - REDIS_HOST=redis-4
     command: bash -cl "./gradlew clean build"
 
   check:
     << : *common
-    depends_on: [runtime-setup, redis-4]
+    depends_on: [runtime-setup]
     environment:
       - CI
-      - REDIS_PORT=6379
-      - REDIS_AUTH_PORT=6378
-      - REDIS_HOST=redis-4
     command: bash -cl "./gradlew clean check"
 
   test:
     << : *common
-    depends_on: [runtime-setup, redis-4]
+    depends_on: [runtime-setup]
     environment:
       - CI
-      - REDIS_PORT=6379
-      - REDIS_AUTH_PORT=6378
-      - REDIS_HOST=redis-4
-    command: bash -cl "./gradlew clean test"
-
-  test-redis-2:
-    << : *common
-    depends_on: [runtime-setup, redis-2]
-    environment:
-      - CI
-      - REDIS_PORT=6379
-      - REDIS_AUTH_PORT=6378
-      - REDIS_HOST=redis-2
-    command: bash -cl "./gradlew clean test"
-
-  test-redis-3:
-    << : *common
-    depends_on: [runtime-setup, redis-3]
-    environment:
-      - CI
-      - REDIS_PORT=6379
-      - REDIS_AUTH_PORT=6378
-      - REDIS_HOST=redis-3
     command: bash -cl "./gradlew clean test"
 
   publish-snapshot:
     << : *common
-    depends_on: [runtime-setup, redis-4]
+    depends_on: [runtime-setup]
     environment:
       - CI
-      - REDIS_PORT=6379
-      - REDIS_AUTH_PORT=6378
-      - REDIS_HOST=redis-4
       - BINTRAY_USER
       - BINTRAY_KEY
     command: bash -cl "./gradlew clean check && ./gradlew bintrayUpload"
 
   publish-release:
     << : *common
-    depends_on: [runtime-setup, redis-4]
+    depends_on: [runtime-setup]
     environment:
       - CI
-      - REDIS_PORT=6379
-      - REDIS_AUTH_PORT=6378
-      - REDIS_HOST=redis-4
       - BINTRAY_USER
       - BINTRAY_KEY
     command: bash -cl "./gradlew clean check && ./gradlew bintrayUpload -PreleaseBuild=true"
@@ -115,23 +78,6 @@ services:
   shell:
     << : *common
     entrypoint: /bin/bash
-
-## redis sidecar
-
-  redis-2:
-    image: redis:2
-    command: bash -c "redis-server --port 6379 & redis-server --port 6378 --requirepass password"
-    networks: [test-net]
-
-  redis-3:
-    image: redis:3
-    command: bash -c "redis-server --port 6379 & redis-server --port 6378 --requirepass password"
-    networks: [test-net]
-
-  redis-4:
-    image: redis:4
-    command: bash -c "redis-server --port 6379 & redis-server --port 6378 --requirepass password"
-    networks: [test-net]
 
 networks:
   test-net:
