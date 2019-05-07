@@ -19,7 +19,6 @@ import io.servicetalk.buffer.api.Buffer;
 
 import javax.annotation.Nullable;
 
-import static io.servicetalk.buffer.api.EmptyBuffer.EMPTY_BUFFER;
 import static io.servicetalk.buffer.api.ReadOnlyBufferAllocators.PREFER_HEAP_RO_ALLOCATOR;
 import static io.servicetalk.http.api.BufferUtils.writeReadOnlyBuffer;
 import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.fromStatusCode;
@@ -326,16 +325,14 @@ public final class HttpResponseStatus {
     private final int statusCode;
     private final String reasonPhrase;
     private final StatusClass statusClass;
-    private final Buffer statusCodeBuffer;
-    private final Buffer reasonPhraseBuffer;
+    private final Buffer encodedAsBuffer;
 
     private HttpResponseStatus(final int statusCode, final String reasonPhrase) {
         this.statusCode = statusCode;
         this.reasonPhrase = requireNonNull(reasonPhrase);
-        this.statusClass = fromStatusCode(statusCode);
-        this.statusCodeBuffer = PREFER_HEAP_RO_ALLOCATOR.fromAscii(Integer.toString(statusCode));
-        this.reasonPhraseBuffer = reasonPhrase.isEmpty() ?
-                EMPTY_BUFFER : PREFER_HEAP_RO_ALLOCATOR.fromAscii(reasonPhrase);
+
+        statusClass = fromStatusCode(statusCode);
+        encodedAsBuffer = PREFER_HEAP_RO_ALLOCATOR.fromAscii(statusCode + " " + reasonPhrase);
     }
 
     /**
@@ -500,29 +497,23 @@ public final class HttpResponseStatus {
     }
 
     /**
-     * Write the equivalent of {@link #code()} to a {@link Buffer}.
+     * Get the <a href="https://tools.ietf.org/html/rfc7230.html#section-3.1.2">reason-phrase</a> that provides a
+     * textual description associated with the numeric status code.
      *
-     * @param buffer The {@link Buffer} to write to
+     * @return the <a href="https://tools.ietf.org/html/rfc7230.html#section-3.1.2">reason-phrase</a> that provides a
+     * textual description associated with the numeric status code
      */
-    public void writeCodeTo(final Buffer buffer) {
-        writeReadOnlyBuffer(statusCodeBuffer, buffer);
+    public String reasonPhrase() {
+        return reasonPhrase;
     }
 
     /**
-     * Write the <a href="https://tools.ietf.org/html/rfc7230.html#section-3.1.2">reason-phrase</a> portion of the
-     * response to a {@link Buffer}.
-     * <pre>
-     *     The reason-phrase element exists for the sole purpose of providing a
-     *     textual description associated with the numeric status code, mostly
-     *     out of deference to earlier Internet application protocols that were
-     *     more frequently used with interactive text clients.  A client SHOULD
-     *     ignore the reason-phrase content.
-     * </pre>
+     * Write the equivalent of this {@link HttpResponseStatus} to a {@link Buffer}.
      *
      * @param buffer The {@link Buffer} to write to
      */
-    public void writeReasonPhraseTo(final Buffer buffer) {
-        writeReadOnlyBuffer(reasonPhraseBuffer, buffer);
+    public void writeTo(final Buffer buffer) {
+        writeReadOnlyBuffer(encodedAsBuffer, buffer);
     }
 
     /**

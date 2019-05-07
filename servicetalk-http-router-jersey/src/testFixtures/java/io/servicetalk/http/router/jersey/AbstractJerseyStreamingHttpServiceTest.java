@@ -305,11 +305,7 @@ public abstract class AbstractJerseyStreamingHttpServiceTest {
             assertThat(res.version(), is(expectedHttpVersion));
             final HttpResponseStatus status = res.status();
             assertThat(status, is(expectedStatus));
-            final Buffer reasonPhrase = DEFAULT_ALLOCATOR.newBuffer();
-            status.writeReasonPhraseTo(reasonPhrase);
-            final Buffer expectedReasonPhrase = DEFAULT_ALLOCATOR.newBuffer();
-            expectedStatus.writeReasonPhraseTo(expectedReasonPhrase);
-            assertThat(reasonPhrase, is(expectedReasonPhrase));
+            assertThat(status.reasonPhrase(), is(expectedStatus.reasonPhrase()));
             return res;
         } catch (final AssertionError ae) {
             throw ae;

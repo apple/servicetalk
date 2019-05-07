@@ -50,10 +50,9 @@ public class HttpResponseStatusTest {
         final HttpResponseStatus status = NO_CONTENT;
 
         assertEquals(204, status.code());
-        assertWriteCodeToBuffer(204, status);
-        assertWriteReasonPhraseToBuffer("No Content", status);
         assertEquals(SUCCESSFUL_2XX, status.statusClass());
         assertEquals("204 No Content", status.toString());
+        assertWriteToBuffer("204 No Content", status);
     }
 
     @Test
@@ -61,21 +60,14 @@ public class HttpResponseStatusTest {
         final HttpResponseStatus status = HttpResponseStatus.of(590, "My Own Status Code");
 
         assertEquals(590, status.code());
-        assertWriteCodeToBuffer(590, status);
-        assertWriteReasonPhraseToBuffer("My Own Status Code", status);
         assertEquals(SERVER_ERROR_5XX, status.statusClass());
         assertEquals("590 My Own Status Code", status.toString());
+        assertWriteToBuffer("590 My Own Status Code", status);
     }
 
-    private static void assertWriteCodeToBuffer(final int expected, final HttpResponseStatus status) {
-        final Buffer buffer = BufferAllocators.DEFAULT_ALLOCATOR.newBuffer(3);
-        status.writeCodeTo(buffer);
-        assertEquals(DEFAULT_RO_ALLOCATOR.fromAscii(String.valueOf(expected)), buffer);
-    }
-
-    private static void assertWriteReasonPhraseToBuffer(final String expected, final HttpResponseStatus status) {
-        final Buffer buffer = BufferAllocators.DEFAULT_ALLOCATOR.newBuffer(expected.length());
-        status.writeReasonPhraseTo(buffer);
+    private static void assertWriteToBuffer(final String expected, final HttpResponseStatus status) {
+        final Buffer buffer = BufferAllocators.DEFAULT_ALLOCATOR.newBuffer();
+        status.writeTo(buffer);
         assertEquals(DEFAULT_RO_ALLOCATOR.fromAscii(expected), buffer);
     }
 

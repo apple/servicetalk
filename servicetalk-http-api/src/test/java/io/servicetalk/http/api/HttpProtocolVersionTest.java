@@ -60,8 +60,8 @@ public class HttpProtocolVersionTest {
     }
 
     private static void assertWriteToBuffer(final String expected, final HttpProtocolVersion version) {
-        final Buffer buffer = BufferAllocators.DEFAULT_ALLOCATOR.newBuffer(expected.length());
-        version.writeVersionTo(buffer);
+        final Buffer buffer = BufferAllocators.DEFAULT_ALLOCATOR.newBuffer();
+        version.writeTo(buffer);
         assertEquals(DEFAULT_RO_ALLOCATOR.fromAscii(expected), buffer);
     }
 

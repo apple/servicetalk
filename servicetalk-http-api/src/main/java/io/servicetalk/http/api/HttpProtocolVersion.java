@@ -19,7 +19,6 @@ import io.servicetalk.buffer.api.Buffer;
 
 import static io.servicetalk.buffer.api.ReadOnlyBufferAllocators.PREFER_HEAP_RO_ALLOCATOR;
 import static io.servicetalk.http.api.BufferUtils.writeReadOnlyBuffer;
-import static java.nio.charset.StandardCharsets.US_ASCII;
 
 /**
  * HTTP <a href="https://tools.ietf.org/html/rfc7230.html#section-2.6">protocol versioning</a>.
@@ -37,7 +36,8 @@ public final class HttpProtocolVersion {
 
     private final int major;
     private final int minor;
-    private final Buffer httpVersion;
+    private final String httpVersion;
+    private final Buffer encodedAsBuffer;
 
     private HttpProtocolVersion(final int major, final int minor) {
         if (major < 0 || major > 9) {
@@ -50,7 +50,8 @@ public final class HttpProtocolVersion {
         }
         this.minor = minor;
 
-        this.httpVersion = PREFER_HEAP_RO_ALLOCATOR.fromAscii("HTTP/" + major + '.' + minor);
+        httpVersion = "HTTP/" + major + '.' + minor;
+        encodedAsBuffer = PREFER_HEAP_RO_ALLOCATOR.fromAscii(httpVersion);
     }
 
     /**
@@ -99,13 +100,12 @@ public final class HttpProtocolVersion {
     }
 
     /**
-     * Write the <a href="https://tools.ietf.org/html/rfc7230.html#section-2.6">HTTP-version</a> to {@code buffer}.
+     * Write the equivalent of this {@link HttpProtocolVersion} to a {@link Buffer}.
      *
-     * @param buffer The {@link Buffer} to write
-     * <a href="https://tools.ietf.org/html/rfc7230.html#section-2.6">HTTP-version</a>
+     * @param buffer the {@link Buffer} to write to
      */
-    public void writeVersionTo(final Buffer buffer) {
-        writeReadOnlyBuffer(httpVersion, buffer);
+    public void writeTo(final Buffer buffer) {
+        writeReadOnlyBuffer(encodedAsBuffer, buffer);
     }
 
     @Override
@@ -132,6 +132,6 @@ public final class HttpProtocolVersion {
 
     @Override
     public String toString() {
-        return httpVersion.toString(US_ASCII);
+        return httpVersion;
     }
 }

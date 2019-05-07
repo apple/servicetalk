@@ -74,11 +74,9 @@ public class HttpResponseDecoderBenchmark {
     public void setup() {
         final HttpResponseStatus status = status(statusCode);
         final Buffer responseBuffer = PREFER_DIRECT_ALLOCATOR.newBuffer(100);
-        HTTP_1_1.writeVersionTo(responseBuffer);
+        HTTP_1_1.writeTo(responseBuffer);
         responseBuffer.writeByte(SP);
-        status.writeCodeTo(responseBuffer);
-        responseBuffer.writeByte(SP);
-        status.writeReasonPhraseTo(responseBuffer);
+        status.writeTo(responseBuffer);
         responseBuffer.writeShort(CRLF_SHORT);
         responseBuffer.writeBytes("content-length: 0".getBytes(US_ASCII));
         responseBuffer.writeShort(CRLF_SHORT);
