@@ -32,10 +32,9 @@ import static io.servicetalk.examples.http.service.composition.backends.StringUt
 /**
  * A service that returns {@link Metadata}s for an entity.
  */
-public final class MetadataBackend implements HttpService {
+final class MetadataBackend implements HttpService {
 
-    public static final String ENTITY_ID_QP_NAME = "entityId";
-
+    private static final String ENTITY_ID_QP_NAME = "entityId";
     private final HttpSerializationProvider serializer;
 
     private MetadataBackend(HttpSerializationProvider serializer) {

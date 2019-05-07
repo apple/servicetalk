@@ -59,7 +59,7 @@ final class ResponseCheckingClientFilter implements StreamingHttpClientFilterFac
         };
     }
 
-    public static final class BadResponseStatusException extends RuntimeException {
+    static final class BadResponseStatusException extends RuntimeException {
         private static final long serialVersionUID = 8814491402570517144L;
 
         private BadResponseStatusException(final String message) {

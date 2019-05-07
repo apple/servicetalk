@@ -32,10 +32,9 @@ import static io.servicetalk.examples.http.service.composition.backends.StringUt
 /**
  * A service that returns {@link User} for an entity.
  */
-public final class UserBackend implements HttpService {
+final class UserBackend implements HttpService {
 
-    public static final String USER_ID_QP_NAME = "userId";
-
+    private static final String USER_ID_QP_NAME = "userId";
     private final HttpSerializationProvider serializer;
 
     private UserBackend(HttpSerializationProvider serializer) {

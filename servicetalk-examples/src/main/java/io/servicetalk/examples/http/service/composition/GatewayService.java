@@ -16,10 +16,6 @@
 package io.servicetalk.examples.http.service.composition;
 
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.examples.http.service.composition.backends.MetadataBackend;
-import io.servicetalk.examples.http.service.composition.backends.RatingBackend;
-import io.servicetalk.examples.http.service.composition.backends.RecommendationBackend;
-import io.servicetalk.examples.http.service.composition.backends.UserBackend;
 import io.servicetalk.examples.http.service.composition.pojo.FullRecommendation;
 import io.servicetalk.examples.http.service.composition.pojo.Metadata;
 import io.servicetalk.examples.http.service.composition.pojo.Rating;
@@ -54,6 +50,7 @@ final class GatewayService implements HttpService {
             new TypeHolder<List<FullRecommendation>>() { };
 
     private static final String USER_ID_QP_NAME = "userId";
+    private static final String ENTITY_ID_QP_NAME = "entityId";
 
     private final HttpClient recommendationsClient;
     private final HttpClient metadataClient;
@@ -82,7 +79,7 @@ final class GatewayService implements HttpService {
 
         final Iterable<String> errorQpValues = () -> request.queryParameters(ERROR_QP_NAME);
         return recommendationsClient.request(recommendationsClient.get("/recommendations/aggregated")
-                .addQueryParameter(RecommendationBackend.USER_ID_QP_NAME, userId)
+                .addQueryParameter(USER_ID_QP_NAME, userId)
                 .addQueryParameters(ERROR_QP_NAME, errorQpValues))
                 // Since HTTP payload is a buffer, we deserialize into List<Recommendation>>.
                 .map(response -> response.payloadBody(serializers.deserializerFor(typeOfRecommendation)))
@@ -99,21 +96,21 @@ final class GatewayService implements HttpService {
                 .flatMapMergeSingle(recommendation -> {
                     Single<Metadata> metadata =
                             metadataClient.request(metadataClient.get("/metadata")
-                                    .addQueryParameter(MetadataBackend.ENTITY_ID_QP_NAME, recommendation.getEntityId())
+                                    .addQueryParameter(ENTITY_ID_QP_NAME, recommendation.getEntityId())
                                     .addQueryParameters(ERROR_QP_NAME, errorQpValues))
                                     // Since HTTP payload is a buffer, we deserialize into Metadata.
                                     .map(response -> response.payloadBody(serializers.deserializerFor(Metadata.class)));
 
                     Single<User> user =
                             userClient.request(userClient.get("/user")
-                                    .addQueryParameter(UserBackend.USER_ID_QP_NAME, recommendation.getEntityId())
+                                    .addQueryParameter(USER_ID_QP_NAME, recommendation.getEntityId())
                                     .addQueryParameters(ERROR_QP_NAME, errorQpValues))
                                     // Since HTTP payload is a buffer, we deserialize into User.
                                     .map(response -> response.payloadBody(serializers.deserializerFor(User.class)));
 
                     Single<Rating> rating =
                             ratingsClient.request(ratingsClient.get("/rating")
-                                    .addQueryParameter(RatingBackend.ENTITY_ID_QP_NAME, recommendation.getEntityId())
+                                    .addQueryParameter(ENTITY_ID_QP_NAME, recommendation.getEntityId())
                                     .addQueryParameters(ERROR_QP_NAME, errorQpValues))
                                     // Since HTTP payload is a buffer, we deserialize into Rating.
                                     .map(response -> response.payloadBody(serializers.deserializerFor(Rating.class)))

@@ -44,12 +44,11 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 /**
  * A service that generates {@link Recommendation}s for a user.
  */
-public final class RecommendationBackend {
-
-    public static final String USER_ID_QP_NAME = "userId";
+final class RecommendationBackend {
 
     private static final TypeHolder<List<Recommendation>> typeOfRecommendation =
             new TypeHolder<List<Recommendation>>() { };
+    private static final String USER_ID_QP_NAME = "userId";
     private static final String EXPECTED_ENTITY_COUNT_QP_NAME = "expectedEntityCount";
 
     private RecommendationBackend() {
