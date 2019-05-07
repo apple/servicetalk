@@ -1,0 +1,147 @@
+:doctype: book
+include::ROOT:partial$component-attributes.adoc[]
+
+= Service Composition
+
+*This is an advanced example and not necessarily intended to be a "getting started" example.*
+
+This example is meant to resemble a somewhat realistic application from a control flow and serialization perspective
+while demonstrating how ServiceTalk's API variations enable users to choose their preferred programming model.
+
+Note this example also contains "backend" services which simulate databases and keep the example self contained.
+These backend services do show more usage of ServiceTalk APIs but are not the focus of the example.
+
+== How to run the example?
+
+This example has two distinct bootstrap locations:
+
+* link:{sourceroot}servicetalk-examples/src/main/java/io/servicetalk/examples/http/service/composition/GatewayServer.java[GatewayServer]
+is a main class and starts only the gateway server with all the endpoints. This
+server is started on port `8080`.
+* link:{sourceroot}servicetalk-examples/src/main/java/io/servicetalk/examples/http/service/composition/backends/BackendsStarter.java[BackendsStarter]
+is a main class that starts the other services, viz.,
+`Recommendation`, `Metadata`, `User` and `Rating` service.
+
+= Usecase
+
+In order to demonstrate a complex service composition usecase, we take the following abstract example:
+
+== Gateway Service
+
+A service that composes multiple downstream service results into an externally consumable result.
+
+=== Result
+
+The result is a complex object link:{sourceroot}servicetalk-examples/src/main/java/io/servicetalk/examples/http/service/composition/pojo/FullRecommendation.java[FullRecommendation]
+as follows:
+
+[source,java]
+----
+public final class FullRecommendation {
+    private Metadata entity;
+    private User recommendedBy;
+    private Rating overallRating;
+    // Getters and setters removed for brevity
+}
+----
+
+Each component of this data is fetched from different backends as described below.
+
+== Recommendation Backend
+
+A link:{sourceroot}servicetalk-examples/src/main/java/io/servicetalk/examples/http/service/composition/backends/RecommendationBackend.java[backend service]
+that provides recommendation (entities) for a particular user.
+Each recommended entity contains:
+
+* Recommended entity ID.
+* User ID who recommended this entity to this user.
+
+This backend provides a two endpoints:
+
+. _Streaming_: An push based endpoint which keeps pushing new recommendations when available.
+To simulate real life scenarios, we push a recommendation periodically.
+. _Aggregated_: An aggregated endpoint that sends all currently available recommendations as a list of entities.
+
+Since a recommendation returned by this backend is not externally consumable (only contains IDs), this incomplete
+information is materialized using the following backends:
+
+== Metadata Backend
+
+A link:{sourceroot}servicetalk-examples/src/main/java/io/servicetalk/examples/http/service/composition/backends/MetadataBackend.java[backend service]
+that provides details about the entity given an `entityId`.
+
+== User Backend
+
+A link:{sourceroot}servicetalk-examples/src/main/java/io/servicetalk/examples/http/service/composition/backends/UserBackend.java[backend service]
+that provides details about a user given a `userId`.
+
+== Rating Backend
+
+A link:{sourceroot}servicetalk-examples/src/main/java/io/servicetalk/examples/http/service/composition/backends/RatingBackend.java[backend service]
+that provides ratings of an entity given an `entityId`.
+
+== Objective
+
+The objective is to demonstrate what will be the different ways in which these service calls can be composed to provide
+the final materialized result.
+
+== Gateway Endpoints
+
+In this example we provide three different endpoints on the gateway server to also demonstrate how different programming
+paradigms can co-exist in a single HTTP server.
+
+=== Asynchronous streaming
+
+This is an link:{sourceroot}servicetalk-examples/src/main/java/io/servicetalk/examples/http/service/composition/StreamingGatewayService.java[endpoint]
+that streams `FullRecommendation` JSON.
+This is a simulation of a push based API that streams data back to the user as and when it is available.
+It queries the streaming recommendation endpoint of the recommendation backend described above.
+This endpoint is implemented as a fully asynchronous `HttpService` and can be queried using the following URI:
+
+----
+http://localhost:8080/recommendations/streaming?userId=1
+----
+
+=== Asynchronous aggregated
+
+This is an link:{sourceroot}servicetalk-examples/src/main/java/io/servicetalk/examples/http/service/composition/GatewayService.java[endpoint]
+that creates a single JSON array containing one or more
+``FullRecommendation``s. Although the result is a single JSON array, the elements of the array are still fetched from the
+other services asynchronously.
+
+This endpoint can be queried using the following endpoint:
+
+----
+http://localhost:8080/recommendations/aggregated?userId=1
+----
+
+=== Blocking
+
+This is an link:{sourceroot}servicetalk-examples/src/main/java/io/servicetalk/examples/http/service/composition/BlockingGatewayService.java[endpoint]
+that uses blocking Http client and server APIs to sequentially query
+all other services for each recommendation.
+
+This endpoint can be queried using the following endpoint:
+
+----
+http://localhost:8080/recommendations/blocking?userId=1
+----
+
+== Error Handling
+
+This example also demonstrates checking the response status, and handling unexpected status codes. Making a request
+with with the `simulateError` query parameter will trigger a `500 Internal Server Error` response from the appropriate backend
+service for the following values:
+- `recommendation-service`
+- `metadata-service`
+- `user-service`
+- `rating-service`
+
+eg.
+
+----
+http://localhost:8080/recommendations/aggregated?userId=1&simulateError=metadata-service
+----
+
+The Gateway services implement a "fallback" for the Rating service only, which can be seen as `-1` ratings in the
+response.

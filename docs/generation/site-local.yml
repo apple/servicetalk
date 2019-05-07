@@ -1,0 +1,45 @@
+runtime:
+  cache_dir: .cache
+site:
+  title: ServiceTalk Docs
+  start_page: servicetalk::index.adoc
+content:
+  # ordered alphabetically by component name (as specified in components' antora.yml)
+  # to reflect ordering of `site.components` used in .hbs
+  sources:
+    - url: ../../
+      branches: HEAD
+      start_path: docs
+    - url: ../../
+      branches: HEAD
+      start_path: servicetalk-examples/docs
+    - url: ../../
+      branches: HEAD
+      start_path: servicetalk-http-api/docs
+    - url: ../../
+      branches: HEAD
+      start_path: servicetalk-http-router-jersey/docs
+    - url: ../../
+      branches: HEAD
+      start_path: servicetalk-http-security-jersey/docs
+    - url: ../../
+      branches: HEAD
+      start_path: servicetalk-concurrent-api/docs
+    - url: ../../
+      branches: HEAD
+      start_path: servicetalk-data-jackson-jersey/docs
+asciidoc:
+  attributes:
+    experimental: ''
+    idprefix: ''
+    idseparator: '-'
+    sectlinks: ''
+    linkattrs: ''
+ui:
+  bundle:
+    url: https://gitlab.com/antora/antora-ui-default/-/jobs/artifacts/master/raw/build/ui-bundle.zip?job=bundle-stable
+    snapshot: true
+  supplemental_files: ./supplemental-ui
+output:
+  dir: .out/local
+  clean: true

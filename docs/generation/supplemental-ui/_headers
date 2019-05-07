@@ -1,0 +1,4 @@
+# set cache control header for fonts in _headers
+# could switch to /_/* and use indefinite age if we used a cache buster for asset URLs
+/_/font/*
+  Cache-Control: public,max-age=604800

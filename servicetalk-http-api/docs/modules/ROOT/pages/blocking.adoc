@@ -1,0 +1,173 @@
+include::ROOT:partial$component-attributes.adoc[]
+= Offloads in HTTP
+
+This document elaborates how HTTP APIs provide ways to influence offloading. General philosophy of writing blocking code
+while using ServiceTalk is explained xref:servicetalk::blocking.adoc[here] and is a recommended read.
+
+== An optimal execution strategy
+
+As described in xref:servicetalk::blocking.adoc#influencing-offloading-decisions[Influencing offloading decisions],
+ServiceTalk tries to calculate an optimal execution strategy based on various inputs. This section describes how this
+calculation is done for those inputs.
+
+=== Streaming core
+
+ServiceTalk core is based on the asynchronous streaming programming model and hence exposes different points where user
+code may interact with the event loop.
+
+(Refer to xref:servicetalk::blocking.adoc#user-code-and-eventloop[User code and Eventloop] to understand data and control
+signals terminology)
+
+==== Client
+
+Considering the request method for
+link:{sourceroot}servicetalk-http-api/src/main/java/io/servicetalk/http/api/StreamingHttpClient.java[`StreamingHttpClient`]
+
+```java
+Single<StreamingHttpResponse> request(StreamingHttpRequest request);
+```
+we have the following points that require offloads:
+
+. Data signals for the response `Single`.
+. Data signals for the response payload `Publisher`.
+. Control signals for the request payload `Publisher`.
+
+==== Server
+
+Considering the handle method for
+link:{sourceroot}servicetalk-http-api/src/main/java/io/servicetalk/http/api/StreamingHttpService.java[`StreamingHttpService`]
+
+```java
+Single<StreamingHttpResponse> handle(HttpServiceContext ctx, StreamingHttpRequest request,
+                                     StreamingHttpResponseFactory responseFactory);
+```
+we have the following points that require offloads:
+
+. Call to `handle()`
+. Control signals for the response `Single`.
+. Control signals for the response payload `Publisher`.
+. Data signals for the request payload `Publisher`.
+
+=== Programming models
+
+xref:servicetalk::index.adoc#programming-paradigms[Programming model] plays an important role in determining an appropriate
+offloading strategy since they naturally omit some paths that user code can not interact with the event loop. The
+following matrix elaborates the paths which require offloading with a (✓) and which do not with a (✗).
+
+==== Client
+
+|===
+^|Programming model ^|response `Single` (data) ^| response `Publisher` (data) ^| request `Publisher` (control)
+
+|xref:index.adoc#client-asynchronous-and-streaming[asynchronous and streaming]
+^|✓
+^|✓
+^|✓
+
+|xref:index.adoc#client-asynchronous-and-aggregated[asynchronous and aggregated]
+^|✓
+^|✗
+^|✗
+
+|xref:index.adoc#client-blocking-and-streaming[blocking and streaming]
+^|✗
+^|✗
+^|✓
+
+|xref:index.adoc#client-blocking-and-aggregated[blocking and aggregated]
+^|✗
+^|✗
+^|✗
+|===
+
+==== Server
+|===
+^|Programming model ^|`handle()` ^|response `Single` (control) ^| response `Publisher` (control) ^| request `Publisher` (data)
+
+|xref:index.adoc#asynchronous-and-streaming[asynchronous and streaming]
+^|✓
+^|✓
+^|✓
+^|✓
+
+|xref:index.adoc#asynchronous-and-aggregated[asynchronous and aggregated]
+^|✓
+^|✓
+^|✗
+^|✗
+
+|xref:index.adoc#blocking-and-streaming[blocking and streaming]
+^|✓
+^|✗
+^|✗
+^|✗
+
+|xref:index.adoc#blocking-and-aggregated[blocking and aggregated]
+^|✓
+^|✗
+^|✗
+^|✗
+|===
+
+=== User code
+
+Any user code that is added to the processing of client/server is considered suspicious by ServiceTalk and hence any
+offloading optimizations as described above may get de-optimized. Examples of such code are:
+
+. link:{sourceroot}servicetalk-http-api/src/main/java/io/servicetalk/http/api/StreamingHttpClientFilterFactory.java[Client filter factory].
+. link:{sourceroot}servicetalk-client-api/src/main/java/io/servicetalk/client/api/LoadBalancerFactory.java[Load balancer factory].
+. link:{sourceroot}servicetalk-http-api/src/main/java/io/servicetalk/http/api/StreamingHttpConnectionFilterFactory.java[Connection filter factory].
+. link:{sourceroot}servicetalk-http-api/src/main/java/io/servicetalk/http/api/StreamingHttpServiceFilterFactory.java[Service filter factory].
+. link:{sourceroot}servicetalk-transport-api/src/main/java/io/servicetalk/transport/api/ConnectionAcceptorFactory.java[Connection acceptor factory].
+. link:{sourceroot}servicetalk-http-api/src/main/java/io/servicetalk/http/api/StreamingHttpService.java[Service].
+
+However, these entities do not always contain blocking code. If these entities and the entities they create which are
+invoked by ServiceTalk do not contain any blocking code, then they can opt-in to the offload optimization by
+implementing
+link:{sourceroot}servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpExecutionStrategyInfluencer.java[`HttpExecutionStrategyInfluencer`].
+If they do, ServiceTalk will include these entities in the process of calculating the optimized offload strategy.
+ServiceTalk provided filters follow this model themselves, eg:
+link:{sourceroot}servicetalk-opentracing-http/src/main/java/io/servicetalk/opentracing/http/TracingHttpRequesterFilter.java[`TracingHttpRequesterFilter`]
+and link:{sourceroot}servicetalk-http-utils/src/main/java/io/servicetalk/http/utils/RedirectingHttpRequesterFilter.java[`RedirectingHttpRequesterFilter`].
+
+== Overriding execution strategy
+
+As elaborated xref:servicetalk::blocking.adoc#opt-in-to-run-on-event-loop[here], ServiceTalk supports overriding
+execution strategy for each request. This helps users to avoid complexity of writing non-blocking code for cases when
+it is not required.
+
+=== Client
+
+Each method on the client that interacts with the event loop, comes with an overload that takes an
+link:{sourceroot}servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpExecutionStrategy.java[`HttpExecutionStrategy`]. Users can pass any
+strategy to these methods and that strategy will be used for that request. This can be used to make requests, processing
+of which blocks and the requests, processing of which is completely asynchronous on the same client. eg:
+
+[source,java]
+----
+// Processing of this request does not have any blocking code
+client.request(HttpExecutionStrategies.noOffloadsStrategy(), client.get("/non-blocking"));
+
+// Processing of this request has blocking code
+client.request(client.get("/blocking"))
+        .map(resp -> aBlockingCall());
+----
+
+=== Server
+
+ServiceTalk only associates a single service with an HTTP server but it additionally provides ways to do routing from
+within a service. A xref:servicetalk-http-router-jersey::index.adoc[Jersey router] is one such router which
+provides ways to specify different
+xref:servicetalk-http-router-jersey::index.adoc#execution-strategies[execution strategies] per route.
+
+=== Global override
+
+In addition to overriding the execution strategy per request/route, one can also specify a strategy for a client/server
+using the respective builders.
+
+[source,java]
+----
+aBuilder.executionStrategy(HttpExecutionStrategies.noOffloadsStrategy());
+----
+
+This strategy will be used for all requests/routes that do not explicitly specify a strategy.

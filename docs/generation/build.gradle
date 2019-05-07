@@ -1,0 +1,51 @@
+buildscript {
+  ext.isCiBuild = System.getenv("CI") != null
+  ext.isReleaseBuild = System.getProperty("releaseBuild") != null
+
+  dependencies {
+    classpath "org.jsoup:jsoup:$jsoupVersion"
+  }
+}
+
+plugins {
+  id "com.moowork.node" version "1.2.0"
+}
+
+apply plugin: "base"
+apply plugin: "idea"
+
+// make Jsoup class available to `validateSite.gradle`
+// (cannot easily declare the jsoup buildscript dependency there due to how we define buildscript repos in ~/.gradle/init.gradle)
+ext.Jsoup = org.jsoup.Jsoup
+
+buildDir = ".out"
+
+node {
+  version = "8.12.0" // LTS
+
+  // CI build uses node from docker image
+  download = !isCiBuild
+}
+
+task installAntora(type: NpmTask) {
+  onlyIf {
+    // speed up local interactive builds
+    def executable = "node_modules/@antora/cli/bin/antora"
+    !file(executable).exists() || (executable + " -v").execute().text.trim() != antoraVersion
+  }
+
+  args = [
+      "install",
+      "@antora/cli@$antoraVersion",
+      "@antora/site-generator-default@$antoraVersion"]
+}
+
+apply from: "$projectDir/gradle/buildSite.gradle"
+apply from: "$projectDir/gradle/validateSite.gradle"
+
+idea {
+  module {
+    excludeDirs += [file(".cache"), file(".gradle"), file(".idea"), file("node_modules")]
+  }
+}
+tasks.idea.dependsOn(tasks.cleanIdea)
