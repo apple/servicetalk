@@ -250,7 +250,8 @@ final class SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> extends Subscr
                             newSubscriber.onError((Throwable) maybeSubscriber);
                         } else {
                             // Existing subscriber or terminal event consumed by other subscriber (COMPLETED_DELIVERED)
-                            newSubscriber.onError(new DuplicateSubscribeException(maybeSubscriber, newSubscriber));
+                            newSubscriber.onError(new DuplicateSubscribeException(maybeSubscriber, newSubscriber,
+                                    "HTTP request/response payload can only be subscribed to once"));
                         }
                     }
                 }

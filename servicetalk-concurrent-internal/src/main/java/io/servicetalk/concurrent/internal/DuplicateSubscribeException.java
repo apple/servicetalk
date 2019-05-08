@@ -33,4 +33,17 @@ public final class DuplicateSubscribeException extends RejectedSubscribeExceptio
         super("Duplicate subscribes are not supported. Existing: " + existingSubscriber + " Attempted: " +
                 attemptedSubscriber);
     }
+
+    /**
+     * Create a new instance.
+     * @param existingSubscriber The existing subscriber, or state that prevented the subscribe from completing.
+     * @param attemptedSubscriber The subscriber which failed to subscribe.
+     * @param message An optional message clarifying the situation.
+     */
+    public DuplicateSubscribeException(@Nullable Object existingSubscriber,
+                                       Object attemptedSubscriber,
+                                       String message) {
+        super("Duplicate subscribes are not supported. Existing: " + existingSubscriber +
+                " Attempted: " + attemptedSubscriber + ": " + message);
+    }
 }
