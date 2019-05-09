@@ -16,7 +16,6 @@
 package io.servicetalk.http.utils;
 
 import io.servicetalk.concurrent.api.Executor;
-import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
@@ -74,9 +73,7 @@ public final class TimeoutHttpRequesterFilter implements StreamingHttpClientFilt
     }
 
     @Override
-    public StreamingHttpClientFilter create(
-            final FilterableStreamingHttpClient client,
-            final Publisher<Object> lbEvents) {
+    public StreamingHttpClientFilter create(final FilterableStreamingHttpClient client) {
         return new StreamingHttpClientFilter(client) {
             @Override
             protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,

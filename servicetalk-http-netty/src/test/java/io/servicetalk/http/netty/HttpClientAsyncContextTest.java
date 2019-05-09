@@ -86,8 +86,8 @@ public class HttpClientAsyncContextTest {
             final boolean useImmediate, final Queue<Throwable> errorQueue, final ServerContext serverContext) {
         SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> clientBuilder = HttpClients.forSingleAddress(
                 serverHostAndPort(serverContext))
-                .appendClientFilter((c, lbEvents) -> new TestStreamingHttpClientFilter(c, errorQueue))
-                .appendClientFilter((c, lbEvents) -> new TestStreamingHttpClientFilter(c, errorQueue));
+                .appendClientFilter(c -> new TestStreamingHttpClientFilter(c, errorQueue))
+                .appendClientFilter(c -> new TestStreamingHttpClientFilter(c, errorQueue));
         if (useImmediate) {
             clientBuilder.executionStrategy(HttpExecutionStrategies.noOffloadsStrategy());
         }

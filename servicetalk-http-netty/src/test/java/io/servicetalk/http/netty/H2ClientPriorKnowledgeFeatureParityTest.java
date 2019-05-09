@@ -437,7 +437,7 @@ public class H2ClientPriorKnowledgeFeatureParityTest {
         final Queue<Throwable> errorQueue = new ConcurrentLinkedQueue<>();
         try (BlockingHttpClient client = forSingleAddress(HostAndPort.of(serverAddress))
                 .h2PriorKnowledge(h2PriorKnowledge).executionStrategy(clientExecutionStrategy)
-                .appendClientFilter((client2, lbEvents) -> new StreamingHttpClientFilter(client2) {
+                .appendClientFilter(client2 -> new StreamingHttpClientFilter(client2) {
                     @Override
                     protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                                     final HttpExecutionStrategy strategy,

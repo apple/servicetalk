@@ -15,8 +15,6 @@
  */
 package io.servicetalk.http.api;
 
-import io.servicetalk.concurrent.api.Publisher;
-
 import java.util.function.Predicate;
 
 import static java.util.Objects.requireNonNull;
@@ -39,13 +37,12 @@ final class StrategyInfluencerAwareConversions {
                 }
 
                 @Override
-                public StreamingHttpClientFilter create(final FilterableStreamingHttpClient client,
-                                                        final Publisher<Object> lbEvents) {
-                    return original.create(address, client, lbEvents);
+                public StreamingHttpClientFilter create(final FilterableStreamingHttpClient client) {
+                    return original.create(address, client);
                 }
             };
         }
-        return (client, lbEvents) -> new StreamingHttpClientFilter(original.create(address, client, lbEvents));
+        return client -> new StreamingHttpClientFilter(original.create(address, client));
     }
 
     static <U> MultiAddressHttpClientFilterFactory<U> toMultiAddressClientFactory(
@@ -59,13 +56,12 @@ final class StrategyInfluencerAwareConversions {
                 }
 
                 @Override
-                public StreamingHttpClientFilter create(final U address, final FilterableStreamingHttpClient client,
-                                                        final Publisher<Object> lbEvents) {
-                    return new StreamingHttpClientFilter(original.create(client, lbEvents));
+                public StreamingHttpClientFilter create(final U address, final FilterableStreamingHttpClient client) {
+                    return new StreamingHttpClientFilter(original.create(client));
                 }
             };
         }
-        return (address, client, lbEvents) -> new StreamingHttpClientFilter(original.create(client, lbEvents));
+        return (address, client) -> new StreamingHttpClientFilter(original.create(client));
     }
 
     static StreamingHttpServiceFilterFactory toConditionalServiceFilterFactory(
@@ -126,14 +122,12 @@ final class StrategyInfluencerAwareConversions {
                 }
 
                 @Override
-                public StreamingHttpClientFilter create(final FilterableStreamingHttpClient client,
-                                                        final Publisher<Object> lbEvents) {
-                    return new ConditionalHttpClientFilter(predicate, original.create(client, lbEvents), client);
+                public StreamingHttpClientFilter create(final FilterableStreamingHttpClient client) {
+                    return new ConditionalHttpClientFilter(predicate, original.create(client), client);
                 }
             };
         }
-        return (client, lbEvents) ->
-                new ConditionalHttpClientFilter(predicate, original.create(client, lbEvents), client);
+        return client -> new ConditionalHttpClientFilter(predicate, original.create(client), client);
     }
 
     static <U> MultiAddressHttpClientFilterFactory<U> toMultiAddressConditionalFilterFactory(
@@ -152,15 +146,13 @@ final class StrategyInfluencerAwareConversions {
 
                 @Override
                 public StreamingHttpClientFilter create(final U address,
-                                                        final FilterableStreamingHttpClient client,
-                                                        final Publisher<Object> lbEvents) {
-                    return new ConditionalHttpClientFilter(predicate,
-                            original.create(address, client, lbEvents), client);
+                                                        final FilterableStreamingHttpClient client) {
+                    return new ConditionalHttpClientFilter(predicate, original.create(address, client), client);
                 }
            };
         }
-        return (address, client, lbEvents) ->
-                new ConditionalHttpClientFilter(predicate, original.create(address, client, lbEvents), client);
+        return (address, client) ->
+                new ConditionalHttpClientFilter(predicate, original.create(address, client), client);
     }
 
     interface StrategyInfluencingStreamingServiceFilterFactory

@@ -66,7 +66,6 @@ import javax.annotation.Nullable;
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.AsyncCloseables.toListenableAsyncCloseable;
-import static io.servicetalk.concurrent.api.Publisher.empty;
 import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.http.api.HttpHeaderNames.HOST;
 import static io.servicetalk.http.api.SslConfigProviders.plainByDefault;
@@ -122,7 +121,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder extends MultiAddressHttpClie
 
             // Need to wrap the top level client (group) in order for non-relative redirects to work
             urlClient = maxRedirects <= 0 ? urlClient :
-                    new RedirectingHttpRequesterFilter(false, maxRedirects).create(urlClient, empty());
+                    new RedirectingHttpRequesterFilter(false, maxRedirects).create(urlClient);
 
             return new FilterableClientToClient(urlClient, buildContext.executionContext.executionStrategy(),
                     buildContext.builder.buildStrategyInfluencerForClient(

@@ -68,8 +68,7 @@ public final class RetryingHttpRequesterFilter implements StreamingHttpClientFil
     }
 
     @Override
-    public StreamingHttpClientFilter create(final FilterableStreamingHttpClient client,
-                                            final Publisher<Object> lbEvents) {
+    public StreamingHttpClientFilter create(final FilterableStreamingHttpClient client) {
         return new StreamingHttpClientFilter(client) {
 
             private final BiIntFunction<Throwable, Completable> retryStrategy =

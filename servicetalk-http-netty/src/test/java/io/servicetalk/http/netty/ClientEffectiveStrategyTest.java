@@ -563,7 +563,7 @@ public class ClientEffectiveStrategyTest {
                         }
                         if (addFilter) {
                             // Here since we do not override mergeForEffectiveStrategy, it will default to offload-all.
-                            clientBuilder.appendClientFilter((client, __) -> new StreamingHttpClientFilter(client) { });
+                            clientBuilder.appendClientFilter(client -> new StreamingHttpClientFilter(client) { });
                         }
                     });
         }
@@ -585,8 +585,7 @@ public class ClientEffectiveStrategyTest {
         }
 
         @Override
-        public StreamingHttpClientFilter create(final FilterableStreamingHttpClient client,
-                                                final Publisher<Object> lbEvents) {
+        public StreamingHttpClientFilter create(final FilterableStreamingHttpClient client) {
             return new StreamingHttpClientFilter(client) {
 
                 @Override

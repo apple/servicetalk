@@ -15,7 +15,6 @@
  */
 package io.servicetalk.opentracing.http;
 
-import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
@@ -72,8 +71,7 @@ public class TracingHttpRequesterFilter extends AbstractTracingHttpFilter
     }
 
     @Override
-    public final StreamingHttpClientFilter create(final FilterableStreamingHttpClient client,
-                                                  final Publisher<Object> lbEvents) {
+    public final StreamingHttpClientFilter create(final FilterableStreamingHttpClient client) {
         return new StreamingHttpClientFilter(client) {
             @Override
             protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,

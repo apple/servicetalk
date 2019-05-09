@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,9 +15,6 @@
  */
 package io.servicetalk.http.api;
 
-import io.servicetalk.client.api.LoadBalancer;
-import io.servicetalk.concurrent.api.Publisher;
-
 import static io.servicetalk.http.api.StrategyInfluencerAwareConversions.toMultiAddressClientFactory;
 import static java.util.Objects.requireNonNull;
 
@@ -31,10 +28,9 @@ public interface StreamingHttpClientFilterFactory {
      * Creates a {@link StreamingHttpClientFilter} using the provided {@link StreamingHttpClientFilter}.
      *
      * @param client {@link FilterableStreamingHttpClient} to filter
-     * @param lbEvents the {@link LoadBalancer} events stream
      * @return {@link StreamingHttpClientFilter} using the provided {@link StreamingHttpClientFilter}.
      */
-    StreamingHttpClientFilter create(FilterableStreamingHttpClient client, Publisher<Object> lbEvents);
+    StreamingHttpClientFilter create(FilterableStreamingHttpClient client);
 
     /**
      * Returns a composed function that first applies the {@code before} function to its input, and then applies
@@ -54,7 +50,7 @@ public interface StreamingHttpClientFilterFactory {
      */
     default StreamingHttpClientFilterFactory append(StreamingHttpClientFilterFactory before) {
         requireNonNull(before);
-        return (client, lbEvents) -> create(before.create(client, lbEvents), lbEvents);
+        return client -> create(before.create(client));
     }
 
     /**
