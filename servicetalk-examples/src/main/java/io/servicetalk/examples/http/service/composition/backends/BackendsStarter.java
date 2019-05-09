@@ -40,6 +40,11 @@ import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
  */
 public final class BackendsStarter {
 
+    public static final String RECOMMENDATION_SERVICE_NAME = "recommendation-service";
+    public static final String METADATA_SERVICE_NAME = "metadata-service";
+    public static final String USER_SERVICE_NAME = "user-service";
+    public static final String RATING_SERVICE_NAME = "rating-service";
+
     private BackendsStarter() {
         // No instances.
     }
@@ -62,22 +67,22 @@ public final class BackendsStarter {
 
             BackendStarter starter = new BackendStarter(ioExecutor, resources);
             final ServerContext recommendationService =
-                    starter.start(RECOMMENDATIONS_BACKEND_ADDRESS.port(), "recommendation-service",
+                    starter.start(RECOMMENDATIONS_BACKEND_ADDRESS.port(), RECOMMENDATION_SERVICE_NAME,
                             newRecommendationsService(httpSerializer));
             allServicesOnClose = allServicesOnClose.merge(recommendationService.onClose());
 
             final ServerContext metadataService =
-                    starter.start(METADATA_BACKEND_ADDRESS.port(), "metadata-service",
+                    starter.start(METADATA_BACKEND_ADDRESS.port(), METADATA_SERVICE_NAME,
                             newMetadataService(httpSerializer));
             allServicesOnClose = allServicesOnClose.merge(metadataService.onClose());
 
             final ServerContext userService =
-                    starter.start(USER_BACKEND_ADDRESS.port(), "user-service",
+                    starter.start(USER_BACKEND_ADDRESS.port(), USER_SERVICE_NAME,
                             newUserService(httpSerializer));
             allServicesOnClose = allServicesOnClose.merge(userService.onClose());
 
             final ServerContext ratingService =
-                    starter.start(RATINGS_BACKEND_ADDRESS.port(), "rating-service",
+                    starter.start(RATINGS_BACKEND_ADDRESS.port(), RATING_SERVICE_NAME,
                             newRatingService(httpSerializer));
             allServicesOnClose = allServicesOnClose.merge(ratingService.onClose());
 

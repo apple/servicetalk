@@ -64,12 +64,10 @@ final class RecommendationBackend {
         return routerBuilder.buildStreaming();
     }
 
-    private static Recommendation newRecommendation() {
+    private static Recommendation newRecommendation(final String userId) {
         final ThreadLocalRandom random = ThreadLocalRandom.current();
         // Generate random IDs for recommended entity IDs
-        final int entityId = random.nextInt();
-        // Generate random ID for recommended by user Id.
-        return new Recommendation(valueOf(entityId), valueOf(random.nextInt(1000)));
+        return new Recommendation(valueOf(random.nextInt()), valueOf(random.nextInt(1000)));
     }
 
     private static final class StreamingService implements StreamingHttpService {
@@ -93,7 +91,7 @@ final class RecommendationBackend {
                     // We use defer() here so that we do not eagerly create a Recommendation which will get emitted for
                     // every schedule. defer() helps us lazily create a new Recommendation object every time we the
                     // scheduler emits a tick.
-                    .concat(defer(() -> succeeded(newRecommendation())))
+                    .concat(defer(() -> succeeded(newRecommendation(userId))))
                     // Since schedule() only schedules a single tick, we repeat the ticks to generate infinite
                     // recommendations. This simulates a push based API which pushes new recommendations as and when
                     // they are available.
@@ -126,7 +124,7 @@ final class RecommendationBackend {
             }
             List<Recommendation> recommendations = new ArrayList<>(expectedEntitiesCount);
             for (int i = 0; i < expectedEntitiesCount; i++) {
-                recommendations.add(newRecommendation());
+                recommendations.add(newRecommendation(userId));
             }
 
             // Serialize the Recommendation list to a single Buffer containing JSON and use it as the response payload.

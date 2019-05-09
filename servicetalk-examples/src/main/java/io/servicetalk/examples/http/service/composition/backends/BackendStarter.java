@@ -46,6 +46,7 @@ final class BackendStarter {
         // Starting the server will start listening for incoming client requests.
         final ServerContext ctx = HttpServers.forPort(listenPort)
                 .ioExecutor(ioExecutor)
+                .appendServiceFilter(new ErrorResponseGeneratingServiceFilter(name))
                 .listenStreamingAndAwait(service);
         LOGGER.info("Started {} listening on {}.", name, ctx.listenAddress());
         return ctx;
