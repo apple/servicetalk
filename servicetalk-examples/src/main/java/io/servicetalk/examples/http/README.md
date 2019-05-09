@@ -113,6 +113,9 @@ Using the following classes:
 - [MetaDataDemoServer](metadata/MetaDataDemoServer.java) - A server that provides greetings in various languages.
 - [MetaDataDemoClient](metadata/MetaDataDemoClient.java) - A client that requests greetings in various languages.
 
+This example uses the [blocking + aggregated](#blocking--aggregated) API, as the metadata API is the same across
+all the HTTP APIs.
+
 ### Service Composition
 
 An advanced example which demonstrates a composition of various ServiceTalks services in one application.

@@ -17,7 +17,6 @@ package io.servicetalk.examples.http.metadata;
 
 import io.servicetalk.http.netty.HttpServers;
 
-import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LANGUAGE;
 import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
 
@@ -40,7 +39,7 @@ public final class MetaDataDemoServer {
 
     public static void main(String[] args) throws Exception {
         HttpServers.forPort(8080)
-                .listenAndAwait((ctx, request, responseFactory) -> {
+                .listenBlockingAndAwait((ctx, request, responseFactory) -> {
                     String languageCode = request.queryParameter("language");
                     final String helloText;
                     if ("en".equals(languageCode)) {
@@ -53,13 +52,13 @@ public final class MetaDataDemoServer {
                         // in the client.
                         languageCode = "garbage";
                     } else {
-                        return succeeded(responseFactory.badRequest());
+                        return responseFactory.badRequest();
                     }
-                    return succeeded(responseFactory.ok()
+                    return responseFactory.ok()
                             // Return the language in upper case, to demonstrate the case-insensitive compare
                             // in the client.
                             .addHeader(CONTENT_LANGUAGE, languageCode.toUpperCase())
-                            .payloadBody(helloText, textSerializer()));
+                            .payloadBody(helloText, textSerializer());
                 })
                 .awaitShutdown();
     }

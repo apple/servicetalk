@@ -15,12 +15,11 @@
  */
 package io.servicetalk.examples.http.metadata;
 
-import io.servicetalk.http.api.HttpClient;
+import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.HttpRequest;
+import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.netty.HttpClients;
 
-import static io.servicetalk.concurrent.api.Single.failed;
-import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LANGUAGE;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.HttpSerializationProviders.textDeserializer;
@@ -45,29 +44,24 @@ public final class MetaDataDemoClient {
         // Try "broken" to demonstrate the incorrect language response error handling.
         // Try anything else to demonstrate incorrect response status error handling.
 
-        try (HttpClient client = HttpClients.forSingleAddress("localhost", 8080).build()) {
-            final HttpRequest httpRequest = client.get("/sayHello")
+        try (BlockingHttpClient client = HttpClients.forSingleAddress("localhost", 8080).buildBlocking()) {
+            HttpRequest httpRequest = client.get("/sayHello")
                     .addQueryParameters(LANGUAGE_NAME, language);
-            String responseBody = client.request(httpRequest)
-                    .flatMap(response -> {
-                        // The `BiFunction` to `toString` can be used to print all or some header values without
-                        // redaction/filtering.
-                        System.out.println(response.toString((name, value) -> value));
+            HttpResponse response = client.request(httpRequest);
+            // The `BiFunction` to `toString` can be used to print all or some header values without
+            // redaction/filtering.
+            System.out.println(response.toString((name, value) -> value));
 
-                        if (!response.status().equals(OK)) {
-                            return failed(new RuntimeException("Bad response status: " + response.status()));
-                        }
-                        // Case insensitively check if the expected language is present.
-                        if (!response.headers().contains(CONTENT_LANGUAGE, language, true)) {
-                            return failed(new RuntimeException("Incorrect language: " +
-                                    response.headers().get(CONTENT_LANGUAGE)));
-                        }
-                        return succeeded(response.payloadBody(textDeserializer()));
-                    })
-                    // This example is demonstrating asynchronous execution, but needs to prevent the main thread from
-                    // exiting before the response has been processed. This isn't typical usage for a streaming API but
-                    // is useful for demonstration purposes.
-                    .toFuture().get();
+            if (!response.status().equals(OK)) {
+                throw new RuntimeException("Bad response status: " + response.status());
+            }
+            // Case insensitively check if the expected language is present.
+            if (!response.headers().contains(CONTENT_LANGUAGE, language, true)) {
+                throw new RuntimeException("Incorrect language: " +
+                        response.headers().get(CONTENT_LANGUAGE));
+            }
+
+            String responseBody = response.payloadBody(textDeserializer());
             System.out.println("Response body: " + responseBody);
         }
     }
