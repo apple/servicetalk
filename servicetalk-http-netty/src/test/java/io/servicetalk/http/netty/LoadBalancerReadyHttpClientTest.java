@@ -187,7 +187,6 @@ public class LoadBalancerReadyHttpClientTest {
     }
 
     private static StreamingHttpResponse newOkResponse() {
-        return StreamingHttpResponses.newResponse(OK, HTTP_1_1, INSTANCE.newHeaders(), INSTANCE.newTrailers(),
-                DEFAULT_ALLOCATOR);
+        return StreamingHttpResponses.newResponse(OK, HTTP_1_1, INSTANCE.newHeaders(), DEFAULT_ALLOCATOR, INSTANCE);
     }
 }

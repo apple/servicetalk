@@ -20,7 +20,9 @@ import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.HttpResponseFactory;
 import io.servicetalk.http.api.HttpResponseStatus;
-import io.servicetalk.http.api.HttpResponses;
+import io.servicetalk.http.api.StreamingHttpResponses;
+
+import java.util.concurrent.ExecutionException;
 
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 
@@ -35,7 +37,14 @@ final class DefaultHttpResponseFactory implements HttpResponseFactory {
 
     @Override
     public HttpResponse newResponse(final HttpResponseStatus status) {
-        return HttpResponses.newResponse(status, HTTP_1_1, headersFactory.newHeaders(), headersFactory.newTrailers(),
-                allocator);
+        try {
+            return StreamingHttpResponses.newResponse(status, HTTP_1_1, headersFactory.newHeaders(), allocator,
+                    headersFactory).toResponse().toFuture().get();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException(e);
+        } catch (ExecutionException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

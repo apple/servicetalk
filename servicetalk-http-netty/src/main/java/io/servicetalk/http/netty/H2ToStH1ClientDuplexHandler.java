@@ -161,8 +161,7 @@ final class H2ToStH1ClientDuplexHandler extends ChannelDuplexHandler {
                 throw new IllegalArgumentException("a response must have " + STATUS + " header");
             } else {
                 StreamingHttpResponse response = newResponse(httpStatus, HTTP_2_0,
-                        h2HeadersToH1HeadersClient(h2Headers, httpStatus), headersFactory.newEmptyTrailers(),
-                        allocator);
+                        h2HeadersToH1HeadersClient(h2Headers, httpStatus), allocator, headersFactory);
                 ctx.fireChannelRead(response);
             }
         } else if (msg instanceof Http2DataFrame) {
@@ -192,7 +191,7 @@ final class H2ToStH1ClientDuplexHandler extends ChannelDuplexHandler {
             h2Headers.set(CONTENT_LENGTH, ZERO);
         }
         StreamingHttpResponse response = newResponse(httpStatus, HTTP_2_0,
-                h2HeadersToH1HeadersClient(h2Headers, httpStatus), headersFactory.newEmptyTrailers(), allocator);
+                h2HeadersToH1HeadersClient(h2Headers, httpStatus), allocator, headersFactory);
         ctx.fireChannelRead(response);
         ctx.fireChannelRead(headersFactory.newEmptyTrailers());
     }

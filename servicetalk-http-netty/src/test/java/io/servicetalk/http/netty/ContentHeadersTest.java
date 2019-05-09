@@ -28,17 +28,13 @@ import io.servicetalk.http.api.HttpPayloadWriter;
 import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpRequestMethod;
-import io.servicetalk.http.api.HttpRequests;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.http.api.HttpResponseStatus;
-import io.servicetalk.http.api.HttpResponses;
 import io.servicetalk.http.api.HttpServerBuilder;
 import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpRequest;
-import io.servicetalk.http.api.StreamingHttpRequests;
 import io.servicetalk.http.api.StreamingHttpResponse;
-import io.servicetalk.http.api.StreamingHttpResponses;
 import io.servicetalk.transport.api.ServerContext;
 
 import org.junit.Test;
@@ -72,6 +68,8 @@ import static io.servicetalk.http.api.HttpResponseStatus.INTERNAL_SERVER_ERROR;
 import static io.servicetalk.http.api.HttpResponseStatus.NO_CONTENT;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
+import static io.servicetalk.http.api.StreamingHttpRequests.newRequest;
+import static io.servicetalk.http.api.StreamingHttpResponses.newResponse;
 import static io.servicetalk.http.netty.AbstractNettyHttpServerTest.ExecutorSupplier.CACHED;
 import static io.servicetalk.http.netty.ContentHeadersTest.Expectation.HAVE_CONTENT_LENGTH;
 import static io.servicetalk.http.netty.ContentHeadersTest.Expectation.HAVE_CONTENT_LENGTH_ZERO;
@@ -332,26 +330,25 @@ public class ContentHeadersTest extends AbstractNettyHttpServerTest {
     }
 
     private static HttpRequest newAggregatedRequest(final HttpRequestMethod requestMethod) {
-        return HttpRequests.newRequest(requestMethod, "/", HTTP_1_1, headersFactory.newHeaders(),
-                headersFactory.newEmptyTrailers(), DEFAULT_ALLOCATOR)
-                .payloadBody(PAYLOAD, textSerializer());
+        HttpRequest req = awaitSingleIndefinitelyNonNull(newRequest(requestMethod, "/", HTTP_1_1,
+                headersFactory.newHeaders(), DEFAULT_ALLOCATOR, headersFactory).toRequest());
+        return requestMethod != TRACE ? req.payloadBody(PAYLOAD, textSerializer()) : req;
     }
 
     private static StreamingHttpRequest newStreamingRequest(final HttpRequestMethod requestMethod) {
-        return StreamingHttpRequests.newRequest(requestMethod, "/", HTTP_1_1, headersFactory.newHeaders(),
-                headersFactory.newEmptyTrailers(), DEFAULT_ALLOCATOR)
-                .payloadBody(from(PAYLOAD), textSerializer());
+        StreamingHttpRequest req = newRequest(requestMethod, "/", HTTP_1_1, headersFactory.newHeaders(),
+                DEFAULT_ALLOCATOR, headersFactory);
+        return requestMethod != TRACE ? req.payloadBody(from(PAYLOAD), textSerializer()) : req;
     }
 
     private static HttpResponse newAggregatedResponse(final HttpResponseStatus status) {
-        return HttpResponses.newResponse(status, HTTP_1_1, headersFactory.newHeaders(),
-                headersFactory.newEmptyTrailers(), DEFAULT_ALLOCATOR)
-                .payloadBody(PAYLOAD, textSerializer());
+        return awaitSingleIndefinitelyNonNull(newResponse(status, HTTP_1_1, headersFactory.newHeaders(),
+                DEFAULT_ALLOCATOR, headersFactory).toResponse()).payloadBody(PAYLOAD, textSerializer());
     }
 
     private static StreamingHttpResponse newStreamingResponse(final HttpResponseStatus status) {
-        return StreamingHttpResponses.newResponse(status, HTTP_1_1, headersFactory.newHeaders(),
-                headersFactory.newEmptyTrailers(), DEFAULT_ALLOCATOR)
+        return newResponse(status, HTTP_1_1, headersFactory.newHeaders(),
+                DEFAULT_ALLOCATOR, headersFactory)
                 .payloadBody(from(PAYLOAD), textSerializer());
     }
 

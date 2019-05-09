@@ -108,7 +108,7 @@ public class ConcurrentRequestsHttpConnectionFilterTest {
         when(conn.transportError()).thenReturn(Single.never());
         AbstractStreamingHttpConnection<NettyConnection> mockConnection =
                 new AbstractStreamingHttpConnection<NettyConnection>(conn,
-                        maxPipelinedReqeusts, executionContext, reqRespFactory) {
+                        maxPipelinedReqeusts, executionContext, reqRespFactory, DefaultHttpHeadersFactory.INSTANCE) {
                     private final AtomicInteger reqCount = new AtomicInteger(0);
 
                     @Override

@@ -31,8 +31,10 @@ import static io.servicetalk.http.api.CharSequences.contentEqualsIgnoreCase;
 import static io.servicetalk.http.api.CharSequences.indexOf;
 import static io.servicetalk.http.api.CharSequences.regionMatches;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
+import static io.servicetalk.http.api.HttpHeaderNames.TRANSFER_ENCODING;
 import static io.servicetalk.http.api.HttpHeaderValues.APPLICATION_X_WWW_FORM_URLENCODED;
 import static io.servicetalk.http.api.HttpHeaderValues.APPLICATION_X_WWW_FORM_URLENCODED_UTF_8;
+import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
 import static io.servicetalk.http.api.HttpHeaderValues.TEXT_PLAIN;
 import static io.servicetalk.http.api.HttpHeaderValues.TEXT_PLAIN_UTF_8;
 import static io.servicetalk.http.api.NetUtil.isValidIpV4Address;
@@ -139,6 +141,12 @@ public final class HeaderUtils {
             }
         }
         return result;
+    }
+
+    static void addChunkedEncoding(final HttpHeaders headers) {
+        if (!headers.contains(TRANSFER_ENCODING, CHUNKED, true)) {
+            headers.add(TRANSFER_ENCODING, CHUNKED);
+        }
     }
 
     /**

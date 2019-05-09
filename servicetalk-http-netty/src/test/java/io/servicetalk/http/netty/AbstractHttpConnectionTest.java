@@ -23,6 +23,8 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.ExecutionContextToHttpExecutionContext;
+import io.servicetalk.http.api.HttpHeaderNames;
+import io.servicetalk.http.api.HttpHeaderValues;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.HttpResponseMetaData;
@@ -56,7 +58,7 @@ import static io.servicetalk.http.api.HttpRequestMethod.GET;
 import static io.servicetalk.http.api.HttpResponseMetaDataFactory.newResponseMetaData;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.StreamingHttpRequests.newRequest;
-import static io.servicetalk.http.api.StreamingHttpRequests.newRequestWithTrailers;
+import static io.servicetalk.http.api.StreamingHttpRequests.newTransportRequest;
 import static io.servicetalk.transport.netty.internal.ExecutionContextRule.immediate;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
@@ -90,7 +92,7 @@ public final class AbstractHttpConnectionTest {
         MockStreamingHttpConnection(final NettyConnection<Object, Object> connection,
                                     final int maxPipelinedRequests) {
             super(connection, maxPipelinedRequests, new ExecutionContextToHttpExecutionContext(ctx, defaultStrategy()),
-                    reqRespFactory);
+                    reqRespFactory, headersFactory);
         }
 
         @Override
@@ -128,9 +130,11 @@ public final class AbstractHttpConnectionTest {
         Buffer chunk3 = allocator.fromAscii("payload");
         HttpHeaders trailers = headersFactory.newEmptyTrailers();
 
-        StreamingHttpRequest req = newRequestWithTrailers(GET, "/foo", HTTP_1_1,
-                headersFactory.newHeaders(),
-                allocator, from(chunk1, chunk2, chunk3, trailers));
+        HttpHeaders headers = headersFactory.newHeaders();
+        headers.add(HttpHeaderNames.TRANSFER_ENCODING, HttpHeaderValues.CHUNKED);
+        StreamingHttpRequest req = newTransportRequest(GET, "/foo", HTTP_1_1,
+                headers,
+                allocator, from(chunk1, chunk2, chunk3, trailers), headersFactory);
 
         HttpResponseMetaData respMeta = newResponseMetaData(HTTP_1_1, OK,
                 INSTANCE.newHeaders().add(CONTENT_TYPE, TEXT_PLAIN));
@@ -160,7 +164,7 @@ public final class AbstractHttpConnectionTest {
         Buffer chunk2 = allocator.fromAscii("payload");
 
         StreamingHttpRequest req = newRequest(GET, "/foo", HTTP_1_1, headersFactory.newHeaders(),
-                headersFactory.newEmptyTrailers(), allocator, from(chunk1, chunk2)); // NO chunk3 here!
+                allocator, headersFactory).payloadBody(from(chunk1, chunk2)); // NO chunk3 here!
 
         HttpResponseMetaData respMeta = newResponseMetaData(HTTP_1_1, OK,
                 headersFactory.newHeaders().add(CONTENT_TYPE, TEXT_PLAIN));

@@ -38,9 +38,10 @@ import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.safeOnError;
 import static io.servicetalk.http.api.BlockingUtils.blockingToCompletable;
+import static io.servicetalk.http.api.HeaderUtils.addChunkedEncoding;
 import static io.servicetalk.http.api.HttpExecutionStrategies.OFFLOAD_RECEIVE_META_STRATEGY;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
-import static io.servicetalk.http.api.StreamingHttpResponses.newResponseWithTrailers;
+import static io.servicetalk.http.api.StreamingHttpResponses.newTransportResponse;
 import static java.lang.Thread.currentThread;
 import static java.util.Objects.requireNonNull;
 
@@ -84,7 +85,9 @@ final class BlockingStreamingToStreamingService extends AbstractServiceAdapterHo
                     final Consumer<HttpResponseMetaData> sendMeta = (metaData) -> {
                         final StreamingHttpResponse result;
                         try {
-                            result = newResponseWithTrailers(metaData.status(), metaData.version(),
+                            // We always send trailers
+                            addChunkedEncoding(metaData.headers());
+                            result = newTransportResponse(metaData.status(), metaData.version(),
                                     metaData.headers(), ctx.executionContext().bufferAllocator(),
                                     fromSource(payloadProcessor).merge(payloadWriter.connect()
                                             .map(buffer -> (Object) buffer) // down cast to Object
@@ -99,7 +102,7 @@ final class BlockingStreamingToStreamingService extends AbstractServiceAdapterHo
                                                 public void cancel() {
                                                     tiCancellable.cancel();
                                                 }
-                                            }));
+                                            }), ctx.headersFactory());
                         } catch (Throwable t) {
                             subscriber.onError(t);
                             throw t;

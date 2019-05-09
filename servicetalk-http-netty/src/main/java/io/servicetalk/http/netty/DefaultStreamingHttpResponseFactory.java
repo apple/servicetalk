@@ -36,6 +36,6 @@ final class DefaultStreamingHttpResponseFactory implements StreamingHttpResponse
     @Override
     public StreamingHttpResponse newResponse(final HttpResponseStatus status) {
         return StreamingHttpResponses.newResponse(status, HTTP_1_1, headersFactory.newHeaders(),
-                headersFactory.newTrailers(), allocator);
+                allocator, headersFactory);
     }
 }

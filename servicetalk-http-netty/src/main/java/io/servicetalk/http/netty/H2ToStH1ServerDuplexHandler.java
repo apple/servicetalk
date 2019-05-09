@@ -130,8 +130,7 @@ final class H2ToStH1ServerDuplexHandler extends ChannelDuplexHandler {
                         PATH + " headers");
             } else {
                 StreamingHttpRequest request = newRequest(httpMethod, path, HTTP_2_0,
-                        h2HeadersToH1HeadersServer(h2Headers, httpMethod), headersFactory.newEmptyTrailers(),
-                        allocator);
+                        h2HeadersToH1HeadersServer(h2Headers, httpMethod), allocator, headersFactory);
                 ctx.fireChannelRead(request);
             }
         } else if (msg instanceof Http2DataFrame) {
@@ -155,7 +154,7 @@ final class H2ToStH1ServerDuplexHandler extends ChannelDuplexHandler {
             h2Headers.set(CONTENT_LENGTH, ZERO);
         }
         StreamingHttpRequest request = newRequest(httpMethod, path, HTTP_2_0,
-                h2HeadersToH1HeadersServer(h2Headers, httpMethod), headersFactory.newEmptyTrailers(), allocator);
+                h2HeadersToH1HeadersServer(h2Headers, httpMethod), allocator, headersFactory);
         ctx.fireChannelRead(request);
         ctx.fireChannelRead(headersFactory.newEmptyTrailers());
     }

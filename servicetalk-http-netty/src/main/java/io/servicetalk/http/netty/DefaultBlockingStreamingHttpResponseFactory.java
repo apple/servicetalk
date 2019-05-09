@@ -18,9 +18,9 @@ package io.servicetalk.http.netty;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.http.api.BlockingStreamingHttpResponse;
 import io.servicetalk.http.api.BlockingStreamingHttpResponseFactory;
-import io.servicetalk.http.api.BlockingStreamingHttpResponses;
 import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.HttpResponseStatus;
+import io.servicetalk.http.api.StreamingHttpResponses;
 
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 
@@ -36,7 +36,7 @@ final class DefaultBlockingStreamingHttpResponseFactory implements BlockingStrea
 
     @Override
     public BlockingStreamingHttpResponse newResponse(final HttpResponseStatus status) {
-        return BlockingStreamingHttpResponses.newResponse(status, HTTP_1_1, headersFactory.newHeaders(),
-                headersFactory.newTrailers(), allocator);
+        return StreamingHttpResponses.newResponse(status, HTTP_1_1, headersFactory.newHeaders(),
+                allocator, headersFactory).toBlockingStreamingResponse();
     }
 }

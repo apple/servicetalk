@@ -24,6 +24,7 @@ import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpEventKey;
 import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpExecutionStrategy;
+import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.http.api.StreamingHttpRequest;
@@ -34,13 +35,17 @@ import io.servicetalk.transport.netty.internal.NettyConnectionContext;
 
 import java.util.function.Function;
 
+import static io.servicetalk.concurrent.api.Publisher.defer;
 import static io.servicetalk.concurrent.api.Publisher.failed;
 import static io.servicetalk.concurrent.api.Publisher.from;
-import static io.servicetalk.http.api.StreamingHttpResponses.newResponseWithTrailers;
+import static io.servicetalk.concurrent.api.Single.succeeded;
+import static io.servicetalk.http.api.HttpApiConversions.mayHaveTrailers;
+import static io.servicetalk.http.api.StreamingHttpResponses.newTransportResponse;
 import static io.servicetalk.http.netty.HeaderUtils.addRequestTransferEncodingIfNecessary;
 import static io.servicetalk.http.netty.HeaderUtils.canAddRequestContentLength;
 import static io.servicetalk.http.netty.HeaderUtils.setRequestContentLength;
 import static java.util.Objects.requireNonNull;
+import static java.util.function.Function.identity;
 
 abstract class AbstractStreamingHttpConnection<CC extends NettyConnectionContext> implements
                        FilterableStreamingHttpConnection, Function<Publisher<Object>, Single<StreamingHttpResponse>> {
@@ -49,15 +54,17 @@ abstract class AbstractStreamingHttpConnection<CC extends NettyConnectionContext
     final HttpExecutionContext executionContext;
     private final Publisher<? extends ConsumableEvent<Integer>> maxConcurrencySetting;
     private final StreamingHttpRequestResponseFactory reqRespFactory;
+    private final HttpHeadersFactory headersFactory;
 
-    AbstractStreamingHttpConnection(
-            CC conn, final int maxPipelinedRequests, HttpExecutionContext executionContext,
-            StreamingHttpRequestResponseFactory reqRespFactory) {
+    AbstractStreamingHttpConnection(CC conn, final int maxPipelinedRequests, HttpExecutionContext executionContext,
+                                    StreamingHttpRequestResponseFactory reqRespFactory,
+                                    final HttpHeadersFactory headersFactory) {
         this.connection = requireNonNull(conn);
         this.executionContext = requireNonNull(executionContext);
         this.reqRespFactory = requireNonNull(reqRespFactory);
         maxConcurrencySetting = from(new IgnoreConsumedEvent<>(maxPipelinedRequests))
-                .concat(connection.onClosing()).concat(Single.succeeded(new IgnoreConsumedEvent<>(0)));
+                .concat(connection.onClosing()).concat(succeeded(new IgnoreConsumedEvent<>(0)));
+        this.headersFactory = headersFactory;
     }
 
     @Override
@@ -80,13 +87,20 @@ abstract class AbstractStreamingHttpConnection<CC extends NettyConnectionContext
     @Override
     public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
                                                  final StreamingHttpRequest request) {
+        Publisher<Object> flatRequest;
         // See https://tools.ietf.org/html/rfc7230#section-3.3.3
         if (canAddRequestContentLength(request)) {
-            return setRequestContentLength(request).flatMap(r ->
-                    strategy.invokeClient(executionContext.executor(), r, this));
+            flatRequest = defer(() -> setRequestContentLength(request, headersFactory)
+                    .flatMapPublisher(identity()).subscribeShareContext());
+        } else {
+            flatRequest = Publisher.<Object>from(request).concat(request.payloadBodyAndTrailers());
+            if (!mayHaveTrailers(request)) {
+                flatRequest = flatRequest.concat(succeeded(headersFactory.newEmptyTrailers()));
+            }
+            addRequestTransferEncodingIfNecessary(request);
         }
-        addRequestTransferEncodingIfNecessary(request);
-        return strategy.invokeClient(executionContext.executor(), request, this);
+
+        return strategy.invokeClient(executionContext.executor(), flatRequest, this);
     }
 
     @Override
@@ -97,8 +111,8 @@ abstract class AbstractStreamingHttpConnection<CC extends NettyConnectionContext
     protected abstract Publisher<Object> writeAndRead(Publisher<Object> stream);
 
     private StreamingHttpResponse newSplicedResponse(HttpResponseMetaData meta, Publisher<Object> pub) {
-        return newResponseWithTrailers(meta.status(), meta.version(), meta.headers(),
-                executionContext.bufferAllocator(), pub);
+        return newTransportResponse(meta.status(), meta.version(), meta.headers(),
+                executionContext.bufferAllocator(), pub, headersFactory);
     }
 
     @Override

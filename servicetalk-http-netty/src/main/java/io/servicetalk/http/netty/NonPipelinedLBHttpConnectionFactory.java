@@ -43,7 +43,7 @@ final class NonPipelinedLBHttpConnectionFactory<ResolvedAddress>
     public Single<StreamingHttpConnection> newConnection(final ResolvedAddress resolvedAddress) {
         return buildStreaming(executionContext, resolvedAddress, config).map(conn -> {
             FilterableStreamingHttpConnection mappedConnection = new NonPipelinedStreamingHttpConnection(conn,
-                    executionContext, reqRespFactory);
+                    executionContext, reqRespFactory, config.headersFactory());
 
             FilterableStreamingHttpConnection filteredConnection = connectionFilterFunction != null ?
                     connectionFilterFunction.create(mappedConnection) : mappedConnection;

@@ -191,8 +191,17 @@ public final class HttpApiConversions {
      * @return {@code true} is the request/response payload is safe to aggregate, {@code false} otherwise.
      */
     public static boolean isSafeToAggregate(HttpMetaData metadata) {
-        return (metadata instanceof EffectiveApiType) &&
-                ((EffectiveApiType) metadata).isAggregated();
+        return ((metadata instanceof PayloadInfo) && ((PayloadInfo) metadata).safeToAggregate());
+    }
+
+    /**
+     * Checks whether a request/response payload may have trailers.
+     *
+     * @param metadata The request/response to check.
+     * @return {@code true} is the request/response payload may have trailers, {@code false} otherwise.
+     */
+    public static boolean mayHaveTrailers(HttpMetaData metadata) {
+        return ((metadata instanceof PayloadInfo) && ((PayloadInfo) metadata).mayHaveTrailers());
     }
 
     /**

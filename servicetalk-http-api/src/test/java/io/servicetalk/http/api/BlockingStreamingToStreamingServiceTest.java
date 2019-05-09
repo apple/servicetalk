@@ -22,6 +22,7 @@ import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.ExecutorRule;
+import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.HttpApiConversions.ServiceAdapterHolder;
 import io.servicetalk.oio.api.PayloadWriter;
@@ -49,8 +50,8 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.ExecutorRule.newRule;
+import static io.servicetalk.concurrent.api.Publisher.failed;
 import static io.servicetalk.concurrent.api.Publisher.from;
-import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.concurrent.internal.PlatformDependent.throwException;
@@ -450,7 +451,9 @@ public class BlockingStreamingToStreamingServiceTest {
 
         Collection<Object> responseCollection = holder.serviceInvocationStrategy()
                 .invokeService(executorRule.executor(), request,
-                        req -> holder.adaptor().handle(mockCtx, req, reqRespFactory), (t, e) -> failed(t))
+                        req -> holder.adaptor().handle(mockCtx, req, reqRespFactory)
+                                .flatMapPublisher(response -> Publisher.<Object>from(response)
+                                        .concat(response.payloadBodyAndTrailers())), (t, e) -> failed(t))
                 .toFuture().get();
 
         return new ArrayList<>(responseCollection);
@@ -489,7 +492,9 @@ public class BlockingStreamingToStreamingServiceTest {
     }
 
     private static void assertTrailer(CharSequence expectedTrailer, CharSequence expectedValue, List<Object> response) {
-        HttpHeaders trailers = (HttpHeaders) response.get(response.size() - 1);
+        Object lastItem = response.get(response.size() - 1);
+        assertThat("Unexpected item in the flattened response.", lastItem, is(instanceOf(HttpHeaders.class)));
+        HttpHeaders trailers = (HttpHeaders) lastItem;
         assertThat(trailers, is(notNullValue()));
         assertThat(trailers.contains(expectedTrailer, expectedValue), is(true));
     }

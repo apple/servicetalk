@@ -68,6 +68,7 @@ import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.parseBoolean;
 import static java.lang.Thread.NORM_PRIORITY;
 import static java.nio.charset.StandardCharsets.US_ASCII;
+import static java.util.Objects.requireNonNull;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
@@ -243,6 +244,14 @@ public abstract class AbstractNettyHttpServerTest {
     static List<String> getBodyAsListOfStrings(final StreamingHttpResponse response)
             throws ExecutionException, InterruptedException {
         return awaitIndefinitelyNonNull(response.payloadBody().map(c -> c.toString(US_ASCII)));
+    }
+
+    static <T> T awaitSingleIndefinitelyNonNull(Single<T> single) {
+        try {
+            return requireNonNull(single.toFuture().get());
+        } catch (InterruptedException | ExecutionException e) {
+            throw new AssertionError(e);
+        }
     }
 
     void assertConnectionClosed() throws Exception {

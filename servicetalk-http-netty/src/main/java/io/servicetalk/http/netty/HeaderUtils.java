@@ -20,6 +20,7 @@ import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.CharSequences;
 import io.servicetalk.http.api.HttpHeaders;
+import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.HttpMetaData;
 import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.StreamingHttpRequest;
@@ -31,7 +32,10 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
+import static io.servicetalk.concurrent.api.Publisher.from;
+import static io.servicetalk.concurrent.api.Publisher.fromIterable;
 import static io.servicetalk.http.api.HttpApiConversions.isSafeToAggregate;
+import static io.servicetalk.http.api.HttpApiConversions.mayHaveTrailers;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderNames.TRANSFER_ENCODING;
 import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
@@ -73,10 +77,7 @@ final class HeaderUtils {
         if (!canAddContentLength(request)) {
             return false;
         }
-        final HttpRequestMethod requestMethod = request.method();
-        // A client MUST NOT send a message body in a TRACE request.
-        // https://tools.ietf.org/html/rfc7231#section-4.3.8
-        return !TRACE.name().equals(requestMethod.name());
+        return canAddRequestTransferEncodingProtocol(request.method());
     }
 
     static boolean canAddResponseContentLength(final StreamingHttpResponse response,
@@ -110,24 +111,32 @@ final class HeaderUtils {
 
     private static boolean canAddContentLength(final HttpMetaData metadata) {
         return !hasContentHeaders(metadata.headers()) &&
-                isSafeToAggregate(metadata);
+                isSafeToAggregate(metadata) && !mayHaveTrailers(metadata);
     }
 
-    static Single<StreamingHttpRequest> setRequestContentLength(final StreamingHttpRequest request) {
-        return setContentLength(request, request.payloadBody(), HeaderUtils::requestContentLengthPayloadHandler);
+    static Single<Publisher<Object>> setRequestContentLength(final StreamingHttpRequest request,
+                                                             final HttpHeadersFactory headersFactory) {
+        return setContentLength(request, request.payloadBodyAndTrailers(), headersFactory,
+                shouldAddZeroContentLength(request.method()) ? HeaderUtils::updateRequestContentLength :
+                        HeaderUtils::updateRequestContentLengthNonZero);
     }
 
-    static Single<StreamingHttpResponse> setResponseContentLength(final StreamingHttpResponse response) {
-        return setContentLength(response, response.payloadBody(), HeaderUtils::responseContentLengthPayloadHandler);
+    static Single<Publisher<Object>> setResponseContentLength(final StreamingHttpResponse response,
+                                                              final HttpHeadersFactory headersFactory) {
+        return setContentLength(response, response.payloadBodyAndTrailers(), headersFactory,
+                HeaderUtils::updateResponseContentLength);
     }
 
-    private static StreamingHttpRequest requestContentLengthPayloadHandler(final StreamingHttpRequest request,
-                                                                           final int contentLength,
-                                                                           final Publisher<Buffer> payload) {
-        if (contentLength > 0 || shouldAddZeroContentLength(request.method())) {
-            request.headers().set(CONTENT_LENGTH, Integer.toString(contentLength));
+    private static void updateRequestContentLengthNonZero(final HttpHeaders headers, final int contentLength) {
+        assert contentLength >= 0;
+        if (contentLength > 0) {
+            headers.set(CONTENT_LENGTH, Integer.toString(contentLength));
         }
-        return request.payloadBody(payload);
+    }
+
+    private static void updateRequestContentLength(final HttpHeaders headers, final int contentLength) {
+        assert contentLength >= 0;
+        headers.set(CONTENT_LENGTH, Integer.toString(contentLength));
     }
 
     static boolean shouldAddZeroContentLength(final HttpRequestMethod requestMethod) {
@@ -142,47 +151,55 @@ final class HeaderUtils {
         return !isEmptyResponseStatus(statusCode) && !isEmptyConnectResponse(requestMethod, statusCode);
     }
 
-    private static StreamingHttpResponse responseContentLengthPayloadHandler(final StreamingHttpResponse response,
-                                                                             final int contentLength,
-                                                                             final Publisher<Buffer> payload) {
-        response.headers().set(CONTENT_LENGTH, Integer.toString(contentLength));
-        return response.payloadBody(payload);
+    private static void updateResponseContentLength(final HttpHeaders headers, final int contentLength) {
+        headers.set(CONTENT_LENGTH, Integer.toString(contentLength));
     }
 
-    @SuppressWarnings("unchecked")
-    private static <T> Single<T> setContentLength(final T metadata, final Publisher<Buffer> originalPayload,
-                                                  final ContentLengthPayloadHandler<T> contentLengthPayloadHandler) {
-        return originalPayload.collect(() -> null, (reduction, item) -> {
-            final List<Buffer> buffers;
+    private static Single<Publisher<Object>> setContentLength(final HttpMetaData metadata,
+                                                              final Publisher<Object> originalPayloadAndTrailers,
+                                                              final HttpHeadersFactory headersFactory,
+                                                              final ContentLengthUpdater contentLengthUpdater) {
+        return originalPayloadAndTrailers.collect(() -> null, (reduction, item) -> {
             if (reduction == null) {
                 // avoid allocating a list if the Publisher emits only a single Buffer
                 return item;
             }
-            if (reduction instanceof Buffer) {
-                buffers = new ArrayList<>();
-                buffers.add((Buffer) reduction);
+            List<Object> items;
+            if (reduction instanceof List) {
+                @SuppressWarnings("unchecked")
+                List<Object> itemsUnchecked = (List<Object>) reduction;
+                items = itemsUnchecked;
             } else {
-                buffers = (List<Buffer>) reduction;
+                items = new ArrayList<>();
+                items.add(reduction);
             }
-            buffers.add(item);
-            return buffers;
+            items.add(item);
+            return items;
         }).map(reduction -> {
             int contentLength = 0;
-            final Publisher<Buffer> payload;
+            final Publisher<Object> payloadAndTrailer;
             if (reduction == null) {
-                payload = Publisher.empty();
+                payloadAndTrailer = from(metadata, headersFactory.newEmptyTrailers());
+            } else if (reduction instanceof List) {
+                @SuppressWarnings("unchecked")
+                final List<Object> items = (List<Object>) reduction;
+                for (int i = 0; i < items.size(); i++) {
+                    Object item = items.get(i);
+                    if (item instanceof Buffer) {
+                        contentLength += ((Buffer) item).readableBytes();
+                    }
+                }
+                payloadAndTrailer = Publisher.<Object>from(metadata)
+                        .concat(fromIterable(items));
             } else if (reduction instanceof Buffer) {
                 final Buffer buffer = (Buffer) reduction;
                 contentLength = buffer.readableBytes();
-                payload = Publisher.from(buffer);
+                payloadAndTrailer = from(metadata, buffer, headersFactory.newEmptyTrailers());
             } else {
-                final List<Buffer> buffers = (List<Buffer>) reduction;
-                for (int i = 0; i < buffers.size(); i++) {
-                    contentLength += buffers.get(i).readableBytes();
-                }
-                payload = Publisher.fromIterable(buffers);
+                payloadAndTrailer = from(metadata, reduction);
             }
-            return contentLengthPayloadHandler.apply(metadata, contentLength, payload);
+            contentLengthUpdater.apply(metadata.headers(), contentLength);
+            return payloadAndTrailer;
         });
     }
 
@@ -194,11 +211,10 @@ final class HeaderUtils {
         return response;
     }
 
-    static StreamingHttpRequest addRequestTransferEncodingIfNecessary(final StreamingHttpRequest request) {
+    static void addRequestTransferEncodingIfNecessary(final StreamingHttpRequest request) {
         if (canAddRequestTransferEncoding(request)) {
             request.headers().add(TRANSFER_ENCODING, CHUNKED);
         }
-        return request;
     }
 
     private static boolean hasContentHeaders(final HttpHeaders headers) {
@@ -220,7 +236,7 @@ final class HeaderUtils {
     }
 
     @FunctionalInterface
-    private interface ContentLengthPayloadHandler<T> {
-        T apply(T request, int contentLength, Publisher<Buffer> payload);
+    private interface ContentLengthUpdater {
+        void apply(HttpHeaders headers, int contentLength);
     }
 }
