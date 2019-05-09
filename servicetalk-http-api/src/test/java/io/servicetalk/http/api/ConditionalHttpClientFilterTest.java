@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,15 +17,13 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.concurrent.api.AsyncCloseable;
 import io.servicetalk.concurrent.api.Completable;
-import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class ConditionalHttpClientFilterTest extends AbstractConditionalHttpFilterTest {
 
-    private static final StreamingHttpClientFilterFactory REQ_FILTER = (client, __) ->
-            new StreamingHttpClientFilter(client) {
+    private static final StreamingHttpClientFilterFactory REQ_FILTER = client -> new StreamingHttpClientFilter(client) {
         @Override
         protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                         final HttpExecutionStrategy strategy,
@@ -42,9 +40,7 @@ public class ConditionalHttpClientFilterTest extends AbstractConditionalHttpFilt
         }
 
         @Override
-        public StreamingHttpClientFilter create(
-                final FilterableStreamingHttpClient client,
-                final Publisher<Object> lbEvents) {
+        public StreamingHttpClientFilter create(final FilterableStreamingHttpClient client) {
             return new ConditionalHttpClientFilter(TEST_REQ_PREDICATE, new StreamingHttpClientFilter(client) {
                 @Override
                 protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,

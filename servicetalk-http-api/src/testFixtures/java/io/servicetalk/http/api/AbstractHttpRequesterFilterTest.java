@@ -360,7 +360,7 @@ public abstract class AbstractHttpRequesterFilterTest {
 
     private <FF extends StreamingHttpClientFilterFactory & StreamingHttpConnectionFilterFactory> StreamingHttpClient
         newClient(final RequestHandler rh, final RequestWithContextHandler rwch, final FF filterFactory) {
-        StreamingHttpClientFilterFactory handlerFilter = (client, __) -> new StreamingHttpClientFilter(client) {
+        StreamingHttpClientFilterFactory handlerFilter = client -> new StreamingHttpClientFilter(client) {
 
                     @Override
                     protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,

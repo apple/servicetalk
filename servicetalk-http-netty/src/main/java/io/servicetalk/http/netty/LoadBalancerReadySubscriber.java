@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.client.api.internal;
+package io.servicetalk.http.netty;
 
-import io.servicetalk.client.api.LoadBalancerReadyEvent;
+import io.servicetalk.client.api.internal.LoadBalancerReadyEvent;
 import io.servicetalk.concurrent.CompletableSource.Processor;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
@@ -31,7 +31,7 @@ import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
  * Designed to listen for {@link LoadBalancerReadyEvent}s and provide notification when a {@link LoadBalancerReadyEvent}
  * returns {@code true} from {@link LoadBalancerReadyEvent#isReady()}.
  */
-public final class LoadBalancerReadySubscriber implements Subscriber<Object> {
+final class LoadBalancerReadySubscriber implements Subscriber<Object> {
     @Nullable
     private volatile Processor onHostsAvailable = newCompletableProcessor();
 
@@ -42,7 +42,7 @@ public final class LoadBalancerReadySubscriber implements Subscriber<Object> {
      * from {@link LoadBalancerReadyEvent#isReady()}, or {@code null} if this event has already been seen and a
      * a {@link LoadBalancerReadyEvent} that returns {@code true} has not been seend.
      */
-    public Completable onHostsAvailable() {
+    Completable onHostsAvailable() {
         Processor onHostsAvailable = this.onHostsAvailable;
         return onHostsAvailable == null ? completed() : fromSource(onHostsAvailable);
     }

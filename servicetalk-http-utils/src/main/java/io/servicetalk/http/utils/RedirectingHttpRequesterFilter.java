@@ -15,7 +15,6 @@
  */
 package io.servicetalk.http.utils;
 
-import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.FilterableReservedStreamingHttpConnection;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
@@ -128,8 +127,7 @@ public final class RedirectingHttpRequesterFilter implements StreamingHttpClient
     }
 
     @Override
-    public StreamingHttpClientFilter create(final FilterableStreamingHttpClient client,
-                                            final Publisher<Object> lbEvents) {
+    public StreamingHttpClientFilter create(final FilterableStreamingHttpClient client) {
         return new StreamingHttpClientFilter(client) {
 
             @Override

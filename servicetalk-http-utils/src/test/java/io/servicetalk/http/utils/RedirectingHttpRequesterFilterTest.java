@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -110,8 +110,7 @@ public class RedirectingHttpRequesterFilterTest {
     }
 
     private StreamingHttpClient newClient(StreamingHttpClientFilterFactory customFilter) {
-        StreamingHttpClientFilterFactory mockResponse = (client, __) ->
-                new StreamingHttpClientFilter(client) {
+        StreamingHttpClientFilterFactory mockResponse = client -> new StreamingHttpClientFilter(client) {
                     @Override
                     protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                                     final HttpExecutionStrategy strategy,

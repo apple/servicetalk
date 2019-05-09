@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,13 +13,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.http.api;
+package io.servicetalk.http.netty;
 
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.client.api.NoAvailableHostException;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
+import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
+import io.servicetalk.http.api.HttpExecutionContext;
+import io.servicetalk.http.api.HttpExecutionStrategy;
+import io.servicetalk.http.api.HttpRequestMetaData;
+import io.servicetalk.http.api.ReservedStreamingHttpConnection;
+import io.servicetalk.http.api.StreamingHttpClient;
+import io.servicetalk.http.api.StreamingHttpClientFilter;
+import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
+import io.servicetalk.http.api.StreamingHttpRequest;
+import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
+import io.servicetalk.http.api.StreamingHttpRequester;
+import io.servicetalk.http.api.StreamingHttpResponse;
+import io.servicetalk.http.api.StreamingHttpResponseFactory;
+import io.servicetalk.http.api.StreamingHttpResponses;
+import io.servicetalk.http.api.TestStreamingHttpClient;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -34,7 +49,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
-import static io.servicetalk.client.api.LoadBalancerReadyEvent.LOAD_BALANCER_READY_EVENT;
+import static io.servicetalk.client.api.internal.LoadBalancerReadyEvent.LOAD_BALANCER_READY_EVENT;
 import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.Single.succeeded;
@@ -64,8 +79,7 @@ public class LoadBalancerReadyHttpClientTest {
     @Mock
     private ReservedStreamingHttpConnection mockReservedConnection;
 
-    private final StreamingHttpClientFilterFactory testHandler = (client, __) -> new StreamingHttpClientFilter(client) {
-
+    private final StreamingHttpClientFilterFactory testHandler = client -> new StreamingHttpClientFilter(client) {
         @Override
         protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                         final HttpExecutionStrategy strategy,
@@ -115,7 +129,7 @@ public class LoadBalancerReadyHttpClientTest {
             Function<StreamingHttpClient, Single<?>> action) throws InterruptedException {
         TestPublisher<Object> loadBalancerPublisher = new TestPublisher<>();
 
-        StreamingHttpClientFilterFactory filterFactory = (next, __) ->
+        StreamingHttpClientFilterFactory filterFactory = next ->
                 new LoadBalancerReadyStreamingHttpClientFilter(1, loadBalancerPublisher, next);
 
         StreamingHttpClient client = TestStreamingHttpClient.from(reqRespFactory, mockExecutionCtx,
@@ -142,7 +156,7 @@ public class LoadBalancerReadyHttpClientTest {
     private void verifyActionIsDelayedUntilAfterInitialized(Function<StreamingHttpClient, Single<?>> action)
             throws InterruptedException {
 
-        StreamingHttpClientFilterFactory filterFactory = (next, __) -> new LoadBalancerReadyStreamingHttpClientFilter(
+        StreamingHttpClientFilterFactory filterFactory = next -> new LoadBalancerReadyStreamingHttpClientFilter(
                 1, loadBalancerPublisher, next);
 
         StreamingHttpClient client = TestStreamingHttpClient.from(reqRespFactory, mockExecutionCtx,

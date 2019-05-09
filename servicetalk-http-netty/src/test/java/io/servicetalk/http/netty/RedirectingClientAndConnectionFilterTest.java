@@ -95,7 +95,7 @@ public final class RedirectingClientAndConnectionFilterTest {
                 CompositeCloseable closeables = AsyncCloseables.newCompositeCloseable();
                 try {
                     StreamingHttpClient client = closeables.prepend(HttpClients.forSingleAddress(serverHostAndPort)
-                            .appendClientFilter((clientFilter, __) -> new StreamingHttpClientFilter(clientFilter) {
+                            .appendClientFilter(clientFilter -> new StreamingHttpClientFilter(clientFilter) {
                                 @Override
                                 public Single<? extends FilterableReservedStreamingHttpConnection> reserveConnection(
                                         final HttpExecutionStrategy strategy, final HttpRequestMetaData metaData) {

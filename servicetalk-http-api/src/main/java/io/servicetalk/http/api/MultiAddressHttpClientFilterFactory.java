@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,6 @@
 package io.servicetalk.http.api;
 
 import io.servicetalk.client.api.GroupKey;
-import io.servicetalk.client.api.LoadBalancer;
-import io.servicetalk.concurrent.api.Publisher;
 
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -40,10 +38,9 @@ public interface MultiAddressHttpClientFilterFactory<U> {
      *
      * @param address the {@code UnresolvedAddress} for the {@link FilterableStreamingHttpClient}
      * @param client the {@link FilterableStreamingHttpClient} to filter
-     * @param lbEvents the {@link LoadBalancer} events stream
      * @return the filtered {@link FilterableStreamingHttpClient}
      */
-    StreamingHttpClientFilter create(U address, FilterableStreamingHttpClient client, Publisher<Object> lbEvents);
+    StreamingHttpClientFilter create(U address, FilterableStreamingHttpClient client);
 
     /**
      * Returns a composed function that first applies the {@code before} function to its input, and then applies
@@ -63,7 +60,7 @@ public interface MultiAddressHttpClientFilterFactory<U> {
      */
     default MultiAddressHttpClientFilterFactory<U> append(MultiAddressHttpClientFilterFactory<U> before) {
         requireNonNull(before);
-        return (group, client, lbEvents) -> create(group, before.create(group, client, lbEvents), lbEvents);
+        return (group, client) -> create(group, before.create(group, client));
     }
 
     /**
@@ -88,8 +85,7 @@ public interface MultiAddressHttpClientFilterFactory<U> {
      */
     static <U> MultiAddressHttpClientFilterFactory<U> from(
             BiFunction<U, FilterableStreamingHttpClient, StreamingHttpClientFilter> function) {
-        requireNonNull(function);
-        return (address, client, __) -> function.apply(address, client);
+        return function::apply;
     }
 
     /**
@@ -103,6 +99,6 @@ public interface MultiAddressHttpClientFilterFactory<U> {
     static <U> MultiAddressHttpClientFilterFactory<U> from(
             Function<FilterableStreamingHttpClient, StreamingHttpClientFilter> function) {
         requireNonNull(function);
-        return (__, client, ___) -> function.apply(client);
+        return (__, client) -> function.apply(client);
     }
 }

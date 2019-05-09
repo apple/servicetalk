@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,17 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.http.api;
+package io.servicetalk.http.netty;
 
 import io.servicetalk.client.api.LoadBalancer;
-import io.servicetalk.client.api.LoadBalancerReadyEvent;
 import io.servicetalk.client.api.NoAvailableHostException;
 import io.servicetalk.client.api.RetryableException;
-import io.servicetalk.client.api.internal.LoadBalancerReadySubscriber;
+import io.servicetalk.client.api.internal.LoadBalancerReadyEvent;
 import io.servicetalk.concurrent.api.BiIntFunction;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.http.api.FilterableReservedStreamingHttpConnection;
+import io.servicetalk.http.api.FilterableStreamingHttpClient;
+import io.servicetalk.http.api.HttpExecutionStrategy;
+import io.servicetalk.http.api.HttpRequestMetaData;
+import io.servicetalk.http.api.StreamingHttpClient;
+import io.servicetalk.http.api.StreamingHttpClientFilter;
+import io.servicetalk.http.api.StreamingHttpRequest;
+import io.servicetalk.http.api.StreamingHttpRequester;
+import io.servicetalk.http.api.StreamingHttpResponse;
 
 import static io.servicetalk.concurrent.api.Completable.failed;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
@@ -33,7 +41,7 @@ import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
  * not being ready for {@link #request(HttpExecutionStrategy, StreamingHttpRequest)} and retry/delay requests until the
  * {@link LoadBalancer} is ready.
  */
-public final class LoadBalancerReadyStreamingHttpClientFilter extends StreamingHttpClientFilter {
+final class LoadBalancerReadyStreamingHttpClientFilter extends StreamingHttpClientFilter {
     private final LoadBalancerReadySubscriber loadBalancerReadySubscriber;
     private final int maxRetryCount;
 
@@ -45,7 +53,7 @@ public final class LoadBalancerReadyStreamingHttpClientFilter extends StreamingH
      * {@link LoadBalancerReadyEvent} events to trigger retries.
      * @param next The next {@link StreamingHttpClient} in the filter chain.
      */
-    public LoadBalancerReadyStreamingHttpClientFilter(
+    LoadBalancerReadyStreamingHttpClientFilter(
             int maxRetryCount, Publisher<Object> loadBalancerEvents, FilterableStreamingHttpClient next) {
         super(next);
         if (maxRetryCount <= 0) {
