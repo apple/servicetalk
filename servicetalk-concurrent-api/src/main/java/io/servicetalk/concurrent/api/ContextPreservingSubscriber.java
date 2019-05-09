@@ -73,4 +73,9 @@ final class ContextPreservingSubscriber<T> implements Subscriber<T> {
             INSTANCE.contextMap(prev);
         }
     }
+
+    @Override
+    public String toString() {
+        return "ContextPreservingSubscriber(" + subscriber + ')';
+    }
 }
