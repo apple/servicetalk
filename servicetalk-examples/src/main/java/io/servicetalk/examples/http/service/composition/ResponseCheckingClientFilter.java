@@ -15,7 +15,6 @@
  */
 package io.servicetalk.examples.http.service.composition;
 
-import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
 import io.servicetalk.http.api.HttpExecutionStrategy;
@@ -41,8 +40,7 @@ final class ResponseCheckingClientFilter implements StreamingHttpClientFilterFac
     }
 
     @Override
-    public StreamingHttpClientFilter create(final FilterableStreamingHttpClient client,
-                                            final Publisher<Object> lbEvents) {
+    public StreamingHttpClientFilter create(final FilterableStreamingHttpClient client) {
         return new StreamingHttpClientFilter(client) {
             @Override
             protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
