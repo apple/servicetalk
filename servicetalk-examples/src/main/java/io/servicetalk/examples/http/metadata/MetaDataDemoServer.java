@@ -46,11 +46,11 @@ public final class MetaDataDemoServer {
                         helloText = "Hello World!";
                     } else if ("fr".equals(languageCode)) {
                         helloText = "Bonjour monde!";
-                    } else if ("broken".equals(languageCode)) {
+                    } else if ("bug".equals(languageCode)) {
                         helloText = "˝å®∫å©´";
-                        // Return an incorrect language to demonstrate the failure case of the header check
-                        // in the client.
-                        languageCode = "garbage";
+                        // Return an incorrect language (simulating a bug) to demonstrate the failure case of the
+                        // header check in the client.
+                        languageCode = "whoops";
                     } else {
                         return responseFactory.badRequest();
                     }
