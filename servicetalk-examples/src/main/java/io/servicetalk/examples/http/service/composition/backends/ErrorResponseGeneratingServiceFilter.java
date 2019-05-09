@@ -24,8 +24,6 @@ import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.api.StreamingHttpServiceFilter;
 import io.servicetalk.http.api.StreamingHttpServiceFilterFactory;
 
-import java.util.Iterator;
-
 import static io.servicetalk.concurrent.api.Single.succeeded;
 
 /**
@@ -33,7 +31,7 @@ import static io.servicetalk.concurrent.api.Single.succeeded;
  */
 public final class ErrorResponseGeneratingServiceFilter implements StreamingHttpServiceFilterFactory {
 
-    public static final String ERROR_QP_NAME = "simulateError";
+    public static final String SIMULATE_ERROR_QP_NAME = "simulateError";
 
     private final String serviceName;
 
@@ -47,10 +45,8 @@ public final class ErrorResponseGeneratingServiceFilter implements StreamingHttp
             @Override
             public Single<StreamingHttpResponse> handle(HttpServiceContext ctx, StreamingHttpRequest request,
                                                         StreamingHttpResponseFactory responseFactory) {
-                for (Iterator<String> parameters = request.queryParameters(ERROR_QP_NAME); parameters.hasNext(); ) {
-                    if (parameters.next().equals(serviceName)) {
-                        return succeeded(responseFactory.internalServerError());
-                    }
+                if (request.hasQueryParameter(SIMULATE_ERROR_QP_NAME, serviceName)) {
+                    return succeeded(responseFactory.internalServerError());
                 }
                 return super.handle(ctx, request, responseFactory);
             }

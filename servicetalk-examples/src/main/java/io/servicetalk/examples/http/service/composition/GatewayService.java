@@ -36,7 +36,7 @@ import java.util.List;
 import static io.servicetalk.concurrent.api.Publisher.fromIterable;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.examples.http.service.composition.AsyncUtils.zip;
-import static io.servicetalk.examples.http.service.composition.backends.ErrorResponseGeneratingServiceFilter.ERROR_QP_NAME;
+import static io.servicetalk.examples.http.service.composition.backends.ErrorResponseGeneratingServiceFilter.SIMULATE_ERROR_QP_NAME;
 
 /**
  * This service provides an API that fetches recommendations in parallel but provides an aggregated JSON array as a
@@ -77,10 +77,10 @@ final class GatewayService implements HttpService {
             return succeeded(responseFactory.badRequest());
         }
 
-        final Iterable<String> errorQpValues = () -> request.queryParameters(ERROR_QP_NAME);
+        final Iterable<String> errorQpValues = () -> request.queryParameters(SIMULATE_ERROR_QP_NAME);
         return recommendationsClient.request(recommendationsClient.get("/recommendations/aggregated")
                 .addQueryParameter(USER_ID_QP_NAME, userId)
-                .addQueryParameters(ERROR_QP_NAME, errorQpValues))
+                .addQueryParameters(SIMULATE_ERROR_QP_NAME, errorQpValues))
                 // Since HTTP payload is a buffer, we deserialize into List<Recommendation>>.
                 .map(response -> response.payloadBody(serializers.deserializerFor(typeOfRecommendation)))
                 .flatMap(recommendations -> queryRecommendationDetails(recommendations, errorQpValues))
@@ -97,21 +97,21 @@ final class GatewayService implements HttpService {
                     Single<Metadata> metadata =
                             metadataClient.request(metadataClient.get("/metadata")
                                     .addQueryParameter(ENTITY_ID_QP_NAME, recommendation.getEntityId())
-                                    .addQueryParameters(ERROR_QP_NAME, errorQpValues))
+                                    .addQueryParameters(SIMULATE_ERROR_QP_NAME, errorQpValues))
                                     // Since HTTP payload is a buffer, we deserialize into Metadata.
                                     .map(response -> response.payloadBody(serializers.deserializerFor(Metadata.class)));
 
                     Single<User> user =
                             userClient.request(userClient.get("/user")
                                     .addQueryParameter(USER_ID_QP_NAME, recommendation.getEntityId())
-                                    .addQueryParameters(ERROR_QP_NAME, errorQpValues))
+                                    .addQueryParameters(SIMULATE_ERROR_QP_NAME, errorQpValues))
                                     // Since HTTP payload is a buffer, we deserialize into User.
                                     .map(response -> response.payloadBody(serializers.deserializerFor(User.class)));
 
                     Single<Rating> rating =
                             ratingsClient.request(ratingsClient.get("/rating")
                                     .addQueryParameter(ENTITY_ID_QP_NAME, recommendation.getEntityId())
-                                    .addQueryParameters(ERROR_QP_NAME, errorQpValues))
+                                    .addQueryParameters(SIMULATE_ERROR_QP_NAME, errorQpValues))
                                     // Since HTTP payload is a buffer, we deserialize into Rating.
                                     .map(response -> response.payloadBody(serializers.deserializerFor(Rating.class)))
                                     // We consider ratings to be a non-critical data and hence we substitute the

@@ -35,7 +35,7 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.List;
 
-import static io.servicetalk.examples.http.service.composition.backends.ErrorResponseGeneratingServiceFilter.ERROR_QP_NAME;
+import static io.servicetalk.examples.http.service.composition.backends.ErrorResponseGeneratingServiceFilter.SIMULATE_ERROR_QP_NAME;
 
 /**
  * This service provides an API that fetches recommendations serially using blocking APIs. Returned response is a single
@@ -80,11 +80,11 @@ final class BlockingGatewayService implements BlockingHttpService {
             return responseFactory.badRequest();
         }
 
-        final Iterable<String> errorQpValues = () -> request.queryParameters(ERROR_QP_NAME);
+        final Iterable<String> errorQpValues = () -> request.queryParameters(SIMULATE_ERROR_QP_NAME);
         List<Recommendation> recommendations =
                 recommendationClient.request(recommendationClient.get("/recommendations/aggregated")
                         .addQueryParameter(USER_ID_QP_NAME, userId)
-                        .addQueryParameters(ERROR_QP_NAME, errorQpValues))
+                        .addQueryParameters(SIMULATE_ERROR_QP_NAME, errorQpValues))
                         .payloadBody(serializers.deserializerFor(typeOfRecommendation));
 
         List<FullRecommendation> fullRecommendations = new ArrayList<>(recommendations.size());
@@ -93,20 +93,20 @@ final class BlockingGatewayService implements BlockingHttpService {
             final Metadata metadata =
                     metadataClient.request(metadataClient.get("/metadata")
                             .addQueryParameter(ENTITY_ID_QP_NAME, recommendation.getEntityId())
-                            .addQueryParameters(ERROR_QP_NAME, errorQpValues))
+                            .addQueryParameters(SIMULATE_ERROR_QP_NAME, errorQpValues))
                             .payloadBody(serializers.deserializerFor(Metadata.class));
 
             final User user =
                     userClient.request(userClient.get("/user")
                             .addQueryParameter(USER_ID_QP_NAME, recommendation.getEntityId())
-                            .addQueryParameters(ERROR_QP_NAME, errorQpValues))
+                            .addQueryParameters(SIMULATE_ERROR_QP_NAME, errorQpValues))
                             .payloadBody(serializers.deserializerFor(User.class));
 
             Rating rating;
             try {
                 rating = ratingClient.request(ratingClient.get("/rating")
                         .addQueryParameter(ENTITY_ID_QP_NAME, recommendation.getEntityId())
-                        .addQueryParameters(ERROR_QP_NAME, errorQpValues))
+                        .addQueryParameters(SIMULATE_ERROR_QP_NAME, errorQpValues))
                         .payloadBody(serializers.deserializerFor(Rating.class));
             } catch (Exception cause) {
                 // We consider ratings to be a non-critical data and hence we substitute the response
