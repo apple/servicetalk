@@ -41,7 +41,6 @@ public final class MetaDataDemoClient {
         final String language = args.length == 1 ? args[0] : "en";
         // "en" returns "Hello World!"
         // "fr" returns "Bonjour monde!"
-        // Try "bug" to demonstrate the incorrect language response error handling.
         // Try anything else to demonstrate incorrect response status error handling.
 
         try (BlockingHttpClient client = HttpClients.forSingleAddress("localhost", 8080).buildBlocking()) {
