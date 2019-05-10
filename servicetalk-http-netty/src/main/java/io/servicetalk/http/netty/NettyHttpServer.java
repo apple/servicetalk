@@ -60,6 +60,7 @@ import java.net.SocketAddress;
 import java.util.ArrayDeque;
 import java.util.Queue;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
@@ -69,6 +70,7 @@ import javax.net.ssl.SSLSession;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.AsyncCloseables.toListenableAsyncCloseable;
 import static io.servicetalk.concurrent.api.Completable.completed;
+import static io.servicetalk.concurrent.api.Completable.defer;
 import static io.servicetalk.concurrent.api.Processors.newCompletableProcessor;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
@@ -223,46 +225,53 @@ final class NettyHttpServer {
         }
 
         private Completable handleRequestAndWriteResponse(final Single<StreamingHttpRequest> requestSingle) {
-            final Publisher<Object> responseObjectPublisher = requestSingle.flatMapPublisher(request -> {
+            final Publisher<Object> responseObjectPublisher = requestSingle.flatMapPublisher(rawRequest -> {
                 // We transform the request and delay the completion of the result flattened stream to avoid
                 // resubscribing to the NettyChannelPublisher before the previous subscriber has terminated. Otherwise
                 // we may attempt to do duplicate subscribe on NettyChannelPublisher, which will result in a connection
                 // closure.
-                Processor processor = newCompletableProcessor();
-                StreamingHttpRequest request2 = request.transformRawPayloadBody(
+                final Processor requestCompletion = newCompletableProcessor();
+                @Nullable
+                final AtomicBoolean payloadSubscribed = drainRequestPayloadBody ? new AtomicBoolean() : null;
+                final StreamingHttpRequest request = rawRequest.transformRawPayloadBody(
                         // Cancellation is assumed to close the connection, or be ignored if this Subscriber has already
                         // terminated. That means we don't need to trigger the processor as completed because we don't
                         // care about processing more requests.
-                        payload -> payload.afterSubscriber(() -> new Subscriber<Object>() {
-                            @Override
-                            public void onSubscribe(final Subscription s) {
+                        payload -> payload.afterSubscriber(() -> {
+                            if (drainRequestPayloadBody) {
+                                payloadSubscribed.set(true);
                             }
-
-                            @Override
-                            public void onNext(final Object obj) {
-                            }
-
-                            @Override
-                            public void onError(final Throwable t) {
-                                // After the response payload has terminated, we may attempt to subscribe to the request
-                                // payload and drain/discard the content (in case the user forgets to consume the
-                                // stream). However this means we may introduce a duplicate subscribe and this doesn't
-                                // mean the request content has not terminated.
-                                if (!drainRequestPayloadBody || !(t instanceof RejectedSubscribeError)) {
-                                    processor.onComplete();
+                            return new Subscriber<Object>() {
+                                @Override
+                                public void onSubscribe(final Subscription s) {
                                 }
-                            }
 
-                            @Override
-                            public void onComplete() {
-                                processor.onComplete();
-                            }
+                                @Override
+                                public void onNext(final Object obj) {
+                                }
+
+                                @Override
+                                public void onError(final Throwable t) {
+                                    // After the response payload has terminated, we may attempt to subscribe to the
+                                    // request payload and drain/discard the content (in case the user forgets to
+                                    // consume the stream). However this means we may introduce a duplicate subscribe
+                                    // and this doesn't mean the request content has not terminated.
+                                    if (!drainRequestPayloadBody || !(t instanceof RejectedSubscribeError)) {
+                                        requestCompletion.onComplete();
+                                    }
+                                }
+
+                                @Override
+                                public void onComplete() {
+                                    requestCompletion.onComplete();
+                                }
+                            };
                         }));
 
-                final HttpRequestMethod requestMethod = request2.method();
-                final HttpKeepAlive keepAlive = HttpKeepAlive.responseKeepAlive(request2);
-                Publisher<Object> objectPublisher = strategy
-                        .invokeService(executionContext().executor(), request2,
+                final HttpRequestMethod requestMethod = request.method();
+                final HttpKeepAlive keepAlive = HttpKeepAlive.responseKeepAlive(request);
+                Publisher<Object> responsePublisher = strategy
+                        .invokeService(executionContext().executor(), request,
                                 req -> service.handle(NettyHttpServerConnection.this, req, streamingResponseFactory())
                                         .flatMap(response -> {
                                             keepAlive.addConnectionHeaderIfNecessary(response);
@@ -274,17 +283,18 @@ final class NettyHttpServer {
                                             // otherwise.
                                             return setResponseContentLength(response);
                                         }),
-                                (cause, executor) -> newErrorResponse(cause, executor, request2.version(), keepAlive));
+                                (cause, executor) -> newErrorResponse(cause, executor, request.version(), keepAlive));
 
                 if (drainRequestPayloadBody) {
-                    objectPublisher = objectPublisher.concat(request2.payloadBody().ignoreElements()
+                    responsePublisher = responsePublisher.concat(defer(() -> payloadSubscribed.get() ?
+                                    Completable.completed() : request.payloadBody().ignoreElements()
                             // Discarding the request payload body is an operation which should not impact the state of
                             // request/response processing. It's appropriate to recover from any error here.
                             // ST may introduce RejectedSubscribeError if user already consumed the request payload body
-                            .onErrorResume(t -> completed()));
+                            .onErrorResume(t -> completed())));
                 }
 
-                return objectPublisher.concat(fromSource(processor));
+                return responsePublisher.concat(fromSource(requestCompletion));
             });
             return connection.write(responseObjectPublisher.repeat(val -> true)
                     // We generate synthetic callbacks to WriteEventsListener as there is a single write per connection
