@@ -138,6 +138,7 @@ public class NettyHttpServerConnectionDrainTest {
     }
 
     private void postLargePayloadAndAssertResponseOk(final BlockingHttpClient client) throws Exception {
+        Thread.sleep(2000);
         HttpResponse response = client.request(client.post("/").payloadBody(LARGE_TEXT, textSerializer()));
         assertThat(response.payloadBody(textDeserializer()), equalTo("OK"));
     }
