@@ -54,11 +54,12 @@ public class NettyHttpServerConnectionDrainTest {
     private static final String LARGE_TEXT;
 
     static {
+        System.setProperty("io.netty.transport.noNative", "true");
         int capacity = 1_000_000;
         ThreadLocalRandom rnd = ThreadLocalRandom.current();
         StringBuilder sb = new StringBuilder(capacity);
         for (int i = 0; i < capacity; i++) {
-            sb.append(rnd.nextInt(32, 128)); // ASCII
+            sb.append((char) rnd.nextInt(32, 128)); // ASCII
         }
         LARGE_TEXT = sb.toString();
     }
@@ -138,7 +139,6 @@ public class NettyHttpServerConnectionDrainTest {
     }
 
     private void postLargePayloadAndAssertResponseOk(final BlockingHttpClient client) throws Exception {
-        Thread.sleep(2000);
         HttpResponse response = client.request(client.post("/").payloadBody(LARGE_TEXT, textSerializer()));
         assertThat(response.payloadBody(textDeserializer()), equalTo("OK"));
     }
@@ -158,7 +158,7 @@ public class NettyHttpServerConnectionDrainTest {
         HttpServerBuilder httpServerBuilder = HttpServers.forAddress(AddressUtils.localAddress(0))
                 // Ensures small TCP buffer such that our large request payload will fill up to make sure we can't
                 // complete the request without at least reading more data
-                .socketOption(StandardSocketOptions.SO_RCVBUF, 64);
+                .socketOption(StandardSocketOptions.SO_RCVBUF, 1024);
 
         if (autoDrain) {
             httpServerBuilder = httpServerBuilder.enableDrainingRequestPayloadBody();
