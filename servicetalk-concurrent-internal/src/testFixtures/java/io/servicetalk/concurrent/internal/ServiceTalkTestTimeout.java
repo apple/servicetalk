@@ -51,7 +51,8 @@ import static java.util.concurrent.TimeUnit.SECONDS;
  * Standard timeout shared by test classes. The {@link #lookForStuckThread} setting is ignored.
  */
 public final class ServiceTalkTestTimeout extends Timeout {
-    public static final int DEFAULT_TIMEOUT_SECONDS = parseBoolean(System.getenv("CI")) ? 90 : 10;
+    public static final boolean CI = parseBoolean(System.getenv("CI"));
+    public static final int DEFAULT_TIMEOUT_SECONDS = CI ? 90 : 10;
     public static final String THREAD_PREFIX = "Time-limited test";
     private final Runnable onTimeout;
 

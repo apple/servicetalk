@@ -150,7 +150,7 @@ public class NettyHttpServerConnectionDrainTest {
                                                                          final HttpExecutionStrategy strategy,
                                                                          final StreamingHttpRequest request) {
                              // Without draining the request is expected to hang, don't wait too long unless on CI
-                             int timeoutSeconds = parseBoolean(System.getenv("CI")) ? 15 : 1;
+                             int timeoutSeconds = ServiceTalkTestTimeout.CI ? 15 : 1;
                              return delegate.request(strategy, request).idleTimeout(timeoutSeconds, SECONDS);
                          }
                      })
