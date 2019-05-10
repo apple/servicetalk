@@ -32,7 +32,6 @@ import org.junit.Test;
 import org.junit.rules.Timeout;
 
 import java.net.SocketAddress;
-import java.net.StandardSocketOptions;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeoutException;
@@ -42,6 +41,7 @@ import javax.annotation.Nullable;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.internal.FutureUtils.awaitTermination;
+import static io.servicetalk.concurrent.internal.ServiceTalkTestTimeout.CI;
 import static io.servicetalk.http.api.HttpSerializationProviders.textDeserializer;
 import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
@@ -54,7 +54,6 @@ public class NettyHttpServerConnectionDrainTest {
     private static final String LARGE_TEXT;
 
     static {
-        System.setProperty("io.netty.transport.noNative", "true");
         int capacity = 1_000_000;
         ThreadLocalRandom rnd = ThreadLocalRandom.current();
         StringBuilder sb = new StringBuilder(capacity);
@@ -155,11 +154,7 @@ public class NettyHttpServerConnectionDrainTest {
     }
 
     private ServerContext server(boolean autoDrain, StreamingHttpService handler) throws Exception {
-        HttpServerBuilder httpServerBuilder = HttpServers.forAddress(AddressUtils.localAddress(0))
-                // Ensures small TCP buffer such that our large request payload will fill up to make sure we can't
-                // complete the request without at least reading more data
-                .socketOption(StandardSocketOptions.SO_RCVBUF, 1024);
-
+        HttpServerBuilder httpServerBuilder = HttpServers.forAddress(AddressUtils.localAddress(0));
         if (autoDrain) {
             httpServerBuilder = httpServerBuilder.enableDrainingRequestPayloadBody();
         } else {
@@ -191,9 +186,10 @@ public class NettyHttpServerConnectionDrainTest {
             @Override
             public void close() {
                 // Without draining the request is expected to hang, don't wait too long unless on CI
-                int timeoutSeconds = ServiceTalkTestTimeout.CI ? 15 : 1;
+                int timeoutSeconds = CI ? 15 : 1;
                 awaitTermination(serverContext.closeAsyncGracefully()
-                        .idleTimeout(timeoutSeconds, SECONDS).toFuture());
+                        .idleTimeout(timeoutSeconds, SECONDS)
+                        .onErrorResume(t -> serverContext.closeAsync().concat(Completable.failed(t))).toFuture());
             }
         };
     }
