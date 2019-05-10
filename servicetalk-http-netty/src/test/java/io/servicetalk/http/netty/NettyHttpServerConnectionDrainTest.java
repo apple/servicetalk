@@ -32,6 +32,7 @@ import org.junit.Test;
 import org.junit.rules.Timeout;
 
 import java.net.SocketAddress;
+import java.net.StandardSocketOptions;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeoutException;
@@ -154,7 +155,8 @@ public class NettyHttpServerConnectionDrainTest {
     }
 
     private ServerContext server(boolean autoDrain, StreamingHttpService handler) throws Exception {
-        HttpServerBuilder httpServerBuilder = HttpServers.forAddress(AddressUtils.localAddress(0));
+        HttpServerBuilder httpServerBuilder = HttpServers.forAddress(AddressUtils.localAddress(0))
+                .socketOption(StandardSocketOptions.SO_RCVBUF, 1024);
         if (autoDrain) {
             httpServerBuilder = httpServerBuilder.enableDrainingRequestPayloadBody();
         } else {
