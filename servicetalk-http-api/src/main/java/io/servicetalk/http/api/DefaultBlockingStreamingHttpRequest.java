@@ -31,7 +31,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Publisher.fromIterable;
 
-class DefaultBlockingStreamingHttpRequest implements BlockingStreamingHttpRequest, PayloadInfo {
+final class DefaultBlockingStreamingHttpRequest implements BlockingStreamingHttpRequest, PayloadInfo {
 
     private final DefaultStreamingHttpRequest original;
 
@@ -45,7 +45,7 @@ class DefaultBlockingStreamingHttpRequest implements BlockingStreamingHttpReques
     }
 
     @Override
-    public final BlockingStreamingHttpRequest version(final HttpProtocolVersion version) {
+    public BlockingStreamingHttpRequest version(final HttpProtocolVersion version) {
         original.version(version);
         return this;
     }
@@ -61,7 +61,7 @@ class DefaultBlockingStreamingHttpRequest implements BlockingStreamingHttpReques
     }
 
     @Override
-    public final BlockingStreamingHttpRequest method(final HttpRequestMethod method) {
+    public BlockingStreamingHttpRequest method(final HttpRequestMethod method) {
         original.method(method);
         return this;
     }
@@ -72,7 +72,7 @@ class DefaultBlockingStreamingHttpRequest implements BlockingStreamingHttpReques
     }
 
     @Override
-    public final BlockingStreamingHttpRequest requestTarget(final String requestTarget) {
+    public BlockingStreamingHttpRequest requestTarget(final String requestTarget) {
         original.requestTarget(requestTarget);
         return this;
     }
@@ -111,13 +111,13 @@ class DefaultBlockingStreamingHttpRequest implements BlockingStreamingHttpReques
     }
 
     @Override
-    public final BlockingStreamingHttpRequest path(final String path) {
+    public BlockingStreamingHttpRequest path(final String path) {
         original.path(path);
         return this;
     }
 
     @Override
-    public final BlockingStreamingHttpRequest appendPathSegments(final String... segments) {
+    public BlockingStreamingHttpRequest appendPathSegments(final String... segments) {
         original.appendPathSegments(segments);
         return this;
     }
@@ -128,13 +128,13 @@ class DefaultBlockingStreamingHttpRequest implements BlockingStreamingHttpReques
     }
 
     @Override
-    public final BlockingStreamingHttpRequest rawPath(final String path) {
+    public BlockingStreamingHttpRequest rawPath(final String path) {
         original.rawPath(path);
         return this;
     }
 
     @Override
-    public final BlockingStreamingHttpRequest rawQuery(final String query) {
+    public BlockingStreamingHttpRequest rawQuery(final String query) {
         original.rawQuery(query);
         return this;
     }
@@ -171,37 +171,37 @@ class DefaultBlockingStreamingHttpRequest implements BlockingStreamingHttpReques
     }
 
     @Override
-    public final BlockingStreamingHttpRequest addQueryParameter(String key, String value) {
+    public BlockingStreamingHttpRequest addQueryParameter(String key, String value) {
         original.addQueryParameter(key, value);
         return this;
     }
 
     @Override
-    public final BlockingStreamingHttpRequest addQueryParameters(String key, Iterable<String> values) {
+    public BlockingStreamingHttpRequest addQueryParameters(String key, Iterable<String> values) {
         original.addQueryParameters(key, values);
         return this;
     }
 
     @Override
-    public final BlockingStreamingHttpRequest addQueryParameters(String key, String... values) {
+    public BlockingStreamingHttpRequest addQueryParameters(String key, String... values) {
         original.addQueryParameters(key, values);
         return this;
     }
 
     @Override
-    public final BlockingStreamingHttpRequest setQueryParameter(String key, String value) {
+    public BlockingStreamingHttpRequest setQueryParameter(String key, String value) {
         original.setQueryParameter(key, value);
         return this;
     }
 
     @Override
-    public final BlockingStreamingHttpRequest setQueryParameters(String key, Iterable<String> values) {
+    public BlockingStreamingHttpRequest setQueryParameters(String key, Iterable<String> values) {
         original.setQueryParameters(key, values);
         return this;
     }
 
     @Override
-    public final BlockingStreamingHttpRequest setQueryParameters(String key, String... values) {
+    public BlockingStreamingHttpRequest setQueryParameters(String key, String... values) {
         original.setQueryParameters(key, values);
         return this;
     }
@@ -233,33 +233,33 @@ class DefaultBlockingStreamingHttpRequest implements BlockingStreamingHttpReques
     }
 
     @Override
-    public final BlockingStreamingHttpRequest payloadBody(final Iterable<Buffer> payloadBody) {
+    public BlockingStreamingHttpRequest payloadBody(final Iterable<Buffer> payloadBody) {
         original.payloadBody(fromIterable(payloadBody));
         return this;
     }
 
     @Override
-    public final BlockingStreamingHttpRequest payloadBody(final CloseableIterable<Buffer> payloadBody) {
+    public BlockingStreamingHttpRequest payloadBody(final CloseableIterable<Buffer> payloadBody) {
         original.payloadBody(fromIterable(payloadBody));
         return this;
     }
 
     @Override
-    public final <T> BlockingStreamingHttpRequest payloadBody(final Iterable<T> payloadBody,
+    public <T> BlockingStreamingHttpRequest payloadBody(final Iterable<T> payloadBody,
                                                               final HttpSerializer<T> serializer) {
         original.payloadBody(fromIterable(payloadBody), serializer);
         return this;
     }
 
     @Override
-    public final <T> BlockingStreamingHttpRequest payloadBody(final CloseableIterable<T> payloadBody,
+    public <T> BlockingStreamingHttpRequest payloadBody(final CloseableIterable<T> payloadBody,
                                                               final HttpSerializer<T> serializer) {
         original.payloadBody(fromIterable(payloadBody), serializer);
         return this;
     }
 
     @Override
-    public final <T> BlockingStreamingHttpRequest transformPayloadBody(
+    public <T> BlockingStreamingHttpRequest transformPayloadBody(
             final Function<BlockingIterable<Buffer>, BlockingIterable<T>> transformer,
             final HttpSerializer<T> serializer) {
         original.transformPayloadBody(bufferPublisher -> fromIterable(transformer.apply(bufferPublisher.toIterable())),
@@ -268,14 +268,14 @@ class DefaultBlockingStreamingHttpRequest implements BlockingStreamingHttpReques
     }
 
     @Override
-    public final BlockingStreamingHttpRequest transformPayloadBody(
+    public BlockingStreamingHttpRequest transformPayloadBody(
             final UnaryOperator<BlockingIterable<Buffer>> transformer) {
         original.transformPayloadBody(bufferPublisher -> fromIterable(transformer.apply(bufferPublisher.toIterable())));
         return this;
     }
 
     @Override
-    public final BlockingStreamingHttpRequest transformRawPayloadBody(
+    public BlockingStreamingHttpRequest transformRawPayloadBody(
             final UnaryOperator<BlockingIterable<?>> transformer) {
         original.transformRawPayloadBody(bufferPublisher ->
                 fromIterable(transformer.apply(bufferPublisher.toIterable())));
@@ -283,7 +283,7 @@ class DefaultBlockingStreamingHttpRequest implements BlockingStreamingHttpReques
     }
 
     @Override
-    public final <T> BlockingStreamingHttpRequest transform(
+    public <T> BlockingStreamingHttpRequest transform(
             final Supplier<T> stateSupplier, final BiFunction<Buffer, T, Buffer> transformer,
             final BiFunction<T, HttpHeaders, HttpHeaders> trailersTransformer) {
         original.transform(stateSupplier, transformer, trailersTransformer);
@@ -291,7 +291,7 @@ class DefaultBlockingStreamingHttpRequest implements BlockingStreamingHttpReques
     }
 
     @Override
-    public final <T> BlockingStreamingHttpRequest transformRaw(
+    public <T> BlockingStreamingHttpRequest transformRaw(
             final Supplier<T> stateSupplier, final BiFunction<Object, T, ?> transformer,
             final BiFunction<T, HttpHeaders, HttpHeaders> trailersTransformer) {
         original.transformRaw(stateSupplier, transformer, trailersTransformer);
@@ -299,7 +299,7 @@ class DefaultBlockingStreamingHttpRequest implements BlockingStreamingHttpReques
     }
 
     @Override
-    public final Single<HttpRequest> toRequest() {
+    public Single<HttpRequest> toRequest() {
         return original.toRequest();
     }
 

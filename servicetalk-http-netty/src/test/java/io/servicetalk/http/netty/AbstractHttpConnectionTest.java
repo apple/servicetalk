@@ -23,8 +23,6 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.ExecutionContextToHttpExecutionContext;
-import io.servicetalk.http.api.HttpHeaderNames;
-import io.servicetalk.http.api.HttpHeaderValues;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.HttpResponseMetaData;
@@ -52,6 +50,8 @@ import static io.servicetalk.http.api.DefaultHttpHeadersFactory.INSTANCE;
 import static io.servicetalk.http.api.HttpEventKey.MAX_CONCURRENCY;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
+import static io.servicetalk.http.api.HttpHeaderNames.TRANSFER_ENCODING;
+import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
 import static io.servicetalk.http.api.HttpHeaderValues.TEXT_PLAIN;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpRequestMethod.GET;
@@ -131,7 +131,7 @@ public final class AbstractHttpConnectionTest {
         HttpHeaders trailers = headersFactory.newEmptyTrailers();
 
         HttpHeaders headers = headersFactory.newHeaders();
-        headers.add(HttpHeaderNames.TRANSFER_ENCODING, HttpHeaderValues.CHUNKED);
+        headers.add(TRANSFER_ENCODING, CHUNKED);
         StreamingHttpRequest req = newTransportRequest(GET, "/foo", HTTP_1_1,
                 headers,
                 allocator, from(chunk1, chunk2, chunk3, trailers), headersFactory);

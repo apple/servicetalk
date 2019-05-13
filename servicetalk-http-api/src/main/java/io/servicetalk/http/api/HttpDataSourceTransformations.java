@@ -41,8 +41,8 @@ import static java.lang.System.nanoTime;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
-final class HttpDataSourceTranformations {
-    private HttpDataSourceTranformations() {
+final class HttpDataSourceTransformations {
+    private HttpDataSourceTransformations() {
         // no instances
     }
 

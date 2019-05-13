@@ -234,7 +234,6 @@ final class NettyHttpServer {
                 // we may attempt to do duplicate subscribe on NettyChannelPublisher, which will result in a connection
                 // closure.
                 final Processor requestCompletion = newCompletableProcessor();
-                @Nullable
                 final AtomicBoolean payloadSubscribed = drainRequestPayloadBody ? new AtomicBoolean() : null;
                 final StreamingHttpRequest request = rawRequest.transformRawPayloadBody(
                         // Cancellation is assumed to close the connection, or be ignored if this Subscriber has already

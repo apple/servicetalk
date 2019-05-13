@@ -19,7 +19,7 @@ import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.BlockingIterator;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
-import io.servicetalk.http.api.HttpDataSourceTranformations.HttpBufferFilterIterable;
+import io.servicetalk.http.api.HttpDataSourceTransformations.HttpBufferFilterIterable;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -37,7 +37,7 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.Assert.assertThat;
 
-public class HttpDataSourceTranformationsTest {
+public class HttpDataSourceTransformationsTest {
 
     public static final Buffer BUFFER_1 = DEFAULT_RO_ALLOCATOR.fromAscii("1");
 

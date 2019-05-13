@@ -22,10 +22,11 @@ import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.SingleSource.Processor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.http.api.HttpDataSourceTranformations.BridgeFlowControlAndDiscardOperator;
-import io.servicetalk.http.api.HttpDataSourceTranformations.HttpBufferTrailersSpliceOperator;
-import io.servicetalk.http.api.HttpDataSourceTranformations.HttpObjectTrailersSpliceOperator;
-import io.servicetalk.http.api.HttpDataSourceTranformations.PayloadAndTrailers;
+import io.servicetalk.http.api.HttpDataSourceTransformations.BridgeFlowControlAndDiscardOperator;
+import io.servicetalk.http.api.HttpDataSourceTransformations.HttpBufferTrailersSpliceOperator;
+import io.servicetalk.http.api.HttpDataSourceTransformations.HttpObjectTrailersSpliceOperator;
+import io.servicetalk.http.api.HttpDataSourceTransformations.HttpTransportBufferFilterOperator;
+import io.servicetalk.http.api.HttpDataSourceTransformations.PayloadAndTrailers;
 
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
@@ -39,7 +40,7 @@ import static io.servicetalk.concurrent.api.Publisher.empty;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.http.api.HeaderUtils.addChunkedEncoding;
-import static io.servicetalk.http.api.HttpDataSourceTranformations.aggregatePayloadAndTrailers;
+import static io.servicetalk.http.api.HttpDataSourceTransformations.aggregatePayloadAndTrailers;
 import static io.servicetalk.http.api.HttpHeaderNames.TRANSFER_ENCODING;
 import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
 import static java.util.Objects.requireNonNull;
@@ -61,10 +62,10 @@ final class StreamingHttpPayloadHolder implements PayloadInfo {
     StreamingHttpPayloadHolder(final HttpHeaders headers, final BufferAllocator allocator,
                                @Nullable final Publisher payloadBody, final DefaultPayloadInfo payloadInfo,
                                final HttpHeadersFactory headersFactory) {
-        this.headers = headers;
+        this.headers = requireNonNull(headers);
         this.allocator = requireNonNull(allocator);
-        this.payloadInfo = payloadInfo;
-        this.headersFactory = headersFactory;
+        this.payloadInfo = requireNonNull(payloadInfo);
+        this.headersFactory = requireNonNull(headersFactory);
         if (payloadInfo.mayHaveTrailers()) {
             this.payloadBody = requireNonNull(payloadBody, "Payload can not be null if trailers are present.");
         } else {
@@ -78,7 +79,7 @@ final class StreamingHttpPayloadHolder implements PayloadInfo {
         }
         splitTrailersIfRequired();
         return payloadInfo.onlyEmitsBuffer() ? bufferPayload() :
-                rawPayload().liftSync(HttpDataSourceTranformations.HttpTransportBufferFilterOperator.INSTANCE);
+                rawPayload().liftSync(HttpTransportBufferFilterOperator.INSTANCE);
     }
 
     Publisher<Object> payloadBodyAndTrailers() {
@@ -87,12 +88,11 @@ final class StreamingHttpPayloadHolder implements PayloadInfo {
             // If trailers are not yet split, the original Publisher will still have them.
             return trailersSingle == null ? rawPayload() : rawPayload().concat(trailersSingle);
         }
-        Publisher<Object> toReturn = payloadBody == null ? empty() : rawPayload();
         if (headers.contains(TRANSFER_ENCODING, CHUNKED)) {
             // explicitly added chunked encoding, we should add trailers explicitly.
-            toReturn = toReturn.concat(succeeded(headersFactory.newEmptyTrailers()));
+            return emptyOrRawPayload().concat(succeeded(headersFactory.newEmptyTrailers()));
         }
-        return toReturn;
+        return emptyOrRawPayload();
     }
 
     public void payloadBody(final Publisher<Buffer> payloadBody) {
@@ -116,7 +116,7 @@ final class StreamingHttpPayloadHolder implements PayloadInfo {
         if (payloadBody != null) {
             splitTrailersIfRequired();
         }
-        payloadBody = transformer.apply(payloadBody == null ? empty() : payloadBody);
+        payloadBody = transformer.apply(emptyOrRawPayload());
     }
 
     public <T> void transform(Supplier<T> stateSupplier, BiFunction<Buffer, T, Buffer> transformer,
@@ -222,8 +222,8 @@ final class StreamingHttpPayloadHolder implements PayloadInfo {
                                                     BiFunction<T, HttpHeaders, HttpHeaders> trailersTransformer) {
         if (payloadBody == null) {
             T state = stateSupplier.get();
-            payloadBody = empty();
             trailersSingle = succeeded(trailersTransformer.apply(state, headersFactory.newEmptyTrailers()));
+            payloadBody = empty();
         } else {
             splitTrailersIfRequired();
             if (!payloadInfo.mayHaveTrailers()) {
@@ -280,6 +280,10 @@ final class StreamingHttpPayloadHolder implements PayloadInfo {
     private Publisher<Object> rawPayload() {
         assert payloadBody != null;
         return (Publisher<Object>) payloadBody;
+    }
+
+    private Publisher<Object> emptyOrRawPayload() {
+        return payloadBody == null ? empty() : rawPayload();
     }
 
     @SuppressWarnings("unchecked")

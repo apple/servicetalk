@@ -128,7 +128,6 @@ final class HeaderUtils {
     }
 
     private static void updateRequestContentLengthNonZero(final HttpHeaders headers, final int contentLength) {
-        assert contentLength >= 0;
         if (contentLength > 0) {
             headers.set(CONTENT_LENGTH, Integer.toString(contentLength));
         }
@@ -196,9 +195,12 @@ final class HeaderUtils {
                 contentLength = buffer.readableBytes();
                 payloadAndTrailer = from(metadata, buffer, headersFactory.newEmptyTrailers());
             } else {
+                contentLength = -1; // We have seen unknown entities, so skip adding content-length.
                 payloadAndTrailer = from(metadata, reduction);
             }
-            contentLengthUpdater.apply(metadata.headers(), contentLength);
+            if (contentLength >= 0) {
+                contentLengthUpdater.apply(metadata.headers(), contentLength);
+            }
             return payloadAndTrailer;
         });
     }

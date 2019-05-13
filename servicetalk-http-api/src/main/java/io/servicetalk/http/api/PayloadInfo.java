@@ -25,26 +25,29 @@ import io.servicetalk.concurrent.api.Publisher;
 interface PayloadInfo {
 
     /**
-     * Asserts if the {@link Publisher} associated with this {@link PayloadInfo} can be safely aggregated to bring all
-     * data in memory. Inputs to this decision is left to the user of the API.
+     * Returns {@code true} if and only if, the {@link Publisher} associated with this {@link PayloadInfo} can be safely
+     * aggregated to bring all data in memory. Inputs to this decision is left to the user of the API.
      *
-     * @return {@code true} if the {@link Publisher} associated with this {@link PayloadInfo} can be safely aggregated
-     * to bring all data in memory.
+     * @return {@code true} if and only if, the {@link Publisher} associated with this {@link PayloadInfo} can be safely
+     * aggregated to bring all data in memory.
      */
     boolean safeToAggregate();
 
     /**
-     * Asserts if the {@link Publisher} associated with this {@link PayloadInfo} may also contain trailers.
+     * Returns {@code true} if and only if, the {@link Publisher} associated with this {@link PayloadInfo} may also
+     * contain trailers.
      *
-     * @return {@code true} if the {@link Publisher} associated with this {@link PayloadInfo} may also contain trailers.
+     * @return {@code true} if and only if, the {@link Publisher} associated with this {@link PayloadInfo} may also
+     * contain trailers.
      */
     boolean mayHaveTrailers();
 
     /**
-     * Asserts if the {@link Publisher} associated with this {@link PayloadInfo} will only emit {@link Buffer}s.
+     * Returns {@code true} if and only if, the {@link Publisher} associated with this {@link PayloadInfo} will only
+     * emit {@link Buffer}s.
      *
-     * @return {@code true} if the {@link Publisher} associated with this {@link PayloadInfo} will only emit
-     * {@link Buffer}s.
+     * @return {@code true} if and only if, the {@link Publisher} associated with this {@link PayloadInfo} will only
+     * emit {@link Buffer}s.
      */
     boolean onlyEmitsBuffer();
 }
