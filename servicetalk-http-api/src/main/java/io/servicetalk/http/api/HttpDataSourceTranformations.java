@@ -48,6 +48,7 @@ import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.checkDuplicateSubscription;
 import static java.lang.Integer.MAX_VALUE;
 import static java.lang.System.nanoTime;
+import static java.lang.Thread.currentThread;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
@@ -455,7 +456,10 @@ final class HttpDataSourceTranformations {
                         final HttpHeaders trailersOut;
                         try {
                             trailersOut = trailersTrans.apply(userState, inTrailersFuture.get());
-                        } catch (InterruptedException | ExecutionException e) {
+                        } catch (InterruptedException e) {
+                            currentThread().interrupt(); // Reset the interrupted flag.
+                            throw new CompletionException(e);
+                        } catch (ExecutionException e) {
                             throw new CompletionException(e);
                         }
                         outTrailersSingle.onSuccess(trailersOut);
@@ -583,7 +587,10 @@ final class HttpDataSourceTranformations {
                         final HttpHeaders trailersOut;
                         try {
                             trailersOut = trailersTrans.apply(userState, inTrailersFuture.get());
-                        } catch (InterruptedException | ExecutionException e) {
+                        } catch (InterruptedException e) {
+                            currentThread().interrupt(); // Reset the interrupted flag.
+                            throw new CompletionException(e);
+                        } catch (ExecutionException e) {
                             throw new CompletionException(e);
                         }
                         outTrailersSingle.onSuccess(trailersOut);
