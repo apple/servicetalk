@@ -40,7 +40,7 @@ final class CopyOnWriteAsyncContextMap implements AsyncContextMap {
         this(EmptyAsyncContextMap.INSTANCE);
     }
 
-    CopyOnWriteAsyncContextMap(CopyAsyncContextMap map) {
+    private CopyOnWriteAsyncContextMap(CopyAsyncContextMap map) {
         this.map = map;
     }
 
@@ -2872,7 +2872,7 @@ final class CopyOnWriteAsyncContextMap implements AsyncContextMap {
          */
         private final Object[] context;
 
-        private SevenOrMoreAsyncContextMap(Object... context) {
+        SevenOrMoreAsyncContextMap(Object... context) {
             this.context = context;
         }
 

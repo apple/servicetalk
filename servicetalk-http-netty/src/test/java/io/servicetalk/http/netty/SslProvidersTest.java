@@ -21,8 +21,8 @@ import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.test.resources.DefaultTestCerts;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.api.SslConfig.SslProvider;
-import io.servicetalk.transport.netty.IoThreadFactory;
 import io.servicetalk.transport.netty.NettyIoExecutors;
+import io.servicetalk.transport.netty.internal.IoThreadFactory;
 
 import org.junit.After;
 import org.junit.Rule;

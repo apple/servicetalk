@@ -16,6 +16,7 @@
 package io.servicetalk.transport.netty;
 
 import io.servicetalk.transport.api.IoExecutor;
+import io.servicetalk.transport.netty.internal.IoThreadFactory;
 import io.servicetalk.transport.netty.internal.NettyIoExecutor;
 
 import java.util.concurrent.ThreadFactory;

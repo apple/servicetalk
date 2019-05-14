@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,25 +15,30 @@
  */
 package io.servicetalk.concurrent.api;
 
+import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
-import io.servicetalk.concurrent.PublisherSource.Subscription;
 
 import static io.servicetalk.concurrent.api.AsyncContextMapThreadLocal.contextThreadLocal;
+import static java.util.Objects.requireNonNull;
 
-final class ContextPreservingSubscriber<T> extends ContextPreservingSubscriberNonCombined<T> implements Subscriber<T> {
-    ContextPreservingSubscriber(Subscriber<T> subscriber, AsyncContextMap current) {
-        super(subscriber, current);
+final class ContextPreservingSubscriberAndSubscription<T> implements Subscriber<T> {
+    final AsyncContextMap saved;
+    final Subscriber<T> subscriber;
+
+    ContextPreservingSubscriberAndSubscription(Subscriber<T> subscriber, AsyncContextMap current) {
+        this.subscriber = requireNonNull(subscriber);
+        this.saved = requireNonNull(current);
     }
 
     @Override
-    public void onSubscribe(Subscription s) {
+    public void onSubscribe(PublisherSource.Subscription s) {
         final Thread currentThread = Thread.currentThread();
         if (currentThread instanceof AsyncContextMapHolder) {
             final AsyncContextMapHolder asyncContextMapHolder = (AsyncContextMapHolder) currentThread;
             AsyncContextMap prev = asyncContextMapHolder.asyncContextMap();
             try {
                 asyncContextMapHolder.asyncContextMap(saved);
-                subscriber.onSubscribe(s);
+                subscriber.onSubscribe(ContextPreservingSubscription.wrap(s, saved));
             } finally {
                 asyncContextMapHolder.asyncContextMap(prev);
             }
@@ -42,11 +47,11 @@ final class ContextPreservingSubscriber<T> extends ContextPreservingSubscriberNo
         }
     }
 
-    private void onSubscribeSlowPath(Subscription s) {
+    private void onSubscribeSlowPath(PublisherSource.Subscription s) {
         AsyncContextMap prev = contextThreadLocal.get();
         try {
             contextThreadLocal.set(saved);
-            subscriber.onSubscribe(s);
+            subscriber.onSubscribe(ContextPreservingSubscription.wrap(s, saved));
         } finally {
             contextThreadLocal.set(prev);
         }
@@ -131,5 +136,10 @@ final class ContextPreservingSubscriber<T> extends ContextPreservingSubscriberNo
         } finally {
             contextThreadLocal.set(prev);
         }
+    }
+
+    @Override
+    public String toString() {
+        return ContextPreservingSubscriberAndSubscription.class.getSimpleName() + "(" + subscriber + ')';
     }
 }

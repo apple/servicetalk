@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,22 +15,21 @@
  */
 package io.servicetalk.concurrent.api;
 
-import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverTerminalFromSource;
+import io.servicetalk.concurrent.SingleSource;
 
-final class EmptyPublisher<T> extends AbstractSynchronousPublisher<T> {
-    private static final EmptyPublisher EMPTY_PUBLISHER = new EmptyPublisher();
+import static java.util.Objects.requireNonNull;
 
-    private EmptyPublisher() {
-        // singleton
+abstract class ContextPreservingSingleNonCombined<T> {
+    final AsyncContextMap saved;
+    final SingleSource.Subscriber<T> subscriber;
+
+    ContextPreservingSingleNonCombined(SingleSource.Subscriber<T> subscriber, AsyncContextMap current) {
+        this.subscriber = requireNonNull(subscriber);
+        this.saved = requireNonNull(current);
     }
 
     @Override
-    void doSubscribe(Subscriber<? super T> subscriber) {
-        deliverTerminalFromSource(subscriber);
-    }
-
-    @SuppressWarnings("unchecked")
-    static <T> Publisher<T> emptyPublisher() {
-        return (Publisher<T>) EMPTY_PUBLISHER;
+    public String toString() {
+        return getClass().getSimpleName() + "(" + subscriber + ')';
     }
 }

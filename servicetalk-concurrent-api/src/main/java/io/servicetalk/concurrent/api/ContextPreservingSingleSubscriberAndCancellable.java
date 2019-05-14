@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,65 +15,72 @@
  */
 package io.servicetalk.concurrent.api;
 
-import io.servicetalk.concurrent.PublisherSource.Subscriber;
-import io.servicetalk.concurrent.PublisherSource.Subscription;
+import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.SingleSource.Subscriber;
+
+import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.AsyncContextMapThreadLocal.contextThreadLocal;
+import static java.util.Objects.requireNonNull;
 
-final class ContextPreservingSubscriber<T> extends ContextPreservingSubscriberNonCombined<T> implements Subscriber<T> {
-    ContextPreservingSubscriber(Subscriber<T> subscriber, AsyncContextMap current) {
-        super(subscriber, current);
+final class ContextPreservingSingleSubscriberAndCancellable<T> implements Subscriber<T> {
+    final AsyncContextMap saved;
+    final Subscriber<? super T> subscriber;
+
+    ContextPreservingSingleSubscriberAndCancellable(Subscriber<? super T> subscriber, AsyncContextMap current) {
+        this.subscriber = requireNonNull(subscriber);
+        this.saved = requireNonNull(current);
     }
 
     @Override
-    public void onSubscribe(Subscription s) {
+    public void onSubscribe(Cancellable cancellable) {
         final Thread currentThread = Thread.currentThread();
         if (currentThread instanceof AsyncContextMapHolder) {
             final AsyncContextMapHolder asyncContextMapHolder = (AsyncContextMapHolder) currentThread;
             AsyncContextMap prev = asyncContextMapHolder.asyncContextMap();
             try {
                 asyncContextMapHolder.asyncContextMap(saved);
-                subscriber.onSubscribe(s);
+                subscriber.onSubscribe(ContextPreservingCancellable.wrap(cancellable, saved));
             } finally {
                 asyncContextMapHolder.asyncContextMap(prev);
             }
         } else {
-            onSubscribeSlowPath(s);
+            onSubscribeSlowPath(cancellable);
         }
     }
 
-    private void onSubscribeSlowPath(Subscription s) {
+    private void onSubscribeSlowPath(Cancellable cancellable) {
         AsyncContextMap prev = contextThreadLocal.get();
         try {
             contextThreadLocal.set(saved);
-            subscriber.onSubscribe(s);
+            subscriber.onSubscribe(ContextPreservingCancellable.wrap(cancellable, saved));
         } finally {
             contextThreadLocal.set(prev);
         }
     }
 
     @Override
-    public void onNext(T t) {
+    public void onSuccess(@Nullable T result) {
         final Thread currentThread = Thread.currentThread();
         if (currentThread instanceof AsyncContextMapHolder) {
             final AsyncContextMapHolder asyncContextMapHolder = (AsyncContextMapHolder) currentThread;
             AsyncContextMap prev = asyncContextMapHolder.asyncContextMap();
             try {
                 asyncContextMapHolder.asyncContextMap(saved);
-                subscriber.onNext(t);
+                subscriber.onSuccess(result);
             } finally {
                 asyncContextMapHolder.asyncContextMap(prev);
             }
         } else {
-            onNextSlowPath(t);
+            onSuccessSlowPath(result);
         }
     }
 
-    private void onNextSlowPath(T t) {
+    private void onSuccessSlowPath(@Nullable T result) {
         AsyncContextMap prev = contextThreadLocal.get();
         try {
             contextThreadLocal.set(saved);
-            subscriber.onNext(t);
+            subscriber.onSuccess(result);
         } finally {
             contextThreadLocal.set(prev);
         }
@@ -107,29 +114,7 @@ final class ContextPreservingSubscriber<T> extends ContextPreservingSubscriberNo
     }
 
     @Override
-    public void onComplete() {
-        final Thread currentThread = Thread.currentThread();
-        if (currentThread instanceof AsyncContextMapHolder) {
-            final AsyncContextMapHolder asyncContextMapHolder = (AsyncContextMapHolder) currentThread;
-            AsyncContextMap prev = asyncContextMapHolder.asyncContextMap();
-            try {
-                asyncContextMapHolder.asyncContextMap(saved);
-                subscriber.onComplete();
-            } finally {
-                asyncContextMapHolder.asyncContextMap(prev);
-            }
-        } else {
-            onCompleteSlowPath();
-        }
-    }
-
-    private void onCompleteSlowPath() {
-        AsyncContextMap prev = contextThreadLocal.get();
-        try {
-            contextThreadLocal.set(saved);
-            subscriber.onComplete();
-        } finally {
-            contextThreadLocal.set(prev);
-        }
+    public String toString() {
+        return ContextPreservingSingleSubscriberAndCancellable.class.getSimpleName() + "(" + subscriber + ')';
     }
 }

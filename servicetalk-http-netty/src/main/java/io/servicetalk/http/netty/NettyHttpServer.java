@@ -221,11 +221,11 @@ final class NettyHttpServer {
 
         Completable process() {
             final Single<StreamingHttpRequest> requestSingle =
-                    new SpliceFlatStreamToMetaSingle<>(connection.read(),
+                    connection.read().liftSyncSingle(new SpliceFlatStreamToMetaSingle<>(
                             (HttpRequestMetaData meta, Publisher<Object> payload) ->
                                     newTransportRequest(meta.method(), meta.requestTarget(), meta.version(),
                                             meta.headers(), executionContext().bufferAllocator(), payload,
-                                            headersFactory));
+                                            headersFactory)));
             return handleRequestAndWriteResponse(requestSingle);
         }
 

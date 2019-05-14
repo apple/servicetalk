@@ -17,6 +17,7 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.concurrent.api.LegacyMockedSingleListenerRule;
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.api.TestPublisherSubscriber;
 import io.servicetalk.concurrent.api.TestSubscription;
@@ -64,8 +65,7 @@ public class SpliceFlatStreamToMetaSingleTest {
     @Test
     public void streamWithHeaderAndPayloadShouldProduceDataWithEmbeddedPayload() {
         Publisher<Object> stream = upstream;
-        SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> op = new SpliceFlatStreamToMetaSingle<>(
-                stream, Data::new);
+        Single<Data> op = stream.liftSyncSingle(new SpliceFlatStreamToMetaSingle<>(Data::new));
         dataSubscriber.listen(op);
         upstream.onNext(metaData);
         Data data = dataSubscriber.verifySuccessAndReturn(Data.class);
@@ -82,8 +82,7 @@ public class SpliceFlatStreamToMetaSingleTest {
     public void streamWithHeaderAndEmptyPayloadShouldCompleteOnPublisherOnSubscribe()
             throws Exception {
         Publisher<Object> stream = upstream;
-        SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> op = new SpliceFlatStreamToMetaSingle<>(
-                stream, Data::new);
+        Single<Data> op = stream.liftSyncSingle(new SpliceFlatStreamToMetaSingle<>(Data::new));
         dataSubscriber.listen(op);
         upstream.onNext(metaData);
         Data data = dataSubscriber.verifySuccessAndReturn(Data.class);
@@ -95,8 +94,7 @@ public class SpliceFlatStreamToMetaSingleTest {
     @Test
     public void emptyStreamShouldCompleteDataWithError() {
         Publisher<Object> stream = upstream;
-        SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> op = new SpliceFlatStreamToMetaSingle<>(
-                stream, Data::new);
+        Single<Data> op = stream.liftSyncSingle(new SpliceFlatStreamToMetaSingle<>(Data::new));
         dataSubscriber.listen(op);
         upstream.onComplete();
         dataSubscriber.verifyFailure(IllegalStateException.class);
@@ -105,8 +103,7 @@ public class SpliceFlatStreamToMetaSingleTest {
     @Test
     public void cancelDataRacingWithDataShouldCompleteAndFailPublisherOnSubscribe() {
         Publisher<Object> stream = upstream;
-        SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> op = new SpliceFlatStreamToMetaSingle<>(
-                stream, Data::new);
+        Single<Data> op = stream.liftSyncSingle(new SpliceFlatStreamToMetaSingle<>(Data::new));
         dataSubscriber.listen(op);
         dataSubscriber.cancel();
         upstream.onNext(metaData);
@@ -119,8 +116,7 @@ public class SpliceFlatStreamToMetaSingleTest {
     @Test
     public void cancelDataAfterDataCompleteShouldIgnoreCancelAndDeliverPublisherOnComplete() {
         Publisher<Object> stream = upstream;
-        SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> op = new SpliceFlatStreamToMetaSingle<>(
-                stream, Data::new);
+        Single<Data> op = stream.liftSyncSingle(new SpliceFlatStreamToMetaSingle<>(Data::new));
         dataSubscriber.listen(op);
         upstream.onNext(metaData);
         Data data = dataSubscriber.verifySuccessAndReturn(Data.class);
@@ -137,8 +133,7 @@ public class SpliceFlatStreamToMetaSingleTest {
     @Test
     public void cancelDataBeforeDataCompleteShouldDeliverError() {
         Publisher<Object> stream = upstream;
-        SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> op = new SpliceFlatStreamToMetaSingle<>(
-                stream, Data::new);
+        Single<Data> op = stream.liftSyncSingle(new SpliceFlatStreamToMetaSingle<>(Data::new));
         dataSubscriber.listen(op);
         upstream.onSubscribe(subscription);
         dataSubscriber.cancel();
@@ -150,8 +145,7 @@ public class SpliceFlatStreamToMetaSingleTest {
     @Test
     public void streamErrorAfterPublisherSubscribeShouldDeliverError() {
         Publisher<Object> stream = upstream;
-        SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> op = new SpliceFlatStreamToMetaSingle<>(
-                stream, Data::new);
+        Single<Data> op = stream.liftSyncSingle(new SpliceFlatStreamToMetaSingle<>(Data::new));
         dataSubscriber.listen(op);
         upstream.onSubscribe(subscription);
         upstream.onNext(metaData);
@@ -169,8 +163,7 @@ public class SpliceFlatStreamToMetaSingleTest {
     @Test
     public void streamCompleteAfterPublisherSubscribeShouldDeliverComplete() {
         Publisher<Object> stream = upstream;
-        SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> op = new SpliceFlatStreamToMetaSingle<>(
-                stream, Data::new);
+        Single<Data> op = stream.liftSyncSingle(new SpliceFlatStreamToMetaSingle<>(Data::new));
         dataSubscriber.listen(op);
         upstream.onNext(metaData);
         Data data = dataSubscriber.verifySuccessAndReturn(Data.class);
@@ -186,8 +179,7 @@ public class SpliceFlatStreamToMetaSingleTest {
     @Test
     public void streamCompleteBeforePublisherSubscribeShouldDeliverCompleteOnSubscribe() {
         Publisher<Object> stream = upstream;
-        SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> op = new SpliceFlatStreamToMetaSingle<>(
-                stream, Data::new);
+        Single<Data> op = stream.liftSyncSingle(new SpliceFlatStreamToMetaSingle<>(Data::new));
         dataSubscriber.listen(op);
         upstream.onNext(metaData);
         Data data = dataSubscriber.verifySuccessAndReturn(Data.class);
@@ -200,8 +192,7 @@ public class SpliceFlatStreamToMetaSingleTest {
     @Test
     public void streamErrorBeforePublisherSubscribeShouldDeliverErrorOnSubscribe() {
         Publisher<Object> stream = upstream;
-        SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> op = new SpliceFlatStreamToMetaSingle<>(
-                stream, Data::new);
+        Single<Data> op = stream.liftSyncSingle(new SpliceFlatStreamToMetaSingle<>(Data::new));
         dataSubscriber.listen(op);
         upstream.onSubscribe(subscription);
         upstream.onNext(metaData);
@@ -216,8 +207,7 @@ public class SpliceFlatStreamToMetaSingleTest {
     @Test
     public void publisherSubscribeTwiceShouldFailSecondSubscriber() {
         Publisher<Object> stream = upstream;
-        SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> op = new SpliceFlatStreamToMetaSingle<>(
-                stream, Data::new);
+        Single<Data> op = stream.liftSyncSingle(new SpliceFlatStreamToMetaSingle<>(Data::new));
         dataSubscriber.listen(op);
         upstream.onNext(metaData);
         Data data = dataSubscriber.verifySuccessAndReturn(Data.class);
@@ -235,8 +225,7 @@ public class SpliceFlatStreamToMetaSingleTest {
     @Test
     public void publisherSubscribeAgainAfterCompletingInitialSubscriberShouldFailSecondSubscriber() {
         Publisher<Object> stream = upstream;
-        SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> op = new SpliceFlatStreamToMetaSingle<>(
-                stream, Data::new);
+        Single<Data> op = stream.liftSyncSingle(new SpliceFlatStreamToMetaSingle<>(Data::new));
         dataSubscriber.listen(op);
         upstream.onNext(metaData);
         Data data = dataSubscriber.verifySuccessAndReturn(Data.class);
@@ -257,10 +246,9 @@ public class SpliceFlatStreamToMetaSingleTest {
         // TestPublisher used in other cases, does not show that behavior. Instead it throws from sendItems() which is
         // less obvious failure message than what we get with dataSubscriber.verifyFailure(DELIBERATE_EXCEPTION);
         Publisher<Object> stream = from(metaData);
-        SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> op = new SpliceFlatStreamToMetaSingle<>(
-                stream, (metaData, payload) -> {
+        Single<Data> op = stream.liftSyncSingle(new SpliceFlatStreamToMetaSingle<>((metaData, payload) -> {
                     throw DELIBERATE_EXCEPTION;
-                });
+                }));
         dataSubscriber.listen(op);
         dataSubscriber.verifyFailure(DELIBERATE_EXCEPTION);
     }

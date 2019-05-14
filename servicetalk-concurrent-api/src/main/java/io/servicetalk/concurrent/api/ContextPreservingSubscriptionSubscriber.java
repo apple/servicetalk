@@ -18,22 +18,11 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 
-import static java.util.Objects.requireNonNull;
+final class ContextPreservingSubscriptionSubscriber<T> extends ContextPreservingSubscriberNonCombined<T>
+        implements Subscriber<T> {
 
-final class ContextPreservingSubscriptionSubscriber<T> implements Subscriber<T> {
-    private final AsyncContextMap saved;
-    private final Subscriber<? super T> subscriber;
-
-    private ContextPreservingSubscriptionSubscriber(Subscriber<? super T> subscriber, AsyncContextMap current) {
-        this.subscriber = requireNonNull(subscriber);
-        this.saved = requireNonNull(current);
-    }
-
-    static <T> Subscriber<T> wrap(Subscriber<T> subscriber, AsyncContextMap current) {
-        // Manual calls to subscribe in operators (e.g. Splice operator) may generate duplicate wrapping.
-        return (subscriber instanceof ContextPreservingSubscriptionSubscriber &&
-                ((ContextPreservingSubscriptionSubscriber) subscriber).saved == current) ? subscriber :
-                new ContextPreservingSubscriptionSubscriber<>(subscriber, current);
+    ContextPreservingSubscriptionSubscriber(Subscriber<T> subscriber, AsyncContextMap current) {
+        super(subscriber, current);
     }
 
     @Override

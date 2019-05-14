@@ -58,8 +58,7 @@ public final class GlobalExecutionContext {
         static final ExecutionContext INSTANCE;
 
         static {
-            final IoExecutor ioExecutor = createIoExecutor(new io.netty.util.concurrent.DefaultThreadFactory(
-                    "servicetalk-global-io-executor", true, NORM_PRIORITY));
+            final IoExecutor ioExecutor = createIoExecutor(new IoThreadFactory("servicetalk-global-io-executor", true));
             final Executor executor = newCachedThreadExecutor(
                     new DefaultThreadFactory("servicetalk-global-executor", true, NORM_PRIORITY));
             INSTANCE = new DefaultExecutionContext(DEFAULT_ALLOCATOR, ioExecutor, executor, OFFLOAD_ALL_STRATEGY);

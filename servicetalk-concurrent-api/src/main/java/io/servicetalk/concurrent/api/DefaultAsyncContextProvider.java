@@ -50,35 +50,140 @@ final class DefaultAsyncContextProvider implements AsyncContextProvider {
     @Override
     public CompletableSource.Subscriber wrapCancellable(final CompletableSource.Subscriber subscriber,
                                                         final AsyncContextMap current) {
+        if (subscriber instanceof ContextPreservingCompletableNonCombined) {
+            final ContextPreservingCompletableNonCombined s = (ContextPreservingCompletableNonCombined) subscriber;
+            if (s.saved == current) {
+                return new ContextPreservingCompletableSubscriberAndCancellable(s.subscriber, current);
+            }
+        } else if (subscriber instanceof ContextPreservingCompletableSubscriberAndCancellable &&
+                ((ContextPreservingCompletableSubscriberAndCancellable) subscriber).saved == current) {
+            return subscriber;
+        }
         return new ContextPreservingCancellableCompletableSubscriber(subscriber, current);
     }
 
     @Override
     public CompletableSource.Subscriber wrapCompletableSubscriber(CompletableSource.Subscriber subscriber,
                                                                   AsyncContextMap current) {
+        if (subscriber instanceof ContextPreservingCompletableNonCombined) {
+            final ContextPreservingCompletableNonCombined s = (ContextPreservingCompletableNonCombined) subscriber;
+            if (s.saved == current) {
+                return new ContextPreservingCompletableSubscriberAndCancellable(s.subscriber, current);
+            }
+        } else if (subscriber instanceof ContextPreservingCompletableSubscriberAndCancellable &&
+                ((ContextPreservingCompletableSubscriberAndCancellable) subscriber).saved == current) {
+            return subscriber;
+        }
         return new ContextPreservingCompletableSubscriber(subscriber, current);
+    }
+
+    @Override
+    public CompletableSource.Subscriber wrapCompletableSubscriberAndCancellable(
+            final CompletableSource.Subscriber subscriber, final AsyncContextMap current) {
+        if (subscriber instanceof ContextPreservingCompletableNonCombined) {
+            final ContextPreservingCompletableNonCombined s = (ContextPreservingCompletableNonCombined) subscriber;
+            if (s.saved == current) {
+                return new ContextPreservingCompletableSubscriberAndCancellable(s.subscriber, current);
+            }
+        } else if (subscriber instanceof ContextPreservingCompletableSubscriberAndCancellable &&
+                ((ContextPreservingCompletableSubscriberAndCancellable) subscriber).saved == current) {
+            return subscriber;
+        }
+        return new ContextPreservingCompletableSubscriberAndCancellable(subscriber, current);
     }
 
     @Override
     public <T> SingleSource.Subscriber<T> wrapCancellable(final SingleSource.Subscriber<T> subscriber,
                                                           final AsyncContextMap current) {
+        if (subscriber instanceof ContextPreservingSingleNonCombined) {
+            @SuppressWarnings("unchecked")
+            final ContextPreservingSingleNonCombined<T> s = (ContextPreservingSingleNonCombined<T>) subscriber;
+            if (s.saved == current) {
+                return new ContextPreservingSingleSubscriberAndCancellable<>(s.subscriber, current);
+            }
+        } else if (subscriber instanceof ContextPreservingSingleSubscriberAndCancellable &&
+                ((ContextPreservingSingleSubscriberAndCancellable<T>) subscriber).saved == current) {
+            return subscriber;
+        }
         return new ContextPreservingCancellableSingleSubscriber<>(subscriber, current);
     }
 
     @Override
     public <T> SingleSource.Subscriber<T> wrapSingleSubscriber(SingleSource.Subscriber<T> subscriber,
                                                                AsyncContextMap current) {
+        if (subscriber instanceof ContextPreservingSingleNonCombined) {
+            @SuppressWarnings("unchecked")
+            final ContextPreservingSingleNonCombined<T> s = (ContextPreservingSingleNonCombined<T>) subscriber;
+            if (s.saved == current) {
+                return new ContextPreservingSingleSubscriberAndCancellable<>(s.subscriber, current);
+            }
+        } else if (subscriber instanceof ContextPreservingSingleSubscriberAndCancellable &&
+                ((ContextPreservingSingleSubscriberAndCancellable<T>) subscriber).saved == current) {
+            return subscriber;
+        }
         return new ContextPreservingSingleSubscriber<>(subscriber, current);
     }
 
     @Override
+    public <T> SingleSource.Subscriber<T> wrapSingleSubscriberAndCancellable(
+            final SingleSource.Subscriber<T> subscriber, final AsyncContextMap current) {
+        if (subscriber instanceof ContextPreservingSingleNonCombined) {
+            @SuppressWarnings("unchecked")
+            final ContextPreservingSingleNonCombined<T> s = (ContextPreservingSingleNonCombined<T>) subscriber;
+            if (s.saved == current) {
+                return new ContextPreservingSingleSubscriberAndCancellable<>(s.subscriber, current);
+            }
+        } else if (subscriber instanceof ContextPreservingSingleSubscriberAndCancellable &&
+                ((ContextPreservingSingleSubscriberAndCancellable<T>) subscriber).saved == current) {
+            return subscriber;
+        }
+        return new ContextPreservingSingleSubscriberAndCancellable<>(subscriber, current);
+    }
+
+    @Override
     public <T> Subscriber<T> wrapSubscription(final Subscriber<T> subscriber, final AsyncContextMap current) {
-        return ContextPreservingSubscriptionSubscriber.wrap(subscriber, current);
+        if (subscriber instanceof ContextPreservingSubscriberNonCombined) {
+            @SuppressWarnings("unchecked")
+            final ContextPreservingSubscriberNonCombined<T> s = (ContextPreservingSubscriberNonCombined<T>) subscriber;
+            if (s.saved == current) {
+                return new ContextPreservingSubscriberAndSubscription<>(s.subscriber, current);
+            }
+        } else if (subscriber instanceof ContextPreservingSubscriberAndSubscription &&
+                ((ContextPreservingSubscriberAndSubscription<T>) subscriber).saved == current) {
+            return subscriber;
+        }
+        return new ContextPreservingSubscriptionSubscriber<>(subscriber, current);
     }
 
     @Override
     public <T> Subscriber<T> wrapPublisherSubscriber(Subscriber<T> subscriber, AsyncContextMap current) {
+        if (subscriber instanceof ContextPreservingSubscriberNonCombined) {
+            @SuppressWarnings("unchecked")
+            final ContextPreservingSubscriberNonCombined<T> s = (ContextPreservingSubscriberNonCombined<T>) subscriber;
+            if (s.saved == current) {
+                return new ContextPreservingSubscriberAndSubscription<>(s.subscriber, current);
+            }
+        } else if (subscriber instanceof ContextPreservingSubscriberAndSubscription &&
+                ((ContextPreservingSubscriberAndSubscription<T>) subscriber).saved == current) {
+            return subscriber;
+        }
         return new ContextPreservingSubscriber<>(subscriber, current);
+    }
+
+    @Override
+    public <T> Subscriber<T> wrapPublisherSubscriberAndSubscription(final Subscriber<T> subscriber,
+                                                                    final AsyncContextMap current) {
+        if (subscriber instanceof ContextPreservingSubscriberNonCombined) {
+            @SuppressWarnings("unchecked")
+            final ContextPreservingSubscriberNonCombined<T> s = (ContextPreservingSubscriberNonCombined<T>) subscriber;
+            if (s.saved == current) {
+                return new ContextPreservingSubscriberAndSubscription<>(s.subscriber, current);
+            }
+        } else if (subscriber instanceof ContextPreservingSubscriberAndSubscription &&
+                ((ContextPreservingSubscriberAndSubscription<T>) subscriber).saved == current) {
+            return subscriber;
+        }
+        return new ContextPreservingSubscriberAndSubscription<>(subscriber, current);
     }
 
     @Override

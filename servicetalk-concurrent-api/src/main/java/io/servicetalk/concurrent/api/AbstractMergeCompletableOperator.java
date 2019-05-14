@@ -45,7 +45,7 @@ abstract class AbstractMergeCompletableOperator extends AbstractNoHandleSubscrib
         // with the original contextMap. Otherwise some other context may leak into this subscriber chain from the other
         // side of the asynchronous boundary.
         final Subscriber operatorSubscriber = signalOffloader.offloadSubscriber(
-                contextProvider.wrapCompletableSubscriber(subscriber, contextMap));
+                contextProvider.wrapCompletableSubscriberAndCancellable(subscriber, contextMap));
         MergeSubscriber mergeSubscriber = apply(operatorSubscriber);
         // Subscriber to use to subscribe to the original source. Since this is an asynchronous operator, it may call
         // Cancellable method from EventLoop (if the asynchronous source created/obtained inside this operator uses
@@ -54,8 +54,7 @@ abstract class AbstractMergeCompletableOperator extends AbstractNoHandleSubscrib
         //
         // We are introducing offloading on the Subscription, which means the AsyncContext may leak if we don't save
         // and restore the AsyncContext before/after the asynchronous boundary.
-        final Subscriber upstreamSubscriber = signalOffloader.offloadCancellable(
-                contextProvider.wrapCancellable(mergeSubscriber, contextMap));
+        final Subscriber upstreamSubscriber = signalOffloader.offloadCancellable(mergeSubscriber);
         original.delegateSubscribe(upstreamSubscriber, signalOffloader, contextMap, contextProvider);
         doMerge(mergeSubscriber);
     }
