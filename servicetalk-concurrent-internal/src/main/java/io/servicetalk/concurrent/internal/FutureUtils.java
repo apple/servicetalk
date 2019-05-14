@@ -19,6 +19,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
 import static io.servicetalk.concurrent.internal.PlatformDependent.throwException;
+import static java.lang.Thread.currentThread;
 
 /**
  * A set of utilities for interacting with {@link Future}.
@@ -50,6 +51,7 @@ public final class FutureUtils {
         try {
             return future.get();
         } catch (InterruptedException e) {
+            currentThread().interrupt(); // Reset the interrupted flag.
             throwException(e);
         } catch (ExecutionException e) {
             throwException(e.getCause());

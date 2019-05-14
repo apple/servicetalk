@@ -17,6 +17,8 @@ package io.servicetalk.http.api;
 
 import java.util.concurrent.ExecutionException;
 
+import static java.lang.Thread.currentThread;
+
 final class RequestResponseFactories {
 
     private RequestResponseFactories() {
@@ -123,7 +125,10 @@ final class RequestResponseFactories {
                                           HttpRequestMethod method, String requestTarget) {
         try {
             return requestFactory.newRequest(method, requestTarget).toRequest().toFuture().get();
-        } catch (InterruptedException | ExecutionException e) {
+        } catch (InterruptedException e) {
+            currentThread().interrupt(); // Reset the interrupted flag.
+            throw new RuntimeException(e);
+        } catch (ExecutionException e) {
             throw new RuntimeException(e);
         }
     }
