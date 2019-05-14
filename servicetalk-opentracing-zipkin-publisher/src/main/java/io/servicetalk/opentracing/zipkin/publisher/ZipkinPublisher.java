@@ -47,6 +47,7 @@ import javax.annotation.Nullable;
 import static io.netty.channel.ChannelOption.RCVBUF_ALLOCATOR;
 import static io.servicetalk.transport.netty.internal.BuilderUtils.datagramChannel;
 import static io.servicetalk.transport.netty.internal.NettyIoExecutors.createEventLoopGroup;
+import static java.lang.Thread.currentThread;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -215,6 +216,7 @@ public final class ZipkinPublisher implements InMemorySpanEventListener, Closeab
             final Bootstrap bootstrap = transport.buildBootstrap(group, encoder, collectorAddress);
             channel = bootstrap.bind(0).sync().channel();
         } catch (InterruptedException e) {
+            currentThread().interrupt(); // Reset the interrupted flag.
             throw new IllegalStateException("Failed to create " + transport + " client");
         } catch (Exception e) {
             logger.warn("Failed to create {} client", transport, e);
