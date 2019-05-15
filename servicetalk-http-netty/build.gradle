@@ -49,6 +49,7 @@ dependencies {
   implementation "io.servicetalk:servicetalk-transport-netty-internal:$project.version"
   implementation "org.slf4j:slf4j-api"
 
+  testImplementation "io.netty:netty-transport-native-unix-common"
   testImplementation "io.servicetalk:servicetalk-concurrent-api-testFixtures:$project.version"
   testImplementation "io.servicetalk:servicetalk-concurrent-internal-testFixtures:$project.version"
   testImplementation "io.servicetalk:servicetalk-http-api-testFixtures:$project.version"
