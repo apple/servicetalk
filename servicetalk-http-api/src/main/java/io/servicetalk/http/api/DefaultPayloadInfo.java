@@ -18,8 +18,8 @@ package io.servicetalk.http.api;
 final class DefaultPayloadInfo implements PayloadInfo {
 
     private static final byte SAFE_TO_AGGREGATE = 1;
-    private static final byte MAY_HAVE_TRAILERS = SAFE_TO_AGGREGATE << 1;
-    private static final byte ONLY_EMIT_BUFFERS = SAFE_TO_AGGREGATE << 2;
+    private static final byte MAY_HAVE_TRAILERS = 2;
+    private static final byte ONLY_EMIT_BUFFERS = 4;
 
     private byte flags;
 

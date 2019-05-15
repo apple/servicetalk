@@ -330,15 +330,14 @@ public class ContentHeadersTest extends AbstractNettyHttpServerTest {
     }
 
     private static HttpRequest newAggregatedRequest(final HttpRequestMethod requestMethod) {
-        HttpRequest req = awaitSingleIndefinitelyNonNull(newRequest(requestMethod, "/", HTTP_1_1,
-                headersFactory.newHeaders(), DEFAULT_ALLOCATOR, headersFactory).toRequest());
-        return requestMethod != TRACE ? req.payloadBody(PAYLOAD, textSerializer()) : req;
+        return awaitSingleIndefinitelyNonNull(newRequest(requestMethod, "/", HTTP_1_1,
+                headersFactory.newHeaders(), DEFAULT_ALLOCATOR, headersFactory).toRequest())
+                .payloadBody(PAYLOAD, textSerializer());
     }
 
     private static StreamingHttpRequest newStreamingRequest(final HttpRequestMethod requestMethod) {
-        StreamingHttpRequest req = newRequest(requestMethod, "/", HTTP_1_1, headersFactory.newHeaders(),
-                DEFAULT_ALLOCATOR, headersFactory);
-        return requestMethod != TRACE ? req.payloadBody(from(PAYLOAD), textSerializer()) : req;
+        return newRequest(requestMethod, "/", HTTP_1_1, headersFactory.newHeaders(),
+                DEFAULT_ALLOCATOR, headersFactory).payloadBody(from(PAYLOAD), textSerializer());
     }
 
     private static HttpResponse newAggregatedResponse(final HttpResponseStatus status) {

@@ -19,6 +19,8 @@ import io.servicetalk.http.api.StreamingHttpClientToBlockingHttpClient.ReservedS
 import io.servicetalk.http.api.StreamingHttpClientToBlockingStreamingHttpClient.ReservedStreamingHttpConnectionToBlockingStreaming;
 import io.servicetalk.http.api.StreamingHttpClientToHttpClient.ReservedStreamingHttpConnectionToReservedHttpConnection;
 
+import static io.servicetalk.http.api.HeaderUtils.isTransferEncodingChunked;
+
 /**
  * Conversion routines to {@link StreamingHttpService}.
  */
@@ -201,7 +203,8 @@ public final class HttpApiConversions {
      * @return {@code true} is the request/response payload may have trailers, {@code false} otherwise.
      */
     public static boolean mayHaveTrailers(HttpMetaData metadata) {
-        return ((metadata instanceof PayloadInfo) && ((PayloadInfo) metadata).mayHaveTrailers());
+        return ((metadata instanceof PayloadInfo) && ((PayloadInfo) metadata).mayHaveTrailers()) ||
+                isTransferEncodingChunked(metadata.headers());
     }
 
     /**

@@ -77,7 +77,7 @@ final class HeaderUtils {
         if (!canAddContentLength(request)) {
             return false;
         }
-        return canAddRequestTransferEncodingProtocol(request.method());
+        return clientMaySendPayloadBodyFor(request.method());
     }
 
     static boolean canAddResponseContentLength(final StreamingHttpResponse response,
@@ -86,10 +86,10 @@ final class HeaderUtils {
     }
 
     static boolean canAddRequestTransferEncoding(final StreamingHttpRequest request) {
-        return !hasContentHeaders(request.headers()) && canAddRequestTransferEncodingProtocol(request.method());
+        return !hasContentHeaders(request.headers()) && clientMaySendPayloadBodyFor(request.method());
     }
 
-    static boolean canAddRequestTransferEncodingProtocol(final HttpRequestMethod requestMethod) {
+    static boolean clientMaySendPayloadBodyFor(final HttpRequestMethod requestMethod) {
         // A client MUST NOT send a message body in a TRACE request.
         // https://tools.ietf.org/html/rfc7231#section-4.3.8
         return !TRACE.name().equals(requestMethod.name());
@@ -194,9 +194,10 @@ final class HeaderUtils {
                 final Buffer buffer = (Buffer) reduction;
                 contentLength = buffer.readableBytes();
                 payloadAndTrailer = from(metadata, buffer, headersFactory.newEmptyTrailers());
-            } else {
-                contentLength = -1; // We have seen unknown entities, so skip adding content-length.
+            } else if (reduction instanceof HttpHeaders) {
                 payloadAndTrailer = from(metadata, reduction);
+            } else {
+                throw new IllegalArgumentException("Unknown object " + reduction + " found as payload");
             }
             if (contentLength >= 0) {
                 contentLengthUpdater.apply(metadata.headers(), contentLength);

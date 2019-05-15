@@ -69,7 +69,7 @@ final class StreamingHttpPayloadHolder implements PayloadInfo {
         if (payloadInfo.mayHaveTrailers()) {
             this.payloadBody = requireNonNull(payloadBody, "Payload can not be null if trailers are present.");
         } else {
-            this.payloadBody = payloadBody == null ? null : filterTrailers(requireNonNull(payloadBody));
+            this.payloadBody = payloadBody == null ? null : filterTrailers(payloadBody);
         }
     }
 
