@@ -30,9 +30,6 @@ import static io.servicetalk.opentracing.internal.TracingConstants.NO_PARENT_ID;
  * <li>00000000000B75A2.00000000000B75A2&lt;:000000000015C003 (no sampling information)</li>
  * <li>00000000000B75A2.00000000000B75A2&lt;:000000000015C003:1 (sampling=true)</li>
  * </ul>
- * <p>
- * See https://github.pie.apple.com/pie/specs/blob/master/tracing.md#using-the-trace-key
- * for specification of the format.
  */
 public final class SingleLineFormatter implements InMemoryTraceStateFormat<SingleLineValue> {
     public static final SingleLineFormatter INSTANCE = new SingleLineFormatter();
