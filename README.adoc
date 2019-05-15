@@ -8,3 +8,87 @@ Netty for common networking protocols used in service to service communication. 
 "smart client" like features such as client-side load balancing and service discovery integration.
 
 See the link:https://io.servicetalk/[ServiceTalk docs] for more information.
+
+== Getting Started
+
+All ServiceTalk released artifacts are available in link:https://repo1.maven.org/maven2/io/servicetalk/[the Maven central repository].
+
+The easiest way to get started is to add ServiceTalk's bill-of-material (BOM) dependency to your project's build.
+
+.Maven, pom/xml
+[source,xml]
+----
+<dependencyManagement>
+<dependencies>
+  <dependency>
+    <groupId>io.servicetalk</groupId>
+    <artifactId>servicetalk-bom</artifactId>
+    <version>${servicetalk.version}</version>
+    <type>pom</type>
+    <scope>import</scope>
+  </dependency>
+</dependencies>
+</dependencyManagement>
+----
+
+.Gradle 5, build.gradle
+[source,groovy]
+----
+implementation platform("io.servicetalk:servicetalk-bom:$serviceTalkVersion")
+----
+
+.Gradle 4
+[source,groovy]
+----
+implementation "io.servicetalk:servicetalk-bom:$serviceTalkVersion" <1>
+
+enableFeaturePreview("IMPROVED_POM_SUPPORT") <2>
+----
+<1> in build.gradle
+<2> in settings.gradle
+
+With this in place, you can add the ServiceTalk module dependencies you need without specifying their versions.
+
+Refer to the link:https://io.servicetalk/[ServiceTalk docs] for various examples that will get you started with the different features of ServiceTalk.
+
+NOTE: Builds of the development version are available
+      in link:https://oss.sonatype.org/content/repositories/snapshots/io/servicetalk/[Sonatype's snapshots Maven repository].
+
+=== Contributor Setup
+
+IMPORTANT: If you're intending to contribute to ServiceTalk,
+           make sure to first read the link:CONTRIBUTING.adoc[contribution guidelines].
+
+ServiceTalk uses link:https://gradle.org[Gradle] as its build tool and only requires Java JDK 8 or higher to be pre-installed.
+ServiceTalk ships with the Gradle Wrapper, which means that there is no need to install Gradle on your machine beforehand.
+In fact you should be able to run:
+
+[source,shell]
+----
+$ ./gradlew build
+----
+
+right after cloning the repository and get `BUILD SUCCESSFUL`.
+
+The supported IDE is link:https://www.jetbrains.com/idea[IntelliJ IDEA].
+In order to open ServiceTalk with it,
+you first need to generate control files by running:
+
+[source,shell]
+----
+$ ./gradlew idea
+----
+
+When done, running one of following commands should open ServiceTalk in IntelliJ:
+
+.Generic
+[source,shell]
+----
+$ idea .
+----
+
+.MacOS
+[source,shell]
+----
+$ open servicetalk.ipr
+----
