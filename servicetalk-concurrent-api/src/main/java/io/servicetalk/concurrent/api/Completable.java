@@ -366,7 +366,7 @@ public abstract class Completable {
      * {@link Completable} has terminated successfully.
      */
     public final <T> Publisher<T> concat(Publisher<? extends T> next) {
-        return this.<T>toPublisher().concat(next);
+        return new CompletableConcatWithPublisher<>(this, next, executor);
     }
 
     /**
