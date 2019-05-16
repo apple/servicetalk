@@ -40,17 +40,17 @@ abstract class AbstractDelegatingHttpResponse implements HttpResponseMetaData, P
 
     @Override
     public boolean safeToAggregate() {
-        return false;
+        return original.safeToAggregate();
     }
 
     @Override
     public boolean mayHaveTrailers() {
-        return false;
+        return original.mayHaveTrailers();
     }
 
     @Override
     public boolean onlyEmitsBuffer() {
-        return false;
+        return original.onlyEmitsBuffer();
     }
 
     @Override
