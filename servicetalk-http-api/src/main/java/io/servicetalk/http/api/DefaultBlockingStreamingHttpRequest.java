@@ -28,7 +28,7 @@ import java.util.function.UnaryOperator;
 import static io.servicetalk.concurrent.api.Publisher.fromIterable;
 
 final class DefaultBlockingStreamingHttpRequest extends AbstractDelegatingHttpRequest
-        implements BlockingStreamingHttpRequest, PayloadInfo {
+        implements BlockingStreamingHttpRequest {
 
     DefaultBlockingStreamingHttpRequest(final DefaultStreamingHttpRequest original) {
         super(original);
