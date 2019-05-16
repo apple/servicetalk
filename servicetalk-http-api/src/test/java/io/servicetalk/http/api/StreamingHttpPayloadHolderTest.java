@@ -85,8 +85,8 @@ public class StreamingHttpPayloadHolderTest {
         Trailers
     }
 
-    private HttpHeaders headers;
-    private HttpHeadersFactory headersFactory;
+    private final HttpHeaders headers;
+    private final HttpHeadersFactory headersFactory;
 
     @Nullable
     private final TestPublisher<Object> payloadSource;
@@ -233,7 +233,7 @@ public class StreamingHttpPayloadHolderTest {
         }
         getPayloadSource().onComplete();
         if (!payloadHolder.onlyEmitsBuffer() && payloadHolder.mayHaveTrailers() ||
-                headers.contains(HttpHeaderNames.TRANSFER_ENCODING, HttpHeaderValues.CHUNKED, true)) {
+                headers.contains(TRANSFER_ENCODING, CHUNKED, true)) {
             verifyTrailersReceived();
         } else {
             assertThat("Expected payload completion", payloadAndTrailersSubscriber.takeTerminal(), is(complete()));

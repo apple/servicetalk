@@ -38,15 +38,15 @@ final class DefaultPayloadInfo implements PayloadInfo {
         return isSet(ONLY_EMIT_BUFFERS);
     }
 
-    DefaultPayloadInfo updateSafeToAggregate(boolean safeToAggregate) {
+    DefaultPayloadInfo setSafeToAggregate(boolean safeToAggregate) {
         return set(SAFE_TO_AGGREGATE, safeToAggregate);
     }
 
-    DefaultPayloadInfo updateMayHaveTrailers(boolean mayHaveTrailers) {
+    DefaultPayloadInfo setMayHaveTrailers(boolean mayHaveTrailers) {
         return set(MAY_HAVE_TRAILERS, mayHaveTrailers);
     }
 
-    DefaultPayloadInfo updateOnlyEmitsBuffer(boolean onlyEmitsBuffer) {
+    DefaultPayloadInfo setOnlyEmitsBuffer(boolean onlyEmitsBuffer) {
         return set(ONLY_EMIT_BUFFERS, onlyEmitsBuffer);
     }
 
@@ -67,12 +67,12 @@ final class DefaultPayloadInfo implements PayloadInfo {
      * @return A new {@link PayloadInfo} representing an HTTP message created by a user.
      */
     static DefaultPayloadInfo forUserCreated(HttpHeaders httpHeaders) {
-        return newInfoUsingHeaders(httpHeaders).updateOnlyEmitsBuffer(true);
+        return newInfoUsingHeaders(httpHeaders).setOnlyEmitsBuffer(true);
     }
 
     private static DefaultPayloadInfo newInfoUsingHeaders(final HttpHeaders httpHeaders) {
         return httpHeaders.contains(HttpHeaderNames.TRANSFER_ENCODING, HttpHeaderValues.CHUNKED, true) ?
-                new DefaultPayloadInfo().updateMayHaveTrailers(true) :
+                new DefaultPayloadInfo().setMayHaveTrailers(true) :
                 new DefaultPayloadInfo();
     }
 
@@ -87,5 +87,31 @@ final class DefaultPayloadInfo implements PayloadInfo {
             flags &= ~flag;
         }
         return this;
+    }
+
+    @Override
+    public boolean equals(final Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+
+        final DefaultPayloadInfo that = (DefaultPayloadInfo) o;
+
+        return flags == that.flags;
+    }
+
+    @Override
+    public int hashCode() {
+        return (int) flags;
+    }
+
+    @Override
+    public String toString() {
+        return "DefaultPayloadInfo{" +
+                "flags=" + flags +
+                '}';
     }
 }

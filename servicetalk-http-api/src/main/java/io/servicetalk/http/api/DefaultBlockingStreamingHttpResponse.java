@@ -27,12 +27,11 @@ import java.util.function.UnaryOperator;
 
 import static io.servicetalk.concurrent.api.Publisher.fromIterable;
 
-final class DefaultBlockingStreamingHttpResponse implements BlockingStreamingHttpResponse, PayloadInfo {
-
-    private final DefaultStreamingHttpResponse original;
+final class DefaultBlockingStreamingHttpResponse extends AbstractDelegatingHttpResponse
+        implements BlockingStreamingHttpResponse {
 
     DefaultBlockingStreamingHttpResponse(final DefaultStreamingHttpResponse original) {
-        this.original = original;
+        super(original);
     }
 
     @Override
@@ -115,24 +114,9 @@ final class DefaultBlockingStreamingHttpResponse implements BlockingStreamingHtt
     }
 
     @Override
-    public HttpProtocolVersion version() {
-        return original.version();
-    }
-
-    @Override
     public BlockingStreamingHttpResponse version(final HttpProtocolVersion version) {
         original.version(version);
         return this;
-    }
-
-    @Override
-    public HttpHeaders headers() {
-        return original.headers();
-    }
-
-    @Override
-    public HttpResponseStatus status() {
-        return original.status();
     }
 
     @Override
@@ -142,17 +126,26 @@ final class DefaultBlockingStreamingHttpResponse implements BlockingStreamingHtt
     }
 
     @Override
-    public boolean safeToAggregate() {
-        return original.safeToAggregate();
+    public boolean equals(final Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        if (!super.equals(o)) {
+            return false;
+        }
+
+        final DefaultBlockingStreamingHttpResponse that = (DefaultBlockingStreamingHttpResponse) o;
+
+        return original.equals(that.original);
     }
 
     @Override
-    public boolean mayHaveTrailers() {
-        return original.mayHaveTrailers();
-    }
-
-    @Override
-    public boolean onlyEmitsBuffer() {
-        return original.onlyEmitsBuffer();
+    public int hashCode() {
+        int result = super.hashCode();
+        result = 31 * result + original.hashCode();
+        return result;
     }
 }

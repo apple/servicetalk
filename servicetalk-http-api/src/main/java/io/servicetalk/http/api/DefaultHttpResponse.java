@@ -21,39 +21,23 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Publisher.from;
 
-final class DefaultHttpResponse implements HttpResponse, PayloadInfo {
+final class DefaultHttpResponse extends AbstractDelegatingHttpResponse implements HttpResponse {
 
-    private final DefaultStreamingHttpResponse original;
     private Buffer payloadBody;
     @Nullable
     private HttpHeaders trailers;
 
     DefaultHttpResponse(final DefaultStreamingHttpResponse original, final Buffer payloadBody,
                         @Nullable final HttpHeaders trailers) {
-        this.original = original;
+        super(original);
         this.payloadBody = payloadBody;
         this.trailers = trailers;
-    }
-
-    @Override
-    public HttpProtocolVersion version() {
-        return original.version();
     }
 
     @Override
     public HttpResponse version(final HttpProtocolVersion version) {
         original.version(version);
         return this;
-    }
-
-    @Override
-    public HttpHeaders headers() {
-        return original.headers();
-    }
-
-    @Override
-    public HttpResponseStatus status() {
-        return original.status();
     }
 
     @Override
@@ -101,17 +85,30 @@ final class DefaultHttpResponse implements HttpResponse, PayloadInfo {
     }
 
     @Override
-    public boolean safeToAggregate() {
-        return false;
+    public boolean equals(final Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        if (!super.equals(o)) {
+            return false;
+        }
+
+        final DefaultHttpResponse that = (DefaultHttpResponse) o;
+
+        if (!payloadBody.equals(that.payloadBody)) {
+            return false;
+        }
+        return trailers != null ? trailers.equals(that.trailers) : that.trailers == null;
     }
 
     @Override
-    public boolean mayHaveTrailers() {
-        return false;
-    }
-
-    @Override
-    public boolean onlyEmitsBuffer() {
-        return false;
+    public int hashCode() {
+        int result = super.hashCode();
+        result = 31 * result + payloadBody.hashCode();
+        result = 31 * result + (trailers != null ? trailers.hashCode() : 0);
+        return result;
     }
 }

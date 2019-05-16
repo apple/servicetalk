@@ -173,7 +173,7 @@ final class HttpDataSourceTransformations {
                 if (!iterator.hasNext(timeoutNanos, NANOSECONDS)) {
                     return false;
                 }
-                timeoutNanos -= (nanoTime() - timeStampA);
+                timeoutNanos -= nanoTime() - timeStampA;
                 return validateNext(iterator.next(timeoutNanos, NANOSECONDS));
             }
 
@@ -402,28 +402,35 @@ final class HttpDataSourceTransformations {
     }
 
     static final class PayloadAndTrailers {
-        final CompositeBuffer compositeBuffer;
+        @Nullable
+        Buffer payload;
         @Nullable
         HttpHeaders trailers;
-
-        PayloadAndTrailers(CompositeBuffer compositeBuffer) {
-            this.compositeBuffer = compositeBuffer;
-        }
     }
 
     static Single<PayloadAndTrailers> aggregatePayloadAndTrailers(Publisher<Object> payloadAndTrailers,
                                                                   BufferAllocator allocator) {
-        return payloadAndTrailers.collect(() ->
-                        new PayloadAndTrailers(allocator.newCompositeBuffer(MAX_VALUE)),
-                (pair, obj) -> {
-                    if (obj instanceof Buffer) {
-                        pair.compositeBuffer.addBuffer((Buffer) obj);
-                    } else if (obj instanceof HttpHeaders) {
-                        pair.trailers = (HttpHeaders) obj;
-                    } else {
-                        throw new UnsupportedHttpChunkException(obj);
-                    }
-                    return pair;
-                });
+        return payloadAndTrailers.collect(PayloadAndTrailers::new, (pair, nextItem) -> {
+            if (nextItem instanceof Buffer) {
+                Buffer buffer = (Buffer) nextItem;
+                if (pair.payload == null) {
+                    pair.payload = buffer;
+                } else if (pair.payload instanceof CompositeBuffer) {
+                    ((CompositeBuffer) pair.payload).addBuffer(buffer);
+                } else {
+                    Buffer oldBuffer = pair.payload;
+                    pair.payload = allocator.newCompositeBuffer(MAX_VALUE).addBuffer(oldBuffer).addBuffer(buffer);
+                }
+            } else if (nextItem instanceof HttpHeaders) {
+                pair.trailers = (HttpHeaders) nextItem;
+            } else {
+                throw new UnsupportedHttpChunkException(nextItem);
+            }
+            return pair;
+        }).beforeOnSuccess(pair -> {
+            if (pair.payload == null) {
+                pair.payload = allocator.newBuffer(0);
+            }
+        });
     }
 }

@@ -30,6 +30,7 @@ import static io.servicetalk.http.api.CharSequences.contentEquals;
 import static io.servicetalk.http.api.CharSequences.contentEqualsIgnoreCase;
 import static io.servicetalk.http.api.CharSequences.indexOf;
 import static io.servicetalk.http.api.CharSequences.regionMatches;
+import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
 import static io.servicetalk.http.api.HttpHeaderNames.TRANSFER_ENCODING;
 import static io.servicetalk.http.api.HttpHeaderValues.APPLICATION_X_WWW_FORM_URLENCODED;
@@ -145,6 +146,10 @@ public final class HeaderUtils {
 
     static boolean isTransferEncodingChunked(final HttpHeaders headers) {
         return headers.contains(TRANSFER_ENCODING, CHUNKED, true);
+    }
+
+    static boolean hasContentLength(final HttpHeaders headers) {
+        return headers.contains(CONTENT_LENGTH);
     }
 
     static void addChunkedEncoding(final HttpHeaders headers) {

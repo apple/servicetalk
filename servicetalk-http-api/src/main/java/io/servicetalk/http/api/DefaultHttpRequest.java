@@ -17,25 +17,19 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.Buffer;
 
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.function.BiFunction;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Publisher.from;
 
-final class DefaultHttpRequest implements HttpRequest, PayloadInfo {
+final class DefaultHttpRequest extends AbstractDelegatingHttpRequest implements HttpRequest {
 
-    private final DefaultStreamingHttpRequest original;
     private Buffer payloadBody;
     @Nullable
     private HttpHeaders trailers;
 
     DefaultHttpRequest(final DefaultStreamingHttpRequest original, final Buffer payloadBody,
                        @Nullable final HttpHeaders trailers) {
-        this.original = original;
+        super(original);
         this.payloadBody = payloadBody;
         this.trailers = trailers;
     }
@@ -83,37 +77,6 @@ final class DefaultHttpRequest implements HttpRequest, PayloadInfo {
     }
 
     @Override
-    @Nullable
-    public String queryParameter(final String key) {
-        return original.queryParameter(key);
-    }
-
-    @Override
-    public Iterable<Map.Entry<String, String>> queryParameters() {
-        return original.queryParameters();
-    }
-
-    @Override
-    public Iterator<String> queryParameters(final String key) {
-        return original.queryParameters(key);
-    }
-
-    @Override
-    public Set<String> queryParametersKeys() {
-        return original.queryParametersKeys();
-    }
-
-    @Override
-    public boolean hasQueryParameter(final String key, final String value) {
-        return original.hasQueryParameter(key, value);
-    }
-
-    @Override
-    public int queryParametersSize() {
-        return original.queryParametersSize();
-    }
-
-    @Override
     public HttpRequest addQueryParameter(final String key, final String value) {
         original.addQueryParameter(key, value);
         return this;
@@ -147,30 +110,6 @@ final class DefaultHttpRequest implements HttpRequest, PayloadInfo {
     public HttpRequest setQueryParameters(final String key, final String... values) {
         original.setQueryParameters(key, values);
         return this;
-    }
-
-    @Override
-    public boolean removeQueryParameters(final String key) {
-        return original.removeQueryParameters(key);
-    }
-
-    @Override
-    public boolean removeQueryParameters(final String key, final String value) {
-        return original.removeQueryParameters(key, value);
-    }
-
-    public void setQueryParams(final Map<String, List<String>> params) {
-        original.setQueryParams(params);
-    }
-
-    @Override
-    public HttpProtocolVersion version() {
-        return original.version();
-    }
-
-    @Override
-    public HttpHeaders headers() {
-        return original.headers();
     }
 
     @Override
@@ -222,80 +161,6 @@ final class DefaultHttpRequest implements HttpRequest, PayloadInfo {
     }
 
     @Override
-    public String toString() {
-        return original.toString();
-    }
-
-    @Override
-    public String toString(final BiFunction<? super CharSequence, ? super CharSequence, CharSequence> headerFilter) {
-        return original.toString(headerFilter);
-    }
-
-    @Override
-    public HttpRequestMethod method() {
-        return original.method();
-    }
-
-    @Override
-    public String requestTarget() {
-        return original.requestTarget();
-    }
-
-    @Override
-    @Nullable
-    public String scheme() {
-        return original.scheme();
-    }
-
-    @Override
-    @Nullable
-    public String userInfo() {
-        return original.userInfo();
-    }
-
-    @Override
-    @Nullable
-    public String host() {
-        return original.host();
-    }
-
-    @Override
-    public int port() {
-        return original.port();
-    }
-
-    @Override
-    public String rawPath() {
-        return original.rawPath();
-    }
-
-    @Override
-    public String path() {
-        return original.path();
-    }
-
-    @Override
-    public String rawQuery() {
-        return original.rawQuery();
-    }
-
-    @Override
-    public boolean hasQueryParameter(final String key) {
-        return original.hasQueryParameter(key);
-    }
-
-    @Override
-    @Nullable
-    public String effectiveHost() {
-        return original.effectiveHost();
-    }
-
-    @Override
-    public int effectivePort() {
-        return original.effectivePort();
-    }
-
-    @Override
     public Buffer payloadBody() {
         return payloadBody;
     }
@@ -328,7 +193,6 @@ final class DefaultHttpRequest implements HttpRequest, PayloadInfo {
         return original;
     }
 
-    @Override
     public BlockingStreamingHttpRequest toBlockingStreamingRequest() {
         return original.toBlockingStreamingRequest();
     }
@@ -347,28 +211,17 @@ final class DefaultHttpRequest implements HttpRequest, PayloadInfo {
 
         final DefaultHttpRequest that = (DefaultHttpRequest) o;
 
-        return original.equals(that.original);
+        if (!payloadBody.equals(that.payloadBody)) {
+            return false;
+        }
+        return trailers != null ? trailers.equals(that.trailers) : that.trailers == null;
     }
 
     @Override
     public int hashCode() {
         int result = super.hashCode();
-        result = 31 * result + original.hashCode();
+        result = 31 * result + payloadBody.hashCode();
+        result = 31 * result + (trailers != null ? trailers.hashCode() : 0);
         return result;
-    }
-
-    @Override
-    public boolean safeToAggregate() {
-        return original.safeToAggregate();
-    }
-
-    @Override
-    public boolean mayHaveTrailers() {
-        return original.mayHaveTrailers();
-    }
-
-    @Override
-    public boolean onlyEmitsBuffer() {
-        return original.onlyEmitsBuffer();
     }
 }

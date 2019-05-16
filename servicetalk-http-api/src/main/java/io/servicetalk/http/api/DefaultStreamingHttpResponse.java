@@ -26,7 +26,8 @@ import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 import javax.annotation.Nullable;
 
-class DefaultStreamingHttpResponse extends DefaultHttpResponseMetaData implements StreamingHttpResponse, PayloadInfo {
+final class DefaultStreamingHttpResponse extends DefaultHttpResponseMetaData
+        implements StreamingHttpResponse, PayloadInfo {
 
     private final StreamingHttpPayloadHolder payloadHolder;
 
@@ -39,7 +40,7 @@ class DefaultStreamingHttpResponse extends DefaultHttpResponseMetaData implement
     }
 
     @Override
-    public final StreamingHttpResponse version(final HttpProtocolVersion version) {
+    public StreamingHttpResponse version(final HttpProtocolVersion version) {
         super.version(version);
         return this;
     }
@@ -56,44 +57,44 @@ class DefaultStreamingHttpResponse extends DefaultHttpResponseMetaData implement
     }
 
     @Override
-    public final Publisher<Object> payloadBodyAndTrailers() {
+    public Publisher<Object> payloadBodyAndTrailers() {
         return payloadHolder.payloadBodyAndTrailers();
     }
 
     @Override
-    public final StreamingHttpResponse payloadBody(final Publisher<Buffer> payloadBody) {
+    public StreamingHttpResponse payloadBody(final Publisher<Buffer> payloadBody) {
         payloadHolder.payloadBody(payloadBody);
         return this;
     }
 
     @Override
-    public final <T> StreamingHttpResponse payloadBody(final Publisher<T> payloadBody,
+    public <T> StreamingHttpResponse payloadBody(final Publisher<T> payloadBody,
                                                       final HttpSerializer<T> serializer) {
         payloadHolder.payloadBody(payloadBody, serializer);
         return this;
     }
 
     @Override
-    public final <T> StreamingHttpResponse transformPayloadBody(Function<Publisher<Buffer>, Publisher<T>> transformer,
+    public <T> StreamingHttpResponse transformPayloadBody(Function<Publisher<Buffer>, Publisher<T>> transformer,
                                                                HttpSerializer<T> serializer) {
         payloadHolder.transformPayloadBody(transformer, serializer);
         return this;
     }
 
     @Override
-    public final StreamingHttpResponse transformPayloadBody(UnaryOperator<Publisher<Buffer>> transformer) {
+    public StreamingHttpResponse transformPayloadBody(UnaryOperator<Publisher<Buffer>> transformer) {
         payloadHolder.transformPayloadBody(transformer);
         return this;
     }
 
     @Override
-    public final StreamingHttpResponse transformRawPayloadBody(UnaryOperator<Publisher<?>> transformer) {
+    public StreamingHttpResponse transformRawPayloadBody(UnaryOperator<Publisher<?>> transformer) {
         payloadHolder.transformRawPayloadBody(transformer);
         return this;
     }
 
     @Override
-    public final <T> StreamingHttpResponse transform(Supplier<T> stateSupplier,
+    public <T> StreamingHttpResponse transform(Supplier<T> stateSupplier,
                                                     BiFunction<Buffer, T, Buffer> transformer,
                                                     BiFunction<T, HttpHeaders, HttpHeaders> trailersTransformer) {
         payloadHolder.transform(stateSupplier, transformer, trailersTransformer);
@@ -101,7 +102,7 @@ class DefaultStreamingHttpResponse extends DefaultHttpResponseMetaData implement
     }
 
     @Override
-    public final <T> StreamingHttpResponse transformRaw(Supplier<T> stateSupplier,
+    public <T> StreamingHttpResponse transformRaw(Supplier<T> stateSupplier,
                                                        BiFunction<Object, T, ?> transformer,
                                                        BiFunction<T, HttpHeaders, HttpHeaders> trailersTransformer) {
         payloadHolder.transformRaw(stateSupplier, transformer, trailersTransformer);
@@ -111,7 +112,7 @@ class DefaultStreamingHttpResponse extends DefaultHttpResponseMetaData implement
     @Override
     public Single<HttpResponse> toResponse() {
         return payloadHolder.aggregate()
-                .map(pair -> new DefaultHttpResponse(this, pair.compositeBuffer, pair.trailers));
+                .map(pair -> new DefaultHttpResponse(this, pair.payload, pair.trailers));
     }
 
     @Override

@@ -37,12 +37,12 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Processors.newSingleProcessor;
 import static io.servicetalk.concurrent.api.Publisher.empty;
+import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.http.api.HeaderUtils.addChunkedEncoding;
+import static io.servicetalk.http.api.HeaderUtils.isTransferEncodingChunked;
 import static io.servicetalk.http.api.HttpDataSourceTransformations.aggregatePayloadAndTrailers;
-import static io.servicetalk.http.api.HttpHeaderNames.TRANSFER_ENCODING;
-import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -88,9 +88,10 @@ final class StreamingHttpPayloadHolder implements PayloadInfo {
             // If trailers are not yet split, the original Publisher will still have them.
             return trailersSingle == null ? rawPayload() : rawPayload().concat(trailersSingle);
         }
-        if (headers.contains(TRANSFER_ENCODING, CHUNKED)) {
+        if (isTransferEncodingChunked(headers)) {
             // explicitly added chunked encoding, we should add trailers explicitly.
-            return emptyOrRawPayload().concat(succeeded(headersFactory.newEmptyTrailers()));
+            return payloadBody == null ? from(headersFactory.newEmptyTrailers()) :
+                    rawPayload().concat(succeeded(headersFactory.newEmptyTrailers()));
         }
         return emptyOrRawPayload();
     }
@@ -130,7 +131,7 @@ final class StreamingHttpPayloadHolder implements PayloadInfo {
     }
 
     Single<PayloadAndTrailers> aggregate() {
-        payloadInfo.updateSafeToAggregate(true);
+        payloadInfo.setSafeToAggregate(true);
         return aggregatePayloadAndTrailers(payloadBodyAndTrailers(), allocator);
     }
 
@@ -215,7 +216,7 @@ final class StreamingHttpPayloadHolder implements PayloadInfo {
                 requireNonNull(newPayload) :
                 // payloadBody() will split trailers if not yet split
                 newPayload.liftSync(new BridgeFlowControlAndDiscardOperator(payloadBody()));
-        payloadInfo.updateOnlyEmitsBuffer(true);
+        payloadInfo.setOnlyEmitsBuffer(true);
     }
 
     private <T> void transformWithTrailersUnchecked(boolean raw, Supplier<T> stateSupplier, BiFunction transformer,
@@ -262,11 +263,11 @@ final class StreamingHttpPayloadHolder implements PayloadInfo {
         }
         // This transform may add trailers, and if there are trailers present we must send `transfer-encoding: chunked`
         // not `content-length`, so force the API type to non-aggregated to indicate that.
-        payloadInfo.updateMayHaveTrailers(true);
+        payloadInfo.setMayHaveTrailers(true);
         // Update the headers to indicate that we will be writing trailers.
         addChunkedEncoding(headers);
         if (!raw) {
-            payloadInfo.updateOnlyEmitsBuffer(true);
+            payloadInfo.setOnlyEmitsBuffer(true);
         }
     }
 
