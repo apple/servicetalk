@@ -30,9 +30,12 @@ import static io.servicetalk.http.api.CharSequences.contentEquals;
 import static io.servicetalk.http.api.CharSequences.contentEqualsIgnoreCase;
 import static io.servicetalk.http.api.CharSequences.indexOf;
 import static io.servicetalk.http.api.CharSequences.regionMatches;
+import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
+import static io.servicetalk.http.api.HttpHeaderNames.TRANSFER_ENCODING;
 import static io.servicetalk.http.api.HttpHeaderValues.APPLICATION_X_WWW_FORM_URLENCODED;
 import static io.servicetalk.http.api.HttpHeaderValues.APPLICATION_X_WWW_FORM_URLENCODED_UTF_8;
+import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
 import static io.servicetalk.http.api.HttpHeaderValues.TEXT_PLAIN;
 import static io.servicetalk.http.api.HttpHeaderValues.TEXT_PLAIN_UTF_8;
 import static io.servicetalk.http.api.NetUtil.isValidIpV4Address;
@@ -139,6 +142,20 @@ public final class HeaderUtils {
             }
         }
         return result;
+    }
+
+    static boolean isTransferEncodingChunked(final HttpHeaders headers) {
+        return headers.contains(TRANSFER_ENCODING, CHUNKED, true);
+    }
+
+    static boolean hasContentLength(final HttpHeaders headers) {
+        return headers.contains(CONTENT_LENGTH);
+    }
+
+    static void addChunkedEncoding(final HttpHeaders headers) {
+        if (!isTransferEncodingChunked(headers)) {
+            headers.add(TRANSFER_ENCODING, CHUNKED);
+        }
     }
 
     /**

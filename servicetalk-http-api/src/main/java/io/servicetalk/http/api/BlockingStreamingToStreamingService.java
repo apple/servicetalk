@@ -38,9 +38,12 @@ import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.safeOnError;
 import static io.servicetalk.http.api.BlockingUtils.blockingToCompletable;
+import static io.servicetalk.http.api.HeaderUtils.addChunkedEncoding;
+import static io.servicetalk.http.api.HeaderUtils.hasContentLength;
+import static io.servicetalk.http.api.HeaderUtils.isTransferEncodingChunked;
 import static io.servicetalk.http.api.HttpExecutionStrategies.OFFLOAD_RECEIVE_META_STRATEGY;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
-import static io.servicetalk.http.api.StreamingHttpResponses.newResponseWithTrailers;
+import static io.servicetalk.http.api.StreamingHttpResponses.newTransportResponse;
 import static java.lang.Thread.currentThread;
 import static java.util.Objects.requireNonNull;
 
@@ -84,22 +87,29 @@ final class BlockingStreamingToStreamingService extends AbstractServiceAdapterHo
                     final Consumer<HttpResponseMetaData> sendMeta = (metaData) -> {
                         final StreamingHttpResponse result;
                         try {
-                            result = newResponseWithTrailers(metaData.status(), metaData.version(),
-                                    metaData.headers(), ctx.executionContext().bufferAllocator(),
-                                    fromSource(payloadProcessor).merge(payloadWriter.connect()
-                                            .map(buffer -> (Object) buffer) // down cast to Object
-                                            .concat(succeeded(payloadWriter.trailers())))
-                                            .beforeSubscription(() -> new PublisherSource.Subscription() {
-                                                @Override
-                                                public void request(final long n) {
-                                                    // Noop
-                                                }
+                            boolean addTrailers = !hasContentLength(metaData.headers());
+                            if (addTrailers && !isTransferEncodingChunked(metaData.headers())) {
+                                addChunkedEncoding(metaData.headers());
+                            }
+                            Publisher<Object> payload = fromSource(payloadProcessor).merge(payloadWriter.connect()
+                                    .map(buffer -> (Object) buffer)); // down cast to Object
+                            if (addTrailers) {
+                                payload = payload.concat(succeeded(payloadWriter.trailers()));
+                            }
+                            payload = payload.beforeSubscription(() -> new PublisherSource.Subscription() {
+                                @Override
+                                public void request(final long n) {
+                                    // Noop
+                                }
 
-                                                @Override
-                                                public void cancel() {
-                                                    tiCancellable.cancel();
-                                                }
-                                            }));
+                                @Override
+                                public void cancel() {
+                                    tiCancellable.cancel();
+                                }
+                            });
+                            result = newTransportResponse(metaData.status(), metaData.version(),
+                                    metaData.headers(), ctx.executionContext().bufferAllocator(),
+                                    payload, ctx.headersFactory());
                         } catch (Throwable t) {
                             subscriber.onError(t);
                             throw t;

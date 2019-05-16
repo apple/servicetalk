@@ -24,7 +24,6 @@ import java.util.function.Function;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Executors.immediate;
-import static io.servicetalk.http.api.DefaultHttpExecutionStrategy.flatten;
 import static java.util.Objects.requireNonNull;
 
 final class NoOffloadsHttpExecutionStrategy implements HttpExecutionStrategy {
@@ -47,23 +46,19 @@ final class NoOffloadsHttpExecutionStrategy implements HttpExecutionStrategy {
 
     @Override
     public Single<StreamingHttpResponse> invokeClient(
-            final Executor fallback, final StreamingHttpRequest request,
+            final Executor fallback, final Publisher<Object> flattenedRequest,
             final Function<Publisher<Object>, Single<StreamingHttpResponse>> client) {
-        Publisher<Object> flatReq = flatten(request, request.payloadBodyAndTrailers()).subscribeOnOverride(immediate());
+        Publisher<Object> flatReq = flattenedRequest.subscribeOnOverride(immediate());
         return client.apply(flatReq)
                 .map(response -> response.transformRawPayloadBody(p -> p.publishOnOverride(immediate())))
                 .publishOnOverride(immediate());
     }
 
     @Override
-    public Publisher<Object> invokeService(
-            final Executor fallback, StreamingHttpRequest request,
-            final Function<StreamingHttpRequest, Single<StreamingHttpResponse>> service,
-            final BiFunction<Throwable, Executor, Single<StreamingHttpResponse>> errorHandler) {
-        request = request.transformRawPayloadBody(payload -> payload.publishOnOverride(immediate()));
-        return service.apply(request)
-                .recoverWith(t -> errorHandler.apply(t, immediate()))
-                .flatMapPublisher(response -> flatten(response, response.payloadBodyAndTrailers()))
+    public Publisher<Object> invokeService(final Executor fallback, final StreamingHttpRequest request,
+                                           final Function<StreamingHttpRequest, Publisher<Object>> service,
+                                           final BiFunction<Throwable, Executor, Publisher<Object>> errorHandler) {
+        return service.apply(request.transformRawPayloadBody(payload -> payload.publishOnOverride(immediate())))
                 .subscribeOnOverride(immediate());
     }
 

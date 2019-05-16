@@ -47,7 +47,7 @@ public class HeaderUtilsTest {
     @Before
     public void setUp() {
         httpRequest = newRequest(GET, "/", HTTP_1_1,
-                HTTP_HEADERS_FACTORY.newHeaders(), HTTP_HEADERS_FACTORY.newTrailers(), DEFAULT_RO_ALLOCATOR);
+                HTTP_HEADERS_FACTORY.newHeaders(), DEFAULT_RO_ALLOCATOR, HTTP_HEADERS_FACTORY);
     }
 
     @Test

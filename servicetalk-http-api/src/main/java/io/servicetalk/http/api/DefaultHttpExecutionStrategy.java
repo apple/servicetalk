@@ -26,6 +26,7 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.api.internal.OffloaderAwareExecutor.ensureThreadAffinity;
 import static io.servicetalk.http.api.HttpExecutionStrategies.Builder.MergeStrategy.Merge;
 import static io.servicetalk.http.api.HttpExecutionStrategies.Builder.MergeStrategy.ReturnOther;
@@ -75,14 +76,13 @@ class DefaultHttpExecutionStrategy implements HttpExecutionStrategy {
 
     @Override
     public Single<StreamingHttpResponse> invokeClient(
-            final Executor fallback, final StreamingHttpRequest request,
+            final Executor fallback, Publisher<Object> flattenedRequest,
             final Function<Publisher<Object>, Single<StreamingHttpResponse>> client) {
         final Executor e = executor(fallback);
-        Publisher<Object> flatReq = flatten(request, request.payloadBodyAndTrailers());
         if (offloaded(OFFLOAD_SEND)) {
-            flatReq = flatReq.subscribeOn(e);
+            flattenedRequest = flattenedRequest.subscribeOn(e);
         }
-        Single<StreamingHttpResponse> resp = client.apply(flatReq);
+        Single<StreamingHttpResponse> resp = client.apply(flattenedRequest);
         if (offloaded(OFFLOAD_RECEIVE_META)) {
             resp = resp.publishOn(e);
         }
@@ -95,23 +95,22 @@ class DefaultHttpExecutionStrategy implements HttpExecutionStrategy {
     @Override
     public Publisher<Object> invokeService(
             final Executor fallback, StreamingHttpRequest request,
-            final Function<StreamingHttpRequest, Single<StreamingHttpResponse>> service,
-            final BiFunction<Throwable, Executor, Single<StreamingHttpResponse>> errorHandler) {
+            final Function<StreamingHttpRequest, Publisher<Object>> service,
+            final BiFunction<Throwable, Executor, Publisher<Object>> errorHandler) {
         final Executor e = executor(fallback);
         if (offloaded(OFFLOAD_RECEIVE_DATA)) {
             request = request.transformRawPayloadBody(payload -> payload.publishOn(e));
         }
-        final Single<StreamingHttpResponse> responseSingle;
+        Publisher<Object> resp;
         if (offloaded(OFFLOAD_RECEIVE_META)) {
             final StreamingHttpRequest r = request;
-            responseSingle = e.submit(() -> service.apply(r).subscribeShareContext())
-                    // exec.submit() returns a Single<Single<response>>, so flatten the nested Single.
-                    .flatMap(identity());
+            resp = e.submit(() -> service.apply(r).subscribeShareContext())
+                    .recoverWith(cause -> succeeded(errorHandler.apply(cause, e)))
+                    // exec.submit() returns a Single<Publisher<Object>>, so flatten the nested Publisher.
+                    .flatMapPublisher(identity());
         } else {
-            responseSingle = service.apply(request);
+            resp = service.apply(request);
         }
-        Publisher<Object> resp = responseSingle.recoverWith(t -> errorHandler.apply(t, e))
-                .flatMapPublisher(response -> flatten(response, response.payloadBodyAndTrailers()));
         if (offloaded(OFFLOAD_SEND)) {
             resp = resp.subscribeOn(e);
         }

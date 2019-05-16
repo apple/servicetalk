@@ -42,8 +42,8 @@ import java.util.function.Function;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
+import static io.servicetalk.concurrent.api.Publisher.failed;
 import static io.servicetalk.concurrent.api.Publisher.from;
-import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.Single.never;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.DefaultHttpHeadersFactory.INSTANCE;
@@ -131,7 +131,7 @@ public class DefaultHttpExecutionStrategyTest {
         StreamingHttpRequest req = analyzer.createNewRequest();
         StreamingHttpResponse resp = analyzer.createNewResponse();
 
-        analyzer.instrumentedResponseForClient(strategy.invokeClient(executor, req,
+        analyzer.instrumentedResponseForClient(strategy.invokeClient(executor, from(req, req.payloadBodyAndTrailers()),
                 publisher -> analyzer.instrumentedFlatRequestForClient(publisher).ignoreElements()
                         .concat(succeeded(resp))))
                 .flatMapPublisher(StreamingHttpResponse::payloadBody)
@@ -148,7 +148,7 @@ public class DefaultHttpExecutionStrategyTest {
         analyzer.instrumentedResponseForServer(strategy.invokeService(executor, req, request -> {
             analyzer.checkServiceInvocation();
             return analyzer.instrumentedRequestPayloadForServer(request.payloadBody())
-                    .ignoreElements().concat(succeeded(resp));
+                    .ignoreElements().concat(Publisher.<Object>from(resp)).concat(resp.payloadBodyAndTrailers());
         }, (throwable, executor1) -> failed(throwable))).toFuture().get();
 
         analyzer.verify();
@@ -226,14 +226,14 @@ public class DefaultHttpExecutionStrategyTest {
         private final CountDownLatch awaitCancel = new CountDownLatch(1);
 
         StreamingHttpRequest createNewRequest() {
-            return newRequest(GET, "/", HTTP_1_1, INSTANCE.newHeaders(),
-                    INSTANCE.newHeaders(), DEFAULT_ALLOCATOR, from(DEFAULT_ALLOCATOR.fromAscii("Hello")));
+            return newRequest(GET, "/", HTTP_1_1, INSTANCE.newHeaders(), DEFAULT_ALLOCATOR, INSTANCE)
+                    .payloadBody(from(DEFAULT_ALLOCATOR.fromAscii("Hello")));
         }
 
         StreamingHttpResponse createNewResponse() {
             return newResponse(HttpResponseStatus.OK, HTTP_1_1, INSTANCE.newHeaders(),
-                    INSTANCE.newTrailers(), DEFAULT_ALLOCATOR,
-                    from(DEFAULT_ALLOCATOR.fromAscii("Hello-Response")));
+                    DEFAULT_ALLOCATOR, INSTANCE)
+                    .payloadBody(from(DEFAULT_ALLOCATOR.fromAscii("Hello-Response")));
         }
 
         Single<StreamingHttpResponse> instrumentedResponseForClient(Single<StreamingHttpResponse> resp) {

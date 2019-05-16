@@ -128,13 +128,14 @@ public final class DefaultHttpConnectionBuilder<ResolvedAddress> extends HttpCon
         return (reservedConnectionsPipelineEnabled(roConfig) ?
                 buildStreaming(executionContext, resolvedAddress, roConfig).map(conn -> {
                     FilterableStreamingHttpConnection limitedConn = new ConcurrentRequestsHttpConnectionFilter(
-                            new PipelinedStreamingHttpConnection(conn, roConfig, executionContext, reqRespFactory
-                            ), roConfig.maxPipelinedRequests());
+                            new PipelinedStreamingHttpConnection(conn, roConfig, executionContext, reqRespFactory),
+                            roConfig.maxPipelinedRequests());
                     return finalFilterFactory == null ? limitedConn : finalFilterFactory.create(limitedConn);
                 }) :
                 buildStreaming(executionContext, resolvedAddress, roConfig).map(conn -> {
                     FilterableStreamingHttpConnection limitedConn = new ConcurrentRequestsHttpConnectionFilter(
-                            new NonPipelinedStreamingHttpConnection(conn, executionContext, reqRespFactory),
+                            new NonPipelinedStreamingHttpConnection(conn, executionContext, reqRespFactory,
+                                    roConfig.headersFactory()),
                             roConfig.maxPipelinedRequests());
                     return finalFilterFactory == null ? limitedConn : finalFilterFactory.create(limitedConn);
                 })
