@@ -92,23 +92,22 @@ final class ReadOnlyHttpHeaders implements HttpHeaders {
     }
 
     @Override
-    public boolean contains(final CharSequence name, final CharSequence value, final boolean caseInsensitive) {
+    public boolean contains(final CharSequence name, final CharSequence value, final boolean caseSensitive) {
         final int nameHash = hashCode(name);
         final int end = keyValuePairs.length - 1;
-        if (caseInsensitive) {
-            for (int i = 0; i < end; i += 2) {
-                final CharSequence currentName = keyValuePairs[i];
-                if (nameHash == hashCode(currentName) && equals(currentName, name) &&
-                        equals(keyValuePairs[i + 1], value)) {
-                    return true;
-                }
-            }
-            return false;
-        } else {
+        if (caseSensitive) {
             for (int i = 0; i < end; i += 2) {
                 final CharSequence currentName = keyValuePairs[i];
                 if (nameHash == hashCode(currentName) && equals(currentName, name) &&
                         equalsValues(keyValuePairs[i + 1], value)) {
+                    return true;
+                }
+            }
+        } else {
+            for (int i = 0; i < end; i += 2) {
+                final CharSequence currentName = keyValuePairs[i];
+                if (nameHash == hashCode(currentName) && equals(currentName, name) &&
+                        equals(keyValuePairs[i + 1], value)) {
                     return true;
                 }
             }
@@ -187,7 +186,7 @@ final class ReadOnlyHttpHeaders implements HttpHeaders {
     }
 
     @Override
-    public boolean remove(CharSequence name, CharSequence value, boolean caseInsensitive) {
+    public boolean remove(CharSequence name, CharSequence value, boolean caseSensitive) {
         throw new UnsupportedOperationException();
     }
 

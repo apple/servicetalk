@@ -57,7 +57,7 @@ final class HeaderUtils {
     }
 
     static boolean isTransferEncodingChunked(final HttpHeaders headers) {
-        return headers.contains(TRANSFER_ENCODING, CHUNKED, true);
+        return headers.contains(TRANSFER_ENCODING, CHUNKED, false);
     }
 
     static void removeTransferEncodingChunked(final HttpHeaders headers) {

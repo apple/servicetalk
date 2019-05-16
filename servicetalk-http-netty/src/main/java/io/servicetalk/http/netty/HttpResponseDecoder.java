@@ -76,7 +76,7 @@ final class HttpResponseDecoder extends HttpObjectDecoder<HttpResponseMetaData> 
             // One exception: Hixie 76 websocket handshake response
             return !(msg.status().code() == SWITCHING_PROTOCOLS.code() &&
                     !msg.headers().contains(SEC_WEBSOCKET_ACCEPT) &&
-                     msg.headers().contains(UPGRADE, WEBSOCKET, true));
+                    msg.headers().contains(UPGRADE, WEBSOCKET, false));
         }
 
         // This method has side effects on the methodQueue for the following reasons:

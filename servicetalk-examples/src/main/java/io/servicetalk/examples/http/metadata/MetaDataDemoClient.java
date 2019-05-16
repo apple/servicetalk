@@ -55,7 +55,7 @@ public final class MetaDataDemoClient {
                 throw new RuntimeException("Bad response status: " + response.status());
             }
             // Case insensitively check if the expected language is present.
-            if (!response.headers().contains(CONTENT_LANGUAGE, language, true)) {
+            if (!response.headers().contains(CONTENT_LANGUAGE, language, false)) {
                 throw new RuntimeException("Incorrect language: " +
                         response.headers().get(CONTENT_LANGUAGE));
             }

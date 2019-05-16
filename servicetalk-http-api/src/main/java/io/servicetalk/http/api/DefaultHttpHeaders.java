@@ -70,8 +70,8 @@ final class DefaultHttpHeaders extends MultiMap<CharSequence, CharSequence> impl
     }
 
     @Override
-    public boolean contains(final CharSequence name, final CharSequence value, final boolean caseInsensitive) {
-        return caseInsensitive ? contains(name, value, CharSequences::contentEqualsIgnoreCase) : contains(name, value);
+    public boolean contains(final CharSequence name, final CharSequence value, final boolean caseSensitive) {
+        return caseSensitive ? contains(name, value) : contains(name, value, CharSequences::contentEqualsIgnoreCase);
     }
 
     @Nullable
@@ -678,7 +678,7 @@ final class DefaultHttpHeaders extends MultiMap<CharSequence, CharSequence> impl
     }
 
     @Override
-    public boolean remove(final CharSequence name, final CharSequence value, final boolean caseInsensitive) {
+    public boolean remove(final CharSequence name, final CharSequence value, final boolean caseSensitive) {
         final int nameHash = hashCode(name);
         final int bucketIndex = index(nameHash);
         final BucketHead<CharSequence, CharSequence> bucketHead = entries[bucketIndex];
@@ -690,7 +690,7 @@ final class DefaultHttpHeaders extends MultiMap<CharSequence, CharSequence> impl
         assert e != null;
         do {
             if (e.keyHash == nameHash && equals(name, e.getKey()) &&
-                    (caseInsensitive ? contentEqualsIgnoreCase(value, e.value) : contentEquals(value, e.value))) {
+                    (caseSensitive ? contentEquals(value, e.value) : contentEqualsIgnoreCase(value, e.value))) {
                 final MultiMapEntry<CharSequence, CharSequence> tmpEntry = e;
                 e = e.bucketNext;
                 removeEntry(bucketHead, tmpEntry, bucketIndex);

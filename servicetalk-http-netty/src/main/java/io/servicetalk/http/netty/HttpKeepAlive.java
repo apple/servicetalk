@@ -43,10 +43,10 @@ enum HttpKeepAlive {
     // or comma-separated values for the Connection header. See: https://tools.ietf.org/html/rfc7230#section-3.2.2
     static HttpKeepAlive responseKeepAlive(final HttpMetaData metaData) {
         if (HTTP_1_1.equals(metaData.version())) {
-            return metaData.headers().contains(CONNECTION, CLOSE, true) ?
+            return metaData.headers().contains(CONNECTION, CLOSE, false) ?
                     CLOSE_ADD_HEADER : KEEP_ALIVE_NO_HEADER;
         } else if (HTTP_1_0.equals(metaData.version())) {
-            return metaData.headers().contains(CONNECTION, KEEP_ALIVE, true) ?
+            return metaData.headers().contains(CONNECTION, KEEP_ALIVE, false) ?
                     KEEP_ALIVE_ADD_HEADER : CLOSE_NO_HEADER;
         } else {
             return CLOSE_NO_HEADER;

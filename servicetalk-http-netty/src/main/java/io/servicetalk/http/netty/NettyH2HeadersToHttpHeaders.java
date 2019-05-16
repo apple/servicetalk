@@ -75,8 +75,8 @@ final class NettyH2HeadersToHttpHeaders implements HttpHeaders {
     }
 
     @Override
-    public boolean contains(final CharSequence name, final CharSequence value, final boolean caseInsensitive) {
-        return nettyHeaders.contains(name, value, caseInsensitive);
+    public boolean contains(final CharSequence name, final CharSequence value, final boolean caseSensitive) {
+        return nettyHeaders.contains(name, value, caseSensitive);
     }
 
     @Override
@@ -144,9 +144,9 @@ final class NettyH2HeadersToHttpHeaders implements HttpHeaders {
     }
 
     @Override
-    public boolean remove(final CharSequence name, final CharSequence value, final boolean caseInsensitive) {
+    public boolean remove(final CharSequence name, final CharSequence value, final boolean caseSensitive) {
         final int sizeBefore = size();
-        if (caseInsensitive) {
+        if (caseSensitive) {
             Iterator<? extends CharSequence> valuesItr = nettyHeaders.valueIterator(name);
             while (valuesItr.hasNext()) {
                 CharSequence next = valuesItr.next();
