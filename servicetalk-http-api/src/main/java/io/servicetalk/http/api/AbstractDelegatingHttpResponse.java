@@ -39,8 +39,8 @@ abstract class AbstractDelegatingHttpResponse implements HttpResponseMetaData, P
     }
 
     @Override
-    public boolean safeToAggregate() {
-        return original.safeToAggregate();
+    public boolean isSafeToAggregate() {
+        return original.isSafeToAggregate();
     }
 
     @Override

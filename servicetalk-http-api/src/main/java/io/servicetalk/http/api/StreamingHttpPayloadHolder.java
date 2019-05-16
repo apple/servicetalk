@@ -136,8 +136,8 @@ final class StreamingHttpPayloadHolder implements PayloadInfo {
     }
 
     @Override
-    public boolean safeToAggregate() {
-        return payloadInfo.safeToAggregate();
+    public boolean isSafeToAggregate() {
+        return payloadInfo.isSafeToAggregate();
     }
 
     @Override

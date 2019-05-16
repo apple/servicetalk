@@ -15,6 +15,8 @@
  */
 package io.servicetalk.http.api;
 
+import static io.servicetalk.http.api.HeaderUtils.isTransferEncodingChunked;
+
 final class DefaultPayloadInfo implements PayloadInfo {
 
     private static final byte SAFE_TO_AGGREGATE = 1;
@@ -24,7 +26,7 @@ final class DefaultPayloadInfo implements PayloadInfo {
     private byte flags;
 
     @Override
-    public boolean safeToAggregate() {
+    public boolean isSafeToAggregate() {
         return isSet(SAFE_TO_AGGREGATE);
     }
 
@@ -71,8 +73,7 @@ final class DefaultPayloadInfo implements PayloadInfo {
     }
 
     private static DefaultPayloadInfo newInfoUsingHeaders(final HttpHeaders httpHeaders) {
-        return httpHeaders.contains(HttpHeaderNames.TRANSFER_ENCODING, HttpHeaderValues.CHUNKED, true) ?
-                new DefaultPayloadInfo().setMayHaveTrailers(true) :
+        return isTransferEncodingChunked(httpHeaders) ? new DefaultPayloadInfo().setMayHaveTrailers(true) :
                 new DefaultPayloadInfo();
     }
 

@@ -31,7 +31,7 @@ interface PayloadInfo {
      * @return {@code true} if and only if, the {@link Publisher} associated with this {@link PayloadInfo} can be safely
      * aggregated to bring all data in memory.
      */
-    boolean safeToAggregate();
+    boolean isSafeToAggregate();
 
     /**
      * Returns {@code true} if and only if, the {@link Publisher} associated with this {@link PayloadInfo} may also

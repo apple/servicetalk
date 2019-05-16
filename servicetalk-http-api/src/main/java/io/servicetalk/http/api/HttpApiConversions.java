@@ -193,7 +193,7 @@ public final class HttpApiConversions {
      * @return {@code true} is the request/response payload is safe to aggregate, {@code false} otherwise.
      */
     public static boolean isSafeToAggregate(HttpMetaData metadata) {
-        return (metadata instanceof PayloadInfo && ((PayloadInfo) metadata).safeToAggregate());
+        return (metadata instanceof PayloadInfo && ((PayloadInfo) metadata).isSafeToAggregate());
     }
 
     /**

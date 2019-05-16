@@ -112,7 +112,10 @@ final class DefaultStreamingHttpResponse extends DefaultHttpResponseMetaData
     @Override
     public Single<HttpResponse> toResponse() {
         return payloadHolder.aggregate()
-                .map(pair -> new DefaultHttpResponse(this, pair.payload, pair.trailers));
+                .map(pair -> {
+                    assert pair.payload != null;
+                    return new DefaultHttpResponse(this, pair.payload, pair.trailers);
+                });
     }
 
     @Override
@@ -121,8 +124,8 @@ final class DefaultStreamingHttpResponse extends DefaultHttpResponseMetaData
     }
 
     @Override
-    public boolean safeToAggregate() {
-        return payloadHolder.safeToAggregate();
+    public boolean isSafeToAggregate() {
+        return payloadHolder.isSafeToAggregate();
     }
 
     @Override

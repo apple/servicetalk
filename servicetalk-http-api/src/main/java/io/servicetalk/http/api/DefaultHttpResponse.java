@@ -20,6 +20,7 @@ import io.servicetalk.buffer.api.Buffer;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Publisher.from;
+import static java.util.Objects.requireNonNull;
 
 final class DefaultHttpResponse extends AbstractDelegatingHttpResponse implements HttpResponse {
 
@@ -53,14 +54,14 @@ final class DefaultHttpResponse extends AbstractDelegatingHttpResponse implement
 
     @Override
     public HttpResponse payloadBody(final Buffer payloadBody) {
-        this.payloadBody = payloadBody;
+        this.payloadBody = requireNonNull(payloadBody);
         original.payloadBody(from(payloadBody));
         return this;
     }
 
     @Override
     public <T> HttpResponse payloadBody(final T pojo, final HttpSerializer<T> serializer) {
-        this.payloadBody = serializer.serialize(headers(), pojo, original.payloadHolder().allocator());
+        this.payloadBody = serializer.serialize(headers(), requireNonNull(pojo), original.payloadHolder().allocator());
         original.payloadBody(from(payloadBody));
         return this;
     }

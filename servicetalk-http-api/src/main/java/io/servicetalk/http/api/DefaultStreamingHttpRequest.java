@@ -179,7 +179,10 @@ final class DefaultStreamingHttpRequest extends DefaultHttpRequestMetaData
     @Override
     public Single<HttpRequest> toRequest() {
         return payloadHolder.aggregate()
-                .map(pair -> new DefaultHttpRequest(this, pair.payload, pair.trailers));
+                .map(pair -> {
+                    assert pair.payload != null;
+                    return new DefaultHttpRequest(this, pair.payload, pair.trailers);
+                });
     }
 
     @Override
@@ -188,8 +191,8 @@ final class DefaultStreamingHttpRequest extends DefaultHttpRequestMetaData
     }
 
     @Override
-    public boolean safeToAggregate() {
-        return payloadHolder.safeToAggregate();
+    public boolean isSafeToAggregate() {
+        return payloadHolder.isSafeToAggregate();
     }
 
     @Override

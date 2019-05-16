@@ -153,7 +153,7 @@ public final class HeaderUtils {
     }
 
     static void addChunkedEncoding(final HttpHeaders headers) {
-        if (!headers.contains(TRANSFER_ENCODING, CHUNKED, true)) {
+        if (!isTransferEncodingChunked(headers)) {
             headers.add(TRANSFER_ENCODING, CHUNKED);
         }
     }

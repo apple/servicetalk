@@ -20,6 +20,7 @@ import io.servicetalk.buffer.api.Buffer;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Publisher.from;
+import static java.util.Objects.requireNonNull;
 
 final class DefaultHttpRequest extends AbstractDelegatingHttpRequest implements HttpRequest {
 
@@ -167,14 +168,14 @@ final class DefaultHttpRequest extends AbstractDelegatingHttpRequest implements 
 
     @Override
     public HttpRequest payloadBody(final Buffer payloadBody) {
-        this.payloadBody = payloadBody;
+        this.payloadBody = requireNonNull(payloadBody);
         original.payloadBody(from(payloadBody));
         return this;
     }
 
     @Override
     public <T> HttpRequest payloadBody(final T pojo, final HttpSerializer<T> serializer) {
-        this.payloadBody = serializer.serialize(headers(), pojo, original.payloadHolder().allocator());
+        this.payloadBody = serializer.serialize(headers(), requireNonNull(pojo), original.payloadHolder().allocator());
         original.payloadBody(from(payloadBody));
         return this;
     }
@@ -193,6 +194,7 @@ final class DefaultHttpRequest extends AbstractDelegatingHttpRequest implements 
         return original;
     }
 
+    @Override
     public BlockingStreamingHttpRequest toBlockingStreamingRequest() {
         return original.toBlockingStreamingRequest();
     }
