@@ -27,14 +27,15 @@ import io.netty.buffer.Unpooled;
 import javax.annotation.Nullable;
 
 import static io.netty.buffer.Unpooled.EMPTY_BUFFER;
+import static io.netty.util.internal.PlatformDependent.directBufferPreferred;
 
 /**
  * Internal utilities for {@link Buffer}s.
  */
 public final class BufferUtil {
 
-    public static final BufferAllocator PREFER_HEAP_ALLOCATOR = new ServiceTalkBufferAllocator(false);
-    public static final BufferAllocator PREFER_DIRECT_ALLOCATOR = new ServiceTalkBufferAllocator(true);
+    static final BufferAllocator PREFER_HEAP_ALLOCATOR = new ServiceTalkBufferAllocator(false);
+    static final BufferAllocator PREFER_DIRECT_ALLOCATOR = new ServiceTalkBufferAllocator(true);
 
     private BufferUtil() {
         // no instances
@@ -104,8 +105,8 @@ public final class BufferUtil {
      * @return the {@link ByteBufAllocator} to use.
      */
     public static ByteBufAllocator getByteBufAllocator(BufferAllocator allocator) {
-        return allocator instanceof ServiceTalkBufferAllocator ?
-                (ServiceTalkBufferAllocator) allocator : ByteBufAllocator.DEFAULT;
+        return (ByteBufAllocator) (allocator instanceof ByteBufAllocator ? allocator :
+                directBufferPreferred() ? PREFER_DIRECT_ALLOCATOR : PREFER_HEAP_ALLOCATOR);
     }
 
     /**
