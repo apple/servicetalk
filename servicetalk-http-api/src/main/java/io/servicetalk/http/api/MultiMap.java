@@ -694,6 +694,9 @@ abstract class MultiMap<K, V> {
         MultiMapEntry<K, V> bucketLastOrPrevious;
 
         MultiMapEntry(final V value, final int keyHash) {
+            if (value == null) {
+                throw new IllegalArgumentException("Null values are not allowed");
+            }
             this.value = value;
             this.keyHash = keyHash;
         }

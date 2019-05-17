@@ -21,9 +21,9 @@ import javax.annotation.Nullable;
 import static io.servicetalk.http.api.CharSequences.caseInsensitiveHashCode;
 import static io.servicetalk.http.api.CharSequences.contentEqualsIgnoreCase;
 import static io.servicetalk.http.api.CharSequences.newAsciiString;
+import static io.servicetalk.http.api.HeaderUtils.validateCookieNameAndValue;
 import static io.servicetalk.http.api.HeaderUtils.validateCookieTokenAndHeaderName;
 import static java.lang.Long.parseLong;
-import static java.util.Objects.requireNonNull;
 
 /**
  * Default implementation of {@link HttpSetCookie}.
@@ -116,8 +116,9 @@ public final class DefaultHttpSetCookie implements HttpSetCookie {
                                 @Nullable final CharSequence domain, @Nullable final CharSequence expires,
                                 @Nullable final Long maxAge, final boolean wrapped, final boolean secure,
                                 final boolean httpOnly) {
-        this.name = requireNonNull(name);
-        this.value = requireNonNull(value);
+        validateCookieNameAndValue(name, value);
+        this.name = name;
+        this.value = value;
         this.path = path;
         this.domain = domain;
         this.expires = expires;
