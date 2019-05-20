@@ -26,13 +26,13 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import java.net.InetSocketAddress;
 import java.nio.channels.ClosedChannelException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 
 import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
 import static io.servicetalk.transport.netty.internal.FlushStrategies.defaultFlushStrategy;
-import static java.net.InetSocketAddress.createUnresolved;
 import static java.nio.charset.Charset.defaultCharset;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.anyOf;
@@ -63,9 +63,9 @@ public final class TcpConnectorTest extends AbstractTcpServerTest {
     }
 
     @Test
-    public void testUnresolvedAddress() throws Exception {
+    public void testResolvedAddress() throws Exception {
         testWriteAndRead(client.connectBlocking(CLIENT_CTX,
-                createUnresolved(serverAddress.getHostString(), serverAddress.getPort())));
+                new InetSocketAddress(serverAddress.getHostString(), serverAddress.getPort())));
     }
 
     @Test
