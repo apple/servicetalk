@@ -158,6 +158,15 @@ public final class HeaderUtils {
         }
     }
 
+    static void validateCookieNameAndValue(final CharSequence cookieName, final CharSequence cookieValue) {
+        if (cookieName == null || cookieName.length() == 0) {
+            throw new IllegalArgumentException("Null or empty cookie names are not allowed.");
+        }
+        if (cookieValue == null) {
+            throw new IllegalArgumentException("Null cookie values are not allowed.");
+        }
+    }
+
     /**
      * Validate {@code key} is valid <a href="https://tools.ietf.org/html/rfc6265#section-4.1.1">cookie-name</a>
      * (aka <a href="https://tools.ietf.org/html/rfc2616#section-2.2">token</a>) and a

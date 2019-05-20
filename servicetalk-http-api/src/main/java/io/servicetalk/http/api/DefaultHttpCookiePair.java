@@ -18,7 +18,7 @@ package io.servicetalk.http.api;
 import static io.servicetalk.http.api.CharSequences.caseInsensitiveHashCode;
 import static io.servicetalk.http.api.CharSequences.contentEqualsIgnoreCase;
 import static io.servicetalk.http.api.CharSequences.indexOf;
-import static java.util.Objects.requireNonNull;
+import static io.servicetalk.http.api.HeaderUtils.validateCookieNameAndValue;
 
 /**
  * Default implementation of {@link HttpCookiePair}.
@@ -47,8 +47,9 @@ public final class DefaultHttpCookiePair implements HttpCookiePair {
      * <a href="https://tools.ietf.org/html/rfc6265#section-4.1.1">cookie-value</a>
      */
     public DefaultHttpCookiePair(final CharSequence cookieName, final CharSequence cookieValue, boolean isWrapped) {
-        this.name = requireNonNull(cookieName);
-        this.value = requireNonNull(cookieValue);
+        validateCookieNameAndValue(cookieName, cookieValue);
+        this.name = cookieName;
+        this.value = cookieValue;
         this.isWrapped = isWrapped;
     }
 
