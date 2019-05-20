@@ -43,9 +43,8 @@ public final class StreamingHttpResponses {
     public static StreamingHttpResponse newResponse(
             final HttpResponseStatus status, final HttpProtocolVersion version, final HttpHeaders headers,
             final BufferAllocator allocator, final HttpHeadersFactory headersFactory) {
-        DefaultPayloadInfo payloadInfo = forUserCreated(headers);
-        return new DefaultStreamingHttpResponse(status, version, headers, allocator,
-                payloadInfo.mayHaveTrailers() ? empty() : null, payloadInfo, headersFactory);
+        return new DefaultStreamingHttpResponse(status, version, headers, allocator, empty(),
+                forUserCreated(headers), headersFactory);
     }
 
     /**

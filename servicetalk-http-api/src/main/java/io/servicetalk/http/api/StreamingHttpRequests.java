@@ -18,6 +18,7 @@ package io.servicetalk.http.api;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Publisher;
 
+import static io.servicetalk.concurrent.api.Publisher.empty;
 import static io.servicetalk.http.api.DefaultPayloadInfo.forTransportReceive;
 import static io.servicetalk.http.api.DefaultPayloadInfo.forUserCreated;
 
@@ -44,8 +45,8 @@ public final class StreamingHttpRequests {
     public static StreamingHttpRequest newRequest(
             final HttpRequestMethod method, final String requestTarget, final HttpProtocolVersion version,
             final HttpHeaders headers, final BufferAllocator allocator, final HttpHeadersFactory headersFactory) {
-        return new DefaultStreamingHttpRequest(method, requestTarget, version, headers, allocator,
-                null, forUserCreated(headers), headersFactory);
+        return new DefaultStreamingHttpRequest(method, requestTarget, version, headers, allocator, empty(),
+                forUserCreated(headers), headersFactory);
     }
 
     /**
@@ -68,7 +69,7 @@ public final class StreamingHttpRequests {
             final HttpRequestMethod method, final String requestTarget, final HttpProtocolVersion version,
             final HttpHeaders headers, final BufferAllocator allocator, final Publisher<Object> payload,
             final HttpHeadersFactory headersFactory) {
-        return new DefaultStreamingHttpRequest(method, requestTarget, version, headers, allocator,
-                payload, forTransportReceive(headers), headersFactory);
+        return new DefaultStreamingHttpRequest(method, requestTarget, version, headers, allocator, payload,
+                forTransportReceive(headers), headersFactory);
     }
 }

@@ -28,7 +28,6 @@ import io.servicetalk.http.api.HttpDataSourceTransformations.HttpObjectTrailersS
 import io.servicetalk.http.api.HttpDataSourceTransformations.HttpTransportBufferFilterOperator;
 import io.servicetalk.http.api.HttpDataSourceTransformations.PayloadAndTrailers;
 
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -55,21 +54,21 @@ final class StreamingHttpPayloadHolder implements PayloadInfo {
     private final DefaultPayloadInfo payloadInfo;
     private final HttpHeadersFactory headersFactory;
     @Nullable
-    private Publisher payloadBody;
+    private Publisher<?> payloadBody;
     @Nullable
     private Single<HttpHeaders> trailersSingle;
 
     StreamingHttpPayloadHolder(final HttpHeaders headers, final BufferAllocator allocator,
-                               @Nullable final Publisher payloadBody, final DefaultPayloadInfo payloadInfo,
+                               @Nullable final Publisher<?> payloadBody, final DefaultPayloadInfo payloadInfo,
                                final HttpHeadersFactory headersFactory) {
         this.headers = requireNonNull(headers);
         this.allocator = requireNonNull(allocator);
         this.payloadInfo = requireNonNull(payloadInfo);
         this.headersFactory = requireNonNull(headersFactory);
         if (payloadInfo.mayHaveTrailers()) {
-            this.payloadBody = requireNonNull(payloadBody, "Payload can not be null if trailers are present.");
-        } else {
-            this.payloadBody = payloadBody == null ? null : filterTrailers(payloadBody);
+            this.payloadBody = requireNonNull(payloadBody);
+        } else if (payloadBody != null) {
+            this.payloadBody = filterTrailers(payloadBody);
         }
     }
 
@@ -225,18 +224,29 @@ final class StreamingHttpPayloadHolder implements PayloadInfo {
             T state = stateSupplier.get();
             trailersSingle = succeeded(trailersTransformer.apply(state, headersFactory.newEmptyTrailers()));
             payloadBody = empty();
+            payloadInfo.setOnlyEmitsBuffer(!raw);
         } else {
             splitTrailersIfRequired();
             if (!payloadInfo.mayHaveTrailers()) {
                 trailersSingle = succeeded(headersFactory.newEmptyTrailers());
             }
             assert trailersSingle != null;
-            final AtomicReference<T> stateForSubscriber = new AtomicReference<>();
+            // trailersSingle will always be used in a serial fashion relative to the payloadBody. The RS operators used
+            // to provide this sequential subscription will take care of visibility for the state Object when accessed
+            // in the trailersSingle map operation.
+            final MutableReference<T> stateForSubscriber = new MutableReference<>();
             trailersSingle = trailersSingle.map(trailers ->
-                    trailersTransformer.apply(stateForSubscriber.get(), trailers));
-            payloadBody = (raw ? rawPayload() : payloadBody()).liftSync(subscriber -> {
+                    trailersTransformer.apply(stateForSubscriber.reference(), trailers));
+            if (raw) {
+                payloadBody = rawPayload();
+                payloadInfo.setOnlyEmitsBuffer(false);
+            } else {
+                payloadBody = payloadBody();
+                payloadInfo.setOnlyEmitsBuffer(true);
+            }
+            payloadBody = payloadBody.liftSync(subscriber -> {
                 T state = stateSupplier.get();
-                stateForSubscriber.set(state);
+                stateForSubscriber.reference(state);
                 return new PublisherSource.Subscriber<Object>() {
                     @Override
                     public void onSubscribe(final Subscription subscription) {
@@ -266,9 +276,6 @@ final class StreamingHttpPayloadHolder implements PayloadInfo {
         payloadInfo.setMayHaveTrailers(true);
         // Update the headers to indicate that we will be writing trailers.
         addChunkedEncoding(headers);
-        if (!raw) {
-            payloadInfo.setOnlyEmitsBuffer(true);
-        }
     }
 
     @SuppressWarnings("unchecked")
@@ -290,5 +297,19 @@ final class StreamingHttpPayloadHolder implements PayloadInfo {
     @SuppressWarnings("unchecked")
     private static Publisher filterTrailers(final Publisher payloadBody) {
         return payloadBody.filter(o -> !(o instanceof HttpHeaders));
+    }
+
+    private static final class MutableReference<T> {
+        @Nullable
+        private T ref;
+
+        @Nullable
+        T reference() {
+            return ref;
+        }
+
+        void reference(T ref) {
+            this.ref = ref;
+        }
     }
 }

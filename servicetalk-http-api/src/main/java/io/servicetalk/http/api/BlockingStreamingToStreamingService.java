@@ -38,10 +38,11 @@ import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.safeOnError;
 import static io.servicetalk.http.api.BlockingUtils.blockingToCompletable;
-import static io.servicetalk.http.api.HeaderUtils.addChunkedEncoding;
 import static io.servicetalk.http.api.HeaderUtils.hasContentLength;
 import static io.servicetalk.http.api.HeaderUtils.isTransferEncodingChunked;
 import static io.servicetalk.http.api.HttpExecutionStrategies.OFFLOAD_RECEIVE_META_STRATEGY;
+import static io.servicetalk.http.api.HttpHeaderNames.TRANSFER_ENCODING;
+import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.StreamingHttpResponses.newTransportResponse;
 import static java.lang.Thread.currentThread;
@@ -87,9 +88,19 @@ final class BlockingStreamingToStreamingService extends AbstractServiceAdapterHo
                     final Consumer<HttpResponseMetaData> sendMeta = (metaData) -> {
                         final StreamingHttpResponse result;
                         try {
-                            boolean addTrailers = !hasContentLength(metaData.headers());
-                            if (addTrailers && !isTransferEncodingChunked(metaData.headers())) {
-                                addChunkedEncoding(metaData.headers());
+                            // transfer-encoding takes precedence over content-length.
+                            // > When a message does not have a Transfer-Encoding header field, a
+                            // Content-Length header field can provide the anticipated size.
+                            // https://tools.ietf.org/html/rfc7230#section-3.3.2
+                            HttpHeaders headers = metaData.headers();
+                            boolean addTrailers = isTransferEncodingChunked(headers);
+                            if (!addTrailers && !hasContentLength(headers)) {
+                                // TODO(scott): do we want to always force content-length or transfer-encoding?
+                                // this is likely not supported in http/1.0 and it is possible that a response has
+                                // neither header and the connection close indicates the end of the response.
+                                // https://tools.ietf.org/html/rfc7230#section-3.3.3
+                                headers.add(TRANSFER_ENCODING, CHUNKED);
+                                addTrailers = true;
                             }
                             Publisher<Object> payload = fromSource(payloadProcessor).merge(payloadWriter.connect()
                                     .map(buffer -> (Object) buffer)); // down cast to Object
