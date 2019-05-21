@@ -67,7 +67,7 @@ final class PublisherConcatWithSingle<T> extends AbstractAsynchronousPublisherOp
          *     change.</li>
          *     <li>{@link Cancellable} once {@link #onSubscribe(Cancellable)} and {@link #cancel()} has not been
          *     called.</li>
-         *     <li>Result of the next {@link Single} when available.</li>
+         *     <li>{@code Result} of the next {@link Single} when available.</li>
          * </ul>
          */
         @Nullable
@@ -91,9 +91,7 @@ final class PublisherConcatWithSingle<T> extends AbstractAsynchronousPublisherOp
                 if (s == CANCELLED) {
                     return;
                 }
-                if (!(s instanceof Long)) {
-                    throw new IllegalStateException("onNext " + t + " received without demand.");
-                }
+                assert s instanceof Long;
                 if (stateUpdater.compareAndSet(this, s, ((long) s - 1))) {
                     break;
                 }
@@ -129,15 +127,12 @@ final class PublisherConcatWithSingle<T> extends AbstractAsynchronousPublisherOp
                 if (s == CANCELLED || s == TERMINATED) {
                     return;
                 }
-                if (s == null || s instanceof Long) {
-                    throw new IllegalStateException("Unexpected state found: " + s);
-                }
                 if (s instanceof RequestedCancellable) {
                     if (stateUpdater.compareAndSet(this, s, TERMINATED)) {
                         terminateTarget(result);
                         break;
                     }
-                } else if (stateUpdater.compareAndSet(this, s, result == null ? NULL_VALUE : result)) {
+                } else if (stateUpdater.compareAndSet(this, s, new Result<>(result))) {
                     break;
                 }
             }
@@ -179,16 +174,10 @@ final class PublisherConcatWithSingle<T> extends AbstractAsynchronousPublisherOp
                     if (stateUpdater.compareAndSet(this, s, new RequestedCancellable((Cancellable) s))) {
                         return;
                     }
-                } else if (s == NULL_VALUE) {
-                    if (stateUpdater.compareAndSet(this, NULL_VALUE, TERMINATED)) {
-                        terminateTarget(null);
-                        return;
-                    }
                 } else {
-                    @SuppressWarnings("unchecked")
-                    T t = (T) s;
+                    assert s instanceof Result;
                     if (stateUpdater.compareAndSet(this, s, TERMINATED)) {
-                        terminateTarget(t);
+                        terminateTarget(Result.fromRaw(s));
                         return;
                     }
                 }
@@ -230,6 +219,21 @@ final class PublisherConcatWithSingle<T> extends AbstractAsynchronousPublisherOp
         @Override
         public void cancel() {
             cancellable.cancel();
+        }
+    }
+
+    private static final class Result<T> {
+        @Nullable
+        private final T result;
+
+        Result(@Nullable final T result) {
+            this.result = result;
+        }
+
+        @Nullable
+        @SuppressWarnings("unchecked")
+        static <T> T fromRaw(Object resultAsObject) {
+            return ((Result<T>) resultAsObject).result;
         }
     }
 }

@@ -38,9 +38,9 @@ public class PublisherConcatWithSingleTest {
 
     private final TestSubscription subscription = new TestSubscription();
     private final TestCancellable cancellable = new TestCancellable();
-    private final TestPublisher<Integer> source = new TestPublisher<>();
-    private final TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
-    private final TestSingle<Integer> single = new TestSingle<>();
+    private final TestPublisher<Long> source = new TestPublisher<>();
+    private final TestPublisherSubscriber<Long> subscriber = new TestPublisherSubscriber<>();
+    private final TestSingle<Long> single = new TestSingle<>();
 
     public PublisherConcatWithSingleTest() {
         toSource(source.concat(single)).subscribe(subscriber);
@@ -51,7 +51,15 @@ public class PublisherConcatWithSingleTest {
 
     @Test
     public void bothComplete() {
-        testBothComplete(2);
+        testBothComplete(2L);
+    }
+
+    @Test
+    public void publisherEmpty() {
+        completeSource();
+        subscriber.request(1);
+        single.onSuccess(1L);
+        verifySingleSuccessTerminatesSubscriber(1L);
     }
 
     @Test
@@ -71,9 +79,9 @@ public class PublisherConcatWithSingleTest {
     @Test
     public void nextError() {
         subscriber.request(1);
-        source.onNext(1);
+        source.onNext(1L);
         source.onComplete();
-        assertThat("Unexpected items emitted.", subscriber.takeItems(), contains(1));
+        assertThat("Unexpected items emitted.", subscriber.takeItems(), contains(1L));
         assertThat("Next source not subscribed.", single.isSubscribed(), is(true));
         assertThat("Unexpected termination.", subscriber.isTerminated(), is(false));
         single.onError(DELIBERATE_EXCEPTION);
@@ -102,7 +110,7 @@ public class PublisherConcatWithSingleTest {
 
     @Test
     public void onSuccessBeforeRequest() {
-        testOnSuccessBeforeRequest(1);
+        testOnSuccessBeforeRequest(1L);
     }
 
     @Test
@@ -110,7 +118,7 @@ public class PublisherConcatWithSingleTest {
         testOnSuccessBeforeRequest(null);
     }
 
-    private void testOnSuccessBeforeRequest(@Nullable Integer nextResult) {
+    private void testOnSuccessBeforeRequest(@Nullable Long nextResult) {
         emitOneItemFromSource();
         completeSource();
         single.onSuccess(nextResult);
@@ -119,7 +127,7 @@ public class PublisherConcatWithSingleTest {
         verifySingleSuccessTerminatesSubscriber(nextResult);
     }
 
-    private void testBothComplete(@Nullable final Integer nextResult) {
+    private void testBothComplete(@Nullable final Long nextResult) {
         emitOneItemFromSource();
         completeSource();
         subscriber.request(1);
@@ -127,7 +135,7 @@ public class PublisherConcatWithSingleTest {
         verifySingleSuccessTerminatesSubscriber(nextResult);
     }
 
-    private void verifySingleSuccessTerminatesSubscriber(@Nullable Integer result) {
+    private void verifySingleSuccessTerminatesSubscriber(@Nullable Long result) {
         assertThat("Unexpected items emitted.", subscriber.takeItems(), contains(result));
         assertThat("Unexpected termination (expected completed).", subscriber.isCompleted(), is(true));
     }
@@ -140,8 +148,8 @@ public class PublisherConcatWithSingleTest {
 
     private void emitOneItemFromSource() {
         subscriber.request(1);
-        source.onNext(1);
-        assertThat("Unexpected items emitted.", subscriber.takeItems(), contains(1));
+        source.onNext(1L);
+        assertThat("Unexpected items emitted.", subscriber.takeItems(), contains(1L));
     }
 
     private void verifySubscriberErrored() {
