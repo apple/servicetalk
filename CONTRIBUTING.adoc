@@ -45,12 +45,13 @@ Issues may be reported through link:https://github.com/servicetalk/servicetalk/i
 Please be sure to include:
 
 * The ServiceTalk version
-* The OS/platform and version
+* The OS version and the output of `uname -a`
+* Java version, output of `java -version`
 * Contextual information (e.g. what you were trying to achieve with ServiceTalk)
 * Simplest possible steps to reproduce
 ** The more complex the steps are, lower the priority it will likely be.
 ** A pull request a with failing test case is preferred, but it's fine to paste the test case into the issue description.
-* Anything else that might be relevant in your opinion, such as network configuration
+* Anything else that might be relevant in your opinion, such as network configuration.
 
 ==== Security issues
 To report a security issue, please DO NOT start by filing a public issue; instead send a
