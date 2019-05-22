@@ -112,7 +112,7 @@ public class StreamingHttpPayloadHolderTest {
         headersFactory = mock(HttpHeadersFactory.class);
         when(headersFactory.newEmptyTrailers()).thenReturn(mock(HttpHeaders.class));
         if (sourceType == SourceType.Trailers) {
-            when(headers.contains(TRANSFER_ENCODING, CHUNKED, true)).thenReturn(true);
+            when(headers.containsIgnoreCase(TRANSFER_ENCODING, CHUNKED)).thenReturn(true);
         }
         payloadSource = sourceType == SourceType.None ? null : new TestPublisher<>();
         final DefaultPayloadInfo payloadInfo = forTransportReceive(headers);
@@ -233,7 +233,7 @@ public class StreamingHttpPayloadHolderTest {
         }
         getPayloadSource().onComplete();
         if (!payloadHolder.onlyEmitsBuffer() && payloadHolder.mayHaveTrailers() ||
-                headers.contains(TRANSFER_ENCODING, CHUNKED, true)) {
+                headers.containsIgnoreCase(TRANSFER_ENCODING, CHUNKED)) {
             verifyTrailersReceived();
         } else {
             assertThat("Expected payload completion", payloadAndTrailersSubscriber.takeTerminal(), is(complete()));
