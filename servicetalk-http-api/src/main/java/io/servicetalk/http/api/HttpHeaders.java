@@ -102,23 +102,18 @@ public interface HttpHeaders extends Iterable<Entry<CharSequence, CharSequence>>
      * @param value the header value of the header to find.
      * @return {@code true} if a {@code name}, {@code value} pair exists.
      */
-    default boolean contains(CharSequence name, CharSequence value) {
-        return contains(name, value, true);
-    }
+    boolean contains(CharSequence name, CharSequence value);
 
     /**
      * Returns {@code true} if a header with the {@code name} and {@code value} exists, {@code false} otherwise.
-     * This also handles multiple values that are separated with a {@code ,}.
      * <p>
-     * If {@code caseSensitive} is {@code true} then a case sensitive compare is done on the value.
+     * Case insensitive compare is done on the value.
      *
      * @param name the name of the header to find.
      * @param value the value of the header to find.
-     * @param caseSensitive {@code true} then a case sensitive compare is run to compare values,
-     * otherwise a case insensitive compare is run to compare values.
      * @return {@code true} if found.
      */
-    boolean contains(CharSequence name, CharSequence value, boolean caseSensitive);
+    boolean containsIgnoreCase(CharSequence name, CharSequence value);
 
     /**
      * Returns the number of headers in this object.
@@ -314,31 +309,25 @@ public interface HttpHeaders extends Iterable<Entry<CharSequence, CharSequence>>
 
     /**
      * Removes specific value(s) from the specified header {@code name}. If the header has more than one identical
-     * values, all of them will be removed. A <i>case sensitive</i> compare is run to compare values. This is identical
-     * to {@link #remove(CharSequence, CharSequence, boolean)} with the third argument equals to {@code false}.
+     * values, all of them will be removed.
      *
      * @param name the name of the header.
      * @param value the value of the header to remove.
      * @return {@code true} if at least one value has been removed.
-     * @see #remove(CharSequence, CharSequence, boolean)
      */
-    default boolean remove(CharSequence name, CharSequence value) {
-        return remove(name, value, true);
-    }
+    boolean remove(CharSequence name, CharSequence value);
 
     /**
      * Removes specific value(s) from the specified header {@code name}. If the header has more than one identical
      * values, all of them will be removed.
      * <p>
-     * If {@code caseSensitive} is {@code true} then a case sensitive compare is done on the value.
+     * Case insensitive compare is done on the value.
      *
      * @param name the name of the header.
      * @param value the value of the header to remove.
-     * @param caseSensitive {@code true} then a case sensitive compare is run to compare values,
-     * otherwise a case insensitive compare is run to compare values.
      * @return {@code true} if at least one value has been removed.
      */
-    boolean remove(CharSequence name, CharSequence value, boolean caseSensitive);
+    boolean removeIgnoreCase(CharSequence name, CharSequence value);
 
     /**
      * Removes all headers.

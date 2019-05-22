@@ -150,8 +150,8 @@ public abstract class AbstractHttpHeadersTest {
     public void caseInsensitiveContains() {
         final HttpHeaders headers = newHeaders();
         headers.add("name1", "value1");
-        assertTrue(headers.contains("name1", "Value1", false));
-        assertFalse(headers.contains("name1", "Value1", true));
+        assertTrue(headers.containsIgnoreCase("name1", "Value1"));
+        assertFalse(headers.contains("name1", "Value1"));
     }
 
     @Test
@@ -824,12 +824,12 @@ public abstract class AbstractHttpHeadersTest {
         headers.add("name3", "value1");
         assertEquals(4, headers.size());
 
-        assertFalse(headers.remove("nameX", "valueX", true));
-        assertFalse(headers.remove("nameX", "valueX", false));
-        assertFalse(headers.remove("nameX", "value1", true));
-        assertFalse(headers.remove("nameX", "value1", false));
-        assertFalse(headers.remove("name1", "valueX", true));
-        assertFalse(headers.remove("name1", "valueX", false));
+        assertFalse(headers.remove("nameX", "valueX"));
+        assertFalse(headers.removeIgnoreCase("nameX", "valueX"));
+        assertFalse(headers.remove("nameX", "value1"));
+        assertFalse(headers.removeIgnoreCase("nameX", "value1"));
+        assertFalse(headers.remove("name1", "valueX"));
+        assertFalse(headers.removeIgnoreCase("name1", "valueX"));
         assertNotNull(headers.get("name1"));
         assertEquals(4, headers.size());
     }
@@ -881,31 +881,31 @@ public abstract class AbstractHttpHeadersTest {
         headers.add("name4", asList("value1", "Value1", "vAlUe1", "vaLue1", "value1"));
         assertEquals(9, headers.size());
 
-        assertTrue(headers.remove("name2", "value2", false));
+        assertTrue(headers.removeIgnoreCase("name2", "value2"));
         assertNotNull(headers.get("name2"));
         assertEquals(8, headers.size());
 
-        assertFalse(headers.remove("name2", "value2", false));
+        assertFalse(headers.removeIgnoreCase("name2", "value2"));
         assertNotNull(headers.get("name2"));
         assertEquals(8, headers.size());
 
-        assertTrue(headers.remove("name2", "VaLue1", false));
+        assertTrue(headers.removeIgnoreCase("name2", "VaLue1"));
         assertNull(headers.get("name2"));
         assertEquals(7, headers.size());
 
-        assertFalse(headers.remove("name2", "value1", false));
+        assertFalse(headers.removeIgnoreCase("name2", "value1"));
         assertNull(headers.get("name2"));
         assertEquals(7, headers.size());
 
-        assertTrue(headers.remove("NaMe1", "value1", false));
+        assertTrue(headers.removeIgnoreCase("NaMe1", "value1"));
         assertNull(headers.get("name1"));
         assertEquals(6, headers.size());
 
-        assertTrue(headers.remove("NaMe3", "VaLue1", false));
+        assertTrue(headers.removeIgnoreCase("NaMe3", "VaLue1"));
         assertNull(headers.get("name3"));
         assertEquals(5, headers.size());
 
-        assertTrue(headers.remove("name4", "value1", false));
+        assertTrue(headers.removeIgnoreCase("name4", "value1"));
         assertNull(headers.get("name4"));
         assertTrue(headers.isEmpty());
     }

@@ -70,8 +70,8 @@ final class DefaultHttpHeaders extends MultiMap<CharSequence, CharSequence> impl
     }
 
     @Override
-    public boolean contains(final CharSequence name, final CharSequence value, final boolean caseSensitive) {
-        return caseSensitive ? contains(name, value) : contains(name, value, CharSequences::contentEqualsIgnoreCase);
+    public boolean containsIgnoreCase(final CharSequence name, final CharSequence value) {
+        return contains(name, value, CharSequences::contentEqualsIgnoreCase);
     }
 
     @Nullable
@@ -678,7 +678,16 @@ final class DefaultHttpHeaders extends MultiMap<CharSequence, CharSequence> impl
     }
 
     @Override
-    public boolean remove(final CharSequence name, final CharSequence value, final boolean caseSensitive) {
+    public boolean remove(final CharSequence name, final CharSequence value) {
+        return remove(name, value, true);
+    }
+
+    @Override
+    public boolean removeIgnoreCase(final CharSequence name, final CharSequence value) {
+        return remove(name, value, false);
+    }
+
+    private boolean remove(final CharSequence name, final CharSequence value, final boolean caseSensitive) {
         final int nameHash = hashCode(name);
         final int bucketIndex = index(nameHash);
         final BucketHead<CharSequence, CharSequence> bucketHead = entries[bucketIndex];
