@@ -126,7 +126,7 @@ final class PublisherConcatWithSingle<T> extends AbstractAsynchronousPublisherOp
                 if (s == CANCELLED || s == TERMINATED) {
                     return;
                 }
-                if (s instanceof PublisherConcatWithSingle.CancellableWithOutstandingDemand) {
+                if (s instanceof CancellableWithOutstandingDemand) {
                     if (stateUpdater.compareAndSet(this, s, TERMINATED)) {
                         terminateTarget(result);
                         break;
@@ -166,7 +166,7 @@ final class PublisherConcatWithSingle<T> extends AbstractAsynchronousPublisherOp
                         subscription.request(n);
                         return;
                     }
-                } else if (s instanceof PublisherConcatWithSingle.CancellableWithOutstandingDemand) {
+                } else if (s instanceof CancellableWithOutstandingDemand) {
                     // already requested
                     return;
                 } else if (s instanceof Cancellable) {
@@ -174,7 +174,7 @@ final class PublisherConcatWithSingle<T> extends AbstractAsynchronousPublisherOp
                         return;
                     }
                 } else {
-                    assert s instanceof PublisherConcatWithSingle.SingleResult;
+                    assert s instanceof SingleResult;
                     if (stateUpdater.compareAndSet(this, s, TERMINATED)) {
                         terminateTarget(SingleResult.fromRaw(s));
                         return;
