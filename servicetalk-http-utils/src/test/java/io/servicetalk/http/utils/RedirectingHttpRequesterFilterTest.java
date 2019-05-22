@@ -101,7 +101,9 @@ public class RedirectingHttpRequesterFilterTest {
                         : HttpResponseStatus.of(parseUnsignedInt(statusHeader.toString()), "");
                 StreamingHttpResponse response = reqRespFactory.newResponse(status);
                 CharSequence redirectLocation = request.headers().get(REQUESTED_LOCATION);
-                response.headers().set(LOCATION, redirectLocation);
+                if (redirectLocation != null) {
+                    response.headers().set(LOCATION, redirectLocation);
+                }
                 return succeeded(response);
             } catch (Throwable t) {
                 return failed(t);

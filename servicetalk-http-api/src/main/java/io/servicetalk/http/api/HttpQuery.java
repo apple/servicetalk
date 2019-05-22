@@ -70,6 +70,7 @@ final class HttpQuery implements Iterable<Map.Entry<String, String>> {
     }
 
     public HttpQuery add(final String key, final String value) {
+        validateQueryParam(key, value);
         if (getValues(key).add(value)) {
             updateQueryParams();
         }
@@ -97,6 +98,7 @@ final class HttpQuery implements Iterable<Map.Entry<String, String>> {
     }
 
     public HttpQuery set(final String key, final String value) {
+        validateQueryParam(key, value);
         final ArrayList<String> list = new ArrayList<>(DEFAULT_LIST_SIZE);
         final boolean changed = list.add(value);
         params.put(key, list);
@@ -179,6 +181,15 @@ final class HttpQuery implements Iterable<Map.Entry<String, String>> {
 
     private List<String> getValues(final String key) {
         return params.computeIfAbsent(key, k -> new ArrayList<>(DEFAULT_LIST_SIZE));
+    }
+
+    private void validateQueryParam(final String key, final String value) {
+        if (key == null || key.isEmpty()) {
+            throw new IllegalArgumentException("Null or empty query parameter names are not allowed.");
+        }
+        if (value == null) {
+            throw new IllegalArgumentException("Null query parameter values are not allowed.");
+        }
     }
 
     private static final class ValuesIterator implements Iterator<String> {

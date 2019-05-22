@@ -16,260 +16,180 @@
 package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.Buffer;
-import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.BlockingIterable;
 import io.servicetalk.concurrent.CloseableIterable;
-import io.servicetalk.concurrent.SingleSource.Processor;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.http.api.HttpDataSourceTranformations.HttpBufferFilterIterable;
-import io.servicetalk.http.api.HttpDataSourceTranformations.HttpBuffersAndTrailersIterable;
-import io.servicetalk.http.api.HttpDataSourceTranformations.HttpObjectsAndTrailersIterable;
 
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 
-import static io.servicetalk.concurrent.api.Processors.newSingleProcessor;
 import static io.servicetalk.concurrent.api.Publisher.fromIterable;
-import static io.servicetalk.concurrent.api.Single.succeeded;
-import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
-import static io.servicetalk.concurrent.internal.BlockingIterables.from;
-import static io.servicetalk.http.api.HttpDataSourceTranformations.consumeOldPayloadBody;
-import static io.servicetalk.http.api.HttpDataSourceTranformations.consumeOldPayloadBodySerialized;
-import static java.util.Objects.requireNonNull;
 
-class DefaultBlockingStreamingHttpRequest<P> extends DefaultHttpRequestMetaData implements
-                                                                                BlockingStreamingHttpRequest {
-    final BlockingIterable<P> payloadBody;
-    final BufferAllocator allocator;
-    final Single<HttpHeaders> trailersSingle;
-    final boolean aggregated;
+final class DefaultBlockingStreamingHttpRequest extends AbstractDelegatingHttpRequest
+        implements BlockingStreamingHttpRequest {
 
-    DefaultBlockingStreamingHttpRequest(
-            final HttpRequestMethod method, final String requestTarget, final HttpProtocolVersion version,
-            final HttpHeaders headers, final HttpHeaders initialTrailers, final BufferAllocator allocator,
-            final BlockingIterable<P> payloadBody, final boolean aggregated) {
-        this(method, requestTarget, version, headers, succeeded(initialTrailers), allocator, payloadBody,
-                aggregated);
-    }
-
-    /**
-     * Create a new instance.
-     * @param method The {@link HttpRequestMethod}.
-     * @param requestTarget The request-target.
-     * @param version The {@link HttpProtocolVersion}.
-     * @param headers The initial {@link HttpHeaders}.
-     * @param trailersSingle The {@link Single} <strong>must</strong> support multiple subscribes, and it is assumed to
-     * provide the original data if re-used over transformation operations.
-     * @param allocator The {@link BufferAllocator} to use for serialization (if required).
-     * @param payloadBody A {@link BlockingIterable} that provide only the payload body. The trailers
-     * <strong>must</strong> not be included, and instead are represented by {@code trailersSingle}.
-     * @param aggregated The type of API this request was originally created as.
-     */
-    DefaultBlockingStreamingHttpRequest(
-            final HttpRequestMethod method, final String requestTarget, final HttpProtocolVersion version,
-            final HttpHeaders headers, final Single<HttpHeaders> trailersSingle, final BufferAllocator allocator,
-            final BlockingIterable<P> payloadBody, final boolean aggregated) {
-        super(method, requestTarget, version, headers);
-        this.allocator = requireNonNull(allocator);
-        this.payloadBody = requireNonNull(payloadBody);
-        this.trailersSingle = requireNonNull(trailersSingle);
-        this.aggregated = aggregated;
-    }
-
-    DefaultBlockingStreamingHttpRequest(final DefaultHttpRequestMetaData oldRequest,
-                                        final BufferAllocator allocator,
-                                        final BlockingIterable<P> payloadBody,
-                                        final Single<HttpHeaders> trailersSingle,
-                                        final boolean aggregated) {
-        super(oldRequest);
-        this.allocator = allocator;
-        this.payloadBody = payloadBody;
-        this.trailersSingle = trailersSingle;
-        this.aggregated = aggregated;
+    DefaultBlockingStreamingHttpRequest(final DefaultStreamingHttpRequest original) {
+        super(original);
     }
 
     @Override
-    public final BlockingStreamingHttpRequest version(final HttpProtocolVersion version) {
-        super.version(version);
+    public BlockingStreamingHttpRequest version(final HttpProtocolVersion version) {
+        original.version(version);
         return this;
     }
 
     @Override
-    public final BlockingStreamingHttpRequest method(final HttpRequestMethod method) {
-        super.method(method);
+    public BlockingStreamingHttpRequest method(final HttpRequestMethod method) {
+        original.method(method);
         return this;
     }
 
     @Override
-    public final BlockingStreamingHttpRequest requestTarget(final String requestTarget) {
-        super.requestTarget(requestTarget);
+    public BlockingStreamingHttpRequest requestTarget(final String requestTarget) {
+        original.requestTarget(requestTarget);
         return this;
     }
 
     @Override
-    public final BlockingStreamingHttpRequest path(final String path) {
-        super.path(path);
+    public BlockingStreamingHttpRequest path(final String path) {
+        original.path(path);
         return this;
     }
 
     @Override
-    public final BlockingStreamingHttpRequest appendPathSegments(final String... segments) {
-        super.appendPathSegments(segments);
+    public BlockingStreamingHttpRequest appendPathSegments(final String... segments) {
+        original.appendPathSegments(segments);
         return this;
     }
 
     @Override
-    public final BlockingStreamingHttpRequest rawPath(final String path) {
-        super.rawPath(path);
+    public BlockingStreamingHttpRequest rawPath(final String path) {
+        original.rawPath(path);
         return this;
     }
 
     @Override
-    public final BlockingStreamingHttpRequest rawQuery(final String query) {
-        super.rawQuery(query);
+    public BlockingStreamingHttpRequest rawQuery(final String query) {
+        original.rawQuery(query);
         return this;
     }
 
     @Override
-    public final BlockingStreamingHttpRequest addQueryParameter(String key, String value) {
-        super.addQueryParameter(key, value);
+    public BlockingStreamingHttpRequest addQueryParameter(String key, String value) {
+        original.addQueryParameter(key, value);
         return this;
     }
 
     @Override
-    public final BlockingStreamingHttpRequest addQueryParameters(String key, Iterable<String> values) {
-        super.addQueryParameters(key, values);
+    public BlockingStreamingHttpRequest addQueryParameters(String key, Iterable<String> values) {
+        original.addQueryParameters(key, values);
         return this;
     }
 
     @Override
-    public final BlockingStreamingHttpRequest addQueryParameters(String key, String... values) {
-        super.addQueryParameters(key, values);
+    public BlockingStreamingHttpRequest addQueryParameters(String key, String... values) {
+        original.addQueryParameters(key, values);
         return this;
     }
 
     @Override
-    public final BlockingStreamingHttpRequest setQueryParameter(String key, String value) {
-        super.setQueryParameter(key, value);
+    public BlockingStreamingHttpRequest setQueryParameter(String key, String value) {
+        original.setQueryParameter(key, value);
         return this;
     }
 
     @Override
-    public final BlockingStreamingHttpRequest setQueryParameters(String key, Iterable<String> values) {
-        super.setQueryParameters(key, values);
+    public BlockingStreamingHttpRequest setQueryParameters(String key, Iterable<String> values) {
+        original.setQueryParameters(key, values);
         return this;
     }
 
     @Override
-    public final BlockingStreamingHttpRequest setQueryParameters(String key, String... values) {
-        super.setQueryParameters(key, values);
+    public BlockingStreamingHttpRequest setQueryParameters(String key, String... values) {
+        original.setQueryParameters(key, values);
         return this;
     }
 
     @Override
     public BlockingIterable<Buffer> payloadBody() {
-        return new HttpBufferFilterIterable(payloadBody);
+        return original.payloadBody().toIterable();
     }
 
     @Override
-    public final BlockingStreamingHttpRequest payloadBody(final Iterable<Buffer> payloadBody) {
-        return transformPayloadBody(consumeOldPayloadBody(from(payloadBody)));
+    public BlockingStreamingHttpRequest payloadBody(final Iterable<Buffer> payloadBody) {
+        original.payloadBody(fromIterable(payloadBody));
+        return this;
     }
 
     @Override
-    public final BlockingStreamingHttpRequest payloadBody(final CloseableIterable<Buffer> payloadBody) {
-        return transformPayloadBody(consumeOldPayloadBody(from(payloadBody)));
+    public BlockingStreamingHttpRequest payloadBody(final CloseableIterable<Buffer> payloadBody) {
+        original.payloadBody(fromIterable(payloadBody));
+        return this;
     }
 
     @Override
-    public final <T> BlockingStreamingHttpRequest payloadBody(final Iterable<T> payloadBody,
+    public <T> BlockingStreamingHttpRequest payloadBody(final Iterable<T> payloadBody,
                                                               final HttpSerializer<T> serializer) {
-        return transformPayloadBody(consumeOldPayloadBodySerialized(from(payloadBody)), serializer);
+        original.payloadBody(fromIterable(payloadBody), serializer);
+        return this;
     }
 
     @Override
-    public final <T> BlockingStreamingHttpRequest payloadBody(final CloseableIterable<T> payloadBody,
+    public <T> BlockingStreamingHttpRequest payloadBody(final CloseableIterable<T> payloadBody,
                                                               final HttpSerializer<T> serializer) {
-        return transformPayloadBody(consumeOldPayloadBodySerialized(from(payloadBody)), serializer);
+        original.payloadBody(fromIterable(payloadBody), serializer);
+        return this;
     }
 
     @Override
-    public final <T> BlockingStreamingHttpRequest transformPayloadBody(
+    public <T> BlockingStreamingHttpRequest transformPayloadBody(
             final Function<BlockingIterable<Buffer>, BlockingIterable<T>> transformer,
             final HttpSerializer<T> serializer) {
-        return new BufferBlockingStreamingHttpRequest(this, allocator,
-                serializer.serialize(headers(), transformer.apply(payloadBody()), allocator),
-                trailersSingle, aggregated);
+        original.transformPayloadBody(bufferPublisher -> fromIterable(transformer.apply(bufferPublisher.toIterable())),
+                serializer);
+        return this;
     }
 
     @Override
-    public final BlockingStreamingHttpRequest transformPayloadBody(
+    public BlockingStreamingHttpRequest transformPayloadBody(
             final UnaryOperator<BlockingIterable<Buffer>> transformer) {
-        return new BufferBlockingStreamingHttpRequest(this, allocator, transformer.apply(payloadBody()),
-                trailersSingle, aggregated);
+        original.transformPayloadBody(bufferPublisher -> fromIterable(transformer.apply(bufferPublisher.toIterable())));
+        return this;
     }
 
     @Override
-    public final BlockingStreamingHttpRequest transformRawPayloadBody(
+    public BlockingStreamingHttpRequest transformRawPayloadBody(
             final UnaryOperator<BlockingIterable<?>> transformer) {
-        return new DefaultBlockingStreamingHttpRequest<>(this, allocator, transformer.apply(payloadBody),
-                trailersSingle, aggregated);
+        original.transformRawPayloadBody(bufferPublisher ->
+                fromIterable(transformer.apply(bufferPublisher.toIterable())));
+        return this;
     }
 
     @Override
-    public final <T> BlockingStreamingHttpRequest transform(
+    public <T> BlockingStreamingHttpRequest transform(
             final Supplier<T> stateSupplier, final BiFunction<Buffer, T, Buffer> transformer,
-            final BiFunction<T, HttpHeaders, HttpHeaders> trailersTrans) {
-        final Processor<HttpHeaders, HttpHeaders> outTrailersSingle = newSingleProcessor();
-        return new BufferBlockingStreamingHttpRequest(this, allocator,
-                new HttpBuffersAndTrailersIterable<>(payloadBody(), stateSupplier,
-                        transformer, trailersTrans, trailersSingle, outTrailersSingle),
-                fromSource(outTrailersSingle), aggregated);
+            final BiFunction<T, HttpHeaders, HttpHeaders> trailersTransformer) {
+        original.transform(stateSupplier, transformer, trailersTransformer);
+        return this;
     }
 
     @Override
-    public final <T> BlockingStreamingHttpRequest transformRaw(final Supplier<T> stateSupplier,
-                                                         final BiFunction<Object, T, ?> transformer,
-                                                         final BiFunction<T, HttpHeaders, HttpHeaders> trailersTrans) {
-        final Processor<HttpHeaders, HttpHeaders> outTrailersSingle = newSingleProcessor();
-        return new DefaultBlockingStreamingHttpRequest<>(this, allocator,
-                new HttpObjectsAndTrailersIterable<>(payloadBody, stateSupplier,
-                        transformer, trailersTrans, trailersSingle, outTrailersSingle),
-                fromSource(outTrailersSingle), aggregated);
+    public <T> BlockingStreamingHttpRequest transformRaw(
+            final Supplier<T> stateSupplier, final BiFunction<Object, T, ?> transformer,
+            final BiFunction<T, HttpHeaders, HttpHeaders> trailersTransformer) {
+        original.transformRaw(stateSupplier, transformer, trailersTransformer);
+        return this;
     }
 
     @Override
-    public final Single<HttpRequest> toRequest() {
+    public Single<HttpRequest> toRequest() {
         return toStreamingRequest().toRequest();
     }
 
     @Override
     public StreamingHttpRequest toStreamingRequest() {
-        return new DefaultStreamingHttpRequest<>(method(), requestTarget(), version(), headers(),
-                trailersSingle, allocator, fromIterable(payloadBody), aggregated);
-    }
-
-    @Override
-    public boolean equals(final Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-        if (!super.equals(o)) {
-            return false;
-        }
-
-        final DefaultBlockingStreamingHttpRequest<?> that = (DefaultBlockingStreamingHttpRequest<?>) o;
-
-        return payloadBody.equals(that.payloadBody);
-    }
-
-    @Override
-    public int hashCode() {
-        return 31 * super.hashCode() + payloadBody.hashCode();
+        return original;
     }
 }

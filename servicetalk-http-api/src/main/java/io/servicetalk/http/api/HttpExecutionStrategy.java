@@ -33,12 +33,12 @@ public interface HttpExecutionStrategy extends ExecutionStrategy {
      *
      * @param fallback {@link Executor} to use as a fallback if this {@link HttpExecutionStrategy} does not define an
      * {@link Executor}.
-     * @param request {@link StreamingHttpRequest} for which the offloading is to be applied.
+     * @param flattenedRequest A flattened {@link Publisher} containing all data constituting an HTTP request.
      * @param client A {@link Function} that given flattened stream of {@link HttpRequestMetaData}, payload and
      * trailers, for the passed {@link StreamingHttpRequest} returns a {@link Single}.
      * @return {@link Single} which is offloaded as required.
      */
-    Single<StreamingHttpResponse> invokeClient(Executor fallback, StreamingHttpRequest request,
+    Single<StreamingHttpResponse> invokeClient(Executor fallback, Publisher<Object> flattenedRequest,
                                                Function<Publisher<Object>, Single<StreamingHttpResponse>> client);
 
     /**
@@ -47,17 +47,15 @@ public interface HttpExecutionStrategy extends ExecutionStrategy {
      * @param fallback {@link Executor} to use as a fallback if this {@link HttpExecutionStrategy} does not define an
      * {@link Executor}.
      * @param request {@link StreamingHttpRequest} for which the offloading is to be applied.
-     * @param service A {@link Function} that executes a {@link StreamingHttpRequest} and returns a
-     * {@link Single}
-     * @param errorHandler In case there is an error on calling the passed {@code service} or if the returned
-     * {@link Single} from the {@code service} terminates with an error. This {@link BiFunction} will be called to
-     * generate an error response.
-     * @return A flattened {@link Publisher} containing {@link HttpRequestMetaData}, payload and trailers
-     * for the {@link StreamingHttpResponse} returned by the passed {@code service}.
+     * @param service A {@link Function} that executes a {@link StreamingHttpRequest} and returns a flattened
+     * {@link Publisher} containing all data constituting an HTTP response.
+     * @param errorHandler In case there is an error before calling the passed {@code service}, this {@link BiFunction}
+     * will be called to generate an error response.
+     * @return A flattened {@link Publisher} containing all data constituting an HTTP response..
      */
     Publisher<Object> invokeService(Executor fallback, StreamingHttpRequest request,
-                                    Function<StreamingHttpRequest, Single<StreamingHttpResponse>> service,
-                                    BiFunction<Throwable, Executor, Single<StreamingHttpResponse>> errorHandler);
+                                    Function<StreamingHttpRequest, Publisher<Object>> service,
+                                    BiFunction<Throwable, Executor, Publisher<Object>> errorHandler);
 
     /**
      * Invokes a service represented by the passed {@link Function}.

@@ -39,4 +39,9 @@
     <Method name="next"/>
     <Bug pattern="IT_NO_SUCH_ELEMENT"/>
   </Match>
+  <!-- Deliberately passing null to verify validations -->
+  <Match>
+    <Class name="io.servicetalk.http.api.InvalidMetadataValuesTest"/>
+    <Bug pattern="NP_NONNULL_PARAM_VIOLATION"/>
+  </Match>
 </FindBugsFilter>

@@ -15,11 +15,11 @@
  */
 package io.servicetalk.http.api;
 
-import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Publisher;
 
-import static io.servicetalk.concurrent.api.Publisher.empty;
+import static io.servicetalk.http.api.DefaultPayloadInfo.forTransportReceive;
+import static io.servicetalk.http.api.DefaultPayloadInfo.forUserCreated;
 
 /**
  * Factory methods for creating {@link StreamingHttpRequest}s.
@@ -30,48 +30,28 @@ public final class StreamingHttpRequests {
     }
 
     /**
-     * Create a new instance using HTTP 1.1 with empty payload body.
+     * Creates a new {@link StreamingHttpRequest}.
      *
      * @param method the {@link HttpRequestMethod} of the request.
      * @param requestTarget the <a href="https://tools.ietf.org/html/rfc7230#section-3.1.1">request-target</a> of the
      * request.
      * @param version the {@link HttpProtocolVersion} of the request.
      * @param headers the {@link HttpHeaders} of the request.
-     * @param initialTrailers the initial state of the
-     * <a href="https://tools.ietf.org/html/rfc7230#section-4.4">trailers</a> for this request.
      * @param allocator the allocator used for serialization purposes if necessary.
+     * @param headersFactory {@link HttpHeadersFactory} to use.
      * @return a new {@link StreamingHttpRequest}.
      */
     public static StreamingHttpRequest newRequest(
             final HttpRequestMethod method, final String requestTarget, final HttpProtocolVersion version,
-            final HttpHeaders headers, final HttpHeaders initialTrailers, final BufferAllocator allocator) {
-        return newRequest(method, requestTarget, version, headers, initialTrailers, allocator, empty());
+            final HttpHeaders headers, final BufferAllocator allocator, final HttpHeadersFactory headersFactory) {
+        return new DefaultStreamingHttpRequest(method, requestTarget, version, headers, allocator,
+                null, forUserCreated(headers), headersFactory);
     }
 
     /**
-     * Create a new instance using HTTP 1.1 with a {@link Publisher} for a payload body.
-     *
-     * @param method the {@link HttpRequestMethod} of the request.
-     * @param requestTarget the <a href="https://tools.ietf.org/html/rfc7230#section-3.1.1">request-target</a> of the
-     * request.
-     * @param version the {@link HttpProtocolVersion} of the request.
-     * @param headers the {@link HttpHeaders} of the request.
-     * @param initialTrailers the initial state of the
-     * <a href="https://tools.ietf.org/html/rfc7230#section-4.4">trailers</a> for this request.
-     * @param allocator the allocator used for serialization purposes if necessary.
-     * @param payloadBody the payload body {@link Publisher}.
-     * @return a new {@link StreamingHttpRequest}.
-     */
-    public static StreamingHttpRequest newRequest(
-            final HttpRequestMethod method, final String requestTarget, final HttpProtocolVersion version,
-            final HttpHeaders headers, final HttpHeaders initialTrailers, final BufferAllocator allocator,
-            final Publisher<Buffer> payloadBody) {
-        return new BufferStreamingHttpRequest(method, requestTarget, version, headers, initialTrailers, allocator,
-                payloadBody, false);
-    }
-
-    /**
-     * Create a new instance using HTTP 1.1 with empty payload body.
+     * Creates a new {@link StreamingHttpRequest} which is read from the transport. If the request contains
+     * <a href="https://tools.ietf.org/html/rfc7230#section-4.4">trailers</a> then the passed {@code payload}
+     * {@link Publisher} should also emit {@link HttpHeaders} before completion.
      *
      * @param method the {@link HttpRequestMethod} of the request.
      * @param requestTarget the <a href="https://tools.ietf.org/html/rfc7230#section-3.1.1">request-target</a> of the
@@ -79,13 +59,16 @@ public final class StreamingHttpRequests {
      * @param version the {@link HttpProtocolVersion} of the request.
      * @param headers the {@link HttpHeaders} of the request.
      * @param allocator the allocator used for serialization purposes if necessary.
-     * @param payloadAndTrailers a {@link Publisher} of the form [&lt;payload chunk&gt;* {@link HttpHeaders}].
+     * @param payload a {@link Publisher} for payload that optionally emits {@link HttpHeaders} if the request contains
+     * <a href="https://tools.ietf.org/html/rfc7230#section-4.4">trailers</a>.
+     * @param headersFactory {@link HttpHeadersFactory} to use.
      * @return a new {@link StreamingHttpRequest}.
      */
-    public static StreamingHttpRequest newRequestWithTrailers(
+    public static StreamingHttpRequest newTransportRequest(
             final HttpRequestMethod method, final String requestTarget, final HttpProtocolVersion version,
-            final HttpHeaders headers, final BufferAllocator allocator, final Publisher<Object> payloadAndTrailers) {
-        return new TransportStreamingHttpRequest(method, requestTarget, version, headers, allocator,
-                payloadAndTrailers, false);
+            final HttpHeaders headers, final BufferAllocator allocator, final Publisher<Object> payload,
+            final HttpHeadersFactory headersFactory) {
+        return new DefaultStreamingHttpRequest(method, requestTarget, version, headers, allocator,
+                payload, forTransportReceive(headers), headersFactory);
     }
 }

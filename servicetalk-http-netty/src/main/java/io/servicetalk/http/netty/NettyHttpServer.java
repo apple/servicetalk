@@ -72,16 +72,19 @@ import static io.servicetalk.concurrent.api.AsyncCloseables.toListenableAsyncClo
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Completable.defer;
 import static io.servicetalk.concurrent.api.Processors.newCompletableProcessor;
+import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
+import static io.servicetalk.http.api.HttpApiConversions.mayHaveTrailers;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderValues.ZERO;
-import static io.servicetalk.http.api.StreamingHttpRequests.newRequestWithTrailers;
+import static io.servicetalk.http.api.StreamingHttpRequests.newTransportRequest;
 import static io.servicetalk.http.netty.HeaderUtils.addResponseTransferEncodingIfNecessary;
 import static io.servicetalk.http.netty.HeaderUtils.canAddResponseContentLength;
 import static io.servicetalk.http.netty.HeaderUtils.setResponseContentLength;
 import static io.servicetalk.transport.netty.internal.CloseHandler.forPipelinedRequestResponse;
 import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater;
+import static java.util.function.Function.identity;
 
 final class NettyHttpServer {
 
@@ -119,7 +122,7 @@ final class NettyHttpServer {
             .map(delegate -> {
                 LOGGER.debug("Started HTTP server for address {}.", delegate.listenAddress());
                 // The ServerContext returned by TcpServerBinder takes care of closing the connectionAcceptor.
-                return new NettyHttpServerContext(delegate, service, executionContext.executionStrategy());
+                return new NettyHttpServerContext(delegate, service);
             });
     }
 
@@ -137,13 +140,10 @@ final class NettyHttpServer {
 
     private static final class NettyHttpServerContext implements ServerContext {
         private final ServerContext delegate;
-        private final HttpExecutionStrategy strategy;
         private final ListenableAsyncCloseable asyncCloseable;
 
-        NettyHttpServerContext(final ServerContext delegate, final StreamingHttpService service,
-                               final HttpExecutionStrategy strategy) {
+        NettyHttpServerContext(final ServerContext delegate, final StreamingHttpService service) {
             this.delegate = delegate;
-            this.strategy = strategy;
             asyncCloseable = toListenableAsyncCloseable(newCompositeCloseable().appendAll(service, delegate));
         }
 
@@ -184,6 +184,7 @@ final class NettyHttpServer {
         private final StreamingHttpService service;
         private final HttpExecutionStrategy strategy;
         private final NettyConnection<Object, Object> connection;
+        private final HttpHeadersFactory headersFactory;
         private final HttpExecutionContext executionContext;
         private final CompositeFlushStrategy compositeFlushStrategy;
         private final boolean drainRequestPayloadBody;
@@ -201,6 +202,7 @@ final class NettyHttpServer {
                     new DefaultBlockingStreamingHttpResponseFactory(headersFactory,
                             connection.executionContext().bufferAllocator()));
             this.connection = connection;
+            this.headersFactory = headersFactory;
             executionContext = new DefaultHttpExecutionContext(connection.executionContext().bufferAllocator(),
                     connection.executionContext().ioExecutor(), connection.executionContext().executor(),
                     strategy);
@@ -214,8 +216,9 @@ final class NettyHttpServer {
             final Single<StreamingHttpRequest> requestSingle =
                     new SpliceFlatStreamToMetaSingle<>(connection.read(),
                             (HttpRequestMetaData meta, Publisher<Object> payload) ->
-                                    newRequestWithTrailers(meta.method(), meta.requestTarget(), meta.version(),
-                                            meta.headers(), executionContext().bufferAllocator(), payload));
+                                    newTransportRequest(meta.method(), meta.requestTarget(), meta.version(),
+                                            meta.headers(), executionContext().bufferAllocator(), payload,
+                                            headersFactory));
             return handleRequestAndWriteResponse(requestSingle);
         }
 
@@ -231,7 +234,6 @@ final class NettyHttpServer {
                 // we may attempt to do duplicate subscribe on NettyChannelPublisher, which will result in a connection
                 // closure.
                 final Processor requestCompletion = newCompletableProcessor();
-                @Nullable
                 final AtomicBoolean payloadSubscribed = drainRequestPayloadBody ? new AtomicBoolean() : null;
                 final StreamingHttpRequest request = rawRequest.transformRawPayloadBody(
                         // Cancellation is assumed to close the connection, or be ignored if this Subscriber has already
@@ -273,17 +275,29 @@ final class NettyHttpServer {
                 Publisher<Object> responsePublisher = strategy
                         .invokeService(executionContext().executor(), request,
                                 req -> service.handle(NettyHttpServerConnection.this, req, streamingResponseFactory())
-                                        .flatMap(response -> {
+                                        .recoverWith(cause ->
+                                                succeeded(newErrorResponse(cause, executionContext.executor(),
+                                                        req.version(), keepAlive)))
+                                        .flatMapPublisher(response -> {
                                             keepAlive.addConnectionHeaderIfNecessary(response);
-                                            if (!canAddResponseContentLength(response, requestMethod)) {
-                                                addResponseTransferEncodingIfNecessary(response, requestMethod);
-                                                return succeeded(response);
-                                            }
                                             // Add the content-length if necessary, falling back to transfer-encoding
                                             // otherwise.
-                                            return setResponseContentLength(response);
+                                            if (canAddResponseContentLength(response, requestMethod)) {
+                                                return setResponseContentLength(response, headersFactory)
+                                                        .flatMapPublisher(identity());
+                                            } else {
+                                                Publisher<Object> flatResponse = Publisher.<Object>from(response)
+                                                        .concat(response.payloadBodyAndTrailers());
+                                                if (!mayHaveTrailers(response)) {
+                                                    flatResponse = flatResponse.concat(
+                                                            succeeded(headersFactory.newEmptyTrailers()));
+                                                }
+                                                addResponseTransferEncodingIfNecessary(response, requestMethod);
+                                                return flatResponse;
+                                            }
                                         }),
-                                (cause, executor) -> newErrorResponse(cause, executor, request.version(), keepAlive));
+                                (cause, executor) -> from(newErrorResponse(cause, executor,
+                                        request.version(), keepAlive)));
 
                 if (drainRequestPayloadBody) {
                     responsePublisher = responsePublisher.concat(defer(() -> payloadSubscribed.get() ?
@@ -337,9 +351,9 @@ final class NettyHttpServer {
                     }));
         }
 
-        private Single<StreamingHttpResponse> newErrorResponse(final Throwable cause, final Executor executor,
-                                                               final HttpProtocolVersion version,
-                                                               final HttpKeepAlive keepAlive) {
+        private StreamingHttpResponse newErrorResponse(final Throwable cause, final Executor executor,
+                                                       final HttpProtocolVersion version,
+                                                       final HttpKeepAlive keepAlive) {
             final StreamingHttpResponse response;
             if (cause instanceof RejectedExecutionException) {
                 LOGGER.error("Task rejected by Executor {} for service={}, connection={}", executor, service, this,
@@ -352,7 +366,7 @@ final class NettyHttpServer {
             response.version(version)
                     .setHeader(CONTENT_LENGTH, ZERO);
             keepAlive.addConnectionHeaderIfNecessary(response);
-            return succeeded(response);
+            return response;
         }
 
         @Override

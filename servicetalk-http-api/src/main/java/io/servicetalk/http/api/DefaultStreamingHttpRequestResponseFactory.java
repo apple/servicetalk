@@ -44,12 +44,12 @@ public final class DefaultStreamingHttpRequestResponseFactory implements Streami
     @Override
     public StreamingHttpRequest newRequest(final HttpRequestMethod method, final String requestTarget) {
         return StreamingHttpRequests.newRequest(method, requestTarget, protocolVersion, headersFactory.newHeaders(),
-                headersFactory.newTrailers(), allocator);
+                allocator, headersFactory);
     }
 
     @Override
     public StreamingHttpResponse newResponse(final HttpResponseStatus status) {
         return StreamingHttpResponses.newResponse(status, protocolVersion, headersFactory.newHeaders(),
-                headersFactory.newTrailers(), allocator);
+                allocator, headersFactory);
     }
 }

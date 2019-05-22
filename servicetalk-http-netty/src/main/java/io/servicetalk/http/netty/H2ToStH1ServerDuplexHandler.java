@@ -52,7 +52,7 @@ import static io.servicetalk.http.api.StreamingHttpRequests.newRequest;
 import static io.servicetalk.http.netty.H2ToStH1Utils.HTTP_2_0;
 import static io.servicetalk.http.netty.H2ToStH1Utils.h1HeadersToH2Headers;
 import static io.servicetalk.http.netty.H2ToStH1Utils.h2HeadersSanitizeForH1;
-import static io.servicetalk.http.netty.HeaderUtils.canAddRequestTransferEncodingProtocol;
+import static io.servicetalk.http.netty.HeaderUtils.clientMaySendPayloadBodyFor;
 import static io.servicetalk.http.netty.HeaderUtils.shouldAddZeroContentLength;
 
 final class H2ToStH1ServerDuplexHandler extends ChannelDuplexHandler {
@@ -130,8 +130,7 @@ final class H2ToStH1ServerDuplexHandler extends ChannelDuplexHandler {
                         PATH + " headers");
             } else {
                 StreamingHttpRequest request = newRequest(httpMethod, path, HTTP_2_0,
-                        h2HeadersToH1HeadersServer(h2Headers, httpMethod), headersFactory.newEmptyTrailers(),
-                        allocator);
+                        h2HeadersToH1HeadersServer(h2Headers, httpMethod), allocator, headersFactory);
                 ctx.fireChannelRead(request);
             }
         } else if (msg instanceof Http2DataFrame) {
@@ -155,7 +154,7 @@ final class H2ToStH1ServerDuplexHandler extends ChannelDuplexHandler {
             h2Headers.set(CONTENT_LENGTH, ZERO);
         }
         StreamingHttpRequest request = newRequest(httpMethod, path, HTTP_2_0,
-                h2HeadersToH1HeadersServer(h2Headers, httpMethod), headersFactory.newEmptyTrailers(), allocator);
+                h2HeadersToH1HeadersServer(h2Headers, httpMethod), allocator, headersFactory);
         ctx.fireChannelRead(request);
         ctx.fireChannelRead(headersFactory.newEmptyTrailers());
     }
@@ -169,7 +168,7 @@ final class H2ToStH1ServerDuplexHandler extends ChannelDuplexHandler {
         h2Headers.remove(Http2Headers.PseudoHeaderName.SCHEME.value());
         h2HeadersSanitizeForH1(h2Headers);
         if (httpMethod != null && !h2Headers.contains(HttpHeaderNames.CONTENT_LENGTH) &&
-                canAddRequestTransferEncodingProtocol(httpMethod)) {
+                clientMaySendPayloadBodyFor(httpMethod)) {
             h2Headers.add(HttpHeaderNames.TRANSFER_ENCODING, HttpHeaderValues.CHUNKED);
         }
         return new NettyH2HeadersToHttpHeaders(h2Headers, headersFactory.validateCookies());

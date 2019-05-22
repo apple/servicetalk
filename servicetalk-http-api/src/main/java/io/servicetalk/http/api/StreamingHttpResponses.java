@@ -15,11 +15,12 @@
  */
 package io.servicetalk.http.api;
 
-import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Publisher;
 
 import static io.servicetalk.concurrent.api.Publisher.empty;
+import static io.servicetalk.http.api.DefaultPayloadInfo.forTransportReceive;
+import static io.servicetalk.http.api.DefaultPayloadInfo.forUserCreated;
 
 /**
  * Factory methods for creating {@link StreamingHttpResponse}s.
@@ -35,49 +36,36 @@ public final class StreamingHttpResponses {
      * @param status the {@link HttpResponseStatus} of the response.
      * @param version the {@link HttpProtocolVersion} of the response.
      * @param headers the {@link HttpHeaders} of the response.
-     * @param initialTrailers the initial state of the
-     * <a href="https://tools.ietf.org/html/rfc7230#section-4.4">trailers</a> for this response.
      * @param allocator the allocator used for serialization purposes if necessary.
+     * @param headersFactory {@link HttpHeadersFactory} to use.
      * @return a new {@link StreamingHttpResponse}.
      */
     public static StreamingHttpResponse newResponse(
             final HttpResponseStatus status, final HttpProtocolVersion version, final HttpHeaders headers,
-            final HttpHeaders initialTrailers, final BufferAllocator allocator) {
-        return newResponse(status, version, headers, initialTrailers, allocator, empty());
+            final BufferAllocator allocator, final HttpHeadersFactory headersFactory) {
+        DefaultPayloadInfo payloadInfo = forUserCreated(headers);
+        return new DefaultStreamingHttpResponse(status, version, headers, allocator,
+                payloadInfo.mayHaveTrailers() ? empty() : null, payloadInfo, headersFactory);
     }
 
     /**
-     * Create a new instance using HTTP 1.1 with empty payload body.
-     *
-     * @param status the {@link HttpResponseStatus} of the response.
-     * @param version the {@link HttpProtocolVersion} of the response.
-     * @param headers the {@link HttpHeaders} of the response.
-     * @param initialTrailers the initial state of the
-     * <a href="https://tools.ietf.org/html/rfc7230#section-4.4">trailers</a> for this response.
-     * @param allocator the allocator used for serialization purposes if necessary.
-     * @param payloadBody the payload body {@link Publisher}.
-     * @return a new {@link StreamingHttpResponse}.
-     */
-    public static StreamingHttpResponse newResponse(
-            final HttpResponseStatus status, final HttpProtocolVersion version, final HttpHeaders headers,
-            final HttpHeaders initialTrailers, final BufferAllocator allocator, Publisher<Buffer> payloadBody) {
-        return new BufferStreamingHttpResponse(status, version, headers, initialTrailers, allocator, payloadBody,
-                false);
-    }
-
-    /**
-     * Create a new instance using HTTP 1.1 with empty payload body.
+     * Creates a new {@link StreamingHttpResponse} which is read from the transport. If the response contains
+     * <a href="https://tools.ietf.org/html/rfc7230#section-4.4">trailers</a> then the passed {@code payload}
+     * {@link Publisher} should also emit {@link HttpHeaders} before completion.
      *
      * @param status the {@link HttpResponseStatus} of the response.
      * @param version the {@link HttpProtocolVersion} of the response.
      * @param headers the {@link HttpHeaders} of the response.
      * @param allocator the allocator used for serialization purposes if necessary.
-     * @param payloadAndTrailers a {@link Publisher} of the form [&lt;payload chunk&gt;* {@link HttpHeaders}].
+     * @param payload a {@link Publisher} for payload that optionally emits {@link HttpHeaders} if the
+     * response contains <a href="https://tools.ietf.org/html/rfc7230#section-4.4">trailers</a>.
+     * @param headersFactory {@link HttpHeadersFactory} to use.
      * @return a new {@link StreamingHttpResponse}.
      */
-    public static StreamingHttpResponse newResponseWithTrailers(
+    public static StreamingHttpResponse newTransportResponse(
             final HttpResponseStatus status, final HttpProtocolVersion version, final HttpHeaders headers,
-            final BufferAllocator allocator, final Publisher<Object> payloadAndTrailers) {
-        return new TransportStreamingHttpResponse(status, version, headers, allocator, payloadAndTrailers, false);
+            final BufferAllocator allocator, final Publisher<Object> payload, final HttpHeadersFactory headersFactory) {
+        return new DefaultStreamingHttpResponse(status, version, headers, allocator, payload,
+                forTransportReceive(headers), headersFactory);
     }
 }

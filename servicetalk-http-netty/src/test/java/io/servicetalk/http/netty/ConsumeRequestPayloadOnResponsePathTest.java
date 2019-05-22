@@ -21,6 +21,7 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.PlatformDependent;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.BlockingHttpClient;
+import io.servicetalk.http.api.DefaultHttpHeadersFactory;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpRequest;
@@ -45,7 +46,7 @@ import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.HttpHeaderNames.TRAILER;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
-import static io.servicetalk.http.api.StreamingHttpResponses.newResponseWithTrailers;
+import static io.servicetalk.http.api.StreamingHttpResponses.newTransportResponse;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.Matchers.is;
@@ -105,8 +106,9 @@ public class ConsumeRequestPayloadOnResponsePathTest {
         test((responseSingle, request) -> responseSingle.map(response ->
                 // It doesn't use the BufferAllocator from HttpServiceContext to simplify the test and avoid using
                 // TriFunction. It doesn't change the behavior of this test.
-                newResponseWithTrailers(response.status(), response.version(), response.headers(), DEFAULT_ALLOCATOR,
-                        response.payloadBodyAndTrailers().concat(consumePayloadBody(request)))));
+                newTransportResponse(response.status(), response.version(), response.headers(), DEFAULT_ALLOCATOR,
+                        response.payloadBodyAndTrailers().concat(consumePayloadBody(request)),
+                        DefaultHttpHeadersFactory.INSTANCE)));
     }
 
     @Test
