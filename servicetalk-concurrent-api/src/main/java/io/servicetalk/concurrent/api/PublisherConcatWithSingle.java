@@ -47,7 +47,6 @@ final class PublisherConcatWithSingle<T> extends AbstractAsynchronousPublisherOp
     private static final class ConcatSubscriber<T>
             implements SingleSource.Subscriber<T>, Subscriber<T>, Subscription {
         private static final Object CANCELLED = new Object();
-        private static final Object NULL_VALUE = new Object();
         private static final Object TERMINATED = new Object();
         private static final AtomicReferenceFieldUpdater<ConcatSubscriber, Object> stateUpdater =
                 newUpdater(ConcatSubscriber.class, Object.class, "state");
@@ -113,7 +112,7 @@ final class PublisherConcatWithSingle<T> extends AbstractAsynchronousPublisherOp
                     return;
                 }
                 if (s instanceof Long && stateUpdater.compareAndSet(this, s,
-                        (long) s > 0 ? new RequestedCancellable(cancellable) : cancellable)
+                        (long) s > 0 ? new CancellableWithOutstandingDemand(cancellable) : cancellable)
                         || s == null && stateUpdater.compareAndSet(this, null, cancellable)) {
                     break;
                 }
@@ -127,12 +126,12 @@ final class PublisherConcatWithSingle<T> extends AbstractAsynchronousPublisherOp
                 if (s == CANCELLED || s == TERMINATED) {
                     return;
                 }
-                if (s instanceof RequestedCancellable) {
+                if (s instanceof PublisherConcatWithSingle.CancellableWithOutstandingDemand) {
                     if (stateUpdater.compareAndSet(this, s, TERMINATED)) {
                         terminateTarget(result);
                         break;
                     }
-                } else if (stateUpdater.compareAndSet(this, s, new Result<>(result))) {
+                } else if (stateUpdater.compareAndSet(this, s, new SingleResult<>(result))) {
                     break;
                 }
             }
@@ -167,17 +166,17 @@ final class PublisherConcatWithSingle<T> extends AbstractAsynchronousPublisherOp
                         subscription.request(n);
                         return;
                     }
-                } else if (s instanceof RequestedCancellable) {
+                } else if (s instanceof PublisherConcatWithSingle.CancellableWithOutstandingDemand) {
                     // already requested
                     return;
                 } else if (s instanceof Cancellable) {
-                    if (stateUpdater.compareAndSet(this, s, new RequestedCancellable((Cancellable) s))) {
+                    if (stateUpdater.compareAndSet(this, s, new CancellableWithOutstandingDemand((Cancellable) s))) {
                         return;
                     }
                 } else {
-                    assert s instanceof Result;
+                    assert s instanceof PublisherConcatWithSingle.SingleResult;
                     if (stateUpdater.compareAndSet(this, s, TERMINATED)) {
-                        terminateTarget(Result.fromRaw(s));
+                        terminateTarget(SingleResult.fromRaw(s));
                         return;
                     }
                 }
@@ -209,10 +208,10 @@ final class PublisherConcatWithSingle<T> extends AbstractAsynchronousPublisherOp
         }
     }
 
-    private static final class RequestedCancellable implements Cancellable {
+    private static final class CancellableWithOutstandingDemand implements Cancellable {
         private final Cancellable cancellable;
 
-        RequestedCancellable(final Cancellable cancellable) {
+        CancellableWithOutstandingDemand(final Cancellable cancellable) {
             this.cancellable = cancellable;
         }
 
@@ -222,18 +221,18 @@ final class PublisherConcatWithSingle<T> extends AbstractAsynchronousPublisherOp
         }
     }
 
-    private static final class Result<T> {
+    private static final class SingleResult<T> {
         @Nullable
         private final T result;
 
-        Result(@Nullable final T result) {
+        SingleResult(@Nullable final T result) {
             this.result = result;
         }
 
         @Nullable
         @SuppressWarnings("unchecked")
         static <T> T fromRaw(Object resultAsObject) {
-            return ((Result<T>) resultAsObject).result;
+            return ((SingleResult<T>) resultAsObject).result;
         }
     }
 }
