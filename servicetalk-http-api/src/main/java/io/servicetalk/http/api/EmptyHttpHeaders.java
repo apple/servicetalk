@@ -57,7 +57,12 @@ public final class EmptyHttpHeaders implements HttpHeaders {
     }
 
     @Override
-    public boolean contains(CharSequence name, CharSequence value, boolean caseInsensitive) {
+    public boolean contains(CharSequence name, CharSequence value) {
+        return false;
+    }
+
+    @Override
+    public boolean containsIgnoreCase(CharSequence name, CharSequence value) {
         return false;
     }
 
@@ -127,7 +132,12 @@ public final class EmptyHttpHeaders implements HttpHeaders {
     }
 
     @Override
-    public boolean remove(CharSequence name, CharSequence value, boolean caseInsensitive) {
+    public boolean remove(CharSequence name, CharSequence value) {
+        return false;
+    }
+
+    @Override
+    public boolean removeIgnoreCase(CharSequence name, CharSequence value) {
         return false;
     }
 

@@ -75,8 +75,13 @@ final class NettyH2HeadersToHttpHeaders implements HttpHeaders {
     }
 
     @Override
-    public boolean contains(final CharSequence name, final CharSequence value, final boolean caseInsensitive) {
-        return nettyHeaders.contains(name, value, caseInsensitive);
+    public boolean contains(final CharSequence name, final CharSequence value) {
+        return nettyHeaders.contains(name, value);
+    }
+
+    @Override
+    public boolean containsIgnoreCase(final CharSequence name, final CharSequence value) {
+        return nettyHeaders.contains(name, value, true);
     }
 
     @Override
@@ -144,23 +149,26 @@ final class NettyH2HeadersToHttpHeaders implements HttpHeaders {
     }
 
     @Override
-    public boolean remove(final CharSequence name, final CharSequence value, final boolean caseInsensitive) {
+    public boolean remove(final CharSequence name, final CharSequence value) {
         final int sizeBefore = size();
-        if (caseInsensitive) {
-            Iterator<? extends CharSequence> valuesItr = nettyHeaders.valueIterator(name);
-            while (valuesItr.hasNext()) {
-                CharSequence next = valuesItr.next();
-                if (contentEquals(next, value)) {
-                    valuesItr.remove();
-                }
+        Iterator<? extends CharSequence> valuesItr = nettyHeaders.valueIterator(name);
+        while (valuesItr.hasNext()) {
+            CharSequence next = valuesItr.next();
+            if (contentEquals(next, value)) {
+                valuesItr.remove();
             }
-        } else {
-            Iterator<? extends CharSequence> valuesItr = nettyHeaders.valueIterator(name);
-            while (valuesItr.hasNext()) {
-                CharSequence next = valuesItr.next();
-                if (contentEqualsIgnoreCase(next, value)) {
-                    valuesItr.remove();
-                }
+        }
+        return sizeBefore != size();
+    }
+
+    @Override
+    public boolean removeIgnoreCase(final CharSequence name, final CharSequence value) {
+        final int sizeBefore = size();
+        Iterator<? extends CharSequence> valuesItr = nettyHeaders.valueIterator(name);
+        while (valuesItr.hasNext()) {
+            CharSequence next = valuesItr.next();
+            if (contentEqualsIgnoreCase(next, value)) {
+                valuesItr.remove();
             }
         }
         return sizeBefore != size();
