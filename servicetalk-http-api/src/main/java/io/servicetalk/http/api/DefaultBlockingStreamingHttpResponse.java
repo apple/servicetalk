@@ -105,7 +105,7 @@ final class DefaultBlockingStreamingHttpResponse extends AbstractDelegatingHttpR
 
     @Override
     public Single<HttpResponse> toResponse() {
-        return original.toResponse();
+        return toStreamingResponse().toResponse();
     }
 
     @Override

@@ -16,6 +16,7 @@
 package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.Buffer;
+import io.servicetalk.concurrent.api.Publisher;
 
 import javax.annotation.Nullable;
 
@@ -191,12 +192,15 @@ final class DefaultHttpRequest extends AbstractDelegatingHttpRequest implements 
 
     @Override
     public StreamingHttpRequest toStreamingRequest() {
-        return original;
+        Publisher<Object> payload = trailers != null ? from(payloadBody, trailers) : from(payloadBody);
+        return new DefaultStreamingHttpRequest(method(), requestTarget(), version(), headers(),
+                original.payloadHolder().allocator(), payload, new DefaultPayloadInfo(this),
+                original.payloadHolder().headersFactory());
     }
 
     @Override
     public BlockingStreamingHttpRequest toBlockingStreamingRequest() {
-        return original.toBlockingStreamingRequest();
+        return toStreamingRequest().toBlockingStreamingRequest();
     }
 
     @Override

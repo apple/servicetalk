@@ -16,6 +16,7 @@
 package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.Buffer;
+import io.servicetalk.concurrent.api.Publisher;
 
 import javax.annotation.Nullable;
 
@@ -68,7 +69,9 @@ final class DefaultHttpResponse extends AbstractDelegatingHttpResponse implement
 
     @Override
     public StreamingHttpResponse toStreamingResponse() {
-        return original;
+        Publisher<Object> payload = trailers != null ? from(payloadBody, trailers) : from(payloadBody);
+        return new DefaultStreamingHttpResponse(status(), version(), headers(), original.payloadHolder().allocator(),
+                payload, new DefaultPayloadInfo(this), original.payloadHolder().headersFactory());
     }
 
     @Override
