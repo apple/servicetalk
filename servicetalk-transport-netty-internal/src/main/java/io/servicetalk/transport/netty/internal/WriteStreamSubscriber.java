@@ -27,8 +27,8 @@ import io.servicetalk.transport.netty.internal.NettyConnection.RequestNSupplier;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelPromise;
+import io.netty.channel.DefaultChannelPromise;
 import io.netty.util.concurrent.EventExecutor;
-import io.netty.util.concurrent.Future;
 
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
@@ -65,6 +65,10 @@ import static java.util.Objects.requireNonNull;
  */
 final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
                                              DefaultNettyConnection.WritableListener, Cancellable {
+    private static final byte SOURCE_TERMINATED = 1;
+    private static final byte CHANNEL_CLOSED = 2;
+    private static final byte CHANNEL_CLOSED_OUTBOUND = 4;
+    private static final byte SUBSCRIBER_TERMINATED = 8;
     private static final Subscription CANCELLED = new EmptySubscription();
     private static final AtomicLongFieldUpdater<WriteStreamSubscriber> requestedUpdater =
             AtomicLongFieldUpdater.newUpdater(WriteStreamSubscriber.class, "requested");
@@ -78,13 +82,7 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
      */
     private final EventExecutor eventLoop;
     private final RequestNSupplier requestNSupplier;
-    /**
-     * It is assumed the underlying transport is ordered and reliable such that if a single write fails then the
-     * remaining writes will also fail. This allows us to only subscribe to the status of the last write operation as a
-     * summary of the status for all write operations.
-     */
-    @Nullable
-    private ChannelPromise lastWritePromise;
+    private final AllWritesPromise promise;
     @SuppressWarnings("unused")
     @Nullable
     private volatile Subscription subscription;
@@ -97,7 +95,6 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
      * does not have to be volatile.
      */
     private boolean enqueueWrites;
-    private boolean terminated;
     private final CloseHandler closeHandler;
 
     WriteStreamSubscriber(Channel channel, RequestNSupplier requestNSupplier, Subscriber subscriber,
@@ -106,6 +103,7 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
         this.subscriber = subscriber;
         this.channel = channel;
         this.requestNSupplier = requestNSupplier;
+        promise = new AllWritesPromise(channel);
         this.closeHandler = closeHandler;
     }
 
@@ -142,59 +140,39 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
              */
             enqueueWrites = true;
         }
-        lastWritePromise = channel.newPromise();
         if (enqueueWrites) {
-            // Make sure we save a reference to the current lastWritePromise becuase it may change by the time the
-            // Runnable below is executed.
-            ChannelPromise lastWritePromise = this.lastWritePromise;
             eventLoop.execute(() -> {
-                doWrite(o, lastWritePromise);
+                doWrite(o);
                 requestMoreIfRequired(subscription);
             });
         } else {
-            doWrite(o, lastWritePromise);
+            doWrite(o);
             requestMoreIfRequired(subscription);
         }
     }
 
-    void doWrite(Object msg, ChannelPromise writePromise) {
+    void doWrite(Object msg) {
         long capacityBefore = channel.bytesBeforeUnwritable();
-        channel.write(msg, writePromise);
+        promise.writeNext(msg);
         long capacityAfter = channel.bytesBeforeUnwritable();
         requestNSupplier.onItemWrite(msg, capacityBefore, capacityAfter);
     }
 
     @Override
     public void onError(Throwable cause) {
-        if (lastWritePromise != null) {
-            lastWritePromise.addListener(future -> terminateListenerAndCloseChannel(cause));
-        } else if (eventLoop.inEventLoop()) {
-            // If lastWritePromise is null that means there are no writes, enqueueWrites should only be set to true if
-            // there are writes.
-            assert !enqueueWrites;
-            terminateListenerAndCloseChannel(cause);
+        if (enqueueWrites || !eventLoop.inEventLoop()) {
+            eventLoop.execute(() -> promise.sourceTerminated(requireNonNull(cause)));
         } else {
-            // If lastWritePromise is null that means there are no writes, enqueueWrites should only be set to true if
-            // there are writes.
-            assert !enqueueWrites;
-            eventLoop.execute(() -> terminateListenerAndCloseChannel(cause));
+            promise.sourceTerminated(requireNonNull(cause));
         }
     }
 
     @Override
     public void onComplete() {
-        if (lastWritePromise != null) {
-            lastWritePromise.addListener(this::terminateAndCloseIfLastWriteFailed);
-        } else if (eventLoop.inEventLoop()) {
-            // If lastWritePromise is null that means there are no writes, enqueueWrites should only be set to true if
-            // there are writes.
-            assert !enqueueWrites;
-            terminateListener();
+        if (enqueueWrites || !eventLoop.inEventLoop()) {
+            eventLoop.execute(() -> promise.sourceTerminated(null));
         } else {
-            // If lastWritePromise is null that means there are no writes, enqueueWrites should only be set to true if
-            // there are writes.
-            assert !enqueueWrites;
-            eventLoop.execute(this::terminateListener);
+            promise.sourceTerminated(null);
         }
     }
 
@@ -206,18 +184,8 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
 
     @Override
     public void channelClosedOutbound() {
-        if (!terminated && lastWritePromise != null) {
-            lastWritePromise.addListener(this::terminateAndCloseIfLastWriteFailed);
-        }
-    }
-
-    private void terminateAndCloseIfLastWriteFailed(Future<?> future) {
-        Throwable cause = future.cause();
-        if (cause == null) {
-            terminateListener();
-        } else {
-            terminateListenerAndCloseChannel(cause);
-        }
+        assert eventLoop.inEventLoop();
+        promise.channelClosedOutbound();
     }
 
     @Override
@@ -231,13 +199,14 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
     }
 
     private void channelClosed0(@Nullable Subscription oldVal, Throwable closedException) {
+        assert eventLoop.inEventLoop();
         if (oldVal == null) {
             // If there was no subscriber when the channel closed, we need to call onSubscribe before we terminate.
             subscriber.onSubscribe(IGNORE_CANCEL);
         } else {
             oldVal.cancel();
         }
-        terminateListener(closedException, false);
+        promise.channelClosed(closedException);
     }
 
     @Override
@@ -273,26 +242,156 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
         }
     }
 
-    private void terminateListenerAndCloseChannel(Throwable cause) {
-        terminateListener(cause, true);
-    }
+    /**
+     * A special {@link DefaultChannelPromise} for write operations. It is assumed that all methods on this class are
+     * only called from the eventloop.
+     */
+    private final class AllWritesPromise extends DefaultChannelPromise {
+        private int activeWrites;
+        private byte state;
+        @Nullable
+        private Throwable failureCause;
 
-    private void terminateListener() {
-        terminateListener(null, false);
-    }
-
-    private void terminateListener(@Nullable Throwable cause, boolean closeChannelIfFailed) {
-        if (terminated) {
-            return;
+        AllWritesPromise(final Channel channel) {
+            super(channel);
         }
-        terminated = true;
-        if (cause != null) {
-            if (closeChannelIfFailed) {
+
+        void writeNext(Object msg) {
+            assert eventLoop.inEventLoop();
+            activeWrites++;
+            channel.write(msg, this);
+        }
+
+        void sourceTerminated(@Nullable Throwable cause) {
+            assert eventLoop.inEventLoop();
+            if (hasFlag(SUBSCRIBER_TERMINATED)) {
+                // We have terminated prematurely perhaps due to write failure.
+                return;
+            }
+            this.failureCause = cause;
+            setFlag(SOURCE_TERMINATED);
+            if (activeWrites == 0) {
+                try {
+                    terminateSubscriber(cause);
+                } catch (Throwable t) {
+                    super.setFailure(t);
+                    return;
+                }
+                // Set the promise to success so that any listeners attached to the promise get terminated
+                super.setSuccess(null);
+            }
+        }
+
+        void channelClosed(@Nullable Throwable cause) {
+            assert eventLoop.inEventLoop();
+            if (hasFlag(CHANNEL_CLOSED) || hasFlag(SUBSCRIBER_TERMINATED)) {
+                return;
+            }
+            setFlag(CHANNEL_CLOSED);
+            tryFailure(cause);
+        }
+
+        void channelClosedOutbound() {
+            assert eventLoop.inEventLoop();
+            if (hasFlag(CHANNEL_CLOSED)) {
+                return;
+            }
+            if (hasFlag(SUBSCRIBER_TERMINATED)) {
+                // We have already terminated the subscriber (all writes have finished (one has failed)) then we
+                // just close the channel now.
+                closeHandler.closeChannelOutbound(channel);
+                return;
+            }
+            // Writes are pending, we will close the channel once writes are done.
+            setFlag(CHANNEL_CLOSED_OUTBOUND);
+        }
+
+        @Override
+        public boolean trySuccess(final Void result) {
+            return setSuccess0();
+        }
+
+        @Override
+        public boolean tryFailure(final Throwable cause) {
+            return setFailure0(cause);
+        }
+
+        @Override
+        public ChannelPromise setSuccess(final Void result) {
+            setSuccess0();
+            return this;
+        }
+
+        @Override
+        public ChannelPromise setFailure(final Throwable cause) {
+            setFailure0(cause);
+            return this;
+        }
+
+        private boolean setSuccess0() {
+            assert eventLoop.inEventLoop();
+            if (hasFlag(SUBSCRIBER_TERMINATED)) {
+                return false;
+            }
+            if (--activeWrites == 0 && hasFlag(SOURCE_TERMINATED) && !hasFlag(SUBSCRIBER_TERMINATED)) {
+                setFlag(SUBSCRIBER_TERMINATED);
+                try {
+                    terminateSubscriber(failureCause);
+                } catch (Throwable t) {
+                    super.setFailure(t);
+                    return false;
+                }
+                super.setSuccess(null);
+            }
+            return true;
+        }
+
+        private boolean setFailure0(Throwable cause) {
+            assert eventLoop.inEventLoop();
+            /*
+             * It is assumed the underlying transport is ordered and reliable such that if a single write fails then the
+             * remaining writes will also fail. So, for any write failure we close the channel and ignore any further
+             * results.
+             */
+            if (hasFlag(SUBSCRIBER_TERMINATED)) {
+                return false;
+            }
+            setFlag(SUBSCRIBER_TERMINATED);
+            Subscription oldVal = subscriptionUpdater.getAndSet(WriteStreamSubscriber.this, CANCELLED);
+            if (oldVal != null && oldVal != CANCELLED) {
+                oldVal.cancel();
+            }
+            try {
+                terminateSubscriber(cause);
+            } catch (Throwable t) {
+                super.setFailure(t);
+                return false;
+            }
+            super.setFailure(cause);
+            return true;
+        }
+
+        private void terminateSubscriber(@Nullable final Throwable cause) {
+            if (hasFlag(CHANNEL_CLOSED_OUTBOUND) || cause != null) {
                 closeHandler.closeChannelOutbound(channel);
             }
-            subscriber.onError(cause);
-        } else {
-            subscriber.onComplete();
+            if (cause == null) {
+                subscriber.onComplete();
+            } else {
+                subscriber.onError(cause);
+                if (!hasFlag(CHANNEL_CLOSED)) {
+                    // Close channel on error.
+                    channel.close();
+                }
+            }
+        }
+
+        private boolean hasFlag(final byte flag) {
+            return (state & flag) == flag;
+        }
+
+        private void setFlag(final byte flag) {
+            state |= flag;
         }
     }
 }

@@ -17,14 +17,17 @@ package io.servicetalk.transport.netty.internal;
 
 import io.servicetalk.concurrent.CompletableSource;
 
+import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelPromise;
 import io.netty.channel.embedded.EmbeddedChannel;
-import io.netty.handler.logging.LoggingHandler;
 import org.junit.After;
 import org.junit.Before;
 
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.empty;
@@ -39,11 +42,13 @@ public abstract class AbstractWriteTest {
     protected EmbeddedChannel channel;
     protected NettyConnection.RequestNSupplier requestNSupplier;
     protected CompletableSource.Subscriber completableSubscriber;
+    protected FailingWriteHandler failingWriteHandler;
 
     @Before
     public void setUp() throws Exception {
         completableSubscriber = mock(CompletableSource.Subscriber.class);
-        channel = new EmbeddedChannel(new LoggingHandler());
+        failingWriteHandler = new FailingWriteHandler();
+        channel = new EmbeddedChannel(failingWriteHandler);
         requestNSupplier = mock(NettyConnection.RequestNSupplier.class);
     }
 
@@ -67,6 +72,23 @@ public abstract class AbstractWriteTest {
         verify(completableSubscriber).onSubscribe(any());
         verify(completableSubscriber).onComplete();
         verifyNoMoreInteractions(completableSubscriber);
+    }
+
+    static final class FailingWriteHandler extends ChannelDuplexHandler {
+        private volatile boolean failNextWrite;
+
+        @Override
+        public void write(final ChannelHandlerContext ctx, final Object msg, final ChannelPromise promise)
+                throws Exception {
+            if (failNextWrite) {
+                throw DELIBERATE_EXCEPTION;
+            }
+            super.write(ctx, msg, promise);
+        }
+
+        void failNextWrite(boolean failNextWrite) {
+            this.failNextWrite = failNextWrite;
+        }
     }
 
     static final class WriteInfo {

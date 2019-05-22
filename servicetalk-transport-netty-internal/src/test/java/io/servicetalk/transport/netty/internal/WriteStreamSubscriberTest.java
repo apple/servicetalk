@@ -24,6 +24,7 @@ import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_
 import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.is;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
@@ -128,6 +129,21 @@ public class WriteStreamSubscriberTest extends AbstractWriteTest {
         verifyWriteSuccessful("Hello");
         verifyWrite(info);
         verifyZeroInteractions(closeHandler);
+    }
+
+    @Test
+    public void writeFailureClosesChannel() throws Exception {
+        WriteInfo info1 = writeAndFlush("Hello1");
+        verify(completableSubscriber).onSubscribe(any());
+        verifyWriteSuccessful("Hello1");
+        verifyWrite(info1);
+
+        failingWriteHandler.failNextWrite(true);
+        subscriber.onNext("Hello2");
+        verify(completableSubscriber).onError(DELIBERATE_EXCEPTION);
+        verify(closeHandler).closeChannelOutbound(any());
+        channel.closeFuture().sync();
+        assertThat("Channel not closed on write failure.", channel.isActive(), is(false));
     }
 
     private void verifyWrite(WriteInfo... infos) {
