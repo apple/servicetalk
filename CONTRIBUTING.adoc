@@ -50,13 +50,13 @@ A good ServiceTalk patch is:
 === Checklist
 Please use the following checklist before pushing your commits or issuing a pull request:
 
-- Does your work build without any failure when you run `./gradlew build` from shell?
-- Does your work introduce any new IDEA inspector warnings?
-- Does your commit message or pull request description meet our commit message rules?
 - Did you rebase your pull request against the HEAD of the target branch and fix all conflicts?
+- Does your work build without any failure when you run `./gradlew build` from shell?
+- Does your commit message or pull request description follow our <<Commit Message Template>>?
 
 === Commit Message Template
-We require that your commit messages match our template. The easiest way to do that is to get git to help you by explicitly using the template. To do that, cd to the root of our repository and run:
+We require that your commit messages match our template. The easiest way to do that is to get git
+to help you by explicitly using the template. To do that, `cd` to the root of our repository and run:
 ```
 git config commit.template .git.commit.template
 ```
@@ -71,8 +71,7 @@ Please be sure to include:
 * Java version, output of `java -version`
 * Contextual information (e.g. what you were trying to achieve with ServiceTalk)
 * Simplest possible steps to reproduce
-** The more complex the steps are, lower the priority it will likely be.
-** A pull request a with failing test case is preferred, but it's fine to paste the test case into the issue description.
+** A pull request with a failing test case is preferred, but it's fine to paste the test case into the issue description.
 * Anything else that might be relevant in your opinion, such as network configuration.
 
 ==== Security issues
@@ -81,5 +80,6 @@ private email to link:mailto:servicetalk-security@group.apple.com[servicetalk-se
 
 == Project Communication
 We encourage your participation asking questions and helping improve the ServiceTalk project.
-link:https://github.com/servicetalk/servicetalk/issues[Github issues] and PRs are
-the primary mechanisms of participation and communication for ServiceTalk.
+link:https://github.com/servicetalk/servicetalk/issues[Github issues] and
+link:https://github.com/servicetalk/servicetalk/pulls[pull requests] are the primary mechanisms of
+participation and communication for ServiceTalk.
