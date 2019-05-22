@@ -32,9 +32,9 @@ final class DefaultPayloadInfo implements PayloadInfo {
         if (from instanceof DefaultPayloadInfo) {
             this.flags = ((DefaultPayloadInfo) from).flags;
         } else {
-            set(SAFE_TO_AGGREGATE, from.isSafeToAggregate());
-            set(MAY_HAVE_TRAILERS, from.mayHaveTrailers());
-            set(ONLY_EMIT_BUFFERS, from.onlyEmitsBuffer());
+            setSafeToAggregate(from.isSafeToAggregate());
+            setMayHaveTrailers(from.mayHaveTrailers());
+            setOnlyEmitsBuffer(from.onlyEmitsBuffer());
         }
     }
 
