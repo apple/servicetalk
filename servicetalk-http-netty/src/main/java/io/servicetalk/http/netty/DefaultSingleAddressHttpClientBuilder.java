@@ -18,11 +18,15 @@ package io.servicetalk.http.netty;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.client.api.ConnectionFactory;
 import io.servicetalk.client.api.ConnectionFactoryFilter;
+import io.servicetalk.client.api.DefaultServiceDiscovererEvent;
 import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.LoadBalancerFactory;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
+import io.servicetalk.concurrent.api.AsyncCloseables;
+import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompositeCloseable;
+import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
@@ -48,10 +52,12 @@ import java.util.function.Function;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
+import static io.servicetalk.concurrent.api.Publisher.failed;
+import static io.servicetalk.concurrent.api.Publisher.never;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
-import static io.servicetalk.http.netty.DefaultHttpConnectionBuilder.reservedConnectionsPipelineEnabled;
 import static io.servicetalk.http.netty.GlobalDnsServiceDiscoverer.globalDnsServiceDiscoverer;
 import static io.servicetalk.http.netty.H2ToStH1Utils.HTTP_2_0;
+import static io.servicetalk.http.netty.StreamingConnectionFactory.reservedConnectionsPipelineEnabled;
 import static io.servicetalk.loadbalancer.RoundRobinLoadBalancer.newRoundRobinFactory;
 import static java.util.Objects.requireNonNull;
 
@@ -129,6 +135,13 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
     static DefaultSingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> forHostAndPort(
             final HostAndPort address) {
         return new DefaultSingleAddressHttpClientBuilder<>(address, globalDnsServiceDiscoverer());
+    }
+
+    static <U> DefaultSingleAddressHttpClientBuilder<U, InetSocketAddress> forResolvedAddress(final U u,
+            final InetSocketAddress address) {
+        ServiceDiscoverer<U, InetSocketAddress, ServiceDiscovererEvent<InetSocketAddress>> sd =
+                new NoopServiceDiscoverer<>(u, address);
+        return new DefaultSingleAddressHttpClientBuilder<>(u, sd);
     }
 
     static DefaultSingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> forUnknownHostAndPort() {
@@ -452,6 +465,47 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
         public HttpExecutionStrategy influenceStrategy(final HttpExecutionStrategy strategy) {
             // We know that round robin load balancer does not block.
             return strategy;
+        }
+    }
+
+    private static final class NoopServiceDiscoverer<U>
+            implements ServiceDiscoverer<U, InetSocketAddress, ServiceDiscovererEvent<InetSocketAddress>> {
+        private final ListenableAsyncCloseable closeable = AsyncCloseables.emptyAsyncCloseable();
+
+        private final Publisher<ServiceDiscovererEvent<InetSocketAddress>> resolution;
+        private final U resolved;
+        private final InetSocketAddress address;
+
+        private NoopServiceDiscoverer(final U resolved, final InetSocketAddress address) {
+            this.resolved = resolved;
+            this.address = address;
+            resolution = Publisher.<ServiceDiscovererEvent<InetSocketAddress>>from(
+                    new DefaultServiceDiscovererEvent<>(address, true))
+                    // LoadBalancer will flag a termination of service discoverer Publisher as unexpected.
+                    .concat(never());
+        }
+
+        @Override
+        public Publisher<ServiceDiscovererEvent<InetSocketAddress>> discover(final U address) {
+            if (!this.resolved.equals(address)) {
+                return failed(new IllegalArgumentException("Unexpected address resolution request: " + address));
+            }
+            return resolution;
+        }
+
+        @Override
+        public Completable onClose() {
+            return closeable.onClose();
+        }
+
+        @Override
+        public Completable closeAsync() {
+            return closeable.closeAsync();
+        }
+
+        @Override
+        public Completable closeAsyncGracefully() {
+            return closeable.closeAsyncGracefully();
         }
     }
 }

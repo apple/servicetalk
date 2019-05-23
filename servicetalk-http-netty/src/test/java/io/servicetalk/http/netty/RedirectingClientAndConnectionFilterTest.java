@@ -51,7 +51,6 @@ import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_0;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.HttpResponseStatus.PERMANENT_REDIRECT;
 import static io.servicetalk.http.netty.RedirectingClientAndConnectionFilterTest.Type.Client;
-import static io.servicetalk.http.netty.RedirectingClientAndConnectionFilterTest.Type.Connection;
 import static io.servicetalk.http.netty.RedirectingClientAndConnectionFilterTest.Type.Reserved;
 import static io.servicetalk.transport.netty.internal.AddressUtils.hostHeader;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
@@ -71,7 +70,7 @@ public final class RedirectingClientAndConnectionFilterTest {
 
     private final Type type;
 
-    protected enum Type { Client, Connection, Reserved }
+    protected enum Type { Client, Reserved }
 
     public RedirectingClientAndConnectionFilterTest(Type type) {
         this.type = type;
@@ -79,7 +78,7 @@ public final class RedirectingClientAndConnectionFilterTest {
 
     @Parameters(name = "{0}")
     public static Object[] getParameters() {
-        return new Object[]{Client, Connection, Reserved};
+        return new Object[]{Client, Reserved};
     }
 
     private BlockingHttpRequester newRequester(ServerContext serverContext) throws Exception {
@@ -122,12 +121,6 @@ public final class RedirectingClientAndConnectionFilterTest {
                     closeables.close();
                     throw t;
                 }
-            case Connection:
-                return new DefaultHttpConnectionBuilder<>()
-                        .appendConnectionFilter(r -> r.headers().contains("X-REDIRECT"),
-                                new RedirectingHttpRequesterFilter())
-                        .buildBlocking(serverSocketAddress);
-
             default:
                 throw new IllegalArgumentException(type.name());
         }

@@ -17,7 +17,6 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
-import io.servicetalk.client.api.ConnectionClosedException;
 import io.servicetalk.client.api.MaxRequestLimitExceededException;
 import io.servicetalk.concurrent.CompletableSource.Processor;
 import io.servicetalk.concurrent.api.Publisher;
@@ -26,11 +25,13 @@ import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.DefaultHttpHeadersFactory;
 import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
+import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpConnection;
 import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpHeaderNames;
 import io.servicetalk.http.api.HttpResponse;
+import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
@@ -39,6 +40,7 @@ import io.servicetalk.http.api.TestStreamingHttpConnection;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.netty.internal.NettyConnection;
 
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
@@ -46,12 +48,10 @@ import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnit;
 import org.mockito.junit.MockitoRule;
 
-import java.io.IOException;
 import java.net.StandardSocketOptions;
 import java.nio.channels.ClosedChannelException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
 import static io.servicetalk.buffer.api.EmptyBuffer.EMPTY_BUFFER;
@@ -66,8 +66,9 @@ import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.http.api.HttpExecutionStrategies.customStrategyBuilder;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
+import static io.servicetalk.http.netty.HttpClients.forResolvedAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
-import static org.hamcrest.Matchers.equalTo;
+import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.startsWith;
@@ -150,6 +151,7 @@ public class ConcurrentRequestsHttpConnectionFilterTest {
         awaitIndefinitelyNonNull(limitedConnection.request(limitedConnection.get("/baz")));
     }
 
+    @Ignore("reserveConnection does not apply connection limits.")
     @Test
     public void throwMaxConcurrencyExceededOnOversubscribedConnection() throws Exception {
         final Processor lastRequestFinished = newCompletableProcessor();
@@ -161,10 +163,11 @@ public class ConcurrentRequestsHttpConnectionFilterTest {
                             .concat(Single.succeeded(responseFactory.ok().payloadBody(deferredPayload)));
                 });
 
-             StreamingHttpConnection connection = new DefaultHttpConnectionBuilder<>()
+             StreamingHttpClient client = forResolvedAddress(serverHostAndPort(serverContext))
                      .maxPipelinedRequests(2)
-                     .buildStreaming(serverContext.listenAddress())
-                     .toFuture().get()) {
+                     .buildStreaming();
+
+             StreamingHttpConnection connection = client.reserveConnection(client.get("/")).toFuture().get()) {
 
             Single<StreamingHttpResponse> resp1 = connection.request(connection.get("/one"));
             Single<StreamingHttpResponse> resp2 = connection.request(connection.get("/two"));
@@ -193,11 +196,12 @@ public class ConcurrentRequestsHttpConnectionFilterTest {
                         Single.succeeded(responseFactory.ok()
                                 .setHeader(HttpHeaderNames.CONNECTION, "close"))));
 
-             HttpConnection connection = new DefaultHttpConnectionBuilder<>()
+             HttpClient client = forResolvedAddress(serverHostAndPort(serverContext))
                      .maxPipelinedRequests(99)
                      .executionStrategy(FULLY_NO_OFFLOAD_STRATEGY)
-                     .build(serverContext.listenAddress())
-                     .toFuture().get()) {
+                     .build();
+
+             HttpConnection connection = client.reserveConnection(client.get("/")).toFuture().get()) {
 
             Single<? extends HttpResponse> resp1 = connection.request(connection.get("/one"));
             Single<? extends HttpResponse> resp2 = connection.request(connection.get("/two"));
@@ -208,9 +212,8 @@ public class ConcurrentRequestsHttpConnectionFilterTest {
                 connection.onClose().concat(resp2).toFuture().get();
                 fail("Should not allow request to complete normally on a closed connection");
             } catch (ExecutionException e) {
-                assertThat(e.getCause(), instanceOf(ConnectionClosedException.class));
-                assertThat(e.getCause().getCause(), instanceOf(ClosedChannelException.class));
-                assertThat(e.getCause().getCause().getMessage(), startsWith("PROTOCOL_CLOSING_INBOUND"));
+                assertThat(e.getCause(), instanceOf(ClosedChannelException.class));
+                assertThat(e.getCause().getMessage(), startsWith("PROTOCOL_CLOSING_INBOUND"));
             }
         }
     }
@@ -224,23 +227,18 @@ public class ConcurrentRequestsHttpConnectionFilterTest {
                         request.payloadBody().ignoreElements()
                                 .concat(ctx.closeAsync()) // trigger reset after client is done writing
                                 .concat(Single.never()));
-
-             HttpConnection connection = new DefaultHttpConnectionBuilder<>()
+             HttpClient client = forResolvedAddress(serverHostAndPort(serverContext))
                      .maxPipelinedRequests(99)
                      .executionStrategy(FULLY_NO_OFFLOAD_STRATEGY)
-                     .build(serverContext.listenAddress())
-                     .toFuture().get()) {
+                     .build();
+
+             HttpConnection connection = client.reserveConnection(client.get("/")).toFuture().get()) {
 
             Single<? extends HttpResponse> resp1 = connection.request(connection.get("/one"));
             Single<? extends HttpResponse> resp2 = connection.request(connection.get("/two"));
 
-            final AtomicReference<Throwable> ioEx = new AtomicReference<>();
-
             Publisher.empty()
-                    .concat(resp1).recoverWith(reset -> {
-                        ioEx.set(reset); // Capture connection reset
-                        return Publisher.empty();
-                    })
+                    .concat(resp1).recoverWith(reset -> Publisher.empty())
                     .toFuture().get();
 
             final Processor closedFinally = newCompletableProcessor();
@@ -250,9 +248,8 @@ public class ConcurrentRequestsHttpConnectionFilterTest {
                 fromSource(closedFinally).concat(resp2).toFuture().get();
                 fail("Should not allow request to complete normally on a closed connection");
             } catch (ExecutionException e) {
-                assertThat(e.getCause(), instanceOf(ConnectionClosedException.class));
-                assertThat(e.getCause().getCause(), instanceOf(IOException.class));
-                assertThat(e.getCause().getCause(), equalTo(ioEx.get())); // Assert connection reset
+                assertThat(e.getCause(), instanceOf(ClosedChannelException.class));
+                assertThat(e.getCause().getMessage(), startsWith("CHANNEL_CLOSED_INBOUND"));
             }
         }
     }
