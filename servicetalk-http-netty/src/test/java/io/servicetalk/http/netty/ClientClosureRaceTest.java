@@ -48,7 +48,6 @@ import java.util.concurrent.Executors;
 import static io.servicetalk.concurrent.api.Single.collectUnordered;
 import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
 import static java.nio.charset.StandardCharsets.US_ASCII;
-import static org.junit.Assert.assertTrue;
 
 public class ClientClosureRaceTest {
 
@@ -143,7 +142,7 @@ public class ClientClosureRaceTest {
     private void runIterations(Callable<Single<?>> test) throws Exception {
         int count = 0;
         try {
-            while (count < ITERATIONS) {
+            while (!receivedExpectedError) {
                 try {
                     count++;
                     Object response = test.call().toFuture().get();
@@ -159,7 +158,6 @@ public class ClientClosureRaceTest {
         } finally {
             LOGGER.info("Completed {} requests", count);
         }
-        assertTrue("Did not receive expected error", receivedExpectedError);
     }
 
     private SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> newClientBuilder() {
