@@ -840,7 +840,7 @@ public abstract class Publisher<T> {
      * @see <a href="http://reactivex.io/documentation/operators/concat.html">ReactiveX concat operator.</a>
      */
     public final Publisher<T> concat(Single<? extends T> next) {
-        return new ConcatPublisher<>(this, next.toPublisher(), executor);
+        return new PublisherConcatWithSingle<>(this, next, executor);
     }
 
     /**
@@ -864,7 +864,7 @@ public abstract class Publisher<T> {
      * @see <a href="http://reactivex.io/documentation/operators/concat.html">ReactiveX concat operator.</a>
      */
     public final Publisher<T> concat(Completable next) {
-        return new ConcatPublisher<>(this, next.toPublisher(), executor);
+        return new PublisherConcatWithCompletable<>(this, next, executor);
     }
 
     /**
