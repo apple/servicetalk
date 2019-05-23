@@ -21,6 +21,7 @@ import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.RetryStrategies;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.transport.api.RetryableException;
 
 import java.time.Duration;
 import java.util.function.BiPredicate;
