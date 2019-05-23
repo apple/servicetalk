@@ -17,11 +17,13 @@ package io.servicetalk.transport.netty.internal;
 
 import io.servicetalk.transport.api.RetryableException;
 
+import java.nio.channels.ClosedChannelException;
+
 /**
  * Indicates that an error happened due to connection closure, but is retryable.
  */
-public class RetryableClosureException extends Exception implements RetryableException {
+public class RetryableClosureException extends ClosedChannelException implements RetryableException {
     RetryableClosureException(final Throwable cause) {
-        super(cause);
+        initCause(cause);
     }
 }
