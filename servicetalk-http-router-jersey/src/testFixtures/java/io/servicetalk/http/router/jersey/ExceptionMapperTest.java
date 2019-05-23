@@ -143,81 +143,99 @@ public class ExceptionMapperTest extends AbstractJerseyStreamingHttpServiceTest 
 
     @Test
     public void stringResponse() {
-        testPlainResponse(STR);
+        runTwiceToEnsureEndpointCache(() -> {
+            testPlainResponse(STR);
+        });
     }
 
     @Test
     public void bufferResponse() {
-        testPlainResponse(BUF);
+        runTwiceToEnsureEndpointCache(() -> {
+            testPlainResponse(BUF);
+        });
     }
 
     @Test
     public void singleBufferResponse() {
-        testPlainResponse(SBUF);
+        runTwiceToEnsureEndpointCache(() -> {
+            testPlainResponse(SBUF);
+        });
     }
 
     @Test
     public void mapResponse() {
-        testJsonResponse(MAP);
+        runTwiceToEnsureEndpointCache(() -> {
+            testJsonResponse(MAP);
+        });
     }
 
     @Test
     public void singleMapResponse() {
-        assumeThat(isStreamingJsonEnabled(), is(true));
-        testJsonResponse(SMAP);
+        runTwiceToEnsureEndpointCache(() -> {
+            assumeThat(isStreamingJsonEnabled(), is(true));
+            testJsonResponse(SMAP);
+        });
     }
 
     private void testPlainResponse(final ExceptionResponseType ert) {
-        testAllExceptionTypes(ert, HttpHeaderValues.TEXT_PLAIN);
+        runTwiceToEnsureEndpointCache(() -> {
+            testAllExceptionTypes(ert, HttpHeaderValues.TEXT_PLAIN);
+        });
     }
 
     private void testJsonResponse(final ExceptionResponseType ert) {
-        testAllExceptionTypes(ert, HttpHeaderValues.APPLICATION_JSON);
+        runTwiceToEnsureEndpointCache(() -> {
+            testAllExceptionTypes(ert, HttpHeaderValues.APPLICATION_JSON);
+        });
     }
 
     private void testAllExceptionTypes(final ExceptionResponseType ert,
                                        final CharSequence expectedContentType) {
-        // Routing exception
-        sendAndAssertResponse(get(SynchronousResources.PATH + "/not_a_resource"), ert,
-                expectedContentType, NotFoundException.class);
+        runTwiceToEnsureEndpointCache(() -> {
+            // Routing exception
+            sendAndAssertResponse(get(SynchronousResources.PATH + "/not_a_resource"), ert,
+                    expectedContentType, NotFoundException.class);
 
-        // Thrown exception
-        sendAndAssertResponse(get(SynchronousResources.PATH + "/text?qp=throw-not-translated"), ert,
-                expectedContentType, DeliberateException.class);
-        sendAndAssertResponse(get(SynchronousResources.PATH + "/text?qp=throw-translated"), ert,
-                expectedContentType, WebApplicationException.class);
-        sendAndAssertResponse(get(AsynchronousResources.PATH + "/text?qp=throw-not-translated"), ert,
-                expectedContentType, DeliberateException.class);
-        sendAndAssertResponse(get(AsynchronousResources.PATH + "/text?qp=throw-translated"), ert,
-                expectedContentType, WebApplicationException.class);
+            // Thrown exception
+            sendAndAssertResponse(get(SynchronousResources.PATH + "/text?qp=throw-not-translated"), ert,
+                    expectedContentType, DeliberateException.class);
+            sendAndAssertResponse(get(SynchronousResources.PATH + "/text?qp=throw-translated"), ert,
+                    expectedContentType, WebApplicationException.class);
+            sendAndAssertResponse(get(AsynchronousResources.PATH + "/text?qp=throw-not-translated"), ert,
+                    expectedContentType, DeliberateException.class);
+            sendAndAssertResponse(get(AsynchronousResources.PATH + "/text?qp=throw-translated"), ert,
+                    expectedContentType, WebApplicationException.class);
 
-        // Failed CompletionStage
-        sendAndAssertResponse(get(AsynchronousResources.PATH + "/failed-text"), ert,
-                expectedContentType, DeliberateException.class);
+            // Failed CompletionStage
+            sendAndAssertResponse(get(AsynchronousResources.PATH + "/failed-text"), ert,
+                    expectedContentType, DeliberateException.class);
 
-        // Failed RS source
-        sendAndAssertResponse(get(AsynchronousResources.PATH + "/completable?fail=true"), ert,
-                expectedContentType, DeliberateException.class);
-        sendAndAssertResponse(get(AsynchronousResources.PATH + "/single-response?fail=true"), ert,
-                expectedContentType, DeliberateException.class);
-        sendAndAssertResponse(get(AsynchronousResources.PATH + "/single-map?fail=true"), ert,
-                expectedContentType, DeliberateException.class);
+            // Failed RS source
+            sendAndAssertResponse(get(AsynchronousResources.PATH + "/completable?fail=true"), ert,
+                    expectedContentType, DeliberateException.class);
+            sendAndAssertResponse(get(AsynchronousResources.PATH + "/single-response?fail=true"), ert,
+                    expectedContentType, DeliberateException.class);
+            sendAndAssertResponse(get(AsynchronousResources.PATH + "/single-map?fail=true"), ert,
+                    expectedContentType, DeliberateException.class);
+        });
     }
 
     private void sendAndAssertResponse(final StreamingHttpRequest req,
                                        final ExceptionResponseType ert,
                                        final CharSequence expectedContentType,
                                        final Class<? extends Throwable> expectedExceptionClass) {
+        runTwiceToEnsureEndpointCache(() -> {
 
-        req.headers().set(EXCEPTION_RESPONSE_TYPE_HEADER, ert.toString());
+            req.headers().set(EXCEPTION_RESPONSE_TYPE_HEADER, ert.toString());
 
-        if (HttpHeaderValues.APPLICATION_JSON.equals(expectedContentType)) {
-            sendAndAssertResponse(req, STATUS_555, expectedContentType,
-                    is(jsonPartEquals("exceptionClassName", expectedExceptionClass.getName())),
-                    getJsonResponseContentLengthExtractor());
-        } else {
-            sendAndAssertResponse(req, STATUS_555, expectedContentType,
-                    is(expectedExceptionClass.getName()), String::length);
-        }
+            if (HttpHeaderValues.APPLICATION_JSON.equals(expectedContentType)) {
+                sendAndAssertResponse(req, STATUS_555, expectedContentType,
+                        is(jsonPartEquals("exceptionClassName", expectedExceptionClass.getName())),
+                        getJsonResponseContentLengthExtractor());
+            } else {
+                sendAndAssertResponse(req, STATUS_555, expectedContentType,
+                        is(expectedExceptionClass.getName()), String::length);
+            }
+        });
     }
 }

@@ -108,12 +108,11 @@ public class SecurityFilterTest extends AbstractJerseyStreamingHttpServiceTest {
     @Test
     public void defaultSecurityContext() {
         sendAndAssertResponse(get(SynchronousResources.PATH + "/security-context"), OK, APPLICATION_JSON,
-                jsonEquals("{\"authenticationScheme\":\"bar\",\"secure\":true,\"userPrincipal\":{\"name\":\"foo\"}}"),
-                getJsonResponseContentLengthExtractor());
+                jsonEquals("{\"authenticationScheme\":\"bar\",\"secure\":true," +
+                        "\"userPrincipal\":{\"name\":\"foo\"}}"), getJsonResponseContentLengthExtractor());
 
         sendAndAssertResponse(get(SynchronousResources.PATH + "/security-context?none=true"), OK, APPLICATION_JSON,
-                jsonEquals("{\"authenticationScheme\":\"none\",\"secure\":false,\"userPrincipal\":{\"name\":\"none\"}}"),
-                getJsonResponseContentLengthExtractor());
-
+                jsonEquals("{\"authenticationScheme\":\"none\",\"secure\":false," +
+                        "\"userPrincipal\":{\"name\":\"none\"}}"), getJsonResponseContentLengthExtractor());
     }
 }

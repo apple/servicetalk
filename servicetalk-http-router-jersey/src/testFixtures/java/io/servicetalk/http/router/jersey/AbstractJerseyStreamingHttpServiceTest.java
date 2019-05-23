@@ -37,6 +37,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.mockito.junit.MockitoJUnit;
 import org.mockito.junit.MockitoRule;
@@ -79,8 +80,6 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 
 public abstract class AbstractJerseyStreamingHttpServiceTest {
-    @Rule
-    public final Times twice = new Times(2);
     @Rule
     public final MockitoRule rule = MockitoJUnit.rule();
     @Rule
@@ -314,5 +313,18 @@ public abstract class AbstractJerseyStreamingHttpServiceTest {
         } catch (final Throwable t) {
             throw new RuntimeException(t);
         }
+    }
+
+    /**
+     * Runs the provided {@code test} lambda multiple times.
+     * <p/>
+     * some tests depend on Endpoint enhancement which is now backed by a cache, so we test the test code multiple times
+     * to ensure that the caching of endpoints doesn't cause any weird side-effects.
+     * @param test {@link Runnable} test callback will be executed multiple times, typically this is run from a @{@link
+     * Test} within a single setup/teardown cycle
+     */
+    protected final void runTwiceToEnsureEndpointCache(Runnable test) {
+        test.run();
+        test.run();
     }
 }

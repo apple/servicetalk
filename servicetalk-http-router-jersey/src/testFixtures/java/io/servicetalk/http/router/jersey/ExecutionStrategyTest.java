@@ -228,9 +228,12 @@ public final class ExecutionStrategyTest extends AbstractJerseyStreamingHttpServ
     }
 
     @Test
-    @SuppressWarnings("unchecked")
     public void testResource() {
+        runTwiceToEnsureEndpointCache(this::runTest);
+    }
 
+    @SuppressWarnings("unchecked")
+    private void runTest() {
         final String resBody = testMode.sendTestRequest(path, this);
         final Map<String, String> threadingInfo;
         try {
