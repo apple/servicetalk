@@ -271,13 +271,15 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
 
     private Throwable enrichError(final Throwable t) {
         final Throwable throwable;
-        if (t instanceof AbortedFirstWrite || t instanceof RetryableClosureException) {
+        if (t instanceof AbortedFirstWrite) {
             final Throwable cause = t.getCause();
             if (closeReason != null) {
                 throwable = new RetryableClosureException(closeReason.wrapError(cause, channel()));
             } else {
                 throwable = cause;
             }
+        } else if (t instanceof RetryableClosureException) {
+            throwable = t;
         } else {
             throwable = closeReason != null ? closeReason.wrapError(t, channel()) : t;
         }
