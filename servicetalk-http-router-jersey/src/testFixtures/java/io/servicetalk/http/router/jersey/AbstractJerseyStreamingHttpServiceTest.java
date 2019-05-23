@@ -80,6 +80,8 @@ import static org.junit.Assert.assertThat;
 
 public abstract class AbstractJerseyStreamingHttpServiceTest {
     @Rule
+    public final Times twice = new Times(2);
+    @Rule
     public final MockitoRule rule = MockitoJUnit.rule();
     @Rule
     public final ServiceTalkTestTimeout timeout = new ServiceTalkTestTimeout();

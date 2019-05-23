@@ -169,29 +169,29 @@ final class EndpointEnhancingRequestFilter implements ContainerRequestFilter {
         @Nullable
         private final Executor executor;
         @Nullable
-        private final Ref<ConnectionContext> ctxRef;
+        private final Provider<Ref<ConnectionContext>> ctxRefProvider;
 
         private AbstractWrappedEndpoint(
                 final Endpoint delegate,
                 final Class<?> resourceClass,
                 final Method resourceMethod,
                 final RequestScope requestScope,
+                @Nullable
                 final Provider<Ref<ConnectionContext>> ctxRefProvider,
                 @Nullable final HttpExecutionStrategy routeExecutionStrategy) {
             this.delegate = delegate;
             this.resourceClass = resourceClass;
             this.resourceMethod = resourceMethod;
             this.requestScope = requestScope;
+            this.ctxRefProvider = ctxRefProvider;
             this.routeExecutionStrategy = routeExecutionStrategy;
             if (routeExecutionStrategy != null) {
-                ctxRef = ctxRefProvider.get();
-                ExecutionContext executionContext = ctxRef.get().executionContext();
+                ExecutionContext executionContext = ctxRefProvider.get().get().executionContext();
                 // ExecutionStrategy and Executor shared for all routes in JerseyRouter
                 executionStrategy = executionContext.executionStrategy();
                 executor = executionContext.executor();
                 effectiveRouteStrategy = calculateEffectiveStrategy(executionStrategy, executor);
             } else {
-                ctxRef = null;
                 effectiveRouteStrategy = null;
                 executionStrategy = null;
                 executor = null;
@@ -282,7 +282,8 @@ final class EndpointEnhancingRequestFilter implements ContainerRequestFilter {
                 final RequestContext requestContext = requestScope.referenceCurrent();
                 final ContainerRequest request = requestProcessingCtx.request();
                 assert executor != null;
-                assert ctxRef != null;
+                assert ctxRefProvider != null;
+                final Ref<ConnectionContext> ctxRef = ctxRefProvider.get();
                 return effectiveRouteStrategy.invokeService(executor, actualExecutor ->
                         requestScope.runInScope(requestContext, () -> {
                             final ConnectionContext origConnectionContext = ctxRef.get();
