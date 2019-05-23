@@ -15,11 +15,13 @@
  */
 package io.servicetalk.http.netty;
 
+import io.servicetalk.client.api.ConnectionFactoryFilter;
+import io.servicetalk.client.api.internal.ReservableRequestConcurrencyController;
+import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
-import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 
@@ -31,25 +33,26 @@ import static io.servicetalk.http.netty.DefaultHttpConnectionBuilder.buildStream
 
 final class NonPipelinedLBHttpConnectionFactory<ResolvedAddress>
         extends AbstractLBHttpConnectionFactory<ResolvedAddress> {
-    NonPipelinedLBHttpConnectionFactory(final ReadOnlyHttpClientConfig config,
-                                        final HttpExecutionContext executionContext,
-                                        @Nullable final StreamingHttpConnectionFilterFactory connectionFilterFunction,
-                                        final StreamingHttpRequestResponseFactory reqRespFactory,
-                                        final HttpExecutionStrategyInfluencer strategyInfluencer) {
-        super(config, executionContext, connectionFilterFunction, reqRespFactory, strategyInfluencer);
+    NonPipelinedLBHttpConnectionFactory(
+            final ReadOnlyHttpClientConfig config, final HttpExecutionContext executionContext,
+            @Nullable final StreamingHttpConnectionFilterFactory connectionFilterFunction,
+            final StreamingHttpRequestResponseFactory reqRespFactory,
+            final HttpExecutionStrategyInfluencer strategyInfluencer,
+            final ConnectionFactoryFilter<ResolvedAddress, FilterableStreamingHttpConnection> connectionFactoryFilter) {
+        super(config, executionContext, connectionFilterFunction, reqRespFactory, strategyInfluencer,
+                connectionFactoryFilter);
     }
 
     @Override
-    public Single<StreamingHttpConnection> newConnection(final ResolvedAddress resolvedAddress) {
-        return buildStreaming(executionContext, resolvedAddress, config).map(conn -> {
-            FilterableStreamingHttpConnection mappedConnection = new NonPipelinedStreamingHttpConnection(conn,
-                    executionContext, reqRespFactory, config.headersFactory());
+    Single<FilterableStreamingHttpConnection> newFilterableConnection(final ResolvedAddress resolvedAddress) {
+        return buildStreaming(executionContext, resolvedAddress, config)
+                .map(conn -> new NonPipelinedStreamingHttpConnection(conn,
+                        executionContext, reqRespFactory, config.headersFactory()));
+    }
 
-            FilterableStreamingHttpConnection filteredConnection = connectionFilterFunction != null ?
-                    connectionFilterFunction.create(mappedConnection) : mappedConnection;
-            return new LoadBalancedStreamingHttpConnection(filteredConnection, newSingleController(
-                    filteredConnection.transportEventStream(MAX_CONCURRENCY), conn.onClosing()),
-                    executionContext.executionStrategy(), strategyInfluencer);
-        });
+    @Override
+    ReservableRequestConcurrencyController newConcurrencyController(final FilterableStreamingHttpConnection connection,
+                                                                    final Completable onClosing) {
+        return newSingleController(connection.transportEventStream(MAX_CONCURRENCY), onClosing);
     }
 }

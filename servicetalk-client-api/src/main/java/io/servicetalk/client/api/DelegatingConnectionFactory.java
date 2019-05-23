@@ -59,4 +59,13 @@ public class DelegatingConnectionFactory<ResolvedAddress, C extends ListenableAs
     public Completable closeAsyncGracefully() {
         return delegate.closeAsyncGracefully();
     }
+
+    /**
+     * Returns the {@link ConnectionFactory} delegate.
+     *
+     * @return Delegate {@link ConnectionFactory}.
+     */
+    protected ConnectionFactory<ResolvedAddress, C> delegate() {
+        return delegate;
+    }
 }

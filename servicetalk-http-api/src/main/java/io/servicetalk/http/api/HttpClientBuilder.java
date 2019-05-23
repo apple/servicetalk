@@ -115,7 +115,7 @@ abstract class HttpClientBuilder<U, R, SDE extends ServiceDiscovererEvent<R>> ex
      * @return {@code this}
      */
     public abstract HttpClientBuilder<U, R, SDE> appendConnectionFactoryFilter(
-            ConnectionFactoryFilter<R, StreamingHttpConnection> factory);
+            ConnectionFactoryFilter<R, FilterableStreamingHttpConnection> factory);
 
     /**
      * Append the filter to the chain of filters used to decorate the {@link HttpClient} created by this
