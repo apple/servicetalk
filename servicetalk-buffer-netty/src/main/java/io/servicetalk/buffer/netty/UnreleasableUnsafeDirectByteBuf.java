@@ -22,7 +22,7 @@ import io.netty.buffer.UnpooledUnsafeDirectByteBuf;
 
 import java.nio.ByteBuffer;
 
-final class UnreleasableUnsafeDirectByteBuf extends UnpooledUnsafeDirectByteBuf {
+class UnreleasableUnsafeDirectByteBuf extends UnpooledUnsafeDirectByteBuf {
     UnreleasableUnsafeDirectByteBuf(ByteBufAllocator alloc, int initialCapacity, int maxCapacity) {
         super(alloc, initialCapacity, maxCapacity);
     }

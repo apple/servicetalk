@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,8 +40,11 @@ final class ServiceTalkBufferAllocator extends AbstractByteBufAllocator implemen
     private final ByteBufAllocator forceHeapAllocator = new ForceTypeByteBufAllocator(this, false);
     private final ByteBufAllocator forceDirectAllocator = new ForceTypeByteBufAllocator(this, true);
 
-    ServiceTalkBufferAllocator(boolean preferDirect) {
+    private final boolean noZeroing;
+
+    ServiceTalkBufferAllocator(boolean preferDirect, boolean tryNoZeroing) {
         super(preferDirect);
+        this.noZeroing = tryNoZeroing && PlatformDependent0.useDirectBufferWithoutZeroing();
     }
 
     @Override
@@ -51,9 +54,12 @@ final class ServiceTalkBufferAllocator extends AbstractByteBufAllocator implemen
 
     @Override
     protected ByteBuf newDirectBuffer(int initialCapacity, int maxCapacity) {
-        return PlatformDependent.hasUnsafe() ?
-                new UnreleasableUnsafeDirectByteBuf(this, initialCapacity, maxCapacity) :
-                new UnreleasableDirectByteBuf(this, initialCapacity, maxCapacity);
+        if (PlatformDependent.hasUnsafe()) {
+            return noZeroing ? new UnreleasableUnsafeNoZeroingDirectByteBuf(this, initialCapacity, maxCapacity) :
+                    new UnreleasableUnsafeDirectByteBuf(this, initialCapacity, maxCapacity);
+        } else {
+            return new UnreleasableDirectByteBuf(this, initialCapacity, maxCapacity);
+        }
     }
 
     @Override

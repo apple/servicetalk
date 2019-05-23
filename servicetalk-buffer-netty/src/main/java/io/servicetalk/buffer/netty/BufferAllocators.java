@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,19 +25,33 @@ public final class BufferAllocators {
     /**
      * Default {@link BufferAllocator} whose {@link Buffer}s are typically backed by Netty buffers.
      */
-    public static final BufferAllocator DEFAULT_ALLOCATOR = BufferUtil.PREFER_DIRECT_ALLOCATOR;
+    public static final BufferAllocator DEFAULT_ALLOCATOR = BufferUtil.PREFER_DIRECT_ALLOCATOR_WITHOUT_ZEROING;
 
     /**
-     * Default {@link BufferAllocator} whose {@link Buffer}s are typically backed by Netty buffers and prefers direct
-     * memory allocation when otherwise not specified.
+     * {@link BufferAllocator} whose {@link Buffer}s are typically backed by Netty buffers and prefers direct memory
+     * allocation when otherwise not specified.
      */
     public static final BufferAllocator PREFER_DIRECT_ALLOCATOR = BufferUtil.PREFER_DIRECT_ALLOCATOR;
 
     /**
-     * Default {@link BufferAllocator} whose {@link Buffer}s are typically backed by Netty buffers and prefers heap
-     * memory allocation when otherwise not specified.
+     * {@link BufferAllocator} whose {@link Buffer}s are typically backed by Netty buffers and prefers heap memory
+     * allocation when otherwise not specified.
      */
     public static final BufferAllocator PREFER_HEAP_ALLOCATOR = BufferUtil.PREFER_HEAP_ALLOCATOR;
+
+    /**
+     * {@link BufferAllocator} whose {@link Buffer}s are typically backed by Netty buffers and prefers direct memory
+     * allocation without zeroing when otherwise not specified.
+     */
+    public static final BufferAllocator PREFER_DIRECT_ALLOCATOR_WITHOUT_ZEROING =
+            BufferUtil.PREFER_DIRECT_ALLOCATOR_WITHOUT_ZEROING;
+
+    /**
+     * {@link BufferAllocator} whose {@link Buffer}s are typically backed by Netty buffers and prefers heap memory
+     * allocation without zeroing when otherwise not specified.
+     */
+    public static final BufferAllocator PREFER_HEAP_ALLOCATOR_WITHOUT_ZEROING =
+            BufferUtil.PREFER_HEAP_ALLOCATOR_WITHOUT_ZEROING;
 
     private BufferAllocators() {
         // no instances
