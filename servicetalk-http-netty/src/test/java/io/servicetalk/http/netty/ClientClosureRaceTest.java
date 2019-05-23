@@ -39,6 +39,7 @@ import java.io.PrintWriter;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.nio.channels.ClosedChannelException;
 import java.util.Collection;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -56,14 +57,16 @@ public class ClientClosureRaceTest {
     public static final int ITERATIONS = ServiceTalkTestTimeout.CI ? 1000 : 500;
     private ServerSocket serverSocket;
     private ExecutorService executor;
+    private int port;
 
     @Before
     public void startServer() throws Exception {
-        serverSocket = new ServerSocket(8080);
+        serverSocket = new ServerSocket(0);
+        port = serverSocket.getLocalPort();
         executor = Executors.newCachedThreadPool();
 
         executor.submit(() -> {
-            while (true) {
+            while (!executor.isShutdown()) {
                 final Socket socket = serverSocket.accept();
                 executor.submit(() -> {
                     try {
@@ -80,7 +83,7 @@ public class ClientClosureRaceTest {
                         }
                         out.print("HTTP/1.1 200 OK\r\n");
                         out.print("content-length: 12\r\n");
-                        // out.print("connection: close\r\n");
+                        // out.print("connection: close\r\n"); // Don't send this, so the closure is unexpected.
                         out.print("\r\n");
                         out.print("Hello world!");
                         out.flush();
@@ -95,6 +98,7 @@ public class ClientClosureRaceTest {
                     }
                 });
             }
+            return null;
         });
     }
 
@@ -218,15 +222,18 @@ public class ClientClosureRaceTest {
         }
     }
 
-    private static SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> newClientBuilder() {
-        return HttpClients.forSingleAddress("localhost", 8080)
+    private SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> newClientBuilder() {
+        return HttpClients.forSingleAddress("localhost", port)
+                .enableWireLogging("servicetalk-tests-client-wire-logger")
                 .appendClientFilter(new RetryingHttpRequesterFilter.Builder().maxRetries(10)
                         .buildWithImmediateRetries());
     }
 
     private static boolean isReadError(final ExecutionException e) {
         // This exception instance check will likely need to be updated for Windows builds.
-        return e.getCause() instanceof Errors.NativeIoException &&
-                e.getCause().getMessage().contains("syscall:read");
+        return (e.getCause() instanceof Errors.NativeIoException &&
+                e.getCause().getMessage().contains("syscall:read")) ||
+                (e.getCause() instanceof ClosedChannelException &&
+                        e.getCause().getMessage().startsWith("CHANNEL_CLOSED_INBOUND"));
     }
 }
