@@ -18,10 +18,10 @@ package io.servicetalk.http.netty;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.HttpClient;
-import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.http.utils.RetryingHttpRequesterFilter;
 import io.servicetalk.transport.api.HostAndPort;
+import io.servicetalk.transport.netty.internal.RetryableClosureException;
 
 import io.netty.channel.unix.Errors;
 import org.junit.After;
@@ -40,13 +40,15 @@ import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.channels.ClosedChannelException;
-import java.util.Collection;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import static io.servicetalk.concurrent.api.Single.collectUnordered;
 import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
 import static java.nio.charset.StandardCharsets.US_ASCII;
+import static org.junit.Assert.assertTrue;
 
 public class ClientClosureRaceTest {
 
@@ -58,6 +60,7 @@ public class ClientClosureRaceTest {
     private ServerSocket serverSocket;
     private ExecutorService executor;
     private int port;
+    private volatile boolean receivedExpectedError;
 
     @Before
     public void startServer() throws Exception {
@@ -111,106 +114,42 @@ public class ClientClosureRaceTest {
     @Test
     public void testSequential() throws Exception {
         final HttpClient client = newClientBuilder().maxPipelinedRequests(1).build();
-
-        int count = 0;
-        try {
-            while (count < ITERATIONS) {
-                count++;
-                final Single<HttpResponse> responseSingle1 = client.request(client.get("/foo"));
-                final Single<HttpResponse> responseSingle2 = responseSingle1.flatMap(
-                        response -> client.request(client.get("/bar")));
-                try {
-                    final HttpResponse response = responseSingle2.whenOnError(t -> LOGGER.error("Encountered error", t))
-                            .toFuture().get();
-                    LOGGER.debug("Response {} = {}", count, response);
-                } catch (ExecutionException e) {
-                    if (isReadError(e)) {
-                        // occasionally expected due to the race
-                        continue;
-                    }
-                    throw e;
-                }
-            }
-        } finally {
-            LOGGER.info("Completed {} requests", count);
-        }
+        runIterations(() -> client.request(client.get("/foo")).flatMap(
+                response -> client.request(client.get("/bar"))));
     }
 
     @Test
     public void testSequentialPosts() throws Exception {
         final HttpClient client = newClientBuilder().maxPipelinedRequests(1).build();
-
-        int count = 0;
-        try {
-            while (count < ITERATIONS) {
-                count++;
-                final Single<HttpResponse> responseSingle1 = client.request(client.post("/foo")
-                        .payloadBody("Some payload", textSerializer()));
-                final Single<HttpResponse> responseSingle2 = responseSingle1.flatMap(
-                        response -> client.request(client.post("/bar")
-                                .payloadBody("Another payload", textSerializer())));
-                try {
-                    final HttpResponse response = responseSingle2.whenOnError(t -> LOGGER.error("Encountered error", t))
-                            .toFuture().get();
-                    LOGGER.debug("Response {} = {}", count, response);
-                } catch (ExecutionException e) {
-                    if (isReadError(e)) {
-                        // occasionally expected due to the race
-                        continue;
-                    }
-                    throw e;
-                }
-            }
-        } finally {
-            LOGGER.info("Completed {} requests", count);
-        }
+        runIterations(() -> client.request(client.post("/foo").payloadBody("Some payload", textSerializer())).flatMap(
+                response -> client.request(client.post("/bar").payloadBody("Another payload", textSerializer()))));
     }
 
     @Test
     public void testPipelined() throws Exception {
         final HttpClient client = newClientBuilder().maxPipelinedRequests(2).build();
-
-        int count = 0;
-        try {
-            while (count < ITERATIONS) {
-                count++;
-                final Single<HttpResponse> responseSingle1 = client.request(client.get("/foo"));
-                final Single<HttpResponse> responseSingle2 = client.request(client.get("/bar"));
-                try {
-                    final Collection<HttpResponse> responses = Single.collectUnordered(responseSingle1, responseSingle2)
-                            .whenOnError(t -> LOGGER.error("Encountered error", t)).toFuture().get();
-                    LOGGER.debug("Response {} = {}", count, responses);
-                } catch (ExecutionException e) {
-                    if (isReadError(e)) {
-                        // occasionally expected due to the race
-                        continue;
-                    }
-                    throw e;
-                }
-            }
-        } finally {
-            LOGGER.info("Completed {} requests", count);
-        }
+        runIterations(() -> collectUnordered(client.request(client.get("/foo")),
+                client.request(client.get("/bar"))));
     }
 
     @Test
     public void testPipelinedPosts() throws Exception {
         final HttpClient client = newClientBuilder().maxPipelinedRequests(2).build();
+        runIterations(() -> collectUnordered(
+                client.request(client.get("/foo").payloadBody("Some payload", textSerializer())),
+                client.request(client.get("/bar").payloadBody("Another payload", textSerializer()))));
+    }
 
+    private void runIterations(Callable<Single<?>> test) throws Exception {
         int count = 0;
         try {
             while (count < ITERATIONS) {
-                count++;
-                final Single<HttpResponse> responseSingle1 = client.request(client.get("/foo")
-                        .payloadBody("Some payload", textSerializer()));
-                final Single<HttpResponse> responseSingle2 = client.request(client.get("/bar")
-                        .payloadBody("Another payload", textSerializer()));
                 try {
-                    final Collection<HttpResponse> responses = Single.collectUnordered(responseSingle1, responseSingle2)
-                            .whenOnError(t -> LOGGER.error("Encountered error", t)).toFuture().get();
-                    LOGGER.debug("Response {} = {}", count, responses);
-                } catch (ExecutionException e) {
-                    if (isReadError(e)) {
+                    count++;
+                    Object response = test.call().toFuture().get();
+                    LOGGER.debug("Response {} = {}", count, response);
+                } catch (Exception e) {
+                    if (isAllowableError(e)) {
                         // occasionally expected due to the race
                         continue;
                     }
@@ -220,20 +159,37 @@ public class ClientClosureRaceTest {
         } finally {
             LOGGER.info("Completed {} requests", count);
         }
+        assertTrue("Did not receive expected error", receivedExpectedError);
     }
 
     private SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> newClientBuilder() {
+        final RetryingHttpRequesterFilter.Builder retryBuilder = new RetryingHttpRequesterFilter.Builder();
         return HttpClients.forSingleAddress("localhost", port)
                 .enableWireLogging("servicetalk-tests-client-wire-logger")
-                .appendClientFilter(new RetryingHttpRequesterFilter.Builder().maxRetries(10)
+                .appendClientFilter(retryBuilder.maxRetries(10)
+                        .retryFor((md, t) -> {
+                            if (isDesiredError(t)) {
+                                receivedExpectedError = true;
+                            }
+                            return retryBuilder.defaultRetryForPredicate().test(md, t);
+                        })
                         .buildWithImmediateRetries());
     }
 
-    private static boolean isReadError(final ExecutionException e) {
+    private static boolean isDesiredError(final Throwable e) {
+        return e instanceof RetryableClosureException;
+    }
+
+    private static boolean isAllowableError(final Exception e) {
+        if (!(e instanceof ExecutionException)) {
+            return false;
+        }
         // This exception instance check will likely need to be updated for Windows builds.
         return (e.getCause() instanceof Errors.NativeIoException &&
                 e.getCause().getMessage().contains("syscall:read")) ||
                 (e.getCause() instanceof ClosedChannelException &&
-                        e.getCause().getMessage().startsWith("CHANNEL_CLOSED_INBOUND"));
+                        e.getCause().getMessage().startsWith("CHANNEL_CLOSED_INBOUND")) ||
+                (e.getCause() instanceof ClosedChannelException &&
+                        e.getCause().getMessage().startsWith("CHANNEL_CLOSED_OUTBOUND"));
     }
 }
