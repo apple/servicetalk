@@ -64,105 +64,143 @@ public class AsynchronousResourceTest extends AbstractAsynchronousResourceTest {
 
     @Test
     public void getVoidCompletion() {
-        sendAndAssertResponse(get("/void-completion"), NO_CONTENT, null, isEmptyString(), __ -> null);
-        sendAndAssertNoResponse(get("/void-completion?defer=true"), OK); // Jersey is inconsistent: should be NO_CONTENT
+        runTwiceToEnsureEndpointCache(() -> {
+            sendAndAssertResponse(get("/void-completion"), NO_CONTENT, null, isEmptyString(), __ -> null);
+            // Jersey is inconsistent: should be NO_CONTENT
+            sendAndAssertNoResponse(get("/void-completion?defer=true"), OK);
 
-        sendAndAssertNoResponse(get("/void-completion?fail=true"), INTERNAL_SERVER_ERROR);
-        sendAndAssertNoResponse(get("/void-completion?fail=true&defer=true"), INTERNAL_SERVER_ERROR);
+            sendAndAssertNoResponse(get("/void-completion?fail=true"), INTERNAL_SERVER_ERROR);
+            sendAndAssertNoResponse(get("/void-completion?fail=true&defer=true"), INTERNAL_SERVER_ERROR);
+        });
     }
 
     @Test
     public void failedText() {
-        sendAndAssertNoResponse(get("/failed-text"), INTERNAL_SERVER_ERROR);
+        runTwiceToEnsureEndpointCache(() -> {
+            sendAndAssertNoResponse(get("/failed-text"), INTERNAL_SERVER_ERROR);
+        });
     }
 
     @Test
     public void cancelledDelayedText() {
-        sendAndAssertNoResponse(get("/failed-text?cancel=true"), SERVICE_UNAVAILABLE);
+        runTwiceToEnsureEndpointCache(() -> {
+            sendAndAssertNoResponse(get("/failed-text?cancel=true"), SERVICE_UNAVAILABLE);
+        });
     }
 
     @Test
     public void getDelayedText() {
-        sendAndAssertResponse(get("/delayed-text?delay=10&unit=MILLISECONDS"), OK, TEXT_PLAIN, "DONE");
+        runTwiceToEnsureEndpointCache(() -> {
+            sendAndAssertResponse(get("/delayed-text?delay=10&unit=MILLISECONDS"), OK, TEXT_PLAIN, "DONE");
+        });
     }
 
     @Test
     public void rsCancelDelayedText() {
-        expected.expectCause(instanceOf(TimeoutException.class));
-        sendAndAssertResponse(get("/delayed-text?delay=1&unit=DAYS"), OK, TEXT_PLAIN, "DONE", 1, SECONDS);
+        runTwiceToEnsureEndpointCache(() -> {
+            expected.expectCause(instanceOf(TimeoutException.class));
+            sendAndAssertResponse(get("/delayed-text?delay=1&unit=DAYS"), OK, TEXT_PLAIN, "DONE", 1, SECONDS);
+        });
     }
 
     @Test
     public void completedStageResponse() {
-        sendAndAssertResponse(get("/response-comsta"), OK, TEXT_PLAIN, "DONE");
+        runTwiceToEnsureEndpointCache(() -> {
+            sendAndAssertResponse(get("/response-comsta"), OK, TEXT_PLAIN, "DONE");
+        });
     }
 
     @Test
     public void delayedStageResponse() {
-        sendAndAssertResponse(get("/delayed-response-comsta?delay=10&unit=MILLISECONDS"), OK, TEXT_PLAIN, "DONE");
+        runTwiceToEnsureEndpointCache(() -> {
+            sendAndAssertResponse(get("/delayed-response-comsta?delay=10&unit=MILLISECONDS"), OK, TEXT_PLAIN, "DONE");
+        });
     }
 
     @Test
     public void rsCancelDelayedDelayedStageResponse() {
-        expected.expectCause(instanceOf(TimeoutException.class));
-        sendAndAssertResponse(get("/delayed-response-comsta?delay=10&unit=DAYS"), OK, TEXT_PLAIN, "DONE", 1, SECONDS);
+        runTwiceToEnsureEndpointCache(() -> {
+            expected.expectCause(instanceOf(TimeoutException.class));
+            sendAndAssertResponse(get("/delayed-response-comsta?delay=10&unit=DAYS"),
+                    OK, TEXT_PLAIN, "DONE", 1, SECONDS);
+        });
     }
 
     @Test
     public void resumeSuspended() {
-        sendAndAssertResponse(get("/suspended/resume"), OK, TEXT_PLAIN, "DONE");
+        runTwiceToEnsureEndpointCache(() -> {
+            sendAndAssertResponse(get("/suspended/resume"), OK, TEXT_PLAIN, "DONE");
+        });
     }
 
     @Test
     public void cancelSuspended() {
-        sendAndAssertNoResponse(get("/suspended/cancel"), SERVICE_UNAVAILABLE);
+        runTwiceToEnsureEndpointCache(() -> {
+            sendAndAssertNoResponse(get("/suspended/cancel"), SERVICE_UNAVAILABLE);
+        });
     }
 
     @Test
     public void setTimeOutResumeSuspended() {
-        sendAndAssertResponse(get("/suspended/timeout-resume"), OK, TEXT_PLAIN, "DONE");
+        runTwiceToEnsureEndpointCache(() -> {
+            sendAndAssertResponse(get("/suspended/timeout-resume"), OK, TEXT_PLAIN, "DONE");
+        });
     }
 
     @Test
     public void setTimeOutExpire() {
-        sendAndAssertNoResponse(get("/suspended/timeout-expire"), SERVICE_UNAVAILABLE);
+        runTwiceToEnsureEndpointCache(() -> {
+            sendAndAssertNoResponse(get("/suspended/timeout-expire"), SERVICE_UNAVAILABLE);
+        });
     }
 
     @Test
     public void setTimeOutExpireHandled() {
-        sendAndAssertNoResponse(get("/suspended/timeout-expire-handled"), GATEWAY_TIMEOUT);
+        runTwiceToEnsureEndpointCache(() -> {
+            sendAndAssertNoResponse(get("/suspended/timeout-expire-handled"), GATEWAY_TIMEOUT);
+        });
     }
 
     @Test
     public void setTimeOutResumed() {
-        // Jersey catches and logs the exception that is raised internally when attempting
-        // to set a timeout on the resumed request ; and just proceeds with normal response handling
-        sendAndAssertResponse(get("/suspended/resume-timeout"), OK, TEXT_PLAIN, "DONE");
+        runTwiceToEnsureEndpointCache(() -> {
+            // Jersey catches and logs the exception that is raised internally when attempting
+            // to set a timeout on the resumed request ; and just proceeds with normal response handling
+            sendAndAssertResponse(get("/suspended/resume-timeout"), OK, TEXT_PLAIN, "DONE");
+        });
     }
 
     @Test
     public void rsCancelSuspended() {
-        expected.expectCause(instanceOf(TimeoutException.class));
-        sendAndAssertResponse(get("/suspended/busy"), OK, TEXT_PLAIN, "DONE", 1, SECONDS);
+        runTwiceToEnsureEndpointCache(() -> {
+            expected.expectCause(instanceOf(TimeoutException.class));
+            sendAndAssertResponse(get("/suspended/busy"), OK, TEXT_PLAIN, "DONE", 1, SECONDS);
+        });
     }
 
     @Test
     public void resumeSuspendedWithJson() {
-        sendAndAssertResponse(get("/suspended/json"), OK, APPLICATION_JSON,
-                jsonEquals("{\"foo\":\"bar3\"}"), getJsonResponseContentLengthExtractor());
+        runTwiceToEnsureEndpointCache(() -> {
+            sendAndAssertResponse(get("/suspended/json"), OK, APPLICATION_JSON,
+                    jsonEquals("{\"foo\":\"bar3\"}"), getJsonResponseContentLengthExtractor());
+        });
     }
 
     @Test
     public void sseStream() {
-        sendAndAssertResponse(get("/sse/stream"), OK, newAsciiString(SERVER_SENT_EVENTS),
-                is(range(0, 10).mapToObj(i -> "data: foo" + i + "\n\n").collect(joining())),
-                __ -> null);
+        runTwiceToEnsureEndpointCache(() -> {
+            sendAndAssertResponse(get("/sse/stream"), OK, newAsciiString(SERVER_SENT_EVENTS),
+                    is(range(0, 10).mapToObj(i -> "data: foo" + i + "\n\n").collect(joining())),
+                    __ -> null);
+        });
     }
 
     @Test
     public void sseBroadcast() {
-        sendAndAssertResponse(get("/sse/broadcast"), OK, newAsciiString(SERVER_SENT_EVENTS),
-                is("data: bar\n\n" + range(0, 10).mapToObj(i -> "data: foo" + i + "\n\n").collect(joining())),
-                __ -> null);
+        runTwiceToEnsureEndpointCache(() -> {
+            sendAndAssertResponse(get("/sse/broadcast"), OK, newAsciiString(SERVER_SENT_EVENTS),
+                    is("data: bar\n\n" + range(0, 10).mapToObj(i -> "data: foo" + i + "\n\n").collect(joining())),
+                    __ -> null);
+        });
     }
 }
