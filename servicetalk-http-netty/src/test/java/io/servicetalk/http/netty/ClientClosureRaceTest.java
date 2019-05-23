@@ -21,7 +21,7 @@ import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.http.utils.RetryingHttpRequesterFilter;
 import io.servicetalk.transport.api.HostAndPort;
-import io.servicetalk.transport.netty.internal.RetryableClosureException;
+import io.servicetalk.transport.api.RetryableException;
 
 import io.netty.channel.unix.Errors;
 import org.junit.After;
@@ -175,7 +175,7 @@ public class ClientClosureRaceTest {
     }
 
     private static boolean isDesiredError(final Throwable e) {
-        return e instanceof RetryableClosureException;
+        return e instanceof ClosedChannelException && e instanceof RetryableException;
     }
 
     private static boolean isAllowableError(final Exception e) {

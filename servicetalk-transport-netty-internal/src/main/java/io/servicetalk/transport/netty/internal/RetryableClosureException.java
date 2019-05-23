@@ -22,7 +22,7 @@ import java.nio.channels.ClosedChannelException;
 /**
  * Indicates that an error happened due to connection closure, but is retryable.
  */
-public class RetryableClosureException extends ClosedChannelException implements RetryableException {
+class RetryableClosureException extends ClosedChannelException implements RetryableException {
     RetryableClosureException(final Throwable cause) {
         initCause(cause);
     }
