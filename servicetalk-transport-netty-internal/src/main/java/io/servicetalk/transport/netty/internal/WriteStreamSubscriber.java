@@ -276,6 +276,7 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
             setFlag(SOURCE_TERMINATED);
             if (activeWrites == 0) {
                 try {
+                    setFlag(SUBSCRIBER_TERMINATED);
                     terminateSubscriber(cause);
                 } catch (Throwable t) {
                     super.tryFailure(t);
@@ -284,7 +285,7 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
                 // We are here because the Publisher that was being written terminated, not the actual channel writes.
                 // Hence, we set the promise result to success to notify the listeners. If the writes fail before the
                 // source terminates, we would have already terminated the Subscriber.
-                super.trySuccess();
+                super.trySuccess(null);
             }
         }
 
@@ -294,7 +295,7 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
                 return;
             }
             setFlag(CHANNEL_CLOSED);
-            tryFailure(written ? new AbortedFirstWrite(cause) : cause);
+            tryFailure(!written ? new AbortedFirstWrite(cause) : cause);
         }
 
         void channelClosedOutbound() {
@@ -347,7 +348,7 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
                     super.tryFailure(t);
                     return false;
                 }
-                super.trySuccess();
+                super.trySuccess(null);
             }
             return true;
         }
