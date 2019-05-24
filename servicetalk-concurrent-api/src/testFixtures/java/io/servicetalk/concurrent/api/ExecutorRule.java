@@ -18,6 +18,7 @@ package io.servicetalk.concurrent.api;
 import org.junit.rules.ExternalResource;
 
 import java.util.concurrent.ExecutionException;
+import java.util.function.Supplier;
 
 import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
 import static java.lang.Thread.NORM_PRIORITY;
@@ -28,10 +29,11 @@ import static java.lang.Thread.NORM_PRIORITY;
  */
 public final class ExecutorRule<E extends Executor> extends ExternalResource {
 
-    private final E executor;
+    private final Supplier<E> eSupplier;
+    private E executor;
 
-    private ExecutorRule(final E executor) {
-        this.executor = executor;
+    private ExecutorRule(final Supplier<E> eSupplier) {
+        this.eSupplier = eSupplier;
     }
 
     /**
@@ -40,7 +42,7 @@ public final class ExecutorRule<E extends Executor> extends ExternalResource {
      * @return a new {@link ExecutorRule}.
      */
     public static ExecutorRule<Executor> newRule() {
-        return withExecutor(Executors.newCachedThreadExecutor());
+        return new ExecutorRule<>(Executors::newCachedThreadExecutor);
     }
 
     /**
@@ -51,17 +53,17 @@ public final class ExecutorRule<E extends Executor> extends ExternalResource {
      * @return a new {@link ExecutorRule}.
      */
     public static ExecutorRule<TestExecutor> withTestExecutor() {
-        return new ExecutorRule<>(new TestExecutor());
+        return new ExecutorRule<>(TestExecutor::new);
     }
 
     /**
      * Create an {@link ExecutorRule} with the specified {@code executor}.
      *
-     * @param executor The {@link Executor} to use.
+     * @param executorSupplier The {@link Executor} {@link Supplier} to use.
      * @return a new {@link ExecutorRule}.
      */
-    public static ExecutorRule<Executor> withExecutor(Executor executor) {
-        return new ExecutorRule<>(executor);
+    public static ExecutorRule<Executor> withExecutor(Supplier<Executor> executorSupplier) {
+        return new ExecutorRule<>(executorSupplier);
     }
 
     /**
@@ -72,7 +74,7 @@ public final class ExecutorRule<E extends Executor> extends ExternalResource {
      * @return a new {@link ExecutorRule}.
      */
     public static ExecutorRule<Executor> withNamePrefix(String namePrefix) {
-        return new ExecutorRule<>(newCachedThreadExecutor(new DefaultThreadFactory(namePrefix, true, NORM_PRIORITY)));
+        return new ExecutorRule<>(() -> newCachedThreadExecutor(new DefaultThreadFactory(namePrefix, true, NORM_PRIORITY)));
     }
 
     /**
@@ -87,6 +89,7 @@ public final class ExecutorRule<E extends Executor> extends ExternalResource {
 
     @Override
     protected void before() {
+        executor = eSupplier.get();
     }
 
     @Override
