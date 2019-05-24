@@ -43,27 +43,6 @@ public class SecurityFilterTest extends AbstractJerseyStreamingHttpServiceTest {
         @Override
         public void filter(final ContainerRequestContext requestCtx) {
             if ("true".equals(requestCtx.getUriInfo().getQueryParameters().getFirst("none"))) {
-                requestCtx.setSecurityContext(new SecurityContext() {
-                    @Override
-                    public Principal getUserPrincipal() {
-                        return new JMXPrincipal("none");
-                    }
-
-                    @Override
-                    public boolean isUserInRole(final String role) {
-                        return false;
-                    }
-
-                    @Override
-                    public boolean isSecure() {
-                        return false;
-                    }
-
-                    @Override
-                    public String getAuthenticationScheme() {
-                        return "none";
-                    }
-                });
                 return;
             }
             requestCtx.setSecurityContext(new SecurityContext() {
@@ -113,8 +92,8 @@ public class SecurityFilterTest extends AbstractJerseyStreamingHttpServiceTest {
                             "\"userPrincipal\":{\"name\":\"foo\"}}"), getJsonResponseContentLengthExtractor());
 
             sendAndAssertResponse(get(SynchronousResources.PATH + "/security-context?none=true"), OK, APPLICATION_JSON,
-                    jsonEquals("{\"authenticationScheme\":\"none\",\"secure\":false," +
-                            "\"userPrincipal\":{\"name\":\"none\"}}"), getJsonResponseContentLengthExtractor());
+                    jsonEquals("{\"authenticationScheme\":null,\"secure\":false," +
+                            "\"userPrincipal\":null}"), getJsonResponseContentLengthExtractor());
         });
     }
 }

@@ -323,7 +323,7 @@ public abstract class AbstractJerseyStreamingHttpServiceTest {
      * @param test {@link Runnable} test callback will be executed multiple times, typically this is run from a @{@link
      * Test} within a single setup/teardown cycle
      */
-    protected final void runTwiceToEnsureEndpointCache(Runnable test) {
+    protected final void runTwiceToEnsureEndpointCache(final Runnable test) {
         test.run();
         test.run();
     }

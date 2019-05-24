@@ -44,7 +44,6 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import javax.annotation.Nullable;
 import javax.annotation.Priority;
 import javax.inject.Provider;
@@ -105,7 +104,7 @@ final class EndpointEnhancingRequestFilter implements ContainerRequestFilter {
 
         private static final EnhancedEndpoint NOOP = new NoopEnhancedEndpoint();
 
-        private final ConcurrentMap<Method, EnhancedEndpoint> enhancements = new ConcurrentHashMap<>();
+        private final ConcurrentHashMap<Method, EnhancedEndpoint> enhancements = new ConcurrentHashMap<>();
 
         void enhance(final RequestScope requestScope,
                      final Provider<Ref<ConnectionContext>> ctxRefProvider,
@@ -186,7 +185,7 @@ final class EndpointEnhancingRequestFilter implements ContainerRequestFilter {
             this.ctxRefProvider = ctxRefProvider;
             this.routeExecutionStrategy = routeExecutionStrategy;
             if (routeExecutionStrategy != null) {
-                ExecutionContext executionContext = ctxRefProvider.get().get().executionContext();
+                final ExecutionContext executionContext = ctxRefProvider.get().get().executionContext();
                 // ExecutionStrategy and Executor shared for all routes in JerseyRouter
                 executionStrategy = executionContext.executionStrategy();
                 executor = executionContext.executor();
@@ -278,35 +277,35 @@ final class EndpointEnhancingRequestFilter implements ContainerRequestFilter {
         private Single<ContainerResponse> callOriginalEndpoint(
                 final RequestProcessingContext requestProcessingCtx,
                 @Nullable final HttpExecutionStrategy effectiveRouteStrategy) {
-            if (effectiveRouteStrategy != null) {
-                final RequestContext requestContext = requestScope.referenceCurrent();
-                final ContainerRequest request = requestProcessingCtx.request();
-                assert executor != null;
-                assert ctxRefProvider != null;
-                final Ref<ConnectionContext> ctxRef = ctxRefProvider.get();
-                return effectiveRouteStrategy.invokeService(executor, actualExecutor ->
-                        requestScope.runInScope(requestContext, () -> {
-                            final ConnectionContext origConnectionContext = ctxRef.get();
-                            if (!(origConnectionContext instanceof ExecutorOverrideConnectionContext)) {
-                                ConnectionContext overrideConnectionContext = new ExecutorOverrideConnectionContext(
-                                        origConnectionContext, actualExecutor);
-                                ctxRef.set(overrideConnectionContext);
-                            }
-                            getRequestBufferPublisherInputStream(request)
-                                    .offloadSourcePublisher(effectiveRouteStrategy, actualExecutor);
-                            setResponseExecutionStrategy(effectiveRouteStrategy, request);
-
-                            return delegate.apply(requestProcessingCtx);
-                        }))
-                        .beforeFinally(requestContext::release);
+            if (effectiveRouteStrategy == null) {
+                return defer(() -> {
+                    try {
+                        return succeeded(delegate.apply(requestProcessingCtx));
+                    } catch (final Throwable t) {
+                        return failed(t);
+                    }
+                });
             }
-            return defer(() -> {
-                try {
-                    return succeeded(delegate.apply(requestProcessingCtx));
-                } catch (final Throwable t) {
-                    return failed(t);
-                }
-            });
+            final RequestContext requestContext = requestScope.referenceCurrent();
+            final ContainerRequest request = requestProcessingCtx.request();
+            assert executor != null;
+            assert ctxRefProvider != null;
+            final Ref<ConnectionContext> ctxRef = ctxRefProvider.get();
+            return effectiveRouteStrategy.invokeService(executor, actualExecutor ->
+                    requestScope.runInScope(requestContext, () -> {
+                        final ConnectionContext origConnectionContext = ctxRef.get();
+                        if (!(origConnectionContext instanceof ExecutorOverrideConnectionContext)) {
+                            ConnectionContext overrideConnectionContext = new ExecutorOverrideConnectionContext(
+                                    origConnectionContext, actualExecutor);
+                            ctxRef.set(overrideConnectionContext);
+                        }
+                        getRequestBufferPublisherInputStream(request)
+                                .offloadSourcePublisher(effectiveRouteStrategy, actualExecutor);
+                        setResponseExecutionStrategy(effectiveRouteStrategy, request);
+
+                        return delegate.apply(requestProcessingCtx);
+                    }))
+                    .beforeFinally(requestContext::release);
         }
 
         protected Single<Response> handleContainerResponse(final ContainerResponse res) {
