@@ -29,6 +29,7 @@ import io.servicetalk.concurrent.api.TestPublisherSubscriber;
 import io.servicetalk.concurrent.api.TestSubscription;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
@@ -69,7 +70,12 @@ public class TimeoutPublisherTest {
     private final TestPublisher<Integer> publisher = new TestPublisher<>();
     private final TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
     private final TestSubscription subscription = new TestSubscription();
-    private final TestExecutor testExecutor = executorRule.executor();
+    private TestExecutor testExecutor;
+
+    @Before
+    public void setup() {
+        testExecutor = executorRule.executor();
+    }
 
     @Test
     public void executorScheduleThrows() {
