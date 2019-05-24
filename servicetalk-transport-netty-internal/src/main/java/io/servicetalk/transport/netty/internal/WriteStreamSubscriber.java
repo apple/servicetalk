@@ -248,6 +248,7 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
      */
     private final class AllWritesPromise extends DefaultChannelPromise {
         private int activeWrites;
+        private boolean written;
         private byte state;
         @Nullable
         private Throwable failureCause;
@@ -258,6 +259,9 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
 
         void writeNext(Object msg) {
             assert eventLoop.inEventLoop();
+            if (!written) {
+                written = true;
+            }
             activeWrites++;
             channel.write(msg, this);
         }
@@ -274,21 +278,23 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
                 try {
                     terminateSubscriber(cause);
                 } catch (Throwable t) {
-                    super.setFailure(t);
+                    super.tryFailure(t);
                     return;
                 }
-                // Set the promise to success so that any listeners attached to the promise get terminated
-                super.setSuccess(null);
+                // We are here because the Publisher that was being written terminated, not the actual channel writes.
+                // Hence, we set the promise result to success to notify the listeners. If the writes fail before the
+                // source terminates, we would have already terminated the Subscriber.
+                super.trySuccess();
             }
         }
 
-        void channelClosed(@Nullable Throwable cause) {
+        void channelClosed(Throwable cause) {
             assert eventLoop.inEventLoop();
             if (hasFlag(CHANNEL_CLOSED) || hasFlag(SUBSCRIBER_TERMINATED)) {
                 return;
             }
             setFlag(CHANNEL_CLOSED);
-            tryFailure(cause);
+            tryFailure(written ? new AbortedFirstWrite(cause) : cause);
         }
 
         void channelClosedOutbound() {
@@ -338,10 +344,10 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
                 try {
                     terminateSubscriber(failureCause);
                 } catch (Throwable t) {
-                    super.setFailure(t);
+                    super.tryFailure(t);
                     return false;
                 }
-                super.setSuccess(null);
+                super.trySuccess();
             }
             return true;
         }
@@ -364,10 +370,10 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
             try {
                 terminateSubscriber(cause);
             } catch (Throwable t) {
-                super.setFailure(t);
+                super.tryFailure(t);
                 return false;
             }
-            super.setFailure(cause);
+            super.tryFailure(cause);
             return true;
         }
 
@@ -392,6 +398,12 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
 
         private void setFlag(final byte flag) {
             state |= flag;
+        }
+    }
+
+    static final class AbortedFirstWrite extends Exception {
+        AbortedFirstWrite(final Throwable cause) {
+            super(null, cause, false, false);
         }
     }
 }

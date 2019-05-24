@@ -15,13 +15,11 @@
  */
 package io.servicetalk.http.netty;
 
-import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.ReservedStreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpResponse;
-import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.netty.internal.AddressUtils;
 
@@ -39,6 +37,7 @@ import java.util.Collection;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.DefaultHttpHeadersFactory.INSTANCE;
+import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 
@@ -60,11 +59,11 @@ public class GracefulCloseTest {
     @SuppressWarnings("unchecked")
     public GracefulCloseTest(final TrailerAddType trailerAddType) throws Exception {
         context = HttpServers.forPort(0).listenStreamingAndAwait((ctx, request, responseFactory) -> {
-            StreamingHttpResponse resp = responseFactory.ok().payloadBody(newPayloadBody(ctx.executionContext()));
+            StreamingHttpResponse resp = responseFactory.ok().payloadBody(from("Hello"), textSerializer());
             switch (trailerAddType) {
                 case Regular:
                     resp.transform(() -> null, (buffer, __) -> buffer,
-                            (__, headers) -> headers.add("foo", "bar"));
+                            (__, trailers) -> trailers.add("foo", "bar"));
                     break;
                 case Duplicate:
                     resp.transformRawPayloadBody(publisher ->
@@ -93,7 +92,7 @@ public class GracefulCloseTest {
     public void useConnection() throws Exception {
         ReservedStreamingHttpConnection conn = client.reserveConnection(client.get("/")).toFuture().get();
         StreamingHttpResponse resp = conn.request(client.get("/")
-                .payloadBody(newPayloadBody(client.executionContext()))).toFuture().get();
+                .payloadBody(from("Hello"), textSerializer())).toFuture().get();
         assertThat("Unexpected response.", resp.status().code(), equalTo(HttpResponseStatus.OK.code()));
         // Drain response.
         resp.payloadBody().toFuture().get();
@@ -103,13 +102,9 @@ public class GracefulCloseTest {
     @Test
     public void useClient() throws Exception {
         StreamingHttpResponse resp = client.request(client.get("/")
-                .payloadBody(newPayloadBody(client.executionContext()))).toFuture().get();
+                .payloadBody(from("Hello"), textSerializer())).toFuture().get();
         assertThat("Unexpected response.", resp.status().code(), equalTo(HttpResponseStatus.OK.code()));
         // Drain response.
         resp.payloadBody().toFuture().get();
-    }
-
-    private Publisher<Buffer> newPayloadBody(final ExecutionContext httpExecutionContext) {
-        return from(httpExecutionContext.bufferAllocator().fromAscii("Hello"));
     }
 }

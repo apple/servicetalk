@@ -15,6 +15,8 @@
  */
 package io.servicetalk.client.api;
 
+import io.servicetalk.transport.api.RetryableException;
+
 import java.net.ConnectException;
 
 /**

@@ -15,9 +15,9 @@
  */
 package io.servicetalk.http.netty;
 
-import io.servicetalk.client.api.RetryableException;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpProtocolVersion;
+import io.servicetalk.transport.api.RetryableException;
 
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http2.DefaultHttp2Headers;

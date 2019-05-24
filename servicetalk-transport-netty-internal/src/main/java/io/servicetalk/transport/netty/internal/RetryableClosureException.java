@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,11 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.client.api;
+package io.servicetalk.transport.netty.internal;
+
+import io.servicetalk.transport.api.RetryableException;
+
+import java.nio.channels.ClosedChannelException;
 
 /**
- * A marker-interface for exceptions which are safely retryable and occur only before ServiceTalk starts writing a
- * request to the network.
+ * Indicates that an error happened due to connection closure, but is retryable.
  */
-public interface RetryableException {
+class RetryableClosureException extends ClosedChannelException implements RetryableException {
+    RetryableClosureException(final Throwable cause) {
+        initCause(cause);
+    }
 }

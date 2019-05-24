@@ -16,20 +16,27 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.PublisherSource.Subscription;
-import io.servicetalk.concurrent.internal.FlowControlUtil;
 
 import java.util.concurrent.atomic.AtomicLong;
+
+import static io.servicetalk.concurrent.internal.FlowControlUtil.addWithOverflowProtection;
 
 /**
  * A {@link Subscription} that tracks requests and cancellation.
  */
 public final class TestSubscription extends TestCancellable implements Subscription {
 
+    private static final long INVALID_REQUEST_N = Long.MIN_VALUE;
     private final AtomicLong requested = new AtomicLong();
 
     @Override
     public void request(final long n) {
-        requested.accumulateAndGet(n, FlowControlUtil::addWithOverflowProtection);
+        requested.accumulateAndGet(n, (x, y) -> {
+            if (x < 0 || y < 0) {
+                return INVALID_REQUEST_N;
+            }
+            return addWithOverflowProtection(x, y);
+        });
         wakeupWaiters();
     }
 
@@ -50,7 +57,12 @@ public final class TestSubscription extends TestCancellable implements Subscript
      */
     public void awaitRequestN(long amount) throws InterruptedException {
         synchronized (waitingLock) {
-            while (requested.get() < amount) {
+            for (;;) {
+                long r = requested.get();
+                if (r == INVALID_REQUEST_N || r >= amount) {
+                    // requested is not going to change now.
+                    return;
+                }
                 waitingLock.wait();
             }
         }
@@ -65,7 +77,12 @@ public final class TestSubscription extends TestCancellable implements Subscript
     public void awaitRequestNUninterruptibly(long amount) {
         boolean interrupted = false;
         synchronized (waitingLock) {
-            while (requested.get() < amount) {
+            for (;;) {
+                long r = requested.get();
+                if (r == INVALID_REQUEST_N || r >= amount) {
+                    // requested is not going to change now.
+                    break;
+                }
                 try {
                     waitingLock.wait();
                 } catch (InterruptedException e) {
