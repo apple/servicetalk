@@ -74,7 +74,8 @@ public final class ExecutorRule<E extends Executor> extends ExternalResource {
      * @return a new {@link ExecutorRule}.
      */
     public static ExecutorRule<Executor> withNamePrefix(String namePrefix) {
-        return new ExecutorRule<>(() -> newCachedThreadExecutor(new DefaultThreadFactory(namePrefix, true, NORM_PRIORITY)));
+        return new ExecutorRule<>(() ->
+                newCachedThreadExecutor(new DefaultThreadFactory(namePrefix, true, NORM_PRIORITY)));
     }
 
     /**
