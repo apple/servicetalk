@@ -57,7 +57,6 @@ import static io.servicetalk.concurrent.api.Publisher.never;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.netty.GlobalDnsServiceDiscoverer.globalDnsServiceDiscoverer;
 import static io.servicetalk.http.netty.H2ToStH1Utils.HTTP_2_0;
-import static io.servicetalk.http.netty.StreamingConnectionFactory.reservedConnectionsPipelineEnabled;
 import static io.servicetalk.loadbalancer.RoundRobinLoadBalancer.newRoundRobinFactory;
 import static java.util.Objects.requireNonNull;
 
@@ -449,6 +448,12 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
         return influencerChainBuilder.buildForClient(strategy);
     }
 
+    // TODO(derek): Temporary, so we can re-enable the ability to create non-pipelined connections for perf testing.
+    private static boolean reservedConnectionsPipelineEnabled(final ReadOnlyHttpClientConfig roConfig) {
+        return roConfig.maxPipelinedRequests() > 1 ||
+                Boolean.valueOf(System.getProperty("io.servicetalk.http.netty.reserved.connections.pipeline", "true"));
+    }
+
     private static final class StrategyInfluencingLoadBalancerFactory<R>
             implements LoadBalancerFactory<R, StreamingHttpConnection>, HttpExecutionStrategyInfluencer {
 
@@ -474,13 +479,11 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
 
         private final Publisher<ServiceDiscovererEvent<InetSocketAddress>> resolution;
         private final U resolved;
-        private final InetSocketAddress address;
 
         private NoopServiceDiscoverer(final U resolved, final InetSocketAddress address) {
-            this.resolved = resolved;
-            this.address = address;
+            this.resolved = requireNonNull(resolved);
             resolution = Publisher.<ServiceDiscovererEvent<InetSocketAddress>>from(
-                    new DefaultServiceDiscovererEvent<>(address, true))
+                    new DefaultServiceDiscovererEvent<>(requireNonNull(address), true))
                     // LoadBalancer will flag a termination of service discoverer Publisher as unexpected.
                     .concat(never());
         }

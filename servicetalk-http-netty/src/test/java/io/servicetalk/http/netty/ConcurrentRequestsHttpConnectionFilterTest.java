@@ -37,6 +37,7 @@ import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.TestStreamingHttpConnection;
+import io.servicetalk.transport.api.RetryableException;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.netty.internal.NettyConnection;
 
@@ -69,6 +70,7 @@ import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.netty.HttpClients.forResolvedAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
+import static org.hamcrest.Matchers.both;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.startsWith;
@@ -212,8 +214,10 @@ public class ConcurrentRequestsHttpConnectionFilterTest {
                 connection.onClose().concat(resp2).toFuture().get();
                 fail("Should not allow request to complete normally on a closed connection");
             } catch (ExecutionException e) {
-                assertThat(e.getCause(), instanceOf(ClosedChannelException.class));
-                assertThat(e.getCause().getMessage(), startsWith("PROTOCOL_CLOSING_INBOUND"));
+                assertThat(e.getCause(), both(instanceOf(ClosedChannelException.class))
+                        .and(instanceOf(RetryableException.class)));
+                assertThat(e.getCause().getCause(), instanceOf(ClosedChannelException.class));
+                assertThat(e.getCause().getCause().getMessage(), startsWith("PROTOCOL_CLOSING_INBOUND"));
             }
         }
     }
@@ -248,8 +252,10 @@ public class ConcurrentRequestsHttpConnectionFilterTest {
                 fromSource(closedFinally).concat(resp2).toFuture().get();
                 fail("Should not allow request to complete normally on a closed connection");
             } catch (ExecutionException e) {
-                assertThat(e.getCause(), instanceOf(ClosedChannelException.class));
-                assertThat(e.getCause().getMessage(), startsWith("CHANNEL_CLOSED_INBOUND"));
+                assertThat(e.getCause(), both(instanceOf(ClosedChannelException.class))
+                        .and(instanceOf(RetryableException.class)));
+                assertThat(e.getCause().getCause(), instanceOf(ClosedChannelException.class));
+                assertThat(e.getCause().getCause().getMessage(), startsWith("CHANNEL_CLOSED_INBOUND"));
             }
         }
     }
