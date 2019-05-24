@@ -23,7 +23,6 @@ import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.LoadBalancerFactory;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
-import io.servicetalk.concurrent.api.AsyncCloseables;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
@@ -51,6 +50,7 @@ import java.net.SocketOption;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.api.AsyncCloseables.emptyAsyncCloseable;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.Publisher.failed;
 import static io.servicetalk.concurrent.api.Publisher.never;
@@ -473,15 +473,16 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
         }
     }
 
-    private static final class NoopServiceDiscoverer<U>
-            implements ServiceDiscoverer<U, InetSocketAddress, ServiceDiscovererEvent<InetSocketAddress>> {
-        private final ListenableAsyncCloseable closeable = AsyncCloseables.emptyAsyncCloseable();
+    private static final class NoopServiceDiscoverer<OriginalAddress>
+            implements ServiceDiscoverer<OriginalAddress, InetSocketAddress,
+            ServiceDiscovererEvent<InetSocketAddress>> {
+        private final ListenableAsyncCloseable closeable = emptyAsyncCloseable();
 
         private final Publisher<ServiceDiscovererEvent<InetSocketAddress>> resolution;
-        private final U resolved;
+        private final OriginalAddress originalAddress;
 
-        private NoopServiceDiscoverer(final U resolved, final InetSocketAddress address) {
-            this.resolved = requireNonNull(resolved);
+        private NoopServiceDiscoverer(final OriginalAddress originalAddress, final InetSocketAddress address) {
+            this.originalAddress = requireNonNull(originalAddress);
             resolution = Publisher.<ServiceDiscovererEvent<InetSocketAddress>>from(
                     new DefaultServiceDiscovererEvent<>(requireNonNull(address), true))
                     // LoadBalancer will flag a termination of service discoverer Publisher as unexpected.
@@ -489,8 +490,8 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
         }
 
         @Override
-        public Publisher<ServiceDiscovererEvent<InetSocketAddress>> discover(final U address) {
-            if (!this.resolved.equals(address)) {
+        public Publisher<ServiceDiscovererEvent<InetSocketAddress>> discover(final OriginalAddress address) {
+            if (!this.originalAddress.equals(address)) {
                 return failed(new IllegalArgumentException("Unexpected address resolution request: " + address));
             }
             return resolution;
