@@ -15,7 +15,6 @@
  */
 package io.servicetalk.http.netty;
 
-import io.servicetalk.buffer.api.CompositeBuffer;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.PlatformDependent;
@@ -64,7 +63,7 @@ public class ConsumeRequestPayloadOnResponsePathTest {
 
     private final CountDownLatch waitServer = new CountDownLatch(1);
     private final AtomicReference<Throwable> errorRef = new AtomicReference<>();
-    private final CompositeBuffer receivedPayload = DEFAULT_ALLOCATOR.newCompositeBuffer();
+    private final StringBuffer receivedPayload = new StringBuffer();
 
     @Test
     public void testConsumeRequestPayloadBeforeResponseMetaDataSent() throws Exception {
@@ -135,7 +134,7 @@ public class ConsumeRequestPayloadOnResponsePathTest {
     // TODO: add testTrailersSentAndConsumeRequestPayload when Publisher.merge(Completable) is available
 
     private Completable consumePayloadBody(final StreamingHttpRequest request) {
-        return request.payloadBody().beforeOnNext(receivedPayload::addBuffer)
+        return request.payloadBody().beforeOnNext(buffer -> receivedPayload.append(buffer.toString(UTF_8)))
                 .ignoreElements()
                 .beforeOnError(errorRef::set)
                 .afterFinally(waitServer::countDown);
@@ -174,7 +173,7 @@ public class ConsumeRequestPayloadOnResponsePathTest {
             waitServer.await();
             assertThat(response.status(), is(OK));
             assertThat("Request payload body might be consumed by someone else", errorRef.get(), is(nullValue()));
-            assertThat(receivedPayload.toString(UTF_8), is(EXPECTED_REQUEST_PAYLOAD));
+            assertThat(receivedPayload.toString(), is(EXPECTED_REQUEST_PAYLOAD));
             assertThat(response.headers().contains(TRAILER, X_TOTAL_LENGTH), is(true));
             assertThat(response.trailers().contains(X_TOTAL_LENGTH), is(true));
             CharSequence trailerLength = response.trailers().get(X_TOTAL_LENGTH);
