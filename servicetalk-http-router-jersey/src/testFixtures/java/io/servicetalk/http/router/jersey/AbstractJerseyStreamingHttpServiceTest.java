@@ -317,7 +317,7 @@ public abstract class AbstractJerseyStreamingHttpServiceTest {
 
     /**
      * Runs the provided {@code test} lambda multiple times.
-     * <p/>
+     * <p>
      * some tests depend on Endpoint enhancement which is now backed by a cache, so we test the test code multiple times
      * to ensure that the caching of endpoints doesn't cause any weird side-effects.
      * @param test {@link Runnable} test callback will be executed multiple times, typically this is run from a @{@link
