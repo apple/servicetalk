@@ -42,10 +42,10 @@ public class DelegatingHttpExecutionStrategy implements HttpExecutionStrategy {
     }
 
     @Override
-    public Single<StreamingHttpResponse> invokeClient(
-            final Executor fallback, final Publisher<Object> flattenedRequest,
-            final Function<Publisher<Object>, Single<StreamingHttpResponse>> client) {
-        return delegate.invokeClient(fallback, flattenedRequest, client);
+    public <FS> Single<StreamingHttpResponse> invokeClient(
+            final Executor fallback, final Publisher<Object> flattenedRequest, final FS flushStrategy,
+            final ClientCallback<FS> client) {
+        return delegate.invokeClient(fallback, flattenedRequest, flushStrategy, client);
     }
 
     @Override

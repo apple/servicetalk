@@ -15,14 +15,20 @@
  */
 package io.servicetalk.http.netty;
 
+import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.transport.netty.internal.DefaultNettyPipelinedConnection;
+import io.servicetalk.transport.netty.internal.FlushStrategy;
 import io.servicetalk.transport.netty.internal.NettyConnection;
+
+import javax.annotation.Nullable;
 
 final class PipelinedStreamingHttpConnection
         extends AbstractStreamingHttpConnection<DefaultNettyPipelinedConnection<Object, Object>> {
+
+    private final NettyConnection<Object, Object> nettyConnection;
 
     PipelinedStreamingHttpConnection(final NettyConnection<Object, Object> connection,
                                      final ReadOnlyHttpClientConfig config,
@@ -30,10 +36,20 @@ final class PipelinedStreamingHttpConnection
                                      final StreamingHttpRequestResponseFactory reqRespFactory) {
         super(new DefaultNettyPipelinedConnection<>(connection, config.maxPipelinedRequests()),
                 config.maxPipelinedRequests(), executionContext, reqRespFactory, config.headersFactory());
+        this.nettyConnection = connection;
     }
 
     @Override
-    protected Publisher<Object> writeAndRead(Publisher<Object> requestStream) {
-        return connection.request(requestStream);
+    protected Publisher<Object> writeAndRead(Publisher<Object> requestStream,
+                                             @Nullable final FlushStrategy flushStrategy) {
+        if (flushStrategy == null) {
+            return connection.request(requestStream);
+        } else {
+            return connection.request(() -> {
+                final Cancellable cancellable = connection.updateFlushStrategy(
+                        (prev, isOriginal) -> isOriginal ? flushStrategy : prev);
+                return nettyConnection.write(requestStream).afterFinally(cancellable::cancel);
+            });
+        }
     }
 }

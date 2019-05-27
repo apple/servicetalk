@@ -53,6 +53,7 @@ import static io.servicetalk.http.api.HttpRequestMethod.GET;
 import static io.servicetalk.http.api.NoOffloadsHttpExecutionStrategy.NO_OFFLOADS_NO_EXECUTOR;
 import static io.servicetalk.http.api.StreamingHttpRequests.newRequest;
 import static io.servicetalk.http.api.StreamingHttpResponses.newResponse;
+import static io.servicetalk.transport.netty.internal.FlushStrategies.flushOnEnd;
 import static java.lang.Thread.currentThread;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
@@ -132,8 +133,8 @@ public class DefaultHttpExecutionStrategyTest {
         StreamingHttpResponse resp = analyzer.createNewResponse();
 
         analyzer.instrumentedResponseForClient(strategy.invokeClient(executor, from(req, req.payloadBodyAndTrailers()),
-                publisher -> analyzer.instrumentedFlatRequestForClient(publisher).ignoreElements()
-                        .concat(succeeded(resp))))
+                flushOnEnd(), (publisher, flushStrategy) ->
+                        analyzer.instrumentedFlatRequestForClient(publisher).ignoreElements().concat(succeeded(resp))))
                 .flatMapPublisher(StreamingHttpResponse::payloadBody)
                 .toFuture().get();
         analyzer.verify();

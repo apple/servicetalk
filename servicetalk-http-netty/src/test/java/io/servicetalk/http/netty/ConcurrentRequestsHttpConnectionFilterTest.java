@@ -39,6 +39,7 @@ import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.TestStreamingHttpConnection;
 import io.servicetalk.transport.api.RetryableException;
 import io.servicetalk.transport.api.ServerContext;
+import io.servicetalk.transport.netty.internal.FlushStrategy;
 import io.servicetalk.transport.netty.internal.NettyConnection;
 
 import org.junit.Ignore;
@@ -126,7 +127,8 @@ public class ConcurrentRequestsHttpConnectionFilterTest {
                     }
 
             @Override
-            protected Publisher<Object> writeAndRead(final Publisher<Object> stream) {
+            protected Publisher<Object> writeAndRead(final Publisher<Object> stream,
+                                                     final FlushStrategy flushStrategy) {
                 return reqResp.apply(stream);
             }
         };
