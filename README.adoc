@@ -1,5 +1,4 @@
 = ServiceTalk
-include::ROOT:partial$component-attributes.adoc[]
 
 ServiceTalk is a JVM network application framework with APIs tailored to specific protocols (e.g. HTTP/1.x,
 HTTP/2.x, etc...) and supports multiple programming paradigms.
