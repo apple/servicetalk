@@ -1,0 +1,11 @@
+/.cache
+/.out
+/node_modules
+/.idea
+/.vscode
+/.gradle
+/*.iml
+/*.ipr
+/*.iws
+.DS_Store
+package-lock.json

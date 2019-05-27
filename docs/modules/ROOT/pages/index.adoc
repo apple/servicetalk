@@ -1,10 +1,9 @@
+include::ROOT:partial$component-attributes.adoc[]
 = ServiceTalk
 
 ServiceTalk is a JVM network application framework with APIs tailored to specific protocols (e.g. HTTP/1.x,
-HTTP/2.x, etc...) and supports multiple programming paradigms.
+HTTP/2.x, etc...) and supports multiple xref:introduction.adoc#programming-paradigms[Programming Paradigms].
 
 It is built on link:https://netty.io[Netty] and is designed to provide most of the performance/scalability benefits of
 Netty for common networking protocols used in service to service communication. ServiceTalk provides server support and
 "smart client" like features such as client-side load balancing and service discovery integration.
-
-See the link:https://io.servicetalk/[ServiceTalk docs] for more information.

@@ -1,1 +1,0 @@
-## ServiceTalk Gradle Plugin Internal
