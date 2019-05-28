@@ -144,8 +144,66 @@ public final class HeaderUtils {
         return result;
     }
 
-    static boolean isTransferEncodingChunked(final HttpHeaders headers) {
-        return headers.containsIgnoreCase(TRANSFER_ENCODING, CHUNKED);
+    /**
+     * Returns {@code true} if {@code headers} indicates {@code transfer-encoding} {@code chunked}.
+     * <p>
+     * The values of all {@link HttpHeaderNames#TRANSFER_ENCODING} headers are interpreted as comma-separated values,
+     * with spaces between values trimmed. If any of these values is  {@link HttpHeaderValues#CHUNKED}, this method
+     * return {@code true}, otherwise it returns {@code false}.
+     *
+     * @param headers The {@link HttpHeaders} to check.
+     * @return {@code} true if {@code headers} indicates {@code transfer-encoding} {@code chunked}, {@code false}
+     * otherwise.
+     */
+    public static boolean isTransferEncodingChunked(final HttpHeaders headers) {
+        // As per https://tools.ietf.org/html/rfc7230#section-3.3.1 the `transfer-encoding` header may contain
+        // multiple values, comma separated.
+        return containsCommaSeparatedValueIgnoreCase(headers, TRANSFER_ENCODING, CHUNKED);
+    }
+
+    static boolean containsCommaSeparatedValueIgnoreCase(final HttpHeaders headers, final CharSequence name,
+                                                         final CharSequence value) {
+        final Iterator<? extends CharSequence> values = headers.values(name);
+        while (values.hasNext()) {
+            final CharSequence next = values.next();
+            if (contentEqualsIgnoreCase(next, value)) {
+                return true;
+            }
+            if (containsCommaSeparatedValueIgnoreCase(next.toString(), value)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Returns {@code true} if {@code commaSeparatedValues} is comma separated, and one of the values matches
+     * {@code needle} case insensitively.
+     * <p>
+     * <b>If {@code commaSeparatedValues} is a single value, without commas, this method will return {@code false} even
+     * if it matches {@code needle}</b>
+     *
+     * @param commaSeparatedValues the comma separated values.
+     * @param needle the value to look for.
+     * @return {@code true} if the value is found, {@code false} otherwise.
+     */
+    private static boolean containsCommaSeparatedValueIgnoreCase(final String commaSeparatedValues,
+                                                                 final CharSequence needle) {
+        int start = 0;
+        int commaPos = commaSeparatedValues.indexOf(',');
+        while (commaPos >= 0) {
+            final String subvalue = commaSeparatedValues.substring(start, commaPos).trim();
+            if (contentEqualsIgnoreCase(subvalue, needle)) {
+                return true;
+            }
+            start = commaPos + 1;
+            commaPos = commaSeparatedValues.indexOf(',', start);
+        }
+        if (start > 0) {
+            String subvalue = commaSeparatedValues.substring(start).trim();
+            return contentEqualsIgnoreCase(subvalue, needle);
+        }
+        return false;
     }
 
     static boolean hasContentLength(final HttpHeaders headers) {
