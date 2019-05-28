@@ -34,6 +34,7 @@ import java.net.InetSocketAddress;
 import java.util.function.Function;
 
 import static io.servicetalk.http.netty.DefaultSingleAddressHttpClientBuilder.forUnknownHostAndPort;
+import static java.net.InetSocketAddress.createUnresolved;
 
 /**
  * Factory methods for building {@link HttpClient} (and other API variations) instances.
@@ -83,9 +84,9 @@ public final class HttpClients {
      * ServiceDiscoverer}.
      *
      * @param host host to connect to, resolved by default using a DNS {@link ServiceDiscoverer}. This will also be
-     * used for the {@link HttpHeaderNames#HOST} together with the {@code port}. Use this method {@link
-     * SingleAddressHttpClientBuilder#enableHostHeaderFallback(CharSequence)} if you want to override that value or
-     * {@link SingleAddressHttpClientBuilder#disableHostHeaderFallback()} if you want to disable this behavior.
+     * used for the {@link HttpHeaderNames#HOST} together with the {@code port}. Use
+     * {@link SingleAddressHttpClientBuilder#enableHostHeaderFallback(CharSequence)} if you want to override that value
+     * or {@link SingleAddressHttpClientBuilder#disableHostHeaderFallback()} if you want to disable this behavior.
      * @param port port to connect to
      * @return new builder for the address
      */
@@ -99,14 +100,60 @@ public final class HttpClients {
      * ServiceDiscoverer}.
      *
      * @param address the {@code UnresolvedAddress} to connect to, resolved by default using a DNS {@link
-     * ServiceDiscoverer}. This address will also be used for the {@link HttpHeaderNames#HOST}. Use this method {@link
-     * SingleAddressHttpClientBuilder#enableHostHeaderFallback(CharSequence)} if you want to override that value or
-     * {@link SingleAddressHttpClientBuilder#disableHostHeaderFallback()} if you want to disable this behavior.
+     * ServiceDiscoverer}. This address will also be used for the {@link HttpHeaderNames#HOST}.
+     * Use {@link SingleAddressHttpClientBuilder#enableHostHeaderFallback(CharSequence)} if you want to override that
+     * value or {@link SingleAddressHttpClientBuilder#disableHostHeaderFallback()} if you want to disable this behavior.
      * @return new builder for the address
      */
     public static SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> forSingleAddress(
             final HostAndPort address) {
         return DefaultSingleAddressHttpClientBuilder.forHostAndPort(address);
+    }
+
+    /**
+     * Creates a {@link SingleAddressHttpClientBuilder} for a resolved address with default {@link LoadBalancer}.
+     *
+     * @param host resolved host address to connect. This will also be used for the {@link HttpHeaderNames#HOST}
+     * together with the {@code port}. Use {@link SingleAddressHttpClientBuilder#enableHostHeaderFallback(CharSequence)}
+     * if you want to override that value or {@link SingleAddressHttpClientBuilder#disableHostHeaderFallback()}
+     * if you want to disable this behavior.
+     * @param port port to connect to
+     * @return new builder for the address
+     */
+    public static SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> forResolvedAddress(
+            final String host, final int port) {
+        return forResolvedAddress(HostAndPort.of(host, port));
+    }
+
+    /**
+     * Creates a {@link SingleAddressHttpClientBuilder} for an address with default {@link LoadBalancer} and DNS {@link
+     * ServiceDiscoverer}.
+     *
+     * @param address the {@code ResolvedAddress} to connect. This address will also be used for the
+     * {@link HttpHeaderNames#HOST}. Use {@link SingleAddressHttpClientBuilder#enableHostHeaderFallback(CharSequence)}
+     * if you want to override that value or {@link SingleAddressHttpClientBuilder#disableHostHeaderFallback()} if you
+     * want to disable this behavior.
+     * @return new builder for the address
+     */
+    public static SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> forResolvedAddress(
+            final HostAndPort address) {
+        return DefaultSingleAddressHttpClientBuilder.forResolvedAddress(address,
+                createUnresolved(address.hostName(), address.port()));
+    }
+
+    /**
+     * Creates a {@link SingleAddressHttpClientBuilder} for an address with default {@link LoadBalancer} and DNS {@link
+     * ServiceDiscoverer}.
+     *
+     * @param address the {@code ResolvedAddress} to connect. This address will also be used for the
+     * {@link HttpHeaderNames#HOST}. Use {@link SingleAddressHttpClientBuilder#enableHostHeaderFallback(CharSequence)}
+     * if you want to override that value or {@link SingleAddressHttpClientBuilder#disableHostHeaderFallback()} if you
+     * want to disable this behavior.
+     * @return new builder for the address
+     */
+    public static SingleAddressHttpClientBuilder<InetSocketAddress, InetSocketAddress> forResolvedAddress(
+            final InetSocketAddress address) {
+        return DefaultSingleAddressHttpClientBuilder.forResolvedAddress(address, address);
     }
 
     /**
