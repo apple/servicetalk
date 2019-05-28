@@ -61,25 +61,23 @@ IMPORTANT: If you're intending to contribute to ServiceTalk,
 
 ServiceTalk uses link:https://gradle.org[Gradle] as its build tool and only requires Java JDK 8 or higher to be pre-installed.
 ServiceTalk ships with the Gradle Wrapper, which means that there is no need to install Gradle on your machine beforehand.
-In fact you should be able to run:
+You should be able to run the following command to build ServiceTalk:
 
 [source,shell]
 ----
 $ ./gradlew build
 ----
 
-right after cloning the repository and get `BUILD SUCCESSFUL`.
-
 The supported IDE is link:https://www.jetbrains.com/idea[IntelliJ IDEA].
-In order to open ServiceTalk with it,
-you first need to generate control files by running:
+In order to generate IntelliJ IDEA project files for ServiceTalk,
+you can run the following command:
 
 [source,shell]
 ----
 $ ./gradlew idea
 ----
 
-When done, running one of following commands should open ServiceTalk in IntelliJ:
+When done, running one of following commands would open ServiceTalk in IntelliJ:
 
 .Generic
 [source,shell]
