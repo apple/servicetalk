@@ -81,6 +81,7 @@ public class ConnectionFactoryFilterTest {
         ReservedBlockingHttpConnection c = client.reserveConnection(client.get("/"));
         assertThat("Unexpected active connections.", activeConnections.get(), is(1));
         c.close();
+        c.asConnection().onClose().toFuture().get();
         assertThat("Unexpected active connections.", activeConnections.get(), is(0));
     }
 
@@ -113,7 +114,7 @@ public class ConnectionFactoryFilterTest {
     private UnaryOperator<FilterableStreamingHttpConnection> connectionCounter(final AtomicInteger activeConnections) {
         return connection -> {
             activeConnections.incrementAndGet();
-            connection.onClose().whenFinally(activeConnections::decrementAndGet).subscribe();
+            connection.onClose().beforeFinally(activeConnections::decrementAndGet).subscribe();
             return connection;
         };
     }
