@@ -7,7 +7,7 @@ It is built on link:https://netty.io[Netty] and is designed to provide most of t
 Netty for common networking protocols used in service to service communication. ServiceTalk provides server support and
 "smart client" like features such as client-side load balancing and service discovery integration.
 
-See the link:https://io.servicetalk/[ServiceTalk docs] for more information.
+See the link:https://servicetalk.io/[ServiceTalk docs] for more information.
 
 == Getting Started
 
@@ -40,16 +40,16 @@ implementation platform("io.servicetalk:servicetalk-bom:$serviceTalkVersion")
 .Gradle 4
 [source,groovy]
 ----
-implementation "io.servicetalk:servicetalk-bom:$serviceTalkVersion" <1>
+implementation "io.servicetalk:servicetalk-bom:$serviceTalkVersion" // <1>
 
-enableFeaturePreview("IMPROVED_POM_SUPPORT") <2>
+enableFeaturePreview("IMPROVED_POM_SUPPORT") // <2>
 ----
-<1> in build.gradle
-<2> in settings.gradle
+<1> in _build.gradle_
+<2> in _settings.gradle_
 
 With this in place, you can add the ServiceTalk module dependencies you need without specifying their versions.
 
-Refer to the link:https://io.servicetalk/[ServiceTalk docs] for various examples that will get you started with the different features of ServiceTalk.
+Refer to the link:https://servicetalk.io/[ServiceTalk docs] for various examples that will get you started with the different features of ServiceTalk.
 
 NOTE: Builds of the development version are available
       in link:https://oss.sonatype.org/content/repositories/snapshots/io/servicetalk/[Sonatype's snapshots Maven repository].
@@ -59,7 +59,7 @@ NOTE: Builds of the development version are available
 IMPORTANT: If you're intending to contribute to ServiceTalk,
            make sure to first read the link:CONTRIBUTING.adoc[contribution guidelines].
 
-ServiceTalk uses link:https://gradle.org[Gradle] as its build tool and only requires Java JDK 8 or higher to be pre-installed.
+ServiceTalk uses link:https://gradle.org[Gradle] as its build tool and only requires JDK 8 or higher to be pre-installed.
 ServiceTalk ships with the Gradle Wrapper, which means that there is no need to install Gradle on your machine beforehand.
 You should be able to run the following command to build ServiceTalk:
 
@@ -85,7 +85,7 @@ When done, running one of following commands would open ServiceTalk in IntelliJ:
 $ idea .
 ----
 
-.MacOS
+.macOS
 [source,shell]
 ----
 $ open servicetalk.ipr
