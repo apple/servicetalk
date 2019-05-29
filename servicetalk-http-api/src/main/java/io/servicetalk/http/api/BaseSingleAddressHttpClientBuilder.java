@@ -89,7 +89,7 @@ abstract class BaseSingleAddressHttpClientBuilder<U, R, SDE extends ServiceDisco
 
     @Override
     public abstract BaseSingleAddressHttpClientBuilder<U, R, SDE> appendConnectionFactoryFilter(
-            ConnectionFactoryFilter<R, StreamingHttpConnection> factory);
+            ConnectionFactoryFilter<R, FilterableStreamingHttpConnection> factory);
 
     @Override
     public abstract BaseSingleAddressHttpClientBuilder<U, R, SDE> disableHostHeaderFallback();

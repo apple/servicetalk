@@ -15,11 +15,13 @@
  */
 package io.servicetalk.http.netty;
 
+import io.servicetalk.client.api.ConnectionFactoryFilter;
+import io.servicetalk.client.api.internal.ReservableRequestConcurrencyController;
+import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
-import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.tcp.netty.internal.ReadOnlyTcpClientConfig;
@@ -33,16 +35,18 @@ import static io.servicetalk.client.api.internal.ReservableRequestConcurrencyCon
 import static io.servicetalk.http.api.HttpEventKey.MAX_CONCURRENCY;
 
 final class H2LBHttpConnectionFactory<ResolvedAddress> extends AbstractLBHttpConnectionFactory<ResolvedAddress> {
-    H2LBHttpConnectionFactory(final ReadOnlyHttpClientConfig config,
-                              final HttpExecutionContext executionContext,
-                              @Nullable final StreamingHttpConnectionFilterFactory connectionFilterFunction,
-                              final StreamingHttpRequestResponseFactory reqRespFactory,
-                              final HttpExecutionStrategyInfluencer strategyInfluencer) {
-        super(config, executionContext, connectionFilterFunction, reqRespFactory, strategyInfluencer);
+    H2LBHttpConnectionFactory(
+            final ReadOnlyHttpClientConfig config, final HttpExecutionContext executionContext,
+            @Nullable final StreamingHttpConnectionFilterFactory connectionFilterFunction,
+            final StreamingHttpRequestResponseFactory reqRespFactory,
+            final HttpExecutionStrategyInfluencer strategyInfluencer,
+            final ConnectionFactoryFilter<ResolvedAddress, FilterableStreamingHttpConnection> connectionFactoryFilter) {
+        super(config, executionContext, connectionFilterFunction, reqRespFactory, strategyInfluencer,
+                connectionFactoryFilter);
     }
 
     @Override
-    public Single<StreamingHttpConnection> newConnection(final ResolvedAddress resolvedAddress) {
+    Single<FilterableStreamingHttpConnection> newFilterableConnection(final ResolvedAddress resolvedAddress) {
         final ReadOnlyTcpClientConfig roTcpClientConfig = config.tcpClientConfig();
         // This state is read only, so safe to keep a copy across Subscribers
         return TcpConnector.connect(null, resolvedAddress, roTcpClientConfig, executionContext)
@@ -51,14 +55,13 @@ final class H2LBHttpConnectionFactory<ResolvedAddress> extends AbstractLBHttpCon
                         config.h2ClientConfig(), reqRespFactory, roTcpClientConfig.flushStrategy(),
                         executionContext.executionStrategy(),
                         new TcpClientChannelInitializer(roTcpClientConfig).andThen(
-                                new H2ClientParentChannelInitializer(config.h2ClientConfig()))))
-                .map(filterableConnection -> {
-                    FilterableStreamingHttpConnection filteredConnection = connectionFilterFunction != null ?
-                            connectionFilterFunction.create(filterableConnection) : filterableConnection;
-                    return new LoadBalancedStreamingHttpConnection(filteredConnection,
-                            newController(filteredConnection.transportEventStream(MAX_CONCURRENCY),
-                                    filterableConnection.onClosing(), SMALLEST_MAX_CONCURRENT_STREAMS),
-                            executionContext.executionStrategy(), strategyInfluencer);
-                });
+                                new H2ClientParentChannelInitializer(config.h2ClientConfig()))));
+    }
+
+    @Override
+    ReservableRequestConcurrencyController newConcurrencyController(final FilterableStreamingHttpConnection connection,
+                                                                    final Completable onClosing) {
+        return newController(connection.transportEventStream(MAX_CONCURRENCY), onClosing,
+                SMALLEST_MAX_CONCURRENT_STREAMS);
     }
 }

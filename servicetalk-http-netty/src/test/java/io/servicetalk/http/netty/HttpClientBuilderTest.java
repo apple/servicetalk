@@ -22,8 +22,8 @@ import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.TestPublisher;
+import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpClient;
-import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.transport.api.HostAndPort;
 
 import org.junit.Test;
@@ -71,8 +71,8 @@ public class HttpClientBuilderTest extends AbstractEchoServerBasedHttpRequesterT
 
     @Test
     public void withConnectionFactoryFilter() throws Exception {
-        ConnectionFactory<InetSocketAddress, StreamingHttpConnection> factory1 = newFilter();
-        ConnectionFactory<InetSocketAddress, StreamingHttpConnection> factory2 = newFilter();
+        ConnectionFactory<InetSocketAddress, FilterableStreamingHttpConnection> factory1 = newFilter();
+        ConnectionFactory<InetSocketAddress, FilterableStreamingHttpConnection> factory2 = newFilter();
         StreamingHttpClient requester = HttpClients.forSingleAddress(serverHostAndPort(serverContext))
                 .appendConnectionFactoryFilter(factoryFilter(factory1))
                 .appendConnectionFactoryFilter(factoryFilter(factory2))
@@ -86,8 +86,8 @@ public class HttpClientBuilderTest extends AbstractEchoServerBasedHttpRequesterT
         verifier.verify(factory2).newConnection(any());
     }
 
-    private static ConnectionFactoryFilter<InetSocketAddress, StreamingHttpConnection> factoryFilter(
-            final ConnectionFactory<InetSocketAddress, StreamingHttpConnection> factory) {
+    private static ConnectionFactoryFilter<InetSocketAddress, FilterableStreamingHttpConnection> factoryFilter(
+            final ConnectionFactory<InetSocketAddress, FilterableStreamingHttpConnection> factory) {
         return orig -> {
             when(factory.newConnection(any()))
                     .thenAnswer(invocation -> orig.newConnection(invocation.getArgument(0)));
@@ -96,8 +96,8 @@ public class HttpClientBuilderTest extends AbstractEchoServerBasedHttpRequesterT
     }
 
     @SuppressWarnings("unchecked")
-    private static ConnectionFactory<InetSocketAddress, StreamingHttpConnection> newFilter() {
-        ConnectionFactory<InetSocketAddress, StreamingHttpConnection> factory =
+    private static ConnectionFactory<InetSocketAddress, FilterableStreamingHttpConnection> newFilter() {
+        ConnectionFactory<InetSocketAddress, FilterableStreamingHttpConnection> factory =
                 mock(ConnectionFactory.class);
         when(factory.closeAsyncGracefully()).thenReturn(completed());
         when(factory.closeAsync()).thenReturn(completed());

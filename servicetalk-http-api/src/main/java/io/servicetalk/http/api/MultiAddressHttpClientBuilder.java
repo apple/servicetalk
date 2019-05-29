@@ -94,7 +94,7 @@ public abstract class MultiAddressHttpClientBuilder<U, R>
 
     @Override
     public abstract MultiAddressHttpClientBuilder<U, R> appendConnectionFactoryFilter(
-            ConnectionFactoryFilter<R, StreamingHttpConnection> factory);
+            ConnectionFactoryFilter<R, FilterableStreamingHttpConnection> factory);
 
     @Override
     public abstract MultiAddressHttpClientBuilder<U, R> disableWaitForLoadBalancer();
