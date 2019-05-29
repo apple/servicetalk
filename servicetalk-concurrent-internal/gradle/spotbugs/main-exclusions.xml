@@ -17,7 +17,7 @@
 <FindBugsFilter>
   <!-- We intentionally store the result of MethodHandle invocation to the local variable and discard it -->
   <Match>
-    <Class name="io.servicetalk.buffer.netty.PlatformDependent0"/>
+    <Class name="io.servicetalk.concurrent.internal.PlatformDependent0"/>
     <Bug pattern="DLS_DEAD_LOCAL_STORE"/>
   </Match>
 </FindBugsFilter>

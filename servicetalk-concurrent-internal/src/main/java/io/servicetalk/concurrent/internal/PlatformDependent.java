@@ -45,6 +45,7 @@ import org.jctools.util.UnsafeAccess;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.nio.ByteBuffer;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
 import java.util.Queue;
@@ -74,7 +75,8 @@ public final class PlatformDependent {
     }
 
     /**
-     * If {@code sun.misc.Unsafe} is available and has not been disabled.
+     * Checks if {@code sun.misc.Unsafe} is available and has not been disabled.
+     *
      * @return {@code true} if {@code sun.misc.Unsafe} is available.
      */
     public static boolean hasUnsafe() {
@@ -82,10 +84,72 @@ public final class PlatformDependent {
     }
 
     /**
+     * Checks if it is possible to create a new direct {@link ByteBuffer} without zeroing the direct memory.
+     *
+     * @return {@code true} if it is possible to create a new direct {@link ByteBuffer} without zeroing the direct
+     * memory; {@code false} otherwise.
+     */
+    public static boolean useDirectBufferWithoutZeroing() {
+        return PlatformDependent0.useDirectBufferWithoutZeroing();
+    }
+
+    /**
+     * Reserves direct memory for the specified size and capacity.
+     *
+     * @param size The size of direct memory to reserve.
+     * @param capacity The capacity of direct memory to reserve.
+     */
+    public static void reserveMemory(final long size, final int capacity) {
+        PlatformDependent0.reserveMemory(size, capacity);
+    }
+
+    /**
+     * Unreserves direct memory for the specified size and capacity.
+     *
+     * @param size The size of direct memory to unreserve.
+     * @param capacity The capacity of direct memory to unreserve.
+     */
+    public static void unreserveMemory(final long size, final int capacity) {
+        PlatformDependent0.unreserveMemory(size, capacity);
+    }
+
+    /**
+     * Allocates direct memory.
+     *
+     * @param size The size of direct memory to allocate.
+     * @return The address of allocated memory.
+     */
+    public static long allocateMemory(final long size) {
+        return PlatformDependent0.allocateMemory(size);
+    }
+
+    /**
+     * Deallocates direct memory.
+     *
+     * @param address The address of direct memory to free.
+     */
+    public static void freeMemory(final long address) {
+        PlatformDependent0.freeMemory(address);
+    }
+
+    /**
+     * Creates a new {@link ByteBuffer} for the specified pre-allocated direct memory.
+     *
+     * @param address The address of pre-allocated direct memory.
+     * @param size The size of pre-allocated direct memory.
+     * @param capacity The capacity of pre-allocated direct memory.
+     * @return A new {@link ByteBuffer}.
+     */
+    public static ByteBuffer newDirectBuffer(final long address, final long size, final int capacity) {
+        return PlatformDependent0.newDirectBuffer(address, size, capacity);
+    }
+
+    /**
      * Raises an exception bypassing compiler checks for checked exceptions.
+     *
      * @param t The {@link Throwable} to throw.
      */
-    public static void throwException(Throwable t) {
+    public static void throwException(final Throwable t) {
         if (hasUnsafe()) {
             PlatformDependent0.throwException(t);
         } else {
@@ -94,13 +158,14 @@ public final class PlatformDependent {
     }
 
     @SuppressWarnings("unchecked")
-    private static <E extends Throwable> void throwException0(Throwable t) throws E {
+    private static <E extends Throwable> void throwException0(final Throwable t) throws E {
         throw (E) t;
     }
 
     /**
      * Create a new {@link Queue} which is safe to use for multiple producers (different threads) and a single
      * consumer (one thread!).
+     *
      * @param <T> Type of items stored in the queue.
      * @return A new unbounded MPSC {@link Queue}.
      */
@@ -155,6 +220,7 @@ public final class PlatformDependent {
      *     this maybe a viable alternative if memory pressure exists and the size is expected to be small.</li>
      *     <li>{@link Queue#remove(Object)} support - Current only the linked variants support this operation.</li>
      * </ul>
+     *
      * @param <T> The data type of the queue.
      * @return a new MPSC {@link Queue} that will use a linked data structure and supports {@link Queue#remove(Object)}.
      */
@@ -195,7 +261,7 @@ public final class PlatformDependent {
      * @param <T> Type of items stored in the queue.
      * @return A new unbounded SPSC {@link Queue}.
      */
-    public static <T> Queue<T> newUnboundedSpscQueue(int initialCapacity) {
+    public static <T> Queue<T> newUnboundedSpscQueue(final int initialCapacity) {
         return Queues.newUnboundedSpscQueue(initialCapacity);
     }
 
@@ -236,7 +302,7 @@ public final class PlatformDependent {
                                      : new MpscGrowableAtomicArrayQueue<>(initialCap, capacity);
         }
 
-        static <T> Queue<T> newUnboundedMpscQueue(int initialCapacity) {
+        static <T> Queue<T> newUnboundedMpscQueue(final int initialCapacity) {
             return USE_UNSAFE_QUEUES ? new MpscUnboundedArrayQueue<>(max(MIN_ALLOWED_MPSC_CHUNK_SIZE, initialCapacity))
                                      : new MpscUnboundedAtomicArrayQueue<>(
                                              max(MIN_ALLOWED_MPSC_CHUNK_SIZE, initialCapacity));
@@ -257,7 +323,7 @@ public final class PlatformDependent {
                     : new SpscGrowableAtomicArrayQueue<>(initialCap, capacity);
         }
 
-        static <T> Queue<T> newUnboundedSpscQueue(int initialCapacity) {
+        static <T> Queue<T> newUnboundedSpscQueue(final int initialCapacity) {
             return USE_UNSAFE_QUEUES ? new SpscUnboundedArrayQueue<>(initialCapacity)
                     : new SpscUnboundedAtomicArrayQueue<>(initialCapacity);
         }

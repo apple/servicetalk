@@ -36,7 +36,6 @@ public final class BufferUtil {
 
     static final BufferAllocator PREFER_HEAP_ALLOCATOR = new ServiceTalkBufferAllocator(false, false);
     static final BufferAllocator PREFER_DIRECT_ALLOCATOR = new ServiceTalkBufferAllocator(true, false);
-    static final BufferAllocator PREFER_HEAP_ALLOCATOR_WITHOUT_ZEROING = new ServiceTalkBufferAllocator(false, true);
     static final BufferAllocator PREFER_DIRECT_ALLOCATOR_WITHOUT_ZEROING = new ServiceTalkBufferAllocator(true, true);
 
     private BufferUtil() {

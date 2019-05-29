@@ -31,6 +31,7 @@ import java.nio.CharBuffer;
 import java.nio.charset.Charset;
 
 import static io.servicetalk.buffer.api.EmptyBuffer.EMPTY_BUFFER;
+import static io.servicetalk.concurrent.internal.PlatformDependent.useDirectBufferWithoutZeroing;
 
 /**
  * Our own {@link AbstractByteBufAllocator} implementation which will not use leak-detection and depends on the GC
@@ -44,7 +45,7 @@ final class ServiceTalkBufferAllocator extends AbstractByteBufAllocator implemen
 
     ServiceTalkBufferAllocator(boolean preferDirect, boolean tryNoZeroing) {
         super(preferDirect);
-        this.noZeroing = tryNoZeroing && PlatformDependent0.useDirectBufferWithoutZeroing();
+        this.noZeroing = tryNoZeroing && useDirectBufferWithoutZeroing();
     }
 
     @Override
