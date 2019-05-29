@@ -19,15 +19,15 @@ The easiest way to get started is to add ServiceTalk's bill-of-material (BOM) de
 [source,xml]
 ----
 <dependencyManagement>
-<dependencies>
-  <dependency>
-    <groupId>io.servicetalk</groupId>
-    <artifactId>servicetalk-bom</artifactId>
-    <version>${servicetalk.version}</version>
-    <type>pom</type>
-    <scope>import</scope>
-  </dependency>
-</dependencies>
+  <dependencies>
+    <dependency>
+      <groupId>io.servicetalk</groupId>
+      <artifactId>servicetalk-bom</artifactId>
+      <version>${servicetalk.version}</version>
+      <type>pom</type>
+      <scope>import</scope>
+    </dependency>
+  </dependencies>
 </dependencyManagement>
 ----
 
