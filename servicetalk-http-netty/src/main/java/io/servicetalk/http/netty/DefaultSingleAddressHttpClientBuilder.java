@@ -29,6 +29,7 @@ import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
+import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
@@ -85,7 +86,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
     @Nullable
     private StreamingHttpClientFilterFactory clientFilterFactory;
     private boolean lbReadyFilterEnabled = true;
-    private ConnectionFactoryFilter<R, StreamingHttpConnection> connectionFactoryFilter =
+    private ConnectionFactoryFilter<R, FilterableStreamingHttpConnection> connectionFactoryFilter =
             ConnectionFactoryFilter.identity();
 
     DefaultSingleAddressHttpClientBuilder(
@@ -185,25 +186,23 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
             final StreamingHttpRequestResponseFactory reqRespFactory = ctx.reqRespFactory;
 
             // closed by the LoadBalancer
-            final ConnectionFactory<R, StreamingHttpConnection> rawConnectionFactory;
+            final ConnectionFactory<R, StreamingHttpConnection> connectionFactory;
             if (roConfig.isH2PriorKnowledge()) {
-                rawConnectionFactory = new H2LBHttpConnectionFactory<>(roConfig, ctx.executionContext,
+                connectionFactory = new H2LBHttpConnectionFactory<>(roConfig, ctx.executionContext,
                         connectionFilterFactory, reqRespFactory,
                         influencerChainBuilder.buildForConnectionFactory(
-                                ctx.executionContext.executionStrategy()));
+                                ctx.executionContext.executionStrategy()), connectionFactoryFilter);
             } else {
-                rawConnectionFactory = reservedConnectionsPipelineEnabled(roConfig) ?
+                connectionFactory = reservedConnectionsPipelineEnabled(roConfig) ?
                         new PipelinedLBHttpConnectionFactory<>(roConfig, ctx.executionContext,
                                 connectionFilterFactory, reqRespFactory,
                                 influencerChainBuilder.buildForConnectionFactory(
-                                        ctx.executionContext.executionStrategy())) :
+                                        ctx.executionContext.executionStrategy()), connectionFactoryFilter) :
                         new NonPipelinedLBHttpConnectionFactory<>(roConfig, ctx.executionContext,
                                 connectionFilterFactory, reqRespFactory,
                                 influencerChainBuilder.buildForConnectionFactory(
-                                        ctx.executionContext.executionStrategy()));
+                                        ctx.executionContext.executionStrategy()), connectionFactoryFilter);
             }
-            final ConnectionFactory<R, ? extends StreamingHttpConnection> connectionFactory =
-                    connectionFactoryFilter.create(closeOnException.prepend(rawConnectionFactory));
 
             final LoadBalancer<? extends StreamingHttpConnection> lbfUntypedForCast =
                     closeOnException.prepend(loadBalancerFactory.newLoadBalancer(sdEvents, connectionFactory));
@@ -383,7 +382,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
 
     @Override
     public DefaultSingleAddressHttpClientBuilder<U, R> appendConnectionFactoryFilter(
-            final ConnectionFactoryFilter<R, StreamingHttpConnection> factory) {
+            final ConnectionFactoryFilter<R, FilterableStreamingHttpConnection> factory) {
         connectionFactoryFilter = connectionFactoryFilter.append(factory);
         influencerChainBuilder.add(factory);
         return this;

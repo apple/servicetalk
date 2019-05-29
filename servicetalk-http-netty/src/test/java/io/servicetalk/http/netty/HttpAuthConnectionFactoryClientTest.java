@@ -19,8 +19,8 @@ import io.servicetalk.client.api.ConnectionFactory;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
+import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpClient;
-import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequestFactory;
 import io.servicetalk.http.api.StreamingHttpResponse;
@@ -88,17 +88,17 @@ public class HttpAuthConnectionFactoryClientTest {
     }
 
     private static final class TestHttpAuthConnectionFactory<ResolvedAddress> implements
-                              ConnectionFactory<ResolvedAddress, StreamingHttpConnection> {
+                              ConnectionFactory<ResolvedAddress, FilterableStreamingHttpConnection> {
         private final ConnectionFactory<ResolvedAddress,
-                ? extends StreamingHttpConnection> delegate;
+                ? extends FilterableStreamingHttpConnection> delegate;
 
         TestHttpAuthConnectionFactory(final ConnectionFactory<ResolvedAddress,
-                ? extends StreamingHttpConnection> delegate) {
+                ? extends FilterableStreamingHttpConnection> delegate) {
             this.delegate = requireNonNull(delegate);
         }
 
         @Override
-        public Single<StreamingHttpConnection> newConnection(
+        public Single<FilterableStreamingHttpConnection> newConnection(
                 final ResolvedAddress resolvedAddress) {
             return delegate.newConnection(resolvedAddress).flatMap(cnx ->
                     cnx.request(defaultStrategy(), newTestRequest(cnx, "/auth"))

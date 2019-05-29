@@ -35,6 +35,7 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.DefaultHttpHeadersFactory;
 import io.servicetalk.http.api.FilterableReservedStreamingHttpConnection;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
+import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpHeadersFactory;
@@ -329,7 +330,7 @@ class DefaultPartitionedHttpClientBuilder<U, R> extends PartitionedHttpClientBui
 
     @Override
     public PartitionedHttpClientBuilder<U, R> appendConnectionFactoryFilter(
-            final ConnectionFactoryFilter<R, StreamingHttpConnection> factory) {
+            final ConnectionFactoryFilter<R, FilterableStreamingHttpConnection> factory) {
         builderTemplate.appendConnectionFactoryFilter(factory);
         return this;
     }

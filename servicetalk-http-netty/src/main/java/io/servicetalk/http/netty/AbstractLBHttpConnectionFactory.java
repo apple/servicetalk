@@ -16,13 +16,18 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.client.api.ConnectionFactory;
+import io.servicetalk.client.api.ConnectionFactoryFilter;
+import io.servicetalk.client.api.internal.ReservableRequestConcurrencyController;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
+import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
 import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
+import io.servicetalk.transport.netty.internal.NettyConnectionContext;
 
 import javax.annotation.Nullable;
 
@@ -38,31 +43,78 @@ abstract class AbstractLBHttpConnectionFactory<ResolvedAddress>
     final HttpExecutionContext executionContext;
     final StreamingHttpRequestResponseFactory reqRespFactory;
     final HttpExecutionStrategyInfluencer strategyInfluencer;
+    final ConnectionFactory<ResolvedAddress, FilterableStreamingHttpConnection> filterableConnectionFactory;
 
-    AbstractLBHttpConnectionFactory(final ReadOnlyHttpClientConfig config,
-                                    final HttpExecutionContext executionContext,
-                                    @Nullable final StreamingHttpConnectionFilterFactory connectionFilterFunction,
-                                    final StreamingHttpRequestResponseFactory reqRespFactory,
-                                    final HttpExecutionStrategyInfluencer strategyInfluencer) {
+    AbstractLBHttpConnectionFactory(
+            final ReadOnlyHttpClientConfig config, final HttpExecutionContext executionContext,
+            @Nullable final StreamingHttpConnectionFilterFactory connectionFilterFunction,
+            final StreamingHttpRequestResponseFactory reqRespFactory,
+            final HttpExecutionStrategyInfluencer strategyInfluencer,
+            final ConnectionFactoryFilter<ResolvedAddress, FilterableStreamingHttpConnection> connectionFactoryFilter) {
         this.connectionFilterFunction = connectionFilterFunction;
         this.config = requireNonNull(config);
         this.executionContext = requireNonNull(executionContext);
         this.reqRespFactory = requireNonNull(reqRespFactory);
         this.strategyInfluencer = strategyInfluencer;
+        filterableConnectionFactory = connectionFactoryFilter.create(
+                new ConnectionFactory<ResolvedAddress, FilterableStreamingHttpConnection>() {
+                    @Override
+                    public Single<FilterableStreamingHttpConnection> newConnection(final ResolvedAddress ra) {
+                        return newFilterableConnection(ra);
+                    }
+
+                    @Override
+                    public Completable onClose() {
+                        return close.onClose();
+                    }
+
+                    @Override
+                    public Completable closeAsync() {
+                        return close.closeAsync();
+                    }
+
+                    @Override
+                    public Completable closeAsyncGracefully() {
+                        return close.closeAsyncGracefully();
+                    }
+        });
     }
 
     @Override
+    public final Single<StreamingHttpConnection> newConnection(final ResolvedAddress resolvedAddress) {
+        return filterableConnectionFactory.newConnection(resolvedAddress)
+                .map(conn -> {
+                    FilterableStreamingHttpConnection filteredConnection = connectionFilterFunction != null ?
+                            connectionFilterFunction.create(conn) : conn;
+                    Completable onClosing;
+                    if (filteredConnection instanceof NettyConnectionContext) {
+                        onClosing = ((NettyConnectionContext) filteredConnection).onClosing();
+                    } else {
+                        onClosing = filteredConnection.onClose();
+                    }
+                    return new LoadBalancedStreamingHttpConnection(filteredConnection,
+                            newConcurrencyController(filteredConnection, onClosing),
+                            executionContext.executionStrategy(), strategyInfluencer);
+                });
+    }
+
+    abstract Single<FilterableStreamingHttpConnection> newFilterableConnection(ResolvedAddress resolvedAddress);
+
+    abstract ReservableRequestConcurrencyController newConcurrencyController(
+            FilterableStreamingHttpConnection connection, Completable onClosing);
+
+    @Override
     public final Completable onClose() {
-        return close.onClose();
+        return filterableConnectionFactory.onClose();
     }
 
     @Override
     public final Completable closeAsync() {
-        return close.closeAsync();
+        return filterableConnectionFactory.closeAsync();
     }
 
     @Override
     public final Completable closeAsyncGracefully() {
-        return close.closeAsyncGracefully();
+        return filterableConnectionFactory.closeAsyncGracefully();
     }
 }
