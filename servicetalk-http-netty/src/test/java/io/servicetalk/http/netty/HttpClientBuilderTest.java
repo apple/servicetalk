@@ -31,7 +31,6 @@ import org.mockito.InOrder;
 
 import java.net.InetSocketAddress;
 import java.util.concurrent.ExecutionException;
-import javax.annotation.Nonnull;
 
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
@@ -87,7 +86,6 @@ public class HttpClientBuilderTest extends AbstractEchoServerBasedHttpRequesterT
         verifier.verify(factory2).newConnection(any());
     }
 
-    @Nonnull
     private static ConnectionFactoryFilter<InetSocketAddress, FilterableStreamingHttpConnection> factoryFilter(
             final ConnectionFactory<InetSocketAddress, FilterableStreamingHttpConnection> factory) {
         return orig -> {

@@ -99,6 +99,7 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
     private boolean enqueueWrites;
     private boolean terminated;
     private final CloseHandler closeHandler;
+    private boolean written;
 
     WriteStreamSubscriber(Channel channel, RequestNSupplier requestNSupplier, Subscriber subscriber,
                           CloseHandler closeHandler) {
@@ -158,6 +159,7 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
     }
 
     void doWrite(Object msg, ChannelPromise writePromise) {
+        written = true;
         long capacityBefore = channel.bytesBeforeUnwritable();
         channel.write(msg, writePromise);
         long capacityAfter = channel.bytesBeforeUnwritable();
@@ -237,7 +239,11 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
         } else {
             oldVal.cancel();
         }
-        terminateListener(closedException, false);
+        if (!written) {
+            terminateListener(new AbortedFirstWrite(closedException), false);
+        } else {
+            terminateListener(closedException, false);
+        }
     }
 
     @Override
@@ -293,6 +299,12 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
             subscriber.onError(cause);
         } else {
             subscriber.onComplete();
+        }
+    }
+
+    static final class AbortedFirstWrite extends Exception {
+        AbortedFirstWrite(final Throwable cause) {
+            super(null, cause, false, false);
         }
     }
 }

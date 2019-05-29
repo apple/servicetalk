@@ -16,7 +16,7 @@ get involved. Pull requests to update and expand this guide are welcome.
 
 == Before you get started
 === Community Guidelines
-We want the ServiceTalk community to be as welcoming and inclusive as possible, and have adopted a link:CODE_OF_CONDUCT.md[Code of Conduct]
+We want the ServiceTalk community to be as welcoming and inclusive as possible, and have adopted a link:CODE_OF_CONDUCT.adoc[Code of Conduct]
 that we ask all community members to read and observe.
 
 === Project Licensing

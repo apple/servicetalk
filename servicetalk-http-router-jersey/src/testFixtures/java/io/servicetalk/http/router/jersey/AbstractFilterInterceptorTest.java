@@ -189,87 +189,101 @@ public abstract class AbstractFilterInterceptorTest extends AbstractJerseyStream
 
     @Test
     public void synchronousResource() {
-        sendAndAssertResponse(post(SynchronousResources.PATH + "/text", "foo1", TEXT_PLAIN),
-                OK, TEXT_PLAIN, "G0T: F001");
+        runTwiceToEnsureEndpointCache(() -> {
+            sendAndAssertResponse(post(SynchronousResources.PATH + "/text", "foo1", TEXT_PLAIN),
+                    OK, TEXT_PLAIN, "G0T: F001");
 
-        sendAndAssertResponse(post(SynchronousResources.PATH + "/text-response", "foo2", TEXT_PLAIN),
-                ACCEPTED, TEXT_PLAIN, "G0T: F002");
+            sendAndAssertResponse(post(SynchronousResources.PATH + "/text-response", "foo2", TEXT_PLAIN),
+                    ACCEPTED, TEXT_PLAIN, "G0T: F002");
 
-        sendAndAssertResponse(post(SynchronousResources.PATH + "/json", "{\"key\":\"val1\"}",
-                APPLICATION_JSON), OK, APPLICATION_JSON,
-                jsonEquals("{\"KEY\":\"VAL1\",\"f00\":\"bar1\"}"), getJsonResponseContentLengthExtractor());
+            sendAndAssertResponse(post(SynchronousResources.PATH + "/json", "{\"key\":\"val1\"}",
+                    APPLICATION_JSON), OK, APPLICATION_JSON,
+                    jsonEquals("{\"KEY\":\"VAL1\",\"f00\":\"bar1\"}"), getJsonResponseContentLengthExtractor());
 
-        sendAndAssertResponse(put(SynchronousResources.PATH + "/json-response", "{\"key\":\"val2\"}",
-                APPLICATION_JSON), ACCEPTED, APPLICATION_JSON,
-                jsonEquals("{\"KEY\":\"VAL2\",\"f00\":\"bar2\"}"), getJsonResponseContentLengthExtractor());
+            sendAndAssertResponse(put(SynchronousResources.PATH + "/json-response", "{\"key\":\"val2\"}",
+                    APPLICATION_JSON), ACCEPTED, APPLICATION_JSON,
+                    jsonEquals("{\"KEY\":\"VAL2\",\"f00\":\"bar2\"}"), getJsonResponseContentLengthExtractor());
+        });
     }
 
     @Test
     public void publisherResources() {
-        sendAndAssertResponse(post(SynchronousResources.PATH + "/text-strin-pubout", "foo1", TEXT_PLAIN),
-                OK, TEXT_PLAIN, is("G0T: F001"), __ -> null);
+        runTwiceToEnsureEndpointCache(() -> {
+            sendAndAssertResponse(post(SynchronousResources.PATH + "/text-strin-pubout", "foo1", TEXT_PLAIN),
+                    OK, TEXT_PLAIN, is("G0T: F001"), __ -> null);
 
-        sendAndAssertResponse(post(SynchronousResources.PATH + "/text-pubin-strout", "foo2", TEXT_PLAIN),
-                OK, TEXT_PLAIN, "G0T: F002");
+            sendAndAssertResponse(post(SynchronousResources.PATH + "/text-pubin-strout", "foo2", TEXT_PLAIN),
+                    OK, TEXT_PLAIN, "G0T: F002");
 
-        sendAndAssertResponse(post(SynchronousResources.PATH + "/text-pubin-pubout", "foo3", TEXT_PLAIN),
-                OK, TEXT_PLAIN, is("G0T: F003"), __ -> null);
+            sendAndAssertResponse(post(SynchronousResources.PATH + "/text-pubin-pubout", "foo3", TEXT_PLAIN),
+                    OK, TEXT_PLAIN, is("G0T: F003"), __ -> null);
+        });
     }
 
     @Test
     public void oioStreamsResource() {
-        sendAndAssertResponse(post(SynchronousResources.PATH + "/text-oio-streams", "bar", TEXT_PLAIN),
-                OK, TEXT_PLAIN, "G0T: BAR");
+        runTwiceToEnsureEndpointCache(() -> {
+            sendAndAssertResponse(post(SynchronousResources.PATH + "/text-oio-streams", "bar", TEXT_PLAIN),
+                    OK, TEXT_PLAIN, "G0T: BAR");
+        });
     }
 
     @Test
     public void asynchronousResource() {
-        sendAndAssertResponse(post(AsynchronousResources.PATH + "/text", "baz1", TEXT_PLAIN),
-                OK, TEXT_PLAIN, "G0T: BAZ1");
+        runTwiceToEnsureEndpointCache(() -> {
+            sendAndAssertResponse(post(AsynchronousResources.PATH + "/text", "baz1", TEXT_PLAIN),
+                    OK, TEXT_PLAIN, "G0T: BAZ1");
 
-        sendAndAssertResponse(post(AsynchronousResources.PATH + "/text-response", "baz2", TEXT_PLAIN),
-                ACCEPTED, TEXT_PLAIN, "G0T: BAZ2");
+            sendAndAssertResponse(post(AsynchronousResources.PATH + "/text-response", "baz2", TEXT_PLAIN),
+                    ACCEPTED, TEXT_PLAIN, "G0T: BAZ2");
+        });
     }
 
     @Test
     public void singleResources() {
-        sendAndAssertResponse(post(SynchronousResources.PATH + "/json-buf-sglin-sglout-response", "{\"key\":\"val1\"}",
-                APPLICATION_JSON), ACCEPTED, APPLICATION_JSON,
-                jsonEquals("{\"KEY\":\"VAL1\",\"f00\":\"bar6\"}"), __ -> null);
+        runTwiceToEnsureEndpointCache(() -> {
+            sendAndAssertResponse(post(SynchronousResources.PATH + "/json-buf-sglin-sglout-response",
+                    "{\"key\":\"val1\"}", APPLICATION_JSON), ACCEPTED, APPLICATION_JSON,
+                    jsonEquals("{\"KEY\":\"VAL1\",\"f00\":\"bar6\"}"), __ -> null);
 
-        sendAndAssertResponse(get(AsynchronousResources.PATH + "/single-response"), ACCEPTED, TEXT_PLAIN, "D0NE");
+            sendAndAssertResponse(get(AsynchronousResources.PATH + "/single-response"), ACCEPTED, TEXT_PLAIN, "D0NE");
 
-        sendAndAssertResponse(get(AsynchronousResources.PATH + "/single-map"), OK, APPLICATION_JSON,
-                jsonEquals("{\"f00\":\"bar4\"}"), getJsonResponseContentLengthExtractor());
+            sendAndAssertResponse(get(AsynchronousResources.PATH + "/single-map"), OK, APPLICATION_JSON,
+                    jsonEquals("{\"f00\":\"bar4\"}"), getJsonResponseContentLengthExtractor());
 
-        sendAndAssertResponse(get(AsynchronousResources.PATH + "/single-pojo"), OK, APPLICATION_JSON,
-                jsonEquals("{\"aString\":\"b00\",\"anInt\":456}"), getJsonResponseContentLengthExtractor());
+            sendAndAssertResponse(get(AsynchronousResources.PATH + "/single-pojo"), OK, APPLICATION_JSON,
+                    jsonEquals("{\"aString\":\"b00\",\"anInt\":456}"), getJsonResponseContentLengthExtractor());
 
-        sendAndAssertResponse(post(AsynchronousResources.PATH + "/json-buf-sglin-sglout", "{\"key\":\"val3\"}",
-                APPLICATION_JSON), OK, APPLICATION_JSON,
-                jsonEquals("{\"KEY\":\"VAL3\",\"f00\":\"bar6\"}"), String::length);
+            sendAndAssertResponse(post(AsynchronousResources.PATH + "/json-buf-sglin-sglout", "{\"key\":\"val3\"}",
+                    APPLICATION_JSON), OK, APPLICATION_JSON,
+                    jsonEquals("{\"KEY\":\"VAL3\",\"f00\":\"bar6\"}"), String::length);
+        });
     }
 
     @Test
     public void bufferResources() {
-        sendAndAssertResponse(get(SynchronousResources.PATH + "/text-buffer"), OK, TEXT_PLAIN, "D0NE");
+        runTwiceToEnsureEndpointCache(() -> {
 
-        final StreamingHttpResponse res =
-                sendAndAssertResponse(withHeader(get(SynchronousResources.PATH + "/text-buffer-response"), "hdr",
-                        "bar"), NON_AUTHORITATIVE_INFORMATION, TEXT_PLAIN, "D0NE");
-        assertThat(res.headers().get("X-Test"), is(newAsciiString("bar")));
+            sendAndAssertResponse(get(SynchronousResources.PATH + "/text-buffer"), OK, TEXT_PLAIN, "D0NE");
 
-        sendAndAssertResponse(post(SynchronousResources.PATH + "/text-buffer", "foo", TEXT_PLAIN), OK, TEXT_PLAIN,
-                "G0T: F00");
+            final StreamingHttpResponse res =
+                    sendAndAssertResponse(withHeader(get(SynchronousResources.PATH + "/text-buffer-response"), "hdr",
+                            "bar"), NON_AUTHORITATIVE_INFORMATION, TEXT_PLAIN, "D0NE");
+            assertThat(res.headers().get("X-Test"), is(newAsciiString("bar")));
 
-        sendAndAssertResponse(withHeader(post(SynchronousResources.PATH + "/text-buffer-response", "foo", TEXT_PLAIN),
-                "hdr", "bar"), ACCEPTED, TEXT_PLAIN, "G0T: F00");
+            sendAndAssertResponse(post(SynchronousResources.PATH + "/text-buffer", "foo", TEXT_PLAIN), OK, TEXT_PLAIN,
+                    "G0T: F00");
 
-        sendAndAssertResponse(post(SynchronousResources.PATH + "/json-buf-pubin-pubout", "{\"key\":\"foo2\"}",
-                APPLICATION_JSON), OK, APPLICATION_JSON, jsonEquals("{\"KEY\":\"F002\"}"), __ -> null);
+            sendAndAssertResponse(withHeader(post(SynchronousResources.PATH + "/text-buffer-response", "foo",
+                    TEXT_PLAIN), "hdr", "bar"), ACCEPTED, TEXT_PLAIN, "G0T: F00");
 
-        sendAndAssertResponse(post(AsynchronousResources.PATH + "/json-buf-sglin-sglout?fail=true",
-                "{\"key\":\"val5\"}", APPLICATION_JSON), INTERNAL_SERVER_ERROR, null, "");
+            sendAndAssertResponse(post(SynchronousResources.PATH + "/json-buf-pubin-pubout",
+                    "{\"key\":\"foo2\"}", APPLICATION_JSON), OK, APPLICATION_JSON,
+                    jsonEquals("{\"KEY\":\"F002\"}"), __ -> null);
+
+            sendAndAssertResponse(post(AsynchronousResources.PATH + "/json-buf-sglin-sglout?fail=true",
+                    "{\"key\":\"val5\"}", APPLICATION_JSON), INTERNAL_SERVER_ERROR, null, "");
+        });
     }
 
     public static class UpperCaseInputStream extends FilterInputStream {

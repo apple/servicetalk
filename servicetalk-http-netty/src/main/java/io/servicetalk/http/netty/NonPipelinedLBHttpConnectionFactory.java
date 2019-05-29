@@ -29,7 +29,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.client.api.internal.ReservableRequestConcurrencyControllers.newSingleController;
 import static io.servicetalk.http.api.HttpEventKey.MAX_CONCURRENCY;
-import static io.servicetalk.http.netty.DefaultHttpConnectionBuilder.buildStreaming;
+import static io.servicetalk.http.netty.StreamingConnectionFactory.buildStreaming;
 
 final class NonPipelinedLBHttpConnectionFactory<ResolvedAddress>
         extends AbstractLBHttpConnectionFactory<ResolvedAddress> {
