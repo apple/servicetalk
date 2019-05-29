@@ -5,4 +5,4 @@ It is a replacement for `jersey-media-json-jackson` and allows avoiding the inpu
 with out-of-the-box body readers and also allows accepting/returning `Single<Pojo>` and `Publisher<Pojo>`
 from resource methods.
 
-See the link:https://io.servicetalk/[ServiceTalk docs] for more information.
+See the link:https://servicetalk.io/[ServiceTalk docs] for more information.
