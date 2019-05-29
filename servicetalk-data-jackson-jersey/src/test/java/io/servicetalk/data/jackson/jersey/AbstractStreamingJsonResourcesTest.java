@@ -52,12 +52,16 @@ public abstract class AbstractStreamingJsonResourcesTest extends AbstractJerseyS
 
     @Test
     public void postJsonMap() {
-        testPostJsonMap("/map", OK);
+        runTwiceToEnsureEndpointCache(() -> {
+            testPostJsonMap("/map", OK);
+        });
     }
 
     @Test
     public void postJsonMapResponse() {
-        testPostJsonMap("/map-response", ACCEPTED);
+        runTwiceToEnsureEndpointCache(() -> {
+            testPostJsonMap("/map-response", ACCEPTED);
+        });
     }
 
     private void testPostJsonMap(final String path, final HttpResponseStatus expectedStatus) {
@@ -67,12 +71,16 @@ public abstract class AbstractStreamingJsonResourcesTest extends AbstractJerseyS
 
     @Test
     public void postJsonMapFailure() {
-        testPostJsonMapFailure("/map");
+        runTwiceToEnsureEndpointCache(() -> {
+            testPostJsonMapFailure("/map");
+        });
     }
 
     @Test
     public void postJsonMapResponseFailure() {
-        testPostJsonMapFailure("/map-response");
+        runTwiceToEnsureEndpointCache(() -> {
+            testPostJsonMapFailure("/map-response");
+        });
     }
 
     private void testPostJsonMapFailure(final String path) {
@@ -82,12 +90,16 @@ public abstract class AbstractStreamingJsonResourcesTest extends AbstractJerseyS
 
     @Test
     public void postBrokenJsonMap() {
-        testPostBrokenJsonMap("/map");
+        runTwiceToEnsureEndpointCache(() -> {
+            testPostBrokenJsonMap("/map");
+        });
     }
 
     @Test
     public void postBrokenJsonMapResponse() {
-        testPostBrokenJsonMap("/map-response");
+        runTwiceToEnsureEndpointCache(() -> {
+            testPostBrokenJsonMap("/map-response");
+        });
     }
 
     private void testPostBrokenJsonMap(final String path) {
@@ -96,12 +108,16 @@ public abstract class AbstractStreamingJsonResourcesTest extends AbstractJerseyS
 
     @Test
     public void postJsonPojo() {
-        testPostJsonPojo("/pojo", OK);
+        runTwiceToEnsureEndpointCache(() -> {
+            testPostJsonPojo("/pojo", OK);
+        });
     }
 
     @Test
     public void postJsonPojoResponse() {
-        testPostJsonPojo("/pojo-response", ACCEPTED);
+        runTwiceToEnsureEndpointCache(() -> {
+            testPostJsonPojo("/pojo-response", ACCEPTED);
+        });
     }
 
     private void testPostJsonPojo(final String path, final HttpResponseStatus expectedStatus) {
@@ -111,12 +127,16 @@ public abstract class AbstractStreamingJsonResourcesTest extends AbstractJerseyS
 
     @Test
     public void postJsonPojoFailure() {
-        testPostJsonPojoFailure("/pojo");
+        runTwiceToEnsureEndpointCache(() -> {
+            testPostJsonPojoFailure("/pojo");
+        });
     }
 
     @Test
     public void postJsonPojoResponseFailure() {
-        testPostJsonPojoFailure("/pojo-response");
+        runTwiceToEnsureEndpointCache(() -> {
+            testPostJsonPojoFailure("/pojo-response");
+        });
     }
 
     private void testPostJsonPojoFailure(final String path) {
@@ -126,12 +146,16 @@ public abstract class AbstractStreamingJsonResourcesTest extends AbstractJerseyS
 
     @Test
     public void postBrokenJsonPojo() {
-        testPostBrokenJsonPojo("/pojo");
+        runTwiceToEnsureEndpointCache(() -> {
+            testPostBrokenJsonPojo("/pojo");
+        });
     }
 
     @Test
     public void postBrokenJsonPojoResponse() {
-        testPostBrokenJsonPojo("/pojo-response");
+        runTwiceToEnsureEndpointCache(() -> {
+            testPostBrokenJsonPojo("/pojo-response");
+        });
     }
 
     private void testPostBrokenJsonPojo(final String path) {
@@ -140,12 +164,16 @@ public abstract class AbstractStreamingJsonResourcesTest extends AbstractJerseyS
 
     @Test
     public void postInvalidJsonPojo() {
-        testPostInvalidJsonPojo("/pojo");
+        runTwiceToEnsureEndpointCache(() -> {
+            testPostInvalidJsonPojo("/pojo");
+        });
     }
 
     @Test
     public void postInvalidJsonPojoResponse() {
-        testPostInvalidJsonPojo("/pojo-response");
+        runTwiceToEnsureEndpointCache(() -> {
+            testPostInvalidJsonPojo("/pojo-response");
+        });
     }
 
     private void testPostInvalidJsonPojo(final String path) {

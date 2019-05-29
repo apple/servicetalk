@@ -27,6 +27,7 @@ import io.servicetalk.concurrent.api.TestExecutor;
 import io.servicetalk.concurrent.api.TestSingle;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
@@ -53,7 +54,12 @@ public class TimeoutCompletableTest {
     public final ExecutorRule<TestExecutor> executorRule = ExecutorRule.withTestExecutor();
 
     private final TestSingle<Integer> source = new TestSingle<>();
-    private final TestExecutor testExecutor = executorRule.executor();
+    private TestExecutor testExecutor;
+
+    @Before
+    public void setup() {
+        testExecutor = executorRule.executor();
+    }
 
     @Test
     public void executorScheduleThrows() {

@@ -1,0 +1,5 @@
+name: servicetalk-examples
+title: Examples
+version: 0.15.0-SNAPSHOT
+nav:
+- modules/ROOT/nav.adoc

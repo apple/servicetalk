@@ -19,6 +19,8 @@ import io.servicetalk.concurrent.api.AsyncCloseables;
 import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.concurrent.api.DefaultThreadFactory;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
+import io.servicetalk.http.api.ReservedStreamingHttpConnection;
+import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
@@ -30,7 +32,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
 
-import java.net.SocketAddress;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ExecutionException;
@@ -44,6 +45,7 @@ import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpResponseStatus.BAD_REQUEST;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
+import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static io.servicetalk.transport.netty.internal.ExecutionContextRule.cached;
 import static java.lang.Thread.NORM_PRIORITY;
 import static org.junit.Assert.assertEquals;
@@ -92,12 +94,15 @@ public class HttpServerMultipleRequestsTest {
                 final int finalI = i;
                 executorService.execute(() -> {
                     try {
-                        StreamingHttpConnection connection = compositeCloseable.append(
-                                new DefaultHttpConnectionBuilder<SocketAddress>()
+                        StreamingHttpClient client = compositeCloseable.append(
+                                HttpClients.forResolvedAddress(serverHostAndPort(ctx))
                                         .maxPipelinedRequests(numRequests)
                                         .ioExecutor(clientExecution.ioExecutor())
                                         .executionStrategy(defaultStrategy(clientExecution.executor()))
-                                        .buildStreaming(ctx.listenAddress()).toFuture().get());
+                                        .buildStreaming());
+                        ReservedStreamingHttpConnection connection = client.reserveConnection(client.get("/"))
+                                .toFuture().get();
+                        compositeCloseable.append(connection);
                         barrier.await();
                         for (int x = 0; x < numRequests; ++x) {
                             makeClientRequestWithId(connection, "thread=" + finalI + " request=" + x);

@@ -444,7 +444,7 @@ public abstract class Single<T> {
      * all elements from {@code next} {@link Publisher}.
      */
     public final Publisher<T> concat(Publisher<? extends T> next) {
-        return toPublisher().concat(next);
+        return new SingleConcatWithPublisher<>(this, next, executor);
     }
 
     /**

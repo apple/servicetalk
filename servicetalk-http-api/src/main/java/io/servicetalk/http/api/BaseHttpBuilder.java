@@ -176,7 +176,6 @@ abstract class BaseHttpBuilder<ResolvedAddress> {
      * @return {@code this}
      * @see SingleAddressHttpClientBuilder#enableHostHeaderFallback(CharSequence)
      * @see MultiAddressHttpClientBuilder#enableHostHeaderFallback(Function)
-     * @see HttpConnectionBuilder#enableHostHeaderFallback(CharSequence)
      */
     public abstract BaseHttpBuilder<ResolvedAddress> disableHostHeaderFallback();
 

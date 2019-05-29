@@ -431,10 +431,11 @@ public class DefaultNettyConnectionTest {
         toSource(conn.read()).subscribe(subscriber);
         writeListener.verifyFailure(exCaptor); // ClosedChannelException was translated
 
+        exCaptor.getValue().printStackTrace();
         // Exception should be of type CloseEventObservedException
-        assertThat(exCaptor.getValue(), instanceOf(ClosedChannelException.class));
+        assertThat(exCaptor.getValue(), instanceOf(RetryableClosureException.class));
         assertThat(exCaptor.getValue().getCause(), instanceOf(ClosedChannelException.class));
-        assertThat(exCaptor.getValue().getMessage(), equalTo(
+        assertThat(exCaptor.getValue().getCause().getMessage(), equalTo(
                 "CHANNEL_CLOSED_OUTBOUND(The transport backing this connection has been shutdown (write)) " +
                         "[id: 0xembedded, L:embedded ! R:embedded]"));
     }

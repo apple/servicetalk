@@ -29,6 +29,10 @@
     <Class name="io.servicetalk.http.netty.TestServiceStreaming"/>
     <Bug pattern="RV_RETURN_VALUE_IGNORED_NO_SIDE_EFFECT"/>
   </Match>
+  <Match>
+    <Class name="io.servicetalk.http.netty.ClientClosureRaceTest"/>
+    <Bug pattern="RV_RETURN_VALUE_IGNORED_BAD_PRACTICE"/>
+  </Match>
   <!-- false positive in Java 11, see https://github.com/spotbugs/spotbugs/issues/756 -->
   <Match>
     <Class name="io.servicetalk.http.netty.AbstractHttpServiceAsyncContextTest"/>

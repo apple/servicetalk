@@ -31,6 +31,7 @@ import io.servicetalk.transport.api.DefaultExecutionContext;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.ExecutionStrategy;
 import io.servicetalk.transport.netty.internal.CloseHandler.CloseEvent;
+import io.servicetalk.transport.netty.internal.WriteStreamSubscriber.AbortedFirstWrite;
 
 import io.netty.channel.AbstractChannel;
 import io.netty.channel.Channel;
@@ -269,7 +270,19 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
     }
 
     private Throwable enrichError(final Throwable t) {
-        Throwable throwable = closeReason != null ? closeReason.wrapError(t, channel()) : t;
+        final Throwable throwable;
+        if (t instanceof AbortedFirstWrite) {
+            final Throwable cause = t.getCause();
+            if (closeReason != null) {
+                throwable = new RetryableClosureException(closeReason.wrapError(cause, channel()));
+            } else {
+                throwable = cause;
+            }
+        } else if (t instanceof RetryableClosureException) {
+            throwable = t;
+        } else {
+            throwable = closeReason != null ? closeReason.wrapError(t, channel()) : t;
+        }
         transportError.onSuccess(throwable);
         return throwable;
     }

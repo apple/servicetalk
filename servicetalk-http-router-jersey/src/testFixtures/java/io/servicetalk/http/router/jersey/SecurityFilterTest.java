@@ -42,6 +42,9 @@ public class SecurityFilterTest extends AbstractJerseyStreamingHttpServiceTest {
     public static class TestSecurityFilter implements ContainerRequestFilter {
         @Override
         public void filter(final ContainerRequestContext requestCtx) {
+            if ("true".equals(requestCtx.getUriInfo().getQueryParameters().getFirst("none"))) {
+                return;
+            }
             requestCtx.setSecurityContext(new SecurityContext() {
                 @Override
                 public Principal getUserPrincipal() {
@@ -83,8 +86,14 @@ public class SecurityFilterTest extends AbstractJerseyStreamingHttpServiceTest {
 
     @Test
     public void defaultSecurityContext() {
-        sendAndAssertResponse(get(SynchronousResources.PATH + "/security-context"), OK, APPLICATION_JSON,
-                jsonEquals("{\"authenticationScheme\":\"bar\",\"secure\":true,\"userPrincipal\":{\"name\":\"foo\"}}"),
-                getJsonResponseContentLengthExtractor());
+        runTwiceToEnsureEndpointCache(() -> {
+            sendAndAssertResponse(get(SynchronousResources.PATH + "/security-context"), OK, APPLICATION_JSON,
+                    jsonEquals("{\"authenticationScheme\":\"bar\",\"secure\":true," +
+                            "\"userPrincipal\":{\"name\":\"foo\"}}"), getJsonResponseContentLengthExtractor());
+
+            sendAndAssertResponse(get(SynchronousResources.PATH + "/security-context?none=true"), OK, APPLICATION_JSON,
+                    jsonEquals("{\"authenticationScheme\":null,\"secure\":false," +
+                            "\"userPrincipal\":null}"), getJsonResponseContentLengthExtractor());
+        });
     }
 }

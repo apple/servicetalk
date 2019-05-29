@@ -15,6 +15,8 @@
  */
 package io.servicetalk.client.api;
 
+import io.servicetalk.transport.api.RetryableException;
+
 /**
  * Thrown when no host is available but at least one is required.
  */

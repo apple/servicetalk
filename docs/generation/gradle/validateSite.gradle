@@ -1,0 +1,204 @@
+// links that are allowed to be http rather than https
+def httpLinks = [
+    //"http://somedomain.tld/someoptionalpath"
+]
+
+// links to exclude from validation (for example because they require authentication)
+def excludedLinks = [
+    //"http://somedomain.tld/someoptionalpath"
+]
+
+configurations {
+  nuValidator
+}
+
+dependencies {
+  nuValidator("nu.validator:validator:$nuValidatorVersion") {
+    exclude group: "org.eclipse.jetty"
+    exclude group: "javax.servlet"
+    exclude group: "commons-fileupload"
+  }
+}
+
+for (location in ["local", "remote"]) {
+  def capitalizedLocation = location.capitalize()
+  def buildSiteTask = "build${capitalizedLocation}Site"
+  def validateSiteTask = "validate${capitalizedLocation}Site"
+  def validateHtmlFilesTask = "validate${capitalizedLocation}HtmlFiles"
+  def configureValidateHtmlFilesTask = "configureValidate${capitalizedLocation}HtmlFiles"
+  def validateHtmlLinksTask = "validate${capitalizedLocation}HtmlLinks"
+
+  def htmlFiles = fileTree("$buildDir/$location").matching { include "**/*.html" }
+
+  task(validateSiteTask) {
+    dependsOn validateHtmlFilesTask, validateHtmlLinksTask
+  }
+
+  task(configureValidateHtmlFilesTask) {
+    doLast {
+      tasks[validateHtmlFilesTask].args htmlFiles
+    }
+  }
+
+  task(validateHtmlFilesTask, type: JavaExec) {
+    dependsOn(configureValidateHtmlFilesTask, buildSiteTask)
+
+    def outputFile = file("$buildDir/report/validateHtmlFiles/result.txt")
+
+    inputs.files htmlFiles
+    outputs.file outputFile
+
+    classpath = configurations.nuValidator
+    main = "nu.validator.client.SimpleCommandLineValidator"
+    args "--skip-non-html" // --also-check-css doesn't work (still checks css as html), so limit to html files
+    args "--filterpattern", '(.*)Consider adding “lang=(.*)'
+    args "--filterpattern", '(.*)Consider adding a “lang” attribute(.*)'
+
+    // for debugging
+    // args "--verbose"
+
+    // write a basic result file s.t. gradle can consider task up-to-date
+    // writing a result file in case validation fails is not easily possible with JavaExec, but also not strictly necessary
+    doFirst { delete(outputFile) }
+    doLast { outputFile.text = "Success." }
+  }
+
+  task(validateHtmlLinksTask) {
+    dependsOn(buildSiteTask)
+
+    def outputDir = file("$buildDir/report/validateHtmlLinks")
+
+    inputs.files htmlFiles
+    outputs.dir outputDir
+
+    doLast {
+      def executor = java.util.concurrent.Executors.newFixedThreadPool(10)
+      def errors = new java.util.concurrent.ConcurrentLinkedQueue()
+      def seenLinks = new HashSet()
+
+      try {
+        // only validate links of latest version because we can't fix links of older versions
+        for (htmlFile in htmlFiles) {
+          if (htmlFile.toString().endsWith("404.html")) {
+            continue;
+          }
+          def htmlText = htmlFile.getText("UTF-8")
+          def unresolvedXrefs = htmlText.findAll(/xref:\S*/)
+          for (xref in unresolvedXrefs) {
+            errors.add("$htmlFile: Unresolved Antora xref: $xref")
+          }
+          def unresolvedTemplateExprs = htmlText.findAll(/\{\{.*\}\}/)
+          for (expr in unresolvedTemplateExprs) {
+            errors.add("$htmlFile: Unresolved Handlebars expression: $expr")
+          }
+          def htmlDoc = Jsoup.parse(htmlText, "UTF-8")
+          def links = htmlDoc.select("a")
+          for (link in links) {
+            def href = link.attributes().get("href")
+
+            if (excludedLinks.any { href.startsWith(it) }) {
+              continue
+            }
+
+            // check each link just once
+            if (!seenLinks.add(href)) {
+              continue
+            }
+
+            def uri
+            try {
+              uri = new URI(href)
+            } catch (URISyntaxException e) {
+              errors.add("$htmlFile: Invalid link URL: $link (Error message: $e.message)")
+              continue
+            }
+            if (uri.scheme == null) {
+              if (href == "" || href == "#") {
+                def id = link.attributes().get("id")
+                if (!id) {
+                  errors.add("$htmlFile: Empty href in link: $link")
+                }
+              } else if (uri.path != null && uri.path != "") {
+                def targetUri
+                if (!uri.fragment || uri.fragment.isEmpty()) {
+                  targetUri = htmlFile.toURI().resolve(href)
+                } else {
+                  def fragmentBegin = href.indexOf('#')
+                  targetUri = htmlFile.toURI().resolve(href.substring(0, fragmentBegin))
+                }
+                def file = new File(targetUri)
+                if (!file.exists()) {
+                  errors.add("$htmlFile: Dangling link: $link")
+                }
+              } else {
+                assert uri.fragment != null
+                def linkTarget = htmlDoc.getElementById(uri.fragment)
+                if (linkTarget == null) {
+                  errors.add("$htmlFile: Dangling link: $link")
+                }
+              }
+            } else if (uri.scheme == "mailto") {
+              // not validated
+            } else if (uri.scheme == "https" || uri.scheme == "http" && httpLinks.any {
+              uri.toString().startsWith(it)
+            }) {
+              // capture values because variables will change while executor is running
+              final submittedUri = uri
+              final submittedHref = href
+              final submittedHtmlFile = htmlFile
+
+              executor.submit {
+                // project.debug() can't be used from non-gradle thread (drops subsequent output)
+                // so stick to println() for debugging
+                // println("Validating external link `$submittedHref`.")
+                def conn = submittedUri.toURL().openConnection()
+                conn.requestMethod = "HEAD"
+                conn.instanceFollowRedirects = true
+                try {
+                  conn.connect()
+                  def responseCode = conn.responseCode
+                  if (responseCode != 200 &&
+                      responseCode != 403/* github auth */ &&
+                      responseCode != 429 /* github rate limiting */) {
+                    errors.add("$submittedHtmlFile: Unexpected HTTP status code `$responseCode` for external link `$submittedHref`.")
+                  }
+                } catch (IOException e) {
+                  println("Ignoring I/O error for external link `$submittedHref`. (Error message: $e.message)")
+                } finally {
+                  conn.disconnect()
+                }
+              }
+            } else if (uri.scheme == "file" && !isReleaseBuild || link.text() == "Edit this Page") {
+              // 'file:' links are allowed in dev builds, and locally built (for testing) release builds may still
+              // reference 'file:' links in the 'Edit this Page' links.
+              def file
+              if (!uri.fragment || uri.fragment.isEmpty()) {
+                file = new File(uri)
+              } else {
+                def fragmentBegin = href.indexOf('#')
+                file = new File(new URI(href.substring(0, fragmentBegin)))
+              }
+              if (!file.exists() && link.text() != "Edit this Page") {
+                errors.add("$htmlFile: Dangling link: $link")
+              }
+            } else {
+              errors.add("$htmlFile: Unexpected URL protocol `$uri.scheme` in: $link")
+            }
+          }
+        }
+      } catch (Exception e) {
+        e.printStackTrace()
+      } finally {
+        executor.shutdown()
+        executor.awaitTermination(1, java.util.concurrent.TimeUnit.MINUTES)
+      }
+
+      if (!errors.isEmpty()) {
+        throw new GradleException(errors.join("\n"))
+      } else {
+        // gradle up-to-date check needs some file output
+        outputDir.mkdirs()
+      }
+    }
+  }
+}

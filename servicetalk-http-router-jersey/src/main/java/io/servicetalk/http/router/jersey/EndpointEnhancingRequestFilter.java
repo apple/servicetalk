@@ -16,6 +16,7 @@
 package io.servicetalk.http.router.jersey;
 
 import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
@@ -42,6 +43,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ConcurrentHashMap;
 import javax.annotation.Nullable;
 import javax.annotation.Priority;
 import javax.inject.Provider;
@@ -51,10 +53,12 @@ import javax.ws.rs.container.ResourceInfo;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 
+import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.HttpExecutionStrategies.difference;
+import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.http.router.jersey.RouteExecutionStrategyUtils.getRouteExecutionStrategy;
 import static io.servicetalk.http.router.jersey.internal.RequestProperties.getRequestBufferPublisherInputStream;
 import static io.servicetalk.http.router.jersey.internal.RequestProperties.setRequestCancellable;
@@ -76,6 +80,9 @@ import static javax.ws.rs.core.Response.noContent;
 // on Endpoint instances of type ResourceMethodInvoker to get the response filters.
 @Priority(MAX_VALUE)
 final class EndpointEnhancingRequestFilter implements ContainerRequestFilter {
+
+    private final EnhancedEndpointCache enhancedEndpointCache = new EnhancedEndpointCache();
+
     @Context
     private Provider<Ref<ConnectionContext>> ctxRefProvider;
 
@@ -87,67 +94,117 @@ final class EndpointEnhancingRequestFilter implements ContainerRequestFilter {
 
     @Override
     public void filter(final ContainerRequestContext requestCtx) {
-        final UriRoutingContext urc = (UriRoutingContext) requestCtx.getUriInfo();
-        final Class<?> resourceClass = urc.getResourceClass();
-        final Method resourceMethod = urc.getResourceMethod();
-        if (resourceClass == null || resourceMethod == null) {
-            return;
+        enhancedEndpointCache.enhance(requestScope, ctxRefProvider, routeStrategiesConfigProvider,
+                (UriRoutingContext) requestCtx.getUriInfo());
+    }
+
+    private interface EnhancedEndpoint extends Endpoint, ResourceInfo { }
+
+    private static final class EnhancedEndpointCache {
+
+        private static final EnhancedEndpoint NOOP = new NoopEnhancedEndpoint();
+
+        private final ConcurrentHashMap<Method, EnhancedEndpoint> enhancements = new ConcurrentHashMap<>();
+
+        void enhance(final RequestScope requestScope,
+                     final Provider<Ref<ConnectionContext>> ctxRefProvider,
+                     final Provider<RouteStrategiesConfig> routeStrategiesConfigProvider,
+                     final UriRoutingContext urc) {
+            if (urc.getResourceMethod() == null) {
+                return;
+            }
+            EnhancedEndpoint enhanced = enhancements.get(urc.getResourceMethod());
+            if (enhanced == null) {
+                // attempt get(..) first to avoid creating a capturing lambda per request in steady state
+                enhanced = enhancements.computeIfAbsent(urc.getResourceMethod(),
+                        resourceMethod -> defineEndpoint(urc.getEndpoint(), requestScope, ctxRefProvider,
+                                routeStrategiesConfigProvider, urc.getResourceClass(), resourceMethod));
+            }
+            if (enhanced != NOOP) {
+                urc.setEndpoint(enhanced);
+            }
         }
 
-        final HttpExecutionStrategy routeExecutionStrategy =
-                getRouteExecutionStrategy(resourceClass, resourceMethod, routeStrategiesConfigProvider.get());
+        private static EnhancedEndpoint defineEndpoint(final Endpoint delegate,
+                                                       final RequestScope requestScope,
+                                                       final Provider<Ref<ConnectionContext>> ctxRefProvider,
+                                                       final Provider<RouteStrategiesConfig> routeStratConfigProvider,
+                                                       final Class<?> resourceClass,
+                                                       final Method resourceMethod) {
+            final HttpExecutionStrategy routeExecutionStrategy =
+                    getRouteExecutionStrategy(resourceClass, resourceMethod, routeStratConfigProvider.get());
 
-        final Class<?> returnType = resourceMethod.getReturnType();
-        if (Single.class.isAssignableFrom(returnType)) {
-            urc.setEndpoint(new SingleAwareEndpoint(urc, requestScope, ctxRefProvider, routeExecutionStrategy));
-        } else if (Completable.class.isAssignableFrom(returnType)) {
-            urc.setEndpoint(new CompletableAwareEndpoint(urc, requestScope, ctxRefProvider, routeExecutionStrategy));
-        } else if (routeExecutionStrategy != null) {
-            urc.setEndpoint(new ExecutorOffloadingEndpoint(urc, requestScope, ctxRefProvider, routeExecutionStrategy));
+            final Class<?> returnType = resourceMethod.getReturnType();
+            if (Single.class.isAssignableFrom(returnType)) {
+                return new SingleAwareEndpoint(
+                        delegate, resourceClass, resourceMethod, requestScope, ctxRefProvider, routeExecutionStrategy);
+            }
+            if (Completable.class.isAssignableFrom(returnType)) {
+                return new CompletableAwareEndpoint(
+                        delegate, resourceClass, resourceMethod, requestScope, ctxRefProvider, routeExecutionStrategy);
+            }
+            if (routeExecutionStrategy != null && (routeExecutionStrategy != noOffloadsStrategy()
+                    // Skip enhancement when user requests no offloading when the current executor == immediate
+                    || ctxRefProvider.get().get().executionContext().executionStrategy().executor() != immediate())) {
+                return new ExecutorOffloadingEndpoint(
+                        delegate, resourceClass, resourceMethod, requestScope, ctxRefProvider, routeExecutionStrategy);
+            }
+            return NOOP;
         }
     }
 
-    private abstract static class AbstractWrappedEndpoint implements Endpoint, ResourceInfo {
-        private final UriRoutingContext uriRoutingContext;
-        private final Endpoint originalEndpoint;
+    private abstract static class AbstractWrappedEndpoint implements EnhancedEndpoint {
+
+        private final Endpoint delegate;
+        private final Class<?> resourceClass;
+        private final Method resourceMethod;
         private final RequestScope requestScope;
         @Nullable
         private final HttpExecutionStrategy routeExecutionStrategy;
         @Nullable
-        private final Ref<ConnectionContext> ctxRef;
+        private final HttpExecutionStrategy effectiveRouteStrategy;
         @Nullable
-        private final ConnectionContext currentConnectionContext;
+        private final ExecutionStrategy executionStrategy;
+        @Nullable
+        private final Executor executor;
+        @Nullable
+        private final Provider<Ref<ConnectionContext>> ctxRefProvider;
 
-        protected AbstractWrappedEndpoint(final UriRoutingContext uriRoutingContext,
-                                          final RequestScope requestScope,
-                                          final Provider<Ref<ConnectionContext>> ctxRefProvider,
-                                          @Nullable final HttpExecutionStrategy routeExecutionStrategy) {
-            this.uriRoutingContext = uriRoutingContext;
-            this.originalEndpoint = uriRoutingContext.getEndpoint();
+        private AbstractWrappedEndpoint(
+                final Endpoint delegate,
+                final Class<?> resourceClass,
+                final Method resourceMethod,
+                final RequestScope requestScope,
+                @Nullable
+                final Provider<Ref<ConnectionContext>> ctxRefProvider,
+                @Nullable final HttpExecutionStrategy routeExecutionStrategy) {
+            this.delegate = delegate;
+            this.resourceClass = resourceClass;
+            this.resourceMethod = resourceMethod;
             this.requestScope = requestScope;
+            this.ctxRefProvider = ctxRefProvider;
             this.routeExecutionStrategy = routeExecutionStrategy;
-
             if (routeExecutionStrategy != null) {
-                ctxRef = ctxRefProvider.get();
-                currentConnectionContext = ctxRef.get();
+                final ExecutionContext executionContext = ctxRefProvider.get().get().executionContext();
+                // ExecutionStrategy and Executor shared for all routes in JerseyRouter
+                executionStrategy = executionContext.executionStrategy();
+                executor = executionContext.executor();
+                effectiveRouteStrategy = calculateEffectiveStrategy(executionStrategy, executor);
             } else {
-                ctxRef = null;
-                currentConnectionContext = null;
+                effectiveRouteStrategy = null;
+                executionStrategy = null;
+                executor = null;
             }
         }
 
-        @Nullable
         @Override
         public Class<?> getResourceClass() {
-            return originalEndpoint instanceof ResourceInfo ?
-                    ((ResourceInfo) originalEndpoint).getResourceClass() : null;
+            return resourceClass;
         }
 
-        @Nullable
         @Override
         public Method getResourceMethod() {
-            return originalEndpoint instanceof ResourceInfo ?
-                    ((ResourceInfo) originalEndpoint).getResourceMethod() : null;
+            return resourceMethod;
         }
 
         @Nullable
@@ -162,21 +219,44 @@ final class EndpointEnhancingRequestFilter implements ContainerRequestFilter {
                 throw new IllegalStateException("Failed to suspend request processing");
             }
 
-            final HttpExecutionStrategy effectiveRouteStrategy = calculateEffectiveStrategy();
-            final Single<Response> objectSingle = callOriginalEndpoint(requestProcessingCtx, effectiveRouteStrategy)
+            final Single<Response> responseSingle = callOriginalEndpoint(requestProcessingCtx, effectiveRouteStrategy)
                     .flatMap(this::handleContainerResponse)
-                    .beforeFinally(() -> uriRoutingContext.setEndpoint(originalEndpoint))
-                    .afterOnError(asyncContext::resume)
-                    .afterCancel(asyncContext::cancel);
+                    .liftSync(subscriber -> new SingleSource.Subscriber<Response>() {
+                        @Override
+                        public void onSubscribe(final Cancellable cancellable) {
+                            subscriber.onSubscribe(() -> {
+                                cancellable.cancel();
+                                restoreEndPoint();
+                                asyncContext.cancel();
+                            });
+                        }
+
+                        @Override
+                        public void onSuccess(@Nullable final Response result) {
+                            restoreEndPoint();
+                            subscriber.onSuccess(result);
+                        }
+
+                        @Override
+                        public void onError(final Throwable t) {
+                            restoreEndPoint();
+                            subscriber.onError(t);
+                            asyncContext.resume(t);
+                        }
+
+                        private void restoreEndPoint() {
+                            requestProcessingCtx.routingContext().setEndpoint(delegate);
+                        }
+                    });
 
             final Cancellable cancellable;
             if (effectiveRouteStrategy != null) {
-                assert currentConnectionContext != null : "currentConnectionContext can't be null";
+                assert executor != null;
                 cancellable = effectiveRouteStrategy
-                        .offloadSend(currentConnectionContext.executionContext().executor(), objectSingle)
+                        .offloadSend(executor, responseSingle)
                         .subscribe(asyncContext::resume);
             } else {
-                cancellable = objectSingle.subscribe(asyncContext::resume);
+                cancellable = responseSingle.subscribe(asyncContext::resume);
             }
             setRequestCancellable(cancellable, requestProcessingCtx.request());
 
@@ -185,15 +265,13 @@ final class EndpointEnhancingRequestFilter implements ContainerRequestFilter {
         }
 
         @Nullable
-        private HttpExecutionStrategy calculateEffectiveStrategy() {
-            if (routeExecutionStrategy != null && currentConnectionContext != null) {
-                ExecutionStrategy connectionStrategy = currentConnectionContext.executionContext().executionStrategy();
-                if (connectionStrategy instanceof HttpExecutionStrategy) {
-                    return difference(currentConnectionContext.executionContext().executor(),
-                            ((HttpExecutionStrategy) connectionStrategy), routeExecutionStrategy);
-                }
+        private HttpExecutionStrategy calculateEffectiveStrategy(@Nullable final ExecutionStrategy executionStrategy,
+                                                                 @Nullable final Executor executor) {
+            assert routeExecutionStrategy != null;
+            if (executor != null && executionStrategy instanceof HttpExecutionStrategy) {
+                return difference(executor, ((HttpExecutionStrategy) executionStrategy), routeExecutionStrategy);
             }
-            return routeExecutionStrategy;
+            return null;
         }
 
         private Single<ContainerResponse> callOriginalEndpoint(
@@ -202,32 +280,32 @@ final class EndpointEnhancingRequestFilter implements ContainerRequestFilter {
             if (effectiveRouteStrategy == null) {
                 return defer(() -> {
                     try {
-                        return succeeded(originalEndpoint.apply(requestProcessingCtx));
+                        return succeeded(delegate.apply(requestProcessingCtx));
                     } catch (final Throwable t) {
                         return failed(t);
                     }
                 });
             }
-
             final RequestContext requestContext = requestScope.referenceCurrent();
             final ContainerRequest request = requestProcessingCtx.request();
+            assert executor != null;
+            assert ctxRefProvider != null;
+            final Ref<ConnectionContext> ctxRef = ctxRefProvider.get();
+            return effectiveRouteStrategy.invokeService(executor, actualExecutor ->
+                    requestScope.runInScope(requestContext, () -> {
+                        final ConnectionContext origConnectionContext = ctxRef.get();
+                        if (!(origConnectionContext instanceof ExecutorOverrideConnectionContext)) {
+                            ConnectionContext overrideConnectionContext = new ExecutorOverrideConnectionContext(
+                                    origConnectionContext, actualExecutor);
+                            ctxRef.set(overrideConnectionContext);
+                        }
+                        getRequestBufferPublisherInputStream(request)
+                                .offloadSourcePublisher(effectiveRouteStrategy, actualExecutor);
+                        setResponseExecutionStrategy(effectiveRouteStrategy, request);
 
-            assert currentConnectionContext != null : "currentConnectionContext can't be null";
-            final ExecutionContext currentExecutionContext = currentConnectionContext.executionContext();
-
-            return effectiveRouteStrategy.invokeService(currentExecutionContext.executor(),
-                    actualExecutor -> {
-                        assert ctxRef != null : "ctxRef can't be null";
-                        ctxRef.set(new ExecutorOverrideConnectionContext(currentConnectionContext, actualExecutor));
-                        return requestScope.runInScope(requestContext, () -> {
-                            getRequestBufferPublisherInputStream(request)
-                                    .offloadSourcePublisher(effectiveRouteStrategy,
-                                            currentExecutionContext.executor());
-                            setResponseExecutionStrategy(effectiveRouteStrategy, request);
-
-                            return originalEndpoint.apply(requestProcessingCtx);
-                        });
-                    });
+                        return delegate.apply(requestProcessingCtx);
+                    }))
+                    .beforeFinally(requestContext::release);
         }
 
         protected Single<Response> handleContainerResponse(final ContainerResponse res) {
@@ -237,23 +315,27 @@ final class EndpointEnhancingRequestFilter implements ContainerRequestFilter {
 
     private static final class ExecutorOffloadingEndpoint extends AbstractWrappedEndpoint {
 
-        protected ExecutorOffloadingEndpoint(final UriRoutingContext uriRoutingContext,
-                                             final RequestScope requestScope,
-                                             final Provider<Ref<ConnectionContext>> ctxRefProvider,
-                                             @Nullable final HttpExecutionStrategy routeExecutionStrategy) {
-            super(uriRoutingContext, requestScope, ctxRefProvider, routeExecutionStrategy);
+        private ExecutorOffloadingEndpoint(final Endpoint delegate,
+                                           final Class<?> resourceClass,
+                                           final Method resourceMethod,
+                                           final RequestScope requestScope,
+                                           final Provider<Ref<ConnectionContext>> ctxRefProvider,
+                                           @Nullable final HttpExecutionStrategy routeExecutionStrategy) {
+            super(delegate, resourceClass, resourceMethod, requestScope, ctxRefProvider, routeExecutionStrategy);
         }
     }
 
     private abstract static class AbstractSourceAwareEndpoint<T> extends AbstractWrappedEndpoint {
         private final Class<T> sourceType;
 
-        protected AbstractSourceAwareEndpoint(final UriRoutingContext uriRoutingContext,
-                                              final Class<T> sourceType,
-                                              final RequestScope requestScope,
-                                              final Provider<Ref<ConnectionContext>> ctxRefProvider,
-                                              @Nullable final HttpExecutionStrategy routeExecutionStrategy) {
-            super(uriRoutingContext, requestScope, ctxRefProvider, routeExecutionStrategy);
+        private AbstractSourceAwareEndpoint(final Endpoint delegate,
+                                            final Class<?> resourceClass,
+                                            final Method resourceMethod,
+                                            final Class<T> sourceType,
+                                            final RequestScope requestScope,
+                                            final Provider<Ref<ConnectionContext>> ctxRefProvider,
+                                            @Nullable final HttpExecutionStrategy routeExecutionStrategy) {
+            super(delegate, resourceClass, resourceMethod, requestScope, ctxRefProvider, routeExecutionStrategy);
             this.sourceType = sourceType;
         }
 
@@ -272,11 +354,14 @@ final class EndpointEnhancingRequestFilter implements ContainerRequestFilter {
     }
 
     private static final class CompletableAwareEndpoint extends AbstractSourceAwareEndpoint<Completable> {
-        private CompletableAwareEndpoint(final UriRoutingContext uriRoutingContext,
+        private CompletableAwareEndpoint(final Endpoint delegate,
+                                         final Class<?> resourceClass,
+                                         final Method resourceMethod,
                                          final RequestScope requestScope,
                                          final Provider<Ref<ConnectionContext>> ctxRefProvider,
                                          @Nullable final HttpExecutionStrategy routeExecutionStrategy) {
-            super(uriRoutingContext, Completable.class, requestScope, ctxRefProvider, routeExecutionStrategy);
+            super(delegate, resourceClass, resourceMethod, Completable.class, requestScope, ctxRefProvider,
+                    routeExecutionStrategy);
         }
 
         @Override
@@ -287,11 +372,14 @@ final class EndpointEnhancingRequestFilter implements ContainerRequestFilter {
 
     @SuppressWarnings("rawtypes")
     private static final class SingleAwareEndpoint extends AbstractSourceAwareEndpoint<Single> {
-        private SingleAwareEndpoint(final UriRoutingContext uriRoutingContext,
+        private SingleAwareEndpoint(final Endpoint delegate,
+                                    final Class<?> resourceClass,
+                                    final Method resourceMethod,
                                     final RequestScope requestScope,
                                     final Provider<Ref<ConnectionContext>> ctxRefProvider,
                                     @Nullable final HttpExecutionStrategy routeExecutionStrategy) {
-            super(uriRoutingContext, Single.class, requestScope, ctxRefProvider, routeExecutionStrategy);
+            super(delegate, resourceClass, resourceMethod, Single.class, requestScope, ctxRefProvider,
+                    routeExecutionStrategy);
         }
 
         @SuppressWarnings("unchecked")
@@ -373,6 +461,26 @@ final class EndpointEnhancingRequestFilter implements ContainerRequestFilter {
         @Override
         public ExecutionContext executionContext() {
             return execCtx;
+        }
+    }
+
+    private static class NoopEnhancedEndpoint implements EnhancedEndpoint {
+        @Override
+        @Nullable
+        public ContainerResponse apply(final RequestProcessingContext requestProcessingContext) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        @Nullable
+        public Method getResourceMethod() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Nullable
+        @Override
+        public Class<?> getResourceClass() {
+            throw new UnsupportedOperationException();
         }
     }
 }

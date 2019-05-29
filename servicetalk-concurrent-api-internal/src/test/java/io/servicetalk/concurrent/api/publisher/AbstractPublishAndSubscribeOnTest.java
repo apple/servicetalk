@@ -49,7 +49,7 @@ public abstract class AbstractPublishAndSubscribeOnTest {
     public final Timeout timeout = new ServiceTalkTestTimeout();
     @Rule
     public final ExecutorRule originalSourceExecutorRule = ExecutorRule.withExecutor(
-            new OffloaderAwareExecutor(newCachedThreadExecutor(), threadBasedOffloaderFactory()));
+            () -> new OffloaderAwareExecutor(newCachedThreadExecutor(), threadBasedOffloaderFactory()));
 
     protected AtomicReferenceArray<Thread> setupAndSubscribe(
             BiFunction<Publisher<String>, Executor, Publisher<String>> offloadingFunction, Executor executor)

@@ -20,9 +20,10 @@ import io.servicetalk.concurrent.api.AsyncContext;
 import io.servicetalk.concurrent.api.AsyncContextMap;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
-import io.servicetalk.http.api.HttpConnectionBuilder;
 import io.servicetalk.http.api.HttpServerBuilder;
 import io.servicetalk.http.api.HttpServiceContext;
+import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
+import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
@@ -30,13 +31,14 @@ import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpServiceFilter;
 import io.servicetalk.http.api.StreamingHttpServiceFilterFactory;
 import io.servicetalk.transport.api.DelegatingConnectionAcceptor;
+import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
 
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
 
-import java.net.SocketAddress;
+import java.net.InetSocketAddress;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
@@ -54,7 +56,9 @@ import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.CharSequences.newAsciiString;
 import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
+import static io.servicetalk.http.netty.HttpClients.forResolvedAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
+import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static java.lang.Thread.currentThread;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
@@ -92,17 +96,16 @@ public abstract class AbstractHttpServiceAsyncContextTest {
             for (int i = 0; i < concurrency; ++i) {
                 final int finalI = i;
                 executorService.execute(() -> {
-                    HttpConnectionBuilder<SocketAddress> connectionBuilder =
-                            new DefaultHttpConnectionBuilder<SocketAddress>()
-                                    .maxPipelinedRequests(numRequests);
-
-                    try (StreamingHttpConnection connection = (!useImmediate ? connectionBuilder :
-                            connectionBuilder.executionStrategy(noOffloadsStrategy()))
-                            .buildStreaming(ctx.listenAddress()).toFuture().get()) {
-
-                        barrier.await();
-                        for (int x = 0; x < numRequests; ++x) {
-                            makeClientRequestWithId(connection, "thread=" + finalI + " request=" + x);
+                    SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> clientBuilder =
+                            forResolvedAddress(serverHostAndPort(ctx)).maxPipelinedRequests(numRequests);
+                    try (StreamingHttpClient client = (!useImmediate ? clientBuilder :
+                            clientBuilder.executionStrategy(noOffloadsStrategy())).buildStreaming()) {
+                        try (StreamingHttpConnection connection = client.reserveConnection(client.get("/"))
+                                .toFuture().get()) {
+                            barrier.await();
+                            for (int x = 0; x < numRequests; ++x) {
+                                makeClientRequestWithId(connection, "thread=" + finalI + " request=" + x);
+                            }
                         }
                     } catch (Throwable cause) {
                         causeRef.compareAndSet(null, cause);
@@ -139,8 +142,9 @@ public abstract class AbstractHttpServiceAsyncContextTest {
                 .appendServiceFilter(filterFactory(useImmediate, asyncFilter, errorQueue)),
                 useImmediate, asyncService);
 
-             StreamingHttpConnection connection = new DefaultHttpConnectionBuilder<SocketAddress>()
-                     .buildStreaming(ctx.listenAddress()).toFuture().get()) {
+             StreamingHttpClient client = HttpClients.forResolvedAddress(serverHostAndPort(ctx)).buildStreaming();
+
+             StreamingHttpConnection connection = client.reserveConnection(client.get("/")).toFuture().get()) {
 
             makeClientRequestWithId(connection, "1");
             assertThat("Error queue is not empty!", errorQueue, empty());
@@ -228,8 +232,9 @@ public abstract class AbstractHttpServiceAsyncContextTest {
                     return completed();
                 })), serverUseImmediate);
 
-             StreamingHttpConnection connection = new DefaultHttpConnectionBuilder<SocketAddress>()
-                     .buildStreaming(ctx.listenAddress()).toFuture().get()) {
+             StreamingHttpClient client = HttpClients.forResolvedAddress(serverHostAndPort(ctx)).buildStreaming();
+
+             StreamingHttpConnection connection = client.reserveConnection(client.get("/")).toFuture().get()) {
 
             makeClientRequestWithId(connection, "1");
             makeClientRequestWithId(connection, "2");

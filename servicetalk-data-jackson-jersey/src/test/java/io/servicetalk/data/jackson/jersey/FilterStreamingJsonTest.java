@@ -64,13 +64,17 @@ public class FilterStreamingJsonTest extends AbstractJerseyStreamingHttpServiceT
 
     @Test
     public void filterSingle() {
-        sendAndAssertResponse(post(SingleJsonResources.PATH + "/map", "{\"foo\":\"bar\"}", APPLICATION_JSON),
-                OK, APPLICATION_JSON, jsonEquals("{\"got\":{\"FOO\":\"BAR\"}}"), __ -> null);
+        runTwiceToEnsureEndpointCache(() -> {
+            sendAndAssertResponse(post(SingleJsonResources.PATH + "/map", "{\"foo\":\"bar\"}", APPLICATION_JSON),
+                    OK, APPLICATION_JSON, jsonEquals("{\"got\":{\"FOO\":\"BAR\"}}"), __ -> null);
+        });
     }
 
     @Test
     public void filterPublisher() {
-        sendAndAssertResponse(post(PublisherJsonResources.PATH + "/map", "{\"foo\":\"bar\"}", APPLICATION_JSON),
-                OK, APPLICATION_JSON, jsonEquals("{\"got\":{\"FOO\":\"BAR\"}}"), __ -> null);
+        runTwiceToEnsureEndpointCache(() -> {
+            sendAndAssertResponse(post(PublisherJsonResources.PATH + "/map", "{\"foo\":\"bar\"}", APPLICATION_JSON),
+                    OK, APPLICATION_JSON, jsonEquals("{\"got\":{\"FOO\":\"BAR\"}}"), __ -> null);
+        });
     }
 }

@@ -254,7 +254,7 @@ final class DefaultContainerResponseWriter implements ContainerResponseWriter {
                 }
             } else {
                 headers.set(CONTENT_LENGTH, contentLength == 0 ? ZERO : Long.toString(contentLength));
-                headers.remove(TRANSFER_ENCODING, CHUNKED, true);
+                headers.removeIgnoreCase(TRANSFER_ENCODING, CHUNKED);
             }
         }
 

@@ -92,25 +92,28 @@ final class ReadOnlyHttpHeaders implements HttpHeaders {
     }
 
     @Override
-    public boolean contains(final CharSequence name, final CharSequence value, final boolean caseInsensitive) {
+    public boolean contains(final CharSequence name, final CharSequence value) {
         final int nameHash = hashCode(name);
         final int end = keyValuePairs.length - 1;
-        if (caseInsensitive) {
-            for (int i = 0; i < end; i += 2) {
-                final CharSequence currentName = keyValuePairs[i];
-                if (nameHash == hashCode(currentName) && equals(currentName, name) &&
-                        equals(keyValuePairs[i + 1], value)) {
-                    return true;
-                }
+        for (int i = 0; i < end; i += 2) {
+            final CharSequence currentName = keyValuePairs[i];
+            if (nameHash == hashCode(currentName) && equals(currentName, name) &&
+                    equalsValues(keyValuePairs[i + 1], value)) {
+                return true;
             }
-            return false;
-        } else {
-            for (int i = 0; i < end; i += 2) {
-                final CharSequence currentName = keyValuePairs[i];
-                if (nameHash == hashCode(currentName) && equals(currentName, name) &&
-                        equalsValues(keyValuePairs[i + 1], value)) {
-                    return true;
-                }
+        }
+        return false;
+    }
+
+    @Override
+    public boolean containsIgnoreCase(final CharSequence name, final CharSequence value) {
+        final int nameHash = hashCode(name);
+        final int end = keyValuePairs.length - 1;
+        for (int i = 0; i < end; i += 2) {
+            final CharSequence currentName = keyValuePairs[i];
+            if (nameHash == hashCode(currentName) && equals(currentName, name) &&
+                    equals(keyValuePairs[i + 1], value)) {
+                return true;
             }
         }
         return false;
@@ -187,7 +190,12 @@ final class ReadOnlyHttpHeaders implements HttpHeaders {
     }
 
     @Override
-    public boolean remove(CharSequence name, CharSequence value, boolean caseInsensitive) {
+    public boolean remove(CharSequence name, CharSequence value) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public boolean removeIgnoreCase(CharSequence name, CharSequence value) {
         throw new UnsupportedOperationException();
     }
 
