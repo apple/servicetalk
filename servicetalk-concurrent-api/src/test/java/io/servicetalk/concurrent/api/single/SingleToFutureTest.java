@@ -27,6 +27,8 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 
 public class SingleToFutureTest extends AbstractToFutureTest<Integer> {
 
@@ -63,21 +65,21 @@ public class SingleToFutureTest extends AbstractToFutureTest<Integer> {
     @Test
     public void testSucceededNull() throws Exception {
         Future<Integer> future = toFuture();
-        exec.executor().schedule(() -> source.onSuccess(null), 50, MILLISECONDS);
-        assertThat(future.isDone(), is(false));
+        exec.executor().schedule(() -> source.onSuccess(null), 10, MILLISECONDS);
         assertThat(future.get(), is(nullValue()));
         assertThat(future.isDone(), is(true));
         assertThat(future.isCancelled(), is(false));
+        verify(mockCancellable, never()).cancel();
     }
 
     @Test
     public void testSucceededThrowable() throws Exception {
         TestSingle<Throwable> throwableSingle = new TestSingle<>();
         Future<Throwable> future = throwableSingle.toFuture();
-        exec.executor().schedule(() -> throwableSingle.onSuccess(DELIBERATE_EXCEPTION), 50, MILLISECONDS);
-        assertThat(future.isDone(), is(false));
+        exec.executor().schedule(() -> throwableSingle.onSuccess(DELIBERATE_EXCEPTION), 10, MILLISECONDS);
         assertThat(future.get(), is(DELIBERATE_EXCEPTION));
         assertThat(future.isDone(), is(true));
         assertThat(future.isCancelled(), is(false));
+        verify(mockCancellable, never()).cancel();
     }
 }
