@@ -15,10 +15,10 @@
  */
 package io.servicetalk.concurrent.reactivestreams.tck;
 
-import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
-
 import org.reactivestreams.tck.PublisherVerification;
 import org.reactivestreams.tck.TestEnvironment;
+
+import static io.servicetalk.concurrent.internal.ServiceTalkTestTimeout.DEFAULT_TIMEOUT_SECONDS;
 
 abstract class AbstractTckTest<T> extends PublisherVerification<T> {
 
@@ -27,6 +27,6 @@ abstract class AbstractTckTest<T> extends PublisherVerification<T> {
     }
 
     private static TestEnvironment newTestEnvironment() {
-        return new TestEnvironment(ServiceTalkTestTimeout.DEFAULT_TIMEOUT_SECONDS);
+        return new TestEnvironment(DEFAULT_TIMEOUT_SECONDS);
     }
 }
