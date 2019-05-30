@@ -38,6 +38,7 @@ import org.junit.After;
 import org.junit.Test;
 
 import java.net.InetSocketAddress;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.UnaryOperator;
 import javax.annotation.Nonnull;
@@ -75,13 +76,14 @@ public class ConnectionFactoryFilterTest {
     @Test
     public void reserveConnection() throws Exception {
         AtomicInteger activeConnections = new AtomicInteger();
+        CountDownLatch doneLatch = new CountDownLatch(1);
         client = clientBuilder.appendConnectionFactoryFilter(
-                newConnectionFactoryFilter(connectionCounter(activeConnections)))
+                newConnectionFactoryFilter(connectionCounter(activeConnections, doneLatch)))
                 .buildBlocking();
         ReservedBlockingHttpConnection c = client.reserveConnection(client.get("/"));
         assertThat("Unexpected active connections.", activeConnections.get(), is(1));
         c.close();
-        c.asConnection().onClose().toFuture().get();
+        doneLatch.await();
         assertThat("Unexpected active connections.", activeConnections.get(), is(0));
     }
 
@@ -89,7 +91,7 @@ public class ConnectionFactoryFilterTest {
     public void countConnections() throws Exception {
         AtomicInteger activeConnections = new AtomicInteger();
         client = clientBuilder.appendConnectionFactoryFilter(
-                newConnectionFactoryFilter(connectionCounter(activeConnections)))
+                newConnectionFactoryFilter(connectionCounter(activeConnections, null)))
                 .buildBlocking();
         sendRequest(client);
         assertThat("Unexpected active connections.", activeConnections.get(), is(1));
@@ -111,10 +113,17 @@ public class ConnectionFactoryFilterTest {
     }
 
     @Nonnull
-    private UnaryOperator<FilterableStreamingHttpConnection> connectionCounter(final AtomicInteger activeConnections) {
+    private UnaryOperator<FilterableStreamingHttpConnection> connectionCounter(final AtomicInteger activeConnections,
+                                                                               @Nullable
+                                                                               final CountDownLatch doneLatch) {
         return connection -> {
             activeConnections.incrementAndGet();
-            connection.onClose().beforeFinally(activeConnections::decrementAndGet).subscribe();
+            connection.onClose().beforeFinally(() -> {
+                activeConnections.decrementAndGet();
+                if (doneLatch != null) {
+                    doneLatch.countDown();
+                }
+            }).subscribe();
             return connection;
         };
     }
