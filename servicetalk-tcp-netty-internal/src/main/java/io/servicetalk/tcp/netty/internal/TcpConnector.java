@@ -33,6 +33,11 @@ import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.ConnectTimeoutException;
 import io.netty.channel.EventLoop;
+import io.netty.resolver.AbstractAddressResolver;
+import io.netty.resolver.AddressResolver;
+import io.netty.resolver.AddressResolverGroup;
+import io.netty.resolver.NoopAddressResolver;
+import io.netty.util.concurrent.EventExecutor;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.ImmediateEventExecutor;
 
@@ -129,6 +134,7 @@ public final class TcpConnector {
             EventLoop loop, BufferAllocator bufferAllocator, ChannelHandler handler) {
         final SocketAddress nettyresolvedRemoteAddress = toNettyAddress(resolvedRemoteAddress);
         Bootstrap bs = new Bootstrap();
+        bs.resolver(NoopNettyAddressResolverGroup.INSTANCE);
         bs.group(loop);
         bs.channel(socketChannel(loop, nettyresolvedRemoteAddress.getClass()));
         bs.handler(handler);
@@ -181,5 +187,30 @@ public final class TcpConnector {
                 subscriber.onError(cause);
             }
         });
+    }
+
+    /**
+     * A {@link AddressResolverGroup} that is used internally so Netty won't try to
+     * resolve addresses, because ServiceTalk is responsible for resolution.
+     */
+    private static final class NoopNettyAddressResolverGroup extends
+                                                     AddressResolverGroup<SocketAddress> {
+        static final AddressResolverGroup<SocketAddress> INSTANCE = new NoopNettyAddressResolverGroup();
+        private static final AbstractAddressResolver<SocketAddress> NOOP_ADDRESS_RESOLVER =
+                new NoopAddressResolver(ImmediateEventExecutor.INSTANCE);
+
+        private NoopNettyAddressResolverGroup() {
+            // singleton
+        }
+
+        @Override
+        protected AddressResolver<SocketAddress> newResolver(EventExecutor executor) {
+            return NOOP_ADDRESS_RESOLVER;
+        }
+
+        @Override
+        public AddressResolver<SocketAddress> getResolver(final EventExecutor executor) {
+            return NOOP_ADDRESS_RESOLVER;
+        }
     }
 }
