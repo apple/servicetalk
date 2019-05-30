@@ -52,4 +52,8 @@ task tck(type: Test) {
   useTestNG()
 }
 
-test.dependsOn tck
+def CI = System.getenv("CI") ?: "false"
+//TODO: Depend unconditionally when this issue is resolved: https://github.com/servicetalk/servicetalk/issues/145
+if(!"true".equals(CI)) {
+  test.dependsOn tck
+}
