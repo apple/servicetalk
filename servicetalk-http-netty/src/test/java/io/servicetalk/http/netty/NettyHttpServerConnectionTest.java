@@ -103,7 +103,7 @@ public class NettyHttpServerConnectionTest {
                 .ioExecutor(contextRule.ioExecutor())
                 .appendConnectionAcceptorFilter(original -> original.append(ctx -> {
                             customCancellableRef.set(
-                                    ((NettyConnectionContext) ctx).updateFlushStrategy(current -> customStrategy));
+                                    ((NettyConnectionContext) ctx).updateFlushStrategy((__, ___) -> customStrategy));
                             return completed();
                         }))
                 .executionStrategy(serverExecutionStrategy)

@@ -98,7 +98,7 @@ public class FlushStrategyOverrideTest {
     public void overrideFlush() throws Throwable {
         NettyConnectionContext nctx = (NettyConnectionContext) conn.connectionContext();
         MockFlushStrategy clientStrategy = new MockFlushStrategy();
-        Cancellable c = nctx.updateFlushStrategy(old -> clientStrategy);
+        Cancellable c = nctx.updateFlushStrategy((old, __) -> clientStrategy);
 
         CountDownLatch reqWritten = new CountDownLatch(1);
         StreamingHttpRequest req = client.get("/flush").payloadBody(from(1, 2, 3)
@@ -147,7 +147,7 @@ public class FlushStrategyOverrideTest {
             if (request.path().startsWith("/flush")) {
                 NettyConnectionContext nctx = (NettyConnectionContext) ctx;
                 MockFlushStrategy strategy = new MockFlushStrategy();
-                Cancellable c = nctx.updateFlushStrategy(old -> strategy);
+                Cancellable c = nctx.updateFlushStrategy((old, __) -> strategy);
                 return succeeded(responseFactory.ok().payloadBody(request.payloadBody().afterFinally(() -> {
                     c.cancel();
                     flushStrategies.add(strategy);

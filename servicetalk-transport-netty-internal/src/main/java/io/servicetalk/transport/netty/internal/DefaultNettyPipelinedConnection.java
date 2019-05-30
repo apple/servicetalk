@@ -34,7 +34,6 @@ import java.net.SocketAddress;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
-import java.util.function.UnaryOperator;
 import javax.annotation.Nullable;
 import javax.net.ssl.SSLSession;
 
@@ -219,7 +218,7 @@ public final class DefaultNettyPipelinedConnection<Req, Resp> implements NettyPi
     }
 
     @Override
-    public Cancellable updateFlushStrategy(final UnaryOperator<FlushStrategy> strategyProvider) {
+    public Cancellable updateFlushStrategy(final FlushStrategyProvider strategyProvider) {
         return connection.updateFlushStrategy(strategyProvider);
     }
 

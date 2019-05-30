@@ -63,7 +63,6 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Predicate;
-import java.util.function.UnaryOperator;
 import javax.annotation.Nullable;
 import javax.net.ssl.SSLSession;
 
@@ -223,7 +222,7 @@ final class NettyHttpServer {
         }
 
         @Override
-        public Cancellable updateFlushStrategy(final UnaryOperator<FlushStrategy> strategyProvider) {
+        public Cancellable updateFlushStrategy(final FlushStrategyProvider strategyProvider) {
             return compositeFlushStrategy.updateFlushStrategy(strategyProvider);
         }
 
@@ -449,13 +448,14 @@ final class NettyHttpServer {
                 this.flushStrategy = flushStrategy;
             }
 
-            Cancellable updateFlushStrategy(final UnaryOperator<FlushStrategy> strategyProvider) {
-                flushStrategyUpdater.updateAndGet(this, strategyProvider);
+            Cancellable updateFlushStrategy(final FlushStrategyProvider strategyProvider) {
+                flushStrategyUpdater.updateAndGet(this, current ->
+                        strategyProvider.getNewStrategy(current, current == originalStrategy));
                 // We always revert to the original strategy specified for the connection. If a user wishes to create a
                 // hierarchical strategy, they have to do it by themselves.
                 return () -> {
                     final WriteEventsListener prev = currentListener;
-                    updateFlushStrategy(__ -> originalStrategy);
+                    updateFlushStrategy((__, ___) -> originalStrategy);
                     // Since flushStrategy and currentListener can not be updated atomically, we only switch
                     // currentListener if it has not changed from what it was before updating flushStrategy.
                     // If the listener has changed, it could have changed before or after updating the flushStrategy but
