@@ -34,7 +34,6 @@ import java.net.InetSocketAddress;
 import java.util.function.Function;
 
 import static io.servicetalk.http.netty.DefaultSingleAddressHttpClientBuilder.forUnknownHostAndPort;
-import static java.net.InetSocketAddress.createUnresolved;
 
 /**
  * Factory methods for building {@link HttpClient} (and other API variations) instances.
@@ -138,7 +137,7 @@ public final class HttpClients {
     public static SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> forResolvedAddress(
             final HostAndPort address) {
         return DefaultSingleAddressHttpClientBuilder.forResolvedAddress(address,
-                createUnresolved(address.hostName(), address.port()));
+                new InetSocketAddress(address.hostName(), address.port()));
     }
 
     /**
