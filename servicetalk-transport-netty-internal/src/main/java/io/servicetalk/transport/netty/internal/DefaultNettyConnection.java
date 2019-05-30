@@ -139,7 +139,8 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
         this.executionContext = new DefaultExecutionContext(allocator, fromNettyEventLoop(channel.eventLoop()),
                 executor, executionStrategy);
         this.closeHandler = requireNonNull(closeHandler);
-        this.originalFlushStrategy = requireNonNull(flushStrategy);
+        // Wrap the strategy so that we can do reference equality to check if the strategy has been modified.
+        originalFlushStrategy = new DelegatingFlushStrategy(flushStrategy);
         this.flushStrategy = originalFlushStrategy;
         if (closeHandler != UNSUPPORTED_PROTOCOL_CLOSE_HANDLER) {
             onClosing = newCompletableProcessor();

@@ -44,6 +44,7 @@ import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
 import io.servicetalk.transport.netty.internal.DefaultNettyConnection;
+import io.servicetalk.transport.netty.internal.DelegatingFlushStrategy;
 import io.servicetalk.transport.netty.internal.FlushStrategy;
 import io.servicetalk.transport.netty.internal.NettyChannelListenableAsyncCloseable;
 import io.servicetalk.transport.netty.internal.NettyConnection.TerminalPredicate;
@@ -134,7 +135,8 @@ final class H2ClientParentConnectionContext extends NettyChannelListenableAsyncC
         super(channel, executor);
         this.executionContext = new DefaultHttpExecutionContext(allocator, fromNettyEventLoop(channel.eventLoop()),
                 executor, executionStrategy);
-        originalFlushStrategy = requireNonNull(flushStrategy);
+        // Wrap the strategy so that we can do reference equality to check if the strategy has been modified.
+        originalFlushStrategy = new DelegatingFlushStrategy(flushStrategy);
         this.flushStrategy = originalFlushStrategy;
         // Just in case the channel abruptly closes, we should complete the onClosing Completable.
         onClose().subscribe(onClosing::onComplete);

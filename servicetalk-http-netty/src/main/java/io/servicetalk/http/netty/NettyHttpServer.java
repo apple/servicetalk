@@ -47,6 +47,7 @@ import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
 import io.servicetalk.transport.netty.internal.CloseHandler;
 import io.servicetalk.transport.netty.internal.DefaultNettyConnection;
+import io.servicetalk.transport.netty.internal.DelegatingFlushStrategy;
 import io.servicetalk.transport.netty.internal.FlushStrategy;
 import io.servicetalk.transport.netty.internal.NettyConnection;
 import io.servicetalk.transport.netty.internal.NettyConnection.TerminalPredicate;
@@ -444,8 +445,9 @@ final class NettyHttpServer {
             private FlushSender flushSender = () -> { };
 
             CompositeFlushStrategy(final FlushStrategy flushStrategy) {
-                originalStrategy = flushStrategy;
-                this.flushStrategy = flushStrategy;
+                // Wrap the strategy so that we can do reference equality to check if the strategy has been modified.
+                originalStrategy = new DelegatingFlushStrategy(flushStrategy);
+                this.flushStrategy = originalStrategy;
             }
 
             Cancellable updateFlushStrategy(final FlushStrategyProvider strategyProvider) {

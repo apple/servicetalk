@@ -59,6 +59,7 @@ public interface NettyConnectionContext extends ConnectionContext {
     /**
      * A provider of {@link FlushStrategy} to update the {@link FlushStrategy} for a {@link NettyConnectionContext}.
      */
+    @FunctionalInterface
     interface FlushStrategyProvider {
 
         /**
