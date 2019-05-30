@@ -19,6 +19,8 @@ import org.reactivestreams.tck.PublisherVerification;
 import org.reactivestreams.tck.TestEnvironment;
 
 import static io.servicetalk.concurrent.internal.ServiceTalkTestTimeout.DEFAULT_TIMEOUT_SECONDS;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 abstract class AbstractTckTest<T> extends PublisherVerification<T> {
 
@@ -27,6 +29,6 @@ abstract class AbstractTckTest<T> extends PublisherVerification<T> {
     }
 
     private static TestEnvironment newTestEnvironment() {
-        return new TestEnvironment(DEFAULT_TIMEOUT_SECONDS);
+        return new TestEnvironment(MILLISECONDS.convert(DEFAULT_TIMEOUT_SECONDS, SECONDS));
     }
 }
