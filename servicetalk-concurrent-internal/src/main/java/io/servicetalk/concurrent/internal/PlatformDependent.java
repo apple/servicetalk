@@ -69,6 +69,7 @@ public final class PlatformDependent {
     private static final int MAX_ALLOWED_QUEUE_CAPACITY = Pow2.MAX_POW2;
     private static final int MIN_ALLOWED_SPSC_CHUNK_SIZE = 8; // JCTools does not allow lower initial capacity.
     private static final int MIN_ALLOWED_MPSC_CHUNK_SIZE = 2; // JCTools does not allow lower initial capacity.
+    private static final Object DUMMY = new Object();
 
     private PlatformDependent() {
         // no instantiation
@@ -149,17 +150,23 @@ public final class PlatformDependent {
      *
      * @param t The {@link Throwable} to throw.
      */
-    public static void throwException(final Throwable t) {
+    public static <T> T throwException(final Throwable t) {
         if (hasUnsafe()) {
             PlatformDependent0.throwException(t);
         } else {
             PlatformDependent.<RuntimeException>throwException0(t);
         }
+        return uncheckedCast();
     }
 
     @SuppressWarnings("unchecked")
     private static <E extends Throwable> void throwException0(final Throwable t) throws E {
         throw (E) t;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static <T> T uncheckedCast() {
+        return (T) DUMMY;
     }
 
     /**

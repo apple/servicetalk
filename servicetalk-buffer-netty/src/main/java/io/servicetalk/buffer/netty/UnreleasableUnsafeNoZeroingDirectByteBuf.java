@@ -60,8 +60,7 @@ final class UnreleasableUnsafeNoZeroingDirectByteBuf extends UnreleasableUnsafeD
             memoryAddress = allocateMemory(size);
         } catch (final Throwable e) {
             unreserveMemory(size, initialCapacity);
-            throwException(e);
-            return null;    // fool compiler
+            return throwException(e);
         }
 
         try {
@@ -69,8 +68,7 @@ final class UnreleasableUnsafeNoZeroingDirectByteBuf extends UnreleasableUnsafeD
         } catch (final Throwable e) {
             freeMemory(memoryAddress);
             unreserveMemory(size, initialCapacity);
-            throwException(e);
-            return null;    // fool compiler
+            return throwException(e);
         }
     }
 }
