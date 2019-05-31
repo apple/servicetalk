@@ -7,7 +7,7 @@ It is built on link:https://netty.io[Netty] and is designed to provide most of t
 Netty for common networking protocols used in service to service communication. ServiceTalk provides server support and
 "smart client" like features such as client-side load balancing and service discovery integration.
 
-See the link:https://servicetalk.io/[ServiceTalk docs] for more information.
+See the link:https://docs.servicetalk.io/[ServiceTalk docs] for more information.
 
 == Getting Started
 
@@ -49,7 +49,7 @@ enableFeaturePreview("IMPROVED_POM_SUPPORT") // <2>
 
 With this in place, you can add the ServiceTalk module dependencies you need without specifying their versions.
 
-Refer to the link:https://servicetalk.io/[ServiceTalk docs] for various examples that will get you started with the different features of ServiceTalk.
+Refer to the link:https://docs.servicetalk.io/[ServiceTalk docs] for various examples that will get you started with the different features of ServiceTalk.
 
 NOTE: Builds of the development version are available
       in link:https://oss.sonatype.org/content/repositories/snapshots/io/servicetalk/[Sonatype's snapshots Maven repository].
