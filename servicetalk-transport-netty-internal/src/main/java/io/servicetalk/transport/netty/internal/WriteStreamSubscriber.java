@@ -29,6 +29,8 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.DefaultChannelPromise;
 import io.netty.util.concurrent.EventExecutor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
@@ -65,10 +67,11 @@ import static java.util.Objects.requireNonNull;
  */
 final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
                                              DefaultNettyConnection.WritableListener, Cancellable {
+    private static final Logger LOGGER = LoggerFactory.getLogger(WriteStreamSubscriber.class);
     private static final byte SOURCE_TERMINATED = 1;
-    private static final byte CHANNEL_CLOSED = 2;
-    private static final byte CHANNEL_CLOSED_OUTBOUND = 4;
-    private static final byte SUBSCRIBER_TERMINATED = 8;
+    private static final byte CHANNEL_CLOSED = 1 << 1;
+    private static final byte CHANNEL_CLOSED_OUTBOUND = 1 << 2;
+    private static final byte SUBSCRIBER_TERMINATED = 1 << 3;
     private static final Subscription CANCELLED = new EmptySubscription();
     private static final AtomicLongFieldUpdater<WriteStreamSubscriber> requestedUpdater =
             AtomicLongFieldUpdater.newUpdater(WriteStreamSubscriber.class, "requested");
@@ -279,7 +282,7 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
                     setFlag(SUBSCRIBER_TERMINATED);
                     terminateSubscriber(cause);
                 } catch (Throwable t) {
-                    super.tryFailure(t);
+                    tryFailureOrLog(t);
                     return;
                 }
                 // We are here because the Publisher that was being written terminated, not the actual channel writes.
@@ -345,8 +348,9 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
                 try {
                     terminateSubscriber(failureCause);
                 } catch (Throwable t) {
-                    super.tryFailure(t);
-                    return false;
+                    tryFailureOrLog(t);
+                    // Always return true since we have set the state to SUBSCRIBER_TERMINATED
+                    return true;
                 }
                 super.trySuccess(null);
             }
@@ -368,28 +372,42 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
             if (oldVal != null && oldVal != CANCELLED) {
                 oldVal.cancel();
             }
-            try {
-                terminateSubscriber(cause);
-            } catch (Throwable t) {
-                super.tryFailure(t);
-                return false;
-            }
-            super.tryFailure(cause);
+            terminateSubscriber(cause);
+            tryFailureOrLog(cause);
+            // Always return true since we have set the state to SUBSCRIBER_TERMINATED
             return true;
         }
 
-        private void terminateSubscriber(@Nullable final Throwable cause) {
+        private void terminateSubscriber(@Nullable Throwable cause) {
             if (hasFlag(CHANNEL_CLOSED_OUTBOUND) || cause != null) {
-                closeHandler.closeChannelOutbound(channel);
+                try {
+                    closeHandler.closeChannelOutbound(channel);
+                } catch (Throwable t) {
+                    cause = t;
+                }
             }
             if (cause == null) {
-                subscriber.onComplete();
+                try {
+                    subscriber.onComplete();
+                } catch (Throwable t) {
+                    tryFailureOrLog(t);
+                }
             } else {
-                subscriber.onError(cause);
+                try {
+                    subscriber.onError(cause);
+                } catch (Throwable t) {
+                    tryFailureOrLog(t);
+                }
                 if (!hasFlag(CHANNEL_CLOSED)) {
                     // Close channel on error.
                     channel.close();
                 }
+            }
+        }
+
+        private void tryFailureOrLog(final Throwable cause) {
+            if (!super.tryFailure(cause)) {
+                LOGGER.error("Failed to set failure on the write promise {}.", this, cause);
             }
         }
 

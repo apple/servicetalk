@@ -133,12 +133,21 @@ public class WriteStreamSubscriberTest extends AbstractWriteTest {
 
     @Test
     public void writeFailureClosesChannel() throws Exception {
+        failingWriteClosesChannel(() -> failingWriteHandler.failNextWritePromise());
+    }
+
+    @Test
+    public void uncaughtWriteExceptionClosesChannel() throws Exception {
+        failingWriteClosesChannel(() -> failingWriteHandler.throwFromNextWrite());
+    }
+
+    private void failingWriteClosesChannel(Runnable enableWriteFailure) throws InterruptedException {
         WriteInfo info1 = writeAndFlush("Hello1");
         verify(completableSubscriber).onSubscribe(any());
         verifyWriteSuccessful("Hello1");
         verifyWrite(info1);
 
-        failingWriteHandler.failNextWrite(true);
+        enableWriteFailure.run();
         subscriber.onNext("Hello2");
         verify(completableSubscriber).onError(DELIBERATE_EXCEPTION);
         verify(closeHandler).closeChannelOutbound(any());

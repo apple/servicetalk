@@ -75,19 +75,28 @@ public abstract class AbstractWriteTest {
     }
 
     static final class FailingWriteHandler extends ChannelDuplexHandler {
-        private volatile boolean failNextWrite;
+        private volatile boolean failNextWritePromise;
+        private volatile boolean throwFromNextWrite;
 
         @Override
         public void write(final ChannelHandlerContext ctx, final Object msg, final ChannelPromise promise)
                 throws Exception {
-            if (failNextWrite) {
+            if (throwFromNextWrite) {
                 throw DELIBERATE_EXCEPTION;
             }
-            super.write(ctx, msg, promise);
+            if (failNextWritePromise) {
+                promise.tryFailure(DELIBERATE_EXCEPTION);
+            } else {
+                super.write(ctx, msg, promise);
+            }
         }
 
-        void failNextWrite(boolean failNextWrite) {
-            this.failNextWrite = failNextWrite;
+        void throwFromNextWrite() {
+            this.throwFromNextWrite = true;
+        }
+
+        void failNextWritePromise() {
+            this.failNextWritePromise = true;
         }
     }
 
