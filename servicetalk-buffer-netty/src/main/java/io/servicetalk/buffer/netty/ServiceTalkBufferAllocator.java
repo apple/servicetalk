@@ -55,10 +55,10 @@ final class ServiceTalkBufferAllocator extends AbstractByteBufAllocator implemen
     @Override
     protected ByteBuf newDirectBuffer(int initialCapacity, int maxCapacity) {
         if (noZeroing) {
-            return new UnreleasableUnsafeDirectByteBuf(this, initialCapacity, maxCapacity);
+            return new UnreleasableUnsafeNoZeroingDirectByteBuf(this, initialCapacity, maxCapacity);
         }
         if (io.netty.util.internal.PlatformDependent.hasUnsafe()) {
-            return new UnreleasableUnsafeNoZeroingDirectByteBuf(this, initialCapacity, maxCapacity);
+            return new UnreleasableUnsafeDirectByteBuf(this, initialCapacity, maxCapacity);
         }
         return new UnreleasableDirectByteBuf(this, initialCapacity, maxCapacity);
     }
