@@ -24,7 +24,6 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.CompositeByteBuf;
-import io.netty.util.internal.PlatformDependent;
 
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
@@ -55,12 +54,13 @@ final class ServiceTalkBufferAllocator extends AbstractByteBufAllocator implemen
 
     @Override
     protected ByteBuf newDirectBuffer(int initialCapacity, int maxCapacity) {
-        if (PlatformDependent.hasUnsafe()) {
-            return noZeroing ? new UnreleasableUnsafeNoZeroingDirectByteBuf(this, initialCapacity, maxCapacity) :
-                    new UnreleasableUnsafeDirectByteBuf(this, initialCapacity, maxCapacity);
-        } else {
-            return new UnreleasableDirectByteBuf(this, initialCapacity, maxCapacity);
+        if (noZeroing) {
+            return new UnreleasableUnsafeDirectByteBuf(this, initialCapacity, maxCapacity);
         }
+        if (io.netty.util.internal.PlatformDependent.hasUnsafe()) {
+            return new UnreleasableUnsafeNoZeroingDirectByteBuf(this, initialCapacity, maxCapacity);
+        }
+        return new UnreleasableDirectByteBuf(this, initialCapacity, maxCapacity);
     }
 
     @Override
@@ -144,7 +144,7 @@ final class ServiceTalkBufferAllocator extends AbstractByteBufAllocator implemen
         final Buffer buf;
         if (buffer.hasArray()) {
             buf = wrap(buffer.array(), buffer.arrayOffset() + buffer.position(), buffer.remaining());
-        } else if (buffer.isDirect() && PlatformDependent.hasUnsafe()) {
+        } else if (buffer.isDirect() && io.netty.util.internal.PlatformDependent.hasUnsafe()) {
             buf = new NettyBuffer<>(new UnreleasableUnsafeDirectByteBuf(this, buffer, buffer.remaining()));
         } else {
             buf = new NettyBuffer<>(new UnreleasableDirectByteBuf(this, buffer, buffer.remaining()));
