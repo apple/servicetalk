@@ -146,10 +146,13 @@ public final class PlatformDependent {
     }
 
     /**
-     * Raises an exception bypassing compiler checks for checked exceptions.
-     *
-     * @param t The {@link Throwable} to throw.
-     */
+    * Raises an exception bypassing compiler checks for checked exceptions.
+    *
+    * @param t The {@link Throwable} to throw.
+    * @param <T> The expected type
+    * @return nothing actually will be returned from this method because it rethrows the specified exception.
+    * {@code return} statement used to fool the compiler if a caller method expects to return something.
+    */
     public static <T> T throwException(final Throwable t) {
         if (hasUnsafe()) {
             PlatformDependent0.throwException(t);
