@@ -165,9 +165,10 @@ final class PlatformDependent0 {
                             (Constructor<?>) maybeDirectBufferConstructor);
                     // try to use the constructor now
                     address = allocateMemory(1);
-                    @SuppressWarnings("PMD.UnusedLocalVariable")
-                    ByteBuffer buffer = (ByteBuffer) directBufferConstructor
-                            .invoke(1, address, null, (Runnable) () -> { /* NOOP */ });
+                    Object buffer = directBufferConstructor.invoke(1, address, null, (Runnable) () -> { /* NOOP */ });
+                    if (!(buffer instanceof ByteBuffer)) {
+                        directBufferConstructor = null;
+                    }
                 } catch (Throwable throwable) {
                     directBufferConstructor = null;
                 } finally {
@@ -212,8 +213,10 @@ final class PlatformDependent0 {
                 try {
                     deallocatorConstructor = lookup.unreflectConstructor((Constructor<?>) maybeDeallocatorConstructor);
                     // try to use the constructor now
-                    @SuppressWarnings("PMD.UnusedLocalVariable")
-                    Runnable deallocator = (Runnable) deallocatorConstructor.invoke(0L, 0L, 0);
+                    Object deallocator = deallocatorConstructor.invoke(0L, 0L, 0);
+                    if (!(deallocator instanceof Runnable)) {
+                        deallocatorConstructor = null;
+                    }
                 } catch (Throwable throwable) {
                     deallocatorConstructor = null;
                 }
