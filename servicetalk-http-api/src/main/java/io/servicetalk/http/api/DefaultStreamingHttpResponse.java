@@ -36,7 +36,8 @@ final class DefaultStreamingHttpResponse extends DefaultHttpResponseMetaData
                                  @Nullable final Publisher payloadBody, final DefaultPayloadInfo payloadInfo,
                                  final HttpHeadersFactory headersFactory) {
         super(status, version, headers);
-        payloadHolder = new StreamingHttpPayloadHolder(headers, allocator, payloadBody, payloadInfo, headersFactory);
+        payloadHolder = new StreamingHttpPayloadHolder(headers, allocator, payloadBody, payloadInfo, headersFactory,
+                version);
     }
 
     @Override

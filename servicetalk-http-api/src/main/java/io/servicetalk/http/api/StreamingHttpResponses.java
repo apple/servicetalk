@@ -18,7 +18,6 @@ package io.servicetalk.http.api;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Publisher;
 
-import static io.servicetalk.concurrent.api.Publisher.empty;
 import static io.servicetalk.http.api.DefaultPayloadInfo.forTransportReceive;
 import static io.servicetalk.http.api.DefaultPayloadInfo.forUserCreated;
 
@@ -43,7 +42,7 @@ public final class StreamingHttpResponses {
     public static StreamingHttpResponse newResponse(
             final HttpResponseStatus status, final HttpProtocolVersion version, final HttpHeaders headers,
             final BufferAllocator allocator, final HttpHeadersFactory headersFactory) {
-        return new DefaultStreamingHttpResponse(status, version, headers, allocator, empty(),
+        return new DefaultStreamingHttpResponse(status, version, headers, allocator, null,
                 forUserCreated(headers), headersFactory);
     }
 

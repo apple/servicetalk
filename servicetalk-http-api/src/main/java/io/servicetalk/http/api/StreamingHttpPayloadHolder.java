@@ -42,6 +42,7 @@ import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.http.api.HeaderUtils.addChunkedEncoding;
 import static io.servicetalk.http.api.HeaderUtils.isTransferEncodingChunked;
 import static io.servicetalk.http.api.HttpDataSourceTransformations.aggregatePayloadAndTrailers;
+import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_0;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -53,6 +54,7 @@ final class StreamingHttpPayloadHolder implements PayloadInfo {
     private final BufferAllocator allocator;
     private final DefaultPayloadInfo payloadInfo;
     private final HttpHeadersFactory headersFactory;
+    private final HttpProtocolVersion version;
     @Nullable
     private Publisher<?> payloadBody;
     @Nullable
@@ -60,13 +62,14 @@ final class StreamingHttpPayloadHolder implements PayloadInfo {
 
     StreamingHttpPayloadHolder(final HttpHeaders headers, final BufferAllocator allocator,
                                @Nullable final Publisher<?> payloadBody, final DefaultPayloadInfo payloadInfo,
-                               final HttpHeadersFactory headersFactory) {
+                               final HttpHeadersFactory headersFactory, final HttpProtocolVersion version) {
         this.headers = requireNonNull(headers);
         this.allocator = requireNonNull(allocator);
         this.payloadInfo = requireNonNull(payloadInfo);
         this.headersFactory = requireNonNull(headersFactory);
+        this.version = requireNonNull(version);
         if (payloadInfo.mayHaveTrailers()) {
-            this.payloadBody = requireNonNull(payloadBody);
+            this.payloadBody = payloadBody != null ? payloadBody : empty();
         } else if (payloadBody != null) {
             this.payloadBody = filterTrailers(payloadBody);
         }
@@ -224,7 +227,6 @@ final class StreamingHttpPayloadHolder implements PayloadInfo {
             T state = stateSupplier.get();
             trailersSingle = succeeded(trailersTransformer.apply(state, headersFactory.newEmptyTrailers()));
             payloadBody = empty();
-            payloadInfo.setOnlyEmitsBuffer(!raw);
         } else {
             splitTrailersIfRequired();
             if (!payloadInfo.mayHaveTrailers()) {
@@ -237,14 +239,7 @@ final class StreamingHttpPayloadHolder implements PayloadInfo {
             final MutableReference<T> stateForSubscriber = new MutableReference<>();
             trailersSingle = trailersSingle.map(trailers ->
                     trailersTransformer.apply(stateForSubscriber.reference(), trailers));
-            if (raw) {
-                payloadBody = rawPayload();
-                payloadInfo.setOnlyEmitsBuffer(false);
-            } else {
-                payloadBody = payloadBody();
-                payloadInfo.setOnlyEmitsBuffer(true);
-            }
-            payloadBody = payloadBody.liftSync(subscriber -> {
+            payloadBody = (raw ? rawPayload() : payloadBody()).liftSync(subscriber -> {
                 T state = stateSupplier.get();
                 stateForSubscriber.reference(state);
                 return new PublisherSource.Subscriber<Object>() {
@@ -271,11 +266,18 @@ final class StreamingHttpPayloadHolder implements PayloadInfo {
                 };
             });
         }
-        // This transform may add trailers, and if there are trailers present we must send `transfer-encoding: chunked`
-        // not `content-length`, so force the API type to non-aggregated to indicate that.
-        payloadInfo.setMayHaveTrailers(true);
-        // Update the headers to indicate that we will be writing trailers.
-        addChunkedEncoding(headers);
+
+        payloadInfo.setOnlyEmitsBuffer(!raw);
+
+        if (!HTTP_1_0.equals(version)) {
+            // This transform may add trailers, and if there are trailers present we must send
+            // `transfer-encoding: chunked` not `content-length`, so force the API type to non-aggregated to indicate
+            // that.
+            payloadInfo.setMayHaveTrailers(true);
+
+            // Update the headers to indicate that we will be writing trailers.
+            addChunkedEncoding(headers);
+        }
     }
 
     @SuppressWarnings("unchecked")

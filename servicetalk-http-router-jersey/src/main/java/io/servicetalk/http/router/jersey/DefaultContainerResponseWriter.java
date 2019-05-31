@@ -49,6 +49,7 @@ import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderNames.TRANSFER_ENCODING;
 import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
 import static io.servicetalk.http.api.HttpHeaderValues.ZERO;
+import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_0;
 import static io.servicetalk.http.router.jersey.CharSequenceUtils.asCharSequence;
 import static io.servicetalk.http.router.jersey.internal.RequestProperties.getRequestCancellable;
 import static io.servicetalk.http.router.jersey.internal.RequestProperties.getResponseBufferPublisher;
@@ -249,7 +250,7 @@ final class DefaultContainerResponseWriter implements ContainerResponseWriter {
         if (!headers.contains(CONTENT_LENGTH)) {
             if (contentLength == UNKNOWN_RESPONSE_LENGTH) {
                 // We can omit Transfer-Encoding for HEAD per https://tools.ietf.org/html/rfc7231#section-4.3.2
-                if (!isHeadRequest()) {
+                if (!isHeadRequest() && !HTTP_1_0.equals(protocolVersion)) {
                     headers.set(TRANSFER_ENCODING, CHUNKED);
                 }
             } else {

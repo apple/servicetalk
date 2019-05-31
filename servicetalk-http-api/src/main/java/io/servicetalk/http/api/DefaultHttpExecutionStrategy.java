@@ -109,7 +109,7 @@ class DefaultHttpExecutionStrategy implements HttpExecutionStrategy {
                     // exec.submit() returns a Single<Publisher<Object>>, so flatten the nested Publisher.
                     .flatMapPublisher(identity());
         } else {
-            resp = service.apply(request).recoverWith(cause -> errorHandler.apply(cause, e));
+            resp = service.apply(request);
         }
         if (offloaded(OFFLOAD_SEND)) {
             resp = resp.subscribeOn(e);

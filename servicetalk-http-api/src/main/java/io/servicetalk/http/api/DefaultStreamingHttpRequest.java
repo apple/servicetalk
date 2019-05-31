@@ -37,7 +37,8 @@ final class DefaultStreamingHttpRequest extends DefaultHttpRequestMetaData
                                 final DefaultPayloadInfo payloadInfo,
                                 final HttpHeadersFactory headersFactory) {
         super(method, requestTarget, version, headers);
-        payloadHolder = new StreamingHttpPayloadHolder(headers, allocator, payloadBody, payloadInfo, headersFactory);
+        payloadHolder = new StreamingHttpPayloadHolder(headers, allocator, payloadBody, payloadInfo, headersFactory,
+                version);
     }
 
     @Override

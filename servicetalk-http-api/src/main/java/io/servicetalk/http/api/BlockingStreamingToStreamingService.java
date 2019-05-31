@@ -43,6 +43,7 @@ import static io.servicetalk.http.api.HeaderUtils.isTransferEncodingChunked;
 import static io.servicetalk.http.api.HttpExecutionStrategies.OFFLOAD_RECEIVE_META_STRATEGY;
 import static io.servicetalk.http.api.HttpHeaderNames.TRANSFER_ENCODING;
 import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
+import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_0;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.StreamingHttpResponses.newTransportResponse;
 import static java.lang.Thread.currentThread;
@@ -94,8 +95,7 @@ final class BlockingStreamingToStreamingService extends AbstractServiceAdapterHo
                             // https://tools.ietf.org/html/rfc7230#section-3.3.2
                             HttpHeaders headers = metaData.headers();
                             boolean addTrailers = isTransferEncodingChunked(headers);
-                            if (!addTrailers && !hasContentLength(headers)) {
-                                // TODO(scott): do we want to always force content-length or transfer-encoding?
+                            if (!addTrailers && !HTTP_1_0.equals(metaData.version()) && !hasContentLength(headers)) {
                                 // this is likely not supported in http/1.0 and it is possible that a response has
                                 // neither header and the connection close indicates the end of the response.
                                 // https://tools.ietf.org/html/rfc7230#section-3.3.3

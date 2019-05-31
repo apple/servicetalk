@@ -46,6 +46,7 @@ import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
 import static io.servicetalk.http.api.HttpHeaderNames.TRANSFER_ENCODING;
 import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
 import static io.servicetalk.http.api.HttpHeaderValues.TEXT_PLAIN_UTF_8;
+import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpSerializationProviders.textDeserializer;
 import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
 import static java.nio.charset.Charset.defaultCharset;
@@ -117,7 +118,7 @@ public class StreamingHttpPayloadHolderTest {
         payloadSource = sourceType == SourceType.None ? null : new TestPublisher<>();
         final DefaultPayloadInfo payloadInfo = forTransportReceive(headers);
         payloadHolder = new StreamingHttpPayloadHolder(headers, DEFAULT_ALLOCATOR, payloadSource, payloadInfo,
-                headersFactory);
+                headersFactory, HTTP_1_1);
     }
 
     @Parameterized.Parameters(name = "{index}: source type: {0}, update mode = {1}, double transform? {2}")
