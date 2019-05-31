@@ -33,7 +33,12 @@ package io.servicetalk.concurrent.internal;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
 import java.lang.reflect.AccessibleObject;
+import java.lang.reflect.Method;
+import java.security.AccessController;
+import java.security.PrivilegedAction;
 import javax.annotation.Nullable;
 
 import static java.lang.Boolean.parseBoolean;
@@ -142,6 +147,43 @@ final class ReflectionUtil {
             return version[1];
         } else {
             return version[0];
+        }
+    }
+
+    @Nullable
+    static MethodHandle extractNioBitsMethod(final String methodName, final MethodHandles.Lookup lookup) {
+        final Object maybeMethod = AccessController.doPrivileged((PrivilegedAction<Object>) () -> {
+            try {
+                final Class<?> bitsClass = Class.forName("java.nio.Bits", false, getSystemClassLoader());
+                final Method method = bitsClass.getDeclaredMethod(methodName, long.class, int.class);
+                final Throwable cause = trySetAccessible(method, true);
+                if (cause != null) {
+                    return cause;
+                }
+                return method;
+            } catch (Throwable e) {
+                return e;
+            }
+        });
+
+        if (!(maybeMethod instanceof Method)) {
+            return null;
+        }
+
+        try {
+            final MethodHandle methodHandle = lookup.unreflect((Method) maybeMethod);
+            methodHandle.invoke(1L, 1);
+            return methodHandle;
+        } catch (Throwable e) {
+            return null;
+        }
+    }
+
+    private static ClassLoader getSystemClassLoader() {
+        if (System.getSecurityManager() == null) {
+            return ClassLoader.getSystemClassLoader();
+        } else {
+            return AccessController.doPrivileged((PrivilegedAction<ClassLoader>) ClassLoader::getSystemClassLoader);
         }
     }
 }
