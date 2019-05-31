@@ -44,6 +44,7 @@ import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
 import io.servicetalk.transport.netty.internal.DefaultNettyConnection;
+import io.servicetalk.transport.netty.internal.DelegatingFlushStrategy;
 import io.servicetalk.transport.netty.internal.FlushStrategy;
 import io.servicetalk.transport.netty.internal.NettyChannelListenableAsyncCloseable;
 import io.servicetalk.transport.netty.internal.NettyConnection.TerminalPredicate;
@@ -80,7 +81,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Predicate;
-import java.util.function.UnaryOperator;
 import javax.annotation.Nullable;
 import javax.net.ssl.SSLSession;
 
@@ -123,6 +123,7 @@ final class H2ClientParentConnectionContext extends NettyChannelListenableAsyncC
     private final HttpExecutionContext executionContext;
     private final SingleSource.Processor<Throwable, Throwable> transportError = newSingleProcessor();
     private final CompletableSource.Processor onClosing = newCompletableProcessor();
+    private final FlushStrategy originalFlushStrategy;
     @Nullable
     private SSLSession sslSession;
     @Nullable
@@ -134,7 +135,9 @@ final class H2ClientParentConnectionContext extends NettyChannelListenableAsyncC
         super(channel, executor);
         this.executionContext = new DefaultHttpExecutionContext(allocator, fromNettyEventLoop(channel.eventLoop()),
                 executor, executionStrategy);
-        this.flushStrategy = flushStrategy;
+        // Wrap the strategy so that we can do reference equality to check if the strategy has been modified.
+        originalFlushStrategy = new DelegatingFlushStrategy(flushStrategy);
+        this.flushStrategy = originalFlushStrategy;
         // Just in case the channel abruptly closes, we should complete the onClosing Completable.
         onClose().subscribe(onClosing::onComplete);
     }
@@ -186,9 +189,10 @@ final class H2ClientParentConnectionContext extends NettyChannelListenableAsyncC
     }
 
     @Override
-    public Cancellable updateFlushStrategy(final UnaryOperator<FlushStrategy> strategyProvider) {
-        FlushStrategy old = flushStrategyUpdater.getAndUpdate(this, strategyProvider);
-        return () -> updateFlushStrategy(__ -> old);
+    public Cancellable updateFlushStrategy(final FlushStrategyProvider strategyProvider) {
+        FlushStrategy old = flushStrategyUpdater.getAndUpdate(this, current ->
+                strategyProvider.getNewStrategy(current, current == originalFlushStrategy));
+        return () -> updateFlushStrategy((__, ___) -> old);
     }
 
     @Override
@@ -558,7 +562,7 @@ final class H2ClientParentConnectionContext extends NettyChannelListenableAsyncC
         }
 
         @Override
-        public Cancellable updateFlushStrategy(final UnaryOperator<FlushStrategy> strategyProvider) {
+        public Cancellable updateFlushStrategy(final FlushStrategyProvider strategyProvider) {
             return connection.updateFlushStrategy(strategyProvider);
         }
 
