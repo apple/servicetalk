@@ -141,20 +141,19 @@ final class PlatformDependent0 {
         if (UNSAFE == null) {
             DIRECT_BUFFER_CONSTRUCTOR = null;
         } else {
-            final Object maybeDirectBufferConstructor =
-                    AccessController.doPrivileged((PrivilegedAction<Object>) () -> {
-                        try {
-                            final Constructor<?> constructor = direct.getClass().getDeclaredConstructor(
-                                    int.class, long.class, FileDescriptor.class, Runnable.class);
-                            Throwable cause = ReflectionUtil.trySetAccessible(constructor, true);
-                            if (cause != null) {
-                                return cause;
-                            }
-                            return constructor;
-                        } catch (Throwable e) {
-                            return e;
-                        }
-                    });
+            final Object maybeDirectBufferConstructor = AccessController.doPrivileged((PrivilegedAction<Object>) () -> {
+                try {
+                    final Constructor<?> constructor = direct.getClass().getDeclaredConstructor(
+                            int.class, long.class, FileDescriptor.class, Runnable.class);
+                    Throwable cause = ReflectionUtil.trySetAccessible(constructor, true);
+                    if (cause != null) {
+                        return cause;
+                    }
+                    return constructor;
+                } catch (Throwable e) {
+                    return e;
+                }
+            });
 
             MethodHandle directBufferConstructor;
             if (maybeDirectBufferConstructor instanceof Constructor<?>) {
@@ -188,25 +187,24 @@ final class PlatformDependent0 {
         if (UNSAFE == null || DIRECT_BUFFER_CONSTRUCTOR == null) {
             DEALLOCATOR_CONSTRUCTOR = null;
         } else {
-            final Object maybeDeallocatorConstructor =
-                    AccessController.doPrivileged((PrivilegedAction<Object>) () -> {
-                        try {
-                            for (Class<?> innerClass : direct.getClass().getDeclaredClasses()) {
-                                if (DEALLOCATOR_CLASS_NAME.equals(innerClass.getName())) {
-                                    final Constructor<?> constructor = innerClass.getDeclaredConstructor(
-                                            long.class, long.class, int.class);
-                                    Throwable cause = ReflectionUtil.trySetAccessible(constructor, true);
-                                    if (cause != null) {
-                                        return cause;
-                                    }
-                                    return constructor;
-                                }
+            final Object maybeDeallocatorConstructor = AccessController.doPrivileged((PrivilegedAction<Object>) () -> {
+                try {
+                    for (Class<?> innerClass : direct.getClass().getDeclaredClasses()) {
+                        if (DEALLOCATOR_CLASS_NAME.equals(innerClass.getName())) {
+                            final Constructor<?> constructor = innerClass.getDeclaredConstructor(
+                                    long.class, long.class, int.class);
+                            Throwable cause = ReflectionUtil.trySetAccessible(constructor, true);
+                            if (cause != null) {
+                                return cause;
                             }
-                            return new ClassNotFoundException(DEALLOCATOR_CLASS_NAME);
-                        } catch (Throwable e) {
-                            return e;
+                            return constructor;
                         }
-                    });
+                    }
+                    return new ClassNotFoundException(DEALLOCATOR_CLASS_NAME);
+                } catch (Throwable e) {
+                    return e;
+                }
+            });
 
             MethodHandle deallocatorConstructor;
             if (maybeDeallocatorConstructor instanceof Constructor<?>) {
@@ -241,6 +239,7 @@ final class PlatformDependent0 {
         LOGGER.debug("java.nio.Bits.unreserveMemory(long, int): {}",
                 UNRESERVE_MEMORY != null ? "available" : "unavailable");
 
+        // Define USE_DIRECT_BUFFER_WITHOUT_ZEROING:
         USE_DIRECT_BUFFER_WITHOUT_ZEROING = UNSAFE != null && DIRECT_BUFFER_CONSTRUCTOR != null &&
                 DEALLOCATOR_CONSTRUCTOR != null && RESERVE_MEMORY != null && UNRESERVE_MEMORY != null;
         LOGGER.debug("Allocation of DirectByteBuffer without zeroing memory: {}",
