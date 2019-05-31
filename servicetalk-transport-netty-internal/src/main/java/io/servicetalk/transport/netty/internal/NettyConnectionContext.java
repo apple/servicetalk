@@ -20,8 +20,6 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.api.ConnectionContext;
 
-import java.util.function.UnaryOperator;
-
 /**
  * A specialized {@link ConnectionContext} for netty based transports.
  */
@@ -31,14 +29,14 @@ public interface NettyConnectionContext extends ConnectionContext {
      * Updates {@link FlushStrategy} associated with this connection. Updated {@link FlushStrategy} will be used in any
      * subsequent writes on this connection.
      *
-     * @param strategyProvider {@link UnaryOperator} that given the current {@link FlushStrategy}, returns the
-     * new {@link FlushStrategy}. This {@link UnaryOperator} <strong>MAY</strong> be invoked multiple times for a single
-     * call to this method and is expected to be idempotent.
+     * @param strategyProvider {@link FlushStrategyProvider} to provide a new {@link FlushStrategy}.
+     * {@link FlushStrategyProvider#getNewStrategy(FlushStrategy, boolean)} <strong>MAY</strong> be invoked multiple
+     * times for a single call to this method and is expected to be idempotent.
      *
      * @return A {@link Cancellable} that will cancel this update and revert the {@link FlushStrategy} for this
      * connection to a default value.
      */
-    Cancellable updateFlushStrategy(UnaryOperator<FlushStrategy> strategyProvider);
+    Cancellable updateFlushStrategy(FlushStrategyProvider strategyProvider);
 
     /**
      * Returns a {@link Single}&lt;{@link Throwable}&gt; that may terminate with an error, if an error is observed at
@@ -57,4 +55,24 @@ public interface NettyConnectionContext extends ConnectionContext {
      * {@link NettyConnectionContext}.
      */
     Completable onClosing();
+
+    /**
+     * A provider of {@link FlushStrategy} to update the {@link FlushStrategy} for a {@link NettyConnectionContext}.
+     */
+    @FunctionalInterface
+    interface FlushStrategyProvider {
+
+        /**
+         * Given the current {@link FlushStrategy} associated with this {@link NettyConnectionContext}, return a new
+         * {@link FlushStrategy}. This method is expected to be idempotent.
+         *
+         * @param current Current {@link FlushStrategy} associated with the {@link NettyConnectionContext}.
+         * @param isCurrentOriginal {@code true} if the supplied {@code current} {@link FlushStrategy} is the same
+         * {@link FlushStrategy} that the associated {@link NettyConnectionContext} was created with. This is useful if
+         * the implementations do not wish to override a strategy already updated by another call.
+         * @return {@link FlushStrategy} to use if successfully updated by
+         * {@link NettyConnectionContext#updateFlushStrategy(FlushStrategyProvider)}.
+         */
+        FlushStrategy getNewStrategy(FlushStrategy current, boolean isCurrentOriginal);
+    }
 }

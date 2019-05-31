@@ -2,4 +2,4 @@
 
 This module defines the ServiceTalk client and server API for the link:https://tools.ietf.org/html/rfc7231[HTTP/1.x]
 protocol.
-See the link:https://servicetalk.io/[ServiceTalk docs] for more information.
+See the link:https://docs.servicetalk.io/[ServiceTalk docs] for more information.

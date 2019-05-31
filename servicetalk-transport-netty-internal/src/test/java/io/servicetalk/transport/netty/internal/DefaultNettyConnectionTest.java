@@ -321,7 +321,7 @@ public class DefaultNettyConnectionTest {
         pollChannelAndVerifyWrites("Hello"); // Flush on each (default)
 
         writeListener.reset();
-        Cancellable c = conn.updateFlushStrategy(old -> batchFlush(2, never()));
+        Cancellable c = conn.updateFlushStrategy((old, __) -> batchFlush(2, never()));
         writeListener.listen(conn.write(publisher));
         publisher.onNext(newBuffer("Hello1"));
         pollChannelAndVerifyWrites(); // No flush
@@ -352,7 +352,7 @@ public class DefaultNettyConnectionTest {
 
     @Test
     public void testCloseAsync() {
-        conn.updateFlushStrategy(fs -> flushOnEnd());
+        conn.updateFlushStrategy((__, ___) -> flushOnEnd());
         writeListener.listen(conn.write(publisher));
         Buffer hello1 = newBuffer("Hello1");
         Buffer hello2 = newBuffer("Hello2");

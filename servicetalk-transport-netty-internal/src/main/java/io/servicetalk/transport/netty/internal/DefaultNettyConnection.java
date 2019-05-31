@@ -51,7 +51,6 @@ import java.net.SocketAddress;
 import java.nio.channels.ClosedChannelException;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Supplier;
-import java.util.function.UnaryOperator;
 import javax.annotation.Nullable;
 import javax.net.ssl.SSLSession;
 
@@ -107,6 +106,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
     @Nullable
     private final CompletableSource.Processor onClosing;
     private final SingleSource.Processor<Throwable, Throwable> transportError = newSingleProcessor();
+    private final FlushStrategy originalFlushStrategy;
 
     private volatile FlushStrategy flushStrategy;
     private volatile WritableListener writableListener = PLACE_HOLDER_WRITABLE_LISTENER;
@@ -139,7 +139,9 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
         this.executionContext = new DefaultExecutionContext(allocator, fromNettyEventLoop(channel.eventLoop()),
                 executor, executionStrategy);
         this.closeHandler = requireNonNull(closeHandler);
-        this.flushStrategy = requireNonNull(flushStrategy);
+        // Wrap the strategy so that we can do reference equality to check if the strategy has been modified.
+        originalFlushStrategy = new DelegatingFlushStrategy(flushStrategy);
+        this.flushStrategy = originalFlushStrategy;
         if (closeHandler != UNSUPPORTED_PROTOCOL_CLOSE_HANDLER) {
             onClosing = newCompletableProcessor();
             closeHandler.registerEventHandler(channel, evt -> { // Called from EventLoop only!
@@ -423,9 +425,10 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
     }
 
     @Override
-    public Cancellable updateFlushStrategy(final UnaryOperator<FlushStrategy> strategyProvider) {
-        FlushStrategy old = flushStrategyUpdater.getAndUpdate(this, strategyProvider);
-        return () -> updateFlushStrategy(__ -> old);
+    public Cancellable updateFlushStrategy(final FlushStrategyProvider strategyProvider) {
+        FlushStrategy old = flushStrategyUpdater.getAndUpdate(this, current ->
+                strategyProvider.getNewStrategy(current, current == originalFlushStrategy));
+        return () -> updateFlushStrategy((__, ___) -> old);
     }
 
     @Override

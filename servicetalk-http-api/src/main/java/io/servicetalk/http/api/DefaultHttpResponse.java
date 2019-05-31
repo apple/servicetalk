@@ -62,7 +62,7 @@ final class DefaultHttpResponse extends AbstractDelegatingHttpResponse implement
 
     @Override
     public <T> HttpResponse payloadBody(final T pojo, final HttpSerializer<T> serializer) {
-        this.payloadBody = serializer.serialize(headers(), requireNonNull(pojo), original.payloadHolder().allocator());
+        this.payloadBody = serializer.serialize(headers(), pojo, original.payloadHolder().allocator());
         original.payloadBody(from(payloadBody));
         return this;
     }
