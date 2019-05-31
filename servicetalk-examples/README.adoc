@@ -1,4 +1,4 @@
 == ServiceTalk examples
 
 This repository is a collection of examples on how to use different facets of ServiceTalk.
-See the https://servicetalk.io/[ServiceTalk docs] for more information.
+See the https://docs.servicetalk.io/[ServiceTalk docs] for more information.
