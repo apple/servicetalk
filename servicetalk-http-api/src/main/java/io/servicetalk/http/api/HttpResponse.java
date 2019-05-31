@@ -43,7 +43,7 @@ public interface HttpResponse extends HttpResponseMetaData, TrailersHolder {
      * Returns an {@link HttpResponse} with its underlying payload set to {@code payloadBody}.
      *
      * @param payloadBody the underlying payload.
-     * @return An {@link HttpResponse} with the new serialized payload body.
+     * @return {@code this}
      */
     HttpResponse payloadBody(Buffer payloadBody);
 
@@ -53,7 +53,7 @@ public interface HttpResponse extends HttpResponseMetaData, TrailersHolder {
      * @param pojo The object to serialize.
      * @param serializer The {@link HttpSerializer} which converts {@code pojo} into bytes.
      * @param <T> The type of object to serialize.
-     * @return An {@link HttpResponse} with the new serialized payload body.
+     * @return {@code this}
      */
     <T> HttpResponse payloadBody(T pojo, HttpSerializer<T> serializer);
 

@@ -59,6 +59,7 @@ import static io.netty.util.internal.StringUtil.simpleClassName;
 import static io.servicetalk.buffer.netty.BufferUtil.newBufferFrom;
 import static io.servicetalk.buffer.netty.BufferUtil.toByteBufNoThrow;
 import static io.servicetalk.http.api.CharSequences.unwrapBuffer;
+import static io.servicetalk.http.netty.HeaderUtils.calculateContentLength;
 import static io.servicetalk.http.netty.HeaderUtils.isTransferEncodingChunked;
 import static io.servicetalk.http.netty.HttpKeepAlive.shouldClose;
 import static java.lang.Long.toHexString;
@@ -159,7 +160,7 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelOutbound
                     case ST_INIT:
                         throw new IllegalStateException("unexpected message type: " + simpleClassName(msg));
                     case ST_CONTENT_NON_CHUNK:
-                        final long contentLength = contentLength(stBuffer);
+                        final long contentLength = calculateContentLength(stBuffer);
                         if (contentLength > 0) {
                             ctx.write(encodeAndRetain(stBuffer), promise);
                             break;
@@ -176,7 +177,7 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelOutbound
                         break;
                     case ST_CONTENT_CHUNK:
                         PromiseCombiner promiseCombiner = new PromiseCombiner();
-                        encodeChunkedContent(ctx, stBuffer, contentLength(stBuffer), promiseCombiner);
+                        encodeChunkedContent(ctx, stBuffer, calculateContentLength(stBuffer), promiseCombiner);
                         promiseCombiner.finish(promise);
                         break;
                     default:
@@ -330,11 +331,6 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelOutbound
             // doesn't modify indexes.
             src.getBytes(src.readerIndex(), dstBuffer, dstOffset, src.readableBytes());
         }
-    }
-
-    private static long contentLength(Buffer msg) {
-        // TODO(scott): add support for file region
-        return msg.readableBytes();
     }
 
     private static ByteBuf encodeAndRetain(Buffer msg) {

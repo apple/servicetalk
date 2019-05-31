@@ -67,7 +67,7 @@ public interface BlockingStreamingHttpRequest extends HttpRequestMetaData {
      * This method reserves the right to delay completion/consumption of {@code payloadBody}. This may occur due to the
      * combination with the existing {@link Iterable} payload body.
      * @param payloadBody The new payload body.
-     * @return A {@link BlockingStreamingHttpRequest} with the new serialized payload body.
+     * @return {@code this}
      */
     BlockingStreamingHttpRequest payloadBody(Iterable<Buffer> payloadBody);
 
@@ -81,7 +81,7 @@ public interface BlockingStreamingHttpRequest extends HttpRequestMetaData {
      * This method reserves the right to delay completion/consumption of {@code payloadBody}. This may occur due to the
      * combination with the existing {@link CloseableIterable} payload body.
      * @param payloadBody The new payload body.
-     * @return A {@link BlockingStreamingHttpRequest} with the new serialized payload body.
+     * @return {@code this}
      */
     BlockingStreamingHttpRequest payloadBody(CloseableIterable<Buffer> payloadBody);
 
@@ -97,7 +97,7 @@ public interface BlockingStreamingHttpRequest extends HttpRequestMetaData {
      * @param payloadBody The new payload body, prior to serialization.
      * @param serializer Used to serialize the payload body.
      * @param <T> The type of objects to serialize.
-     * @return A {@link BlockingStreamingHttpRequest} with the new serialized payload body.
+     * @return {@code this}
      */
     <T> BlockingStreamingHttpRequest payloadBody(Iterable<T> payloadBody, HttpSerializer<T> serializer);
 
@@ -113,7 +113,7 @@ public interface BlockingStreamingHttpRequest extends HttpRequestMetaData {
      * @param payloadBody The new payload body, prior to serialization.
      * @param serializer Used to serialize the payload body.
      * @param <T> The type of objects to serialize.
-     * @return A {@link BlockingStreamingHttpRequest} with the new serialized payload body.
+     * @return {@code this}
      */
     <T> BlockingStreamingHttpRequest payloadBody(CloseableIterable<T> payloadBody, HttpSerializer<T> serializer);
 
@@ -126,7 +126,7 @@ public interface BlockingStreamingHttpRequest extends HttpRequestMetaData {
      * may be processed.
      * @param serializer Used to serialize the payload body.
      * @param <T> The type of objects to serialize.
-     * @return A {@link BlockingStreamingHttpRequest} with the new serialized payload body.
+     * @return {@code this}
      */
     <T> BlockingStreamingHttpRequest transformPayloadBody(
             Function<BlockingIterable<Buffer>, BlockingIterable<T>> transformer, HttpSerializer<T> serializer);
@@ -142,7 +142,7 @@ public interface BlockingStreamingHttpRequest extends HttpRequestMetaData {
      * @param serializer Used to serialize the payload body.
      * @param <T> The type of objects to deserialize.
      * @param <R> The type of objects to serialize.
-     * @return A {@link BlockingStreamingHttpRequest} with the new serialized payload body.
+     * @return {@code this}
      */
     default <T, R> BlockingStreamingHttpRequest transformPayloadBody(
             Function<BlockingIterable<T>, BlockingIterable<R>> transformer, HttpDeserializer<T> deserializer,
@@ -155,7 +155,7 @@ public interface BlockingStreamingHttpRequest extends HttpRequestMetaData {
      * @param transformer A {@link Function} which take as a parameter the existing payload body
      * {@link BlockingIterable} and returns the new payload body {@link BlockingIterable}. It is assumed the existing
      * payload body {@link BlockingIterable} will be transformed/consumed or else no more requests may be processed.
-     * @return A {@link BlockingStreamingHttpRequest} with the new payload body.
+     * @return {@code this}
      */
     BlockingStreamingHttpRequest transformPayloadBody(UnaryOperator<BlockingIterable<Buffer>> transformer);
 
@@ -163,7 +163,7 @@ public interface BlockingStreamingHttpRequest extends HttpRequestMetaData {
      * Returns a {@link BlockingStreamingHttpRequest} with its underlying payload transformed. Note that the raw objects
      * of the underlying {@link Iterable} may be exposed. The object types are not guaranteed to be homogeneous.
      * @param transformer Responsible for transforming the payload body.
-     * @return A {@link BlockingStreamingHttpRequest} with the new payload body.
+     * @return {@code this}
      */
     BlockingStreamingHttpRequest transformRawPayloadBody(UnaryOperator<BlockingIterable<?>> transformer);
 
@@ -176,7 +176,7 @@ public interface BlockingStreamingHttpRequest extends HttpRequestMetaData {
      * @param trailersTransformer Invoked after all payload has been consumed with the state and the trailers. The
      * return value of this {@link BiFunction} will be the trailers for the {@link BlockingStreamingHttpRequest}.
      * @param <T> The type of state used during the transformation.
-     * @return A {@link BlockingStreamingHttpRequest} with the new payload body.
+     * @return {@code this}
      */
     <T> BlockingStreamingHttpRequest transform(Supplier<T> stateSupplier,
                                                BiFunction<Buffer, T, Buffer> transformer,
@@ -191,7 +191,7 @@ public interface BlockingStreamingHttpRequest extends HttpRequestMetaData {
      * @param trailersTransformer Invoked after all payload has been consumed with the state and the trailers. The
      * return value of this {@link BiFunction} will be the trailers for the {@link BlockingStreamingHttpRequest}.
      * @param <T> The type of state used during the transformation.
-     * @return A {@link BlockingStreamingHttpRequest} with the new payload body.
+     * @return {@code this}
      */
     <T> BlockingStreamingHttpRequest transformRaw(Supplier<T> stateSupplier,
                                                   BiFunction<Object, T, ?> transformer,
