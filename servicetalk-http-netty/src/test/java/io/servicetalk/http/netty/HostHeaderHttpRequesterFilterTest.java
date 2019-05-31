@@ -16,7 +16,7 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.http.api.BlockingHttpClient;
-import io.servicetalk.http.api.BlockingHttpConnection;
+import io.servicetalk.http.api.ReservedBlockingHttpConnection;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
 
@@ -87,13 +87,16 @@ public class HostHeaderHttpRequesterFilterTest {
     }
 
     @Test
-    public void connectionBuilderAppendConnectionFilter() throws Exception {
+    public void reserveConnection() throws Exception {
         try (ServerContext context = buildServer();
-             BlockingHttpConnection conn = new DefaultHttpConnectionBuilder<>()
+             BlockingHttpClient client = HttpClients.forResolvedAddress(serverHostAndPort(context))
+                     .disableHostHeaderFallback() // turn off the default
                     .appendConnectionFilter(new HostHeaderHttpRequesterFilter(HostAndPort.of("foo.bar", -1)))
-                    .buildBlocking(context.listenAddress())) {
-                assertEquals("foo.bar:-1",
+                    .buildBlocking()) {
+            ReservedBlockingHttpConnection conn = client.reserveConnection(client.get("/"));
+            assertEquals("foo.bar:-1",
                         conn.request(conn.get("/")).payloadBody(textDeserializer()));
+            conn.close();
         }
     }
 }

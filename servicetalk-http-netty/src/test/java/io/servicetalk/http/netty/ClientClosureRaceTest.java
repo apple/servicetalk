@@ -142,7 +142,7 @@ public class ClientClosureRaceTest {
     private void runIterations(Callable<Single<?>> test) throws Exception {
         int count = 0;
         try {
-            while (!receivedExpectedError) {
+            while (!receivedExpectedError && count < ITERATIONS) {
                 try {
                     count++;
                     Object response = test.call().toFuture().get();

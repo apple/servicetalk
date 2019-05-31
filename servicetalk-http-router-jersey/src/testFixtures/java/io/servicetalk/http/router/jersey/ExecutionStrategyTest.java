@@ -32,9 +32,11 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
@@ -59,7 +61,6 @@ import static java.lang.String.format;
 import static java.util.Arrays.asList;
 import static java.util.Arrays.stream;
 import static java.util.Collections.singletonMap;
-import static java.util.stream.Collectors.toList;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertThat;
@@ -173,14 +174,38 @@ public final class ExecutionStrategyTest extends AbstractJerseyStreamingHttpServ
     }
 
     private final TestExecutorStrategy routerExecutionStrategy;
+    private final TestExecutorStrategy classExecutionStrategy;
+    private final TestExecutorStrategy methodExecutionStrategy;
+    private final TestMode testMode;
+    private final String path;
 
-    public ExecutionStrategyTest(final TestExecutorStrategy routerExecutionStrategy) {
+    public ExecutionStrategyTest(final TestExecutorStrategy routerExecutionStrategy,
+                                 final TestExecutorStrategy classExecutionStrategy,
+                                 final TestExecutorStrategy methodExecutionStrategy,
+                                 final TestMode testMode,
+                                 final String path) {
         this.routerExecutionStrategy = routerExecutionStrategy;
+        this.classExecutionStrategy = classExecutionStrategy;
+        this.methodExecutionStrategy = methodExecutionStrategy;
+        this.testMode = testMode;
+        this.path = path;
     }
 
-    @Parameters
+    @Parameters(name = "{4} :: r={0}, c={1}, m={2} {3}")
     public static Collection<Object[]> data() {
-        return stream(TestExecutorStrategy.values()).map(e -> new Object[]{e}).collect(toList());
+        List<Object[]> parameters = new ArrayList<>();
+        stream(TestExecutorStrategy.values()).forEach(routerExecutionStrategy -> {
+            ROOT_PATHS_EXEC_STRATS.forEach((rootPath, classExecutionStrategy) -> {
+                SUB_PATHS_EXEC_STRATS.forEach((subPath, methodExecutionStrategy) -> {
+                    SUB_SUB_PATH_TEST_MODES.forEach((subSubPath, testMode) -> {
+                        String path = rootPath + subPath + subSubPath;
+                        parameters.add(new Object[]{routerExecutionStrategy, classExecutionStrategy,
+                                methodExecutionStrategy, testMode, path});
+                    });
+                });
+            });
+        });
+        return parameters;
     }
 
     static Function<String, HttpExecutionStrategy> asFactory(
@@ -203,23 +228,12 @@ public final class ExecutionStrategyTest extends AbstractJerseyStreamingHttpServ
     }
 
     @Test
-    public void allResources() {
-        ROOT_PATHS_EXEC_STRATS.forEach((rootPath, classExecutionStrategy) -> {
-            SUB_PATHS_EXEC_STRATS.forEach((subPath, methodExecutionStrategy) -> {
-                SUB_SUB_PATH_TEST_MODES.forEach((subSubPath, testMode) -> {
-                    String path = rootPath + subPath + subSubPath;
-                    testResource(classExecutionStrategy, methodExecutionStrategy, testMode, path);
-                });
-            });
-        });
+    public void testResource() {
+        runTwiceToEnsureEndpointCache(this::runTest);
     }
 
     @SuppressWarnings("unchecked")
-    private void testResource(final TestExecutorStrategy classExecutionStrategy,
-                              final TestExecutorStrategy methodExecutionStrategy,
-                              final TestMode testMode,
-                              final String path) {
-
+    private void runTest() {
         final String resBody = testMode.sendTestRequest(path, this);
         final Map<String, String> threadingInfo;
         try {

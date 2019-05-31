@@ -45,10 +45,10 @@ public abstract class AbstractHandleSubscribeOffloadedTest {
     public static final String TIMER_THREAD_NAME_PREFIX = "timer-thread";
     @Rule
     public final ExecutorRule executorForOffloadRule =
-            withExecutor(newCachedThreadExecutor(new DefaultThreadFactory(OFFLOAD_THREAD_NAME_PREFIX)));
+            withExecutor(() -> newCachedThreadExecutor(new DefaultThreadFactory(OFFLOAD_THREAD_NAME_PREFIX)));
     @Rule
     public final ExecutorRule executorForTimerRule =
-            withExecutor(newCachedThreadExecutor(new DefaultThreadFactory(TIMER_THREAD_NAME_PREFIX)));
+            withExecutor(() -> newCachedThreadExecutor(new DefaultThreadFactory(TIMER_THREAD_NAME_PREFIX)));
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
     protected final AtomicReference<Thread> handleSubscribeInvokerRef = new AtomicReference<>();

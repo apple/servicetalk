@@ -25,6 +25,8 @@ import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.HttpProtocolVersion;
 import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.http.api.HttpServerBuilder;
+import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
+import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
@@ -32,6 +34,7 @@ import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.test.resources.DefaultTestCerts;
 import io.servicetalk.transport.api.ConnectionAcceptor;
 import io.servicetalk.transport.api.DelegatingConnectionAcceptor;
+import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.api.SslConfig;
@@ -64,6 +67,7 @@ import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.transport.api.ConnectionAcceptor.ACCEPT_ALL;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
+import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.parseBoolean;
 import static java.lang.Thread.NORM_PRIORITY;
@@ -109,6 +113,7 @@ public abstract class AbstractNettyHttpServerTest {
     private ConnectionAcceptor connectionAcceptor = ACCEPT_ALL;
     private boolean sslEnabled;
     private ServerContext serverContext;
+    private StreamingHttpClient httpClient;
     private StreamingHttpConnection httpConnection;
     private StreamingHttpService service;
 
@@ -148,15 +153,16 @@ public abstract class AbstractNettyHttpServerTest {
                 .beforeOnSuccess(ctx -> LOGGER.debug("Server started on {}.", ctx.listenAddress()))
                 .beforeOnError(throwable -> LOGGER.debug("Failed starting server on {}.", bindAddress)));
 
-        final DefaultHttpConnectionBuilder<Object> httpConnectionBuilder = new DefaultHttpConnectionBuilder<>();
+        final SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> clientBuilder =
+                HttpClients.forResolvedAddress(serverHostAndPort(serverContext));
         if (sslEnabled) {
             final SslConfig sslConfig = SslConfigBuilder.forClientWithoutServerIdentity()
                     .trustManager(DefaultTestCerts::loadMutualAuthCaPem).build();
-            httpConnectionBuilder.sslConfig(sslConfig);
+            clientBuilder.sslConfig(sslConfig);
         }
-        httpConnection = awaitIndefinitelyNonNull(httpConnectionBuilder.ioExecutor(clientIoExecutor)
-                .executionStrategy(defaultStrategy(clientExecutor))
-                .buildStreaming(serverContext.listenAddress()));
+        httpClient = clientBuilder.ioExecutor(clientIoExecutor)
+                .executionStrategy(defaultStrategy(clientExecutor)).buildStreaming();
+        httpConnection = httpClient.reserveConnection(httpClient.get("/")).toFuture().get();
     }
 
     Single<ServerContext> listen(HttpServerBuilder builder) {
@@ -176,7 +182,7 @@ public abstract class AbstractNettyHttpServerTest {
 
     @After
     public void stopServer() throws Exception {
-        newCompositeCloseable().appendAll(httpConnection, clientExecutor, serverContext).close();
+        newCompositeCloseable().appendAll(httpConnection, httpClient, clientExecutor, serverContext).close();
     }
 
     @AfterClass

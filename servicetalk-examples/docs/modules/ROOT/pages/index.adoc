@@ -1,0 +1,8 @@
+include::ROOT:partial$component-attributes.adoc[]
+= Examples
+
+This repository is a collection of examples on how to use different facets of ServiceTalk.
+The examples are divided based on protocol and currently have the following supported protocols:
+
+- xref:http/index.adoc[io.servicetalk.examples.http] - examples for link:https://tools.ietf.org/html/rfc7231[HTTP]
+protocol

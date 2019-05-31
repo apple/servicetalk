@@ -62,7 +62,7 @@ public interface StreamingHttpResponse extends HttpResponseMetaData {
      * This method reserves the right to delay completion/consumption of {@code payloadBody}. This may occur due to the
      * combination with the existing {@link Publisher} payload body.
      * @param payloadBody The new payload body.
-     * @return A {@link StreamingHttpResponse} with the new serialized payload body.
+     * @return {@code this}
      */
     StreamingHttpResponse payloadBody(Publisher<Buffer> payloadBody);
 
@@ -78,7 +78,7 @@ public interface StreamingHttpResponse extends HttpResponseMetaData {
      * @param payloadBody The new payload body, prior to serialization.
      * @param serializer Used to serialize the payload body.
      * @param <T> The type of objects to serialize.
-     * @return A {@link StreamingHttpResponse} with the new serialized payload body.
+     * @return {@code this}
      */
     <T> StreamingHttpResponse payloadBody(Publisher<T> payloadBody, HttpSerializer<T> serializer);
 
@@ -89,7 +89,7 @@ public interface StreamingHttpResponse extends HttpResponseMetaData {
      * {@link Publisher} will be transformed/consumed or else no more responses may be processed.
      * @param serializer Used to serialize the payload body.
      * @param <T> The type of objects to serialize.
-     * @return A {@link StreamingHttpResponse} with the new serialized payload body.
+     * @return {@code this}
      */
     <T> StreamingHttpResponse transformPayloadBody(Function<Publisher<Buffer>, Publisher<T>> transformer,
                                                    HttpSerializer<T> serializer);
@@ -103,7 +103,7 @@ public interface StreamingHttpResponse extends HttpResponseMetaData {
      * @param serializer Used to serialize the payload body.
      * @param <T> The type of objects to deserialize.
      * @param <R> The type of objects to serialize.
-     * @return A {@link StreamingHttpResponse} with the new serialized payload body.
+     * @return {@code this}
      */
     default <T, R> StreamingHttpResponse transformPayloadBody(Function<Publisher<T>, Publisher<R>> transformer,
                                                               HttpDeserializer<T> deserializer,
@@ -117,7 +117,7 @@ public interface StreamingHttpResponse extends HttpResponseMetaData {
      * @param transformer A {@link Function} which take as a parameter the existing payload body {@link Publisher} and
      * returns the new payload body {@link Publisher}. It is assumed the existing payload body {@link Publisher} will be
      * transformed/consumed or else no more responses may be processed.
-     * @return A {@link StreamingHttpResponse} with the new payload body.
+     * @return {@code this}
      */
     StreamingHttpResponse transformPayloadBody(UnaryOperator<Publisher<Buffer>> transformer);
 
@@ -125,7 +125,7 @@ public interface StreamingHttpResponse extends HttpResponseMetaData {
      * Returns a {@link StreamingHttpResponse} with its underlying payload transformed. Note that the raw objects of the
      * underlying {@link Publisher} may be exposed. The object types are not guaranteed to be homogeneous.
      * @param transformer Responsible for transforming the payload body.
-     * @return A {@link StreamingHttpResponse} with the new payload body.
+     * @return {@code this}
      */
     StreamingHttpResponse transformRawPayloadBody(UnaryOperator<Publisher<?>> transformer);
 
@@ -138,7 +138,7 @@ public interface StreamingHttpResponse extends HttpResponseMetaData {
      * @param trailersTransformer Invoked after all payload has been consumed with the state and the trailers. The
      * return value of this {@link BiFunction} will be the trailers for the {@link StreamingHttpResponse}.
      * @param <T> The type of state used during the transformation.
-     * @return A {@link StreamingHttpResponse} with the new payload body.
+     * @return {@code this}
      */
     <T> StreamingHttpResponse transform(Supplier<T> stateSupplier,
                                         BiFunction<Buffer, T, Buffer> transformer,
@@ -153,7 +153,7 @@ public interface StreamingHttpResponse extends HttpResponseMetaData {
      * @param trailersTransformer Invoked after all payload has been consumed with the state and the trailers. The
      * return value of this {@link BiFunction} will be the trailers for the {@link StreamingHttpResponse}.
      * @param <T> The type of state used during the transformation.
-     * @return A {@link StreamingHttpResponse} with the new payload body.
+     * @return {@code this}
      */
     <T> StreamingHttpResponse transformRaw(Supplier<T> stateSupplier,
                                            BiFunction<Object, T, ?> transformer,

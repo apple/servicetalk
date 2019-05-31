@@ -18,14 +18,18 @@ package io.servicetalk.http.netty;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.client.api.ConnectionFactory;
 import io.servicetalk.client.api.ConnectionFactoryFilter;
+import io.servicetalk.client.api.DefaultServiceDiscovererEvent;
 import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.LoadBalancerFactory;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
+import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompositeCloseable;
+import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
+import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
@@ -47,9 +51,11 @@ import java.net.SocketOption;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.api.AsyncCloseables.emptyAsyncCloseable;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
+import static io.servicetalk.concurrent.api.Publisher.failed;
+import static io.servicetalk.concurrent.api.Publisher.never;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
-import static io.servicetalk.http.netty.DefaultHttpConnectionBuilder.reservedConnectionsPipelineEnabled;
 import static io.servicetalk.http.netty.GlobalDnsServiceDiscoverer.globalDnsServiceDiscoverer;
 import static io.servicetalk.http.netty.H2ToStH1Utils.HTTP_2_0;
 import static io.servicetalk.loadbalancer.RoundRobinLoadBalancer.newRoundRobinFactory;
@@ -80,7 +86,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
     @Nullable
     private StreamingHttpClientFilterFactory clientFilterFactory;
     private boolean lbReadyFilterEnabled = true;
-    private ConnectionFactoryFilter<R, StreamingHttpConnection> connectionFactoryFilter =
+    private ConnectionFactoryFilter<R, FilterableStreamingHttpConnection> connectionFactoryFilter =
             ConnectionFactoryFilter.identity();
 
     DefaultSingleAddressHttpClientBuilder(
@@ -131,6 +137,13 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
         return new DefaultSingleAddressHttpClientBuilder<>(address, globalDnsServiceDiscoverer());
     }
 
+    static <U> DefaultSingleAddressHttpClientBuilder<U, InetSocketAddress> forResolvedAddress(final U u,
+            final InetSocketAddress address) {
+        ServiceDiscoverer<U, InetSocketAddress, ServiceDiscovererEvent<InetSocketAddress>> sd =
+                new NoopServiceDiscoverer<>(u, address);
+        return new DefaultSingleAddressHttpClientBuilder<>(u, sd);
+    }
+
     static DefaultSingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> forUnknownHostAndPort() {
         return new DefaultSingleAddressHttpClientBuilder<>(globalDnsServiceDiscoverer());
     }
@@ -173,25 +186,23 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
             final StreamingHttpRequestResponseFactory reqRespFactory = ctx.reqRespFactory;
 
             // closed by the LoadBalancer
-            final ConnectionFactory<R, StreamingHttpConnection> rawConnectionFactory;
+            final ConnectionFactory<R, StreamingHttpConnection> connectionFactory;
             if (roConfig.isH2PriorKnowledge()) {
-                rawConnectionFactory = new H2LBHttpConnectionFactory<>(roConfig, ctx.executionContext,
+                connectionFactory = new H2LBHttpConnectionFactory<>(roConfig, ctx.executionContext,
                         connectionFilterFactory, reqRespFactory,
                         influencerChainBuilder.buildForConnectionFactory(
-                                ctx.executionContext.executionStrategy()));
+                                ctx.executionContext.executionStrategy()), connectionFactoryFilter);
             } else {
-                rawConnectionFactory = reservedConnectionsPipelineEnabled(roConfig) ?
+                connectionFactory = reservedConnectionsPipelineEnabled(roConfig) ?
                         new PipelinedLBHttpConnectionFactory<>(roConfig, ctx.executionContext,
                                 connectionFilterFactory, reqRespFactory,
                                 influencerChainBuilder.buildForConnectionFactory(
-                                        ctx.executionContext.executionStrategy())) :
+                                        ctx.executionContext.executionStrategy()), connectionFactoryFilter) :
                         new NonPipelinedLBHttpConnectionFactory<>(roConfig, ctx.executionContext,
                                 connectionFilterFactory, reqRespFactory,
                                 influencerChainBuilder.buildForConnectionFactory(
-                                        ctx.executionContext.executionStrategy()));
+                                        ctx.executionContext.executionStrategy()), connectionFactoryFilter);
             }
-            final ConnectionFactory<R, ? extends StreamingHttpConnection> connectionFactory =
-                    connectionFactoryFilter.create(closeOnException.prepend(rawConnectionFactory));
 
             final LoadBalancer<? extends StreamingHttpConnection> lbfUntypedForCast =
                     closeOnException.prepend(loadBalancerFactory.newLoadBalancer(sdEvents, connectionFactory));
@@ -371,7 +382,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
 
     @Override
     public DefaultSingleAddressHttpClientBuilder<U, R> appendConnectionFactoryFilter(
-            final ConnectionFactoryFilter<R, StreamingHttpConnection> factory) {
+            final ConnectionFactoryFilter<R, FilterableStreamingHttpConnection> factory) {
         connectionFactoryFilter = connectionFactoryFilter.append(factory);
         influencerChainBuilder.add(factory);
         return this;
@@ -436,6 +447,12 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
         return influencerChainBuilder.buildForClient(strategy);
     }
 
+    // TODO(derek): Temporary, so we can re-enable the ability to create non-pipelined connections for perf testing.
+    private static boolean reservedConnectionsPipelineEnabled(final ReadOnlyHttpClientConfig roConfig) {
+        return roConfig.maxPipelinedRequests() > 1 ||
+                Boolean.valueOf(System.getProperty("io.servicetalk.http.netty.reserved.connections.pipeline", "true"));
+    }
+
     private static final class StrategyInfluencingLoadBalancerFactory<R>
             implements LoadBalancerFactory<R, StreamingHttpConnection>, HttpExecutionStrategyInfluencer {
 
@@ -452,6 +469,46 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
         public HttpExecutionStrategy influenceStrategy(final HttpExecutionStrategy strategy) {
             // We know that round robin load balancer does not block.
             return strategy;
+        }
+    }
+
+    private static final class NoopServiceDiscoverer<OriginalAddress>
+            implements ServiceDiscoverer<OriginalAddress, InetSocketAddress,
+            ServiceDiscovererEvent<InetSocketAddress>> {
+        private final ListenableAsyncCloseable closeable = emptyAsyncCloseable();
+
+        private final Publisher<ServiceDiscovererEvent<InetSocketAddress>> resolution;
+        private final OriginalAddress originalAddress;
+
+        private NoopServiceDiscoverer(final OriginalAddress originalAddress, final InetSocketAddress address) {
+            this.originalAddress = requireNonNull(originalAddress);
+            resolution = Publisher.<ServiceDiscovererEvent<InetSocketAddress>>from(
+                    new DefaultServiceDiscovererEvent<>(requireNonNull(address), true))
+                    // LoadBalancer will flag a termination of service discoverer Publisher as unexpected.
+                    .concat(never());
+        }
+
+        @Override
+        public Publisher<ServiceDiscovererEvent<InetSocketAddress>> discover(final OriginalAddress address) {
+            if (!this.originalAddress.equals(address)) {
+                return failed(new IllegalArgumentException("Unexpected address resolution request: " + address));
+            }
+            return resolution;
+        }
+
+        @Override
+        public Completable onClose() {
+            return closeable.onClose();
+        }
+
+        @Override
+        public Completable closeAsync() {
+            return closeable.closeAsync();
+        }
+
+        @Override
+        public Completable closeAsyncGracefully() {
+            return closeable.closeAsyncGracefully();
         }
     }
 }

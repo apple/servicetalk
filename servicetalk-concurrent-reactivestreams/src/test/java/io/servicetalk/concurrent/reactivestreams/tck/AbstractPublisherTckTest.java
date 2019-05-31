@@ -17,8 +17,6 @@ package io.servicetalk.concurrent.reactivestreams.tck;
 
 import io.servicetalk.concurrent.api.Publisher;
 
-import org.reactivestreams.tck.PublisherVerification;
-import org.reactivestreams.tck.TestEnvironment;
 import org.testng.annotations.Test;
 
 import static io.servicetalk.concurrent.reactivestreams.ReactiveStreamsAdapters.toReactiveStreamsPublisher;
@@ -32,11 +30,7 @@ import static io.servicetalk.concurrent.reactivestreams.ReactiveStreamsAdapters.
  * want to extend {@link AbstractPublisherOperatorTckTest}.
  */
 @Test
-public abstract class AbstractPublisherTckTest<T> extends PublisherVerification<T> {
-
-    protected AbstractPublisherTckTest() {
-        super(new TestEnvironment());
-    }
+public abstract class AbstractPublisherTckTest<T> extends AbstractTckTest<T> {
 
     @Override
     public final org.reactivestreams.Publisher<T> createPublisher(final long elements) {

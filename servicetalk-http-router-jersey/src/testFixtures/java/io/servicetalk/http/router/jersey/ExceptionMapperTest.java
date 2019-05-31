@@ -143,28 +143,38 @@ public class ExceptionMapperTest extends AbstractJerseyStreamingHttpServiceTest 
 
     @Test
     public void stringResponse() {
-        testPlainResponse(STR);
+        runTwiceToEnsureEndpointCache(() -> {
+            testPlainResponse(STR);
+        });
     }
 
     @Test
     public void bufferResponse() {
-        testPlainResponse(BUF);
+        runTwiceToEnsureEndpointCache(() -> {
+            testPlainResponse(BUF);
+        });
     }
 
     @Test
     public void singleBufferResponse() {
-        testPlainResponse(SBUF);
+        runTwiceToEnsureEndpointCache(() -> {
+            testPlainResponse(SBUF);
+        });
     }
 
     @Test
     public void mapResponse() {
-        testJsonResponse(MAP);
+        runTwiceToEnsureEndpointCache(() -> {
+            testJsonResponse(MAP);
+        });
     }
 
     @Test
     public void singleMapResponse() {
-        assumeThat(isStreamingJsonEnabled(), is(true));
-        testJsonResponse(SMAP);
+        runTwiceToEnsureEndpointCache(() -> {
+            assumeThat(isStreamingJsonEnabled(), is(true));
+            testJsonResponse(SMAP);
+        });
     }
 
     private void testPlainResponse(final ExceptionResponseType ert) {
@@ -208,7 +218,6 @@ public class ExceptionMapperTest extends AbstractJerseyStreamingHttpServiceTest 
                                        final ExceptionResponseType ert,
                                        final CharSequence expectedContentType,
                                        final Class<? extends Throwable> expectedExceptionClass) {
-
         req.headers().set(EXCEPTION_RESPONSE_TYPE_HEADER, ert.toString());
 
         if (HttpHeaderValues.APPLICATION_JSON.equals(expectedContentType)) {

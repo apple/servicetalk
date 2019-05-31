@@ -47,6 +47,7 @@ import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
 import io.servicetalk.transport.netty.internal.CloseHandler;
 import io.servicetalk.transport.netty.internal.DefaultNettyConnection;
+import io.servicetalk.transport.netty.internal.DelegatingFlushStrategy;
 import io.servicetalk.transport.netty.internal.FlushStrategy;
 import io.servicetalk.transport.netty.internal.NettyConnection;
 import io.servicetalk.transport.netty.internal.NettyConnection.TerminalPredicate;
@@ -63,7 +64,6 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Predicate;
-import java.util.function.UnaryOperator;
 import javax.annotation.Nullable;
 import javax.net.ssl.SSLSession;
 
@@ -224,7 +224,7 @@ final class NettyHttpServer {
         }
 
         @Override
-        public Cancellable updateFlushStrategy(final UnaryOperator<FlushStrategy> strategyProvider) {
+        public Cancellable updateFlushStrategy(final FlushStrategyProvider strategyProvider) {
             return compositeFlushStrategy.updateFlushStrategy(strategyProvider);
         }
 
@@ -446,17 +446,19 @@ final class NettyHttpServer {
             private FlushSender flushSender = () -> { };
 
             CompositeFlushStrategy(final FlushStrategy flushStrategy) {
-                originalStrategy = flushStrategy;
-                this.flushStrategy = flushStrategy;
+                // Wrap the strategy so that we can do reference equality to check if the strategy has been modified.
+                originalStrategy = new DelegatingFlushStrategy(flushStrategy);
+                this.flushStrategy = originalStrategy;
             }
 
-            Cancellable updateFlushStrategy(final UnaryOperator<FlushStrategy> strategyProvider) {
-                flushStrategyUpdater.updateAndGet(this, strategyProvider);
+            Cancellable updateFlushStrategy(final FlushStrategyProvider strategyProvider) {
+                flushStrategyUpdater.updateAndGet(this, current ->
+                        strategyProvider.getNewStrategy(current, current == originalStrategy));
                 // We always revert to the original strategy specified for the connection. If a user wishes to create a
                 // hierarchical strategy, they have to do it by themselves.
                 return () -> {
                     final WriteEventsListener prev = currentListener;
-                    updateFlushStrategy(__ -> originalStrategy);
+                    updateFlushStrategy((__, ___) -> originalStrategy);
                     // Since flushStrategy and currentListener can not be updated atomically, we only switch
                     // currentListener if it has not changed from what it was before updating flushStrategy.
                     // If the listener has changed, it could have changed before or after updating the flushStrategy but

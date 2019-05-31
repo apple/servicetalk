@@ -127,13 +127,13 @@ final class HeaderUtils {
                 HeaderUtils::updateResponseContentLength);
     }
 
-    private static void updateRequestContentLengthNonZero(final HttpHeaders headers, final int contentLength) {
+    private static void updateRequestContentLengthNonZero(final int contentLength, final HttpHeaders headers) {
         if (contentLength > 0) {
             headers.set(CONTENT_LENGTH, Integer.toString(contentLength));
         }
     }
 
-    private static void updateRequestContentLength(final HttpHeaders headers, final int contentLength) {
+    private static void updateRequestContentLength(final int contentLength, final HttpHeaders headers) {
         assert contentLength >= 0;
         headers.set(CONTENT_LENGTH, Integer.toString(contentLength));
     }
@@ -150,14 +150,14 @@ final class HeaderUtils {
         return !isEmptyResponseStatus(statusCode) && !isEmptyConnectResponse(requestMethod, statusCode);
     }
 
-    private static void updateResponseContentLength(final HttpHeaders headers, final int contentLength) {
+    private static void updateResponseContentLength(final int contentLength, final HttpHeaders headers) {
         headers.set(CONTENT_LENGTH, Integer.toString(contentLength));
     }
 
     private static Single<Publisher<Object>> setContentLength(final HttpMetaData metadata,
                                                               final Publisher<Object> originalPayloadAndTrailers,
                                                               final HttpHeadersFactory headersFactory,
-                                                              final ContentLengthUpdater contentLengthUpdater) {
+                                                              final BiIntConsumer<HttpHeaders> contentLengthUpdater) {
         return originalPayloadAndTrailers.collect(() -> null, (reduction, item) -> {
             if (reduction == null) {
                 // avoid allocating a list if the Publisher emits only a single Buffer
@@ -180,13 +180,9 @@ final class HeaderUtils {
             if (reduction == null) {
                 payloadAndTrailer = from(metadata, headersFactory.newEmptyTrailers());
             } else if (reduction instanceof List) {
-                @SuppressWarnings("unchecked")
-                final List<Object> items = (List<Object>) reduction;
+                final List<?> items = (List<?>) reduction;
                 for (int i = 0; i < items.size(); i++) {
-                    Object item = items.get(i);
-                    if (item instanceof Buffer) {
-                        contentLength += ((Buffer) item).readableBytes();
-                    }
+                    contentLength += calculateContentLength(items.get(i));
                 }
                 payloadAndTrailer = Publisher.<Object>from(metadata)
                         .concat(fromIterable(items));
@@ -200,10 +196,22 @@ final class HeaderUtils {
                 throw new IllegalArgumentException("Unknown object " + reduction + " found as payload");
             }
             if (contentLength >= 0) {
-                contentLengthUpdater.apply(metadata.headers(), contentLength);
+                contentLengthUpdater.apply(contentLength, metadata.headers());
             }
             return payloadAndTrailer;
         });
+    }
+
+    static int calculateContentLength(Object item) {
+        // TODO(scott): add support for file region
+        if (item instanceof Buffer) {
+            return calculateContentLength((Buffer) item);
+        }
+        throw new IllegalArgumentException("Unknown object " + item + " found as payload");
+    }
+
+    static int calculateContentLength(Buffer item) {
+        return item.readableBytes();
     }
 
     static StreamingHttpResponse addResponseTransferEncodingIfNecessary(final StreamingHttpResponse response,
@@ -239,7 +247,7 @@ final class HeaderUtils {
     }
 
     @FunctionalInterface
-    private interface ContentLengthUpdater {
-        void apply(HttpHeaders headers, int contentLength);
+    private interface BiIntConsumer<T> {
+        void apply(int contentLength, T headers);
     }
 }
