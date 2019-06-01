@@ -36,7 +36,6 @@ import org.slf4j.LoggerFactory;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.AccessibleObject;
-import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
@@ -153,69 +152,47 @@ final class ReflectionUtils {
     }
 
     @Nullable
-    static MethodHandle lookupConstructor(final Callable<Constructor<?>> constructorSupplier,
-                                          final MethodHandles.Lookup lookup,
-                                          final ThrowablePredicate<MethodHandle> verifier) {
-        final Object maybeConstructor = AccessController.doPrivileged((PrivilegedAction<Object>) () -> {
+    static <T extends AccessibleObject> MethodHandle lookupAccessibleObject(final Callable<T> tLookup,
+                                                                            final Class<T> clazz,
+                                                                            final MethodHandleFunction<T> function) {
+
+        final Object maybeAccessibleObject = AccessController.doPrivileged((PrivilegedAction<Object>) () -> {
             try {
-                final Constructor<?> constructor = constructorSupplier.call();
-                if (constructor == null) {
+                final T accessibleObject = tLookup.call();
+                if (accessibleObject == null) {
                     return null;
                 }
-                Throwable cause = trySetAccessible(constructor, true);
+                Throwable cause = trySetAccessible(accessibleObject, true);
                 if (cause != null) {
                     return cause;
                 }
-                return constructor;
+                return accessibleObject;
             } catch (Throwable t) {
                 return t;
             }
         });
 
-        if (!(maybeConstructor instanceof Constructor<?>)) {
+        if (!clazz.isInstance(maybeAccessibleObject)) {
             return null;
         }
 
-        MethodHandle constructor;
         try {
-            constructor = lookup.unreflectConstructor((Constructor<?>) maybeConstructor);
-            // try to use the constructor now
-            if (!verifier.test(constructor)) {
-                constructor = null;
-            }
+            return function.apply(clazz.cast(maybeAccessibleObject));
         } catch (Throwable throwable) {
-            constructor = null;
+            return null;
         }
-        return constructor;
     }
 
     @Nullable
     static MethodHandle extractNioBitsMethod(final String methodName, final MethodHandles.Lookup lookup) {
-        final Object maybeMethod = AccessController.doPrivileged((PrivilegedAction<Object>) () -> {
-            try {
-                final Class<?> bitsClass = Class.forName("java.nio.Bits", false, getSystemClassLoader());
-                final Method method = bitsClass.getDeclaredMethod(methodName, long.class, int.class);
-                final Throwable cause = trySetAccessible(method, true);
-                if (cause != null) {
-                    return cause;
-                }
-                return method;
-            } catch (Throwable t) {
-                return t;
-            }
-        });
-
-        if (!(maybeMethod instanceof Method)) {
-            return null;
-        }
-
-        try {
-            final MethodHandle methodHandle = lookup.unreflect((Method) maybeMethod);
+        return lookupAccessibleObject(() -> {
+            final Class<?> bitsClass = Class.forName("java.nio.Bits", false, getSystemClassLoader());
+            return bitsClass.getDeclaredMethod(methodName, long.class, int.class);
+        }, Method.class, method -> {
+            final MethodHandle methodHandle = lookup.unreflect(method);
             methodHandle.invoke(1L, 1);
             return methodHandle;
-        } catch (Throwable t) {
-            return null;
-        }
+        });
     }
 
     private static ClassLoader getSystemClassLoader() {
@@ -227,7 +204,8 @@ final class ReflectionUtils {
     }
 
     @FunctionalInterface
-    interface ThrowablePredicate<T> {
-        boolean test(T t) throws Throwable;
+    interface MethodHandleFunction<T> {
+        @Nullable
+        MethodHandle apply(T t) throws Throwable;
     }
 }

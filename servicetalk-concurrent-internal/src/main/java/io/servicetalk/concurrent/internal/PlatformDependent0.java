@@ -37,6 +37,7 @@ import sun.misc.Unsafe;
 import java.io.FileDescriptor;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.nio.ByteBuffer;
 import java.security.AccessController;
@@ -44,7 +45,7 @@ import java.security.PrivilegedAction;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.internal.ReflectionUtils.extractNioBitsMethod;
-import static io.servicetalk.concurrent.internal.ReflectionUtils.lookupConstructor;
+import static io.servicetalk.concurrent.internal.ReflectionUtils.lookupAccessibleObject;
 import static java.lang.Boolean.getBoolean;
 import static java.util.Objects.requireNonNull;
 
@@ -136,18 +137,24 @@ final class PlatformDependent0 {
         }
         UNSAFE = unsafe;
 
-        MethodHandles.Lookup lookup = null;
+        final MethodHandles.Lookup lookup;
         // Define DIRECT_BUFFER_CONSTRUCTOR:
         if (UNSAFE == null) {
             DIRECT_BUFFER_CONSTRUCTOR = null;
+            lookup = null;
         } else {
             lookup = MethodHandles.lookup();
-            DIRECT_BUFFER_CONSTRUCTOR = lookupConstructor(() -> direct.getClass().getDeclaredConstructor(
-                    int.class, long.class, FileDescriptor.class, Runnable.class), lookup, methodHandle -> {
+            DIRECT_BUFFER_CONSTRUCTOR = lookupAccessibleObject(() -> direct.getClass().getDeclaredConstructor(
+                    int.class, long.class, FileDescriptor.class, Runnable.class), Constructor.class, constructor -> {
+
                 long address = 0L;
                 try {
+                    final MethodHandle methodHandle = lookup.unreflectConstructor(constructor);
                     address = allocateMemory(1);
-                    return methodHandle.invoke(1, address, null, (Runnable) () -> { /* NOOP */ }) instanceof ByteBuffer;
+                    if (methodHandle.invoke(1, address, null, (Runnable) () -> { /* NOOP */ }) instanceof ByteBuffer) {
+                        return methodHandle;
+                    }
+                    return null;
                 } finally {
                     if (address != 0L) {
                         freeMemory(address);
@@ -162,14 +169,20 @@ final class PlatformDependent0 {
         if (UNSAFE == null || DIRECT_BUFFER_CONSTRUCTOR == null) {
             DEALLOCATOR_CONSTRUCTOR = null;
         } else {
-            DEALLOCATOR_CONSTRUCTOR = lookupConstructor(() -> {
+            DEALLOCATOR_CONSTRUCTOR = lookupAccessibleObject(() -> {
                 for (Class<?> innerClass : direct.getClass().getDeclaredClasses()) {
                     if (DEALLOCATOR_CLASS_NAME.equals(innerClass.getName())) {
                         return innerClass.getDeclaredConstructor(long.class, long.class, int.class);
                     }
                 }
                 return null;
-            }, lookup, methodHandle -> methodHandle.invoke(0L, 0L, 0) instanceof Runnable);
+            }, Constructor.class, constructor -> {
+                final MethodHandle methodHandle = lookup.unreflectConstructor(constructor);
+                if (methodHandle.invoke(0L, 0L, 0) instanceof Runnable) {
+                    return methodHandle;
+                }
+                return null;
+            });
         }
         LOGGER.debug("java.nio.DirectByteBuffer$Deallocator.<init>(long, long, int): {}",
                 DIRECT_BUFFER_CONSTRUCTOR != null ? "available" : "unavailable");
