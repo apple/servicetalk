@@ -157,7 +157,7 @@ final class PlatformDependent0 {
 
             MethodHandle directBufferConstructor;
             if (maybeDirectBufferConstructor instanceof Constructor<?>) {
-                long address = -1;
+                long address = 0L;
                 try {
                     lookup = MethodHandles.lookup();
                     directBufferConstructor = lookup.unreflectConstructor(
@@ -171,7 +171,7 @@ final class PlatformDependent0 {
                 } catch (Throwable throwable) {
                     directBufferConstructor = null;
                 } finally {
-                    if (address != -1) {
+                    if (address != 0L) {
                         freeMemory(address);
                     }
                 }
