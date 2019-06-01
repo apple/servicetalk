@@ -111,29 +111,6 @@ final class PlatformDependent0 {
                 unsafe = (Unsafe) maybeUnsafe;
                 LOGGER.debug("sun.misc.Unsafe.theUnsafe: available");
             }
-
-            // ensure the unsafe supports all necessary methods to work around the mistake in the latest OpenJDK
-            // http://www.mail-archive.com/jdk6-dev@openjdk.java.net/msg00698.html
-            if (unsafe != null) {
-                final Unsafe finalUnsafe = unsafe;
-                final Object maybeException = AccessController.doPrivileged((PrivilegedAction<Object>) () -> {
-                    try {
-                        finalUnsafe.getClass().getDeclaredMethod(
-                                "copyMemory", Object.class, long.class, Object.class, long.class, long.class);
-                        return null;
-                    } catch (Throwable t) {
-                        return t;
-                    }
-                });
-
-                if (maybeException == null) {
-                    LOGGER.debug("sun.misc.Unsafe.copyMemory: available");
-                } else {
-                    // Unsafe.copyMemory(Object, long, Object, long, long) unavailable.
-                    unsafe = null;
-                    LOGGER.debug("sun.misc.Unsafe.copyMemory: unavailable", (Throwable) maybeException);
-                }
-            }
         }
         UNSAFE = unsafe;
 
