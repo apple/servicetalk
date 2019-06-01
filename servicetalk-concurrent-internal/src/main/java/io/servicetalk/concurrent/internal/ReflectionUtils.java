@@ -48,14 +48,14 @@ import static java.lang.Boolean.parseBoolean;
  *
  * This class is forked from the netty project and modified to suit our needs.
  */
-final class ReflectionUtil {
+final class ReflectionUtils {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(ReflectionUtil.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ReflectionUtils.class);
 
     private static final int JAVA_VERSION = javaVersion0();
     private static final boolean IS_EXPLICIT_TRY_REFLECTION_SET_ACCESSIBLE = explicitTryReflectionSetAccessible0();
 
-    private ReflectionUtil() {
+    private ReflectionUtils() {
         // no instances
     }
 

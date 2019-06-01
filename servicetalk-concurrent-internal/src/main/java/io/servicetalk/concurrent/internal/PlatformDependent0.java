@@ -44,7 +44,7 @@ import java.security.AccessController;
 import java.security.PrivilegedAction;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.internal.ReflectionUtil.extractNioBitsMethod;
+import static io.servicetalk.concurrent.internal.ReflectionUtils.extractNioBitsMethod;
 import static java.lang.Boolean.getBoolean;
 import static java.util.Objects.requireNonNull;
 
@@ -88,7 +88,7 @@ final class PlatformDependent0 {
             final Object maybeUnsafe = AccessController.doPrivileged((PrivilegedAction<Object>) () -> {
                 try {
                     final Field unsafeField = Unsafe.class.getDeclaredField("theUnsafe");
-                    final Throwable cause = ReflectionUtil.trySetAccessible(unsafeField, false);
+                    final Throwable cause = ReflectionUtils.trySetAccessible(unsafeField, false);
                     if (cause != null) {
                         return cause;
                     }
@@ -145,7 +145,7 @@ final class PlatformDependent0 {
                 try {
                     final Constructor<?> constructor = direct.getClass().getDeclaredConstructor(
                             int.class, long.class, FileDescriptor.class, Runnable.class);
-                    Throwable cause = ReflectionUtil.trySetAccessible(constructor, true);
+                    Throwable cause = ReflectionUtils.trySetAccessible(constructor, true);
                     if (cause != null) {
                         return cause;
                     }
@@ -193,7 +193,7 @@ final class PlatformDependent0 {
                         if (DEALLOCATOR_CLASS_NAME.equals(innerClass.getName())) {
                             final Constructor<?> constructor = innerClass.getDeclaredConstructor(
                                     long.class, long.class, int.class);
-                            Throwable cause = ReflectionUtil.trySetAccessible(constructor, true);
+                            Throwable cause = ReflectionUtils.trySetAccessible(constructor, true);
                             if (cause != null) {
                                 return cause;
                             }
