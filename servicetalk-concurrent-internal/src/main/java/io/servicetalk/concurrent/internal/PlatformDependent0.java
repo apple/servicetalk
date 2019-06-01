@@ -263,6 +263,7 @@ final class PlatformDependent0 {
     }
 
     static void throwException(Throwable cause) {
+        assert UNSAFE != null;
         // JVM has been observed to crash when passing a null argument. See https://github.com/netty/netty/issues/4131.
         UNSAFE.throwException(requireNonNull(cause));
     }
