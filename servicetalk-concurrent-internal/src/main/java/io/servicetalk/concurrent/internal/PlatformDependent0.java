@@ -142,20 +142,12 @@ final class PlatformDependent0 {
             DIRECT_BUFFER_CONSTRUCTOR = null;
         } else {
             lookup = MethodHandles.lookup();
-            DIRECT_BUFFER_CONSTRUCTOR = lookupConstructor(() -> {
-                try {
-                    return direct.getClass().getDeclaredConstructor(
-                            int.class, long.class, FileDescriptor.class, Runnable.class);
-                } catch (Throwable t) {
-                    return null;
-                }
-            }, lookup, methodHandle -> {
+            DIRECT_BUFFER_CONSTRUCTOR = lookupConstructor(() -> direct.getClass().getDeclaredConstructor(
+                    int.class, long.class, FileDescriptor.class, Runnable.class), lookup, methodHandle -> {
                 long address = 0L;
                 try {
                     address = allocateMemory(1);
                     return methodHandle.invoke(1, address, null, (Runnable) () -> { /* NOOP */ }) instanceof ByteBuffer;
-                } catch (Throwable t) {
-                    return false;
                 } finally {
                     if (address != 0L) {
                         freeMemory(address);
@@ -173,21 +165,11 @@ final class PlatformDependent0 {
             DEALLOCATOR_CONSTRUCTOR = lookupConstructor(() -> {
                 for (Class<?> innerClass : direct.getClass().getDeclaredClasses()) {
                     if (DEALLOCATOR_CLASS_NAME.equals(innerClass.getName())) {
-                        try {
-                            return innerClass.getDeclaredConstructor(long.class, long.class, int.class);
-                        } catch (Throwable t) {
-                            return null;
-                        }
+                        return innerClass.getDeclaredConstructor(long.class, long.class, int.class);
                     }
                 }
                 return null;
-            }, lookup, methodHandle -> {
-                try {
-                    return methodHandle.invoke(0L, 0L, 0) instanceof Runnable;
-                } catch (Throwable throwable) {
-                    return false;
-                }
-            });
+            }, lookup, methodHandle -> methodHandle.invoke(0L, 0L, 0) instanceof Runnable);
         }
         LOGGER.debug("java.nio.DirectByteBuffer$Deallocator.<init>(long, long, int): {}",
                 DIRECT_BUFFER_CONSTRUCTOR != null ? "available" : "unavailable");

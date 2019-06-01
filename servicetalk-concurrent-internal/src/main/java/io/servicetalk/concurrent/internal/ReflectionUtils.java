@@ -40,8 +40,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
-import java.util.function.Predicate;
-import java.util.function.Supplier;
+import java.util.concurrent.Callable;
 import javax.annotation.Nullable;
 
 import static java.lang.Boolean.parseBoolean;
@@ -154,12 +153,12 @@ final class ReflectionUtils {
     }
 
     @Nullable
-    static MethodHandle lookupConstructor(final Supplier<Constructor<?>> constructorSupplier,
+    static MethodHandle lookupConstructor(final Callable<Constructor<?>> constructorSupplier,
                                           final MethodHandles.Lookup lookup,
-                                          final Predicate<MethodHandle> verifier) {
+                                          final ThrowablePredicate<MethodHandle> verifier) {
         final Object maybeConstructor = AccessController.doPrivileged((PrivilegedAction<Object>) () -> {
             try {
-                final Constructor<?> constructor = constructorSupplier.get();
+                final Constructor<?> constructor = constructorSupplier.call();
                 if (constructor == null) {
                     return null;
                 }
@@ -225,5 +224,10 @@ final class ReflectionUtils {
         } else {
             return AccessController.doPrivileged((PrivilegedAction<ClassLoader>) ClassLoader::getSystemClassLoader);
         }
+    }
+
+    @FunctionalInterface
+    interface ThrowablePredicate<T> {
+        boolean test(T t) throws Throwable;
     }
 }
