@@ -37,7 +37,6 @@ import sun.misc.Unsafe;
 import java.io.FileDescriptor;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
-import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.nio.ByteBuffer;
 import java.security.AccessController;
@@ -45,6 +44,7 @@ import java.security.PrivilegedAction;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.internal.ReflectionUtils.extractNioBitsMethod;
+import static io.servicetalk.concurrent.internal.ReflectionUtils.lookupConstructor;
 import static java.lang.Boolean.getBoolean;
 import static java.util.Objects.requireNonNull;
 
@@ -94,8 +94,8 @@ final class PlatformDependent0 {
                     }
                     // the unsafe instance
                     return unsafeField.get(null);
-                } catch (Throwable e) {
-                    return e;
+                } catch (Throwable t) {
+                    return t;
                 }
             });
 
@@ -120,8 +120,8 @@ final class PlatformDependent0 {
                         finalUnsafe.getClass().getDeclaredMethod(
                                 "copyMemory", Object.class, long.class, Object.class, long.class, long.class);
                         return null;
-                    } catch (Throwable e) {
-                        return e;
+                    } catch (Throwable t) {
+                        return t;
                     }
                 });
 
@@ -141,44 +141,27 @@ final class PlatformDependent0 {
         if (UNSAFE == null) {
             DIRECT_BUFFER_CONSTRUCTOR = null;
         } else {
-            final Object maybeDirectBufferConstructor = AccessController.doPrivileged((PrivilegedAction<Object>) () -> {
+            lookup = MethodHandles.lookup();
+            DIRECT_BUFFER_CONSTRUCTOR = lookupConstructor(() -> {
                 try {
-                    final Constructor<?> constructor = direct.getClass().getDeclaredConstructor(
+                    return direct.getClass().getDeclaredConstructor(
                             int.class, long.class, FileDescriptor.class, Runnable.class);
-                    Throwable cause = ReflectionUtils.trySetAccessible(constructor, true);
-                    if (cause != null) {
-                        return cause;
-                    }
-                    return constructor;
-                } catch (Throwable e) {
-                    return e;
+                } catch (Throwable t) {
+                    return null;
                 }
-            });
-
-            MethodHandle directBufferConstructor;
-            if (maybeDirectBufferConstructor instanceof Constructor<?>) {
+            }, lookup, methodHandle -> {
                 long address = 0L;
                 try {
-                    lookup = MethodHandles.lookup();
-                    directBufferConstructor = lookup.unreflectConstructor(
-                            (Constructor<?>) maybeDirectBufferConstructor);
-                    // try to use the constructor now
                     address = allocateMemory(1);
-                    Object buffer = directBufferConstructor.invoke(1, address, null, (Runnable) () -> { /* NOOP */ });
-                    if (!(buffer instanceof ByteBuffer)) {
-                        directBufferConstructor = null;
-                    }
-                } catch (Throwable throwable) {
-                    directBufferConstructor = null;
+                    return methodHandle.invoke(1, address, null, (Runnable) () -> { /* NOOP */ }) instanceof ByteBuffer;
+                } catch (Throwable t) {
+                    return false;
                 } finally {
                     if (address != 0L) {
                         freeMemory(address);
                     }
                 }
-            } else {
-                directBufferConstructor = null;
-            }
-            DIRECT_BUFFER_CONSTRUCTOR = directBufferConstructor;
+            });
         }
         LOGGER.debug("java.nio.DirectByteBuffer.<init>(int, long, FileDescriptor, Runnable): {}",
                 DIRECT_BUFFER_CONSTRUCTOR != null ? "available" : "unavailable");
@@ -187,41 +170,24 @@ final class PlatformDependent0 {
         if (UNSAFE == null || DIRECT_BUFFER_CONSTRUCTOR == null) {
             DEALLOCATOR_CONSTRUCTOR = null;
         } else {
-            final Object maybeDeallocatorConstructor = AccessController.doPrivileged((PrivilegedAction<Object>) () -> {
-                try {
-                    for (Class<?> innerClass : direct.getClass().getDeclaredClasses()) {
-                        if (DEALLOCATOR_CLASS_NAME.equals(innerClass.getName())) {
-                            final Constructor<?> constructor = innerClass.getDeclaredConstructor(
-                                    long.class, long.class, int.class);
-                            Throwable cause = ReflectionUtils.trySetAccessible(constructor, true);
-                            if (cause != null) {
-                                return cause;
-                            }
-                            return constructor;
+            DEALLOCATOR_CONSTRUCTOR = lookupConstructor(() -> {
+                for (Class<?> innerClass : direct.getClass().getDeclaredClasses()) {
+                    if (DEALLOCATOR_CLASS_NAME.equals(innerClass.getName())) {
+                        try {
+                            return innerClass.getDeclaredConstructor(long.class, long.class, int.class);
+                        } catch (Throwable t) {
+                            return null;
                         }
                     }
-                    return new ClassNotFoundException(DEALLOCATOR_CLASS_NAME);
-                } catch (Throwable e) {
-                    return e;
+                }
+                return null;
+            }, lookup, methodHandle -> {
+                try {
+                    return methodHandle.invoke(0L, 0L, 0) instanceof Runnable;
+                } catch (Throwable throwable) {
+                    return false;
                 }
             });
-
-            MethodHandle deallocatorConstructor;
-            if (maybeDeallocatorConstructor instanceof Constructor<?>) {
-                try {
-                    deallocatorConstructor = lookup.unreflectConstructor((Constructor<?>) maybeDeallocatorConstructor);
-                    // try to use the constructor now
-                    Object deallocator = deallocatorConstructor.invoke(0L, 0L, 0);
-                    if (!(deallocator instanceof Runnable)) {
-                        deallocatorConstructor = null;
-                    }
-                } catch (Throwable throwable) {
-                    deallocatorConstructor = null;
-                }
-            } else {
-                deallocatorConstructor = null;
-            }
-            DEALLOCATOR_CONSTRUCTOR = deallocatorConstructor;
         }
         LOGGER.debug("java.nio.DirectByteBuffer$Deallocator.<init>(long, long, int): {}",
                 DIRECT_BUFFER_CONSTRUCTOR != null ? "available" : "unavailable");
@@ -262,8 +228,8 @@ final class PlatformDependent0 {
         assert RESERVE_MEMORY != null;
         try {
             RESERVE_MEMORY.invoke(size, capacity);
-        } catch (Throwable e) {
-            throw new Error(e);
+        } catch (Throwable t) {
+            throw new Error(t);
         }
     }
 
@@ -271,8 +237,8 @@ final class PlatformDependent0 {
         assert UNRESERVE_MEMORY != null;
         try {
             UNRESERVE_MEMORY.invoke(size, capacity);
-        } catch (Throwable e) {
-            throw new Error(e);
+        } catch (Throwable t) {
+            throw new Error(t);
         }
     }
 

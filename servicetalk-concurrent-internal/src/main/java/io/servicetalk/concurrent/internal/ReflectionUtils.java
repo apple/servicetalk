@@ -36,9 +36,12 @@ import org.slf4j.LoggerFactory;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.AccessibleObject;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
 import static java.lang.Boolean.parseBoolean;
@@ -151,6 +154,43 @@ final class ReflectionUtils {
     }
 
     @Nullable
+    static MethodHandle lookupConstructor(final Supplier<Constructor<?>> constructorSupplier,
+                                          final MethodHandles.Lookup lookup,
+                                          final Predicate<MethodHandle> verifier) {
+        final Object maybeConstructor = AccessController.doPrivileged((PrivilegedAction<Object>) () -> {
+            try {
+                final Constructor<?> constructor = constructorSupplier.get();
+                if (constructor == null) {
+                    return null;
+                }
+                Throwable cause = trySetAccessible(constructor, true);
+                if (cause != null) {
+                    return cause;
+                }
+                return constructor;
+            } catch (Throwable t) {
+                return t;
+            }
+        });
+
+        if (!(maybeConstructor instanceof Constructor<?>)) {
+            return null;
+        }
+
+        MethodHandle constructor;
+        try {
+            constructor = lookup.unreflectConstructor((Constructor<?>) maybeConstructor);
+            // try to use the constructor now
+            if (!verifier.test(constructor)) {
+                constructor = null;
+            }
+        } catch (Throwable throwable) {
+            constructor = null;
+        }
+        return constructor;
+    }
+
+    @Nullable
     static MethodHandle extractNioBitsMethod(final String methodName, final MethodHandles.Lookup lookup) {
         final Object maybeMethod = AccessController.doPrivileged((PrivilegedAction<Object>) () -> {
             try {
@@ -161,8 +201,8 @@ final class ReflectionUtils {
                     return cause;
                 }
                 return method;
-            } catch (Throwable e) {
-                return e;
+            } catch (Throwable t) {
+                return t;
             }
         });
 
@@ -174,7 +214,7 @@ final class ReflectionUtils {
             final MethodHandle methodHandle = lookup.unreflect((Method) maybeMethod);
             methodHandle.invoke(1L, 1);
             return methodHandle;
-        } catch (Throwable e) {
+        } catch (Throwable t) {
             return null;
         }
     }
