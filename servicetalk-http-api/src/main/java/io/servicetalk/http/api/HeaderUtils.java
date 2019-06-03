@@ -191,7 +191,10 @@ public final class HeaderUtils {
                                                                  final CharSequence needle) {
         int start = 0;
         int commaPos = commaSeparatedValues.indexOf(',');
-        while (commaPos >= 0) {
+        for (;;) {
+            if (commaPos < 0) {
+                return start > 0 && contentEqualsIgnoreCase(commaSeparatedValues.substring(start).trim(), needle);
+            }
             final String subvalue = commaSeparatedValues.substring(start, commaPos).trim();
             if (contentEqualsIgnoreCase(subvalue, needle)) {
                 return true;
@@ -199,11 +202,6 @@ public final class HeaderUtils {
             start = commaPos + 1;
             commaPos = commaSeparatedValues.indexOf(',', start);
         }
-        if (start > 0) {
-            String subvalue = commaSeparatedValues.substring(start).trim();
-            return contentEqualsIgnoreCase(subvalue, needle);
-        }
-        return false;
     }
 
     static boolean hasContentLength(final HttpHeaders headers) {
