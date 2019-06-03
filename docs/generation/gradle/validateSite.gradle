@@ -6,6 +6,8 @@ def httpLinks = [
 // links to exclude from validation (for example because they require authentication)
 def excludedLinks = [
     //"http://somedomain.tld/someoptionalpath"
+    "https://github.com/apple/servicetalk",
+    "https://pages.github.pie.apple.com/servicetalk"
 ]
 
 configurations {
