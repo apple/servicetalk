@@ -34,7 +34,7 @@ adding individuals in this role will be formalized in the future.
 == Contributing
 === Opening a Pull Request
 We love pull requests! For minor changes, feel free to open up a PR directly. For larger feature development and any
-changes that may require community discussion, we ask that you discuss your ideas on a link:https://github.com/servicetalk/servicetalk/issues[github issue]
+changes that may require community discussion, we ask that you discuss your ideas on a link:https://github.com/apple/servicetalk/issues[github issue]
 prior to opening a PR, and then reference that issue within your PR comment.
 
 CI will run tests against the PR and post the status back to github.
@@ -62,7 +62,7 @@ git config commit.template .git.commit.template
 ```
 
 === Reporting Issues
-Issues may be reported through link:https://github.com/servicetalk/servicetalk/issues[github issues].
+Issues may be reported through link:https://github.com/apple/servicetalk/issues[github issues].
 
 Please be sure to include:
 
@@ -80,6 +80,6 @@ private email to link:mailto:servicetalk-security@group.apple.com[servicetalk-se
 
 == Project Communication
 We encourage your participation asking questions and helping improve the ServiceTalk project.
-link:https://github.com/servicetalk/servicetalk/issues[Github issues] and
-link:https://github.com/servicetalk/servicetalk/pulls[pull requests] are the primary mechanisms of
+link:https://github.com/apple/servicetalk/issues[Github issues] and
+link:https://github.com/apple/servicetalk/pulls[pull requests] are the primary mechanisms of
 participation and communication for ServiceTalk.

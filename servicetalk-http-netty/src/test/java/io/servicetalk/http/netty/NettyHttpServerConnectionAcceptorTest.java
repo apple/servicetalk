@@ -131,7 +131,7 @@ public class NettyHttpServerConnectionAcceptorTest extends AbstractNettyHttpServ
         return parameters;
     }
 
-    @Ignore("Flaky on CI: https://github.com/servicetalk/servicetalk/issues/452")
+    @Ignore("Flaky on CI: https://github.com/apple/servicetalk/issues/452")
     @Test
     public void testAcceptConnection() throws Exception {
         try {
