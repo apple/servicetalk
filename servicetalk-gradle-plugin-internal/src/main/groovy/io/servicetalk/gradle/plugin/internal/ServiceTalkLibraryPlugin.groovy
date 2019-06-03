@@ -39,6 +39,7 @@ import static ProjectUtils.createJavadocJarTask
 import static ProjectUtils.createSourcesJarTask
 import static ProjectUtils.fixBomDependencies
 import static ProjectUtils.writeToFile
+import static io.servicetalk.gradle.plugin.internal.ProjectUtils.getOrCreateJavadocTask
 
 class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
   void apply(Project project) {
@@ -365,8 +366,12 @@ class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
         testRuntimeOnly project.configurations["testFixturesRuntime"]
       }
 
-      def sourcesJar = createSourcesJarTask(project, testFixturesSourceSet)
-      def javadocJar = createJavadocJarTask(project, testFixturesSourceSet)
+      def sourcesJarTask = createSourcesJarTask(project, testFixturesSourceSet)
+      project.tasks.findByName("jar").dependsOn(sourcesJarTask)
+      def javadocTask = getOrCreateJavadocTask(project, testFixturesSourceSet)
+      project.tasks.findByName("javadoc").dependsOn(javadocTask)
+      def javadocJarTask = createJavadocJarTask(project, testFixturesSourceSet)
+      project.tasks.findByName("jar").dependsOn(javadocJarTask)
 
       publishing {
         publications {
@@ -374,8 +379,8 @@ class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
             artifactId = "$testFixturesJar.baseName-$testFixturesJar.appendix"
             from new TestFixturesComponent(project)
             artifact(testFixturesJar)
-            artifact(sourcesJar)
-            artifact(javadocJar)
+            artifact(sourcesJarTask)
+            artifact(javadocJarTask)
             fixBomDependencies(pom)
           }
         }
