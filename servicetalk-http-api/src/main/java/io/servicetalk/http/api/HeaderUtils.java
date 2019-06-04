@@ -169,7 +169,7 @@ public final class HeaderUtils {
             if (contentEqualsIgnoreCase(next, value)) {
                 return true;
             }
-            if (containsCommaSeparatedValueIgnoreCase(next.toString(), value)) {
+            if (containsCommaSeparatedValueIgnoreCase(next, value)) {
                 return true;
             }
         }
@@ -177,30 +177,33 @@ public final class HeaderUtils {
     }
 
     /**
-     * Returns {@code true} if {@code commaSeparatedValues} is comma separated, and one of the values matches
-     * {@code needle} case insensitively.
-     * <p>
-     * <b>If {@code commaSeparatedValues} is a single value, without commas, this method will return {@code false} even
-     * if it matches {@code needle}</b>
+     * Returns {@code true} if {@code commaSeparatedValues} is comma separated and one of the values (or the whole
+     * string) matches {@code needle} case insensitively.
      *
      * @param commaSeparatedValues the comma separated values.
      * @param needle the value to look for.
      * @return {@code true} if the value is found, {@code false} otherwise.
      */
-    private static boolean containsCommaSeparatedValueIgnoreCase(final String commaSeparatedValues,
+    private static boolean containsCommaSeparatedValueIgnoreCase(final CharSequence commaSeparatedValues,
                                                                  final CharSequence needle) {
         int start = 0;
-        int commaPos = commaSeparatedValues.indexOf(',');
+        int commaPos = indexOf(commaSeparatedValues, ',', 0);
+        if (commaPos < 0) {
+            return contentEqualsIgnoreCase(commaSeparatedValues, needle);
+        }
+
+        // Only convert to a String if we actually have a comma-separated value to parse
+        final String commaSeparatedValuesStr = commaSeparatedValues.toString();
         for (;;) {
             if (commaPos < 0) {
-                return start > 0 && contentEqualsIgnoreCase(commaSeparatedValues.substring(start).trim(), needle);
+                return start > 0 && contentEqualsIgnoreCase(commaSeparatedValuesStr.substring(start).trim(), needle);
             }
-            final String subvalue = commaSeparatedValues.substring(start, commaPos).trim();
+            final String subvalue = commaSeparatedValuesStr.substring(start, commaPos).trim();
             if (contentEqualsIgnoreCase(subvalue, needle)) {
                 return true;
             }
             start = commaPos + 1;
-            commaPos = commaSeparatedValues.indexOf(',', start);
+            commaPos = commaSeparatedValuesStr.indexOf(',', start);
         }
     }
 
