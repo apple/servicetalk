@@ -288,8 +288,8 @@ class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
       // This task defaults to XML reporting for CI, but humans like HTML
       tasks.withType(SpotBugsTask) {
         reports {
-          xml.enabled = "true" == System.getenv("CI")
-          html.enabled = "true" != System.getenv("CI")
+          xml.enabled = project.ext.isCiBuild
+          html.enabled = !project.ext.isCiBuild
         }
       }
 

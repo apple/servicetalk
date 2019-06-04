@@ -51,7 +51,7 @@ task buildRemoteSite(type: NodeTask) { task ->
   inputs.file("site-remote.yml")
   outputs.dir(outputDir)
 
-  if (System.getenv("CI") != null) {
+  if (project.ext.isCiBuild) {
     execOverrides {
       it.environment "GIT_CREDENTIALS": "https://${file(System.getProperty("antoraKeyPath")).text}:@github.com"
     }

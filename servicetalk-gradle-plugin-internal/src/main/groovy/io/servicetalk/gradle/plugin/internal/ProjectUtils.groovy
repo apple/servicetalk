@@ -27,6 +27,13 @@ import org.gradle.api.tasks.javadoc.Javadoc
 
 class ProjectUtils {
 
+  static void addBuildContextExtensions(Project project) {
+    project.ext {
+      isCiBuild = "true" != System.getenv("CI")
+      isReleaseBuild = project.hasProperty("releaseBuild")
+    }
+  }
+
   static void addManifestAttributes(Project project, Manifest manifest) {
     manifest.attributes("Built-JDK": System.getProperty("java.version"),
         "Specification-Title": project.name,
