@@ -29,7 +29,7 @@ class ProjectUtils {
 
   static void addBuildContextExtensions(Project project) {
     project.ext {
-      isCiBuild = "true" != System.getenv("CI")
+      isCiBuild = "true" == System.getenv("CI")
       isReleaseBuild = project.hasProperty("releaseBuild")
     }
   }
