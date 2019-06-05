@@ -104,9 +104,9 @@ final class PlatformDependent0 {
             // is an instanceof Unsafe and reversing the if and else blocks; this is because an
             // instanceof check against Unsafe will trigger a class load and we might not have
             // the runtime permission accessClassInPackage.sun.misc
-            if (maybeUnsafe instanceof Throwable) {
+            if (maybeUnsafe instanceof Exception) {
                 unsafe = null;
-                LOGGER.debug("sun.misc.Unsafe.theUnsafe: unavailable", (Throwable) maybeUnsafe);
+                LOGGER.debug("sun.misc.Unsafe.theUnsafe: unavailable", (Exception) maybeUnsafe);
             } else {
                 unsafe = (Unsafe) maybeUnsafe;
                 LOGGER.debug("sun.misc.Unsafe.theUnsafe: available");
