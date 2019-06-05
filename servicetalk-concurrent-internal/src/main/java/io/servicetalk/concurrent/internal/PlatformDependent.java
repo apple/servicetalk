@@ -159,6 +159,8 @@ public final class PlatformDependent {
         } else {
             PlatformDependent.<RuntimeException>throwException0(t);
         }
+        // This will never be invoked at runtime because each branch above with rethrow the passed Throwable.
+        // However, this is necessary to fool the compiler.
         return uncheckedCast();
     }
 

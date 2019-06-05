@@ -19,6 +19,7 @@
     "https://checkstyle.org/dtds/suppressions_1_2.dtd">
 
 <suppressions>
-  <!-- We intentionally declare internal method to throw Throwable which we catch later -->
+  <!-- We intentionally declare that the internal method of MethodHandleFunction throws Throwable because we use
+  java.lang.invoke.MethodHandle.invoke(...) which may throw Throwable -->
   <suppress checks="IllegalThrows" files="io/servicetalk/concurrent/internal/ReflectionUtils.java"/>
 </suppressions>
