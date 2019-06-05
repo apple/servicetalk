@@ -7,7 +7,7 @@ def httpLinks = [
 def excludedLinks = [
     //"http://somedomain.tld/someoptionalpath"
     "https://github.com/apple/servicetalk",
-    "https://pages.github.pie.apple.com/servicetalk"
+    "https://github.pie.apple.com/servicetalk"
 ]
 
 configurations {

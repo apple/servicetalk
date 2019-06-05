@@ -80,6 +80,6 @@ private email to link:mailto:servicetalk-security@group.apple.com[servicetalk-se
 
 == Project Communication
 We encourage your participation asking questions and helping improve the ServiceTalk project.
-link:https://github.com/apple/servicetalk/issues[Github issues] and
-link:https://github.com/apple/servicetalk/pulls[pull requests] are the primary mechanisms of
+link:https://github.pie.apple.com/servicetalk/servicetalk/issues[Github issues] and
+link:https://github.pie.apple.com/servicetalk/servicetalk/pulls[pull requests] are the primary mechanisms of
 participation and communication for ServiceTalk.
