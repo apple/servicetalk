@@ -61,7 +61,7 @@ public class ConsumeRequestPayloadOnResponsePathTest {
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
 
-    private final CountDownLatch waitServer = new CountDownLatch(1);
+    private final CountDownLatch serverLatch = new CountDownLatch(1);
     private final AtomicReference<Throwable> errorRef = new AtomicReference<>();
     private final StringBuffer receivedPayload = new StringBuffer();
 
@@ -137,7 +137,7 @@ public class ConsumeRequestPayloadOnResponsePathTest {
         return request.payloadBody().beforeOnNext(buffer -> receivedPayload.append(buffer.toString(UTF_8)))
                 .ignoreElements()
                 .beforeOnError(errorRef::set)
-                .afterFinally(waitServer::countDown);
+                .afterFinally(serverLatch::countDown);
     }
 
     private void test(final BiFunction<Single<StreamingHttpResponse>, StreamingHttpRequest,
@@ -168,9 +168,9 @@ public class ConsumeRequestPayloadOnResponsePathTest {
             try (BlockingHttpClient client = HttpClients.forSingleAddress(AddressUtils.serverHostAndPort(serverContext))
                     .buildBlocking()) {
                 response = client.request(client.post("/").payloadBody(EXPECTED_REQUEST_PAYLOAD, textSerializer()));
+                serverLatch.await();
             }
 
-            waitServer.await();
             assertThat(response.status(), is(OK));
             assertThat("Request payload body might be consumed by someone else", errorRef.get(), is(nullValue()));
             assertThat(receivedPayload.toString(), is(EXPECTED_REQUEST_PAYLOAD));
