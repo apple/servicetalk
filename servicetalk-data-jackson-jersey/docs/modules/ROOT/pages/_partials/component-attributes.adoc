@@ -1,6 +1,6 @@
 ifndef::sourceroot[]
-:sourceroot: https://github.com/servicetalk/servicetalk/blob/master/
+:sourceroot: https://github.com/apple/servicetalk/blob/master/
 ifdef::is-release-version[]
-:sourceroot: https://github.com/servicetalk/servicetalk/blob/{page-component-version}/
+:sourceroot: https://github.com/apple/servicetalk/blob/{page-component-version}/
 endif::[]
 endif::[]

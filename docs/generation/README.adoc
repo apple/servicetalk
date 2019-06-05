@@ -1,9 +1,9 @@
 = ServiceTalk Documentation Website
 
-Repo for ServiceTalk's https://pages.github.com/servicetalk/servicetalk/[documentation website].
+Repo for ServiceTalk's https://pages.github.com/apple/servicetalk/[documentation website].
 
 The website is built with the https://antora.org[Antora] docsite generator out of https://asciidoctor.org[Asciidoc] docs
-maintained in the https://github.com/servicetalk/servicetalk[upstream project].
+maintained in the https://github.com/apple/servicetalk[upstream project].
 
 == Development
 

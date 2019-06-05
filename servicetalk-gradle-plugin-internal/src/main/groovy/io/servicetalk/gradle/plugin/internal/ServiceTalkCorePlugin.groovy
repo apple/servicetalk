@@ -91,7 +91,7 @@ class ServiceTalkCorePlugin implements Plugin<Project> {
             repo = "servicetalk"
             name = project.name
             licenses = ["Apache-2.0"]
-            vcsUrl = "https://github.com/servicetalk/servicetalk.git"
+            vcsUrl = "https://github.com/apple/servicetalk.git"
           }
           override = true
           publish = true
