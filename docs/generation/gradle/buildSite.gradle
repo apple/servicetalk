@@ -88,7 +88,10 @@ task publishRemoteSite(type: Exec) {
       BRANCH_NAME=\$(git symbolic-ref -q HEAD)
       BRANCH_NAME=\${BRANCH_NAME##refs/heads/}
       GIT_AUTHOR=\$(git --no-pager show -s --format='%an <%ae>' HEAD)
-      git fetch origin +gh-pages:gh-pages
+      if ( ! git remote get-url docs ); then
+        git remote add docs git@github.com:apple/servicetalk.git
+      fi
+      git fetch docs +gh-pages:gh-pages
       git worktree add gh-pages gh-pages
       cd gh-pages
 
@@ -98,7 +101,7 @@ task publishRemoteSite(type: Exec) {
       git add * .nojekyll
 
       git commit --author="\$GIT_AUTHOR" -m "Publish docsite"
-      git push origin gh-pages
+      git push docs gh-pages
 
       cd ..
       rm -rf gh-pages
