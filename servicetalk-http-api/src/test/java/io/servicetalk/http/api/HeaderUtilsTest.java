@@ -22,14 +22,18 @@ import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CharsetEncoder;
 
 import static io.netty.util.AsciiString.of;
+import static io.servicetalk.http.api.HeaderUtils.isTransferEncodingChunked;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
+import static io.servicetalk.http.api.HttpHeaderNames.TRANSFER_ENCODING;
 import static io.servicetalk.http.api.HttpHeaderValues.APPLICATION_JSON;
 import static io.servicetalk.http.api.HttpHeaderValues.APPLICATION_X_WWW_FORM_URLENCODED;
 import static io.servicetalk.http.api.HttpHeaderValues.APPLICATION_X_WWW_FORM_URLENCODED_UTF_8;
+import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
 import static io.servicetalk.http.api.HttpHeaderValues.TEXT_PLAIN;
 import static io.servicetalk.http.api.HttpHeaderValues.TEXT_PLAIN_UTF_8;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -112,7 +116,58 @@ public class HeaderUtilsTest {
                 }));
     }
 
+    @Test
+    public void isTransferEncodingChunkedFalseCases() {
+        HttpHeaders headers = DefaultHttpHeadersFactory.INSTANCE.newHeaders();
+        assertTrue(headers.isEmpty());
+        assertFalse(isTransferEncodingChunked(headers));
+
+        headers.add("Some-Header", "Some-Value");
+        assertFalse(isTransferEncodingChunked(headers));
+
+        headers.add(TRANSFER_ENCODING, "Some-Value");
+        assertFalse(isTransferEncodingChunked(headers));
+
+        assertFalse(isTransferEncodingChunked(headersWithTransferEncoding(of("gzip"))
+                .add(TRANSFER_ENCODING, "base64")));
+    }
+
+    @Test
+    public void isTransferEncodingChunkedTrueCases() {
+        HttpHeaders headers = DefaultHttpHeadersFactory.INSTANCE.newHeaders();
+        assertTrue(headers.isEmpty());
+        // lower case
+        headers.set(TRANSFER_ENCODING, CHUNKED);
+        assertOneTransferEncodingChunked(headers);
+        // Capital Case
+        headers.set("Transfer-Encoding", "Chunked");
+        assertOneTransferEncodingChunked(headers);
+        // Random case
+        headers.set(TRANSFER_ENCODING, "cHuNkEd");
+        assertOneTransferEncodingChunked(headers);
+
+        assertTrue(isTransferEncodingChunked(headersWithTransferEncoding(of("chunked,gzip"))));
+        assertTrue(isTransferEncodingChunked(headersWithTransferEncoding(of("chunked, gzip"))));
+        assertTrue(isTransferEncodingChunked(headersWithTransferEncoding(of("gzip, chunked"))));
+        assertTrue(isTransferEncodingChunked(headersWithTransferEncoding(of("gzip,chunked"))));
+        assertTrue(isTransferEncodingChunked(headersWithTransferEncoding(of("gzip, chunked, base64"))));
+
+        assertTrue(isTransferEncodingChunked(headersWithTransferEncoding(of("gzip"))
+                .add(TRANSFER_ENCODING, "chunked")));
+        assertTrue(isTransferEncodingChunked(headersWithTransferEncoding(of("chunked"))
+                .add(TRANSFER_ENCODING, "gzip")));
+    }
+
     private static HttpHeaders headersWithContentType(final CharSequence contentType) {
         return DefaultHttpHeadersFactory.INSTANCE.newHeaders().set(CONTENT_TYPE, contentType);
+    }
+
+    private static HttpHeaders headersWithTransferEncoding(final CharSequence contentType) {
+        return DefaultHttpHeadersFactory.INSTANCE.newHeaders().set(TRANSFER_ENCODING, contentType);
+    }
+
+    private static void assertOneTransferEncodingChunked(final HttpHeaders headers) {
+        assertEquals(1, headers.size());
+        assertTrue(isTransferEncodingChunked(headers));
     }
 }
