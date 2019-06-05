@@ -28,14 +28,14 @@ public final class BufferAllocators {
     public static final BufferAllocator DEFAULT_ALLOCATOR = BufferUtil.PREFER_DIRECT_ALLOCATOR_WITHOUT_ZEROING;
 
     /**
-     * {@link BufferAllocator} whose {@link Buffer}s are typically backed by Netty buffers and prefers direct memory
-     * allocation when otherwise not specified.
+     * Default {@link BufferAllocator} whose {@link Buffer}s are typically backed by Netty buffers and prefers direct
+     * memory allocation when otherwise not specified.
      */
     public static final BufferAllocator PREFER_DIRECT_ALLOCATOR = BufferUtil.PREFER_DIRECT_ALLOCATOR;
 
     /**
-     * {@link BufferAllocator} whose {@link Buffer}s are typically backed by Netty buffers and prefers heap memory
-     * allocation when otherwise not specified.
+     * Default {@link BufferAllocator} whose {@link Buffer}s are typically backed by Netty buffers and prefers heap
+     * memory allocation when otherwise not specified.
      */
     public static final BufferAllocator PREFER_HEAP_ALLOCATOR = BufferUtil.PREFER_HEAP_ALLOCATOR;
 
