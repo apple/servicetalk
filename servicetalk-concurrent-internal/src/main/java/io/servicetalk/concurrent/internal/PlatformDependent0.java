@@ -95,8 +95,8 @@ final class PlatformDependent0 {
                     }
                     // the unsafe instance
                     return unsafeField.get(null);
-                } catch (Throwable t) {
-                    return t;
+                } catch (NoSuchFieldException | SecurityException | IllegalAccessException e) {
+                    return e;
                 }
             });
 
