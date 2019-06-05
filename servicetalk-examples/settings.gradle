@@ -15,3 +15,15 @@
  */
 enableFeaturePreview("IMPROVED_POM_SUPPORT")
 rootProject.name = "servicetalk-examples"
+
+include "http:helloworld",
+        "http:jaxrs",
+        "http:metadata",
+        "http:serialization",
+        "http:service:composition"
+
+project(":http:helloworld").name = "servicetalk-example-http-helloworld"
+project(":http:jaxrs").name = "servicetalk-example-http-jaxrs"
+project(":http:metadata").name = "servicetalk-example-http-metadata"
+project(":http:serialization").name = "servicetalk-example-http-serialization"
+project(":http:service:composition").name = "servicetalk-example-http-service-composition"
