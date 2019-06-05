@@ -322,6 +322,12 @@ class DefaultPartitionedHttpClientBuilder<U, R> extends PartitionedHttpClientBui
     }
 
     @Override
+    public PartitionedHttpClientBuilder<U, R> proxyAddress(final U proxyAddress) {
+        builderTemplate.proxyAddress(proxyAddress);
+        return this;
+    }
+
+    @Override
     public PartitionedHttpClientBuilder<U, R> appendConnectionFilter(
             final StreamingHttpConnectionFilterFactory factory) {
         builderTemplate.appendConnectionFilter(factory);

@@ -49,8 +49,10 @@ import io.servicetalk.transport.api.SslConfig;
 import java.net.InetSocketAddress;
 import java.net.SocketOption;
 import java.util.function.Function;
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import static io.netty.util.NetUtil.toSocketAddressString;
 import static io.servicetalk.concurrent.api.AsyncCloseables.emptyAsyncCloseable;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.Publisher.failed;
@@ -73,6 +75,8 @@ import static java.util.Objects.requireNonNull;
 final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHttpClientBuilder<U, R> {
     @Nullable
     private final U address;
+    @Nullable
+    private U proxyAddress;
     private final HttpClientConfig config;
     private final HttpExecutionContextBuilder executionContextBuilder;
     private final ClientStrategyInfluencerChainBuilder influencerChainBuilder;
@@ -80,7 +84,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
     private ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> serviceDiscoverer;
     @Nullable
     private Function<U, StreamingHttpClientFilterFactory> hostHeaderFilterFactoryFunction =
-            DefaultSingleAddressHttpClientBuilder::defaultHostHeaderFilterFactory;
+            address -> new HostHeaderHttpRequesterFilter(unresolvedAddressToCharSequence(address));
     @Nullable
     private StreamingHttpConnectionFilterFactory connectionFilterFactory;
     @Nullable
@@ -112,6 +116,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
     private DefaultSingleAddressHttpClientBuilder(@Nullable final U address,
                                                   final DefaultSingleAddressHttpClientBuilder<U, R> from) {
         this.address = address;
+        this.proxyAddress = from.proxyAddress;
         config = new HttpClientConfig(from.config);
         executionContextBuilder = new HttpExecutionContextBuilder(from.executionContextBuilder);
         influencerChainBuilder = from.influencerChainBuilder.copy();
@@ -152,18 +157,23 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
         final DefaultSingleAddressHttpClientBuilder<U, R> builder;
         final HttpExecutionContext executionContext;
         final StreamingHttpRequestResponseFactory reqRespFactory;
+        @Nullable
+        final U proxyAddress;
 
         HttpClientBuildContext(final DefaultSingleAddressHttpClientBuilder<U, R> builder,
                                final HttpExecutionContext executionContext,
-                               final StreamingHttpRequestResponseFactory reqRespFactory) {
+                               final StreamingHttpRequestResponseFactory reqRespFactory,
+                               @Nullable final U proxyAddress) {
             this.builder = builder;
             this.executionContext = executionContext;
             this.reqRespFactory = reqRespFactory;
+            this.proxyAddress = proxyAddress;
         }
 
         Publisher<? extends ServiceDiscovererEvent<R>> discover() {
             assert builder.address != null : "Attempted to buildStreaming with an unknown address";
-            return builder.serviceDiscoverer.discover(builder.address);
+            return builder.serviceDiscoverer.discover(
+                    proxyAddress != null ? proxyAddress : builder.address);
         }
 
         StreamingHttpClient build() {
@@ -212,14 +222,16 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
 
             StreamingHttpClientFilterFactory currClientFilterFactory = clientFilterFactory;
 
+            if (config.connectAddress() != null && config.tcpClientConfig().sslContext() == null) {
+                // If we're talking to a proxy over http (not https), rewrite the request-target to absolute-form, as
+                // specified by the RFC: https://tools.ietf.org/html/rfc7230#section-5.3.2
+                currClientFilterFactory = appendFilter(currClientFilterFactory,
+                        proxyAbsoluteAddressFilterFactory());
+            }
+
             if (hostHeaderFilterFactoryFunction != null) {
-                StreamingHttpClientFilterFactory hostHeaderFilterFactory =
-                        hostHeaderFilterFactoryFunction.apply(address);
-                if (currClientFilterFactory == null) {
-                    currClientFilterFactory = hostHeaderFilterFactory;
-                } else {
-                    currClientFilterFactory = currClientFilterFactory.append(hostHeaderFilterFactory);
-                }
+                currClientFilterFactory = appendFilter(currClientFilterFactory,
+                        hostHeaderFilterFactoryFunction.apply(address));
             }
 
             FilterableStreamingHttpClient lbClient = closeOnException.prepend(
@@ -234,6 +246,17 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
         } catch (final Throwable t) {
             closeOnException.closeAsync().subscribe();
             throw t;
+        }
+    }
+
+    @Nonnull
+    private static StreamingHttpClientFilterFactory appendFilter(
+            @Nullable final StreamingHttpClientFilterFactory currClientFilterFactory,
+            final StreamingHttpClientFilterFactory appendClientFilterFactory) {
+        if (currClientFilterFactory == null) {
+            return appendClientFilterFactory;
+        } else {
+            return currClientFilterFactory.append(appendClientFilterFactory);
         }
     }
 
@@ -262,17 +285,12 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
                 new DefaultStreamingHttpRequestResponseFactory(exec.bufferAllocator(),
                         clonedBuilder.config.headersFactory(), HTTP_1_1);
 
-        return new HttpClientBuildContext<>(clonedBuilder, exec, reqRespFactory);
+        return new HttpClientBuildContext<>(clonedBuilder, exec, reqRespFactory, proxyAddress);
     }
 
-    private static <U> HostHeaderHttpRequesterFilter defaultHostHeaderFilterFactory(final U address) {
-        if (address instanceof CharSequence) {
-            return new HostHeaderHttpRequesterFilter((CharSequence) address);
-        }
-        if (address instanceof HostAndPort) {
-            return new HostHeaderHttpRequesterFilter((HostAndPort) address);
-        }
-        throw new IllegalArgumentException("Unsupported host header address type, provide an override");
+    private AbsoluteAddressHttpRequesterFilter proxyAbsoluteAddressFilterFactory() {
+        assert address != null : "address should have been set in constructor";
+        return new AbsoluteAddressHttpRequesterFilter("http", unresolvedAddressToCharSequence(address));
     }
 
     @Override
@@ -369,6 +387,18 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
     }
 
     @Override
+    public DefaultSingleAddressHttpClientBuilder<U, R> proxyAddress(@Nullable U proxyAddress) {
+        this.proxyAddress = proxyAddress;
+        if (proxyAddress == null) {
+            config.connectAddress(null);
+        } else {
+            assert address != null : "address should have been set in constructor";
+            config.connectAddress(unresolvedAddressToCharSequence(address));
+        }
+        return this;
+    }
+
+    @Override
     public DefaultSingleAddressHttpClientBuilder<U, R> appendConnectionFilter(
             final StreamingHttpConnectionFilterFactory factory) {
         if (connectionFilterFactory == null) {
@@ -451,6 +481,17 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
     private static boolean reservedConnectionsPipelineEnabled(final ReadOnlyHttpClientConfig roConfig) {
         return roConfig.maxPipelinedRequests() > 1 ||
                 Boolean.valueOf(System.getProperty("io.servicetalk.http.netty.reserved.connections.pipeline", "true"));
+    }
+
+    private static <U> CharSequence unresolvedAddressToCharSequence(final U address) {
+        if (address instanceof CharSequence) {
+            return (CharSequence) address;
+        }
+        if (address instanceof HostAndPort) {
+            final HostAndPort hostAndPort = (HostAndPort) address;
+            return toSocketAddressString(hostAndPort.hostName(), hostAndPort.port());
+        }
+        throw new IllegalArgumentException("Unsupported address type");
     }
 
     private static final class StrategyInfluencingLoadBalancerFactory<R>

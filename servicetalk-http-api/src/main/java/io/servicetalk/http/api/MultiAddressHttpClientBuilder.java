@@ -25,8 +25,10 @@ import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.SslConfig;
 
 import java.net.SocketOption;
+import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import javax.annotation.Nullable;
 
 import static io.servicetalk.http.api.StrategyInfluencerAwareConversions.toMultiAddressConditionalFilterFactory;
 import static java.util.Objects.requireNonNull;
@@ -81,6 +83,16 @@ public abstract class MultiAddressHttpClientBuilder<U, R>
 
     @Override
     public abstract MultiAddressHttpClientBuilder<U, R> disableHostHeaderFallback();
+
+    /**
+     * Sets a callback that is called immediately before the {@link SingleAddressHttpClientBuilder} for any
+     * {@link HostAndPort} is built.
+     *
+     * @param clientBuilderCallback The callback.
+     * @return this.
+     */
+    public abstract MultiAddressHttpClientBuilder<U, R> clientBuilderCallback(
+            @Nullable BiConsumer<HostAndPort, SingleAddressHttpClientBuilder<U, R>> clientBuilderCallback);
 
     @Override
     public abstract MultiAddressHttpClientBuilder<U, R> appendConnectionFilter(

@@ -88,6 +88,37 @@ public final class HttpRequestUriUtils {
     }
 
     /**
+     * Get the effective request URI for the provided {@link HttpRequestMetaData}.
+     * <p>
+     * For example, for this <a href="https://tools.ietf.org/html/rfc7230#section-5.3.1">origin-form</a> request:
+     * <pre>
+     * GET /pub/WWW/TheProject.html HTTP/1.1
+     * Host: www.example.org:8080
+     * </pre>
+     * and a {@code fixedAuthority} of {@code "example.com"} the effective request URI will be:
+     * <pre>
+     * http://example.com/pub/WWW/TheProject.html
+     * </pre>
+     *
+     * @param metaData the {@link HttpRequestMetaData} to use.
+     * @param fixedScheme the configured fixed scheme as {@link String}, or {@code null} if none is set.
+     * @param fixedAuthority the configured fixed authority as {@link String}, or {@code null} if none is set.
+     * @param includeUserInfo {@code true} if the deprecated user info sub-component must be included
+     * (see <a href="https://tools.ietf.org/html/rfc7230#section-2.7.1">RFC 7230, section 2.7.1</a>).
+     * Note that this flag has no effect on any user info that could be provided in {@code fixedAuthority}.
+     * @return an effective request URI as {@link String}.
+     * @throws IllegalArgumentException if {@code fixedScheme} is not {@code null} and is not
+     * {@code http} nor {@code https}.
+     */
+    public static String getEffectiveRequestUri(final HttpRequestMetaData metaData,
+                                                final String fixedScheme,
+                                                final String fixedAuthority,
+                                                final boolean includeUserInfo) {
+        return buildEffectiveRequestUri(null, metaData, fixedScheme, fixedAuthority, metaData.rawPath(),
+                metaData.rawQuery(), includeUserInfo);
+    }
+
+    /**
      * Get the base URI for the provided {@link ConnectionContext} and {@link HttpRequestMetaData}.
      * <p>
      * For example, for this <a href="https://tools.ietf.org/html/rfc7230#section-5.3.1">origin-form</a> request:
@@ -142,7 +173,8 @@ public final class HttpRequestUriUtils {
         return buildEffectiveRequestUri(ctx, metaData, fixedScheme, fixedAuthority, "/", null, includeUserInfo);
     }
 
-    private static String buildEffectiveRequestUri(final ConnectionContext ctx, final HttpRequestMetaData metaData,
+    private static String buildEffectiveRequestUri(@Nullable final ConnectionContext ctx,
+                                                   final HttpRequestMetaData metaData,
                                                    @Nullable final String fixedScheme,
                                                    @Nullable final String fixedAuthority,
                                                    @Nullable final String path,
@@ -153,10 +185,15 @@ public final class HttpRequestUriUtils {
             throw new IllegalArgumentException("Unsupported scheme: " + fixedScheme);
         }
 
-        if (metaData.scheme() != null) {
+        if (ctx == null && (fixedScheme == null || fixedAuthority == null)) {
+            throw new IllegalArgumentException("Context required without scheme and authority");
+        }
+
+        final String metadataScheme = metaData.scheme();
+        if (metadataScheme != null) {
             // absolute form
             return buildRequestUri(
-                    metaData.scheme(),
+                    metadataScheme,
                     includeUserInfo ? metaData.userInfo() : null,
                     metaData.host(),
                     metaData.port(),

@@ -51,6 +51,11 @@ final class HttpClientChannelInitializer implements ChannelInitializer {
                 roConfig.maxInitialLineLength(), roConfig.maxHeaderSize(), closeHandler));
         pipeline.addLast(new HttpRequestEncoder(methodQueue,
                 roConfig.headersEncodedSizeEstimate(), roConfig.trailersEncodedSizeEstimate(), closeHandler));
+
+        if (roConfig.connectAddress() != null && roConfig.tcpClientConfig().sslContext() != null) {
+            // If we're using a proxy, and https, add a handler to send the CONNECT
+            pipeline.addFirst(new HttpConnectHandler(roConfig));
+        }
         return ctx;
     }
 }

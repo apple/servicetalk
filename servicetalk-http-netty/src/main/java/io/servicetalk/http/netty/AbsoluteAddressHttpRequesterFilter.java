@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,9 +18,9 @@ package io.servicetalk.http.netty;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
+import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
-import io.servicetalk.http.api.HttpHeaderNames;
 import io.servicetalk.http.api.StreamingHttpClientFilter;
 import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
 import io.servicetalk.http.api.StreamingHttpConnectionFilter;
@@ -29,26 +29,28 @@ import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequester;
 import io.servicetalk.http.api.StreamingHttpResponse;
 
-import static io.netty.util.NetUtil.isValidIpV6Address;
-import static io.servicetalk.http.api.CharSequences.newAsciiString;
-import static io.servicetalk.http.api.HttpHeaderNames.HOST;
-import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
+import static io.servicetalk.http.utils.HttpRequestUriUtils.getEffectiveRequestUri;
+import static java.util.Objects.requireNonNull;
 
 /**
- * A filter which will apply a fallback value for the {@link HttpHeaderNames#HOST} header if one is not present.
+ * A filter that rewrites non-absolute request targets to include the host and port the {@link HttpClient} was built
+ * for.
  */
-final class HostHeaderHttpRequesterFilter implements StreamingHttpClientFilterFactory,
-                                                     StreamingHttpConnectionFilterFactory,
-                                                     HttpExecutionStrategyInfluencer {
-    private final CharSequence fallbackHost;
+final class AbsoluteAddressHttpRequesterFilter implements StreamingHttpClientFilterFactory,
+                                                          StreamingHttpConnectionFilterFactory,
+                                                          HttpExecutionStrategyInfluencer {
+    private final String scheme;
+    private final String authority;
 
     /**
      * Create a new instance.
-     * @param fallbackHost The address to use as a fallback if a {@link HttpHeaderNames#HOST} header is not present.
+     *
+     * @param scheme The scheme of the client.
+     * @param authority The authority (host:port) of the client.
      */
-    HostHeaderHttpRequesterFilter(CharSequence fallbackHost) {
-        this.fallbackHost = newAsciiString(isValidIpV6Address(fallbackHost) && fallbackHost.charAt(0) != '[' ?
-                "[" + fallbackHost + "]" : fallbackHost.toString());
+    AbsoluteAddressHttpRequesterFilter(String scheme, CharSequence authority) {
+        this.scheme = requireNonNull(scheme);
+        this.authority = authority.toString();
     }
 
     @Override
@@ -59,7 +61,7 @@ final class HostHeaderHttpRequesterFilter implements StreamingHttpClientFilterFa
             protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                             final HttpExecutionStrategy strategy,
                                                             final StreamingHttpRequest request) {
-                return HostHeaderHttpRequesterFilter.this.request(delegate, strategy, request);
+                return AbsoluteAddressHttpRequesterFilter.this.request(delegate, strategy, request);
             }
         };
     }
@@ -69,8 +71,8 @@ final class HostHeaderHttpRequesterFilter implements StreamingHttpClientFilterFa
         return new StreamingHttpConnectionFilter(connection) {
             @Override
             public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
-                                                            final StreamingHttpRequest request) {
-                return HostHeaderHttpRequesterFilter.this.request(delegate(), strategy, request);
+                                                         final StreamingHttpRequest request) {
+                return AbsoluteAddressHttpRequesterFilter.this.request(delegate(), strategy, request);
             }
         };
     }
@@ -84,9 +86,8 @@ final class HostHeaderHttpRequesterFilter implements StreamingHttpClientFilterFa
     private Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                   final HttpExecutionStrategy strategy,
                                                   final StreamingHttpRequest request) {
-        if (HTTP_1_1.equals(request.version()) && !request.headers().contains(HOST)) {
-            request.headers().set(HOST, fallbackHost);
-        }
+        final String effectiveRequestUri = getEffectiveRequestUri(request, scheme, authority, false);
+        request.requestTarget(effectiveRequestUri);
         return delegate.request(strategy, request);
     }
 }
