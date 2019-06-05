@@ -166,9 +166,6 @@ public final class HeaderUtils {
         final Iterator<? extends CharSequence> values = headers.values(name);
         while (values.hasNext()) {
             final CharSequence next = values.next();
-            if (contentEqualsIgnoreCase(next, value)) {
-                return true;
-            }
             if (containsCommaSeparatedValueIgnoreCase(next, value)) {
                 return true;
             }
