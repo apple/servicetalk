@@ -34,6 +34,7 @@ import java.util.List;
 
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Publisher.fromIterable;
+import static io.servicetalk.http.api.HeaderUtils.isTransferEncodingChunked;
 import static io.servicetalk.http.api.HttpApiConversions.isSafeToAggregate;
 import static io.servicetalk.http.api.HttpApiConversions.mayHaveTrailers;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
@@ -58,10 +59,6 @@ final class HeaderUtils {
     static int indexOf(CharSequence sequence, char c, int fromIndex) {
         return sequence instanceof AsciiString ? ((AsciiString) sequence).indexOf(c, fromIndex) :
                 CharSequences.indexOf(sequence, c, fromIndex);
-    }
-
-    static boolean isTransferEncodingChunked(final HttpHeaders headers) {
-        return headers.containsIgnoreCase(TRANSFER_ENCODING, CHUNKED);
     }
 
     static void removeTransferEncodingChunked(final HttpHeaders headers) {

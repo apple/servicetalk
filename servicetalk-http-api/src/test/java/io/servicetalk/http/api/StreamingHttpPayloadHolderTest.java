@@ -50,6 +50,8 @@ import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpSerializationProviders.textDeserializer;
 import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
 import static java.nio.charset.Charset.defaultCharset;
+import static java.util.Collections.emptyIterator;
+import static java.util.Collections.singletonList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.equalTo;
@@ -113,7 +115,9 @@ public class StreamingHttpPayloadHolderTest {
         headersFactory = mock(HttpHeadersFactory.class);
         when(headersFactory.newEmptyTrailers()).thenReturn(mock(HttpHeaders.class));
         if (sourceType == SourceType.Trailers) {
-            when(headers.containsIgnoreCase(TRANSFER_ENCODING, CHUNKED)).thenReturn(true);
+            when(headers.values(TRANSFER_ENCODING)).then(__ -> singletonList(CHUNKED).iterator());
+        } else {
+            when(headers.values(TRANSFER_ENCODING)).then(__ -> emptyIterator());
         }
         payloadSource = sourceType == SourceType.None ? null : new TestPublisher<>();
         final DefaultPayloadInfo payloadInfo = forTransportReceive(headers);
