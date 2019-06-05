@@ -76,15 +76,11 @@ final class PlatformDependent0 {
     private static final boolean USE_DIRECT_BUFFER_WITHOUT_ZEROING;
 
     static {
-        final ByteBuffer direct;
         Unsafe unsafe;
 
         if (IS_EXPLICIT_NO_UNSAFE) {
-            direct = null;
             unsafe = null;
         } else {
-            direct = ByteBuffer.allocateDirect(1);
-
             // attempt to access field Unsafe#theUnsafe
             final Object maybeUnsafe = AccessController.doPrivileged((PrivilegedAction<Object>) () -> {
                 try {
@@ -114,12 +110,15 @@ final class PlatformDependent0 {
         }
         UNSAFE = unsafe;
 
+        final ByteBuffer direct;
         final MethodHandles.Lookup lookup;
         // Define DIRECT_BUFFER_CONSTRUCTOR:
         if (UNSAFE == null) {
-            DIRECT_BUFFER_CONSTRUCTOR = null;
+            direct = null;
             lookup = null;
+            DIRECT_BUFFER_CONSTRUCTOR = null;
         } else {
+            direct = ByteBuffer.allocateDirect(1);
             lookup = MethodHandles.lookup();
             DIRECT_BUFFER_CONSTRUCTOR = lookupAccessibleObject(() -> direct.getClass().getDeclaredConstructor(
                     int.class, long.class, FileDescriptor.class, Runnable.class), Constructor.class, constructor -> {
