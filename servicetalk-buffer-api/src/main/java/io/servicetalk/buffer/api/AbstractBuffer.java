@@ -523,7 +523,7 @@ abstract class AbstractBuffer implements Buffer {
 
     @Override
     public final int indexOf(int fromIndex, int toIndex, byte value) {
-        return fromIndex > toIndex ? firstIndexOf(fromIndex, toIndex, value) :
+        return fromIndex < toIndex ? firstIndexOf(fromIndex, toIndex, value) :
                 lastIndexOf(fromIndex, toIndex, value);
     }
 
