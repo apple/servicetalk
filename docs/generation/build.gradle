@@ -1,6 +1,6 @@
 buildscript {
-  ext.isCiBuild = System.getenv("CI") != null
-  ext.isReleaseBuild = System.getProperty("releaseBuild") != null
+  ext.isCiBuild = "true" == System.getenv("CI")
+  ext.isReleaseBuild = project.hasProperty("releaseBuild")
 
   dependencies {
     classpath "org.jsoup:jsoup:$jsoupVersion"

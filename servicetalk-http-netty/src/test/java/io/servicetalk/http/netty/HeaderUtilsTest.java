@@ -24,6 +24,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import static io.servicetalk.buffer.api.ReadOnlyBufferAllocators.DEFAULT_RO_ALLOCATOR;
+import static io.servicetalk.http.api.HeaderUtils.isTransferEncodingChunked;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderNames.TRANSFER_ENCODING;
 import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
@@ -31,7 +32,6 @@ import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpRequestMethod.GET;
 import static io.servicetalk.http.api.StreamingHttpRequests.newRequest;
 import static io.servicetalk.http.netty.HeaderUtils.addRequestTransferEncodingIfNecessary;
-import static io.servicetalk.http.netty.HeaderUtils.isTransferEncodingChunked;
 import static io.servicetalk.http.netty.HeaderUtils.removeTransferEncodingChunked;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -48,32 +48,6 @@ public class HeaderUtilsTest {
     public void setUp() {
         httpRequest = newRequest(GET, "/", HTTP_1_1,
                 HTTP_HEADERS_FACTORY.newHeaders(), DEFAULT_RO_ALLOCATOR, HTTP_HEADERS_FACTORY);
-    }
-
-    @Test
-    public void isTransferEncodingChunkedFalseCases() {
-        assertTrue(httpRequest.headers().isEmpty());
-        assertFalse(isTransferEncodingChunked(httpRequest.headers()));
-
-        httpRequest.headers().add("Some-Header", "Some-Value");
-        assertFalse(isTransferEncodingChunked(httpRequest.headers()));
-
-        httpRequest.headers().add(TRANSFER_ENCODING, "Some-Value");
-        assertFalse(isTransferEncodingChunked(httpRequest.headers()));
-    }
-
-    @Test
-    public void isTransferEncodingChunkedTrueCases() {
-        assertTrue(httpRequest.headers().isEmpty());
-        // lower case
-        httpRequest.headers().set(TRANSFER_ENCODING, CHUNKED);
-        assertOneTransferEncodingChunked(httpRequest.headers());
-        // Capital Case
-        httpRequest.headers().set("Transfer-Encoding", "Chunked");
-        assertOneTransferEncodingChunked(httpRequest.headers());
-        // Random case
-        httpRequest.headers().set(TRANSFER_ENCODING, "cHuNkEd");
-        assertOneTransferEncodingChunked(httpRequest.headers());
     }
 
     @Test
