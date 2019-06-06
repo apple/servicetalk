@@ -21,22 +21,15 @@ import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.api.Processors;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpService;
-import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.netty.internal.FlushStrategies;
 import io.servicetalk.transport.netty.internal.NettyConnectionContext;
 
-import org.junit.After;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 
-import java.net.InetSocketAddress;
-import java.util.Collection;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
@@ -49,42 +42,20 @@ import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
 import static io.servicetalk.http.api.HttpRequestMethod.POST;
 import static io.servicetalk.http.netty.AbstractNettyHttpServerTest.ExecutorSupplier.CACHED;
 import static io.servicetalk.http.netty.AbstractNettyHttpServerTest.ExecutorSupplier.CACHED_SERVER;
-import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 
-@RunWith(Parameterized.class)
 public class FlushStrategyForClientApiTest extends AbstractNettyHttpServerTest {
 
     private final CountDownLatch requestLatch = new CountDownLatch(1);
     private final BlockingQueue<Buffer> payloadBuffersReceived = new ArrayBlockingQueue<>(2);
-    private final boolean pipelining;
     private volatile StreamingHttpRequest request;
 
-    public FlushStrategyForClientApiTest(final boolean pipelining) {
+    public FlushStrategyForClientApiTest() {
         super(CACHED, CACHED_SERVER);
-        this.pipelining = pipelining;
-    }
-
-    @Parameterized.Parameters(name = "pipelining={0}")
-    public static Collection<Boolean> clientExecutors() {
-        return asList(true, false);
-    }
-
-    @Override
-    SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> newClientBuilder() {
-        if (!pipelining) {
-            System.setProperty("io.servicetalk.http.netty.reserved.connections.pipeline", "false");
-        }
-        return super.newClientBuilder().maxPipelinedRequests(pipelining ? 2 : 1);
-    }
-
-    @After
-    public void cleanup() {
-        System.clearProperty("io.servicetalk.http.netty.reserved.connections.pipeline");
     }
 
     @Override
