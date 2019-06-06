@@ -150,8 +150,9 @@ public final class PlatformDependent {
     *
     * @param t The {@link Throwable} to throw.
     * @param <T> The expected type
-    * @return nothing actually will be returned from this method because it rethrows the specified exception.
-    * {@code return} statement used to fool the compiler if a caller method expects to return something.
+    * @return nothing actually will be returned from this method because it rethrows the specified exception. Making
+    * this method return an arbitrary type makes the caller method easier as they do not have to add a return statement
+    * after calling this method.
     */
     public static <T> T throwException(final Throwable t) {
         if (hasUnsafe()) {
