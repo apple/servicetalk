@@ -36,9 +36,9 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import java.net.InetSocketAddress;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeoutException;
 
@@ -50,9 +50,6 @@ import static io.servicetalk.http.api.HttpRequestMethod.POST;
 import static io.servicetalk.http.netty.AbstractNettyHttpServerTest.ExecutorSupplier.CACHED;
 import static io.servicetalk.http.netty.AbstractNettyHttpServerTest.ExecutorSupplier.CACHED_SERVER;
 import static java.util.Arrays.asList;
-import static java.util.Collections.emptyList;
-import static java.util.Collections.singletonList;
-import static java.util.Collections.synchronizedList;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertNull;
@@ -63,8 +60,7 @@ import static org.junit.Assert.fail;
 public class FlushStrategyForClientApiTest extends AbstractNettyHttpServerTest {
 
     private final CountDownLatch requestLatch = new CountDownLatch(1);
-    private final CountDownLatch payloadLatch = new CountDownLatch(1);
-    private final List<Buffer> payloadBuffersReceived = synchronizedList(new ArrayList<>());
+    private final BlockingQueue<Buffer> payloadBuffersReceived = new ArrayBlockingQueue<>(2);
     private final boolean pipelining;
     private volatile StreamingHttpRequest request;
 
@@ -97,8 +93,11 @@ public class FlushStrategyForClientApiTest extends AbstractNettyHttpServerTest {
             FlushStrategyForClientApiTest.this.request = request;
             requestLatch.countDown();
             request.payloadBody().forEach(buffer -> {
-                payloadBuffersReceived.add(buffer);
-                payloadLatch.countDown();
+                try {
+                    payloadBuffersReceived.put(buffer);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
             });
             return Single.succeeded(responseFactory.ok());
         });
@@ -151,11 +150,11 @@ public class FlushStrategyForClientApiTest extends AbstractNettyHttpServerTest {
         responseSingle.toFuture(); // Subscribe, to initiate the request, but we don't care about the response.
 
         requestLatch.await(); // Wait for the server to receive the response, meaning the client wrote and flushed.
-        assertThat(payloadBuffersReceived, is(emptyList()));
+        assertThat(payloadBuffersReceived.size(), is(0));
 
         final Buffer payloadItem = BufferAllocators.DEFAULT_ALLOCATOR.fromAscii("Hello");
         payloadItemProcessor.onSuccess(payloadItem);
-        payloadLatch.await(); // Wait for the server to receive the payload
-        assertThat(payloadBuffersReceived, is(singletonList(payloadItem)));
+        Buffer receivedBuffer = payloadBuffersReceived.take(); // Wait for the server to receive the payload
+        assertThat(receivedBuffer, is(payloadItem));
     }
 }

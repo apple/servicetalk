@@ -42,9 +42,10 @@ final class NonPipelinedStreamingHttpConnection
             return connection.write(requestStream).merge(connection.read());
         } else {
             return Publisher.defer(() -> {
-                final Cancellable cancellable = connection.updateFlushStrategy(
+                final Cancellable resetFlushStrategy = connection.updateFlushStrategy(
                         (prev, isOriginal) -> isOriginal ? flushStrategy : prev);
-                return connection.write(requestStream).merge(connection.read()).afterFinally(cancellable::cancel);
+                return connection.write(requestStream).merge(connection.read())
+                        .afterFinally(resetFlushStrategy::cancel);
             });
         }
     }

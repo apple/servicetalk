@@ -20,7 +20,7 @@ import io.servicetalk.client.api.internal.IgnoreConsumedEvent;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.http.api.ClientCallback;
+import io.servicetalk.http.api.ClientInvoker;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpEventKey;
 import io.servicetalk.http.api.HttpExecutionContext;
@@ -53,7 +53,7 @@ import static java.util.Objects.requireNonNull;
 import static java.util.function.Function.identity;
 
 abstract class AbstractStreamingHttpConnection<CC extends NettyConnectionContext>
-        implements FilterableStreamingHttpConnection, ClientCallback<FlushStrategy> {
+        implements FilterableStreamingHttpConnection, ClientInvoker<FlushStrategy> {
 
     final CC connection;
     final HttpExecutionContext executionContext;
@@ -85,8 +85,8 @@ abstract class AbstractStreamingHttpConnection<CC extends NettyConnectionContext
     }
 
     @Override
-    public final Single<StreamingHttpResponse> apply(final Publisher<Object> flattenedRequest,
-                                                     @Nullable final FlushStrategy flushStrategy) {
+    public final Single<StreamingHttpResponse> invokeClient(final Publisher<Object> flattenedRequest,
+                                                            @Nullable final FlushStrategy flushStrategy) {
         return new SpliceFlatStreamToMetaSingle<>(writeAndRead(flattenedRequest, flushStrategy),
                 this::newSplicedResponse);
     }
@@ -113,14 +113,8 @@ abstract class AbstractStreamingHttpConnection<CC extends NettyConnectionContext
 
     @Nullable
     static FlushStrategy determineFlushStrategyForApi(final HttpMetaData request) {
-        final boolean safeToAggregate = isSafeToAggregate(request);
-        final FlushStrategy flushStrategy;
-        if (safeToAggregate) {
-            flushStrategy = flushOnEnd();
-        } else {
-            flushStrategy = null; // Don't change the flush strategy, keep the default.
-        }
-        return flushStrategy;
+        // For non-aggregated, don't change the flush strategy, keep the default.
+        return isSafeToAggregate(request) ? flushOnEnd() : null;
     }
 
     @Override

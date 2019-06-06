@@ -287,10 +287,11 @@ final class NettyHttpServer {
                                             if (flushStrategy == null) {
                                                 return handleResponse(requestMethod, response);
                                             } else {
-                                                Cancellable cancellable = compositeFlushStrategy.updateFlushStrategy(
+                                                final Cancellable resetFlushStrategy =
+                                                        compositeFlushStrategy.updateFlushStrategy(
                                                         (prev, isOriginal) -> isOriginal ? flushStrategy : prev);
                                                 return handleResponse(requestMethod, response)
-                                                        .afterFinally(cancellable::cancel);
+                                                        .afterFinally(resetFlushStrategy::cancel);
                                             }
                                         }),
                                 (cause, executor) -> from(newErrorResponse(cause, executor,

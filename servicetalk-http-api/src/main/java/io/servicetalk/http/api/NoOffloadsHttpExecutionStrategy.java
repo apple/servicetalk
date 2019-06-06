@@ -47,9 +47,9 @@ final class NoOffloadsHttpExecutionStrategy implements HttpExecutionStrategy {
     @Override
     public <FS> Single<StreamingHttpResponse> invokeClient(
             final Executor fallback, final Publisher<Object> flattenedRequest, final FS flushStrategy,
-            final ClientCallback<FS> client) {
+            final ClientInvoker<FS> client) {
         Publisher<Object> flatReq = flattenedRequest.subscribeOnOverride(immediate());
-        return client.apply(flatReq, flushStrategy)
+        return client.invokeClient(flatReq, flushStrategy)
                 .map(response -> response.transformRawPayloadBody(p -> p.publishOnOverride(immediate())))
                 .publishOnOverride(immediate());
     }

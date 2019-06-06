@@ -45,10 +45,12 @@ final class PipelinedStreamingHttpConnection
         if (flushStrategy == null) {
             return connection.request(requestStream);
         } else {
+            // Using the Writer abstraction here defers updating the flush strategy until just before this request is
+            // written.
             return connection.request(() -> {
-                final Cancellable cancellable = connection.updateFlushStrategy(
+                final Cancellable resetFlushStrategy = connection.updateFlushStrategy(
                         (prev, isOriginal) -> isOriginal ? flushStrategy : prev);
-                return nettyConnection.write(requestStream).afterFinally(cancellable::cancel);
+                return nettyConnection.write(requestStream).afterFinally(resetFlushStrategy::cancel);
             });
         }
     }

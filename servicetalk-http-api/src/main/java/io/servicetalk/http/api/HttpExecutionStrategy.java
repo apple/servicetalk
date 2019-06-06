@@ -42,7 +42,7 @@ public interface HttpExecutionStrategy extends ExecutionStrategy {
      * @return {@link Single} which is offloaded as required.
      */
     <FS> Single<StreamingHttpResponse> invokeClient(Executor fallback, Publisher<Object> flattenedRequest,
-                                                    @Nullable FS flushStrategy, ClientCallback<FS> client);
+                                                    @Nullable FS flushStrategy, ClientInvoker<FS> client);
 
     /**
      * Invokes the passed {@link Function} and applies the necessary offloading of request and response for a server.

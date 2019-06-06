@@ -18,18 +18,23 @@ package io.servicetalk.http.api;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 
-import java.util.function.BiFunction;
 import javax.annotation.Nullable;
 
 /**
- * A {@link BiFunction} that given flattened stream of {@link HttpRequestMetaData}, payload and
+ * A function that given flattened stream of {@link HttpRequestMetaData}, payload and
  * trailers, for the passed {@link StreamingHttpRequest} returns a {@link Single}.
  *
- * @param <FS> The {@code FlushStrategy} type to use.
+ * @param <State> The {@code state} type to use.
  */
-public interface ClientCallback<FS> extends BiFunction<Publisher<Object>, FS,
-        Single<StreamingHttpResponse>> {
+@FunctionalInterface
+public interface ClientInvoker<State> {
 
-    @Override
-    Single<StreamingHttpResponse> apply(Publisher<Object> objectPublisher, @Nullable FS fs);
+    /**
+     * Invokes the client.
+     *
+     * @param objectPublisher flattened stream of {@link HttpRequestMetaData}, payload and trailers.
+     * @param state the state to pass.
+     * @return a {@link Single} of the {@link StreamingHttpResponse}.
+     */
+    Single<StreamingHttpResponse> invokeClient(Publisher<Object> objectPublisher, @Nullable State state);
 }
