@@ -44,8 +44,8 @@ import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
 import io.servicetalk.transport.netty.internal.DefaultNettyConnection;
-import io.servicetalk.transport.netty.internal.DelegatingFlushStrategy;
 import io.servicetalk.transport.netty.internal.FlushStrategy;
+import io.servicetalk.transport.netty.internal.FlushStrategyHolder;
 import io.servicetalk.transport.netty.internal.NettyChannelListenableAsyncCloseable;
 import io.servicetalk.transport.netty.internal.NettyConnection.TerminalPredicate;
 import io.servicetalk.transport.netty.internal.NettyConnectionContext;
@@ -79,7 +79,6 @@ import java.util.concurrent.Delayed;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
-import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
 import javax.net.ssl.SSLSession;
@@ -101,7 +100,6 @@ import static io.servicetalk.transport.netty.internal.NettyIoExecutors.fromNetty
 import static io.servicetalk.transport.netty.internal.NettyPipelineSslUtils.extractSslSession;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater;
 
 final class H2ClientParentConnectionContext extends NettyChannelListenableAsyncCloseable implements
                                                                                          NettyConnectionContext {
@@ -112,18 +110,14 @@ final class H2ClientParentConnectionContext extends NettyChannelListenableAsyncC
             unknownStackTrace(new ClosedChannelException(), H2ClientParentConnectionContext.class,
                     "handlerRemoved(..)");
     private static final Logger LOGGER = LoggerFactory.getLogger(H2ClientParentConnectionContext.class);
-    private static final AtomicReferenceFieldUpdater<H2ClientParentConnectionContext, FlushStrategy>
-            flushStrategyUpdater = newUpdater(H2ClientParentConnectionContext.class, FlushStrategy.class,
-            "flushStrategy");
     private static final ScheduledFuture<?> GRACEFUL_CLOSE_PING_PENDING = new NoopScheduledFuture();
     private static final ScheduledFuture<?> GRACEFUL_CLOSE_PING_ACK_RECV = new NoopScheduledFuture();
     private static final long GRACEFUL_CLOSE_PING_CONTENT = 34213531352L;
     private static final long GRACEFUL_CLOSE_PING_ACK_TIMEOUT_MS = 10000;
-    private volatile FlushStrategy flushStrategy;
+    private final FlushStrategyHolder flushStrategyHolder;
     private final HttpExecutionContext executionContext;
     private final SingleSource.Processor<Throwable, Throwable> transportError = newSingleProcessor();
     private final CompletableSource.Processor onClosing = newCompletableProcessor();
-    private final FlushStrategy originalFlushStrategy;
     @Nullable
     private SSLSession sslSession;
     @Nullable
@@ -135,9 +129,7 @@ final class H2ClientParentConnectionContext extends NettyChannelListenableAsyncC
         super(channel, executor);
         this.executionContext = new DefaultHttpExecutionContext(allocator, fromNettyEventLoop(channel.eventLoop()),
                 executor, executionStrategy);
-        // Wrap the strategy so that we can do reference equality to check if the strategy has been modified.
-        originalFlushStrategy = new DelegatingFlushStrategy(flushStrategy);
-        this.flushStrategy = originalFlushStrategy;
+        this.flushStrategyHolder = new FlushStrategyHolder(flushStrategy);
         // Just in case the channel abruptly closes, we should complete the onClosing Completable.
         onClose().subscribe(onClosing::onComplete);
     }
@@ -190,9 +182,7 @@ final class H2ClientParentConnectionContext extends NettyChannelListenableAsyncC
 
     @Override
     public Cancellable updateFlushStrategy(final FlushStrategyProvider strategyProvider) {
-        FlushStrategy old = flushStrategyUpdater.getAndUpdate(this, current ->
-                strategyProvider.getNewStrategy(current, current == originalFlushStrategy));
-        return () -> updateFlushStrategy((__, ___) -> old);
+        return flushStrategyHolder.updateFlushStrategy(strategyProvider);
     }
 
     @Override
@@ -476,7 +466,7 @@ final class H2ClientParentConnectionContext extends NettyChannelListenableAsyncC
                                     // Http2StreamChannel is not of type SocketChannel. Also Netty will manage the half
                                     // closure based upon stream state.
                                     UNSUPPORTED_PROTOCOL_CLOSE_HANDLER,
-                                    connection.flushStrategy,
+                                    connection.flushStrategyHolder.currentStrategy(),
                                     connection.executionContext.executionStrategy());
 
                     // In h2 a stream is 1 to 1 with a request/response life cycle. This means there is no concept of
