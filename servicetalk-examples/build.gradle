@@ -31,7 +31,7 @@ subprojects {
 
   dependencies {
     // Applications should not depend on bom-internal as it is intended for _internal_ ServiceTalk use cases only:
-    // This is necessary here due to quirks in how the Gradle composite buildStreaming works.
+    // This is necessary here due to quirks in how the Gradle composite build works.
     // - When examples are part of a Gradle composite project, 3rd-party dependencies that are used by ServiceTalk
     // internally are not resolved correctly. Explicitly using bom-internal here allows the resolution to succeed.
     // - On the other hand, when examples is built as a standalone project, the bom-internal dependency is useless and
