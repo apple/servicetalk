@@ -3,7 +3,7 @@ hs_err_pid*
 
 # intellij
 /.idea
-/*.iml
+*.iml
 /*.ipr
 /*.iws
 /out/
@@ -14,6 +14,7 @@ hs_err_pid*
 /.out/
 /buildSrc/build
 /.dist/
+build/
 
 # Eclipse
 /bin/

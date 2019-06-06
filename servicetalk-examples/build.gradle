@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,42 +20,22 @@ if (!repositories) {
   }
 }
 
-apply plugin: "java"
 apply plugin: "idea"
 
-dependencies {
-  // `servicetalk-bom` brings consistent version of ServiceTalk modules.
-  implementation "io.servicetalk:servicetalk-bom:$project.version"
+subprojects {
+  // Dependencies are purposefully not shared at this level in order for individual examples to have
+  // a complete "standalone" set of dependencies that users can copy and use in their projects.
+  // The dependency below is due to a side effect of the build tool.
 
-  // If you use 3-party dependencies in your application, you have to specify it as an explicit dependency,
-  // including group id, artifact id and version.
-  implementation "com.google.code.findbugs:jsr305:$jsr305Version"
-  // The version for all ServiceTalk dependencies will be resolved based on information in `servicetalk-bom`.
-  implementation "io.servicetalk:servicetalk-annotations"
-  implementation "io.servicetalk:servicetalk-buffer-netty"
-  implementation "io.servicetalk:servicetalk-data-jackson"
-  // We could use jersey-media-json-jackson instead. Using servicetalk-data-jackson-jersey allows us to avoid the
-  // input stream adaptation that kicks in with out-of-the-box body readers and also allows accepting/returning
-  // Single<Pojo> and Publisher<Pojo> from resource methods.
-  implementation "io.servicetalk:servicetalk-data-jackson-jersey"
-  implementation "io.servicetalk:servicetalk-dns-discovery-netty"
-  implementation "io.servicetalk:servicetalk-http-api"
-  implementation "io.servicetalk:servicetalk-http-netty"
-  implementation "io.servicetalk:servicetalk-http-router-jersey"
-  implementation "io.servicetalk:servicetalk-http-router-predicate"
-  implementation "io.servicetalk:servicetalk-http-utils"
-  implementation "io.servicetalk:servicetalk-loadbalancer"
-  implementation "io.servicetalk:servicetalk-serialization-api"
-  implementation "io.servicetalk:servicetalk-transport-netty"
-  implementation "org.apache.logging.log4j:log4j-core:$log4jVersion"
-  implementation "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
-  implementation "org.glassfish.jersey.inject:jersey-hk2:$jerseyVersion"
+  apply plugin: "java"
 
-  // Applications should not depend on bom-internal as it is intended for _internal_ ServiceTalk use cases only:
-  // This is necessary here due to quirks in how the Gradle composite buildStreaming works.
-  // - When examples are part of a Gradle composite project, 3rd-party dependencies that are used by ServiceTalk
-  // internally are not resolved correctly. Explicitly using bom-internal here allows the resolution to succeed.
-  // - On the other hand, when examples is built as a standalone project, the bom-internal dependency is useless and
-  // has no effect: transitive 3rd-party dependencies are correctly resolved for each ServiceTalk dependency.
-  implementation "io.servicetalk:servicetalk-bom-internal:$project.version"
+  dependencies {
+    // Applications should not depend on bom-internal as it is intended for _internal_ ServiceTalk use cases only:
+    // This is necessary here due to quirks in how the Gradle composite build works.
+    // - When examples are part of a Gradle composite project, 3rd-party dependencies that are used by ServiceTalk
+    // internally are not resolved correctly. Explicitly using bom-internal here allows the resolution to succeed.
+    // - On the other hand, when examples is built as a standalone project, the bom-internal dependency is useless and
+    // has no effect: transitive 3rd-party dependencies are correctly resolved for each ServiceTalk dependency.
+    implementation "io.servicetalk:servicetalk-bom-internal:$project.version"
+  }
 }

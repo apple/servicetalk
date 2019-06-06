@@ -1,0 +1,42 @@
+/*
+ * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+if (!repositories) {
+  repositories {
+    jcenter()
+    maven { url "https://plugins.gradle.org/m2/" }
+  }
+}
+
+apply plugin: "idea"
+apply plugin: "java"
+
+dependencies {
+  // `servicetalk-bom` brings consistent version of ServiceTalk modules.
+  implementation "io.servicetalk:servicetalk-bom:$project.version"
+
+  // The version for all ServiceTalk dependencies will be resolved based on information in `servicetalk-bom`.
+  implementation "io.servicetalk:servicetalk-annotations"
+  // We could use jersey-media-json-jackson instead. Using servicetalk-data-jackson-jersey allows us to avoid the
+  // input stream adaptation that kicks in with out-of-the-box body readers and also allows accepting/returning
+  // Single<Pojo> and Publisher<Pojo> from resource methods.
+  implementation "io.servicetalk:servicetalk-data-jackson-jersey"
+  implementation "io.servicetalk:servicetalk-http-netty"
+  implementation "io.servicetalk:servicetalk-http-router-jersey"
+  implementation "org.slf4j:slf4j-api:$slf4jVersion"
+
+  runtime "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
+  runtime "org.glassfish.jersey.inject:jersey-hk2:$jerseyVersion"
+}
