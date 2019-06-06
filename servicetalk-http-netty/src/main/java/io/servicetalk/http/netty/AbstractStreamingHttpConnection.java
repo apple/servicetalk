@@ -20,35 +20,40 @@ import io.servicetalk.client.api.internal.IgnoreConsumedEvent;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.http.api.ClientInvoker;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpEventKey;
 import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpHeadersFactory;
+import io.servicetalk.http.api.HttpMetaData;
 import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
+import io.servicetalk.transport.netty.internal.FlushStrategy;
 import io.servicetalk.transport.netty.internal.NettyConnectionContext;
 
-import java.util.function.Function;
+import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Publisher.defer;
 import static io.servicetalk.concurrent.api.Publisher.failed;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.succeeded;
+import static io.servicetalk.http.api.HttpApiConversions.isSafeToAggregate;
 import static io.servicetalk.http.api.HttpApiConversions.mayHaveTrailers;
 import static io.servicetalk.http.api.StreamingHttpResponses.newTransportResponse;
 import static io.servicetalk.http.netty.HeaderUtils.addRequestTransferEncodingIfNecessary;
 import static io.servicetalk.http.netty.HeaderUtils.canAddRequestContentLength;
 import static io.servicetalk.http.netty.HeaderUtils.setRequestContentLength;
+import static io.servicetalk.transport.netty.internal.FlushStrategies.flushOnEnd;
 import static java.util.Objects.requireNonNull;
 import static java.util.function.Function.identity;
 
-abstract class AbstractStreamingHttpConnection<CC extends NettyConnectionContext> implements
-                       FilterableStreamingHttpConnection, Function<Publisher<Object>, Single<StreamingHttpResponse>> {
+abstract class AbstractStreamingHttpConnection<CC extends NettyConnectionContext>
+        implements FilterableStreamingHttpConnection, ClientInvoker<FlushStrategy> {
 
     final CC connection;
     final HttpExecutionContext executionContext;
@@ -80,8 +85,10 @@ abstract class AbstractStreamingHttpConnection<CC extends NettyConnectionContext
     }
 
     @Override
-    public final Single<StreamingHttpResponse> apply(final Publisher<Object> flattenedRequest) {
-        return new SpliceFlatStreamToMetaSingle<>(writeAndRead(flattenedRequest), this::newSplicedResponse);
+    public final Single<StreamingHttpResponse> invokeClient(final Publisher<Object> flattenedRequest,
+                                                            @Nullable final FlushStrategy flushStrategy) {
+        return new SpliceFlatStreamToMetaSingle<>(writeAndRead(flattenedRequest, flushStrategy),
+                this::newSplicedResponse);
     }
 
     @Override
@@ -100,7 +107,14 @@ abstract class AbstractStreamingHttpConnection<CC extends NettyConnectionContext
             addRequestTransferEncodingIfNecessary(request);
         }
 
-        return strategy.invokeClient(executionContext.executor(), flatRequest, this);
+        return strategy.invokeClient(executionContext.executor(), flatRequest, determineFlushStrategyForApi(request),
+                this);
+    }
+
+    @Nullable
+    static FlushStrategy determineFlushStrategyForApi(final HttpMetaData request) {
+        // For non-aggregated, don't change the flush strategy, keep the default.
+        return isSafeToAggregate(request) ? flushOnEnd() : null;
     }
 
     @Override
@@ -108,7 +122,8 @@ abstract class AbstractStreamingHttpConnection<CC extends NettyConnectionContext
         return executionContext;
     }
 
-    protected abstract Publisher<Object> writeAndRead(Publisher<Object> stream);
+    protected abstract Publisher<Object> writeAndRead(Publisher<Object> stream,
+                                                      @Nullable FlushStrategy flushStrategy);
 
     private StreamingHttpResponse newSplicedResponse(HttpResponseMetaData meta, Publisher<Object> pub) {
         return newTransportResponse(meta.status(), meta.version(), meta.headers(),

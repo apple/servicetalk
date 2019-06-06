@@ -64,6 +64,7 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Predicate;
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.net.ssl.SSLSession;
 
@@ -79,6 +80,7 @@ import static io.servicetalk.http.api.HttpApiConversions.mayHaveTrailers;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderValues.ZERO;
 import static io.servicetalk.http.api.StreamingHttpRequests.newTransportRequest;
+import static io.servicetalk.http.netty.AbstractStreamingHttpConnection.determineFlushStrategyForApi;
 import static io.servicetalk.http.netty.HeaderUtils.addResponseTransferEncodingIfNecessary;
 import static io.servicetalk.http.netty.HeaderUtils.canAddResponseContentLength;
 import static io.servicetalk.http.netty.HeaderUtils.setResponseContentLength;
@@ -280,20 +282,16 @@ final class NettyHttpServer {
                                                         req.version(), keepAlive)))
                                         .flatMapPublisher(response -> {
                                             keepAlive.addConnectionHeaderIfNecessary(response);
-                                            // Add the content-length if necessary, falling back to transfer-encoding
-                                            // otherwise.
-                                            if (canAddResponseContentLength(response, requestMethod)) {
-                                                return setResponseContentLength(response, headersFactory)
-                                                        .flatMapPublisher(identity());
+
+                                            final FlushStrategy flushStrategy = determineFlushStrategyForApi(response);
+                                            if (flushStrategy == null) {
+                                                return handleResponse(requestMethod, response);
                                             } else {
-                                                Publisher<Object> flatResponse = Publisher.<Object>from(response)
-                                                        .concat(response.payloadBodyAndTrailers());
-                                                if (!mayHaveTrailers(response)) {
-                                                    flatResponse = flatResponse.concat(
-                                                            succeeded(headersFactory.newEmptyTrailers()));
-                                                }
-                                                addResponseTransferEncodingIfNecessary(response, requestMethod);
-                                                return flatResponse;
+                                                final Cancellable resetFlushStrategy =
+                                                        compositeFlushStrategy.updateFlushStrategy(
+                                                        (prev, isOriginal) -> isOriginal ? flushStrategy : prev);
+                                                return handleResponse(requestMethod, response)
+                                                        .afterFinally(resetFlushStrategy::cancel);
                                             }
                                         }),
                                 (cause, executor) -> from(newErrorResponse(cause, executor,
@@ -349,6 +347,26 @@ final class NettyHttpServer {
                             subscriber.onComplete();
                         }
                     }));
+        }
+
+        @Nonnull
+        private Publisher<Object> handleResponse(final HttpRequestMethod requestMethod,
+                                                 final StreamingHttpResponse response) {
+            // Add the content-length if necessary, falling back to transfer-encoding
+            // otherwise.
+            if (canAddResponseContentLength(response, requestMethod)) {
+                return setResponseContentLength(response, headersFactory)
+                        .flatMapPublisher(identity());
+            } else {
+                Publisher<Object> flatResponse = Publisher.<Object>from(response)
+                        .concat(response.payloadBodyAndTrailers());
+                if (!mayHaveTrailers(response)) {
+                    flatResponse = flatResponse.concat(
+                            succeeded(headersFactory.newEmptyTrailers()));
+                }
+                addResponseTransferEncodingIfNecessary(response, requestMethod);
+                return flatResponse;
+            }
         }
 
         private StreamingHttpResponse newErrorResponse(final Throwable cause, final Executor executor,

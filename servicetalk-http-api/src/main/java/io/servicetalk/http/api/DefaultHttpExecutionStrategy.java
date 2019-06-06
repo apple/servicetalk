@@ -75,14 +75,14 @@ class DefaultHttpExecutionStrategy implements HttpExecutionStrategy {
     }
 
     @Override
-    public Single<StreamingHttpResponse> invokeClient(
-            final Executor fallback, Publisher<Object> flattenedRequest,
-            final Function<Publisher<Object>, Single<StreamingHttpResponse>> client) {
+    public <FS> Single<StreamingHttpResponse> invokeClient(
+            final Executor fallback, Publisher<Object> flattenedRequest, final FS flushStrategy,
+            final ClientInvoker<FS> client) {
         final Executor e = executor(fallback);
         if (offloaded(OFFLOAD_SEND)) {
             flattenedRequest = flattenedRequest.subscribeOn(e);
         }
-        Single<StreamingHttpResponse> resp = client.apply(flattenedRequest);
+        Single<StreamingHttpResponse> resp = client.invokeClient(flattenedRequest, flushStrategy);
         if (offloaded(OFFLOAD_RECEIVE_META)) {
             resp = resp.publishOn(e);
         }

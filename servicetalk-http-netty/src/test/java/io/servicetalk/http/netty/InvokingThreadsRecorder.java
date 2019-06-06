@@ -20,6 +20,7 @@ import io.servicetalk.concurrent.api.DefaultThreadFactory;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.http.api.ClientInvoker;
 import io.servicetalk.http.api.DelegatingHttpExecutionStrategy;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpServerBuilder;
@@ -186,11 +187,11 @@ final class InvokingThreadsRecorder<T> {
         }
 
         @Override
-        public Single<StreamingHttpResponse> invokeClient(
-                final Executor fallback, final Publisher<Object> flattenedRequest,
-                final Function<Publisher<Object>, Single<StreamingHttpResponse>> client) {
+        public <FS> Single<StreamingHttpResponse> invokeClient(
+                final Executor fallback, final Publisher<Object> flattenedRequest, final FS flushStrategy,
+                final ClientInvoker<FS> client) {
             usedForClientOffloading = true;
-            return super.invokeClient(fallback, flattenedRequest, client);
+            return super.invokeClient(fallback, flattenedRequest, flushStrategy, client);
         }
 
         @Override
