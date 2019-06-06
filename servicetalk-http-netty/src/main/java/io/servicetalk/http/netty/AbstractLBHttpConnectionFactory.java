@@ -27,6 +27,7 @@ import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
 import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
+import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.netty.internal.NettyConnectionContext;
 
 import javax.annotation.Nullable;
@@ -86,9 +87,10 @@ abstract class AbstractLBHttpConnectionFactory<ResolvedAddress>
                 .map(conn -> {
                     FilterableStreamingHttpConnection filteredConnection = connectionFilterFunction != null ?
                             connectionFilterFunction.create(conn) : conn;
+                    ConnectionContext ctx = filteredConnection.connectionContext();
                     Completable onClosing;
-                    if (filteredConnection instanceof NettyConnectionContext) {
-                        onClosing = ((NettyConnectionContext) filteredConnection).onClosing();
+                    if (ctx instanceof NettyConnectionContext) {
+                        onClosing = ((NettyConnectionContext) ctx).onClosing();
                     } else {
                         onClosing = filteredConnection.onClose();
                     }
