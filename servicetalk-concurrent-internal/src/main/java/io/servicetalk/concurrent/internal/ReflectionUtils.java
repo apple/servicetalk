@@ -39,7 +39,6 @@ import java.lang.reflect.AccessibleObject;
 import java.lang.reflect.Method;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
-import java.util.concurrent.Callable;
 import javax.annotation.Nullable;
 
 import static java.lang.Boolean.parseBoolean;
@@ -152,13 +151,13 @@ final class ReflectionUtils {
     }
 
     @Nullable
-    static <T extends AccessibleObject> MethodHandle lookupAccessibleObject(final Callable<T> tLookup,
+    static <T extends AccessibleObject> MethodHandle lookupAccessibleObject(final AccessibleObjectSupplier<T> tLookup,
                                                                             final Class<T> clazz,
                                                                             final MethodHandleFunction<T> function) {
 
         final Object maybeAccessibleObject = AccessController.doPrivileged((PrivilegedAction<Object>) () -> {
             try {
-                final T accessibleObject = tLookup.call();
+                final T accessibleObject = tLookup.get();
                 if (accessibleObject == null) {
                     return null;
                 }
@@ -167,8 +166,8 @@ final class ReflectionUtils {
                     return cause;
                 }
                 return accessibleObject;
-            } catch (Throwable t) {
-                return t;
+            } catch (ClassNotFoundException | NoSuchMethodException | SecurityException e) {
+                return e;
             }
         });
 
@@ -201,6 +200,12 @@ final class ReflectionUtils {
         } else {
             return AccessController.doPrivileged((PrivilegedAction<ClassLoader>) ClassLoader::getSystemClassLoader);
         }
+    }
+
+    @FunctionalInterface
+    interface AccessibleObjectSupplier<T extends AccessibleObject> {
+        @Nullable
+        T get() throws ClassNotFoundException, NoSuchMethodException;
     }
 
     @FunctionalInterface
