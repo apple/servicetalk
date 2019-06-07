@@ -16,7 +16,10 @@
 package io.servicetalk.http.api;
 
 import io.servicetalk.concurrent.CompletableSource;
+import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.api.AsyncCloseable;
+import io.servicetalk.concurrent.api.AsyncContext;
+import io.servicetalk.concurrent.api.AsyncContextMap;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
@@ -28,14 +31,17 @@ import org.junit.Test;
 import org.junit.rules.Timeout;
 
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 import java.util.function.Predicate;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
+import static io.servicetalk.concurrent.api.AsyncContextMap.Key.newKey;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.transport.netty.internal.ExecutionContextRule.cached;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 
@@ -46,10 +52,15 @@ public abstract class AbstractConditionalHttpFilterTest {
             new DefaultStreamingHttpRequestResponseFactory(DEFAULT_ALLOCATOR, DefaultHttpHeadersFactory.INSTANCE,
                     HttpProtocolVersion.HTTP_1_1);
 
+    protected static final AsyncContextMap.Key<String> CTX_KEY = newKey("test-key");
+
     @ClassRule
     public static final ExecutionContextRule TEST_CTX = cached();
 
-    protected static final Predicate<StreamingHttpRequest> TEST_REQ_PREDICATE = req -> "/accept".equals(req.path());
+    protected static final Predicate<StreamingHttpRequest> TEST_REQ_PREDICATE = req -> {
+        AsyncContext.put(CTX_KEY, "in-predicate");
+        return "/accept".equals(req.path());
+    };
 
     protected static final BiFunction<StreamingHttpRequest, StreamingHttpResponseFactory, Single<StreamingHttpResponse>>
             TEST_REQ_HANDLER = (req, resFactory) -> succeeded(resFactory.ok()
@@ -89,6 +100,25 @@ public abstract class AbstractConditionalHttpFilterTest {
     @Test
     public void predicateRejects() throws Exception {
         testFilter(false);
+    }
+
+    @Test
+    public void contextIsPreserved() throws Exception {
+        final StreamingHttpRequest req = REQ_RES_FACTORY.get("/reject");
+        AsyncContext.put(CTX_KEY, "in-test");
+        AtomicReference<String> ctxKeyValueInNextFilter = new AtomicReference<>();
+        Single<StreamingHttpResponse> ctxCheckingSingle = new Single<StreamingHttpResponse>() {
+            @Override
+            protected void handleSubscribe(final SingleSource.Subscriber<? super StreamingHttpResponse> subscriber) {
+                toSource(sendTestRequest(req)).subscribe(subscriber);
+                // Get the value after invoking subscribe on the conditional filter.
+                // If the filter does not share context then any modification done via the predicate will not be visible
+                // post subscribe.
+                ctxKeyValueInNextFilter.set(AsyncContext.get(CTX_KEY));
+            }
+        };
+        ctxCheckingSingle.toFuture().get();
+        assertThat("Unexpected context key value.", ctxKeyValueInNextFilter.get(), equalTo("in-predicate"));
     }
 
     private void testFilter(boolean expectAccepted) throws Exception {
