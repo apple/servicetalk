@@ -26,6 +26,7 @@ import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.RejectedSubscribeError;
 import io.servicetalk.http.api.DefaultHttpExecutionContext;
+import io.servicetalk.http.api.EmptyHttpHeaders;
 import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpHeaders;
@@ -299,7 +300,7 @@ final class NettyHttpServer {
 
                 if (drainRequestPayloadBody) {
                     responsePublisher = responsePublisher.concat(defer(() -> payloadSubscribed.get() ?
-                                    Completable.completed() : request.payloadBody().ignoreElements()
+                                    completed() : request.payloadBody().ignoreElements()
                             // Discarding the request payload body is an operation which should not impact the state of
                             // request/response processing. It's appropriate to recover from any error here.
                             // ST may introduce RejectedSubscribeError if user already consumed the request payload body
@@ -350,19 +351,17 @@ final class NettyHttpServer {
         }
 
         @Nonnull
-        private Publisher<Object> handleResponse(final HttpRequestMethod requestMethod,
-                                                 final StreamingHttpResponse response) {
+        private static Publisher<Object> handleResponse(final HttpRequestMethod requestMethod,
+                                                        final StreamingHttpResponse response) {
             // Add the content-length if necessary, falling back to transfer-encoding
             // otherwise.
             if (canAddResponseContentLength(response, requestMethod)) {
-                return setResponseContentLength(response, headersFactory)
-                        .flatMapPublisher(identity());
+                return setResponseContentLength(response).flatMapPublisher(identity());
             } else {
                 Publisher<Object> flatResponse = Publisher.<Object>from(response)
                         .concat(response.payloadBodyAndTrailers());
                 if (!mayHaveTrailers(response)) {
-                    flatResponse = flatResponse.concat(
-                            succeeded(headersFactory.newEmptyTrailers()));
+                    flatResponse = flatResponse.concat(succeeded(EmptyHttpHeaders.INSTANCE));
                 }
                 addResponseTransferEncodingIfNecessary(response, requestMethod);
                 return flatResponse;
@@ -458,7 +457,9 @@ final class NettyHttpServer {
                     "currentListener");
 
             private final FlushStrategy originalStrategy;
+            @SuppressWarnings("FieldMayBeFinal")
             private volatile FlushStrategy flushStrategy;
+            @SuppressWarnings("FieldMayBeFinal")
             private volatile WriteEventsListener currentListener = INIT;
             private FlushSender flushSender = () -> { };
 

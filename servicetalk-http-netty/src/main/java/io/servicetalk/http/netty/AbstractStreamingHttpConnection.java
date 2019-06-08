@@ -21,6 +21,7 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.ClientInvoker;
+import io.servicetalk.http.api.EmptyHttpHeaders;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpEventKey;
 import io.servicetalk.http.api.HttpExecutionContext;
@@ -97,12 +98,12 @@ abstract class AbstractStreamingHttpConnection<CC extends NettyConnectionContext
         Publisher<Object> flatRequest;
         // See https://tools.ietf.org/html/rfc7230#section-3.3.3
         if (canAddRequestContentLength(request)) {
-            flatRequest = defer(() -> setRequestContentLength(request, headersFactory)
+            flatRequest = defer(() -> setRequestContentLength(request)
                     .flatMapPublisher(identity()).subscribeShareContext());
         } else {
             flatRequest = Publisher.<Object>from(request).concat(request.payloadBodyAndTrailers());
             if (!mayHaveTrailers(request)) {
-                flatRequest = flatRequest.concat(succeeded(headersFactory.newEmptyTrailers()));
+                flatRequest = flatRequest.concat(succeeded(EmptyHttpHeaders.INSTANCE));
             }
             addRequestTransferEncodingIfNecessary(request);
         }
