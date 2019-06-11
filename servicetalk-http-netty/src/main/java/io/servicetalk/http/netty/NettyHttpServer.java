@@ -457,9 +457,7 @@ final class NettyHttpServer {
                     "currentListener");
 
             private final FlushStrategy originalStrategy;
-            @SuppressWarnings("FieldMayBeFinal")
             private volatile FlushStrategy flushStrategy;
-            @SuppressWarnings("FieldMayBeFinal")
             private volatile WriteEventsListener currentListener = INIT;
             private FlushSender flushSender = () -> { };
 
