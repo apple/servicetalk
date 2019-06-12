@@ -94,7 +94,7 @@ final class ReduceSingle<R, T> extends AbstractNoHandleSubscribeSingle<R> {
         public void onSubscribe(final Subscription s) {
             final ConcurrentSubscription cs = wrap(s);
             subscriber.onSubscribe(cs);
-            s.request(Long.MAX_VALUE);
+            cs.request(Long.MAX_VALUE);
         }
 
         @Override
