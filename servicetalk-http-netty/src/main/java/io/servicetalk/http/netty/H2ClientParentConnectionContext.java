@@ -266,19 +266,17 @@ final class H2ClientParentConnectionContext extends NettyChannelListenableAsyncC
             goAwayFrame.setExtraStreamIds(Integer.MAX_VALUE);
             channel().write(goAwayFrame);
             channel().writeAndFlush(new DefaultHttp2PingFrame(GRACEFUL_CLOSE_PING_CONTENT)).addListener(future -> {
-                if (future.isSuccess()) {
-                    // If gracefulCloseTimeoutFuture is not GRACEFUL_CLOSE_PING_PENDING that means we have
-                    // already received the PING(ACK) and there is no need to apply the timeout.
-                    if (gracefulCloseTimeoutFuture == GRACEFUL_CLOSE_PING_PENDING) {
-                        gracefulCloseTimeoutFuture = channel().eventLoop().schedule(() -> {
-                            // If the PING(ACK) times out we may have under estimated the 2RTT time so we
-                            // optimistically keep the connection open and rely upon higher level timeouts to tear
-                            // down the connection.
-                            gracefulCloseWriteSecondGoAway(channel());
-                            LOGGER.debug("channel={} timeout {}ms waiting for PING(ACK) during graceful close",
-                                    channel(), GRACEFUL_CLOSE_PING_ACK_TIMEOUT_MS);
-                        }, GRACEFUL_CLOSE_PING_ACK_TIMEOUT_MS, MILLISECONDS);
-                    }
+                // If gracefulCloseTimeoutFuture is not GRACEFUL_CLOSE_PING_PENDING that means we have
+                // already received the PING(ACK) and there is no need to apply the timeout.
+                if (future.isSuccess() && gracefulCloseTimeoutFuture == GRACEFUL_CLOSE_PING_PENDING) {
+                    gracefulCloseTimeoutFuture = channel().eventLoop().schedule(() -> {
+                        // If the PING(ACK) times out we may have under estimated the 2RTT time so we
+                        // optimistically keep the connection open and rely upon higher level timeouts to tear
+                        // down the connection.
+                        gracefulCloseWriteSecondGoAway(channel());
+                        LOGGER.debug("channel={} timeout {}ms waiting for PING(ACK) during graceful close",
+                                channel(), GRACEFUL_CLOSE_PING_ACK_TIMEOUT_MS);
+                    }, GRACEFUL_CLOSE_PING_ACK_TIMEOUT_MS, MILLISECONDS);
                 }
             });
         }
