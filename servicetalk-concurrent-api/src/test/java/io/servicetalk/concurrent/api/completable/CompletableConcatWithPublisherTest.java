@@ -115,6 +115,23 @@ public class CompletableConcatWithPublisherTest {
     }
 
     @Test
+    public void request0Propagated() {
+        subscriber.request(0);
+        triggerNextSubscribe();
+        assertThat("Invalid request-n not propagated.", subscription.requested(), is(0L));
+        assertThat("requestN not called", subscription.isRequested(), is(true));
+    }
+
+    @Test
+    public void request0PropagatedAfterComplete() {
+        source.onComplete();
+        subscriber.request(0);
+        next.onSubscribe(subscription);
+        assertThat("Invalid request-n not propagated.", subscription.requested(), is(0L));
+        assertThat("requestN not called", subscription.isRequested(), is(true));
+    }
+
+    @Test
     public void invalidThenValidRequestAcrossNext() {
         subscriber.request(-1);
         triggerNextSubscribe();

@@ -31,6 +31,7 @@ import org.junit.rules.Timeout;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.Matchers.notNullValue;
@@ -85,10 +86,19 @@ public class SingleConcatWithPublisherTest {
     }
 
     @Test
-    public void invalidRequestBeforeNextSubscribe() {
-        subscriber.request(-1);
-        triggerNextSubscribe();
-        assertThat("Invalid request-n not propagated.", subscription.requested(), is(lessThan(0L)));
+    public void invalidRequestBeforeNextSubscribeNegative1() {
+        invalidRequestBeforeNextSubscribe(-1);
+    }
+
+    @Test
+    public void invalidRequestBeforeNextSubscribeZero() {
+        invalidRequestBeforeNextSubscribe(0);
+    }
+
+    private void invalidRequestBeforeNextSubscribe(long invalidN) {
+        subscriber.request(invalidN);
+        assertThat("Unexpected subscriber termination.", subscriber.takeError(),
+                instanceOf(IllegalArgumentException.class));
     }
 
     @Test
@@ -101,25 +111,34 @@ public class SingleConcatWithPublisherTest {
     @Test
     public void multipleInvalidRequest() {
         subscriber.request(-1);
-        triggerNextSubscribe();
         subscriber.request(-10);
-        assertThat("Invalid request-n not propagated.", subscription.requested(), is(lessThan(0L)));
+        assertThat("Unexpected subscriber termination.", subscriber.takeError(),
+                instanceOf(IllegalArgumentException.class));
     }
 
     @Test
-    public void invalidThenValidRequest() {
-        subscriber.request(-1);
-        subscriber.request(10);
-        triggerNextSubscribe();
-        assertThat("Invalid request-n not propagated.", subscription.requested(), is(lessThan(0L)));
+    public void invalidThenValidRequestNegative1() {
+        invalidThenValidRequest(-1);
     }
 
     @Test
-    public void invalidThenValidRequestAcrossNext() {
-        subscriber.request(-1);
-        triggerNextSubscribe();
-        subscriber.request(10);
-        assertThat("Invalid request-n not propagated.", subscription.requested(), is(lessThan(0L)));
+    public void invalidThenValidRequestZero() {
+        invalidThenValidRequest(0);
+    }
+
+    private void invalidThenValidRequest(long invalidN) {
+        subscriber.request(invalidN);
+        subscriber.request(1);
+        assertThat("Unexpected subscriber termination.", subscriber.takeError(),
+                instanceOf(IllegalArgumentException.class));
+    }
+
+    @Test
+    public void request0PropagatedAfterSuccess() {
+        source.onSuccess(1);
+        subscriber.request(0);
+        assertThat("Unexpected subscriber termination.", subscriber.takeError(),
+                instanceOf(IllegalArgumentException.class));
     }
 
     @Test
@@ -153,6 +172,15 @@ public class SingleConcatWithPublisherTest {
         subscriber.cancel();
         assertFalse("Original single cancelled unexpectedly.", cancellable.isCancelled());
         assertTrue("Next source not cancelled.", subscription.isCancelled());
+    }
+
+    @Test
+    public void zeroIsNotRequestedOnTransitionToSubscription() {
+        subscriber.request(1);
+        source.onSuccess(1);
+        next.onSubscribe(subscription);
+        assertThat("Invalid request-n.", subscription.requested(), is(0L));
+        assertThat("requestN called unexpectedly.", subscription.isRequested(), is(false));
     }
 
     private void triggerNextSubscribe() {

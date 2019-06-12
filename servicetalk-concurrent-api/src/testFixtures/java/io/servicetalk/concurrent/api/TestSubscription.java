@@ -28,9 +28,11 @@ public final class TestSubscription extends TestCancellable implements Subscript
 
     private static final long INVALID_REQUEST_N = Long.MIN_VALUE;
     private final AtomicLong requested = new AtomicLong();
+    private volatile boolean requestCalled;
 
     @Override
     public void request(final long n) {
+        requestCalled = true;
         requested.accumulateAndGet(n, (x, y) -> {
             if (x < 0 || y < 0) {
                 return INVALID_REQUEST_N;
@@ -47,6 +49,15 @@ public final class TestSubscription extends TestCancellable implements Subscript
      */
     public long requested() {
         return requested.get();
+    }
+
+    /**
+     * Determine if {@link #request(long)} has been called or not.
+     *
+     * @return {@code true} if {@link #request(long)} has been called or not.
+     */
+    public boolean isRequested() {
+        return requestCalled;
     }
 
     /**
