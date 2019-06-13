@@ -25,23 +25,24 @@ ServiceTalk follows the below principles for providing a path to no offloading:
 
 === Asynchronous and offloading
 
-As described xref:servicetalk::blocking.adoc[here], ServiceTalk does not assume absence of blocking user code even when
+As described xref:servicetalk::blocking.adoc[here], ServiceTalk assumes presence of blocking user code even when
 using ServiceTalk's asynchronous APIs. So, in order to eliminate offloading for a request there are __at least__ the
 following steps that are required:
 
-1. Only use asynchronous APIs for processing of a request.
-2. Turn off offloading for processing of a request.
+1. Make sure that there is no blocking code for processing of a request.
+2. Only use asynchronous APIs for processing of a request.
+3. Turn off offloading for processing of a request.
 
-Since (1) is straight forward, we will elaborate how to achieve (2) for clients and servers.
+(1) is a manual user process and (2) is straightforward, we will elaborate how to achieve (3) for clients and servers.
 
-CAUTION: Remaining sections elaborate how to disable offloading which is considered an advanced feature.
+CAUTION: Remaining sections elaborate how to disable offloading, which is considered an advanced feature.
 
-For (2) ServiceTalk assumes when a user is using any of the above methods, "they know what they are doing" and does not
+For (3) ServiceTalk assumes when a user is using any of the above methods, "they know what they are doing" and does not
 override that choice.
 
 == Client
 
-For a client, there are two distinct ways for turning off offloading:
+For a client, there are two distinct ways of turning off offloading:
 
 1. Disable offloading per request.
 2. Disable offloading for the entire client.
@@ -88,12 +89,12 @@ See
 link:{sourceroot}servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpClientBuilder.java[HttpClientBuilder].
 [source,java]
 ----
-aBuilder.executionStrategy(HttpExecutionStrategies.noOffloadsStrategy());
+clientBuilder.executionStrategy(HttpExecutionStrategies.noOffloadsStrategy());
 ----
 
 This strategy will be used for all requests that do not explicitly specify a strategy.
 
-CAUTION: Beware of inadvertently adding a request which uses blocking code to a client that disables offloading.
+CAUTION: Beware of inadvertently adding a request which uses blocking code to a client that has offloading disabled.
 
 == Server
 
@@ -102,10 +103,10 @@ to the server. This enables us to provide vastly different routing solutions wit
 However, it does mean that ServiceTalk only knows the programming model of the service that implements routing and not
 the programming model of the routes for each request. Since, ServiceTalk has to select an execution strategy before
 invoking the service (router) this means that an individual route can not entirely control all offloading done by the
-server. Hence, all routers in ServiceTalk has two execution strategies in play for any request processing:
+server. Hence, all routers in ServiceTalk have two execution strategies in play for any request processing:
 
-1. Strategy for the server (filters, router, etc)
-2. Strategy for a route.
+1. _Strategy for the server_: All code that constitutes request processing in a server apart from the actual route.
+2. _Strategy for a route_: Route implementation for a particular request.
 
 === Server Strategy
 
@@ -116,12 +117,12 @@ See
 link:{sourceroot}servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpServerBuilder.java[HttpServerBuilder].
 [source,java]
 ----
-aBuilder.executionStrategy(HttpExecutionStrategies.noOffloadsStrategy());
+serverBuilder.executionStrategy(HttpExecutionStrategies.noOffloadsStrategy());
 ----
 
 This strategy will be used for all requests processed by this server.
 
-CAUTION: Beware of inadvertently adding blocking code to a server that disables offloading.
+CAUTION: Beware of inadvertently adding blocking code to a server that has offloading disabled.
 
 === Route strategy
 
@@ -131,7 +132,7 @@ specify such a strategy:
 
 ==== Implicit route strategy
 
-A router may have an ability to infer an appropriate execution strategy for a route from the programming model the route
+A router may have the ability to infer an appropriate execution strategy for a route from the programming model the route
 uses, just like ServiceTalk xref:blocking.adoc#programming-models[infers execution strategy per programming model].
 This auto-inference is only used if no strategy is explicitly specified for that route.
 
@@ -148,12 +149,12 @@ In order to effectively evolve to different programming models, one should ensur
 strategy either implicitly (when supported by the router) or explicitly (for overrides or lack of implicit strategy
 capabilities in the router). Depending on server strategy for a route is dangerous because:
 
-1. Server strategy may change adversely impacting the route.
+1. Server strategy may change, adversely impacting the route.
 2. Increasing scope of server strategy (to also be the default strategy for all routes) makes it hard to understand how
 changing that strategy may impact all routes. Typically, server strategy should be chosen based on all code that is
 executed before executing the actual route for a request.
 
-Making sure that all routes can independently specify their strategy makes it easier to reason about impacts while
+Making sure that all routes can independently specify their strategy makes it easier to reason about the impacts of
 changing these strategies. ServiceTalk provided routers provide ways to explicitly specify a route strategy, implicit
 inference capabilities may vary. See xref:servicetalk-http-router-jersey::evolve-to-async.adoc[Jersey Router]
-to see it's capabilities for per route strategies.
+to see its capabilities for per route strategies.
