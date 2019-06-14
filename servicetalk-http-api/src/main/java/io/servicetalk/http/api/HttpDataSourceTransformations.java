@@ -429,7 +429,7 @@ final class HttpDataSourceTransformations {
             return pair;
         }).beforeOnSuccess(pair -> {
             if (pair.payload == null) {
-                pair.payload = allocator.newBuffer(0);
+                pair.payload = allocator.newBuffer(0, false);
             }
         });
     }
