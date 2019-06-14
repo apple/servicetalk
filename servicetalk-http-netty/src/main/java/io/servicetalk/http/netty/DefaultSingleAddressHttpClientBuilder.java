@@ -49,7 +49,6 @@ import io.servicetalk.transport.api.SslConfig;
 import java.net.InetSocketAddress;
 import java.net.SocketOption;
 import java.util.function.Function;
-import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import static io.netty.util.NetUtil.toSocketAddressString;
@@ -249,7 +248,6 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
         }
     }
 
-    @Nonnull
     private static StreamingHttpClientFilterFactory appendFilter(
             @Nullable final StreamingHttpClientFilterFactory currClientFilterFactory,
             final StreamingHttpClientFilterFactory appendClientFilterFactory) {

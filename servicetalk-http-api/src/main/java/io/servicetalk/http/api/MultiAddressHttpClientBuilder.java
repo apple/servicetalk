@@ -85,14 +85,14 @@ public abstract class MultiAddressHttpClientBuilder<U, R>
     public abstract MultiAddressHttpClientBuilder<U, R> disableHostHeaderFallback();
 
     /**
-     * Sets a callback that is called immediately before the {@link SingleAddressHttpClientBuilder} for any
-     * {@link HostAndPort} is built.
+     * Sets a configurator that is called immediately before the {@link SingleAddressHttpClientBuilder} for any
+     * {@link HostAndPort} is built, to configure of the builder.
      *
-     * @param clientBuilderCallback The callback.
+     * @param clientConfiguratorForHost The configurator.
      * @return this.
      */
-    public abstract MultiAddressHttpClientBuilder<U, R> clientBuilderCallback(
-            @Nullable BiConsumer<HostAndPort, SingleAddressHttpClientBuilder<U, R>> clientBuilderCallback);
+    public abstract MultiAddressHttpClientBuilder<U, R> clientConfiguratorForHost(
+            @Nullable BiConsumer<HostAndPort, SingleAddressHttpClientBuilder<U, R>> clientConfiguratorForHost);
 
     @Override
     public abstract MultiAddressHttpClientBuilder<U, R> appendConnectionFilter(
