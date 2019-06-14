@@ -31,8 +31,6 @@ import java.net.SocketOption;
 import java.util.Map;
 import javax.annotation.Nullable;
 
-import static java.util.Objects.requireNonNull;
-
 final class DefaultHttpServerBuilder extends HttpServerBuilder {
 
     private final HttpServerConfig config = new HttpServerConfig();
@@ -112,12 +110,6 @@ final class DefaultHttpServerBuilder extends HttpServerBuilder {
     @Override
     public HttpServerBuilder disableWireLogging() {
         config.tcpConfig().disableWireLogging();
-        return this;
-    }
-
-    @Override
-    public HttpServerBuilder address(final SocketAddress address) {
-        this.address = requireNonNull(address);
         return this;
     }
 
