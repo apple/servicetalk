@@ -27,13 +27,14 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.nio.channels.ClosedChannelException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -53,6 +54,8 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 
 public class HttpsProxyTest {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(HttpsProxyTest.class);
 
     @Rule
     public final ServiceTalkTestTimeout timeout = new ServiceTalkTestTimeout();
@@ -93,8 +96,8 @@ public class HttpsProxyTest {
                         }
 
                         handler.handle(socket, in, initialLine);
-                    } catch (IOException e) {
-                        throw new RuntimeException(e);
+                    } catch (Exception e) {
+                        LOGGER.error("Error from proxy", e);
                     } finally {
                         try {
                             socket.close();
@@ -169,8 +172,7 @@ public class HttpsProxyTest {
         final Future<HttpResponse> httpResponseFuture = client.request(client.get("/path")).toFuture();
 
         expected.expect(ExecutionException.class);
-        expected.expectCause(Matchers.instanceOf(ClosedChannelException.class));
-        // TODO(derek): Once SslHandler is changed to propagate write failures, this exception class will need to change
+        expected.expectCause(Matchers.instanceOf(ProxyResponseException.class));
         httpResponseFuture.get();
     }
 

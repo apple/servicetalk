@@ -15,12 +15,14 @@
  */
 package io.servicetalk.http.netty;
 
+import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
 
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.concurrent.atomic.AtomicInteger;
@@ -35,6 +37,9 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 
 public class HttpProxyTest {
+
+    @Rule
+    public final ServiceTalkTestTimeout timeout = new ServiceTalkTestTimeout();
 
     private int proxyPort;
     private int serverPort;

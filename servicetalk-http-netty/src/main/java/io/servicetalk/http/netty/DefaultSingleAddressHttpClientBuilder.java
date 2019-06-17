@@ -194,6 +194,14 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
 
             final StreamingHttpRequestResponseFactory reqRespFactory = ctx.reqRespFactory;
 
+            ConnectionFactoryFilter<R, FilterableStreamingHttpConnection> connectionFactoryFilter =
+                    this.connectionFactoryFilter;
+
+            if (config.connectAddress() != null && config.tcpClientConfig().sslContext() != null) {
+                connectionFactoryFilter = new ProxyConnectConnectionFactoryFilter<R, FilterableStreamingHttpConnection>(
+                        config.connectAddress(), reqRespFactory).append(connectionFactoryFilter);
+            }
+
             // closed by the LoadBalancer
             final ConnectionFactory<R, StreamingHttpConnection> connectionFactory;
             if (roConfig.isH2PriorKnowledge()) {

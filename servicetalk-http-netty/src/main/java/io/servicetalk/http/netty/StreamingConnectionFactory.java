@@ -49,8 +49,9 @@ final class StreamingConnectionFactory {
                     return DefaultNettyConnection.initChannel(channel, executionContext.bufferAllocator(),
                             executionContext.executor(), new TerminalPredicate<>(LAST_CHUNK_PREDICATE), closeHandler,
                             roTcpClientConfig.flushStrategy(), new TcpClientChannelInitializer(
-                                    roConfig.tcpClientConfig()).andThen(new HttpClientChannelInitializer(roConfig,
-                                    closeHandler)), executionContext.executionStrategy());
+                                    roConfig.tcpClientConfig(), roConfig.connectAddress() != null)
+                                    .andThen(new HttpClientChannelInitializer(roConfig, closeHandler)),
+                            executionContext.executionStrategy());
                 });
     }
 }

@@ -227,6 +227,11 @@ final class H2ClientParentConnectionContext extends NettyChannelListenableAsyncC
     }
 
     @Override
+    public Channel nettyChannel() {
+        return channel();
+    }
+
+    @Override
     protected void doCloseAsyncGracefully() {
         EventLoop eventLoop = channel().eventLoop();
         if (eventLoop.inEventLoop()) {
@@ -554,6 +559,11 @@ final class H2ClientParentConnectionContext extends NettyChannelListenableAsyncC
         @Override
         public Completable closeAsyncGracefully() {
             return connection.closeAsyncGracefully();
+        }
+
+        @Override
+        public Channel nettyChannel() {
+            return connection.nettyChannel();
         }
 
         @Override

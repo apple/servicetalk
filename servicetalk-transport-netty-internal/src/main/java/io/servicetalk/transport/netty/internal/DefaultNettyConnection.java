@@ -399,6 +399,11 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
     }
 
     @Override
+    public Channel nettyChannel() {
+        return channel();
+    }
+
+    @Override
     public String toString() {
         return channel().toString();
     }
@@ -561,6 +566,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
             } finally {
                 release(evt);
             }
+            ctx.fireUserEventTriggered(evt);
         }
 
         @Override

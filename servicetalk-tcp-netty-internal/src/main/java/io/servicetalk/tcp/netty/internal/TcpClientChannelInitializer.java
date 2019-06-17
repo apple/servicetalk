@@ -17,10 +17,12 @@ package io.servicetalk.tcp.netty.internal;
 
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
+import io.servicetalk.transport.netty.internal.DeferHandler;
 import io.servicetalk.transport.netty.internal.IdleTimeoutInitializer;
 import io.servicetalk.transport.netty.internal.SslClientChannelInitializer;
 
 import io.netty.channel.Channel;
+import io.netty.handler.ssl.SslHandler;
 
 /**
  * {@link ChannelInitializer} for TCP client.
@@ -35,6 +37,16 @@ public class TcpClientChannelInitializer implements ChannelInitializer {
      * @param config to use for initialization.
      */
     public TcpClientChannelInitializer(ReadOnlyTcpClientConfig config) {
+        this(config, false);
+    }
+
+    /**
+     * Creates a {@link ChannelInitializer} for the {@code config}.
+     *
+     * @param config to use for initialization.
+     * @param deferSslHandler {@code true} to wrap the {@link SslHandler} in a {@link DeferHandler}.
+     */
+    public TcpClientChannelInitializer(ReadOnlyTcpClientConfig config, boolean deferSslHandler) {
         ChannelInitializer delegate = ChannelInitializer.defaultInitializer();
         if (config.wireLoggingInitializer() != null) {
             delegate = delegate.andThen(config.wireLoggingInitializer());
@@ -45,7 +57,7 @@ public class TcpClientChannelInitializer implements ChannelInitializer {
         if (config.sslContext() != null) {
             delegate = delegate.andThen(new SslClientChannelInitializer(config.sslContext(),
                     config.sslHostnameVerificationAlgorithm(), config.sslHostnameVerificationHost(),
-                    config.sslHostnameVerificationPort()));
+                    config.sslHostnameVerificationPort(), deferSslHandler));
         }
         this.delegate = delegate;
     }

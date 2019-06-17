@@ -55,6 +55,7 @@ import io.servicetalk.transport.netty.internal.NettyConnection.TerminalPredicate
 import io.servicetalk.transport.netty.internal.NettyConnectionContext;
 import io.servicetalk.transport.netty.internal.NoopWriteEventsListener;
 
+import io.netty.channel.Channel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -430,6 +431,11 @@ final class NettyHttpServer {
         @Override
         public Completable closeAsyncGracefully() {
             return connection.closeAsyncGracefully();
+        }
+
+        @Override
+        public Channel nettyChannel() {
+            return connection.nettyChannel();
         }
 
         @Override

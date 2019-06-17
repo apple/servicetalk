@@ -20,6 +20,8 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.api.ConnectionContext;
 
+import io.netty.channel.Channel;
+
 /**
  * A specialized {@link ConnectionContext} for netty based transports.
  */
@@ -55,6 +57,13 @@ public interface NettyConnectionContext extends ConnectionContext {
      * {@link NettyConnectionContext}.
      */
     Completable onClosing();
+
+    /**
+     * Return the Netty {@link Channel} backing this connection.
+     *
+     * @return the Netty {@link Channel} backing this connection.
+     */
+    Channel nettyChannel();
 
     /**
      * A provider of {@link FlushStrategy} to update the {@link FlushStrategy} for a {@link NettyConnectionContext}.

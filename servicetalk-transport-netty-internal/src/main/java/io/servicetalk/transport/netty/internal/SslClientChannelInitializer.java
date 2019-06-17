@@ -18,6 +18,7 @@ package io.servicetalk.transport.netty.internal;
 import io.servicetalk.transport.api.ConnectionContext;
 
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelHandler;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslHandler;
 
@@ -37,6 +38,7 @@ public class SslClientChannelInitializer implements ChannelInitializer {
     private final String hostnameVerificationHost;
     private final int hostnameVerificationPort;
     private final SslContext sslContext;
+    private final boolean deferSslHandler;
 
     /**
      * New instance.
@@ -44,19 +46,25 @@ public class SslClientChannelInitializer implements ChannelInitializer {
      * @param hostnameVerificationAlgorithm hostname verification algorithm.
      * @param hostnameVerificationHost the non-authoritative name of the host.
      * @param hostnameVerificationPort the non-authoritative port.
+     * @param deferSslHandler {@code true} to wrap the {@link SslHandler} in a {@link DeferHandler}.
      */
     public SslClientChannelInitializer(SslContext sslContext, @Nullable String hostnameVerificationAlgorithm,
-                                       @Nullable String hostnameVerificationHost, int hostnameVerificationPort) {
+                                       @Nullable String hostnameVerificationHost, int hostnameVerificationPort,
+                                       final boolean deferSslHandler) {
         this.sslContext = requireNonNull(sslContext);
         this.hostnameVerificationAlgorithm = hostnameVerificationAlgorithm;
         this.hostnameVerificationHost = hostnameVerificationHost;
         this.hostnameVerificationPort = hostnameVerificationPort;
+        this.deferSslHandler = deferSslHandler;
     }
 
     @Override
     public ConnectionContext init(Channel channel, ConnectionContext context) {
-        SslHandler sslHandler = newHandler(sslContext, channel.alloc(), hostnameVerificationAlgorithm,
+        ChannelHandler sslHandler = newHandler(sslContext, channel.alloc(), hostnameVerificationAlgorithm,
                                            hostnameVerificationHost, hostnameVerificationPort);
+        if (deferSslHandler) {
+            sslHandler = new DeferHandler(channel, "sslHandler", sslHandler);
+        }
         channel.pipeline().addFirst(sslHandler);
         return context;
     }
