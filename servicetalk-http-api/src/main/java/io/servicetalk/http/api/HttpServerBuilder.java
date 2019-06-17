@@ -25,8 +25,6 @@ import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.api.SslConfig;
 
 import java.io.InputStream;
-import java.net.InetSocketAddress;
-import java.net.SocketAddress;
 import java.net.SocketOption;
 import java.util.Map;
 import java.util.function.Predicate;
@@ -285,26 +283,6 @@ public abstract class HttpServerBuilder {
                                                        final StreamingHttpServiceFilterFactory factory) {
         appendServiceFilter(toConditionalServiceFilterFactory(predicate, factory));
         return this;
-    }
-
-    /**
-     * Sets the address to listen on.
-     *
-     * @param address The listen address for the server.
-     * @return {@code this}.
-     * @see #port(int)
-     */
-    public abstract HttpServerBuilder address(SocketAddress address);
-
-    /**
-     * Sets the port to listen on, the IP address is the wildcard address.
-     *
-     * @param port The listen port for the server
-     * @return {@code this}.
-     * @see #address(SocketAddress)
-     */
-    public HttpServerBuilder port(int port) {
-        return address(new InetSocketAddress(port));
     }
 
     /**
