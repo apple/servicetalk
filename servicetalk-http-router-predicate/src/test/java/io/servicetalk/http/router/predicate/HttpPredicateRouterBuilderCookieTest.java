@@ -37,10 +37,10 @@ public class HttpPredicateRouterBuilderCookieTest extends BaseHttpPredicateRoute
                 .when((ctx, req) -> true).thenRouteTo(fallbackService)
                 .buildStreaming();
 
-        when(headers.getCookies("session")).then(answerIteratorOf(cookie1));
+        when(headers.getCookiesIterator("session")).then(answerIteratorOf(cookie1));
         assertSame(responseA, service.handle(ctx, request, reqRespFactory));
 
-        when(headers.getCookies("session")).thenReturn(emptyIterator());
+        when(headers.getCookiesIterator("session")).thenReturn(emptyIterator());
         assertSame(fallbackResponse, service.handle(ctx, request, reqRespFactory));
     }
 
@@ -51,19 +51,19 @@ public class HttpPredicateRouterBuilderCookieTest extends BaseHttpPredicateRoute
                 .when((ctx, req) -> true).thenRouteTo(fallbackService)
                 .buildStreaming();
 
-        when(headers.getCookies("session")).then(answerIteratorOf(cookie1));
+        when(headers.getCookiesIterator("session")).then(answerIteratorOf(cookie1));
         assertSame(responseA, service.handle(ctx, request, reqRespFactory));
 
-        when(headers.getCookies("session")).then(answerIteratorOf(cookie1, cookie2));
+        when(headers.getCookiesIterator("session")).then(answerIteratorOf(cookie1, cookie2));
         assertSame(responseA, service.handle(ctx, request, reqRespFactory));
 
-        when(headers.getCookies("session")).then(answerIteratorOf(cookie2, cookie1));
+        when(headers.getCookiesIterator("session")).then(answerIteratorOf(cookie2, cookie1));
         assertSame(responseA, service.handle(ctx, request, reqRespFactory));
 
-        when(headers.getCookies("session")).then(answerIteratorOf(cookie2));
+        when(headers.getCookiesIterator("session")).then(answerIteratorOf(cookie2));
         assertSame(fallbackResponse, service.handle(ctx, request, reqRespFactory));
 
-        when(headers.getCookies("session")).thenReturn(emptyIterator());
+        when(headers.getCookiesIterator("session")).thenReturn(emptyIterator());
         assertSame(fallbackResponse, service.handle(ctx, request, reqRespFactory));
     }
 
@@ -74,16 +74,16 @@ public class HttpPredicateRouterBuilderCookieTest extends BaseHttpPredicateRoute
                 .when((ctx, req) -> true).thenRouteTo(fallbackService)
                 .buildStreaming();
 
-        when(headers.getCookies("session")).then(answerIteratorOf(cookie1));
+        when(headers.getCookiesIterator("session")).then(answerIteratorOf(cookie1));
         assertSame(responseA, service.handle(ctx, request, reqRespFactory));
 
-        when(headers.getCookies("session")).then(answerIteratorOf(cookie2, cookie1));
+        when(headers.getCookiesIterator("session")).then(answerIteratorOf(cookie2, cookie1));
         assertSame(responseA, service.handle(ctx, request, reqRespFactory));
 
-        when(headers.getCookies("session")).then(answerIteratorOf(cookie2));
+        when(headers.getCookiesIterator("session")).then(answerIteratorOf(cookie2));
         assertSame(fallbackResponse, service.handle(ctx, request, reqRespFactory));
 
-        when(headers.getCookies("session")).thenReturn(emptyIterator());
+        when(headers.getCookiesIterator("session")).thenReturn(emptyIterator());
         assertSame(fallbackResponse, service.handle(ctx, request, reqRespFactory));
     }
 }

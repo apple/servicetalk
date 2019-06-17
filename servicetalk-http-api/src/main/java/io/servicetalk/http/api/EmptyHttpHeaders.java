@@ -52,7 +52,7 @@ public final class EmptyHttpHeaders implements HttpHeaders {
     }
 
     @Override
-    public Iterator<? extends CharSequence> values(CharSequence name) {
+    public Iterator<? extends CharSequence> valuesIterator(CharSequence name) {
         return emptyIterator();
     }
 
@@ -189,28 +189,28 @@ public final class EmptyHttpHeaders implements HttpHeaders {
     }
 
     @Override
-    public Iterator<? extends HttpCookiePair> getCookies() {
+    public Iterator<? extends HttpCookiePair> getCookiesIterator() {
         return emptyIterator();
     }
 
     @Override
-    public Iterator<? extends HttpCookiePair> getCookies(final CharSequence name) {
+    public Iterator<? extends HttpCookiePair> getCookiesIterator(final CharSequence name) {
         return emptyIterator();
     }
 
     @Override
-    public Iterator<? extends HttpSetCookie> getSetCookies() {
+    public Iterator<? extends HttpSetCookie> getSetCookiesIterator() {
         return emptyIterator();
     }
 
     @Override
-    public Iterator<? extends HttpSetCookie> getSetCookies(final CharSequence name) {
+    public Iterator<? extends HttpSetCookie> getSetCookiesIterator(final CharSequence name) {
         return emptyIterator();
     }
 
     @Override
-    public Iterator<? extends HttpSetCookie> getSetCookies(final CharSequence name, final CharSequence domain,
-                                                           final CharSequence path) {
+    public Iterator<? extends HttpSetCookie> getSetCookiesIterator(final CharSequence name, final CharSequence domain,
+                                                                   final CharSequence path) {
         return emptyIterator();
     }
 

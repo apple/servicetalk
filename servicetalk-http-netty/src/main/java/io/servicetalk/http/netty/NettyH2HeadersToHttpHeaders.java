@@ -70,7 +70,7 @@ final class NettyH2HeadersToHttpHeaders implements HttpHeaders {
     }
 
     @Override
-    public Iterator<? extends CharSequence> values(final CharSequence name) {
+    public Iterator<? extends CharSequence> valuesIterator(final CharSequence name) {
         return nettyHeaders.valueIterator(name);
     }
 
@@ -217,24 +217,24 @@ final class NettyH2HeadersToHttpHeaders implements HttpHeaders {
     }
 
     @Override
-    public Iterator<? extends HttpCookiePair> getCookies() {
+    public Iterator<? extends HttpCookiePair> getCookiesIterator() {
         Iterator<CharSequence> valueItr = nettyHeaders.valueIterator(HttpHeaderNames.COOKIE);
         return valueItr.hasNext() ? new CookiesIterator(valueItr) : emptyIterator();
     }
 
     @Override
-    public Iterator<? extends HttpCookiePair> getCookies(final CharSequence name) {
+    public Iterator<? extends HttpCookiePair> getCookiesIterator(final CharSequence name) {
         return new CookiesByNameIterator(nettyHeaders.valueIterator(HttpHeaderNames.COOKIE), name);
     }
 
     @Override
-    public Iterator<? extends HttpSetCookie> getSetCookies() {
+    public Iterator<? extends HttpSetCookie> getSetCookiesIterator() {
         Iterator<CharSequence> valueItr = nettyHeaders.valueIterator(HttpHeaderNames.SET_COOKIE);
         return valueItr.hasNext() ? new SetCookiesIterator(valueItr) : emptyIterator();
     }
 
     @Override
-    public Iterator<? extends HttpSetCookie> getSetCookies(final CharSequence name) {
+    public Iterator<? extends HttpSetCookie> getSetCookiesIterator(final CharSequence name) {
         Iterator<CharSequence> valueItr = nettyHeaders.valueIterator(HttpHeaderNames.SET_COOKIE);
         while (valueItr.hasNext()) {
             HttpSetCookie setCookie = HeaderUtils.parseSetCookie(valueItr.next(), name, validateCookies);
@@ -246,8 +246,8 @@ final class NettyH2HeadersToHttpHeaders implements HttpHeaders {
     }
 
     @Override
-    public Iterator<? extends HttpSetCookie> getSetCookies(final CharSequence name, final CharSequence domain,
-                                                           final CharSequence path) {
+    public Iterator<? extends HttpSetCookie> getSetCookiesIterator(final CharSequence name, final CharSequence domain,
+                                                                   final CharSequence path) {
         Iterator<CharSequence> valueItr = nettyHeaders.valueIterator(HttpHeaderNames.SET_COOKIE);
         while (valueItr.hasNext()) {
             // In the future we could attempt to delay full parsing of the cookie until after the domain/path have

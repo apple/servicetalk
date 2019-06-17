@@ -385,7 +385,7 @@ public class HttpRequestDecoderTest {
     }
 
     static void assertSingleHeaderValue(HttpHeaders headers, CharSequence name, CharSequence expectedValue) {
-        Iterator<? extends CharSequence> itr = headers.values(name);
+        Iterator<? extends CharSequence> itr = headers.valuesIterator(name);
         assertTrue("unabled to find header name '" + name + "'", itr.hasNext());
         CharSequence value = itr.next();
         assertTrue(name + " expected value of '" + expectedValue + "' but got: '" + value + "'",
