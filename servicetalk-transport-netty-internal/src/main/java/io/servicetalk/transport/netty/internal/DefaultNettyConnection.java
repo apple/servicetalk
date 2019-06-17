@@ -95,8 +95,6 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
             unknownStackTrace(new ClosedChannelException(), NettyToStChannelInboundHandler.class, "handlerRemoved(..)");
     private static final AtomicReferenceFieldUpdater<DefaultNettyConnection, WritableListener> writableListenerUpdater =
             newUpdater(DefaultNettyConnection.class, WritableListener.class, "writableListener");
-    private static final AtomicReferenceFieldUpdater<DefaultNettyConnection, FlushStrategy> flushStrategyUpdater =
-            newUpdater(DefaultNettyConnection.class, FlushStrategy.class, "flushStrategy");
 
     private final TerminalPredicate<Read> terminalMsgPredicate;
     private final CloseHandler closeHandler;
@@ -106,9 +104,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
     @Nullable
     private final CompletableSource.Processor onClosing;
     private final SingleSource.Processor<Throwable, Throwable> transportError = newSingleProcessor();
-    private final FlushStrategy originalFlushStrategy;
-
-    private volatile FlushStrategy flushStrategy;
+    private final FlushStrategyHolder flushStrategyHolder;
     private volatile WritableListener writableListener = PLACE_HOLDER_WRITABLE_LISTENER;
     /**
      * Potentially contains more information when a protocol or channel level close event was observed.
@@ -139,9 +135,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
         this.executionContext = new DefaultExecutionContext(allocator, fromNettyEventLoop(channel.eventLoop()),
                 executor, executionStrategy);
         this.closeHandler = requireNonNull(closeHandler);
-        // Wrap the strategy so that we can do reference equality to check if the strategy has been modified.
-        originalFlushStrategy = new DelegatingFlushStrategy(flushStrategy);
-        this.flushStrategy = originalFlushStrategy;
+        flushStrategyHolder = new FlushStrategyHolder(flushStrategy);
         if (closeHandler != UNSUPPORTED_PROTOCOL_CLOSE_HANDLER) {
             onClosing = newCompletableProcessor();
             closeHandler.registerEventHandler(channel, evt -> { // Called from EventLoop only!
@@ -316,7 +310,8 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
                 WriteStreamSubscriber subscriber = new WriteStreamSubscriber(channel(), requestNSupplierFactory.get(),
                         completableSubscriber, closeHandler);
                 if (failIfWriteActive(subscriber, completableSubscriber)) {
-                    toSource(composeFlushes(channel(), write, flushStrategy)).subscribe(subscriber);
+                    toSource(composeFlushes(channel(), write, flushStrategyHolder.currentStrategy()))
+                            .subscribe(subscriber);
                 }
             }
         }).onErrorResume(this::enrichErrorCompletable);
@@ -426,9 +421,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
 
     @Override
     public Cancellable updateFlushStrategy(final FlushStrategyProvider strategyProvider) {
-        FlushStrategy old = flushStrategyUpdater.getAndUpdate(this, current ->
-                strategyProvider.getNewStrategy(current, current == originalFlushStrategy));
-        return () -> updateFlushStrategy((__, ___) -> old);
+        return flushStrategyHolder.updateFlushStrategy(strategyProvider);
     }
 
     @Override
@@ -499,7 +492,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
         public void channelWritabilityChanged(ChannelHandlerContext ctx) {
             if (ctx.channel().isWritable()) {
                 connection.writableListener.channelWritable();
-            } else if (connection.flushStrategy.shouldFlushOnUnwritable()) {
+            } else if (connection.flushStrategyHolder.currentStrategy().shouldFlushOnUnwritable()) {
                 ctx.flush();
             }
         }

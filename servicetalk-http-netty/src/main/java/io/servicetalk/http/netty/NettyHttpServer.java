@@ -48,8 +48,8 @@ import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
 import io.servicetalk.transport.netty.internal.CloseHandler;
 import io.servicetalk.transport.netty.internal.DefaultNettyConnection;
-import io.servicetalk.transport.netty.internal.DelegatingFlushStrategy;
 import io.servicetalk.transport.netty.internal.FlushStrategy;
+import io.servicetalk.transport.netty.internal.FlushStrategyHolder;
 import io.servicetalk.transport.netty.internal.NettyConnection;
 import io.servicetalk.transport.netty.internal.NettyConnection.TerminalPredicate;
 import io.servicetalk.transport.netty.internal.NettyConnectionContext;
@@ -449,32 +449,25 @@ final class NettyHttpServer {
             private static final WriteEventsListener CANCELLED = new NoopWriteEventsListener() { };
             private static final WriteEventsListener TERMINATED = new NoopWriteEventsListener() { };
 
-            private static final AtomicReferenceFieldUpdater<CompositeFlushStrategy, FlushStrategy>
-                    flushStrategyUpdater = newUpdater(CompositeFlushStrategy.class, FlushStrategy.class,
-                    "flushStrategy");
             private static final AtomicReferenceFieldUpdater<CompositeFlushStrategy, WriteEventsListener>
                     currentListenerUpdater = newUpdater(CompositeFlushStrategy.class, WriteEventsListener.class,
                     "currentListener");
 
-            private final FlushStrategy originalStrategy;
-            private volatile FlushStrategy flushStrategy;
+            private final FlushStrategyHolder flushStrategyHolder;
             private volatile WriteEventsListener currentListener = INIT;
             private FlushSender flushSender = () -> { };
 
             CompositeFlushStrategy(final FlushStrategy flushStrategy) {
-                // Wrap the strategy so that we can do reference equality to check if the strategy has been modified.
-                originalStrategy = new DelegatingFlushStrategy(flushStrategy);
-                this.flushStrategy = originalStrategy;
+                flushStrategyHolder = new FlushStrategyHolder(flushStrategy);
             }
 
             Cancellable updateFlushStrategy(final FlushStrategyProvider strategyProvider) {
-                flushStrategyUpdater.updateAndGet(this, current ->
-                        strategyProvider.getNewStrategy(current, current == originalStrategy));
+                Cancellable revertStrategy = flushStrategyHolder.updateFlushStrategy(strategyProvider);
                 // We always revert to the original strategy specified for the connection. If a user wishes to create a
                 // hierarchical strategy, they have to do it by themselves.
                 return () -> {
                     final WriteEventsListener prev = currentListener;
-                    updateFlushStrategy((__, ___) -> originalStrategy);
+                    revertStrategy.cancel();
                     // Since flushStrategy and currentListener can not be updated atomically, we only switch
                     // currentListener if it has not changed from what it was before updating flushStrategy.
                     // If the listener has changed, it could have changed before or after updating the flushStrategy but
@@ -483,7 +476,7 @@ final class NettyHttpServer {
                     // Unconditionally updating the currentListener would mean that we may swap out the listener for the
                     // updated strategy.
                     if (currentListener == prev) {
-                        WriteEventsListener listener = originalStrategy.apply(flushSender);
+                        WriteEventsListener listener = flushStrategyHolder.currentStrategy().apply(flushSender);
                         if (currentListenerUpdater.compareAndSet(CompositeFlushStrategy.this, prev, listener)) {
                             try {
                                 prev.writeTerminated();
@@ -538,7 +531,7 @@ final class NettyHttpServer {
                 // connection. Since read-transform-write for Http server, subscribe to write Publisher MUST
                 // happen-before reading of the first request. This means that apply() should happen-before any metadata
                 // is emitted.
-                updateListener(flushStrategy.apply(flushSender));
+                updateListener(flushStrategyHolder.currentStrategy().apply(flushSender));
             }
 
             void afterEmitTrailers() {
