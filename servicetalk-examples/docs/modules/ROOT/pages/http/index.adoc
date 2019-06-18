@@ -2,8 +2,8 @@ include::ROOT:partial$component-attributes.adoc[]
 
 == HTTP Examples
 
-The link:{sourceroot}servicetalk-examples/src/main/java/io/servicetalk/examples/http[`io.servicetalk.examples.http`]
-package contains examples for the https://tools.ietf.org/html/rfc7231[HTTP] protocol.
+The link:{sourceroot}servicetalk-examples/http[`http`]
+folder contains examples for the https://tools.ietf.org/html/rfc7231[HTTP] protocol.
 
 [#HelloWorld]
 === Hello World
@@ -15,23 +15,23 @@ An obligatory "Hello World" example for HTTP.
 This example demonstrates asynchronous request processing where the payload body is aggregated into a single object
 instead of a stream.
 
-* link:{sourceroot}servicetalk-examples/src/main/java/io/servicetalk/examples/http/helloworld/async/HelloWorldServer.java[HelloWorldServer] - a server that demonstrates the asynchronous API and
+* link:{sourceroot}servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/async/HelloWorldServer.java[HelloWorldServer] - a server that demonstrates the asynchronous API and
 responds with a simple `Hello World!` response body as a `text/plain`.
-* link:{sourceroot}servicetalk-examples/src/main/java/io/servicetalk/examples/http/helloworld/async/HelloWorldClient.java[HelloWorldClient] - a client that sends a `GET` request to the
-link:{sourceroot}servicetalk-examples/src/main/java/io/servicetalk/examples/http/helloworld/async/HelloWorldServer.java[server] and receives the response as a single content.
-* link:{sourceroot}servicetalk-examples/src/main/java/io/servicetalk/examples/http/helloworld/async/HelloWorldUrlClient.java[HelloWorldUrlClient] - a client that sends a `GET` request to the
+* link:{sourceroot}servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/async/HelloWorldClient.java[HelloWorldClient] - a client that sends a `GET` request to the
+link:{sourceroot}servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/async/HelloWorldServer.java[server] and receives the response as a single content.
+* link:{sourceroot}servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/async/HelloWorldUrlClient.java[HelloWorldUrlClient] - a client that sends a `GET` request to the
 specified URL in absolute-form and receives the response as a single content.
 
 ==== Asynchronous + Streaming
 
 This example demonstrates asynchronous request processing where the payload body is a stream.
 
-* link:{sourceroot}servicetalk-examples/src/main/java/io/servicetalk/examples/http/helloworld/async/streaming/HelloWorldStreamingServer.java[HelloWorldStreamingServer] - a server that responds with a
+* link:{sourceroot}servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/async/streaming/HelloWorldStreamingServer.java[HelloWorldStreamingServer] - a server that responds with a
 stream of `text/plain` payload body for every request.
-* link:{sourceroot}servicetalk-examples/src/main/java/io/servicetalk/examples/http/helloworld/async/streaming/HelloWorldStreamingClient.java[HelloWorldStreamingClient] - a client that sends a `GET`
-request to the link:{sourceroot}servicetalk-examples/src/main/java/io/servicetalk/examples/http/helloworld/async/streaming/HelloWorldStreamingServer.java[server] and receives the response payload
+* link:{sourceroot}servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/async/streaming/HelloWorldStreamingClient.java[HelloWorldStreamingClient] - a client that sends a `GET`
+request to the link:{sourceroot}servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/async/streaming/HelloWorldStreamingServer.java[server] and receives the response payload
 body as a stream of buffers.
-* link:{sourceroot}servicetalk-examples/src/main/java/io/servicetalk/examples/http/helloworld/async/streaming/HelloWorldStreamingUrlClient.java[HelloWorldStreamingUrlClient] - a client that sends a
+* link:{sourceroot}servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/async/streaming/HelloWorldStreamingUrlClient.java[HelloWorldStreamingUrlClient] - a client that sends a
 `GET` request to the specified URL in absolute-form and receives the response payload body as a stream of buffers.
 
 [#blocking-aggregated]
@@ -40,36 +40,36 @@ body as a stream of buffers.
 This example demonstrates blocking request processing where the payload body is aggregated into a single object. The
 APIs will block if content is requested but there is no content available.
 
-* link:{sourceroot}servicetalk-examples/src/main/java/io/servicetalk/examples/http/helloworld/blocking/BlockingHelloWorldServer.java[BlockingHelloWorldServer] - a server that demonstrates the
+* link:{sourceroot}servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/blocking/BlockingHelloWorldServer.java[BlockingHelloWorldServer] - a server that demonstrates the
 blocking API and responds with a simple `Hello World!` response body as a `text/plain`.
-* link:{sourceroot}servicetalk-examples/src/main/java/io/servicetalk/examples/http/helloworld/blocking/BlockingHelloWorldClient.java[BlockingHelloWorldClient] - a client that sends a `GET` request to
-the link:{sourceroot}servicetalk-examples/src/main/java/io/servicetalk/examples/http/helloworld/blocking/BlockingHelloWorldServer.java[server] and receives the response payload body as one aggregated
+* link:{sourceroot}servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/blocking/BlockingHelloWorldClient.java[BlockingHelloWorldClient] - a client that sends a `GET` request to
+the link:{sourceroot}servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/blocking/BlockingHelloWorldServer.java[server] and receives the response payload body as one aggregated
 object.
-* link:{sourceroot}servicetalk-examples/src/main/java/io/servicetalk/examples/http/helloworld/blocking/BlockingHelloWorldUrlClient.java[BlockingHelloWorldUrlClient] - a client that sends a `GET`
+* link:{sourceroot}servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/blocking/BlockingHelloWorldUrlClient.java[BlockingHelloWorldUrlClient] - a client that sends a `GET`
 request to the specified URL in absolute-form and receives the response payload body as one aggregated object.
 
 ==== Blocking + Streaming
 
 This example demonstrates blocking request processing where the payload body is a blocking iterable stream.
 
-* link:{sourceroot}servicetalk-examples/src/main/java/io/servicetalk/examples/http/helloworld/blocking/streaming/BlockingHelloWorldStreamingServer.java[BlockingHelloWorldStreamingServer] - a server
+* link:{sourceroot}servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/blocking/streaming/BlockingHelloWorldStreamingServer.java[BlockingHelloWorldStreamingServer] - a server
 that responds with an iterable stream of `text/plain` payload body for every request.
-* link:{sourceroot}servicetalk-examples/src/main/java/io/servicetalk/examples/http/helloworld/blocking/streaming/BlockingHelloWorldStreamingClient.java[BlockingHelloWorldStreamingClient] - a client
-that sends a `GET` request to the link:{sourceroot}servicetalk-examples/src/main/java/io/servicetalk/examples/http/helloworld/blocking/streaming/BlockingHelloWorldStreamingServer.java[server] and
+* link:{sourceroot}servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/blocking/streaming/BlockingHelloWorldStreamingClient.java[BlockingHelloWorldStreamingClient] - a client
+that sends a `GET` request to the link:{sourceroot}servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/blocking/streaming/BlockingHelloWorldStreamingServer.java[server] and
 receives the response payload body as a blocking iterable stream of buffers.
-* link:{sourceroot}servicetalk-examples/src/main/java/io/servicetalk/examples/http/helloworld/blocking/streaming/BlockingHelloWorldStreamingUrlClient.java[BlockingHelloWorldStreamingUrlClient] - a
+* link:{sourceroot}servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/blocking/streaming/BlockingHelloWorldStreamingUrlClient.java[BlockingHelloWorldStreamingUrlClient] - a
 client that sends a `GET` request to the specified URL in absolute-form and receives the response payload body as a
 blocking iterable stream of buffers.
 
 [#Serialization]
 === Serialization
 
-A similar to "Hello World" examples, which demonstrate link:{sourceroot}servicetalk-examples/src/main/java/io/servicetalk/examples/http/serialization/async[asynchronous-aggregated],
-link:{sourceroot}servicetalk-examples/src/main/java/io/servicetalk/examples/http/serialization/async/streaming[asynchronous-streaming], link:{sourceroot}servicetalk-examples/src/main/java/io/servicetalk/examples/http/serialization/blocking[blocking-aggregated], and
-link:{sourceroot}servicetalk-examples/src/main/java/io/servicetalk/examples/http/serialization/blocking/streaming[blocking-streaming] client and server with JSON serialization of simple pojo classes.
+A similar to "Hello World" examples, which demonstrate link:{sourceroot}servicetalk-examples/http/serialization/src/main/java/io/servicetalk/examples/http/serialization/async[asynchronous-aggregated],
+link:{sourceroot}servicetalk-examples/http/serialization/src/main/java/io/servicetalk/examples/http/serialization/async/streaming[asynchronous-streaming], link:{sourceroot}servicetalk-examples/http/serialization/src/main/java/io/servicetalk/examples/http/serialization/blocking[blocking-aggregated], and
+link:{sourceroot}servicetalk-examples/http/serialization/src/main/java/io/servicetalk/examples/http/serialization/blocking/streaming[blocking-streaming] client and server with JSON serialization of simple pojo classes.
 
-Client sends a `POST` request with a JSON payload link:{sourceroot}servicetalk-examples/src/main/java/io/servicetalk/examples/http/serialization/CreatePojoRequest.java[PojoRequest] and expects a response
-with `Content-Type: application/json` and link:{sourceroot}servicetalk-examples/src/main/java/io/servicetalk/examples/http/serialization/PojoResponse.java[MyPojo] as a payload.
+Client sends a `POST` request with a JSON payload link:{sourceroot}servicetalk-examples/http/serialization/src/main/java/io/servicetalk/examples/http/serialization/CreatePojoRequest.java[PojoRequest] and expects a response
+with `Content-Type: application/json` and link:{sourceroot}servicetalk-examples/http/serialization/src/main/java/io/servicetalk/examples/http/serialization/PojoResponse.java[MyPojo] as a payload.
 
 [#JAXRS]
 === JAX-RS
@@ -82,9 +82,9 @@ aggregated/streaming) are exposed.
 
 A simple "Hello World" example built using JAX-RS.
 
-* link:{sourceroot}servicetalk-examples/src/main/java/io/servicetalk/examples/http/jaxrs/HelloWorldJaxRsServer.java[HelloWorldJaxRsServer] - a JAX-RS based hello world server that demonstrates how to
+* link:{sourceroot}servicetalk-examples/http/jaxrs/src/main/java/io/servicetalk/examples/http/jaxrs/HelloWorldJaxRsServer.java[HelloWorldJaxRsServer] - a JAX-RS based hello world server that demonstrates how to
 write blocking as well as asynchronous resource methods.
-* link:{sourceroot}servicetalk-examples/src/main/java/io/servicetalk/examples/http/jaxrs/HelloWorldJaxRsResource.java[HelloWorldJaxRsResource] - a JAX-RS resource having different methods for
+* link:{sourceroot}servicetalk-examples/http/jaxrs/src/main/java/io/servicetalk/examples/http/jaxrs/HelloWorldJaxRsResource.java[HelloWorldJaxRsResource] - a JAX-RS resource having different methods for
 blocking and asynchronous interactions.
 
 This example does not have a client yet but one can use curl to send requests like:
@@ -94,7 +94,7 @@ curl http://localhost:8080/greetings/hello
 ----
 
 More examples of how to use the resource can be found in the
-link:{sourceroot}servicetalk-examples/src/main/java/io/servicetalk/examples/http/jaxrs/HelloWorldJaxRsResource.java[HelloWorldJaxRsResource] javadocs.
+link:{sourceroot}servicetalk-examples/http/jaxrs/src/main/java/io/servicetalk/examples/http/jaxrs/HelloWorldJaxRsResource.java[HelloWorldJaxRsResource] javadocs.
 
 [#MetaData]
 === MetaData
@@ -108,8 +108,8 @@ This example demonstrates some of the basic functionality of the Http MetaData c
 
 Using the following classes:
 
-- link:{sourceroot}servicetalk-examples/src/main/java/io/servicetalk/examples/http/metadata/MetaDataDemoServer.java[MetaDataDemoServer] - A server that provides greetings in various languages.
-- link:{sourceroot}servicetalk-examples/src/main/java/io/servicetalk/examples/http/metadata/MetaDataDemoClient.java[MetaDataDemoClient] - A client that requests greetings in various languages.
+- link:{sourceroot}servicetalk-examples/http/metadata/src/main/java/io/servicetalk/examples/http/metadata/MetaDataDemoServer.java[MetaDataDemoServer] - A server that provides greetings in various languages.
+- link:{sourceroot}servicetalk-examples/http/metadata/src/main/java/io/servicetalk/examples/http/metadata/MetaDataDemoClient.java[MetaDataDemoClient] - A client that requests greetings in various languages.
 
 This example uses the link:#blocking-aggregated[blocking + aggregated] API, as the metadata API is the same across
 all the HTTP APIs.

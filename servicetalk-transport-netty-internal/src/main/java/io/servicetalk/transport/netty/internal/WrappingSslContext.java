@@ -28,7 +28,7 @@ final class WrappingSslContext extends DelegatingSslContext {
 
     WrappingSslContext(SslContext context, @Nullable List<String> protocols) {
         super(context);
-        this.protocols = protocols == null ? null : protocols.toArray(new String[protocols.size()]);
+        this.protocols = protocols == null ? null : protocols.toArray(new String[0]);
     }
 
     @Override

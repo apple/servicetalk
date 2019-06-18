@@ -39,6 +39,7 @@ import org.junit.Test;
 import org.junit.rules.Timeout;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
+import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Completable.never;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
@@ -96,7 +97,9 @@ public class PipelinedHttpConnectionTest {
             Publisher<Object> publisher = inv.getArgument(0);
             return publisher.ignoreElements(); // simulate write consuming all
         });
+        when(connection.updateFlushStrategy(any())).thenReturn(IGNORE_CANCEL);
         when(connection.read()).thenReturn(readPublisher1, readPublisher2);
+
         pipe = TestStreamingHttpConnection.from(
                 new PipelinedStreamingHttpConnection(connection, config.asReadOnly(),
                         new ExecutionContextToHttpExecutionContext(ctx, defaultStrategy()),
@@ -111,6 +114,7 @@ public class PipelinedHttpConnectionTest {
         when(connection.executionContext()).thenReturn(ctx);
         when(connection.write(any())).thenReturn(completed());
         when(connection.read()).thenReturn(Publisher.from(reqRespFactory.ok(), emptyLastChunk));
+        when(connection.updateFlushStrategy(any())).thenReturn(IGNORE_CANCEL);
         Single<StreamingHttpResponse> request = pipe.request(
                 reqRespFactory.get("/Foo"));
         toSource(request).subscribe(dataSubscriber1);

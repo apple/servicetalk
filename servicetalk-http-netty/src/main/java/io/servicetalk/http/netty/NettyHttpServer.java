@@ -26,6 +26,7 @@ import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.RejectedSubscribeError;
 import io.servicetalk.http.api.DefaultHttpExecutionContext;
+import io.servicetalk.http.api.EmptyHttpHeaders;
 import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpHeaders;
@@ -47,8 +48,8 @@ import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
 import io.servicetalk.transport.netty.internal.CloseHandler;
 import io.servicetalk.transport.netty.internal.DefaultNettyConnection;
-import io.servicetalk.transport.netty.internal.DelegatingFlushStrategy;
 import io.servicetalk.transport.netty.internal.FlushStrategy;
+import io.servicetalk.transport.netty.internal.FlushStrategyHolder;
 import io.servicetalk.transport.netty.internal.NettyConnection;
 import io.servicetalk.transport.netty.internal.NettyConnection.TerminalPredicate;
 import io.servicetalk.transport.netty.internal.NettyConnectionContext;
@@ -64,6 +65,7 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Predicate;
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.net.ssl.SSLSession;
 
@@ -79,6 +81,7 @@ import static io.servicetalk.http.api.HttpApiConversions.mayHaveTrailers;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderValues.ZERO;
 import static io.servicetalk.http.api.StreamingHttpRequests.newTransportRequest;
+import static io.servicetalk.http.netty.AbstractStreamingHttpConnection.determineFlushStrategyForApi;
 import static io.servicetalk.http.netty.HeaderUtils.addResponseTransferEncodingIfNecessary;
 import static io.servicetalk.http.netty.HeaderUtils.canAddResponseContentLength;
 import static io.servicetalk.http.netty.HeaderUtils.setResponseContentLength;
@@ -280,20 +283,16 @@ final class NettyHttpServer {
                                                         req.version(), keepAlive)))
                                         .flatMapPublisher(response -> {
                                             keepAlive.addConnectionHeaderIfNecessary(response);
-                                            // Add the content-length if necessary, falling back to transfer-encoding
-                                            // otherwise.
-                                            if (canAddResponseContentLength(response, requestMethod)) {
-                                                return setResponseContentLength(response, headersFactory)
-                                                        .flatMapPublisher(identity());
+
+                                            final FlushStrategy flushStrategy = determineFlushStrategyForApi(response);
+                                            if (flushStrategy == null) {
+                                                return handleResponse(requestMethod, response);
                                             } else {
-                                                Publisher<Object> flatResponse = Publisher.<Object>from(response)
-                                                        .concat(response.payloadBodyAndTrailers());
-                                                if (!mayHaveTrailers(response)) {
-                                                    flatResponse = flatResponse.concat(
-                                                            succeeded(headersFactory.newEmptyTrailers()));
-                                                }
-                                                addResponseTransferEncodingIfNecessary(response, requestMethod);
-                                                return flatResponse;
+                                                final Cancellable resetFlushStrategy =
+                                                        compositeFlushStrategy.updateFlushStrategy(
+                                                        (prev, isOriginal) -> isOriginal ? flushStrategy : prev);
+                                                return handleResponse(requestMethod, response)
+                                                        .afterFinally(resetFlushStrategy::cancel);
                                             }
                                         }),
                                 (cause, executor) -> from(newErrorResponse(cause, executor,
@@ -301,7 +300,7 @@ final class NettyHttpServer {
 
                 if (drainRequestPayloadBody) {
                     responsePublisher = responsePublisher.concat(defer(() -> payloadSubscribed.get() ?
-                                    Completable.completed() : request.payloadBody().ignoreElements()
+                                    completed() : request.payloadBody().ignoreElements()
                             // Discarding the request payload body is an operation which should not impact the state of
                             // request/response processing. It's appropriate to recover from any error here.
                             // ST may introduce RejectedSubscribeError if user already consumed the request payload body
@@ -349,6 +348,24 @@ final class NettyHttpServer {
                             subscriber.onComplete();
                         }
                     }));
+        }
+
+        @Nonnull
+        private static Publisher<Object> handleResponse(final HttpRequestMethod requestMethod,
+                                                        final StreamingHttpResponse response) {
+            // Add the content-length if necessary, falling back to transfer-encoding
+            // otherwise.
+            if (canAddResponseContentLength(response, requestMethod)) {
+                return setResponseContentLength(response).flatMapPublisher(identity());
+            } else {
+                Publisher<Object> flatResponse = Publisher.<Object>from(response)
+                        .concat(response.payloadBodyAndTrailers());
+                if (!mayHaveTrailers(response)) {
+                    flatResponse = flatResponse.concat(succeeded(EmptyHttpHeaders.INSTANCE));
+                }
+                addResponseTransferEncodingIfNecessary(response, requestMethod);
+                return flatResponse;
+            }
         }
 
         private StreamingHttpResponse newErrorResponse(final Throwable cause, final Executor executor,
@@ -432,32 +449,25 @@ final class NettyHttpServer {
             private static final WriteEventsListener CANCELLED = new NoopWriteEventsListener() { };
             private static final WriteEventsListener TERMINATED = new NoopWriteEventsListener() { };
 
-            private static final AtomicReferenceFieldUpdater<CompositeFlushStrategy, FlushStrategy>
-                    flushStrategyUpdater = newUpdater(CompositeFlushStrategy.class, FlushStrategy.class,
-                    "flushStrategy");
             private static final AtomicReferenceFieldUpdater<CompositeFlushStrategy, WriteEventsListener>
                     currentListenerUpdater = newUpdater(CompositeFlushStrategy.class, WriteEventsListener.class,
                     "currentListener");
 
-            private final FlushStrategy originalStrategy;
-            private volatile FlushStrategy flushStrategy;
+            private final FlushStrategyHolder flushStrategyHolder;
             private volatile WriteEventsListener currentListener = INIT;
             private FlushSender flushSender = () -> { };
 
             CompositeFlushStrategy(final FlushStrategy flushStrategy) {
-                // Wrap the strategy so that we can do reference equality to check if the strategy has been modified.
-                originalStrategy = new DelegatingFlushStrategy(flushStrategy);
-                this.flushStrategy = originalStrategy;
+                flushStrategyHolder = new FlushStrategyHolder(flushStrategy);
             }
 
             Cancellable updateFlushStrategy(final FlushStrategyProvider strategyProvider) {
-                flushStrategyUpdater.updateAndGet(this, current ->
-                        strategyProvider.getNewStrategy(current, current == originalStrategy));
+                Cancellable revertStrategy = flushStrategyHolder.updateFlushStrategy(strategyProvider);
                 // We always revert to the original strategy specified for the connection. If a user wishes to create a
                 // hierarchical strategy, they have to do it by themselves.
                 return () -> {
                     final WriteEventsListener prev = currentListener;
-                    updateFlushStrategy((__, ___) -> originalStrategy);
+                    revertStrategy.cancel();
                     // Since flushStrategy and currentListener can not be updated atomically, we only switch
                     // currentListener if it has not changed from what it was before updating flushStrategy.
                     // If the listener has changed, it could have changed before or after updating the flushStrategy but
@@ -466,7 +476,7 @@ final class NettyHttpServer {
                     // Unconditionally updating the currentListener would mean that we may swap out the listener for the
                     // updated strategy.
                     if (currentListener == prev) {
-                        WriteEventsListener listener = originalStrategy.apply(flushSender);
+                        WriteEventsListener listener = flushStrategyHolder.currentStrategy().apply(flushSender);
                         if (currentListenerUpdater.compareAndSet(CompositeFlushStrategy.this, prev, listener)) {
                             try {
                                 prev.writeTerminated();
@@ -521,7 +531,7 @@ final class NettyHttpServer {
                 // connection. Since read-transform-write for Http server, subscribe to write Publisher MUST
                 // happen-before reading of the first request. This means that apply() should happen-before any metadata
                 // is emitted.
-                updateListener(flushStrategy.apply(flushSender));
+                updateListener(flushStrategyHolder.currentStrategy().apply(flushSender));
             }
 
             void afterEmitTrailers() {

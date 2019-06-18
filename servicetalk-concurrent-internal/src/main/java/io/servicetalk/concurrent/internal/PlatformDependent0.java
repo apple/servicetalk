@@ -34,11 +34,18 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import sun.misc.Unsafe;
 
+import java.io.FileDescriptor;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
+import java.nio.ByteBuffer;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.internal.ReflectionUtils.extractNioBitsMethod;
+import static io.servicetalk.concurrent.internal.ReflectionUtils.lookupAccessibleObject;
 import static java.lang.Boolean.getBoolean;
 import static java.util.Objects.requireNonNull;
 
@@ -51,23 +58,34 @@ final class PlatformDependent0 {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(PlatformDependent0.class);
 
-    private static final String DISABLE_UNSAFE_PROPERTY = "io.servicetalk.noUnsafe";
+    private static final boolean IS_EXPLICIT_NO_UNSAFE = getBoolean("io.servicetalk.noUnsafe");
 
-    private static final boolean isExplicitNoUnsafe = isExplicitNoUnsafe();
+    private static final String DEALLOCATOR_CLASS_NAME = "java.nio.DirectByteBuffer$Deallocator";
+
     @Nullable
-    static final Unsafe UNSAFE;
+    private static final Unsafe UNSAFE;
+    @Nullable
+    private static final MethodHandle DIRECT_BUFFER_CONSTRUCTOR;
+    @Nullable
+    private static final MethodHandle DEALLOCATOR_CONSTRUCTOR;
+    @Nullable
+    private static final MethodHandle RESERVE_MEMORY;
+    @Nullable
+    private static final MethodHandle UNRESERVE_MEMORY;
+
+    private static final boolean USE_DIRECT_BUFFER_WITHOUT_ZEROING;
 
     static {
         Unsafe unsafe;
 
-        if (isExplicitNoUnsafe) {
+        if (IS_EXPLICIT_NO_UNSAFE) {
             unsafe = null;
         } else {
             // attempt to access field Unsafe#theUnsafe
             final Object maybeUnsafe = AccessController.doPrivileged((PrivilegedAction<Object>) () -> {
                 try {
                     final Field unsafeField = Unsafe.class.getDeclaredField("theUnsafe");
-                    Throwable cause = ReflectionUtil.trySetAccessible(unsafeField);
+                    final Throwable cause = ReflectionUtils.trySetAccessible(unsafeField, false);
                     if (cause != null) {
                         return cause;
                     }
@@ -89,50 +107,139 @@ final class PlatformDependent0 {
                 unsafe = (Unsafe) maybeUnsafe;
                 LOGGER.debug("sun.misc.Unsafe.theUnsafe: available");
             }
-
-            // ensure the unsafe supports all necessary methods to work around the mistake in the latest OpenJDK
-            // http://www.mail-archive.com/jdk6-dev@openjdk.java.net/msg00698.html
-            if (unsafe != null) {
-                final Unsafe finalUnsafe = unsafe;
-                final Object maybeException = AccessController.doPrivileged((PrivilegedAction<Object>) () -> {
-                    try {
-                        finalUnsafe.getClass().getDeclaredMethod(
-                                "copyMemory", Object.class, long.class, Object.class, long.class, long.class);
-                        return null;
-                    } catch (NoSuchMethodException | SecurityException e) {
-                        return e;
-                    }
-                });
-
-                if (maybeException == null) {
-                    LOGGER.debug("sun.misc.Unsafe.copyMemory: available");
-                } else {
-                    // Unsafe.copyMemory(Object, long, Object, long, long) unavailable.
-                    unsafe = null;
-                    LOGGER.debug("sun.misc.Unsafe.copyMemory: unavailable", (Throwable) maybeException);
-                }
-            }
         }
         UNSAFE = unsafe;
+
+        final ByteBuffer direct;
+        final MethodHandles.Lookup lookup;
+        // Define DIRECT_BUFFER_CONSTRUCTOR:
+        if (UNSAFE == null) {
+            direct = null;
+            lookup = null;
+            DIRECT_BUFFER_CONSTRUCTOR = null;
+        } else {
+            direct = ByteBuffer.allocateDirect(1);
+            lookup = MethodHandles.lookup();
+            DIRECT_BUFFER_CONSTRUCTOR = lookupAccessibleObject(() -> direct.getClass().getDeclaredConstructor(
+                    int.class, long.class, FileDescriptor.class, Runnable.class), Constructor.class, constructor -> {
+
+                long address = 0L;
+                try {
+                    final MethodHandle methodHandle = lookup.unreflectConstructor(constructor);
+                    address = allocateMemory(1);
+                    if (methodHandle.invoke(1, address, null, (Runnable) () -> { /* NOOP */ }) instanceof ByteBuffer) {
+                        return methodHandle;
+                    }
+                    return null;
+                } finally {
+                    if (address != 0L) {
+                        freeMemory(address);
+                    }
+                }
+            });
+        }
+        LOGGER.debug("java.nio.DirectByteBuffer.<init>(int, long, FileDescriptor, Runnable): {}",
+                DIRECT_BUFFER_CONSTRUCTOR != null ? "available" : "unavailable");
+
+        // Define DEALLOCATOR_CONSTRUCTOR:
+        if (UNSAFE == null || DIRECT_BUFFER_CONSTRUCTOR == null) {
+            DEALLOCATOR_CONSTRUCTOR = null;
+        } else {
+            DEALLOCATOR_CONSTRUCTOR = lookupAccessibleObject(() -> {
+                for (Class<?> innerClass : direct.getClass().getDeclaredClasses()) {
+                    if (DEALLOCATOR_CLASS_NAME.equals(innerClass.getName())) {
+                        return innerClass.getDeclaredConstructor(long.class, long.class, int.class);
+                    }
+                }
+                return null;
+            }, Constructor.class, constructor -> {
+                final MethodHandle methodHandle = lookup.unreflectConstructor(constructor);
+                if (methodHandle.invoke(0L, 0L, 0) instanceof Runnable) {
+                    return methodHandle;
+                }
+                return null;
+            });
+        }
+        LOGGER.debug("java.nio.DirectByteBuffer$Deallocator.<init>(long, long, int): {}",
+                DIRECT_BUFFER_CONSTRUCTOR != null ? "available" : "unavailable");
+
+        // Define RESERVE_MEMORY and UNRESERVE_MEMORY:
+        if (UNSAFE == null || DIRECT_BUFFER_CONSTRUCTOR == null || DEALLOCATOR_CONSTRUCTOR == null) {
+            RESERVE_MEMORY = null;
+            UNRESERVE_MEMORY = null;
+        } else {
+            RESERVE_MEMORY = extractNioBitsMethod("reserveMemory", lookup);
+            UNRESERVE_MEMORY = extractNioBitsMethod("unreserveMemory", lookup);
+        }
+        LOGGER.debug("java.nio.Bits.reserveMemory(long, int): {}",
+                RESERVE_MEMORY != null ? "available" : "unavailable");
+        LOGGER.debug("java.nio.Bits.unreserveMemory(long, int): {}",
+                UNRESERVE_MEMORY != null ? "available" : "unavailable");
+
+        // Define USE_DIRECT_BUFFER_WITHOUT_ZEROING:
+        USE_DIRECT_BUFFER_WITHOUT_ZEROING = UNSAFE != null && DIRECT_BUFFER_CONSTRUCTOR != null &&
+                DEALLOCATOR_CONSTRUCTOR != null && RESERVE_MEMORY != null && UNRESERVE_MEMORY != null;
+        LOGGER.debug("Allocation of DirectByteBuffer without zeroing memory: {}",
+                USE_DIRECT_BUFFER_WITHOUT_ZEROING ? "available" : "unavailable");
     }
 
     private PlatformDependent0() {
         // no instantiation
     }
 
-    private static boolean isExplicitNoUnsafe() {
-        return getBoolean(DISABLE_UNSAFE_PROPERTY);
-    }
-
-    /**
-     * If {@code sun.misc.Unsafe} is available and has not been disabled.
-     * @return {@code true} if {@code sun.misc.Unsafe} is available.
-     */
-    public static boolean hasUnsafe() {
+    static boolean hasUnsafe() {
         return UNSAFE != null;
     }
 
+    static boolean useDirectBufferWithoutZeroing() {
+        return USE_DIRECT_BUFFER_WITHOUT_ZEROING;
+    }
+
+    static void reserveMemory(final long size, final int capacity) {
+        assert RESERVE_MEMORY != null;
+        try {
+            RESERVE_MEMORY.invoke(size, capacity);
+        } catch (Throwable t) {
+            throw new Error(t);
+        }
+    }
+
+    static void unreserveMemory(final long size, final int capacity) {
+        assert UNRESERVE_MEMORY != null;
+        try {
+            UNRESERVE_MEMORY.invoke(size, capacity);
+        } catch (Throwable t) {
+            throw new Error(t);
+        }
+    }
+
+    static long allocateMemory(final long size) {
+        assert UNSAFE != null;
+        return UNSAFE.allocateMemory(size);
+    }
+
+    static void freeMemory(final long address) {
+        assert UNSAFE != null;
+        UNSAFE.freeMemory(address);
+    }
+
+    static ByteBuffer newDirectBuffer(final long address, final long size, final int capacity) {
+        assert DEALLOCATOR_CONSTRUCTOR != null;
+        assert DIRECT_BUFFER_CONSTRUCTOR != null;
+        try {
+            final Runnable deallocator = (Runnable) DEALLOCATOR_CONSTRUCTOR.invoke(address, size, capacity);
+            return (ByteBuffer) DIRECT_BUFFER_CONSTRUCTOR.invoke(capacity, address, null, deallocator);
+        } catch (Throwable cause) {
+            // Not expected to ever throw!
+            if (cause instanceof Error) {
+                throw (Error) cause;
+            }
+            throw new Error(cause);
+        }
+    }
+
     static void throwException(Throwable cause) {
+        assert UNSAFE != null;
         // JVM has been observed to crash when passing a null argument. See https://github.com/netty/netty/issues/4131.
         UNSAFE.throwException(requireNonNull(cause));
     }

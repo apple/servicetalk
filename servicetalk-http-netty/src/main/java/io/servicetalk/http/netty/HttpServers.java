@@ -35,7 +35,6 @@ public final class HttpServers {
      *
      * @param port The listen port for the server.
      * @return a new builder.
-     * @see HttpServerBuilder#port(int)
      */
     public static HttpServerBuilder forPort(int port) {
         return new DefaultHttpServerBuilder(new InetSocketAddress(port));
@@ -46,7 +45,6 @@ public final class HttpServers {
      *
      * @param socketAddress The listen address for the server.
      * @return a new builder.
-     * @see HttpServerBuilder#address(SocketAddress)
      */
     public static HttpServerBuilder forAddress(SocketAddress socketAddress) {
         return new DefaultHttpServerBuilder(socketAddress);

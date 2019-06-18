@@ -33,8 +33,7 @@ public interface NettyConnectionContext extends ConnectionContext {
      * {@link FlushStrategyProvider#getNewStrategy(FlushStrategy, boolean)} <strong>MAY</strong> be invoked multiple
      * times for a single call to this method and is expected to be idempotent.
      *
-     * @return A {@link Cancellable} that will cancel this update and revert the {@link FlushStrategy} for this
-     * connection to a default value.
+     * @return A {@link Cancellable} that will cancel this update.
      */
     Cancellable updateFlushStrategy(FlushStrategyProvider strategyProvider);
 

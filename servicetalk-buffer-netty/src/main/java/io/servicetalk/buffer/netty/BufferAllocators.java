@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,7 @@ public final class BufferAllocators {
     /**
      * Default {@link BufferAllocator} whose {@link Buffer}s are typically backed by Netty buffers.
      */
-    public static final BufferAllocator DEFAULT_ALLOCATOR = BufferUtil.PREFER_DIRECT_ALLOCATOR;
+    public static final BufferAllocator DEFAULT_ALLOCATOR = BufferUtil.PREFER_DIRECT_ALLOCATOR_WITHOUT_ZEROING;
 
     /**
      * Default {@link BufferAllocator} whose {@link Buffer}s are typically backed by Netty buffers and prefers direct

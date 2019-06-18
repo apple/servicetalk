@@ -19,8 +19,8 @@ import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.CharSequences;
+import io.servicetalk.http.api.EmptyHttpHeaders;
 import io.servicetalk.http.api.HttpHeaders;
-import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.HttpMetaData;
 import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.StreamingHttpRequest;
@@ -111,17 +111,14 @@ final class HeaderUtils {
                 isSafeToAggregate(metadata) && !mayHaveTrailers(metadata);
     }
 
-    static Single<Publisher<Object>> setRequestContentLength(final StreamingHttpRequest request,
-                                                             final HttpHeadersFactory headersFactory) {
-        return setContentLength(request, request.payloadBodyAndTrailers(), headersFactory,
+    static Single<Publisher<Object>> setRequestContentLength(final StreamingHttpRequest request) {
+        return setContentLength(request, request.payloadBodyAndTrailers(),
                 shouldAddZeroContentLength(request.method()) ? HeaderUtils::updateRequestContentLength :
                         HeaderUtils::updateRequestContentLengthNonZero);
     }
 
-    static Single<Publisher<Object>> setResponseContentLength(final StreamingHttpResponse response,
-                                                              final HttpHeadersFactory headersFactory) {
-        return setContentLength(response, response.payloadBodyAndTrailers(), headersFactory,
-                HeaderUtils::updateResponseContentLength);
+    static Single<Publisher<Object>> setResponseContentLength(final StreamingHttpResponse response) {
+        return setContentLength(response, response.payloadBodyAndTrailers(), HeaderUtils::updateResponseContentLength);
     }
 
     private static void updateRequestContentLengthNonZero(final int contentLength, final HttpHeaders headers) {
@@ -153,7 +150,6 @@ final class HeaderUtils {
 
     private static Single<Publisher<Object>> setContentLength(final HttpMetaData metadata,
                                                               final Publisher<Object> originalPayloadAndTrailers,
-                                                              final HttpHeadersFactory headersFactory,
                                                               final BiIntConsumer<HttpHeaders> contentLengthUpdater) {
         return originalPayloadAndTrailers.collect(() -> null, (reduction, item) -> {
             if (reduction == null) {
@@ -175,7 +171,7 @@ final class HeaderUtils {
             int contentLength = 0;
             final Publisher<Object> payloadAndTrailer;
             if (reduction == null) {
-                payloadAndTrailer = from(metadata, headersFactory.newEmptyTrailers());
+                payloadAndTrailer = from(metadata, EmptyHttpHeaders.INSTANCE);
             } else if (reduction instanceof List) {
                 final List<?> items = (List<?>) reduction;
                 for (int i = 0; i < items.size(); i++) {
@@ -186,7 +182,7 @@ final class HeaderUtils {
             } else if (reduction instanceof Buffer) {
                 final Buffer buffer = (Buffer) reduction;
                 contentLength = buffer.readableBytes();
-                payloadAndTrailer = from(metadata, buffer, headersFactory.newEmptyTrailers());
+                payloadAndTrailer = from(metadata, buffer, EmptyHttpHeaders.INSTANCE);
             } else if (reduction instanceof HttpHeaders) {
                 payloadAndTrailer = from(metadata, reduction);
             } else {

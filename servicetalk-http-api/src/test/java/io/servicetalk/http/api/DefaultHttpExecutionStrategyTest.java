@@ -132,8 +132,8 @@ public class DefaultHttpExecutionStrategyTest {
         StreamingHttpResponse resp = analyzer.createNewResponse();
 
         analyzer.instrumentedResponseForClient(strategy.invokeClient(executor, from(req, req.payloadBodyAndTrailers()),
-                publisher -> analyzer.instrumentedFlatRequestForClient(publisher).ignoreElements()
-                        .concat(succeeded(resp))))
+                null, (publisher, __) ->
+                        analyzer.instrumentedFlatRequestForClient(publisher).ignoreElements().concat(succeeded(resp))))
                 .flatMapPublisher(StreamingHttpResponse::payloadBody)
                 .toFuture().get();
         analyzer.verify();

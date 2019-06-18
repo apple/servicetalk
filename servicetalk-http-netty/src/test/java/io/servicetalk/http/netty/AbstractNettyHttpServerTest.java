@@ -84,7 +84,8 @@ public abstract class AbstractNettyHttpServerTest {
 
     enum ExecutorSupplier {
         IMMEDIATE(Executors::immediate),
-        CACHED(() -> newCachedThreadExecutor(new DefaultThreadFactory("client-executor", true, NORM_PRIORITY)));
+        CACHED(() -> newCachedThreadExecutor(new DefaultThreadFactory("client-executor", true, NORM_PRIORITY))),
+        CACHED_SERVER(() -> newCachedThreadExecutor(new DefaultThreadFactory("server-executor", true, NORM_PRIORITY)));
 
         final Supplier<Executor> executorSupplier;
 
@@ -153,8 +154,7 @@ public abstract class AbstractNettyHttpServerTest {
                 .beforeOnSuccess(ctx -> LOGGER.debug("Server started on {}.", ctx.listenAddress()))
                 .beforeOnError(throwable -> LOGGER.debug("Failed starting server on {}.", bindAddress)));
 
-        final SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> clientBuilder =
-                HttpClients.forResolvedAddress(serverHostAndPort(serverContext));
+        final SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> clientBuilder = newClientBuilder();
         if (sslEnabled) {
             final SslConfig sslConfig = SslConfigBuilder.forClientWithoutServerIdentity()
                     .trustManager(DefaultTestCerts::loadMutualAuthCaPem).build();
@@ -163,6 +163,10 @@ public abstract class AbstractNettyHttpServerTest {
         httpClient = clientBuilder.ioExecutor(clientIoExecutor)
                 .executionStrategy(defaultStrategy(clientExecutor)).buildStreaming();
         httpConnection = httpClient.reserveConnection(httpClient.get("/")).toFuture().get();
+    }
+
+    SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> newClientBuilder() {
+        return HttpClients.forResolvedAddress(serverHostAndPort(serverContext));
     }
 
     Single<ServerContext> listen(HttpServerBuilder builder) {
@@ -182,7 +186,8 @@ public abstract class AbstractNettyHttpServerTest {
 
     @After
     public void stopServer() throws Exception {
-        newCompositeCloseable().appendAll(httpConnection, httpClient, clientExecutor, serverContext).close();
+        newCompositeCloseable().appendAll(httpConnection, httpClient, clientExecutor, serverExecutor, serverContext)
+                .close();
     }
 
     @AfterClass

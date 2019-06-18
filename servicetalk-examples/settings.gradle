@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,3 +15,15 @@
  */
 enableFeaturePreview("IMPROVED_POM_SUPPORT")
 rootProject.name = "servicetalk-examples"
+
+include "http:helloworld",
+        "http:jaxrs",
+        "http:metadata",
+        "http:serialization",
+        "http:service-composition"
+
+project(":http:helloworld").name = "servicetalk-examples-http-helloworld"
+project(":http:jaxrs").name = "servicetalk-examples-http-jaxrs"
+project(":http:metadata").name = "servicetalk-examples-http-metadata"
+project(":http:serialization").name = "servicetalk-examples-http-serialization"
+project(":http:service-composition").name = "servicetalk-examples-http-service-composition"

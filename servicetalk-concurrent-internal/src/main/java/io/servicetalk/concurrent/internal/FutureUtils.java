@@ -25,7 +25,6 @@ import static java.lang.Thread.currentThread;
  * A set of utilities for interacting with {@link Future}.
  */
 public final class FutureUtils {
-    private static final Object DUMMY = new Object();
 
     private FutureUtils() {
         // No instances.
@@ -52,16 +51,9 @@ public final class FutureUtils {
             return future.get();
         } catch (InterruptedException e) {
             currentThread().interrupt(); // Reset the interrupted flag.
-            throwException(e);
+            return throwException(e);
         } catch (ExecutionException e) {
-            throwException(e.getCause());
+            return throwException(e.getCause());
         }
-
-        return uncheckedCast(); // Used to fool the compiler, but actually should never be invoked at runtime.
-    }
-
-    @SuppressWarnings("unchecked")
-    private static <T> T uncheckedCast() {
-        return (T) DUMMY;
     }
 }

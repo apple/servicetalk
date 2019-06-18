@@ -15,11 +15,15 @@
  */
 package io.servicetalk.http.netty;
 
+import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
+import io.servicetalk.transport.netty.internal.FlushStrategy;
 import io.servicetalk.transport.netty.internal.NettyConnection;
+
+import javax.annotation.Nullable;
 
 final class NonPipelinedStreamingHttpConnection
         extends AbstractStreamingHttpConnection<NettyConnection<Object, Object>> {
@@ -32,7 +36,17 @@ final class NonPipelinedStreamingHttpConnection
     }
 
     @Override
-    protected Publisher<Object> writeAndRead(final Publisher<Object> requestStream) {
-        return connection.write(requestStream).merge(connection.read());
+    protected Publisher<Object> writeAndRead(final Publisher<Object> requestStream,
+                                             @Nullable final FlushStrategy flushStrategy) {
+        if (flushStrategy == null) {
+            return connection.write(requestStream).merge(connection.read());
+        } else {
+            return Publisher.defer(() -> {
+                final Cancellable resetFlushStrategy = connection.updateFlushStrategy(
+                        (prev, isOriginal) -> isOriginal ? flushStrategy : prev);
+                return connection.write(requestStream).merge(connection.read())
+                        .afterFinally(resetFlushStrategy::cancel);
+            });
+        }
     }
 }
