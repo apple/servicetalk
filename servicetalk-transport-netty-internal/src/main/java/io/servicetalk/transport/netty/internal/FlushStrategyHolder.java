@@ -57,7 +57,7 @@ public final class FlushStrategyHolder {
      *
      * @param strategyProvider {@link NettyConnectionContext.FlushStrategyProvider} to provide a new
      * {@link FlushStrategy}.
-     * {@link NettyConnectionContext.FlushStrategyProvider#getNewStrategy(FlushStrategy, boolean)} <strong>MAY</strong>
+     * {@link NettyConnectionContext.FlushStrategyProvider#computeFlushStrategy(FlushStrategy, boolean)} <strong>MAY</strong>
      * be invoked multiple times for a single call to this method and is expected to be idempotent.
      *
      * @return A {@link Cancellable} that will cancel this update.
@@ -65,7 +65,7 @@ public final class FlushStrategyHolder {
     public Cancellable updateFlushStrategy(final NettyConnectionContext.FlushStrategyProvider strategyProvider) {
         for (;;) {
             final FlushStrategy cStrategy = flushStrategy;
-            FlushStrategy newStrategy = strategyProvider.getNewStrategy(cStrategy, cStrategy == originalFlushStrategy);
+            FlushStrategy newStrategy = strategyProvider.computeFlushStrategy(cStrategy, cStrategy == originalFlushStrategy);
             if (flushStrategyUpdater.compareAndSet(this, cStrategy, newStrategy)) {
                 return () -> flushStrategyUpdater.getAndUpdate(FlushStrategyHolder.this,
                         // Only revert if the current strategy is what we had set, otherwise, some other code path has
