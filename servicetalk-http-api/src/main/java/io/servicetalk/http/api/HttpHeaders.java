@@ -24,8 +24,6 @@ import java.util.Spliterators;
 import java.util.function.BiFunction;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.http.api.HeaderUtils.iteratorToCollection;
-
 /**
  * HTTP <a href="https://tools.ietf.org/html/rfc7230.html#section-3.2">Header Fields</a>.
  * <p>
@@ -89,8 +87,9 @@ public interface HttpHeaders extends Iterable<Entry<CharSequence, CharSequence>>
      * @param name the name of the header to retrieve.
      * @return a {@link Iterable} of header values or an empty {@link Iterable} if no values are found.
      */
-    default Collection<? extends CharSequence> values(CharSequence name) {
-        return iteratorToCollection(valuesIterator(name));
+    @SuppressWarnings("unchecked")
+    default Iterable<? extends CharSequence> values(CharSequence name) {
+        return () -> (Iterator<CharSequence>) valuesIterator(name);
     }
 
     /**
@@ -411,8 +410,9 @@ public interface HttpHeaders extends Iterable<Entry<CharSequence, CharSequence>>
      *
      * @return A {@link Collection} with all the <a href="https://tools.ietf.org/html/rfc6265#section-4.2">cookie</a>s.
      */
-    default Collection<? extends HttpCookiePair> getCookies() {
-        return iteratorToCollection(getCookiesIterator());
+    @SuppressWarnings("unchecked")
+    default Iterable<? extends HttpCookiePair> getCookies() {
+        return () -> (Iterator<HttpCookiePair>) getCookiesIterator();
     }
 
     /**
@@ -431,8 +431,9 @@ public interface HttpHeaders extends Iterable<Entry<CharSequence, CharSequence>>
      * @param name the cookie-name of the {@link HttpSetCookie}s to get.
      * @return A {@link Collection} where all the {@link HttpSetCookie}s have the same name.
      */
-    default Collection<? extends HttpCookiePair> getCookies(CharSequence name) {
-        return iteratorToCollection(getCookiesIterator(name));
+    @SuppressWarnings("unchecked")
+    default Iterable<? extends HttpCookiePair> getCookies(CharSequence name) {
+        return () -> (Iterator<HttpCookiePair>) getCookiesIterator(name);
     }
 
     /**
@@ -452,8 +453,9 @@ public interface HttpHeaders extends Iterable<Entry<CharSequence, CharSequence>>
      * @return A {@link Collection} with all the
      * <a href="https://tools.ietf.org/html/rfc6265#section-4.1">set-cookie</a>s.
      */
-    default Collection<? extends HttpSetCookie> getSetCookies() {
-        return iteratorToCollection(getSetCookiesIterator());
+    @SuppressWarnings("unchecked")
+    default Iterable<? extends HttpSetCookie> getSetCookies() {
+        return () -> (Iterator<HttpSetCookie>) getSetCookiesIterator();
     }
 
     /**
@@ -473,8 +475,9 @@ public interface HttpHeaders extends Iterable<Entry<CharSequence, CharSequence>>
      * @param name the cookie-name of the {@link HttpSetCookie}s to get.
      * @return A {@link Collection} where all the {@link HttpSetCookie}s have the same name.
      */
-    default Collection<? extends HttpSetCookie> getSetCookies(CharSequence name) {
-        return iteratorToCollection(getSetCookiesIterator(name));
+    @SuppressWarnings("unchecked")
+    default Iterable<? extends HttpSetCookie> getSetCookies(CharSequence name) {
+        return () -> (Iterator<HttpSetCookie>) getSetCookiesIterator(name);
     }
 
     /**
@@ -498,9 +501,10 @@ public interface HttpHeaders extends Iterable<Entry<CharSequence, CharSequence>>
      * to the <a href="https://tools.ietf.org/html/rfc6265#section-5.1.4">Path Matching</a> algorithm.
      * @return A {@link Collection} where all the {@link HttpSetCookie}s match the parameter values.
      */
-    default Collection<? extends HttpSetCookie> getSetCookies(CharSequence name, CharSequence domain,
-                                                              CharSequence path) {
-        return iteratorToCollection(getSetCookiesIterator(name, domain, path));
+    @SuppressWarnings("unchecked")
+    default Iterable<? extends HttpSetCookie> getSetCookies(CharSequence name, CharSequence domain,
+                                                            CharSequence path) {
+        return () -> (Iterator<HttpSetCookie>) getSetCookiesIterator(name, domain, path);
     }
 
     /**

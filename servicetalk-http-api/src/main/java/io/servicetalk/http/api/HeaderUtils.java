@@ -18,8 +18,6 @@ package io.servicetalk.http.api;
 import io.servicetalk.buffer.api.ByteProcessor;
 
 import java.nio.charset.Charset;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -46,7 +44,6 @@ import static java.lang.Math.min;
 import static java.lang.System.lineSeparator;
 import static java.nio.charset.Charset.availableCharsets;
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static java.util.Collections.emptyList;
 import static java.util.Collections.unmodifiableMap;
 import static java.util.regex.Pattern.CASE_INSENSITIVE;
 import static java.util.regex.Pattern.compile;
@@ -670,18 +667,6 @@ public final class HeaderUtils {
         }
         return pattern.matcher(contentTypeHeader.subSequence(expectedContentType.length(), contentTypeHeader.length()))
                 .matches();
-    }
-
-    static <T> Collection<T> iteratorToCollection(final Iterator<T> i) {
-        if (!i.hasNext()) {
-            return emptyList();
-        }
-
-        Collection<T> collection = new ArrayList<>();
-        while (i.hasNext()) {
-            collection.add(i.next());
-        }
-        return collection;
     }
 
     private static Pattern compileCharsetRegex(String charsetName) {
