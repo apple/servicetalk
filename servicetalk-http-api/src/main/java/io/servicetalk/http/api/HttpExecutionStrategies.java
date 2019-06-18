@@ -79,6 +79,15 @@ public final class HttpExecutionStrategies {
     }
 
     /**
+     * The default {@link HttpExecutionStrategy} using with streaming.
+     *
+     * @return Default streaming {@link HttpExecutionStrategy}.
+     */
+    public static HttpExecutionStrategy defaultStreamingStrategy() {
+        return OFFLOAD_ALL_STRATEGY;
+    }
+
+    /**
      * A {@link HttpExecutionStrategy} that disables all offloads.
      *
      * @return {@link HttpExecutionStrategy} that disables all offloads.
@@ -117,12 +126,15 @@ public final class HttpExecutionStrategies {
     public static HttpExecutionStrategy difference(final Executor fallback,
                                                    final HttpExecutionStrategy left,
                                                    final HttpExecutionStrategy right) {
-        if (left == noOffloadsStrategy() || right == noOffloadsStrategy()) {
-            return right;
-        }
         if (left.equals(right)) {
             // No difference, so no offloading is required.
             return null;
+        }
+        if (left == noOffloadsStrategy() && right != noOffloadsStrategy()) {
+            return right;
+        }
+        if (left != noOffloadsStrategy() && right == noOffloadsStrategy()) {
+            return left;
         }
         if (right.executor() != null && right.executor() != left.executor() && right.executor() != fallback) {
             // Since the original offloads were done on a different executor, we need to offload again.

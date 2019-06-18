@@ -26,6 +26,6 @@ final class DefaultStreamingStrategyInfluencer implements HttpExecutionStrategyI
 
     @Override
     public HttpExecutionStrategy influenceStrategy(final HttpExecutionStrategy strategy) {
-        return strategy.merge(HttpExecutionStrategies.OFFLOAD_ALL_STRATEGY);
+        return strategy.merge(HttpExecutionStrategies.defaultStreamingStrategy());
     }
 }

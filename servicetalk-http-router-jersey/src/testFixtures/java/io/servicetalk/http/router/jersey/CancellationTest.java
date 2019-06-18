@@ -117,6 +117,7 @@ public class CancellationTest {
         when(execCtx.bufferAllocator()).thenReturn(DEFAULT_ALLOCATOR);
         when(execCtx.executor()).thenReturn(execMock);
         when(execCtx.ioExecutor()).thenReturn(mock(IoExecutor.class));
+        when(execCtx.executionStrategy()).thenReturn(defaultStrategy(execMock));
 
         cancellableResources = new CancellableResources();
 
@@ -187,7 +188,7 @@ public class CancellationTest {
         // The handler method uses OutputStream APIs which are blocking. So we need to call handle and subscribe on
         // different threads because the write operation will block on the Subscriber creating requestN demand.
         Single<StreamingHttpResponse> respSingle = execRule.executor().submit(() ->
-                    jerseyRouter.handle(ctx, req, HTTP_REQ_RES_FACTORY))
+                jerseyRouter.handle(ctx, req, HTTP_REQ_RES_FACTORY))
                 .flatMap(identity());
         Future<StreamingHttpResponse> respFuture = respSingle.toFuture();
 
@@ -223,8 +224,8 @@ public class CancellationTest {
             Single<StreamingHttpResponse> respSingle = execRule.executor().submit(() ->
                     jerseyRouter.handle(ctx, req, HTTP_REQ_RES_FACTORY)
             ).flatMap(identity())
-             .beforeOnError(errorRef::set)
-             .afterCancel(cancelledLatch::countDown);
+                    .beforeOnError(errorRef::set)
+                    .afterCancel(cancelledLatch::countDown);
 
             toSource(respSingle).subscribe(new SingleSource.Subscriber<StreamingHttpResponse>() {
                 @Override

@@ -53,12 +53,10 @@ import javax.ws.rs.container.ResourceInfo;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 
-import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.HttpExecutionStrategies.difference;
-import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.http.router.jersey.RouteExecutionStrategyUtils.getRouteExecutionStrategy;
 import static io.servicetalk.http.router.jersey.internal.RequestProperties.getRequestBufferPublisherInputStream;
 import static io.servicetalk.http.router.jersey.internal.RequestProperties.setRequestCancellable;
@@ -98,7 +96,8 @@ final class EndpointEnhancingRequestFilter implements ContainerRequestFilter {
                 (UriRoutingContext) requestCtx.getUriInfo());
     }
 
-    private interface EnhancedEndpoint extends Endpoint, ResourceInfo { }
+    private interface EnhancedEndpoint extends Endpoint, ResourceInfo {
+    }
 
     private static final class EnhancedEndpointCache {
 
@@ -143,9 +142,10 @@ final class EndpointEnhancingRequestFilter implements ContainerRequestFilter {
                 return new CompletableAwareEndpoint(
                         delegate, resourceClass, resourceMethod, requestScope, ctxRefProvider, routeExecutionStrategy);
             }
-            if (routeExecutionStrategy != null && (routeExecutionStrategy != noOffloadsStrategy()
-                    // Skip enhancement when user requests no offloading when the current executor == immediate
-                    || ctxRefProvider.get().get().executionContext().executionStrategy().executor() != immediate())) {
+            final ExecutionContext executionContext = ctxRefProvider.get().get().executionContext();
+            final HttpExecutionStrategy difference = difference(executionContext.executor(),
+                    (HttpExecutionStrategy) executionContext.executionStrategy(), routeExecutionStrategy);
+            if (difference != null) {
                 return new ExecutorOffloadingEndpoint(
                         delegate, resourceClass, resourceMethod, requestScope, ctxRefProvider, routeExecutionStrategy);
             }
@@ -175,8 +175,7 @@ final class EndpointEnhancingRequestFilter implements ContainerRequestFilter {
                 final Class<?> resourceClass,
                 final Method resourceMethod,
                 final RequestScope requestScope,
-                @Nullable
-                final Provider<Ref<ConnectionContext>> ctxRefProvider,
+                @Nullable final Provider<Ref<ConnectionContext>> ctxRefProvider,
                 @Nullable final HttpExecutionStrategy routeExecutionStrategy) {
             this.delegate = delegate;
             this.resourceClass = resourceClass;

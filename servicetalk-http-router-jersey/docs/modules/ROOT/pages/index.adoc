@@ -503,7 +503,7 @@ S: Global |M: Route +
 C: Route +
 S: Route |M: Route +
 C: Route +
-S: Server I/O
+S: Global
 
 |Router +
 Executor |M: Router +
@@ -512,12 +512,12 @@ S: Router |M: Route +
 C: Route +
 S: Route |M: Route +
 C: Route +
-S: Server I/O
+S: Global
 
 |Router +
-No Offloads |M: Server I/O +
+No Offloads |M: Global +
 C: Global +
-S: Server I/O |M: Route +
+S: Global |M: Route +
 C: Route +
 S: Route |M: Server I/O +
 C: Server I/O +
