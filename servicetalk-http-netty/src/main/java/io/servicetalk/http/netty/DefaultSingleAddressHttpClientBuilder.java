@@ -197,9 +197,9 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
             ConnectionFactoryFilter<R, FilterableStreamingHttpConnection> connectionFactoryFilter =
                     this.connectionFactoryFilter;
 
-            if (config.connectAddress() != null && config.tcpClientConfig().sslContext() != null) {
+            if (roConfig.connectAddress() != null && roConfig.tcpClientConfig().sslContext() != null) {
                 connectionFactoryFilter = new ProxyConnectConnectionFactoryFilter<R, FilterableStreamingHttpConnection>(
-                        config.connectAddress(), reqRespFactory).append(connectionFactoryFilter);
+                        roConfig.connectAddress(), reqRespFactory).append(connectionFactoryFilter);
             }
 
             // closed by the LoadBalancer
@@ -229,7 +229,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
 
             StreamingHttpClientFilterFactory currClientFilterFactory = clientFilterFactory;
 
-            if (config.connectAddress() != null && config.tcpClientConfig().sslContext() == null) {
+            if (roConfig.connectAddress() != null && roConfig.tcpClientConfig().sslContext() == null) {
                 // If we're talking to a proxy over http (not https), rewrite the request-target to absolute-form, as
                 // specified by the RFC: https://tools.ietf.org/html/rfc7230#section-5.3.2
                 currClientFilterFactory = appendFilter(currClientFilterFactory,
