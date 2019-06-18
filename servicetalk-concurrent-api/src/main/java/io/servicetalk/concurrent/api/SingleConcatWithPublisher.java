@@ -22,8 +22,6 @@ import io.servicetalk.concurrent.internal.SignalOffloader;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid;
-import static io.servicetalk.concurrent.internal.SubscriberUtils.newExceptionForInvalidRequestN;
 import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater;
 
 final class SingleConcatWithPublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
@@ -119,19 +117,15 @@ final class SingleConcatWithPublisher<T> extends AbstractNoHandleSubscribePublis
                 if (oldVal == REQUESTED || oldVal == CANCELLED) {
                     super.request(n);
                     break;
-                } else if (!isRequestNValid(n)) {
-                    // This is another reason for CANCELLED, so we can terminate if the first request(n) is invalid.
-                    mayBeResult = CANCELLED;
-                    target.onError(newExceptionForInvalidRequestN(n));
-                    break;
                 } else if (mayBeResultUpdater.compareAndSet(this, oldVal, REQUESTED)) {
                     if (oldVal != INITIAL) {
                         @SuppressWarnings("unchecked")
-                        T tVal = (T) oldVal;
+                        final T tVal = (T) oldVal;
                         emitSingleSuccessToTarget(tVal);
                     }
+                    // forward any invalid requestN on to the super class so it can propagate an error if necessary.
                     if (n != 1) {
-                        super.request(n - 1);
+                        super.request(n > 0 ? n - 1 : n);
                     }
                     break;
                 }

@@ -25,8 +25,6 @@ import static io.servicetalk.concurrent.internal.FlowControlUtil.addWithOverflow
  * A {@link Subscription} that tracks requests and cancellation.
  */
 public final class TestSubscription extends TestCancellable implements Subscription {
-
-    private static final long INVALID_REQUEST_N = Long.MIN_VALUE;
     private final AtomicLong requested = new AtomicLong();
     private volatile boolean requestCalled;
 
@@ -34,8 +32,11 @@ public final class TestSubscription extends TestCancellable implements Subscript
     public void request(final long n) {
         requestCalled = true;
         requested.accumulateAndGet(n, (x, y) -> {
-            if (x < 0 || y < 0) {
-                return INVALID_REQUEST_N;
+            if (x < 0) {
+                return x;
+            }
+            if (y <= 0) {
+                return y;
             }
             return addWithOverflowProtection(x, y);
         });
@@ -52,12 +53,14 @@ public final class TestSubscription extends TestCancellable implements Subscript
     }
 
     /**
-     * Determine if {@link #request(long)} has been called or not.
+     * Test if the cumulative value of {@link #request(long)} matches {@code value}. This method will take into account
+     * invalid values (e.g. {@code 0}) which may otherwise be challenging to validate with {@link #requested()}.
      *
-     * @return {@code true} if {@link #request(long)} has been called or not.
+     * @param value The invalid value to check.
+     * @return {@code true} if the cumulative value of {@link #request(long)} matches {@code value}.
      */
-    public boolean isRequested() {
-        return requestCalled;
+    public boolean requestedEquals(long value) {
+        return value == 0 && requestCalled || value != 0 && requested.get() == value;
     }
 
     /**
@@ -70,7 +73,7 @@ public final class TestSubscription extends TestCancellable implements Subscript
         synchronized (waitingLock) {
             for (;;) {
                 long r = requested.get();
-                if (r == INVALID_REQUEST_N || r >= amount) {
+                if (isRequestNInvalid(r) || r >= amount) {
                     // requested is not going to change now.
                     return;
                 }
@@ -90,7 +93,7 @@ public final class TestSubscription extends TestCancellable implements Subscript
         synchronized (waitingLock) {
             for (;;) {
                 long r = requested.get();
-                if (r == INVALID_REQUEST_N || r >= amount) {
+                if (isRequestNInvalid(r) || r >= amount) {
                     // requested is not going to change now.
                     break;
                 }
@@ -105,5 +108,14 @@ public final class TestSubscription extends TestCancellable implements Subscript
         if (interrupted) {
             Thread.currentThread().interrupt();
         }
+    }
+
+    @Override
+    public String toString() {
+        return "requestN: " + requested.get() + " requestCalled: " + requestCalled;
+    }
+
+    private boolean isRequestNInvalid(long r) {
+        return r < 0 || (r == 0 && requestCalled);
     }
 }
