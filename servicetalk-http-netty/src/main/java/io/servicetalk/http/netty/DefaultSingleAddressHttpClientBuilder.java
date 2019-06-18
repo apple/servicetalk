@@ -187,6 +187,11 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
 
     private StreamingHttpClient buildStreaming(HttpClientBuildContext<U, R> ctx) {
         final ReadOnlyHttpClientConfig roConfig = config.asReadOnly();
+
+        if (roConfig.isH2PriorKnowledge() && roConfig.connectAddress() != null) {
+            throw new UnsupportedOperationException("Proxying is not yet supported with HTTP/2");
+        }
+
         // Track resources that potentially need to be closed when an exception is thrown during buildStreaming
         final CompositeCloseable closeOnException = newCompositeCloseable();
         try {
