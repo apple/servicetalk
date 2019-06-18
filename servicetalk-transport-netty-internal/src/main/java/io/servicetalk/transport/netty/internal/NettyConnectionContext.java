@@ -30,8 +30,8 @@ public interface NettyConnectionContext extends ConnectionContext {
      * subsequent writes on this connection.
      *
      * @param strategyProvider {@link FlushStrategyProvider} to provide a new {@link FlushStrategy}.
-     * {@link FlushStrategyProvider#computeFlushStrategy(FlushStrategy, boolean)} <strong>MAY</strong> be invoked multiple
-     * times for a single call to this method and is expected to be idempotent.
+     * {@link FlushStrategyProvider#computeFlushStrategy(FlushStrategy, boolean)} <strong>MAY</strong> be invoked
+     * multiple times for a single call to this method and is expected to be idempotent.
      *
      * @return A {@link Cancellable} that will cancel this update.
      */
