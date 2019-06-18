@@ -85,9 +85,6 @@ public abstract class SingleAddressHttpClientBuilder<U, R>
     public abstract SingleAddressHttpClientBuilder<U, R> maxPipelinedRequests(int maxPipelinedRequests);
 
     @Override
-    public abstract SingleAddressHttpClientBuilder<U, R> proxyAddress(@Nullable U proxyAddress);
-
-    @Override
     public abstract SingleAddressHttpClientBuilder<U, R> appendConnectionFilter(
             StreamingHttpConnectionFilterFactory factory);
 

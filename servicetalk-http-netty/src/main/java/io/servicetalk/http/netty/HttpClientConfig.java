@@ -142,6 +142,10 @@ final class HttpClientConfig {
         this.connectAddress = connectAddress;
     }
 
+    public boolean hasProxy() {
+        return connectAddress != null;
+    }
+
     ReadOnlyHttpClientConfig asReadOnly() {
         return new ReadOnlyHttpClientConfig(this);
     }

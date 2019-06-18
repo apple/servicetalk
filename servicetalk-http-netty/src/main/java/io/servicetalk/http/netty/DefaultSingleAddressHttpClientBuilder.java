@@ -93,6 +93,14 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
             ConnectionFactoryFilter.identity();
 
     DefaultSingleAddressHttpClientBuilder(
+            final U address, final U proxyAddress,
+            final ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> serviceDiscoverer) {
+        this(address, serviceDiscoverer);
+        this.proxyAddress = proxyAddress;
+        config.connectAddress(unresolvedAddressToCharSequence(address));
+    }
+
+    DefaultSingleAddressHttpClientBuilder(
             final U address, final ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> serviceDiscoverer) {
         this.address = requireNonNull(address);
         config = new HttpClientConfig(new TcpClientConfig(false));
@@ -141,11 +149,23 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
         return new DefaultSingleAddressHttpClientBuilder<>(address, globalDnsServiceDiscoverer());
     }
 
-    static <U> DefaultSingleAddressHttpClientBuilder<U, InetSocketAddress> forResolvedAddress(final U u,
-            final InetSocketAddress address) {
+    static DefaultSingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> forHostAndPortViaProxy(
+            final HostAndPort address, final HostAndPort proxyAddress) {
+        return new DefaultSingleAddressHttpClientBuilder<>(address, proxyAddress, globalDnsServiceDiscoverer());
+    }
+
+    static <U> DefaultSingleAddressHttpClientBuilder<U, InetSocketAddress> forResolvedAddress(
+            final U u, final InetSocketAddress address) {
         ServiceDiscoverer<U, InetSocketAddress, ServiceDiscovererEvent<InetSocketAddress>> sd =
                 new NoopServiceDiscoverer<>(u, address);
         return new DefaultSingleAddressHttpClientBuilder<>(u, sd);
+    }
+
+    static <U> DefaultSingleAddressHttpClientBuilder<U, InetSocketAddress> forResolvedAddressViaProxy(
+            final U u, final InetSocketAddress address, final U proxyAddress) {
+        ServiceDiscoverer<U, InetSocketAddress, ServiceDiscovererEvent<InetSocketAddress>> sd =
+                new NoopServiceDiscoverer<>(u, address);
+        return new DefaultSingleAddressHttpClientBuilder<>(u, proxyAddress, sd);
     }
 
     static DefaultSingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> forUnknownHostAndPort() {
@@ -188,8 +208,8 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
     private StreamingHttpClient buildStreaming(HttpClientBuildContext<U, R> ctx) {
         final ReadOnlyHttpClientConfig roConfig = config.asReadOnly();
 
-        if (roConfig.isH2PriorKnowledge() && roConfig.connectAddress() != null) {
-            throw new UnsupportedOperationException("Proxying is not yet supported with HTTP/2");
+        if (roConfig.isH2PriorKnowledge() && roConfig.hasProxy()) {
+            throw new IllegalStateException("Proxying is not yet supported with HTTP/2");
         }
 
         // Track resources that potentially need to be closed when an exception is thrown during buildStreaming
@@ -202,7 +222,8 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
             ConnectionFactoryFilter<R, FilterableStreamingHttpConnection> connectionFactoryFilter =
                     this.connectionFactoryFilter;
 
-            if (roConfig.connectAddress() != null && roConfig.tcpClientConfig().sslContext() != null) {
+            if (roConfig.hasProxy() && roConfig.tcpClientConfig().sslContext() != null) {
+                assert roConfig.connectAddress() != null;
                 connectionFactoryFilter = new ProxyConnectConnectionFactoryFilter<R, FilterableStreamingHttpConnection>(
                         roConfig.connectAddress(), reqRespFactory).append(connectionFactoryFilter);
             }
@@ -234,7 +255,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
 
             StreamingHttpClientFilterFactory currClientFilterFactory = clientFilterFactory;
 
-            if (roConfig.connectAddress() != null && roConfig.tcpClientConfig().sslContext() == null) {
+            if (roConfig.hasProxy() && roConfig.tcpClientConfig().sslContext() == null) {
                 // If we're talking to a proxy over http (not https), rewrite the request-target to absolute-form, as
                 // specified by the RFC: https://tools.ietf.org/html/rfc7230#section-5.3.2
                 currClientFilterFactory = appendFilter(currClientFilterFactory,
@@ -398,18 +419,6 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
     }
 
     @Override
-    public DefaultSingleAddressHttpClientBuilder<U, R> proxyAddress(@Nullable U proxyAddress) {
-        this.proxyAddress = proxyAddress;
-        if (proxyAddress == null) {
-            config.connectAddress(null);
-        } else {
-            assert address != null : "address should have been set in constructor";
-            config.connectAddress(unresolvedAddressToCharSequence(address));
-        }
-        return this;
-    }
-
-    @Override
     public DefaultSingleAddressHttpClientBuilder<U, R> appendConnectionFilter(
             final StreamingHttpConnectionFilterFactory factory) {
         if (connectionFilterFactory == null) {
@@ -502,7 +511,8 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
             final HostAndPort hostAndPort = (HostAndPort) address;
             return toSocketAddressString(hostAndPort.hostName(), hostAndPort.port());
         }
-        throw new IllegalArgumentException("Unsupported address type");
+        throw new IllegalArgumentException("Unsupported address type, unable to convert " + address.getClass() +
+                " to CharSequence");
     }
 
     private static final class StrategyInfluencingLoadBalancerFactory<R>

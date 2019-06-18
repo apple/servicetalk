@@ -19,7 +19,6 @@ import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.test.resources.DefaultTestCerts;
-import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
 
 import org.hamcrest.Matchers;
@@ -148,8 +147,7 @@ public class HttpsProxyTest {
     }
 
     public void createClient() {
-        client = HttpClients.forSingleAddress("localhost", serverPort)
-                .proxyAddress(HostAndPort.of("localhost", proxyPort))
+        client = HttpClients.forSingleAddressViaProxy("localhost", serverPort, "localhost", proxyPort)
                 .sslConfig(forClientWithoutServerIdentity().trustManager(DefaultTestCerts::loadMutualAuthCaPem).build())
                 .build();
     }

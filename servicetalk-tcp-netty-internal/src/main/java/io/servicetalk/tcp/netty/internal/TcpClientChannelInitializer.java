@@ -17,7 +17,7 @@ package io.servicetalk.tcp.netty.internal;
 
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
-import io.servicetalk.transport.netty.internal.DeferHandler;
+import io.servicetalk.transport.netty.internal.DeferSslHandler;
 import io.servicetalk.transport.netty.internal.IdleTimeoutInitializer;
 import io.servicetalk.transport.netty.internal.SslClientChannelInitializer;
 
@@ -44,7 +44,7 @@ public class TcpClientChannelInitializer implements ChannelInitializer {
      * Creates a {@link ChannelInitializer} for the {@code config}.
      *
      * @param config to use for initialization.
-     * @param deferSslHandler {@code true} to wrap the {@link SslHandler} in a {@link DeferHandler}.
+     * @param deferSslHandler {@code true} to wrap the {@link SslHandler} in a {@link DeferSslHandler}.
      */
     public TcpClientChannelInitializer(ReadOnlyTcpClientConfig config, boolean deferSslHandler) {
         ChannelInitializer delegate = ChannelInitializer.defaultInitializer();

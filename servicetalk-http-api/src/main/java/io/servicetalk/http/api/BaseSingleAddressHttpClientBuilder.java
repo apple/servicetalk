@@ -76,15 +76,6 @@ abstract class BaseSingleAddressHttpClientBuilder<U, R, SDE extends ServiceDisco
     @Override
     public abstract BaseSingleAddressHttpClientBuilder<U, R, SDE> maxPipelinedRequests(int maxPipelinedRequests);
 
-    /**
-     * Sets the proxy address to use for requests made with this client.
-     *
-     * @param proxyAddress the proxy {@code UnresolvedAddress} to connect to, resolved by default using a DNS {@link
-     * ServiceDiscoverer}.
-     * @return this
-     */
-    public abstract BaseSingleAddressHttpClientBuilder<U, R, SDE> proxyAddress(U proxyAddress);
-
     @Override
     public abstract BaseSingleAddressHttpClientBuilder<U, R, SDE> appendConnectionFilter(
             StreamingHttpConnectionFilterFactory factory);

@@ -18,7 +18,6 @@ package io.servicetalk.http.netty;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpResponse;
-import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
 
 import org.junit.Before;
@@ -71,8 +70,7 @@ public class HttpProxyTest {
     }
 
     public void createClient() {
-        client = HttpClients.forSingleAddress("localhost", serverPort)
-                .proxyAddress(HostAndPort.of("localhost", proxyPort))
+        client = HttpClients.forSingleAddressViaProxy("localhost", serverPort, "localhost", proxyPort)
                 .build();
     }
 

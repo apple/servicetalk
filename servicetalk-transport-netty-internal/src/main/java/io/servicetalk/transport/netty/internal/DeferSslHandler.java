@@ -18,25 +18,24 @@ package io.servicetalk.transport.netty.internal;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandler;
+import io.netty.handler.ssl.SslHandler;
 
 /**
- * A {@link ChannelHandler} that holds a place in a pipeline, allowing us to defer adding a {@link ChannelHandler}.
+ * A {@link ChannelHandler} that holds a place in a pipeline, allowing us to defer adding the {@link SslHandler}.
  */
-public class DeferHandler extends ChannelDuplexHandler {
+public class DeferSslHandler extends ChannelDuplexHandler {
     private final Channel channel;
-    private final ChannelHandler handler;
-    private final String handlerName;
+    private final SslHandler handler;
 
-    DeferHandler(final Channel channel, final String handlerName, final ChannelHandler handler) {
+    DeferSslHandler(final Channel channel, final SslHandler handler) {
         this.channel = channel;
-        this.handlerName = handlerName;
         this.handler = handler;
     }
 
     /**
-     * Indicates that we are ready to stop deferring, and add the deferred {@link ChannelHandler}.
+     * Indicates that we are ready to stop deferring, and add the deferred {@link SslHandler}.
      */
     public void ready() {
-        channel.pipeline().replace(this, handlerName, handler);
+        channel.pipeline().replace(this, null, handler);
     }
 }

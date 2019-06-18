@@ -23,11 +23,10 @@ import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpResponseStatus;
-import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.transport.netty.internal.DefaultNettyPipelinedConnection;
-import io.servicetalk.transport.netty.internal.DeferHandler;
+import io.servicetalk.transport.netty.internal.DeferSslHandler;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
@@ -66,8 +65,7 @@ final class ProxyConnectConnectionFactoryFilter<ResolvedAddress, C
     }
 
     private static Channel getChannel(final FilterableStreamingHttpConnection c) {
-        final AbstractStreamingHttpConnection ashc = (AbstractStreamingHttpConnection) c;
-        final DefaultNettyPipelinedConnection dnpc = (DefaultNettyPipelinedConnection) ashc.connectionContext();
+        final DefaultNettyPipelinedConnection dnpc = (DefaultNettyPipelinedConnection) c.connectionContext();
         return dnpc.nettyChannel();
     }
 
@@ -81,11 +79,9 @@ final class ProxyConnectConnectionFactoryFilter<ResolvedAddress, C
 
         @Override
         public Single<C> newConnection(final ResolvedAddress resolvedAddress) {
-            final Single<C> cSingle = original.newConnection(resolvedAddress);
-            return cSingle.flatMap(c -> {
-                final StreamingHttpRequest connectRequest = reqRespFactory.connect(connectAddress)
-                        .addHeader(CONTENT_LENGTH, ZERO);
-                final Single<StreamingHttpResponse> responseSingle = c.request(defaultStrategy(), connectRequest);
+            return original.newConnection(resolvedAddress).flatMap(c -> {
+                final Single<StreamingHttpResponse> responseSingle = c.request(defaultStrategy(),
+                        reqRespFactory.connect(connectAddress).addHeader(CONTENT_LENGTH, ZERO));
                 return responseSingle.flatMap(response -> {
                     if (HttpResponseStatus.StatusClass.SUCCESSFUL_2XX.contains(response.status())) {
                         final Channel channel = getChannel(c);
@@ -107,12 +103,13 @@ final class ProxyConnectConnectionFactoryFilter<ResolvedAddress, C
                             }
                         });
 
-                        channel.pipeline().get(DeferHandler.class).ready();
+                        channel.pipeline().get(DeferSslHandler.class).ready();
 
                         return response.payloadBody().ignoreElements().concat(fromSource(processor));
                     } else {
                         return response.payloadBody().ignoreElements().concat(
-                                failed(new ProxyResponseException("Bad response from proxy", response.status())));
+                                failed(new ProxyResponseException("Bad response from proxy CONNECT " + connectAddress,
+                                        response.status())));
                     }
                 });
             });
@@ -126,6 +123,11 @@ final class ProxyConnectConnectionFactoryFilter<ResolvedAddress, C
         @Override
         public Completable closeAsync() {
             return original.closeAsync();
+        }
+
+        @Override
+        public Completable closeAsyncGracefully() {
+            return original.closeAsyncGracefully();
         }
     }
 }

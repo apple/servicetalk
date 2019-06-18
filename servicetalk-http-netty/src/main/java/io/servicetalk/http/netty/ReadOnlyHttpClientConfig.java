@@ -87,4 +87,8 @@ final class ReadOnlyHttpClientConfig {
     public CharSequence connectAddress() {
         return connectAddress;
     }
+
+    public boolean hasProxy() {
+        return connectAddress != null;
+    }
 }

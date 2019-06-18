@@ -20,7 +20,7 @@ import io.servicetalk.http.api.HttpResponseStatus;
 /**
  * A proxy response exception, that indicates an unexpected response status from a proxy.
  */
-public class ProxyResponseException extends RuntimeException {
+public final class ProxyResponseException extends RuntimeException {
     private final HttpResponseStatus status;
 
     ProxyResponseException(final String message, final HttpResponseStatus status) {
