@@ -80,9 +80,6 @@ public interface HttpHeaders extends Iterable<Entry<CharSequence, CharSequence>>
 
     /**
      * Returns all values for the header with the specified name.
-     * <p>
-     * Note: The returned {@code Collection} is not backed by this {@link HttpHeaders}, so changes are not propagated
-     * in either direction.
      *
      * @param name the name of the header to retrieve.
      * @return a {@link Iterable} of header values or an empty {@link Iterable} if no values are found.
@@ -404,9 +401,6 @@ public interface HttpHeaders extends Iterable<Entry<CharSequence, CharSequence>>
 
     /**
      * Gets all the <a href="https://tools.ietf.org/html/rfc6265#section-4.2">cookie</a>s.
-     * <p>
-     * Note: The returned {@code Collection} is not backed by this {@link HttpHeaders}, so changes are not propagated
-     * in either direction.
      *
      * @return A {@link Collection} with all the <a href="https://tools.ietf.org/html/rfc6265#section-4.2">cookie</a>s.
      */
@@ -424,9 +418,6 @@ public interface HttpHeaders extends Iterable<Entry<CharSequence, CharSequence>>
 
     /**
      * Gets the <a href="https://tools.ietf.org/html/rfc6265#section-4.2">cookie</a>s with the same name.
-     * <p>
-     * Note: The returned {@code Collection} is not backed by this {@link HttpHeaders}, so changes are not propagated
-     * in either direction.
      *
      * @param name the cookie-name of the {@link HttpSetCookie}s to get.
      * @return A {@link Collection} where all the {@link HttpSetCookie}s have the same name.
@@ -446,9 +437,6 @@ public interface HttpHeaders extends Iterable<Entry<CharSequence, CharSequence>>
 
     /**
      * Gets all the <a href="https://tools.ietf.org/html/rfc6265#section-4.1">set-cookie</a>s.
-     * <p>
-     * Note: The returned {@code Collection} is not backed by this {@link HttpHeaders}, so changes are not propagated
-     * in either direction.
      *
      * @return A {@link Collection} with all the
      * <a href="https://tools.ietf.org/html/rfc6265#section-4.1">set-cookie</a>s.
@@ -468,9 +456,6 @@ public interface HttpHeaders extends Iterable<Entry<CharSequence, CharSequence>>
 
     /**
      * Gets the <a href="https://tools.ietf.org/html/rfc6265#section-4.1">set-cookie</a>s with the same name.
-     * <p>
-     * Note: The returned {@code Collection} is not backed by this {@link HttpHeaders}, so changes are not propagated
-     * in either direction.
      *
      * @param name the cookie-name of the {@link HttpSetCookie}s to get.
      * @return A {@link Collection} where all the {@link HttpSetCookie}s have the same name.
@@ -490,9 +475,6 @@ public interface HttpHeaders extends Iterable<Entry<CharSequence, CharSequence>>
 
     /**
      * Gets the <a href="https://tools.ietf.org/html/rfc6265#section-4.1">set-cookie</a>s with the same name.
-     * <p>
-     * Note: The returned {@code Collection} is not backed by this {@link HttpHeaders}, so changes are not propagated
-     * in either direction.
      *
      * @param name the cookie-name of the {@link HttpSetCookie}s to get.
      * @param domain the domain-value of the {@link HttpSetCookie}s to get. This value may be matched according
