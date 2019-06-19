@@ -137,11 +137,11 @@ final class SequentialSubscription implements Subscription, Cancellable {
      * @param next {@link Subscription} that should now be <strong>current</strong>.
      */
     void switchTo(Subscription next) {
-        if (next == null) {
-            throw new NullPointerException();
-        }
-        // sourceEmitted is stable here because we are on the Subscriber thread.
-        long currSourceEmitted = sourceEmitted;
+        requireNonNull(next);
+        // No special concurrency considerations for sourceEmitted access is required in this method because we are
+        // on the Subscriber thread in this method. We want to track the effective source requested for the purposes of
+        // how much more request(n) is necessary below.
+        long effectiveSourceRequested = sourceEmitted;
         for (;;) {
             final long currSourceRequested = sourceRequested;
             assert currSourceRequested != SWITCHING; // no concurrency on this method allowed
@@ -160,13 +160,14 @@ final class SequentialSubscription implements Subscription, Cancellable {
                 // sourceEmitted is stable here because we are on the Subscriber thread. We want to request the
                 // difference between total requested and what has been emitted from the new subscription. We also
                 // need to set the value of total requested below to make sure it is monotonically increasing.
-                // sourceRequested ...[delta]... requested
-                final long delta = currRequested - currSourceEmitted;
+                // effectiveSourceRequested ...[delta]... requested
+                final long delta = currRequested - effectiveSourceRequested;
+                assert delta >= 0;
                 if (delta != 0) {
-                    // There maybe concurrency with the Subscription thread. In this case we want to avoid
-                    // "double request" from requested, so we track how much we have already requested and decrement it
-                    // on future loop iterations.
-                    currSourceEmitted = currRequested;
+                    // There maybe concurrency with the Subscription thread, or synchronous delivery of data from
+                    // request(n). In these cases we want to avoid "double request" from requested, so we track how much
+                    // we have already requested and decrement it on future loop iterations.
+                    effectiveSourceRequested = currRequested;
                     next.request(delta);
                 }
 
