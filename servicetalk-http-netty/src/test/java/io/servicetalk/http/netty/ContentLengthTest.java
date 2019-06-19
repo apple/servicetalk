@@ -122,8 +122,7 @@ public class ContentLengthTest extends AbstractNettyHttpServerTest {
 
     private static void setRequestContentLengthAndVerify(final StreamingHttpRequest request,
                                                          final Matcher<CharSequence> matcher) throws Exception {
-        Collection<Object> flattened = setRequestContentLength(request)
-                .toFuture().get().toFuture().get();
+        Collection<Object> flattened = setRequestContentLength(request).toFuture().get();
         assertThat("Unexpected items in the flattened request.", flattened, hasSize(greaterThanOrEqualTo(2)));
         Object firstItem = flattened.iterator().next();
         assertThat("Unexpected items in the flattened request.", firstItem, is(instanceOf(HttpMetaData.class)));
@@ -132,8 +131,7 @@ public class ContentLengthTest extends AbstractNettyHttpServerTest {
 
     private static void setResponseContentLengthAndVerify(final StreamingHttpResponse response,
                                                           final Matcher<CharSequence> matcher) throws Exception {
-        Collection<Object> flattened = setResponseContentLength(response)
-                .toFuture().get().toFuture().get();
+        Collection<Object> flattened = setResponseContentLength(response).toFuture().get();
         assertThat("Unexpected items in the flattened response.", flattened, hasSize(greaterThanOrEqualTo(2)));
         Object firstItem = flattened.iterator().next();
         assertThat("Unexpected items in the flattened response.", firstItem, is(instanceOf(HttpMetaData.class)));
