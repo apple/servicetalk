@@ -62,7 +62,7 @@ final class HeaderUtils {
     }
 
     static void removeTransferEncodingChunked(final HttpHeaders headers) {
-        final Iterator<? extends CharSequence> itr = headers.values(TRANSFER_ENCODING);
+        final Iterator<? extends CharSequence> itr = headers.valuesIterator(TRANSFER_ENCODING);
         while (itr.hasNext()) {
             if (io.netty.handler.codec.http.HttpHeaderValues.CHUNKED.contentEqualsIgnoreCase(itr.next())) {
                 itr.remove();

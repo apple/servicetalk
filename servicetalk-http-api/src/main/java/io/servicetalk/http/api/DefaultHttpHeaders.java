@@ -119,7 +119,7 @@ final class DefaultHttpHeaders extends MultiMap<CharSequence, CharSequence> impl
     }
 
     @Override
-    public Iterator<? extends HttpCookiePair> getCookies() {
+    public Iterator<? extends HttpCookiePair> getCookiesIterator() {
         final int keyHash = hashCode(COOKIE);
         final BucketHead<CharSequence, CharSequence> bucketHead = entries[index(keyHash)];
         if (bucketHead == null) {
@@ -137,7 +137,7 @@ final class DefaultHttpHeaders extends MultiMap<CharSequence, CharSequence> impl
     }
 
     @Override
-    public Iterator<? extends HttpCookiePair> getCookies(final CharSequence name) {
+    public Iterator<? extends HttpCookiePair> getCookiesIterator(final CharSequence name) {
         final int keyHash = hashCode(COOKIE);
         final BucketHead<CharSequence, CharSequence> bucketHead = entries[index(keyHash)];
         if (bucketHead == null) {
@@ -155,7 +155,7 @@ final class DefaultHttpHeaders extends MultiMap<CharSequence, CharSequence> impl
     }
 
     @Override
-    public Iterator<? extends HttpSetCookie> getSetCookies() {
+    public Iterator<? extends HttpSetCookie> getSetCookiesIterator() {
         final int keyHash = hashCode(SET_COOKIE);
         final BucketHead<CharSequence, CharSequence> bucketHead = entries[index(keyHash)];
         if (bucketHead == null) {
@@ -173,7 +173,7 @@ final class DefaultHttpHeaders extends MultiMap<CharSequence, CharSequence> impl
     }
 
     @Override
-    public Iterator<? extends HttpSetCookie> getSetCookies(final CharSequence name) {
+    public Iterator<? extends HttpSetCookie> getSetCookiesIterator(final CharSequence name) {
         final int keyHash = hashCode(SET_COOKIE);
         final BucketHead<CharSequence, CharSequence> bucketHead = entries[index(keyHash)];
         if (bucketHead == null) {
@@ -194,8 +194,8 @@ final class DefaultHttpHeaders extends MultiMap<CharSequence, CharSequence> impl
     }
 
     @Override
-    public Iterator<? extends HttpSetCookie> getSetCookies(final CharSequence name, final CharSequence domain,
-                                                           final CharSequence path) {
+    public Iterator<? extends HttpSetCookie> getSetCookiesIterator(final CharSequence name, final CharSequence domain,
+                                                                   final CharSequence path) {
         final int keyHash = hashCode(SET_COOKIE);
         final BucketHead<CharSequence, CharSequence> bucketHead = entries[index(keyHash)];
         if (bucketHead == null) {
@@ -600,7 +600,7 @@ final class DefaultHttpHeaders extends MultiMap<CharSequence, CharSequence> impl
     }
 
     @Override
-    public Iterator<? extends CharSequence> values(final CharSequence name) {
+    public Iterator<? extends CharSequence> valuesIterator(final CharSequence name) {
         return getValues(name);
     }
 

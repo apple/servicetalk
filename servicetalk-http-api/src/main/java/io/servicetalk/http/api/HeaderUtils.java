@@ -115,8 +115,8 @@ public final class HeaderUtils {
         // The regular iterator is not suitable for equality comparisons because the overall ordering is not
         // in any specific order relative to the content of this MultiMap.
         for (final CharSequence name : lhs.names()) {
-            final Iterator<? extends CharSequence> valueItr = lhs.values(name);
-            final Iterator<? extends CharSequence> h2ValueItr = rhs.values(name);
+            final Iterator<? extends CharSequence> valueItr = lhs.valuesIterator(name);
+            final Iterator<? extends CharSequence> h2ValueItr = rhs.valuesIterator(name);
             while (valueItr.hasNext() && h2ValueItr.hasNext()) {
                 if (!contentEquals(valueItr.next(), h2ValueItr.next())) {
                     return false;
@@ -136,7 +136,7 @@ public final class HeaderUtils {
         int result = HASH_CODE_SEED;
         for (final CharSequence key : headers.names()) {
             result = 31 * result + caseInsensitiveHashCode(key);
-            final Iterator<? extends CharSequence> valueItr = headers.values(key);
+            final Iterator<? extends CharSequence> valueItr = headers.valuesIterator(key);
             while (valueItr.hasNext()) {
                 result = 31 * result + caseInsensitiveHashCode(valueItr.next());
             }
@@ -163,7 +163,7 @@ public final class HeaderUtils {
 
     static boolean containsCommaSeparatedValueIgnoreCase(final HttpHeaders headers, final CharSequence name,
                                                          final CharSequence value) {
-        final Iterator<? extends CharSequence> values = headers.values(name);
+        final Iterator<? extends CharSequence> values = headers.valuesIterator(name);
         while (values.hasNext()) {
             final CharSequence next = values.next();
             if (containsCommaSeparatedValueIgnoreCase(next, value)) {

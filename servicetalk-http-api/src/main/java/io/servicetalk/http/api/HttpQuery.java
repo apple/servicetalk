@@ -22,6 +22,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.NoSuchElementException;
 import java.util.Set;
+import java.util.Spliterator;
+import java.util.Spliterators;
 import java.util.function.Consumer;
 import javax.annotation.Nullable;
 
@@ -29,6 +31,7 @@ import static java.util.Collections.addAll;
 import static java.util.Collections.emptyIterator;
 import static java.util.Collections.unmodifiableSet;
 import static java.util.Objects.requireNonNull;
+import static java.util.Spliterator.SIZED;
 
 final class HttpQuery implements Iterable<Map.Entry<String, String>> {
 
@@ -57,12 +60,27 @@ final class HttpQuery implements Iterable<Map.Entry<String, String>> {
         return values.get(0);
     }
 
-    public Iterator<String> values(final String key) {
+    public Iterator<String> valuesIterator(final String key) {
         final List<String> values = params.get(key);
         if (values == null) {
             return emptyIterator();
         }
         return new ValuesIterator(values.iterator(), this::updateQueryParams);
+    }
+
+    public Iterable<String> values(final String key) {
+        return new Iterable<String>() {
+            @Override
+            public Iterator<String> iterator() {
+                return valuesIterator(key);
+            }
+
+            @Override
+            public Spliterator<String> spliterator() {
+                final List<String> values = params.get(key);
+                return Spliterators.spliterator(iterator(), values == null ? 0 : values.size(), SIZED);
+            }
+        };
     }
 
     public Set<String> keys() {
@@ -132,7 +150,7 @@ final class HttpQuery implements Iterable<Map.Entry<String, String>> {
     }
 
     public boolean contains(final String key, final String value) {
-        final Iterator<String> values = values(key);
+        final Iterator<String> values = valuesIterator(key);
         while (values.hasNext()) {
             if (value.equals(values.next())) {
                 return true;
@@ -151,7 +169,7 @@ final class HttpQuery implements Iterable<Map.Entry<String, String>> {
     }
 
     public boolean remove(final String key, final String value) {
-        final Iterator<String> values = values(key);
+        final Iterator<String> values = valuesIterator(key);
         while (values.hasNext()) {
             if (value.equals(values.next())) {
                 values.remove();

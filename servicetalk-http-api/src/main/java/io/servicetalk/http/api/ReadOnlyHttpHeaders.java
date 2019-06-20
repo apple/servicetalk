@@ -87,7 +87,7 @@ final class ReadOnlyHttpHeaders implements HttpHeaders {
     }
 
     @Override
-    public Iterator<? extends CharSequence> values(final CharSequence name) {
+    public Iterator<? extends CharSequence> valuesIterator(final CharSequence name) {
         return new ReadOnlyValueIterator(name);
     }
 
@@ -261,18 +261,18 @@ final class ReadOnlyHttpHeaders implements HttpHeaders {
     }
 
     @Override
-    public Iterator<? extends HttpCookiePair> getCookies() {
-        Iterator<? extends CharSequence> valueItr = values(HttpHeaderNames.COOKIE);
+    public Iterator<? extends HttpCookiePair> getCookiesIterator() {
+        Iterator<? extends CharSequence> valueItr = valuesIterator(HttpHeaderNames.COOKIE);
         return valueItr.hasNext() ? new ReadOnlyCookiesIterator(valueItr) : emptyIterator();
     }
 
     @Override
-    public Iterator<? extends HttpCookiePair> getCookies(final CharSequence name) {
-        return new ReadOnlyCookiesByNameIterator(values(HttpHeaderNames.COOKIE), name);
+    public Iterator<? extends HttpCookiePair> getCookiesIterator(final CharSequence name) {
+        return new ReadOnlyCookiesByNameIterator(valuesIterator(HttpHeaderNames.COOKIE), name);
     }
 
     @Override
-    public Iterator<? extends HttpSetCookie> getSetCookies() {
+    public Iterator<? extends HttpSetCookie> getSetCookiesIterator() {
         final int nameHash = hashCode(SET_COOKIE);
         final int end = keyValuePairs.length - 1;
         for (int i = 0; i < end; i += 2) {
@@ -285,7 +285,7 @@ final class ReadOnlyHttpHeaders implements HttpHeaders {
     }
 
     @Override
-    public Iterator<? extends HttpSetCookie> getSetCookies(final CharSequence name) {
+    public Iterator<? extends HttpSetCookie> getSetCookiesIterator(final CharSequence name) {
         final int nameHash = hashCode(SET_COOKIE);
         final int end = keyValuePairs.length - 1;
         for (int i = 0; i < end; i += 2) {
@@ -302,7 +302,7 @@ final class ReadOnlyHttpHeaders implements HttpHeaders {
     }
 
     @Override
-    public Iterator<? extends HttpSetCookie> getSetCookies(final CharSequence name, final CharSequence domain,
+    public Iterator<? extends HttpSetCookie> getSetCookiesIterator(final CharSequence name, final CharSequence domain,
                                                            final CharSequence path) {
         final int nameHash = hashCode(SET_COOKIE);
         final int end = keyValuePairs.length - 1;

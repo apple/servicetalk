@@ -41,8 +41,13 @@ abstract class AbstractDelegatingHttpRequest implements PayloadInfo, HttpRequest
     }
 
     @Override
-    public Iterator<String> queryParameters(final String key) {
+    public Iterable<String> queryParameters(final String key) {
         return original.queryParameters(key);
+    }
+
+    @Override
+    public Iterator<String> queryParametersIterator(final String key) {
+        return original.queryParametersIterator(key);
     }
 
     @Override

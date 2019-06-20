@@ -80,7 +80,7 @@ final class BlockingGatewayService implements BlockingHttpService {
             return responseFactory.badRequest();
         }
 
-        final Iterable<String> errorQpValues = () -> request.queryParameters(SIMULATE_ERROR_QP_NAME);
+        final Iterable<String> errorQpValues = () -> request.queryParametersIterator(SIMULATE_ERROR_QP_NAME);
         List<Recommendation> recommendations =
                 recommendationClient.request(recommendationClient.get("/recommendations/aggregated")
                         .addQueryParameter(USER_ID_QP_NAME, userId)

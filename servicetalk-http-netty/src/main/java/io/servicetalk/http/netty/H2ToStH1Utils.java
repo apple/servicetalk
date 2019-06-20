@@ -84,7 +84,7 @@ final class H2ToStH1Utils {
      * @param h1Headers The headers which may contain cookies.
      */
     static void h1HeadersSplitCookieCrumbs(HttpHeaders h1Headers) {
-        Iterator<? extends CharSequence> cookieItr = h1Headers.values(COOKIE);
+        Iterator<? extends CharSequence> cookieItr = h1Headers.valuesIterator(COOKIE);
         // We want to avoid "concurrent modifications" of the headers while we are iterating. So we insert crumbs
         // into an intermediate collection and insert them after the split process concludes.
         List<CharSequence> cookiesToAdd = null;
@@ -117,7 +117,7 @@ final class H2ToStH1Utils {
         // H2 doesn't support connection headers, so remove each one, and the headers corresponding to the
         // connection value.
         // https://tools.ietf.org/html/rfc7540#section-8.1.2.2
-        Iterator<? extends CharSequence> connectionItr = h1Headers.values(CONNECTION);
+        Iterator<? extends CharSequence> connectionItr = h1Headers.valuesIterator(CONNECTION);
         if (connectionItr.hasNext()) {
             do {
                 String connectionHeader = connectionItr.next().toString();
@@ -143,7 +143,7 @@ final class H2ToStH1Utils {
 
         // TE header is treated specially https://tools.ietf.org/html/rfc7540#section-8.1.2.2
         // (only value of "trailers" is allowed).
-        Iterator<? extends CharSequence> teItr = h1Headers.values(TE);
+        Iterator<? extends CharSequence> teItr = h1Headers.valuesIterator(TE);
         boolean addTrailers = false;
         while (teItr.hasNext()) {
             String teValue = teItr.next().toString();

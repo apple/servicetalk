@@ -73,7 +73,7 @@ final class StreamingGatewayService implements StreamingHttpService {
             return succeeded(responseFactory.badRequest());
         }
 
-        final Iterable<String> errorQpValues = () -> request.queryParameters(SIMULATE_ERROR_QP_NAME);
+        final Iterable<String> errorQpValues = () -> request.queryParametersIterator(SIMULATE_ERROR_QP_NAME);
         return recommendationsClient.request(recommendationsClient.get("/recommendations/stream")
                 .addQueryParameter(USER_ID_QP_NAME, userId)
                 .addQueryParameters(SIMULATE_ERROR_QP_NAME, errorQpValues))
