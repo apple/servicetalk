@@ -15,7 +15,6 @@
  */
 package io.servicetalk.http.api;
 
-import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -83,6 +82,8 @@ public interface HttpHeaders extends Iterable<Entry<CharSequence, CharSequence>>
      *
      * @param name the name of the header to retrieve.
      * @return a {@link Iterable} of header values or an empty {@link Iterable} if no values are found.
+     *
+     * @see #valuesIterator(CharSequence) if minimal object allocation is required.
      */
     @SuppressWarnings("unchecked")
     default Iterable<? extends CharSequence> values(CharSequence name) {
@@ -94,6 +95,8 @@ public interface HttpHeaders extends Iterable<Entry<CharSequence, CharSequence>>
      *
      * @param name the name of the header to retrieve.
      * @return a {@link Iterator} of header values or an empty {@link Iterator} if no values are found.
+     *
+     * @see #values(CharSequence) if Iterable is preferred, at the expense of more object allocation.
      */
     Iterator<? extends CharSequence> valuesIterator(CharSequence name);
 
@@ -402,7 +405,9 @@ public interface HttpHeaders extends Iterable<Entry<CharSequence, CharSequence>>
     /**
      * Gets all the <a href="https://tools.ietf.org/html/rfc6265#section-4.2">cookie</a>s.
      *
-     * @return A {@link Collection} with all the <a href="https://tools.ietf.org/html/rfc6265#section-4.2">cookie</a>s.
+     * @return An {@link Iterable} with all the <a href="https://tools.ietf.org/html/rfc6265#section-4.2">cookie</a>s.
+     *
+     * @see #getCookiesIterator() if minimal object allocation is required.
      */
     @SuppressWarnings("unchecked")
     default Iterable<? extends HttpCookiePair> getCookies() {
@@ -413,6 +418,8 @@ public interface HttpHeaders extends Iterable<Entry<CharSequence, CharSequence>>
      * Gets all the <a href="https://tools.ietf.org/html/rfc6265#section-4.2">cookie</a>s.
      *
      * @return An {@link Iterator} with all the <a href="https://tools.ietf.org/html/rfc6265#section-4.2">cookie</a>s.
+     *
+     * @see #getCookies() if Iterable is preferred, at the expense of more object allocation.
      */
     Iterator<? extends HttpCookiePair> getCookiesIterator();
 
@@ -420,7 +427,9 @@ public interface HttpHeaders extends Iterable<Entry<CharSequence, CharSequence>>
      * Gets the <a href="https://tools.ietf.org/html/rfc6265#section-4.2">cookie</a>s with the same name.
      *
      * @param name the cookie-name of the {@link HttpSetCookie}s to get.
-     * @return A {@link Collection} where all the {@link HttpSetCookie}s have the same name.
+     * @return An {@link Iterable} where all the {@link HttpSetCookie}s have the same name.
+     *
+     * @see #getCookiesIterator(CharSequence) if minimal object allocation is required.
      */
     @SuppressWarnings("unchecked")
     default Iterable<? extends HttpCookiePair> getCookies(CharSequence name) {
@@ -432,14 +441,18 @@ public interface HttpHeaders extends Iterable<Entry<CharSequence, CharSequence>>
      *
      * @param name the cookie-name of the {@link HttpSetCookie}s to get.
      * @return An {@link Iterator} where all the {@link HttpSetCookie}s have the same name.
+     *
+     * @see #getCookies(CharSequence) if Iterable is preferred, at the expense of more object allocation.
      */
     Iterator<? extends HttpCookiePair> getCookiesIterator(CharSequence name);
 
     /**
      * Gets all the <a href="https://tools.ietf.org/html/rfc6265#section-4.1">set-cookie</a>s.
      *
-     * @return A {@link Collection} with all the
+     * @return An {@link Iterable} with all the
      * <a href="https://tools.ietf.org/html/rfc6265#section-4.1">set-cookie</a>s.
+     *
+     * @see #getSetCookiesIterator() if minimal object allocation is required.
      */
     @SuppressWarnings("unchecked")
     default Iterable<? extends HttpSetCookie> getSetCookies() {
@@ -451,6 +464,8 @@ public interface HttpHeaders extends Iterable<Entry<CharSequence, CharSequence>>
      *
      * @return An {@link Iterator} with all the
      * <a href="https://tools.ietf.org/html/rfc6265#section-4.1">set-cookie</a>s.
+     *
+     * @see #getSetCookies() if Iterable is preferred, at the expense of more object allocation.
      */
     Iterator<? extends HttpSetCookie> getSetCookiesIterator();
 
@@ -458,7 +473,9 @@ public interface HttpHeaders extends Iterable<Entry<CharSequence, CharSequence>>
      * Gets the <a href="https://tools.ietf.org/html/rfc6265#section-4.1">set-cookie</a>s with the same name.
      *
      * @param name the cookie-name of the {@link HttpSetCookie}s to get.
-     * @return A {@link Collection} where all the {@link HttpSetCookie}s have the same name.
+     * @return An {@link Iterable} where all the {@link HttpSetCookie}s have the same name.
+     *
+     * @see #getSetCookiesIterator(CharSequence) if minimal object allocation is required.
      */
     @SuppressWarnings("unchecked")
     default Iterable<? extends HttpSetCookie> getSetCookies(CharSequence name) {
@@ -470,6 +487,8 @@ public interface HttpHeaders extends Iterable<Entry<CharSequence, CharSequence>>
      *
      * @param name the cookie-name of the {@link HttpSetCookie}s to get.
      * @return An {@link Iterator} where all the {@link HttpSetCookie}s have the same name.
+     *
+     * @see #getSetCookies(CharSequence) if Iterable is preferred, at the expense of more object allocation.
      */
     Iterator<? extends HttpSetCookie> getSetCookiesIterator(CharSequence name);
 
@@ -481,7 +500,9 @@ public interface HttpHeaders extends Iterable<Entry<CharSequence, CharSequence>>
      * to the <a href="https://tools.ietf.org/html/rfc6265#section-5.1.3">Domain Matching</a> algorithm.
      * @param path the path-av of the {@link HttpSetCookie}s to get. This value may be matched according
      * to the <a href="https://tools.ietf.org/html/rfc6265#section-5.1.4">Path Matching</a> algorithm.
-     * @return A {@link Collection} where all the {@link HttpSetCookie}s match the parameter values.
+     * @return An {@link Iterable} where all the {@link HttpSetCookie}s match the parameter values.
+     *
+     * @see #getSetCookiesIterator(CharSequence, CharSequence, CharSequence) if minimal object allocation is required.
      */
     @SuppressWarnings("unchecked")
     default Iterable<? extends HttpSetCookie> getSetCookies(CharSequence name, CharSequence domain,
@@ -498,6 +519,9 @@ public interface HttpHeaders extends Iterable<Entry<CharSequence, CharSequence>>
      * @param path the path-av of the {@link HttpSetCookie}s to get. This value may be matched according
      * to the <a href="https://tools.ietf.org/html/rfc6265#section-5.1.4">Path Matching</a> algorithm.
      * @return An {@link Iterator} where all the {@link HttpSetCookie}s match the parameter values.
+
+     * @see #getSetCookies(CharSequence, CharSequence, CharSequence) if Iterable is preferred, at the expense of more
+     * object allocation.
      */
     Iterator<? extends HttpSetCookie> getSetCookiesIterator(CharSequence name, CharSequence domain, CharSequence path);
 
