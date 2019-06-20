@@ -8,7 +8,7 @@ paradigm:
 
 ==== Blocking Client
 See
-link:{sourceroot}servicetalk-examples/src/main/java/io/servicetalk/examples/http/helloworld/blocking/BlockingHelloWorldClient.java[BlockingHelloWorldClient].
+link:{sourceroot}servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/blocking/BlockingHelloWorldClient.java[BlockingHelloWorldClient].
 [source, java]
 ----
 try (BlockingHttpClient client = HttpClients.forSingleAddress("localhost", 8080).buildBlocking()) {
@@ -19,7 +19,7 @@ try (BlockingHttpClient client = HttpClients.forSingleAddress("localhost", 8080)
 
 ==== Blocking Server
 See
-link:{sourceroot}servicetalk-examples/src/main/java/io/servicetalk/examples/http/helloworld/blocking/BlockingHelloWorldServer.java[BlockingHelloWorldServer].
+link:{sourceroot}servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/blocking/BlockingHelloWorldServer.java[BlockingHelloWorldServer].
 [source, java]
 ----
 HttpServers.forPort(8080)
@@ -115,7 +115,7 @@ response (including the payload body) is also a single aggregated object. The `S
 object and there are no asynchronous primitives involved.
 
 See
-link:{sourceroot}servicetalk-examples/src/main/java/io/servicetalk/examples/http/helloworld/blocking/BlockingHelloWorldServer.java[BlockingHelloWorldServer].
+link:{sourceroot}servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/blocking/BlockingHelloWorldServer.java[BlockingHelloWorldServer].
 [source, java]
 ----
 HttpServers.forPort(8080)
@@ -135,7 +135,7 @@ link:{sourceroot}servicetalk-http-api/src/main/java/io/servicetalk/http/api/Http
 involved.
 
 See
-link:{sourceroot}servicetalk-examples/src/main/java/io/servicetalk/examples/http/helloworld/blocking/streaming/BlockingHelloWorldStreamingServer.java[BlockingHelloWorldStreamingServer].
+link:{sourceroot}servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/blocking/streaming/BlockingHelloWorldStreamingServer.java[BlockingHelloWorldStreamingServer].
 [source, java]
 ----
 HttpServers.forPort(8080).listenBlockingStreamingAndAwait((ctx, request, response) -> {
@@ -156,7 +156,7 @@ link:{sourceroot}servicetalk-concurrent-api/src/main/java/io/servicetalk/concurr
 asynchronous primitive.
 
 See
-link:{sourceroot}servicetalk-examples/src/main/java/io/servicetalk/examples/http/helloworld/async/HelloWorldServer.java[HelloWorldServer].
+link:{sourceroot}servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/async/HelloWorldServer.java[HelloWorldServer].
 [source, java]
 ----
 HttpServers.forPort(8080)
@@ -176,7 +176,7 @@ payload body is written via a
 link:{sourceroot}servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Publisher.java[Publisher].
 
 See
-link:{sourceroot}servicetalk-examples/src/main/java/io/servicetalk/examples/http/helloworld/async/streaming/HelloWorldStreamingServer.java[HelloWorldStreamingServer].
+link:{sourceroot}servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/async/streaming/HelloWorldStreamingServer.java[HelloWorldStreamingServer].
 [source, java]
 ----
 HttpServers.forPort(8080)
@@ -319,7 +319,7 @@ response (including the payload body) is also a single aggregated object. The `C
 object and there are no asynchronous primitives involved.
 
 See
-link:{sourceroot}servicetalk-examples/src/main/java/io/servicetalk/examples/http/helloworld/blocking/BlockingHelloWorldClient.java[BlockingHelloWorldClient]
+link:{sourceroot}servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/blocking/BlockingHelloWorldClient.java[BlockingHelloWorldClient]
 [source, java]
 ----
 try (BlockingHttpClient client = HttpClients.forSingleAddress("localhost", 8080).buildBlocking()) {
@@ -339,7 +339,7 @@ link:{sourceroot}servicetalk-buffer-api/src/main/java/io/servicetalk/buffer/api/
 primitives involved.
 
 See
-link:{sourceroot}servicetalk-examples/src/main/java/io/servicetalk/examples/http/helloworld/blocking/streaming/BlockingHelloWorldStreamingClient.java[BlockingHelloWorldStreamingClient]
+link:{sourceroot}servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/blocking/streaming/BlockingHelloWorldStreamingClient.java[BlockingHelloWorldStreamingClient]
 [source, java]
 ----
 try (BlockingStreamingHttpClient client = HttpClients.forSingleAddress("localhost", 8080)
@@ -362,7 +362,7 @@ link:{sourceroot}servicetalk-concurrent-api/src/main/java/io/servicetalk/concurr
 asynchronous primitive.
 
 See
-link:{sourceroot}servicetalk-examples/src/main/java/io/servicetalk/examples/http/helloworld/async/HelloWorldClient.java[HelloWorldClient]
+link:{sourceroot}servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/async/HelloWorldClient.java[HelloWorldClient]
 [source, java]
 ----
 try (HttpClient client = HttpClients.forSingleAddress("localhost", 8080).build()) {
@@ -392,7 +392,7 @@ payload body is written via a
 link:{sourceroot}servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Publisher.java[Publisher].
 
 See
-link:{sourceroot}servicetalk-examples/src/main/java/io/servicetalk/examples/http/helloworld/async/streaming/HelloWorldStreamingClient.java[HelloWorldStreamingClient]
+link:{sourceroot}servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/async/streaming/HelloWorldStreamingClient.java[HelloWorldStreamingClient]
 [source, java]
 ----
 try (StreamingHttpClient client = HttpClients.forSingleAddress("localhost", 8080).buildStreaming()) {
