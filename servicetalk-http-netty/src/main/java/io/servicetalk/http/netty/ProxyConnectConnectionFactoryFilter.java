@@ -105,6 +105,9 @@ final class ProxyConnectConnectionFactoryFilter<ResolvedAddress, C
 
                         channel.pipeline().get(DeferSslHandler.class).ready();
 
+                        // There is no need to apply offloading explicitly (despite completing `processor` on the
+                        // EventLoop) because `payloadBody()` will be offloaded according to the strategy for the
+                        // request.
                         return response.payloadBody().ignoreElements().concat(fromSource(processor));
                     } else {
                         return response.payloadBody().ignoreElements().concat(
