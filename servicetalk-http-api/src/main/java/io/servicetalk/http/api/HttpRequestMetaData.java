@@ -209,9 +209,17 @@ public interface HttpRequestMetaData extends HttpMetaData {
      * Returns all values for the query parameter with the specified key.
      *
      * @param key the key of the query parameter to retrieve.
+     * @return an {@link Iterable} of query parameter values or an empty {@link Iterable} if no values are found.
+     */
+    Iterable<String> queryParameters(String key);
+
+    /**
+     * Returns all values for the query parameter with the specified key.
+     *
+     * @param key the key of the query parameter to retrieve.
      * @return an {@link Iterator} of query parameter values or an empty {@link Iterator} if no values are found.
      */
-    Iterator<String> queryParameters(String key);
+    Iterator<String> queryParametersIterator(String key);
 
     /**
      * Returns a {@link Set} of all query parameter keys. The returned {@link Set} cannot be modified.

@@ -12,24 +12,31 @@ content:
   sources:
     - url: https://github.pie.apple.com/servicetalk/servicetalk.git
       branches: internal-master
+      tags: [0.15.0-docfix]
       start_path: docs
     - url: https://github.pie.apple.com/servicetalk/servicetalk.git
       branches: internal-master
+      tags: [0.15.0-docfix]
       start_path: servicetalk-examples/docs
     - url: https://github.pie.apple.com/servicetalk/servicetalk.git
       branches: internal-master
+      tags: [0.15.0-docfix]
       start_path: servicetalk-http-api/docs
     - url: https://github.pie.apple.com/servicetalk/servicetalk.git
       branches: internal-master
+      tags: [0.15.0-docfix]
       start_path: servicetalk-http-router-jersey/docs
     - url: https://github.pie.apple.com/servicetalk/servicetalk.git
       branches: internal-master
+      tags: [0.15.0-docfix]
       start_path: servicetalk-http-security-jersey/docs
     - url: https://github.pie.apple.com/servicetalk/servicetalk.git
       branches: internal-master
+      tags: [0.15.0-docfix]
       start_path: servicetalk-concurrent-api/docs
     - url: https://github.pie.apple.com/servicetalk/servicetalk.git
       branches: internal-master
+      tags: [0.15.0-docfix]
       start_path: servicetalk-data-jackson-jersey/docs
 asciidoc:
   attributes:

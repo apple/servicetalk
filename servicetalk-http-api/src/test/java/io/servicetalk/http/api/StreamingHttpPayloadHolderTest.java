@@ -115,9 +115,9 @@ public class StreamingHttpPayloadHolderTest {
         headersFactory = mock(HttpHeadersFactory.class);
         when(headersFactory.newEmptyTrailers()).thenReturn(mock(HttpHeaders.class));
         if (sourceType == SourceType.Trailers) {
-            when(headers.values(TRANSFER_ENCODING)).then(__ -> singletonList(CHUNKED).iterator());
+            when(headers.valuesIterator(TRANSFER_ENCODING)).then(__ -> singletonList(CHUNKED).iterator());
         } else {
-            when(headers.values(TRANSFER_ENCODING)).then(__ -> emptyIterator());
+            when(headers.valuesIterator(TRANSFER_ENCODING)).then(__ -> emptyIterator());
         }
         payloadSource = sourceType == SourceType.None ? null : new TestPublisher<>();
         final DefaultPayloadInfo payloadInfo = forTransportReceive(headers);

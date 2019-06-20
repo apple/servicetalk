@@ -199,8 +199,13 @@ class DefaultHttpRequestMetaData extends AbstractHttpMetaData implements HttpReq
     }
 
     @Override
-    public Iterator<String> queryParameters(final String key) {
+    public Iterable<String> queryParameters(final String key) {
         return lazyParseQueryString().values(key);
+    }
+
+    @Override
+    public Iterator<String> queryParametersIterator(final String key) {
+        return lazyParseQueryString().valuesIterator(key);
     }
 
     @Override

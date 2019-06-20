@@ -20,8 +20,8 @@ ServiceTalk follows the below principles for providing a path to no offloading:
 
 1. Turning off offloading is always an opt-in.
 2. All user code (filters, service, etc) will individually opt-out of offloading when applicable.
-3. Explicit opt-in to no offloading by users turns off auto-inference of execution strategy for that entity.
- ServiceTalk will never override that strategy.
+3. Explicit opt-in to no offloading to override auto-inference of execution strategy for that entity
+(aka an http path/route). ServiceTalk will never override that strategy.
 
 === Asynchronous and offloading
 
@@ -37,8 +37,8 @@ following steps that are required:
 
 CAUTION: Remaining sections elaborate how to disable offloading, which is considered an advanced feature.
 
-For (3) ServiceTalk assumes when a user is using any of the above methods, "they know what they are doing" and does not
-override that choice.
+For (3) ServiceTalk assumes when a user is using any of the above methods, "they know what they are doing" and generally
+applies the strategy specified by the user "as is".
 
 == Client
 
@@ -75,10 +75,10 @@ httpClient.request(HttpExecutionStrategies.noOffloadsStrategy(), aRequest);
 ----
 
 For a request made using this strategy, ServiceTalk will not perform any offloading and all user calls may be invoked
-on the eventloop.
+on the EventLoop.
 
 CAUTION: It is assumed that no blocking code exists during the entire processing of this request. If this assumption
-is violated then it will negatively impact the responsiveness of other work done on that eventloop.
+is violated then it will negatively impact the responsiveness of other work done on that EventLoop.
 
 === No offloads per client
 
@@ -98,12 +98,13 @@ CAUTION: Beware of inadvertently adding a request which uses blocking code to a 
 
 == Server
 
-ServiceTalk core is unaware of a routing technology and assumes that routing is implemented inside the service provided
-to the server. This enables us to provide vastly different routing solutions without changing the core of ServiceTalk.
-However, it does mean that ServiceTalk only knows the programming model of the service that implements routing and not
-the programming model of the routes for each request. Since, ServiceTalk has to select an execution strategy before
-invoking the service (router) this means that an individual route can not entirely control all offloading done by the
-server. Hence, all routers in ServiceTalk have two execution strategies in play for any request processing:
+ServiceTalk is designed in a layered fashion to enable extensibility. Therefore the core is unaware of a specific
+routing technology (e.g. JAX-RS) and assumes any routing is implemented inside the service provided to the server. This
+enables us to provide vastly different routing solutions without changing the core of ServiceTalk. However, it does mean
+that ServiceTalk only knows the programming model of the service that implements routing and not the programming model
+of the routes for each request. Since, ServiceTalk has to select an execution strategy before invoking the service
+(router) this means that an individual route can not entirely control all offloading done by the server. Hence, all
+routers in ServiceTalk have two execution strategies in play for any request processing:
 
 1. _Strategy for the server_: All code that constitutes request processing in a server apart from the actual route.
 2. _Strategy for a route_: Route implementation for a particular request.
@@ -132,8 +133,9 @@ specify such a strategy:
 
 ==== Implicit route strategy
 
-A router may have the ability to infer an appropriate execution strategy for a route from the programming model the route
-uses, just like ServiceTalk xref:blocking.adoc#programming-models[infers execution strategy per programming model].
+A router may have the ability to infer an appropriate execution strategy for a route from the programming model the
+route uses, just like ServiceTalk
+xref:blocking.adoc#programming-models[infers execution strategy per programming model].
 This auto-inference is only used if no strategy is explicitly specified for that route.
 
 ==== Explicit route strategy
@@ -149,7 +151,8 @@ In order to effectively evolve to different programming models, one should ensur
 strategy either implicitly (when supported by the router) or explicitly (for overrides or lack of implicit strategy
 capabilities in the router). Depending on server strategy for a route is dangerous because:
 
-1. Server strategy may change, adversely impacting the route.
+1. Server strategy may change, adversely impacting the route. If the server strategy does change, and the router doesn't
+auto-infer the correct default strategy, then the effective strategy at each route maybe impacted.
 2. Increasing scope of server strategy (to also be the default strategy for all routes) makes it hard to understand how
 changing that strategy may impact all routes. Typically, server strategy should be chosen based on all code that is
 executed before executing the actual route for a request.
