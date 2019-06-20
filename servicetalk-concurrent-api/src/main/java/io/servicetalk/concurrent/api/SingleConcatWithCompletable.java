@@ -46,7 +46,7 @@ final class SingleConcatWithCompletable<T> extends AbstractCompletableAndSingleC
     private static final class ConcatWithSubscriber<T> extends AbstractConcatWithSubscriber<T> {
         private final Completable next;
         @Nullable
-        private volatile T result;
+        private T result;
 
         ConcatWithSubscriber(final Subscriber<? super T> target, final Completable next) {
             super(target);

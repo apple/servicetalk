@@ -47,13 +47,13 @@ final class ResumeCompletable extends AbstractNoHandleSubscribeCompletable {
 
     private static final class ResumeSubscriber implements Subscriber {
         private final Subscriber subscriber;
-        @Nullable
-        private volatile Function<Throwable, ? extends Completable> nextFactory;
         private final SignalOffloader signalOffloader;
         private final AsyncContextMap contextMap;
         private final AsyncContextProvider contextProvider;
         @Nullable
-        private volatile SequentialCancellable sequentialCancellable;
+        private SequentialCancellable sequentialCancellable;
+        @Nullable
+        private Function<Throwable, ? extends Completable> nextFactory;
 
         ResumeSubscriber(Subscriber subscriber, Function<Throwable, ? extends Completable> nextFactory,
                          SignalOffloader signalOffloader, AsyncContextMap contextMap,
@@ -67,9 +67,8 @@ final class ResumeCompletable extends AbstractNoHandleSubscribeCompletable {
 
         @Override
         public void onSubscribe(Cancellable cancellable) {
-            SequentialCancellable sequentialCancellable = this.sequentialCancellable;
             if (sequentialCancellable == null) {
-                this.sequentialCancellable = sequentialCancellable = new SequentialCancellable(cancellable);
+                sequentialCancellable = new SequentialCancellable(cancellable);
                 subscriber.onSubscribe(sequentialCancellable);
             } else {
                 // Only a single re-subscribe is allowed.
@@ -85,7 +84,6 @@ final class ResumeCompletable extends AbstractNoHandleSubscribeCompletable {
 
         @Override
         public void onError(Throwable throwable) {
-            final Function<Throwable, ? extends Completable> nextFactory = this.nextFactory;
             if (nextFactory == null) {
                 subscriber.onError(throwable);
                 return;
