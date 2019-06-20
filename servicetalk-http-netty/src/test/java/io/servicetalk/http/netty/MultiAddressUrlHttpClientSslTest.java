@@ -22,14 +22,11 @@ import io.servicetalk.http.api.DefaultHttpHeadersFactory;
 import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpRequest;
-import io.servicetalk.http.api.SslConfigProvider;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.test.resources.DefaultTestCerts;
-import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
-import io.servicetalk.transport.api.SslConfig;
 import io.servicetalk.transport.netty.internal.ExecutionContextRule;
 
 import org.junit.After;
@@ -54,10 +51,6 @@ import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderNames.HOST;
 import static io.servicetalk.http.api.HttpHeaderValues.ZERO;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
-import static io.servicetalk.http.api.SslConfigProviders.plainByDefault;
-import static io.servicetalk.http.api.SslConfigProviders.secureByDefault;
-import static io.servicetalk.transport.api.SslConfigBuilder.forClientWithoutServerIdentity;
-import static io.servicetalk.transport.api.SslConfigBuilder.forServer;
 import static io.servicetalk.transport.netty.internal.AddressUtils.hostHeader;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
@@ -124,7 +117,7 @@ public class MultiAddressUrlHttpClientSslTest {
         when(SECURE_STREAMING_HTTP_SERVICE.closeAsync()).thenReturn(completed());
         when(SECURE_STREAMING_HTTP_SERVICE.closeAsyncGracefully()).thenReturn(completed());
         secureServerCtx = HttpServers.forAddress(localAddress(0))
-                .sslConfig(forServer(DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey).build())
+                .enableSsl(DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey).finish()
                 .ioExecutor(CTX.ioExecutor())
                 .executionStrategy(noOffloadsStrategy())
                 .listenStreamingAndAwait(SECURE_STREAMING_HTTP_SERVICE);
@@ -162,8 +155,8 @@ public class MultiAddressUrlHttpClientSslTest {
     @Test(expected = TimeoutException.class)
     public void secureClientToNonSecureServer() throws Exception {
         HttpClient client = HttpClients.forMultiAddressUrl()
-                .sslConfigProvider(secureByDefault())
                 .ioExecutor(CTX.ioExecutor())
+                .effectiveScheme(__ -> "https")
                 .executionStrategy(defaultStrategy(CTX.executor()))
                 .build();
 
@@ -186,7 +179,6 @@ public class MultiAddressUrlHttpClientSslTest {
     @Test
     public void requesterWithPlainSslConfigProvider() throws Exception {
         try (BlockingHttpRequester client = HttpClients.forMultiAddressUrl()
-                .sslConfigProvider(plainByDefault())
                 .ioExecutor(CTX.ioExecutor())
                 .executionStrategy(defaultStrategy(CTX.executor()))
                 .buildBlocking()) {
@@ -196,22 +188,10 @@ public class MultiAddressUrlHttpClientSslTest {
 
     @Test
     public void requesterWithSecureSslConfigProvider() throws Exception {
-        SslConfigProvider sslConfigProvider = new SslConfigProvider() {
-            @Override
-            public int defaultPort(@Nullable final String scheme, final String effectiveHost) {
-                return secureByDefault().defaultPort(scheme, effectiveHost);
-            }
-
-            @Override
-            public SslConfig forHostAndPort(final HostAndPort hostAndPort) {
-                return forClientWithoutServerIdentity()
-                        // required for generated certificates
-                        .trustManager(DefaultTestCerts::loadMutualAuthCaPem)
-                        .build();
-            }
-        };
         try (BlockingHttpRequester client = HttpClients.forMultiAddressUrl()
-                .sslConfigProvider(sslConfigProvider)
+                .effectiveScheme(__ -> "https")
+                .configureSsl(config -> config.disableHostnameVerification()
+                        .trustManager(DefaultTestCerts::loadMutualAuthCaPem))
                 .ioExecutor(CTX.ioExecutor())
                 .executionStrategy(defaultStrategy(CTX.executor()))
                 .buildBlocking()) {

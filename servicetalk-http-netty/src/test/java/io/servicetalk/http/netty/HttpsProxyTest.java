@@ -44,8 +44,6 @@ import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.HttpHeaderNames.HOST;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
-import static io.servicetalk.transport.api.SslConfigBuilder.forClientWithoutServerIdentity;
-import static io.servicetalk.transport.api.SslConfigBuilder.forServer;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -140,7 +138,7 @@ public class HttpsProxyTest {
 
     public void startServer() throws Exception {
         final ServerContext serverContext = HttpServers.forPort(0)
-                .sslConfig(forServer(DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey).build())
+                .enableSsl(DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey).finish()
                 .listenAndAwait((ctx, request, responseFactory) -> succeeded(responseFactory.ok()
                         .payloadBody("host: " + request.headers().get(HOST), textSerializer())));
         serverPort = serverHostAndPort(serverContext).port();
@@ -148,7 +146,7 @@ public class HttpsProxyTest {
 
     public void createClient() {
         client = HttpClients.forSingleAddressViaProxy("localhost", serverPort, "localhost", proxyPort)
-                .sslConfig(forClientWithoutServerIdentity().trustManager(DefaultTestCerts::loadMutualAuthCaPem).build())
+                .enableSsl().disableHostnameVerification().trustManager(DefaultTestCerts::loadMutualAuthCaPem).finish()
                 .build();
     }
 

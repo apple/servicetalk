@@ -20,14 +20,16 @@ import io.servicetalk.client.api.ConnectionFactoryFilter;
 import io.servicetalk.client.api.LoadBalancerFactory;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
+import io.servicetalk.transport.api.ClientSslConfigBuilder;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.IoExecutor;
-import io.servicetalk.transport.api.SslConfig;
 
 import java.net.SocketOption;
-import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.UnaryOperator;
+import javax.annotation.Nullable;
 
 import static io.servicetalk.http.api.StrategyInfluencerAwareConversions.toMultiAddressConditionalFilterFactory;
 import static java.util.Objects.requireNonNull;
@@ -84,6 +86,28 @@ public abstract class MultiAddressHttpClientBuilder<U, R>
     public abstract MultiAddressHttpClientBuilder<U, R> disableHostHeaderFallback();
 
     /**
+     * Sets a function that is used to determine the scheme of a request if the request-target is not absolute-form.
+     *
+     * @param effectiveSchemeFunction the function to use.
+     * @return {@code this}
+     */
+    public abstract MultiAddressHttpClientBuilder<U, R> effectiveScheme(
+            Function<HttpRequestMetaData, String> effectiveSchemeFunction);
+
+    /**
+     * Sets an operator that is used for configuring SSL/TLS for https requests. This is not required to enable SSL/TLS,
+     * only to customize the configuration. Pass {@code null} for {@code sslConfigOperator} to un-set any previously set
+     * function and use the default SSL/TLS configuration instead.
+     * <p>
+     * Note: Returning {@code null} from the operator will result in SSL/TLS <b>not</b> being configured.
+     *
+     * @param sslConfigOperator The operator to use for configuring SSL/TLS for https requests.
+     * @return {@code this}
+     */
+    public abstract MultiAddressHttpClientBuilder<U, R> configureSsl(
+            UnaryOperator<ClientSslConfigBuilder<?>> sslConfigOperator);
+
+    /**
      * Sets a configurator that is called immediately before the {@link SingleAddressHttpClientBuilder} for any
      * {@link HostAndPort} is built, to configure the builder.
      *
@@ -91,7 +115,8 @@ public abstract class MultiAddressHttpClientBuilder<U, R>
      * @return this.
      */
     public abstract MultiAddressHttpClientBuilder<U, R> clientConfiguratorForHost(
-            BiConsumer<HostAndPort, SingleAddressHttpClientBuilder<U, R>> clientConfiguratorForHost);
+            @Nullable BiFunction<HostAndPort, SingleAddressHttpClientBuilder<U, R>,
+                    SingleAddressHttpClientBuilder<U, R>> clientConfiguratorForHost);
 
     @Override
     public abstract MultiAddressHttpClientBuilder<U, R> appendConnectionFilter(
@@ -171,14 +196,6 @@ public abstract class MultiAddressHttpClientBuilder<U, R>
 
         return appendClientFilter(toMultiAddressConditionalFilterFactory(predicate, factory));
     }
-
-    /**
-     * Set a {@link SslConfigProvider} for appropriate {@link SslConfig}s.
-     *
-     * @param sslConfigProvider A {@link SslConfigProvider} to use.
-     * @return {@code this}.
-     */
-    public abstract MultiAddressHttpClientBuilder<U, R> sslConfigProvider(SslConfigProvider sslConfigProvider);
 
     /**
      * Set a maximum number of redirects to follow.

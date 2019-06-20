@@ -22,12 +22,14 @@ import io.servicetalk.transport.api.ConnectionAcceptor;
 import io.servicetalk.transport.api.ConnectionAcceptorFactory;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.ServerContext;
+import io.servicetalk.transport.api.ServerSslConfigBuilder;
 import io.servicetalk.transport.api.SslConfig;
 
 import java.io.InputStream;
 import java.net.SocketOption;
 import java.util.Map;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.http.api.BlockingUtils.blockingInvocation;
@@ -115,7 +117,8 @@ public abstract class HttpServerBuilder {
 
     /**
      * Allows to setup SNI.
-     * You can either use {@link #sslConfig(SslConfig)} or this method.
+     * You can either use {@link #enableSsl(Supplier, Supplier)}/{@link #enableSsl(Supplier, Supplier, String)}
+     * or this method.
      *
      * @param mappings mapping hostnames to the ssl configuration that should be used.
      * @param defaultConfig the configuration to use if no hostnames matched from {@code mappings}.
@@ -127,15 +130,42 @@ public abstract class HttpServerBuilder {
     public abstract HttpServerBuilder sniConfig(@Nullable Map<String, SslConfig> mappings, SslConfig defaultConfig);
 
     /**
-     * Enable SSL/TLS using the provided {@link SslConfig}. To disable it pass in {@code null}.
+     * Enable SSL/TLS, and return a builder for configuring it.  Call {@link ServerSslConfigBuilder#finish()} to
+     * return to configuring the HTTP client.
      *
-     * @param sslConfig the {@link SslConfig}.
-     * @return this.
-     * @throws IllegalStateException if the {@link SslConfig#keyCertChainSupplier()}, {@link SslConfig#keySupplier()},
-     * or {@link SslConfig#trustCertChainSupplier()} throws when
-     * {@link InputStream#close()} is called.
+     * @param keyCertChainSupplier an {@link Supplier} that will provide an input stream for a X.509 certificate chain
+     * in PEM format.
+     * <p>
+     * The responsibility to call {@link InputStream#close()} is transferred to callers of the {@link Supplier}.
+     * If this is not the desired behavior then wrap the {@link InputStream} and override {@link InputStream#close()}.
+     * @param keySupplier an {@link Supplier} that will provide an input stream for a KCS#8 private key in PEM format.
+     * <p>
+     * The responsibility to call {@link InputStream#close()} is transferred to callers of the {@link Supplier}.
+     * If this is not the desired behavior then wrap the {@link InputStream} and override {@link InputStream#close()}.
+     * @return an {@link ServerSslConfigBuilder} for configuring SSL/TLS.
      */
-    public abstract HttpServerBuilder sslConfig(@Nullable SslConfig sslConfig);
+    public abstract ServerSslConfigBuilder<HttpServerBuilder> enableSsl(Supplier<InputStream> keyCertChainSupplier,
+                                                                        Supplier<InputStream> keySupplier);
+
+    /**
+     * Enable SSL/TLS, and return a builder for configuring it.  Call {@link ServerSslConfigBuilder#finish()} to
+     * return to configuring the HTTP client.
+     *
+     * @param keyCertChainSupplier an {@link Supplier} that will provide an input stream for a X.509 certificate chain
+     * in PEM format.
+     * <p>
+     * The responsibility to call {@link InputStream#close()} is transferred to callers of the {@link Supplier}.
+     * If this is not the desired behavior then wrap the {@link InputStream} and override {@link InputStream#close()}.
+     * @param keySupplier an {@link Supplier} that will provide an input stream for a KCS#8 private key in PEM format.
+     * <p>
+     * The responsibility to call {@link InputStream#close()} is transferred to callers of the {@link Supplier}.
+     * If this is not the desired behavior then wrap the {@link InputStream} and override {@link InputStream#close()}.
+     * @param keyPassword the password of the {@code keyFile} if it's password-protected.
+     * @return an {@link ServerSslConfigBuilder} for configuring SSL/TLS.
+     */
+    public abstract ServerSslConfigBuilder<HttpServerBuilder> enableSsl(Supplier<InputStream> keyCertChainSupplier,
+                                                                        Supplier<InputStream> keySupplier,
+                                                                        String keyPassword);
 
     /**
      * Add a {@link SocketOption} that is applied.
