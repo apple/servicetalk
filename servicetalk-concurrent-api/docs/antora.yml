@@ -1,5 +1,5 @@
 name: servicetalk-concurrent-api
 title: ServiceTalk Concurrent API
-version: 0.15-SNAPSHOT
+version: 0.15
 nav:
   - modules/ROOT/nav.adoc

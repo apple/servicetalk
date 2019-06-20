@@ -1,5 +1,5 @@
 name: servicetalk-data-jackson-jersey
 title: ServiceTalk Data Jackson Jersey
-version: 0.15-SNAPSHOT
+version: 0.15
 nav:
   - modules/ROOT/nav.adoc
