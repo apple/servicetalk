@@ -31,6 +31,10 @@ import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 import static org.hamcrest.Matchers.is;
 
 public class SynchronousResourceTest extends AbstractResourceTest {
+    public SynchronousResourceTest(final RouterApi api) {
+        super(api);
+    }
+
     @Override
     String resourcePath() {
         return PATH;

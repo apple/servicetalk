@@ -61,6 +61,10 @@ import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertThat;
 
 public abstract class AbstractResourceTest extends AbstractJerseyStreamingHttpServiceTest {
+    public AbstractResourceTest(final RouterApi api) {
+        super(api);
+    }
+
     @NameBinding
     @Target({ElementType.TYPE, ElementType.METHOD})
     @Retention(RetentionPolicy.RUNTIME)

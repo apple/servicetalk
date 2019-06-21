@@ -37,6 +37,10 @@ import static javax.ws.rs.Priorities.AUTHENTICATION;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 
 public class SecurityFilterTest extends AbstractJerseyStreamingHttpServiceTest {
+    public SecurityFilterTest(final RouterApi api) {
+        super(api);
+    }
+
     @Provider
     @Priority(AUTHENTICATION)
     public static class TestSecurityFilter implements ContainerRequestFilter {

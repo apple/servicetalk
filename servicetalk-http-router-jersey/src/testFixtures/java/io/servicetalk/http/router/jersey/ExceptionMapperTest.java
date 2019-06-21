@@ -60,6 +60,10 @@ public class ExceptionMapperTest extends AbstractJerseyStreamingHttpServiceTest 
     private static final String EXCEPTION_RESPONSE_TYPE_HEADER = "X-EXCEPTION-RESPONSE-TYPE";
     private static final HttpResponseStatus STATUS_555 = HttpResponseStatus.of(555, "");
 
+    public ExceptionMapperTest(final RouterApi api) {
+        super(api);
+    }
+
     enum ExceptionResponseType {
         STR {
             @Override

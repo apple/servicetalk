@@ -35,6 +35,10 @@ import static java.util.Arrays.asList;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 
 public abstract class AbstractStreamingJsonResourcesTest extends AbstractJerseyStreamingHttpServiceTest {
+    public AbstractStreamingJsonResourcesTest(final RouterApi api) {
+        super(api);
+    }
+
     public static class TestApplication extends Application {
         @Override
         public Set<Class<?>> getClasses() {

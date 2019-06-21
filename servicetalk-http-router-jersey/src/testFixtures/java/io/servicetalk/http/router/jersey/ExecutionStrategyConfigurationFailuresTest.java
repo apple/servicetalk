@@ -49,7 +49,7 @@ public class ExecutionStrategyConfigurationFailuresTest {
         expected.expectMessage(both(containsString("emptyId()"))
                 .and(containsString("ResourceInvalidExecStrategy")));
 
-        new HttpJerseyRouterBuilder().build(new Application() {
+        new HttpJerseyRouterBuilder().buildStreaming(new Application() {
             @Override
             public Set<Class<?>> getClasses() {
                 return singleton(ResourceInvalidExecStrategy.class);
@@ -63,7 +63,7 @@ public class ExecutionStrategyConfigurationFailuresTest {
         expected.expectMessage(both(containsString("subResourceDefault()"))
                 .and(containsString("subResourceRouteExecId()")));
 
-        new HttpJerseyRouterBuilder().build(new TestApplication());
+        new HttpJerseyRouterBuilder().buildStreaming(new TestApplication());
     }
 
     @Test
@@ -78,7 +78,7 @@ public class ExecutionStrategyConfigurationFailuresTest {
         new HttpJerseyRouterBuilder()
                 .routeExecutionStrategyFactory(asFactory(
                         singletonMap("test", defaultStrategy(TEST_EXEC.executor()))))
-                .build(new Application() {
+                .buildStreaming(new Application() {
                     @Override
                     public Set<Class<?>> getClasses() {
                         return singleton(ResourceUnsupportedAsync.class);

@@ -124,7 +124,7 @@ public class CancellationTest {
         jerseyRouter = new HttpJerseyRouterBuilder()
                 .routeExecutionStrategyFactory(asFactory(
                         singletonMap("test", defaultStrategy(execRule.executor()))))
-                .build(new Application() {
+                .buildStreaming(new Application() {
                     @Override
                     public Set<Object> getSingletons() {
                         // Jersey logs a WARNING about this not being a provider, but it works anyway.

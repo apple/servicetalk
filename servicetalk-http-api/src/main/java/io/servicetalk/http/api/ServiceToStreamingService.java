@@ -18,18 +18,18 @@ package io.servicetalk.http.api;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 
-import static io.servicetalk.http.api.HttpExecutionStrategies.OFFLOAD_RECEIVE_DATA_AND_SEND_STRATEGY;
+import static io.servicetalk.http.api.HttpExecutionStrategies.OFFLOAD_SEND_STRATEGY;
 import static java.util.Objects.requireNonNull;
 
 final class ServiceToStreamingService extends AbstractServiceAdapterHolder {
     /**
      * For aggregation, we invoke the service after the payload is completed, hence we need to offload data.
      */
-    private static final HttpExecutionStrategy DEFAULT_STRATEGY = OFFLOAD_RECEIVE_DATA_AND_SEND_STRATEGY;
+    private static final HttpExecutionStrategy DEFAULT_STRATEGY = OFFLOAD_SEND_STRATEGY;
     private final HttpService original;
 
-    ServiceToStreamingService(final HttpService original, HttpExecutionStrategyInfluencer influencer) {
-        super(influencer.influenceStrategy(DEFAULT_STRATEGY));
+    private ServiceToStreamingService(final HttpService original, HttpExecutionStrategy influencer) {
+        super(influencer);
         this.original = requireNonNull(original);
     }
 
@@ -49,5 +49,47 @@ final class ServiceToStreamingService extends AbstractServiceAdapterHolder {
     @Override
     public Completable closeAsyncGracefully() {
         return original.closeAsyncGracefully();
+    }
+
+    public static HttpApiConversions.ServiceAdapterHolder newAdapter(final HttpService original,
+                                                                     final HttpExecutionStrategyInfluencer influencer) {
+        HttpExecutionStrategy influencedStrategy = influencer.influenceStrategy(DEFAULT_STRATEGY);
+        // Due to lack of more specialized offloading strategies we provide a localized optimization in case user didn't
+        // override the strategy at the server builder. Future enhancements to HttpExecutionStrategy may unlock more
+        // appropriate offloading modes for this conversion.
+        // The current manual offloading workaround may result in double offloading if the router (eg. Jersey) opts in
+        // to more offloading at runtime (eg via annotation on the JAX-RS endpoint). We accept this negative as a
+        // temporary situation where we expected it less likely for folks to use this initially. It allows for a
+        // considerable performance increase while we work on supporting more strategies.
+        if (!influencedStrategy.isDataReceiveOffloaded()) {
+            return new ManuallyOffloadingAggregatedToStreamingService(original, influencedStrategy);
+        }
+        return new ServiceToStreamingService(original, influencedStrategy);
+    }
+
+    private static class ManuallyOffloadingAggregatedToStreamingService extends AbstractServiceAdapterHolder {
+
+        private final HttpService original;
+
+        ManuallyOffloadingAggregatedToStreamingService(final HttpService original,
+                                                       final HttpExecutionStrategy serviceInvocationStrategy) {
+            super(serviceInvocationStrategy);
+            this.original = requireNonNull(original);
+        }
+
+        @Override
+        public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
+                                                    final StreamingHttpRequest request,
+                                                    final StreamingHttpResponseFactory responseFactory) {
+            return request.toRequest().flatMap(req ->
+                    ctx.executionContext().executor().submit(() ->
+                            original.handle(ctx, req, ctx.responseFactory()))
+                            .flatMap(sr -> sr.map(HttpResponse::toStreamingResponse)));
+        }
+
+        @Override
+        public Completable closeAsync() {
+            return original.closeAsync();
+        }
     }
 }

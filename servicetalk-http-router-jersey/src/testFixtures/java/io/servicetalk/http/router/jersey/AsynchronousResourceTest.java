@@ -38,6 +38,10 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isEmptyString;
 
 public class AsynchronousResourceTest extends AbstractAsynchronousResourceTest {
+    public AsynchronousResourceTest(final RouterApi api) {
+        super(api);
+    }
+
     @Ignore("Remove this after https://github.com/eclipse-ee4j/jersey/issues/3672 is solved")
     @Override
     public void getJson() {

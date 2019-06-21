@@ -37,6 +37,10 @@ import static javax.ws.rs.Priorities.ENTITY_CODER;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 
 public class FilterStreamingJsonTest extends AbstractJerseyStreamingHttpServiceTest {
+    public FilterStreamingJsonTest(final RouterApi api) {
+        super(api);
+    }
+
     @Priority(ENTITY_CODER)
     @Provider
     public static class TestGlobalFilter implements ContainerRequestFilter {

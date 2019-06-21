@@ -156,7 +156,7 @@ public final class HttpApiConversions {
      */
     public static ServiceAdapterHolder toStreamingHttpService(HttpService service,
                                                               HttpExecutionStrategyInfluencer influencer) {
-        return new ServiceToStreamingService(service, influencer);
+        return ServiceToStreamingService.newAdapter(service, influencer);
     }
 
     /**
@@ -182,7 +182,7 @@ public final class HttpApiConversions {
      */
     public static ServiceAdapterHolder toStreamingHttpService(BlockingHttpService service,
                                                               HttpExecutionStrategyInfluencer influencer) {
-        return new BlockingToStreamingService(service, influencer);
+        return BlockingToStreamingService.newAdapter(service, influencer);
     }
 
     /**
@@ -227,5 +227,35 @@ public final class HttpApiConversions {
          * @return {@link HttpExecutionStrategy} for this adapter.
          */
         HttpExecutionStrategy serviceInvocationStrategy();
+    }
+
+    /**
+     * Convert from a {@link BlockingStreamingHttpService} to a {@link StreamingHttpService}.
+     *
+     * @param service The {@link BlockingStreamingHttpService} to convert.
+     * @return {@link ServiceAdapterHolder} containing the service adapted to the streaming programming model.
+     */
+    public static BlockingHttpService toBlockingHttpService(StreamingHttpService service) {
+        return new StreamingHttpServiceToBlockingHttpService(service);
+    }
+
+    /**
+     * Convert from a {@link StreamingHttpService} to a {@link StreamingHttpService}.
+     *
+     * @param service The {@link BlockingStreamingHttpService} to convert.
+     * @return {@link ServiceAdapterHolder} containing the service adapted to the streaming programming model.
+     */
+    public static HttpService toHttpService(StreamingHttpService service) {
+        return new StreamingHttpServiceToHttpService(service);
+    }
+
+    /**
+     * Convert from a {@link BlockingStreamingHttpService} to a {@link StreamingHttpService}.
+     *
+     * @param service The {@link BlockingStreamingHttpService} to convert.
+     * @return {@link ServiceAdapterHolder} containing the service adapted to the streaming programming model.
+     */
+    public static BlockingStreamingHttpService toBlockingStreamingHttpService(StreamingHttpService service) {
+        return new StreamingHttpServiceToBlockingStreamingHttpService(service);
     }
 }

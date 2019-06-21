@@ -20,15 +20,15 @@ import io.servicetalk.concurrent.api.Single;
 
 import static io.servicetalk.http.api.BlockingUtils.blockingToCompletable;
 import static io.servicetalk.http.api.BlockingUtils.blockingToSingle;
-import static io.servicetalk.http.api.HttpExecutionStrategies.OFFLOAD_RECEIVE_DATA_STRATEGY;
 import static java.util.Objects.requireNonNull;
 
 final class BlockingToStreamingService extends AbstractServiceAdapterHolder {
-    static final HttpExecutionStrategy DEFAULT_STRATEGY = OFFLOAD_RECEIVE_DATA_STRATEGY;
+    static final HttpExecutionStrategy DEFAULT_STRATEGY = HttpExecutionStrategies.noOffloadsStrategy();
     private final BlockingHttpService original;
 
-    BlockingToStreamingService(final BlockingHttpService original, HttpExecutionStrategyInfluencer influencer) {
-        super(influencer.influenceStrategy(DEFAULT_STRATEGY));
+    private BlockingToStreamingService(final BlockingHttpService original,
+                                       final HttpExecutionStrategy executionStrategy) {
+        super(executionStrategy);
         this.original = requireNonNull(original);
     }
 
@@ -43,5 +43,48 @@ final class BlockingToStreamingService extends AbstractServiceAdapterHolder {
     @Override
     public Completable closeAsync() {
         return blockingToCompletable(original::close);
+    }
+
+    static AbstractServiceAdapterHolder newAdapter(final BlockingHttpService original,
+                                                   final HttpExecutionStrategyInfluencer influencer) {
+        HttpExecutionStrategy influencedStrategy = influencer.influenceStrategy(DEFAULT_STRATEGY);
+        // Due to lack of more specialized offloading strategies we provide a localized optimization in case user didn't
+        // override the strategy at the server builder. Future enhancements to HttpExecutionStrategy may unlock more
+        // appropriate offloading modes for this conversion.
+        // The current manual offloading workaround may result in double offloading if the router (eg. Jersey) opts in
+        // to more offloading at runtime (eg via annotation on the JAX-RS endpoint). We accept this negative as a
+        // temporary situation where we expected it less likely for folks to use this initially. It allows for a
+        // considerable performance increase while we work on supporting more strategies.
+        if (!influencedStrategy.isDataReceiveOffloaded()) {
+            return new ManuallyOffloadingBlockingToStreamingService(original, influencedStrategy);
+        }
+        return new BlockingToStreamingService(original, influencedStrategy);
+    }
+
+    private static class ManuallyOffloadingBlockingToStreamingService extends AbstractServiceAdapterHolder {
+
+        private final BlockingHttpService original;
+
+        ManuallyOffloadingBlockingToStreamingService(final BlockingHttpService original,
+                                                     final HttpExecutionStrategy serviceInvocationStrategy) {
+            super(serviceInvocationStrategy);
+            this.original = requireNonNull(original);
+        }
+
+        @Override
+        public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
+                                                    final StreamingHttpRequest request,
+                                                    final StreamingHttpResponseFactory responseFactory) {
+            return request.toRequest().flatMap(req ->
+                    ctx.executionContext().executor().submit(() ->
+                            original.handle(ctx, req, ctx.responseFactory())
+                    ))
+                    .map(HttpResponse::toStreamingResponse);
+        }
+
+        @Override
+        public Completable closeAsync() {
+            return blockingToCompletable(original::close);
+        }
     }
 }

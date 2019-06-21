@@ -38,6 +38,10 @@ import static javax.ws.rs.core.Response.status;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 
 public class IllBehavedRequestFilterTest extends AbstractJerseyStreamingHttpServiceTest {
+    public IllBehavedRequestFilterTest(final RouterApi api) {
+        super(api);
+    }
+
     @Provider
     @Priority(AUTHENTICATION)
     public static class IllBehavedRequestFilter implements ContainerRequestFilter {

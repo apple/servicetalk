@@ -34,6 +34,10 @@ import static org.hamcrest.Matchers.isEmptyString;
 import static org.junit.Assert.assertThat;
 
 public abstract class AbstractAsynchronousResourceTest extends AbstractResourceTest {
+    public AbstractAsynchronousResourceTest(final RouterApi api) {
+        super(api);
+    }
+
     @Override
     String resourcePath() {
         return AsynchronousResources.PATH;

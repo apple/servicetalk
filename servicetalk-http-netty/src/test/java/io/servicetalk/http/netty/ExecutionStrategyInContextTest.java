@@ -154,7 +154,7 @@ public class ExecutionStrategyInContextTest {
             assert expectedClientStrategy == null;
             expectedClientStrategy = customStrategyBuilder().offloadReceiveData().build();
             assert expectedServerStrategy == null;
-            expectedServerStrategy = customStrategyBuilder().offloadReceiveData().offloadSend().build();
+            expectedServerStrategy = customStrategyBuilder().offloadSend().build();
         }
         HttpExecutionStrategy clientStrat = client.executionContext().executionStrategy();
         assertThat("Unexpected client strategy.", clientStrat, equalStrategies(expectedClientStrategy));
@@ -180,7 +180,7 @@ public class ExecutionStrategyInContextTest {
             assert expectedClientStrategy == null;
             expectedClientStrategy = customStrategyBuilder().offloadNone().build();
             assert expectedServerStrategy == null;
-            expectedServerStrategy = customStrategyBuilder().offloadReceiveData().build();
+            expectedServerStrategy = customStrategyBuilder().offloadNone().build();
         }
         HttpExecutionStrategy clientStrat = client.executionContext().executionStrategy();
         assertThat("Unexpected client strategy.", clientStrat, equalStrategies(expectedClientStrategy));

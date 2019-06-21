@@ -66,7 +66,7 @@ import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertThat;
 
 @RunWith(Parameterized.class)
-public final class ExecutionStrategyTest extends AbstractJerseyStreamingHttpServiceTest {
+public final class ExecutionStrategyTest extends AbstractNonParameterizedJerseyStreamingHttpServiceTest {
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     @ClassRule
@@ -132,21 +132,21 @@ public final class ExecutionStrategyTest extends AbstractJerseyStreamingHttpServ
         GET(false) {
             @Override
             String sendTestRequest(final String path,
-                                   final AbstractJerseyStreamingHttpServiceTest reqHelper) {
+                                   final AbstractNonParameterizedJerseyStreamingHttpServiceTest reqHelper) {
                 return reqHelper.sendAndAssertStatusOnly(reqHelper.get(path), OK);
             }
         },
         GET_RS(true) {
             @Override
             String sendTestRequest(final String path,
-                                   final AbstractJerseyStreamingHttpServiceTest reqHelper) {
+                                   final AbstractNonParameterizedJerseyStreamingHttpServiceTest reqHelper) {
                 return GET.sendTestRequest(path, reqHelper);
             }
         },
         POST_RS(true) {
             @Override
             String sendTestRequest(final String path,
-                                   final AbstractJerseyStreamingHttpServiceTest reqHelper) {
+                                   final AbstractNonParameterizedJerseyStreamingHttpServiceTest reqHelper) {
                 return reqHelper.sendAndAssertStatusOnly(reqHelper.post(path, "{\"foo\":\"bar\"}", APPLICATION_JSON),
                         OK);
             }
@@ -158,7 +158,7 @@ public final class ExecutionStrategyTest extends AbstractJerseyStreamingHttpServ
             this.rs = rs;
         }
 
-        abstract String sendTestRequest(String path, AbstractJerseyStreamingHttpServiceTest reqHelper);
+        abstract String sendTestRequest(String path, AbstractNonParameterizedJerseyStreamingHttpServiceTest reqHelper);
     }
 
     private static final Map<String, TestMode> SUB_SUB_PATH_TEST_MODES;
@@ -184,6 +184,7 @@ public final class ExecutionStrategyTest extends AbstractJerseyStreamingHttpServ
                                  final TestExecutorStrategy methodExecutionStrategy,
                                  final TestMode testMode,
                                  final String path) {
+        super(RouterApi.ASYNC_STREAMING);
         this.routerExecutionStrategy = routerExecutionStrategy;
         this.classExecutionStrategy = classExecutionStrategy;
         this.methodExecutionStrategy = methodExecutionStrategy;
