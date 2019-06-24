@@ -165,8 +165,6 @@ final class EndpointEnhancingRequestFilter implements ContainerRequestFilter {
         @Nullable
         private final HttpExecutionStrategy effectiveRouteStrategy;
         @Nullable
-        private final ExecutionStrategy executionStrategy;
-        @Nullable
         private final Executor executor;
         @Nullable
         private final Provider<Ref<ConnectionContext>> ctxRefProvider;
@@ -187,12 +185,11 @@ final class EndpointEnhancingRequestFilter implements ContainerRequestFilter {
             if (routeExecutionStrategy != null) {
                 final ExecutionContext executionContext = ctxRefProvider.get().get().executionContext();
                 // ExecutionStrategy and Executor shared for all routes in JerseyRouter
-                executionStrategy = executionContext.executionStrategy();
+                final ExecutionStrategy executionStrategy = executionContext.executionStrategy();
                 executor = executionContext.executor();
                 effectiveRouteStrategy = calculateEffectiveStrategy(executionStrategy, executor);
             } else {
                 effectiveRouteStrategy = null;
-                executionStrategy = null;
                 executor = null;
             }
         }
