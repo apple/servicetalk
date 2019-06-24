@@ -43,7 +43,6 @@ import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static java.util.Arrays.stream;
 import static java.util.Collections.emptyMap;
@@ -140,21 +139,21 @@ final class RouteExecutionStrategyUtils {
         return new RouteStrategiesConfig(validator.routeStrategies);
     }
 
+    @Nullable
     static HttpExecutionStrategy getRouteExecutionStrategy(final Class<?> clazz,
                                                            final Method method,
                                                            final RouteStrategiesConfig routeStrategiesConfig) {
 
         Annotation annotation = getRouteExecutionStrategyAnnotation(clazz, method);
         if (annotation == null) {
-            return defaultStrategy();
+            return null;
         }
 
         if (annotation instanceof NoOffloadsRouteExecutionStrategy) {
             return noOffloadsStrategy();
         }
 
-        return routeStrategiesConfig.routeStrategies.getOrDefault(((RouteExecutionStrategy) annotation).id(),
-                defaultStrategy());
+        return routeStrategiesConfig.routeStrategies.get(((RouteExecutionStrategy) annotation).id());
     }
 
     @Nullable

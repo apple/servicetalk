@@ -143,8 +143,9 @@ final class EndpointEnhancingRequestFilter implements ContainerRequestFilter {
                         delegate, resourceClass, resourceMethod, requestScope, ctxRefProvider, routeExecutionStrategy);
             }
             final ExecutionContext executionContext = ctxRefProvider.get().get().executionContext();
-            final HttpExecutionStrategy difference = difference(executionContext.executor(),
-                    (HttpExecutionStrategy) executionContext.executionStrategy(), routeExecutionStrategy);
+            final HttpExecutionStrategy difference = routeExecutionStrategy == null ? null :
+                    difference(executionContext.executor(),
+                            (HttpExecutionStrategy) executionContext.executionStrategy(), routeExecutionStrategy);
             if (difference != null) {
                 return new ExecutorOffloadingEndpoint(
                         delegate, resourceClass, resourceMethod, requestScope, ctxRefProvider, routeExecutionStrategy);
