@@ -17,11 +17,13 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.client.api.ConnectionFactory;
 import io.servicetalk.client.api.ConnectionFactoryFilter;
+import io.servicetalk.client.api.DelegatingConnectionFactory;
 import io.servicetalk.concurrent.SingleSource;
-import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
+import io.servicetalk.http.api.HttpExecutionStrategy;
+import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
 import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.StreamingHttpResponse;
@@ -48,7 +50,8 @@ import static io.servicetalk.http.api.HttpHeaderValues.ZERO;
  */
 final class ProxyConnectConnectionFactoryFilter<ResolvedAddress, C
         extends ListenableAsyncCloseable & FilterableStreamingHttpConnection>
-        implements ConnectionFactoryFilter<ResolvedAddress, C> {
+        implements ConnectionFactoryFilter<ResolvedAddress, C>,
+                   HttpExecutionStrategyInfluencer {
 
     private final StreamingHttpRequestResponseFactory reqRespFactory;
     private final String connectAddress;
@@ -69,17 +72,15 @@ final class ProxyConnectConnectionFactoryFilter<ResolvedAddress, C
         return dnpc.nettyChannel();
     }
 
-    private final class ProxyFilter implements ConnectionFactory<ResolvedAddress, C> {
+    private final class ProxyFilter extends DelegatingConnectionFactory<ResolvedAddress, C> {
 
-        private final ConnectionFactory<ResolvedAddress, C> original;
-
-        private ProxyFilter(final ConnectionFactory<ResolvedAddress, C> original) {
-            this.original = original;
+        private ProxyFilter(final ConnectionFactory<ResolvedAddress, C> delegate) {
+            super(delegate);
         }
 
         @Override
         public Single<C> newConnection(final ResolvedAddress resolvedAddress) {
-            return original.newConnection(resolvedAddress).flatMap(c -> {
+            return delegate().newConnection(resolvedAddress).flatMap(c -> {
                 final Single<StreamingHttpResponse> responseSingle = c.request(defaultStrategy(),
                         reqRespFactory.connect(connectAddress).addHeader(CONTENT_LENGTH, ZERO));
                 return responseSingle.flatMap(response -> {
@@ -103,6 +104,11 @@ final class ProxyConnectConnectionFactoryFilter<ResolvedAddress, C
                             }
                         });
 
+                        if (channel.pipeline().get(DeferSslHandler.class) == null) {
+                            return response.payloadBody().ignoreElements().concat(failed(
+                                    new IllegalStateException("No DeferSslHandler found in channel pipeline")));
+                        }
+
                         channel.pipeline().get(DeferSslHandler.class).ready();
 
                         // There is no need to apply offloading explicitly (despite completing `processor` on the
@@ -117,20 +123,11 @@ final class ProxyConnectConnectionFactoryFilter<ResolvedAddress, C
                 });
             });
         }
+    }
 
-        @Override
-        public Completable onClose() {
-            return original.onClose();
-        }
-
-        @Override
-        public Completable closeAsync() {
-            return original.closeAsync();
-        }
-
-        @Override
-        public Completable closeAsyncGracefully() {
-            return original.closeAsyncGracefully();
-        }
+    @Override
+    public HttpExecutionStrategy influenceStrategy(final HttpExecutionStrategy strategy) {
+        // No influence since we do not block.
+        return strategy;
     }
 }

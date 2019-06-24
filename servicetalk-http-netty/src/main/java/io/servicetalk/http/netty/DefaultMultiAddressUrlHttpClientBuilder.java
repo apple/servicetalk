@@ -451,7 +451,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder extends MultiAddressHttpClie
 
     @Override
     public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> clientConfiguratorForHost(
-            @Nullable BiConsumer<HostAndPort, SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress>>
+            BiConsumer<HostAndPort, SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress>>
                     clientConfiguratorForHost) {
         this.clientConfiguratorForHost = clientConfiguratorForHost;
         return this;
