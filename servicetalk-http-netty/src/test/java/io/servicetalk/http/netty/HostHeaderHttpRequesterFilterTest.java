@@ -17,7 +17,6 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.ReservedBlockingHttpConnection;
-import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
 
 import org.junit.Test;
@@ -67,7 +66,7 @@ public class HostHeaderHttpRequesterFilterTest {
         try (ServerContext context = buildServer();
              BlockingHttpClient client = forSingleAddress(serverHostAndPort(context))
                     .disableHostHeaderFallback() // turn off the default
-                    .appendClientFilter(new HostHeaderHttpRequesterFilter(HostAndPort.of("foo.bar", -1)))
+                     .appendClientFilter(new HostHeaderHttpRequesterFilter("foo.bar:-1"))
                     .buildBlocking()) {
                 assertEquals("foo.bar:-1",
                         client.request(client.get("/")).payloadBody(textDeserializer()));
@@ -79,7 +78,7 @@ public class HostHeaderHttpRequesterFilterTest {
         try (ServerContext context = buildServer();
              BlockingHttpClient client = forSingleAddress(serverHostAndPort(context))
                     .disableHostHeaderFallback() // turn off the default
-                    .appendConnectionFilter(new HostHeaderHttpRequesterFilter(HostAndPort.of("foo.bar", -1)))
+                     .appendConnectionFilter(new HostHeaderHttpRequesterFilter("foo.bar:-1"))
                     .buildBlocking()) {
                 assertEquals("foo.bar:-1",
                         client.request(client.get("/")).payloadBody(textDeserializer()));
@@ -91,7 +90,7 @@ public class HostHeaderHttpRequesterFilterTest {
         try (ServerContext context = buildServer();
              BlockingHttpClient client = HttpClients.forResolvedAddress(serverHostAndPort(context))
                      .disableHostHeaderFallback() // turn off the default
-                    .appendConnectionFilter(new HostHeaderHttpRequesterFilter(HostAndPort.of("foo.bar", -1)))
+                     .appendConnectionFilter(new HostHeaderHttpRequesterFilter("foo.bar:-1"))
                     .buildBlocking()) {
             ReservedBlockingHttpConnection conn = client.reserveConnection(client.get("/"));
             assertEquals("foo.bar:-1",

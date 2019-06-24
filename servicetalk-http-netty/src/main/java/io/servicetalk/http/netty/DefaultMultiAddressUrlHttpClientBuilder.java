@@ -61,6 +61,7 @@ import java.net.SocketOption;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.function.BiConsumer;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
@@ -99,6 +100,9 @@ final class DefaultMultiAddressUrlHttpClientBuilder extends MultiAddressHttpClie
     private MultiAddressHttpClientFilterFactory<HostAndPort> clientFilterFactory;
     @Nullable
     private Function<HostAndPort, CharSequence> hostHeaderTransformer;
+    @Nullable
+    private BiConsumer<HostAndPort, SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress>>
+            clientConfiguratorForHost;
 
     DefaultMultiAddressUrlHttpClientBuilder(
             final DefaultSingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builderTemplate) {
@@ -112,7 +116,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder extends MultiAddressHttpClie
             final HttpClientBuildContext<HostAndPort, InetSocketAddress> buildContext = builderTemplate.copyBuildCtx();
 
             final ClientFactory clientFactory = new ClientFactory(buildContext.builder,
-                    sslConfigProvider, clientFilterFactory, hostHeaderTransformer);
+                    sslConfigProvider, clientFilterFactory, hostHeaderTransformer, clientConfiguratorForHost);
 
             CachingKeyFactory keyFactory = closeables.prepend(new CachingKeyFactory(sslConfigProvider));
 
@@ -222,16 +226,22 @@ final class DefaultMultiAddressUrlHttpClientBuilder extends MultiAddressHttpClie
         private final MultiAddressHttpClientFilterFactory<HostAndPort> clientFilterFactory;
         @Nullable
         private final Function<HostAndPort, CharSequence> hostHeaderTransformer;
+        @Nullable
+        private final BiConsumer<HostAndPort, SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress>>
+                clientConfiguratorForHost;
 
         ClientFactory(
                 final DefaultSingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builderTemplate,
                 final SslConfigProvider sslConfigProvider,
                 @Nullable final MultiAddressHttpClientFilterFactory<HostAndPort> clientFilterFactory,
-                @Nullable final Function<HostAndPort, CharSequence> hostHeaderTransformer) {
+                @Nullable final Function<HostAndPort, CharSequence> hostHeaderTransformer,
+                @Nullable BiConsumer<HostAndPort, SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress>>
+                        clientConfiguratorForHost) {
             this.builderTemplate = builderTemplate;
             this.sslConfigProvider = sslConfigProvider;
             this.clientFilterFactory = clientFilterFactory;
             this.hostHeaderTransformer = hostHeaderTransformer;
+            this.clientConfiguratorForHost = clientConfiguratorForHost;
         }
 
         @Override
@@ -263,6 +273,10 @@ final class DefaultMultiAddressUrlHttpClientBuilder extends MultiAddressHttpClie
             buildContext.builder.sslConfig(sslConfig);
             if (clientFilterFactory != null) {
                 buildContext.builder.appendClientFilter(clientFilterFactory.asClientFilter(urlKey.hostAndPort));
+            }
+
+            if (clientConfiguratorForHost != null) {
+                clientConfiguratorForHost.accept(urlKey.hostAndPort, buildContext.builder);
             }
             return buildContext.build();
         }
@@ -432,6 +446,14 @@ final class DefaultMultiAddressUrlHttpClientBuilder extends MultiAddressHttpClie
     public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> maxPipelinedRequests(
             final int maxPipelinedRequests) {
         builderTemplate.maxPipelinedRequests(maxPipelinedRequests);
+        return this;
+    }
+
+    @Override
+    public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> clientConfiguratorForHost(
+            BiConsumer<HostAndPort, SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress>>
+                    clientConfiguratorForHost) {
+        this.clientConfiguratorForHost = clientConfiguratorForHost;
         return this;
     }
 
