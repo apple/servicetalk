@@ -121,7 +121,7 @@ public final class HttpExecutionStrategies {
             // No difference, so no offloading is required.
             return null;
         }
-        if (left == noOffloadsStrategy() && right != noOffloadsStrategy()) {
+        if (left == noOffloadsStrategy()) {
             return right;
         }
         if (left != noOffloadsStrategy() && right == noOffloadsStrategy()) {
