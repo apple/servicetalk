@@ -42,7 +42,7 @@ import java.util.regex.Pattern;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.http.api.HttpApiConversions.toStreamingHttpService;
-import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStreamingStrategy;
+import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.router.predicate.Predicates.method;
 import static io.servicetalk.http.router.predicate.Predicates.methodIsOneOf;
 import static io.servicetalk.http.router.predicate.Predicates.pathEquals;
@@ -68,7 +68,6 @@ import static java.util.Objects.requireNonNull;
  * If no routes match, a default service is used, which returns a 404 response.
  */
 public final class HttpPredicateRouterBuilder implements RouteStarter {
-
     private final List<Route> routes = new ArrayList<>();
     private final RouteContinuationImpl continuation = new RouteContinuationImpl();
     @Nullable
@@ -256,7 +255,7 @@ public final class HttpPredicateRouterBuilder implements RouteStarter {
 
         @Override
         public RouteStarter thenRouteTo(final StreamingHttpService service) {
-            return thenRouteTo0(service, newInfluencer(service).influenceStrategy(defaultStreamingStrategy()));
+            return thenRouteTo0(service, newInfluencer(service).influenceStrategy(defaultStrategy()));
         }
 
         @Override

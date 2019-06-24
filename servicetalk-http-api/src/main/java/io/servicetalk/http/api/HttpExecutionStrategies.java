@@ -79,15 +79,6 @@ public final class HttpExecutionStrategies {
     }
 
     /**
-     * The default {@link HttpExecutionStrategy} using with streaming.
-     *
-     * @return Default streaming {@link HttpExecutionStrategy}.
-     */
-    public static HttpExecutionStrategy defaultStreamingStrategy() {
-        return OFFLOAD_ALL_STRATEGY;
-    }
-
-    /**
      * A {@link HttpExecutionStrategy} that disables all offloads.
      *
      * @return {@link HttpExecutionStrategy} that disables all offloads.
