@@ -163,7 +163,6 @@ public class ClientClosureRaceTest {
     private SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> newClientBuilder() {
         final RetryingHttpRequesterFilter.Builder retryBuilder = new RetryingHttpRequesterFilter.Builder();
         return HttpClients.forSingleAddress("localhost", port)
-                .enableWireLogging("servicetalk-tests-client-wire-logger")
                 .appendClientFilter(retryBuilder.maxRetries(10)
                         .retryFor((md, t) -> {
                             if (isDesiredError(t)) {

@@ -27,6 +27,7 @@ import io.servicetalk.concurrent.internal.SequentialCancellable;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.netty.internal.NettyConnection.RequestNSupplier;
 
+import io.netty.channel.Channel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -210,6 +211,11 @@ public final class DefaultNettyPipelinedConnection<Req, Resp> implements NettyPi
     @Override
     public Completable closeAsyncGracefully() {
         return connection.closeAsyncGracefully();
+    }
+
+    @Override
+    public Channel nettyChannel() {
+        return connection.nettyChannel();
     }
 
     @Override

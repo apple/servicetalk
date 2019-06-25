@@ -44,8 +44,8 @@ import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
 import io.servicetalk.transport.netty.internal.DefaultNettyConnection;
-import io.servicetalk.transport.netty.internal.DelegatingFlushStrategy;
 import io.servicetalk.transport.netty.internal.FlushStrategy;
+import io.servicetalk.transport.netty.internal.FlushStrategyHolder;
 import io.servicetalk.transport.netty.internal.NettyChannelListenableAsyncCloseable;
 import io.servicetalk.transport.netty.internal.NettyConnection.TerminalPredicate;
 import io.servicetalk.transport.netty.internal.NettyConnectionContext;
@@ -54,6 +54,7 @@ import io.servicetalk.transport.netty.internal.NettyPipelineSslUtils;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.channel.ChannelOutboundInvoker;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.EventLoop;
 import io.netty.handler.codec.http2.DefaultHttp2GoAwayFrame;
@@ -77,9 +78,9 @@ import java.net.SocketAddress;
 import java.nio.channels.ClosedChannelException;
 import java.util.concurrent.Delayed;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
-import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
 import javax.net.ssl.SSLSession;
@@ -101,7 +102,6 @@ import static io.servicetalk.transport.netty.internal.NettyIoExecutors.fromNetty
 import static io.servicetalk.transport.netty.internal.NettyPipelineSslUtils.extractSslSession;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater;
 
 final class H2ClientParentConnectionContext extends NettyChannelListenableAsyncCloseable implements
                                                                                          NettyConnectionContext {
@@ -112,32 +112,29 @@ final class H2ClientParentConnectionContext extends NettyChannelListenableAsyncC
             unknownStackTrace(new ClosedChannelException(), H2ClientParentConnectionContext.class,
                     "handlerRemoved(..)");
     private static final Logger LOGGER = LoggerFactory.getLogger(H2ClientParentConnectionContext.class);
-    private static final AtomicReferenceFieldUpdater<H2ClientParentConnectionContext, FlushStrategy>
-            flushStrategyUpdater = newUpdater(H2ClientParentConnectionContext.class, FlushStrategy.class,
-            "flushStrategy");
     private static final ScheduledFuture<?> GRACEFUL_CLOSE_PING_PENDING = new NoopScheduledFuture();
     private static final ScheduledFuture<?> GRACEFUL_CLOSE_PING_ACK_RECV = new NoopScheduledFuture();
-    private static final long GRACEFUL_CLOSE_PING_CONTENT = 34213531352L;
+    private static final long GRACEFUL_CLOSE_PING_CONTENT = ThreadLocalRandom.current().nextLong();
     private static final long GRACEFUL_CLOSE_PING_ACK_TIMEOUT_MS = 10000;
-    private volatile FlushStrategy flushStrategy;
+    private final FlushStrategyHolder flushStrategyHolder;
     private final HttpExecutionContext executionContext;
     private final SingleSource.Processor<Throwable, Throwable> transportError = newSingleProcessor();
     private final CompletableSource.Processor onClosing = newCompletableProcessor();
-    private final FlushStrategy originalFlushStrategy;
+    private final int gracefulShutdownTimeoutMs;
     @Nullable
     private SSLSession sslSession;
     @Nullable
-    private ScheduledFuture<?> gracefulClosePingAckTimeoutFuture;
+    private ScheduledFuture<?> gracefulCloseTimeoutFuture;
+    private int activeChildChannels;
 
     private H2ClientParentConnectionContext(Channel channel, BufferAllocator allocator,
                                             Executor executor, FlushStrategy flushStrategy,
-                                            HttpExecutionStrategy executionStrategy) {
+                                            int gracefulShutdownTimeoutMs, HttpExecutionStrategy executionStrategy) {
         super(channel, executor);
         this.executionContext = new DefaultHttpExecutionContext(allocator, fromNettyEventLoop(channel.eventLoop()),
                 executor, executionStrategy);
-        // Wrap the strategy so that we can do reference equality to check if the strategy has been modified.
-        originalFlushStrategy = new DelegatingFlushStrategy(flushStrategy);
-        this.flushStrategy = originalFlushStrategy;
+        this.flushStrategyHolder = new FlushStrategyHolder(flushStrategy);
+        this.gracefulShutdownTimeoutMs = gracefulShutdownTimeoutMs;
         // Just in case the channel abruptly closes, we should complete the onClosing Completable.
         onClose().subscribe(onClosing::onComplete);
     }
@@ -160,7 +157,8 @@ final class H2ClientParentConnectionContext extends NettyChannelListenableAsyncC
                 try {
                     delayedCancellable = new DelayedCancellable();
                     H2ClientParentConnectionContext connection = new H2ClientParentConnectionContext(channel,
-                            allocator, executor, parentFlushStrategy, executionStrategy);
+                            allocator, executor, parentFlushStrategy, config.gracefulShutdownTimeoutMs(),
+                            executionStrategy);
                     channel.attr(CHANNEL_CLOSEABLE_KEY).set(connection);
                     // We need the NettyToStChannelInboundHandler to be last in the pipeline. We accomplish that by
                     // calling the ChannelInitializer before we do addLast for the NettyToStChannelInboundHandler.
@@ -190,9 +188,7 @@ final class H2ClientParentConnectionContext extends NettyChannelListenableAsyncC
 
     @Override
     public Cancellable updateFlushStrategy(final FlushStrategyProvider strategyProvider) {
-        FlushStrategy old = flushStrategyUpdater.getAndUpdate(this, current ->
-                strategyProvider.getNewStrategy(current, current == originalFlushStrategy));
-        return () -> updateFlushStrategy((__, ___) -> old);
+        return flushStrategyHolder.updateFlushStrategy(strategyProvider);
     }
 
     @Override
@@ -227,6 +223,11 @@ final class H2ClientParentConnectionContext extends NettyChannelListenableAsyncC
     }
 
     @Override
+    public Channel nettyChannel() {
+        return channel();
+    }
+
+    @Override
     protected void doCloseAsyncGracefully() {
         EventLoop eventLoop = channel().eventLoop();
         if (eventLoop.inEventLoop()) {
@@ -243,11 +244,11 @@ final class H2ClientParentConnectionContext extends NettyChannelListenableAsyncC
     }
 
     private void doCloseAsyncGracefully0() {
-        if (gracefulClosePingAckTimeoutFuture == null) {
-            // Set the gracefulClosePingAckTimeoutFuture before doing the write, because we will reference the state
+        if (gracefulCloseTimeoutFuture == null) {
+            // Set the gracefulCloseTimeoutFuture before doing the write, because we will reference the state
             // when we receive the PING(ACK) to determine if action is necessary, and it is conceivable that the
             // write future may not be executed which sets the timer.
-            gracefulClosePingAckTimeoutFuture = GRACEFUL_CLOSE_PING_PENDING;
+            gracefulCloseTimeoutFuture = GRACEFUL_CLOSE_PING_PENDING;
 
             onClosing.onComplete();
 
@@ -260,19 +261,41 @@ final class H2ClientParentConnectionContext extends NettyChannelListenableAsyncC
             goAwayFrame.setExtraStreamIds(Integer.MAX_VALUE);
             channel().write(goAwayFrame);
             channel().writeAndFlush(new DefaultHttp2PingFrame(GRACEFUL_CLOSE_PING_CONTENT)).addListener(future -> {
-                        // If gracefulClosePingAckTimeoutFuture is not GRACEFUL_CLOSE_PING_PENDING that means we have
-                        // already received the PING(ACK) and there is no need to apply the timeout.
-                        if (gracefulClosePingAckTimeoutFuture == GRACEFUL_CLOSE_PING_PENDING) {
-                            gracefulClosePingAckTimeoutFuture = channel().eventLoop().schedule(() -> {
-                                // If the PING(ACK) times out we may have under estimated the 2RTT time so we
-                                // optimistically keep the connection open and rely upon higher level timeouts to tear
-                                // down the connection.
-                                channel().writeAndFlush(new DefaultHttp2GoAwayFrame(NO_ERROR));
-                                LOGGER.debug("channel={} timeout {}ms waiting for PING(ACK) during graceful close",
-                                        channel(), GRACEFUL_CLOSE_PING_ACK_TIMEOUT_MS);
-                            }, GRACEFUL_CLOSE_PING_ACK_TIMEOUT_MS, MILLISECONDS);
-                        }
-                    });
+                // If gracefulCloseTimeoutFuture is not GRACEFUL_CLOSE_PING_PENDING that means we have
+                // already received the PING(ACK) and there is no need to apply the timeout.
+                if (future.isSuccess() && gracefulCloseTimeoutFuture == GRACEFUL_CLOSE_PING_PENDING) {
+                    gracefulCloseTimeoutFuture = channel().eventLoop().schedule(() -> {
+                        // If the PING(ACK) times out we may have under estimated the 2RTT time so we
+                        // optimistically keep the connection open and rely upon higher level timeouts to tear
+                        // down the connection.
+                        gracefulCloseWriteSecondGoAway(channel());
+                        LOGGER.debug("channel={} timeout {}ms waiting for PING(ACK) during graceful close",
+                                channel(), GRACEFUL_CLOSE_PING_ACK_TIMEOUT_MS);
+                    }, GRACEFUL_CLOSE_PING_ACK_TIMEOUT_MS, MILLISECONDS);
+                }
+            });
+        }
+    }
+
+    private void gracefulCloseWriteSecondGoAway(ChannelOutboundInvoker ctx) {
+        ctx.writeAndFlush(new DefaultHttp2GoAwayFrame(NO_ERROR)).addListener(future -> {
+            if (activeChildChannels == 0) {
+                channel().close();
+            } else if (future.isSuccess()) {
+                gracefulCloseTimeoutFuture = channel().eventLoop().schedule(() -> {
+                    LOGGER.debug("channel={} timeout {}ms waiting for graceful close with {} active streams",
+                            channel(), gracefulShutdownTimeoutMs, activeChildChannels);
+                    channel().close();
+                }, gracefulShutdownTimeoutMs, MILLISECONDS);
+            }
+        });
+    }
+
+    private void tryFinishGracefulClose() {
+        if (activeChildChannels == 0 && gracefulCloseTimeoutFuture != null &&
+                gracefulCloseTimeoutFuture != GRACEFUL_CLOSE_PING_PENDING) {
+            // gracefulCloseTimeoutFuture will be cancelled during connection closure elsewhere.
+            channel().close();
         }
     }
 
@@ -325,11 +348,13 @@ final class H2ClientParentConnectionContext extends NettyChannelListenableAsyncC
         @Override
         public void channelInactive(ChannelHandlerContext ctx) {
             tryFailSubscriber(CLOSED_CHANNEL_INACTIVE);
+            doConnectionCleanup();
         }
 
         @Override
         public void handlerRemoved(ChannelHandlerContext ctx) {
             tryFailSubscriber(CLOSED_HANDLER_REMOVED);
+            doConnectionCleanup();
         }
 
         @Override
@@ -376,13 +401,19 @@ final class H2ClientParentConnectionContext extends NettyChannelListenableAsyncC
             } else if (msg instanceof Http2PingFrame) {
               Http2PingFrame pingFrame = (Http2PingFrame) msg;
               if (pingFrame.ack() && pingFrame.content() == GRACEFUL_CLOSE_PING_CONTENT &&
-                      connection.gracefulClosePingAckTimeoutFuture != null) {
-                  connection.gracefulClosePingAckTimeoutFuture.cancel(true);
-                  connection.gracefulClosePingAckTimeoutFuture = GRACEFUL_CLOSE_PING_ACK_RECV;
-                  ctx.writeAndFlush(new DefaultHttp2GoAwayFrame(NO_ERROR));
+                      connection.gracefulCloseTimeoutFuture != null) {
+                  connection.gracefulCloseTimeoutFuture.cancel(true);
+                  connection.gracefulCloseTimeoutFuture = GRACEFUL_CLOSE_PING_ACK_RECV;
+                  connection.gracefulCloseWriteSecondGoAway(ctx);
               }
             } else {
                 ctx.fireChannelRead(msg);
+            }
+        }
+
+        private void doConnectionCleanup() {
+            if (connection.gracefulCloseTimeoutFuture != null) {
+                connection.gracefulCloseTimeoutFuture.cancel(true);
             }
         }
 
@@ -466,6 +497,11 @@ final class H2ClientParentConnectionContext extends NettyChannelListenableAsyncC
             if (futureCause == null) {
                 try {
                     Http2StreamChannel streamChannel = future.getNow();
+                    ++connection.activeChildChannels;
+                    streamChannel.closeFuture().addListener(future1 -> {
+                        --connection.activeChildChannels;
+                        connection.tryFinishGracefulClose();
+                    });
                     streamChannel.pipeline().addLast(new H2ToStH1ClientDuplexHandler(waitForSslHandshake,
                             connection.executionContext().bufferAllocator(), headersFactory));
                     DefaultNettyConnection<Object, Object> nettyConnection =
@@ -476,7 +512,7 @@ final class H2ClientParentConnectionContext extends NettyChannelListenableAsyncC
                                     // Http2StreamChannel is not of type SocketChannel. Also Netty will manage the half
                                     // closure based upon stream state.
                                     UNSUPPORTED_PROTOCOL_CLOSE_HANDLER,
-                                    connection.flushStrategy,
+                                    connection.flushStrategyHolder.currentStrategy(),
                                     connection.executionContext.executionStrategy());
 
                     // In h2 a stream is 1 to 1 with a request/response life cycle. This means there is no concept of
@@ -554,6 +590,11 @@ final class H2ClientParentConnectionContext extends NettyChannelListenableAsyncC
         @Override
         public Completable closeAsyncGracefully() {
             return connection.closeAsyncGracefully();
+        }
+
+        @Override
+        public Channel nettyChannel() {
+            return connection.nettyChannel();
         }
 
         @Override

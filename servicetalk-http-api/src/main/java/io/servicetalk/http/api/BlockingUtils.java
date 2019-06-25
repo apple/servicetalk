@@ -30,8 +30,6 @@ import static java.lang.Thread.currentThread;
 
 final class BlockingUtils {
 
-    private static final Object DUMMY = new Object();
-
     private BlockingUtils() {
         // no instances
     }
@@ -139,8 +137,7 @@ final class BlockingUtils {
         try {
             return source.toFuture().get();
         } catch (final ExecutionException e) {
-            throwException(e.getCause());
-            return uncheckedCast(); // Used to fool the compiler, but actually should never be invoked at runtime.
+            return throwException(e.getCause());
         }
     }
 
@@ -152,10 +149,5 @@ final class BlockingUtils {
         } catch (final ExecutionException e) {
             throwException(e.getCause());
         }
-    }
-
-    @SuppressWarnings("unchecked")
-    private static <T> T uncheckedCast() {
-        return (T) DUMMY;
     }
 }

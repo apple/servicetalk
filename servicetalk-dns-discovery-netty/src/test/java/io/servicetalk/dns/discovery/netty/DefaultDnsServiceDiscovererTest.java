@@ -511,7 +511,7 @@ public class DefaultDnsServiceDiscovererTest {
         assertThat(subscriber.inactiveEventAddresses.size(), equalTo(expectedInactiveCount));
     }
 
-    @Ignore("This is failing because of https://github.com/servicetalk/servicetalk/issues/280")
+    @Ignore("This is failing because of https://github.com/apple/servicetalk/issues/280")
     @SuppressWarnings("unchecked")
     @Test
     public void exceptionInSubscriberOnErrorWhileClose() throws Exception {

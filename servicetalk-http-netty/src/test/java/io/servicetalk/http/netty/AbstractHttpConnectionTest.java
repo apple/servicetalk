@@ -32,6 +32,7 @@ import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.TestStreamingHttpConnection;
 import io.servicetalk.transport.netty.internal.ExecutionContextRule;
+import io.servicetalk.transport.netty.internal.FlushStrategy;
 import io.servicetalk.transport.netty.internal.NettyConnection;
 
 import org.junit.Before;
@@ -96,7 +97,7 @@ public final class AbstractHttpConnectionTest {
         }
 
         @Override
-        protected Publisher<Object> writeAndRead(final Publisher<Object> stream) {
+        protected Publisher<Object> writeAndRead(final Publisher<Object> stream, final FlushStrategy flushStrategy) {
             return reqResp.apply(stream);
         }
     }

@@ -17,7 +17,10 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.client.api.ConnectionFactoryFilter;
 import io.servicetalk.client.api.DelegatingConnectionFactory;
+import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.api.AsyncCloseables;
+import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.BlockingHttpClient;
@@ -27,23 +30,32 @@ import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.http.api.ReservedBlockingHttpConnection;
+import io.servicetalk.http.api.ReservedStreamingHttpConnection;
 import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.http.api.StreamingHttpConnectionFilter;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
+import io.servicetalk.transport.api.ConnectionContext;
+import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
+import io.servicetalk.transport.netty.internal.NettyConnectionContext;
 
+import io.netty.channel.Channel;
 import org.junit.After;
 import org.junit.Test;
 
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.UnaryOperator;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import javax.net.ssl.SSLSession;
 
+import static io.servicetalk.concurrent.api.Processors.newCompletableProcessor;
+import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.http.netty.HttpClients.forSingleAddress;
 import static io.servicetalk.http.netty.HttpServers.forPort;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
@@ -105,7 +117,22 @@ public class ConnectionFactoryFilterTest {
         AddResponseHeaderConnectionFilter.assertResponseHeader(response);
     }
 
-    @Nonnull
+    @Test
+    public void onClosingIsDelegated() throws Exception {
+        CompletableSource.Processor onClosing = newCompletableProcessor();
+        client = clientBuilder.appendConnectionFactoryFilter(
+                newConnectionFactoryFilter(delegate ->
+                        new NettyConnectionContextReturningConnection(delegate, onClosing)))
+                .buildBlocking();
+
+        ReservedStreamingHttpConnection con = client.asStreamingClient()
+                .reserveConnection(client.get("/"))
+                .toFuture().get();
+        NettyConnectionContext ctx = (NettyConnectionContext) con.connectionContext();
+        onClosing.onComplete();
+        ctx.onClosing().toFuture().get();
+    }
+
     private HttpResponse sendRequest(BlockingHttpClient client) throws Exception {
         HttpResponse response = client.request(client.get("/"));
         assertThat("Unexpected response.", response.status(), equalTo(HttpResponseStatus.OK));
@@ -157,6 +184,90 @@ public class ConnectionFactoryFilterTest {
 
         static void assertResponseHeader(HttpResponseMetaData metaData) {
             assertThat("Expected header not found.", metaData.headers().contains(HEADER_FOR_FACTORY), is(true));
+        }
+    }
+
+    private static final class NettyConnectionContextReturningConnection extends StreamingHttpConnectionFilter {
+        private final NettyConnectionContext ctx;
+
+        NettyConnectionContextReturningConnection(final FilterableStreamingHttpConnection delegate,
+                                                  final CompletableSource.Processor onClosing) {
+            super(delegate);
+            ctx = new DelegatingNettyConnectionContext((NettyConnectionContext) delegate.connectionContext(),
+                    onClosing);
+        }
+
+        @Override
+        public ConnectionContext connectionContext() {
+            return ctx;
+        }
+   }
+
+    private static final class DelegatingNettyConnectionContext implements NettyConnectionContext {
+
+        private final NettyConnectionContext delegate;
+        private final CompletableSource.Processor onClosing;
+
+        DelegatingNettyConnectionContext(final NettyConnectionContext delegate,
+                                         final CompletableSource.Processor onClosing) {
+            this.delegate = delegate;
+            this.onClosing = onClosing;
+        }
+
+        @Override
+        public SocketAddress localAddress() {
+            return delegate.localAddress();
+        }
+
+        @Override
+        public SocketAddress remoteAddress() {
+            return delegate.remoteAddress();
+        }
+
+        @Override
+        @Nullable
+        public SSLSession sslSession() {
+            return delegate.sslSession();
+        }
+
+        @Override
+        public ExecutionContext executionContext() {
+            return delegate.executionContext();
+        }
+
+        @Override
+        public Completable onClose() {
+            return delegate.onClose();
+        }
+
+        @Override
+        public Completable closeAsync() {
+            return delegate.closeAsync();
+        }
+
+        @Override
+        public Completable closeAsyncGracefully() {
+            return delegate.closeAsyncGracefully();
+        }
+
+        @Override
+        public Channel nettyChannel() {
+            return delegate.nettyChannel();
+        }
+
+        @Override
+        public Cancellable updateFlushStrategy(final FlushStrategyProvider strategyProvider) {
+            return delegate.updateFlushStrategy(strategyProvider);
+        }
+
+        @Override
+        public Single<Throwable> transportError() {
+            return delegate.transportError();
+        }
+
+        @Override
+        public Completable onClosing() {
+            return fromSource(onClosing);
         }
     }
 }

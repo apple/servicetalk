@@ -207,15 +207,16 @@ public class ContentHeadersTest extends AbstractNettyHttpServerTest {
     }
 
     private static Supplier<HttpResponseMetaData> aggregatedResponse(final HttpResponseStatus status) {
-        return describe(() -> newAggregatedResponse(status), "AggregatedResponse");
+        return describe(() -> newAggregatedResponse(status), "Aggregated" + status.code() + "Response");
     }
 
     private static Supplier<HttpResponseMetaData> aggregatedResponseAsStreaming(final HttpResponseStatus status) {
-        return describe(() -> newAggregatedResponse(status).toStreamingResponse(), "AggregatedResponseAsStreaming");
+        return describe(() -> newAggregatedResponse(status).toStreamingResponse(), "Aggregated" + status.code() +
+                "ResponseAsStreaming");
     }
 
     private static Supplier<HttpResponseMetaData> streamingResponse(final HttpResponseStatus status) {
-        return describe(() -> newStreamingResponse(status), "StreamingResponse");
+        return describe(() -> newStreamingResponse(status), "Streaming" + status.code() + "Response");
     }
 
     private static <T> UnaryOperator<T> defaults() {

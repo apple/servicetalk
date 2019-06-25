@@ -20,6 +20,9 @@ import io.servicetalk.concurrent.internal.DeliberateException;
 import io.servicetalk.concurrent.internal.FlowControlUtil;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 
+import org.hamcrest.BaseMatcher;
+import org.hamcrest.Description;
+import org.hamcrest.Matcher;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -28,28 +31,32 @@ import org.junit.Test;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
 
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.concurrent.internal.ServiceTalkTestTimeout.DEFAULT_TIMEOUT_SECONDS;
-import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.newExceptionForInvalidRequestN;
+import static java.lang.Long.MAX_VALUE;
+import static java.lang.Long.MIN_VALUE;
+import static java.lang.Math.min;
 import static java.util.concurrent.Executors.newCachedThreadPool;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.Assert.fail;
+import static org.mockito.AdditionalMatchers.leq;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 public final class SequentialSubscriptionTest {
-
+    private static final int ITERATIONS_FOR_CONCURRENT_TESTS = 500;
     @Rule
     public final ServiceTalkTestTimeout timeout = new ServiceTalkTestTimeout();
 
@@ -68,8 +75,26 @@ public final class SequentialSubscriptionTest {
 
     @After
     public void tearDown() throws Exception {
-        executor.shutdown();
+        executor.shutdownNow();
         executor.awaitTermination(DEFAULT_TIMEOUT_SECONDS, SECONDS);
+    }
+
+    @Test
+    public void testInvalidRequestNNegative1() {
+        s.request(-1);
+        verify(s1).request(-1);
+    }
+
+    @Test
+    public void testInvalidRequestNZero() {
+        s.request(0);
+        verify(s1).request(leq(0L));
+    }
+
+    @Test
+    public void testInvalidRequestNLongMin() {
+        s.request(0);
+        verify(s1).request(MIN_VALUE);
     }
 
     @Test
@@ -113,6 +138,19 @@ public final class SequentialSubscriptionTest {
         verifyNoMoreInteractions(s1);
     }
 
+    @Test(expected = NullPointerException.class)
+    public void testSwitchToNull() {
+        s.switchTo(null);
+    }
+
+    @Test
+    public void testCancelAfterRequest() {
+        s.cancel();
+        verify(s1).cancel();
+        s.request(1);
+        verify(s1, never()).request(anyLong());
+    }
+
     @Test
     public void testSubscriptionRequestThrows() {
         doThrow(DELIBERATE_EXCEPTION).when(s1).request(anyLong());
@@ -145,80 +183,193 @@ public final class SequentialSubscriptionTest {
 
     @Test
     public void testConcurrentLargeRequestedWithSwitch() throws Exception {
-        testConcurrentRequestEmitAndSwitch(10_00_000, 5);
+        testConcurrentRequestEmitAndSwitch(1_000_000, 10_000);
     }
 
-    private void testConcurrentRequestEmitAndSwitch(int totalItems, int switchEvery) throws Exception {
-        final AtomicReference<RuntimeException> errorFromSubscription = new AtomicReference<>();
-        final AtomicLong requestedReceived = new AtomicLong();
-        SequentialSubscription subscription = new SequentialSubscription(newMockSubscription(requestedReceived,
-                errorFromSubscription));
+    @Test
+    public void testRequestNAlwaysDirectedTowardSwitchedSubscription() throws Exception {
+        for (int i = 0; i < ITERATIONS_FOR_CONCURRENT_TESTS; ++i) {
+            requestNAlwaysDirectedTowardSwitchedSubscription();
+        }
+    }
+
+    @Test
+    public void requestNNegative1AlwaysDirectedTowardSwitchedSubscription() throws Exception {
+        for (int i = 0; i < ITERATIONS_FOR_CONCURRENT_TESTS; ++i) {
+            invalidRequestNAlwaysDirectedTowardSwitchedSubscription(-1, matchValueOrCancelled(is(-1L)));
+        }
+    }
+
+    @Test
+    public void requestNZeroAlwaysDirectedTowardSwitchedSubscription() throws Exception {
+        for (int i = 0; i < ITERATIONS_FOR_CONCURRENT_TESTS; ++i) {
+            invalidRequestNAlwaysDirectedTowardSwitchedSubscription(0, matchValueOrCancelled(lessThanOrEqualTo(0L)));
+        }
+    }
+
+    @Test
+    public void requestNLongMinAlwaysDirectedTowardSwitchedSubscription() throws Exception {
+        for (int i = 0; i < ITERATIONS_FOR_CONCURRENT_TESTS; ++i) {
+            invalidRequestNAlwaysDirectedTowardSwitchedSubscription(MIN_VALUE, matchValueOrCancelled(is(MIN_VALUE)));
+        }
+    }
+
+    private void testConcurrentRequestEmitAndSwitch(int totalItems, int maxDeliveryPerSubscription) throws Exception {
+        final SequentialSubscription subscription = new SequentialSubscription();
         final CyclicBarrier allStarted = new CyclicBarrier(3);
-        final AtomicInteger requested = new AtomicInteger();
-        final AtomicInteger sent = new AtomicInteger();
         Future<Void> requester = executor.submit(() -> {
             allStarted.await();
-            int requestedCnt = 0;
-            while (requestedCnt < totalItems) {
+            for (long requestedCnt = 0; requestedCnt < totalItems; ++requestedCnt) {
                 subscription.request(1);
-                requestedCnt++;
             }
-            requested.addAndGet(requestedCnt);
             return null;
         });
-        Future<Void> sender = executor.submit(() -> {
+        Future<Long> sender = executor.submit(() -> {
+            long totalSent = 0;
+            CountingSubscription lastSourceSubscription = new CountingSubscription();
+            subscription.switchTo(lastSourceSubscription);
             allStarted.await();
-            int totalSent = 0;
-            long sentToCurrentSubscription = 0;
-            AtomicLong currentSubscriptionRequested = requestedReceived;
-            for (;;) {
-                long reqRecvd = currentSubscriptionRequested.get();
-                if (errorFromSubscription.get() != null) {
-                    throw errorFromSubscription.get();
-                }
-                if (sentToCurrentSubscription == reqRecvd) {
-                    int totalRequested = requested.get();
-                    if (totalRequested == totalItems && totalSent == totalRequested) {
-                        break;
-                    } else {
-                        Thread.yield();
-                        continue;
+            while (totalSent < totalItems) {
+                long reqRecvd = lastSourceSubscription.requestedReceived();
+                if (reqRecvd != 0) {
+                    long itemReceivedCount = min(reqRecvd, maxDeliveryPerSubscription);
+                    // Simulate delivering itemReceivedCount items which is a snapshot of what has been requested from
+                    // the lastSourceSubscription, and then terminating a source.
+                    for (long i = 0; i < itemReceivedCount; ++i) {
+                        subscription.itemReceived();
+                        if (totalSent < totalItems) {
+                            ++totalSent;
+                        } else {
+                            break;
+                        }
                     }
-                }
-                subscription.itemReceived();
-                sentToCurrentSubscription++;
-                totalSent++;
-                if (sentToCurrentSubscription % switchEvery == 0) {
-                    sentToCurrentSubscription = 0;
-                    currentSubscriptionRequested = new AtomicLong();
-                    subscription.switchTo(newMockSubscription(currentSubscriptionRequested, errorFromSubscription));
+                    lastSourceSubscription = new CountingSubscription();
+                    subscription.switchTo(lastSourceSubscription);
+                } else {
+                    // Simulating switching with no items delivered (e.g. Completable, or empty Publisher).
+                    lastSourceSubscription = new CountingSubscription();
+                    subscription.switchTo(lastSourceSubscription);
+                    Thread.yield();
                 }
             }
-            sent.set(totalSent);
-            return null;
+            return totalSent;
         });
         allStarted.await();
         requester.get();
-        assertThat("Unexpected requested count.", requested.get(), equalTo(totalItems));
-        sender.get();
-        assertThat("Unexpected sent count.", sent.get(), equalTo(totalItems));
+        assertThat("Unexpected itemReceived.", sender.get(), equalTo((long) totalItems));
     }
 
-    private static Subscription newMockSubscription(AtomicLong requestedReceived,
-                                                    AtomicReference<RuntimeException> errorFromSubscription) {
-        return new Subscription() {
+    private void requestNAlwaysDirectedTowardSwitchedSubscription() throws Exception {
+        final SequentialSubscription subscription = new SequentialSubscription();
+        final CyclicBarrier allStarted = new CyclicBarrier(3);
+        Future<Void> requester = executor.submit(() -> {
+            allStarted.await();
+            subscription.request(1);
+            return null;
+        });
+        Future<Long> sender = executor.submit(() -> {
+            allStarted.await();
+            CountingSubscription lastSourceSubscription = new CountingSubscription();
+            subscription.switchTo(lastSourceSubscription);
+            long reqRecvd;
+            while ((reqRecvd = lastSourceSubscription.requestedReceived()) == 0) {
+                Thread.yield();
+            }
+            return reqRecvd;
+        });
+        allStarted.await();
+        requester.get();
+        assertThat("Unexpected itemReceived.", sender.get(), equalTo((long) 1));
+    }
+
+    private void invalidRequestNAlwaysDirectedTowardSwitchedSubscription(long n,
+                                                                         Matcher<? super CountingSubscription> matcher)
+            throws Exception {
+        final SequentialSubscription subscription = new SequentialSubscription();
+        final CyclicBarrier allStarted = new CyclicBarrier(3);
+        Future<Void> requester = executor.submit(() -> {
+            allStarted.await();
+            subscription.request(n);
+            return null;
+        });
+        Future<CountingSubscription> sender = executor.submit(() -> {
+            allStarted.await();
+            CountingSubscription lastSourceSubscription = new CountingSubscription(true);
+            subscription.switchTo(lastSourceSubscription);
+            while (lastSourceSubscription.requestedReceived() == 0) {
+                Thread.yield();
+            }
+            return lastSourceSubscription;
+        });
+        allStarted.await();
+        requester.get();
+        CountingSubscription countingSubscription = sender.get();
+        assertThat("Unexpected itemReceived: " + countingSubscription, countingSubscription, matcher);
+    }
+
+    private static final class CountingSubscription implements Subscription {
+        private final AtomicLong requestedReceived = new AtomicLong();
+        private volatile boolean cancelled;
+        private boolean allowInvalidN;
+
+        CountingSubscription() {
+            this(false);
+        }
+
+        CountingSubscription(boolean allowInvalidN) {
+            this.allowInvalidN = allowInvalidN;
+        }
+
+        @Override
+        public void request(long n) {
+            if (allowInvalidN) {
+                requestedReceived.addAndGet(n);
+            } else if (n <= 0) {
+                // set to MAX_VALUE so tests will complete and the exception will propagate, instead of the switch
+                // thread being hung waiting for demand.
+                requestedReceived.set(MAX_VALUE);
+                throw newExceptionForInvalidRequestN(n);
+            } else {
+                requestedReceived.accumulateAndGet(n, FlowControlUtil::addWithOverflowProtection);
+            }
+        }
+
+        @Override
+        public void cancel() {
+            cancelled = true;
+            requestedReceived.set(MAX_VALUE);
+        }
+
+        boolean isCancelled() {
+            return cancelled;
+        }
+
+        long requestedReceived() {
+            return requestedReceived.get();
+        }
+
+        @Override
+        public String toString() {
+            return "requestedReceived: " + requestedReceived.get() + " cancelled: " + cancelled;
+        }
+    }
+
+    private static Matcher<? super CountingSubscription> matchValueOrCancelled(
+            Matcher<? super Long> valueMatcher) {
+        return new BaseMatcher<CountingSubscription>() {
             @Override
-            public void request(long n) {
-                if (!isRequestNValid(n)) {
-                    errorFromSubscription.set(newExceptionForInvalidRequestN(n));
-                } else {
-                    requestedReceived.accumulateAndGet(n, FlowControlUtil::addWithOverflowProtection);
-                }
+            public void describeTo(final Description description) {
+                valueMatcher.describeTo(description);
+                description.appendText(" or not cancelled.");
             }
 
             @Override
-            public void cancel() {
-                // Noop
+            public boolean matches(final Object o) {
+                if (!(o instanceof CountingSubscription)) {
+                    return false;
+                }
+                CountingSubscription s = (CountingSubscription) o;
+                return valueMatcher.matches(s.requestedReceived()) || s.isCancelled();
             }
         };
     }

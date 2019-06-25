@@ -22,6 +22,7 @@ import io.servicetalk.transport.api.ExecutionStrategy;
 
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import javax.annotation.Nullable;
 
 /**
  * An execution strategy for HTTP client and servers.
@@ -34,12 +35,14 @@ public interface HttpExecutionStrategy extends ExecutionStrategy {
      * @param fallback {@link Executor} to use as a fallback if this {@link HttpExecutionStrategy} does not define an
      * {@link Executor}.
      * @param flattenedRequest A flattened {@link Publisher} containing all data constituting an HTTP request.
-     * @param client A {@link Function} that given flattened stream of {@link HttpRequestMetaData}, payload and
+     * @param flushStrategy The {@code FlushStrategy} to use.
+     * @param client A {@link BiFunction} that given flattened stream of {@link HttpRequestMetaData}, payload and
      * trailers, for the passed {@link StreamingHttpRequest} returns a {@link Single}.
+     * @param <FS> The {@code FlushStrategy} type to use.
      * @return {@link Single} which is offloaded as required.
      */
-    Single<StreamingHttpResponse> invokeClient(Executor fallback, Publisher<Object> flattenedRequest,
-                                               Function<Publisher<Object>, Single<StreamingHttpResponse>> client);
+    <FS> Single<StreamingHttpResponse> invokeClient(Executor fallback, Publisher<Object> flattenedRequest,
+                                                    @Nullable FS flushStrategy, ClientInvoker<FS> client);
 
     /**
      * Invokes the passed {@link Function} and applies the necessary offloading of request and response for a server.

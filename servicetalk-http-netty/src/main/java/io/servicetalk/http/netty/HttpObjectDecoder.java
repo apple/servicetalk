@@ -31,6 +31,7 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.buffer.api.Buffer;
+import io.servicetalk.http.api.EmptyHttpHeaders;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.HttpMetaData;
@@ -59,6 +60,7 @@ import static io.netty.util.ByteProcessor.FIND_NON_LINEAR_WHITESPACE;
 import static io.servicetalk.buffer.netty.BufferUtil.newBufferFrom;
 import static io.servicetalk.http.api.CharSequences.emptyAsciiString;
 import static io.servicetalk.http.api.CharSequences.newAsciiString;
+import static io.servicetalk.http.api.HeaderUtils.isTransferEncodingChunked;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderNames.SEC_WEBSOCKET_KEY1;
 import static io.servicetalk.http.api.HttpHeaderNames.SEC_WEBSOCKET_KEY2;
@@ -69,7 +71,6 @@ import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_0;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpRequestMethod.GET;
 import static io.servicetalk.http.api.HttpResponseStatus.SWITCHING_PROTOCOLS;
-import static io.servicetalk.http.netty.HeaderUtils.isTransferEncodingChunked;
 import static io.servicetalk.http.netty.HeaderUtils.removeTransferEncodingChunked;
 import static io.servicetalk.http.netty.HttpKeepAlive.shouldClose;
 import static java.lang.Character.isISOControl;
@@ -242,7 +243,7 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
                         // fast-path
                         // No content is expected.
                         ctx.fireChannelRead(message);
-                        ctx.fireChannelRead(headersFactory.newEmptyTrailers());
+                        ctx.fireChannelRead(EmptyHttpHeaders.INSTANCE);
                         closeHandler.protocolPayloadEndInbound(ctx);
                         resetNow();
                         return;
@@ -259,7 +260,7 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
                         long contentLength = contentLength();
                         if (contentLength == 0 || contentLength == -1 && isDecodingRequest()) {
                             ctx.fireChannelRead(message);
-                            ctx.fireChannelRead(headersFactory.newEmptyTrailers());
+                            ctx.fireChannelRead(EmptyHttpHeaders.INSTANCE);
                             closeHandler.protocolPayloadEndInbound(ctx);
                             resetNow();
                             return;
@@ -316,7 +317,7 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
                     // https://tools.ietf.org/html/rfc7230.html#section-4.1
                     // This is not chunked encoding so there will not be any trailers.
                     ctx.fireChannelRead(newBufferFrom(content));
-                    ctx.fireChannelRead(headersFactory.newEmptyTrailers());
+                    ctx.fireChannelRead(EmptyHttpHeaders.INSTANCE);
                     closeHandler.protocolPayloadEndInbound(ctx);
                     resetNow();
                 } else {
@@ -420,7 +421,7 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
             boolean chunked = isTransferEncodingChunked(message.headers());
             if (currentState == State.READ_VARIABLE_LENGTH_CONTENT && !in.isReadable() && !chunked) {
                 // End of connection.
-                ctx.fireChannelRead(headersFactory.newEmptyTrailers());
+                ctx.fireChannelRead(EmptyHttpHeaders.INSTANCE);
                 closeHandler.protocolPayloadEndInbound(ctx);
                 resetNow();
                 return;
@@ -448,7 +449,7 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
             }
 
             if (!prematureClosure) {
-                ctx.fireChannelRead(headersFactory.newEmptyTrailers());
+                ctx.fireChannelRead(EmptyHttpHeaders.INSTANCE);
                 closeHandler.protocolPayloadEndInbound(ctx);
             }
             resetNow();

@@ -20,6 +20,8 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.api.ConnectionContext;
 
+import io.netty.channel.Channel;
+
 /**
  * A specialized {@link ConnectionContext} for netty based transports.
  */
@@ -30,11 +32,10 @@ public interface NettyConnectionContext extends ConnectionContext {
      * subsequent writes on this connection.
      *
      * @param strategyProvider {@link FlushStrategyProvider} to provide a new {@link FlushStrategy}.
-     * {@link FlushStrategyProvider#getNewStrategy(FlushStrategy, boolean)} <strong>MAY</strong> be invoked multiple
-     * times for a single call to this method and is expected to be idempotent.
+     * {@link FlushStrategyProvider#computeFlushStrategy(FlushStrategy, boolean)} <strong>MAY</strong> be invoked
+     * multiple times for a single call to this method and is expected to be idempotent.
      *
-     * @return A {@link Cancellable} that will cancel this update and revert the {@link FlushStrategy} for this
-     * connection to a default value.
+     * @return A {@link Cancellable} that will cancel this update.
      */
     Cancellable updateFlushStrategy(FlushStrategyProvider strategyProvider);
 
@@ -57,6 +58,13 @@ public interface NettyConnectionContext extends ConnectionContext {
     Completable onClosing();
 
     /**
+     * Return the Netty {@link Channel} backing this connection.
+     *
+     * @return the Netty {@link Channel} backing this connection.
+     */
+    Channel nettyChannel();
+
+    /**
      * A provider of {@link FlushStrategy} to update the {@link FlushStrategy} for a {@link NettyConnectionContext}.
      */
     @FunctionalInterface
@@ -73,6 +81,6 @@ public interface NettyConnectionContext extends ConnectionContext {
          * @return {@link FlushStrategy} to use if successfully updated by
          * {@link NettyConnectionContext#updateFlushStrategy(FlushStrategyProvider)}.
          */
-        FlushStrategy getNewStrategy(FlushStrategy current, boolean isCurrentOriginal);
+        FlushStrategy computeFlushStrategy(FlushStrategy current, boolean isCurrentOriginal);
     }
 }

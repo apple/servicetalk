@@ -45,14 +45,13 @@ final class SingleFlatMapPublisher<T, R> extends AbstractNoHandleSubscribePublis
                         contextMap, contextProvider), signalOffloader, contextMap, contextProvider);
     }
 
-    private static final class SubscriberImpl<T, R> implements SingleSource.Subscriber<T>, Subscriber<R> {
+    private static final class SubscriberImpl<T, R> extends CancellableThenSubscription
+            implements SingleSource.Subscriber<T>, Subscriber<R> {
         private final Subscriber<? super R> subscriber;
         private final Function<? super T, ? extends Publisher<? extends R>> nextFactory;
         private final SignalOffloader signalOffloader;
         private final AsyncContextMap contextMap;
         private final AsyncContextProvider contextProvider;
-        @Nullable
-        private volatile SequentialSubscription sequentialSubscription;
 
         SubscriberImpl(Subscriber<? super R> subscriber,
                        Function<? super T, ? extends Publisher<? extends R>> nextFactory,
@@ -67,31 +66,13 @@ final class SingleFlatMapPublisher<T, R> extends AbstractNoHandleSubscribePublis
 
         @Override
         public void onSubscribe(Cancellable cancellable) {
-            SequentialSubscription sequentialSubscription = this.sequentialSubscription;
-            if (sequentialSubscription != null) {
-                sequentialSubscription.cancel();
-                return;
-            }
-            this.sequentialSubscription = sequentialSubscription = new SequentialSubscription(new Subscription() {
-                @Override
-                public void request(long n) {
-                    // This is a NOOP because the work for the original Single is already in progress when onSubscribe
-                    // is called. Demand for Single is implicit so there is nothing to request.
-                }
-
-                @Override
-                public void cancel() {
-                    cancellable.cancel();
-                }
-            });
-            subscriber.onSubscribe(sequentialSubscription);
+            setCancellable(cancellable);
+            subscriber.onSubscribe(this);
         }
 
         @Override
         public void onSubscribe(Subscription s) {
-            SequentialSubscription sequentialSubscription = this.sequentialSubscription;
-            assert sequentialSubscription != null;
-            sequentialSubscription.switchTo(s);
+            setSubscription(s);
         }
 
         @Override
@@ -117,9 +98,6 @@ final class SingleFlatMapPublisher<T, R> extends AbstractNoHandleSubscribePublis
 
         @Override
         public void onNext(R r) {
-            SequentialSubscription sequentialSubscription = this.sequentialSubscription;
-            assert sequentialSubscription != null;
-            sequentialSubscription.itemReceived();
             subscriber.onNext(r);
         }
 

@@ -130,44 +130,11 @@ ServiceTalk provided filters follow this model themselves, eg:
 link:{sourceroot}servicetalk-opentracing-http/src/main/java/io/servicetalk/opentracing/http/TracingHttpRequesterFilter.java[`TracingHttpRequesterFilter`]
 and link:{sourceroot}servicetalk-http-utils/src/main/java/io/servicetalk/http/utils/RedirectingHttpRequesterFilter.java[`RedirectingHttpRequesterFilter`].
 
-== Overriding execution strategy
+== Evolving to asynchronous
 
-As elaborated xref:servicetalk::blocking.adoc#opt-in-to-run-on-event-loop[here], ServiceTalk supports overriding
-execution strategy for each request. This helps users to avoid complexity of writing non-blocking code for cases when
-it is not required.
-
-=== Client
-
-Each method on the client that interacts with the event loop, comes with an overload that takes an
-link:{sourceroot}servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpExecutionStrategy.java[`HttpExecutionStrategy`]. Users can pass any
-strategy to these methods and that strategy will be used for that request. This can be used to make requests, processing
-of which blocks and the requests, processing of which is completely asynchronous on the same client. eg:
-
-[source,java]
-----
-// Processing of this request does not have any blocking code
-client.request(HttpExecutionStrategies.noOffloadsStrategy(), client.get("/non-blocking"));
-
-// Processing of this request has blocking code
-client.request(client.get("/blocking"))
-        .map(resp -> aBlockingCall());
-----
-
-=== Server
-
-ServiceTalk only associates a single service with an HTTP server but it additionally provides ways to do routing from
-within a service. A xref:servicetalk-http-router-jersey::index.adoc[Jersey router] is one such router which
-provides ways to specify different
-xref:servicetalk-http-router-jersey::index.adoc#execution-strategies[execution strategies] per route.
-
-=== Global override
-
-In addition to overriding the execution strategy per request/route, one can also specify a strategy for a client/server
-using the respective builders.
-
-[source,java]
-----
-aBuilder.executionStrategy(HttpExecutionStrategies.noOffloadsStrategy());
-----
-
-This strategy will be used for all requests/routes that do not explicitly specify a strategy.
+Blocking programming model is easy to start and understand but it may not be the correct tool for all scenarios.
+In fact, ServiceTalk assumes that applications typically have a mixed profile where different parts follow different
+xref:servicetalk::introduction.adoc#programming-paradigms[programming paradigms]. One of the goals of ServiceTalk is to
+help users evolve from a blocking programming model to a completely asynchronous programming model without the need to
+completely rewrite the entire application. The process for this evolution is elaborated in
+xref:evolve-to-async.adoc[this document].

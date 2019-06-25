@@ -233,20 +233,20 @@ public class H2ClientPriorKnowledgeFeatureParityTest {
             assertEquals(headers.getCookie("name1"), new DefaultHttpCookiePair("name1", "value1"));
             assertEquals(headers.getCookie("name2"), new DefaultHttpCookiePair("name2", "value2"));
 
-            assertIteratorHasItems(headers.getCookies(), new DefaultHttpCookiePair("name1", "value1"),
+            assertIteratorHasItems(headers.getCookiesIterator(), new DefaultHttpCookiePair("name1", "value1"),
                     new DefaultHttpCookiePair("name2", "value2"), new DefaultHttpCookiePair("name1", "value3"));
-            assertIteratorHasItems(headers.getCookies("name1"), new DefaultHttpCookiePair("name1", "value1"),
+            assertIteratorHasItems(headers.getCookiesIterator("name1"), new DefaultHttpCookiePair("name1", "value1"),
                     new DefaultHttpCookiePair("name1", "value3"));
-            assertIteratorHasItems(headers.getCookies("name2"), new DefaultHttpCookiePair("name2", "value2"));
+            assertIteratorHasItems(headers.getCookiesIterator("name2"), new DefaultHttpCookiePair("name2", "value2"));
 
             assertTrue(headers.removeCookies("name1"));
-            assertEmptyIterator(headers.getCookies("name1"));
-            assertIteratorHasItems(headers.getCookies("name2"), new DefaultHttpCookiePair("name2", "value2"));
+            assertEmptyIterator(headers.getCookiesIterator("name1"));
+            assertIteratorHasItems(headers.getCookiesIterator("name2"), new DefaultHttpCookiePair("name2", "value2"));
 
             assertTrue(headers.removeCookies("name2"));
-            assertEmptyIterator(headers.getCookies("name1"));
-            assertEmptyIterator(headers.getCookies("name2"));
-            assertEmptyIterator(headers.values(COOKIE));
+            assertEmptyIterator(headers.getCookiesIterator("name1"));
+            assertEmptyIterator(headers.getCookiesIterator("name2"));
+            assertEmptyIterator(headers.valuesIterator(COOKIE));
 
             // Simulate the same behavior as above, but with addCookie
             headers.addCookie("name1", "value1");
@@ -261,20 +261,20 @@ public class H2ClientPriorKnowledgeFeatureParityTest {
             }
             assertEquals(headers.getCookie("name2"), new DefaultHttpCookiePair("name2", "value2"));
 
-            assertIteratorHasItems(headers.getCookies(), new DefaultHttpCookiePair("name1", "value1"),
+            assertIteratorHasItems(headers.getCookiesIterator(), new DefaultHttpCookiePair("name1", "value1"),
                     new DefaultHttpCookiePair("name2", "value2"), new DefaultHttpCookiePair("name1", "value3"));
-            assertIteratorHasItems(headers.getCookies("name1"), new DefaultHttpCookiePair("name1", "value1"),
+            assertIteratorHasItems(headers.getCookiesIterator("name1"), new DefaultHttpCookiePair("name1", "value1"),
                     new DefaultHttpCookiePair("name1", "value3"));
-            assertIteratorHasItems(headers.getCookies("name2"), new DefaultHttpCookiePair("name2", "value2"));
+            assertIteratorHasItems(headers.getCookiesIterator("name2"), new DefaultHttpCookiePair("name2", "value2"));
 
             assertTrue(headers.removeCookies("name1"));
-            assertEmptyIterator(headers.getCookies("name1"));
-            assertIteratorHasItems(headers.getCookies("name2"), new DefaultHttpCookiePair("name2", "value2"));
+            assertEmptyIterator(headers.getCookiesIterator("name1"));
+            assertIteratorHasItems(headers.getCookiesIterator("name2"), new DefaultHttpCookiePair("name2", "value2"));
 
             assertTrue(headers.removeCookies("name2"));
-            assertEmptyIterator(headers.getCookies("name1"));
-            assertEmptyIterator(headers.getCookies("name2"));
-            assertEmptyIterator(headers.values(COOKIE));
+            assertEmptyIterator(headers.getCookiesIterator("name1"));
+            assertEmptyIterator(headers.getCookiesIterator("name2"));
+            assertEmptyIterator(headers.valuesIterator(COOKIE));
 
             // Split headers across 2 header entries, with duplicate cookie names.
             headers.add(COOKIE, "name1=value1; name2=value2; name1=value3");
@@ -289,32 +289,32 @@ public class H2ClientPriorKnowledgeFeatureParityTest {
                 assertEquals(headers.getCookie("name3"), new DefaultHttpCookiePair("name3", "value6"));
             }
 
-            assertIteratorHasItems(headers.getCookies(), new DefaultHttpCookiePair("name1", "value1"),
+            assertIteratorHasItems(headers.getCookiesIterator(), new DefaultHttpCookiePair("name1", "value1"),
                     new DefaultHttpCookiePair("name2", "value2"), new DefaultHttpCookiePair("name1", "value3"),
                     new DefaultHttpCookiePair("name2", "value4"), new DefaultHttpCookiePair("name1", "value5"),
                     new DefaultHttpCookiePair("name3", "value6"));
-            assertIteratorHasItems(headers.getCookies("name1"), new DefaultHttpCookiePair("name1", "value1"),
+            assertIteratorHasItems(headers.getCookiesIterator("name1"), new DefaultHttpCookiePair("name1", "value1"),
                     new DefaultHttpCookiePair("name1", "value3"), new DefaultHttpCookiePair("name1", "value5"));
-            assertIteratorHasItems(headers.getCookies("name2"), new DefaultHttpCookiePair("name2", "value2"),
+            assertIteratorHasItems(headers.getCookiesIterator("name2"), new DefaultHttpCookiePair("name2", "value2"),
                     new DefaultHttpCookiePair("name2", "value4"));
-            assertIteratorHasItems(headers.getCookies("name3"), new DefaultHttpCookiePair("name3", "value6"));
+            assertIteratorHasItems(headers.getCookiesIterator("name3"), new DefaultHttpCookiePair("name3", "value6"));
 
             assertTrue(headers.removeCookies("name2"));
-            assertIteratorHasItems(headers.getCookies("name1"), new DefaultHttpCookiePair("name1", "value1"),
+            assertIteratorHasItems(headers.getCookiesIterator("name1"), new DefaultHttpCookiePair("name1", "value1"),
                     new DefaultHttpCookiePair("name1", "value3"), new DefaultHttpCookiePair("name1", "value5"));
-            assertEmptyIterator(headers.getCookies("name2"));
-            assertIteratorHasItems(headers.getCookies("name3"), new DefaultHttpCookiePair("name3", "value6"));
+            assertEmptyIterator(headers.getCookiesIterator("name2"));
+            assertIteratorHasItems(headers.getCookiesIterator("name3"), new DefaultHttpCookiePair("name3", "value6"));
 
             assertTrue(headers.removeCookies("name1"));
-            assertEmptyIterator(headers.getCookies("name1"));
-            assertEmptyIterator(headers.getCookies("name2"));
-            assertIteratorHasItems(headers.getCookies("name3"), new DefaultHttpCookiePair("name3", "value6"));
+            assertEmptyIterator(headers.getCookiesIterator("name1"));
+            assertEmptyIterator(headers.getCookiesIterator("name2"));
+            assertIteratorHasItems(headers.getCookiesIterator("name3"), new DefaultHttpCookiePair("name3", "value6"));
 
             assertTrue(headers.removeCookies("name3"));
-            assertEmptyIterator(headers.getCookies("name1"));
-            assertEmptyIterator(headers.getCookies("name2"));
-            assertEmptyIterator(headers.getCookies("name3"));
-            assertEmptyIterator(headers.values(COOKIE));
+            assertEmptyIterator(headers.getCookiesIterator("name1"));
+            assertEmptyIterator(headers.getCookiesIterator("name2"));
+            assertEmptyIterator(headers.getCookiesIterator("name3"));
+            assertEmptyIterator(headers.valuesIterator(COOKIE));
 
             // Test partial name matches don't inadvertently match.
             headers.add(COOKIE, "foo=bar");
@@ -330,14 +330,14 @@ public class H2ClientPriorKnowledgeFeatureParityTest {
             assertFalse(headers.removeCookies("f"));
             assertEquals(headers.getCookie("foo"), new DefaultHttpCookiePair("foo", "bar"));
 
-            assertEmptyIterator(headers.getCookies("foo="));
-            assertEmptyIterator(headers.getCookies("fo"));
-            assertEmptyIterator(headers.getCookies("f"));
+            assertEmptyIterator(headers.getCookiesIterator("foo="));
+            assertEmptyIterator(headers.getCookiesIterator("fo"));
+            assertEmptyIterator(headers.getCookiesIterator("f"));
 
             assertTrue(headers.removeCookies("foo"));
             assertNull(headers.getCookie("foo"));
-            assertEmptyIterator(headers.getCookies("foo"));
-            assertEmptyIterator(headers.values(COOKIE));
+            assertEmptyIterator(headers.getCookiesIterator("foo"));
+            assertEmptyIterator(headers.valuesIterator(COOKIE));
         }
     }
 
@@ -356,18 +356,18 @@ public class H2ClientPriorKnowledgeFeatureParityTest {
             assertFalse(headers.removeCookies("qwert"));
             assertNull(headers.getSetCookie("qwerty="));
             assertNull(headers.getSetCookie("qwert"));
-            assertFalse(headers.getSetCookies("qwerty=").hasNext());
-            assertFalse(headers.getSetCookies("qwert").hasNext());
-            assertEmptyIterator(headers.getSetCookies("qwerty=", "somecompany.co.uk", "/1"));
-            assertEmptyIterator(headers.getSetCookies("qwert", "somecompany.co.uk", "/1"));
+            assertFalse(headers.getSetCookiesIterator("qwerty=").hasNext());
+            assertFalse(headers.getSetCookiesIterator("qwert").hasNext());
+            assertEmptyIterator(headers.getSetCookiesIterator("qwerty=", "somecompany.co.uk", "/1"));
+            assertEmptyIterator(headers.getSetCookiesIterator("qwert", "somecompany.co.uk", "/1"));
 
             assertSetCookie1(headers.getSetCookie("qwerty"));
-            Iterator<? extends HttpSetCookie> itr = headers.getSetCookies("qwerty");
+            Iterator<? extends HttpSetCookie> itr = headers.getSetCookiesIterator("qwerty");
             assertTrue(itr.hasNext());
             assertSetCookie1(itr.next());
             assertFalse(itr.hasNext());
 
-            itr = headers.getSetCookies("qwerty", "somecompany.co.uk", "/1");
+            itr = headers.getSetCookiesIterator("qwerty", "somecompany.co.uk", "/1");
             assertTrue(itr.hasNext());
             assertSetCookie1(itr.next());
             assertFalse(itr.hasNext());
@@ -709,7 +709,7 @@ public class H2ClientPriorKnowledgeFeatureParityTest {
                     if (contentType != null) {
                         resp.headers().add(CONTENT_TYPE, contentType);
                     }
-                    resp.headers().add(COOKIE, request.headers().values(HttpHeaderNames.COOKIE));
+                    resp.headers().add(COOKIE, request.headers().valuesIterator(HttpHeaderNames.COOKIE));
                     return succeeded(resp);
                 }).toFuture().get();
         return (InetSocketAddress) h1ServerContext.listenAddress();

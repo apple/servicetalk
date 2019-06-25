@@ -28,14 +28,11 @@ import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequester;
 import io.servicetalk.http.api.StreamingHttpResponse;
-import io.servicetalk.transport.api.HostAndPort;
 
 import static io.netty.util.NetUtil.isValidIpV6Address;
-import static io.netty.util.NetUtil.toSocketAddressString;
 import static io.servicetalk.http.api.CharSequences.newAsciiString;
 import static io.servicetalk.http.api.HttpHeaderNames.HOST;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
-import static java.util.Objects.requireNonNull;
 
 /**
  * A filter which will apply a fallback value for the {@link HttpHeaderNames#HOST} header if one is not present.
@@ -44,24 +41,6 @@ final class HostHeaderHttpRequesterFilter implements StreamingHttpClientFilterFa
                                                      StreamingHttpConnectionFilterFactory,
                                                      HttpExecutionStrategyInfluencer {
     private final CharSequence fallbackHost;
-
-    /**
-     * Create a new instance.
-     * @param fallbackHost The address to use as a fallback if a {@link HttpHeaderNames#HOST} header is not present.
-     */
-    HostHeaderHttpRequesterFilter(HostAndPort fallbackHost) {
-        this(fallbackHost.hostName(), fallbackHost.port());
-    }
-
-    /**
-     * Create a new instance.
-     * @param fallbackHostName The host name to use as a fallback if a {@link HttpHeaderNames#HOST} header is not
-     * present.
-     * @param fallbackPort The port to use as a fallback if a {@link HttpHeaderNames#HOST} header is not present.
-     */
-    HostHeaderHttpRequesterFilter(String fallbackHostName, int fallbackPort) {
-        this.fallbackHost = requireNonNull(newAsciiString(toSocketAddressString(fallbackHostName, fallbackPort)));
-    }
 
     /**
      * Create a new instance.

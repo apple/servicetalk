@@ -118,19 +118,19 @@ public final class HttpPredicateRouterBuilder implements RouteStarter {
     @Override
     public StringMultiValueMatcher whenQueryParam(final String name) {
         requireNonNull(name);
-        return new StringMultiValueMatcherImpl(req -> req.queryParameters(name));
+        return new StringMultiValueMatcherImpl(req -> req.queryParametersIterator(name));
     }
 
     @Override
     public StringMultiValueMatcher whenHeader(final CharSequence name) {
         requireNonNull(name);
-        return new StringMultiValueMatcherImpl(req -> req.headers().values(name));
+        return new StringMultiValueMatcherImpl(req -> req.headers().valuesIterator(name));
     }
 
     @Override
     public CookieMatcher whenCookie(final String name) {
         requireNonNull(name);
-        return new CookieMatcherImpl(req -> req.headers().getCookies(name));
+        return new CookieMatcherImpl(req -> req.headers().getCookiesIterator(name));
     }
 
     @Override

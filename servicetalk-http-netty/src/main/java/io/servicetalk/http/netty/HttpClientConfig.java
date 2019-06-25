@@ -19,6 +19,8 @@ import io.servicetalk.http.api.DefaultHttpHeadersFactory;
 import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.tcp.netty.internal.TcpClientConfig;
 
+import javax.annotation.Nullable;
+
 import static java.util.Objects.requireNonNull;
 
 final class HttpClientConfig {
@@ -32,6 +34,8 @@ final class HttpClientConfig {
     private int maxPipelinedRequests = 1;
     private int headersEncodedSizeEstimate = 256;
     private int trailersEncodedSizeEstimate = 256;
+    @Nullable
+    private CharSequence connectAddress;
 
     HttpClientConfig(final TcpClientConfig tcpClientConfig) {
         this.tcpClientConfig = requireNonNull(tcpClientConfig);
@@ -47,6 +51,7 @@ final class HttpClientConfig {
         maxPipelinedRequests = from.maxPipelinedRequests;
         headersEncodedSizeEstimate = from.headersEncodedSizeEstimate;
         trailersEncodedSizeEstimate = from.trailersEncodedSizeEstimate;
+        this.connectAddress = from.connectAddress;
     }
 
     TcpClientConfig tcpClientConfig() {
@@ -126,6 +131,19 @@ final class HttpClientConfig {
             throw new IllegalArgumentException("trailersEncodedSizeEstimate must be > 0");
         }
         this.trailersEncodedSizeEstimate = trailersEncodedSizeEstimate;
+    }
+
+    @Nullable
+    public CharSequence connectAddress() {
+        return connectAddress;
+    }
+
+    public void connectAddress(@Nullable final CharSequence connectAddress) {
+        this.connectAddress = connectAddress;
+    }
+
+    public boolean hasProxy() {
+        return connectAddress != null;
     }
 
     ReadOnlyHttpClientConfig asReadOnly() {

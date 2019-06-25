@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,13 +24,13 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.CompositeByteBuf;
-import io.netty.util.internal.PlatformDependent;
 
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.charset.Charset;
 
 import static io.servicetalk.buffer.api.EmptyBuffer.EMPTY_BUFFER;
+import static io.servicetalk.concurrent.internal.PlatformDependent.useDirectBufferWithoutZeroing;
 
 /**
  * Our own {@link AbstractByteBufAllocator} implementation which will not use leak-detection and depends on the GC
@@ -40,8 +40,11 @@ final class ServiceTalkBufferAllocator extends AbstractByteBufAllocator implemen
     private final ByteBufAllocator forceHeapAllocator = new ForceTypeByteBufAllocator(this, false);
     private final ByteBufAllocator forceDirectAllocator = new ForceTypeByteBufAllocator(this, true);
 
-    ServiceTalkBufferAllocator(boolean preferDirect) {
+    private final boolean noZeroing;
+
+    ServiceTalkBufferAllocator(boolean preferDirect, boolean tryNoZeroing) {
         super(preferDirect);
+        this.noZeroing = tryNoZeroing && useDirectBufferWithoutZeroing();
     }
 
     @Override
@@ -51,9 +54,13 @@ final class ServiceTalkBufferAllocator extends AbstractByteBufAllocator implemen
 
     @Override
     protected ByteBuf newDirectBuffer(int initialCapacity, int maxCapacity) {
-        return PlatformDependent.hasUnsafe() ?
-                new UnreleasableUnsafeDirectByteBuf(this, initialCapacity, maxCapacity) :
-                new UnreleasableDirectByteBuf(this, initialCapacity, maxCapacity);
+        if (noZeroing) {
+            return new UnreleasableUnsafeNoZeroingDirectByteBuf(this, initialCapacity, maxCapacity);
+        }
+        if (io.netty.util.internal.PlatformDependent.hasUnsafe()) {
+            return new UnreleasableUnsafeDirectByteBuf(this, initialCapacity, maxCapacity);
+        }
+        return new UnreleasableDirectByteBuf(this, initialCapacity, maxCapacity);
     }
 
     @Override
@@ -137,7 +144,7 @@ final class ServiceTalkBufferAllocator extends AbstractByteBufAllocator implemen
         final Buffer buf;
         if (buffer.hasArray()) {
             buf = wrap(buffer.array(), buffer.arrayOffset() + buffer.position(), buffer.remaining());
-        } else if (buffer.isDirect() && PlatformDependent.hasUnsafe()) {
+        } else if (buffer.isDirect() && io.netty.util.internal.PlatformDependent.hasUnsafe()) {
             buf = new NettyBuffer<>(new UnreleasableUnsafeDirectByteBuf(this, buffer, buffer.remaining()));
         } else {
             buf = new NettyBuffer<>(new UnreleasableDirectByteBuf(this, buffer, buffer.remaining()));

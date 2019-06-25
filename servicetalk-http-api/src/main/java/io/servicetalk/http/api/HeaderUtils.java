@@ -115,8 +115,8 @@ public final class HeaderUtils {
         // The regular iterator is not suitable for equality comparisons because the overall ordering is not
         // in any specific order relative to the content of this MultiMap.
         for (final CharSequence name : lhs.names()) {
-            final Iterator<? extends CharSequence> valueItr = lhs.values(name);
-            final Iterator<? extends CharSequence> h2ValueItr = rhs.values(name);
+            final Iterator<? extends CharSequence> valueItr = lhs.valuesIterator(name);
+            final Iterator<? extends CharSequence> h2ValueItr = rhs.valuesIterator(name);
             while (valueItr.hasNext() && h2ValueItr.hasNext()) {
                 if (!contentEquals(valueItr.next(), h2ValueItr.next())) {
                     return false;
@@ -136,7 +136,7 @@ public final class HeaderUtils {
         int result = HASH_CODE_SEED;
         for (final CharSequence key : headers.names()) {
             result = 31 * result + caseInsensitiveHashCode(key);
-            final Iterator<? extends CharSequence> valueItr = headers.values(key);
+            final Iterator<? extends CharSequence> valueItr = headers.valuesIterator(key);
             while (valueItr.hasNext()) {
                 result = 31 * result + caseInsensitiveHashCode(valueItr.next());
             }
@@ -144,8 +144,64 @@ public final class HeaderUtils {
         return result;
     }
 
-    static boolean isTransferEncodingChunked(final HttpHeaders headers) {
-        return headers.containsIgnoreCase(TRANSFER_ENCODING, CHUNKED);
+    /**
+     * Returns {@code true} if {@code headers} indicates {@code transfer-encoding} {@code chunked}.
+     * <p>
+     * The values of all {@link HttpHeaderNames#TRANSFER_ENCODING} headers are interpreted as comma-separated values,
+     * with spaces between values trimmed. If any of these values is  {@link HttpHeaderValues#CHUNKED}, this method
+     * return {@code true}, otherwise it returns {@code false}.
+     *
+     * @param headers The {@link HttpHeaders} to check.
+     * @return {@code} true if {@code headers} indicates {@code transfer-encoding} {@code chunked}, {@code false}
+     * otherwise.
+     */
+    public static boolean isTransferEncodingChunked(final HttpHeaders headers) {
+        // As per https://tools.ietf.org/html/rfc7230#section-3.3.1 the `transfer-encoding` header may contain
+        // multiple values, comma separated.
+        return containsCommaSeparatedValueIgnoreCase(headers, TRANSFER_ENCODING, CHUNKED);
+    }
+
+    static boolean containsCommaSeparatedValueIgnoreCase(final HttpHeaders headers, final CharSequence name,
+                                                         final CharSequence value) {
+        final Iterator<? extends CharSequence> values = headers.valuesIterator(name);
+        while (values.hasNext()) {
+            final CharSequence next = values.next();
+            if (containsCommaSeparatedValueIgnoreCase(next, value)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Returns {@code true} if {@code commaSeparatedValues} is comma separated and one of the values (or the whole
+     * string) matches {@code needle} case insensitively.
+     *
+     * @param commaSeparatedValues the comma separated values.
+     * @param needle the value to look for.
+     * @return {@code true} if the value is found, {@code false} otherwise.
+     */
+    private static boolean containsCommaSeparatedValueIgnoreCase(final CharSequence commaSeparatedValues,
+                                                                 final CharSequence needle) {
+        int start = 0;
+        int commaPos = indexOf(commaSeparatedValues, ',', 0);
+        if (commaPos < 0) {
+            return contentEqualsIgnoreCase(commaSeparatedValues, needle);
+        }
+
+        // Only convert to a String if we actually have a comma-separated value to parse
+        final String commaSeparatedValuesStr = commaSeparatedValues.toString();
+        for (;;) {
+            if (commaPos < 0) {
+                return start > 0 && contentEqualsIgnoreCase(commaSeparatedValuesStr.substring(start).trim(), needle);
+            }
+            final String subvalue = commaSeparatedValuesStr.substring(start, commaPos).trim();
+            if (contentEqualsIgnoreCase(subvalue, needle)) {
+                return true;
+            }
+            start = commaPos + 1;
+            commaPos = commaSeparatedValuesStr.indexOf(',', start);
+        }
     }
 
     static boolean hasContentLength(final HttpHeaders headers) {

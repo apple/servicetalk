@@ -83,4 +83,17 @@ public class ReadOnlyByteBufferTest {
         Buffer buffer = DEFAULT_RO_ALLOCATOR.fromAscii("test");
         buffer.writerIndex(buffer.capacity() + 1);
     }
+
+    @Test
+    public void testIndexOf() {
+        Buffer buffer = DEFAULT_RO_ALLOCATOR.fromAscii("test");
+
+        assertEquals(-1, buffer.indexOf(0, 4, (byte) 'a'));
+
+        assertEquals(0, buffer.indexOf(0, 4, (byte) 't'));
+        assertEquals(3, buffer.indexOf(1, 4, (byte) 't'));
+
+        assertEquals(3, buffer.indexOf(4, 0, (byte) 't'));
+        assertEquals(0, buffer.indexOf(3, 0, (byte) 't'));
+    }
 }

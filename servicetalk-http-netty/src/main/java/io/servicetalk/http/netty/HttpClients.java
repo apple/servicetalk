@@ -95,6 +95,24 @@ public final class HttpClients {
     }
 
     /**
+     * Creates a {@link SingleAddressHttpClientBuilder} for an address via a proxy, with default {@link LoadBalancer}
+     * and DNS {@link ServiceDiscoverer}.
+     *
+     * @param host host to connect to via the proxy. This will also be used for the {@link HttpHeaderNames#HOST}
+     * together with the {@code port}. Use
+     * {@link SingleAddressHttpClientBuilder#enableHostHeaderFallback(CharSequence)} if you want to override that value
+     * or {@link SingleAddressHttpClientBuilder#disableHostHeaderFallback()} if you want to disable this behavior.
+     * @param port port to connect to
+     * @param proxyHost the proxy host to connect to, resolved by default using a DNS {@link ServiceDiscoverer}.
+     * @param proxyPort The proxy port to connect.
+     * @return new builder for the address
+     */
+    public static SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> forSingleAddressViaProxy(
+            final String host, final int port, final String proxyHost, final int proxyPort) {
+        return forSingleAddressViaProxy(HostAndPort.of(host, port), HostAndPort.of(proxyHost, proxyPort));
+    }
+
+    /**
      * Creates a {@link SingleAddressHttpClientBuilder} for an address with default {@link LoadBalancer} and DNS {@link
      * ServiceDiscoverer}.
      *
@@ -110,6 +128,23 @@ public final class HttpClients {
     }
 
     /**
+     * Creates a {@link SingleAddressHttpClientBuilder} for an address via a proxy, with default {@link LoadBalancer}
+     * and DNS {@link ServiceDiscoverer}.
+     *
+     * @param address the {@code UnresolvedAddress} to connect to via the proxy. This address will also be used for the
+     * {@link HttpHeaderNames#HOST}. Use {@link SingleAddressHttpClientBuilder#enableHostHeaderFallback(CharSequence)}
+     * if you want to override that value or {@link SingleAddressHttpClientBuilder#disableHostHeaderFallback()} if you
+     * want to disable this behavior.
+     * @param proxyAddress the proxy {@code UnresolvedAddress} to connect to, resolved by default using a DNS {@link
+     * ServiceDiscoverer}.
+     * @return new builder for the address
+     */
+    public static SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> forSingleAddressViaProxy(
+            final HostAndPort address, final HostAndPort proxyAddress) {
+        return DefaultSingleAddressHttpClientBuilder.forHostAndPortViaProxy(address, proxyAddress);
+    }
+
+    /**
      * Creates a {@link SingleAddressHttpClientBuilder} for a resolved address with default {@link LoadBalancer}.
      *
      * @param host resolved host address to connect. This will also be used for the {@link HttpHeaderNames#HOST}
@@ -122,6 +157,24 @@ public final class HttpClients {
     public static SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> forResolvedAddress(
             final String host, final int port) {
         return forResolvedAddress(HostAndPort.of(host, port));
+    }
+
+    /**
+     * Creates a {@link SingleAddressHttpClientBuilder} for a resolved address via a proxy, with default
+     * {@link LoadBalancer}.
+     *
+     * @param host resolved host address to connect via the proxy. This will also be used for the
+     * {@link HttpHeaderNames#HOST} together with the {@code port}. Use
+     * {@link SingleAddressHttpClientBuilder#enableHostHeaderFallback(CharSequence)} if you want to override that value
+     * or {@link SingleAddressHttpClientBuilder#disableHostHeaderFallback()} if you want to disable this behavior.
+     * @param port port to connect to via the proxy
+     * @param proxyHost The proxy resolved host address to connect.
+     * @param proxyPort The proxy port to connect.
+     * @return new builder for the address
+     */
+    public static SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> forResolvedAddressViaProxy(
+            final String host, final int port, final String proxyHost, final int proxyPort) {
+        return forResolvedAddressViaProxy(HostAndPort.of(host, port), HostAndPort.of(proxyHost, proxyPort));
     }
 
     /**
@@ -141,6 +194,23 @@ public final class HttpClients {
     }
 
     /**
+     * Creates a {@link SingleAddressHttpClientBuilder} for an address via a proxy, with default {@link LoadBalancer}
+     * and DNS {@link ServiceDiscoverer}.
+     *
+     * @param address the {@code ResolvedAddress} to connect to via the proxy. This address will also be used for the
+     * {@link HttpHeaderNames#HOST}. Use {@link SingleAddressHttpClientBuilder#enableHostHeaderFallback(CharSequence)}
+     * if you want to override that value or {@link SingleAddressHttpClientBuilder#disableHostHeaderFallback()} if you
+     * want to disable this behavior.
+     * @param proxyAddress The proxy {@code ResolvedAddress} to connect.
+     * @return new builder for the address
+     */
+    public static SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> forResolvedAddressViaProxy(
+            final HostAndPort address, final HostAndPort proxyAddress) {
+        return DefaultSingleAddressHttpClientBuilder.forResolvedAddressViaProxy(address,
+                new InetSocketAddress(address.hostName(), address.port()), proxyAddress);
+    }
+
+    /**
      * Creates a {@link SingleAddressHttpClientBuilder} for an address with default {@link LoadBalancer} and DNS {@link
      * ServiceDiscoverer}.
      *
@@ -153,6 +223,22 @@ public final class HttpClients {
     public static SingleAddressHttpClientBuilder<InetSocketAddress, InetSocketAddress> forResolvedAddress(
             final InetSocketAddress address) {
         return DefaultSingleAddressHttpClientBuilder.forResolvedAddress(address, address);
+    }
+
+    /**
+     * Creates a {@link SingleAddressHttpClientBuilder} for an address via a proxy, with default {@link LoadBalancer}
+     * and DNS {@link ServiceDiscoverer}.
+     *
+     * @param address the {@code ResolvedAddress} to connect to via the proxy. This address will also be used for the
+     * {@link HttpHeaderNames#HOST}. Use {@link SingleAddressHttpClientBuilder#enableHostHeaderFallback(CharSequence)}
+     * if you want to override that value or {@link SingleAddressHttpClientBuilder#disableHostHeaderFallback()} if you
+     * want to disable this behavior.
+     * @param proxyAddress The proxy {@code ResolvedAddress} to connect.
+     * @return new builder for the address
+     */
+    public static SingleAddressHttpClientBuilder<InetSocketAddress, InetSocketAddress> forResolvedAddressViaProxy(
+            final InetSocketAddress address, final InetSocketAddress proxyAddress) {
+        return DefaultSingleAddressHttpClientBuilder.forResolvedAddressViaProxy(address, address, proxyAddress);
     }
 
     /**

@@ -59,10 +59,10 @@ public abstract class AbstractHttpHeadersTest {
         headers.add("name4", "value8");
         assertEquals(8, headers.size());
 
-        assertIteratorIs(headers.values("name1"), "value1", "value5");
-        assertIteratorIs(headers.values("name2"), "value2", "value6");
-        assertIteratorIs(headers.values("name3"), "value3", "value7");
-        assertIteratorIs(headers.values("name4"), "value4", "value8");
+        assertIteratorIs(headers.valuesIterator("name1"), "value1", "value5");
+        assertIteratorIs(headers.valuesIterator("name2"), "value2", "value6");
+        assertIteratorIs(headers.valuesIterator("name3"), "value3", "value7");
+        assertIteratorIs(headers.valuesIterator("name4"), "value4", "value8");
         Set<Entry<CharSequence, CharSequence>> entries = new HashSet<>();
         entries.add(new SimpleEntry<>("name1", "value1"));
         entries.add(new SimpleEntry<>("name2", "value2"));
@@ -91,7 +91,7 @@ public abstract class AbstractHttpHeadersTest {
         headers.add("name4", "value8");
         assertEquals(8, headers.size());
 
-        final Iterator<? extends CharSequence> name2Itr = headers.values("name2");
+        final Iterator<? extends CharSequence> name2Itr = headers.valuesIterator("name2");
         final Iterator<Entry<CharSequence, CharSequence>> itr = headers.iterator();
         while (itr.hasNext()) {
             Entry<CharSequence, CharSequence> entry = itr.next();
@@ -135,15 +135,15 @@ public abstract class AbstractHttpHeadersTest {
         headers.add("name5", "value10");
         headers.remove("name4");
 
-        final Iterator<? extends CharSequence> nameItr = headers.values("name2");
+        final Iterator<? extends CharSequence> nameItr = headers.valuesIterator("name2");
         assertTrue(nameItr.hasNext());
         assertEquals("value6", nameItr.next());
         nameItr.remove();
         assertIteratorIs(nameItr, "value9");
-        assertIteratorIs(headers.values("name1"), "value1", "value5");
-        assertIteratorIs(headers.values("name3"), "value3", "value7");
+        assertIteratorIs(headers.valuesIterator("name1"), "value1", "value5");
+        assertIteratorIs(headers.valuesIterator("name3"), "value3", "value7");
         assertFalse(headers.contains("name4"));
-        assertIteratorIs(headers.values("name5"), "value10");
+        assertIteratorIs(headers.valuesIterator("name5"), "value10");
     }
 
     @Test
@@ -224,14 +224,14 @@ public abstract class AbstractHttpHeadersTest {
         headers.add("name", "value3");
         assertEquals(3, headers.size());
 
-        assertIteratorIs(headers.values("name"), "value1", "value2", "value3");
+        assertIteratorIs(headers.valuesIterator("name"), "value1", "value2", "value3");
     }
 
     @Test
     public void absentHeaderIteratorEmpty() {
         final HttpHeaders headers = newHeaders();
 
-        assertIteratorIs(headers.values("name"), new String[]{});
+        assertIteratorIs(headers.valuesIterator("name"), new String[]{});
     }
 
     @Test
@@ -288,7 +288,7 @@ public abstract class AbstractHttpHeadersTest {
         assertEquals("value1", headers.getAndRemove("name1", "defaultvalue"));
         assertEquals("value2", headers.getAndRemove("name2"));
         assertNull(headers.getAndRemove("name2"));
-        final Iterator<? extends CharSequence> valueItr = headers.values("name3");
+        final Iterator<? extends CharSequence> valueItr = headers.valuesIterator("name3");
         assertTrue(valueItr.hasNext());
         assertEquals("value4", valueItr.next());
         valueItr.remove();
@@ -325,7 +325,7 @@ public abstract class AbstractHttpHeadersTest {
         headers.set("name", "value1");
         headers.set("name", "value2");
         assertEquals(1, headers.size());
-        assertEquals("value2", headers.values("name").next());
+        assertEquals("value2", headers.valuesIterator("name").next());
         assertEquals("value2", headers.get("name"));
     }
 
@@ -335,7 +335,7 @@ public abstract class AbstractHttpHeadersTest {
         headers.set("name", "value1");
         headers.set("name", asList("value2", "value3"));
         assertEquals(2, headers.size());
-        assertIteratorIs(headers.values("name"), "value2", "value3");
+        assertIteratorIs(headers.valuesIterator("name"), "value2", "value3");
         assertEquals("value2", headers.get("name"));
     }
 
@@ -345,7 +345,7 @@ public abstract class AbstractHttpHeadersTest {
         headers.set("name", "value1");
         headers.set("name", "value2", "value3");
         assertEquals(2, headers.size());
-        assertIteratorIs(headers.values("name"), "value2", "value3");
+        assertIteratorIs(headers.valuesIterator("name"), "value2", "value3");
         assertEquals("value2", headers.get("name"));
     }
 
@@ -572,7 +572,7 @@ public abstract class AbstractHttpHeadersTest {
     @Test
     public void getAllReturnsEmptyListForUnknownName() {
         final HttpHeaders headers = newHeaders();
-        assertFalse(headers.values("noname").hasNext());
+        assertFalse(headers.valuesIterator("noname").hasNext());
     }
 
     @Test
@@ -664,8 +664,8 @@ public abstract class AbstractHttpHeadersTest {
         h.add("n1", "v12");
         h.add("n2", "v22");
 
-        final Iterator<? extends CharSequence> iter1 = h.values("n1");
-        final Iterator<? extends CharSequence> iter2 = h.values("n2");
+        final Iterator<? extends CharSequence> iter1 = h.valuesIterator("n1");
+        final Iterator<? extends CharSequence> iter2 = h.valuesIterator("n2");
         assertTrue(iter1.hasNext());
         assertTrue(iter2.hasNext());
         assertNotNull(iter1.next());
@@ -681,7 +681,7 @@ public abstract class AbstractHttpHeadersTest {
         headers.add("name1", "value2");
         headers.add("name2", "value3");
 
-        Iterator<? extends CharSequence> headerItr = headers.values("name1");
+        Iterator<? extends CharSequence> headerItr = headers.valuesIterator("name1");
         assertTrue(headerItr.hasNext());
         headerItr.next();
         headerItr.remove();
@@ -692,10 +692,10 @@ public abstract class AbstractHttpHeadersTest {
 
         assertFalse(headerItr.hasNext());
 
-        headerItr = headers.values("name1");
+        headerItr = headers.valuesIterator("name1");
         assertFalse(headerItr.hasNext());
 
-        headerItr = headers.values("name2");
+        headerItr = headers.valuesIterator("name2");
         assertTrue(headerItr.hasNext());
         assertEquals("value3", headerItr.next());
         assertFalse(headerItr.hasNext());

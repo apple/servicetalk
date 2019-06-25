@@ -20,6 +20,8 @@ import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.publish.maven.MavenPublication
 
+import static io.servicetalk.gradle.plugin.internal.ProjectUtils.addBuildContextExtensions
+
 class ServiceTalkCorePlugin implements Plugin<Project> {
   void apply(Project project) {
     if (project.subprojects) {
@@ -32,6 +34,7 @@ class ServiceTalkCorePlugin implements Plugin<Project> {
   }
 
   private static void configureProject(Project project) {
+    addBuildContextExtensions project
     applyJavaPlugins project
     configureTests project
   }
@@ -64,9 +67,8 @@ class ServiceTalkCorePlugin implements Plugin<Project> {
         }
       }
 
-      def releaseBuild = project.hasProperty("releaseBuild")
       def endsWithSnapshot = project.version.toString().toUpperCase().endsWith("-SNAPSHOT")
-      if (releaseBuild) {
+      if (project.ext.isReleaseBuild) {
         if (endsWithSnapshot) {
           throw new GradleException("Project version for a release build must not contain a '-SNAPSHOT' suffix")
         }
@@ -89,7 +91,7 @@ class ServiceTalkCorePlugin implements Plugin<Project> {
             repo = "servicetalk"
             name = project.name
             licenses = ["Apache-2.0"]
-            vcsUrl = "https://github.com/servicetalk/servicetalk.git"
+            vcsUrl = "https://github.com/apple/servicetalk.git"
           }
           override = true
           publish = true

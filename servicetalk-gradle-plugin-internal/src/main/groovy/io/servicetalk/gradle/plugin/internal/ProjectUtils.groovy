@@ -27,6 +27,13 @@ import org.gradle.api.tasks.javadoc.Javadoc
 
 class ProjectUtils {
 
+  static void addBuildContextExtensions(Project project) {
+    project.ext {
+      isCiBuild = "true" == System.getenv("CI")
+      isReleaseBuild = project.hasProperty("releaseBuild")
+    }
+  }
+
   static void addManifestAttributes(Project project, Manifest manifest) {
     manifest.attributes("Built-JDK": System.getProperty("java.version"),
         "Specification-Title": project.name,
@@ -55,7 +62,7 @@ class ProjectUtils {
     }
   }
 
-  static Jar createJavadocJarTask(Project project, SourceSet sourceSet) {
+  static Javadoc getOrCreateJavadocTask(Project project, SourceSet sourceSet) {
     def javadocTaskName = sourceSet.getTaskName(null, "javadoc")
     def javadocTask = project.tasks.findByName(javadocTaskName)
     if (!javadocTask) {
@@ -68,8 +75,15 @@ class ProjectUtils {
         conventionMapping.title = { "$project.name $project.version $sourceSet.name API" as String }
       }
     }
+    javadocTask
+  }
 
-    return createTask(project, sourceSet.getTaskName(null, "javadocJar"), Jar) {
+  static Jar createJavadocJarTask(Project project, SourceSet sourceSet) {
+    createJavadocJarTask(project, sourceSet, getOrCreateJavadocTask(project, sourceSet))
+  }
+
+  static Jar createJavadocJarTask(Project project, SourceSet sourceSet, Javadoc javadocTask) {
+    createTask(project, sourceSet.getTaskName(null, "javadocJar"), Jar) {
       description = "Assembles a Jar archive containing the $sourceSet.name Javadoc."
       group = JavaBasePlugin.DOCUMENTATION_GROUP
       appendix = sourceSet.name == "main" ? null : sourceSet.name
