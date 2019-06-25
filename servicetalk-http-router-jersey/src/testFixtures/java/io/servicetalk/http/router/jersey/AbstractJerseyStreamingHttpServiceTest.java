@@ -99,7 +99,7 @@ public abstract class AbstractJerseyStreamingHttpServiceTest {
     public final void initServerAndClient() throws Exception {
         HttpServerBuilder serverBuilder = HttpServers.forAddress(localAddress(0));
         HttpJerseyRouterBuilder routerBuilder = new HttpJerseyRouterBuilder();
-        configureBuilder(serverBuilder, routerBuilder);
+        configureBuilders(serverBuilder, routerBuilder);
         final StreamingHttpService router = routerBuilder.build(application());
         final Configuration config = ((DefaultJerseyStreamingHttpRouter) router).configuration();
         streamingJsonEnabled = getValue(config.getProperties(), config.getRuntimeType(), JSON_FEATURE, "",
@@ -115,8 +115,8 @@ public abstract class AbstractJerseyStreamingHttpServiceTest {
         hostHeader = hostHeader(hostAndPort);
     }
 
-    protected void configureBuilder(final HttpServerBuilder serverBuilder,
-                                    final HttpJerseyRouterBuilder jerseyRouterBuilder) {
+    protected void configureBuilders(final HttpServerBuilder serverBuilder,
+                                     final HttpJerseyRouterBuilder jerseyRouterBuilder) {
         serverBuilder.executionStrategy(defaultStrategy(SERVER_CTX.executor()));
     }
 
