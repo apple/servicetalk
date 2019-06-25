@@ -51,28 +51,9 @@ final class DefaultExecutor extends AbstractOffloaderAwareExecutor implements Co
      * scheduler thread is usually ok. In cases, when it is not, one can always override the executor with a custom
      * scheduler.
      */
-    private static final ScheduledExecutorService SINGLE_THREADED_SCHEDULER =
+    private static final ScheduledExecutorService GLOBAL_SINGLE_THREADED_SCHEDULED_EXECUTOR =
             newSingleThreadScheduledExecutor(new DefaultThreadFactory("servicetalk-global-scheduler-",
                     true, NORM_PRIORITY));
-    /**
-     * Schedulers are only used to generate a tick and do not execute any user code. This means they will never run any
-     * blocking code and hence it does not matter whether we use the interruptOnCancel as sent by the user upon creation
-     * in the scheduler. User code (completion of Completable on tick) will be executed on the configured executor and
-     * not the Scheduler thread.
-     */
-    private static final InternalScheduler GLOBAL_SINGLE_THREADED_SCHEDULER = new InternalScheduler() {
-        @Override
-        public void run() {
-            // This is a shared scheduler and hence there is no clear lifetime, so, we ignore shutdown. Since
-            // SINGLE_THREADED_SCHEDULER uses daemon threads, the threads will be shutdown on JVM shutdown.
-        }
-
-        @Override
-        public Cancellable apply(final Runnable task, final long delay, final TimeUnit unit) {
-            ScheduledFuture<?> future = SINGLE_THREADED_SCHEDULER.schedule(task, delay, unit);
-            return () -> future.cancel(true);
-        }
-    };
     private static final RejectedExecutionHandler DEFAULT_REJECTION_HANDLER = new AbortPolicy();
 
     private final InternalExecutor executor;
@@ -91,7 +72,7 @@ final class DefaultExecutor extends AbstractOffloaderAwareExecutor implements Co
 
     DefaultExecutor(java.util.concurrent.Executor jdkExecutor, boolean interruptOnCancel) {
         // Since we run blocking task, we should try interrupt when cancelled.
-        this(jdkExecutor, GLOBAL_SINGLE_THREADED_SCHEDULER, interruptOnCancel);
+        this(jdkExecutor, new SingleThreadedScheduler(jdkExecutor), interruptOnCancel);
     }
 
     DefaultExecutor(java.util.concurrent.Executor jdkExecutor, ScheduledExecutorService scheduler) {
@@ -225,5 +206,34 @@ final class DefaultExecutor extends AbstractOffloaderAwareExecutor implements Co
                 return () -> future.cancel(interruptOnCancel);
             }
         };
+    }
+
+    private static final class SingleThreadedScheduler implements InternalScheduler {
+
+        private final java.util.concurrent.Executor offloadExecutor;
+
+        SingleThreadedScheduler(final java.util.concurrent.Executor offloadExecutor) {
+            this.offloadExecutor = offloadExecutor;
+        }
+
+        @Override
+        public void run() {
+            // This uses shared scheduled executor service and hence there is no clear lifetime, so, we ignore shutdown.
+            // Since GLOBAL_SINGLE_THREADED_SCHEDULED_EXECUTOR uses daemon threads, the threads will be shutdown on JVM
+            // shutdown.
+        }
+
+        @Override
+        public Cancellable apply(final Runnable task, final long delay, final TimeUnit unit) {
+            // When using the global scheduler, offload timer ticks to the user specified Executor since user code
+            // executed on the timer tick can block.
+            ScheduledFuture<?> future = GLOBAL_SINGLE_THREADED_SCHEDULED_EXECUTOR.schedule(
+                    () -> offloadExecutor.execute(task), delay, unit);
+            // Schedulers are only used to generate a tick and do not execute any user code. This means they will never
+            // run any blocking code and hence it does not matter whether we use the interruptOnCancel as sent by the
+            // user upon creation in the scheduler. User code (completion of Completable on tick) will be executed on
+            // the configured executor and not the Scheduler thread.
+            return () -> future.cancel(true);
+        }
     }
 }
