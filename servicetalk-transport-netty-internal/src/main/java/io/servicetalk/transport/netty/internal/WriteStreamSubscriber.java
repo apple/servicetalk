@@ -70,7 +70,7 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
     private static final Logger LOGGER = LoggerFactory.getLogger(WriteStreamSubscriber.class);
     private static final byte SOURCE_TERMINATED = 1;
     private static final byte CHANNEL_CLOSED = 1 << 1;
-    private static final byte CHANNEL_CLOSED_OUTBOUND = 1 << 2;
+    private static final byte CLOSE_OUTBOUND_ON_SUBSCRIBER_TERMINATION = 1 << 2;
     private static final byte SUBSCRIBER_TERMINATED = 1 << 3;
     private static final Subscription CANCELLED = new EmptySubscription();
     private static final AtomicLongFieldUpdater<WriteStreamSubscriber> requestedUpdater =
@@ -163,10 +163,11 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
 
     @Override
     public void onError(Throwable cause) {
+        requireNonNull(cause);
         if (enqueueWrites || !eventLoop.inEventLoop()) {
-            eventLoop.execute(() -> promise.sourceTerminated(requireNonNull(cause)));
+            eventLoop.execute(() -> promise.sourceTerminated(cause));
         } else {
-            promise.sourceTerminated(requireNonNull(cause));
+            promise.sourceTerminated(cause);
         }
     }
 
@@ -288,6 +289,9 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
                 // We are here because the Publisher that was being written terminated, not the actual channel writes.
                 // Hence, we set the promise result to success to notify the listeners. If the writes fail before the
                 // source terminates, we would have already terminated the Subscriber.
+                //
+                // If we use trySuccess() here then it will reenter sourceTerminated() where it will see the state
+                // as SUBSCRIBER_TERMINATED and do nothing. trySuccess(null) does not reenter.
                 super.trySuccess(null);
             }
         }
@@ -295,9 +299,9 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
         void channelClosed(Throwable cause) {
             assert eventLoop.inEventLoop();
             if (hasFlag(CHANNEL_CLOSED) || hasFlag(SUBSCRIBER_TERMINATED)) {
+                setFlag(CHANNEL_CLOSED);
                 return;
             }
-            setFlag(CHANNEL_CLOSED);
             tryFailure(!written ? new AbortedFirstWrite(cause) : cause);
         }
 
@@ -313,7 +317,7 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
                 return;
             }
             // Writes are pending, we will close the channel once writes are done.
-            setFlag(CHANNEL_CLOSED_OUTBOUND);
+            setFlag(CLOSE_OUTBOUND_ON_SUBSCRIBER_TERMINATION);
         }
 
         @Override
@@ -343,7 +347,7 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
             if (hasFlag(SUBSCRIBER_TERMINATED)) {
                 return false;
             }
-            if (--activeWrites == 0 && hasFlag(SOURCE_TERMINATED) && !hasFlag(SUBSCRIBER_TERMINATED)) {
+            if (--activeWrites == 0 && hasFlag(SOURCE_TERMINATED)) {
                 setFlag(SUBSCRIBER_TERMINATED);
                 try {
                     terminateSubscriber(failureCause);
@@ -352,24 +356,23 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
                     // Always return true since we have set the state to SUBSCRIBER_TERMINATED
                     return true;
                 }
-                super.trySuccess(null);
+                return super.trySuccess(null);
             }
             return true;
         }
 
         private boolean setFailure0(Throwable cause) {
             assert eventLoop.inEventLoop();
-            /*
-             * It is assumed the underlying transport is ordered and reliable such that if a single write fails then the
-             * remaining writes will also fail. So, for any write failure we close the channel and ignore any further
-             * results.
-             */
+            // Application today assume ordered and reliable behavior from the transport such that if a single write
+            // fails then the remaining writes will also fail. So, for any write failure we close the channel and
+            // ignore any further results. For non-reliable protocols, when we support them, we will modify this
+            // behavior as appropriate.
             if (hasFlag(SUBSCRIBER_TERMINATED)) {
                 return false;
             }
             setFlag(SUBSCRIBER_TERMINATED);
             Subscription oldVal = subscriptionUpdater.getAndSet(WriteStreamSubscriber.this, CANCELLED);
-            if (oldVal != null && oldVal != CANCELLED) {
+            if (oldVal != null && !hasFlag(SOURCE_TERMINATED)) {
                 oldVal.cancel();
             }
             terminateSubscriber(cause);
@@ -379,7 +382,7 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
         }
 
         private void terminateSubscriber(@Nullable Throwable cause) {
-            if (hasFlag(CHANNEL_CLOSED_OUTBOUND) || cause != null) {
+            if (hasFlag(CLOSE_OUTBOUND_ON_SUBSCRIBER_TERMINATION) || cause != null) {
                 try {
                     closeHandler.closeChannelOutbound(channel);
                 } catch (Throwable t) {
