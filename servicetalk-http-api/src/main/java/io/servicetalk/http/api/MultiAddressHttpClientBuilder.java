@@ -28,7 +28,6 @@ import java.net.SocketOption;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import javax.annotation.Nullable;
 
 import static io.servicetalk.http.api.StrategyInfluencerAwareConversions.toMultiAddressConditionalFilterFactory;
 import static java.util.Objects.requireNonNull;
@@ -105,17 +104,6 @@ public abstract class MultiAddressHttpClientBuilder<U, R>
      */
     public abstract MultiAddressHttpClientBuilder<U, R> configureSsl(
             BiFunction<HostAndPort, ClientSslConfigBuilder<?>, ClientSslConfigBuilder<?>> sslConfigFunction);
-
-    /**
-     * Sets a configurator that is called immediately before the {@link SingleAddressHttpClientBuilder} for any
-     * {@link HostAndPort} is built, to configure the builder.
-     *
-     * @param clientConfiguratorForHost The configurator.
-     * @return this.
-     */
-    public abstract MultiAddressHttpClientBuilder<U, R> clientConfiguratorForHost(
-            @Nullable BiFunction<HostAndPort, SingleAddressHttpClientBuilder<U, R>,
-                    SingleAddressHttpClientBuilder<U, R>> clientConfiguratorForHost);
 
     @Override
     public abstract MultiAddressHttpClientBuilder<U, R> appendConnectionFilter(
