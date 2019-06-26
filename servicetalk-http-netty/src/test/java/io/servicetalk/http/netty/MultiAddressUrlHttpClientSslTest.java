@@ -176,7 +176,6 @@ public class MultiAddressUrlHttpClientSslTest {
     @Test
     public void requesterWithDefaultSslConfigProvider() throws Exception {
         try (BlockingHttpRequester client = HttpClients.forMultiAddressUrl()
-                .enableWireLogging("servicetalk-tests-client-wire-logger")
                 .ioExecutor(CTX.ioExecutor())
                 .executionStrategy(defaultStrategy(CTX.executor()))
                 .buildBlocking()) {

@@ -50,9 +50,6 @@ public class TcpClientChannelInitializer implements ChannelInitializer {
     public TcpClientChannelInitializer(ReadOnlyTcpClientConfig config, boolean deferSslHandler) {
         ChannelInitializer delegate = ChannelInitializer.defaultInitializer();
         delegate = delegate.andThen(new PooledRecvByteBufAllocatorInitializer());
-        if (config.wireLoggingInitializer() != null) {
-            delegate = delegate.andThen(config.wireLoggingInitializer());
-        }
         if (config.idleTimeoutMs() > 0) {
             delegate = delegate.andThen(new IdleTimeoutInitializer(config.idleTimeoutMs()));
         }
@@ -60,6 +57,9 @@ public class TcpClientChannelInitializer implements ChannelInitializer {
             delegate = delegate.andThen(new SslClientChannelInitializer(config.sslContext(),
                     config.sslHostnameVerificationAlgorithm(), config.sslHostnameVerificationHost(),
                     config.sslHostnameVerificationPort(), deferSslHandler));
+        }
+        if (config.wireLoggingInitializer() != null) {
+            delegate = delegate.andThen(config.wireLoggingInitializer());
         }
         this.delegate = delegate;
     }
