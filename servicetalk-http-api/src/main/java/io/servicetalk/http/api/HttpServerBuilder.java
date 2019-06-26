@@ -131,7 +131,7 @@ public abstract class HttpServerBuilder {
 
     /**
      * Enable SSL/TLS, and return a builder for configuring it.  Call {@link ServerSslConfigBuilder#finish()} to
-     * return to configuring the HTTP client.
+     * return to configuring the HTTP server.
      *
      * @param keyCertChainSupplier an {@link Supplier} that will provide an input stream for a X.509 certificate chain
      * in PEM format.
@@ -149,7 +149,7 @@ public abstract class HttpServerBuilder {
 
     /**
      * Enable SSL/TLS, and return a builder for configuring it.  Call {@link ServerSslConfigBuilder#finish()} to
-     * return to configuring the HTTP client.
+     * return to configuring the HTTP server.
      *
      * @param keyCertChainSupplier an {@link Supplier} that will provide an input stream for a X.509 certificate chain
      * in PEM format.

@@ -93,9 +93,9 @@ public abstract class MultiAddressHttpClientBuilder<U, R>
             Function<HttpRequestMetaData, String> effectiveSchemeFunction);
 
     /**
-     * Sets a function that is used for configuring SSL/TLS for https requests. This is not required to enable SSL/TLS,
-     * only to customize the configuration. Pass {@code null} for {@code sslConfigFunction} to un-set any previously set
-     * function and use the default SSL/TLS configuration instead.
+     * Sets a function that is used for configuring SSL/TLS for https requests.
+     * Pass {@code null} for {@code sslConfigFunction} to un-set any previously set function and use the default SSL/TLS
+     * configuration instead.
      * <p>
      * Note: Returning {@code null} from the function will result in SSL/TLS <b>not</b> being configured.
      *
