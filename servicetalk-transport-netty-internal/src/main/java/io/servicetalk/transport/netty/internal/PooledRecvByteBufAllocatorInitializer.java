@@ -93,7 +93,7 @@ public final class PooledRecvByteBufAllocatorInitializer implements ChannelIniti
          *
          * @param alloc the {@link MaxMessagesRecvByteBufAllocator}
          */
-        public ThreadLocalRecvByteBufAllocator(final MaxMessagesRecvByteBufAllocator alloc) {
+        ThreadLocalRecvByteBufAllocator(final MaxMessagesRecvByteBufAllocator alloc) {
             this.alloc = requireNonNull(alloc);
         }
 
@@ -162,7 +162,7 @@ public final class PooledRecvByteBufAllocatorInitializer implements ChannelIniti
         }
 
         @Override
-        protected final void channelRead0(final ChannelHandlerContext ctx, final ByteBuf buf) {
+        protected void channelRead0(final ChannelHandlerContext ctx, final ByteBuf buf) {
             // We must not release the incoming message here because it will be released by SimpleChannelInboundHandler
             ctx.fireChannelRead(copy(ctx.alloc(), buf));
         }
