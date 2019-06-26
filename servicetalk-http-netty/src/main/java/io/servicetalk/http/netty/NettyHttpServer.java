@@ -89,7 +89,6 @@ import static io.servicetalk.http.netty.HeaderUtils.setResponseContentLength;
 import static io.servicetalk.transport.netty.internal.CloseHandler.forPipelinedRequestResponse;
 import static io.servicetalk.transport.netty.internal.FlushStrategies.flushOnEach;
 import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater;
-import static java.util.function.Function.identity;
 
 final class NettyHttpServer {
 
@@ -358,7 +357,7 @@ final class NettyHttpServer {
             // Add the content-length if necessary, falling back to transfer-encoding
             // otherwise.
             if (canAddResponseContentLength(response, requestMethod)) {
-                return setResponseContentLength(response).flatMapPublisher(identity());
+                return setResponseContentLength(response);
             } else {
                 Publisher<Object> flatResponse = Publisher.<Object>from(response)
                         .concat(response.payloadBodyAndTrailers());

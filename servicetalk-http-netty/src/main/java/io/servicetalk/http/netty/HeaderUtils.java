@@ -17,7 +17,6 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.CharSequences;
 import io.servicetalk.http.api.EmptyHttpHeaders;
 import io.servicetalk.http.api.HttpHeaders;
@@ -111,13 +110,13 @@ final class HeaderUtils {
                 isSafeToAggregate(metadata) && !mayHaveTrailers(metadata);
     }
 
-    static Single<Publisher<Object>> setRequestContentLength(final StreamingHttpRequest request) {
+    static Publisher<Object> setRequestContentLength(final StreamingHttpRequest request) {
         return setContentLength(request, request.payloadBodyAndTrailers(),
                 shouldAddZeroContentLength(request.method()) ? HeaderUtils::updateRequestContentLength :
                         HeaderUtils::updateRequestContentLengthNonZero);
     }
 
-    static Single<Publisher<Object>> setResponseContentLength(final StreamingHttpResponse response) {
+    static Publisher<Object> setResponseContentLength(final StreamingHttpResponse response) {
         return setContentLength(response, response.payloadBodyAndTrailers(), HeaderUtils::updateResponseContentLength);
     }
 
@@ -148,9 +147,9 @@ final class HeaderUtils {
         headers.set(CONTENT_LENGTH, Integer.toString(contentLength));
     }
 
-    private static Single<Publisher<Object>> setContentLength(final HttpMetaData metadata,
-                                                              final Publisher<Object> originalPayloadAndTrailers,
-                                                              final BiIntConsumer<HttpHeaders> contentLengthUpdater) {
+    private static Publisher<Object> setContentLength(final HttpMetaData metadata,
+                                                      final Publisher<Object> originalPayloadAndTrailers,
+                                                      final BiIntConsumer<HttpHeaders> contentLengthUpdater) {
         return originalPayloadAndTrailers.collect(() -> null, (reduction, item) -> {
             if (reduction == null) {
                 // avoid allocating a list if the Publisher emits only a single Buffer
@@ -167,31 +166,28 @@ final class HeaderUtils {
             }
             items.add(item);
             return items;
-        }).map(reduction -> {
+        }).flatMapPublisher(reduction -> {
             int contentLength = 0;
-            final Publisher<Object> payloadAndTrailer;
+            final Publisher<Object> flatRequest;
             if (reduction == null) {
-                payloadAndTrailer = from(metadata, EmptyHttpHeaders.INSTANCE);
+                flatRequest = from(metadata, EmptyHttpHeaders.INSTANCE);
             } else if (reduction instanceof List) {
                 final List<?> items = (List<?>) reduction;
                 for (int i = 0; i < items.size(); i++) {
                     contentLength += calculateContentLength(items.get(i));
                 }
-                payloadAndTrailer = Publisher.<Object>from(metadata)
-                        .concat(fromIterable(items));
+                flatRequest = Publisher.<Object>from(metadata).concat(fromIterable(items));
             } else if (reduction instanceof Buffer) {
                 final Buffer buffer = (Buffer) reduction;
                 contentLength = buffer.readableBytes();
-                payloadAndTrailer = from(metadata, buffer, EmptyHttpHeaders.INSTANCE);
+                flatRequest = from(metadata, buffer, EmptyHttpHeaders.INSTANCE);
             } else if (reduction instanceof HttpHeaders) {
-                payloadAndTrailer = from(metadata, reduction);
+                flatRequest = from(metadata, reduction);
             } else {
                 throw new IllegalArgumentException("Unknown object " + reduction + " found as payload");
             }
-            if (contentLength >= 0) {
-                contentLengthUpdater.apply(contentLength, metadata.headers());
-            }
-            return payloadAndTrailer;
+            contentLengthUpdater.apply(contentLength, metadata.headers());
+            return flatRequest;
         });
     }
 

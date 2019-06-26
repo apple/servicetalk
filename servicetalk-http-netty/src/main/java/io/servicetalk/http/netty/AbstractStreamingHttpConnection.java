@@ -39,7 +39,6 @@ import io.servicetalk.transport.netty.internal.NettyConnectionContext;
 
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.api.Publisher.defer;
 import static io.servicetalk.concurrent.api.Publisher.failed;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.succeeded;
@@ -51,7 +50,6 @@ import static io.servicetalk.http.netty.HeaderUtils.canAddRequestContentLength;
 import static io.servicetalk.http.netty.HeaderUtils.setRequestContentLength;
 import static io.servicetalk.transport.netty.internal.FlushStrategies.flushOnEnd;
 import static java.util.Objects.requireNonNull;
-import static java.util.function.Function.identity;
 
 abstract class AbstractStreamingHttpConnection<CC extends NettyConnectionContext>
         implements FilterableStreamingHttpConnection, ClientInvoker<FlushStrategy> {
@@ -98,8 +96,7 @@ abstract class AbstractStreamingHttpConnection<CC extends NettyConnectionContext
         Publisher<Object> flatRequest;
         // See https://tools.ietf.org/html/rfc7230#section-3.3.3
         if (canAddRequestContentLength(request)) {
-            flatRequest = defer(() -> setRequestContentLength(request)
-                    .flatMapPublisher(identity()).subscribeShareContext());
+            flatRequest = setRequestContentLength(request);
         } else {
             flatRequest = Publisher.<Object>from(request).concat(request.payloadBodyAndTrailers());
             if (!mayHaveTrailers(request)) {
