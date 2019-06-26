@@ -60,7 +60,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.BiFunction;
 import java.util.function.Function;
-import java.util.function.UnaryOperator;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
@@ -96,7 +95,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder extends MultiAddressHttpClie
     @Nullable
     private Function<HostAndPort, CharSequence> unresolvedAddressToHostFunction;
     @Nullable
-    private UnaryOperator<ClientSslConfigBuilder<?>> sslConfigOperator;
+    private BiFunction<HostAndPort, ClientSslConfigBuilder<?>, ClientSslConfigBuilder<?>> sslConfigFunction;
     @Nullable
     private BiFunction<HostAndPort, SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress>,
             SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress>> clientConfiguratorForHost;
@@ -113,7 +112,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder extends MultiAddressHttpClie
             final HttpClientBuildContext<HostAndPort, InetSocketAddress> buildContext = builderTemplate.copyBuildCtx();
 
             final ClientFactory clientFactory = new ClientFactory(buildContext.builder,
-                    clientFilterFactory, unresolvedAddressToHostFunction, sslConfigOperator, clientConfiguratorForHost);
+                    clientFilterFactory, unresolvedAddressToHostFunction, sslConfigFunction, clientConfiguratorForHost);
 
             CachingKeyFactory keyFactory = closeables.prepend(new CachingKeyFactory(effectiveSchemeFunction));
 
@@ -227,7 +226,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder extends MultiAddressHttpClie
         @Nullable
         private final Function<HostAndPort, CharSequence> hostHeaderTransformer;
         @Nullable
-        private UnaryOperator<ClientSslConfigBuilder<?>> sslConfigOperator;
+        private BiFunction<HostAndPort, ClientSslConfigBuilder<?>, ClientSslConfigBuilder<?>> sslConfigFunction;
         @Nullable
         private final BiFunction<HostAndPort, SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress>,
                 SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress>> clientConfiguratorForHost;
@@ -236,13 +235,14 @@ final class DefaultMultiAddressUrlHttpClientBuilder extends MultiAddressHttpClie
                 final DefaultSingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builderTemplate,
                 @Nullable final MultiAddressHttpClientFilterFactory<HostAndPort> clientFilterFactory,
                 @Nullable final Function<HostAndPort, CharSequence> hostHeaderTransformer,
-                @Nullable final UnaryOperator<ClientSslConfigBuilder<?>> sslConfigOperator,
+                @Nullable final BiFunction<HostAndPort, ClientSslConfigBuilder<?>, ClientSslConfigBuilder<?>>
+                        sslConfigFunction,
                 @Nullable final BiFunction<HostAndPort, SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress>,
                         SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress>> clientConfiguratorForHost) {
             this.builderTemplate = builderTemplate;
             this.clientFilterFactory = clientFilterFactory;
             this.hostHeaderTransformer = hostHeaderTransformer;
-            this.sslConfigOperator = sslConfigOperator;
+            this.sslConfigFunction = sslConfigFunction;
             this.clientConfiguratorForHost = clientConfiguratorForHost;
         }
 
@@ -258,8 +258,8 @@ final class DefaultMultiAddressUrlHttpClientBuilder extends MultiAddressHttpClie
 
             if ("https".equalsIgnoreCase(urlKey.scheme)) {
                 ClientSslConfigBuilder<?> sslConfigBuilder = buildContext.builder.enableSsl();
-                if (sslConfigOperator != null) {
-                    sslConfigBuilder = sslConfigOperator.apply(sslConfigBuilder);
+                if (sslConfigFunction != null) {
+                    sslConfigBuilder = sslConfigFunction.apply(urlKey.hostAndPort, sslConfigBuilder);
                 }
                 if (sslConfigBuilder != null) {
                     sslConfigBuilder.finish();
@@ -454,8 +454,8 @@ final class DefaultMultiAddressUrlHttpClientBuilder extends MultiAddressHttpClie
 
     @Override
     public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> configureSsl(
-            UnaryOperator<ClientSslConfigBuilder<?>> sslConfigOperator) {
-        this.sslConfigOperator = sslConfigOperator;
+            BiFunction<HostAndPort, ClientSslConfigBuilder<?>, ClientSslConfigBuilder<?>> sslConfigFunction) {
+        this.sslConfigFunction = sslConfigFunction;
         return this;
     }
 

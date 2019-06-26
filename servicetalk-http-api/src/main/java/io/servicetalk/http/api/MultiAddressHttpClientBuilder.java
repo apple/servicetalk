@@ -28,7 +28,6 @@ import java.net.SocketOption;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.function.UnaryOperator;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.http.api.StrategyInfluencerAwareConversions.toMultiAddressConditionalFilterFactory;
@@ -95,17 +94,17 @@ public abstract class MultiAddressHttpClientBuilder<U, R>
             Function<HttpRequestMetaData, String> effectiveSchemeFunction);
 
     /**
-     * Sets an operator that is used for configuring SSL/TLS for https requests. This is not required to enable SSL/TLS,
-     * only to customize the configuration. Pass {@code null} for {@code sslConfigOperator} to un-set any previously set
+     * Sets a function that is used for configuring SSL/TLS for https requests. This is not required to enable SSL/TLS,
+     * only to customize the configuration. Pass {@code null} for {@code sslConfigFunction} to un-set any previously set
      * function and use the default SSL/TLS configuration instead.
      * <p>
-     * Note: Returning {@code null} from the operator will result in SSL/TLS <b>not</b> being configured.
+     * Note: Returning {@code null} from the function will result in SSL/TLS <b>not</b> being configured.
      *
-     * @param sslConfigOperator The operator to use for configuring SSL/TLS for https requests.
+     * @param sslConfigFunction The function to use for configuring SSL/TLS for https requests.
      * @return {@code this}
      */
     public abstract MultiAddressHttpClientBuilder<U, R> configureSsl(
-            UnaryOperator<ClientSslConfigBuilder<?>> sslConfigOperator);
+            BiFunction<HostAndPort, ClientSslConfigBuilder<?>, ClientSslConfigBuilder<?>> sslConfigFunction);
 
     /**
      * Sets a configurator that is called immediately before the {@link SingleAddressHttpClientBuilder} for any

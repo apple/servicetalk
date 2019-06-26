@@ -190,7 +190,7 @@ public class MultiAddressUrlHttpClientSslTest {
     public void requesterWithSecureSslConfigProvider() throws Exception {
         try (BlockingHttpRequester client = HttpClients.forMultiAddressUrl()
                 .effectiveScheme(__ -> "https")
-                .configureSsl(config -> config.disableHostnameVerification()
+                .configureSsl((hap, config) -> config.disableHostnameVerification()
                         .trustManager(DefaultTestCerts::loadMutualAuthCaPem))
                 .ioExecutor(CTX.ioExecutor())
                 .executionStrategy(defaultStrategy(CTX.executor()))
