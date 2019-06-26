@@ -87,6 +87,7 @@ import static io.servicetalk.http.netty.HeaderUtils.addResponseTransferEncodingI
 import static io.servicetalk.http.netty.HeaderUtils.canAddResponseContentLength;
 import static io.servicetalk.http.netty.HeaderUtils.setResponseContentLength;
 import static io.servicetalk.transport.netty.internal.CloseHandler.forPipelinedRequestResponse;
+import static io.servicetalk.transport.netty.internal.FlushStrategies.flushOnEach;
 import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater;
 import static java.util.function.Function.identity;
 
@@ -541,7 +542,12 @@ final class NettyHttpServer {
             }
 
             void afterEmitTrailers() {
-                updateListener(INIT);
+                // We do not expect any data to be written after trailers and before the next metadata but a user may
+                // inadvertently generate trailers using the raw transform methods which will write duplicate trailers
+                // on the wire. The encoder will ignore the duplicate trailer by writing an empty buffer but on the
+                // channel there will be a write without a flush which may lead to incomplete promises. Hence we reset
+                // to flush-on-each.
+                updateListener(flushOnEach().apply(flushSender));
             }
 
             private void updateListener(final WriteEventsListener newListener) {
