@@ -18,6 +18,7 @@ package io.servicetalk.transport.api;
 import java.io.InputStream;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import javax.net.ssl.KeyManagerFactory;
 
 /**
  * Factory methods for building {@link ClientSslConfigBuilder} and {@link ServerSslConfigBuilder}, for use by builders,
@@ -62,6 +63,23 @@ public final class ChainingSslConfigBuilders {
      *
      * @param finisher Supplies the object to return when calling {@link ServerSslConfigBuilder#finish()}.
      * @param configConsumer {@link Consumer} to call with the {@link SslConfig} when
+     * @param keyManagerFactory an {@link KeyManagerFactory}.
+     * @param <F> The type to return when calling {@link ServerSslConfigBuilder#finish()}.
+     * @return a new {@link ServerSslConfigBuilder}.
+     */
+    public static <F> ServerSslConfigBuilder<F> forServer(final Supplier<F> finisher,
+                                                          final Consumer<SslConfig> configConsumer,
+                                                          final KeyManagerFactory keyManagerFactory) {
+        return new ServerSslConfigBuilder<>(finisher, configConsumer, keyManagerFactory);
+    }
+
+    /**
+     * Creates a builder for new server-side {@link SslConfig}.
+     * <p>
+     * Note: This is intended for builders, to aid with builder chaining.
+     *
+     * @param finisher Supplies the object to return when calling {@link ServerSslConfigBuilder#finish()}.
+     * @param configConsumer {@link Consumer} to call with the {@link SslConfig} when
      * @param keyCertChainSupplier an {@link Supplier} that will provide an input stream for a X.509 certificate chain
      * in PEM format.
      * <p>
@@ -78,7 +96,7 @@ public final class ChainingSslConfigBuilders {
                                                           final Consumer<SslConfig> configConsumer,
                                                           final Supplier<InputStream> keyCertChainSupplier,
                                                           final Supplier<InputStream> keySupplier) {
-        return new ServerSslConfigBuilder<>(finisher, configConsumer).keyManager(keyCertChainSupplier, keySupplier);
+        return new ServerSslConfigBuilder<>(finisher, configConsumer, keyCertChainSupplier, keySupplier);
     }
 
     /**
@@ -106,7 +124,6 @@ public final class ChainingSslConfigBuilders {
                                                           final Supplier<InputStream> keyCertChainSupplier,
                                                           final Supplier<InputStream> keySupplier,
                                                           final String keyPassword) {
-        return new ServerSslConfigBuilder<>(finisher, configConsumer)
-                .keyManager(keyCertChainSupplier, keySupplier, keyPassword);
+        return new ServerSslConfigBuilder<>(finisher, configConsumer, keyCertChainSupplier, keySupplier, keyPassword);
     }
 }

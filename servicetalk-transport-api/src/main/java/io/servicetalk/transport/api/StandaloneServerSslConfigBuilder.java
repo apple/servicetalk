@@ -15,9 +15,11 @@
  */
 package io.servicetalk.transport.api;
 
-import java.util.concurrent.atomic.AtomicReference;
+import java.io.InputStream;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import javax.annotation.Nullable;
+import javax.net.ssl.KeyManagerFactory;
 
 /**
  * Builder for {@link SslConfig} for servers.
@@ -27,9 +29,21 @@ import java.util.function.Supplier;
 public final class StandaloneServerSslConfigBuilder
         extends BaseServerSslConfigBuilder<StandaloneServerSslConfigBuilder, SslConfig> {
 
-    private StandaloneServerSslConfigBuilder(final Supplier<SslConfig> finisher,
-                                             final Consumer<SslConfig> configConsumer) {
-        super(finisher, configConsumer);
+    StandaloneServerSslConfigBuilder(final Supplier<SslConfig> finisher, final Consumer<SslConfig> configConsumer,
+                                     final KeyManagerFactory keyManagerFactory) {
+        super(finisher, configConsumer, keyManagerFactory);
+    }
+
+    StandaloneServerSslConfigBuilder(final Supplier<SslConfig> finisher, final Consumer<SslConfig> configConsumer,
+                                     final Supplier<InputStream> keyCertChainSupplier,
+                                     final Supplier<InputStream> keySupplier) {
+        super(finisher, configConsumer, keyCertChainSupplier, keySupplier);
+    }
+
+    StandaloneServerSslConfigBuilder(final Supplier<SslConfig> finisher, final Consumer<SslConfig> configConsumer,
+                                     final Supplier<InputStream> keyCertChainSupplier,
+                                     final Supplier<InputStream> keySupplier, @Nullable final String keyPassword) {
+        super(finisher, configConsumer, keyCertChainSupplier, keySupplier, keyPassword);
     }
 
     /**
@@ -39,10 +53,5 @@ public final class StandaloneServerSslConfigBuilder
      */
     public SslConfig build() {
         return finishInternal();
-    }
-
-    static StandaloneServerSslConfigBuilder newInstance() {
-        AtomicReference<SslConfig> configRef = new AtomicReference<>();
-        return new StandaloneServerSslConfigBuilder(configRef::get, configRef::set);
     }
 }

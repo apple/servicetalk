@@ -34,6 +34,7 @@ import java.net.SocketOption;
 import java.util.Map;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
+import javax.net.ssl.KeyManagerFactory;
 
 final class DefaultHttpServerBuilder extends HttpServerBuilder {
 
@@ -91,6 +92,12 @@ final class DefaultHttpServerBuilder extends HttpServerBuilder {
     public HttpServerBuilder sniConfig(@Nullable final Map<String, SslConfig> mappings, final SslConfig defaultConfig) {
         config.tcpConfig().sniConfig(mappings, defaultConfig);
         return this;
+    }
+
+    @Override
+    public ServerSslConfigBuilder<HttpServerBuilder> enableSsl(final KeyManagerFactory keyManagerFactory) {
+        return ChainingSslConfigBuilders.forServer(() -> this, sslConfig -> config.tcpConfig().sslConfig(sslConfig),
+                keyManagerFactory);
     }
 
     @Override

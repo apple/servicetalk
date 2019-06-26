@@ -15,9 +15,11 @@
  */
 package io.servicetalk.transport.api;
 
+import java.io.InputStream;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
+import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLParameters;
 
@@ -38,6 +40,13 @@ class BaseClientSslConfigBuilder<B extends BaseClientSslConfigBuilder, F> extend
     private int hostNameVerificationPort = -1;
     @Nullable
     private String sniHostname;
+
+    private Supplier<InputStream> keyCertChainSupplier = nullSupplier();
+    private Supplier<InputStream> keySupplier = nullSupplier();
+    @Nullable
+    private KeyManagerFactory keyManagerFactory;
+    @Nullable
+    private String keyPassword;
 
     BaseClientSslConfigBuilder(final Supplier<F> finisher, final Consumer<SslConfig> configConsumer) {
         super(finisher, configConsumer);
@@ -116,6 +125,67 @@ class BaseClientSslConfigBuilder<B extends BaseClientSslConfigBuilder, F> extend
     public B disableHostnameVerification() {
         hostNameVerificationHost = null;
         hostNameVerificationPort = -1;
+        return castAsB();
+    }
+
+    /**
+     * Identifying certificate for this host. {@code keyManagerFactory} may
+     * be {@code null}, which disables mutual authentication.
+     * The {@link KeyManagerFactory} which take preference over any configured {@link Supplier}.
+     *
+     * @param keyManagerFactory an {@link KeyManagerFactory}.
+     * @return self.
+     */
+    public B keyManager(KeyManagerFactory keyManagerFactory) {
+        this.keyCertChainSupplier = nullSupplier();
+        this.keySupplier = nullSupplier();
+        this.keyPassword = null;
+        this.keyManagerFactory = keyManagerFactory;
+        return castAsB();
+    }
+
+    /**
+     * Identifying certificate for this host. {@code keyCertChainInputStream} and {@code keyInputStream} may
+     * be {@code null}, which disables mutual authentication.
+     *
+     * @param keyCertChainSupplier an {@link Supplier} that will provide an input stream for a X.509 certificate chain
+     * in PEM format.
+     * <p>
+     * The responsibility to call {@link InputStream#close()} is transferred to callers of the {@link Supplier}.
+     * If this is not the desired behavior then wrap the {@link InputStream} and override {@link InputStream#close()}.
+     * @param keySupplier an {@link Supplier} that will provide an input stream for a KCS#8 private key in PEM format.
+     * <p>
+     * The responsibility to call {@link InputStream#close()} is transferred to callers of the {@link Supplier}.
+     * If this is not the desired behavior then wrap the {@link InputStream} and override {@link InputStream#close()}.
+     * @return self.
+     */
+    public B keyManager(Supplier<InputStream> keyCertChainSupplier, Supplier<InputStream> keySupplier) {
+        return keyManager(keyCertChainSupplier, keySupplier, null);
+    }
+
+    /**
+     * Identifying certificate for this host. {@code keyCertChainInputStream} and {@code keyInputStream} may
+     * be {@code null}, which disables mutual authentication.
+     *
+     * @param keyCertChainSupplier an {@link Supplier} that will provide an input stream for a X.509 certificate chain
+     * in PEM format.
+     * <p>
+     * The responsibility to call {@link InputStream#close()} is transferred to callers of the {@link Supplier}.
+     * If this is not the desired behavior then wrap the {@link InputStream} and override {@link InputStream#close()}.
+     * @param keySupplier an {@link Supplier} that will provide an input stream for a KCS#8 private key in PEM format.
+     * <p>
+     * The responsibility to call {@link InputStream#close()} is transferred to callers of the {@link Supplier}.
+     * If this is not the desired behavior then wrap the {@link InputStream} and override {@link InputStream#close()}.
+     * @param keyPassword the password of the {@code keyInputStream}, or {@code null} if it's not
+     * password-protected
+     * @return self.
+     */
+    public B keyManager(Supplier<InputStream> keyCertChainSupplier, Supplier<InputStream> keySupplier,
+                        @Nullable String keyPassword) {
+        keyManagerFactory = null;
+        this.keyCertChainSupplier = keyCertChainSupplier;
+        this.keySupplier = keySupplier;
+        this.keyPassword = keyPassword;
         return castAsB();
     }
 

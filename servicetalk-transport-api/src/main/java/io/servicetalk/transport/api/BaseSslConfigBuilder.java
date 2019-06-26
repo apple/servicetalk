@@ -21,7 +21,6 @@ import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
-import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.TrustManagerFactory;
 
 import static java.util.Objects.requireNonNull;
@@ -37,16 +36,10 @@ abstract class BaseSslConfigBuilder<B extends BaseSslConfigBuilder, F> {
     @Nullable
     TrustManagerFactory trustManagerFactory;
     @Nullable
-    KeyManagerFactory keyManagerFactory;
-    @Nullable
-    String keyPassword;
-    @Nullable
     Iterable<String> ciphers;
     long sessionCacheSize;
     long sessionTimeout;
     Supplier<InputStream> trustCertChainSupplier = nullSupplier();
-    Supplier<InputStream> keyCertChainSupplier = nullSupplier();
-    Supplier<InputStream> keySupplier = nullSupplier();
     ApplicationProtocolConfig apn = ApplicationProtocolConfig.DISABLED;
     SslConfig.SslProvider provider = SslConfig.SslProvider.AUTO;
     @Nullable
@@ -84,67 +77,6 @@ abstract class BaseSslConfigBuilder<B extends BaseSslConfigBuilder, F> {
     public B trustManager(TrustManagerFactory trustManagerFactory) {
         trustCertChainSupplier = nullSupplier();
         this.trustManagerFactory = trustManagerFactory;
-        return castAsB();
-    }
-
-    /**
-     * Identifying certificate for this host. {@code keyManagerFactory} may
-     * be {@code null} for client contexts, which disables mutual authentication.
-     * The {@link KeyManagerFactory} which take preference over any configured {@link Supplier}.
-     *
-     * @param keyManagerFactory an {@link KeyManagerFactory}.
-     * @return self.
-     */
-    public B keyManager(KeyManagerFactory keyManagerFactory) {
-        this.keyCertChainSupplier = nullSupplier();
-        this.keySupplier = nullSupplier();
-        this.keyPassword = null;
-        this.keyManagerFactory = keyManagerFactory;
-        return castAsB();
-    }
-
-    /**
-     * Identifying certificate for this host. {@code keyCertChainInputStream} and {@code keyInputStream} may
-     * be {@code null} for client contexts, which disables mutual authentication.
-     *
-     * @param keyCertChainSupplier an {@link Supplier} that will provide an input stream for a X.509 certificate chain
-     * in PEM format.
-     * <p>
-     * The responsibility to call {@link InputStream#close()} is transferred to callers of the {@link Supplier}.
-     * If this is not the desired behavior then wrap the {@link InputStream} and override {@link InputStream#close()}.
-     * @param keySupplier an {@link Supplier} that will provide an input stream for a KCS#8 private key in PEM format.
-     * <p>
-     * The responsibility to call {@link InputStream#close()} is transferred to callers of the {@link Supplier}.
-     * If this is not the desired behavior then wrap the {@link InputStream} and override {@link InputStream#close()}.
-     * @return self.
-     */
-    public B keyManager(Supplier<InputStream> keyCertChainSupplier, Supplier<InputStream> keySupplier) {
-        return keyManager(keyCertChainSupplier, keySupplier, null);
-    }
-
-    /**
-     * Identifying certificate for this host. {@code keyCertChainInputStream} and {@code keyInputStream} may
-     * be {@code null} for client contexts, which disables mutual authentication.
-     *
-     * @param keyCertChainSupplier an {@link Supplier} that will provide an input stream for a X.509 certificate chain
-     * in PEM format.
-     * <p>
-     * The responsibility to call {@link InputStream#close()} is transferred to callers of the {@link Supplier}.
-     * If this is not the desired behavior then wrap the {@link InputStream} and override {@link InputStream#close()}.
-     * @param keySupplier an {@link Supplier} that will provide an input stream for a KCS#8 private key in PEM format.
-     * <p>
-     * The responsibility to call {@link InputStream#close()} is transferred to callers of the {@link Supplier}.
-     * If this is not the desired behavior then wrap the {@link InputStream} and override {@link InputStream#close()}.
-     * @param keyPassword the password of the {@code keyInputStream}, or {@code null} if it's not
-     * password-protected
-     * @return self.
-     */
-    public B keyManager(Supplier<InputStream> keyCertChainSupplier, Supplier<InputStream> keySupplier,
-                        @Nullable String keyPassword) {
-        keyManagerFactory = null;
-        this.keyCertChainSupplier = keyCertChainSupplier;
-        this.keySupplier = keySupplier;
-        this.keyPassword = keyPassword;
         return castAsB();
     }
 
@@ -236,7 +168,7 @@ abstract class BaseSslConfigBuilder<B extends BaseSslConfigBuilder, F> {
     }
 
     @SuppressWarnings("unchecked")
-    private static <T> Supplier<T> nullSupplier() {
+    static <T> Supplier<T> nullSupplier() {
         return NULL_SUPPLIER;
     }
 }

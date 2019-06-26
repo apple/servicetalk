@@ -15,8 +15,11 @@
  */
 package io.servicetalk.transport.api;
 
+import java.io.InputStream;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import javax.annotation.Nullable;
+import javax.net.ssl.KeyManagerFactory;
 
 /**
  * Builder for {@link SslConfig} for servers, used for chaining builders.
@@ -25,8 +28,20 @@ import java.util.function.Supplier;
  * @see SslConfigBuilders for static factory methods.
  */
 public final class ServerSslConfigBuilder<F> extends BaseServerSslConfigBuilder<ServerSslConfigBuilder<F>, F> {
-    ServerSslConfigBuilder(final Supplier<F> finisher, final Consumer<SslConfig> configConsumer) {
-        super(finisher, configConsumer);
+    ServerSslConfigBuilder(final Supplier<F> finisher, final Consumer<SslConfig> configConsumer,
+                           final KeyManagerFactory keyManagerFactory) {
+        super(finisher, configConsumer, keyManagerFactory);
+    }
+
+    ServerSslConfigBuilder(final Supplier<F> finisher, final Consumer<SslConfig> configConsumer,
+                           final Supplier<InputStream> keyCertChainSupplier, final Supplier<InputStream> keySupplier) {
+        super(finisher, configConsumer, keyCertChainSupplier, keySupplier);
+    }
+
+    ServerSslConfigBuilder(final Supplier<F> finisher, final Consumer<SslConfig> configConsumer,
+                           final Supplier<InputStream> keyCertChainSupplier, final Supplier<InputStream> keySupplier,
+                           @Nullable final String keyPassword) {
+        super(finisher, configConsumer, keyCertChainSupplier, keySupplier, keyPassword);
     }
 
     /**

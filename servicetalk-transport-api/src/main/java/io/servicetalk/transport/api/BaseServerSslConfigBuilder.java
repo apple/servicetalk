@@ -15,8 +15,11 @@
  */
 package io.servicetalk.transport.api;
 
+import java.io.InputStream;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import javax.annotation.Nullable;
+import javax.net.ssl.KeyManagerFactory;
 
 import static java.util.Objects.requireNonNull;
 
@@ -24,8 +27,33 @@ class BaseServerSslConfigBuilder<B extends BaseServerSslConfigBuilder, F> extend
 
     private SslConfig.ClientAuth clientAuth = SslConfig.ClientAuth.NONE;
 
-    BaseServerSslConfigBuilder(final Supplier<F> finisher, final Consumer<SslConfig> configConsumer) {
+    private Supplier<InputStream> keyCertChainSupplier = nullSupplier();
+    private Supplier<InputStream> keySupplier = nullSupplier();
+    @Nullable
+    private KeyManagerFactory keyManagerFactory;
+    @Nullable
+    private String keyPassword;
+
+    BaseServerSslConfigBuilder(final Supplier<F> finisher, final Consumer<SslConfig> configConsumer,
+                               KeyManagerFactory keyManagerFactory) {
         super(finisher, configConsumer);
+        this.keyManagerFactory = keyManagerFactory;
+    }
+
+    BaseServerSslConfigBuilder(final Supplier<F> finisher, final Consumer<SslConfig> configConsumer,
+                               Supplier<InputStream> keyCertChainSupplier, Supplier<InputStream> keySupplier) {
+        super(finisher, configConsumer);
+        this.keyCertChainSupplier = keyCertChainSupplier;
+        this.keySupplier = keySupplier;
+    }
+
+    BaseServerSslConfigBuilder(final Supplier<F> finisher, final Consumer<SslConfig> configConsumer,
+                               Supplier<InputStream> keyCertChainSupplier, Supplier<InputStream> keySupplier,
+                               @Nullable String keyPassword) {
+        super(finisher, configConsumer);
+        this.keyCertChainSupplier = keyCertChainSupplier;
+        this.keySupplier = keySupplier;
+        this.keyPassword = keyPassword;
     }
 
     /**

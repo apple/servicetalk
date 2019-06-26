@@ -16,10 +16,12 @@
 package io.servicetalk.transport.api;
 
 import java.io.InputStream;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
+import javax.net.ssl.KeyManagerFactory;
 
 /**
- * Factory methods for building {@link ClientSslConfigBuilder} and {@link ServerSslConfigBuilder}.
+ * Factory methods for building {@link ServerSslConfigBuilder}.
  */
 public final class SslConfigBuilders {
 
@@ -28,35 +30,14 @@ public final class SslConfigBuilders {
     }
 
     /**
-     * Creates a builder for new client-side {@link SslConfig}.
-     * <p>
-     * This method does not have enough information to ensure
-     * <a href="https://tools.ietf.org/search/rfc2818#section-3.1">server identity</a> is verified. Use
-     * {@link #forClient(String, int)} instead for
-     * <a href="https://tools.ietf.org/search/rfc2818#section-3.1">server identity</a> verification.
+     * Creates a builder for new server-side {@link SslConfig}.
      *
-     * @return a new {@link StandaloneClientSslConfigBuilder}.
+     * @param keyManagerFactory an {@link KeyManagerFactory}.
+     * @return a new {@link StandaloneServerSslConfigBuilder}.
      */
-    public static StandaloneClientSslConfigBuilder forClientWithoutVerificationOrSni() {
-        return StandaloneClientSslConfigBuilder.newInstance();
-    }
-
-    /**
-     * Creates a builder for new client-side {@link SslConfig} which verifies the
-     * <a href="https://tools.ietf.org/search/rfc2818#section-3.1">server identity</a>.
-     *
-     * @param hostname The non-authoritative name of the host. This is used to verify the
-     * <a href="https://tools.ietf.org/search/rfc2818#section-3.1">server identity</a>.
-     * @param port The non-authoritative port. This maybe used to verify
-     * <a href="https://tools.ietf.org/search/rfc2818#section-3.1">server identity</a>.
-     * @return a new {@link StandaloneClientSslConfigBuilder}.
-     */
-    public static StandaloneClientSslConfigBuilder forClient(String hostname,
-                                                             int port) {
-        return StandaloneClientSslConfigBuilder.newInstance()
-                .hostNameVerificationHost(hostname)
-                .hostNameVerificationPort(port)
-                .sniHostname(hostname);
+    public static StandaloneServerSslConfigBuilder forServer(final KeyManagerFactory keyManagerFactory) {
+        AtomicReference<SslConfig> configRef = new AtomicReference<>();
+        return new StandaloneServerSslConfigBuilder(configRef::get, configRef::set, keyManagerFactory);
     }
 
     /**
@@ -75,7 +56,8 @@ public final class SslConfigBuilders {
      */
     public static StandaloneServerSslConfigBuilder forServer(final Supplier<InputStream> keyCertChainSupplier,
                                                              final Supplier<InputStream> keySupplier) {
-        return StandaloneServerSslConfigBuilder.newInstance().keyManager(keyCertChainSupplier, keySupplier);
+        AtomicReference<SslConfig> configRef = new AtomicReference<>();
+        return new StandaloneServerSslConfigBuilder(configRef::get, configRef::set, keyCertChainSupplier, keySupplier);
     }
 
     /**
@@ -96,7 +78,8 @@ public final class SslConfigBuilders {
     public static StandaloneServerSslConfigBuilder forServer(final Supplier<InputStream> keyCertChainSupplier,
                                                              final Supplier<InputStream> keySupplier,
                                                              final String keyPassword) {
-        return StandaloneServerSslConfigBuilder.newInstance()
-                .keyManager(keyCertChainSupplier, keySupplier, keyPassword);
+        AtomicReference<SslConfig> configRef = new AtomicReference<>();
+        return new StandaloneServerSslConfigBuilder(configRef::get, configRef::set,
+                keyCertChainSupplier, keySupplier, keyPassword);
     }
 }

@@ -31,6 +31,7 @@ import java.util.Map;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
+import javax.net.ssl.KeyManagerFactory;
 
 import static io.servicetalk.http.api.BlockingUtils.blockingInvocation;
 import static io.servicetalk.http.api.HttpApiConversions.toStreamingHttpService;
@@ -128,6 +129,15 @@ public abstract class HttpServerBuilder {
      * {@link InputStream#close()} is called.
      */
     public abstract HttpServerBuilder sniConfig(@Nullable Map<String, SslConfig> mappings, SslConfig defaultConfig);
+
+    /**
+     * Enable SSL/TLS, and return a builder for configuring it.  Call {@link ServerSslConfigBuilder#finish()} to
+     * return to configuring the HTTP server.
+     *
+     * @param keyManagerFactory an {@link KeyManagerFactory}.
+     * @return an {@link ServerSslConfigBuilder} for configuring SSL/TLS.
+     */
+    public abstract ServerSslConfigBuilder<HttpServerBuilder> enableSsl(KeyManagerFactory keyManagerFactory);
 
     /**
      * Enable SSL/TLS, and return a builder for configuring it.  Call {@link ServerSslConfigBuilder#finish()} to
