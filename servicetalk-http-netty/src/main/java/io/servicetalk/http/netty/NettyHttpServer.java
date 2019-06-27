@@ -16,12 +16,14 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.CompletableSource.Processor;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
+import io.servicetalk.concurrent.api.Processors;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.RejectedSubscribeError;
@@ -70,14 +72,13 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.net.ssl.SSLSession;
 
+import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.AsyncCloseables.toListenableAsyncCloseable;
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Completable.defer;
-import static io.servicetalk.concurrent.api.Processors.newCompletableProcessor;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.succeeded;
-import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.http.api.HttpApiConversions.mayHaveTrailers;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderValues.ZERO;
@@ -88,6 +89,7 @@ import static io.servicetalk.http.netty.HeaderUtils.canAddResponseContentLength;
 import static io.servicetalk.http.netty.HeaderUtils.setResponseContentLength;
 import static io.servicetalk.transport.netty.internal.CloseHandler.forPipelinedRequestResponse;
 import static io.servicetalk.transport.netty.internal.FlushStrategies.flushOnEach;
+import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater;
 
 final class NettyHttpServer {
@@ -237,7 +239,7 @@ final class NettyHttpServer {
                 // resubscribing to the NettyChannelPublisher before the previous subscriber has terminated. Otherwise
                 // we may attempt to do duplicate subscribe on NettyChannelPublisher, which will result in a connection
                 // closure.
-                final Processor requestCompletion = newCompletableProcessor();
+                final SingleSubscribeProcessor requestCompletion = new SingleSubscribeProcessor();
                 final AtomicBoolean payloadSubscribed = drainRequestPayloadBody ? new AtomicBoolean() : null;
                 final StreamingHttpRequest request = rawRequest.transformRawPayloadBody(
                         // Cancellation is assumed to close the connection, or be ignored if this Subscriber has already
@@ -308,7 +310,7 @@ final class NettyHttpServer {
                             .onErrorResume(t -> completed())));
                 }
 
-                return responsePublisher.concat(fromSource(requestCompletion));
+                return responsePublisher.concat(requestCompletion);
             });
             return connection.write(responseObjectPublisher.repeat(val -> true)
                     // We generate synthetic callbacks to WriteEventsListener as there is a single write per connection
@@ -565,6 +567,44 @@ final class NettyHttpServer {
                     }
                 }
             }
+        }
+    }
+
+    /**
+     * Equivalent of {@link Processors#newCompletableProcessor()} that doesn't handle multiple
+     * {@link CompletableSource.Subscriber#subscribe(CompletableSource.Subscriber) subscribes}.
+     */
+    private static final class SingleSubscribeProcessor extends Completable implements Processor {
+
+        @Nullable
+        private CompletableSource.Subscriber subscriber;
+
+        @Override
+        protected void handleSubscribe(final CompletableSource.Subscriber subscriber) {
+            this.subscriber = requireNonNull(subscriber);
+            subscriber.onSubscribe(IGNORE_CANCEL);
+        }
+
+        @Override
+        public void onSubscribe(final Cancellable cancellable) {
+            // no op, we never cancel as Subscribers and subscribes are decoupled.
+        }
+
+        @Override
+        public void onComplete() {
+            assert subscriber != null;
+            subscriber.onComplete();
+        }
+
+        @Override
+        public void onError(final Throwable t) {
+            assert subscriber != null;
+            subscriber.onError(t);
+        }
+
+        @Override
+        public void subscribe(final Subscriber subscriber) {
+            subscribeInternal(subscriber);
         }
     }
 }
