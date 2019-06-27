@@ -32,7 +32,6 @@ import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
@@ -88,14 +87,16 @@ public class CompletableConcatWithPublisherTest {
     public void invalidRequestBeforeNextSubscribe() {
         subscriber.request(-1);
         triggerNextSubscribe();
-        assertThat("Invalid request-n not propagated.", subscription.requested(), is(lessThan(0L)));
+        assertThat("Invalid request-n not propagated " + subscription, subscription.requestedEquals(-1),
+                is(true));
     }
 
     @Test
     public void invalidRequestAfterNextSubscribe() {
         triggerNextSubscribe();
         subscriber.request(-1);
-        assertThat("Invalid request-n not propagated.", subscription.requested(), is(lessThan(0L)));
+        assertThat("Invalid request-n not propagated " + subscription, subscription.requestedEquals(-1),
+                is(true));
     }
 
     @Test
@@ -103,7 +104,8 @@ public class CompletableConcatWithPublisherTest {
         subscriber.request(-1);
         triggerNextSubscribe();
         subscriber.request(-10);
-        assertThat("Invalid request-n not propagated.", subscription.requested(), is(lessThan(0L)));
+        assertThat("Invalid request-n not propagated " + subscription, subscription.requestedEquals(-1),
+                is(true));
     }
 
     @Test
@@ -111,7 +113,25 @@ public class CompletableConcatWithPublisherTest {
         subscriber.request(-1);
         subscriber.request(10);
         triggerNextSubscribe();
-        assertThat("Invalid request-n not propagated.", subscription.requested(), is(lessThan(0L)));
+        assertThat("Invalid request-n not propagated " + subscription, subscription.requestedEquals(-1),
+                is(true));
+    }
+
+    @Test
+    public void request0Propagated() {
+        subscriber.request(0);
+        triggerNextSubscribe();
+        assertThat("Invalid request-n not propagated " + subscription, subscription.requestedEquals(0),
+                is(true));
+    }
+
+    @Test
+    public void request0PropagatedAfterComplete() {
+        source.onComplete();
+        subscriber.request(0);
+        next.onSubscribe(subscription);
+        assertThat("Invalid request-n not propagated " + subscription, subscription.requestedEquals(0),
+                is(true));
     }
 
     @Test
@@ -119,7 +139,8 @@ public class CompletableConcatWithPublisherTest {
         subscriber.request(-1);
         triggerNextSubscribe();
         subscriber.request(10);
-        assertThat("Invalid request-n not propagated.", subscription.requested(), is(lessThan(0L)));
+        assertThat("Invalid request-n not propagated " + subscription, subscription.requestedEquals(-1),
+                is(true));
     }
 
     @Test

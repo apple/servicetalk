@@ -43,8 +43,9 @@ final class SingleConcatWithPublisher<T> extends AbstractNoHandleSubscribePublis
 
     private static final class ConcatSubscriber<T> extends CancellableThenSubscription
             implements SingleSource.Subscriber<T>, Subscriber<T> {
-        private static final Object INITIAL_VALUE = new Object();
+        private static final Object INITIAL = new Object();
         private static final Object REQUESTED = new Object();
+        private static final Object CANCELLED = new Object();
         private static final AtomicReferenceFieldUpdater<ConcatSubscriber, Object> mayBeResultUpdater =
                 newUpdater(ConcatSubscriber.class, Object.class, "mayBeResult");
 
@@ -54,16 +55,16 @@ final class SingleConcatWithPublisher<T> extends AbstractNoHandleSubscribePublis
         /**
          * Following values are possible:
          * <ul>
-         *     <li>{@link ConcatSubscriber#INITIAL_VALUE} upon creation</li>
-         *     <li>Actual result if {@link #onSuccess(Object)} invoked before {@link #emitAdjustedItemIfAvailable()}
-         *     </li>
-         *     <li>{@link ConcatSubscriber#REQUESTED} if {@link #emitAdjustedItemIfAvailable()} invoked before
+         *     <li>{@link ConcatSubscriber#INITIAL} upon creation</li>
+         *     <li>Actual result if {@link #onSuccess(Object)} invoked before {@link #request(long)}</li>
+         *     <li>{@link ConcatSubscriber#REQUESTED} if {@link #request(long)} (with a valid n) invoked before
          *     {@link #onSuccess(Object)}</li>
+         *     <li>{@link ConcatSubscriber#CANCELLED} if {@link #cancel()} is called or the first call to request(n)
+         *     is invalid </li>
          * </ul>
          */
         @Nullable
-        private volatile Object mayBeResult = INITIAL_VALUE;
-        private boolean adjustedRequestNForSingle;
+        private volatile Object mayBeResult = INITIAL;
 
         ConcatSubscriber(final Subscriber<? super T> subscriber, final Publisher<? extends T> next) {
             this.target = subscriber;
@@ -78,9 +79,14 @@ final class SingleConcatWithPublisher<T> extends AbstractNoHandleSubscribePublis
 
         @Override
         public void onSuccess(@Nullable final T result) {
-            Object oldValue = mayBeResultUpdater.getAndSet(this, result);
-            if (oldValue == REQUESTED) {
-                emitSingleSuccessToTarget(result);
+            for (;;) {
+                Object oldValue = mayBeResult;
+                if (oldValue == REQUESTED) {
+                    emitSingleSuccessToTarget(result);
+                    break;
+                } else if (oldValue == CANCELLED || mayBeResultUpdater.compareAndSet(this, INITIAL, result)) {
+                    break;
+                }
             }
         }
 
@@ -105,22 +111,34 @@ final class SingleConcatWithPublisher<T> extends AbstractNoHandleSubscribePublis
         }
 
         @Override
-        boolean shouldAdjustRequestNBy1() {
-            if (adjustedRequestNForSingle) {
-                return false;
+        public void request(long n) {
+            for (;;) {
+                Object oldVal = mayBeResult;
+                if (oldVal == REQUESTED || oldVal == CANCELLED) {
+                    super.request(n);
+                    break;
+                } else if (mayBeResultUpdater.compareAndSet(this, oldVal, REQUESTED)) {
+                    if (oldVal != INITIAL) {
+                        @SuppressWarnings("unchecked")
+                        final T tVal = (T) oldVal;
+                        emitSingleSuccessToTarget(tVal);
+                    }
+                    // forward any invalid requestN on to the super class so it can propagate an error if necessary.
+                    if (n != 1) {
+                        super.request(n > 0 ? n - 1 : n);
+                    }
+                    break;
+                }
             }
-            adjustedRequestNForSingle = true;
-            return true;
         }
 
         @Override
-        void emitAdjustedItemIfAvailable() {
-            Object oldVal = mayBeResultUpdater.getAndSet(this, REQUESTED);
-            if (oldVal != INITIAL_VALUE) {
-                @SuppressWarnings("unchecked")
-                T t = (T) oldVal;
-                emitSingleSuccessToTarget(t);
-            }
+        public void cancel() {
+            // We track cancelled here because we need to make sure if cancel() happens subsequent calls to request(n)
+            // are NOOPs [1].
+            // [1] https://github.com/reactive-streams/reactive-streams-jvm#3.6
+            mayBeResult = CANCELLED;
+            super.cancel();
         }
 
         private void emitSingleSuccessToTarget(@Nullable final T result) {
