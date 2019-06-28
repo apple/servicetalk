@@ -53,7 +53,7 @@ final class SingleFlatMapCompletable<T> extends AbstractNoHandleSubscribeComplet
         private final AsyncContextMap contextMap;
         private final AsyncContextProvider contextProvider;
         @Nullable
-        private volatile SequentialCancellable sequentialCancellable;
+        private SequentialCancellable sequentialCancellable;
 
         SubscriberImpl(Subscriber subscriber, Function<T, ? extends Completable> nextFactory,
                        final SignalOffloader signalOffloader, final AsyncContextMap contextMap,
@@ -67,9 +67,8 @@ final class SingleFlatMapCompletable<T> extends AbstractNoHandleSubscribeComplet
 
         @Override
         public void onSubscribe(Cancellable cancellable) {
-            SequentialCancellable sequentialCancellable = this.sequentialCancellable;
             if (sequentialCancellable == null) {
-                this.sequentialCancellable = sequentialCancellable = new SequentialCancellable(cancellable);
+                sequentialCancellable = new SequentialCancellable(cancellable);
                 subscriber.onSubscribe(sequentialCancellable);
             } else {
                 sequentialCancellable.nextCancellable(cancellable);

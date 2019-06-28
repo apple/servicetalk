@@ -39,8 +39,7 @@ final class ConcatPublisher<T> extends AbstractAsynchronousPublisherOperator<T, 
         private final Subscriber<? super T> target;
         private final Publisher<? extends T> next;
         private final SequentialSubscription subscription = new SequentialSubscription();
-        // Volatile for visibility across subscribes, there is no concurrent access of this field.
-        private volatile boolean nextSubscribed;
+        private boolean nextSubscribed;
 
         ConcatSubscriber(Subscriber<? super T> target, Publisher<? extends T> next) {
             this.target = target;

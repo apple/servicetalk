@@ -60,7 +60,7 @@ abstract class AbstractCompletableAndSingleConcatenated<T> extends AbstractNoHan
 
         private final Subscriber<? super T> target;
         @Nullable
-        private volatile SequentialCancellable sequentialCancellable;
+        private SequentialCancellable sequentialCancellable;
 
         AbstractConcatWithSubscriber(final Subscriber<? super T> target) {
             this.target = target;
@@ -68,9 +68,8 @@ abstract class AbstractCompletableAndSingleConcatenated<T> extends AbstractNoHan
 
         @Override
         public final void onSubscribe(final Cancellable cancellable) {
-            SequentialCancellable sequentialCancellable = this.sequentialCancellable;
             if (sequentialCancellable == null) {
-                this.sequentialCancellable = sequentialCancellable = new SequentialCancellable(cancellable);
+                sequentialCancellable = new SequentialCancellable(cancellable);
                 target.onSubscribe(sequentialCancellable);
             } else {
                 sequentialCancellable.nextCancellable(cancellable);

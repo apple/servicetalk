@@ -44,7 +44,7 @@ final class SingleFlatMapSingle<T, R> extends AbstractAsynchronousSingleOperator
         private final Subscriber<? super R> subscriber;
         private final Function<? super T, ? extends Single<? extends R>> nextFactory;
         @Nullable
-        private volatile SequentialCancellable sequentialCancellable;
+        private SequentialCancellable sequentialCancellable;
 
         SubscriberImpl(Subscriber<? super R> subscriber,
                        Function<? super T, ? extends Single<? extends R>> nextFactory) {
@@ -54,18 +54,16 @@ final class SingleFlatMapSingle<T, R> extends AbstractAsynchronousSingleOperator
 
         @Override
         public void onSubscribe(Cancellable cancellable) {
-            SequentialCancellable sequentialCancellable = this.sequentialCancellable;
-            if (sequentialCancellable != null) {
-                sequentialCancellable.cancel();
-                return;
+            if (sequentialCancellable == null) {
+                sequentialCancellable = new SequentialCancellable(cancellable);
+                subscriber.onSubscribe(sequentialCancellable);
+            } else {
+                cancellable.cancel();
             }
-            this.sequentialCancellable = sequentialCancellable = new SequentialCancellable(cancellable);
-            subscriber.onSubscribe(sequentialCancellable);
         }
 
         @Override
         public void onSuccess(@Nullable T result) {
-            final SequentialCancellable sequentialCancellable = SubscriberImpl.this.sequentialCancellable;
             assert sequentialCancellable != null;
 
             // We can't have a class that implements Subscriber for both cases because of type erasure so just create a
