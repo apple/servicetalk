@@ -78,7 +78,10 @@ final class HeaderUtils {
 
     static boolean canAddResponseContentLength(final StreamingHttpResponse response,
                                                final HttpRequestMethod requestMethod) {
-        return canAddContentLength(response) && shouldAddZeroContentLength(response.status().code(), requestMethod);
+        return canAddContentLength(response) && shouldAddZeroContentLength(response.status().code(), requestMethod)
+                // HEAD requests should either have the content-length already set (= what GET will return) or
+                // have the header omitted when unknown, but never have any payload anyway so don't try to infer it
+                && !isHeadResponse(requestMethod);
     }
 
     static boolean canAddRequestTransferEncoding(final StreamingHttpRequest request) {
@@ -88,7 +91,7 @@ final class HeaderUtils {
     static boolean clientMaySendPayloadBodyFor(final HttpRequestMethod requestMethod) {
         // A client MUST NOT send a message body in a TRACE request.
         // https://tools.ietf.org/html/rfc7231#section-4.3.8
-        return !TRACE.name().equals(requestMethod.name());
+        return !TRACE.equals(requestMethod);
     }
 
     static boolean canAddResponseTransferEncoding(final StreamingHttpResponse response,
@@ -101,7 +104,7 @@ final class HeaderUtils {
                                                           final HttpRequestMethod requestMethod) {
         // (for HEAD) the server MUST NOT send a message body in the response.
         // https://tools.ietf.org/html/rfc7231#section-4.3.2
-        return !HEAD.name().equals(requestMethod.name()) && !isEmptyResponseStatus(statusCode)
+        return !HEAD.equals(requestMethod) && !isEmptyResponseStatus(statusCode)
                 && !isEmptyConnectResponse(requestMethod, statusCode);
     }
 
@@ -141,6 +144,10 @@ final class HeaderUtils {
     static boolean shouldAddZeroContentLength(final int statusCode,
                                               final HttpRequestMethod requestMethod) {
         return !isEmptyResponseStatus(statusCode) && !isEmptyConnectResponse(requestMethod, statusCode);
+    }
+
+    private static boolean isHeadResponse(final HttpRequestMethod requestMethod) {
+        return HEAD.equals(requestMethod);
     }
 
     private static void updateResponseContentLength(final int contentLength, final HttpHeaders headers) {
@@ -225,7 +232,7 @@ final class HeaderUtils {
         // A server MUST NOT send any Transfer-Encoding or Content-Length header fields in a 2xx (Successful) response
         // to CONNECT.
         // https://tools.ietf.org/html/rfc7231#section-4.3.6
-        return CONNECT.name().equals(requestMethod.name()) && SUCCESSFUL_2XX.contains(statusCode);
+        return CONNECT.equals(requestMethod) && SUCCESSFUL_2XX.contains(statusCode);
     }
 
     private static boolean isEmptyResponseStatus(final int statusCode) {
