@@ -54,13 +54,13 @@ final class ResumeSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
 
     private static final class ResumeSubscriber<T> implements Subscriber<T> {
         private final Subscriber<? super T> subscriber;
-        @Nullable
-        private volatile Function<Throwable, ? extends Single<? extends T>> nextFactory;
         private final SignalOffloader signalOffloader;
         private final AsyncContextMap contextMap;
         private final AsyncContextProvider contextProvider;
         @Nullable
-        private volatile SequentialCancellable sequentialCancellable;
+        private SequentialCancellable sequentialCancellable;
+        @Nullable
+        private Function<Throwable, ? extends Single<? extends T>> nextFactory;
 
         ResumeSubscriber(Subscriber<? super T> subscriber,
                          Function<Throwable, ? extends Single<? extends T>> nextFactory,
@@ -75,9 +75,8 @@ final class ResumeSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
 
         @Override
         public void onSubscribe(Cancellable cancellable) {
-            SequentialCancellable sequentialCancellable = this.sequentialCancellable;
             if (sequentialCancellable == null) {
-                this.sequentialCancellable = sequentialCancellable = new SequentialCancellable(cancellable);
+                sequentialCancellable = new SequentialCancellable(cancellable);
                 subscriber.onSubscribe(sequentialCancellable);
             } else {
                 // Only a single re-subscribe is allowed.
@@ -93,7 +92,6 @@ final class ResumeSingle<T> extends AbstractNoHandleSubscribeSingle<T> {
 
         @Override
         public void onError(Throwable throwable) {
-            final Function<Throwable, ? extends Single<? extends T>> nextFactory = this.nextFactory;
             if (nextFactory == null) {
                 subscriber.onError(throwable);
                 return;
