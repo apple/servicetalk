@@ -29,6 +29,7 @@ import io.servicetalk.transport.api.SslConfig;
 
 import java.net.SocketOption;
 import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
@@ -120,7 +121,8 @@ public abstract class PartitionedHttpClientBuilder<U, R>
             LoadBalancerFactory<R, StreamingHttpConnection> loadBalancerFactory);
 
     @Override
-    public abstract PartitionedHttpClientBuilder<U, R> enableHostHeaderFallback(CharSequence hostHeader);
+    public abstract PartitionedHttpClientBuilder<U, R> unresolvedAddressToHost(
+            Function<U, CharSequence> unresolvedAddressToHostFunction);
 
     @Override
     public abstract PartitionedHttpClientBuilder<U, R> appendClientFilter(StreamingHttpClientFilterFactory function);

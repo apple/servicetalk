@@ -137,7 +137,7 @@ public class PartitionedHttpClientTest {
                 // TODO(jayv) This *hack* only works because SRV_NAME is part of the selection criteria,
                 // we need to consider adding metadata to PartitionAttributes.
                 .appendClientBuilderFilter((pa, builder) ->
-                        builder.enableHostHeaderFallback(pa.get(SRV_NAME)))
+                        builder.unresolvedAddressToHost(addr -> pa.get(SRV_NAME)))
                 .buildBlocking()) {
 
             sdPublisher.onSubscribe(new TestSubscription());
@@ -164,7 +164,7 @@ public class PartitionedHttpClientTest {
                 // TODO(jayv) This *hack* only works because SRV_NAME is part of the selection criteria,
                 // we need to consider adding metadata to PartitionAttributes.
                 .appendClientBuilderFilter((pa, builder) ->
-                        builder.enableHostHeaderFallback(pa.get(SRV_NAME)))
+                        builder.unresolvedAddressToHost(addr -> pa.get(SRV_NAME)))
                 .buildBlocking()) {
 
             sdPublisher.onSubscribe(new TestSubscription());

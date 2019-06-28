@@ -24,6 +24,7 @@ import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.SslConfig;
 
 import java.net.SocketOption;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
@@ -114,7 +115,8 @@ public abstract class SingleAddressHttpClientBuilder<U, R>
             LoadBalancerFactory<R, StreamingHttpConnection> loadBalancerFactory);
 
     @Override
-    public abstract SingleAddressHttpClientBuilder<U, R> enableHostHeaderFallback(CharSequence hostHeader);
+    public abstract SingleAddressHttpClientBuilder<U, R> unresolvedAddressToHost(
+            Function<U, CharSequence> unresolvedAddressToHostFunction);
 
     @Override
     public abstract SingleAddressHttpClientBuilder<U, R> appendClientFilter(StreamingHttpClientFilterFactory factory);

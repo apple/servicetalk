@@ -84,7 +84,7 @@ public final class HttpClients {
      *
      * @param host host to connect to, resolved by default using a DNS {@link ServiceDiscoverer}. This will also be
      * used for the {@link HttpHeaderNames#HOST} together with the {@code port}. Use
-     * {@link SingleAddressHttpClientBuilder#enableHostHeaderFallback(CharSequence)} if you want to override that value
+     * {@link SingleAddressHttpClientBuilder#unresolvedAddressToHost(Function)} if you want to override that value
      * or {@link SingleAddressHttpClientBuilder#disableHostHeaderFallback()} if you want to disable this behavior.
      * @param port port to connect to
      * @return new builder for the address
@@ -100,7 +100,7 @@ public final class HttpClients {
      *
      * @param host host to connect to via the proxy. This will also be used for the {@link HttpHeaderNames#HOST}
      * together with the {@code port}. Use
-     * {@link SingleAddressHttpClientBuilder#enableHostHeaderFallback(CharSequence)} if you want to override that value
+     * {@link SingleAddressHttpClientBuilder#unresolvedAddressToHost(Function)} if you want to override that value
      * or {@link SingleAddressHttpClientBuilder#disableHostHeaderFallback()} if you want to disable this behavior.
      * @param port port to connect to
      * @param proxyHost the proxy host to connect to, resolved by default using a DNS {@link ServiceDiscoverer}.
@@ -118,7 +118,7 @@ public final class HttpClients {
      *
      * @param address the {@code UnresolvedAddress} to connect to, resolved by default using a DNS {@link
      * ServiceDiscoverer}. This address will also be used for the {@link HttpHeaderNames#HOST}.
-     * Use {@link SingleAddressHttpClientBuilder#enableHostHeaderFallback(CharSequence)} if you want to override that
+     * Use {@link SingleAddressHttpClientBuilder#unresolvedAddressToHost(Function)} if you want to override that
      * value or {@link SingleAddressHttpClientBuilder#disableHostHeaderFallback()} if you want to disable this behavior.
      * @return new builder for the address
      */
@@ -132,7 +132,7 @@ public final class HttpClients {
      * and DNS {@link ServiceDiscoverer}.
      *
      * @param address the {@code UnresolvedAddress} to connect to via the proxy. This address will also be used for the
-     * {@link HttpHeaderNames#HOST}. Use {@link SingleAddressHttpClientBuilder#enableHostHeaderFallback(CharSequence)}
+     * {@link HttpHeaderNames#HOST}. Use {@link SingleAddressHttpClientBuilder#unresolvedAddressToHost(Function)}
      * if you want to override that value or {@link SingleAddressHttpClientBuilder#disableHostHeaderFallback()} if you
      * want to disable this behavior.
      * @param proxyAddress the proxy {@code UnresolvedAddress} to connect to, resolved by default using a DNS {@link
@@ -148,7 +148,7 @@ public final class HttpClients {
      * Creates a {@link SingleAddressHttpClientBuilder} for a resolved address with default {@link LoadBalancer}.
      *
      * @param host resolved host address to connect. This will also be used for the {@link HttpHeaderNames#HOST}
-     * together with the {@code port}. Use {@link SingleAddressHttpClientBuilder#enableHostHeaderFallback(CharSequence)}
+     * together with the {@code port}. Use {@link SingleAddressHttpClientBuilder#unresolvedAddressToHost(Function)}
      * if you want to override that value or {@link SingleAddressHttpClientBuilder#disableHostHeaderFallback()}
      * if you want to disable this behavior.
      * @param port port to connect to
@@ -165,7 +165,7 @@ public final class HttpClients {
      *
      * @param host resolved host address to connect via the proxy. This will also be used for the
      * {@link HttpHeaderNames#HOST} together with the {@code port}. Use
-     * {@link SingleAddressHttpClientBuilder#enableHostHeaderFallback(CharSequence)} if you want to override that value
+     * {@link SingleAddressHttpClientBuilder#unresolvedAddressToHost(Function)} if you want to override that value
      * or {@link SingleAddressHttpClientBuilder#disableHostHeaderFallback()} if you want to disable this behavior.
      * @param port port to connect to via the proxy
      * @param proxyHost The proxy resolved host address to connect.
@@ -182,7 +182,7 @@ public final class HttpClients {
      * ServiceDiscoverer}.
      *
      * @param address the {@code ResolvedAddress} to connect. This address will also be used for the
-     * {@link HttpHeaderNames#HOST}. Use {@link SingleAddressHttpClientBuilder#enableHostHeaderFallback(CharSequence)}
+     * {@link HttpHeaderNames#HOST}. Use {@link SingleAddressHttpClientBuilder#unresolvedAddressToHost(Function)}
      * if you want to override that value or {@link SingleAddressHttpClientBuilder#disableHostHeaderFallback()} if you
      * want to disable this behavior.
      * @return new builder for the address
@@ -198,7 +198,7 @@ public final class HttpClients {
      * and DNS {@link ServiceDiscoverer}.
      *
      * @param address the {@code ResolvedAddress} to connect to via the proxy. This address will also be used for the
-     * {@link HttpHeaderNames#HOST}. Use {@link SingleAddressHttpClientBuilder#enableHostHeaderFallback(CharSequence)}
+     * {@link HttpHeaderNames#HOST}. Use {@link SingleAddressHttpClientBuilder#unresolvedAddressToHost(Function)}
      * if you want to override that value or {@link SingleAddressHttpClientBuilder#disableHostHeaderFallback()} if you
      * want to disable this behavior.
      * @param proxyAddress The proxy {@code ResolvedAddress} to connect.
@@ -215,7 +215,7 @@ public final class HttpClients {
      * ServiceDiscoverer}.
      *
      * @param address the {@code ResolvedAddress} to connect. This address will also be used for the
-     * {@link HttpHeaderNames#HOST}. Use {@link SingleAddressHttpClientBuilder#enableHostHeaderFallback(CharSequence)}
+     * {@link HttpHeaderNames#HOST}. Use {@link SingleAddressHttpClientBuilder#unresolvedAddressToHost(Function)}
      * if you want to override that value or {@link SingleAddressHttpClientBuilder#disableHostHeaderFallback()} if you
      * want to disable this behavior.
      * @return new builder for the address
@@ -230,7 +230,7 @@ public final class HttpClients {
      * and DNS {@link ServiceDiscoverer}.
      *
      * @param address the {@code ResolvedAddress} to connect to via the proxy. This address will also be used for the
-     * {@link HttpHeaderNames#HOST}. Use {@link SingleAddressHttpClientBuilder#enableHostHeaderFallback(CharSequence)}
+     * {@link HttpHeaderNames#HOST}. Use {@link SingleAddressHttpClientBuilder#unresolvedAddressToHost(Function)}
      * if you want to override that value or {@link SingleAddressHttpClientBuilder#disableHostHeaderFallback()} if you
      * want to disable this behavior.
      * @param proxyAddress The proxy {@code ResolvedAddress} to connect.
@@ -249,7 +249,7 @@ public final class HttpClients {
      * The lifecycle of the provided {@link ServiceDiscoverer} should be managed by the caller.
      * @param address the {@code UnresolvedAddress} to connect to resolved using the provided {@code serviceDiscoverer}.
      * This address will also be used for the {@link HttpHeaderNames#HOST} using a best effort conversion. Use {@link
-     * SingleAddressHttpClientBuilder#enableHostHeaderFallback(CharSequence)} if you want to override that value or
+     * SingleAddressHttpClientBuilder#unresolvedAddressToHost(Function)} if you want to override that value or
      * {@link SingleAddressHttpClientBuilder#disableHostHeaderFallback()} if you want to disable this behavior.
      * @param <U> the type of address before resolution (unresolved address)
      * @param <R> the type of address after resolution (resolved address)
@@ -269,7 +269,7 @@ public final class HttpClients {
      * The lifecycle of the provided {@link ServiceDiscoverer} should be managed by the caller.
      * @param address the {@code UnresolvedAddress} to resolve using the provided {@code serviceDiscoverer}.
      * This address will also be used for the {@link HttpHeaderNames#HOST} using a best effort conversion. Use {@link
-     * PartitionedHttpClientBuilder#enableHostHeaderFallback(CharSequence)} if you want to override that value or
+     * PartitionedHttpClientBuilder#unresolvedAddressToHost(Function)} if you want to override that value or
      * {@link PartitionedHttpClientBuilder#disableHostHeaderFallback()} if you want to disable this behavior.
      * @param partitionAttributesBuilderFactory The factory {@link Function} used to build {@link PartitionAttributes}
      * from {@link HttpRequestMetaData}.

@@ -134,16 +134,12 @@ final class HttpClientConfig {
     }
 
     @Nullable
-    public CharSequence connectAddress() {
+    CharSequence connectAddress() {
         return connectAddress;
     }
 
-    public void connectAddress(@Nullable final CharSequence connectAddress) {
+    void connectAddress(@Nullable final CharSequence connectAddress) {
         this.connectAddress = connectAddress;
-    }
-
-    public boolean hasProxy() {
-        return connectAddress != null;
     }
 
     ReadOnlyHttpClientConfig asReadOnly() {

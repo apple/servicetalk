@@ -24,11 +24,9 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
-import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
-import io.servicetalk.http.api.StreamingHttpResponse;
-import io.servicetalk.transport.netty.internal.DefaultNettyPipelinedConnection;
 import io.servicetalk.transport.netty.internal.DeferSslHandler;
+import io.servicetalk.transport.netty.internal.NettyPipelinedConnection;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
@@ -41,6 +39,7 @@ import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderValues.ZERO;
+import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.SUCCESSFUL_2XX;
 
 /**
  * A connection factory filter that sends a `CONNECT` request for https proxying.
@@ -67,11 +66,6 @@ final class ProxyConnectConnectionFactoryFilter<ResolvedAddress, C
         return new ProxyFilter(original);
     }
 
-    private static Channel getChannel(final FilterableStreamingHttpConnection c) {
-        final DefaultNettyPipelinedConnection dnpc = (DefaultNettyPipelinedConnection) c.connectionContext();
-        return dnpc.nettyChannel();
-    }
-
     private final class ProxyFilter extends DelegatingConnectionFactory<ResolvedAddress, C> {
 
         private ProxyFilter(final ConnectionFactory<ResolvedAddress, C> delegate) {
@@ -80,48 +74,51 @@ final class ProxyConnectConnectionFactoryFilter<ResolvedAddress, C
 
         @Override
         public Single<C> newConnection(final ResolvedAddress resolvedAddress) {
-            return delegate().newConnection(resolvedAddress).flatMap(c -> {
-                final Single<StreamingHttpResponse> responseSingle = c.request(defaultStrategy(),
-                        reqRespFactory.connect(connectAddress).addHeader(CONTENT_LENGTH, ZERO));
-                return responseSingle.flatMap(response -> {
-                    if (HttpResponseStatus.StatusClass.SUCCESSFUL_2XX.contains(response.status())) {
-                        final Channel channel = getChannel(c);
-                        final SingleSource.Processor<C, C> processor = newSingleProcessor();
+            return delegate().newConnection(resolvedAddress).flatMap(c ->
+                // We currently only have access to a StreamingHttpRequester, which means we are forced to provide an
+                // HttpExecutionStrategy. Because we can't be sure if there is any blocking code in the connection
+                // filters we use the default strategy which should offload everything to be safe.
+                c.request(defaultStrategy(),
+                            reqRespFactory.connect(connectAddress).addHeader(CONTENT_LENGTH, ZERO))
+                 .flatMap(response -> {
+                if (SUCCESSFUL_2XX.contains(response.status())) {
+                    final Channel channel = ((NettyPipelinedConnection) c.connectionContext()).nettyChannel();
+                    final SingleSource.Processor<C, C> processor = newSingleProcessor();
 
-                        channel.pipeline().addLast(new ChannelInboundHandlerAdapter() {
-                            @Override
-                            public void userEventTriggered(final ChannelHandlerContext ctx, final Object evt)
-                                    throws Exception {
-                                if (evt instanceof SslHandshakeCompletionEvent) {
-                                    SslHandshakeCompletionEvent event = (SslHandshakeCompletionEvent) evt;
-                                    if (event.isSuccess()) {
-                                        processor.onSuccess(c);
-                                    } else {
-                                        processor.onError(event.cause());
-                                    }
+                    channel.pipeline().addLast(new ChannelInboundHandlerAdapter() {
+                        @Override
+                        public void userEventTriggered(final ChannelHandlerContext ctx, final Object evt) {
+                            if (evt instanceof SslHandshakeCompletionEvent) {
+                                SslHandshakeCompletionEvent event = (SslHandshakeCompletionEvent) evt;
+                                if (event.isSuccess()) {
+                                    processor.onSuccess(c);
+                                } else {
+                                    processor.onError(event.cause());
                                 }
-                                super.userEventTriggered(ctx, evt);
                             }
-                        });
-
-                        if (channel.pipeline().get(DeferSslHandler.class) == null) {
-                            return response.payloadBody().ignoreElements().concat(failed(
-                                    new IllegalStateException("No DeferSslHandler found in channel pipeline")));
+                            ctx.fireUserEventTriggered(evt);
                         }
+                    });
 
-                        channel.pipeline().get(DeferSslHandler.class).ready();
-
-                        // There is no need to apply offloading explicitly (despite completing `processor` on the
-                        // EventLoop) because `payloadBody()` will be offloaded according to the strategy for the
-                        // request.
-                        return response.payloadBody().ignoreElements().concat(fromSource(processor));
-                    } else {
-                        return response.payloadBody().ignoreElements().concat(
-                                failed(new ProxyResponseException("Bad response from proxy CONNECT " + connectAddress,
-                                        response.status())));
+                    DeferSslHandler deferSslHandler = channel.pipeline().get(DeferSslHandler.class);
+                    if (deferSslHandler == null) {
+                        return response.payloadBody().ignoreElements().concat(failed(
+                                new IllegalStateException("Failed to find a handler of type " +
+                                        DeferSslHandler.class + " in channel pipeline.")));
                     }
-                });
-            });
+
+                    deferSslHandler.ready();
+
+                    // There is no need to apply offloading explicitly (despite completing `processor` on the
+                    // EventLoop) because `payloadBody()` will be offloaded according to the strategy for the
+                    // request.
+                    return response.payloadBody().ignoreElements().concat(fromSource(processor));
+                } else {
+                    return response.payloadBody().ignoreElements().concat(
+                            failed(new ProxyResponseException("Bad response from proxy CONNECT " + connectAddress,
+                                    response.status())));
+                }
+            }));
         }
     }
 
