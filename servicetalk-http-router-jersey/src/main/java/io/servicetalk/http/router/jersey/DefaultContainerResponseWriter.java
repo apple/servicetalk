@@ -123,12 +123,17 @@ final class DefaultContainerResponseWriter implements ContainerResponseWriter {
         } else if (contentLength == 0 || isHeadRequest()) {
             sendResponse(contentLength, null, responseContext);
             return null;
-        } else {
-            final ConnectableBufferOutputStream os = new ConnectableBufferOutputStream(
-                    serviceCtx.executionContext().bufferAllocator());
-            sendResponse(contentLength, os.connect(), responseContext);
-            return new CopyingOutputStream(os);
+        } else if (contentLength > 0) {
+            // Jersey has buffered the full response body: bypass streaming response and use an optimized path instead
+            return new BufferedResponseOutputStream(serviceCtx.executionContext().bufferAllocator(),
+                    buf -> sendResponse(contentLength, Publisher.from(buf), responseContext));
         }
+
+        // OIO adapted streaming response of unknown length
+        final ConnectableBufferOutputStream os = new ConnectableBufferOutputStream(
+                serviceCtx.executionContext().bufferAllocator());
+        sendResponse(contentLength, os.connect(), responseContext);
+        return new CopyingOutputStream(os);
     }
 
     @Override
