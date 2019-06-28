@@ -33,10 +33,7 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.ReferenceCountUtil;
 import io.netty.util.UncheckedBooleanSupplier;
 import io.netty.util.concurrent.FastThreadLocal;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import static java.lang.Math.max;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -59,15 +56,7 @@ public final class PooledRecvByteBufAllocatorInitializer implements ChannelIniti
      */
     private static final class ThreadLocalRecvByteBufAllocator implements MaxMessagesRecvByteBufAllocator {
 
-        private static final Logger LOGGER = LoggerFactory.getLogger(ThreadLocalRecvByteBufAllocator.class);
-
-        private static final int CAPACITY;
-
-        static {
-            int capacity = Integer.getInteger("io.servicetalk.threadLocalRecvCapacity", 128 * 1024);
-            LOGGER.debug("-Dio.servicetalk.threadLocalRecvCapacity: {}", capacity);
-            CAPACITY = max(capacity, 1024);
-        }
+        private static final int CAPACITY = 128 * 1024;
 
         private static final FastThreadLocal<ByteBuf> BUFFER = new FastThreadLocal<ByteBuf>() {
             @Override
@@ -155,7 +144,7 @@ public final class PooledRecvByteBufAllocatorInitializer implements ChannelIniti
     @Sharable
     private static final class CopyByteBufHandler extends SimpleChannelInboundHandler<ByteBuf> {
 
-        public static final ChannelHandler INSTANCE = new CopyByteBufHandler();
+        static final ChannelHandler INSTANCE = new CopyByteBufHandler();
 
         private CopyByteBufHandler() {
             // Singleton
