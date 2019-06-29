@@ -62,9 +62,9 @@ public class SslClientChannelInitializer implements ChannelInitializer {
         final SslHandler sslHandler = newHandler(sslContext, channel.alloc(), hostnameVerificationAlgorithm,
                                            hostnameVerificationHost, hostnameVerificationPort);
         if (deferSslHandler) {
-            channel.pipeline().addFirst(new DeferSslHandler(channel, sslHandler));
+            channel.pipeline().addLast(new DeferSslHandler(channel, sslHandler));
         } else {
-            channel.pipeline().addFirst(sslHandler);
+            channel.pipeline().addLast(sslHandler);
         }
 
         return context;
