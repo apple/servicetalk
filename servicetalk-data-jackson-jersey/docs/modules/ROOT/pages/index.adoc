@@ -6,6 +6,8 @@ It is a replacement for `jersey-media-json-jackson` and allows avoiding the inpu
 with out-of-the-box body readers and also allows accepting/returning `Single<Pojo>` and `Publisher<Pojo>`
 from resource methods.
 
+CAUTION: This serializer can not currently be used with Server-Sent Events (SSE).
+
 == Using a custom ObjectMapper
 
 If you have configured a Jackson `ObjectMapper` and want to use it with this module, you need to provide it to the

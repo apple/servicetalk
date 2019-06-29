@@ -105,6 +105,7 @@ of `Buffer`s.
 
 CAUTION: Using `Buffer` and async payloads will prevent off-the-shelf
 payload-aware <<filter-inter>> from working properly.
+Moreover, such payloads can not currently be used with Server-Sent Events (SSE).
 
 Let's look at some examples.
 The first one is a rewrite of the previous `hello` example but,
