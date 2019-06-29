@@ -19,6 +19,7 @@ import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
 import io.servicetalk.transport.netty.internal.DeferSslHandler;
 import io.servicetalk.transport.netty.internal.IdleTimeoutInitializer;
+import io.servicetalk.transport.netty.internal.PooledRecvByteBufAllocatorInitializer;
 import io.servicetalk.transport.netty.internal.SslClientChannelInitializer;
 
 import io.netty.channel.Channel;
@@ -48,9 +49,7 @@ public class TcpClientChannelInitializer implements ChannelInitializer {
      */
     public TcpClientChannelInitializer(ReadOnlyTcpClientConfig config, boolean deferSslHandler) {
         ChannelInitializer delegate = ChannelInitializer.defaultInitializer();
-        if (config.wireLoggingInitializer() != null) {
-            delegate = delegate.andThen(config.wireLoggingInitializer());
-        }
+        delegate = delegate.andThen(new PooledRecvByteBufAllocatorInitializer());
         if (config.idleTimeoutMs() > 0) {
             delegate = delegate.andThen(new IdleTimeoutInitializer(config.idleTimeoutMs()));
         }
@@ -58,6 +57,9 @@ public class TcpClientChannelInitializer implements ChannelInitializer {
             delegate = delegate.andThen(new SslClientChannelInitializer(config.sslContext(),
                     config.sslHostnameVerificationAlgorithm(), config.sslHostnameVerificationHost(),
                     config.sslHostnameVerificationPort(), deferSslHandler));
+        }
+        if (config.wireLoggingInitializer() != null) {
+            delegate = delegate.andThen(config.wireLoggingInitializer());
         }
         this.delegate = delegate;
     }

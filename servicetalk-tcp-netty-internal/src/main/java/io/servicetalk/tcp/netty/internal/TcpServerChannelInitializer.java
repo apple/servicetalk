@@ -18,6 +18,7 @@ package io.servicetalk.tcp.netty.internal;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
 import io.servicetalk.transport.netty.internal.IdleTimeoutInitializer;
+import io.servicetalk.transport.netty.internal.PooledRecvByteBufAllocatorInitializer;
 import io.servicetalk.transport.netty.internal.SslServerChannelInitializer;
 
 import io.netty.channel.Channel;
@@ -36,6 +37,7 @@ public class TcpServerChannelInitializer implements ChannelInitializer {
      */
     public TcpServerChannelInitializer(ReadOnlyTcpServerConfig config) {
         ChannelInitializer delegate = ChannelInitializer.defaultInitializer();
+        delegate = delegate.andThen(new PooledRecvByteBufAllocatorInitializer());
         if (config.idleTimeoutMs() > 0) {
             delegate = delegate.andThen(new IdleTimeoutInitializer(config.idleTimeoutMs()));
         }
