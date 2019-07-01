@@ -1,0 +1,686 @@
+include::ROOT:partial$component-attributes.adoc[]
+= ServiceTalk Performance
+
+This section will discuss the design, trade-offs, and performance tuning options and recommendations for your
+ServiceTalk applications.
+
+== Design goal
+
+ServiceTalk grew out of the need for a Java networking library with the benefits of async-IOfootnote:[serving 10s to
+100s of thousands of concurrent connections with a single application with small number of threads. This is impossible
+to achieve with typical Java, Blocking-IO libraries that follow the 1 thread per connection networking model.] without
+necessarily the drawbacks of complex APIs such as low level networking library http://netty.io[Netty] or forcing an
+async non-blocking programming model upon the entire codebase.
+
+ServiceTalk aims to hit a sweet spot with applications that have a need where parts of the application benefit from
+async-IO, while the rest of the application logic can use the simpler blocking sequential programming model.
+The value-proposition ServiceTalk offers, is a networking framework at a similarly higher level API to the typical Java
+network libraries, but layered in a way to let you mix and match the programming models depending on your use-case,
+without sacrificing on performance nor forcing you to rewrite your application when you reach the next level of scale.
+
+Many ServiceTalk committers are core committers on Netty footnote:[ServiceTalk is built on top of
+http://netty.io[Netty]] and lead the Netty community project. We aim to provide a lightweight library, with the best
+possible performance and minimal overhead in compute and GC pressure over Netty -- often lauded as best in class high
+performance Java networking library. That said, we may be making performance trade-offs in some areas to enable
+user-friendly and safe APIs for users less comfortable with
+https://docs.oracle.com/javase/specs/jls/se8/html/jls-17.html[Java Memory Model], reference counting, non-blocking and
+asynchrony in general.
+
+== Trade-offs
+
+As stated in the design goals, ServiceTalk aims to strike a balance between performance and usability, all while being
+safe out of the box. This section clarifies some aspects, considerations and choices.
+
+=== Blocking API on top of async
+
+In order to build a library that supports both blocking and asynchronous APIs, we use an asynchronous core and build
+blocking APIs on top. In case of our blocking API, it means there is some overhead involved when the event-loop thread
+performs the async-IO, then hands-off the request payload to a worker pool to invoke the blocking user code. This then
+hands back the response to the event-loop thread to perform IO.
+
+Network libraries that dedicate a single thread per connection to do IO and execute user code from that thread may have
+better throughput and latency as long as the concurrent connection count is lowfootnote:[overhead of kernel/user-space
+thread context switching will dominate CPU usage and there are limits in the 1000s of threads the OS wil allow an
+application to start]. In our experience applications at some point reach a level of concurrency that they need to scale
+up, which in those network libraries means an imminent rewrite with some async-IO library or throwing a lot of hardware
+at the problem. For this reason ServiceTalk may not be optimal in the low concurrency blocking user code scenario,
+although our benchmarks have shown that it certainly performs reasonably well despite this architecture.
+
+You may choose to opt-out of offloading and handle user code on the IO threads to get the similar model, however this
+may lead to increased latencies if the same IO thread happens to be shared by multiple connections, especially when
+calling blocking code. -- _not typically recommended_
+
+=== Reference Counting
+
+Java NIO and the Netty native API transports footnote:[https://netty.io/wiki/native-transports.html[epoll on Linux,
+kqueue on Mac]] require direct (non-heap) memory
+https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/nio/ByteBuffer.html[DirectByteBuffers] to read and
+write bytes from the network driver. Allocating and collection of these buffers is very expensive, it incurs application
+wide synchronization to allocate and puts additional pressure on the GC to clean up the
+https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/lang/ref/PhantomReference.html[PhantomReferences],
+which increases GC pauses.
+
+image::ref-counting.png[GC overhead caused by DirectByteBuffers]
+
+In order to overcome this, Netty provides
+https://netty.io/4.1/api/index.html?io/netty/buffer/PooledByteBufAllocator.html[PooledByteBufAllocator] to amortize the
+cost of the application's `DirectByteBuffer` overhead over the application's lifetime. In order for object pooling to
+work the application needs to tell the pool when it's done with a resource, for this reason pooled Netty buffers expose
+the concept of https://netty.io/wiki/reference-counted-objects.html[reference counting]. This allows for a nice
+performance improvement at the cost of burdening the user with manual memory management, a skill not required for
+typical Java developers. From experience we've learned that manual memory management is very hard, even for people
+familiar with the application, but often times applications change over time and folks don't always remember that some
+resources need to be managed leading to hard to debug memory leaks in Java. For this reason in ServiceTalk we've decided
+to not expose reference counted buffers to the user in APIs and tries to deal with this low level aspect internally and
+copies to heap buffers at the user-facing API boundaries.
+
+This does mean that a ServiceTalk application won't be as efficient as a pure Netty based application that leverages
+buffer pooling and ref-counting end-to-end, but we consider safe and user-friendly APIs to be a more important goal at
+this point. For use-cases that require extreme levels of performance, we suggest users to look into directly building on
+top of http://netty.io[Netty] instead. At this level of scale you'll be most likely already using async non-blocking
+APIs, so the step up to Netty will be small.
+
+=== Back-pressure
+
+In order to not overwhelm an async client or service, one needs to manage flow-control to give back-pressure.
+Communicating flow control signals end to end footnote:[socket -- _read_ -> business logic -- _write_ -> socket] is
+non-trivial in an async non-blocking application. One elegant solution to this problem is
+https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.2/README.md#specification[Reactive Streams] which
+ServiceTalk implements at its core.
+
+It comes with the overhead of applying multiple operators (see xref:servicetalk-concurrent-api::index.adoc[Concurrent
+API]) to your business logic. Typical async applications (eg. written using Netty), have deeper call-stacks than
+blocking APIs, but in practice with `Reactive Streams` applications with functional operators this is more pronounced.
+Deep call-stacks may make the JVM JIT less effective and the wrappers will put additional pressure on the GC. So there
+is a performance penalty for this strategy, but it's a trade-off we chose to elegantly decouple flow control which is
+otherwise non-trivial and intertwined with your business logic. We are continuously improving performance and reducing
+this overhead as much as we can, but again if extreme levels of performance are required we suggest Netty as the better
+fit for your use-case.
+
+=== Safe-to-block aka Offloading
+
+Because ServiceTalk is asynchronous and non-blocking at the core it needs to defend against user- or third party code
+that potentially blocks the IO event-loop. Read the chapter on xref:blocking.adoc#safe-to-block[Blocking] for more
+details.
+
+Offloading user-code is a non-trivial mechanism that while very effective, comes at the cost of wrapping operators,
+`Publishers` and `Subscribers` at multiple stages in the `Reactive Streams` pipeline to ensure no signal originating
+from the IO event-loop gets blocked. There can be a significant overhead with deferring to a thread-pool executor to
+delivering the signals to be offloaded. But depending on your use-case you may choose to opt out of (some or all) this
+offloading by manually providing the xref:servicetalk::performance.adoc#ExecutionStrategy[ExecutionStrategy] or
+preferably choosing a xref:servicetalk::performance.adoc#offloading-and-flushing[programming model] which makes
+optimizations for offloading and flushing behind the scenes.
+
+== Tuning options and recommendations
+
+Below sections will offer suggestions that may improve performance depending on your use-case.
+
+[#offloading-and-flushing]
+=== Programming model (offloading & flushing)
+
+ServiceTalk offers APIs for various programming paradigms, this is to align with how the user wants to structure their
+application logic, but it's also used to optimize the amount of offloading and flushing that is required, which can
+dramatically improve your application's performance.
+
+==== FlushStrategy
+
+Flushing is the act of writing data that was queued up in the Netty `Channel` pipeline to the network socket, typically
+via https://pubs.opengroup.org/onlinepubs/009695399/functions/write.html[write] or
+https://pubs.opengroup.org/onlinepubs/009695399/functions/writev.html[writev]
+https://en.wikipedia.org/wiki/System_call[syscall] on POSIX operating systems. Syscalls require a user- to kernel-space
+context-switch which is very expensive, hence applications should queue up writes and make that call as infrequently
+as possible without introducing more latency.
+
+Our benchmarks revealed that reducing the number of flushes per request/response for example from 3 to a single flush
+almost tripled the throughput of the application. So as long as latency permits, try to minimize the flushes as much as
+possible.
+
+The `FlushStrategy` is the `ServiceTalk` abstraction to control when ServiceTalk requests a `flush()` on the
+Netty `Channel`, see `FlushStrategies` for more details, the most commons strategies
+
+[CAUTION]
+_Please consider the
+xref:servicetalk::performance.adoc#programming-models[programming models] before attempting to override the strategy,
+it's an advanced currently experimental API._
+
+
+[%header,cols="1,3,3"]
+|===
+|Strategy
+|Description
+|Use-case
+
+|`flushOnEach()` *(default)*
+|flushes after every item emitted on the write stream of a request/response (eg after the HTTP metadata, after every
+payload chunk and after HTTP trailers)
+|Typically what you want for a streaming application where every write needs to be delivered immediately.
+
+|`flushOnEnd()`
+|flushes only after the last item emitted on the write stream of a request/response (eg don't flush until the last HTTP
+payload chunk or HTTP trailers)
+|When your payload is aggregated, you most likely want to perform a single flush of the metadata + payload.
+
+|`batchFlush(n, timeSource)`
+|flush after `n` number of items are emitted or some time has elapsed (driven by the `timeSource`)
+|This may be interesting if you have a high velocity streaming API, where you don't necessarily need to emit every item
+individually and thus can batch a set of writes, with some control over the latency between flushes.
+
+|===
+
+The current API is still experimental and only exposed on the internal API by casting a `ConnectionContext` to a
+`NettyConnectionContext` on a `Connection`.
+For example to update the strategy for an HTTP client, for a single request one can do
+
+[source, java]
+----
+StreamingHttpClient client = HttpClients.forSingleAddress("localhost", 8080).buildStreaming();
+StreamingHttpRequest request = client.get("/foo");
+
+// Reserve a connection from the load-balancer to update its strategy prior to requesting
+ReservedStreamingHttpConnection connection = client.reserveConnection(request)
+        .toFuture().get(); // this blocks, for brevity in this example
+
+// Update the strategy to "flush on each"
+NettyConnectionContext nettyConnectionCtx = (NettyConnectionContext) connection.connectionContext();
+nettyConnectionCtx.updateFlushStrategy((current, isOrig) -> FlushStrategies.flushOnEnd());
+
+connection.request(request);
+
+// Release the connection back to the load-balancer (possibly restore the strategy before returning)
+connection.releaseAsync().toFuture().get(); // this blocks, for brevity in this example
+----
+
+Server side one can update the strategy as part of the request/response, again by casting the context, or using a
+`ConnectionAcceptorFilter` to set it once for all future requests on the same connection.
+
+[source, java]
+----
+HttpServers.forPort(8080)
+        .appendConnectionAcceptorFilter(delegate -> new ConnectionAcceptor() {
+            @Override
+            public Completable accept(final ConnectionContext ctx) {
+
+                ((NettyConnectionContext)ctx).updateFlushStrategy((current, isOrig) -> FlushStrategies.flushOnEnd())
+
+                return delegate.accept(ctx);
+            }
+        })
+        .listenStreamingAndAwait((ctx, request, responseFactory) -> {
+
+            ((NettyConnectionContext)ctx).updateFlushStrategy((current, isOrig) -> FlushStrategies.flushOnEnd())
+
+            return Single.succeeded(responseFactory.ok()
+                    .payloadBody(somePayload));
+        });
+----
+
+[#ExecutionStrategy]
+==== ExecutionStrategy (offloading)
+
+`ExecutionStrategy` is the core abstraction ServiceTalk uses to drive offloading delivering signals and data from the IO
+threads. For HTTP there is `HttpExecutionStrategy` which adds protocol specific offload-points to be used by the clients
+and services.
+
+[CAUTION]
+_Please consider the
+xref:servicetalk::performance.adoc#programming-models[programming models] before attempting to override the strategy,
+it's an advanced API._
+
+Users confident with understanding the implications may choose to opt-out of offloading by specifying the
+`executionStrategy` on the client and server builders, or in case of the client override it per request as follows:
+
+[IMPORTANT]
+Disabling offloading entirely is an option that gives the best performance when you are 100% sure that none of your
+code, library code or any ServiceTalk filters footnote:[Filters shipped with ServiceTalk, unless explicitly mentioned,
+can be considered non-blocking] that are applied will block.
+
+[source, java]
+----
+HttpServers.forPort(8080)
+        .executionStrategy(HttpExecutionStrategies.noOffloadsStrategy()) // disable offloading
+        .listenStreamingAndAwait((ctx, request, responseFactory) ->
+                Single.succeeded(responseFactory.ok()));
+
+StreamingHttpClient client = HttpClients.forSingleAddress("localhost", 8080)
+        .executionStrategy(HttpExecutionStrategies.noOffloadsStrategy()) // disable offloading
+        .buildStreaming();
+
+client.request(
+        // override a single request with a custom defined strategy
+        HttpExecutionStrategies.customStrategyBuilder()
+            .offloadReceiveData()
+            .build(),
+        client.get("/"));
+----
+
+
+[#programming-models]
+==== Choosing the optimal programming model
+The programming model as described earlier can in addition to better aligning with your application logic, also tune 2
+very important performance knobs. The model is chosen when constructing the client or server, or service routers
+footnote:[Jersey Router or HTTP Predicate Router] from the builders. The following table is a summary of how the
+programming model affects flushing and offloading and what use-cases it maps to. Please consider reading the detailed
+documentation on xref:servicetalk-http-api::blocking.adoc#Programming Models[HTTP Programming models].
+
+[%header,cols="1,3,3,3,3"]
+|===
+
+|Model
+|Flush
+|Offload Server
+|Offload Client
+|Use-case
+
+|*Async Aggregated*
+
+`cb.build()`
+
+`sb.listen()`
+|Single Flush
+|Offload handling the request (Meta + payload combined)
+
+Offload the response control signals
+|Offload handling the response (Meta + payload combined)
+
+
+|you have aggregated data and your code can deal with `Single<T>` or `Future<T>`
+
+|*Async Streaming*
+
+`cb.buildStreaming()`
+
+`sb.listenStreaming()`
+|Flush Meta +
+Flush Each Item
+2+|Offloads receipt of Meta, every payload item and all control signals
+
+|you have streaming data and your code can deal with `Single<T>` or `Future<T>` and `Publisher<T>`
+
+|*Blocking Aggregated*
+
+`cb.buildBlocking()`
+
+`sb.listenBlocking()`
+|Single Flush
+|Offload handling the request (Meta + payload combined)
+|None
+|you have aggregated data and blocking code
+
+|*Blocking Streaming*
+
+`cb.buildBlockingStreaming()`
+
+`sb.listenBlockingStreaming()`
+|Flush Meta +
+Flush Each Item
+|Offload receipt of Meta
+|Offload control signals
+|you have streaming data and blocking code
+
+|===
+
+This table hopefully clarifies how merely choosing the _programming model_ depending on your use-case can improve
+efficiency significantly. If you can in addition completely opt-out of the offloading, you will get the best possible
+performance.
+
+[#jersey-programming-models]
+==== JAX-RS Jersey Router Programming Model
+
+Choosing the right programming model can have significant performance benefits when deploying Jersey routes as well. All
+Jersey APIs are supported under all models, however there may be some unexpected side-effects, for example when choosing
+an _Aggregated_ router implementation. You would still be able to use streaming data types footnote:[`Reactive Streams`
+or `Input|OutputStream`] as input and output for JAX-RS endpoints, but need to realize that there will be buffering
+behind the scenes to aggregate and deliver the data in a single payload when the stream completes.
+
+[NOTE]
+There is no API-wise need for the Jersey router to be implemented in the 4 different programming models, however it
+currently offers the most effective way to benefit from these performance optimizations and may improve this in the
+future.
+
+
+[%header,cols="1,4"]
+|===
+
+|Model
+|Optimal use-case
+
+|Async Aggregated
+|`Single<T>`, `Publisher<T>`, `Completable` data types in endpoints with aggregated data.
+
+best performance with offloading disabled for aggregated use-cases, optionally using ServiceTalk
+serializers
+
+|Async Streaming
+|`Publisher<T>` data type in endpoints with streaming data
+
+best performance with offloading disabled for streaming use-cases, optionally using ServiceTalk serializers.
+
+|Blocking Aggregated
+|typical primitive and aggregated JAX-RS data types, `Buffer`, `byte[]` or POJOs with serialization
+
+best performance in general when endpoints have aggregated data
+
+|Blocking Streaming
+|best performance when endpoint depend on `InputStream` and `OutputStream`
+
+|===
+
+[TIP]
+When in doubt using _Blocking Aggregated_ or _Blocking Streaming_ is a safe bet to get good performance, especially if
+you are converting an existing vanilla JAX-RS application.
+
+If you need to mix `Reactive Streams` routes with typical JAX-RS _Blocking Aggregated_ routes, you have 2 options.
+Either you'll fall back to the _Async Streaming_ model to avoid aggregating your streams and lose some optimizations for
+your Blocking Aggregated routes. Or if your paths allow it, you can front-load your Jersey Router with the ServiceTalk
+Predicate Router and compose 2 Jersey routes behind the Predicate Router, each in their respective optimal programming
+model.
+
+
+=== IO Thread pool sizing
+
+By default Netty and ServiceTalk size the IO Thread-pool as follows
+
+[source, java]
+----
+2 * Runtime.availableProcessors()
+----
+[NOTE]
+====
+available processors: CPU cores (logical
+https://en.wikipedia.org/wiki/Hyper-threading[SMT] cores if available) or container compute units as defined by
+https://en.wikipedia.org/wiki/Cgroups[Linux cgroups]
+====
+On an under-utilized machine footnote:[most systems in production have some headroom for load spikes] when your your IO
+Threads are performing business logic (no offloading), you'll get better tail latencies with more IO threads than your
+available logical compute units. Applying some multiplier can be beneficial, however one must always consider the
+overhead of context switches. -- _benchmarking your use-case is recommended_
+
+However when aiming for maximum
+throughput and when you can keep your IO threads mostly busy, going with IO Threads equal to number of logical SMT CPU
+cores will give the best performance as it avoids costly Thread context switching, which in our benchmarks was observed
+as 10% performance boost over our default setting.
+
+For example, to override the IO Thread pool on an HTTP client builder (equivalent on the server builder)
+
+[source, java]
+----
+IoExecutor ioExecutor = NettyIoExecutors.createIoExecutor(
+                Runtime.getRuntime().availableProcessors(),
+                new IoThreadFactory("io-pool"));
+
+HttpClients.forSingleAddress("localhost", 8080)
+                .ioExecutor(ioExecutor)
+                .buildStreaming();
+----
+
+
+=== Socket and Transport Options
+
+ServiceTalk exposes configuration knobs at various layers of the stack. At the lowest layer there are the TCP
+`SocketOptions` and ServiceTalk options, both exposed on the client builder.
+
+[source, java]
+----
+BlockingHttpClient client = HttpClients.forSingleAddress("localhost", 8080)
+        .socketOption(StandardSocketOptions.SO_RCVBUF, 1234567)
+        .socketOption(StandardSocketOptions.SO_SNDBUF, 1234567)
+        .socketOption(ServiceTalkSocketOptions.CONNECT_TIMEOUT, 12345)
+        .socketOption(ServiceTalkSocketOptions.IDLE_TIMEOUT, 12345L)
+        .socketOption(ServiceTalkSocketOptions.WRITE_BUFFER_THRESHOLD, 12345)
+        .buildBlocking();
+HttpResponse resp = client.request(client.get("/"));
+
+----
+
+=== HTTP auto payload-draining
+
+When a user forgets to consume the payload using one of the streaming API, eg. the input is invalid and the user wants
+to returns an `HTTP 4xx` status code but forgets to deal with the payload footnote:[typically compose the response with
+`request.payloadBody().ignoreElements()`]. ServiceTalk will notice that the response was completed, but the request is
+not fully read. It'll then automatically consume the payload such that subsequent requests will not be blocked behind it
+in the read buffer. This mechanism comes with some overhead to track response completion, so if you know for sure that
+your code will always consume the payload, or you are not using the streaming APIs, this mechanism can be disabled to
+save some CPU and memory as follows
+
+[source, java]
+----
+HttpServers.forPort(8080)
+                .disableDrainingRequestPayloadBody()
+                .listenStreamingAndAwait((ctx, request, responseFactory) -> ..);
+----
+
+=== HTTP Header validation
+
+ServiceTalk aims to be safe by default, hence it validates HTTP headers (incl. cookies) in accordance to the HTTP spec,
+this comes with some overhead. If you know that your headers will always be valid or you don't care about headers at
+all, then you may see some benefit from disabling header validation as follows
+
+[source, java]
+----
+DefaultHttpHeadersFactory headersFactory = new DefaultHttpHeadersFactory(false /* names */,
+                                                                         false /* cookies */);
+
+HttpClients.forSingleAddress("localhost", 8080)
+                .headersFactory(headersFactory)
+                .buildBlocking();
+----
+
+=== Async Context
+
+Within an async context -- pun intended -- typical Java users lost a powerful tool, the `ThreadLocal`. Especially with
+offloading enabled it's unlikely for all parts of a single request/response to be handled by the same
+thread. Mechanisms that depend on `ThreadLocals` eg. logging with https://www.slf4j.org/manual.html#mdc[MDC] no longer
+work out of the box, for this reason ServiceTalk offers `AsyncContext` which is an alternative API that serves the same
+purpose.
+
+To intercept all the code paths in `Reactive Streams` `Publishers` and `Subscribers` to _save_ and _restore_ the async
+execution context at every stage, it needs to wrap in many places and juggle the user's context around. In our
+benchmarks we've observed up to a 10-20% hit in throughput. Like most common features in ServiceTalk this is enabled by
+default and can be opted-out of as follows
+
+[CAUTION]
+Some ServiceTalk features such as `OpenTracing` may depend on `AsyncContext`
+
+[source, java]
+----
+static {
+    // place this at the entrypoitn of your application
+    AsyncContext.disable();
+}
+----
+
+=== Netty PooledByteBufAllocator
+ServiceTalk leverages Netty's
+https://netty.io/4.1/api/index.html?io/netty/buffer/PooledByteBufAllocator.html[PooledByteBufAllocator] to write your
+buffers and any additional protocol framing data to the transport, the defaults should work for most cases, however like
+many things the optimal configuration depends on your application. Here are some system properties you may want to
+tweak, for more detailed tuning options of the
+https://www.facebook.com/notes/facebook-engineering/scalable-memory-allocation-using-jemalloc/480222803919[jemalloc
+inspired buffer pool] look at the
+https://netty.io/4.1/api/index.html?io/netty/buffer/PooledByteBufAllocator.html[PooledByteBufAllocator] source
+
+[%header,cols="1,3a"]
+|===
+|Option
+|Description
+
+
+|`io.netty.allocator.numHeapArenas`
+|Number or arenas for HEAP buffers, this impacts how much system memory is reserved for buffer pooling.
+[TIP]
+Unused by `ServiceTalk`, set this to `0`, unless it can't use Direct Buffers and needs to fall back to HEAP
+
+|`io.netty.allocator.numDirectArenas`
+|Number or arenas for Direct buffers, this impacts how much system memory is reserved for buffer pooling
+
+|===
+
+=== Netty native SSL engine
+SSL encryption can cause significant compute overhead over non-encrypted traffic, so it's important to choose an
+implementation an cipher that offers not only the right level of encryption but also meets your performance goals. Some
+ciphers are implemented leveraging hardware acceleration which may significantly reduce CPU overhead. In addition Netty
+offers the https://netty.io/wiki/forked-tomcat-native.html[netty-tcnative] module which provides an alternative native
+SSL engine implementation (OpenSSL or BoringSSL footnote:[BoringSSL is a drop-in replacement for OpenSSL maintained by
+Google]) that offers superior performance over the one typically shipped in OpenJDK. It's as easy as dropping in the
+https://netty.io/wiki/forked-tomcat-native.html#artifacts[JAR] of the SSL implementation on your classpath and configure
+the `OpenSSL` engine in ServiceTalk
+
+[source, java]
+----
+
+// add the netty dependency to your build, eg: "io.netty:netty-tcnative-boringssl-static:2.0.25.Final"
+
+BlockingHttpClient client = HttpClients.forSingleAddress("netty.io", 443)
+        .sslConfig(
+                SslConfigBuilder.forClient("netty.io", 443)
+                        .provider(SslConfig.SslProvider.OPENSSL) // SslProvider.JDK | SslProvider.AUTO
+                        .build())
+        .buildBlocking();
+HttpResponse resp = client.request(client.get("/"));
+----
+
+=== Netty LEAK-detection
+Netty on which ServiceTalk builds on top, has a way to
+https://netty.io/wiki/reference-counted-objects.html#leak-detection-levels[detect leaking of `DirectByteBuffers`]. With
+the default `SIMPLE` detector comes a minor overhead to tag and track every buffer it sees, but assuming that your code
+does not use Netty directly, you may choose to disable this detection mechanism with the following system property.
+
+[CAUTION]
+This may reduce visibility on reference counting bugs in ServiceTalk and Netty.
+
+[source]
+----
+-Dio.netty.leakDetection.level=DISABLED
+----
+
+== Benchmarks
+While we are careful in not adding unnecessary performance overhead during the development of ServiceTalk, we can't
+claim we deliver on this goal unless we measure. Therefore we've developed a performance test bench that we run
+periodically. This section will describe our test environment and some of the scenarios that we put to the test.
+Currently the performance test-suite is not publicly available, but we intend to incrementally add tooling and
+benchmarks to the code-base. Every environment and use-case is different and may perform differently and requires
+different tuning strategies, so we want to enable our users to easily test and confirm the performance of ServiceTalk
+meets their needs.
+
+=== Environment
+[cols="1,3a"]
+|===
+| CPU
+| Intel(R) Xeon(R) CPU E5-2640 v3 @ 2.60GHz (3.40GHz with Turbo)
+
+| NUMA Nodes
+| 2 processors
+
+| CPU Cores
+| 16 (2x 8 physical CPU cores, 32 logical CPU cores with HyperThreading)
+
+| CPU Cache
+| 20MB
+
+| Memory
+| 250GB
+
+| OS
+| CentOS 6.9 -- Linux 4.15
+
+| Network
+| N/A -- all tests performed using `localhost` networking
+
+| Virtualization
+| N/A -- bare metal
+
+|===
+
+=== Reducing the noise
+In order to minimize noise in the benchmarks we mitigate the problem from different angles
+
+- the system has 2 https://en.wikipedia.org/wiki/Non-uniform_memory_access[NUMA nodes] which allows us to isolate the
+load-generator from the system under test
+
+- background and operational processes typically run on the first few logical CPUs (first NUMA node), these don't
+consume much resources but we don't want the system under test to compete for resources and be negatively affected by
+cache invalidation by context switching
+
+- using `localhost` networking avoids bottlenecks and issues on the physical network, potential network virtualization
+overhead, including misconfiguration and noisy neighbors. This way we ensure that the only latency observed is the one
+introduced by ServiceTalk.
+
+- for server benchmarks the client load generator requires less compute cycles, so we co-locate it on the 1st NUMA-node,
+shared with the background processes but confined to a set of logical CPUs that are rarely used by the background
+processes. The server itself will be dedicated to all the cores of the 2nd NUMA-node.
+
+- for client benchmarks the background server taking request is a minimal Netty-based application. Netty offers the best
+possible performance and lowest overhead, making it ideal to see how fast a client can send requests. The Netty backend
+is co-located with the background processes on the first NUMA-node, but again isolated from the cores  typically
+receiving most background tasks. The client under test will be dedicated to all the cores of the 2nd NUMA-node.
+
+- every scenario test is performed from a clean start of either the client and server and repeated 3 times, for a
+duration of 3 minutes. This gives us sufficiently consistent numbers and guarantees the bench goes through a phase of
+JIT warm-up, some GC while working and a steady state. The throughput numbers are averaged over the runs.
+
+=== Test scenarios
+We obviously can't test all scenarios, but our aim is to continuously monitor performance of a set of typical use-cases
+users may have using ServiceTalk APIs. In addition we'll also compare how well other libraries and frameworks in the
+Java ecosystem perform, for example it's interesting for us to compare against Netty, as it shows us exactly how much
+overhead we are adding on top.
+
+==== Clients and Server types
+* HTTP Clients and Servers in all programming models (see
+xref:servicetalk::performance.adoc#programming-models[programming models] for performance implications)
+    ** Async Aggregated
+    ** Async Streaming
+    ** Blocking Aggregated
+    ** Blocking Streaming
+
+* JAX-RS Jersey router performance
+    ** all xref:servicetalk::performance.adoc#jersey-programming-models[Jersey Router programming models]
+    ** common JAX-RS data types (`String`, `byte[]`, `InputStream`, `OutputStream`)
+    ** Reactive Streams types (`Single<T>`, `Publisher<T>`, `Publisher<Buffer>`)
+    ** JSON with Jersey Jackson module & `ServiceTalk` Jersey Jackson module
+
+==== Features and dimensions
+* PLAIN vs SSL
+* offloading (default) vs not-offloading
+* HTTP Methods
+    ** GET
+    ** POST
+* Payload sizes
+    ** 0
+    ** 256
+    ** 16KB
+    ** 256KB
+* AsyncContext enable/disable
+* Header validation enable/disable
+* IO Thread count
+* Connection count
+
+=== Load-generators
+In case of testing the HTTP server, we use either the native HTTP load-generator https://github.com/wg/wrk[wrk] written
+in C with async IO, or a purpose built ServiceTalk load-generator using the ServiceTalk asynchronous HTTP client. Our
+custom load-generator reports within 1-3% of the same numbers as `wrk`. We use our load-generator to test scenarios that
+`wrk` doesn't support such as streaming data, SSL, and possibly non-HTTP protocols in the future. By baselining our
+load-gen against `wrk` we ensure that we can trust the numbers and defend against regressions or improvements in
+ServiceTalk skewing the numbers. Similarly for testing client performance we use a Netty-based server implementation for
+reference as it offers the best performance and can be used to baseline in the same fashion to the client load-gen, in
+case we need a backend server with features only available in ServiceTalk.
+
+==== wrk -- native HTTP client -- target 1000 connections
+Wrk opens 1000 connections to the target, then using an thread-pool of 8 workers (it has 8 dedicated CPU cores) it fires
+requests at the target server, each time a response completes on a connection, it fires the next request, and so on
+until the test completes, typically 3 minutes.
+
+==== ServiceTalk Async HTTP Client bench -- target 1000 connections
+In a loop 1000 requests are fired using the Async HTTP Client, which opens roughly 1000 connections, then from its IO
+thread-pool of 16 workers (it has 16 dedicated CPU cores) it fires new requests each time a response completes on a
+connection, and so on until the test completes, typically 3 minutes.
+
+==== ServiceTalk Blocking HTTP Client bench -- target 1000 connections
+Starts a work-pool of 1000 threads (it has 16 dedicated CPU cores) then from every worker thread it uses a Blocking HTTP
+Client to send a request and blocks on the response. When the response completes, it fires the next request and blocks
+again, and so on until the test completes, typically 3 minutes.
+
+=== Latency reporting
+So far we've mostly talked about throughput, but it's often interesting to report on latency as well, both `wrk` as well
+as our custom load-generator support latency reporting -- we leverage the awesome
+https://github.com/HdrHistogram/HdrHistogram[HdrHistogram] to make sure we're striking a good balance between throughput
+and latency.
