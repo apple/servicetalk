@@ -17,6 +17,7 @@ package io.servicetalk.transport.netty.internal;
 
 import io.servicetalk.transport.api.ConnectionContext;
 
+import io.netty.channel.AdaptiveRecvByteBufAllocator;
 import io.netty.channel.Channel;
 
 /**
@@ -51,6 +52,12 @@ public interface ChannelInitializer {
      * @return Default initializer for ServiceTalk.
      */
     static ChannelInitializer defaultInitializer() {
-        return (channel, context) -> context;
+        return (channel, context) -> {
+            channel.config().setRecvByteBufAllocator(
+                    new AdaptiveRecvByteBufAllocator(512, 32768, 65536)
+                            .respectMaybeMoreData(false)
+                            .maxMessagesPerRead(4));
+            return context;
+        };
     }
 }
