@@ -26,6 +26,7 @@ import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.IoExecutor;
 
 import java.net.SocketOption;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
@@ -167,6 +168,19 @@ abstract class HttpClientBuilder<U, R, SDE extends ServiceDiscovererEvent<R>> ex
 
     @Override
     public abstract HttpClientBuilder<U, R, SDE> disableHostHeaderFallback();
+
+    /**
+     * Provides a means to convert {@link U} unresolved address type into a {@link CharSequence}.
+     * An example of where this maybe used is to convert the {@link U} to a default host header. It may also
+     * be used in the event of proxying.
+     *
+     * @param unresolvedAddressToHostFunction invoked to convert the {@link U} unresolved address type into a
+     * {@link CharSequence} suitable for use in
+     * <a href="https://tools.ietf.org/html/rfc7230#section-5.4">Host Header</a> format.
+     * @return {@code this}
+     */
+    public abstract HttpClientBuilder<U, R, SDE> unresolvedAddressToHost(
+            Function<U, CharSequence> unresolvedAddressToHostFunction);
 
     /**
      * Disable automatically delaying {@link StreamingHttpRequest}s until the {@link LoadBalancer} is ready.

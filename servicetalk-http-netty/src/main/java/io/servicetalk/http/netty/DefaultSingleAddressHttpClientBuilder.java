@@ -46,6 +46,8 @@ import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.SslConfig;
 
+import io.netty.util.NetUtil;
+
 import java.net.InetSocketAddress;
 import java.net.SocketOption;
 import java.util.function.Function;
@@ -81,9 +83,11 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
     private final ClientStrategyInfluencerChainBuilder influencerChainBuilder;
     private LoadBalancerFactory<R, StreamingHttpConnection> loadBalancerFactory;
     private ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> serviceDiscoverer;
+    private Function<U, CharSequence> hostToCharSequenceFunction =
+            DefaultSingleAddressHttpClientBuilder::unresolvedAddressToCharSequence;
     @Nullable
     private Function<U, StreamingHttpClientFilterFactory> hostHeaderFilterFactoryFunction =
-            address -> new HostHeaderHttpRequesterFilter(unresolvedAddressToCharSequence(address));
+            address -> new HostHeaderHttpRequesterFilter(hostToCharSequenceFunction.apply(address));
     @Nullable
     private StreamingHttpConnectionFilterFactory connectionFilterFactory;
     @Nullable
@@ -93,11 +97,12 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
             ConnectionFactoryFilter.identity();
 
     DefaultSingleAddressHttpClientBuilder(
-            final U address, final U proxyAddress,
+            final U address, final U proxyAddress, Function<U, CharSequence> hostToCharSequenceFunction,
             final ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> serviceDiscoverer) {
         this(address, serviceDiscoverer);
         this.proxyAddress = proxyAddress;
-        config.connectAddress(unresolvedAddressToCharSequence(address));
+        this.hostToCharSequenceFunction = requireNonNull(hostToCharSequenceFunction);
+        config.connectAddress(hostToCharSequenceFunction.apply(address));
     }
 
     DefaultSingleAddressHttpClientBuilder(
@@ -131,6 +136,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
         this.serviceDiscoverer = from.serviceDiscoverer;
         clientFilterFactory = from.clientFilterFactory;
         connectionFilterFactory = from.connectionFilterFactory;
+        hostToCharSequenceFunction = from.hostToCharSequenceFunction;
         hostHeaderFilterFactoryFunction = from.hostHeaderFilterFactoryFunction;
         lbReadyFilterEnabled = from.lbReadyFilterEnabled;
         connectionFactoryFilter = from.connectionFactoryFilter;
@@ -151,7 +157,9 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
 
     static DefaultSingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> forHostAndPortViaProxy(
             final HostAndPort address, final HostAndPort proxyAddress) {
-        return new DefaultSingleAddressHttpClientBuilder<>(address, proxyAddress, globalDnsServiceDiscoverer());
+        return new DefaultSingleAddressHttpClientBuilder<>(address, proxyAddress,
+                hostAndPort -> toSocketAddressString(hostAndPort.hostName(), hostAndPort.port()),
+                globalDnsServiceDiscoverer());
     }
 
     static <U> DefaultSingleAddressHttpClientBuilder<U, InetSocketAddress> forResolvedAddress(
@@ -161,11 +169,19 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
         return new DefaultSingleAddressHttpClientBuilder<>(u, sd);
     }
 
-    static <U> DefaultSingleAddressHttpClientBuilder<U, InetSocketAddress> forResolvedAddressViaProxy(
-            final U u, final InetSocketAddress address, final U proxyAddress) {
-        ServiceDiscoverer<U, InetSocketAddress, ServiceDiscovererEvent<InetSocketAddress>> sd =
+    static DefaultSingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> forResolvedAddressViaProxy(
+            final HostAndPort u, final InetSocketAddress address, final HostAndPort proxyAddress) {
+        ServiceDiscoverer<HostAndPort, InetSocketAddress, ServiceDiscovererEvent<InetSocketAddress>> sd =
                 new NoopServiceDiscoverer<>(u, address);
-        return new DefaultSingleAddressHttpClientBuilder<>(u, proxyAddress, sd);
+        return new DefaultSingleAddressHttpClientBuilder<>(u, proxyAddress,
+                hostAndPort -> toSocketAddressString(hostAndPort.hostName(), hostAndPort.port()), sd);
+    }
+
+    static DefaultSingleAddressHttpClientBuilder<InetSocketAddress, InetSocketAddress> forResolvedAddressViaProxy(
+            final InetSocketAddress u, final InetSocketAddress address, final InetSocketAddress proxyAddress) {
+        ServiceDiscoverer<InetSocketAddress, InetSocketAddress, ServiceDiscovererEvent<InetSocketAddress>> sd =
+                new NoopServiceDiscoverer<>(u, address);
+        return new DefaultSingleAddressHttpClientBuilder<>(u, proxyAddress, NetUtil::toSocketAddressString, sd);
     }
 
     static DefaultSingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> forUnknownHostAndPort() {
@@ -322,7 +338,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
 
     private AbsoluteAddressHttpRequesterFilter proxyAbsoluteAddressFilterFactory() {
         assert address != null : "address should have been set in constructor";
-        return new AbsoluteAddressHttpRequesterFilter("http", unresolvedAddressToCharSequence(address));
+        return new AbsoluteAddressHttpRequesterFilter("http", hostToCharSequenceFunction.apply(address));
     }
 
     @Override
@@ -451,8 +467,9 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
     }
 
     @Override
-    public DefaultSingleAddressHttpClientBuilder<U, R> enableHostHeaderFallback(final CharSequence hostHeader) {
-        hostHeaderFilterFactoryFunction = address -> new HostHeaderHttpRequesterFilter(hostHeader);
+    public DefaultSingleAddressHttpClientBuilder<U, R> unresolvedAddressToHost(
+            Function<U, CharSequence> unresolvedAddressToHostFunction) {
+        this.hostToCharSequenceFunction = requireNonNull(unresolvedAddressToHostFunction);
         return this;
     }
 
@@ -510,6 +527,9 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
         if (address instanceof HostAndPort) {
             final HostAndPort hostAndPort = (HostAndPort) address;
             return toSocketAddressString(hostAndPort.hostName(), hostAndPort.port());
+        }
+        if (address instanceof InetSocketAddress) {
+            return toSocketAddressString((InetSocketAddress) address);
         }
         throw new IllegalArgumentException("Unsupported address type, unable to convert " + address.getClass() +
                 " to CharSequence");

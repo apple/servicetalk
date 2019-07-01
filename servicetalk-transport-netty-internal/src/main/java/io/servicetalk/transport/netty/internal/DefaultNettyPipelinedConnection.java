@@ -60,15 +60,6 @@ public final class DefaultNettyPipelinedConnection<Req, Resp> implements NettyPi
      * New instance.
      *
      * @param connection {@link NettyConnection} requests to which are to be pipelined.
-     */
-    public DefaultNettyPipelinedConnection(NettyConnection<Resp, Req> connection) {
-        this(connection, 2);
-    }
-
-    /**
-     * New instance.
-     *
-     * @param connection {@link NettyConnection} requests to which are to be pipelined.
      * @param initialQueueSize Initial size for the write and read queues.
      */
     public DefaultNettyPipelinedConnection(NettyConnection<Resp, Req> connection, int initialQueueSize) {

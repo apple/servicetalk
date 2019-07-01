@@ -362,8 +362,9 @@ class DefaultPartitionedHttpClientBuilder<U, R> extends PartitionedHttpClientBui
     }
 
     @Override
-    public PartitionedHttpClientBuilder<U, R> enableHostHeaderFallback(final CharSequence hostHeader) {
-        builderTemplate.enableHostHeaderFallback(hostHeader);
+    public PartitionedHttpClientBuilder<U, R> unresolvedAddressToHost(
+            final Function<U, CharSequence> unresolvedAddressToHostFunction) {
+        builderTemplate.unresolvedAddressToHost(unresolvedAddressToHostFunction);
         return this;
     }
 
