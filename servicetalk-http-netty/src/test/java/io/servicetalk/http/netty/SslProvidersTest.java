@@ -21,6 +21,8 @@ import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.test.resources.DefaultTestCerts;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.api.SslConfig.SslProvider;
+import io.servicetalk.transport.netty.IoThreadFactory;
+import io.servicetalk.transport.netty.NettyIoExecutors;
 
 import org.junit.After;
 import org.junit.Rule;
@@ -30,6 +32,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import java.util.Collection;
+import java.util.concurrent.ThreadLocalRandom;
 
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
 import static io.servicetalk.http.api.HttpHeaderValues.TEXT_PLAIN_UTF_8;
@@ -52,10 +55,15 @@ public class SslProvidersTest {
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
 
+    private final String payloadBody;
     private final ServerContext serverContext;
     private final BlockingHttpClient client;
 
-    public SslProvidersTest(SslProvider serverSslProvider, SslProvider clientSslProvider) throws Exception {
+    public SslProvidersTest(SslProvider serverSslProvider, SslProvider clientSslProvider, int payloadLength)
+            throws Exception {
+
+        payloadBody = randomString(payloadLength);
+
         serverContext = HttpServers.forAddress(localAddress(0))
                 .sslConfig(forServer(DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey)
                         .provider(serverSslProvider)
@@ -63,13 +71,14 @@ public class SslProvidersTest {
                 .listenBlockingAndAwait((ctx, request, responseFactory) -> {
                     assertThat(request.path(), is("/path"));
                     assertThat(request.headers().get(CONTENT_TYPE), is(TEXT_PLAIN_UTF_8));
-                    assertThat(request.payloadBody(textDeserializer()), is("request-payload-body"));
+                    assertThat(request.payloadBody(textDeserializer()), is("request-payload-body-" + payloadBody));
 
                     return responseFactory.ok()
-                            .payloadBody("response-payload-body", textSerializer());
+                            .payloadBody("response-payload-body-" + payloadBody, textSerializer());
                 });
 
         client = HttpClients.forSingleAddress(serverHostAndPort(serverContext))
+                .ioExecutor(NettyIoExecutors.createIoExecutor(new IoThreadFactory("client-io")))
                 .sslConfig(forClientWithoutServerIdentity()
                         // required for generated test certificates
                         .trustManager(DefaultTestCerts::loadMutualAuthCaPem)
@@ -78,13 +87,17 @@ public class SslProvidersTest {
                 .buildBlocking();
     }
 
-    @Parameterized.Parameters(name = "server={0} client={1}")
-    public static Collection<SslProvider[]> sslProviders() {
+    @Parameterized.Parameters(name = "server={0} client={1} payloadLength={2}")
+    public static Collection<Object[]> sslProviders() {
         return asList(
-                new SslProvider[]{JDK, JDK},
-                new SslProvider[]{JDK, OPENSSL},
-                new SslProvider[]{OPENSSL, JDK},
-                new SslProvider[]{OPENSSL, OPENSSL}
+                new Object[]{JDK, JDK, 256},
+                new Object[]{JDK, OPENSSL, 256},
+                new Object[]{OPENSSL, JDK, 256},
+                new Object[]{OPENSSL, OPENSSL, 256},
+                new Object[]{JDK, JDK, 16384},
+                new Object[]{JDK, OPENSSL, 16384},
+                new Object[]{OPENSSL, JDK, 16384},
+                new Object[]{OPENSSL, OPENSSL, 16384}
         );
     }
 
@@ -100,10 +113,18 @@ public class SslProvidersTest {
     @Test
     public void testSecureClientToSecureServer() throws Exception {
         HttpResponse response = client.request(client.get("/path")
-                .payloadBody("request-payload-body", textSerializer()));
+                .payloadBody("request-payload-body-" + payloadBody, textSerializer()));
 
         assertThat(response.status(), is(OK));
         assertThat(response.headers().get(CONTENT_TYPE), is(TEXT_PLAIN_UTF_8));
-        assertThat(response.payloadBody(textDeserializer()), is("response-payload-body"));
+        assertThat(response.payloadBody(textDeserializer()), is("response-payload-body-" + payloadBody));
+    }
+
+    private static String randomString(final int length) {
+        final StringBuilder sb = new StringBuilder(length);
+        for (int i = 0; i < length; i++) {
+            sb.append((char) ThreadLocalRandom.current().nextInt('a', 'z' + 1));
+        }
+        return sb.toString();
     }
 }
