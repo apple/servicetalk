@@ -47,7 +47,7 @@ public class HostHeaderHttpRequesterFilterTest {
     private static void doHostHeaderTest(String hostHeader, String expectedValue) throws Exception {
         try (ServerContext context = buildServer();
              BlockingHttpClient client = forSingleAddress(serverHostAndPort(context))
-                .enableHostHeaderFallback(hostHeader)
+                .unresolvedAddressToHost(addr -> hostHeader)
                 .buildBlocking()) {
             assertEquals(expectedValue,
                     client.request(client.get("/")).payloadBody(textDeserializer()));

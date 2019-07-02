@@ -53,9 +53,6 @@ import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.SslConfig;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.net.InetSocketAddress;
 import java.net.SocketOption;
 import java.util.Objects;
@@ -85,9 +82,6 @@ import static java.util.Objects.requireNonNull;
  */
 final class DefaultMultiAddressUrlHttpClientBuilder extends MultiAddressHttpClientBuilder<HostAndPort,
         InetSocketAddress> {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(DefaultMultiAddressUrlHttpClientBuilder.class);
-
     // https://tools.ietf.org/html/rfc2068#section-10.3 says:
     // A user agent SHOULD NOT automatically redirect a request more than 5 times,
     // since such redirects usually indicate an infinite loop.
@@ -99,7 +93,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder extends MultiAddressHttpClie
     @Nullable
     private MultiAddressHttpClientFilterFactory<HostAndPort> clientFilterFactory;
     @Nullable
-    private Function<HostAndPort, CharSequence> hostHeaderTransformer;
+    private Function<HostAndPort, CharSequence> unresolvedAddressToHostFunction;
     @Nullable
     private BiConsumer<HostAndPort, SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress>>
             clientConfiguratorForHost;
@@ -116,7 +110,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder extends MultiAddressHttpClie
             final HttpClientBuildContext<HostAndPort, InetSocketAddress> buildContext = builderTemplate.copyBuildCtx();
 
             final ClientFactory clientFactory = new ClientFactory(buildContext.builder,
-                    sslConfigProvider, clientFilterFactory, hostHeaderTransformer, clientConfiguratorForHost);
+                    sslConfigProvider, clientFilterFactory, unresolvedAddressToHostFunction, clientConfiguratorForHost);
 
             CachingKeyFactory keyFactory = closeables.prepend(new CachingKeyFactory(sslConfigProvider));
 
@@ -264,11 +258,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder extends MultiAddressHttpClie
                     builderTemplate.copyBuildCtx(urlKey.hostAndPort);
 
             if (hostHeaderTransformer != null) {
-                try {
-                    buildContext.builder.enableHostHeaderFallback(hostHeaderTransformer.apply(urlKey.hostAndPort));
-                } catch (Exception e) {
-                    LOGGER.error("Failed to transform address for host header override", e);
-                }
+                buildContext.builder.unresolvedAddressToHost(hostHeaderTransformer);
             }
             buildContext.builder.sslConfig(sslConfig);
             if (clientFilterFactory != null) {
@@ -508,9 +498,9 @@ final class DefaultMultiAddressUrlHttpClientBuilder extends MultiAddressHttpClie
     }
 
     @Override
-    public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> enableHostHeaderFallback(
-            final Function<HostAndPort, CharSequence> hostHeaderTransformer) {
-        this.hostHeaderTransformer = requireNonNull(hostHeaderTransformer);
+    public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> unresolvedAddressToHost(
+            Function<HostAndPort, CharSequence> unresolvedAddressToHostFunction) {
+        this.unresolvedAddressToHostFunction = requireNonNull(unresolvedAddressToHostFunction);
         return this;
     }
 

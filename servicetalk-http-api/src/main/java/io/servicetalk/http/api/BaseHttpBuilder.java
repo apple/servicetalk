@@ -174,8 +174,7 @@ abstract class BaseHttpBuilder<ResolvedAddress> {
      * This setting disables the default filter such that no {@code Host} header will be manipulated.
      *
      * @return {@code this}
-     * @see SingleAddressHttpClientBuilder#enableHostHeaderFallback(CharSequence)
-     * @see MultiAddressHttpClientBuilder#enableHostHeaderFallback(Function)
+     * @see MultiAddressHttpClientBuilder#unresolvedAddressToHost(Function)
      */
     public abstract BaseHttpBuilder<ResolvedAddress> disableHostHeaderFallback();
 

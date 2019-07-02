@@ -68,7 +68,7 @@ final class CompletableConcatWithCompletable extends AbstractNoHandleSubscribeCo
         private final Subscriber target;
         private final Completable next;
         @Nullable
-        private volatile SequentialCancellable sequentialCancellable;
+        private SequentialCancellable sequentialCancellable;
         @SuppressWarnings("unused")
         private volatile int subscribedToNext;
 
@@ -79,9 +79,8 @@ final class CompletableConcatWithCompletable extends AbstractNoHandleSubscribeCo
 
         @Override
         public void onSubscribe(Cancellable cancellable) {
-            SequentialCancellable sequentialCancellable = this.sequentialCancellable;
             if (sequentialCancellable == null) {
-                this.sequentialCancellable = sequentialCancellable = new SequentialCancellable(cancellable);
+                sequentialCancellable = new SequentialCancellable(cancellable);
                 target.onSubscribe(sequentialCancellable);
             } else {
                 sequentialCancellable.nextCancellable(cancellable);

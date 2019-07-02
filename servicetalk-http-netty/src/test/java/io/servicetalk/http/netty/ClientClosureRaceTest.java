@@ -23,9 +23,10 @@ import io.servicetalk.http.utils.RetryingHttpRequesterFilter;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.RetryableException;
 
-import io.netty.channel.unix.Errors;
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -55,17 +56,26 @@ public class ClientClosureRaceTest {
     public final ServiceTalkTestTimeout timeout = new ServiceTalkTestTimeout();
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ClientClosureRaceTest.class);
-    public static final int ITERATIONS = ServiceTalkTestTimeout.CI ? 1000 : 500;
+    public static final int ITERATIONS = 600;
+    private static ExecutorService executor;
     private ServerSocket serverSocket;
-    private ExecutorService executor;
     private int port;
     private volatile boolean receivedExpectedError;
+
+    @BeforeClass
+    public static void beforeClass() {
+        executor = Executors.newCachedThreadPool();
+    }
+
+    @AfterClass
+    public static void afterClass() {
+        executor.shutdownNow();
+    }
 
     @Before
     public void startServer() throws Exception {
         serverSocket = new ServerSocket(0);
         port = serverSocket.getLocalPort();
-        executor = Executors.newCachedThreadPool();
 
         executor.submit(() -> {
             while (!executor.isShutdown()) {
@@ -107,7 +117,6 @@ public class ClientClosureRaceTest {
     @After
     public void stopServer() throws Exception {
         serverSocket.close();
-        executor.shutdownNow();
     }
 
     @Test
@@ -178,15 +187,6 @@ public class ClientClosureRaceTest {
     }
 
     private static boolean isAllowableError(final Exception e) {
-        if (!(e instanceof ExecutionException)) {
-            return false;
-        }
-        // This exception instance check will likely need to be updated for Windows builds.
-        return (e.getCause() instanceof Errors.NativeIoException &&
-                e.getCause().getMessage().contains("syscall:read")) ||
-                (e.getCause() instanceof ClosedChannelException &&
-                        e.getCause().getMessage().startsWith("CHANNEL_CLOSED_INBOUND")) ||
-                (e.getCause() instanceof ClosedChannelException &&
-                        e.getCause().getMessage().startsWith("CHANNEL_CLOSED_OUTBOUND"));
+        return e instanceof ExecutionException && e.getCause() instanceof IOException;
     }
 }

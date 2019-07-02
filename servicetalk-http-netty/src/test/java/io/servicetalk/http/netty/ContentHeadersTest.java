@@ -142,7 +142,7 @@ public class ContentHeadersTest extends AbstractNettyHttpServerTest {
 
                 // ----- Response -----
                 new ResponseTest(aggregatedResponse(OK), GET, defaults(), HAVE_CONTENT_LENGTH),
-                new ResponseTest(aggregatedResponse(OK), HEAD, defaults(), HAVE_CONTENT_LENGTH),
+                new ResponseTest(aggregatedResponse(OK), HEAD, defaults(), HAVE_NEITHER),
                 new ResponseTest(aggregatedResponse(OK), POST, defaults(), HAVE_CONTENT_LENGTH),
                 new ResponseTest(aggregatedResponse(OK), PUT, defaults(), HAVE_CONTENT_LENGTH),
                 new ResponseTest(aggregatedResponse(OK), DELETE, defaults(), HAVE_CONTENT_LENGTH),
@@ -152,7 +152,7 @@ public class ContentHeadersTest extends AbstractNettyHttpServerTest {
                 new ResponseTest(aggregatedResponse(OK), PATCH, defaults(), HAVE_CONTENT_LENGTH),
 
                 new ResponseTest(aggregatedResponse(OK), GET, withoutPayload(), HAVE_CONTENT_LENGTH_ZERO),
-                new ResponseTest(aggregatedResponse(OK), HEAD, withoutPayload(), HAVE_CONTENT_LENGTH_ZERO),
+                new ResponseTest(aggregatedResponse(OK), HEAD, withoutPayload(), HAVE_NEITHER),
                 new ResponseTest(aggregatedResponse(OK), POST, withoutPayload(), HAVE_CONTENT_LENGTH_ZERO),
                 new ResponseTest(aggregatedResponse(OK), PUT, withoutPayload(), HAVE_CONTENT_LENGTH_ZERO),
                 new ResponseTest(aggregatedResponse(OK), DELETE, withoutPayload(), HAVE_CONTENT_LENGTH_ZERO),
@@ -323,11 +323,6 @@ public class ContentHeadersTest extends AbstractNettyHttpServerTest {
     @Override
     Single<ServerContext> listen(final HttpServerBuilder builder) {
         return testDefinition.listen(builder);
-    }
-
-    @Nullable
-    private static String checkHeaders(final Expectation expectation, final HttpHeaders headers) {
-        return expectation.assertHeaders(headers);
     }
 
     private static HttpRequest newAggregatedRequest(final HttpRequestMethod requestMethod) {

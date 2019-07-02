@@ -20,12 +20,12 @@ import io.servicetalk.client.api.ConnectionFactoryFilter;
 import io.servicetalk.client.api.LoadBalancerFactory;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
-import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.SslConfig;
 
 import java.io.InputStream;
 import java.net.SocketOption;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
@@ -105,17 +105,9 @@ abstract class BaseSingleAddressHttpClientBuilder<U, R, SDE extends ServiceDisco
     public abstract BaseSingleAddressHttpClientBuilder<U, R, SDE> loadBalancerFactory(
             LoadBalancerFactory<R, StreamingHttpConnection> loadBalancerFactory);
 
-    /**
-     * Automatically set the provided {@link HttpHeaderNames#HOST} on {@link StreamingHttpRequest}s when it's missing.
-     * <p>
-     * For known address types such as {@link HostAndPort} the {@link HttpHeaderNames#HOST} is inferred and
-     * automatically set by default, if you have a custom address type or want to override the inferred value use this
-     * method. Use {@link #disableHostHeaderFallback()} if you don't want any {@link HttpHeaderNames#HOST} manipulation
-     * at all.
-     * @param hostHeader the value for the {@link HttpHeaderNames#HOST}
-     * @return {@code this}
-     */
-    public abstract BaseSingleAddressHttpClientBuilder<U, R, SDE> enableHostHeaderFallback(CharSequence hostHeader);
+    @Override
+    public abstract BaseSingleAddressHttpClientBuilder<U, R, SDE> unresolvedAddressToHost(
+            Function<U, CharSequence> unresolvedAddressToHostFunction);
 
     /**
      * Enable SSL/TLS using the provided {@link SslConfig}. To disable it pass in {@code null}.

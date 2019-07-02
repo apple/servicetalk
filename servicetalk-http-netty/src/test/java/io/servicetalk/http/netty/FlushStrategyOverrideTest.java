@@ -85,6 +85,7 @@ public class FlushStrategyOverrideTest {
                 .disableHostHeaderFallback()
                 .ioExecutor(ctx.ioExecutor())
                 .executionStrategy(noOffloadsStrategy())
+                .unresolvedAddressToHost(InetSocketAddress::getHostString)
                 .buildStreaming();
         conn = client.reserveConnection(client.get("/")).toFuture().get();
     }

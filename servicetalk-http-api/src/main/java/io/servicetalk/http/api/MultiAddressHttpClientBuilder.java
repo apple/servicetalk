@@ -118,18 +118,9 @@ public abstract class MultiAddressHttpClientBuilder<U, R>
     public abstract MultiAddressHttpClientBuilder<U, R> loadBalancerFactory(
             LoadBalancerFactory<R, StreamingHttpConnection> loadBalancerFactory);
 
-    /**
-     * Automatically set the provided {@link HttpHeaderNames#HOST} on {@link StreamingHttpRequest}s when it's missing.
-     * <p>
-     * For known address types such as {@link HostAndPort} the {@link HttpHeaderNames#HOST} is inferred and
-     * automatically set by default, if you have a custom address type or want to override the inferred value use this
-     * method. Use {@link #disableHostHeaderFallback()} if you don't want any {@link HttpHeaderNames#HOST} manipulation
-     * at all.
-     * @param hostHeaderTransformer transforms the {@code UnresolvedAddress} for the {@link HttpHeaderNames#HOST}
-     * @return {@code this}
-     */
-    public abstract MultiAddressHttpClientBuilder<U, R> enableHostHeaderFallback(
-            Function<U, CharSequence> hostHeaderTransformer);
+    @Override
+    public abstract MultiAddressHttpClientBuilder<U, R> unresolvedAddressToHost(
+            Function<U, CharSequence> unresolvedAddressToHostFunction);
 
     /**
      * Append the filter to the chain of filters used to decorate the {@link StreamingHttpClient} created by this
