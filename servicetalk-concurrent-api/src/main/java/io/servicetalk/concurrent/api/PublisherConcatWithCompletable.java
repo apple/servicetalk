@@ -60,7 +60,7 @@ final class PublisherConcatWithCompletable<T> extends AbstractAsynchronousPublis
 
         @Override
         public void onSubscribe(Subscription s) {
-            cancellableUpdater.getAndSet(this, s);
+            cancellable = s;
             target.onSubscribe(this);
         }
 
@@ -80,9 +80,8 @@ final class PublisherConcatWithCompletable<T> extends AbstractAsynchronousPublis
                 final Cancellable c = this.cancellable;
                 if (c == CANCELLED) {
                     cancellable.cancel();
-                    return;
-                }
-                if (cancellableUpdater.compareAndSet(this, c, cancellable)) {
+                    break;
+                } else if (cancellableUpdater.compareAndSet(this, c, cancellable)) {
                     break;
                 }
             }
@@ -100,9 +99,9 @@ final class PublisherConcatWithCompletable<T> extends AbstractAsynchronousPublis
 
         @Override
         public void request(final long n) {
-            Cancellable cancellable = cancellableUpdater.get(this);
-            if (cancellable instanceof Subscription) {
-                ((Subscription) cancellable).request(n);
+            Cancellable currCancellable = cancellable;
+            if (currCancellable instanceof Subscription) {
+                ((Subscription) currCancellable).request(n);
             }
         }
 
