@@ -203,4 +203,14 @@ public class AsynchronousResourceTest extends AbstractAsynchronousResourceTest {
                     __ -> null);
         });
     }
+
+    @Test
+    public void sseUnsupported() {
+        runTwiceToEnsureEndpointCache(() -> {
+            // Jersey's OutboundEventWriter ignores the lack of a MessageBodyWriter for the event (an error is logged
+            // but no feedback is provided to the client side)
+            sendAndAssertResponse(get("/sse/unsupported"), OK, newAsciiString(SERVER_SENT_EVENTS),
+                    isEmptyString(), __ -> null);
+        });
+    }
 }
