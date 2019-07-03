@@ -516,9 +516,9 @@ C: Route +
 S: Global
 
 |Router +
-No Offloads |M: Server I/O +
-C: Server I/O +
-S: Server I/O |M: Route +
+No Offloads |M: Global +
+C: Global +
+S: Global |M: Route +
 C: Route +
 S: Route |M: Server I/O +
 C: Server I/O +

@@ -15,6 +15,8 @@
  */
 package io.servicetalk.http.router.jersey;
 
+import io.servicetalk.concurrent.api.Completable;
+import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 
@@ -23,6 +25,7 @@ import org.glassfish.jersey.server.ExtendedResourceContext;
 import org.glassfish.jersey.server.model.HandlerConstructor;
 import org.glassfish.jersey.server.model.Invocable;
 import org.glassfish.jersey.server.model.MethodHandler;
+import org.glassfish.jersey.server.model.Parameter;
 import org.glassfish.jersey.server.model.Resource;
 import org.glassfish.jersey.server.model.ResourceMethod;
 import org.glassfish.jersey.server.model.ResourceModel;
@@ -43,14 +46,17 @@ import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.http.api.HttpExecutionStrategies.customStrategyBuilder;
 import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static java.util.Arrays.stream;
 import static java.util.Collections.emptyMap;
+import static org.glassfish.jersey.model.Parameter.Source.ENTITY;
 
 final class RouteExecutionStrategyUtils {
     private static final class RouteExecutionStrategyValidator implements ResourceModelVisitor {
         private final Function<String, HttpExecutionStrategy> routeStrategyFactory;
         private final Map<String, HttpExecutionStrategy> routeStrategies;
+        private final Map<Method, HttpExecutionStrategy> methodDefaultStrategies;
         private final Set<String> errors;
         private final Deque<ResourceMethod> resourceMethodDeque;
 
@@ -58,6 +64,7 @@ final class RouteExecutionStrategyUtils {
             this.routeStrategyFactory = routeStrategyFactory;
 
             routeStrategies = new HashMap<>();
+            methodDefaultStrategies = new HashMap<>();
             errors = new TreeSet<>();
             resourceMethodDeque = new ArrayDeque<>();
         }
@@ -84,7 +91,10 @@ final class RouteExecutionStrategyUtils {
 
         @Override
         public void visitInvocable(final Invocable invocable) {
-            validate(id -> routeStrategies.computeIfAbsent(id, routeStrategyFactory), resourceMethodDeque.peek(),
+            methodDefaultStrategies.put(invocable.getHandlingMethod(), computeDefaultExecutionStrategy(invocable));
+
+            validateRouteExecutionStrategyAnnotationIfPresent(
+                    id -> routeStrategies.computeIfAbsent(id, routeStrategyFactory), resourceMethodDeque.peek(),
                     invocable.getHandler().getHandlerClass(), invocable.getHandlingMethod(), errors);
         }
 
@@ -117,6 +127,12 @@ final class RouteExecutionStrategyUtils {
         }
     }
 
+    private static final HttpExecutionStrategy OFFLOAD_RECEIVE_META = customStrategyBuilder()
+            .offloadReceiveMetadata().build();
+    private static final HttpExecutionStrategy OFFLOAD_RECEIVE_META_AND_SEND = customStrategyBuilder()
+            .offloadReceiveMetadata().offloadSend().build();
+    private static final HttpExecutionStrategy OFFLOAD_ALL = customStrategyBuilder().offloadAll().build();
+
     private RouteExecutionStrategyUtils() {
         // no instances
     }
@@ -127,7 +143,7 @@ final class RouteExecutionStrategyUtils {
         final ExtendedResourceContext resourceContext =
                 applicationHandler.getInjectionManager().getInstance(ExtendedResourceContext.class);
         if (resourceContext == null) {
-            return new RouteStrategiesConfig(emptyMap());
+            return new RouteStrategiesConfig(emptyMap(), emptyMap());
         }
 
         final RouteExecutionStrategyValidator validator = new RouteExecutionStrategyValidator(routeStrategyFactory);
@@ -136,23 +152,24 @@ final class RouteExecutionStrategyUtils {
             throw new IllegalArgumentException("Invalid execution strategy configuration found:\n" + validator.errors);
         }
 
-        return new RouteStrategiesConfig(validator.routeStrategies);
+        return new RouteStrategiesConfig(validator.routeStrategies, validator.methodDefaultStrategies);
     }
 
-    @Nullable
     static HttpExecutionStrategy getRouteExecutionStrategy(final Class<?> clazz,
                                                            final Method method,
                                                            final RouteStrategiesConfig routeStrategiesConfig) {
 
-        Annotation annotation = getRouteExecutionStrategyAnnotation(clazz, method);
+        final Annotation annotation = getRouteExecutionStrategyAnnotation(clazz, method);
         if (annotation == null) {
-            return null;
+            // This can never be null because all methods known to Jersey have been introspected
+            return routeStrategiesConfig.methodDefaultStrategies.get(method);
         }
 
         if (annotation instanceof NoOffloadsRouteExecutionStrategy) {
             return noOffloadsStrategy();
         }
 
+        // This can never be null because we have pre-validated that all route strategy IDs exist at startup
         return routeStrategiesConfig.routeStrategies.get(((RouteExecutionStrategy) annotation).id());
     }
 
@@ -174,11 +191,38 @@ final class RouteExecutionStrategyUtils {
         return clazz.getAnnotation(RouteExecutionStrategy.class);
     }
 
-    private static void validate(final Function<String, HttpExecutionStrategy> routeStrategyFactory,
-                                 @Nullable final ResourceMethod resourceMethod,
-                                 final Class<?> clazz,
-                                 final Method method,
-                                 final Set<String> errors) {
+    private static HttpExecutionStrategy computeDefaultExecutionStrategy(final Invocable invocable) {
+        final Parameter entityParam = invocable.getParameters().stream().filter(p -> p.getSource() == ENTITY)
+                .findFirst()
+                .orElse(null);
+
+        boolean consumesStreaming = entityParam != null &&
+                Publisher.class.isAssignableFrom(entityParam.getRawType());
+        boolean consumesAsync = consumesStreaming ||
+                (entityParam != null && Single.class.isAssignableFrom(entityParam.getRawType()));
+        boolean producesStreaming = Publisher.class.isAssignableFrom(invocable.getRawResponseType());
+        boolean producesAsync = producesStreaming ||
+                Single.class.isAssignableFrom(invocable.getRawResponseType()) ||
+                Completable.class.isAssignableFrom(invocable.getRawResponseType());
+
+        if (!consumesAsync && !producesAsync) {
+            // blocking-aggregated
+            return OFFLOAD_RECEIVE_META;
+        } else if (consumesAsync && !consumesStreaming && producesAsync && !producesStreaming) {
+            // async-aggregated
+            return OFFLOAD_RECEIVE_META_AND_SEND;
+        } else {
+            // default to async-streaming, as it has the most aggressive offloading strategy
+            return OFFLOAD_ALL;
+        }
+    }
+
+    private static void validateRouteExecutionStrategyAnnotationIfPresent(
+            final Function<String, HttpExecutionStrategy> routeStrategyFactory,
+            @Nullable final ResourceMethod resourceMethod,
+            final Class<?> clazz,
+            final Method method,
+            final Set<String> errors) {
 
         final Annotation annotation;
 
