@@ -29,6 +29,8 @@ import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ExecutionContext;
 
 import org.glassfish.jersey.internal.util.collection.Ref;
+import org.glassfish.jersey.server.ExtendedUriInfo;
+import org.glassfish.jersey.server.model.ResourceMethod;
 
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -120,10 +122,9 @@ final class JacksonSerializerMessageBodyReaderWriter implements MessageBodyReade
     public boolean isWriteable(final Class<?> type, final Type genericType, final Annotation[] annotations,
                                final MediaType mediaType) {
 
-        return isSupportedMediaType(mediaType);
+        return !isSse(requestCtxProvider.get()) && isSupportedMediaType(mediaType);
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     public void writeTo(final Object o, final Class<?> type, final Type genericType, final Annotation[] annotations,
                         final MediaType mediaType, final MultivaluedMap<String, Object> httpHeaders,
@@ -195,6 +196,11 @@ final class JacksonSerializerMessageBodyReaderWriter implements MessageBodyReade
                                    final Class<T> type, final int contentLength,
                                    final BufferAllocator allocator) {
         return awaitResult(deserialize(bufferPublisher, ser, type, contentLength, allocator).toFuture());
+    }
+
+    private static boolean isSse(ContainerRequestContext requestCtx) {
+        final ResourceMethod method = ((ExtendedUriInfo) requestCtx.getUriInfo()).getMatchedResourceMethod();
+        return method != null && method.isSse();
     }
 
     private static boolean isSupportedMediaType(final MediaType mediaType) {

@@ -40,6 +40,7 @@ import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.MessageBodyWriter;
 
 import static io.servicetalk.http.router.jersey.AbstractMessageBodyReaderWriter.getRequestContentLength;
+import static io.servicetalk.http.router.jersey.AbstractMessageBodyReaderWriter.isSse;
 import static io.servicetalk.http.router.jersey.AbstractMessageBodyReaderWriter.newBufferForRequestContent;
 import static io.servicetalk.http.router.jersey.internal.BufferPublisherInputStream.handleEntityStream;
 import static io.servicetalk.http.router.jersey.internal.RequestProperties.setResponseBufferPublisher;
@@ -107,7 +108,7 @@ final class BufferMessageBodyReaderWriter implements MessageBodyReader<Buffer>, 
                                final Type genericType,
                                final Annotation[] annotations,
                                final MediaType mediaType) {
-        return Buffer.class.isAssignableFrom(type);
+        return !isSse(requestCtxProvider.get()) && Buffer.class.isAssignableFrom(type);
     }
 
     @Override
