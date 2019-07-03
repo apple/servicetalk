@@ -28,6 +28,17 @@ public final class FlowControlUtil {
     }
 
     /**
+     * If {@code x} is {@code >=-1} this method behaves the same as {@link #addWithOverflowProtection(long, long)}.
+     * If {@code x} is {@code <-1} then {@code x} is returned.
+     * @param x first value (may be negative).
+     * @param y second value (should be positive).
+     * @return The result of {@code x+y} or {@link Long#MAX_VALUE} if overflow occurs, or {@code x} if {@code x<-1}.
+     */
+    public static long addWithOverflowProtectionIfGtEqNegativeOne(long x, long y) {
+        return x < -1 ? x : addWithOverflowProtection(x, y);
+    }
+
+    /**
      * If {@code x} is non-negative this method behaves the same as {@link #addWithOverflowProtection(long, long)}.
      * If {@code x} is negative then {@code x} is returned.
      * @param x first value (may be negative).
