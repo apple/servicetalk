@@ -31,6 +31,7 @@ import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 
@@ -116,6 +117,94 @@ public class PublisherConcatWithSingleTest {
     @Test
     public void onSuccessWithNullBeforeRequest() {
         testOnSuccessBeforeRequest(null);
+    }
+
+    @Test
+    public void invalidRequestNNegative1BeforeProcessingSingle() {
+        invalidRequestNWhenProcessingSingle(-1, true);
+    }
+
+    @Test
+    public void invalidRequestNNegative1AfterProcessingSingle() {
+        invalidRequestNWhenProcessingSingle(-1, false);
+    }
+
+    @Test
+    public void invalidRequestNZeroBeforeProcessingSingle() {
+        invalidRequestNWhenProcessingSingle(0, true);
+    }
+
+    @Test
+    public void invalidRequestNZeroAfterProcessingSingle() {
+        invalidRequestNWhenProcessingSingle(0, false);
+    }
+
+    @Test
+    public void invalidRequestNLongMinBeforeProcessingSingle() {
+        invalidRequestNWhenProcessingSingle(Long.MIN_VALUE, true);
+    }
+
+    @Test
+    public void invalidRequestNLongMinAfterProcessingSingle() {
+        invalidRequestNWhenProcessingSingle(Long.MIN_VALUE, false);
+    }
+
+    @Test
+    public void validRequestNAfterInvalidRequestNNegative1AfterProcessingSingle() {
+        validRequestNAfterInvalidRequestNWhenProcessingSingle(-1, false);
+    }
+
+    @Test
+    public void validRequestNAfterInvalidRequestNNegative1BeforeProcessingSingle() {
+        validRequestNAfterInvalidRequestNWhenProcessingSingle(-1, true);
+    }
+
+    @Test
+    public void validRequestNAfterInvalidRequestNZeroBeforeProcessingSingle() {
+        validRequestNAfterInvalidRequestNWhenProcessingSingle(0, true);
+    }
+
+    @Test
+    public void validRequestNAfterInvalidRequestNZeroAfterProcessingSingle() {
+        validRequestNAfterInvalidRequestNWhenProcessingSingle(0, false);
+    }
+
+    @Test
+    public void validRequestNAfterInvalidRequestNLongMinBeforeProcessingSingle() {
+        validRequestNAfterInvalidRequestNWhenProcessingSingle(Long.MIN_VALUE, true);
+    }
+
+    @Test
+    public void validRequestNAfterInvalidRequestNLongMinAfterProcessingSingle() {
+        validRequestNAfterInvalidRequestNWhenProcessingSingle(Long.MIN_VALUE, false);
+    }
+
+    private void validRequestNAfterInvalidRequestNWhenProcessingSingle(long n, boolean requestNBeforeSuccess) {
+        completeSource();
+        if (requestNBeforeSuccess) {
+            subscriber.request(n);
+            subscriber.request(Long.MAX_VALUE);
+        }
+        single.onSuccess(10L);
+        if (!requestNBeforeSuccess) {
+            subscriber.request(n);
+            subscriber.request(Long.MAX_VALUE);
+        }
+        assertThat("Unexpected termination (expected error).", subscriber.takeError(),
+                is(instanceOf(IllegalArgumentException.class)));
+    }
+
+    private void invalidRequestNWhenProcessingSingle(long n, boolean requestNBeforeSuccess) {
+        completeSource();
+        if (requestNBeforeSuccess) {
+            subscriber.request(n);
+        }
+        single.onSuccess(10L);
+        if (!requestNBeforeSuccess) {
+            subscriber.request(n);
+        }
+        assertThat("Unexpected termination (expected error).", subscriber.takeError(),
+                is(instanceOf(IllegalArgumentException.class)));
     }
 
     private void testOnSuccessBeforeRequest(@Nullable Long nextResult) {
