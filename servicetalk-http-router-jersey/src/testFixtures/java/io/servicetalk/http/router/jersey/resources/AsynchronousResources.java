@@ -57,6 +57,7 @@ import javax.ws.rs.container.Suspended;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.GenericEntity;
 import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.sse.OutboundSseEvent;
 import javax.ws.rs.sse.Sse;
@@ -97,7 +98,8 @@ public class AsynchronousResources {
 
     private static final Serializer SERIALIZER = new DefaultSerializer(new JacksonSerializationProvider());
     private static final TypeHolder<Map<String, Object>> STRING_OBJECT_MAP_TYPE =
-            new TypeHolder<Map<String, Object>>() { };
+            new TypeHolder<Map<String, Object>>() {
+            };
 
     @Context
     private ConnectionContext ctx;
@@ -551,9 +553,7 @@ public class AsynchronousResources {
         scheduleSseEventSend(new SseEmitter() {
             @Override
             public CompletionStage<?> emit(final OutboundSseEvent event) {
-                // This returns null :( for the moment (JerseySseBroadcaster not fully implemented yet)
-                sseBroadcaster.broadcast(event);
-                return completedFuture(null);
+                return sseBroadcaster.broadcast(event);
             }
 
             @Override
@@ -561,6 +561,17 @@ public class AsynchronousResources {
                 sseBroadcaster.close();
             }
         }, sse, Refs.of(0), ctx.executionContext().executor());
+    }
+
+    @Produces(SERVER_SENT_EVENTS)
+    @Path("/sse/unsupported")
+    @GET
+    public void getSseUnsupportedType(@Context final SseEventSink eventSink,
+                                      @Context final Sse sse) {
+        eventSink.send(sse.newEventBuilder()
+                .data(Buffer.class, ctx.executionContext().bufferAllocator().fromAscii("foo"))
+                .mediaType(MediaType.TEXT_PLAIN_TYPE)
+                .build());
     }
 
     private interface SseEmitter {

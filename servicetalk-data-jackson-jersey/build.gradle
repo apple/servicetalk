@@ -43,7 +43,7 @@ dependencies {
   implementation "io.servicetalk:servicetalk-http-router-jersey-internal:$project.version"
   implementation "io.servicetalk:servicetalk-http-utils:$project.version"
   implementation "io.servicetalk:servicetalk-transport-netty:$project.version"
-  implementation "org.glassfish.jersey.core:jersey-common"
+  implementation "org.glassfish.jersey.core:jersey-server"
   implementation "org.slf4j:slf4j-api"
 
   testImplementation "io.servicetalk:servicetalk-concurrent-api-testFixtures:$project.version"

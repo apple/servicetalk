@@ -21,6 +21,8 @@ import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.transport.api.ConnectionContext;
 
 import org.glassfish.jersey.internal.util.collection.Ref;
+import org.glassfish.jersey.server.ExtendedUriInfo;
+import org.glassfish.jersey.server.model.ResourceMethod;
 
 import java.io.InputStream;
 import java.lang.annotation.Annotation;
@@ -95,7 +97,7 @@ abstract class AbstractMessageBodyReaderWriter<Source, T, SourceOfT, WrappedSour
                                      final Type genericType,
                                      final Annotation[] annotations,
                                      final MediaType mediaType) {
-        return isSupported(genericType);
+        return !isSse(requestCtxProvider.get()) && isSupported(genericType);
     }
 
     final void writeTo(final Publisher<Buffer> publisher) throws WebApplicationException {
@@ -131,6 +133,11 @@ abstract class AbstractMessageBodyReaderWriter<Source, T, SourceOfT, WrappedSour
     static Buffer newBufferForRequestContent(final int contentLength,
                                              final BufferAllocator allocator) {
         return contentLength == -1 ? allocator.newBuffer() : allocator.newBuffer(contentLength);
+    }
+
+    static boolean isSse(ContainerRequestContext requestCtx) {
+        final ResourceMethod method = ((ExtendedUriInfo) requestCtx.getUriInfo()).getMatchedResourceMethod();
+        return method != null && method.isSse();
     }
 
     @Nullable
