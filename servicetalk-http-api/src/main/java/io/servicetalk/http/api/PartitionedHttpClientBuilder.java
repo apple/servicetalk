@@ -24,8 +24,8 @@ import io.servicetalk.client.api.partition.PartitionAttributes;
 import io.servicetalk.client.api.partition.PartitionMapFactory;
 import io.servicetalk.client.api.partition.PartitionedServiceDiscovererEvent;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
+import io.servicetalk.transport.api.ClientSslConfigBuilder;
 import io.servicetalk.transport.api.IoExecutor;
-import io.servicetalk.transport.api.SslConfig;
 
 import java.net.SocketOption;
 import java.util.function.BiFunction;
@@ -125,6 +125,9 @@ public abstract class PartitionedHttpClientBuilder<U, R>
             Function<U, CharSequence> unresolvedAddressToHostFunction);
 
     @Override
+    public abstract ClientSslConfigBuilder<? extends PartitionedHttpClientBuilder<U, R>> enableSsl();
+
+    @Override
     public abstract PartitionedHttpClientBuilder<U, R> appendClientFilter(StreamingHttpClientFilterFactory function);
 
     @Override
@@ -133,9 +136,6 @@ public abstract class PartitionedHttpClientBuilder<U, R>
         return (PartitionedHttpClientBuilder<U, R>)
                 super.appendClientFilter(predicate, factory);
     }
-
-    @Override
-    public abstract PartitionedHttpClientBuilder<U, R> sslConfig(@Nullable SslConfig sslConfig);
 
     /**
      * Sets the maximum amount of {@link ServiceDiscovererEvent} objects that will be queued for each partition.
