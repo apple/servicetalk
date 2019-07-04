@@ -27,6 +27,7 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.http.api.CharSequences;
 import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
@@ -42,15 +43,17 @@ import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.tcp.netty.internal.TcpClientConfig;
+import io.servicetalk.transport.api.ChainingSslConfigBuilders;
+import io.servicetalk.transport.api.ClientSslConfigBuilder;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.IoExecutor;
-import io.servicetalk.transport.api.SslConfig;
 
 import io.netty.util.NetUtil;
 
 import java.net.InetSocketAddress;
 import java.net.SocketOption;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
 import static io.netty.util.NetUtil.toSocketAddressString;
@@ -83,8 +86,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
     private final ClientStrategyInfluencerChainBuilder influencerChainBuilder;
     private LoadBalancerFactory<R, StreamingHttpConnection> loadBalancerFactory;
     private ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> serviceDiscoverer;
-    private Function<U, CharSequence> hostToCharSequenceFunction =
-            DefaultSingleAddressHttpClientBuilder::unresolvedAddressToCharSequence;
+    private Function<U, CharSequence> hostToCharSequenceFunction = this::toAuthorityForm;
     @Nullable
     private Function<U, StreamingHttpClientFilterFactory> hostHeaderFilterFactoryFunction =
             address -> new HostHeaderHttpRequesterFilter(hostToCharSequenceFunction.apply(address));
@@ -501,9 +503,20 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
     }
 
     @Override
-    public DefaultSingleAddressHttpClientBuilder<U, R> sslConfig(@Nullable final SslConfig sslConfig) {
-        config.tcpClientConfig().sslConfig(sslConfig);
-        return this;
+    public ClientSslConfigBuilder<DefaultSingleAddressHttpClientBuilder<U, R>> enableSsl() {
+        assert address != null;
+        return ChainingSslConfigBuilders.forClient(
+                () -> this, sslConfig -> config.tcpClientConfig().sslConfig(sslConfig),
+                unresolvedHostFunction(address).toString(),
+                unresolvedPortFunction(address));
+    }
+
+    <F> ClientSslConfigBuilder<F> enableSsl(Supplier<F> finisher) {
+        assert address != null;
+        return ChainingSslConfigBuilders.forClient(
+                finisher, sslConfig -> config.tcpClientConfig().sslConfig(sslConfig),
+                unresolvedHostFunction(address).toString(),
+                unresolvedPortFunction(address));
     }
 
     void appendToStrategyInfluencer(MultiAddressHttpClientFilterFactory<U> multiAddressHttpClientFilterFactory) {
@@ -520,7 +533,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
                 Boolean.valueOf(System.getProperty("io.servicetalk.http.netty.reserved.connections.pipeline", "true"));
     }
 
-    private static <U> CharSequence unresolvedAddressToCharSequence(final U address) {
+    private CharSequence toAuthorityForm(final U address) {
         if (address instanceof CharSequence) {
             return (CharSequence) address;
         }
@@ -533,6 +546,36 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
         }
         throw new IllegalArgumentException("Unsupported address type, unable to convert " + address.getClass() +
                 " to CharSequence");
+    }
+
+    private CharSequence unresolvedHostFunction(final U address) {
+        if (address instanceof HostAndPort) {
+            return ((HostAndPort) address).hostName();
+        }
+        if (address instanceof InetSocketAddress) {
+            return ((InetSocketAddress) address).getHostString();
+        }
+        CharSequence cs = hostToCharSequenceFunction.apply(address);
+        int colon = CharSequences.indexOf(cs, ':', 0);
+        if (colon < 0) {
+            return cs;
+        }
+        return cs.subSequence(0, colon);
+    }
+
+    private int unresolvedPortFunction(final U address) {
+        if (address instanceof HostAndPort) {
+            return ((HostAndPort) address).port();
+        }
+        if (address instanceof InetSocketAddress) {
+            return ((InetSocketAddress) address).getPort();
+        }
+        CharSequence cs = hostToCharSequenceFunction.apply(address);
+        int colon = CharSequences.indexOf(cs, ':', 0);
+        if (colon < 0) {
+            return -1;
+        }
+        return Integer.parseInt(cs.subSequence(colon + 1, cs.length() - 1).toString());
     }
 
     private static final class StrategyInfluencingLoadBalancerFactory<R>

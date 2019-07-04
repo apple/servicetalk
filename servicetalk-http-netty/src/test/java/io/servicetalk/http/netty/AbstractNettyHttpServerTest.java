@@ -37,8 +37,6 @@ import io.servicetalk.transport.api.DelegatingConnectionAcceptor;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.ServerContext;
-import io.servicetalk.transport.api.SslConfig;
-import io.servicetalk.transport.api.SslConfigBuilder;
 import io.servicetalk.transport.netty.IoThreadFactory;
 import io.servicetalk.transport.netty.NettyIoExecutors;
 
@@ -143,11 +141,8 @@ public abstract class AbstractNettyHttpServerTest {
                 .executionStrategy(defaultStrategy(serverExecutor))
                 .socketOption(StandardSocketOptions.SO_SNDBUF, 100);
         if (sslEnabled) {
-            final SslConfig sslConfig = SslConfigBuilder.forServer(
-                    DefaultTestCerts::loadServerPem,
-                    DefaultTestCerts::loadServerKey)
-                    .build();
-            serverBuilder.sslConfig(sslConfig);
+            serverBuilder.enableSsl(DefaultTestCerts::loadServerPem,
+                    DefaultTestCerts::loadServerKey).finish();
         }
         serverContext = awaitIndefinitelyNonNull(listen(serverBuilder.ioExecutor(serverIoExecutor)
                 .appendConnectionAcceptorFilter(original -> new DelegatingConnectionAcceptor(connectionAcceptor)))
@@ -156,9 +151,7 @@ public abstract class AbstractNettyHttpServerTest {
 
         final SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> clientBuilder = newClientBuilder();
         if (sslEnabled) {
-            final SslConfig sslConfig = SslConfigBuilder.forClientWithoutServerIdentity()
-                    .trustManager(DefaultTestCerts::loadMutualAuthCaPem).build();
-            clientBuilder.sslConfig(sslConfig);
+            clientBuilder.enableSsl().trustManager(DefaultTestCerts::loadMutualAuthCaPem).finish();
         }
         httpClient = clientBuilder.ioExecutor(clientIoExecutor)
                 .executionStrategy(defaultStrategy(clientExecutor)).buildStreaming();

@@ -23,7 +23,8 @@ import io.servicetalk.test.resources.DefaultTestCerts;
 import io.servicetalk.transport.api.ConnectionAcceptor;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.api.SslConfig;
-import io.servicetalk.transport.api.SslConfigBuilder;
+import io.servicetalk.transport.api.SslConfigBuilders;
+import io.servicetalk.transport.api.TestSslConfigBuilders;
 import io.servicetalk.transport.netty.IoThreadFactory;
 import io.servicetalk.transport.netty.internal.ExecutionContextRule;
 import io.servicetalk.transport.netty.internal.NettyConnection;
@@ -98,7 +99,7 @@ public abstract class AbstractTcpServerTest {
     TcpClientConfig getTcpClientConfig() {
         TcpClientConfig tcpClientConfig = new TcpClientConfig(false);
         if (sslEnabled) {
-            final SslConfig sslConfig = SslConfigBuilder.forClientWithoutServerIdentity()
+            final SslConfig sslConfig = TestSslConfigBuilders.forClientWithoutVerificationOrSni()
                     .trustManager(DefaultTestCerts::loadMutualAuthCaPem).build();
             tcpClientConfig = tcpClientConfig.sslConfig(sslConfig);
         }
@@ -114,7 +115,7 @@ public abstract class AbstractTcpServerTest {
     TcpServerConfig getTcpServerConfig() {
         TcpServerConfig tcpServerConfig = new TcpServerConfig(false);
         if (sslEnabled) {
-            final SslConfig sslConfig = SslConfigBuilder.forServer(
+            final SslConfig sslConfig = SslConfigBuilders.forServer(
                     DefaultTestCerts::loadServerPem,
                     DefaultTestCerts::loadServerKey)
                     .build();

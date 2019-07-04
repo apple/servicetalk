@@ -204,4 +204,12 @@ public interface SslConfig {
      * <a href="https://tools.ietf.org/search/rfc2818#section-3.1">server identity</a>.
      */
     int hostnameVerificationPort();
+
+    /**
+     * The <a href="https://tools.ietf.org/html/rfc6066#section-3">SNI</a> host name.
+     *
+     * @return The <a href="https://tools.ietf.org/html/rfc6066#section-3">SNI</a> host name.
+     */
+    @Nullable
+    String sniHostname();
 }
