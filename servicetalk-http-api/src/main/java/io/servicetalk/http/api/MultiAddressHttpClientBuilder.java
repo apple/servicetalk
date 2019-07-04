@@ -25,7 +25,7 @@ import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.IoExecutor;
 
 import java.net.SocketOption;
-import java.util.function.BiFunction;
+import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -94,16 +94,13 @@ public abstract class MultiAddressHttpClientBuilder<U, R>
 
     /**
      * Sets a function that is used for configuring SSL/TLS for https requests.
-     * Pass {@code null} for {@code sslConfigFunction} to un-set any previously set function and use the default SSL/TLS
-     * configuration instead.
-     * <p>
-     * Note: Returning {@code null} from the function will result in SSL/TLS <b>not</b> being configured.
      *
      * @param sslConfigFunction The function to use for configuring SSL/TLS for https requests.
      * @return {@code this}
      */
     public abstract MultiAddressHttpClientBuilder<U, R> configureSsl(
-            BiFunction<HostAndPort, ClientSslConfigBuilder<?>, ClientSslConfigBuilder<?>> sslConfigFunction);
+            BiConsumer<HostAndPort, ClientSslConfigBuilder<? extends SingleAddressHttpClientBuilder<U, R>>>
+                    sslConfigFunction);
 
     @Override
     public abstract MultiAddressHttpClientBuilder<U, R> appendConnectionFilter(

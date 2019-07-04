@@ -115,11 +115,4 @@ abstract class BaseSingleAddressHttpClientBuilder<U, R, SDE extends ServiceDisco
      * @return an {@link ClientSslConfigBuilder} for configuring SSL/TLS.
      */
     public abstract ClientSslConfigBuilder<? extends BaseSingleAddressHttpClientBuilder<U, R, SDE>> enableSsl();
-
-    /**
-     * Disable SSL/TLS.
-     *
-     * @return {@code this}
-     */
-    public abstract BaseSingleAddressHttpClientBuilder<U, R, SDE> disableSsl();
 }

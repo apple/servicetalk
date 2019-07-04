@@ -58,7 +58,7 @@ import java.net.SocketOption;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.function.BiFunction;
+import java.util.function.BiConsumer;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
@@ -95,7 +95,8 @@ final class DefaultMultiAddressUrlHttpClientBuilder extends MultiAddressHttpClie
     @Nullable
     private Function<HostAndPort, CharSequence> unresolvedAddressToHostFunction;
     @Nullable
-    private BiFunction<HostAndPort, ClientSslConfigBuilder<?>, ClientSslConfigBuilder<?>> sslConfigFunction;
+    private BiConsumer<HostAndPort, ClientSslConfigBuilder<?
+            extends SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress>>> sslConfigFunction;
 
     DefaultMultiAddressUrlHttpClientBuilder(
             final DefaultSingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builderTemplate) {
@@ -223,13 +224,15 @@ final class DefaultMultiAddressUrlHttpClientBuilder extends MultiAddressHttpClie
         @Nullable
         private final Function<HostAndPort, CharSequence> hostHeaderTransformer;
         @Nullable
-        private BiFunction<HostAndPort, ClientSslConfigBuilder<?>, ClientSslConfigBuilder<?>> sslConfigFunction;
+        private BiConsumer<HostAndPort, ClientSslConfigBuilder<? extends
+                SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress>>> sslConfigFunction;
 
         ClientFactory(
                 final DefaultSingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builderTemplate,
                 @Nullable final MultiAddressHttpClientFilterFactory<HostAndPort> clientFilterFactory,
                 @Nullable final Function<HostAndPort, CharSequence> hostHeaderTransformer,
-                @Nullable final BiFunction<HostAndPort, ClientSslConfigBuilder<?>, ClientSslConfigBuilder<?>>
+                @Nullable final BiConsumer<HostAndPort, ClientSslConfigBuilder<? extends
+                        SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress>>>
                         sslConfigFunction) {
             this.builderTemplate = builderTemplate;
             this.clientFilterFactory = clientFilterFactory;
@@ -248,13 +251,12 @@ final class DefaultMultiAddressUrlHttpClientBuilder extends MultiAddressHttpClie
             }
 
             if ("https".equalsIgnoreCase(urlKey.scheme)) {
-                ClientSslConfigBuilder<?> sslConfigBuilder = buildContext.builder.enableSsl();
+                final ClientSslConfigBuilder<DefaultSingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress>>
+                        sslConfigBuilder = buildContext.builder.enableSsl();
                 if (sslConfigFunction != null) {
-                    sslConfigBuilder = sslConfigFunction.apply(urlKey.hostAndPort, sslConfigBuilder);
+                    sslConfigFunction.accept(urlKey.hostAndPort, sslConfigBuilder);
                 }
-                if (sslConfigBuilder != null) {
-                    sslConfigBuilder.finish();
-                }
+                sslConfigBuilder.finish();
             }
 
             if (clientFilterFactory != null) {
@@ -441,8 +443,9 @@ final class DefaultMultiAddressUrlHttpClientBuilder extends MultiAddressHttpClie
 
     @Override
     public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> configureSsl(
-            BiFunction<HostAndPort, ClientSslConfigBuilder<?>, ClientSslConfigBuilder<?>> sslConfigFunction) {
-        this.sslConfigFunction = sslConfigFunction;
+            BiConsumer<HostAndPort, ClientSslConfigBuilder<? extends
+                    SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress>>> sslConfigFunction) {
+        this.sslConfigFunction = requireNonNull(sslConfigFunction);
         return this;
     }
 

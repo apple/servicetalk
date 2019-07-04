@@ -519,12 +519,6 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
                 unresolvedPortFunction(address));
     }
 
-    @Override
-    public DefaultSingleAddressHttpClientBuilder<U, R> disableSsl() {
-        config.tcpClientConfig().sslConfig(null);
-        return this;
-    }
-
     void appendToStrategyInfluencer(MultiAddressHttpClientFilterFactory<U> multiAddressHttpClientFilterFactory) {
         influencerChainBuilder.add(multiAddressHttpClientFilterFactory);
     }
@@ -540,11 +534,18 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
     }
 
     private CharSequence toAuthorityForm(final U address) {
-        final int port = unresolvedPortFunction(address);
-        if (port < 0) {
-            return unresolvedHostFunction(address);
+        if (address instanceof CharSequence) {
+            return (CharSequence) address;
         }
-        return unresolvedHostFunction(address) + ":" + port;
+        if (address instanceof HostAndPort) {
+            final HostAndPort hostAndPort = (HostAndPort) address;
+            return toSocketAddressString(hostAndPort.hostName(), hostAndPort.port());
+        }
+        if (address instanceof InetSocketAddress) {
+            return toSocketAddressString((InetSocketAddress) address);
+        }
+        throw new IllegalArgumentException("Unsupported address type, unable to convert " + address.getClass() +
+                " to CharSequence");
     }
 
     private CharSequence unresolvedHostFunction(final U address) {

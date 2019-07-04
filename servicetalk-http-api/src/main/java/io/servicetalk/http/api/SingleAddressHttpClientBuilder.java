@@ -130,7 +130,4 @@ public abstract class SingleAddressHttpClientBuilder<U, R>
 
     @Override
     public abstract ClientSslConfigBuilder<? extends SingleAddressHttpClientBuilder<U, R>> enableSsl();
-
-    @Override
-    public abstract SingleAddressHttpClientBuilder<U, R> disableSsl();
 }

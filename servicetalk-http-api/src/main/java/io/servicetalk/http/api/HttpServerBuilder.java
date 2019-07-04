@@ -118,6 +118,7 @@ public abstract class HttpServerBuilder {
 
     /**
      * Allows to setup SNI.
+     * <p>
      * You can either use {@link #enableSsl(Supplier, Supplier)}/{@link #enableSsl(Supplier, Supplier, String)}
      * or this method.
      *
@@ -131,7 +132,7 @@ public abstract class HttpServerBuilder {
     public abstract HttpServerBuilder sniConfig(@Nullable Map<String, SslConfig> mappings, SslConfig defaultConfig);
 
     /**
-     * Enable SSL/TLS, and return a builder for configuring it.  Call {@link ServerSslConfigBuilder#finish()} to
+     * Enable SSL/TLS, and return a builder for configuring it. Call {@link ServerSslConfigBuilder#finish()} to
      * return to configuring the HTTP server.
      *
      * @param keyManagerFactory an {@link KeyManagerFactory}.
@@ -140,7 +141,7 @@ public abstract class HttpServerBuilder {
     public abstract ServerSslConfigBuilder<HttpServerBuilder> enableSsl(KeyManagerFactory keyManagerFactory);
 
     /**
-     * Enable SSL/TLS, and return a builder for configuring it.  Call {@link ServerSslConfigBuilder#finish()} to
+     * Enable SSL/TLS, and return a builder for configuring it. Call {@link ServerSslConfigBuilder#finish()} to
      * return to configuring the HTTP server.
      *
      * @param keyCertChainSupplier an {@link Supplier} that will provide an input stream for a X.509 certificate chain
@@ -158,7 +159,7 @@ public abstract class HttpServerBuilder {
                                                                         Supplier<InputStream> keySupplier);
 
     /**
-     * Enable SSL/TLS, and return a builder for configuring it.  Call {@link ServerSslConfigBuilder#finish()} to
+     * Enable SSL/TLS, and return a builder for configuring it. Call {@link ServerSslConfigBuilder#finish()} to
      * return to configuring the HTTP server.
      *
      * @param keyCertChainSupplier an {@link Supplier} that will provide an input stream for a X.509 certificate chain

@@ -380,12 +380,6 @@ class DefaultPartitionedHttpClientBuilder<U, R> extends PartitionedHttpClientBui
     }
 
     @Override
-    public PartitionedHttpClientBuilder<U, R> disableSsl() {
-        builderTemplate.disableSsl();
-        return this;
-    }
-
-    @Override
     public PartitionedHttpClientBuilder<U, R> serviceDiscoveryMaxQueueSize(final int serviceDiscoveryMaxQueueSize) {
         this.serviceDiscoveryMaxQueueSize = serviceDiscoveryMaxQueueSize;
         return this;

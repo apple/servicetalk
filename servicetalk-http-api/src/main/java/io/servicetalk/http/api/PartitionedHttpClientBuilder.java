@@ -128,9 +128,6 @@ public abstract class PartitionedHttpClientBuilder<U, R>
     public abstract ClientSslConfigBuilder<? extends PartitionedHttpClientBuilder<U, R>> enableSsl();
 
     @Override
-    public abstract PartitionedHttpClientBuilder<U, R> disableSsl();
-
-    @Override
     public abstract PartitionedHttpClientBuilder<U, R> appendClientFilter(StreamingHttpClientFilterFactory function);
 
     @Override
