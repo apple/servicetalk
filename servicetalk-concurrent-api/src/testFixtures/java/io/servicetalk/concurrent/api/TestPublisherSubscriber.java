@@ -220,6 +220,19 @@ public final class TestPublisherSubscriber<T> implements Subscriber<T>, Subscrip
         private boolean checkDemand = true;
         @Nullable
         private String loggingName;
+        @Nullable
+        private Subscriber<T> subscriber;
+
+        /**
+         * Invoke {@link Subscriber} after all other validation and collection is done.
+         *
+         * @param subscriber the {@link Subscriber} to invoke.
+         * @return this.
+         */
+        public Builder<T> finalDelegate(Subscriber<T> subscriber) {
+            this.subscriber = subscriber;
+            return this;
+        }
 
         /**
          * Enables asserting items are not delivered without sufficient demand. The default is enabled.
@@ -280,6 +293,45 @@ public final class TestPublisherSubscriber<T> implements Subscriber<T>, Subscrip
             final CollectingPublisherSubscriber<T> collector = new CollectingPublisherSubscriber<>();
             Subscriber<T> delegate = collector;
 
+            if (subscriber != null) {
+                delegate = new Subscriber<T>() {
+                    @Override
+                    public void onSubscribe(final Subscription subscription) {
+                        try {
+                            collector.onSubscribe(subscription);
+                        } finally {
+                            subscriber.onSubscribe(subscription);
+                        }
+                    }
+
+                    @Override
+                    public void onNext(@Nullable final T t) {
+                        try {
+                            collector.onNext(t);
+                        } finally {
+                            subscriber.onNext(t);
+                        }
+                    }
+
+                    @Override
+                    public void onError(final Throwable t) {
+                        try {
+                            collector.onError(t);
+                        } finally {
+                            subscriber.onError(t);
+                        }
+                    }
+
+                    @Override
+                    public void onComplete() {
+                        try {
+                            collector.onComplete();
+                        } finally {
+                            subscriber.onComplete();
+                        }
+                    }
+                };
+            }
             if (checkDemand) {
                 delegate = new DemandCheckingSubscriber<>(delegate);
             }

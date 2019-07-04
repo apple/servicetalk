@@ -15,6 +15,7 @@
  */
 package io.servicetalk.concurrent.api.publisher;
 
+import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.api.TestCancellable;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.api.TestPublisherSubscriber;
@@ -23,6 +24,7 @@ import io.servicetalk.concurrent.api.TestSubscription;
 import io.servicetalk.concurrent.internal.TerminalNotification;
 
 import org.junit.Test;
+import org.mockito.stubbing.Answer;
 
 import javax.annotation.Nullable;
 
@@ -34,13 +36,19 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
 
 public class PublisherConcatWithSingleTest {
 
     private final TestSubscription subscription = new TestSubscription();
     private final TestCancellable cancellable = new TestCancellable();
     private final TestPublisher<Long> source = new TestPublisher<>();
-    private final TestPublisherSubscriber<Long> subscriber = new TestPublisherSubscriber<>();
+    @SuppressWarnings("unchecked")
+    private Subscriber<Long> mockSubscriber = (Subscriber<Long>) mock(Subscriber.class);
+    private final TestPublisherSubscriber<Long> subscriber = new TestPublisherSubscriber.Builder<Long>()
+            .finalDelegate(mockSubscriber).build();
     private final TestSingle<Long> single = new TestSingle<>();
 
     public PublisherConcatWithSingleTest() {
@@ -48,6 +56,30 @@ public class PublisherConcatWithSingleTest {
         source.onSubscribe(subscription);
         assertThat("Unexpected termination.", subscriber.isTerminated(), is(false));
         assertThat("Next source subscribed before termination.", single.isSubscribed(), is(false));
+    }
+
+    @Test
+    public void subscriberDemandThenOnNextThrowsSendsOnError() {
+        completeSource();
+        subscriber.request(1);
+        doAnswer((Answer<Void>) invocation -> {
+            throw DELIBERATE_EXCEPTION;
+        }).when(mockSubscriber).onNext(any(Long.class));
+        single.onSuccess(1L);
+        assertThat("Unexpected items emitted.", subscriber.takeItems(), contains(1L));
+        verifySubscriberErrored();
+    }
+
+    @Test
+    public void subscriberOnNextThenDemandThrowsSendsOnError() {
+        completeSource();
+        doAnswer((Answer<Void>) invocation -> {
+            throw DELIBERATE_EXCEPTION;
+        }).when(mockSubscriber).onNext(any(Long.class));
+        single.onSuccess(1L);
+        subscriber.request(1);
+        assertThat("Unexpected items emitted.", subscriber.takeItems(), contains(1L));
+        verifySubscriberErrored();
     }
 
     @Test
