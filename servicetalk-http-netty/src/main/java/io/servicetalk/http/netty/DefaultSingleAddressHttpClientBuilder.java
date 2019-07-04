@@ -549,41 +549,33 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
     }
 
     private CharSequence unresolvedHostFunction(final U address) {
-        if (address instanceof CharSequence) {
-            CharSequence cs = (CharSequence) address;
-            int colon = CharSequences.indexOf(cs, ':', 0);
-            if (colon < 0) {
-                return cs;
-            }
-            return cs.subSequence(0, colon);
-        }
         if (address instanceof HostAndPort) {
             return ((HostAndPort) address).hostName();
         }
         if (address instanceof InetSocketAddress) {
             return ((InetSocketAddress) address).getHostString();
         }
-        throw new IllegalArgumentException("Unsupported address type, unable to convert " + address.getClass() +
-                " to CharSequence");
+        CharSequence cs = hostToCharSequenceFunction.apply(address);
+        int colon = CharSequences.indexOf(cs, ':', 0);
+        if (colon < 0) {
+            return cs;
+        }
+        return cs.subSequence(0, colon);
     }
 
     private int unresolvedPortFunction(final U address) {
-        if (address instanceof CharSequence) {
-            CharSequence cs = (CharSequence) address;
-            int colon = CharSequences.indexOf(cs, ':', 0);
-            if (colon < 0) {
-                return -1;
-            }
-            return Integer.parseInt(cs.subSequence(colon + 1, cs.length() - 1).toString());
-        }
         if (address instanceof HostAndPort) {
             return ((HostAndPort) address).port();
         }
         if (address instanceof InetSocketAddress) {
             return ((InetSocketAddress) address).getPort();
         }
-        throw new IllegalArgumentException("Unsupported address type, unable to convert " + address.getClass() +
-                " to CharSequence");
+        CharSequence cs = hostToCharSequenceFunction.apply(address);
+        int colon = CharSequences.indexOf(cs, ':', 0);
+        if (colon < 0) {
+            return -1;
+        }
+        return Integer.parseInt(cs.subSequence(colon + 1, cs.length() - 1).toString());
     }
 
     private static final class StrategyInfluencingLoadBalancerFactory<R>
