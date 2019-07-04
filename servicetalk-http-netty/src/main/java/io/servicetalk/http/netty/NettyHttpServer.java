@@ -16,7 +16,6 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.concurrent.Cancellable;
-import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.CompletableSource.Processor;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
@@ -89,7 +88,6 @@ import static io.servicetalk.http.netty.HeaderUtils.canAddResponseContentLength;
 import static io.servicetalk.http.netty.HeaderUtils.setResponseContentLength;
 import static io.servicetalk.transport.netty.internal.CloseHandler.forPipelinedRequestResponse;
 import static io.servicetalk.transport.netty.internal.FlushStrategies.flushOnEach;
-import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater;
 
 final class NettyHttpServer {
@@ -572,17 +570,22 @@ final class NettyHttpServer {
 
     /**
      * Equivalent of {@link Processors#newCompletableProcessor()} that doesn't handle multiple
-     * {@link CompletableSource.Subscriber#subscribe(CompletableSource.Subscriber) subscribes}.
+     * {@link Subscriber#subscribe(Subscriber) subscribes} and implements only {@link Subscriber#onComplete()}.
      */
     private static final class SingleSubscribeProcessor extends Completable implements Processor {
+        private static final AtomicReferenceFieldUpdater<SingleSubscribeProcessor, Subscriber> subscriberUpdater =
+                newUpdater(SingleSubscribeProcessor.class, Subscriber.class, "subscriber");
 
+        @SuppressWarnings("unused")
         @Nullable
-        private CompletableSource.Subscriber subscriber;
+        private volatile Subscriber subscriber;
 
         @Override
-        protected void handleSubscribe(final CompletableSource.Subscriber subscriber) {
-            this.subscriber = requireNonNull(subscriber);
+        protected void handleSubscribe(final Subscriber subscriber) {
             subscriber.onSubscribe(IGNORE_CANCEL);
+            if (!subscriberUpdater.compareAndSet(this, null, subscriber)) {
+                subscriber.onComplete();
+            }
         }
 
         @Override
@@ -592,14 +595,16 @@ final class NettyHttpServer {
 
         @Override
         public void onComplete() {
-            assert subscriber != null;
-            subscriber.onComplete();
+            final Subscriber subscriber = subscriberUpdater.getAndSet(this, this);
+            if (subscriber != null) {
+                subscriber.onComplete();
+            }
         }
 
         @Override
         public void onError(final Throwable t) {
-            assert subscriber != null;
-            subscriber.onError(t);
+            // we do not expect onError to be invoked
+            throw new UnsupportedOperationException();
         }
 
         @Override
