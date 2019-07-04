@@ -196,12 +196,12 @@ final class RouteExecutionStrategyUtils {
                 .findFirst()
                 .orElse(null);
 
-        boolean consumesStreaming = entityParam != null &&
+        final boolean consumesStreaming = entityParam != null &&
                 Publisher.class.isAssignableFrom(entityParam.getRawType());
-        boolean consumesAsync = consumesStreaming ||
+        final boolean consumesAsync = consumesStreaming ||
                 (entityParam != null && Single.class.isAssignableFrom(entityParam.getRawType()));
-        boolean producesStreaming = Publisher.class.isAssignableFrom(invocable.getRawResponseType());
-        boolean producesAsync = producesStreaming ||
+        final boolean producesStreaming = Publisher.class.isAssignableFrom(invocable.getRawResponseType());
+        final boolean producesAsync = producesStreaming ||
                 Single.class.isAssignableFrom(invocable.getRawResponseType()) ||
                 Completable.class.isAssignableFrom(invocable.getRawResponseType());
 
