@@ -153,6 +153,16 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
     protected abstract boolean isDecodingRequest();
 
     /**
+     * When the initial line is expected, and a buffer is received, which may or may not contain a CRLF that
+     * terminates the initial line.
+     *
+     * @param ctx the {@link ChannelHandlerContext}.
+     * @param buffer the {@link Buffer} received.
+     * @param lfIndex index of the LF character in the first CRLF in {@code buffer}, negative if no CRLF was found.
+     */
+    protected abstract void handlePartialInitialLine(ChannelHandlerContext ctx, ByteBuf buffer, int lfIndex);
+
+    /**
      * Create a new {@link HttpMetaData} because a new request/response
      * <a href="https://tools.ietf.org/html/rfc7230.html#section-3.1">start line</a> has been parsed.
      *
@@ -181,6 +191,7 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
             }
             case READ_INITIAL: {
                 final int lfIndex = findCRLF(buffer, maxInitialLineSize);
+                handlePartialInitialLine(ctx, buffer, lfIndex);
                 if (lfIndex < 0) {
                     return;
                 }

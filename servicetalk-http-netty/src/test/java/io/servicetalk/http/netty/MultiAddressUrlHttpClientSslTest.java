@@ -35,14 +35,15 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.junit.rules.Timeout;
 import org.mockito.stubbing.Answer;
 
+import java.nio.channels.ClosedChannelException;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeoutException;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.api.BlockingTestUtils.await;
+import static io.servicetalk.concurrent.api.BlockingTestUtils.awaitIndefinitely;
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
@@ -56,7 +57,7 @@ import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static io.servicetalk.transport.netty.internal.ExecutionContextRule.immediate;
 import static java.lang.String.format;
-import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.clearInvocations;
@@ -70,6 +71,9 @@ public class MultiAddressUrlHttpClientSslTest {
 
     @ClassRule
     public static final ExecutionContextRule CTX = immediate();
+
+    @Rule
+    public final ExpectedException expectedException = ExpectedException.none();
 
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
@@ -139,7 +143,7 @@ public class MultiAddressUrlHttpClientSslTest {
         clearInvocations(STREAMING_HTTP_SERVICE, SECURE_STREAMING_HTTP_SERVICE);
     }
 
-    @Test(expected = ExecutionException.class)
+    @Test
     public void nonSecureClientToSecureServer() throws Exception {
         HttpClient client = HttpClients.forMultiAddressUrl()
                 .ioExecutor(CTX.ioExecutor())
@@ -149,10 +153,13 @@ public class MultiAddressUrlHttpClientSslTest {
         HttpRequest request = client.get("/")
                 .addHeader(HOST, secureServerHostHeader)
                 .addHeader(CONTENT_LENGTH, ZERO);
-        await(client.request(request), 2, SECONDS);
+
+        expectedException.expect(ExecutionException.class);
+        expectedException.expectCause(instanceOf(ClosedChannelException.class));
+        awaitIndefinitely(client.request(request));
     }
 
-    @Test(expected = TimeoutException.class)
+    @Test
     public void secureClientToNonSecureServer() throws Exception {
         HttpClient client = HttpClients.forMultiAddressUrl()
                 .ioExecutor(CTX.ioExecutor())
@@ -163,7 +170,10 @@ public class MultiAddressUrlHttpClientSslTest {
         HttpRequest request = client.get("/")
                 .addHeader(HOST, serverHostHeader)
                 .addHeader(CONTENT_LENGTH, ZERO);
-        await(client.request(request), 2, SECONDS);
+
+        expectedException.expect(ExecutionException.class);
+        expectedException.expectCause(instanceOf(ClosedChannelException.class));
+        awaitIndefinitely(client.request(request));
     }
 
     @Test
