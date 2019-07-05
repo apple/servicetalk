@@ -604,8 +604,10 @@ final class NettyHttpServer {
 
         @Override
         public void onError(final Throwable t) {
-            // we do not expect onError to be invoked
-            throw new UnsupportedOperationException();
+            final Subscriber subscriber = subscriberUpdater.getAndSet(this, NoopSubscriber.INSTANCE);
+            if (subscriber != null) {
+                subscriber.onError(t);
+            }
         }
 
         @Override
