@@ -16,6 +16,7 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.CompletableSource.Processor;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
@@ -595,7 +596,7 @@ final class NettyHttpServer {
 
         @Override
         public void onComplete() {
-            final Subscriber subscriber = subscriberUpdater.getAndSet(this, this);
+            final Subscriber subscriber = subscriberUpdater.getAndSet(this, NoopSubscriber.INSTANCE);
             if (subscriber != null) {
                 subscriber.onComplete();
             }
@@ -610,6 +611,27 @@ final class NettyHttpServer {
         @Override
         public void subscribe(final Subscriber subscriber) {
             subscribeInternal(subscriber);
+        }
+    }
+
+    private static final class NoopSubscriber implements CompletableSource.Subscriber {
+
+        static final CompletableSource.Subscriber INSTANCE = new NoopSubscriber();
+
+        private NoopSubscriber() {
+            // Singleton
+        }
+
+        @Override
+        public void onSubscribe(final Cancellable cancellable) {
+        }
+
+        @Override
+        public void onComplete() {
+        }
+
+        @Override
+        public void onError(final Throwable t) {
         }
     }
 }
