@@ -26,7 +26,9 @@ import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Processors;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.concurrent.api.internal.SubscribableCompletable;
 import io.servicetalk.concurrent.internal.RejectedSubscribeError;
+import io.servicetalk.concurrent.internal.TerminalNotification;
 import io.servicetalk.http.api.DefaultHttpExecutionContext;
 import io.servicetalk.http.api.EmptyHttpHeaders;
 import io.servicetalk.http.api.HttpExecutionContext;
@@ -72,7 +74,6 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.net.ssl.SSLSession;
 
-import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.AsyncCloseables.toListenableAsyncCloseable;
 import static io.servicetalk.concurrent.api.Completable.completed;
@@ -238,7 +239,7 @@ final class NettyHttpServer {
                 // resubscribing to the NettyChannelPublisher before the previous subscriber has terminated. Otherwise
                 // we may attempt to do duplicate subscribe on NettyChannelPublisher, which will result in a connection
                 // closure.
-                final SingleSubscribeProcessor requestCompletion = new SingleSubscribeProcessor();
+                final SingleSubscriberProcessor requestCompletion = new SingleSubscriberProcessor();
                 final AtomicBoolean payloadSubscribed = drainRequestPayloadBody ? new AtomicBoolean() : null;
                 final StreamingHttpRequest request = rawRequest.transformRawPayloadBody(
                         // Cancellation is assumed to close the connection, or be ignored if this Subscriber has already
@@ -571,21 +572,31 @@ final class NettyHttpServer {
 
     /**
      * Equivalent of {@link Processors#newCompletableProcessor()} that doesn't handle multiple
-     * {@link Subscriber#subscribe(Subscriber) subscribes} and implements only {@link Subscriber#onComplete()}.
+     * {@link Subscriber#subscribe(Subscriber) subscribes}.
      */
-    private static final class SingleSubscribeProcessor extends Completable implements Processor {
-        private static final AtomicReferenceFieldUpdater<SingleSubscribeProcessor, Subscriber> subscriberUpdater =
-                newUpdater(SingleSubscribeProcessor.class, Subscriber.class, "subscriber");
+    private static final class SingleSubscriberProcessor extends SubscribableCompletable implements Processor,
+                                                                                                    Cancellable {
+        private static final Object CANCELLED = new Object();
 
-        @SuppressWarnings("unused")
+        private static final AtomicReferenceFieldUpdater<SingleSubscriberProcessor, Object> stateUpdater =
+                AtomicReferenceFieldUpdater.newUpdater(SingleSubscriberProcessor.class, Object.class, "state");
+
         @Nullable
-        private volatile Subscriber subscriber;
+        private volatile Object state;
 
         @Override
         protected void handleSubscribe(final Subscriber subscriber) {
-            subscriber.onSubscribe(IGNORE_CANCEL);
-            if (!subscriberUpdater.compareAndSet(this, null, subscriber)) {
-                subscriber.onComplete();
+            subscriber.onSubscribe(this);
+            for (;;) {
+                final Object cState = state;
+                if (cState instanceof TerminalNotification) {
+                    TerminalNotification terminalNotification = (TerminalNotification) cState;
+                    terminalNotification.terminate(subscriber);
+                    break;
+                } else if (cState == CANCELLED ||
+                        cState == null && stateUpdater.compareAndSet(this, null, subscriber)) {
+                    break;
+                }
             }
         }
 
@@ -596,42 +607,23 @@ final class NettyHttpServer {
 
         @Override
         public void onComplete() {
-            final Subscriber subscriber = subscriberUpdater.getAndSet(this, NoopSubscriber.INSTANCE);
-            if (subscriber != null) {
-                subscriber.onComplete();
+            final Object oldState = stateUpdater.getAndSet(this, TerminalNotification.complete());
+            if (oldState instanceof CompletableSource.Subscriber) {
+                ((Subscriber) oldState).onComplete();
             }
         }
 
         @Override
         public void onError(final Throwable t) {
-            // we do not expect onError to be invoked
-            throw new UnsupportedOperationException();
+            final Object oldState = stateUpdater.getAndSet(this, TerminalNotification.error(t));
+            if (oldState instanceof CompletableSource.Subscriber) {
+                ((Subscriber) oldState).onError(t);
+            }
         }
 
         @Override
-        public void subscribe(final Subscriber subscriber) {
-            subscribeInternal(subscriber);
-        }
-    }
-
-    private static final class NoopSubscriber implements CompletableSource.Subscriber {
-
-        static final CompletableSource.Subscriber INSTANCE = new NoopSubscriber();
-
-        private NoopSubscriber() {
-            // Singleton
-        }
-
-        @Override
-        public void onSubscribe(final Cancellable cancellable) {
-        }
-
-        @Override
-        public void onComplete() {
-        }
-
-        @Override
-        public void onError(final Throwable t) {
+        public void cancel() {
+            state = CANCELLED;
         }
     }
 }
