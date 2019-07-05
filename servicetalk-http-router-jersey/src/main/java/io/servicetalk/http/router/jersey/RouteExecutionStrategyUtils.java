@@ -207,6 +207,10 @@ final class RouteExecutionStrategyUtils {
 
         if (!consumesAsync && !producesAsync) {
             // blocking-aggregated
+            // HttpApiConversions/BlockingToStreamingService uses OFFLOAD_RECEIVE_DATA_STRATEGY because we are invoking
+            // the service within a callback of Single<HttpRequest>, which may call the service on the eventloop.
+            // Here we are not invoking the service as part of collecting the request payload,
+            // so OFFLOAD_RECEIVE_META is sufficient.
             return OFFLOAD_RECEIVE_META;
         } else if (consumesAsync && !consumesStreaming && producesAsync && !producesStreaming) {
             // async-aggregated
