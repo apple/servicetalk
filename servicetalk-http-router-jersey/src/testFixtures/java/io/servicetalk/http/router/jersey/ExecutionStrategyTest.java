@@ -302,6 +302,8 @@ public final class ExecutionStrategyTest extends AbstractJerseyStreamingHttpServ
                     case DEFAULT:
                         switch (methodExecutionStrategy) {
                             case DEFAULT:
+                                assertGlobalExecutor(testMode, context, threadingInfo);
+                                return;
                             case NO_OFFLOADS:
                                 assertDefaultNoOffloadsExecutor(testMode, context, threadingInfo);
                                 return;

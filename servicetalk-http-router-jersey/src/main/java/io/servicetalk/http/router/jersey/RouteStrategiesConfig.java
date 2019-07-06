@@ -17,6 +17,7 @@ package io.servicetalk.http.router.jersey;
 
 import io.servicetalk.http.api.HttpExecutionStrategy;
 
+import java.lang.reflect.Method;
 import java.util.Map;
 
 import static java.util.Collections.unmodifiableMap;
@@ -24,8 +25,12 @@ import static java.util.Collections.unmodifiableMap;
 final class RouteStrategiesConfig {
     final Map<String, HttpExecutionStrategy> routeStrategies;
 
-    RouteStrategiesConfig(final Map<String, HttpExecutionStrategy> routeStrategies) {
+    final Map<Method, HttpExecutionStrategy> methodDefaultStrategies;
+
+    RouteStrategiesConfig(final Map<String, HttpExecutionStrategy> routeStrategies,
+                          final Map<Method, HttpExecutionStrategy> methodDefaultStrategies) {
         // We do not copy routeStrategies because it comes from our code and no adverse mutation is expected
         this.routeStrategies = unmodifiableMap(routeStrategies);
+        this.methodDefaultStrategies = unmodifiableMap(methodDefaultStrategies);
     }
 }
