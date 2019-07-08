@@ -16,15 +16,20 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.CompletableSource.Processor;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
+import io.servicetalk.concurrent.api.Processors;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.concurrent.api.internal.SubscribableCompletable;
+import io.servicetalk.concurrent.internal.DuplicateSubscribeException;
 import io.servicetalk.concurrent.internal.RejectedSubscribeError;
+import io.servicetalk.concurrent.internal.TerminalNotification;
 import io.servicetalk.http.api.DefaultHttpExecutionContext;
 import io.servicetalk.http.api.EmptyHttpHeaders;
 import io.servicetalk.http.api.HttpExecutionContext;
@@ -74,10 +79,8 @@ import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseabl
 import static io.servicetalk.concurrent.api.AsyncCloseables.toListenableAsyncCloseable;
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Completable.defer;
-import static io.servicetalk.concurrent.api.Processors.newCompletableProcessor;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.succeeded;
-import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.http.api.HttpApiConversions.mayHaveTrailers;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderValues.ZERO;
@@ -237,7 +240,7 @@ final class NettyHttpServer {
                 // resubscribing to the NettyChannelPublisher before the previous subscriber has terminated. Otherwise
                 // we may attempt to do duplicate subscribe on NettyChannelPublisher, which will result in a connection
                 // closure.
-                final Processor requestCompletion = newCompletableProcessor();
+                final SingleSubscriberProcessor requestCompletion = new SingleSubscriberProcessor();
                 final AtomicBoolean payloadSubscribed = drainRequestPayloadBody ? new AtomicBoolean() : null;
                 final StreamingHttpRequest request = rawRequest.transformRawPayloadBody(
                         // Cancellation is assumed to close the connection, or be ignored if this Subscriber has already
@@ -308,7 +311,7 @@ final class NettyHttpServer {
                             .onErrorResume(t -> completed())));
                 }
 
-                return responsePublisher.concat(fromSource(requestCompletion));
+                return responsePublisher.concat(requestCompletion);
             });
             return connection.write(responseObjectPublisher.repeat(val -> true)
                     // We generate synthetic callbacks to WriteEventsListener as there is a single write per connection
@@ -565,6 +568,66 @@ final class NettyHttpServer {
                     }
                 }
             }
+        }
+    }
+
+    /**
+     * Equivalent of {@link Processors#newCompletableProcessor()} that doesn't handle multiple
+     * {@link Subscriber#subscribe(Subscriber) subscribes}.
+     */
+    private static final class SingleSubscriberProcessor extends SubscribableCompletable implements Processor,
+                                                                                                    Cancellable {
+        private static final Object CANCELLED = new Object();
+
+        private static final AtomicReferenceFieldUpdater<SingleSubscriberProcessor, Object> stateUpdater =
+                AtomicReferenceFieldUpdater.newUpdater(SingleSubscriberProcessor.class, Object.class, "state");
+
+        @Nullable
+        private volatile Object state;
+
+        @Override
+        protected void handleSubscribe(final Subscriber subscriber) {
+            subscriber.onSubscribe(this);
+            for (;;) {
+                final Object cState = state;
+                if (cState instanceof TerminalNotification) {
+                    TerminalNotification terminalNotification = (TerminalNotification) cState;
+                    terminalNotification.terminate(subscriber);
+                    break;
+                } else if (cState instanceof Subscriber) {
+                    subscriber.onError(new DuplicateSubscribeException(cState, subscriber));
+                    break;
+                } else if (cState == CANCELLED ||
+                        cState == null && stateUpdater.compareAndSet(this, null, subscriber)) {
+                    break;
+                }
+            }
+        }
+
+        @Override
+        public void onSubscribe(final Cancellable cancellable) {
+            // no op, we never cancel as Subscribers and subscribes are decoupled.
+        }
+
+        @Override
+        public void onComplete() {
+            final Object oldState = stateUpdater.getAndSet(this, TerminalNotification.complete());
+            if (oldState instanceof CompletableSource.Subscriber) {
+                ((Subscriber) oldState).onComplete();
+            }
+        }
+
+        @Override
+        public void onError(final Throwable t) {
+            final Object oldState = stateUpdater.getAndSet(this, TerminalNotification.error(t));
+            if (oldState instanceof CompletableSource.Subscriber) {
+                ((Subscriber) oldState).onError(t);
+            }
+        }
+
+        @Override
+        public void cancel() {
+            state = CANCELLED;
         }
     }
 }
