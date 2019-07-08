@@ -20,9 +20,9 @@ import io.servicetalk.client.api.ConnectionFactoryFilter;
 import io.servicetalk.client.api.LoadBalancerFactory;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
+import io.servicetalk.transport.api.ClientSslConfigBuilder;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.IoExecutor;
-import io.servicetalk.transport.api.SslConfig;
 
 import java.net.SocketOption;
 import java.util.function.BiConsumer;
@@ -84,14 +84,23 @@ public abstract class MultiAddressHttpClientBuilder<U, R>
     public abstract MultiAddressHttpClientBuilder<U, R> disableHostHeaderFallback();
 
     /**
-     * Sets a configurator that is called immediately before the {@link SingleAddressHttpClientBuilder} for any
-     * {@link HostAndPort} is built, to configure the builder.
+     * Sets a function that is used to determine the scheme of a request if the request-target is not absolute-form.
      *
-     * @param clientConfiguratorForHost The configurator.
-     * @return this.
+     * @param effectiveSchemeFunction the function to use.
+     * @return {@code this}
      */
-    public abstract MultiAddressHttpClientBuilder<U, R> clientConfiguratorForHost(
-            BiConsumer<HostAndPort, SingleAddressHttpClientBuilder<U, R>> clientConfiguratorForHost);
+    public abstract MultiAddressHttpClientBuilder<U, R> effectiveScheme(
+            Function<HttpRequestMetaData, String> effectiveSchemeFunction);
+
+    /**
+     * Sets a function that is used for configuring SSL/TLS for https requests.
+     *
+     * @param sslConfigFunction The function to use for configuring SSL/TLS for https requests.
+     * @return {@code this}
+     */
+    public abstract MultiAddressHttpClientBuilder<U, R> configureSsl(
+            BiConsumer<HostAndPort, ClientSslConfigBuilder<? extends SingleAddressHttpClientBuilder<U, R>>>
+                    sslConfigFunction);
 
     @Override
     public abstract MultiAddressHttpClientBuilder<U, R> appendConnectionFilter(
@@ -171,14 +180,6 @@ public abstract class MultiAddressHttpClientBuilder<U, R>
 
         return appendClientFilter(toMultiAddressConditionalFilterFactory(predicate, factory));
     }
-
-    /**
-     * Set a {@link SslConfigProvider} for appropriate {@link SslConfig}s.
-     *
-     * @param sslConfigProvider A {@link SslConfigProvider} to use.
-     * @return {@code this}.
-     */
-    public abstract MultiAddressHttpClientBuilder<U, R> sslConfigProvider(SslConfigProvider sslConfigProvider);
 
     /**
      * Set a maximum number of redirects to follow.

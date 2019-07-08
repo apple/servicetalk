@@ -21,15 +21,20 @@ import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.HttpServerBuilder;
 import io.servicetalk.http.api.StreamingHttpService;
+import io.servicetalk.transport.api.ChainingSslConfigBuilders;
 import io.servicetalk.transport.api.ConnectionAcceptor;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.ServerContext;
+import io.servicetalk.transport.api.ServerSslConfigBuilder;
 import io.servicetalk.transport.api.SslConfig;
 
+import java.io.InputStream;
 import java.net.SocketAddress;
 import java.net.SocketOption;
 import java.util.Map;
+import java.util.function.Supplier;
 import javax.annotation.Nullable;
+import javax.net.ssl.KeyManagerFactory;
 
 final class DefaultHttpServerBuilder extends HttpServerBuilder {
 
@@ -90,9 +95,24 @@ final class DefaultHttpServerBuilder extends HttpServerBuilder {
     }
 
     @Override
-    public HttpServerBuilder sslConfig(@Nullable final SslConfig sslConfig) {
-        config.tcpConfig().sslConfig(sslConfig);
-        return this;
+    public ServerSslConfigBuilder<HttpServerBuilder> enableSsl(final KeyManagerFactory keyManagerFactory) {
+        return ChainingSslConfigBuilders.forServer(() -> this, sslConfig -> config.tcpConfig().sslConfig(sslConfig),
+                keyManagerFactory);
+    }
+
+    @Override
+    public ServerSslConfigBuilder<HttpServerBuilder> enableSsl(final Supplier<InputStream> keyCertChainSupplier,
+                                                               final Supplier<InputStream> keySupplier) {
+        return ChainingSslConfigBuilders.forServer(() -> this, sslConfig -> config.tcpConfig().sslConfig(sslConfig),
+                keyCertChainSupplier, keySupplier);
+    }
+
+    @Override
+    public ServerSslConfigBuilder<HttpServerBuilder> enableSsl(final Supplier<InputStream> keyCertChainSupplier,
+                                                               final Supplier<InputStream> keySupplier,
+                                                               final String keyPassword) {
+        return ChainingSslConfigBuilders.forServer(() -> this, sslConfig -> config.tcpConfig().sslConfig(sslConfig),
+                keyCertChainSupplier, keySupplier, keyPassword);
     }
 
     @Override
