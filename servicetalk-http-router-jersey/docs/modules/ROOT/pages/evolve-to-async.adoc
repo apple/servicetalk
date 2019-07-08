@@ -1,5 +1,4 @@
 include::ROOT:partial$component-attributes.adoc[]
-
 = Evolving to asynchronous
 
 Evolution to full asynchronous routes is elaborated xref:servicetalk-http-api::evolve-to-async.adoc[here].
