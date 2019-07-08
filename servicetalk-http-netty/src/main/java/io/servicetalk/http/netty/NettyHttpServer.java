@@ -27,6 +27,7 @@ import io.servicetalk.concurrent.api.Processors;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.internal.SubscribableCompletable;
+import io.servicetalk.concurrent.internal.DuplicateSubscribeException;
 import io.servicetalk.concurrent.internal.RejectedSubscribeError;
 import io.servicetalk.concurrent.internal.TerminalNotification;
 import io.servicetalk.http.api.DefaultHttpExecutionContext;
@@ -592,6 +593,9 @@ final class NettyHttpServer {
                 if (cState instanceof TerminalNotification) {
                     TerminalNotification terminalNotification = (TerminalNotification) cState;
                     terminalNotification.terminate(subscriber);
+                    break;
+                } else if (cState instanceof Subscriber) {
+                    subscriber.onError(new DuplicateSubscribeException(cState, subscriber));
                     break;
                 } else if (cState == CANCELLED ||
                         cState == null && stateUpdater.compareAndSet(this, null, subscriber)) {
