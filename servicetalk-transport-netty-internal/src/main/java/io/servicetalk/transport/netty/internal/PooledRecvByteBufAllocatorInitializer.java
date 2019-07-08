@@ -21,12 +21,12 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.Unpooled;
 import io.netty.buffer.UnpooledByteBufAllocator;
-import io.netty.channel.AdaptiveRecvByteBufAllocator;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandler;
+import io.netty.channel.DefaultMaxMessagesRecvByteBufAllocator;
 import io.netty.channel.MaxMessagesRecvByteBufAllocator;
 import io.netty.channel.RecvByteBufAllocator;
 import io.netty.channel.SimpleChannelInboundHandler;
@@ -42,11 +42,9 @@ import static java.util.Objects.requireNonNull;
 public final class PooledRecvByteBufAllocatorInitializer implements ChannelInitializer {
     @Override
     public ConnectionContext init(final Channel channel, final ConnectionContext context) {
-        channel.config().setRecvByteBufAllocator(new ThreadLocalRecvByteBufAllocator(
-                new AdaptiveRecvByteBufAllocator(512, 32768, 65536)
-                        .respectMaybeMoreData(false)
-                        .maxMessagesPerRead(4)));
-        channel.pipeline().addFirst(CopyByteBufHandler.INSTANCE);
+        RecvByteBufAllocator recvByteBufAllocator = channel.config().getRecvByteBufAllocator();
+        channel.config().setRecvByteBufAllocator(new ThreadLocalRecvByteBufAllocator(recvByteBufAllocator));
+        channel.pipeline().addLast(CopyByteBufHandler.INSTANCE);
         return context;
     }
 
@@ -82,8 +80,12 @@ public final class PooledRecvByteBufAllocatorInitializer implements ChannelIniti
          *
          * @param alloc the {@link MaxMessagesRecvByteBufAllocator}
          */
-        ThreadLocalRecvByteBufAllocator(final MaxMessagesRecvByteBufAllocator alloc) {
-            this.alloc = requireNonNull(alloc);
+        ThreadLocalRecvByteBufAllocator(final RecvByteBufAllocator alloc) {
+            if (alloc instanceof MaxMessagesRecvByteBufAllocator) {
+                this.alloc = (MaxMessagesRecvByteBufAllocator) alloc;
+            } else {
+                this.alloc = new MaxMessagesRecvByteBufAllocatorAdapter(alloc);
+            }
         }
 
         @Override
@@ -130,6 +132,21 @@ public final class PooledRecvByteBufAllocatorInitializer implements ChannelIniti
             public boolean continueReading(final UncheckedBooleanSupplier uncheckedBooleanSupplier) {
                 return ((ExtendedHandle) delegate()).continueReading(uncheckedBooleanSupplier);
             }
+        }
+    }
+
+    private static final class MaxMessagesRecvByteBufAllocatorAdapter
+            extends DefaultMaxMessagesRecvByteBufAllocator {
+        private final RecvByteBufAllocator delegate;
+
+        MaxMessagesRecvByteBufAllocatorAdapter(final RecvByteBufAllocator delegate) {
+            this.delegate = requireNonNull(delegate);
+        }
+
+        @SuppressWarnings("deprecation")
+        @Override
+        public Handle newHandle() {
+            return delegate.newHandle();
         }
     }
 
