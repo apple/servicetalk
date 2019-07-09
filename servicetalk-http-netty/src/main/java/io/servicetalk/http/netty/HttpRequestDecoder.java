@@ -59,7 +59,7 @@ final class HttpRequestDecoder extends HttpObjectDecoder<HttpRequestMetaData> {
             byte b = buffer.getByte(buffer.readerIndex() + i);
             if (b < 'A' || b > 'Z') {
                 // Illegal request if it doesn't start with 3 capital letters
-                ctx.close();
+                throw new IllegalArgumentException("Invalid initial line");
             }
         }
     }
