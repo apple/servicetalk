@@ -6,6 +6,8 @@ def httpLinks = [
 // links to exclude from validation (for example because they require authentication)
 def excludedLinks = [
     //"http://somedomain.tld/someoptionalpath"
+    // Exclude the repo until it's public, otherwise thr 404's fail the validation.
+    "https://github.com/apple/servicetalk"
 ]
 
 configurations {
