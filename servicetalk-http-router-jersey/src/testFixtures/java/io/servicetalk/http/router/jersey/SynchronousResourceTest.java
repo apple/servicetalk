@@ -31,6 +31,10 @@ import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 import static org.hamcrest.Matchers.is;
 
 public class SynchronousResourceTest extends AbstractResourceTest {
+    public SynchronousResourceTest(final boolean serverNoOffloads) {
+        super(serverNoOffloads);
+    }
+
     @Override
     String resourcePath() {
         return PATH;
