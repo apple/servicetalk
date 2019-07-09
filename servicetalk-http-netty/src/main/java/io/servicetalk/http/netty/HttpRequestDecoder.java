@@ -57,8 +57,14 @@ final class HttpRequestDecoder extends HttpObjectDecoder<HttpRequestMetaData> {
         final int len = min(3, buffer.readableBytes());
         for (int i = 0; i < len; ++i) {
             byte b = buffer.getByte(buffer.readerIndex() + i);
+            if (b == ' ' && i > 0) {
+                // If we find a space after at least one capital letter, accept this as valid.
+                return;
+            }
+            // As per the RFC, request method is case-sensitive, and all valid methods are uppercase.
+            // https://tools.ietf.org/html/rfc7231#section-4.1
             if (b < 'A' || b > 'Z') {
-                // Illegal request if it doesn't start with 3 capital letters
+                // Illegal request if it doesn't start with 3 capital letters, or fewer followed by a space.
                 throw new IllegalArgumentException("Invalid initial line");
             }
         }

@@ -374,6 +374,19 @@ public class HttpResponseDecoderTest {
         }
     }
 
+    @Test(expected = DecoderException.class)
+    public void invalidInitialLine() {
+        EmbeddedChannel channel = newEmbeddedChannel();
+        byte[] content = new byte[128];
+        ThreadLocalRandom.current().nextBytes(content);
+        byte[] beforeContentBytes = ("http").getBytes(US_ASCII);
+        try {
+            assertTrue(channel.writeInbound(wrappedBuffer(beforeContentBytes)));
+        } finally {
+            channel.finishAndReleaseAll();
+        }
+    }
+
     private static void validateHttpResponse(EmbeddedChannel channel, int expectedContentLength) {
         validateHttpResponse(channel, expectedContentLength, false);
     }
