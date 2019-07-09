@@ -193,7 +193,12 @@ final class PublisherConcatWithSingle<T> extends AbstractAsynchronousPublisherOp
         }
 
         private void terminateTarget(@Nullable final T t) {
-            target.onNext(t);
+            try {
+                target.onNext(t);
+            } catch (Throwable cause) {
+                target.onError(cause);
+                return;
+            }
             target.onComplete();
         }
 
