@@ -65,12 +65,15 @@ final class HttpResponseDecoder extends HttpObjectDecoder<HttpResponseMetaData> 
 
     @Override
     protected void handlePartialInitialLine(final ChannelHandlerContext ctx, final ByteBuf buffer, final int lfIndex) {
-        final int len = min(FIRST_BYTES.length, buffer.readableBytes());
-        for (int i = 0; i < len; ++i) {
-            byte b = buffer.getByte(buffer.readerIndex() + i);
-            if (b != FIRST_BYTES[i]) {
-                // Illegal response if it doesn't start with 'HTTP'
-                throw new IllegalArgumentException("Invalid initial line");
+        if (lfIndex < 0) {
+            // Only perform this check if we haven't found the CRLF yet.
+            final int len = min(FIRST_BYTES.length, buffer.readableBytes());
+            for (int i = 0; i < len; ++i) {
+                byte b = buffer.getByte(buffer.readerIndex() + i);
+                if (b != FIRST_BYTES[i]) {
+                    // Illegal response if it doesn't start with 'HTTP'
+                    throw new IllegalArgumentException("Invalid initial line");
+                }
             }
         }
     }

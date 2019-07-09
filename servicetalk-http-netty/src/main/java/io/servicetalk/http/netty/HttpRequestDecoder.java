@@ -54,12 +54,15 @@ final class HttpRequestDecoder extends HttpObjectDecoder<HttpRequestMetaData> {
 
     @Override
     protected void handlePartialInitialLine(final ChannelHandlerContext ctx, final ByteBuf buffer, final int lfIndex) {
-        final int len = min(3, buffer.readableBytes());
-        for (int i = 0; i < len; ++i) {
-            byte b = buffer.getByte(buffer.readerIndex() + i);
-            if (b < 'A' || b > 'Z') {
-                // Illegal request if it doesn't start with 3 capital letters
-                throw new IllegalArgumentException("Invalid initial line");
+        if (lfIndex < 0) {
+            // Only perform this check if we haven't found the CRLF yet.
+            final int len = min(3, buffer.readableBytes());
+            for (int i = 0; i < len; ++i) {
+                byte b = buffer.getByte(buffer.readerIndex() + i);
+                if (b < 'A' || b > 'Z') {
+                    // Illegal request if it doesn't start with 3 capital letters
+                    throw new IllegalArgumentException("Invalid initial line");
+                }
             }
         }
     }
