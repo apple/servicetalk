@@ -48,7 +48,7 @@ public class PublisherConcatWithSingleTest {
     @SuppressWarnings("unchecked")
     private Subscriber<Long> mockSubscriber = (Subscriber<Long>) mock(Subscriber.class);
     private final TestPublisherSubscriber<Long> subscriber = new TestPublisherSubscriber.Builder<Long>()
-            .finalDelegate(mockSubscriber).build();
+            .lastSubscriber(mockSubscriber).build();
     private final TestSingle<Long> single = new TestSingle<>();
 
     public PublisherConcatWithSingleTest() {

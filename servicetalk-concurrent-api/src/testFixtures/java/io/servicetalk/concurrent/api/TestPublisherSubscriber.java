@@ -229,7 +229,7 @@ public final class TestPublisherSubscriber<T> implements Subscriber<T>, Subscrip
          * @param subscriber the {@link Subscriber} to invoke.
          * @return this.
          */
-        public Builder<T> finalDelegate(Subscriber<T> subscriber) {
+        public Builder<T> lastSubscriber(Subscriber<T> subscriber) {
             this.subscriber = subscriber;
             return this;
         }
@@ -294,43 +294,7 @@ public final class TestPublisherSubscriber<T> implements Subscriber<T>, Subscrip
             Subscriber<T> delegate = collector;
 
             if (subscriber != null) {
-                delegate = new Subscriber<T>() {
-                    @Override
-                    public void onSubscribe(final Subscription subscription) {
-                        try {
-                            collector.onSubscribe(subscription);
-                        } finally {
-                            subscriber.onSubscribe(subscription);
-                        }
-                    }
-
-                    @Override
-                    public void onNext(@Nullable final T t) {
-                        try {
-                            collector.onNext(t);
-                        } finally {
-                            subscriber.onNext(t);
-                        }
-                    }
-
-                    @Override
-                    public void onError(final Throwable t) {
-                        try {
-                            collector.onError(t);
-                        } finally {
-                            subscriber.onError(t);
-                        }
-                    }
-
-                    @Override
-                    public void onComplete() {
-                        try {
-                            collector.onComplete();
-                        } finally {
-                            subscriber.onComplete();
-                        }
-                    }
-                };
+                delegate = new DoubleDelegatingSubscriber<>(delegate, subscriber);
             }
             if (checkDemand) {
                 delegate = new DemandCheckingSubscriber<>(delegate);
@@ -340,6 +304,52 @@ public final class TestPublisherSubscriber<T> implements Subscriber<T>, Subscrip
             }
 
             return new TestPublisherSubscriber<>(collector, delegate);
+        }
+    }
+
+    private static final class DoubleDelegatingSubscriber<T> implements Subscriber<T> {
+        private final Subscriber<T> first;
+        private final Subscriber<T> second;
+
+        DoubleDelegatingSubscriber(final Subscriber<T> first, final Subscriber<T> second) {
+            this.first = requireNonNull(first);
+            this.second = requireNonNull(second);
+        }
+
+        @Override
+        public void onSubscribe(final Subscription subscription) {
+            try {
+                first.onSubscribe(subscription);
+            } finally {
+                second.onSubscribe(subscription);
+            }
+        }
+
+        @Override
+        public void onNext(@Nullable final T t) {
+            try {
+                first.onNext(t);
+            } finally {
+                second.onNext(t);
+            }
+        }
+
+        @Override
+        public void onError(final Throwable t) {
+            try {
+                first.onError(t);
+            } finally {
+                second.onError(t);
+            }
+        }
+
+        @Override
+        public void onComplete() {
+            try {
+                first.onComplete();
+            } finally {
+                second.onComplete();
+            }
         }
     }
 }
