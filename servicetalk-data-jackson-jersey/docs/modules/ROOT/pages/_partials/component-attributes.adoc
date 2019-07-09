@@ -1,6 +1,8 @@
+:git-tag: 0.16.0
+
 ifndef::sourceroot[]
 :sourceroot: https://github.com/apple/servicetalk/blob/master/
 ifdef::is-release-version[]
-:sourceroot: https://github.com/apple/servicetalk/blob/{page-component-version}/
+:sourceroot: https://github.com/apple/servicetalk/blob/{git-tag}/
 endif::[]
 endif::[]
