@@ -18,103 +18,12 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.SingleSource.Subscriber;
 
-import javax.annotation.Nullable;
-
-import static io.servicetalk.concurrent.api.AsyncContextMapThreadLocal.contextThreadLocal;
-import static java.util.Objects.requireNonNull;
-
-final class ContextPreservingSingleSubscriberAndCancellable<T> implements Subscriber<T> {
-    final AsyncContextMap saved;
-    final Subscriber<? super T> subscriber;
-
-    ContextPreservingSingleSubscriberAndCancellable(Subscriber<? super T> subscriber, AsyncContextMap current) {
-        this.subscriber = requireNonNull(subscriber);
-        this.saved = requireNonNull(current);
+final class ContextPreservingSingleSubscriberAndCancellable<T> extends ContextPreservingSingleSubscriber<T> {
+    ContextPreservingSingleSubscriberAndCancellable(Subscriber<T> subscriber, AsyncContextMap current) {
+        super(subscriber, current);
     }
 
-    @Override
-    public void onSubscribe(Cancellable cancellable) {
-        final Thread currentThread = Thread.currentThread();
-        if (currentThread instanceof AsyncContextMapHolder) {
-            final AsyncContextMapHolder asyncContextMapHolder = (AsyncContextMapHolder) currentThread;
-            AsyncContextMap prev = asyncContextMapHolder.asyncContextMap();
-            try {
-                asyncContextMapHolder.asyncContextMap(saved);
-                subscriber.onSubscribe(ContextPreservingCancellable.wrap(cancellable, saved));
-            } finally {
-                asyncContextMapHolder.asyncContextMap(prev);
-            }
-        } else {
-            onSubscribeSlowPath(cancellable);
-        }
-    }
-
-    private void onSubscribeSlowPath(Cancellable cancellable) {
-        AsyncContextMap prev = contextThreadLocal.get();
-        try {
-            contextThreadLocal.set(saved);
-            subscriber.onSubscribe(ContextPreservingCancellable.wrap(cancellable, saved));
-        } finally {
-            contextThreadLocal.set(prev);
-        }
-    }
-
-    @Override
-    public void onSuccess(@Nullable T result) {
-        final Thread currentThread = Thread.currentThread();
-        if (currentThread instanceof AsyncContextMapHolder) {
-            final AsyncContextMapHolder asyncContextMapHolder = (AsyncContextMapHolder) currentThread;
-            AsyncContextMap prev = asyncContextMapHolder.asyncContextMap();
-            try {
-                asyncContextMapHolder.asyncContextMap(saved);
-                subscriber.onSuccess(result);
-            } finally {
-                asyncContextMapHolder.asyncContextMap(prev);
-            }
-        } else {
-            onSuccessSlowPath(result);
-        }
-    }
-
-    private void onSuccessSlowPath(@Nullable T result) {
-        AsyncContextMap prev = contextThreadLocal.get();
-        try {
-            contextThreadLocal.set(saved);
-            subscriber.onSuccess(result);
-        } finally {
-            contextThreadLocal.set(prev);
-        }
-    }
-
-    @Override
-    public void onError(Throwable t) {
-        final Thread currentThread = Thread.currentThread();
-        if (currentThread instanceof AsyncContextMapHolder) {
-            final AsyncContextMapHolder asyncContextMapHolder = (AsyncContextMapHolder) currentThread;
-            AsyncContextMap prev = asyncContextMapHolder.asyncContextMap();
-            try {
-                asyncContextMapHolder.asyncContextMap(saved);
-                subscriber.onError(t);
-            } finally {
-                asyncContextMapHolder.asyncContextMap(prev);
-            }
-        } else {
-            onErrorSlowPath(t);
-        }
-    }
-
-    private void onErrorSlowPath(Throwable t) {
-        AsyncContextMap prev = contextThreadLocal.get();
-        try {
-            contextThreadLocal.set(saved);
-            subscriber.onError(t);
-        } finally {
-            contextThreadLocal.set(prev);
-        }
-    }
-
-    @Override
-    public String toString() {
-        return ContextPreservingSingleSubscriberAndCancellable.class.getSimpleName() + "(" + subscriber + ')';
+    void invokeOnSubscribe(Cancellable cancellable) {
+        subscriber.onSubscribe(ContextPreservingCancellable.wrap(cancellable, saved));
     }
 }

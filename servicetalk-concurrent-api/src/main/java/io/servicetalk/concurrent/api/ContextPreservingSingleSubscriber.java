@@ -16,28 +16,36 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.SingleSource.Subscriber;
 
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.AsyncContextMapThreadLocal.contextThreadLocal;
+import static java.util.Objects.requireNonNull;
 
-final class ContextPreservingSingleSubscriber<T> extends ContextPreservingSingleNonCombined<T>
-        implements Subscriber<T> {
+class ContextPreservingSingleSubscriber<T> implements Subscriber<T> {
+    final AsyncContextMap saved;
+    final SingleSource.Subscriber<T> subscriber;
 
     ContextPreservingSingleSubscriber(Subscriber<T> subscriber, AsyncContextMap current) {
-        super(subscriber, current);
+        this.subscriber = requireNonNull(subscriber);
+        this.saved = requireNonNull(current);
+    }
+
+    void invokeOnSubscribe(Cancellable cancellable) {
+        subscriber.onSubscribe(cancellable);
     }
 
     @Override
-    public void onSubscribe(Cancellable cancellable) {
+    public final void onSubscribe(Cancellable cancellable) {
         final Thread currentThread = Thread.currentThread();
         if (currentThread instanceof AsyncContextMapHolder) {
             final AsyncContextMapHolder asyncContextMapHolder = (AsyncContextMapHolder) currentThread;
             AsyncContextMap prev = asyncContextMapHolder.asyncContextMap();
             try {
                 asyncContextMapHolder.asyncContextMap(saved);
-                subscriber.onSubscribe(cancellable);
+                invokeOnSubscribe(cancellable);
             } finally {
                 asyncContextMapHolder.asyncContextMap(prev);
             }
@@ -50,14 +58,14 @@ final class ContextPreservingSingleSubscriber<T> extends ContextPreservingSingle
         AsyncContextMap prev = contextThreadLocal.get();
         try {
             contextThreadLocal.set(saved);
-            subscriber.onSubscribe(cancellable);
+            invokeOnSubscribe(cancellable);
         } finally {
             contextThreadLocal.set(prev);
         }
     }
 
     @Override
-    public void onSuccess(@Nullable T result) {
+    public final void onSuccess(@Nullable T result) {
         final Thread currentThread = Thread.currentThread();
         if (currentThread instanceof AsyncContextMapHolder) {
             final AsyncContextMapHolder asyncContextMapHolder = (AsyncContextMapHolder) currentThread;
@@ -84,7 +92,7 @@ final class ContextPreservingSingleSubscriber<T> extends ContextPreservingSingle
     }
 
     @Override
-    public void onError(Throwable t) {
+    public final void onError(Throwable t) {
         final Thread currentThread = Thread.currentThread();
         if (currentThread instanceof AsyncContextMapHolder) {
             final AsyncContextMapHolder asyncContextMapHolder = (AsyncContextMapHolder) currentThread;
@@ -108,5 +116,10 @@ final class ContextPreservingSingleSubscriber<T> extends ContextPreservingSingle
         } finally {
             contextThreadLocal.set(prev);
         }
+    }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "(" + subscriber + ')';
     }
 }

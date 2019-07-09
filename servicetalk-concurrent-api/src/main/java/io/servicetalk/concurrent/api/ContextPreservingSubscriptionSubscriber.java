@@ -18,11 +18,15 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 
-final class ContextPreservingSubscriptionSubscriber<T> extends ContextPreservingSubscriberNonCombined<T>
-        implements Subscriber<T> {
+import static java.util.Objects.requireNonNull;
+
+final class ContextPreservingSubscriptionSubscriber<T> implements Subscriber<T> {
+    final AsyncContextMap saved;
+    final Subscriber<T> subscriber;
 
     ContextPreservingSubscriptionSubscriber(Subscriber<T> subscriber, AsyncContextMap current) {
-        super(subscriber, current);
+        this.subscriber = requireNonNull(subscriber);
+        this.saved = requireNonNull(current);
     }
 
     @Override
@@ -43,5 +47,10 @@ final class ContextPreservingSubscriptionSubscriber<T> extends ContextPreserving
     @Override
     public void onComplete() {
         subscriber.onComplete();
+    }
+
+    @Override
+    public String toString() {
+        return ContextPreservingSubscriptionSubscriber.class.getSimpleName() + "(" + subscriber + ')';
     }
 }

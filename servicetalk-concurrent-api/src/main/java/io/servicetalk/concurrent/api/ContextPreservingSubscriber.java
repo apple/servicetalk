@@ -19,21 +19,30 @@ import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 
 import static io.servicetalk.concurrent.api.AsyncContextMapThreadLocal.contextThreadLocal;
+import static java.util.Objects.requireNonNull;
 
-final class ContextPreservingSubscriber<T> extends ContextPreservingSubscriberNonCombined<T> implements Subscriber<T> {
+class ContextPreservingSubscriber<T> implements Subscriber<T> {
+    final AsyncContextMap saved;
+    final Subscriber<T> subscriber;
+
     ContextPreservingSubscriber(Subscriber<T> subscriber, AsyncContextMap current) {
-        super(subscriber, current);
+        this.subscriber = requireNonNull(subscriber);
+        this.saved = requireNonNull(current);
+    }
+
+    void invokeOnSubscribe(Subscription s) {
+        subscriber.onSubscribe(s);
     }
 
     @Override
-    public void onSubscribe(Subscription s) {
+    public final void onSubscribe(Subscription s) {
         final Thread currentThread = Thread.currentThread();
         if (currentThread instanceof AsyncContextMapHolder) {
             final AsyncContextMapHolder asyncContextMapHolder = (AsyncContextMapHolder) currentThread;
             AsyncContextMap prev = asyncContextMapHolder.asyncContextMap();
             try {
                 asyncContextMapHolder.asyncContextMap(saved);
-                subscriber.onSubscribe(s);
+                invokeOnSubscribe(s);
             } finally {
                 asyncContextMapHolder.asyncContextMap(prev);
             }
@@ -46,14 +55,14 @@ final class ContextPreservingSubscriber<T> extends ContextPreservingSubscriberNo
         AsyncContextMap prev = contextThreadLocal.get();
         try {
             contextThreadLocal.set(saved);
-            subscriber.onSubscribe(s);
+            invokeOnSubscribe(s);
         } finally {
             contextThreadLocal.set(prev);
         }
     }
 
     @Override
-    public void onNext(T t) {
+    public final void onNext(T t) {
         final Thread currentThread = Thread.currentThread();
         if (currentThread instanceof AsyncContextMapHolder) {
             final AsyncContextMapHolder asyncContextMapHolder = (AsyncContextMapHolder) currentThread;
@@ -80,7 +89,7 @@ final class ContextPreservingSubscriber<T> extends ContextPreservingSubscriberNo
     }
 
     @Override
-    public void onError(Throwable t) {
+    public final void onError(Throwable t) {
         final Thread currentThread = Thread.currentThread();
         if (currentThread instanceof AsyncContextMapHolder) {
             final AsyncContextMapHolder asyncContextMapHolder = (AsyncContextMapHolder) currentThread;
@@ -107,7 +116,7 @@ final class ContextPreservingSubscriber<T> extends ContextPreservingSubscriberNo
     }
 
     @Override
-    public void onComplete() {
+    public final void onComplete() {
         final Thread currentThread = Thread.currentThread();
         if (currentThread instanceof AsyncContextMapHolder) {
             final AsyncContextMapHolder asyncContextMapHolder = (AsyncContextMapHolder) currentThread;
@@ -131,5 +140,10 @@ final class ContextPreservingSubscriber<T> extends ContextPreservingSubscriberNo
         } finally {
             contextThreadLocal.set(prev);
         }
+    }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "(" + subscriber + ')';
     }
 }
