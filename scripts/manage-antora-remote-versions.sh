@@ -7,30 +7,20 @@ set -eu
 
 function usage() {
 cat << EOF
-manage-antora-remote-versions.sh [-a|-o] {semver}
+manage-antora-remote-versions.sh {semver}
 
 Adds or updates tag versions in the Antora remotes.
-
-  -a Add a version to the tags
-  -u Update a patch version
 
 semver must be the full 3 components.
 EOF
 }
 
-if [ "$#" -ne "2" ]; then
+if [ "$#" -ne "1" ]; then
     usage
     exit 1
 fi
 
-operation="$1"
-newversion="$2"
-
-if [ "$operation" != "-a" -a "$operation" != "-u" ]; then
-    echo "Unknown argument: $operation"
-    usage
-    exit 1
-fi
+newversion="$1"
 
 if ( echo "$newversion" | grep -q "SNAPSHOT" ); then
     echo "Expected version to be a release version, not snapshot"
@@ -48,12 +38,24 @@ file=docs/generation/site-remote.yml
 
 count1="$(grep "tags:" "$file" | wc -l)"
 
-if [ "$operation" = "-a" ]; then
-    cat "$file" | sed "s/^      tags: \[\(.*\)\]$/      tags: [\1, $newversion]/" > "$file.tmp"
-elif [ "$operation" = "-u" ]; then
-    newversionprefix="${newversion%.*}"
-    cat "$file" | sed "s/^      tags: \[\(.*\)$newversionprefix\.[^,]*\(.*\)\]$/      tags: [\1$newversion\2]/" > "$file.tmp"
-fi
+majorminor="${newversion%.*}"
+
+rm -f "$file.tmp"
+cat "$file" | while IFS='' read line; do
+    if ( echo "$line" | grep -q "^      tags: \[.*\]" ); then
+        if (echo "$line" | grep -q "[[ ]${majorminor}.\d" ); then
+            # If major.minor was already in this line, update the patch version
+            echo "$line" |
+              sed "s/^      tags: \[\(.*[[ ]\)$majorminor\.[^,]*\(.*\)\]$/      tags: [\1$newversion\2]/" \
+              >> "$file.tmp"
+        else
+            # If major.minor was not already in this line, add it
+            echo "$line" | sed "s/^      tags: \[\(.*\)\]$/      tags: [\1, $newversion]/" >> "$file.tmp"
+        fi
+    else
+        echo "$line" >> "$file.tmp"
+    fi
+done
 
 count2="$(grep -F "$newversion" "$file.tmp" | wc -l)"
 
