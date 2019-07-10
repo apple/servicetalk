@@ -216,6 +216,7 @@ public final class ExecutionStrategyTest extends AbstractJerseyStreamingHttpServ
     @Override
     protected void configureBuilders(final HttpServerBuilder serverBuilder,
                                      final HttpJerseyRouterBuilder jerseyRouterBuilder) {
+        // We do not call super.configureBuilders here because some strategies expect the default serverBuilder
         routerExecutionStrategy.configureRouterBuilder(serverBuilder, ROUTER_EXEC.executor());
 
         jerseyRouterBuilder.routeExecutionStrategyFactory(

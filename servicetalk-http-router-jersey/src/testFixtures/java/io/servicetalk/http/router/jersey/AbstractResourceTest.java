@@ -123,10 +123,9 @@ public abstract class AbstractResourceTest extends AbstractJerseyStreamingHttpSe
     @Override
     protected void configureBuilders(final HttpServerBuilder serverBuilder,
                                      final HttpJerseyRouterBuilder jerseyRouterBuilder) {
+        super.configureBuilders(serverBuilder, jerseyRouterBuilder);
         if (serverNoOffloads) {
             serverBuilder.executionStrategy(noOffloadsStrategy());
-        } else {
-            super.configureBuilders(serverBuilder, jerseyRouterBuilder);
         }
     }
 

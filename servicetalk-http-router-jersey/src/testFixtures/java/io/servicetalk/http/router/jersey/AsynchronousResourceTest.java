@@ -462,6 +462,6 @@ public class AsynchronousResourceTest extends AbstractResourceTest {
     }
 
     private void assumeOffloads(final AssumeOffloadsReason reason) {
-        assumeThat(reason.message + " can't be used with nooffloads", serverNoOffloads(), is(false));
+        assumeThat(reason.message + " can't be used with noOffloads", serverNoOffloads(), is(false));
     }
 }
