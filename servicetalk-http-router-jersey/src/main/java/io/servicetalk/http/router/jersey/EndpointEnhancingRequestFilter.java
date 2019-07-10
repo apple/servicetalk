@@ -483,18 +483,14 @@ final class EndpointEnhancingRequestFilter implements ContainerRequestFilter {
 
     // Variant of HttpExecutionStrategies#difference which is geared towards router logic
     @Nullable
-    public static HttpExecutionStrategy difference(final Executor fallback,
+    private static HttpExecutionStrategy difference(final Executor fallback,
                                                    final HttpExecutionStrategy left,
                                                    final HttpExecutionStrategy right) {
-        if (left.equals(right)) {
-            // No difference, so no offloading is required.
+        if (left.equals(right) || right == noOffloadsStrategy()) {
             return null;
         }
         if (left == noOffloadsStrategy()) {
             return right;
-        }
-        if (left != noOffloadsStrategy() && right == noOffloadsStrategy()) {
-            return null;
         }
 
         final Executor rightExecutor = right.executor();
