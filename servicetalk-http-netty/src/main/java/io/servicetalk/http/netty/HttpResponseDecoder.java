@@ -70,7 +70,7 @@ final class HttpResponseDecoder extends HttpObjectDecoder<HttpResponseMetaData> 
             byte b = buffer.getByte(buffer.readerIndex() + i);
             if (b != FIRST_BYTES[i]) {
                 // Illegal response if it doesn't start with 'HTTP'
-                throw new IllegalArgumentException("Invalid initial line");
+                splitInitialLineError();
             }
         }
     }

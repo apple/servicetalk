@@ -65,7 +65,7 @@ final class HttpRequestDecoder extends HttpObjectDecoder<HttpRequestMetaData> {
             // https://tools.ietf.org/html/rfc7231#section-4.1
             if (b < 'A' || b > 'Z') {
                 // Illegal request if it doesn't start with 3 capital letters, or fewer followed by a space.
-                throw new IllegalArgumentException("Invalid initial line");
+                splitInitialLineError();
             }
         }
     }
