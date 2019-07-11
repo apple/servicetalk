@@ -17,12 +17,15 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.SingleSource;
-import io.servicetalk.concurrent.internal.SubscriberUtils;
+import io.servicetalk.concurrent.internal.FlowControlUtil;
 
+import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.internal.FlowControlUtil.addWithOverflowProtection;
+import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid;
+import static io.servicetalk.concurrent.internal.SubscriberUtils.newExceptionForInvalidRequestN;
+import static java.lang.Long.MIN_VALUE;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater;
 
@@ -50,27 +53,15 @@ final class PublisherConcatWithSingle<T> extends AbstractAsynchronousPublisherOp
         private static final Object TERMINATED = new Object();
         private static final AtomicReferenceFieldUpdater<ConcatSubscriber, Object> stateUpdater =
                 newUpdater(ConcatSubscriber.class, Object.class, "state");
+        private static final AtomicLongFieldUpdater<ConcatSubscriber> requestNUpdater =
+                AtomicLongFieldUpdater.newUpdater(ConcatSubscriber.class, "requestN");
         private final Subscriber<? super T> target;
         private final Single<? extends T> next;
         private boolean nextSubscribed;
 
         @Nullable
-        private Subscription subscription;
-
-        /**
-         * Can have the following values:
-         * <ul>
-         *     <li>{@code null} at creation.</li>
-         *     <li>{@link Long} representing pending requested items.</li>
-         *     <li>{@link ConcatSubscriber#CANCELLED} once {@link #cancel()} is called, after this state will never
-         *     change.</li>
-         *     <li>{@link Cancellable} once {@link #onSubscribe(Cancellable)} and {@link #cancel()} has not been
-         *     called.</li>
-         *     <li>{@code Result} of the next {@link Single} when available.</li>
-         * </ul>
-         */
-        @Nullable
         private volatile Object state;
+        private volatile long requestN;
 
         ConcatSubscriber(Subscriber<? super T> target, Single<? extends T> next) {
             this.target = target;
@@ -79,22 +70,13 @@ final class PublisherConcatWithSingle<T> extends AbstractAsynchronousPublisherOp
 
         @Override
         public void onSubscribe(Subscription s) {
-            subscription = s;
+            state = s;
             target.onSubscribe(this);
         }
 
         @Override
         public void onNext(T t) {
-            for (;;) {
-                final Object s = state;
-                if (s == CANCELLED) {
-                    return;
-                }
-                assert s instanceof Long;
-                if (stateUpdater.compareAndSet(this, s, ((long) s - 1))) {
-                    break;
-                }
-            }
+            requestNUpdater.decrementAndGet(this);
             target.onNext(t);
         }
 
@@ -109,11 +91,8 @@ final class PublisherConcatWithSingle<T> extends AbstractAsynchronousPublisherOp
                 final Object s = state;
                 if (s == CANCELLED) {
                     cancellable.cancel();
-                    return;
-                }
-                if (s instanceof Long && stateUpdater.compareAndSet(this, s,
-                        (long) s > 0 ? new CancellableWithOutstandingDemand(cancellable) : cancellable)
-                        || s == null && stateUpdater.compareAndSet(this, null, cancellable)) {
+                    break;
+                } else if (stateUpdater.compareAndSet(this, s, cancellable)) {
                     break;
                 }
             }
@@ -121,18 +100,32 @@ final class PublisherConcatWithSingle<T> extends AbstractAsynchronousPublisherOp
 
         @Override
         public void onSuccess(@Nullable final T result) {
+            // requestN may go negative as a result of this decrement. This is done to simplify underflow management
+            // and is compensated for below and in request(n).
+            long requestNBeforeDecrement = requestNUpdater.getAndDecrement(this);
             for (;;) {
                 final Object s = state;
                 if (s == CANCELLED || s == TERMINATED) {
-                    return;
-                }
-                if (s instanceof CancellableWithOutstandingDemand) {
+                    break;
+                } else if (requestNBeforeDecrement > 0) {
                     if (stateUpdater.compareAndSet(this, s, TERMINATED)) {
                         terminateTarget(result);
                         break;
                     }
-                } else if (stateUpdater.compareAndSet(this, s, new SingleResult<>(result))) {
-                    break;
+                } else if (requestNBeforeDecrement == 0) {
+                    if (stateUpdater.compareAndSet(this, s, new SingleResult<>(result))) {
+                        if (s instanceof CancellableWithOutstandingDemand) {
+                            // We have to re-check requestN here because it has changed.
+                            requestNBeforeDecrement = requestN;
+                            // CancellableWithOutstandingDemand means that requestN count has changed, it should not
+                            // be 0 any more. We rely upon this because otherwise we may infinite loop here.
+                            assert requestNBeforeDecrement != 0;
+                        } else {
+                            break;
+                        }
+                    }
+                } else if (stateUpdater.compareAndSet(this, s, TERMINATED)) {
+                    target.onError(newExceptionForInvalidRequestN(requestNBeforeDecrement));
                 }
             }
         }
@@ -149,53 +142,50 @@ final class PublisherConcatWithSingle<T> extends AbstractAsynchronousPublisherOp
 
         @Override
         public void request(final long n) {
-            assert subscription != null;
-            if (!SubscriberUtils.isRequestNValid(n)) {
-                subscription.request(n);
-                return;
+            final long requestNPostUpdate;
+            if (isRequestNValid(n)) {
+                requestNPostUpdate = requestNUpdater.accumulateAndGet(this, n,
+                        FlowControlUtil::addWithOverflowProtectionIfGtEqNegativeOne);
+            } else {
+                requestNPostUpdate = sanitizeInvalidRequestN(n);
+                requestN = requestNPostUpdate;
             }
 
             for (;;) {
                 final Object s = state;
-                if (s == CANCELLED || s == TERMINATED) {
-                    return;
-                }
-                if (s instanceof Long || s == null) {
-                    long nextState = s != null ? addWithOverflowProtection((long) s, n) : n;
-                    if (stateUpdater.compareAndSet(this, s, nextState)) {
-                        subscription.request(n);
-                        return;
+                if (s instanceof Subscription) {
+                    ((Subscription) s).request(n);
+                    break;
+                } else if (s instanceof SingleResult) {
+                    if (stateUpdater.compareAndSet(this, s, TERMINATED)) {
+                        // requestNPostUpdate may be legitimately be 0 after incrementing because the single completion
+                        // unconditionally decrements.
+                        if (requestNPostUpdate >= 0) {
+                            terminateTarget(SingleResult.fromRaw(s));
+                        } else {
+                            target.onError(newExceptionForInvalidRequestN(requestNPostUpdate));
+                        }
+                        break;
                     }
-                } else if (s instanceof CancellableWithOutstandingDemand) {
-                    // already requested
-                    return;
-                } else if (s instanceof Cancellable) {
+                } else if (s instanceof Cancellable && !(s instanceof CancellableWithOutstandingDemand)) {
                     if (stateUpdater.compareAndSet(this, s, new CancellableWithOutstandingDemand((Cancellable) s))) {
-                        return;
+                        break;
                     }
                 } else {
-                    assert s instanceof SingleResult;
-                    if (stateUpdater.compareAndSet(this, s, TERMINATED)) {
-                        terminateTarget(SingleResult.fromRaw(s));
-                        return;
-                    }
+                    break;
                 }
             }
         }
 
         @Override
         public void cancel() {
-            assert subscription != null;
             for (;;) {
                 final Object s = state;
                 if (s == CANCELLED || s == TERMINATED) {
-                    return;
-                }
-                if (stateUpdater.compareAndSet(this, s, CANCELLED)) {
+                    break;
+                } else if (stateUpdater.compareAndSet(this, s, CANCELLED)) {
                     if (s instanceof Cancellable) {
                         ((Cancellable) s).cancel();
-                    } else {
-                        subscription.cancel();
                     }
                     break;
                 }
@@ -203,8 +193,19 @@ final class PublisherConcatWithSingle<T> extends AbstractAsynchronousPublisherOp
         }
 
         private void terminateTarget(@Nullable final T t) {
-            target.onNext(t);
+            try {
+                target.onNext(t);
+            } catch (Throwable cause) {
+                target.onError(cause);
+                return;
+            }
             target.onComplete();
+        }
+
+        private static long sanitizeInvalidRequestN(long n) {
+            // 0 and -1 are used during arithmetic, but they are invalid. so just use -2. this also simplifies underflow
+            // protection when decrementing.
+            return n >= -1 ? -2 : n == MIN_VALUE ? MIN_VALUE + 1 : n;
         }
     }
 

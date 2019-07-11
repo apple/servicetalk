@@ -42,6 +42,7 @@ import java.util.regex.Pattern;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.http.api.HttpApiConversions.toStreamingHttpService;
+import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.router.predicate.Predicates.method;
 import static io.servicetalk.http.router.predicate.Predicates.methodIsOneOf;
 import static io.servicetalk.http.router.predicate.Predicates.pathEquals;
@@ -54,7 +55,7 @@ import static java.util.Objects.requireNonNull;
 /**
  * Builds an {@link StreamingHttpService} which routes requests to a number of other {@link StreamingHttpService}s based
  * on user specified criteria.
- *
+ * <p>
  * eg.
  * <pre>{@code
  * final StreamingHttpService<HttpChunk, HttpChunk> router = new HttpPredicateRouterBuilder<HttpChunk, HttpChunk>()
@@ -67,7 +68,6 @@ import static java.util.Objects.requireNonNull;
  * If no routes match, a default service is used, which returns a 404 response.
  */
 public final class HttpPredicateRouterBuilder implements RouteStarter {
-
     private final List<Route> routes = new ArrayList<>();
     private final RouteContinuationImpl continuation = new RouteContinuationImpl();
     @Nullable
@@ -255,24 +255,24 @@ public final class HttpPredicateRouterBuilder implements RouteStarter {
 
         @Override
         public RouteStarter thenRouteTo(final StreamingHttpService service) {
-            return thenRouteTo0(service, strategy);
+            return thenRouteTo0(service, newInfluencer(service).influenceStrategy(defaultStrategy()));
         }
 
         @Override
         public RouteStarter thenRouteTo(final HttpService service) {
-            ServiceAdapterHolder adapterHolder = toStreamingHttpService(service, newInfluencer(service));
+            final ServiceAdapterHolder adapterHolder = toStreamingHttpService(service, newInfluencer(service));
             return thenRouteTo0(adapterHolder.adaptor(), adapterHolder.serviceInvocationStrategy());
         }
 
         @Override
         public RouteStarter thenRouteTo(final BlockingHttpService service) {
-            ServiceAdapterHolder adapterHolder = toStreamingHttpService(service, newInfluencer(service));
+            final ServiceAdapterHolder adapterHolder = toStreamingHttpService(service, newInfluencer(service));
             return thenRouteTo0(adapterHolder.adaptor(), adapterHolder.serviceInvocationStrategy());
         }
 
         @Override
         public RouteStarter thenRouteTo(final BlockingStreamingHttpService service) {
-            ServiceAdapterHolder adapterHolder = toStreamingHttpService(service, newInfluencer(service));
+            final ServiceAdapterHolder adapterHolder = toStreamingHttpService(service, newInfluencer(service));
             return thenRouteTo0(adapterHolder.adaptor(), adapterHolder.serviceInvocationStrategy());
         }
 

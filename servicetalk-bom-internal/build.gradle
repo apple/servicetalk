@@ -67,6 +67,7 @@ dependencyManagement {
 
     // Testing
     dependency "junit:junit:$junitVersion"
+    dependency "io.netty:netty-tcnative-boringssl-static:$tcnativeVersion"
     dependency "net.javacrumbs.json-unit:json-unit:$jsonUnitVersion"
     dependency "net.javacrumbs.json-unit:json-unit-fluent:$jsonUnitVersion"
     dependency "org.hamcrest:hamcrest-library:$hamcrestVersion"

@@ -21,7 +21,7 @@ import io.servicetalk.concurrent.PublisherSource.Subscription;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.internal.FlowControlUtil.addWithOverflowProtectionIfNotNegative;
+import static io.servicetalk.concurrent.internal.FlowControlUtil.addWithOverflowProtection;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid;
 import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater;
 
@@ -36,9 +36,6 @@ import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater
  * </ul>
  */
 abstract class CancellableThenSubscription implements Subscription {
-
-    private static final Long AWAITING_SUBSCRIPTION_SET = 0L;
-    private static final Long INVALID_REQUEST_N = Long.MIN_VALUE;
     private static final Cancellable CANCELLED = () -> { };
     /**
      * Can be the following:
@@ -58,51 +55,26 @@ abstract class CancellableThenSubscription implements Subscription {
     private Cancellable firstCancellable;
 
     @Override
-    public void request(final long n) {
-        final Object currentState = state;
-        if (currentState == CANCELLED ||
-                // Pre-existing invalid request-n, should be sent as-is to the original Subscription
-                currentState instanceof Long && (long) currentState == INVALID_REQUEST_N) {
-            return;
-        }
-
-        final boolean shouldAdjustRequestNBy1 = shouldAdjustRequestNBy1();
-        final long adjustedN = isRequestNValid(n) ? shouldAdjustRequestNBy1 ? n - 1 : n : INVALID_REQUEST_N;
-
-        if (shouldAdjustRequestNBy1) {
-            emitAdjustedItemIfAvailable();
-            if (n == 1) {
-                // Only 1 item was requested and we emitted (or scheduled to emit) that item, nothing else is required
-                // to be done.
-                return;
-            }
-        }
-
+    public void request(long n) {
         for (;;) {
             final Object s = state;
             if (s instanceof Subscription) {
-                Subscription subscription = (Subscription) s;
-                subscription.request(adjustedN);
+                ((Subscription) s).request(n);
                 break;
-            } else if (s == null || s instanceof Long) {
-                if (isRequestNValid(n) && s != null) {
-                    if (stateUpdater.compareAndSet(this, s,
-                            addWithOverflowProtectionIfNotNegative((long) s, adjustedN))) {
-                        break;
-                    }
-                } else if (stateUpdater.compareAndSet(this, s, adjustedN)) {
+            } else if (s == null || !isRequestNValid(n)) {
+                if (stateUpdater.compareAndSet(this, s, n)) {
                     break;
                 }
+            } else if (s instanceof Long) {
+                final long longS = (long) s;
+                if (longS < 0 || stateUpdater.compareAndSet(this, s, addWithOverflowProtection(longS, n))) {
+                    break;
+                }
+            } else {
+                assert s == CANCELLED;
+                break;
             }
         }
-    }
-
-    boolean shouldAdjustRequestNBy1() {
-        return false; // Noop by default
-    }
-
-    void emitAdjustedItemIfAvailable() {
-        // Noop by default
     }
 
     @Override
@@ -110,33 +82,31 @@ abstract class CancellableThenSubscription implements Subscription {
         Object oldState = stateUpdater.getAndSet(this, CANCELLED);
         if (oldState instanceof Cancellable) {
             ((Cancellable) oldState).cancel();
-        }
-        if (oldState == null || oldState instanceof Long) {
-            // according to the contract, setCancellable() should happen-before call to any other method.
-            assert firstCancellable != null;
+        } else if (oldState != CANCELLED && firstCancellable != null) {
             firstCancellable.cancel();
+            firstCancellable = null;
         }
     }
 
-    void setCancellable(Cancellable cancellable) {
+    final void setCancellable(Cancellable cancellable) {
         firstCancellable = cancellable;
-        if (state == CANCELLED) {
-            cancellable.cancel();
-        }
     }
 
-    void setSubscription(Subscription subscription) {
+    final void setSubscription(Subscription subscription) {
+        // Make a best effort to null firstCancellable. We no longer need to interact with it at this point because the
+        // action associated with the firstCancellable has completed when this method is called. If we do cancel that is
+        // still permitted by the spec [1].
+        // [1] https://github.com/reactive-streams/reactive-streams-jvm#3.5
+        firstCancellable = null;
         for (;;) {
             final Object s = state;
             if (s instanceof Long) {
-                long toRequest = (long) s;
-                if (toRequest == AWAITING_SUBSCRIPTION_SET &&
-                        stateUpdater.compareAndSet(this, AWAITING_SUBSCRIPTION_SET, subscription)) {
-                    break;
-                }
-                if (stateUpdater.compareAndSet(this, s, AWAITING_SUBSCRIPTION_SET)) {
+                final long toRequest = (long) s;
+                // we must reset to 0 before we try to request any data. this ensures that we don't double count
+                // any n value that is added in request(n) above from another thread.
+                if (stateUpdater.compareAndSet(this, s, 0L)) {
                     subscription.request(toRequest);
-                    if (stateUpdater.compareAndSet(this, AWAITING_SUBSCRIPTION_SET, subscription)) {
+                    if (stateUpdater.compareAndSet(this, 0L, subscription)) {
                         break;
                     }
                 }

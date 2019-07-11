@@ -54,7 +54,6 @@ import java.util.function.Supplier;
 import javax.annotation.Nullable;
 import javax.net.ssl.SSLSession;
 
-import static io.netty.util.ReferenceCountUtil.release;
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.concurrent.api.Processors.newCompletableProcessor;
@@ -394,6 +393,11 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
     }
 
     @Override
+    public Channel nettyChannel() {
+        return channel();
+    }
+
+    @Override
     public String toString() {
         return channel().toString();
     }
@@ -532,28 +536,25 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
 
         @Override
         public void userEventTriggered(ChannelHandlerContext ctx, Object evt) {
-            try {
-                if (evt == ChannelOutputShutdownEvent.INSTANCE) {
-                    connection.closeHandler.channelClosedOutbound(ctx);
-                    connection.writableListener.channelClosedOutbound();
-                } else if (evt == ChannelInputShutdownReadComplete.INSTANCE) {
-                    // Notify close handler first to enhance error reporting
-                    connection.closeHandler.channelClosedInbound(ctx);
-                    // ChannelInputShutdownEvent is not always triggered and can get triggered before we tried to read
-                    // all the available data. ChannelInputShutdownReadComplete is the one that seems to (at least in
-                    // the current netty version) gets triggered reliably at the appropriate time.
-                    connection.nettyChannelPublisher.channelInboundClosed();
-                } else if (evt instanceof SslHandshakeCompletionEvent) {
-                    connection.sslSession = extractSslSession(ctx.pipeline(), (SslHandshakeCompletionEvent) evt,
-                            this::tryFailSubscriber);
-                    if (subscriber != null) {
-                        assert waitForSslHandshake;
-                        completeSubscriber();
-                    }
+            if (evt == ChannelOutputShutdownEvent.INSTANCE) {
+                connection.closeHandler.channelClosedOutbound(ctx);
+                connection.writableListener.channelClosedOutbound();
+            } else if (evt == ChannelInputShutdownReadComplete.INSTANCE) {
+                // Notify close handler first to enhance error reporting
+                connection.closeHandler.channelClosedInbound(ctx);
+                // ChannelInputShutdownEvent is not always triggered and can get triggered before we tried to read
+                // all the available data. ChannelInputShutdownReadComplete is the one that seems to (at least in
+                // the current netty version) gets triggered reliably at the appropriate time.
+                connection.nettyChannelPublisher.channelInboundClosed();
+            } else if (evt instanceof SslHandshakeCompletionEvent) {
+                connection.sslSession = extractSslSession(ctx.pipeline(), (SslHandshakeCompletionEvent) evt,
+                        this::tryFailSubscriber);
+                if (subscriber != null) {
+                    assert waitForSslHandshake;
+                    completeSubscriber();
                 }
-            } finally {
-                release(evt);
             }
+            ctx.fireUserEventTriggered(evt);
         }
 
         @Override

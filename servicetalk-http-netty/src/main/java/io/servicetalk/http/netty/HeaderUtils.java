@@ -17,7 +17,6 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.CharSequences;
 import io.servicetalk.http.api.EmptyHttpHeaders;
 import io.servicetalk.http.api.HttpHeaders;
@@ -79,7 +78,10 @@ final class HeaderUtils {
 
     static boolean canAddResponseContentLength(final StreamingHttpResponse response,
                                                final HttpRequestMethod requestMethod) {
-        return canAddContentLength(response) && shouldAddZeroContentLength(response.status().code(), requestMethod);
+        return canAddContentLength(response) && shouldAddZeroContentLength(response.status().code(), requestMethod)
+                // HEAD requests should either have the content-length already set (= what GET will return) or
+                // have the header omitted when unknown, but never have any payload anyway so don't try to infer it
+                && !isHeadResponse(requestMethod);
     }
 
     static boolean canAddRequestTransferEncoding(final StreamingHttpRequest request) {
@@ -89,7 +91,7 @@ final class HeaderUtils {
     static boolean clientMaySendPayloadBodyFor(final HttpRequestMethod requestMethod) {
         // A client MUST NOT send a message body in a TRACE request.
         // https://tools.ietf.org/html/rfc7231#section-4.3.8
-        return !TRACE.name().equals(requestMethod.name());
+        return !TRACE.equals(requestMethod);
     }
 
     static boolean canAddResponseTransferEncoding(final StreamingHttpResponse response,
@@ -102,7 +104,7 @@ final class HeaderUtils {
                                                           final HttpRequestMethod requestMethod) {
         // (for HEAD) the server MUST NOT send a message body in the response.
         // https://tools.ietf.org/html/rfc7231#section-4.3.2
-        return !HEAD.name().equals(requestMethod.name()) && !isEmptyResponseStatus(statusCode)
+        return !HEAD.equals(requestMethod) && !isEmptyResponseStatus(statusCode)
                 && !isEmptyConnectResponse(requestMethod, statusCode);
     }
 
@@ -111,13 +113,13 @@ final class HeaderUtils {
                 isSafeToAggregate(metadata) && !mayHaveTrailers(metadata);
     }
 
-    static Single<Publisher<Object>> setRequestContentLength(final StreamingHttpRequest request) {
+    static Publisher<Object> setRequestContentLength(final StreamingHttpRequest request) {
         return setContentLength(request, request.payloadBodyAndTrailers(),
                 shouldAddZeroContentLength(request.method()) ? HeaderUtils::updateRequestContentLength :
                         HeaderUtils::updateRequestContentLengthNonZero);
     }
 
-    static Single<Publisher<Object>> setResponseContentLength(final StreamingHttpResponse response) {
+    static Publisher<Object> setResponseContentLength(final StreamingHttpResponse response) {
         return setContentLength(response, response.payloadBodyAndTrailers(), HeaderUtils::updateResponseContentLength);
     }
 
@@ -144,13 +146,17 @@ final class HeaderUtils {
         return !isEmptyResponseStatus(statusCode) && !isEmptyConnectResponse(requestMethod, statusCode);
     }
 
+    private static boolean isHeadResponse(final HttpRequestMethod requestMethod) {
+        return HEAD.equals(requestMethod);
+    }
+
     private static void updateResponseContentLength(final int contentLength, final HttpHeaders headers) {
         headers.set(CONTENT_LENGTH, Integer.toString(contentLength));
     }
 
-    private static Single<Publisher<Object>> setContentLength(final HttpMetaData metadata,
-                                                              final Publisher<Object> originalPayloadAndTrailers,
-                                                              final BiIntConsumer<HttpHeaders> contentLengthUpdater) {
+    private static Publisher<Object> setContentLength(final HttpMetaData metadata,
+                                                      final Publisher<Object> originalPayloadAndTrailers,
+                                                      final BiIntConsumer<HttpHeaders> contentLengthUpdater) {
         return originalPayloadAndTrailers.collect(() -> null, (reduction, item) -> {
             if (reduction == null) {
                 // avoid allocating a list if the Publisher emits only a single Buffer
@@ -167,31 +173,28 @@ final class HeaderUtils {
             }
             items.add(item);
             return items;
-        }).map(reduction -> {
+        }).flatMapPublisher(reduction -> {
             int contentLength = 0;
-            final Publisher<Object> payloadAndTrailer;
+            final Publisher<Object> flatRequest;
             if (reduction == null) {
-                payloadAndTrailer = from(metadata, EmptyHttpHeaders.INSTANCE);
+                flatRequest = from(metadata, EmptyHttpHeaders.INSTANCE);
             } else if (reduction instanceof List) {
                 final List<?> items = (List<?>) reduction;
                 for (int i = 0; i < items.size(); i++) {
                     contentLength += calculateContentLength(items.get(i));
                 }
-                payloadAndTrailer = Publisher.<Object>from(metadata)
-                        .concat(fromIterable(items));
+                flatRequest = Publisher.<Object>from(metadata).concat(fromIterable(items));
             } else if (reduction instanceof Buffer) {
                 final Buffer buffer = (Buffer) reduction;
                 contentLength = buffer.readableBytes();
-                payloadAndTrailer = from(metadata, buffer, EmptyHttpHeaders.INSTANCE);
+                flatRequest = from(metadata, buffer, EmptyHttpHeaders.INSTANCE);
             } else if (reduction instanceof HttpHeaders) {
-                payloadAndTrailer = from(metadata, reduction);
+                flatRequest = from(metadata, reduction);
             } else {
                 throw new IllegalArgumentException("Unknown object " + reduction + " found as payload");
             }
-            if (contentLength >= 0) {
-                contentLengthUpdater.apply(contentLength, metadata.headers());
-            }
-            return payloadAndTrailer;
+            contentLengthUpdater.apply(contentLength, metadata.headers());
+            return flatRequest;
         });
     }
 
@@ -229,7 +232,7 @@ final class HeaderUtils {
         // A server MUST NOT send any Transfer-Encoding or Content-Length header fields in a 2xx (Successful) response
         // to CONNECT.
         // https://tools.ietf.org/html/rfc7231#section-4.3.6
-        return CONNECT.name().equals(requestMethod.name()) && SUCCESSFUL_2XX.contains(statusCode);
+        return CONNECT.equals(requestMethod) && SUCCESSFUL_2XX.contains(statusCode);
     }
 
     private static boolean isEmptyResponseStatus(final int statusCode) {

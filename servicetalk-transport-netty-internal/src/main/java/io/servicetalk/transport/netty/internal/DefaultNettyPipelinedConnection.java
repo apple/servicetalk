@@ -27,6 +27,7 @@ import io.servicetalk.concurrent.internal.SequentialCancellable;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.netty.internal.NettyConnection.RequestNSupplier;
 
+import io.netty.channel.Channel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,15 +55,6 @@ public final class DefaultNettyPipelinedConnection<Req, Resp> implements NettyPi
     private final NettyConnection<Resp, Req> connection;
     private final NettyConnection.TerminalPredicate<Resp> terminalMsgPredicate;
     private final WriteQueue<Resp> writeQueue;
-
-    /**
-     * New instance.
-     *
-     * @param connection {@link NettyConnection} requests to which are to be pipelined.
-     */
-    public DefaultNettyPipelinedConnection(NettyConnection<Resp, Req> connection) {
-        this(connection, 2);
-    }
 
     /**
      * New instance.
@@ -210,6 +202,11 @@ public final class DefaultNettyPipelinedConnection<Req, Resp> implements NettyPi
     @Override
     public Completable closeAsyncGracefully() {
         return connection.closeAsyncGracefully();
+    }
+
+    @Override
+    public Channel nettyChannel() {
+        return connection.nettyChannel();
     }
 
     @Override

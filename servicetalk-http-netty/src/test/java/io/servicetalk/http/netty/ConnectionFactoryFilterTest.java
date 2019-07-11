@@ -41,6 +41,7 @@ import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.netty.internal.NettyConnectionContext;
 
+import io.netty.channel.Channel;
 import org.junit.After;
 import org.junit.Test;
 
@@ -247,6 +248,11 @@ public class ConnectionFactoryFilterTest {
         @Override
         public Completable closeAsyncGracefully() {
             return delegate.closeAsyncGracefully();
+        }
+
+        @Override
+        public Channel nettyChannel() {
+            return delegate.nettyChannel();
         }
 
         @Override

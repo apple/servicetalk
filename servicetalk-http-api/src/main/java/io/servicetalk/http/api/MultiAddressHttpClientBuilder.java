@@ -20,11 +20,12 @@ import io.servicetalk.client.api.ConnectionFactoryFilter;
 import io.servicetalk.client.api.LoadBalancerFactory;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
+import io.servicetalk.transport.api.ClientSslConfigBuilder;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.IoExecutor;
-import io.servicetalk.transport.api.SslConfig;
 
 import java.net.SocketOption;
+import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -82,6 +83,25 @@ public abstract class MultiAddressHttpClientBuilder<U, R>
     @Override
     public abstract MultiAddressHttpClientBuilder<U, R> disableHostHeaderFallback();
 
+    /**
+     * Sets a function that is used to determine the scheme of a request if the request-target is not absolute-form.
+     *
+     * @param effectiveSchemeFunction the function to use.
+     * @return {@code this}
+     */
+    public abstract MultiAddressHttpClientBuilder<U, R> effectiveScheme(
+            Function<HttpRequestMetaData, String> effectiveSchemeFunction);
+
+    /**
+     * Sets a function that is used for configuring SSL/TLS for https requests.
+     *
+     * @param sslConfigFunction The function to use for configuring SSL/TLS for https requests.
+     * @return {@code this}
+     */
+    public abstract MultiAddressHttpClientBuilder<U, R> configureSsl(
+            BiConsumer<HostAndPort, ClientSslConfigBuilder<? extends SingleAddressHttpClientBuilder<U, R>>>
+                    sslConfigFunction);
+
     @Override
     public abstract MultiAddressHttpClientBuilder<U, R> appendConnectionFilter(
             StreamingHttpConnectionFilterFactory factory);
@@ -107,18 +127,9 @@ public abstract class MultiAddressHttpClientBuilder<U, R>
     public abstract MultiAddressHttpClientBuilder<U, R> loadBalancerFactory(
             LoadBalancerFactory<R, StreamingHttpConnection> loadBalancerFactory);
 
-    /**
-     * Automatically set the provided {@link HttpHeaderNames#HOST} on {@link StreamingHttpRequest}s when it's missing.
-     * <p>
-     * For known address types such as {@link HostAndPort} the {@link HttpHeaderNames#HOST} is inferred and
-     * automatically set by default, if you have a custom address type or want to override the inferred value use this
-     * method. Use {@link #disableHostHeaderFallback()} if you don't want any {@link HttpHeaderNames#HOST} manipulation
-     * at all.
-     * @param hostHeaderTransformer transforms the {@code UnresolvedAddress} for the {@link HttpHeaderNames#HOST}
-     * @return {@code this}
-     */
-    public abstract MultiAddressHttpClientBuilder<U, R> enableHostHeaderFallback(
-            Function<U, CharSequence> hostHeaderTransformer);
+    @Override
+    public abstract MultiAddressHttpClientBuilder<U, R> unresolvedAddressToHost(
+            Function<U, CharSequence> unresolvedAddressToHostFunction);
 
     /**
      * Append the filter to the chain of filters used to decorate the {@link StreamingHttpClient} created by this
@@ -169,14 +180,6 @@ public abstract class MultiAddressHttpClientBuilder<U, R>
 
         return appendClientFilter(toMultiAddressConditionalFilterFactory(predicate, factory));
     }
-
-    /**
-     * Set a {@link SslConfigProvider} for appropriate {@link SslConfig}s.
-     *
-     * @param sslConfigProvider A {@link SslConfigProvider} to use.
-     * @return {@code this}.
-     */
-    public abstract MultiAddressHttpClientBuilder<U, R> sslConfigProvider(SslConfigProvider sslConfigProvider);
 
     /**
      * Set a maximum number of redirects to follow.

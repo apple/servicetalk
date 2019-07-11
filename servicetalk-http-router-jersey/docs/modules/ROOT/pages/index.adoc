@@ -105,6 +105,7 @@ of `Buffer`s.
 
 CAUTION: Using `Buffer` and async payloads will prevent off-the-shelf
 payload-aware <<filter-inter>> from working properly.
+Moreover, such payloads can not currently be used with Server-Sent Events (SSE).
 
 Let's look at some examples.
 The first one is a rewrite of the previous `hello` example but,
@@ -407,10 +408,8 @@ the Jersey router, as demonstrated here:
 [source,java]
 ----
 HttpServers.forPort(8080)
-    .listenStreamingAndAwait(
-            new HttpJerseyRouterBuilder()
-                    .executionStrategy(HttpExecutionStrategies.defaultStrategy(executor))
-                    .build(jaxrsApplication))
+    .executionStrategy(HttpExecutionStrategies.defaultStrategy(executor))
+    .listenStreamingAndAwait(new HttpJerseyRouterBuilder().build(jaxrsApplication))
     .awaitShutdown();
 ----
 
@@ -464,10 +463,8 @@ bootstrap code and followed by one JAX-RS resource method:
 [source,java]
 ----
 HttpServers.forPort(8080)
-    .listenStreamingAndAwait(
-            new HttpJerseyRouterBuilder()
-                    .executionStrategy(HttpExecutionStrategies.noOffloadsStrategy())
-                    .build(jaxrsApplication))
+    .executionStrategy(HttpExecutionStrategies.noOffloadsStrategy())
+    .listenStreamingAndAwait(new HttpJerseyRouterBuilder().build(jaxrsApplication))
     .awaitShutdown();
 
 @NoOffloadsRouteExecutionStrategy
@@ -484,7 +481,11 @@ public class HelloWorldJaxRsResource {
 
 Notice how `HttpExecutionStrategies.noOffloadsStrategy()` and
 `@NoOffloadsRouteExecutionStrategy` are used conjointly to ensure that
-the requests will be fully handled on I/O threads.
+offloading will be completely disabled and that the requests will be fully handled on I/O threads.
+
+WARNING: Disabling offloading should only be done when it is certain that no blocking code will be invoked.
+Request handling in Jersey follows a complicated and dynamic path, so unexpected blocking can occur in non-user code.
+Be sure to thoroughly test the routes for which you intend to disable offloading.
 
 These different options combined together yield different effects at
 different level of the application code. The following table details
@@ -503,7 +504,7 @@ S: Global |M: Route +
 C: Route +
 S: Route |M: Route +
 C: Route +
-S: Server I/O
+S: Global
 
 |Router +
 Executor |M: Router +
@@ -512,12 +513,12 @@ S: Router |M: Route +
 C: Route +
 S: Route |M: Route +
 C: Route +
-S: Server I/O
+S: Global
 
 |Router +
-No Offloads |M: Server I/O +
+No Offloads |M: Global +
 C: Global +
-S: Server I/O |M: Route +
+S: Global |M: Route +
 C: Route +
 S: Route |M: Server I/O +
 C: Server I/O +

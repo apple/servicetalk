@@ -49,13 +49,13 @@ final class ResumePublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
 
     private static final class ResumeSubscriber<T> implements Subscriber<T> {
         private final Subscriber<? super T> subscriber;
-        @Nullable
-        private volatile Function<Throwable, ? extends Publisher<? extends T>> nextFactory;
         private final SignalOffloader signalOffloader;
         private final AsyncContextMap contextMap;
         private final AsyncContextProvider contextProvider;
         @Nullable
-        private volatile SequentialSubscription sequentialSubscription;
+        private SequentialSubscription sequentialSubscription;
+        @Nullable
+        private Function<Throwable, ? extends Publisher<? extends T>> nextFactory;
 
         ResumeSubscriber(Subscriber<? super T> subscriber,
                          Function<Throwable, ? extends Publisher<? extends T>> nextFactory,
@@ -70,9 +70,8 @@ final class ResumePublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
 
         @Override
         public void onSubscribe(Subscription s) {
-            SequentialSubscription sequentialSubscription = this.sequentialSubscription;
             if (sequentialSubscription == null) {
-                this.sequentialSubscription = sequentialSubscription = new SequentialSubscription(s);
+                sequentialSubscription = new SequentialSubscription(s);
                 subscriber.onSubscribe(sequentialSubscription);
             } else {
                 // Only a single re-subscribe is allowed.
@@ -83,15 +82,13 @@ final class ResumePublisher<T> extends AbstractNoHandleSubscribePublisher<T> {
 
         @Override
         public void onNext(T t) {
-            SequentialSubscription sequentialSubscription = this.sequentialSubscription;
-            assert sequentialSubscription != null : "Subscription can not be null in onNext.";
+            assert sequentialSubscription != null;
             sequentialSubscription.itemReceived();
             subscriber.onNext(t);
         }
 
         @Override
         public void onError(Throwable t) {
-            final Function<Throwable, ? extends Publisher<? extends T>> nextFactory = this.nextFactory;
             if (nextFactory == null) {
                 subscriber.onError(t);
                 return;

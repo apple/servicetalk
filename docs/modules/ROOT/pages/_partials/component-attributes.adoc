@@ -1,6 +1,5 @@
+:git-ref: master
+
 ifndef::sourceroot[]
-:sourceroot: https://github.pie.apple.com/servicetalk/servicetalk/blob/master/
-ifdef::is-release-version[]
-:sourceroot: https://github.pie.apple.com/servicetalk/servicetalk/blob/{page-component-version}/
-endif::[]
+:sourceroot: https://github.pie.apple.com/servicetalk/servicetalk/blob/{git-ref}/
 endif::[]
