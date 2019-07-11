@@ -334,6 +334,32 @@ public class HttpRequestDecoderTest {
         }
     }
 
+    @Test(expected = DecoderException.class)
+    public void invalidInitialLine() {
+        EmbeddedChannel channel = newEmbeddedChannel();
+        byte[] content = new byte[128];
+        ThreadLocalRandom.current().nextBytes(content);
+        byte[] beforeContentBytes = ("get").getBytes(US_ASCII);
+        try {
+            channel.writeInbound(wrappedBuffer(beforeContentBytes));
+        } finally {
+            channel.finishAndReleaseAll();
+        }
+    }
+
+    @Test
+    public void acceptShortRequestMethod() {
+        EmbeddedChannel channel = newEmbeddedChannel();
+        byte[] content = new byte[128];
+        ThreadLocalRandom.current().nextBytes(content);
+        byte[] beforeContentBytes = ("A / HTTP/1.1").getBytes(US_ASCII);
+        try {
+            assertFalse(channel.writeInbound(wrappedBuffer(beforeContentBytes)));
+        } finally {
+            channel.finishAndReleaseAll();
+        }
+    }
+
     private static EmbeddedChannel newEmbeddedChannel() {
         HttpRequestDecoder decoder = new HttpRequestDecoder(new ArrayDeque<>(),
                 DefaultHttpHeadersFactory.INSTANCE, 8192, 8192);

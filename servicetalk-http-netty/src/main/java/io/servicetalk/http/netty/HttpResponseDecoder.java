@@ -22,6 +22,7 @@ import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.transport.netty.internal.CloseHandler;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.channel.ChannelHandlerContext;
 
 import java.util.Queue;
 
@@ -36,10 +37,13 @@ import static io.servicetalk.http.api.HttpResponseStatus.NO_CONTENT;
 import static io.servicetalk.http.api.HttpResponseStatus.SWITCHING_PROTOCOLS;
 import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.INFORMATIONAL_1XX;
 import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
+import static java.lang.Math.min;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.util.Objects.requireNonNull;
 
 final class HttpResponseDecoder extends HttpObjectDecoder<HttpResponseMetaData> {
+
+    private static final byte[] FIRST_BYTES = "HTTP".getBytes(US_ASCII);
 
     private final Queue<HttpRequestMethod> methodQueue;
 
@@ -57,6 +61,18 @@ final class HttpResponseDecoder extends HttpObjectDecoder<HttpResponseMetaData> 
     @Override
     protected boolean isDecodingRequest() {
         return false;
+    }
+
+    @Override
+    protected void handlePartialInitialLine(final ChannelHandlerContext ctx, final ByteBuf buffer) {
+        final int len = min(FIRST_BYTES.length, buffer.readableBytes());
+        for (int i = 0; i < len; ++i) {
+            byte b = buffer.getByte(buffer.readerIndex() + i);
+            if (b != FIRST_BYTES[i]) {
+                // Illegal response if it doesn't start with 'HTTP'
+                splitInitialLineError();
+            }
+        }
     }
 
     @Override
