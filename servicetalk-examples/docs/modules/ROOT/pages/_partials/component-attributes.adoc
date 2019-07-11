@@ -1,4 +1,4 @@
-:git-ref: master
+:git-ref: 0.15.0
 
 ifndef::sourceroot[]
 :sourceroot: https://github.pie.apple.com/servicetalk/servicetalk/blob/{git-ref}/

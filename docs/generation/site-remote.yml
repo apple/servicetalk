@@ -47,7 +47,10 @@ asciidoc:
     linkattrs: ''
 ui:
   bundle:
-    url: https://gitlab.com/antora/antora-ui-default/-/jobs/artifacts/master/raw/build/ui-bundle.zip?job=bundle-stable
+    # Downloaded from https://gitlab.com/antora/antora-ui-default/-/jobs/240724388/artifacts/raw/build/ui-bundle.zip?inline=false
+    # which is a build of commit 4330e8ce (https://gitlab.com/antora/antora-ui-default/commit/4330e8ce78c3180c13147411ba3554e65816e74b)
+    # since the next commit refactors the structure of the UI.
+    url: ui-bundle.zip
     snapshot: true
   supplemental_files: ./supplemental-ui
 output:
