@@ -73,8 +73,14 @@ for file in docs/antora.yml */docs/antora.yml; do
     sed "s/^version:.*/version: ${version%.*}/" "$file" > "$file.tmp"
     mv "$file.tmp" "$file"
 done
-./scripts/update-patch-version-in-antora-components-attributes.sh "$version"
+./scripts/update-git-ref-in-antora-components-attributes.sh "$version"
 ./scripts/manage-antora-remote-versions.sh "$version"
+
+if [ -n "${DRYRUN:-}" ]; then
+    echo "DRYRUN: Pausing to allow inspection before release would be tagged."
+    echo "Press enter to continue."
+    read
+fi
 
 $git commit -a -m "Release $version"
 $git push origin master
@@ -92,7 +98,7 @@ for file in docs/antora.yml */docs/antora.yml; do
     sed "s/^version:.*/version: ${nextVersion%.*}-SNAPSHOT/" "$file" > "$file.tmp"
     mv "$file.tmp" "$file"
 done
-./scripts/update-patch-version-in-antora-components-attributes.sh "${nextVersion%-SNAPSHOT}"
+./scripts/update-git-ref-in-antora-components-attributes.sh "master"
 
 $git commit -a -m "Preparing for $nextVersion development"
 $git push origin master
