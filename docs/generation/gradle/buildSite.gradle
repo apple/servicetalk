@@ -13,12 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+def servicetalkRoot = "../../"
+
+task copyFilesFromRoot(type: Copy) {
+  from "$servicetalkRoot/README.adoc", "$servicetalkRoot/CONTRIBUTING.adoc", "$servicetalkRoot/CODE_OF_CONDUCT.adoc"
+  into "$servicetalkRoot/docs/modules/ROOT/pages"
+}
+
 task buildLocalSite(type: NodeTask) { task ->
-  dependsOn installAntora
+  dependsOn installAntora, copyFilesFromRoot
 
   def outputDir = file("$buildDir/local")
-
-  def servicetalkRoot = "../../"
 
   inputs.file("site-local.yml")
   inputs.dir("$servicetalkRoot/docs")

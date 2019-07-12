@@ -8,5 +8,5 @@
 ** xref:servicetalk-http-router-jersey::index.adoc[Jersey Router]
 ** xref:servicetalk-http-security-jersey::index.adoc[Jersey Security]
 ** xref:servicetalk-data-jackson-jersey::index.adoc[Data Jackson Jersey]
-
-
+* xref:CONTRIBUTING.adoc[Contributing]
+* xref:CODE_OF_CONDUCT.adoc[Code of Conduct]
