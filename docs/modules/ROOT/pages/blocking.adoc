@@ -31,6 +31,7 @@ reduce thread hops and do all application processing on the event loop. ServiceT
 applications but requires explicit <<Opt-in to run on event loop, opt-ins>> to avoid inadvertently blocking the
 event loop.
 
+[#safe-to-block]
 == How is it safe to block?
 
 Simply put, ServiceTalk makes sure that no user code is called on the event loop. In order to do that, it uses an
