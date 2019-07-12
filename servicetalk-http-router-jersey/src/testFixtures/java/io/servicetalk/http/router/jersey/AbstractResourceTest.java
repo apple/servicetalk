@@ -16,16 +16,20 @@
 package io.servicetalk.http.router.jersey;
 
 import io.servicetalk.http.api.HttpResponseStatus;
+import io.servicetalk.http.api.HttpServerBuilder;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.router.jersey.resources.AsynchronousResources;
 import io.servicetalk.http.router.jersey.resources.SynchronousResources;
 
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 import javax.ws.rs.NameBinding;
@@ -37,6 +41,7 @@ import javax.ws.rs.core.Application;
 import javax.ws.rs.ext.Provider;
 
 import static io.servicetalk.http.api.CharSequences.newAsciiString;
+import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.http.api.HttpHeaderValues.APPLICATION_JSON;
 import static io.servicetalk.http.api.HttpHeaderValues.TEXT_PLAIN;
 import static io.servicetalk.http.api.HttpRequestMethod.POST;
@@ -60,6 +65,7 @@ import static org.hamcrest.Matchers.isEmptyString;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertThat;
 
+@RunWith(Parameterized.class)
 public abstract class AbstractResourceTest extends AbstractJerseyStreamingHttpServiceTest {
     @NameBinding
     @Target({ElementType.TYPE, ElementType.METHOD})
@@ -96,6 +102,30 @@ public abstract class AbstractResourceTest extends AbstractJerseyStreamingHttpSe
                     SynchronousResources.class,
                     AsynchronousResources.class
             ));
+        }
+    }
+
+    private final boolean serverNoOffloads;
+
+    protected AbstractResourceTest(final boolean serverNoOffloads) {
+        this.serverNoOffloads = serverNoOffloads;
+    }
+
+    @Parameterized.Parameters(name = "{index}: server-no-offloads = {0}")
+    public static Collection<Object> data() {
+        return asList(false, true);
+    }
+
+    protected boolean serverNoOffloads() {
+        return serverNoOffloads;
+    }
+
+    @Override
+    protected void configureBuilders(final HttpServerBuilder serverBuilder,
+                                     final HttpJerseyRouterBuilder jerseyRouterBuilder) {
+        super.configureBuilders(serverBuilder, jerseyRouterBuilder);
+        if (serverNoOffloads) {
+            serverBuilder.executionStrategy(noOffloadsStrategy());
         }
     }
 

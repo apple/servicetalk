@@ -39,8 +39,6 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import org.mockito.junit.MockitoJUnit;
-import org.mockito.junit.MockitoRule;
 
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
@@ -81,8 +79,6 @@ import static org.junit.Assert.assertThat;
 
 public abstract class AbstractJerseyStreamingHttpServiceTest {
     @Rule
-    public final MockitoRule rule = MockitoJUnit.rule();
-    @Rule
     public final ServiceTalkTestTimeout timeout = new ServiceTalkTestTimeout();
     @Rule
     public final ExpectedException expected = ExpectedException.none();
@@ -100,15 +96,16 @@ public abstract class AbstractJerseyStreamingHttpServiceTest {
         HttpServerBuilder serverBuilder = HttpServers.forAddress(localAddress(0));
         HttpJerseyRouterBuilder routerBuilder = new HttpJerseyRouterBuilder();
         configureBuilders(serverBuilder, routerBuilder);
-        final StreamingHttpService router = routerBuilder.build(application());
-        final Configuration config = ((DefaultJerseyStreamingHttpRouter) router).configuration();
+        final DefaultJerseyStreamingHttpRouter router =
+                (DefaultJerseyStreamingHttpRouter) routerBuilder.build(application());
+        final Configuration config = router.configuration();
         streamingJsonEnabled = getValue(config.getProperties(), config.getRuntimeType(), JSON_FEATURE, "",
                 String.class).toLowerCase().contains("servicetalk");
 
         serverContext = serverBuilder
                 .ioExecutor(SERVER_CTX.ioExecutor())
                 .bufferAllocator(SERVER_CTX.bufferAllocator())
-                .listenStreamingAndAwait(router);
+                .listenStreamingAndAwait(customizeRouter(router));
 
         final HostAndPort hostAndPort = serverHostAndPort(serverContext);
         httpClient = HttpClients.forSingleAddress(hostAndPort).buildStreaming();
@@ -118,6 +115,10 @@ public abstract class AbstractJerseyStreamingHttpServiceTest {
     protected void configureBuilders(final HttpServerBuilder serverBuilder,
                                      final HttpJerseyRouterBuilder jerseyRouterBuilder) {
         serverBuilder.executionStrategy(defaultStrategy(SERVER_CTX.executor()));
+    }
+
+    protected StreamingHttpService customizeRouter(final DefaultJerseyStreamingHttpRouter router) {
+        return router;
     }
 
     @After

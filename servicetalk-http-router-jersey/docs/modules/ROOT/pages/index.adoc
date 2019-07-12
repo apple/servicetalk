@@ -487,6 +487,10 @@ WARNING: Disabling offloading should only be done when it is certain that no blo
 Request handling in Jersey follows a complicated and dynamic path, so unexpected blocking can occur in non-user code.
 Be sure to thoroughly test the routes for which you intend to disable offloading.
 
+IMPORTANT: It is currently not possible to disable offloading if any JAX-RS resource uses `@Suspended AsyncResponse`,
+`CompletionStage` responses or Server-Sent Events. A workaround for this consists in using the Predicate router
+to selectively offload such resources, as shown in this link:{sourceroot}servicetalk-http-router-jersey/src/testFixtures/java/io/servicetalk/http/router/jersey/MixedModeResourceTest.java[test]
+
 These different options combined together yield different effects at
 different level of the application code. The following table details
 what to expect when using them.
