@@ -1,3 +1,9 @@
+if (!repositories) {
+  repositories {
+    jcenter()
+  }
+}
+
 // links that are allowed to be http rather than https
 def httpLinks = [
     //"http://somedomain.tld/someoptionalpath"
