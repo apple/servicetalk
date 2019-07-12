@@ -32,6 +32,7 @@ import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutor;
 
 import io.netty.channel.EventLoop;
+import io.netty.channel.socket.SocketChannel;
 import io.netty.resolver.ResolvedAddressTypes;
 import io.netty.resolver.dns.DefaultDnsCache;
 import io.netty.resolver.dns.DnsNameResolver;
@@ -61,6 +62,7 @@ import static io.servicetalk.concurrent.internal.EmptySubscription.EMPTY_SUBSCRI
 import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.newExceptionForInvalidRequestN;
 import static io.servicetalk.transport.netty.internal.BuilderUtils.datagramChannel;
+import static io.servicetalk.transport.netty.internal.BuilderUtils.socketChannel;
 import static io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutors.toEventLoopAwareNettyIoExecutor;
 import static java.lang.System.nanoTime;
 import static java.nio.ByteBuffer.wrap;
@@ -98,9 +100,18 @@ final class DefaultDnsServiceDiscoverer
         this.ttlCache = new MinTtlCache(new DefaultDnsCache(minTTL, Integer.MAX_VALUE, minTTL), minTTL);
         this.invalidateHostsOnDnsFailure = invalidateHostsOnDnsFailure;
         final EventLoop eventLoop = this.nettyIoExecutor.eventLoopGroup().next();
+        @SuppressWarnings("unchecked")
+        final Class<? extends SocketChannel> socketChannelClass =
+                (Class<? extends SocketChannel>) socketChannel(eventLoop, InetSocketAddress.class);
         final DnsNameResolverBuilder builder = new DnsNameResolverBuilder(eventLoop)
                 .resolveCache(ttlCache)
-                .channelType(datagramChannel(eventLoop));
+                .channelType(datagramChannel(eventLoop))
+                // Enable TCP fallback to be able to handle truncated responses.
+                // https://tools.ietf.org/html/rfc7766
+                .socketChannelType(socketChannelClass)
+                // We should complete once the preferred address types could be resolved to ensure we always
+                // respond as fast as possible.
+                .completeOncePreferredResolved(true);
         if (queryTimeout != null) {
             builder.queryTimeoutMillis(queryTimeout.toMillis());
         }
@@ -116,6 +127,7 @@ final class DefaultDnsServiceDiscoverer
         if (dnsResolverAddressTypes != null) {
             builder.resolvedAddressTypes(toNettyType(dnsResolverAddressTypes));
         }
+
         resolver = builder.build();
         LOGGER.debug("Created a new DNS discoverer {} with minimum TTL (seconds): {}, ndots: {}, " +
                         "optResourceEnabled {}, dnsResolverAddressTypes {}, dnsServerAddressStreamProvider {}.",

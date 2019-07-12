@@ -474,7 +474,8 @@ public class DefaultDnsServiceDiscovererTest {
         recordStore.addResponse("apple.com", A, ipv4);
         recordStore.addResponse("apple.com", AAAA, nextIp6());
 
-        final int expectedActiveCount = 2;
+        // We at least expect 1 as we prefer ipv4 but depending on how fast we resolve we may also have 2.
+        final int expectedActiveCount = 1;
         final int expectedInactiveCount = 0;
 
         CountDownLatch latch = new CountDownLatch(expectedActiveCount + expectedInactiveCount);
@@ -485,8 +486,32 @@ public class DefaultDnsServiceDiscovererTest {
 
         latch.await();
         assertNull(throwableRef.get());
-        assertThat(subscriber.activeEventAddresses.size(), greaterThanOrEqualTo(expectedActiveCount));
+
+        // We must receive at least 1 as we prefer A records.
+        assertThat(subscriber.activeEventAddresses.size(), greaterThanOrEqualTo(1));
         assertThat(subscriber.activeEventAddresses, hasItem(ipv4));
+        assertThat(subscriber.inactiveEventAddresses.size(), equalTo(expectedInactiveCount));
+    }
+
+    @Test
+    public void preferIpv4ButOnlyAAAARecordIsPresent() throws InterruptedException {
+        final String ipv6 = nextIp6();
+        recordStore.addResponse("apple.com", AAAA, ipv6);
+
+        final int expectedActiveCount = 1;
+        final int expectedInactiveCount = 0;
+
+        CountDownLatch latch = new CountDownLatch(expectedActiveCount + expectedInactiveCount);
+        AtomicReference<Throwable> throwableRef = new AtomicReference<>();
+        Publisher<ServiceDiscovererEvent<InetAddress>> publisher = discoverer.discover("apple.com");
+        final TestSubscriber subscriber = new TestSubscriber(latch);
+        toSource(publisher).subscribe(subscriber);
+
+        latch.await();
+        assertNull(throwableRef.get());
+
+        assertThat(subscriber.activeEventAddresses.size(), equalTo(1));
+        assertThat(subscriber.activeEventAddresses, hasItem(ipv6));
         assertThat(subscriber.inactiveEventAddresses.size(), equalTo(expectedInactiveCount));
     }
 
