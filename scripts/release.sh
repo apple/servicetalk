@@ -8,8 +8,6 @@ set -eu
 function usage() {
 cat << EOF
 release.sh {next_version}
-
-TODO
 EOF
 }
 
@@ -26,22 +24,10 @@ if ( echo "$nextVersion" | grep -qv "SNAPSHOT" ); then
     exit 1
 fi
 
-if [ "$(echo "$nextVersion" | tr -Cd '.')" != ".." ]; then
-    echo "Expected next version to be semver (eg 1.2.3)"
-    usage
-    exit 1
-fi
-
 version=$(cat gradle.properties | grep version= |  sed 's/-SNAPSHOT//' | sed 's/^version=//')
 
 if ( echo "$version" | grep -q "SNAPSHOT" ); then
     echo "Expected release version to be a release version, not snapshot"
-    usage
-    exit 1
-fi
-
-if [ "$(echo "$version" | tr -Cd '.')" != ".." ]; then
-    echo "Expected release version to be semver (eg 1.2.3)"
     usage
     exit 1
 fi
@@ -95,7 +81,7 @@ for file in gradle.properties */gradle.properties; do
     mv "$file.tmp" "$file"
 done
 for file in docs/antora.yml */docs/antora.yml; do
-    sed "s/^version:.*/version: ${nextVersion%.*}-SNAPSHOT/" "$file" > "$file.tmp"
+    sed "s/^version:.*/version: SNAPSHOT/" "$file" > "$file.tmp"
     mv "$file.tmp" "$file"
 done
 ./scripts/update-git-ref-in-antora-components-attributes.sh "master"
