@@ -27,6 +27,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.LongSupplier;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
 import static java.util.Objects.requireNonNull;
 
 final class FromBlockingIterablePublisher<T> extends AbstractSynchronousPublisher<T> {
@@ -49,7 +50,7 @@ final class FromBlockingIterablePublisher<T> extends AbstractSynchronousPublishe
         try {
             subscriber.onSubscribe(new FromBlockingIterableSubscription<>(iterable.iterator(), subscriber, this));
         } catch (Throwable t) {
-            LOGGER.debug("Ignoring exception from onSubscribe of Subscriber {}.", subscriber, t);
+            handleExceptionFromOnSubscribe(subscriber, t);
         }
     }
 

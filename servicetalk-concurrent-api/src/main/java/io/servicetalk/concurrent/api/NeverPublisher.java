@@ -15,13 +15,10 @@
  */
 package io.servicetalk.concurrent.api;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import static io.servicetalk.concurrent.internal.EmptySubscription.EMPTY_SUBSCRIPTION;
+import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
 
 final class NeverPublisher<T> extends AbstractSynchronousPublisher<T> {
-    private static final Logger LOGGER = LoggerFactory.getLogger(NeverPublisher.class);
     private static final NeverPublisher NEVER_PUBLISHER = new NeverPublisher();
 
     @Override
@@ -29,7 +26,7 @@ final class NeverPublisher<T> extends AbstractSynchronousPublisher<T> {
         try {
             subscriber.onSubscribe(EMPTY_SUBSCRIPTION);
         } catch (Throwable t) {
-            LOGGER.debug("Ignoring exception from onSubscribe of Subscriber {}.", subscriber, t);
+            handleExceptionFromOnSubscribe(subscriber, t);
         }
     }
 

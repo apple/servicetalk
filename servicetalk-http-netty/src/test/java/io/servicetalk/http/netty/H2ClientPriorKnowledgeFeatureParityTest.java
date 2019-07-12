@@ -31,7 +31,6 @@ import io.servicetalk.http.api.DefaultHttpCookiePair;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpCookiePair;
 import io.servicetalk.http.api.HttpEventKey;
-import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpRequest;
@@ -92,12 +91,10 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
 import static io.netty.handler.codec.http.HttpHeaderNames.CONTENT_TYPE;
 import static io.netty.handler.codec.http.HttpResponseStatus.OK;
-import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.HttpEventKey.MAX_CONCURRENCY;
 import static io.servicetalk.http.api.HttpHeaderNames.COOKIE;
@@ -107,9 +104,9 @@ import static io.servicetalk.http.api.HttpHeaderValues.CONTINUE;
 import static io.servicetalk.http.api.HttpResponseStatus.EXPECTATION_FAILED;
 import static io.servicetalk.http.api.HttpSerializationProviders.textDeserializer;
 import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
-import static io.servicetalk.http.netty.H2ClientPriorKnowledgeFeatureParityTest.TestExecutionStrategy.CACHED;
-import static io.servicetalk.http.netty.H2ClientPriorKnowledgeFeatureParityTest.TestExecutionStrategy.NO_OFFLOAD;
 import static io.servicetalk.http.netty.HttpClients.forSingleAddress;
+import static io.servicetalk.http.netty.HttpTestExecutionStrategy.CACHED;
+import static io.servicetalk.http.netty.HttpTestExecutionStrategy.NO_OFFLOAD;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.BuilderUtils.serverChannel;
 import static io.servicetalk.transport.netty.internal.NettyIoExecutors.createEventLoopGroup;
@@ -145,7 +142,7 @@ public class H2ClientPriorKnowledgeFeatureParityTest {
     private HttpExecutionStrategy clientExecutionStrategy;
     private boolean h2PriorKnowledge;
 
-    public H2ClientPriorKnowledgeFeatureParityTest(TestExecutionStrategy strategy, boolean h2PriorKnowledge) {
+    public H2ClientPriorKnowledgeFeatureParityTest(HttpTestExecutionStrategy strategy, boolean h2PriorKnowledge) {
         clientExecutionStrategy = strategy.executorSupplier.get();
         serverEventLoopGroup = createEventLoopGroup(2, new DefaultThreadFactory("server-io", true, NORM_PRIORITY));
         this.h2PriorKnowledge = h2PriorKnowledge;
@@ -901,18 +898,6 @@ public class H2ClientPriorKnowledgeFeatureParityTest {
                 outHeaders.add(HttpHeaderNames.COOKIE, headers.headers().getAll(HttpHeaderNames.COOKIE));
                 ctx.write(new DefaultHttp2HeadersFrame(outHeaders));
             }
-        }
-    }
-
-    enum TestExecutionStrategy {
-        NO_OFFLOAD(HttpExecutionStrategies::noOffloadsStrategy),
-        CACHED(() -> HttpExecutionStrategies.defaultStrategy(newCachedThreadExecutor(
-                new DefaultThreadFactory("client-executor", true, NORM_PRIORITY))));
-
-        final Supplier<HttpExecutionStrategy> executorSupplier;
-
-        TestExecutionStrategy(final Supplier<HttpExecutionStrategy> executorSupplier) {
-            this.executorSupplier = executorSupplier;
         }
     }
 

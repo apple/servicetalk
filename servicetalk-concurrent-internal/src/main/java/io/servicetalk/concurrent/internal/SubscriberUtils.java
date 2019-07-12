@@ -163,13 +163,13 @@ public final class SubscriberUtils {
         try {
             subscriber.onSubscribe(EMPTY_SUBSCRIPTION);
         } catch (Throwable t) {
-            LOGGER.debug("Ignoring exception from onSubscribe of Subscriber {}.", subscriber, t);
+            handleExceptionFromOnSubscribe(subscriber, t);
             return;
         }
         try {
             subscriber.onError(cause);
         } catch (Throwable t) {
-            LOGGER.debug("Ignoring exception from onError of Subscriber {}.", subscriber, t);
+            LOGGER.info("Ignoring exception from onError of Subscriber {}.", subscriber, t);
         }
     }
 
@@ -183,13 +183,13 @@ public final class SubscriberUtils {
         try {
             subscriber.onSubscribe(EMPTY_SUBSCRIPTION);
         } catch (Throwable t) {
-            LOGGER.debug("Ignoring exception from onSubscribe of Subscriber {}.", subscriber, t);
+            handleExceptionFromOnSubscribe(subscriber, t);
             return;
         }
         try {
             subscriber.onComplete();
         } catch (Throwable t) {
-            LOGGER.debug("Ignoring exception from onComplete of Subscriber {}.", subscriber, t);
+            LOGGER.info("Ignoring exception from onComplete of Subscriber {}.", subscriber, t);
         }
     }
 
@@ -204,13 +204,13 @@ public final class SubscriberUtils {
         try {
             subscriber.onSubscribe(IGNORE_CANCEL);
         } catch (Throwable t) {
-            LOGGER.debug("Ignoring exception from onSubscribe of Subscriber {}.", subscriber, t);
+            handleExceptionFromOnSubscribe(subscriber, t);
             return;
         }
         try {
             subscriber.onError(cause);
         } catch (Throwable t) {
-            LOGGER.debug("Ignoring exception from onError of Subscriber {}.", subscriber, t);
+            LOGGER.info("Ignoring exception from onError of Subscriber {}.", subscriber, t);
         }
     }
 
@@ -224,13 +224,13 @@ public final class SubscriberUtils {
         try {
             subscriber.onSubscribe(IGNORE_CANCEL);
         } catch (Throwable t) {
-            LOGGER.debug("Ignoring exception from onSubscribe of Subscriber {}.", subscriber, t);
+            handleExceptionFromOnSubscribe(subscriber, t);
             return;
         }
         try {
             subscriber.onError(cause);
         } catch (Throwable t) {
-            LOGGER.debug("Ignoring exception from onError of Subscriber {}.", subscriber, t);
+            LOGGER.info("Ignoring exception from onError of Subscriber {}.", subscriber, t);
         }
     }
 
@@ -242,7 +242,14 @@ public final class SubscriberUtils {
      * @param <T> The type of {@link Subscriber}.
      */
     public static <T> void handleExceptionFromOnSubscribe(Subscriber<T> subscriber, Throwable cause) {
-        LOGGER.warn("Ignoring exception from onSubscribe of Subscriber {}.", subscriber, cause);
+        // The Subscriber violated the spec by throwing from onSubscribe [1]. However we make a best effort to
+        // complete the async control flow by calling onError even though the Subscriber state is unknown. The "best
+        // effort" may end up violating RFC single terminal signal delivery [2] and concurrency [3] rules, but we are
+        // in an invalid state.
+        // [1] https://github.com/reactive-streams/reactive-streams-jvm#1.9
+        // [2] https://github.com/reactive-streams/reactive-streams-jvm#1.7
+        // [3] https://github.com/reactive-streams/reactive-streams-jvm#1.3
+        subscriber.onError(cause);
     }
 
     /**
@@ -253,7 +260,32 @@ public final class SubscriberUtils {
      * @param <T> The type of {@link SingleSource.Subscriber}.
      */
     public static <T> void handleExceptionFromOnSubscribe(SingleSource.Subscriber<T> subscriber, Throwable cause) {
-        LOGGER.warn("Ignoring exception from onSubscribe of Subscriber {}.", subscriber, cause);
+        // The Subscriber violated the spec by throwing from onSubscribe [1]. However we make a best effort to
+        // complete the async control flow by calling onError even though the Subscriber state is unknown. The "best
+        // effort" may end up violating RFC single terminal signal delivery [2] and concurrency [3] rules, but we are
+        // in an invalid state.
+        // [1] https://github.com/reactive-streams/reactive-streams-jvm#1.9
+        // [2] https://github.com/reactive-streams/reactive-streams-jvm#1.7
+        // [3] https://github.com/reactive-streams/reactive-streams-jvm#1.3
+        subscriber.onError(cause);
+    }
+
+    /**
+     * Handle the case when a call to {@link CompletableSource.Subscriber#onSubscribe(Cancellable)} throws from a
+     * source.
+     * @param subscriber The {@link CompletableSource.Subscriber} that threw an exception from
+     * {@link CompletableSource.Subscriber#onSubscribe(Cancellable)}.
+     * @param cause The exception thrown by {@code subscriber}.
+     */
+    public static void handleExceptionFromOnSubscribe(CompletableSource.Subscriber subscriber, Throwable cause) {
+        // The Subscriber violated the spec by throwing from onSubscribe [1]. However we make a best effort to
+        // complete the async control flow by calling onError even though the Subscriber state is unknown. The "best
+        // effort" may end up violating RFC single terminal signal delivery [2] and concurrency [3] rules, but we are
+        // in an invalid state.
+        // [1] https://github.com/reactive-streams/reactive-streams-jvm#1.9
+        // [2] https://github.com/reactive-streams/reactive-streams-jvm#1.7
+        // [3] https://github.com/reactive-streams/reactive-streams-jvm#1.3
+        subscriber.onError(cause);
     }
 
     /**
@@ -267,7 +299,7 @@ public final class SubscriberUtils {
         try {
             subscriber.onError(cause);
         } catch (Throwable t) {
-            LOGGER.debug("Ignoring exception from onError of Subscriber {}.", subscriber, t);
+            LOGGER.info("Ignoring exception from onError of Subscriber {}.", subscriber, t);
         }
     }
 }

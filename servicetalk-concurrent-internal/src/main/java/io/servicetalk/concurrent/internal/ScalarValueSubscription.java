@@ -63,20 +63,20 @@ public final class ScalarValueSubscription<T> implements Subscription {
                     try {
                         subscriber.onError(cause);
                     } catch (Throwable t) {
-                        LOGGER.debug("Ignoring exception from onError of Subscriber {}.", subscriber, t);
+                        LOGGER.info("Ignoring exception from onError of Subscriber {}.", subscriber, t);
                     }
                     return;
                 }
                 try {
                     subscriber.onComplete();
                 } catch (Throwable t) {
-                    LOGGER.debug("Ignoring exception from onComplete of Subscriber {}.", subscriber, t);
+                    LOGGER.info("Ignoring exception from onComplete of Subscriber {}.", subscriber, t);
                 }
             } else {
                 try {
                     subscriber.onError(newExceptionForInvalidRequestN(n));
                 } catch (Throwable t) {
-                    LOGGER.debug("Ignoring exception from onError of Subscriber {}.", subscriber, t);
+                    LOGGER.info("Ignoring exception from onError of Subscriber {}.", subscriber, t);
                 }
             }
         }
