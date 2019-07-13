@@ -7,8 +7,8 @@ ServiceTalk applications.
 ServiceTalk grew out of the need for a Java networking library with the benefits of async-IOfootnote:[serving 10s to
 100s of thousands of concurrent connections with a single application with small number of threads. This is impractical
 to achieve with typical Java, Blocking-IO libraries that follow the 1 thread per connection networking model.] which can
-hide the complexities of lower level networking libraries such as link:http://netty.io[Netty]. We also learned that
-although asynchronous programming offers scaling benefits it comes with come complexity around control flow,
+hide the complexities of lower level networking libraries such as link:https://netty.io[Netty]. We also learned that
+although asynchronous programming offers scaling benefits it comes with some complexity around control flow,
 error propagation, debugging, and visibility. In practice there was a desire to mix synchronous
 (for simplicity and developer velocity) with asynchronous (for improved utilization and vertical scalability) in the
 same application.
@@ -19,15 +19,14 @@ networking library with out of the box support for commonly used protocols (e.g.
 tailored to each protocol layered in a way to promote evolving programming models (blocking/synchronous -> asynchronous)
 without sacrificing on performance nor forcing you to rewrite your application when you reach the next level of scale.
 
-ServiceTalk came from core Netty contributors footnote:[ServiceTalk is built on top of http://netty.io[Netty]]
-recognizing the complexities of use (back-pressure, error propagation, RPC, EventLoop threading model, etc...) and
-duplication (pooling, load balancing, resiliency, request/response correlation, etc...). We aim to provide a lightweight
-networking library, with the best possible performance and minimal overhead in compute and GC pressure over Netty
-(which is the link:https://netty.io/wiki/adopters.html[networking core for many large scale JVM deployments]). That
-said, we may be making performance trade-offs in some areas to in favor of usability and/or safety. For example more
-advanced concepts such as
-link:https://docs.oracle.com/javase/specs/jls/se8/html/jls-17.html[Java Memory Model], reference counting, non-blocking
-and asynchronous control flow.
+ServiceTalk recognizes the complexities of use (back-pressure, error propagation, RPC, EventLoop threading model, etc…​)
+and duplication (pooling, load balancing, resiliency, request/response correlation, etc…​) that comes with Netty. We aim
+to provide a lightweight networking library, with the best possible performance and minimal overhead in compute and GC
+pressure over Netty (which is the
+link:https://netty.io/wiki/adopters.html[networking core for many large scale JVM deployments]). That said, we may be
+making performance trade-offs in some areas to in favor of usability and/or safety. For example more advanced concepts
+such as link:https://docs.oracle.com/javase/specs/jls/se8/html/jls-17.html[Java Memory Model], reference counting,
+non-blocking and asynchronous control flow.
 
 == Trade-offs
 As stated in the design goals, ServiceTalk aims to strike a balance between performance and usability, all while being
@@ -49,67 +48,54 @@ architecture.
 
 A strategy to avoid the thread hopping is to opt-in to executing user code on the EventLoop thread. However this will
 have an adverse effect on latency and responsiveness if you execute xref:servicetalk::blocking.adoc[blocking] code. See
-xref:servicetalk::evolve-to-async.adoc[Evolving to Asynchronous docs] for more details.
+xref:servicetalk-http-api::evolve-to-async.adoc[Evolving to Asynchronous docs] for more details.
 
 [#reference-counting]
 === Reference Counting
-Java NIO and the Netty native API transports footnote:[https://netty.io/wiki/native-transports.html[epoll on Linux,
-kqueue on Mac]] require direct (non-heap) memory
-https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/nio/ByteBuffer.html[DirectByteBuffers] to read and
-write bytes from the network driver. Allocating and collection of these buffers is very expensive, it may incur
-application wide synchronization to allocate and puts additional pressure on the GC to clean up the
-link:https://docs.oracle.com/en/java/javase/11/docs/api/java.base/java/lang/ref/PhantomReference.html[PhantomReferences]
-, which increases GC pauses.
+At the core of link:https://netty.io/wiki/using-as-a-generic-library.html#buffer-api[Netty's Buffer APIs] is
+link:https://netty.io/wiki/reference-counted-objects.html[reference counting] which reduces the cost of allocation and
+collection of direct buffers.
 
 image::ref-counting.png[GC overhead caused by DirectByteBuffers]
 
-In order to overcome this, Netty provides
-link:https://netty.io/4.1/api/index.html?io/netty/buffer/PooledByteBufAllocator.html[PooledByteBufAllocator] to amortize
-the cost of the application's `DirectByteBuffer` overhead over the application's lifetime. In order for object pooling
-to work the application needs to tell the pool when it's done with a resource, for this reason pooled Netty buffers
-expose the concept of link:https://netty.io/wiki/reference-counted-objects.html[reference counting]. This reduces the
-performance costs related to direct memory allocation/deallocation at the cost of complexity to the user who must manage
-memory manually. Automatic memory management is a big selling point for the JVM and not something Java developers
-have to think much about. From experience we've learned that manual memory management is challenging to get right. Even
-if you are lucky enough to get it right it is a continuous cost you have to pay as the code base evolves and new members
-of the team join. This can also lead to increased operational costs tracking down memory leaks or prematurely released
-buffers. For this reason in ServiceTalk we've decided to not expose reference counted buffers to the user in APIs.
-ServiceTalk will internalize the complexity of reference counting and minimize the costs of `DirectByteBuffer` costs
-with various strategies (e.g. copying to heap buffers, using pooled allocators when buffers are not exposed to users,
-etc...).
+However, it comes with an overhead of managing lifecycle of these reference counted objects. This complexity is passed
+to the users as they have to explicitly define the lifetime of these objects. ServiceTalk focuses on ease of usage and
+safety. Manual memory management conflicts with that promise, making ServiceTalk hard to use and potentially unsafe.
+*For this reason in ServiceTalk we've decided not to expose reference counted buffers in user facing APIs* and deal with
+this low level complexity internally by copying to heap buffers at the user-facing API boundaries.
 
-This trade-off of hiding complexity comes at the cost of performance. Exposing reference counting and leveraging buffer
-pooling would provide more performance, but the performance trade-off was not large enough to justify the complexity for
-most use cases. If your benchmarks indicate the lack of reference counting and buffer pooling is the culprit why you
-cannot meet your performance SLA we suggest users to look into directly building on top of link:http://netty.io[Netty]
-instead. At this level of scale you'll be most likely already using async non-blocking APIs, so the step up to Netty
-will be small.
+This is a conscious decision understanding that this may make some extremely high throughput, low latency use cases
+almost impossible to implement with ServiceTalk. Benchmarks indicate this is a good trade-off for most use cases and
+providing safe, easy to use APIs will be a differentiating feature of ServiceTalk. If your benchmarks indicate the lack
+of reference counting and buffer pooling is the culprit why you cannot meet your performance SLA we suggest users to
+look into directly building on top of link:https://netty.io[Netty] instead.
 
-=== Back-pressure, Function Composition
-In order to not overwhelm an async client or service, one needs to manage flow-control to give back-pressure.
-Communicating flow control signals end to end footnote:[socket -- _read_ -> business logic -- _write_ -> socket] is
-non-trivial in an async non-blocking application. ServiceTalk can enforce back-pressure at multiple layers
-(e.g. number of connection, number of outstanding requests, per request, etc...) and utilizes
-link:https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.2/README.md#specification[Reactive Streams] APIs
-to manage payload/data back-pressure throughout the core. `Reactive Streams` provides a means to handle streams of data
-and allows the consumer of the data to specify how much data it is willing to consume in an asynchronous manner.
-Much like the link:https://en.wikipedia.org/wiki/Futures_and_promises[`Future`/`Promise`] paradigm provides an means to
-handle single-item (aka scalar) asynchronous operations, `Reactive Streams` provides a similar concept for multi-item
-(aka streaming) asynchronous operations. Both concepts provide the ability to streamline asynchronous control flow and
-error propagation via function composition instead of link:http://callbackhell.com[chaining callbacks], in
-`Reactive Streams` this is commonly referred to as link:http://reactivex.io/documentation/operators.html[operators].
+=== Reactive core
+ServiceTalk's core design principals aim to enable large scale link:https://www.reactivemanifesto.org[reactive system].
+Responsiveness is an essential part of building a reactive system. ServiceTalk implements
+link:https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.2/README.md#specification[Reactive Streams APIs]
+to provide flow controlled, responsive networking abstractions. Such flow controlled systems express a well coordinated
+upper bound on resources (e.g. memory) providing a high level of resiliency in presence of unexpected data spikes.
 
-The streamlined control flow and end-to-end back-pressure comes with a trade-off which in practice typically involves
-additional object allocation and as a side effect may lead to deeper stack traces. Another benefit of `Reactive Streams`
-is a link:https://github.com/reactive-streams/reactive-streams-jvm#glossary[well defined] concurrency an interaction
-pattern. For general operator implementations that represent asynchronous function composition these concurrency
-constraints must be respected/enforced which may result in additional synchronization that may not be strictly required
-if you take care of synchronization externally (e.g. operations are guaranteed to be on the same thread,
-synchronization is enforced elsewhere in your control flow, etc...). In ServiceTalk we implement our own
-operators (see xref:servicetalk-concurrent-api::index.adoc[Concurrent API]) in order to keep allocation and
-synchronization low while strictly enforcing back-pressure. In practice the trade-off of streaming lined control flow
-and automated back-pressure for performance was well worth it for most use cases. If your benchmarks indicate operator
-implementations are the culprit why you cannot meet your SLA please
+Concepts such as link:https://en.wikipedia.org/wiki/Futures_and_promises[`Future`/`Promise`] provide a nice abstraction
+for single-item asynchronous operations. `Future`/`Promise` implementations (e.g.
+link:https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/CompletableFuture.html[CompletableFuture],
+link:https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/CompletionStage.html[CompletionStage])
+leverage
+link:https://en.wikipedia.org/wiki/Function_composition[function composition] to streamline asynchronous control for and
+error propagation. This concept can be extended to multi-item asynchronous operations represented using
+`Reactive Streams` (aka
+link:https://docs.oracle.com/javase/9/docs/api/java/util/concurrent/Flow.html[JDK9 Flow]). Such functions on
+asynchronous sources are typically referred to as link:https://reactivex.io/documentation/operators.html[operators] in
+ServiceTalk. Operators help us transparently propagate demand across business logic thus enabling end-to-end flow
+control. This automatic control flow and end-to-end back-pressure with operators comes with a trade-off which in
+practice typically involves additional object allocation and as a side effect may lead to deeper stack traces. In
+ServiceTalk we implement our own xref:servicetalk-concurrent-api::index.adoc[operators] in order to keep allocation and
+minimize synchronization while strictly enforcing back-pressure.
+
+We believe that using function composition increases readability for complex asynchronous systems as compared to
+callbacks, thus following ServiceTalk's design philosophy of favoring ease of use. However, if your benchmarks indicate
+operator implementations to be a bottleneck why you cannot meet your SLA please
 link:https://github.com/apple/servicetalk/issues/new[file an issue] describing your use case and we will work to improve
 the operators in question.
 
@@ -119,13 +105,13 @@ Because ServiceTalk is asynchronous and non-blocking at the core it needs to def
 that potentially blocks IO EventLoop threads. Read the chapter on xref:blocking.adoc#safe-to-block[Blocking] for more
 details.
 
-`ServiceTalk` has xref:servicetalk-concurrent-api::blocking#executor-affinity[Executor Affinity] which ensures the same
-`Executor` is used for each `Subscriber` chain on asynchronous operator boundaries. By default when using the streaming
-APIs this requires wrapping on the asynchronous operator boundaries and may result in additional thread hops between
-``Executor``s (and even if ``Executor`` happens to be the same). Depending upon the use case performance costs maybe
-relatively high but we have the following compensatory strategies in place:
+`ServiceTalk` has xref:servicetalk-concurrent-api::blocking#executor-affinity[Executor Affinity] which ensures that the
+same `Executor` is used for each `Subscriber` chain on asynchronous operator boundaries. By default when using the
+streaming APIs this requires wrapping on the asynchronous operator boundaries and may result in additional thread hops
+between ``Executor``s (and even if ``Executor`` happens to be the same). Depending upon the use case, performance costs
+maybe relatively high but we have the following compensatory strategies in place:
 
-* The ServiceTalk team is investigating ways to reduce the cost of offloading for streaming APIs
+* ServiceTalk team is investigating ways to reduce the cost of offloading for streaming APIs
 * choosing the appropriate xref:servicetalk::performance.adoc#offloading-and-flushing[programming model] for your use
 case allows us to be more optimal and reduce offloading
 * you can opt-out of (some or all) offloading via
@@ -145,8 +131,8 @@ application's performance.
 [#flushstrategy]
 ==== FlushStrategy
 Flushing is the act of writing data that is queued in the Netty `Channel` pipeline to the network socket, typically
-via link:http://pubs.opengroup.org/onlinepubs/9699919799/utilities/write.html[write] or
-link:http://pubs.opengroup.org/onlinepubs/9699919799/functions/writev.html[writev]
+via link:https://pubs.opengroup.org/onlinepubs/9699919799/utilities/write.html[write] or
+link:https://pubs.opengroup.org/onlinepubs/9699919799/functions/writev.html[writev]
 link:https://en.wikipedia.org/wiki/System_call[syscall] on POSIX operating systems. Syscalls typically involve a user to
 kernel-space context-switch which is relatively expensive. To compensate for this Netty introduces and intermediate
 write queue to batch write operations triggered by flushing. This reduces the syscall frequency and if done effectively
@@ -154,12 +140,12 @@ should not have a negative impact on latency.
 
 For example in benchmarks that involve a small number of writes (e.g. HTTP server responding to a `GET` request with
 in memory content) reducing from 3 flushes to 1 flush almost tripled the throughput of the application. The general rule
-of thumb is to try to batch writes as much as possible. You should consider your use case as if data is being generated
-asynchronously (e.g. as a result to a call to another service) you may want to flush more frequently to avoid
-introducing latency/responsiveness.
+of thumb is to try to batch writes as much as possible. We suggest to evaluate this according to your use case, when
+data is generated asynchronously (e.g. as a result to a call to another service) you may want to flush more frequently
+to avoid introducing latency/responsiveness.
 
-Exposing flushing on the public API is non-trivial when you have asynchronous control flow. The flush signals must be
-ordered with respect to the data, and care must be taken not to drop these signals during data transformations.
+Exposing flush controls on the public API is non-trivial when you have asynchronous control flow. The flush signals must
+be ordered with respect to the data, and care must be taken not to drop these signals during data transformations.
 ServiceTalk currently doesn't expose a way to control flush strategies in the public API but may be able to infer a more
 optimal strategy if you select the appropriate programming paradigm for the
 xref:servicetalk-http-api::index.adoc#client-programming-paradigms[client] and
@@ -262,14 +248,14 @@ link:{sourceroot}servicetalk-http-router-predicate[Predicate Router]).
 
 If you are using the appropriate programming model,
 have reviewed xref:servicetalk-http-api::evolve-to-async.adoc[the docs on Evolving to Asynchronous], and are confident
-you (or a library you use) will *not* execute blocking code in the path you are control flow being overridden, then
-ServiceTalk allows you to override `ExecutionStrategy` at multiple levels:
+you (or a library you use) will *not* execute blocking code in control flow in question, then ServiceTalk allows you to
+override `ExecutionStrategy` at multiple levels:
 
-1. Override per request (see xref:servicetalk-http-api::evolve-to-async.adoc#client[client] and
+1. per request (see xref:servicetalk-http-api::evolve-to-async.adoc#client[client] and
 xref:servicetalk-http-api::evolve-to-async.adoc#server[server])
-2. Override per client/server (see xref:servicetalk-http-api::evolve-to-async.adoc#client[client] and
+2. per client/server (see xref:servicetalk-http-api::evolve-to-async.adoc#client[client] and
 xref:servicetalk-http-api::evolve-to-async.adoc#server[server])
-3. Filters override
+3. Filters implement
 link:{sourceroot}servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpExecutionStrategyInfluencer.java[`HttpExecutionStrategyInfluencer`]
 (or similar for your protocol) APIs
 
@@ -283,12 +269,12 @@ can be considered non-blocking] that are applied will block.
 Selecting the appropriate programming paradigm can help simplify your application logic (see
 xref:servicetalk-http-api::index.adoc#client-programming-paradigms[client programming paradigms] and
 xref:servicetalk-http-api::index.adoc#service-programming-paradigms[service programming paradigms]) and also
-enables ServiceTalk to apply optimizations behind the scenes (e.g.
+enable ServiceTalk to apply optimizations behind the scenes (e.g.
 xref:servicetalk::performance.adoc#flushstrategy[flushing] and
-xref:servicetalk::performance.adoc#ExecutionStrategy[offloading]). The paradigm is chosen when constructing the client
+xref:servicetalk::performance.adoc#ExecutionStrategy[offloading]). A paradigm is chosen when constructing the client
 or server, transforming a client on demand on a per-request basis (e.g.
 link:{sourceroot}servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpClient.java#L77-L79[HttpClient#asBlockingClient()]
-), or levering a service xref:servicetalk-http-api::index.adoc#routers[router's] per-route ability to support the
+), or leveraging a service xref:servicetalk-http-api::index.adoc#routers[router's] per-route ability to support the
 different paradigms. The following table is a summary of how the programming paradigm affects flushing and offloading.
 Please consider reading the detailed documentation on
 xref:servicetalk-http-api::blocking.adoc#programming-models[HTTP Programming models].
@@ -314,7 +300,7 @@ Offload the response control signals
 |Offload handling the response (Meta + payload combined)
 
 
-|you have aggregated data and your code can deal with `Single<T>` or `Future<T>`
+|you have aggregated data and your code uses `Single<T>` or `Future<T>`
 
 |*Async Streaming*
 
@@ -325,7 +311,7 @@ Offload the response control signals
 Flush Each Item
 2+|Offloads receipt of Meta, every payload item and all control signals
 
-|you have streaming data and your code can deal with `Single<T>` or `Future<T>` and `Publisher<T>`
+|you have streaming data and your code uses `Single<T>` or `Future<T>` and `Publisher<T>`
 
 |*Blocking Aggregated*
 
@@ -516,7 +502,7 @@ asynchronous control flow boundary. In order to provide a static API `ThreadLoca
 optimization (e.g.
 link:{sourceroot}servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/AsyncContextMapHolder.java[AsyncContextMapHolder]
 ) is used to minimize this cost. This `ThreadLocal` optimization is enabled by default and can be enabled by using our
-link:{sourceroute}servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/DefaultThreadFactory.java[DefaultThreadFactory]
+link:{sourceroot}servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/DefaultThreadFactory.java[DefaultThreadFactory]
 if you use a custom `Executor`.
 
 In benchmarks with high throughput and asynchronous operators you will likely see a drop in throughput.
