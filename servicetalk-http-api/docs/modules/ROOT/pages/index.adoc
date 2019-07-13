@@ -82,6 +82,7 @@ programming paradigm but plan to add support for the others soon. The
 <<asynchronous-and-streaming, Asynchronous and Streaming>> can be used with a `Service` in any other programming
 paradigm.
 
+[#routers]
 === Routers
 In practice it is common for a HTTP `Service` to handle many different types of request(s) that all have unique
 processing requirements. The control flow in ServiceTalk is represented by a "Router". A "Router" is a `Service` that
@@ -105,6 +106,7 @@ link:{sourceroot}servicetalk-http-router-jersey[JAX-RS via Jersey]). The general
                                                                 +---------+
 ----
 
+[#service-programming-paradigms]
 === Service Programming Paradigms
 HTTP `Service` supports all the variations described in xref:servicetalk:ROOT:introduction.adoc#programming-paradigms[Programming Paradigms].
 
@@ -309,6 +311,7 @@ background.
                                              +--------------+
 ----
 
+[#client-programming-paradigms]
 === Client Programming Paradigms
 HTTP Client supports all the variations described in xref:servicetalk:ROOT:introduction.adoc#programming-paradigms[Programming Paradigms].
 

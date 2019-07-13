@@ -37,6 +37,7 @@ message in the same execution chain.**
 
 Look at <<Pitfalls>> section for examples elaborating this implication.
 
+[#executor-affinity]
 === Executor Affinity
 
 In ServiceTalk different protocols will provide request processing by means of an asynchronous source, eg: `Single`.
