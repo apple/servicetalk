@@ -24,7 +24,7 @@ and duplication (pooling, load balancing, resiliency, request/response correlati
 to provide a lightweight networking library, with the best possible performance and minimal overhead in compute and GC
 pressure over Netty (which is the
 link:https://netty.io/wiki/adopters.html[networking core for many large scale JVM deployments]). That said, we may be
-making performance trade-offs in some areas to in favor of usability and/or safety. For example more advanced concepts
+making performance trade-offs in some areas to favor usability and/or safety. For example more advanced concepts
 such as link:https://docs.oracle.com/javase/specs/jls/se8/html/jls-17.html[Java Memory Model], reference counting,
 non-blocking and asynchronous control flow.
 
@@ -82,13 +82,13 @@ for single-item asynchronous operations. `Future`/`Promise` implementations (e.g
 link:https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/CompletableFuture.html[CompletableFuture],
 link:https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/CompletionStage.html[CompletionStage])
 leverage
-link:https://en.wikipedia.org/wiki/Function_composition[function composition] to streamline asynchronous control for and
-error propagation. This concept can be extended to multi-item asynchronous operations represented using
+link:https://en.wikipedia.org/wiki/Function_composition[function composition] to streamline asynchronous control flow
+and error propagation. This concept can be extended to multi-item asynchronous operations represented using
 `Reactive Streams` (aka
 link:https://docs.oracle.com/javase/9/docs/api/java/util/concurrent/Flow.html[JDK9 Flow]). Such functions on
 asynchronous sources are typically referred to as link:https://reactivex.io/documentation/operators.html[operators] in
 ServiceTalk. Operators help us transparently propagate demand across business logic thus enabling end-to-end flow
-control. This automatic control flow and end-to-end back-pressure with operators comes with a trade-off which in
+control. This streamlined control flow and end-to-end back-pressure with operators comes with a trade-off which in
 practice typically involves additional object allocation and as a side effect may lead to deeper stack traces. In
 ServiceTalk we implement our own xref:servicetalk-concurrent-api::index.adoc[operators] in order to keep allocation and
 minimize synchronization while strictly enforcing back-pressure.
