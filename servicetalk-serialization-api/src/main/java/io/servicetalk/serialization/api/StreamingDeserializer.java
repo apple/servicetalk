@@ -18,6 +18,7 @@ package io.servicetalk.serialization.api;
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.BlockingIterable;
 import io.servicetalk.concurrent.BlockingIterator;
+import io.servicetalk.concurrent.api.BlockingGracefulCloseable;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -37,7 +38,7 @@ import java.util.List;
  *
  * @param <T> Type of object to be deserialized.
  */
-public interface StreamingDeserializer<T> extends AutoCloseable {
+public interface StreamingDeserializer<T> extends BlockingGracefulCloseable {
 
     /**
      * Deserialize the passed {@link Buffer} into an {@link Iterable} of {@link T}s. If this {@link Buffer} and any

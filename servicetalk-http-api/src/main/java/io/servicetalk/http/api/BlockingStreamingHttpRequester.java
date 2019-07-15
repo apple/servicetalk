@@ -15,10 +15,12 @@
  */
 package io.servicetalk.http.api;
 
+import io.servicetalk.concurrent.api.BlockingGracefulCloseable;
+
 /**
  * The equivalent of {@link StreamingHttpRequester} but with synchronous/blocking APIs instead of asynchronous APIs.
  */
-public interface BlockingStreamingHttpRequester extends BlockingStreamingHttpRequestFactory, AutoCloseable {
+public interface BlockingStreamingHttpRequester extends BlockingStreamingHttpRequestFactory, BlockingGracefulCloseable {
     /**
      * Send a {@code request} using the passed {@link HttpExecutionStrategy strategy}.
      *

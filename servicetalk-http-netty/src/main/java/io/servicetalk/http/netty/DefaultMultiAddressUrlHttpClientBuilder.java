@@ -316,11 +316,6 @@ final class DefaultMultiAddressUrlHttpClientBuilder extends MultiAddressHttpClie
         }
 
         @Override
-        public void close() throws Exception {
-            closeable.closeAsync().toFuture().get();
-        }
-
-        @Override
         public Completable onClose() {
             return closeable.onClose();
         }

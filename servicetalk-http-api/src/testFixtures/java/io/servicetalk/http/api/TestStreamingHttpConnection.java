@@ -131,11 +131,6 @@ public final class TestStreamingHttpConnection {
             }
 
             @Override
-            public void close() throws Exception {
-                filterChain.close();
-            }
-
-            @Override
             public ConnectionContext connectionContext() {
                 return filterChain.connectionContext();
             }

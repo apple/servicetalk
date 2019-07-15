@@ -34,7 +34,6 @@ import java.util.Collection;
 import javax.net.ssl.SSLSession;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
-import static io.servicetalk.concurrent.internal.FutureUtils.awaitTermination;
 import static io.servicetalk.http.api.AbstractHttpServiceFilterTest.SecurityType.Insecure;
 import static io.servicetalk.http.api.AbstractHttpServiceFilterTest.SecurityType.Secure;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
@@ -150,11 +149,6 @@ public abstract class AbstractHttpServiceFilterTest {
             @Override
             public Completable closeAsync() {
                 return Completable.completed();
-            }
-
-            @Override
-            public void close() throws Exception {
-                awaitTermination(closeAsyncGracefully().toFuture());
             }
 
             @Override

@@ -128,11 +128,6 @@ final class ConcurrentRequestsHttpConnectionFilter implements FilterableStreamin
     }
 
     @Override
-    public void close() throws Exception {
-        delegate.close();
-    }
-
-    @Override
     public Completable onClose() {
         return delegate.onClose();
     }

@@ -104,8 +104,17 @@ final class DefaultCompositeCloseable implements CompositeCloseable {
 
     @Override
     public void close() throws Exception {
+        awaitCompletable(closeAsync());
+    }
+
+    @Override
+    public void closeGracefully() throws Exception {
+        awaitCompletable(closeAsyncGracefully());
+    }
+
+    private void awaitCompletable(final Completable completable) throws Exception {
         try {
-            closeAsync().toFuture().get();
+            completable.toFuture().get();
         } catch (final ExecutionException e) {
             final Throwable cause = e.getCause();
             if (cause != null) {

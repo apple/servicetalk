@@ -88,6 +88,11 @@ final class StreamingHttpClientToBlockingHttpClient implements BlockingHttpClien
     }
 
     @Override
+    public void closeGracefully() throws Exception {
+        client.closeGracefully();
+    }
+
+    @Override
     public HttpRequest newRequest(final HttpRequestMethod method, final String requestTarget) {
         return reqRespFactory.newRequest(method, requestTarget);
     }
@@ -170,6 +175,11 @@ final class StreamingHttpClientToBlockingHttpClient implements BlockingHttpClien
         @Override
         public void close() throws Exception {
             connection.close();
+        }
+
+        @Override
+        public void closeGracefully() throws Exception {
+            connection.closeGracefully();
         }
 
         @Override

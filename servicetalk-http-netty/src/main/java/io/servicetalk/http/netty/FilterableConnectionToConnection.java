@@ -97,11 +97,6 @@ final class FilterableConnectionToConnection implements StreamingHttpConnection 
     }
 
     @Override
-    public void close() throws Exception {
-        filteredConnection.close();
-    }
-
-    @Override
     public Completable onClose() {
         return filteredConnection.onClose();
     }

@@ -70,11 +70,6 @@ public class ReservedStreamingHttpConnectionFilter implements FilterableReserved
     }
 
     @Override
-    public void close() throws Exception {
-        delegate.close();
-    }
-
-    @Override
     public Completable onClose() {
         return delegate.onClose();
     }
