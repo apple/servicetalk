@@ -45,7 +45,9 @@ dependencyManagement {
   dependencies {
     // Transitive Dependencies
     dependency "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
+    dependency "com.google.api.grpc:proto-google-common-protos:$protoGoogleCommonProtosVersion"
     dependency "com.google.code.findbugs:jsr305:$jsr305Version"
+    dependency "com.google.protobuf:protobuf-java:$protobufVersion"
     dependency "io.opentracing:opentracing-api:$openTracingVersion"
     dependency "io.reactivex.rxjava2:rxjava:$rxJavaVersion"
     dependency "javax.ws.rs:javax.ws.rs-api:$jaxRsVersion"
@@ -57,6 +59,7 @@ dependencyManagement {
     dependency "org.jctools:jctools-core:$jcToolsVersion"
     dependency "org.reactivestreams:reactive-streams:$reactiveStreamsVersion"
     dependency "org.slf4j:slf4j-api:$slf4jVersion"
+
 
     // Java 11 removals
     dependency "com.sun.activation:javax.activation:$javaxActivationVersion"
