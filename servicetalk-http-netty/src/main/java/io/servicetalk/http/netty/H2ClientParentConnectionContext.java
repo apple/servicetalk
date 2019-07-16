@@ -572,12 +572,6 @@ final class H2ClientParentConnectionContext extends NettyChannelListenableAsyncC
         }
 
         @Override
-        public void close() throws Exception {
-            // TODO(scott): should we have a utility method to make sure this is done consistently?
-            connection.closeAsync().toFuture().get();
-        }
-
-        @Override
         public Completable onClose() {
             return connection.onClose();
         }

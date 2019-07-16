@@ -118,11 +118,6 @@ final class LoadBalancedStreamingHttpConnection
     }
 
     @Override
-    public void close() throws Exception {
-        filteredConnection.close();
-    }
-
-    @Override
     public Completable onClose() {
         return filteredConnection.onClose();
     }

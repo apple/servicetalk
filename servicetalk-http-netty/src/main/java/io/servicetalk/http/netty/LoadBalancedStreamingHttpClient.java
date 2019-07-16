@@ -90,11 +90,6 @@ final class LoadBalancedStreamingHttpClient implements FilterableStreamingHttpCl
     }
 
     @Override
-    public void close() throws Exception {
-        loadBalancer.closeAsync().toFuture().get();
-    }
-
-    @Override
     public Completable onClose() {
         return loadBalancer.onClose();
     }

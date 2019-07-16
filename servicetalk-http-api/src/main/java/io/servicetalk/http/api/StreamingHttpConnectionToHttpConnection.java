@@ -98,6 +98,11 @@ final class StreamingHttpConnectionToHttpConnection implements HttpConnection {
     }
 
     @Override
+    public void closeGracefully() throws Exception {
+        connection.closeGracefully();
+    }
+
+    @Override
     public Completable onClose() {
         return connection.onClose();
     }

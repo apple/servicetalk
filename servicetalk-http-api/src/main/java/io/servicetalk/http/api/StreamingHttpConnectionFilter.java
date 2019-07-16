@@ -79,11 +79,6 @@ public class StreamingHttpConnectionFilter implements FilterableStreamingHttpCon
     }
 
     @Override
-    public void close() throws Exception {
-        delegate.close();
-    }
-
-    @Override
     public final StreamingHttpRequest newRequest(final HttpRequestMethod method, final String requestTarget) {
         return delegate.newRequest(method, requestTarget);
     }

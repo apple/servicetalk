@@ -73,11 +73,6 @@ public class StreamingHttpClientFilter implements FilterableStreamingHttpClient 
     }
 
     @Override
-    public void close() throws Exception {
-        delegate.close();
-    }
-
-    @Override
     public StreamingHttpRequest newRequest(final HttpRequestMethod method, final String requestTarget) {
         return delegate.newRequest(method, requestTarget);
     }

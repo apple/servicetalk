@@ -163,11 +163,6 @@ class DefaultPartitionedHttpClientBuilder<U, R> extends PartitionedHttpClientBui
         }
 
         @Override
-        public void close() throws Exception {
-            group.closeAsync().toFuture().get();
-        }
-
-        @Override
         public Completable onClose() {
             return group.onClose();
         }
@@ -209,10 +204,6 @@ class DefaultPartitionedHttpClientBuilder<U, R> extends PartitionedHttpClientBui
         @Override
         public StreamingHttpResponseFactory httpResponseFactory() {
             return new DefaultStreamingHttpResponseFactory(DefaultHttpHeadersFactory.INSTANCE, DEFAULT_ALLOCATOR);
-        }
-
-        @Override
-        public void close() {
         }
 
         @Override

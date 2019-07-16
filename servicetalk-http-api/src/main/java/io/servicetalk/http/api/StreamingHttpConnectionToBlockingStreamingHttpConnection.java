@@ -95,6 +95,11 @@ final class StreamingHttpConnectionToBlockingStreamingHttpConnection implements 
     }
 
     @Override
+    public void closeGracefully() throws Exception {
+        connection.closeGracefully();
+    }
+
+    @Override
     public BlockingStreamingHttpRequest newRequest(final HttpRequestMethod method, final String requestTarget) {
         return reqRespFactory.newRequest(method, requestTarget);
     }

@@ -18,13 +18,11 @@ package io.servicetalk.http.api;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Single;
 
-import static io.servicetalk.concurrent.internal.FutureUtils.awaitTermination;
-
 /**
  * The equivalent of {@link HttpRequester} but that accepts {@link StreamingHttpRequest} and returns
  * {@link StreamingHttpResponse}.
  */
-public interface StreamingHttpRequester extends StreamingHttpRequestFactory, ListenableAsyncCloseable, AutoCloseable {
+public interface StreamingHttpRequester extends StreamingHttpRequestFactory, ListenableAsyncCloseable {
     /**
      * Send a {@code request} using the specified {@link HttpExecutionStrategy strategy}.
      *
@@ -50,9 +48,4 @@ public interface StreamingHttpRequester extends StreamingHttpRequestFactory, Lis
      * @return a {@link StreamingHttpResponseFactory}.
      */
     StreamingHttpResponseFactory httpResponseFactory();
-
-    @Override
-    default void close() throws Exception {
-        awaitTermination(closeAsyncGracefully().toFuture());
-    }
 }

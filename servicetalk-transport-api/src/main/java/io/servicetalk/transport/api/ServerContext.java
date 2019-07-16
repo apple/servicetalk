@@ -15,6 +15,7 @@
  */
 package io.servicetalk.transport.api;
 
+import io.servicetalk.concurrent.GracefulAutoCloseable;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 
 import java.net.SocketAddress;
@@ -24,7 +25,7 @@ import static io.servicetalk.concurrent.internal.FutureUtils.awaitTermination;
 /**
  * Context for servers.
  */
-public interface ServerContext extends ListenableAsyncCloseable, AutoCloseable {
+public interface ServerContext extends ListenableAsyncCloseable, GracefulAutoCloseable {
 
     /**
      * Listen address for the server associated with this context.
@@ -50,7 +51,12 @@ public interface ServerContext extends ListenableAsyncCloseable, AutoCloseable {
     }
 
     @Override
-    default void close() {
+    default void close() throws Exception {
+        awaitTermination(closeAsync().toFuture());
+    }
+
+    @Override
+    default void closeGracefully() throws Exception {
         awaitTermination(closeAsyncGracefully().toFuture());
     }
 }

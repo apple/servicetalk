@@ -15,13 +15,16 @@
  */
 package io.servicetalk.http.api;
 
+import io.servicetalk.concurrent.GracefulAutoCloseable;
 import io.servicetalk.concurrent.api.Single;
+
+import static io.servicetalk.concurrent.internal.FutureUtils.awaitTermination;
 
 /**
  * The equivalent of {@link HttpConnection} but that accepts {@link StreamingHttpRequest} and returns
  * {@link StreamingHttpResponse}.
  */
-public interface StreamingHttpConnection extends FilterableStreamingHttpConnection {
+public interface StreamingHttpConnection extends FilterableStreamingHttpConnection, GracefulAutoCloseable {
     /**
      * Send a {@code request}.
      *
@@ -56,4 +59,14 @@ public interface StreamingHttpConnection extends FilterableStreamingHttpConnecti
      * @return a {@link BlockingHttpConnection} representation of this {@link StreamingHttpConnection}.
      */
     BlockingHttpConnection asBlockingConnection();
+
+    @Override
+    default void close() throws Exception {
+        awaitTermination(closeAsync().toFuture());
+    }
+
+    @Override
+    default void closeGracefully() throws Exception {
+        awaitTermination(closeAsyncGracefully().toFuture());
+    }
 }
