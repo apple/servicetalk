@@ -250,6 +250,7 @@ public final class SubscriberUtils {
         // [2] https://github.com/reactive-streams/reactive-streams-jvm#1.7
         // [3] https://github.com/reactive-streams/reactive-streams-jvm#1.3
         subscriber.onError(cause);
+        LOGGER.warn("Unexpected exception from onSubscribe of Subscriber {}.", subscriber, cause);
     }
 
     /**
@@ -268,6 +269,7 @@ public final class SubscriberUtils {
         // [2] https://github.com/reactive-streams/reactive-streams-jvm#1.7
         // [3] https://github.com/reactive-streams/reactive-streams-jvm#1.3
         subscriber.onError(cause);
+        LOGGER.warn("Unexpected exception from onSubscribe of Subscriber {}.", subscriber, cause);
     }
 
     /**
@@ -286,6 +288,7 @@ public final class SubscriberUtils {
         // [2] https://github.com/reactive-streams/reactive-streams-jvm#1.7
         // [3] https://github.com/reactive-streams/reactive-streams-jvm#1.3
         subscriber.onError(cause);
+        LOGGER.warn("Unexpected exception from onSubscribe of Subscriber {}.", subscriber, cause);
     }
 
     /**
