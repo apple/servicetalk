@@ -612,7 +612,7 @@ is critical to your use case.
 
 === Test scenarios
 We obviously can't test all scenarios, but our aim is to continuously monitor performance of a set of use cases that
-are representative of real world use cases while also isolating ServiceTalk as much as possible (e.g. reduce business
+are representative of real world use cases while also isolating ServiceTalk as much as possible (e.g. minimize business
 logic). In addition, we also compare how well other libraries and frameworks in the Java ecosystem perform,
 for example it's interesting for us to compare against Netty, as it shows us exactly how much overhead we are adding on
 top.
@@ -651,4 +651,4 @@ xref:servicetalk::performance.adoc#programming-models[programming models] for pe
 
 These test scenarios and benchmarks have helped us convince ourselves that ServiceTalk performs as expected compared
 to other libraries in the industry for the use cases that interests us. We are interested in improving ServiceTalk in
-general and would add more benchmarks as and when we find a good return on investments in doing so.
+general and would add more benchmarks as necessary.
