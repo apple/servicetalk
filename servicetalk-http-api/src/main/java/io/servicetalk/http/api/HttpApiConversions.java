@@ -156,7 +156,7 @@ public final class HttpApiConversions {
      */
     public static ServiceAdapterHolder toStreamingHttpService(HttpService service,
                                                               HttpExecutionStrategyInfluencer influencer) {
-        return ServiceToStreamingService.newAdapter(service, influencer);
+        return new ServiceToStreamingService(service, influencer);
     }
 
     /**
@@ -182,7 +182,7 @@ public final class HttpApiConversions {
      */
     public static ServiceAdapterHolder toStreamingHttpService(BlockingHttpService service,
                                                               HttpExecutionStrategyInfluencer influencer) {
-        return BlockingToStreamingService.newAdapter(service, influencer);
+        return new BlockingToStreamingService(service, influencer);
     }
 
     /**

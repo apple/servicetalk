@@ -37,7 +37,6 @@ import io.servicetalk.transport.api.ServerContext;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
@@ -76,8 +75,6 @@ import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assume.assumeThat;
 
 @RunWith(Parameterized.class)
-// TODO(nkant) These fail due to offloading conversion changes, please take a look
-@Ignore("Disabled temp due to Offloading conversion changes")
 public class ServerEffectiveStrategyTest {
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
@@ -241,8 +238,6 @@ public class ServerEffectiveStrategyTest {
     @Test
     public void blocking() throws Exception {
         assert params != null;
-        assumeThat("Ignoring no-offloads strategy for blocking.",
-                params.isNoOffloadsStrategy(), is(false));
         BlockingHttpClient client = params.startBlocking();
         client.request(client.get("/")
                 .payloadBody(client.executionContext().bufferAllocator().fromAscii("Hello")));
@@ -272,8 +267,6 @@ public class ServerEffectiveStrategyTest {
     @Test
     public void async() throws Exception {
         assert params != null;
-        assumeThat("Ignoring no-offloads strategy for async.",
-                params.isNoOffloadsStrategy(), is(false));
         BlockingHttpClient client = params.startAsync();
         client.request(client.get("/")
                 .payloadBody(client.executionContext().bufferAllocator().fromAscii("Hello")));
