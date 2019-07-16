@@ -30,5 +30,5 @@ import java.util.Iterator;
  *
  * @param <T> the type of elements returned by this {@link CloseableIterator}.
  */
-public interface CloseableIterator<T> extends Iterator<T>, GracefulAutoCloseable {
+public interface CloseableIterator<T> extends Iterator<T>, AutoCloseable {
 }
