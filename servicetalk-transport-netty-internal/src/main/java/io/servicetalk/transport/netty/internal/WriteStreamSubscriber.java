@@ -155,10 +155,14 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
     }
 
     void doWrite(Object msg) {
-        long capacityBefore = channel.bytesBeforeUnwritable();
-        promise.writeNext(msg);
-        long capacityAfter = channel.bytesBeforeUnwritable();
-        requestNSupplier.onItemWrite(msg, capacityBefore, capacityAfter);
+        assert channel.eventLoop().inEventLoop();
+        // Ignore onNext if the channel is already closed.
+        if (promise.isWritable()) {
+            long capacityBefore = channel.bytesBeforeUnwritable();
+            promise.writeNext(msg);
+            long capacityAfter = channel.bytesBeforeUnwritable();
+            requestNSupplier.onItemWrite(msg, capacityBefore, capacityAfter);
+        }
     }
 
     @Override
@@ -420,6 +424,10 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
 
         private void setFlag(final byte flag) {
             state |= flag;
+        }
+
+        boolean isWritable() {
+            return !hasFlag(CHANNEL_CLOSED) && !hasFlag(SUBSCRIBER_TERMINATED);
         }
     }
 
