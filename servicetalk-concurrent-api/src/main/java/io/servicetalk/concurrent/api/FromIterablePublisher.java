@@ -23,6 +23,7 @@ import java.util.concurrent.TimeoutException;
 
 import static io.servicetalk.concurrent.internal.AutoClosableUtils.closeAndReThrowUnchecked;
 import static io.servicetalk.concurrent.internal.FlowControlUtil.addWithOverflowProtection;
+import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.newExceptionForInvalidRequestN;
 import static java.util.Objects.requireNonNull;
@@ -41,7 +42,7 @@ final class FromIterablePublisher<T> extends AbstractSynchronousPublisher<T> {
         try {
             subscriber.onSubscribe(new FromIterableSubscription<>(iterable.iterator(), subscriber));
         } catch (Throwable t) {
-            LOGGER.debug("Ignoring exception from onSubscribe of Subscriber {}.", subscriber, t);
+            handleExceptionFromOnSubscribe(subscriber, t);
         }
     }
 
@@ -119,7 +120,7 @@ final class FromIterablePublisher<T> extends AbstractSynchronousPublisher<T> {
             try {
                 subscriber.onError(cause);
             } catch (Throwable t) {
-                LOGGER.debug("Ignoring exception from onError of Subscriber {}.", subscriber, t);
+                LOGGER.info("Ignoring exception from onError of Subscriber {}.", subscriber, t);
             }
         }
 
@@ -128,7 +129,7 @@ final class FromIterablePublisher<T> extends AbstractSynchronousPublisher<T> {
             try {
                 subscriber.onComplete();
             } catch (Throwable t) {
-                LOGGER.debug("Ignoring exception from onComplete of Subscriber {}.", subscriber, t);
+                LOGGER.info("Ignoring exception from onComplete of Subscriber {}.", subscriber, t);
             }
         }
     }

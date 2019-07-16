@@ -15,15 +15,10 @@
  */
 package io.servicetalk.concurrent.api;
 
-import io.servicetalk.concurrent.SingleSource.Subscriber;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
+import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
 
 final class NeverSingle<T> extends AbstractSynchronousSingle<T> {
-    private static final Logger LOGGER = LoggerFactory.getLogger(NeverSingle.class);
     private static final NeverSingle<Object> INSTANCE = new NeverSingle<>();
 
     private NeverSingle() {
@@ -35,7 +30,7 @@ final class NeverSingle<T> extends AbstractSynchronousSingle<T> {
         try {
             subscriber.onSubscribe(IGNORE_CANCEL);
         } catch (Throwable t) {
-            LOGGER.debug("Ignoring exception from onSubscribe of Subscriber {}.", subscriber, t);
+            handleExceptionFromOnSubscribe(subscriber, t);
         }
     }
 

@@ -30,7 +30,7 @@ public class AfterSubscribeTest extends AbstractWhenOnSubscribeTest {
     public void testCallbackThrowsError() {
         listener.listen(doSubscribe(Completable.completed(), __ -> {
             throw DELIBERATE_EXCEPTION;
-        })).verifyNoEmissions();
+        })).verifyFailure(DELIBERATE_EXCEPTION);
     }
 
     @Override

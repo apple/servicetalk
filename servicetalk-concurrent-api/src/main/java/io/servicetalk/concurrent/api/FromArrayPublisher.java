@@ -20,6 +20,7 @@ import org.slf4j.LoggerFactory;
 
 import static io.servicetalk.concurrent.internal.FlowControlUtil.addWithOverflowProtection;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverTerminalFromSource;
+import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.newExceptionForInvalidRequestN;
 import static java.lang.Math.min;
@@ -44,7 +45,7 @@ final class FromArrayPublisher<T> extends AbstractSynchronousPublisher<T> {
             try {
                 s.onSubscribe(new FromArraySubscription<>(values, s));
             } catch (Throwable t) {
-                LOGGER.debug("Ignoring exception from onSubscribe of Subscriber {}.", s, t);
+                handleExceptionFromOnSubscribe(s, t);
             }
         } else {
             deliverTerminalFromSource(s);
@@ -103,7 +104,7 @@ final class FromArrayPublisher<T> extends AbstractSynchronousPublisher<T> {
             try {
                 subscriber.onError(cause);
             } catch (Throwable t) {
-                LOGGER.debug("Ignoring exception from onError of Subscriber {}.", subscriber, t);
+                LOGGER.info("Ignoring exception from onError of Subscriber {}.", subscriber, t);
             }
         }
 
@@ -112,7 +113,7 @@ final class FromArrayPublisher<T> extends AbstractSynchronousPublisher<T> {
             try {
                 subscriber.onComplete();
             } catch (Throwable t) {
-                LOGGER.debug("Ignoring exception from onComplete of Subscriber {}.", subscriber, t);
+                LOGGER.info("Ignoring exception from onComplete of Subscriber {}.", subscriber, t);
             }
         }
     }
