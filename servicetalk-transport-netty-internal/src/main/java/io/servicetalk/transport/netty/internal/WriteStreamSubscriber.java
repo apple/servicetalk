@@ -155,7 +155,6 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
     }
 
     void doWrite(Object msg) {
-        assert channel.eventLoop().inEventLoop();
         // Ignore onNext if the channel is already closed.
         if (promise.isWritable()) {
             long capacityBefore = channel.bytesBeforeUnwritable();
@@ -239,7 +238,8 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
 
     private void requestMoreIfRequired(@Nullable Subscription subscription) {
         // subscription could be null if channelWritable is invoked before onSubscribe.
-        if (subscription == null || subscription == CANCELLED) {
+        // If promise is not writable, then we will not be able to write anyways, so do not request more.
+        if (subscription == null || subscription == CANCELLED || !promise.isWritable()) {
             return;
         }
 
@@ -263,6 +263,11 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
 
         AllWritesPromise(final Channel channel) {
             super(channel);
+        }
+
+        boolean isWritable() {
+            assert channel.eventLoop().inEventLoop();
+            return !hasFlag(CHANNEL_CLOSED) && !hasFlag(SUBSCRIBER_TERMINATED);
         }
 
         void writeNext(Object msg) {
@@ -424,10 +429,6 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
 
         private void setFlag(final byte flag) {
             state |= flag;
-        }
-
-        boolean isWritable() {
-            return !hasFlag(CHANNEL_CLOSED) && !hasFlag(SUBSCRIBER_TERMINATED);
         }
     }
 
