@@ -51,7 +51,8 @@ abstract class AbstractAsynchronousPublisherOperator<T, R> extends AbstractNoHan
         // with the original contextMap. Otherwise some other context may leak into this subscriber chain from the other
         // side of the asynchronous boundary.
         final Subscriber<? super R> operatorSubscriber = signalOffloader.offloadSubscriber(
-                contextProvider.wrapPublisherSubscriber(subscriber, contextMap));
+                contextProvider.wrapPublisherSubscriberAndSubscription(subscriber, contextMap));
+
         // Subscriber to use to subscribe to the original source. Since this is an asynchronous operator, it may call
         // Subscription methods from EventLoop (if the asynchronous source created/obtained inside this operator uses
         // EventLoop) which may execute blocking code on EventLoop, eg: beforeRequest(). So, we should offload
@@ -59,8 +60,7 @@ abstract class AbstractAsynchronousPublisherOperator<T, R> extends AbstractNoHan
         //
         // We are introducing offloading on the Subscription, which means the AsyncContext may leak if we don't save
         // and restore the AsyncContext before/after the asynchronous boundary.
-        final Subscriber<? super T> upstreamSubscriber = signalOffloader.offloadSubscription(
-                contextProvider.wrapSubscription(apply(operatorSubscriber), contextMap));
+        final Subscriber<? super T> upstreamSubscriber = signalOffloader.offloadSubscription(apply(operatorSubscriber));
         original.delegateSubscribe(upstreamSubscriber, signalOffloader, contextMap, contextProvider);
     }
 }

@@ -16,46 +16,45 @@
 package io.servicetalk.concurrent.api;
 
 import static java.lang.ThreadLocal.withInitial;
-import static java.util.Objects.requireNonNull;
 
 final class AsyncContextMapThreadLocal {
-    private static final ThreadLocal<AsyncContextMap> contextLocal = withInitial(
-            AsyncContextMapThreadLocal::newContextMap);
+    static final ThreadLocal<AsyncContextMap> contextThreadLocal =
+            withInitial(AsyncContextMapThreadLocal::newContextMap);
 
-    static AsyncContextMap newContextMap() {
+    private static AsyncContextMap newContextMap() {
         return new CopyOnWriteAsyncContextMap();
     }
 
     AsyncContextMap get() {
-        Thread t = Thread.currentThread();
+        final Thread t = Thread.currentThread();
         if (t instanceof AsyncContextMapHolder) {
-            AsyncContextMapHolder asyncContextMapHolder = (AsyncContextMapHolder) t;
+            final AsyncContextMapHolder asyncContextMapHolder = (AsyncContextMapHolder) t;
             AsyncContextMap map = asyncContextMapHolder.asyncContextMap();
             if (map == null) {
                 map = newContextMap();
                 asyncContextMapHolder.asyncContextMap(map);
             }
             return map;
+        } else {
+            return contextThreadLocal.get();
         }
-        return contextLocal.get();
     }
 
     void set(AsyncContextMap asyncContextMap) {
-        requireNonNull(asyncContextMap);
-        Thread t = Thread.currentThread();
+        final Thread t = Thread.currentThread();
         if (t instanceof AsyncContextMapHolder) {
             ((AsyncContextMapHolder) t).asyncContextMap(asyncContextMap);
         } else {
-            contextLocal.set(asyncContextMap);
+            contextThreadLocal.set(asyncContextMap);
         }
     }
 
     void remove() {
-        Thread t = Thread.currentThread();
+        final Thread t = Thread.currentThread();
         if (t instanceof AsyncContextMapHolder) {
             ((AsyncContextMapHolder) t).asyncContextMap(null);
         } else {
-            contextLocal.remove();
+            contextThreadLocal.remove();
         }
     }
 }

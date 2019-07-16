@@ -17,17 +17,17 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.SingleSource;
+import io.servicetalk.concurrent.SingleSource.Subscriber;
 
 import javax.annotation.Nullable;
 
 import static java.util.Objects.requireNonNull;
 
-final class ContextPreservingCancellableSingleSubscriber<T> implements SingleSource.Subscriber<T> {
-    private final AsyncContextMap saved;
-    private final SingleSource.Subscriber<? super T> subscriber;
+final class ContextPreservingCancellableSingleSubscriber<T> implements Subscriber<T> {
+    final AsyncContextMap saved;
+    final SingleSource.Subscriber<T> subscriber;
 
-    ContextPreservingCancellableSingleSubscriber(SingleSource.Subscriber<? super T> subscriber,
-                                                 AsyncContextMap current) {
+    ContextPreservingCancellableSingleSubscriber(Subscriber<T> subscriber, AsyncContextMap current) {
         this.subscriber = requireNonNull(subscriber);
         this.saved = requireNonNull(current);
     }
@@ -45,5 +45,10 @@ final class ContextPreservingCancellableSingleSubscriber<T> implements SingleSou
     @Override
     public void onError(final Throwable t) {
         subscriber.onError(t);
+    }
+
+    @Override
+    public String toString() {
+        return ContextPreservingCancellableSingleSubscriber.class.getSimpleName() + "(" + subscriber + ')';
     }
 }

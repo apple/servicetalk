@@ -69,6 +69,17 @@ interface AsyncContextProvider {
                                                            AsyncContextMap current);
 
     /**
+     * Wrap an {@link CompletableSource.Subscriber} and any {@link Cancellable}s from
+     * {@link CompletableSource.Subscriber#onSubscribe(Cancellable)} to ensure it is able to track {@link AsyncContext}
+     * correctly.
+     * @param subscriber The subscriber to wrap.
+     * @param current The current {@link AsyncContextMap}.
+     * @return The wrapped subscriber.
+     */
+    CompletableSource.Subscriber wrapCompletableSubscriberAndCancellable(CompletableSource.Subscriber subscriber,
+                                                                         AsyncContextMap current);
+
+    /**
      * Wrap the {@link Cancellable} to ensure it is able to track
      * {@link AsyncContext} correctly.
      * @param subscriber The {@link SingleSource.Subscriber} for which to wrap the corresponding
@@ -89,6 +100,18 @@ interface AsyncContextProvider {
     <T> SingleSource.Subscriber<T> wrapSingleSubscriber(SingleSource.Subscriber<T> subscriber, AsyncContextMap current);
 
     /**
+     * Wrap an {@link SingleSource.Subscriber} and any {@link Cancellable}s from
+     * {@link SingleSource.Subscriber#onSubscribe(Cancellable)} to ensure it is able to track {@link AsyncContext}
+     * correctly.
+     * @param subscriber subscriber to wrap.
+     * @param current The current {@link AsyncContextMap}.
+     * @param <T> Type of the {@link Single}.
+     * @return The wrapped subscriber.
+     */
+    <T> SingleSource.Subscriber<T> wrapSingleSubscriberAndCancellable(SingleSource.Subscriber<T> subscriber,
+                                                                      AsyncContextMap current);
+
+    /**
      * Wrap an {@link Subscription} to ensure it is able to track {@link AsyncContext} correctly.
      * @param subscriber The {@link Subscriber} for which to wrap the corresponding
      * {@link Subscription}.
@@ -107,6 +130,17 @@ interface AsyncContextProvider {
      */
     <T> PublisherSource.Subscriber<T> wrapPublisherSubscriber(PublisherSource.Subscriber<T> subscriber,
                                                               AsyncContextMap current);
+
+    /**
+     * Wrap an {@link Subscriber} and any {@link Subscription}s from {@link Subscriber#onSubscribe(Subscription)} to
+     * ensure it is able to track {@link AsyncContext} correctly.
+     * @param subscriber The subscriber to wrap.
+     * @param current The current {@link AsyncContextMap}.
+     * @param <T> the type of element signaled to the {@link Subscriber}.
+     * @return The wrapped subscriber.
+     */
+    <T> PublisherSource.Subscriber<T> wrapPublisherSubscriberAndSubscription(PublisherSource.Subscriber<T> subscriber,
+                                                                             AsyncContextMap current);
 
     /**
      * Wrap an {@link Executor} to ensure it is able to track {@link AsyncContext} correctly.

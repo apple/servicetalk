@@ -19,10 +19,11 @@ import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
+import io.servicetalk.concurrent.SingleSource.Subscriber;
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.concurrent.api.PublisherToSingleOperator;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.internal.SubscribablePublisher;
-import io.servicetalk.concurrent.api.internal.SubscribableSingle;
 import io.servicetalk.concurrent.internal.DuplicateSubscribeException;
 import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.http.api.StreamingHttpResponse;
@@ -37,7 +38,6 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
-import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.EmptySubscription.EMPTY_SUBSCRIPTION;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.checkDuplicateSubscription;
 import static io.servicetalk.concurrent.internal.ThrowableUtil.unknownStackTrace;
@@ -51,29 +51,25 @@ import static java.util.Objects.requireNonNull;
  * @param <MetaData> type of meta-data in front of the stream of {@link Payload}, eg. {@link HttpResponseMetaData}
  * @param <Payload> type of payload inside the {@link Data}, eg. {@link Buffer}
  */
-final class SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> extends SubscribableSingle<Data> {
-
+final class SpliceFlatStreamToMetaSingle<Data, MetaData, Payload> implements PublisherToSingleOperator<Object, Data> {
     private static final Logger LOGGER = LoggerFactory.getLogger(SpliceFlatStreamToMetaSingle.class);
     private final BiFunction<MetaData, Publisher<Payload>, Data> packer;
-    private final PublisherSource<?> original;
 
     /**
      * Operator splicing a {@link Publisher}&lt;{@link Object}&gt; with a common {@link Payload} and {@link
      * MetaData} header as first element into a {@link Data}&lt;{@link Payload}&gt; eg. {@link
      * StreamingHttpResponse}&lt;{@link Buffer}&gt;.
      *
-     * @param original the stream of {@link Object}s to splice in a {@link Data}&lt;{@link Payload}&gt;
      * @param packer function to pack the {@link Publisher}&lt;{@link Payload}&gt; and {@link MetaData} into a
      * {@link Data}
      */
-    SpliceFlatStreamToMetaSingle(Publisher<?> original, BiFunction<MetaData, Publisher<Payload>, Data> packer) {
+    SpliceFlatStreamToMetaSingle(BiFunction<MetaData, Publisher<Payload>, Data> packer) {
         this.packer = requireNonNull(packer);
-        this.original = toSource(original);
     }
 
     @Override
-    protected void handleSubscribe(Subscriber<? super Data> dataSubscriber) {
-        original.subscribe(new SplicingSubscriber<>(this, dataSubscriber));
+    public PublisherSource.Subscriber<Object> apply(Subscriber<? super Data> subscriber) {
+        return new SplicingSubscriber<>(this, subscriber);
     }
 
     /* Visible for testing */

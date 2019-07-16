@@ -86,8 +86,8 @@ abstract class AbstractStreamingHttpConnection<CC extends NettyConnectionContext
     @Override
     public final Single<StreamingHttpResponse> invokeClient(final Publisher<Object> flattenedRequest,
                                                             @Nullable final FlushStrategy flushStrategy) {
-        return new SpliceFlatStreamToMetaSingle<>(writeAndRead(flattenedRequest, flushStrategy),
-                this::newSplicedResponse);
+        return writeAndRead(flattenedRequest, flushStrategy).liftSyncToSingle(new SpliceFlatStreamToMetaSingle<>(
+                this::newSplicedResponse));
     }
 
     @Override
