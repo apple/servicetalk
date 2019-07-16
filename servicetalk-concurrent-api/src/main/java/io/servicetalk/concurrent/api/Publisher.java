@@ -1909,7 +1909,7 @@ public abstract class Publisher<T> {
      * @return a {@link Single} which when subscribed, the {@code operator} argument will be used to convert the
      * {@link SingleSource.Subscriber} to a {@link Subscriber} before subscribing to this {@link Publisher}.
      */
-    public final <R> Single<R> liftSyncSingle(PublisherToSingleOperator<? super T, ? extends R> operator) {
+    public final <R> Single<R> liftSyncToSingle(PublisherToSingleOperator<? super T, ? extends R> operator) {
         return new LiftSynchronousPublisherToSingle<>(this, operator);
     }
 

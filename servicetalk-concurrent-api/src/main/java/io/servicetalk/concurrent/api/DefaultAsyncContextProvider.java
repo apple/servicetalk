@@ -58,7 +58,7 @@ final class DefaultAsyncContextProvider implements AsyncContextProvider {
             }
         } else if (subscriber instanceof ContextPreservingCancellableCompletableSubscriber &&
                 ((ContextPreservingCancellableCompletableSubscriber) subscriber).saved == current) {
-            // no need to check for instanceof ContextPreservingSingleSubscriberAndCancellable, because
+            // no need to check for instanceof ContextPreservingCompletableSubscriberAndCancellable, because
             // it extends from ContextPreservingSingleSubscriber.
             return subscriber;
         }
