@@ -61,6 +61,11 @@ IMPORTANT: If you're intending to contribute to ServiceTalk,
 
 ServiceTalk uses link:https://gradle.org[Gradle] as its build tool and only requires JDK 8 or higher to be pre-installed.
 ServiceTalk ships with the Gradle Wrapper, which means that there is no need to install Gradle on your machine beforehand.
+
+IMPORTANT: ServiceTalk's source code is UTF-8 encoded: make sure your filesystem supports it before attempting to build
+the project. Setting the `JAVA_TOOL_OPTIONS` env var to `-Dfile.encoding=UTF-8` should help building the project in
+non-UTF-8 environments. Editors and IDEs must also support UTF-8 in order to successfully edit ServiceTalk's source code.
+
 You should be able to run the following command to build ServiceTalk:
 
 [source,shell]
