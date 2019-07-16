@@ -15,7 +15,7 @@
  */
 package io.servicetalk.http.api;
 
-import io.servicetalk.concurrent.api.BlockingGracefulCloseable;
+import io.servicetalk.concurrent.GracefulAutoCloseable;
 import io.servicetalk.concurrent.api.Single;
 
 import static io.servicetalk.concurrent.internal.FutureUtils.awaitTermination;
@@ -24,7 +24,7 @@ import static io.servicetalk.concurrent.internal.FutureUtils.awaitTermination;
  * The equivalent of {@link HttpClient} but that accepts {@link StreamingHttpRequest} and returns
  * {@link StreamingHttpResponse}.
  */
-public interface StreamingHttpClient extends FilterableStreamingHttpClient, BlockingGracefulCloseable {
+public interface StreamingHttpClient extends FilterableStreamingHttpClient, GracefulAutoCloseable {
     /**
      * Send a {@code request}.
      *
