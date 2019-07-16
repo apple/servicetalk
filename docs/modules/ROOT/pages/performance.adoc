@@ -602,70 +602,18 @@ ServiceTalk and is subject to change at any time.
 -Dio.netty.leakDetection.level=DISABLED
 ----
 
-== Benchmarks
+== Internal performance evaluation
 While we are careful in not adding unnecessary performance overhead during the development of ServiceTalk, we can't
-claim we deliver on this goal unless we measure. Therefore we've developed a performance test bench that we run
-periodically. This section will describe our test environment and some of the scenarios that we put to the test.
-Currently the performance test-suite is not publicly available, but we intend to incrementally add tooling and
-benchmarks to the code-base. Every environment and use-case is different and may perform differently and requires
-different tuning strategies, so we want to enable our users to easily test and confirm the performance of ServiceTalk
-meets their needs.
-
-=== Environment
-[cols="1,3a"]
-|===
-| CPU
-| Intel(R) Xeon(R) CPU E5-2640 v3 @ 2.60GHz (3.40GHz with Turbo)
-
-| NUMA Nodes
-| 2 processors
-
-| CPU Cores
-| 16 (2x 8 physical CPU cores, 32 logical CPU cores with HyperThreading)
-
-| CPU Cache
-| 20MB
-
-| Memory
-| 250GB
-
-| OS
-| CentOS 6.9 -- Linux 4.15
-
-| Network
-| N/A -- all tests performed using `localhost` networking
-
-| Virtualization
-| N/A -- bare metal
-
-|===
-
-=== Reducing the noise
-In order to minimize noise in the benchmarks we mitigate the problem from different angles
-
-* the system has 2 link:https://en.wikipedia.org/wiki/Non-uniform_memory_access[NUMA nodes] which allows us to isolate
-the load-generator from the system under test
-* background and operational processes typically run on the first few logical CPUs (first NUMA node), these don't
-consume much resources but we don't want the system under test to compete for resources and be negatively affected by
-cache invalidation by context switching
-* using `localhost` networking avoids bottlenecks and issues on the physical network, potential network virtualization
-overhead, including misconfiguration and noisy neighbors. This way we ensure that the only latency observed is the one
-introduced by ServiceTalk.
-* for server benchmarks the client load generator requires less compute cycles, so we co-locate it on the 1st NUMA-node,
-shared with the background processes but confined to a set of logical CPUs that are rarely used by the background
-processes. The server itself will be dedicated to all the cores of the 2nd NUMA-node.
-* for client benchmarks the background server taking request is a minimal Netty-based application. We use Netty and
-not ServiceTalk because we don't want to worry about the SerivceTalk service to be the bottleneck. The Netty server is
-co-located with the background processes on the first NUMA-node, but again isolated from the cores typically receiving
-most background tasks. The client under test will be dedicated to all the cores of the 2nd NUMA-node.
-* every scenario test is performed from a clean start of either the client and server and repeated 3 times, for a
-duration of 3 minutes. This gives us sufficiently consistent numbers and guarantees the bench goes through a phase of
-JIT warm-up, some GC while working and a steady state. The throughput numbers are averaged over the runs.
+claim we deliver on this goal unless we measure. Therefore we evaluate ServiceTalk's performance periodically.
+The following sections will outline the performance evaluations we do internally. You can use this information to
+determine whether we have covered the areas of your interest. Every environment and use-case is different which may
+perform differently and require different tuning strategies, so we would suggest you do your evaluations if performance
+is critical to your use case.
 
 === Test scenarios
 We obviously can't test all scenarios, but our aim is to continuously monitor performance of a set of use cases that
-are representative of real world use cases while also isolating ServiceTalk as much as possible (e.g. not too much
-business logic). In addition we'll also compare how well other libraries and frameworks in the Java ecosystem perform,
+are representative of real world use cases while also isolating ServiceTalk as much as possible (e.g. reduce business
+logic). In addition, we also compare how well other libraries and frameworks in the Java ecosystem perform,
 for example it's interesting for us to compare against Netty, as it shows us exactly how much overhead we are adding on
 top.
 
@@ -699,33 +647,8 @@ xref:servicetalk::performance.adoc#programming-models[programming models] for pe
 * IO Thread count
 * Connection count
 
-=== Load-generators
-In case of testing the HTTP server, we use either the native HTTP load-generator link:https://github.com/wg/wrk[wrk]
-written in C with async IO, or a purpose built ServiceTalk load-generator using the ServiceTalk asynchronous HTTP
-client. Our custom load-generator reports within 1-3% of the same numbers as `wrk`. We use our load-generator to test
-scenarios that `wrk` doesn't support such as streaming data, SSL, and possibly non-HTTP protocols in the future. By
-baselining our load-gen against `wrk` increases confidence in the results and may help identify regressions or
-improvements in ServiceTalk skewing the numbers. Similarly for testing client performance we use a Netty-based server
-implementation for reference as it avoids any overhead ServiceTalk may add and can be used to baseline in the same
-fashion to the client load-gen, in case we need a backend server with features only available in ServiceTalk.
+=== Conclusion
 
-==== wrk -- native HTTP client -- target 1000 connections
-Wrk opens 1000 connections to the target, then using an thread-pool of 8 workers (it has 8 dedicated CPU cores) it fires
-requests at the target server, each time a response completes on a connection, it fires the next request, and so on
-until the test completes, typically 3 minutes.
-
-==== ServiceTalk Async HTTP Client bench -- target 1000 connections
-In a loop 1000 requests are fired using the Async HTTP Client, which opens roughly 1000 connections, then from its IO
-thread-pool of 16 workers (it has 16 dedicated CPU cores) it fires new requests each time a response completes on a
-connection, and so on until the test completes, typically 3 minutes.
-
-==== ServiceTalk Blocking HTTP Client bench -- target 1000 connections
-Starts a work-pool of 1000 threads (it has 16 dedicated CPU cores) then from every worker thread it uses a Blocking HTTP
-Client to send a request and blocks on the response. When the response completes, it fires the next request and blocks
-again, and so on until the test completes, typically 3 minutes.
-
-=== Latency reporting
-So far we've mostly talked about throughput, but it's often interesting to report on latency as well, both `wrk` as well
-as our custom load-generator support latency reporting -- we leverage the awesome
-link:https://github.com/HdrHistogram/HdrHistogram[HdrHistogram] to make sure we're striking a good balance between
-throughput and latency.
+These test scenarios and benchmarks have helped us convince ourselves that ServiceTalk performs as expected compared
+to other libraries in the industry for the use cases that interests us. We are interested in improving ServiceTalk in
+general and would add more benchmarks as and when we find a good return on investments in doing so.
