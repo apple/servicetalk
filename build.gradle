@@ -86,10 +86,12 @@ task test {
 }
 
 task check {
+  dependsOn checkstyleRoot
   dependsOn findTasks('check')
 }
 
 task build {
+  dependsOn checkstyleRoot
   dependsOn findTasks('build')
 }
 
