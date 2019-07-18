@@ -159,11 +159,6 @@ public final class TestStreamingHttpClient {
                             }
 
                             @Override
-                            public void close() throws Exception {
-                                rc.close();
-                            }
-
-                            @Override
                             public Completable closeAsyncGracefully() {
                                 return rc.closeAsyncGracefully();
                             }
@@ -210,11 +205,6 @@ public final class TestStreamingHttpClient {
             @Override
             public StreamingHttpResponseFactory httpResponseFactory() {
                 return filterChain.httpResponseFactory();
-            }
-
-            @Override
-            public void close() throws Exception {
-                filterChain.close();
             }
 
             @Override

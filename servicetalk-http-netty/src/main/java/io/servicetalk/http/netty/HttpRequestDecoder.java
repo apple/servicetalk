@@ -21,12 +21,14 @@ import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.transport.netty.internal.CloseHandler;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.channel.ChannelHandlerContext;
 
 import java.util.Queue;
 
 import static io.servicetalk.http.api.HttpRequestMetaDataFactory.newRequestMetaData;
 import static io.servicetalk.http.api.HttpRequestMethod.Properties.NONE;
 import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
+import static java.lang.Math.min;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.util.Objects.requireNonNull;
 
@@ -48,6 +50,24 @@ final class HttpRequestDecoder extends HttpObjectDecoder<HttpRequestMetaData> {
     @Override
     protected boolean isDecodingRequest() {
         return true;
+    }
+
+    @Override
+    protected void handlePartialInitialLine(final ChannelHandlerContext ctx, final ByteBuf buffer) {
+        final int len = min(3, buffer.readableBytes());
+        for (int i = 0; i < len; ++i) {
+            byte b = buffer.getByte(buffer.readerIndex() + i);
+            if (b == ' ' && i > 0) {
+                // If we find a space after at least one capital letter, accept this as valid.
+                return;
+            }
+            // As per the RFC, request method is case-sensitive, and all valid methods are uppercase.
+            // https://tools.ietf.org/html/rfc7231#section-4.1
+            if (b < 'A' || b > 'Z') {
+                // Illegal request if it doesn't start with 3 capital letters, or fewer followed by a space.
+                splitInitialLineError();
+            }
+        }
     }
 
     @Override

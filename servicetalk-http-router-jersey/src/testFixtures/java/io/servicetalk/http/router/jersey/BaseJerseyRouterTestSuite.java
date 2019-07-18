@@ -38,7 +38,8 @@ import org.junit.runners.Suite.SuiteClasses;
 
         // Execution strategy tests
         ExecutionStrategyConfigurationFailuresTest.class,
-        ExecutionStrategyTest.class
+        ExecutionStrategyTest.class,
+        MixedModeResourceTest.class
 })
 public abstract class BaseJerseyRouterTestSuite {
     // NOOP

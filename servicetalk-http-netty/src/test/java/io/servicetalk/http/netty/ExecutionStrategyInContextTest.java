@@ -20,6 +20,7 @@ import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.BlockingStreamingHttpClient;
 import io.servicetalk.http.api.HttpClient;
+import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpServerBuilder;
 import io.servicetalk.http.api.ReservedBlockingHttpConnection;
@@ -196,11 +197,17 @@ public class ExecutionStrategyInContextTest {
     }
 
     private void testBlockingStreaming(boolean customStrategy) throws Exception {
-        BlockingStreamingHttpClient client = initClientAndServer(builder ->
-                builder.listenBlockingStreaming((ctx, request, response) -> {
-                    serviceStrategyRef.set(ctx.executionContext().executionStrategy());
-                    response.sendMetaData().close();
-                }), customStrategy).buildBlockingStreaming();
+        BlockingStreamingHttpClient client = initClientAndServer(builder -> {
+            if (customStrategy) {
+                // Ensure we don't deadlock by not offloading receive meta
+                expectedServerStrategy = customStrategyBuilder().offloadReceiveMetadata().build();
+                builder.executionStrategy(expectedServerStrategy);
+            }
+            return builder.listenBlockingStreaming((ctx, request, response) -> {
+                serviceStrategyRef.set(ctx.executionContext().executionStrategy());
+                response.sendMetaData().close();
+            });
+        }, customStrategy).buildBlockingStreaming();
         clientAsCloseable = client;
         if (!customStrategy) {
             assert expectedClientStrategy == null;

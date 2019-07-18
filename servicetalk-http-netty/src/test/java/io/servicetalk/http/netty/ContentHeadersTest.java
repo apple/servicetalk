@@ -110,7 +110,6 @@ public class ContentHeadersTest extends AbstractNettyHttpServerTest {
                 new RequestTest(aggregatedRequest(DELETE), defaults(), HAVE_CONTENT_LENGTH),
                 new RequestTest(aggregatedRequest(CONNECT), defaults(), HAVE_CONTENT_LENGTH),
                 new RequestTest(aggregatedRequest(OPTIONS), defaults(), HAVE_CONTENT_LENGTH),
-                new RequestTest(aggregatedRequest(TRACE), defaults(), HAVE_NEITHER),
                 new RequestTest(aggregatedRequest(PATCH), defaults(), HAVE_CONTENT_LENGTH),
 
                 new RequestTest(aggregatedRequest(GET), withoutPayload(), HAVE_NEITHER),
@@ -528,7 +527,7 @@ public class ContentHeadersTest extends AbstractNettyHttpServerTest {
         void runTest(final StreamingHttpConnection connection) throws Exception {
             // test needs to check the response
             final StreamingHttpResponse response = connection.request(
-                    newStreamingRequest(requestMethod)).toFuture().get();
+                    newStreamingRequest(requestMethod).payloadBody(empty())).toFuture().get();
             final HttpHeaders headers = response.headers();
             assertNull(expectation.assertHeaders(headers));
             response.payloadBody().toFuture().get(); // drain the payload

@@ -60,6 +60,12 @@ final class NoopAsyncContextProvider implements AsyncContextProvider {
     }
 
     @Override
+    public CompletableSource.Subscriber wrapCompletableSubscriberAndCancellable(
+            final CompletableSource.Subscriber subscriber, final AsyncContextMap current) {
+        return subscriber;
+    }
+
+    @Override
     public <T> SingleSource.Subscriber<T> wrapCancellable(final SingleSource.Subscriber<T> subscriber,
                                                           final AsyncContextMap current) {
         return subscriber;
@@ -72,12 +78,24 @@ final class NoopAsyncContextProvider implements AsyncContextProvider {
     }
 
     @Override
+    public <T> SingleSource.Subscriber<T> wrapSingleSubscriberAndCancellable(
+            final SingleSource.Subscriber<T> subscriber, final AsyncContextMap current) {
+        return subscriber;
+    }
+
+    @Override
     public <T> Subscriber<T> wrapSubscription(final Subscriber<T> subscriber, final AsyncContextMap current) {
         return subscriber;
     }
 
     @Override
     public <T> Subscriber<T> wrapPublisherSubscriber(final Subscriber<T> subscriber, final AsyncContextMap current) {
+        return subscriber;
+    }
+
+    @Override
+    public <T> Subscriber<T> wrapPublisherSubscriberAndSubscription(final Subscriber<T> subscriber,
+                                                                    final AsyncContextMap current) {
         return subscriber;
     }
 

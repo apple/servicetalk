@@ -1,5 +1,5 @@
 name: servicetalk-http-security-jersey
 title: ServiceTalk HTTP Security - Jersey
-version: 0.16-SNAPSHOT
+version: SNAPSHOT
 nav:
   - modules/ROOT/nav.adoc

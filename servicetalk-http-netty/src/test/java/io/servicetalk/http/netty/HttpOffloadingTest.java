@@ -35,8 +35,8 @@ import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ServerContext;
-import io.servicetalk.transport.netty.IoThreadFactory;
 import io.servicetalk.transport.netty.internal.ExecutionContextRule;
+import io.servicetalk.transport.netty.internal.IoThreadFactory;
 
 import org.junit.After;
 import org.junit.Before;

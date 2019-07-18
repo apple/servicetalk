@@ -217,6 +217,7 @@ public final class ExecutionStrategyTest extends AbstractNonParameterizedJerseyS
     @Override
     protected void configureBuilders(final HttpServerBuilder serverBuilder,
                                      final HttpJerseyRouterBuilder jerseyRouterBuilder) {
+        // We do not call super.configureBuilders here because some strategies expect the default serverBuilder
         routerExecutionStrategy.configureRouterBuilder(serverBuilder, ROUTER_EXEC.executor());
 
         jerseyRouterBuilder.routeExecutionStrategyFactory(
@@ -303,6 +304,8 @@ public final class ExecutionStrategyTest extends AbstractNonParameterizedJerseyS
                     case DEFAULT:
                         switch (methodExecutionStrategy) {
                             case DEFAULT:
+                                assertGlobalExecutor(testMode, context, threadingInfo);
+                                return;
                             case NO_OFFLOADS:
                                 assertDefaultNoOffloadsExecutor(testMode, context, threadingInfo);
                                 return;

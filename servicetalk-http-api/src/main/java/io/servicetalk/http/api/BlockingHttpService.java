@@ -15,13 +15,14 @@
  */
 package io.servicetalk.http.api;
 
+import io.servicetalk.concurrent.GracefulAutoCloseable;
 import io.servicetalk.concurrent.api.Single;
 
 /**
  * The equivalent of {@link HttpService} but with synchronous/blocking APIs instead of asynchronous APIs.
  */
 @FunctionalInterface
-public interface BlockingHttpService extends AutoCloseable {
+public interface BlockingHttpService extends GracefulAutoCloseable {
     /**
      * Handles a single HTTP request.
      *

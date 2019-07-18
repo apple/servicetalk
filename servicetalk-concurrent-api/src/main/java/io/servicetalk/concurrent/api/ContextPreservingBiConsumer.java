@@ -17,7 +17,7 @@ package io.servicetalk.concurrent.api;
 
 import java.util.function.BiConsumer;
 
-import static io.servicetalk.concurrent.api.DefaultAsyncContextProvider.INSTANCE;
+import static io.servicetalk.concurrent.api.AsyncContextMapThreadLocal.contextThreadLocal;
 import static java.util.Objects.requireNonNull;
 
 final class ContextPreservingBiConsumer<T, U> implements BiConsumer<T, U> {
@@ -31,12 +31,28 @@ final class ContextPreservingBiConsumer<T, U> implements BiConsumer<T, U> {
 
     @Override
     public void accept(T t, U u) {
-        AsyncContextMap prev = INSTANCE.contextMap();
+        final Thread currentThread = Thread.currentThread();
+        if (currentThread instanceof AsyncContextMapHolder) {
+            final AsyncContextMapHolder asyncContextMapHolder = (AsyncContextMapHolder) currentThread;
+            AsyncContextMap prev = asyncContextMapHolder.asyncContextMap();
+            try {
+                asyncContextMapHolder.asyncContextMap(saved);
+                delegate.accept(t, u);
+            } finally {
+                asyncContextMapHolder.asyncContextMap(prev);
+            }
+        } else {
+            slowPath(t, u);
+        }
+    }
+
+    private void slowPath(T t, U u) {
+        AsyncContextMap prev = contextThreadLocal.get();
         try {
-            INSTANCE.contextMap(saved);
+            contextThreadLocal.set(saved);
             delegate.accept(t, u);
         } finally {
-            INSTANCE.contextMap(prev);
+            contextThreadLocal.set(prev);
         }
     }
 }

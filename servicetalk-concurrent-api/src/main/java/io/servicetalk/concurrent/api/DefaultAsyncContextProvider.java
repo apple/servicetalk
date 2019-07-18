@@ -50,35 +50,164 @@ final class DefaultAsyncContextProvider implements AsyncContextProvider {
     @Override
     public CompletableSource.Subscriber wrapCancellable(final CompletableSource.Subscriber subscriber,
                                                         final AsyncContextMap current) {
+        if (subscriber instanceof ContextPreservingCompletableSubscriber) {
+            final ContextPreservingCompletableSubscriber s = (ContextPreservingCompletableSubscriber) subscriber;
+            if (s.saved == current) {
+                return subscriber instanceof ContextPreservingCompletableSubscriberAndCancellable ? subscriber :
+                        new ContextPreservingCompletableSubscriberAndCancellable(s.subscriber, current);
+            }
+        } else if (subscriber instanceof ContextPreservingCancellableCompletableSubscriber &&
+                ((ContextPreservingCancellableCompletableSubscriber) subscriber).saved == current) {
+            // no need to check for instanceof ContextPreservingCompletableSubscriberAndCancellable, because
+            // it extends from ContextPreservingSingleSubscriber.
+            return subscriber;
+        }
         return new ContextPreservingCancellableCompletableSubscriber(subscriber, current);
     }
 
     @Override
     public CompletableSource.Subscriber wrapCompletableSubscriber(CompletableSource.Subscriber subscriber,
                                                                   AsyncContextMap current) {
+        if (subscriber instanceof ContextPreservingCancellableCompletableSubscriber) {
+            final ContextPreservingCancellableCompletableSubscriber s =
+                    (ContextPreservingCancellableCompletableSubscriber) subscriber;
+            if (s.saved == current) {
+                return new ContextPreservingCompletableSubscriberAndCancellable(s.subscriber, current);
+            }
+        } else if (subscriber instanceof ContextPreservingCompletableSubscriber &&
+                ((ContextPreservingCompletableSubscriber) subscriber).saved == current) {
+            // no need to check for instanceof ContextPreservingCompletableSubscriberAndCancellable, because
+            // it extends from ContextPreservingCompletableSubscriber.
+            return subscriber;
+        }
         return new ContextPreservingCompletableSubscriber(subscriber, current);
+    }
+
+    @Override
+    public CompletableSource.Subscriber wrapCompletableSubscriberAndCancellable(
+            final CompletableSource.Subscriber subscriber, final AsyncContextMap current) {
+        if (subscriber instanceof ContextPreservingCompletableSubscriber) {
+            final ContextPreservingCompletableSubscriber s = (ContextPreservingCompletableSubscriber) subscriber;
+            if (s.saved == current) {
+                return subscriber instanceof ContextPreservingCompletableSubscriberAndCancellable ? subscriber :
+                        new ContextPreservingCompletableSubscriberAndCancellable(s.subscriber, current);
+            }
+        } else if (subscriber instanceof ContextPreservingCancellableCompletableSubscriber) {
+            final ContextPreservingCancellableCompletableSubscriber s =
+                    (ContextPreservingCancellableCompletableSubscriber) subscriber;
+            if (s.saved == current) {
+                return new ContextPreservingCompletableSubscriberAndCancellable(s.subscriber, current);
+            }
+        }
+        return new ContextPreservingCompletableSubscriberAndCancellable(subscriber, current);
     }
 
     @Override
     public <T> SingleSource.Subscriber<T> wrapCancellable(final SingleSource.Subscriber<T> subscriber,
                                                           final AsyncContextMap current) {
+        if (subscriber instanceof ContextPreservingSingleSubscriber) {
+            final ContextPreservingSingleSubscriber<T> s = (ContextPreservingSingleSubscriber<T>) subscriber;
+            if (s.saved == current) {
+                return subscriber instanceof ContextPreservingSingleSubscriberAndCancellable ? subscriber :
+                        new ContextPreservingSingleSubscriberAndCancellable<>(s.subscriber, current);
+            }
+        } else if (subscriber instanceof ContextPreservingCancellableSingleSubscriber &&
+                ((ContextPreservingCancellableSingleSubscriber<T>) subscriber).saved == current) {
+            // no need to check for instanceof ContextPreservingSingleSubscriberAndCancellable, because
+            // it extends from ContextPreservingSingleSubscriber.
+            return subscriber;
+        }
         return new ContextPreservingCancellableSingleSubscriber<>(subscriber, current);
     }
 
     @Override
     public <T> SingleSource.Subscriber<T> wrapSingleSubscriber(SingleSource.Subscriber<T> subscriber,
                                                                AsyncContextMap current) {
+        if (subscriber instanceof ContextPreservingCancellableSingleSubscriber) {
+            final ContextPreservingCancellableSingleSubscriber<T> s =
+                    (ContextPreservingCancellableSingleSubscriber<T>) subscriber;
+            if (s.saved == current) {
+                return new ContextPreservingSingleSubscriberAndCancellable<>(s.subscriber, current);
+            }
+        } else if (subscriber instanceof ContextPreservingSingleSubscriber &&
+                ((ContextPreservingSingleSubscriber) subscriber).saved == current) {
+            // no need to check for instanceof ContextPreservingSingleSubscriberAndCancellable, because
+            // it extends from ContextPreservingSingleSubscriber.
+            return subscriber;
+        }
         return new ContextPreservingSingleSubscriber<>(subscriber, current);
     }
 
     @Override
+    public <T> SingleSource.Subscriber<T> wrapSingleSubscriberAndCancellable(
+            final SingleSource.Subscriber<T> subscriber, final AsyncContextMap current) {
+        if (subscriber instanceof ContextPreservingSingleSubscriber) {
+            final ContextPreservingSingleSubscriber<T> s = (ContextPreservingSingleSubscriber<T>) subscriber;
+            if (s.saved == current) {
+                return subscriber instanceof ContextPreservingSingleSubscriberAndCancellable ? subscriber :
+                        new ContextPreservingSingleSubscriberAndCancellable<>(s.subscriber, current);
+            }
+        } else if (subscriber instanceof ContextPreservingCancellableSingleSubscriber) {
+            final ContextPreservingCancellableSingleSubscriber<T> s =
+                    (ContextPreservingCancellableSingleSubscriber<T>) subscriber;
+            if (s.saved == current) {
+                return new ContextPreservingSingleSubscriberAndCancellable<>(s.subscriber, current);
+            }
+        }
+        return new ContextPreservingSingleSubscriberAndCancellable<>(subscriber, current);
+    }
+
+    @Override
     public <T> Subscriber<T> wrapSubscription(final Subscriber<T> subscriber, final AsyncContextMap current) {
-        return ContextPreservingSubscriptionSubscriber.wrap(subscriber, current);
+        if (subscriber instanceof ContextPreservingSubscriber) {
+            final ContextPreservingSubscriber<T> s = (ContextPreservingSubscriber<T>) subscriber;
+            if (s.saved == current) {
+                return subscriber instanceof ContextPreservingSubscriberAndSubscription ? subscriber :
+                        new ContextPreservingSubscriberAndSubscription<>(s.subscriber, current);
+            }
+        } else if (subscriber instanceof ContextPreservingSubscriptionSubscriber &&
+                ((ContextPreservingSubscriptionSubscriber) subscriber).saved == current) {
+            // no need to check for instanceof ContextPreservingSubscriberAndSubscription, because
+            // it extends from ContextPreservingSubscriptionSubscriber.
+            return subscriber;
+        }
+        return new ContextPreservingSubscriptionSubscriber<>(subscriber, current);
     }
 
     @Override
     public <T> Subscriber<T> wrapPublisherSubscriber(Subscriber<T> subscriber, AsyncContextMap current) {
+        if (subscriber instanceof ContextPreservingSubscriptionSubscriber) {
+            final ContextPreservingSubscriptionSubscriber<T> s =
+                    (ContextPreservingSubscriptionSubscriber<T>) subscriber;
+            if (s.saved == current) {
+                return new ContextPreservingSubscriberAndSubscription<>(s.subscriber, current);
+            }
+        } else if (subscriber instanceof ContextPreservingSubscriber &&
+                ((ContextPreservingSubscriber) subscriber).saved == current) {
+            // no need to check for instanceof ContextPreservingSubscriberAndSubscription, because
+            // it extends from ContextPreservingSubscriptionSubscriber.
+            return subscriber;
+        }
         return new ContextPreservingSubscriber<>(subscriber, current);
+    }
+
+    @Override
+    public <T> Subscriber<T> wrapPublisherSubscriberAndSubscription(final Subscriber<T> subscriber,
+                                                                    final AsyncContextMap current) {
+        if (subscriber instanceof ContextPreservingSubscriber) {
+            final ContextPreservingSubscriber<T> s = (ContextPreservingSubscriber<T>) subscriber;
+            if (s.saved == current) {
+                return subscriber instanceof ContextPreservingSubscriberAndSubscription ? subscriber :
+                        new ContextPreservingSubscriberAndSubscription<>(s.subscriber, current);
+            }
+        } else if (subscriber instanceof ContextPreservingSubscriptionSubscriber) {
+            final ContextPreservingSubscriptionSubscriber<T> s =
+                    (ContextPreservingSubscriptionSubscriber<T>) subscriber;
+            if (s.saved == current) {
+                return new ContextPreservingSubscriberAndSubscription<>(s.subscriber, current);
+            }
+        }
+        return new ContextPreservingSubscriberAndSubscription<>(subscriber, current);
     }
 
     @Override

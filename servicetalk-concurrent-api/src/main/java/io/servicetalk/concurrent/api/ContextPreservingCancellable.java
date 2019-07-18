@@ -17,7 +17,7 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
 
-import static io.servicetalk.concurrent.api.DefaultAsyncContextProvider.INSTANCE;
+import static io.servicetalk.concurrent.api.AsyncContextMapThreadLocal.contextThreadLocal;
 import static java.util.Objects.requireNonNull;
 
 final class ContextPreservingCancellable implements Cancellable {
@@ -39,12 +39,33 @@ final class ContextPreservingCancellable implements Cancellable {
 
     @Override
     public void cancel() {
-        AsyncContextMap prev = INSTANCE.contextMap();
+        final Thread currentThread = Thread.currentThread();
+        if (currentThread instanceof AsyncContextMapHolder) {
+            final AsyncContextMapHolder asyncContextMapHolder = (AsyncContextMapHolder) currentThread;
+            AsyncContextMap prev = asyncContextMapHolder.asyncContextMap();
+            try {
+                asyncContextMapHolder.asyncContextMap(saved);
+                delegate.cancel();
+            } finally {
+                asyncContextMapHolder.asyncContextMap(prev);
+            }
+        } else {
+            slowPath();
+        }
+    }
+
+    private void slowPath() {
+        AsyncContextMap prev = contextThreadLocal.get();
         try {
-            INSTANCE.contextMap(saved);
+            contextThreadLocal.set(saved);
             delegate.cancel();
         } finally {
-            INSTANCE.contextMap(prev);
+            contextThreadLocal.set(prev);
         }
+    }
+
+    @Override
+    public String toString() {
+        return ContextPreservingCancellable.class.getSimpleName() + "(" + delegate + ')';
     }
 }

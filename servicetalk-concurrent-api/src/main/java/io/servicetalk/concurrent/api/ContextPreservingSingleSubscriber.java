@@ -17,51 +17,109 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.SingleSource;
+import io.servicetalk.concurrent.SingleSource.Subscriber;
 
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.api.DefaultAsyncContextProvider.INSTANCE;
+import static io.servicetalk.concurrent.api.AsyncContextMapThreadLocal.contextThreadLocal;
 import static java.util.Objects.requireNonNull;
 
-final class ContextPreservingSingleSubscriber<T> implements SingleSource.Subscriber<T> {
-    private final AsyncContextMap saved;
-    private final SingleSource.Subscriber<? super T> subscriber;
+class ContextPreservingSingleSubscriber<T> implements Subscriber<T> {
+    final AsyncContextMap saved;
+    final SingleSource.Subscriber<T> subscriber;
 
-    ContextPreservingSingleSubscriber(SingleSource.Subscriber<? super T> subscriber, AsyncContextMap current) {
+    ContextPreservingSingleSubscriber(Subscriber<T> subscriber, AsyncContextMap current) {
         this.subscriber = requireNonNull(subscriber);
         this.saved = requireNonNull(current);
     }
 
+    void invokeOnSubscribe(Cancellable cancellable) {
+        subscriber.onSubscribe(cancellable);
+    }
+
     @Override
-    public void onSubscribe(Cancellable cancellable) {
-        AsyncContextMap prev = INSTANCE.contextMap();
+    public final void onSubscribe(Cancellable cancellable) {
+        final Thread currentThread = Thread.currentThread();
+        if (currentThread instanceof AsyncContextMapHolder) {
+            final AsyncContextMapHolder asyncContextMapHolder = (AsyncContextMapHolder) currentThread;
+            AsyncContextMap prev = asyncContextMapHolder.asyncContextMap();
+            try {
+                asyncContextMapHolder.asyncContextMap(saved);
+                invokeOnSubscribe(cancellable);
+            } finally {
+                asyncContextMapHolder.asyncContextMap(prev);
+            }
+        } else {
+            onSubscribeSlowPath(cancellable);
+        }
+    }
+
+    private void onSubscribeSlowPath(Cancellable cancellable) {
+        AsyncContextMap prev = contextThreadLocal.get();
         try {
-            INSTANCE.contextMap(saved);
-            subscriber.onSubscribe(cancellable);
+            contextThreadLocal.set(saved);
+            invokeOnSubscribe(cancellable);
         } finally {
-            INSTANCE.contextMap(prev);
+            contextThreadLocal.set(prev);
         }
     }
 
     @Override
-    public void onSuccess(@Nullable T result) {
-        AsyncContextMap prev = INSTANCE.contextMap();
+    public final void onSuccess(@Nullable T result) {
+        final Thread currentThread = Thread.currentThread();
+        if (currentThread instanceof AsyncContextMapHolder) {
+            final AsyncContextMapHolder asyncContextMapHolder = (AsyncContextMapHolder) currentThread;
+            AsyncContextMap prev = asyncContextMapHolder.asyncContextMap();
+            try {
+                asyncContextMapHolder.asyncContextMap(saved);
+                subscriber.onSuccess(result);
+            } finally {
+                asyncContextMapHolder.asyncContextMap(prev);
+            }
+        } else {
+            onSuccessSlowPath(result);
+        }
+    }
+
+    private void onSuccessSlowPath(@Nullable T result) {
+        AsyncContextMap prev = contextThreadLocal.get();
         try {
-            INSTANCE.contextMap(saved);
+            contextThreadLocal.set(saved);
             subscriber.onSuccess(result);
         } finally {
-            INSTANCE.contextMap(prev);
+            contextThreadLocal.set(prev);
         }
     }
 
     @Override
-    public void onError(Throwable t) {
-        AsyncContextMap prev = INSTANCE.contextMap();
+    public final void onError(Throwable t) {
+        final Thread currentThread = Thread.currentThread();
+        if (currentThread instanceof AsyncContextMapHolder) {
+            final AsyncContextMapHolder asyncContextMapHolder = (AsyncContextMapHolder) currentThread;
+            AsyncContextMap prev = asyncContextMapHolder.asyncContextMap();
+            try {
+                asyncContextMapHolder.asyncContextMap(saved);
+                subscriber.onError(t);
+            } finally {
+                asyncContextMapHolder.asyncContextMap(prev);
+            }
+        } else {
+            onErrorSlowPath(t);
+        }
+    }
+
+    private void onErrorSlowPath(Throwable t) {
+        AsyncContextMap prev = contextThreadLocal.get();
         try {
-            INSTANCE.contextMap(saved);
+            contextThreadLocal.set(saved);
             subscriber.onError(t);
         } finally {
-            INSTANCE.contextMap(prev);
+            contextThreadLocal.set(prev);
         }
+    }
+
+    @Override
+    public String toString() {
+        return getClass().getSimpleName() + "(" + subscriber + ')';
     }
 }

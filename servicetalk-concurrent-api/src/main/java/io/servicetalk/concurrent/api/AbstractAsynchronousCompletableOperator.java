@@ -48,7 +48,7 @@ abstract class AbstractAsynchronousCompletableOperator extends AbstractNoHandleS
         // with the original contextMap. Otherwise some other context may leak into this subscriber chain from the other
         // side of the asynchronous boundary.
         final Subscriber operatorSubscriber = signalOffloader.offloadSubscriber(
-                contextProvider.wrapCompletableSubscriber(subscriber, contextMap));
+                contextProvider.wrapCompletableSubscriberAndCancellable(subscriber, contextMap));
         // Subscriber to use to subscribe to the original source. Since this is an asynchronous operator, it may call
         // Cancellable method from EventLoop (if the asynchronous source created/obtained inside this operator uses
         // EventLoop) which may execute blocking code on EventLoop, eg: beforeCancel(). So, we should offload
@@ -56,8 +56,7 @@ abstract class AbstractAsynchronousCompletableOperator extends AbstractNoHandleS
         //
         // We are introducing offloading on the Subscription, which means the AsyncContext may leak if we don't save
         // and restore the AsyncContext before/after the asynchronous boundary.
-        final Subscriber upstreamSubscriber = signalOffloader.offloadCancellable(
-                contextProvider.wrapCancellable(apply(operatorSubscriber), contextMap));
+        final Subscriber upstreamSubscriber = signalOffloader.offloadCancellable(apply(operatorSubscriber));
         original.delegateSubscribe(upstreamSubscriber, signalOffloader, contextMap, contextProvider);
     }
 }

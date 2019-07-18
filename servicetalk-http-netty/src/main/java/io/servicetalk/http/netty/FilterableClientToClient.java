@@ -151,11 +151,6 @@ final class FilterableClientToClient implements StreamingHttpClient {
             }
 
             @Override
-            public void close() throws Exception {
-                rc.close();
-            }
-
-            @Override
             public Completable closeAsyncGracefully() {
                 return rc.closeAsyncGracefully();
             }
@@ -181,11 +176,6 @@ final class FilterableClientToClient implements StreamingHttpClient {
     @Override
     public StreamingHttpResponseFactory httpResponseFactory() {
         return client.httpResponseFactory();
-    }
-
-    @Override
-    public void close() throws Exception {
-        client.close();
     }
 
     @Override

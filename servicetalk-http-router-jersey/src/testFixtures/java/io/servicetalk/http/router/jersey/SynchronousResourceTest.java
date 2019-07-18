@@ -31,8 +31,8 @@ import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 import static org.hamcrest.Matchers.is;
 
 public class SynchronousResourceTest extends AbstractResourceTest {
-    public SynchronousResourceTest(final RouterApi api) {
-        super(api);
+    public SynchronousResourceTest(final boolean serverNoOffloads, final RouterApi api) {
+        super(serverNoOffloads, api);
     }
 
     @Override

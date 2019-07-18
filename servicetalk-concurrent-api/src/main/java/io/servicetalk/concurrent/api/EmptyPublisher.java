@@ -15,13 +15,9 @@
  */
 package io.servicetalk.concurrent.api;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverTerminalFromSource;
 
 final class EmptyPublisher<T> extends AbstractSynchronousPublisher<T> {
-    private static final Logger LOGGER = LoggerFactory.getLogger(EmptyPublisher.class);
     private static final EmptyPublisher EMPTY_PUBLISHER = new EmptyPublisher();
 
     private EmptyPublisher() {

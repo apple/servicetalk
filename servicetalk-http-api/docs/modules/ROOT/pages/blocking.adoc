@@ -48,6 +48,7 @@ we have the following points that require offloads:
 . Control signals for the response payload `Publisher`.
 . Data signals for the request payload `Publisher`.
 
+[#programming-models]
 === Programming models
 
 xref:servicetalk::index.adoc#programming-paradigms[Programming model] plays an important role in determining an appropriate

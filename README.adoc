@@ -57,7 +57,7 @@ NOTE: Builds of the development version are available
 === Contributor Setup
 
 IMPORTANT: If you're intending to contribute to ServiceTalk,
-           make sure to first read the link:CONTRIBUTING.adoc[contribution guidelines].
+           make sure to first read the xref:CONTRIBUTING.adoc[contribution guidelines].
 
 ServiceTalk uses link:https://gradle.org[Gradle] as its build tool and only requires JDK 8 or higher to be pre-installed.
 ServiceTalk ships with the Gradle Wrapper, which means that there is no need to install Gradle on your machine beforehand.

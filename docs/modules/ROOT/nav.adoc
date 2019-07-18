@@ -1,5 +1,6 @@
 * xref:introduction.adoc[Introduction]
 ** xref:blocking.adoc[Blocking]
+** xref:performance.adoc[Performance]
 * xref:servicetalk-examples::index.adoc[Examples]
 * xref:servicetalk-concurrent-api::index.adoc[Concurrent API]
 * xref:servicetalk-http-api::index.adoc[HTTP API]
@@ -7,5 +8,5 @@
 ** xref:servicetalk-http-router-jersey::index.adoc[Jersey Router]
 ** xref:servicetalk-http-security-jersey::index.adoc[Jersey Security]
 ** xref:servicetalk-data-jackson-jersey::index.adoc[Data Jackson Jersey]
-
-
+* xref:CONTRIBUTING.adoc[Contributing]
+* xref:CODE_OF_CONDUCT.adoc[Code of Conduct]

@@ -55,6 +55,7 @@ dependencies {
   testFixturesImplementation "io.servicetalk:servicetalk-concurrent-internal-testFixtures:$project.version"
   testFixturesImplementation "io.servicetalk:servicetalk-data-jackson:$project.version"
   testFixturesImplementation "io.servicetalk:servicetalk-http-netty:$project.version"
+  testFixturesImplementation "io.servicetalk:servicetalk-http-router-predicate:$project.version"
   testFixturesImplementation "io.servicetalk:servicetalk-test-resources:$project.version"
   testFixturesImplementation "io.servicetalk:servicetalk-transport-netty:$project.version"
   testFixturesImplementation "io.servicetalk:servicetalk-transport-netty-internal:$project.version"

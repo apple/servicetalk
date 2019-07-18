@@ -53,8 +53,8 @@ import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.netty.DefaultSingleAddressHttpClientBuilder.HttpClientBuildContext;
+import io.servicetalk.transport.api.ClientSslConfigBuilder;
 import io.servicetalk.transport.api.IoExecutor;
-import io.servicetalk.transport.api.SslConfig;
 
 import java.net.SocketOption;
 import java.util.function.Function;
@@ -163,11 +163,6 @@ class DefaultPartitionedHttpClientBuilder<U, R> extends PartitionedHttpClientBui
         }
 
         @Override
-        public void close() throws Exception {
-            group.closeAsync().toFuture().get();
-        }
-
-        @Override
         public Completable onClose() {
             return group.onClose();
         }
@@ -209,10 +204,6 @@ class DefaultPartitionedHttpClientBuilder<U, R> extends PartitionedHttpClientBui
         @Override
         public StreamingHttpResponseFactory httpResponseFactory() {
             return new DefaultStreamingHttpResponseFactory(DefaultHttpHeadersFactory.INSTANCE, DEFAULT_ALLOCATOR);
-        }
-
-        @Override
-        public void close() {
         }
 
         @Override
@@ -375,9 +366,8 @@ class DefaultPartitionedHttpClientBuilder<U, R> extends PartitionedHttpClientBui
     }
 
     @Override
-    public PartitionedHttpClientBuilder<U, R> sslConfig(@Nullable final SslConfig sslConfig) {
-        builderTemplate.sslConfig(sslConfig);
-        return this;
+    public ClientSslConfigBuilder<PartitionedHttpClientBuilder<U, R>> enableSsl() {
+        return builderTemplate.enableSsl(() -> this);
     }
 
     @Override

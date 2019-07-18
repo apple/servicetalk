@@ -21,6 +21,7 @@ import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
+import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.internal.SignalOffloader;
 
 import org.slf4j.Logger;
@@ -1882,6 +1883,34 @@ public abstract class Publisher<T> {
      */
     public final <R> Publisher<R> liftSync(PublisherOperator<? super T, ? extends R> operator) {
         return new LiftSynchronousPublisherOperator<>(this, operator, executor);
+    }
+
+    /**
+     * <strong>This method requires advanced knowledge of building operators. Before using this method please attempt
+     * to compose existing operator(s) to satisfy your use case.</strong>
+     * <p>
+     * Returns a {@link Single} which when subscribed, the {@code operator} argument will be used to convert between the
+     * {@link SingleSource.Subscriber} to a {@link Subscriber} before subscribing to this {@link Publisher}.
+     * <pre>{@code
+     *     Publisher<X> pub = ...;
+     *     pub.map(..) // A
+     *        .liftSync(original -> modified)
+     *        .filter(..) // B - we have converted to Single now!
+     * }</pre>
+     *
+     * The {@code original -> modified} "operator" <strong>MUST</strong> be "synchronous" in that it does not interact
+     * with the original {@link Subscriber} from outside the modified {@link Subscriber} or {@link Subscription}
+     * threads. That is to say this operator will not impact the {@link Executor} constraints already in place between
+     * <i>A</i> and <i>B</i> above. If you need asynchronous behavior, or are unsure, don't use this operator.
+     * @param operator The custom operator logic. The input is the "original" {@link SingleSource.Subscriber} to the
+     * returned {@link Single} and the return is the "modified" {@link Subscriber} that provides custom operator
+     * business logic on this {@link Publisher}.
+     * @param <R> Type of the items emitted by the returned {@link Single}.
+     * @return a {@link Single} which when subscribed, the {@code operator} argument will be used to convert the
+     * {@link SingleSource.Subscriber} to a {@link Subscriber} before subscribing to this {@link Publisher}.
+     */
+    public final <R> Single<R> liftSyncToSingle(PublisherToSingleOperator<? super T, ? extends R> operator) {
+        return new LiftSynchronousPublisherToSingle<>(this, operator);
     }
 
     /**

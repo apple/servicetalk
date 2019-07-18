@@ -17,19 +17,23 @@ package io.servicetalk.http.router.jersey;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
+import io.servicetalk.http.api.BlockingHttpService;
+import io.servicetalk.http.api.BlockingStreamingHttpService;
 import io.servicetalk.http.api.HttpProtocolVersion;
 import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.http.api.HttpServerBuilder;
+import io.servicetalk.http.api.HttpService;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
+import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.netty.HttpClients;
 import io.servicetalk.http.netty.HttpServers;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
-import io.servicetalk.transport.netty.IoThreadFactory;
 import io.servicetalk.transport.netty.internal.ExecutionContextRule;
+import io.servicetalk.transport.netty.internal.IoThreadFactory;
 
 import org.hamcrest.Matcher;
 import org.junit.After;
@@ -138,16 +142,16 @@ public abstract class AbstractNonParameterizedJerseyStreamingHttpServiceTest {
 
         switch (api) {
             case ASYNC_AGGREGATED:
-                serverContext = httpServerBuilder.listenAndAwait(toAggregated(router));
+                serverContext = buildRouter(httpServerBuilder, toAggregated(router));
                 break;
             case ASYNC_STREAMING:
-                serverContext = httpServerBuilder.listenStreamingAndAwait(router);
+                serverContext = buildRouter(httpServerBuilder, router);
                 break;
             case BLOCKING_AGGREGATED:
-                serverContext = httpServerBuilder.listenBlockingAndAwait(toBlocking(router));
+                serverContext = buildRouter(httpServerBuilder, toBlocking(router));
                 break;
             case BLOCKING_STREAMING:
-                serverContext = httpServerBuilder.listenBlockingStreamingAndAwait(toBlockingStreaming(router));
+                serverContext = buildRouter(httpServerBuilder, toBlockingStreaming(router));
                 break;
             default:
                 throw new IllegalArgumentException(api.name());
@@ -157,8 +161,28 @@ public abstract class AbstractNonParameterizedJerseyStreamingHttpServiceTest {
         hostHeader = hostHeader(hostAndPort);
     }
 
+    protected ServerContext buildRouter(final HttpServerBuilder httpServerBuilder,
+                                        final HttpService router) throws Exception {
+        return httpServerBuilder.listenAndAwait(router);
+    }
+
+    protected ServerContext buildRouter(final HttpServerBuilder httpServerBuilder,
+                                        final StreamingHttpService router) throws Exception {
+        return httpServerBuilder.listenStreamingAndAwait(router);
+    }
+
+    protected ServerContext buildRouter(final HttpServerBuilder httpServerBuilder,
+                                        final BlockingHttpService router) throws Exception {
+        return httpServerBuilder.listenBlockingAndAwait(router);
+    }
+
+    protected ServerContext buildRouter(final HttpServerBuilder httpServerBuilder,
+                                        final BlockingStreamingHttpService router) throws Exception {
+        return httpServerBuilder.listenBlockingStreamingAndAwait(router);
+    }
+
     protected void configureBuilders(final HttpServerBuilder serverBuilder,
-                                    final HttpJerseyRouterBuilder jerseyRouterBuilder) {
+                                     final HttpJerseyRouterBuilder jerseyRouterBuilder) {
         serverBuilder.executionStrategy(defaultStrategy(SERVER_CTX.executor()));
     }
 

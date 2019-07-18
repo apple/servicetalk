@@ -56,7 +56,8 @@ import javax.ws.rs.core.Response;
 import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.Single.succeeded;
-import static io.servicetalk.http.api.HttpExecutionStrategies.difference;
+import static io.servicetalk.http.api.HttpExecutionStrategies.customStrategyBuilder;
+import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.http.router.jersey.RouteExecutionStrategyUtils.getRouteExecutionStrategy;
 import static io.servicetalk.http.router.jersey.internal.RequestProperties.getRequestBufferPublisherInputStream;
 import static io.servicetalk.http.router.jersey.internal.RequestProperties.setRequestCancellable;
@@ -143,8 +144,7 @@ final class EndpointEnhancingRequestFilter implements ContainerRequestFilter {
                         delegate, resourceClass, resourceMethod, requestScope, ctxRefProvider, routeExecutionStrategy);
             }
             final ExecutionContext executionContext = ctxRefProvider.get().get().executionContext();
-            final HttpExecutionStrategy difference = routeExecutionStrategy == null ? null :
-                    difference(executionContext.executor(),
+            final HttpExecutionStrategy difference = difference(executionContext.executor(),
                             (HttpExecutionStrategy) executionContext.executionStrategy(), routeExecutionStrategy);
             if (difference != null) {
                 return new ExecutorOffloadingEndpoint(
@@ -479,5 +479,28 @@ final class EndpointEnhancingRequestFilter implements ContainerRequestFilter {
         public Class<?> getResourceClass() {
             throw new UnsupportedOperationException();
         }
+    }
+
+    // Variant of HttpExecutionStrategies#difference which is geared towards router logic
+    @Nullable
+    private static HttpExecutionStrategy difference(final Executor fallback,
+                                                   final HttpExecutionStrategy left,
+                                                   final HttpExecutionStrategy right) {
+        if (left.equals(right) || right == noOffloadsStrategy()) {
+            return null;
+        }
+        if (left == noOffloadsStrategy()) {
+            return right;
+        }
+
+        final Executor rightExecutor = right.executor();
+        if (rightExecutor != null && rightExecutor != left.executor() && rightExecutor != fallback) {
+            // Since the original offloads were done on a different executor, we need to offload again
+            // and for this we assume that the intention is to offload only the call to handle
+            return customStrategyBuilder().offloadReceiveMetadata().executor(rightExecutor).build();
+        }
+
+        // There is no need to offload differently than what the left side has deemed safe enough
+        return null;
     }
 }

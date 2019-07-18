@@ -22,6 +22,7 @@ import org.junit.Test;
 import static io.servicetalk.http.api.HttpExecutionStrategies.customStrategyBuilder;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategies.difference;
+import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
@@ -53,6 +54,24 @@ public class HttpExecutionStrategiesTest {
         Executor executor = mock(Executor.class);
         HttpExecutionStrategy result = difference(executor, strat, strat);
         assertThat("Unexpected diff.", result, is(nullValue()));
+    }
+
+    @Test
+    public void diffRightNoOffload() {
+        Executor fallback = mock(Executor.class);
+        HttpExecutionStrategy strat1 = customStrategyBuilder().offloadReceiveData().build();
+        HttpExecutionStrategy strat2 = noOffloadsStrategy();
+        HttpExecutionStrategy result = difference(fallback, strat1, strat2);
+        assertThat("Unexpected diff.", result, is(nullValue()));
+    }
+
+    @Test
+    public void diffLeftNoOffload() {
+        Executor fallback = mock(Executor.class);
+        HttpExecutionStrategy strat1 = noOffloadsStrategy();
+        HttpExecutionStrategy strat2 = customStrategyBuilder().offloadReceiveData().build();
+        HttpExecutionStrategy result = difference(fallback, strat1, strat2);
+        assertThat("Unexpected diff.", result, is(sameInstance(strat2)));
     }
 
     @Test

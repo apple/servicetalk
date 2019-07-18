@@ -220,6 +220,19 @@ public final class TestPublisherSubscriber<T> implements Subscriber<T>, Subscrip
         private boolean checkDemand = true;
         @Nullable
         private String loggingName;
+        @Nullable
+        private Subscriber<T> subscriber;
+
+        /**
+         * Invoke {@link Subscriber} after all other validation and collection is done.
+         *
+         * @param subscriber the {@link Subscriber} to invoke.
+         * @return this.
+         */
+        public Builder<T> lastSubscriber(Subscriber<T> subscriber) {
+            this.subscriber = subscriber;
+            return this;
+        }
 
         /**
          * Enables asserting items are not delivered without sufficient demand. The default is enabled.
@@ -280,6 +293,9 @@ public final class TestPublisherSubscriber<T> implements Subscriber<T>, Subscrip
             final CollectingPublisherSubscriber<T> collector = new CollectingPublisherSubscriber<>();
             Subscriber<T> delegate = collector;
 
+            if (subscriber != null) {
+                delegate = new DoubleDelegatingSubscriber<>(delegate, subscriber);
+            }
             if (checkDemand) {
                 delegate = new DemandCheckingSubscriber<>(delegate);
             }
@@ -288,6 +304,52 @@ public final class TestPublisherSubscriber<T> implements Subscriber<T>, Subscrip
             }
 
             return new TestPublisherSubscriber<>(collector, delegate);
+        }
+    }
+
+    private static final class DoubleDelegatingSubscriber<T> implements Subscriber<T> {
+        private final Subscriber<T> first;
+        private final Subscriber<T> second;
+
+        DoubleDelegatingSubscriber(final Subscriber<T> first, final Subscriber<T> second) {
+            this.first = requireNonNull(first);
+            this.second = requireNonNull(second);
+        }
+
+        @Override
+        public void onSubscribe(final Subscription subscription) {
+            try {
+                first.onSubscribe(subscription);
+            } finally {
+                second.onSubscribe(subscription);
+            }
+        }
+
+        @Override
+        public void onNext(@Nullable final T t) {
+            try {
+                first.onNext(t);
+            } finally {
+                second.onNext(t);
+            }
+        }
+
+        @Override
+        public void onError(final Throwable t) {
+            try {
+                first.onError(t);
+            } finally {
+                second.onError(t);
+            }
+        }
+
+        @Override
+        public void onComplete() {
+            try {
+                first.onComplete();
+            } finally {
+                second.onComplete();
+            }
         }
     }
 }

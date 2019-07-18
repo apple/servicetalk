@@ -84,7 +84,7 @@ final class StreamingHttpServiceToBlockingStreamingHttpService implements Blocki
             throw e;
         } catch (ExecutionException e) {
             PlatformDependent.throwException(e.getCause());
-            throw new Error("Unreachable code");
+            assert false : "unreachable";
         }
     }
 

@@ -117,15 +117,11 @@ public final class HttpExecutionStrategies {
     public static HttpExecutionStrategy difference(final Executor fallback,
                                                    final HttpExecutionStrategy left,
                                                    final HttpExecutionStrategy right) {
-        if (left.equals(right)) {
-            // No difference, so no offloading is required.
+        if (left.equals(right) || right == noOffloadsStrategy()) {
             return null;
         }
         if (left == noOffloadsStrategy()) {
             return right;
-        }
-        if (left != noOffloadsStrategy() && right == noOffloadsStrategy()) {
-            return left;
         }
         if (right.executor() != null && right.executor() != left.executor() && right.executor() != fallback) {
             // Since the original offloads were done on a different executor, we need to offload again.

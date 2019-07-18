@@ -20,10 +20,13 @@ import io.servicetalk.concurrent.PublisherSource.Subscription;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.nio.channels.ClosedChannelException;
+
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.is;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -139,6 +142,14 @@ public class WriteStreamSubscriberTest extends AbstractWriteTest {
     @Test
     public void uncaughtWriteExceptionClosesChannel() throws Exception {
         failingWriteClosesChannel(() -> failingWriteHandler.throwFromNextWrite());
+    }
+
+    @Test
+    public void onNextAfterChannelClose() {
+        subscriber.channelClosed(new ClosedChannelException());
+        subscriber.onNext("Hello");
+        channel.runPendingTasks();
+        assertThat("Unexpected message(s) written.", channel.outboundMessages(), is(empty()));
     }
 
     private void failingWriteClosesChannel(Runnable enableWriteFailure) throws InterruptedException {

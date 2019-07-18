@@ -40,6 +40,7 @@ CAUTION: Remaining sections elaborate how to disable offloading, which is consid
 For (3) ServiceTalk assumes when a user is using any of the above methods, "they know what they are doing" and generally
 applies the strategy specified by the user "as is".
 
+[#client]
 == Client
 
 For a client, there are two distinct ways of turning off offloading:
@@ -96,6 +97,7 @@ This strategy will be used for all requests that do not explicitly specify a str
 
 CAUTION: Beware of inadvertently adding a request which uses blocking code to a client that has offloading disabled.
 
+[#server]
 == Server
 
 ServiceTalk is designed in a layered fashion to enable extensibility. Therefore the core is unaware of a specific

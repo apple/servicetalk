@@ -78,6 +78,7 @@ import static java.util.stream.Collectors.toList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.startsWith;
+import static org.junit.Assume.assumeThat;
 
 @RunWith(Parameterized.class)
 public class PredicateRouterOffloadingTest {
@@ -140,6 +141,7 @@ public class PredicateRouterOffloadingTest {
 
     @Test
     public void predicateOffloadedAndNotRoute() throws Exception {
+        assumeSafeToDisableOffloading(routeServiceType);
         final HttpPredicateRouterBuilder routerBuilder = newRouterBuilder();
         routeServiceType.addThreadRecorderService(
                 routerBuilder.when(newPredicate()).executionStrategy(noOffloadsStrategy()),
@@ -179,6 +181,7 @@ public class PredicateRouterOffloadingTest {
 
     @Test
     public void noOffloads() throws Exception {
+        assumeSafeToDisableOffloading(routeServiceType);
         final HttpPredicateRouterBuilder routerBuilder = newRouterBuilder();
         serverBuilder.executionStrategy(noOffloadsStrategy());
         routeServiceType.addThreadRecorderService(
@@ -192,6 +195,7 @@ public class PredicateRouterOffloadingTest {
 
     @Test
     public void routeStrategySameAsRouter() throws Exception {
+        assumeSafeToDisableOffloading(routeServiceType);
         final HttpPredicateRouterBuilder routerBuilder = newRouterBuilder();
         final HttpExecutionStrategy routerStrat = newMetaUnaffectingExecutionStrategy();
         final HttpExecutionStrategy routeStrat = newMetaUnaffectingExecutionStrategy();
@@ -383,5 +387,10 @@ public class PredicateRouterOffloadingTest {
             recordThread();
             return factory.ok();
         }
+    }
+
+    private void assumeSafeToDisableOffloading(final RouteServiceType api) {
+        assumeThat("BlockingStreaming + noOffloads = deadlock",
+                api == RouteServiceType.BLOCKING_STREAMING, is(false));
     }
 }
