@@ -119,10 +119,16 @@ task spotbugs {
     ['servicetalk-bom', 'servicetalk-bom-internal', 'servicetalk-examples', 'servicetalk-gradle-plugin-internal'])
 }
 
+task validateLocalDocSite(type:Exec) {
+  workingDir 'docs/generation'
+  commandLine './gradlew', 'validateLocalSite'
+}
+
 task quality {
   dependsOn tasks.checkstyle
   dependsOn tasks.pmd
   dependsOn tasks.spotbugs
+  dependsOn tasks.validateLocalDocSite
 }
 
 task bintrayUpload {
