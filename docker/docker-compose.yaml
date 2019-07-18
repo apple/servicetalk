@@ -41,7 +41,7 @@ services:
     depends_on: [runtime-setup]
     environment:
       - CI
-    command: bash -cl "./gradlew --no-daemon clean build && cd docs/generation && ./gradlew -S validateLocalSite"
+    command: bash -cl "./gradlew --no-daemon clean build"
 
   check:
     << : *common

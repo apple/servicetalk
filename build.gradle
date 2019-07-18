@@ -92,11 +92,6 @@ task test {
   dependsOn findTasks('test')
 }
 
-task check {
-  dependsOn checkstyleRoot
-  dependsOn findTasks('check')
-}
-
 task build {
   dependsOn checkstyleRoot
   dependsOn findTasks('build')
@@ -121,10 +116,21 @@ task spotbugs {
     ['servicetalk-bom', 'servicetalk-bom-internal', 'servicetalk-examples', 'servicetalk-gradle-plugin-internal'])
 }
 
+task validateLocalDocSite(type:Exec) {
+  workingDir 'docs/generation'
+  commandLine './gradlew', 'validateLocalSite'
+}
+
 task quality {
   dependsOn tasks.checkstyle
   dependsOn tasks.pmd
   dependsOn tasks.spotbugs
+  dependsOn tasks.validateLocalDocSite
+}
+
+task check {
+  dependsOn tasks.quality
+  dependsOn findTasks('check')
 }
 
 task bintrayUpload {
