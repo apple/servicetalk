@@ -47,13 +47,13 @@ final class StreamingHttpServiceToBlockingStreamingHttpService implements Blocki
                        final BlockingStreamingHttpRequest request,
                        final BlockingStreamingHttpServerResponse svcResponse) throws Exception {
         // Block handle() for the duration of the request for now (for cancellation reasons)
-        futureGetCancelOnInterrupt(handelRequestWithJersey(ctx, request, svcResponse));
+        futureGetCancelOnInterrupt(handleBlockingRequest(ctx, request, svcResponse));
     }
 
     @Nonnull
-    private Completable handelRequestWithJersey(final HttpServiceContext ctx,
-                                                final BlockingStreamingHttpRequest request,
-                                                final BlockingStreamingHttpServerResponse svcResponse) {
+    private Completable handleBlockingRequest(final HttpServiceContext ctx,
+                                              final BlockingStreamingHttpRequest request,
+                                              final BlockingStreamingHttpServerResponse svcResponse) {
         return original.handle(ctx, request.toStreamingRequest(), ctx.streamingResponseFactory())
                 .flatMapCompletable(streamingHttpResponse -> {
                     copyMeta(streamingHttpResponse, svcResponse);
