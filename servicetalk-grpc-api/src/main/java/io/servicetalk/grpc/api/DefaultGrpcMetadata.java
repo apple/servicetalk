@@ -28,7 +28,7 @@ class DefaultGrpcMetadata implements GrpcMetadata {
     private Duration deadline;
 
     DefaultGrpcMetadata(final String path) {
-        this.path = path;
+        this.path = requireNonNull(path);
     }
 
     @Override
