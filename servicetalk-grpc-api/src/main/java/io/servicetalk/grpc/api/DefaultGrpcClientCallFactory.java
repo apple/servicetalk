@@ -40,7 +40,7 @@ final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
     private final StreamingHttpClient streamingHttpClient;
 
     DefaultGrpcClientCallFactory(final StreamingHttpClient streamingHttpClient) {
-        this.streamingHttpClient = streamingHttpClient;
+        this.streamingHttpClient = requireNonNull(streamingHttpClient);
     }
 
     @Override
@@ -70,7 +70,6 @@ final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
         requireNonNull(serializationProvider);
         requireNonNull(requestClass);
         requireNonNull(responseClass);
-        requireNonNull(streamingHttpClient);
         return (metadata, request) -> {
             StreamingHttpRequest httpRequest = streamingHttpClient.post(metadata.path());
             initRequest(httpRequest);
@@ -117,14 +116,10 @@ final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
             HttpRequest httpRequest = newAggregatedRequest(metadata, request, client,
                     serializationProvider, requestClass);
             HttpResponse response;
-            try {
-                response = strategy == null ? client.request(httpRequest) :
-                        client.request(strategy, httpRequest);
-                return validateResponseAndGetPayload(response,
-                        serializationProvider.deserializerFor(responseClass));
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
+            response = strategy == null ? client.request(httpRequest) :
+                    client.request(strategy, httpRequest);
+            return validateResponseAndGetPayload(response,
+                    serializationProvider.deserializerFor(responseClass));
         };
     }
 

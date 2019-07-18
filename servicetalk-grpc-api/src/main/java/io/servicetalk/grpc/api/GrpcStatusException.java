@@ -18,6 +18,8 @@ package io.servicetalk.grpc.api;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
+import static java.util.Objects.requireNonNull;
+
 /**
  * A {@link GrpcStatus} in exception form.
  */
@@ -35,7 +37,7 @@ public final class GrpcStatusException extends RuntimeException {
     GrpcStatusException(GrpcStatus status, Supplier<com.google.rpc.Status> applicationStatusSupplier) {
         super(toMessage(status), status.cause());
         this.status = status;
-        this.applicationStatusSupplier = applicationStatusSupplier;
+        this.applicationStatusSupplier = requireNonNull(applicationStatusSupplier);
     }
 
     /**

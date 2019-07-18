@@ -38,6 +38,7 @@ import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.PlatformDependent.throwException;
+import static java.util.Objects.requireNonNull;
 
 final class GrpcRouteConversions {
     private GrpcRouteConversions() {
@@ -46,6 +47,7 @@ final class GrpcRouteConversions {
 
     static <Req, Resp> Route<Req, Resp> toRoute(
             final StreamingRoute<Req, Resp> original) {
+        requireNonNull(original);
         return new Route<Req, Resp>() {
             @Override
             public Single<Resp> handle(final GrpcServiceContext ctx, final Req request) {
@@ -76,6 +78,7 @@ final class GrpcRouteConversions {
 
     static <Req, Resp> StreamingRoute<Req, Resp> toStreaming(
             final Route<Req, Resp> original) {
+        requireNonNull(original);
         return new StreamingRoute<Req, Resp>() {
             @Override
             public Publisher<Resp> handle(final GrpcServiceContext ctx, final Publisher<Req> request) {
@@ -96,6 +99,7 @@ final class GrpcRouteConversions {
 
     static <Req, Resp> StreamingRoute<Req, Resp> toStreaming(
             final BlockingStreamingRoute<Req, Resp> original) {
+        requireNonNull(original);
         return new StreamingRoute<Req, Resp>() {
             private final AsyncCloseable closeable = toAsyncCloseable(original);
             @Override
@@ -146,6 +150,7 @@ final class GrpcRouteConversions {
 
     static <Req, Resp> StreamingRoute<Req, Resp> toStreaming(
             final BlockingRoute<Req, Resp> original) {
+        requireNonNull(original);
         return new StreamingRoute<Req, Resp>() {
             private final AsyncCloseable closeable = toAsyncCloseable(original);
             @Override
@@ -173,6 +178,7 @@ final class GrpcRouteConversions {
 
     static <Req, Resp> RequestStreamingRoute<Req, Resp>
     toRequestStreamingRoute(final Route<Req, Resp> original) {
+        requireNonNull(original);
         return new RequestStreamingRoute<Req, Resp>() {
             @Override
             public Single<Resp> handle(final GrpcServiceContext ctx, final Publisher<Req> request) {
@@ -193,6 +199,7 @@ final class GrpcRouteConversions {
 
     static <Req, Resp> RequestStreamingRoute<Req, Resp>
     toRequestStreamingRoute(final StreamingRoute<Req, Resp> original) {
+        requireNonNull(original);
         return new RequestStreamingRoute<Req, Resp>() {
             @Override
             public Single<Resp> handle(final GrpcServiceContext ctx, final Publisher<Req> request) {
@@ -223,6 +230,7 @@ final class GrpcRouteConversions {
 
     static <Req, Resp> ResponseStreamingRoute<Req, Resp>
     toResponseStreamingRoute(final Route<Req, Resp> original) {
+        requireNonNull(original);
         return new ResponseStreamingRoute<Req, Resp>() {
             @Override
             public Publisher<Resp> handle(final GrpcServiceContext ctx, final Req request) {
@@ -243,6 +251,7 @@ final class GrpcRouteConversions {
 
     static <Req, Resp> ResponseStreamingRoute<Req, Resp>
     toResponseStreamingRoute(final StreamingRoute<Req, Resp> original) {
+        requireNonNull(original);
         return new ResponseStreamingRoute<Req, Resp>() {
             @Override
             public Publisher<Resp> handle(final GrpcServiceContext ctx, final Req request) {

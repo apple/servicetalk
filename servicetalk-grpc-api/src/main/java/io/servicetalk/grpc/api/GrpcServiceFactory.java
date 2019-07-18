@@ -52,6 +52,7 @@ public abstract class GrpcServiceFactory<Filter extends Service, Service extends
         this.routes = routes;
     }
 
+    @SuppressWarnings("unchecked")
     static GrpcServiceFactory<?, ?, ?> merge(final GrpcServiceFactory<?, ?, ?>... factories) {
         GrpcRoutes[] routes = new GrpcRoutes[factories.length];
         for (int i = 0; i < factories.length; i++) {

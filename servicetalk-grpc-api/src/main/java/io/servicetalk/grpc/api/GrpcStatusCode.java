@@ -19,6 +19,8 @@ import java.util.HashMap;
 import java.util.Map;
 import javax.annotation.Nullable;
 
+import static java.lang.Integer.parseInt;
+
 /**
  * Standard gRPC status codes. Copied from {@code io.grpc.Status}.
  */
@@ -86,7 +88,7 @@ public enum GrpcStatusCode {
             return UNKNOWN;
         }
         try {
-            return fromCodeValue(Integer.parseInt(codeValue.toString()));
+            return fromCodeValue(parseInt(codeValue.toString()));
         } catch (NumberFormatException e) {
             return UNKNOWN;
         }

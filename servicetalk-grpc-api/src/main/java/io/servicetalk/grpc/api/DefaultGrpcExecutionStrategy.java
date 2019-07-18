@@ -28,12 +28,14 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
+import static java.util.Objects.requireNonNull;
+
 final class DefaultGrpcExecutionStrategy implements GrpcExecutionStrategy {
 
     private final HttpExecutionStrategy delegate;
 
     DefaultGrpcExecutionStrategy(final HttpExecutionStrategy delegate) {
-        this.delegate = delegate;
+        this.delegate = requireNonNull(delegate);
     }
 
     @Override

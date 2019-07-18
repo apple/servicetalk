@@ -76,7 +76,7 @@ final class GrpcRouter {
     private final Map<String, RouteProvider> blockingRoutes;
     private final Map<String, RouteProvider> blockingStreamingRoutes;
 
-    private final StreamingHttpService notFound = (ctx, request, responseFactory) -> {
+    private static final StreamingHttpService notFound = (ctx, request, responseFactory) -> {
         StreamingHttpResponse response = responseFactory.ok();
         response.version(request.version());
         response.transform(() -> null, (buffer, __) -> buffer, (__, trailers) -> {

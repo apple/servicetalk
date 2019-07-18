@@ -19,11 +19,12 @@ import com.google.rpc.Status;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.grpc.api.GrpcStatusCode.UNKNOWN;
+import static java.lang.Integer.parseInt;
+import static java.util.Objects.requireNonNull;
 
 /**
  * Class representing gRPC statuses. Basically a re-implementation of {@code io.grpc.Status}.
@@ -71,7 +72,7 @@ public final class GrpcStatus {
      * @param description additional description.
      */
     public GrpcStatus(GrpcStatusCode code, @Nullable Throwable cause, @Nullable CharSequence description) {
-        this.code = Objects.requireNonNull(code);
+        this.code = requireNonNull(code);
         this.cause = cause;
         this.description = description == null ? null : description.toString();
     }
@@ -84,7 +85,7 @@ public final class GrpcStatus {
     @SuppressWarnings("unused")
     public static GrpcStatus fromCodeValue(String codeValue) {
         try {
-            return fromCodeValue(Integer.parseInt(codeValue));
+            return fromCodeValue(parseInt(codeValue));
         } catch (NumberFormatException e) {
             return UNKNOWN.status();
         }
@@ -171,7 +172,8 @@ public final class GrpcStatus {
      * Returns the cause, can be null.
      * @return the cause, can be null.
      */
-    public @Nullable Throwable cause() {
+    @Nullable
+    public Throwable cause() {
         return cause;
     }
 
@@ -179,7 +181,8 @@ public final class GrpcStatus {
      * Returns additional descriptions, can be null.
      * @return additional descriptions, can be null.
      */
-    public @Nullable String description() {
+    @Nullable
+    public String description() {
         return description;
     }
 
