@@ -92,11 +92,6 @@ task test {
   dependsOn findTasks('test')
 }
 
-task check {
-  dependsOn checkstyleRoot
-  dependsOn findTasks('check')
-}
-
 task build {
   dependsOn checkstyleRoot
   dependsOn findTasks('build')
@@ -131,6 +126,11 @@ task quality {
   dependsOn tasks.pmd
   dependsOn tasks.spotbugs
   dependsOn tasks.validateLocalDocSite
+}
+
+task check {
+  dependsOn tasks.quality
+  dependsOn findTasks('check')
 }
 
 task bintrayUpload {
