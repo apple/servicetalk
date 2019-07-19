@@ -22,6 +22,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.Future;
 
+import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
 import static java.util.Objects.requireNonNull;
 
 final class FutureToSingle<T> extends Single<T> implements SingleSource<T> {
@@ -37,7 +38,8 @@ final class FutureToSingle<T> extends Single<T> implements SingleSource<T> {
         try {
             subscriber.onSubscribe(() -> future.cancel(true));
         } catch (Throwable t) {
-            LOGGER.debug("Ignoring exception from onSubscribe of Subscriber {}.", subscriber, t);
+            handleExceptionFromOnSubscribe(subscriber, t);
+            return;
         }
 
         final T value;
@@ -50,7 +52,7 @@ final class FutureToSingle<T> extends Single<T> implements SingleSource<T> {
         try {
             subscriber.onSuccess(value);
         } catch (Throwable t) {
-            LOGGER.debug("Ignoring exception from onSuccess of Subscriber {}.", subscriber, t);
+            LOGGER.info("Ignoring exception from onSuccess of Subscriber {}.", subscriber, t);
         }
     }
 

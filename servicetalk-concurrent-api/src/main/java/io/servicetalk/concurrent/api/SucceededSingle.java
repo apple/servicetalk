@@ -15,14 +15,13 @@
  */
 package io.servicetalk.concurrent.api;
 
-import io.servicetalk.concurrent.SingleSource.Subscriber;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
+import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
 
 final class SucceededSingle<T> extends AbstractSynchronousSingle<T> {
     private static final Logger LOGGER = LoggerFactory.getLogger(SucceededSingle.class);
@@ -38,13 +37,13 @@ final class SucceededSingle<T> extends AbstractSynchronousSingle<T> {
         try {
             subscriber.onSubscribe(IGNORE_CANCEL);
         } catch (Throwable t) {
-            LOGGER.debug("Ignoring exception from onSubscribe of Subscriber {}.", subscriber, t);
+            handleExceptionFromOnSubscribe(subscriber, t);
             return;
         }
         try {
             subscriber.onSuccess(value);
         } catch (Throwable t) {
-            LOGGER.debug("Ignoring exception from onSuccess of Subscriber {}.", subscriber, t);
+            LOGGER.info("Ignoring exception from onSuccess of Subscriber {}.", subscriber, t);
         }
     }
 }

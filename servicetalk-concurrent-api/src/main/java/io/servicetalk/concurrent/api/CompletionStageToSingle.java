@@ -26,6 +26,7 @@ import java.util.concurrent.Future;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
+import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
 import static java.util.Objects.requireNonNull;
 
 final class CompletionStageToSingle<T> extends Single<T> implements SingleSource<T> {
@@ -42,7 +43,8 @@ final class CompletionStageToSingle<T> extends Single<T> implements SingleSource
             try {
                 subscriber.onSubscribe(() -> ((Future<?>) stage).cancel(true));
             } catch (Throwable t) {
-                LOGGER.debug("Ignoring exception from onSubscribe of Subscriber {}.", subscriber, t);
+                handleExceptionFromOnSubscribe(subscriber, t);
+                return;
             }
         } else {
             CompletableFuture<? extends T> future = toCompletableFuture();
@@ -50,31 +52,29 @@ final class CompletionStageToSingle<T> extends Single<T> implements SingleSource
                 try {
                     subscriber.onSubscribe(() -> future.cancel(true));
                 } catch (Throwable t) {
-                    LOGGER.debug("Ignoring exception from onSubscribe of Subscriber {}.", subscriber, t);
+                    handleExceptionFromOnSubscribe(subscriber, t);
+                    return;
                 }
             } else {
                 try {
                     subscriber.onSubscribe(IGNORE_CANCEL);
                 } catch (Throwable t) {
-                    LOGGER.debug("Ignoring exception from onSubscribe of Subscriber {}.", subscriber, t);
+                    handleExceptionFromOnSubscribe(subscriber, t);
+                    return;
                 }
             }
         }
 
         stage.whenComplete((value, cause) -> {
-           if (cause != null) {
-               try {
-                   subscriber.onError(cause);
-               } catch (Throwable t) {
-                   LOGGER.debug("Ignoring exception from onError of Subscriber {}.", subscriber, t);
-               }
-           } else {
-               try {
-                   subscriber.onSuccess(value);
-               } catch (Throwable t) {
-                   LOGGER.debug("Ignoring exception from onSuccess of Subscriber {}.", subscriber, t);
-               }
-           }
+            try {
+                if (cause != null) {
+                    subscriber.onError(cause);
+                } else {
+                    subscriber.onSuccess(value);
+                }
+            } catch (Throwable t) {
+                LOGGER.info("Ignoring exception from terminal method of Subscriber {}.", subscriber, t);
+            }
         });
     }
 

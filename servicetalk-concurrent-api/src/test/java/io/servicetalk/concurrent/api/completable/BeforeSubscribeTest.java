@@ -28,13 +28,13 @@ import java.util.function.Consumer;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.contains;
 
 public class BeforeSubscribeTest extends AbstractWhenOnSubscribeTest {
 
     @Test
     public void testCallbackThrowsError() {
-        List<AssertionError> failures = new ArrayList<>();
+        List<Throwable> failures = new ArrayList<>();
         toSource(doSubscribe(Completable.completed(), s -> {
             throw DELIBERATE_EXCEPTION;
         })).subscribe(new Subscriber() {
@@ -45,7 +45,7 @@ public class BeforeSubscribeTest extends AbstractWhenOnSubscribeTest {
 
             @Override
             public void onError(final Throwable t) {
-                failures.add(new AssertionError("onError invoked unexpectedly.", t));
+                failures.add(t);
             }
 
             @Override
@@ -53,7 +53,7 @@ public class BeforeSubscribeTest extends AbstractWhenOnSubscribeTest {
                 failures.add(new AssertionError("onComplete invoked unexpectedly."));
             }
         });
-        assertThat("Unexpected errors: " + failures, failures, hasSize(0));
+        assertThat("Unexpected errors: " + failures, failures, contains(DELIBERATE_EXCEPTION));
     }
 
     @Override

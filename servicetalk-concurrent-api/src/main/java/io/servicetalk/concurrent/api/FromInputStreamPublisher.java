@@ -28,6 +28,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.internal.FlowControlUtil.addWithOverflowProtection;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverTerminalFromSource;
+import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.newExceptionForInvalidRequestN;
 import static java.lang.Math.min;
@@ -82,7 +83,7 @@ final class FromInputStreamPublisher extends Publisher<byte[]> implements Publis
             try {
                 subscriber.onSubscribe(new InputStreamPublisherSubscription(stream, subscriber));
             } catch (Throwable t) {
-                LOGGER.debug("Ignoring exception from onSubscribe of Subscriber {}.", subscriber, t);
+                handleExceptionFromOnSubscribe(subscriber, t);
             }
         } else {
             deliverTerminalFromSource(subscriber, new DuplicateSubscribeException(null, subscriber));
@@ -205,7 +206,7 @@ final class FromInputStreamPublisher extends Publisher<byte[]> implements Publis
                 try {
                     subscriber.onComplete();
                 } catch (Throwable t) {
-                    LOGGER.debug("Ignoring exception from onComplete of Subscriber {}.", subscriber, t);
+                    LOGGER.info("Ignoring exception from onComplete of Subscriber {}.", subscriber, t);
                 }
             }
         }
@@ -215,16 +216,16 @@ final class FromInputStreamPublisher extends Publisher<byte[]> implements Publis
                 try {
                     subscriber.onError(t);
                 } catch (Throwable tt) {
-                    LOGGER.debug("Ignoring exception from onError of Subscriber {}.", subscriber, tt);
+                    LOGGER.info("Ignoring exception from onError of Subscriber {}.", subscriber, tt);
                 }
             }
         }
 
-        private <T extends Throwable> T closeStreamOnError(T t) {
+        private Throwable closeStreamOnError(Throwable t) {
             try {
                 stream.close();
-            } catch (IOException e) {
-                t.addSuppressed(e);
+            } catch (Throwable e) {
+                // ignored, we are already closing with an error.
             }
             return t;
         }
@@ -232,7 +233,7 @@ final class FromInputStreamPublisher extends Publisher<byte[]> implements Publis
         private void closeStream(final Subscriber<? super byte[]> subscriber) {
             try {
                 stream.close();
-            } catch (IOException e) {
+            } catch (Throwable e) {
                 if (trySetTerminalSent()) {
                     sendOnError(subscriber, e);
                 }

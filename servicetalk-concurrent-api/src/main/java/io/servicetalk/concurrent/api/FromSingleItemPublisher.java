@@ -17,14 +17,11 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.internal.ScalarValueSubscription;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import javax.annotation.Nullable;
 
-final class FromSingleItemPublisher<T> extends AbstractSynchronousPublisher<T> {
-    private static final Logger LOGGER = LoggerFactory.getLogger(FromSingleItemPublisher.class);
+import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
 
+final class FromSingleItemPublisher<T> extends AbstractSynchronousPublisher<T> {
     @Nullable
     private final T value;
 
@@ -36,8 +33,8 @@ final class FromSingleItemPublisher<T> extends AbstractSynchronousPublisher<T> {
     void doSubscribe(Subscriber<? super T> subscriber) {
         try {
             subscriber.onSubscribe(new ScalarValueSubscription<>(value, subscriber));
-        } catch (Throwable t) {
-            LOGGER.debug("Ignoring exception from onSubscribe of Subscriber {}.", subscriber, t);
+        } catch (Throwable cause) {
+            handleExceptionFromOnSubscribe(subscriber, cause);
         }
     }
 }
