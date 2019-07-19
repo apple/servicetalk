@@ -32,6 +32,7 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static java.util.function.Function.identity;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
@@ -279,6 +280,27 @@ public class PublisherConcatMapIterableTest {
         publisher.onNext(asList("one", "two", "three"));
         subscriber.request(1);
         assertThat(subscriber.takeError(), is(DELIBERATE_EXCEPTION));
+    }
+
+    @Test
+    public void exceptionFromSubscriptionRequestNIsPropagatedAndNoMoreEventsDelivered() {
+        AtomicBoolean shouldThrow = new AtomicBoolean();
+        toSource(publisher.flatMapConcatIterable(identity())
+                .map(s -> {
+                    // Only throw on the first call to map(). If the operator propagates events
+                    // after the terminal we want to let them pass through and fail the test.
+                    if (shouldThrow.compareAndSet(false, true)) {
+                        throw DELIBERATE_EXCEPTION;
+                    } else {
+                        return s;
+                    }
+                })).subscribe(subscriber);
+        publisher.onNext(singletonList("one"));
+        subscriber.request(1);
+        assertThat(subscriber.takeError(), is(DELIBERATE_EXCEPTION));
+        subscriber.request(1);
+        publisher.onNext(asList("two", "three"));
+        assertThat(subscriber.takeItems(), is(empty()));
     }
 
     private void verifyTermination(boolean success) {
