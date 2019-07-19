@@ -41,21 +41,28 @@ services:
     depends_on: [runtime-setup]
     environment:
       - CI
-    command: bash -cl "./gradlew clean build && cd docs/generation && ./gradlew -S validateLocalSite"
+    command: bash -cl "./gradlew --no-daemon clean build"
 
   check:
     << : *common
     depends_on: [runtime-setup]
     environment:
       - CI
-    command: bash -cl "./gradlew clean check"
+    command: bash -cl "./gradlew --no-daemon clean check"
 
   test:
     << : *common
     depends_on: [runtime-setup]
     environment:
       - CI
-    command: bash -cl "./gradlew clean test"
+    command: bash -cl "./gradlew --no-daemon clean test"
+
+  quality:
+    << : *common
+    depends_on: [runtime-setup]
+    environment:
+      - CI
+    command: bash -cl "./gradlew --no-daemon clean quality"
 
   publish-snapshot:
     << : *common
@@ -64,7 +71,7 @@ services:
       - CI
       - BINTRAY_USER
       - BINTRAY_KEY
-    command: bash -cl "./gradlew clean check && ./gradlew bintrayUpload"
+    command: bash -cl "./gradlew --no-daemon clean check && ./gradlew --no-daemon bintrayUpload"
 
   publish-release:
     << : *common
@@ -73,7 +80,7 @@ services:
       - CI
       - BINTRAY_USER
       - BINTRAY_KEY
-    command: bash -cl "./gradlew clean check && ./gradlew bintrayUpload -PreleaseBuild=true"
+    command: bash -cl "./gradlew --no-daemon clean check && ./gradlew --no-daemon bintrayUpload -PreleaseBuild=true"
 
   shell:
     << : *common

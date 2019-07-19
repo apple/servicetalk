@@ -24,6 +24,12 @@ import static io.servicetalk.gradle.plugin.internal.ProjectUtils.addBuildContext
 
 class ServiceTalkCorePlugin implements Plugin<Project> {
   void apply(Project project) {
+    def fenc = System.getProperty("file.encoding")
+    if (!"UTF-8".equalsIgnoreCase(fenc)) {
+      throw new GradleException("File encoding must be UTF-8 but is $fenc, consider using a file system that " +
+          "supports it or setting the JAVA_TOOL_OPTIONS env var to: -Dfile.encoding=UTF-8");
+    }
+
     if (project.subprojects) {
       project.subprojects {
         configureProject it

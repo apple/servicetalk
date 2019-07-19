@@ -34,6 +34,9 @@ services:
   test:
     image: servicetalk:centos-7-1.11
 
+  quality:
+    image: servicetalk:centos-7-1.11
+
   publish-snapshot:
     image: servicetalk:centos-7-1.11
 

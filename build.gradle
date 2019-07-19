@@ -30,6 +30,13 @@ buildscript {
   }
 }
 
+if (!repositories) {
+  repositories {
+    jcenter()
+    maven { url "https://plugins.gradle.org/m2/" }
+  }
+}
+
 // Composite builds do not correctly substitute test fixtures dependencies
 // because they target a custom configuration (namely: testFixturesRuntime).
 // We work around this problem by replacing test fixtures artifact dependencies
@@ -85,11 +92,8 @@ task test {
   dependsOn findTasks('test')
 }
 
-task check {
-  dependsOn findTasks('check')
-}
-
 task build {
+  dependsOn checkstyleRoot
   dependsOn findTasks('build')
 }
 
@@ -112,10 +116,21 @@ task spotbugs {
     ['servicetalk-bom', 'servicetalk-bom-internal', 'servicetalk-examples', 'servicetalk-gradle-plugin-internal'])
 }
 
+task validateLocalDocSite(type:Exec) {
+  workingDir 'docs/generation'
+  commandLine './gradlew', 'validateLocalSite'
+}
+
 task quality {
   dependsOn tasks.checkstyle
   dependsOn tasks.pmd
   dependsOn tasks.spotbugs
+  dependsOn tasks.validateLocalDocSite
+}
+
+task check {
+  dependsOn tasks.quality
+  dependsOn findTasks('check')
 }
 
 task bintrayUpload {
