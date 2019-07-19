@@ -18,6 +18,9 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.internal.FlowControlUtil;
 import io.servicetalk.concurrent.internal.TerminalNotification;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
@@ -35,6 +38,7 @@ import static java.util.Collections.emptyIterator;
 import static java.util.Objects.requireNonNull;
 
 final class PublisherConcatMapIterable<T, U> extends AbstractSynchronousPublisherOperator<T, U> {
+    private static final Logger LOGGER = LoggerFactory.getLogger(PublisherConcatMapIterable.class);
     private final Function<? super T, ? extends Iterable<? extends U>> mapper;
 
     PublisherConcatMapIterable(Publisher<T> original, Function<? super T, ? extends Iterable<? extends U>> mapper,
@@ -93,7 +97,7 @@ final class PublisherConcatMapIterable<T, U> extends AbstractSynchronousPublishe
             // its subscriber and cancel the subscription.
             Iterator<? extends U> currentIterator = requireNonNull(mapper.apply(u).iterator());
             this.currentIterator = currentIterator;
-            tryDrainIterator(currentIterator, sourceSubscription, terminalNotification, requestN);
+            tryDrainIterator(currentIterator, sourceSubscription, terminalNotification, requestN, false);
         }
 
         @Override
@@ -102,7 +106,7 @@ final class PublisherConcatMapIterable<T, U> extends AbstractSynchronousPublishe
             assert sourceSubscription != null;
             TerminalNotification terminalNotification = TerminalNotification.error(t);
             this.terminalNotification = terminalNotification;
-            tryDrainIterator(currentIterator, sourceSubscription, terminalNotification, requestN);
+            tryDrainIterator(currentIterator, sourceSubscription, terminalNotification, requestN, false);
         }
 
         @Override
@@ -111,7 +115,7 @@ final class PublisherConcatMapIterable<T, U> extends AbstractSynchronousPublishe
             assert sourceSubscription != null;
             TerminalNotification terminalNotification = TerminalNotification.complete();
             this.terminalNotification = terminalNotification;
-            tryDrainIterator(currentIterator, sourceSubscription, terminalNotification, requestN);
+            tryDrainIterator(currentIterator, sourceSubscription, terminalNotification, requestN, false);
         }
 
         @Override
@@ -123,7 +127,7 @@ final class PublisherConcatMapIterable<T, U> extends AbstractSynchronousPublishe
             } else {
                 tryDrainIterator(currentIterator, sourceSubscription, terminalNotification,
                         requestNUpdater.accumulateAndGet(this, n,
-                                FlowControlUtil::addWithOverflowProtectionIfNotNegative));
+                                FlowControlUtil::addWithOverflowProtectionIfNotNegative), true);
             }
         }
 
@@ -147,7 +151,8 @@ final class PublisherConcatMapIterable<T, U> extends AbstractSynchronousPublishe
         }
 
         private void tryDrainIterator(Iterator<? extends U> currentIterator, Subscription sourceSubscription,
-                                      @Nullable TerminalNotification terminalNotification, long requestN) {
+                                      @Nullable TerminalNotification terminalNotification, long requestN,
+                                      boolean drainFromSubscription) {
             boolean hasNext = false;
             boolean terminated = false;
             do {
@@ -156,9 +161,23 @@ final class PublisherConcatMapIterable<T, U> extends AbstractSynchronousPublishe
                 }
                 final long initialRequestN = requestN;
                 try {
-                    while ((hasNext = currentIterator.hasNext()) && requestN > 0) {
-                        --requestN;
-                        target.onNext(currentIterator.next());
+                    try {
+                        while ((hasNext = currentIterator.hasNext()) && requestN > 0) {
+                            --requestN;
+                            target.onNext(currentIterator.next());
+                        }
+                    } catch (Throwable cause) {
+                        if (drainFromSubscription) {
+                            terminated = true;
+                            try {
+                                target.onError(cause);
+                            } catch (Throwable cause2) {
+                                LOGGER.info("Ignoring exception from onError of Subscriber {}.", target, cause2);
+                                doCancel(sourceSubscription);
+                            }
+                        } else {
+                            throw cause; // let the exception propagate so the upstream source can do the cleanup.
+                        }
                     }
                     if (terminalNotification != null && !hasNext) {
                         terminated = true;
