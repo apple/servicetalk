@@ -13,6 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+buildscript {
+  if (!repositories) {
+    repositories {
+      jcenter()
+      maven { url "https://plugins.gradle.org/m2/" }
+    }
+  }
+
+  dependencies {
+    classpath "io.servicetalk:servicetalk-grpc-gradle-plugin:$project.version"
+  }
+}
+
 if (!repositories) {
   repositories {
     jcenter()
@@ -20,8 +33,9 @@ if (!repositories) {
   }
 }
 
-apply plugin: "idea"
 apply plugin: "java"
+apply plugin: "servicetalk-grpc"
+apply plugin: "idea"
 
 dependencies {
   // `servicetalk-bom` brings consistent version of ServiceTalk modules.
@@ -35,4 +49,11 @@ dependencies {
 
   implementation "org.slf4j:slf4j-api"
   runtime "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
+}
+
+serviceTalkGrpc {
+  protobufVersion = project.property("protobufVersion")
+
+  // The following hack must be omitted in users projects and is necessary here only because we want to use the locally built version of the plugin
+  serviceTalkProtocPluginPath = "${project.rootProject.rootDir}/../servicetalk-grpc-protoc/build/buildExecutable/protoc-gen-servicetalk_grpc.exe"
 }

@@ -48,6 +48,7 @@ dependencyManagement {
     dependency "com.google.api.grpc:proto-google-common-protos:$protoGoogleCommonProtosVersion"
     dependency "com.google.code.findbugs:jsr305:$jsr305Version"
     dependency "com.google.protobuf:protobuf-java:$protobufVersion"
+    dependency "com.squareup:javapoet:$javaPoetVersion"
     dependency "io.opentracing:opentracing-api:$openTracingVersion"
     dependency "io.reactivex.rxjava2:rxjava:$rxJavaVersion"
     dependency "javax.ws.rs:javax.ws.rs-api:$jaxRsVersion"
