@@ -27,10 +27,13 @@ import static io.servicetalk.http.api.HttpHeaderValues.APPLICATION_JSON;
 import static io.servicetalk.http.api.HttpResponseStatus.INTERNAL_SERVER_ERROR;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.router.jersey.AbstractNonParameterizedJerseyStreamingHttpServiceTest.RouterApi.ASYNC_AGGREGATED;
+import static io.servicetalk.http.router.jersey.AbstractNonParameterizedJerseyStreamingHttpServiceTest.RouterApi.ASYNC_STREAMING;
 import static io.servicetalk.http.router.jersey.AbstractNonParameterizedJerseyStreamingHttpServiceTest.RouterApi.BLOCKING_AGGREGATED;
+import static io.servicetalk.http.router.jersey.AbstractNonParameterizedJerseyStreamingHttpServiceTest.RouterApi.BLOCKING_STREAMING;
 import static org.junit.Assume.assumeTrue;
 
 public class PublisherJsonResourcesTest extends AbstractStreamingJsonResourcesTest {
+
     public PublisherJsonResourcesTest(final RouterApi api) {
         super(api);
     }
@@ -43,33 +46,15 @@ public class PublisherJsonResourcesTest extends AbstractStreamingJsonResourcesTe
     // When a source publisher is map to a response publisher, errors that happen when the source is read
     // occur after the execution has left the Jersey router. This leads to 200 OK responses with a broken content
     // stream, as visible in the following tests overrides with the async router API or leads to a 500 ISE response
-    // for aggregated router api.
+    // for aggregated router API.
 
     final HttpResponseStatus statusForFailedSerialization() {
-        switch (api) {
-            case ASYNC_STREAMING:
-            case BLOCKING_STREAMING:
-                return OK;
-            case BLOCKING_AGGREGATED:
-            case ASYNC_AGGREGATED:
-                return INTERNAL_SERVER_ERROR;
-            default:
-                throw new UnsupportedOperationException("Unexpected router API: " + api.name());
-        }
+        return api == ASYNC_STREAMING || api == BLOCKING_STREAMING ? OK : INTERNAL_SERVER_ERROR;
     }
 
     @Nullable
     final CharSequence contentTypeForFailedSerialization() {
-        switch (api) {
-            case ASYNC_STREAMING:
-            case BLOCKING_STREAMING:
-                return APPLICATION_JSON;
-            case BLOCKING_AGGREGATED:
-            case ASYNC_AGGREGATED:
-                return null;
-            default:
-                throw new UnsupportedOperationException("Unexpected router API: " + api.name());
-        }
+        return api == ASYNC_STREAMING || api == BLOCKING_STREAMING ? APPLICATION_JSON : null;
     }
 
     private void skipWhenAggregatingDueToOffloadingIssueInCombinationWithJacksonAndAggregated() {

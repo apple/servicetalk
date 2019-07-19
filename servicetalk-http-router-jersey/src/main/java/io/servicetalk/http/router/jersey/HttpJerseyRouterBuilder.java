@@ -22,7 +22,6 @@ import io.servicetalk.http.api.HttpApiConversions;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpService;
-import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.transport.api.ConnectionContext;
 
@@ -65,11 +64,11 @@ public final class HttpJerseyRouterBuilder {
     }
 
     /**
-     * Set the function used to compute the base URI for incoming {@link StreamingHttpRequest}s.
+     * Set the function used to compute the base URI for the incoming HTTP request.
      * <b>The computed base URI must have {@code /} as path, and no query nor fragment.</b>
      *
      * @param baseUriFunction a {@link BiFunction} that computes a base URI {@link String}
-     * for the provided {@link ConnectionContext} and {@link StreamingHttpRequest}.
+     * for the provided {@link ConnectionContext} and {@link HttpRequestMetaData}.
      * @return this
      * @see <a href="https://tools.ietf.org/html/rfc3986#section-3">URI Syntax Components</a>
      */
@@ -99,7 +98,7 @@ public final class HttpJerseyRouterBuilder {
      * Build the {@link HttpService} for the specified JAX-RS {@link Application}.
      *
      * @param application the {@link Application} to route requests to.
-     * @return the {@link StreamingHttpService}.
+     * @return the {@link HttpService}.
      */
     public HttpService build(final Application application) {
         return toAggregated(from(application));
@@ -109,7 +108,7 @@ public final class HttpJerseyRouterBuilder {
      * Build the {@link HttpService} for the specified JAX-RS {@link Application} class.
      *
      * @param applicationClass the {@link Application} class to instantiate and route requests to.
-     * @return the {@link StreamingHttpService}.
+     * @return the {@link HttpService}.
      */
     public HttpService build(final Class<? extends Application> applicationClass) {
         return toAggregated(from(applicationClass));
@@ -139,7 +138,7 @@ public final class HttpJerseyRouterBuilder {
      * Build the {@link BlockingHttpService} for the specified JAX-RS {@link Application}.
      *
      * @param application the {@link Application} to route requests to.
-     * @return the {@link StreamingHttpService}.
+     * @return the {@link BlockingHttpService}.
      */
     public BlockingHttpService buildBlocking(final Application application) {
         return toBlocking(from(application));
@@ -149,7 +148,7 @@ public final class HttpJerseyRouterBuilder {
      * Build the {@link BlockingHttpService} for the specified JAX-RS {@link Application} class.
      *
      * @param applicationClass the {@link Application} class to instantiate and route requests to.
-     * @return the {@link StreamingHttpService}.
+     * @return the {@link BlockingHttpService}.
      */
     public BlockingHttpService buildBlocking(final Class<? extends Application> applicationClass) {
         return toBlocking(from(applicationClass));
@@ -159,7 +158,7 @@ public final class HttpJerseyRouterBuilder {
      * Build the {@link BlockingStreamingHttpService} for the specified JAX-RS {@link Application}.
      *
      * @param application the {@link Application} to route requests to.
-     * @return the {@link StreamingHttpService}.
+     * @return the {@link BlockingStreamingHttpService}.
      */
     public BlockingStreamingHttpService buildBlockingStreaming(final Application application) {
         return toBlockingStreaming(from(application));
@@ -169,7 +168,7 @@ public final class HttpJerseyRouterBuilder {
      * Build the {@link BlockingStreamingHttpService} for the specified JAX-RS {@link Application} class.
      *
      * @param applicationClass the {@link Application} class to instantiate and route requests to.
-     * @return the {@link StreamingHttpService}.
+     * @return the {@link BlockingStreamingHttpService}.
      */
     public BlockingStreamingHttpService buildBlockingStreaming(final Class<? extends Application> applicationClass) {
         return toBlockingStreaming(from(applicationClass));

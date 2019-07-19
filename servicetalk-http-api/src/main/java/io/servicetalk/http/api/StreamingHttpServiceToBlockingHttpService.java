@@ -15,6 +15,7 @@
  */
 package io.servicetalk.http.api;
 
+import static io.servicetalk.http.api.BlockingUtils.futureGetCancelOnInterrupt;
 import static java.util.Objects.requireNonNull;
 
 final class StreamingHttpServiceToBlockingHttpService implements BlockingHttpService {
@@ -28,8 +29,9 @@ final class StreamingHttpServiceToBlockingHttpService implements BlockingHttpSer
     public HttpResponse handle(final HttpServiceContext ctx,
                                final HttpRequest request,
                                final HttpResponseFactory responseFactory) throws Exception {
-        return original.handle(ctx, request.toStreamingRequest(), ctx.streamingResponseFactory())
-                .flatMap(StreamingHttpResponse::toResponse).toFuture().get();
+        return futureGetCancelOnInterrupt(
+                original.handle(ctx, request.toStreamingRequest(), ctx.streamingResponseFactory())
+                        .flatMap(StreamingHttpResponse::toResponse).toFuture());
     }
 
     @Override

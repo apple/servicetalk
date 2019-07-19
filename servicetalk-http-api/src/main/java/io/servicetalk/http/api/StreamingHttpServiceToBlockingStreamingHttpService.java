@@ -25,13 +25,12 @@ import io.servicetalk.concurrent.internal.DelayedCancellable;
 import io.servicetalk.concurrent.internal.PlatformDependent;
 
 import java.io.IOException;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
+import static io.servicetalk.http.api.BlockingUtils.futureGetCancelOnInterrupt;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 
@@ -47,7 +46,7 @@ final class StreamingHttpServiceToBlockingStreamingHttpService implements Blocki
                        final BlockingStreamingHttpRequest request,
                        final BlockingStreamingHttpServerResponse svcResponse) throws Exception {
         // Block handle() for the duration of the request for now (for cancellation reasons)
-        futureGetCancelOnInterrupt(handleBlockingRequest(ctx, request, svcResponse));
+        futureGetCancelOnInterrupt(handleBlockingRequest(ctx, request, svcResponse).toFuture());
     }
 
     @Nonnull
@@ -72,20 +71,6 @@ final class StreamingHttpServiceToBlockingStreamingHttpService implements Blocki
     @Override
     public void close() throws Exception {
         original.closeAsync().toFuture().get();
-    }
-
-    static void futureGetCancelOnInterrupt(Completable source) throws Exception {
-        Future<Void> future = source.toFuture();
-        try {
-            future.get();
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            future.cancel(false);
-            throw e;
-        } catch (ExecutionException e) {
-            PlatformDependent.throwException(e.getCause());
-            assert false : "unreachable";
-        }
     }
 
     private static class PayloadBodyAndTrailersToPayloadWriter extends SubscribableCompletable {
@@ -145,7 +130,7 @@ final class StreamingHttpServiceToBlockingStreamingHttpService implements Blocki
                     assert false : "Expected only buffer or trailer in payloadBodyAndTrailers()";
                 } catch (IOException e) {
                     try {
-                        if (nonTerminated()) {
+                        if (tryTerminate()) {
                             subscriber.onError(e);
                         } else {
                             PlatformDependent.throwException(e);
@@ -163,7 +148,7 @@ final class StreamingHttpServiceToBlockingStreamingHttpService implements Blocki
                 } catch (IOException e) {
                     t.addSuppressed(e);
                 }
-                if (nonTerminated()) {
+                if (tryTerminate()) {
                     subscriber.onError(t);
                 } else {
                     PlatformDependent.throwException(t);
@@ -174,11 +159,11 @@ final class StreamingHttpServiceToBlockingStreamingHttpService implements Blocki
             public void onComplete() {
                 try {
                     payloadWriter.close();
-                    if (nonTerminated()) {
+                    if (tryTerminate()) {
                         subscriber.onComplete();
                     }
                 } catch (IOException e) {
-                    if (nonTerminated()) {
+                    if (tryTerminate()) {
                         subscriber.onError(e);
                     } else {
                         PlatformDependent.throwException(e);
@@ -186,7 +171,7 @@ final class StreamingHttpServiceToBlockingStreamingHttpService implements Blocki
                 }
             }
 
-            boolean nonTerminated() {
+            boolean tryTerminate() {
                 return terminatedUpdater.compareAndSet(this, 0, 1);
             }
         }

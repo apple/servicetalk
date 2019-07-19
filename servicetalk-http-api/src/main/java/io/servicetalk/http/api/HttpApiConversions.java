@@ -230,30 +230,30 @@ public final class HttpApiConversions {
     }
 
     /**
-     * Convert from a {@link BlockingStreamingHttpService} to a {@link StreamingHttpService}.
+     * Convert from a {@link StreamingHttpService} to a {@link BlockingHttpService}.
      *
-     * @param service The {@link BlockingStreamingHttpService} to convert.
-     * @return {@link ServiceAdapterHolder} containing the service adapted to the streaming programming model.
+     * @param service The {@link StreamingHttpService} to convert.
+     * @return The conversion result.
      */
     public static BlockingHttpService toBlockingHttpService(StreamingHttpService service) {
         return new StreamingHttpServiceToBlockingHttpService(service);
     }
 
     /**
-     * Convert from a {@link StreamingHttpService} to a {@link StreamingHttpService}.
+     * Convert from a {@link StreamingHttpService} to a {@link HttpService}.
      *
-     * @param service The {@link BlockingStreamingHttpService} to convert.
-     * @return {@link ServiceAdapterHolder} containing the service adapted to the streaming programming model.
+     * @param service The {@link StreamingHttpService} to convert.
+     * @return The conversion result.
      */
     public static HttpService toHttpService(StreamingHttpService service) {
         return new StreamingHttpServiceToHttpService(service);
     }
 
     /**
-     * Convert from a {@link BlockingStreamingHttpService} to a {@link StreamingHttpService}.
+     * Convert from a {@link StreamingHttpService} to a {@link BlockingStreamingHttpService}.
      *
-     * @param service The {@link BlockingStreamingHttpService} to convert.
-     * @return {@link ServiceAdapterHolder} containing the service adapted to the streaming programming model.
+     * @param service The {@link StreamingHttpService} to convert.
+     * @return The conversion result.
      */
     public static BlockingStreamingHttpService toBlockingStreamingHttpService(StreamingHttpService service) {
         return new StreamingHttpServiceToBlockingStreamingHttpService(service);

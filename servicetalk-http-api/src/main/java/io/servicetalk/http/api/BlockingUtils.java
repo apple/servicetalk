@@ -21,9 +21,11 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.internal.SubscribableCompletable;
 import io.servicetalk.concurrent.api.internal.SubscribableSingle;
+import io.servicetalk.concurrent.internal.PlatformDependent;
 import io.servicetalk.concurrent.internal.ThreadInterruptingCancellable;
 
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 
 import static io.servicetalk.concurrent.internal.PlatformDependent.throwException;
 import static java.lang.Thread.currentThread;
@@ -86,6 +88,19 @@ final class BlockingUtils {
                 subscriber.onSuccess(response);
             }
         };
+    }
+
+    static <T> T futureGetCancelOnInterrupt(Future<T> future) throws Exception {
+        try {
+            return future.get();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            future.cancel(false);
+            throw e;
+        } catch (ExecutionException e) {
+            PlatformDependent.throwException(e.getCause());
+            throw new Error("unreachable");
+        }
     }
 
     static BlockingStreamingHttpResponse request(final StreamingHttpRequester requester,
