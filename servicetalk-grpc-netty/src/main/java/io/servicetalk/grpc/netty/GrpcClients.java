@@ -19,7 +19,6 @@ import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.grpc.api.GrpcClientBuilder;
-import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.http.netty.HttpClients;
 import io.servicetalk.transport.api.HostAndPort;
 
@@ -35,7 +34,7 @@ public final class GrpcClients {
     }
 
     /**
-     * Creates a {@link DefaultGrpcClientBuilder} for an address with default {@link LoadBalancer} and DNS
+     * Creates a {@link GrpcClientBuilder} for an address with default {@link LoadBalancer} and DNS
      * {@link ServiceDiscoverer}.
      *
      * @param host host to connect to, resolved by default using a DNS {@link ServiceDiscoverer}.
@@ -48,7 +47,7 @@ public final class GrpcClients {
     }
 
     /**
-     * Creates a {@link DefaultGrpcClientBuilder} for an address with default {@link LoadBalancer} and DNS
+     * Creates a {@link GrpcClientBuilder} for an address with default {@link LoadBalancer} and DNS
      * {@link ServiceDiscoverer}.
      *
      * @param address the {@code UnresolvedAddress} to connect to, resolved by default using a DNS
@@ -61,7 +60,7 @@ public final class GrpcClients {
     }
 
     /**
-     * Creates a {@link SingleAddressHttpClientBuilder} for a resolved address with default {@link LoadBalancer}.
+     * Creates a {@link GrpcClientBuilder} for a resolved address with default {@link LoadBalancer}.
      *
      * @param host resolved host address to connect.
      * @param port port to connect to
@@ -74,7 +73,7 @@ public final class GrpcClients {
     }
 
     /**
-     * Creates a {@link SingleAddressHttpClientBuilder} for an address with default {@link LoadBalancer} and DNS
+     * Creates a {@link GrpcClientBuilder} for an address with default {@link LoadBalancer} and DNS
      * {@link ServiceDiscoverer}.
      *
      * @param address the {@code ResolvedAddress} to connect.
@@ -86,7 +85,7 @@ public final class GrpcClients {
     }
 
     /**
-     * Creates a {@link SingleAddressHttpClientBuilder} for an address with default {@link LoadBalancer} and DNS
+     * Creates a {@link GrpcClientBuilder} for an address with default {@link LoadBalancer} and DNS
      * {@link ServiceDiscoverer}.
      *
      * @param address the {@code InetSocketAddress} to connect.
@@ -99,7 +98,7 @@ public final class GrpcClients {
     }
 
     /**
-     * Creates a {@link DefaultGrpcClientBuilder} for a custom address type with default {@link LoadBalancer} and user
+     * Creates a {@link GrpcClientBuilder} for a custom address type with default {@link LoadBalancer} and user
      * provided {@link ServiceDiscoverer}.
      *
      * @param serviceDiscoverer The {@link ServiceDiscoverer} to resolve addresses of remote servers to connect to.
