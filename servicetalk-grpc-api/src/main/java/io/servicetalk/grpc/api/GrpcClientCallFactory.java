@@ -234,7 +234,6 @@ public interface GrpcClientCallFactory extends ListenableAsyncCloseable {
          *
          * @param metadata {@link GrpcClientMetadata} for the request.
          * @param request {@link Req} to send.
-         *
          * @return {@link Resp} received.
          * @throws Exception if an exception occurs during the request processing.
          */
@@ -254,7 +253,6 @@ public interface GrpcClientCallFactory extends ListenableAsyncCloseable {
          *
          * @param metadata {@link GrpcClientMetadata} for the request.
          * @param request {@link BlockingIterable} of {@link Req} to send.
-         *
          * @return {@link BlockingIterable} containing the streaming response.
          * @throws Exception if an exception occurs during the request processing.
          */
@@ -274,7 +272,6 @@ public interface GrpcClientCallFactory extends ListenableAsyncCloseable {
          *
          * @param metadata {@link GrpcClientMetadata} for the request.
          * @param request {@link BlockingIterable} of {@link Req} to send.
-         *
          * @return {@link Resp} received.
          * @throws Exception if an exception occurs during the request processing.
          */
@@ -294,7 +291,6 @@ public interface GrpcClientCallFactory extends ListenableAsyncCloseable {
          *
          * @param metadata {@link GrpcClientMetadata} for the request.
          * @param request {@link Req} to send.
-         *
          * @return {@link BlockingIterable} containing the streaming response.
          * @throws Exception if an exception occurs during the request processing.
          */
