@@ -98,8 +98,7 @@ final class DefaultGrpcServerBuilder extends GrpcServerBuilder implements Server
 
     @Override
     public GrpcServerBuilder sniConfig(@Nullable final Map<String, SslConfig> mappings, final SslConfig defaultConfig) {
-        httpServerBuilder.sniConfig(mappings, defaultConfig);
-        return this;
+        throw new UnsupportedOperationException("SSL not yet supported.");
     }
 
     @Override

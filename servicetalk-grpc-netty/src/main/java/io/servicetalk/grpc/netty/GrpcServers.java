@@ -32,7 +32,7 @@ public final class GrpcServers {
     /**
      * New {@link GrpcServerBuilder} instance.
      *
-     * @param port The listen port for the server.
+     * @param port the listen port for the server.
      * @return a new builder.
      */
     public static GrpcServerBuilder forPort(int port) {
@@ -42,7 +42,7 @@ public final class GrpcServers {
     /**
      * New {@link GrpcServerBuilder} instance.
      *
-     * @param socketAddress The listen address for the server.
+     * @param socketAddress the listen address for the server.
      * @return a new builder.
      */
     public static GrpcServerBuilder forAddress(SocketAddress socketAddress) {

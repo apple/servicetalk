@@ -39,7 +39,6 @@ public final class GrpcClients {
      *
      * @param host host to connect to, resolved by default using a DNS {@link ServiceDiscoverer}.
      * @param port port to connect to
-     *
      * @return new builder for the address
      */
     public static GrpcClientBuilder<HostAndPort, InetSocketAddress> forAddress(final String host, final int port) {
@@ -52,7 +51,6 @@ public final class GrpcClients {
      *
      * @param address the {@code UnresolvedAddress} to connect to, resolved by default using a DNS
      * {@link ServiceDiscoverer}.
-     *
      * @return new builder for the address
      */
     public static GrpcClientBuilder<HostAndPort, InetSocketAddress> forAddress(final HostAndPort address) {
@@ -62,9 +60,8 @@ public final class GrpcClients {
     /**
      * Creates a {@link GrpcClientBuilder} for a resolved address with default {@link LoadBalancer}.
      *
-     * @param host resolved host address to connect.
+     * @param host resolved host address to connect to.
      * @param port port to connect to
-     *
      * @return new builder for the address
      */
     public static GrpcClientBuilder<HostAndPort, InetSocketAddress> forResolvedAddress(final String host,
@@ -76,8 +73,7 @@ public final class GrpcClients {
      * Creates a {@link GrpcClientBuilder} for an address with default {@link LoadBalancer} and DNS
      * {@link ServiceDiscoverer}.
      *
-     * @param address the {@code ResolvedAddress} to connect.
-     *
+     * @param address the {@code ResolvedAddress} to connect to.
      * @return new builder for the address
      */
     public static GrpcClientBuilder<HostAndPort, InetSocketAddress> forResolvedAddress(final HostAndPort address) {
@@ -88,8 +84,7 @@ public final class GrpcClients {
      * Creates a {@link GrpcClientBuilder} for an address with default {@link LoadBalancer} and DNS
      * {@link ServiceDiscoverer}.
      *
-     * @param address the {@code InetSocketAddress} to connect.
-     *
+     * @param address the {@code InetSocketAddress} to connect to.
      * @return new builder for the address
      */
     public static GrpcClientBuilder<InetSocketAddress, InetSocketAddress> forResolvedAddress(
@@ -106,7 +101,6 @@ public final class GrpcClients {
      * @param address the {@code UnresolvedAddress} to connect to resolved using the provided {@code serviceDiscoverer}.
      * @param <U> the type of address before resolution (unresolved address)
      * @param <R> the type of address after resolution (resolved address)
-     *
      * @return new builder with provided configuration
      */
     public static <U, R>
