@@ -1,0 +1,38 @@
+/*
+ * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+if (!repositories) {
+  repositories {
+    jcenter()
+    maven { url "https://plugins.gradle.org/m2/" }
+  }
+}
+
+apply plugin: "idea"
+apply plugin: "java"
+
+dependencies {
+  // `servicetalk-bom` brings consistent version of ServiceTalk modules.
+  implementation "io.servicetalk:servicetalk-bom:$project.version"
+
+  // The version for all ServiceTalk dependencies will be resolved based on information in `servicetalk-bom`.
+  implementation "io.servicetalk:servicetalk-annotations"
+  implementation "io.servicetalk:servicetalk-grpc-api"
+  implementation "io.servicetalk:servicetalk-grpc-netty"
+  implementation "io.servicetalk:servicetalk-grpc-protobuf"
+
+  implementation "org.slf4j:slf4j-api"
+  runtime "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
+}
