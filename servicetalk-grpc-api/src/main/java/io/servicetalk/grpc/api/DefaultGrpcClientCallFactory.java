@@ -25,13 +25,13 @@ import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpRequestFactory;
 import io.servicetalk.http.api.HttpResponse;
-import io.servicetalk.http.api.HttpSerializationProvider;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpRequest;
 
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.internal.BlockingIterables.singletonBlockingIterable;
+import static io.servicetalk.grpc.api.GrpcMessageEncoding.None;
 import static io.servicetalk.grpc.api.GrpcUtils.initRequest;
 import static io.servicetalk.grpc.api.GrpcUtils.validateResponseAndGetPayload;
 import static java.util.Objects.requireNonNull;
@@ -45,7 +45,7 @@ final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
 
     @Override
     public <Req, Resp> ClientCall<Req, Resp>
-    newCall(final HttpSerializationProvider serializationProvider,
+    newCall(final GrpcSerializationProvider serializationProvider,
             final Class<Req> requestClass, final Class<Resp> responseClass) {
         requireNonNull(serializationProvider);
         requireNonNull(requestClass);
@@ -59,13 +59,13 @@ final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
             return (strategy == null ? client.request(httpRequest) :
                     client.request(strategy, httpRequest))
                     .map(response -> validateResponseAndGetPayload(response,
-                            serializationProvider.deserializerFor(responseClass)));
+                            serializationProvider.deserializerFor(getMessageEncoding(metadata), responseClass)));
         };
     }
 
     @Override
     public <Req, Resp> StreamingClientCall<Req, Resp>
-    newStreamingCall(final HttpSerializationProvider serializationProvider, final Class<Req> requestClass,
+    newStreamingCall(final GrpcSerializationProvider serializationProvider, final Class<Req> requestClass,
                      final Class<Resp> responseClass) {
         requireNonNull(serializationProvider);
         requireNonNull(requestClass);
@@ -74,19 +74,19 @@ final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
             StreamingHttpRequest httpRequest = streamingHttpClient.post(metadata.path());
             initRequest(httpRequest);
             httpRequest.payloadBody(request.map(DefaultGrpcClientCallFactory::uncheckedCast),
-                    serializationProvider.serializerFor(requestClass));
+                    serializationProvider.serializerFor(metadata, requestClass));
             @Nullable
             GrpcExecutionStrategy strategy = metadata.strategy();
             return (strategy == null ? streamingHttpClient.request(httpRequest) :
                     streamingHttpClient.request(strategy, httpRequest))
                     .flatMapPublisher(response -> validateResponseAndGetPayload(response,
-                            serializationProvider.deserializerFor(responseClass)));
+                            serializationProvider.deserializerFor(getMessageEncoding(metadata), responseClass)));
         };
     }
 
     @Override
     public <Req, Resp> RequestStreamingClientCall<Req, Resp>
-    newRequestStreamingCall(final HttpSerializationProvider serializationProvider,
+    newRequestStreamingCall(final GrpcSerializationProvider serializationProvider,
                             final Class<Req> requestClass, final Class<Resp> responseClass) {
         StreamingClientCall<Req, Resp> streamingClientCall =
                 newStreamingCall(serializationProvider, requestClass, responseClass);
@@ -95,7 +95,7 @@ final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
 
     @Override
     public <Req, Resp> ResponseStreamingClientCall<Req, Resp>
-    newResponseStreamingCall(final HttpSerializationProvider serializationProvider,
+    newResponseStreamingCall(final GrpcSerializationProvider serializationProvider,
                              final Class<Req> requestClass, final Class<Resp> responseClass) {
         StreamingClientCall<Req, Resp> streamingClientCall = newStreamingCall(serializationProvider, requestClass,
                 responseClass);
@@ -104,7 +104,7 @@ final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
 
     @Override
     public <Req, Resp> BlockingClientCall<Req, Resp>
-    newBlockingCall(final HttpSerializationProvider serializationProvider,
+    newBlockingCall(final GrpcSerializationProvider serializationProvider,
                     final Class<Req> requestClass, final Class<Resp> responseClass) {
         requireNonNull(serializationProvider);
         requireNonNull(requestClass);
@@ -119,13 +119,13 @@ final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
             response = strategy == null ? client.request(httpRequest) :
                     client.request(strategy, httpRequest);
             return validateResponseAndGetPayload(response,
-                    serializationProvider.deserializerFor(responseClass));
+                    serializationProvider.deserializerFor(getMessageEncoding(metadata), responseClass));
         };
     }
 
     @Override
     public <Req, Resp> BlockingStreamingClientCall<Req, Resp>
-    newBlockingStreamingCall(final HttpSerializationProvider serializationProvider,
+    newBlockingStreamingCall(final GrpcSerializationProvider serializationProvider,
                              final Class<Req> requestClass, final Class<Resp> responseClass) {
         requireNonNull(serializationProvider);
         requireNonNull(requestClass);
@@ -134,19 +134,20 @@ final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
         return (metadata, request) -> {
             BlockingStreamingHttpRequest httpRequest = client.post(metadata.path());
             initRequest(httpRequest);
-            httpRequest.payloadBody(request, serializationProvider.serializerFor(requestClass));
+            httpRequest.payloadBody(request, serializationProvider.serializerFor(metadata, requestClass));
             @Nullable
             GrpcExecutionStrategy strategy = metadata.strategy();
             BlockingStreamingHttpResponse response;
             response = strategy == null ? client.request(httpRequest) :
                     client.request(strategy, httpRequest);
-            return response.payloadBody(serializationProvider.deserializerFor(responseClass));
+            return response.payloadBody(serializationProvider.deserializerFor(getMessageEncoding(metadata),
+                    responseClass));
         };
     }
 
     @Override
     public <Req, Resp> BlockingRequestStreamingClientCall<Req, Resp>
-    newBlockingRequestStreamingCall(final HttpSerializationProvider serializationProvider,
+    newBlockingRequestStreamingCall(final GrpcSerializationProvider serializationProvider,
                                     final Class<Req> requestClass, final Class<Resp> responseClass) {
         BlockingStreamingClientCall<Req, Resp> streamingClientCall = newBlockingStreamingCall(serializationProvider,
                 requestClass, responseClass);
@@ -155,7 +156,7 @@ final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
 
     @Override
     public <Req, Resp> BlockingResponseStreamingClientCall<Req, Resp>
-    newBlockingResponseStreamingCall(final HttpSerializationProvider serializationProvider,
+    newBlockingResponseStreamingCall(final GrpcSerializationProvider serializationProvider,
                                      final Class<Req> requestClass, final Class<Resp> responseClass) {
         BlockingStreamingClientCall<Req, Resp> streamingClientCall =
                 newBlockingStreamingCall(serializationProvider, requestClass, responseClass);
@@ -182,12 +183,18 @@ final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
         return (T) o;
     }
 
+    private GrpcMessageEncoding getMessageEncoding(final GrpcClientMetadata metadata) {
+        GrpcMessageEncoding messageEncoding = metadata.messageEncoding();
+        return messageEncoding == null ? None : messageEncoding;
+    }
+
     private <Req> HttpRequest newAggregatedRequest(final GrpcClientMetadata metadata, final Req rawReq,
                                                    final HttpRequestFactory requestFactory,
-                                                   final HttpSerializationProvider serializationProvider,
+                                                   final GrpcSerializationProvider serializationProvider,
                                                    final Class<Req> requestClass) {
         HttpRequest httpRequest = requestFactory.post(metadata.path());
         initRequest(httpRequest);
-        return httpRequest.payloadBody(uncheckedCast(rawReq), serializationProvider.serializerFor(requestClass));
+        return httpRequest.payloadBody(uncheckedCast(rawReq),
+                serializationProvider.serializerFor(metadata, requestClass));
     }
 }
