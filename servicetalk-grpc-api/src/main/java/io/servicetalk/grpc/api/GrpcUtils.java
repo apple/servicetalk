@@ -116,7 +116,7 @@ final class GrpcUtils {
         return response.payloadBody(deserializer);
     }
 
-    static GrpcMessageEncoding readGrpcMessageEncoding(HttpMetaData httpMetaData) {
+    static GrpcMessageEncoding readGrpcMessageEncoding(final HttpMetaData httpMetaData) {
         CharSequence encoding = httpMetaData.headers().get(GRPC_MESSAGE_ENCODING_KEY);
         // identity is a special header for no compression
         if (encoding != null && contentEqualsIgnoreCase(encoding, IDENTITY)) {
