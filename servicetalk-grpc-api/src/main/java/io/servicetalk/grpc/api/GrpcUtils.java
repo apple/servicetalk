@@ -119,7 +119,7 @@ final class GrpcUtils {
     static GrpcMessageEncoding readGrpcMessageEncoding(final HttpMetaData httpMetaData) {
         CharSequence encoding = httpMetaData.headers().get(GRPC_MESSAGE_ENCODING_KEY);
         // identity is a special header for no compression
-        if (encoding != null && contentEqualsIgnoreCase(encoding, IDENTITY)) {
+        if (encoding != null && !contentEqualsIgnoreCase(encoding, IDENTITY)) {
             String lowercaseEncoding = encoding.toString().toLowerCase();
             switch (lowercaseEncoding) {
                 case "gzip":
