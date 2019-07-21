@@ -19,12 +19,14 @@ import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.http.api.HttpDeserializer;
 import io.servicetalk.http.api.HttpHeaders;
+import io.servicetalk.http.api.HttpMetaData;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.HttpResponseFactory;
 import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
+import io.servicetalk.serialization.api.SerializationException;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.rpc.Status;
@@ -33,6 +35,11 @@ import java.util.Base64;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.grpc.api.GrpcMessageEncoding.Gzip;
+import static io.servicetalk.grpc.api.GrpcMessageEncoding.None;
+import static io.servicetalk.grpc.api.GrpcMessageEncoding.Snappy;
+import static io.servicetalk.grpc.api.GrpcMessageEncoding.Zlib;
+import static io.servicetalk.http.api.CharSequences.contentEqualsIgnoreCase;
 import static io.servicetalk.http.api.CharSequences.newAsciiString;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
 import static io.servicetalk.http.api.HttpHeaderNames.SERVER;
@@ -49,6 +56,8 @@ final class GrpcUtils {
     private static final CharSequence GRPC_STATUS_MESSAGE_TRAILER = newAsciiString("grpc-message");
     // TODO (nkant): add project version
     private static final CharSequence GRPC_USER_AGENT = newAsciiString("grpc-service-talk/");
+    private static final CharSequence IDENTITY = newAsciiString(None.encoding());
+    private static final CharSequence GRPC_MESSAGE_ENCODING_KEY = newAsciiString("grpc-encoding");
     public static final GrpcStatus STATUS_OK = GrpcStatus.fromCodeValue(GrpcStatusCode.OK.value());
 
     private GrpcUtils() {
@@ -105,6 +114,26 @@ final class GrpcUtils {
                                                      final HttpDeserializer<Resp> deserializer) {
         validateGrpcStatus(response.trailers(), response.headers());
         return response.payloadBody(deserializer);
+    }
+
+    static GrpcMessageEncoding readGrpcMessageEncoding(final HttpMetaData httpMetaData) {
+        CharSequence encoding = httpMetaData.headers().get(GRPC_MESSAGE_ENCODING_KEY);
+        // identity is a special header for no compression
+        if (encoding != null && contentEqualsIgnoreCase(encoding, IDENTITY)) {
+            String lowercaseEncoding = encoding.toString().toLowerCase();
+            switch (lowercaseEncoding) {
+                case "gzip":
+                    return Gzip;
+                case "zlib":
+                    return Zlib;
+                case "snappy":
+                    return Snappy;
+                default:
+                    throw new SerializationException("Compression " + lowercaseEncoding + " not supported");
+            }
+        } else {
+            return None;
+        }
     }
 
     private static void initResponse(final HttpResponseMetaData response) {
