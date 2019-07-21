@@ -45,6 +45,24 @@ public interface GrpcMetadata {
     void compressed(boolean compressed);
 
     /**
+     * Returns {@code GrpcMessageEncoding} for any message that is to be sent {@link #isCompressed() compressed}.
+     * {@code null} if none specified.
+     *
+     * @return {@code GrpcMessageEncoding} for any message that is to be sent {@link #isCompressed() compressed}.
+     * {@code null} if none specified.
+     */
+    @Nullable
+    GrpcMessageEncoding messageEncoding();
+
+    /**
+     * Sets {@code GrpcMessageEncoding} for any message that is to be sent {@link #isCompressed() compressed}.
+     *
+     * @param messageEncoding {@code GrpcMessageEncoding} for any message that is to be sent
+     * {@link #isCompressed() compressed}.
+     */
+    void messageEncoding(GrpcMessageEncoding messageEncoding);
+
+    /**
      * Returns a <a href="https://grpc.io/blog/deadlines/">gRPC deadline</a>, if set for the associated RPC method.
      *
      * @return {@link Duration} representing the <a href="https://grpc.io/blog/deadlines/">gRPC deadline</a> or

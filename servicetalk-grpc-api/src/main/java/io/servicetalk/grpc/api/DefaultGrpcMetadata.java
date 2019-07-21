@@ -25,6 +25,8 @@ class DefaultGrpcMetadata implements GrpcMetadata {
     private final String path;
     private boolean compressed;
     @Nullable
+    private GrpcMessageEncoding messageEncoding;
+    @Nullable
     private Duration deadline;
 
     DefaultGrpcMetadata(final String path) {
@@ -44,6 +46,17 @@ class DefaultGrpcMetadata implements GrpcMetadata {
     @Override
     public void compressed(final boolean compressed) {
         this.compressed = compressed;
+    }
+
+    @Nullable
+    @Override
+    public GrpcMessageEncoding messageEncoding() {
+        return messageEncoding;
+    }
+
+    @Override
+    public void messageEncoding(final GrpcMessageEncoding messageEncoding) {
+        this.messageEncoding = requireNonNull(messageEncoding);
     }
 
     @Nullable
