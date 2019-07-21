@@ -23,7 +23,6 @@ import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.grpc.api.GrpcRouter.RouteProviders;
 import io.servicetalk.grpc.api.GrpcServiceFactory.ServerBinder;
-import io.servicetalk.http.api.HttpSerializationProvider;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.ServerContext;
 
@@ -150,13 +149,13 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
      * @param route {@link Route} to add.
      * @param requestClass {@link Class} for the request object.
      * @param responseClass {@link Class} for the response object.
-     * @param serializationProvider {@link HttpSerializationProvider} for the route.
+     * @param serializationProvider {@link GrpcSerializationProvider} for the route.
      * @param <Req> Type of request.
      * @param <Resp> Type of response.
      */
     protected final <Req, Resp> void addRoute(
             final String path, final Route<Req, Resp> route, final Class<Req> requestClass,
-            final Class<Resp> responseClass, final HttpSerializationProvider serializationProvider) {
+            final Class<Resp> responseClass, final GrpcSerializationProvider serializationProvider) {
         routeBuilder.addRoute(path, null, route, requestClass, responseClass, serializationProvider);
     }
 
@@ -168,14 +167,14 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
      * @param route {@link Route} to add.
      * @param requestClass {@link Class} for the request object.
      * @param responseClass {@link Class} for the response object.
-     * @param serializationProvider {@link HttpSerializationProvider} for the route.
+     * @param serializationProvider {@link GrpcSerializationProvider} for the route.
      * @param <Req> Type of request.
      * @param <Resp> Type of response.
      */
     protected final <Req, Resp> void addRoute(
             final String path, final GrpcExecutionStrategy executionStrategy, final Route<Req, Resp> route,
             final Class<Req> requestClass, final Class<Resp> responseClass,
-            final HttpSerializationProvider serializationProvider) {
+            final GrpcSerializationProvider serializationProvider) {
         routeBuilder.addRoute(path, executionStrategy, route, requestClass, responseClass, serializationProvider);
     }
 
@@ -186,13 +185,13 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
      * @param route {@link StreamingRoute} to add.
      * @param requestClass {@link Class} for the request object.
      * @param responseClass {@link Class} for the response object.
-     * @param serializationProvider {@link HttpSerializationProvider} for the route.
+     * @param serializationProvider {@link GrpcSerializationProvider} for the route.
      * @param <Req> Type of request.
      * @param <Resp> Type of response.
      */
     protected final <Req, Resp> void addStreamingRoute(
             final String path, final StreamingRoute<Req, Resp> route, final Class<Req> requestClass,
-            final Class<Resp> responseClass, final HttpSerializationProvider serializationProvider) {
+            final Class<Resp> responseClass, final GrpcSerializationProvider serializationProvider) {
         routeBuilder.addStreamingRoute(path, null, route, requestClass, responseClass,
                 serializationProvider);
     }
@@ -205,14 +204,14 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
      * @param route {@link StreamingRoute} to add.
      * @param requestClass {@link Class} for the request object.
      * @param responseClass {@link Class} for the response object.
-     * @param serializationProvider {@link HttpSerializationProvider} for the route.
+     * @param serializationProvider {@link GrpcSerializationProvider} for the route.
      * @param <Req> Type of request.
      * @param <Resp> Type of response.
      */
     protected final <Req, Resp> void addStreamingRoute(
             final String path, final GrpcExecutionStrategy executionStrategy,
             final StreamingRoute<Req, Resp> route, final Class<Req> requestClass,
-            final Class<Resp> responseClass, final HttpSerializationProvider serializationProvider) {
+            final Class<Resp> responseClass, final GrpcSerializationProvider serializationProvider) {
         routeBuilder.addStreamingRoute(path, null, route, requestClass, responseClass,
                 serializationProvider);
     }
@@ -224,13 +223,13 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
      * @param route {@link RequestStreamingRoute} to add.
      * @param requestClass {@link Class} for the request object.
      * @param responseClass {@link Class} for the response object.
-     * @param serializationProvider {@link HttpSerializationProvider} for the route.
+     * @param serializationProvider {@link GrpcSerializationProvider} for the route.
      * @param <Req> Type of request.
      * @param <Resp> Type of response.
      */
     protected final <Req, Resp> void addRequestStreamingRoute(
             final String path, final RequestStreamingRoute<Req, Resp> route, final Class<Req> requestClass,
-            final Class<Resp> responseClass, final HttpSerializationProvider serializationProvider) {
+            final Class<Resp> responseClass, final GrpcSerializationProvider serializationProvider) {
         routeBuilder.addRequestStreamingRoute(path, null, route, requestClass, responseClass,
                 serializationProvider);
     }
@@ -243,14 +242,14 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
      * @param route {@link RequestStreamingRoute} to add.
      * @param requestClass {@link Class} for the request object.
      * @param responseClass {@link Class} for the response object.
-     * @param serializationProvider {@link HttpSerializationProvider} for the route.
+     * @param serializationProvider {@link GrpcSerializationProvider} for the route.
      * @param <Req> Type of request.
      * @param <Resp> Type of response.
      */
     protected final <Req, Resp> void addRequestStreamingRoute(
             final String path, final GrpcExecutionStrategy executionStrategy,
             final RequestStreamingRoute<Req, Resp> route, final Class<Req> requestClass,
-            final Class<Resp> responseClass, final HttpSerializationProvider serializationProvider) {
+            final Class<Resp> responseClass, final GrpcSerializationProvider serializationProvider) {
         routeBuilder.addRequestStreamingRoute(path, executionStrategy, route, requestClass, responseClass,
                 serializationProvider);
     }
@@ -262,13 +261,13 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
      * @param route {@link ResponseStreamingRoute} to add.
      * @param requestClass {@link Class} for the request object.
      * @param responseClass {@link Class} for the response object.
-     * @param serializationProvider {@link HttpSerializationProvider} for the route.
+     * @param serializationProvider {@link GrpcSerializationProvider} for the route.
      * @param <Req> Type of request.
      * @param <Resp> Type of response.
      */
     protected final <Req, Resp> void addResponseStreamingRoute(
             final String path, final ResponseStreamingRoute<Req, Resp> route, final Class<Req> requestClass,
-            final Class<Resp> responseClass, final HttpSerializationProvider serializationProvider) {
+            final Class<Resp> responseClass, final GrpcSerializationProvider serializationProvider) {
         routeBuilder.addResponseStreamingRoute(path, null, route, requestClass, responseClass,
                 serializationProvider);
     }
@@ -281,14 +280,14 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
      * @param route {@link ResponseStreamingRoute} to add.
      * @param requestClass {@link Class} for the request object.
      * @param responseClass {@link Class} for the response object.
-     * @param serializationProvider {@link HttpSerializationProvider} for the route.
+     * @param serializationProvider {@link GrpcSerializationProvider} for the route.
      * @param <Req> Type of request.
      * @param <Resp> Type of response.
      */
     protected final <Req, Resp> void addResponseStreamingRoute(
             final String path, final GrpcExecutionStrategy executionStrategy,
             final ResponseStreamingRoute<Req, Resp> route, final Class<Req> requestClass,
-            final Class<Resp> responseClass, final HttpSerializationProvider serializationProvider) {
+            final Class<Resp> responseClass, final GrpcSerializationProvider serializationProvider) {
         routeBuilder.addResponseStreamingRoute(path, executionStrategy, route, requestClass, responseClass,
                 serializationProvider);
     }
@@ -300,13 +299,13 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
      * @param route {@link BlockingRoute} to add.
      * @param requestClass {@link Class} for the request object.
      * @param responseClass {@link Class} for the response object.
-     * @param serializationProvider {@link HttpSerializationProvider} for the route.
+     * @param serializationProvider {@link GrpcSerializationProvider} for the route.
      * @param <Req> Type of request.
      * @param <Resp> Type of response.
      */
     protected final <Req, Resp> void addBlockingRoute(
             final String path, final BlockingRoute<Req, Resp> route, final Class<Req> requestClass,
-            final Class<Resp> responseClass, final HttpSerializationProvider serializationProvider) {
+            final Class<Resp> responseClass, final GrpcSerializationProvider serializationProvider) {
         routeBuilder.addBlockingRoute(path, null, route, requestClass, responseClass,
                 serializationProvider);
     }
@@ -319,14 +318,14 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
      * @param route {@link BlockingRoute} to add.
      * @param requestClass {@link Class} for the request object.
      * @param responseClass {@link Class} for the response object.
-     * @param serializationProvider {@link HttpSerializationProvider} for the route.
+     * @param serializationProvider {@link GrpcSerializationProvider} for the route.
      * @param <Req> Type of request.
      * @param <Resp> Type of response.
      */
     protected final <Req, Resp> void addBlockingRoute(
             final String path, final GrpcExecutionStrategy executionStrategy, final BlockingRoute<Req, Resp> route,
             final Class<Req> requestClass, final Class<Resp> responseClass,
-            final HttpSerializationProvider serializationProvider) {
+            final GrpcSerializationProvider serializationProvider) {
         routeBuilder.addBlockingRoute(path, executionStrategy, route, requestClass, responseClass,
                 serializationProvider);
     }
@@ -338,13 +337,13 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
      * @param route {@link BlockingStreamingRoute} to add.
      * @param requestClass {@link Class} for the request object.
      * @param responseClass {@link Class} for the response object.
-     * @param serializationProvider {@link HttpSerializationProvider} for the route.
+     * @param serializationProvider {@link GrpcSerializationProvider} for the route.
      * @param <Req> Type of request.
      * @param <Resp> Type of response.
      */
     protected final <Req, Resp> void addBlockingStreamingRoute(
             final String path, final BlockingStreamingRoute<Req, Resp> route, final Class<Req> requestClass,
-            final Class<Resp> responseClass, final HttpSerializationProvider serializationProvider) {
+            final Class<Resp> responseClass, final GrpcSerializationProvider serializationProvider) {
         routeBuilder.addBlockingStreamingRoute(path, null, route, requestClass, responseClass,
                 serializationProvider);
     }
@@ -357,14 +356,14 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
      * @param route {@link BlockingStreamingRoute} to add.
      * @param requestClass {@link Class} for the request object.
      * @param responseClass {@link Class} for the response object.
-     * @param serializationProvider {@link HttpSerializationProvider} for the route.
+     * @param serializationProvider {@link GrpcSerializationProvider} for the route.
      * @param <Req> Type of request.
      * @param <Resp> Type of response.
      */
     protected final <Req, Resp> void addBlockingStreamingRoute(
             final String path, final GrpcExecutionStrategy executionStrategy,
             final BlockingStreamingRoute<Req, Resp> route, final Class<Req> requestClass,
-            final Class<Resp> responseClass, final HttpSerializationProvider serializationProvider) {
+            final Class<Resp> responseClass, final GrpcSerializationProvider serializationProvider) {
         routeBuilder.addBlockingStreamingRoute(path, executionStrategy,
                 route, requestClass, responseClass, serializationProvider);
     }
@@ -376,13 +375,13 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
      * @param route {@link BlockingRequestStreamingRoute} to add.
      * @param requestClass {@link Class} for the request object.
      * @param responseClass {@link Class} for the response object.
-     * @param serializationProvider {@link HttpSerializationProvider} for the route.
+     * @param serializationProvider {@link GrpcSerializationProvider} for the route.
      * @param <Req> Type of request.
      * @param <Resp> Type of response.
      */
     protected final <Req, Resp> void addBlockingRequestStreamingRoute(
             final String path, final BlockingRequestStreamingRoute<Req, Resp> route, final Class<Req> requestClass,
-            final Class<Resp> responseClass, final HttpSerializationProvider serializationProvider) {
+            final Class<Resp> responseClass, final GrpcSerializationProvider serializationProvider) {
         routeBuilder.addBlockingRequestStreamingRoute(path, null, route, requestClass, responseClass,
                 serializationProvider);
     }
@@ -395,14 +394,14 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
      * @param route {@link BlockingRequestStreamingRoute} to add.
      * @param requestClass {@link Class} for the request object.
      * @param responseClass {@link Class} for the response object.
-     * @param serializationProvider {@link HttpSerializationProvider} for the route.
+     * @param serializationProvider {@link GrpcSerializationProvider} for the route.
      * @param <Req> Type of request.
      * @param <Resp> Type of response.
      */
     protected final <Req, Resp> void addBlockingRequestStreamingRoute(
             final String path, final GrpcExecutionStrategy executionStrategy,
             final BlockingRequestStreamingRoute<Req, Resp> route, final Class<Req> requestClass,
-            final Class<Resp> responseClass, final HttpSerializationProvider serializationProvider) {
+            final Class<Resp> responseClass, final GrpcSerializationProvider serializationProvider) {
         routeBuilder.addBlockingRequestStreamingRoute(path, executionStrategy, route, requestClass, responseClass,
                 serializationProvider);
     }
@@ -414,13 +413,13 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
      * @param route {@link BlockingResponseStreamingRoute} to add.
      * @param requestClass {@link Class} for the request object.
      * @param responseClass {@link Class} for the response object.
-     * @param serializationProvider {@link HttpSerializationProvider} for the route.
+     * @param serializationProvider {@link GrpcSerializationProvider} for the route.
      * @param <Req> Type of request.
      * @param <Resp> Type of response.
      */
     protected final <Req, Resp> void addBlockingResponseStreamingRoute(
             final String path, final BlockingResponseStreamingRoute<Req, Resp> route, final Class<Req> requestClass,
-            final Class<Resp> responseClass, final HttpSerializationProvider serializationProvider) {
+            final Class<Resp> responseClass, final GrpcSerializationProvider serializationProvider) {
         routeBuilder.addBlockingResponseStreamingRoute(path, null, route, requestClass, responseClass,
                 serializationProvider);
     }
@@ -433,14 +432,14 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
      * @param route {@link BlockingResponseStreamingRoute} to add.
      * @param requestClass {@link Class} for the request object.
      * @param responseClass {@link Class} for the response object.
-     * @param serializationProvider {@link HttpSerializationProvider} for the route.
+     * @param serializationProvider {@link GrpcSerializationProvider} for the route.
      * @param <Req> Type of request.
      * @param <Resp> Type of response.
      */
     protected final <Req, Resp> void addBlockingResponseStreamingRoute(
             final String path, final GrpcExecutionStrategy executionStrategy,
             final BlockingResponseStreamingRoute<Req, Resp> route, final Class<Req> requestClass,
-            final Class<Resp> responseClass, final HttpSerializationProvider serializationProvider) {
+            final Class<Resp> responseClass, final GrpcSerializationProvider serializationProvider) {
         routeBuilder.addBlockingResponseStreamingRoute(path, executionStrategy, route, requestClass, responseClass,
                 serializationProvider);
     }
