@@ -35,10 +35,7 @@ import java.util.Base64;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.grpc.api.GrpcMessageEncoding.Gzip;
 import static io.servicetalk.grpc.api.GrpcMessageEncoding.None;
-import static io.servicetalk.grpc.api.GrpcMessageEncoding.Snappy;
-import static io.servicetalk.grpc.api.GrpcMessageEncoding.Zlib;
 import static io.servicetalk.http.api.CharSequences.contentEqualsIgnoreCase;
 import static io.servicetalk.http.api.CharSequences.newAsciiString;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
@@ -121,16 +118,7 @@ final class GrpcUtils {
         // identity is a special header for no compression
         if (encoding != null && !contentEqualsIgnoreCase(encoding, IDENTITY)) {
             String lowercaseEncoding = encoding.toString().toLowerCase();
-            switch (lowercaseEncoding) {
-                case "gzip":
-                    return Gzip;
-                case "zlib":
-                    return Zlib;
-                case "snappy":
-                    return Snappy;
-                default:
-                    throw new SerializationException("Compression " + lowercaseEncoding + " not supported");
-            }
+            throw new SerializationException("Compression " + lowercaseEncoding + " not supported");
         } else {
             return None;
         }
