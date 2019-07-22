@@ -16,13 +16,8 @@
 
 def servicetalkRoot = "../../"
 
-task copyFilesFromRoot(type: Copy) {
-  from "$servicetalkRoot/README.adoc", "$servicetalkRoot/CONTRIBUTING.adoc", "$servicetalkRoot/CODE_OF_CONDUCT.adoc"
-  into "$servicetalkRoot/docs/modules/ROOT/pages"
-}
-
 task buildLocalSite(type: NodeTask) { task ->
-  dependsOn installAntora, copyFilesFromRoot
+  dependsOn installAntora
 
   def outputDir = file("$buildDir/local")
 
