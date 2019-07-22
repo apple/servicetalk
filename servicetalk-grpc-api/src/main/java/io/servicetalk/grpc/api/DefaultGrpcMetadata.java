@@ -15,19 +15,11 @@
  */
 package io.servicetalk.grpc.api;
 
-import java.time.Duration;
-import javax.annotation.Nullable;
-
 import static java.util.Objects.requireNonNull;
 
 class DefaultGrpcMetadata implements GrpcMetadata {
 
     private final String path;
-    private boolean compressed;
-    @Nullable
-    private GrpcMessageEncoding messageEncoding;
-    @Nullable
-    private Duration deadline;
 
     DefaultGrpcMetadata(final String path) {
         this.path = requireNonNull(path);
@@ -36,36 +28,5 @@ class DefaultGrpcMetadata implements GrpcMetadata {
     @Override
     public String path() {
         return path;
-    }
-
-    @Override
-    public boolean isCompressed() {
-        return compressed;
-    }
-
-    @Override
-    public void compressed(final boolean compressed) {
-        this.compressed = compressed;
-    }
-
-    @Nullable
-    @Override
-    public GrpcMessageEncoding messageEncoding() {
-        return messageEncoding;
-    }
-
-    @Override
-    public void messageEncoding(final GrpcMessageEncoding messageEncoding) {
-        this.messageEncoding = requireNonNull(messageEncoding);
-    }
-
-    @Nullable
-    @Override
-    public Duration deadline() {
-        return deadline;
-    }
-
-    void deadline(final Duration deadline) {
-        this.deadline = requireNonNull(deadline);
     }
 }

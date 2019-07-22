@@ -15,7 +15,6 @@
  */
 package io.servicetalk.grpc.api;
 
-import java.time.Duration;
 import javax.annotation.Nullable;
 
 import static java.util.Objects.requireNonNull;
@@ -45,10 +44,5 @@ public class DefaultGrpcClientMetadata extends DefaultGrpcMetadata implements Gr
     @Override
     public void strategy(final GrpcExecutionStrategy strategy) {
         this.strategy = requireNonNull(strategy);
-    }
-
-    @Override
-    public void deadline(final Duration deadline) {
-        super.deadline(deadline);
     }
 }
