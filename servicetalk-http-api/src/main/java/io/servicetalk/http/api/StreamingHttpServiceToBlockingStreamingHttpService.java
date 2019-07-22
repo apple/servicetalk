@@ -48,7 +48,6 @@ final class StreamingHttpServiceToBlockingStreamingHttpService implements Blocki
     public void handle(final HttpServiceContext ctx,
                        final BlockingStreamingHttpRequest request,
                        final BlockingStreamingHttpServerResponse svcResponse) throws Exception {
-        // Block handle() for the duration of the request for now (for cancellation reasons)
         futureGetCancelOnInterrupt(handleBlockingRequest(ctx, request, svcResponse).toFuture());
     }
 
