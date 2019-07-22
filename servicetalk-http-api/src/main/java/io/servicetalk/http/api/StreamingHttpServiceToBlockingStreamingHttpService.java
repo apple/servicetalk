@@ -108,7 +108,7 @@ final class StreamingHttpServiceToBlockingStreamingHttpService implements Blocki
             private final HttpPayloadWriter<Buffer> payloadWriter;
             private volatile int terminated;
             @Nullable
-            private ConcurrentSubscription wrapped;
+            private ConcurrentSubscription subscription;
 
             PayloadPump(final Subscriber subscriber, final HttpPayloadWriter<Buffer> payloadWriter) {
                 this.subscriber = subscriber;
@@ -116,17 +116,16 @@ final class StreamingHttpServiceToBlockingStreamingHttpService implements Blocki
             }
 
             @Override
-            public void onSubscribe(final PublisherSource.Subscription subscription) {
-                // We need to protect sub.cancel() from concurrent (re-entrant) invocation with sub.request(MAX)
-                wrapped = ConcurrentSubscription.wrap(subscription);
-                subscriber.onSubscribe(wrapped);
-                wrapped.request(Long.MAX_VALUE);
+            public void onSubscribe(final PublisherSource.Subscription inSubscription) {
+                // We need to protect sub.cancel() from concurrent invocation with sub.request(MAX)
+                subscription = ConcurrentSubscription.wrap(inSubscription);
+                subscriber.onSubscribe(subscription);
+                subscription.request(Long.MAX_VALUE);
             }
 
             @Override
             public void onNext(@Nullable final Object bufferOrTrailers) {
                 assert bufferOrTrailers != null;
-                assert wrapped != null;
                 try {
                     if (bufferOrTrailers instanceof Buffer) {
                         payloadWriter.write((Buffer) bufferOrTrailers);
@@ -145,7 +144,8 @@ final class StreamingHttpServiceToBlockingStreamingHttpService implements Blocki
                             throwException(e);
                         }
                     } finally {
-                        wrapped.cancel();
+                        assert subscription != null;
+                        subscription.cancel();
                     }
                 }
             }
@@ -165,15 +165,15 @@ final class StreamingHttpServiceToBlockingStreamingHttpService implements Blocki
             public void onComplete() {
                 try {
                     payloadWriter.close();
-                    if (tryTerminate()) {
-                        subscriber.onComplete();
-                    }
                 } catch (IOException e) {
                     if (tryTerminate()) {
                         subscriber.onError(e);
                     } else {
-                        LOGGER.error("Failed to deliver IOException from onComplete() after termination", e);
+                        LOGGER.warn("Failed to deliver IOException from payloadWriter.close() after termination", e);
                     }
+                }
+                if (tryTerminate()) {
+                    subscriber.onComplete();
                 }
             }
 
