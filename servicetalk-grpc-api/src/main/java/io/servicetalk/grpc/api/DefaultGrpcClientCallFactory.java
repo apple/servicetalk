@@ -15,6 +15,7 @@
  */
 package io.servicetalk.grpc.api;
 
+import io.servicetalk.concurrent.BlockingIterator;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.http.api.BlockingHttpClient;
@@ -149,7 +150,15 @@ final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
                                     final Class<Req> requestClass, final Class<Resp> responseClass) {
         final BlockingStreamingClientCall<Req, Resp> streamingClientCall =
                 newBlockingStreamingCall(serializationProvider, requestClass, responseClass);
-        return (metadata, request) -> requireNonNull(streamingClientCall.request(metadata, request).iterator().next());
+        return (metadata, request) -> {
+            final BlockingIterator<Resp> iterator = streamingClientCall.request(metadata, request).iterator();
+            final Resp firstItem = requireNonNull(iterator.next());
+            if (iterator.hasNext()) {
+                throw new IllegalArgumentException("Only a single item expected, but saw the second value: " +
+                        iterator.next());
+            }
+            return firstItem;
+        };
     }
 
     @Override
