@@ -49,7 +49,7 @@ public abstract class GrpcServerBuilder {
      * Sets the {@link HttpHeadersFactory} to be used for creating {@link HttpHeaders} when decoding requests.
      *
      * @param headersFactory the {@link HttpHeadersFactory} to use.
-     * @return {@code this}
+     * @return {@code this}.
      */
     public abstract GrpcServerBuilder headersFactory(HttpHeadersFactory headersFactory);
 
@@ -59,7 +59,7 @@ public abstract class GrpcServerBuilder {
      *
      * @param clientCloseTimeoutMs {@code 0} if the server should close the connection immediately, or
      * {@code > 0} if a wait time should be used.
-     * @return {@code this}
+     * @return {@code this}.
      */
     public abstract GrpcServerBuilder clientCloseTimeout(long clientCloseTimeoutMs);
 
@@ -86,7 +86,7 @@ public abstract class GrpcServerBuilder {
      * guess for future buffer allocations.
      *
      * @param headersEncodedSizeEstimate estimated initial value.
-     * @return {@code this}
+     * @return {@code this}.
      */
     public abstract GrpcServerBuilder headersEncodedSizeEstimate(int headersEncodedSizeEstimate);
 
@@ -95,7 +95,7 @@ public abstract class GrpcServerBuilder {
      * buffer allocations.
      *
      * @param trailersEncodedSizeEstimate estimated initial value.
-     * @return {@code this};
+     * @return {@code this}.
      */
     public abstract GrpcServerBuilder trailersEncodedSizeEstimate(int trailersEncodedSizeEstimate);
 
@@ -244,7 +244,7 @@ public abstract class GrpcServerBuilder {
      * </pre>
      * @param factory {@link ConnectionAcceptorFactory} to append. Lifetime of this
      * {@link ConnectionAcceptorFactory} is managed by this builder and the server started thereof.
-     * @return {@code this}
+     * @return {@code this}.
      */
     public abstract GrpcServerBuilder appendConnectionAcceptorFilter(ConnectionAcceptorFactory factory);
 
@@ -260,7 +260,7 @@ public abstract class GrpcServerBuilder {
      *     filter1 =&gt; filter2 =&gt; filter3 =&gt; service
      * </pre>
      * @param factory {@link StreamingHttpServiceFilterFactory} to append.
-     * @return {@code this}
+     * @return {@code this}.
      */
     public abstract GrpcServerBuilder appendHttpServiceFilter(StreamingHttpServiceFilterFactory factory);
 
@@ -278,7 +278,7 @@ public abstract class GrpcServerBuilder {
      * </pre>
      * @param predicate the {@link Predicate} to test if the filter must be applied.
      * @param factory {@link StreamingHttpServiceFilterFactory} to append.
-     * @return {@code this}
+     * @return {@code this}.
      */
     public abstract GrpcServerBuilder appendHttpServiceFilter(Predicate<StreamingHttpRequest> predicate,
                                                               StreamingHttpServiceFilterFactory factory);
@@ -312,9 +312,7 @@ public abstract class GrpcServerBuilder {
      * <p>
      * If the underlying protocol (eg. TCP) supports it this will result in a socket bind/listen on {@code address}.
      *
-     * @param serviceFactories {@link GrpcServiceFactory}(s) to create a
-     * <a href="https://www.grpc.io">gRPC</a> service.
-     *
+     * @param serviceFactories {@link GrpcServiceFactory}(s) to create a <a href="https://www.grpc.io">gRPC</a> service.
      * @return A {@link Single} that completes when the server is successfully started or terminates with an error if
      * the server could not be started.
      */
@@ -327,9 +325,7 @@ public abstract class GrpcServerBuilder {
      * <p>
      * If the underlying protocol (eg. TCP) supports it this will result in a socket bind/listen on {@code address}.
      *
-     * @param serviceFactories {@link GrpcServiceFactory}(s) to create a
-     * <a href="https://www.grpc.io">gRPC</a> service.
-     *
+     * @param serviceFactories {@link GrpcServiceFactory}(s) to create a <a href="https://www.grpc.io">gRPC</a> service.
      * @return A {@link ServerContext} by blocking the calling thread until the server is successfully started or
      * throws an {@link Exception} if the server could not be started.
      * @throws Exception if the server could not be started.
@@ -343,9 +339,7 @@ public abstract class GrpcServerBuilder {
      * <p>
      * If the underlying protocol (eg. TCP) supports it this will result in a socket bind/listen on {@code address}.
      *
-     * @param serviceFactory {@link GrpcServiceFactory} to create a
-     * <a href="https://www.grpc.io">gRPC</a> service.
-     *
+     * @param serviceFactory {@link GrpcServiceFactory} to create a <a href="https://www.grpc.io">gRPC</a> service.
      * @return A {@link ServerContext} by blocking the calling thread until the server is successfully started or
      * throws an {@link Exception} if the server could not be started.
      */
