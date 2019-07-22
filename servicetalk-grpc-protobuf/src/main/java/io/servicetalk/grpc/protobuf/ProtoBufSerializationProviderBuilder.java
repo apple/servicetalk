@@ -123,9 +123,8 @@ public final class ProtoBufSerializationProviderBuilder {
             if (serializersForType == null) {
                 throw new SerializationException("Unknown class to serialize: " + type.getName());
             }
-            GrpcMessageEncoding messageEncoding = metadata.messageEncoding();
             @SuppressWarnings("unchecked")
-            HttpSerializer<T> httpSerializer = serializersForType.get(messageEncoding == null ? None : messageEncoding);
+            HttpSerializer<T> httpSerializer = serializersForType.get(None); // compression not yet supported.
             return httpSerializer;
         }
 

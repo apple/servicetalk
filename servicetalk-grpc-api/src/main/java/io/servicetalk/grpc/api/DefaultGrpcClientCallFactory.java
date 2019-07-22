@@ -186,8 +186,8 @@ final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
     }
 
     private GrpcMessageEncoding getMessageEncoding(final GrpcClientMetadata metadata) {
-        GrpcMessageEncoding messageEncoding = metadata.messageEncoding();
-        return messageEncoding == null ? None : messageEncoding;
+        // compression not yet supported.
+        return None;
     }
 
     private <Req> HttpRequest newAggregatedRequest(final GrpcClientMetadata metadata, final Req rawReq,
