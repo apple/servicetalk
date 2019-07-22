@@ -21,10 +21,7 @@ package io.servicetalk.grpc.api;
  */
 public enum GrpcMessageEncoding {
 
-    None("identity"),
-    Gzip("gzip"),
-    Zlib("zlib"),
-    Snappy("snappy");
+    None("identity");
 
     private final String encoding;
 

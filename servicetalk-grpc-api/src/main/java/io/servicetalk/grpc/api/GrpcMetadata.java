@@ -15,9 +15,6 @@
  */
 package io.servicetalk.grpc.api;
 
-import java.time.Duration;
-import javax.annotation.Nullable;
-
 /**
  * Metadata for a <a href="https://www.grpc.io">gRPC</a> call.
  */
@@ -29,45 +26,4 @@ public interface GrpcMetadata {
      * @return The path for the associated <a href="https://www.grpc.io">gRPC</a> method.
      */
     String path();
-
-    /**
-     * Returns {@code true} if the associated message is to be sent compressed.
-     *
-     * @return {@code true} if the associated message is to be sent compressed.
-     */
-    boolean isCompressed();
-
-    /**
-     * The associated message will be sent compressed if {@code compressed} is {@code true}.
-     *
-     * @param compressed {@code true} if the associated message is to be sent compressed.
-     */
-    void compressed(boolean compressed);
-
-    /**
-     * Returns {@code GrpcMessageEncoding} for any message that is to be sent {@link #isCompressed() compressed}.
-     * {@code null} if none specified.
-     *
-     * @return {@code GrpcMessageEncoding} for any message that is to be sent {@link #isCompressed() compressed}.
-     * {@code null} if none specified.
-     */
-    @Nullable
-    GrpcMessageEncoding messageEncoding();
-
-    /**
-     * Sets {@code GrpcMessageEncoding} for any message that is to be sent {@link #isCompressed() compressed}.
-     *
-     * @param messageEncoding {@code GrpcMessageEncoding} for any message that is to be sent
-     * {@link #isCompressed() compressed}.
-     */
-    void messageEncoding(GrpcMessageEncoding messageEncoding);
-
-    /**
-     * Returns a <a href="https://grpc.io/blog/deadlines/">gRPC deadline</a>, if set for the associated RPC method.
-     *
-     * @return {@link Duration} representing the <a href="https://grpc.io/blog/deadlines/">gRPC deadline</a> or
-     * {@code null} if none exists.
-     */
-    @Nullable
-    Duration deadline();
 }
