@@ -97,7 +97,7 @@ interface SingleAddressGrpcClientBuilder<U, R,
      *     filter1 =&gt; filter2 =&gt; filter3 =&gt; original connection factory
      * </pre>
      * @param factory {@link ConnectionFactoryFilter} to use.
-     * @return {@code this}
+     * @return {@code this}.
      */
     SingleAddressGrpcClientBuilder<U, R, SDE> appendConnectionFactoryFilter(
             ConnectionFactoryFilter<R, FilterableStreamingHttpConnection> factory);

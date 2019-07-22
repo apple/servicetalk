@@ -167,9 +167,10 @@ interface BaseGrpcClientBuilder<U, R> {
      * <pre>
      *     filter1 =&gt; filter2 =&gt; filter3 =&gt; connection
      * </pre>
+     *
      * @param factory {@link StreamingHttpConnectionFilterFactory} to decorate a {@link StreamingHttpConnection} for the
      * purpose of filtering.
-     * @return {@code this}
+     * @return {@code this}.
      */
     BaseGrpcClientBuilder<U, R> appendConnectionFilter(StreamingHttpConnectionFilterFactory factory);
 
@@ -189,10 +190,11 @@ interface BaseGrpcClientBuilder<U, R> {
      * <pre>
      *     filter1 =&gt; filter2 =&gt; filter3 =&gt; connection
      * </pre>
+     *
      * @param predicate the {@link Predicate} to test if the filter must be applied.
      * @param factory {@link StreamingHttpConnectionFilterFactory} to decorate a {@link StreamingHttpConnection} for the
      * purpose of filtering.
-     * @return {@code this}
+     * @return {@code this}.
      */
     // We don't want the user to be able to override but it cannot be final because we need to override the type.
     // However this class is package private so the user will not be able to override this method.

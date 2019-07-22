@@ -24,22 +24,26 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.grpc.api.GrpcStatusCode.UNKNOWN;
 import static java.lang.Integer.parseInt;
+import static java.util.Collections.unmodifiableMap;
 import static java.util.Objects.requireNonNull;
 
 /**
- * Class representing gRPC statuses. Basically a re-implementation of {@code io.grpc.Status}.
+ * Class representing gRPC statuses.
+ *
+ * @see GrpcStatusCode
  */
 public final class GrpcStatus {
     static final Map<Integer, GrpcStatus> CACHED_INSTANCES;
     static {
-        CACHED_INSTANCES = new HashMap<>(GrpcStatusCode.values().length, 1f);
+        final Map<Integer, GrpcStatus> cachedInstances = new HashMap<>(GrpcStatusCode.values().length, 1f);
         for (GrpcStatusCode code : GrpcStatusCode.values()) {
-            GrpcStatus replaced = CACHED_INSTANCES.put(code.value(), new GrpcStatus(code));
+            GrpcStatus replaced = cachedInstances.put(code.value(), new GrpcStatus(code));
             if (replaced != null) {
                 throw new IllegalStateException(String.format("GrpcStatusCode value %d used by both %s and %s",
                         code.value(), replaced.code, code));
             }
         }
+        CACHED_INSTANCES = unmodifiableMap(cachedInstances);
     }
 
     private final GrpcStatusCode code;
@@ -50,6 +54,7 @@ public final class GrpcStatus {
 
     /**
      * Constructs a status with no cause or description.
+     *
      * @param code status code.
      */
     public GrpcStatus(GrpcStatusCode code) {
@@ -58,6 +63,7 @@ public final class GrpcStatus {
 
     /**
      * Constructs a status with cause but no additional description.
+     *
      * @param code status code.
      * @param cause cause.
      */
@@ -67,6 +73,7 @@ public final class GrpcStatus {
 
     /**
      * Constructs a status with cause and additional description.
+     *
      * @param code status code.
      * @param cause cause.
      * @param description additional description.
@@ -79,6 +86,7 @@ public final class GrpcStatus {
 
     /**
      * Obtains the status given a code value string.
+     *
      * @param codeValue code value string.
      * @return status associated with the code value, or {@link GrpcStatusCode#UNKNOWN}.
      */
@@ -93,6 +101,7 @@ public final class GrpcStatus {
 
     /**
      * Obtains the status given an integer code value.
+     *
      * @param codeValue integer code value.
      * @return status associated with the code value, or {@link GrpcStatusCode#UNKNOWN}.
      */
@@ -103,9 +112,10 @@ public final class GrpcStatus {
 
     /**
      * Translates a throwable into a status.
+     *
      * @param t the throwable.
-     * @return embedded status if the throwable is a {@link GrpcStatusException}, or an
-     *         {@link GrpcStatusCode#UNKNOWN} status with the throwable as the cause.
+     * @return embedded status if the throwable is a {@link GrpcStatusException}, or an {@link GrpcStatusCode#UNKNOWN}
+     * status with the throwable as the cause.
      */
     public static GrpcStatus fromThrowable(Throwable t) {
         GrpcStatus status = fromThrowableNullable(t);
@@ -114,6 +124,7 @@ public final class GrpcStatus {
 
     /**
      * Translates a throwable into a status.
+     *
      * @param t the throwable.
      * @return embedded status if the throwable is a {@link GrpcStatusException}, or {@code null}.
      */
@@ -125,6 +136,7 @@ public final class GrpcStatus {
 
     /**
      * Returns the current status wrapped in a {@link GrpcStatusException}.
+     *
      * @return the current status wrapped in a {@link GrpcStatusException}.
      */
     public GrpcStatusException asException() {
@@ -145,15 +157,8 @@ public final class GrpcStatus {
     }
 
     /**
-     * Returns whether this status is a success.
-     * @return whether this status is a success.
-     */
-    public boolean isSuccess() {
-        return code.value() == GrpcStatusCode.OK.value();
-    }
-
-    /**
      * Returns the status code.
+     *
      * @return the status code.
      */
     public GrpcStatusCode code() {
@@ -161,15 +166,8 @@ public final class GrpcStatus {
     }
 
     /**
-     * Returns the code value.
-     * @return the code value.
-     */
-    public int codeValue() {
-        return code.value();
-    }
-
-    /**
      * Returns the cause, can be null.
+     *
      * @return the cause, can be null.
      */
     @Nullable
@@ -179,6 +177,7 @@ public final class GrpcStatus {
 
     /**
      * Returns additional descriptions, can be null.
+     *
      * @return additional descriptions, can be null.
      */
     @Nullable
