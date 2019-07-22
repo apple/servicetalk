@@ -58,7 +58,7 @@ final class GrpcUtils {
     private static final CharSequence GRPC_USER_AGENT = newAsciiString("grpc-service-talk/");
     private static final CharSequence IDENTITY = newAsciiString(None.encoding());
     private static final CharSequence GRPC_MESSAGE_ENCODING_KEY = newAsciiString("grpc-encoding");
-    public static final GrpcStatus STATUS_OK = GrpcStatus.fromCodeValue(GrpcStatusCode.OK.value());
+    private static final GrpcStatus STATUS_OK = GrpcStatus.fromCodeValue(GrpcStatusCode.OK.value());
 
     private GrpcUtils() {
         // No instances.
@@ -66,32 +66,32 @@ final class GrpcUtils {
 
     static void initRequest(final HttpRequestMetaData request) {
         assert request.method() == POST;
-        HttpHeaders headers = request.headers();
+        final HttpHeaders headers = request.headers();
         headers.set(USER_AGENT, GRPC_USER_AGENT);
         headers.set(TE, TRAILERS);
         headers.set(CONTENT_TYPE, GRPC_CONTENT_TYPE);
     }
 
-    static StreamingHttpResponse newResponse(StreamingHttpResponseFactory responseFactory, BufferAllocator allocator) {
-        StreamingHttpResponse response = responseFactory.ok();
+    static StreamingHttpResponse newResponse(final StreamingHttpResponseFactory responseFactory,
+                                             final BufferAllocator allocator) {
+        final StreamingHttpResponse response = responseFactory.ok();
         initResponse(response);
-        response.transform(() -> null, (buffer, __) -> buffer, (__, trailers) -> {
+        return response.transform(() -> null, (buffer, __) -> buffer, (__, trailers) -> {
             GrpcUtils.setStatus(trailers, STATUS_OK, null, allocator);
             return trailers;
         });
-        return response;
     }
 
-    static HttpResponse newResponse(HttpResponseFactory responseFactory, BufferAllocator allocator) {
-        HttpResponse response = responseFactory.ok();
+    static HttpResponse newResponse(final HttpResponseFactory responseFactory, final BufferAllocator allocator) {
+        final HttpResponse response = responseFactory.ok();
         initResponse(response);
         setStatus(response.trailers(), STATUS_OK, null, allocator);
         return response;
     }
 
-    static void setStatus(HttpHeaders trailers, GrpcStatus status, @Nullable Status details,
-                          BufferAllocator allocator) {
-        trailers.set(GRPC_STATUS_CODE_TRAILER, valueOf(status.codeValue()));
+    static void setStatus(final HttpHeaders trailers, final GrpcStatus status, final @Nullable Status details,
+                          final BufferAllocator allocator) {
+        trailers.set(GRPC_STATUS_CODE_TRAILER, valueOf(status.code().value()));
         if (status.description() != null) {
             trailers.set(GRPC_STATUS_MESSAGE_TRAILER, status.description());
         }
@@ -117,7 +117,7 @@ final class GrpcUtils {
     }
 
     static GrpcMessageEncoding readGrpcMessageEncoding(final HttpMetaData httpMetaData) {
-        CharSequence encoding = httpMetaData.headers().get(GRPC_MESSAGE_ENCODING_KEY);
+        final CharSequence encoding = httpMetaData.headers().get(GRPC_MESSAGE_ENCODING_KEY);
         // identity is a special header for no compression
         if (encoding != null && !contentEqualsIgnoreCase(encoding, IDENTITY)) {
             String lowercaseEncoding = encoding.toString().toLowerCase();
@@ -138,7 +138,7 @@ final class GrpcUtils {
 
     private static void initResponse(final HttpResponseMetaData response) {
         // The response status is 200 no matter what. Actual status is put in trailers.
-        HttpHeaders headers = response.headers();
+        final HttpHeaders headers = response.headers();
         headers.set(SERVER, GRPC_USER_AGENT);
         headers.set(CONTENT_TYPE, GRPC_CONTENT_TYPE);
     }
@@ -161,7 +161,7 @@ final class GrpcUtils {
             // there is any.
             grpcHeaders = trailers;
         }
-        GrpcStatusCode grpcStatusCode = GrpcStatusCode.fromCodeValue(statusCode);
+        final GrpcStatusCode grpcStatusCode = GrpcStatusCode.fromCodeValue(statusCode);
         if (grpcStatusCode.value() != GrpcStatusCode.OK.value()) {
             throw new GrpcStatus(grpcStatusCode, null, grpcHeaders.get(GRPC_STATUS_MESSAGE_TRAILER))
                     .asException(new StatusSupplier(grpcHeaders));
@@ -169,8 +169,8 @@ final class GrpcUtils {
     }
 
     @Nullable
-    private static Status getStatusDetails(HttpHeaders headers) {
-        CharSequence details = headers.get(GRPC_STATUS_DETAILS_TRAILER);
+    private static Status getStatusDetails(final HttpHeaders headers) {
+        final CharSequence details = headers.get(GRPC_STATUS_DETAILS_TRAILER);
         if (details == null) {
             return null;
         }
@@ -180,6 +180,11 @@ final class GrpcUtils {
         } catch (InvalidProtocolBufferException e) {
             throw new IllegalStateException("Could not decode grpc status details", e);
         }
+    }
+
+    @SuppressWarnings("unchecked")
+    static <T> T uncheckedCast(Object o) {
+        return (T) o;
     }
 
     /**

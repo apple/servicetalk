@@ -60,6 +60,7 @@ import static io.servicetalk.grpc.api.GrpcRouteConversions.toStreaming;
 import static io.servicetalk.grpc.api.GrpcStatusCode.UNIMPLEMENTED;
 import static io.servicetalk.grpc.api.GrpcUtils.newResponse;
 import static io.servicetalk.grpc.api.GrpcUtils.readGrpcMessageEncoding;
+import static io.servicetalk.grpc.api.GrpcUtils.uncheckedCast;
 import static io.servicetalk.http.api.HttpApiConversions.toStreamingHttpService;
 import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static java.util.Collections.unmodifiableMap;
@@ -77,7 +78,7 @@ final class GrpcRouter {
     private final Map<String, RouteProvider> blockingStreamingRoutes;
 
     private static final StreamingHttpService notFound = (ctx, request, responseFactory) -> {
-        StreamingHttpResponse response = responseFactory.ok();
+        final StreamingHttpResponse response = responseFactory.ok();
         response.version(request.version());
         response.transform(() -> null, (buffer, __) -> buffer, (__, trailers) -> {
             GrpcUtils.setStatus(trailers, UNIMPLEMENTED.status(), null,
@@ -98,7 +99,7 @@ final class GrpcRouter {
     }
 
     Single<ServerContext> bind(final ServerBinder binder, final ExecutionContext executionContext) {
-        Map<String, StreamingHttpService> allRoutes = new HashMap<>();
+        final Map<String, StreamingHttpService> allRoutes = new HashMap<>();
         populateRoutes(executionContext, allRoutes, routes);
         populateRoutes(executionContext, allRoutes, streamingRoutes);
         populateRoutes(executionContext, allRoutes, blockingRoutes);
@@ -119,11 +120,9 @@ final class GrpcRouter {
                                 final Map<String, StreamingHttpService> allRoutes,
                                 final Map<String, RouteProvider> routes) {
         for (Map.Entry<String, RouteProvider> entry : routes.entrySet()) {
-            ServiceAdapterHolder adapterHolder = entry.getValue().buildRoute(executionContext);
-            StreamingHttpService service =
-                    adapterHolder.serviceInvocationStrategy().offloadService(executionContext.executor(),
-                            adapterHolder.adaptor());
-            allRoutes.put(entry.getKey(), service);
+            final ServiceAdapterHolder adapterHolder = entry.getValue().buildRoute(executionContext);
+            allRoutes.put(entry.getKey(), adapterHolder.serviceInvocationStrategy()
+                    .offloadService(executionContext.executor(), adapterHolder.adaptor()));
         }
     }
 
@@ -145,9 +144,9 @@ final class GrpcRouter {
         }
 
         Builder(final Map<String, RouteProvider> routes,
-                       final Map<String, RouteProvider> streamingRoutes,
-                       final Map<String, RouteProvider> blockingRoutes,
-                       final Map<String, RouteProvider> blockingStreamingRoutes) {
+                final Map<String, RouteProvider> streamingRoutes,
+                final Map<String, RouteProvider> blockingRoutes,
+                final Map<String, RouteProvider> blockingStreamingRoutes) {
             this.routes = routes;
             this.streamingRoutes = streamingRoutes;
             this.blockingRoutes = blockingRoutes;
@@ -155,7 +154,7 @@ final class GrpcRouter {
         }
 
         RouteProviders drainRoutes() {
-            Map<String, RouteProvider> allRoutes = new HashMap<>();
+            final Map<String, RouteProvider> allRoutes = new HashMap<>();
             allRoutes.putAll(routes);
             allRoutes.putAll(streamingRoutes);
             allRoutes.putAll(blockingRoutes);
@@ -167,11 +166,11 @@ final class GrpcRouter {
             return new RouteProviders(allRoutes);
         }
 
-        static GrpcRouter.Builder merge(GrpcRouter.Builder... builders) {
-            Map<String, RouteProvider> routes = new HashMap<>();
-            Map<String, RouteProvider> streamingRoutes = new HashMap<>();
-            Map<String, RouteProvider> blockingRoutes = new HashMap<>();
-            Map<String, RouteProvider> blockingStreamingRoutes = new HashMap<>();
+        static GrpcRouter.Builder merge(final GrpcRouter.Builder... builders) {
+            final Map<String, RouteProvider> routes = new HashMap<>();
+            final Map<String, RouteProvider> streamingRoutes = new HashMap<>();
+            final Map<String, RouteProvider> blockingRoutes = new HashMap<>();
+            final Map<String, RouteProvider> blockingStreamingRoutes = new HashMap<>();
             for (Builder builder : builders) {
                 routes.putAll(builder.routes);
                 streamingRoutes.putAll(builder.streamingRoutes);
@@ -187,8 +186,8 @@ final class GrpcRouter {
                 final Class<Resp> responseClass, final GrpcSerializationProvider serializationProvider) {
             routes.put(path, new RouteProvider(executionContext -> toStreamingHttpService(
                     (HttpService) (ctx, request, responseFactory) -> {
-                        GrpcServiceContext serviceContext = new DefaultGrpcServiceContext(request.path(), ctx);
-                        HttpDeserializer<Req> deserializer =
+                        final GrpcServiceContext serviceContext = new DefaultGrpcServiceContext(request.path(), ctx);
+                        final HttpDeserializer<Req> deserializer =
                                 serializationProvider.deserializerFor(readGrpcMessageEncoding(request), requestClass);
                         return route.handle(serviceContext, request.payloadBody(deserializer))
                                 .map(rawResp -> newResponse(responseFactory, ctx.executionContext().bufferAllocator())
@@ -206,11 +205,11 @@ final class GrpcRouter {
                 final Class<Resp> responseClass, final GrpcSerializationProvider serializationProvider) {
             streamingRoutes.put(path, new RouteProvider(executionContext -> {
                 StreamingHttpService service = (ctx, request, responseFactory) -> {
-                    GrpcServiceContext serviceContext = new DefaultGrpcServiceContext(request.path(), ctx);
-                    HttpDeserializer<Req> deserializer =
+                    final GrpcServiceContext serviceContext = new DefaultGrpcServiceContext(request.path(), ctx);
+                    final HttpDeserializer<Req> deserializer =
                             serializationProvider.deserializerFor(readGrpcMessageEncoding(request), requestClass);
-                    Publisher<Resp> response = route.handle(serviceContext, request.payloadBody(deserializer))
-                            .map(GrpcRouter::uncheckedCast);
+                    final Publisher<Resp> response = route.handle(serviceContext, request.payloadBody(deserializer))
+                            .map(GrpcUtils::uncheckedCast);
                     return succeeded(newResponse(responseFactory, ctx.executionContext().bufferAllocator())
                             .payloadBody(response, serializationProvider.serializerFor(serviceContext, responseClass)));
                 };
@@ -278,10 +277,10 @@ final class GrpcRouter {
                 final Class<Resp> responseClass, final GrpcSerializationProvider serializationProvider) {
             blockingRoutes.put(path, new RouteProvider(executionContext ->
                     toStreamingHttpService((BlockingHttpService) (ctx, request, responseFactory) -> {
-                        GrpcServiceContext serviceContext = new DefaultGrpcServiceContext(request.path(), ctx);
-                        HttpDeserializer<Req> deserializer =
+                        final GrpcServiceContext serviceContext = new DefaultGrpcServiceContext(request.path(), ctx);
+                        final HttpDeserializer<Req> deserializer =
                                 serializationProvider.deserializerFor(readGrpcMessageEncoding(request), requestClass);
-                        Resp response = route.handle(serviceContext, request.payloadBody(deserializer));
+                        final Resp response = route.handle(serviceContext, request.payloadBody(deserializer));
                         return newResponse(responseFactory, ctx.executionContext().bufferAllocator())
                                 .payloadBody(response,
                                         serializationProvider.serializerFor(serviceContext, responseClass));
@@ -309,10 +308,10 @@ final class GrpcRouter {
                 final Class<Resp> responseClass, final GrpcSerializationProvider serializationProvider) {
             blockingRoutes.put(path, new RouteProvider(executionContext ->
                     toStreamingHttpService((ctx, request, response) -> {
-                        GrpcServiceContext serviceContext = new DefaultGrpcServiceContext(request.path(), ctx);
-                        HttpDeserializer<Req> deserializer =
+                        final GrpcServiceContext serviceContext = new DefaultGrpcServiceContext(request.path(), ctx);
+                        final HttpDeserializer<Req> deserializer =
                                 serializationProvider.deserializerFor(readGrpcMessageEncoding(request), requestClass);
-                        HttpSerializer<Resp> serializer =
+                        final HttpSerializer<Resp> serializer =
                                 serializationProvider.serializerFor(serviceContext, responseClass);
                         route.handle(serviceContext, request.payloadBody(deserializer), new GrpcPayloadWriter<Resp>() {
                             @Nullable
@@ -366,7 +365,7 @@ final class GrpcRouter {
                 final GrpcSerializationProvider serializationProvider) {
             return addBlockingStreamingRoute(path, executionStrategy, (ctx, request, responseWriter) -> {
                         try {
-                            Resp resp = route.handle(ctx, request);
+                            final Resp resp = route.handle(ctx, request);
                             responseWriter.write(resp);
                         } finally {
                             responseWriter.close();
@@ -420,7 +419,7 @@ final class GrpcRouter {
         }
 
         RouteProvider routeProvider(final String path) {
-            RouteProvider routeProvider = routes.get(path);
+            final RouteProvider routeProvider = routes.get(path);
             if (routeProvider == null) {
                 throw new IllegalArgumentException("No routes registered for path: " + path);
             }
@@ -515,10 +514,5 @@ final class GrpcRouter {
         public Completable closeAsyncGracefully() {
             return closeable.closeAsyncGracefully();
         }
-    }
-
-    @SuppressWarnings("unchecked")
-    private static <T> T uncheckedCast(final Object rawReq) {
-        return (T) rawReq;
     }
 }
