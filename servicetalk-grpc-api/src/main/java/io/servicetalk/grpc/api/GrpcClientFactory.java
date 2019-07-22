@@ -85,6 +85,7 @@ public abstract class GrpcClientFactory<Client extends GrpcClient<BlockingClient
      * <pre>
      *     filter1 =&gt; filter2 =&gt; filter3 =&gt; client
      * </pre>
+     *
      * @param before the factory to apply before this factory is applied
      * @return {@code this}
      */
@@ -103,7 +104,6 @@ public abstract class GrpcClientFactory<Client extends GrpcClient<BlockingClient
      *
      * @param existing Existing {@link FilterFactory}.
      * @param append {@link FilterFactory} to append to {@code existing}.
-     *
      * @return a composed factory that first applies the {@code before} factory and then applies {@code existing}
      * factory
      */
@@ -115,7 +115,6 @@ public abstract class GrpcClientFactory<Client extends GrpcClient<BlockingClient
      *
      * @param clientCallFactory {@link GrpcClientCallFactory} to use for creating client calls.
      * The returned {@link Client} should own the lifecycle of this factory.
-     *
      * @return A new <a href="https://www.grpc.io">gRPC</a> client following the specified
      * <a href="https://www.grpc.io">gRPC</a> {@link Client} contract.
      */
@@ -126,7 +125,6 @@ public abstract class GrpcClientFactory<Client extends GrpcClient<BlockingClient
      *
      * @param client {@link Client} to use for creating a {@link Filter} through the {@link FilterFactory}.
      * @param filterFactory {@link FilterFactory}
-     *
      * @return A {@link Filter} filtering the passed {@link Client}.
      */
     protected abstract Filter newFilter(Client client, FilterFactory filterFactory);
@@ -135,7 +133,6 @@ public abstract class GrpcClientFactory<Client extends GrpcClient<BlockingClient
      * Create a new {@link Client} using the passed {@link FilterableClient}.
      *
      * @param filterableClient {@link FilterableClient} to create a {@link Client} from.
-     *
      * @return A new <a href="https://www.grpc.io">gRPC</a> client following the specified
      * <a href="https://www.grpc.io">gRPC</a> {@link Client} contract.
      */
@@ -147,7 +144,6 @@ public abstract class GrpcClientFactory<Client extends GrpcClient<BlockingClient
      *
      * @param clientCallFactory {@link GrpcClientCallFactory} to use for creating client calls.
      * The returned {@link Client} should own the lifecycle of this factory.
-     *
      * @return A new <a href="https://www.grpc.io">gRPC</a> client following the specified
      * <a href="https://www.grpc.io">gRPC</a> {@link BlockingClient} contract.
      */
