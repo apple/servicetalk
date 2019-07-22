@@ -24,6 +24,9 @@ import io.servicetalk.http.api.HttpExecutionStrategy;
  */
 public final class GrpcExecutionStrategies {
 
+    private static final DefaultGrpcExecutionStrategy NO_OFFLOADS =
+            new DefaultGrpcExecutionStrategy(HttpExecutionStrategies.noOffloadsStrategy());
+
     private GrpcExecutionStrategies() {
         // No instances
     }
@@ -43,7 +46,7 @@ public final class GrpcExecutionStrategies {
      * @param executor {@link Executor} to use.
      * @return Default {@link GrpcExecutionStrategy}.
      */
-    public static GrpcExecutionStrategy defaultStrategy(Executor executor) {
+    public static GrpcExecutionStrategy defaultStrategy(final Executor executor) {
         return new DefaultGrpcExecutionStrategy(HttpExecutionStrategies.defaultStrategy(executor));
     }
 
@@ -53,7 +56,7 @@ public final class GrpcExecutionStrategies {
      * @return {@link GrpcExecutionStrategy} that disables all offloads.
      */
     public static GrpcExecutionStrategy noOffloadsStrategy() {
-        return new DefaultGrpcExecutionStrategy(HttpExecutionStrategies.noOffloadsStrategy());
+        return NO_OFFLOADS;
     }
 
     /**

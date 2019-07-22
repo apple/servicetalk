@@ -31,6 +31,7 @@ public final class GrpcStatusException extends RuntimeException {
 
     /**
      * Constructs an instance with the given {@link GrpcStatus}.
+     *
      * @param status status to be wrapped.
      * @param applicationStatusSupplier the {@link Supplier} for the {@link com.google.rpc.Status}.
      */
@@ -42,6 +43,7 @@ public final class GrpcStatusException extends RuntimeException {
 
     /**
      * Returns the wrapped {@link GrpcStatus}.
+     *
      * @return the wrapped {@link GrpcStatus}.
      */
     public GrpcStatus status() {
@@ -50,6 +52,7 @@ public final class GrpcStatusException extends RuntimeException {
 
     /**
      * Returns the status details if any was included or {@code null}.
+     *
      * @return the wrapped {@link com.google.rpc.Status}.
      */
     @Nullable
@@ -59,6 +62,7 @@ public final class GrpcStatusException extends RuntimeException {
 
     /**
      * Returns a new {@link GrpcStatusException} for the given {@link com.google.rpc.Status}.
+     *
      * @param status the status
      * @return the exception created.
      */

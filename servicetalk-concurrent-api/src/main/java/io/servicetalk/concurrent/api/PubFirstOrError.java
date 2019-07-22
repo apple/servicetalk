@@ -47,7 +47,8 @@ final class PubFirstOrError<T> extends AbstractPubToSingle<T> {
                     // Since we are in onNext, if cancel() throws, we will get an onError from the source.
                     // No need to add specific exception handling here.
                     subscription.cancel();
-                    terminate(new IllegalArgumentException("only a single item expected, but saw second value: " + t));
+                    terminate(new IllegalArgumentException(
+                            "Only a single item expected, but saw the second value: " + t));
                 }
             }
 

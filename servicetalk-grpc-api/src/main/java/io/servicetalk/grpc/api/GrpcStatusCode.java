@@ -20,9 +20,12 @@ import java.util.Map;
 import javax.annotation.Nullable;
 
 import static java.lang.Integer.parseInt;
+import static java.util.Collections.unmodifiableMap;
 
 /**
- * Standard gRPC status codes. Copied from {@code io.grpc.Status}.
+ * Standard gRPC status codes.
+ *
+ * @see <a href="https://github.com/grpc/grpc/blob/master/doc/statuscodes.md">Official gRPC status codes</a>
  */
 public enum GrpcStatusCode {
     /** Successful. */
@@ -61,15 +64,17 @@ public enum GrpcStatusCode {
     UNAUTHENTICATED(16);
 
     private static final Map<Integer, GrpcStatusCode> INT_TO_STATUS_CODE_MAP;
+
     static {
-        INT_TO_STATUS_CODE_MAP = new HashMap<>(GrpcStatusCode.values().length);
+        final Map<Integer, GrpcStatusCode> intToStatusCodeMap = new HashMap<>(GrpcStatusCode.values().length);
         for (GrpcStatusCode code : GrpcStatusCode.values()) {
-            GrpcStatusCode replaced = INT_TO_STATUS_CODE_MAP.put(code.value(), code);
+            GrpcStatusCode replaced = intToStatusCodeMap.put(code.value(), code);
             if (replaced != null) {
                 throw new IllegalStateException(String.format("GrpcStatusCode value %d used by both %s and %s",
                         code.value(), replaced, code));
             }
         }
+        INT_TO_STATUS_CODE_MAP = unmodifiableMap(intToStatusCodeMap);
     }
 
     private final int value;
@@ -80,6 +85,7 @@ public enum GrpcStatusCode {
 
     /**
      * Obtains the status code given a code value.
+     *
      * @param codeValue code value.
      * @return status code associated with the code value, or {@link #UNKNOWN}.
      */
@@ -96,6 +102,7 @@ public enum GrpcStatusCode {
 
     /**
      * Obtains the status code given an integer code value.
+     *
      * @param codeValue integer code value.
      * @return status code associated with the code value, or {@link #UNKNOWN}.
      */
@@ -105,6 +112,7 @@ public enum GrpcStatusCode {
 
     /**
      * Returns the integer code value.
+     *
      * @return the integer code value.
      */
     public int value() {
@@ -113,6 +121,7 @@ public enum GrpcStatusCode {
 
     /**
      * Returns a standard {@link GrpcStatus} with this status code.
+     *
      * @return a standard {@link GrpcStatus} with this status code.
      */
     public GrpcStatus status() {

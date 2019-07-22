@@ -45,6 +45,7 @@ public interface GrpcClientMetadata extends GrpcMetadata {
     /**
      * Sets the <a href="https://grpc.io/blog/deadlines/">gRPC deadline</a> for the associated
      * <a href="https://www.grpc.io">gRPC</a> method.
+     *
      * @param deadline The <a href="https://grpc.io/blog/deadlines/">gRPC deadline</a> for the associated
      * <a href="https://www.grpc.io">gRPC</a> method.
      */
