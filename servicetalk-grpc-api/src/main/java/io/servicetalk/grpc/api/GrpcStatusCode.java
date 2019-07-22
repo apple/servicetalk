@@ -66,15 +66,15 @@ public enum GrpcStatusCode {
     private static final Map<Integer, GrpcStatusCode> INT_TO_STATUS_CODE_MAP;
 
     static {
-        final Map<Integer, GrpcStatusCode> map = new HashMap<>(GrpcStatusCode.values().length);
+        final Map<Integer, GrpcStatusCode> intToStatusCodeMap = new HashMap<>(GrpcStatusCode.values().length);
         for (GrpcStatusCode code : GrpcStatusCode.values()) {
-            GrpcStatusCode replaced = map.put(code.value(), code);
+            GrpcStatusCode replaced = intToStatusCodeMap.put(code.value(), code);
             if (replaced != null) {
                 throw new IllegalStateException(String.format("GrpcStatusCode value %d used by both %s and %s",
                         code.value(), replaced, code));
             }
         }
-        INT_TO_STATUS_CODE_MAP = unmodifiableMap(map);
+        INT_TO_STATUS_CODE_MAP = unmodifiableMap(intToStatusCodeMap);
     }
 
     private final int value;

@@ -35,15 +35,15 @@ import static java.util.Objects.requireNonNull;
 public final class GrpcStatus {
     static final Map<Integer, GrpcStatus> CACHED_INSTANCES;
     static {
-        final Map<Integer, GrpcStatus> map = new HashMap<>(GrpcStatusCode.values().length, 1f);
+        final Map<Integer, GrpcStatus> cachedInstances = new HashMap<>(GrpcStatusCode.values().length, 1f);
         for (GrpcStatusCode code : GrpcStatusCode.values()) {
-            GrpcStatus replaced = map.put(code.value(), new GrpcStatus(code));
+            GrpcStatus replaced = cachedInstances.put(code.value(), new GrpcStatus(code));
             if (replaced != null) {
                 throw new IllegalStateException(String.format("GrpcStatusCode value %d used by both %s and %s",
                         code.value(), replaced.code, code));
             }
         }
-        CACHED_INSTANCES = unmodifiableMap(map);
+        CACHED_INSTANCES = unmodifiableMap(cachedInstances);
     }
 
     private final GrpcStatusCode code;
