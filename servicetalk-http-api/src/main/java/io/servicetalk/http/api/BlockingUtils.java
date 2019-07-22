@@ -21,7 +21,6 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.internal.SubscribableCompletable;
 import io.servicetalk.concurrent.api.internal.SubscribableSingle;
-import io.servicetalk.concurrent.internal.PlatformDependent;
 import io.servicetalk.concurrent.internal.ThreadInterruptingCancellable;
 
 import java.util.concurrent.ExecutionException;
@@ -98,8 +97,7 @@ final class BlockingUtils {
             future.cancel(false);
             throw e;
         } catch (ExecutionException e) {
-            PlatformDependent.throwException(e.getCause());
-            throw new Error("unreachable");
+            return throwException(e.getCause());
         }
     }
 

@@ -21,8 +21,10 @@ import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.internal.SubscribableCompletable;
-import io.servicetalk.concurrent.internal.DelayedCancellable;
-import io.servicetalk.concurrent.internal.PlatformDependent;
+import io.servicetalk.concurrent.internal.ConcurrentSubscription;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
@@ -30,6 +32,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
+import static io.servicetalk.concurrent.internal.PlatformDependent.throwException;
 import static io.servicetalk.http.api.BlockingUtils.futureGetCancelOnInterrupt;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
@@ -73,6 +76,11 @@ final class StreamingHttpServiceToBlockingStreamingHttpService implements Blocki
         original.closeAsync().toFuture().get();
     }
 
+    @Override
+    public void closeGracefully() throws Exception {
+        original.closeAsyncGracefully().toFuture().get();
+    }
+
     private static class PayloadBodyAndTrailersToPayloadWriter extends SubscribableCompletable {
 
         private final Publisher<Object> payloadBodyAndTrailers;
@@ -86,38 +94,39 @@ final class StreamingHttpServiceToBlockingStreamingHttpService implements Blocki
 
         @Override
         protected void handleSubscribe(final CompletableSource.Subscriber subscriber) {
-            final DelayedCancellable cancellable = new DelayedCancellable();
-            toSource(payloadBodyAndTrailers).subscribe(new PayloadPump(subscriber, cancellable, payloadWriter));
-            subscriber.onSubscribe(cancellable);
+            toSource(payloadBodyAndTrailers).subscribe(new PayloadPump(subscriber, payloadWriter));
         }
 
         private static final class PayloadPump implements PublisherSource.Subscriber<Object> {
+
+            private static final Logger LOGGER = LoggerFactory.getLogger(PayloadPump.class);
 
             private static final AtomicIntegerFieldUpdater<PayloadPump> terminatedUpdater =
                     newUpdater(PayloadPump.class, "terminated");
 
             private final Subscriber subscriber;
-            private final DelayedCancellable cancellable;
             private final HttpPayloadWriter<Buffer> payloadWriter;
             private volatile int terminated;
+            @Nullable
+            private ConcurrentSubscription wrapped;
 
-            PayloadPump(final Subscriber subscriber,
-                        final DelayedCancellable cancellable,
-                        final HttpPayloadWriter<Buffer> payloadWriter) {
+            PayloadPump(final Subscriber subscriber, final HttpPayloadWriter<Buffer> payloadWriter) {
                 this.subscriber = subscriber;
-                this.cancellable = cancellable;
                 this.payloadWriter = payloadWriter;
             }
 
             @Override
             public void onSubscribe(final PublisherSource.Subscription subscription) {
-                cancellable.delayedCancellable(subscription);
-                subscription.request(Long.MAX_VALUE);
+                // We need to protect sub.cancel() from concurrent (re-entrant) invocation with sub.request(MAX)
+                wrapped = ConcurrentSubscription.wrap(subscription);
+                subscriber.onSubscribe(wrapped);
+                wrapped.request(Long.MAX_VALUE);
             }
 
             @Override
             public void onNext(@Nullable final Object bufferOrTrailers) {
                 assert bufferOrTrailers != null;
+                assert wrapped != null;
                 try {
                     if (bufferOrTrailers instanceof Buffer) {
                         payloadWriter.write((Buffer) bufferOrTrailers);
@@ -133,25 +142,22 @@ final class StreamingHttpServiceToBlockingStreamingHttpService implements Blocki
                         if (tryTerminate()) {
                             subscriber.onError(e);
                         } else {
-                            PlatformDependent.throwException(e);
+                            throwException(e);
                         }
                     } finally {
-                        cancellable.cancel();
+                        wrapped.cancel();
                     }
                 }
             }
 
             @Override
             public void onError(final Throwable t) {
-                try {
-                    payloadWriter.flush();
-                } catch (IOException e) {
-                    t.addSuppressed(e);
-                }
+                // Don't close the payloadWriter on error, we need to bubble up the exception through the subscriber to
+                // communicate the failure
                 if (tryTerminate()) {
                     subscriber.onError(t);
                 } else {
-                    PlatformDependent.throwException(t);
+                    LOGGER.error("Failed to deliver onError() after termination", t);
                 }
             }
 
@@ -166,7 +172,7 @@ final class StreamingHttpServiceToBlockingStreamingHttpService implements Blocki
                     if (tryTerminate()) {
                         subscriber.onError(e);
                     } else {
-                        PlatformDependent.throwException(e);
+                        LOGGER.error("Failed to deliver IOException from onComplete() after termination", e);
                     }
                 }
             }
