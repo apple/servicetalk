@@ -52,10 +52,8 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
      * Use the passed {@link ServerBinder} to bind an appropriate
      * <a href="https://www.grpc.io">gRPC</a> service for the server.
      *
-     * @param binder {@link ServerBinder} to bind <a href="https://www.grpc.io">gRPC</a> service
-     * to the server.
+     * @param binder {@link ServerBinder} to bind <a href="https://www.grpc.io">gRPC</a> service to the server.
      * @param executionContext {@link ExecutionContext} to use for the service.
-     *
      * @return A {@link Single} that completes when the server is successfully started or terminates with an error if
      * the server could not be started.
      */
@@ -74,7 +72,6 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
      * Create a new {@link Service} from the passed {@link AllGrpcRoutes}.
      *
      * @param routes {@link AllGrpcRoutes} for which a {@link Service} has to be created.
-     *
      * @return {@link Service} containing all the passed routes.
      */
     protected abstract Service newServiceFromRoutes(AllGrpcRoutes routes);
@@ -82,7 +79,6 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
     /**
      * Returns a {@link AllGrpcRoutes} representing this {@link GrpcRoutes}. Any route registered that is not a
      * {@link StreamingRoute} will be converted to a {@link StreamingRoute}.
-     *
      * @return {@link AllGrpcRoutes} representing this {@link GrpcRoutes}.
      */
     AllGrpcRoutes drainToStreamingRoutes() {
@@ -648,10 +644,8 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
          * programming model is registered, it will be converted to a {@link StreamingRoute}.
          *
          * @param path for the route.
-         *
          * @param <Req> Type of request.
          * @param <Resp> Type of response.
-         *
          * @return Registered {@link StreamingRoute} for the passed {@code path}.
          * @throws IllegalArgumentException If the route does not exist.
          */
@@ -663,10 +657,8 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
          * programming model is registered, it will be converted to a {@link Route}.
          *
          * @param path for the route.
-         *
          * @param <Req> Type of request.
          * @param <Resp> Type of response.
-         *
          * @return Registered {@link Route} for the passed {@code path}.
          * @throws IllegalArgumentException If the route does not exist.
          */
@@ -678,29 +670,25 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
          * programming model is registered, it will be converted to a {@link RequestStreamingRoute}.
          *
          * @param path for the route.
-         *
          * @param <Req> Type of request.
          * @param <Resp> Type of response.
-         *
          * @return Registered {@link RequestStreamingRoute} for the passed {@code path}.
          * @throws IllegalArgumentException If the route does not exist.
          */
-        <Req, Resp> RequestStreamingRoute<Req, Resp>
-        requestStreamingRouteFor(String path) throws IllegalArgumentException;
+        <Req, Resp> RequestStreamingRoute<Req, Resp> requestStreamingRouteFor(String path)
+                throws IllegalArgumentException;
 
         /**
          * Returns the registered {@link ResponseStreamingRoute} for the passed {@code path}. If a route with a
          * different programming model is registered, it will be converted to a {@link ResponseStreamingRoute}.
          *
          * @param path for the route.
-         *
          * @param <Req> Type of request.
          * @param <Resp> Type of response.
-         *
          * @return Registered {@link ResponseStreamingRoute} for the passed {@code path}.
          * @throws IllegalArgumentException If the route does not exist.
          */
-        <Req, Resp> ResponseStreamingRoute<Req, Resp>
-        responseStreamingRouteFor(String path) throws IllegalArgumentException;
+        <Req, Resp> ResponseStreamingRoute<Req, Resp> responseStreamingRouteFor(String path)
+                throws IllegalArgumentException;
     }
 }

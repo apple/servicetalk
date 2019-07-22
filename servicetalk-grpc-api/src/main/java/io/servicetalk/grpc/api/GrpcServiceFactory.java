@@ -29,8 +29,7 @@ import javax.annotation.Nullable;
 import static java.util.Objects.requireNonNull;
 
 /**
- * A factory for binding a <a href="https://www.grpc.io">gRPC</a> service to a server using a
- * {@link ServerBinder}.
+ * A factory for binding a <a href="https://www.grpc.io">gRPC</a> service to a server using a {@link ServerBinder}.
  *
  * @param <Filter> Type for service filter
  * @param <Service> Type for service
@@ -69,10 +68,8 @@ public abstract class GrpcServiceFactory<Filter extends Service, Service extends
      * Use the passed {@link ServerBinder} to bind an appropriate
      * <a href="https://www.grpc.io">gRPC</a> service for the server.
      *
-     * @param binder {@link ServerBinder} to bind <a href="https://www.grpc.io">gRPC</a> service
-     * to the server.
+     * @param binder {@link ServerBinder} to bind <a href="https://www.grpc.io">gRPC</a> service to the server.
      * @param executionContext {@link ExecutionContext} to use for the service.
-     *
      * @return A {@link Single} that completes when the server is successfully started or terminates with an error if
      * the server could not be started.
      */
@@ -86,7 +83,6 @@ public abstract class GrpcServiceFactory<Filter extends Service, Service extends
 
     /**
      * Appends the passed {@link FilterFactory} to this factory.
-     *
      * <p>
      * The order of execution of these filters are in order of append. If 3 filters are added as follows:
      * <pre>
@@ -96,6 +92,7 @@ public abstract class GrpcServiceFactory<Filter extends Service, Service extends
      * <pre>
      *     filter1 =&gt; filter2 =&gt; filter3 =&gt; client
      * </pre>
+     *
      * @param before the factory to apply before this factory is applied
      * @return {@code this}
      */
@@ -113,7 +110,6 @@ public abstract class GrpcServiceFactory<Filter extends Service, Service extends
      *
      * @param existing Existing {@link FilterFactory}.
      * @param append {@link FilterFactory} to append to {@code existing}.
-     *
      * @return a composed factory that first applies the {@code before} factory and then applies {@code existing}
      * factory
      */
@@ -140,7 +136,6 @@ public abstract class GrpcServiceFactory<Filter extends Service, Service extends
          * If the underlying protocol (eg. TCP) supports it this will result in a socket bind/listen on {@code address}.
          *
          * @param service {@link HttpService} to bind.
-         *
          * @return A {@link Single} that completes when the server is successfully started or terminates with an error
          * if the server could not be started.
          */
@@ -152,7 +147,6 @@ public abstract class GrpcServiceFactory<Filter extends Service, Service extends
          * If the underlying protocol (eg. TCP) supports it this will result in a socket bind/listen on {@code address}.
          *
          * @param service {@link StreamingHttpService} to bind.
-         *
          * @return A {@link Single} that completes when the server is successfully started or terminates with an error
          * if the server could not be started.
          */
@@ -164,7 +158,6 @@ public abstract class GrpcServiceFactory<Filter extends Service, Service extends
          * If the underlying protocol (eg. TCP) supports it this will result in a socket bind/listen on {@code address}.
          *
          * @param service {@link BlockingHttpService} to bind.
-         *
          * @return A {@link Single} that completes when the server is successfully started or terminates with an error
          * if the server could not be started.
          */
@@ -176,7 +169,6 @@ public abstract class GrpcServiceFactory<Filter extends Service, Service extends
          * If the underlying protocol (eg. TCP) supports it this will result in a socket bind/listen on {@code address}.
          *
          * @param service {@link BlockingStreamingHttpService} to bind.
-         *
          * @return A {@link Single} that completes when the server is successfully started or terminates with an error
          * if the server could not be started.
          */

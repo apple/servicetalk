@@ -29,7 +29,7 @@ public interface GrpcServiceFilterFactory<Filter extends Service, Service> {
     /**
      * Create a {@link Filter} using the provided {@link Service}.
      *
-     * @param service {@link Service} to filter
+     * @param service {@link Service} to filter.
      * @return {@link Filter} using the provided {@link Service}.
      */
     Filter create(Service service);
@@ -46,9 +46,9 @@ public interface GrpcServiceFilterFactory<Filter extends Service, Service> {
      * <pre>
      *     filter1 =&gt; filter2 =&gt; filter3 =&gt; service
      * </pre>
-     * @param before the factory to apply before this factory is applied
      *
-     * @return a composed factory that first applies the {@code before} factory and then applies this factory
+     * @param before the factory to apply before this factory is applied.
+     * @return a composed factory that first applies the {@code before} factory and then applies this factory.
      */
     default GrpcServiceFilterFactory<Filter, Service> append(
             GrpcServiceFilterFactory<Filter, Service> before) {
