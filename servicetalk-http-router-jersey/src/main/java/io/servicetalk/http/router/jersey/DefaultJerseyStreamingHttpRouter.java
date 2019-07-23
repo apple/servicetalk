@@ -21,6 +21,7 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.internal.SubscribableSingle;
 import io.servicetalk.concurrent.internal.DelayedCancellable;
 import io.servicetalk.http.api.HttpExecutionStrategy;
+import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
@@ -83,12 +84,12 @@ final class DefaultJerseyStreamingHttpRouter implements StreamingHttpService {
 
     private final ApplicationHandler applicationHandler;
     private final int publisherInputStreamQueueCapacity;
-    private final BiFunction<ConnectionContext, StreamingHttpRequest, String> baseUriFunction;
+    private final BiFunction<ConnectionContext, HttpRequestMetaData, String> baseUriFunction;
     private final Container container;
 
     DefaultJerseyStreamingHttpRouter(final Application application,
                                      final int publisherInputStreamQueueCapacity,
-                                     final BiFunction<ConnectionContext, StreamingHttpRequest, String> baseUriFunction,
+                                     final BiFunction<ConnectionContext, HttpRequestMetaData, String> baseUriFunction,
                                      final Function<String, HttpExecutionStrategy> routeStrategyFactory) {
         this(new ApplicationHandler(application), publisherInputStreamQueueCapacity, baseUriFunction,
                 routeStrategyFactory);
@@ -96,7 +97,7 @@ final class DefaultJerseyStreamingHttpRouter implements StreamingHttpService {
 
     DefaultJerseyStreamingHttpRouter(final Class<? extends Application> applicationClass,
                                      final int publisherInputStreamQueueCapacity,
-                                     final BiFunction<ConnectionContext, StreamingHttpRequest, String> baseUriFunction,
+                                     final BiFunction<ConnectionContext, HttpRequestMetaData, String> baseUriFunction,
                                      final Function<String, HttpExecutionStrategy> routeStrategyFactory) {
         this(new ApplicationHandler(applicationClass), publisherInputStreamQueueCapacity, baseUriFunction,
                 routeStrategyFactory);
@@ -104,7 +105,7 @@ final class DefaultJerseyStreamingHttpRouter implements StreamingHttpService {
 
     private DefaultJerseyStreamingHttpRouter(final ApplicationHandler applicationHandler,
                                              final int publisherInputStreamQueueCapacity,
-                                             final BiFunction<ConnectionContext, StreamingHttpRequest,
+                                             final BiFunction<ConnectionContext, HttpRequestMetaData,
                                                      String> baseUriFunction,
                                              final Function<String, HttpExecutionStrategy> routeStrategyFactory) {
 

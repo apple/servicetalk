@@ -43,10 +43,11 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isEmptyString;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assume.assumeThat;
+import static org.junit.Assume.assumeTrue;
 
 public class AsynchronousResourceTest extends AbstractResourceTest {
-    public AsynchronousResourceTest(final boolean serverNoOffloads) {
-        super(serverNoOffloads);
+    public AsynchronousResourceTest(final boolean serverNoOffloads, final RouterApi api) {
+        super(serverNoOffloads, api);
     }
 
     @Override
@@ -421,6 +422,7 @@ public class AsynchronousResourceTest extends AbstractResourceTest {
     @Test
     public void sseStream() {
         assumeOffloads(AssumeOffloadsReason.SSE);
+        assumeStreaming();
         runTwiceToEnsureEndpointCache(() -> {
             sendAndAssertResponse(get("/sse/stream"), OK, newAsciiString(SERVER_SENT_EVENTS),
                     is(range(0, 10).mapToObj(i -> "data: foo" + i + "\n\n").collect(joining())),
@@ -431,6 +433,7 @@ public class AsynchronousResourceTest extends AbstractResourceTest {
     @Test
     public void sseBroadcast() {
         assumeOffloads(AssumeOffloadsReason.SSE);
+        assumeStreaming();
         runTwiceToEnsureEndpointCache(() -> {
             sendAndAssertResponse(get("/sse/broadcast"), OK, newAsciiString(SERVER_SENT_EVENTS),
                     is("data: bar\n\n" + range(0, 10).mapToObj(i -> "data: foo" + i + "\n\n").collect(joining())),
@@ -441,6 +444,7 @@ public class AsynchronousResourceTest extends AbstractResourceTest {
     @Test
     public void sseUnsupported() {
         assumeOffloads(AssumeOffloadsReason.SSE);
+        assumeStreaming();
         runTwiceToEnsureEndpointCache(() -> {
             // Jersey's OutboundEventWriter ignores the lack of a MessageBodyWriter for the event (an error is logged
             // but no feedback is provided to the client side)
@@ -463,5 +467,10 @@ public class AsynchronousResourceTest extends AbstractResourceTest {
 
     private void assumeOffloads(final AssumeOffloadsReason reason) {
         assumeThat(reason.message + " can't be used with noOffloads", serverNoOffloads(), is(false));
+    }
+
+    private void assumeStreaming() {
+        assumeTrue("not supported for aggregated APIs", api == RouterApi.ASYNC_STREAMING
+                || api == RouterApi.BLOCKING_STREAMING);
     }
 }

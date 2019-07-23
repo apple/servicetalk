@@ -196,11 +196,17 @@ public class ExecutionStrategyInContextTest {
     }
 
     private void testBlockingStreaming(boolean customStrategy) throws Exception {
-        BlockingStreamingHttpClient client = initClientAndServer(builder ->
-                builder.listenBlockingStreaming((ctx, request, response) -> {
-                    serviceStrategyRef.set(ctx.executionContext().executionStrategy());
-                    response.sendMetaData().close();
-                }), customStrategy).buildBlockingStreaming();
+        BlockingStreamingHttpClient client = initClientAndServer(builder -> {
+            if (customStrategy) {
+                // Ensure we don't deadlock by not offloading receive meta
+                expectedServerStrategy = customStrategyBuilder().offloadReceiveMetadata().build();
+                builder.executionStrategy(expectedServerStrategy);
+            }
+            return builder.listenBlockingStreaming((ctx, request, response) -> {
+                serviceStrategyRef.set(ctx.executionContext().executionStrategy());
+                response.sendMetaData().close();
+            });
+        }, customStrategy).buildBlockingStreaming();
         clientAsCloseable = client;
         if (!customStrategy) {
             assert expectedClientStrategy == null;

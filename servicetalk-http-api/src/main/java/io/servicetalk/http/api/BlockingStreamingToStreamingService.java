@@ -59,8 +59,14 @@ final class BlockingStreamingToStreamingService extends AbstractServiceAdapterHo
 
     BlockingStreamingToStreamingService(final BlockingStreamingHttpService original,
                                         final HttpExecutionStrategyInfluencer influencer) {
-        super(influencer.influenceStrategy(DEFAULT_STRATEGY));
+        super(serviceInvocationStrategy(influencer));
         this.original = requireNonNull(original);
+    }
+
+    private static HttpExecutionStrategy serviceInvocationStrategy(final HttpExecutionStrategyInfluencer influencer) {
+        HttpExecutionStrategy httpExecutionStrategy = influencer.influenceStrategy(DEFAULT_STRATEGY);
+        assert httpExecutionStrategy.isMetadataReceiveOffloaded() : "This will deadlock!";
+        return httpExecutionStrategy;
     }
 
     @Override
@@ -95,7 +101,12 @@ final class BlockingStreamingToStreamingService extends AbstractServiceAdapterHo
                             // https://tools.ietf.org/html/rfc7230#section-3.3.2
                             HttpHeaders headers = metaData.headers();
                             boolean addTrailers = isTransferEncodingChunked(headers);
-                            if (!addTrailers && !HTTP_1_0.equals(metaData.version()) && !hasContentLength(headers)) {
+                            if (!addTrailers && !HTTP_1_0.equals(metaData.version()) && !hasContentLength(headers) &&
+                                    // HEAD responses MUST never carry a payload, adding chunked makes no sense and
+                                    // breaks our HttpResponseDecoder
+                                    // TODO(jayv) we can provide an optimized PayloadWriter for HEAD response that
+                                    // immediately completes on sendMeta() and disallows further writes or trailers
+                                    request.method() != HttpRequestMethod.HEAD) {
                                 // this is likely not supported in http/1.0 and it is possible that a response has
                                 // neither header and the connection close indicates the end of the response.
                                 // https://tools.ietf.org/html/rfc7230#section-3.3.3

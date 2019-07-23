@@ -228,4 +228,34 @@ public final class HttpApiConversions {
          */
         HttpExecutionStrategy serviceInvocationStrategy();
     }
+
+    /**
+     * Convert from a {@link StreamingHttpService} to a {@link BlockingHttpService}.
+     *
+     * @param service The {@link StreamingHttpService} to convert.
+     * @return The conversion result.
+     */
+    public static BlockingHttpService toBlockingHttpService(StreamingHttpService service) {
+        return new StreamingHttpServiceToBlockingHttpService(service);
+    }
+
+    /**
+     * Convert from a {@link StreamingHttpService} to a {@link HttpService}.
+     *
+     * @param service The {@link StreamingHttpService} to convert.
+     * @return The conversion result.
+     */
+    public static HttpService toHttpService(StreamingHttpService service) {
+        return new StreamingHttpServiceToHttpService(service);
+    }
+
+    /**
+     * Convert from a {@link StreamingHttpService} to a {@link BlockingStreamingHttpService}.
+     *
+     * @param service The {@link StreamingHttpService} to convert.
+     * @return The conversion result.
+     */
+    public static BlockingStreamingHttpService toBlockingStreamingHttpService(StreamingHttpService service) {
+        return new StreamingHttpServiceToBlockingStreamingHttpService(service);
+    }
 }

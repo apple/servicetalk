@@ -63,6 +63,10 @@ import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.Assert.assertThat;
 
 public abstract class AbstractFilterInterceptorTest extends AbstractJerseyStreamingHttpServiceTest {
+    public AbstractFilterInterceptorTest(final RouterApi api) {
+        super(api);
+    }
+
     @Priority(ENTITY_CODER)
     @Provider
     public static class TestGlobalFilter implements ContainerRequestFilter, ContainerResponseFilter {

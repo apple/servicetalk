@@ -29,8 +29,10 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import javax.ws.rs.NameBinding;
 import javax.ws.rs.container.ContainerRequestContext;
@@ -64,9 +66,18 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isEmptyString;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assume.assumeThat;
 
 @RunWith(Parameterized.class)
-public abstract class AbstractResourceTest extends AbstractJerseyStreamingHttpServiceTest {
+public abstract class AbstractResourceTest extends AbstractNonParameterizedJerseyStreamingHttpServiceTest {
+    private final boolean serverNoOffloads;
+
+    public AbstractResourceTest(final boolean serverNoOffloads, final RouterApi api) {
+        super(api);
+        this.serverNoOffloads = serverNoOffloads;
+        assumeSafeToDisableOffloading(serverNoOffloads, api);
+    }
+
     @NameBinding
     @Target({ElementType.TYPE, ElementType.METHOD})
     @Retention(RetentionPolicy.RUNTIME)
@@ -105,15 +116,14 @@ public abstract class AbstractResourceTest extends AbstractJerseyStreamingHttpSe
         }
     }
 
-    private final boolean serverNoOffloads;
-
-    protected AbstractResourceTest(final boolean serverNoOffloads) {
-        this.serverNoOffloads = serverNoOffloads;
-    }
-
-    @Parameterized.Parameters(name = "{index}: server-no-offloads = {0}")
-    public static Collection<Object> data() {
-        return asList(false, true);
+    @Parameterized.Parameters(name = "{1} server-no-offloads = {0}")
+    public static Collection<Object[]> data() {
+        List<Object[]> params = new ArrayList<>();
+        AbstractJerseyStreamingHttpServiceTest.data().forEach(oa -> {
+            params.add(new Object[]{false, oa[0]});
+            params.add(new Object[]{true, oa[0]});
+        });
+        return params;
     }
 
     protected boolean serverNoOffloads() {
@@ -363,5 +373,10 @@ public abstract class AbstractResourceTest extends AbstractJerseyStreamingHttpSe
             // Missing mandatory field
             sendAndAssertStatusOnly(post("/json-pojoin-pojoout", "{\"foo\":\"bar\"}", APPLICATION_JSON), BAD_REQUEST);
         });
+    }
+
+    static void assumeSafeToDisableOffloading(final boolean serverNoOffloads, final RouterApi api) {
+        assumeThat("BlockingStreaming + noOffloads = deadlock",
+                serverNoOffloads && (api == RouterApi.BLOCKING_STREAMING), is(false));
     }
 }

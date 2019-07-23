@@ -33,6 +33,10 @@ import static java.util.Collections.singleton;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 
 public class CustomJacksonSerializationProviderTest extends AbstractJerseyStreamingHttpServiceTest {
+    public CustomJacksonSerializationProviderTest(final RouterApi api) {
+        super(api);
+    }
+
     public static class TestApplication extends Application {
         @Override
         public Set<Class<?>> getClasses() {

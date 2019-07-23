@@ -22,6 +22,10 @@ import static io.servicetalk.http.api.HttpHeaderValues.APPLICATION_JSON;
 import static io.servicetalk.http.api.HttpResponseStatus.BAD_REQUEST;
 
 public class SingleJsonResourcesTest extends AbstractStreamingJsonResourcesTest {
+    public SingleJsonResourcesTest(final RouterApi api) {
+        super(api);
+    }
+
     @Override
     protected String testUri(final String path) {
         return PATH + path;
