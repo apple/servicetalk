@@ -16,7 +16,8 @@ def excludedLinks = [
     "https://github.com/apple/servicetalk",
     "https://oss.sonatype.org/content/repositories/snapshots/io/servicetalk/",
     "https://repo1.maven.org/maven2/io/servicetalk/",
-    "https://docs.servicetalk.io/"
+    "https://docs.servicetalk.io/",
+    "https://reactivex.io/"
 ]
 
 configurations {
