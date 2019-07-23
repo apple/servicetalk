@@ -2,8 +2,7 @@ runtime:
   cache_dir: .cache
 site:
   title: ServiceTalk Docs
-  url: https://pages.github.com/apple/servicetalk
-  start_page: servicetalk::README.adoc
+  start_page: servicetalk::index.adoc
 content:
   # ordered alphabetically by component name (as specified in components' antora.yml)
   # to reflect ordering of `site.components` used in .hbs
@@ -12,31 +11,31 @@ content:
   sources:
     - url: https://github.com/apple/servicetalk.git
       branches: master
-      tags: [0.15.0]
+      tags: [0.15.0, 0.16.0]
       start_path: docs
     - url: https://github.com/apple/servicetalk.git
       branches: master
-      tags: [0.15.0]
+      tags: [0.15.0, 0.16.0]
       start_path: servicetalk-examples/docs
     - url: https://github.com/apple/servicetalk.git
       branches: master
-      tags: [0.15.0]
+      tags: [0.15.0, 0.16.0]
       start_path: servicetalk-http-api/docs
     - url: https://github.com/apple/servicetalk.git
       branches: master
-      tags: [0.15.0]
+      tags: [0.15.0, 0.16.0]
       start_path: servicetalk-http-router-jersey/docs
     - url: https://github.com/apple/servicetalk.git
       branches: master
-      tags: [0.15.0]
+      tags: [0.15.0, 0.16.0]
       start_path: servicetalk-http-security-jersey/docs
     - url: https://github.com/apple/servicetalk.git
       branches: master
-      tags: [0.15.0]
+      tags: [0.15.0, 0.16.0]
       start_path: servicetalk-concurrent-api/docs
     - url: https://github.com/apple/servicetalk.git
       branches: master
-      tags: [0.15.0]
+      tags: [0.15.0, 0.16.0]
       start_path: servicetalk-data-jackson-jersey/docs
 asciidoc:
   attributes:

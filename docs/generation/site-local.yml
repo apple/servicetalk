@@ -2,7 +2,7 @@ runtime:
   cache_dir: .cache
 site:
   title: ServiceTalk Docs
-  start_page: servicetalk::README.adoc
+  start_page: servicetalk::index.adoc
 content:
   # ordered alphabetically by component name (as specified in components' antora.yml)
   # to reflect ordering of `site.components` used in .hbs
