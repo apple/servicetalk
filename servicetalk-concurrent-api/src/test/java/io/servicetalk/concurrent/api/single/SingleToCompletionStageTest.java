@@ -71,6 +71,7 @@ public class SingleToCompletionStageTest {
     private static final String ST_THREAD_PREFIX_NAME = "st-exec-thread-";
     private static final String JDK_THREAD_NAME_PREFIX = "jdk-thread-";
     private static final String JDK_FORK_JOIN_THREAD_NAME_PREFIX = "ForkJoinPool";
+    private static final String COMPLETABLE_FUTURE_THREAD_PER_TASK_NAME_PREFIX = "Thread-";
 
     @BeforeClass
     public static void beforeClass() {
@@ -1004,7 +1005,10 @@ public class SingleToCompletionStageTest {
     }
 
     private static void verifyInJdkForkJoinThread() {
-        if (!currentThread().getName().startsWith(JDK_FORK_JOIN_THREAD_NAME_PREFIX)) {
+        Thread currentThread = currentThread();
+        if (!currentThread.getName().startsWith(JDK_FORK_JOIN_THREAD_NAME_PREFIX) &&
+            // CompletableFuture may use a ThreadPerTaskExecutor executor if available processors is low (e.g. 1).
+            !currentThread.getName().startsWith(COMPLETABLE_FUTURE_THREAD_PER_TASK_NAME_PREFIX)) {
             throw new IllegalStateException("unexpected thread: " + currentThread());
         }
     }
