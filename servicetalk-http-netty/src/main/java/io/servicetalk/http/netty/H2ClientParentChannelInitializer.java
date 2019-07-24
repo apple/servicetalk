@@ -22,10 +22,11 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.handler.codec.http2.Http2FrameCodecBuilder;
 import io.netty.handler.codec.http2.Http2FrameLogger;
-import io.netty.handler.codec.http2.Http2MultiplexCodecBuilder;
+import io.netty.handler.codec.http2.Http2MultiplexHandler;
 
-import static io.netty.handler.codec.http2.Http2MultiplexCodecBuilder.forClient;
+import static io.netty.handler.codec.http2.Http2FrameCodecBuilder.forClient;
 import static io.netty.handler.logging.LogLevel.TRACE;
 
 final class H2ClientParentChannelInitializer implements ChannelInitializer {
@@ -37,7 +38,7 @@ final class H2ClientParentChannelInitializer implements ChannelInitializer {
 
     @Override
     public ConnectionContext init(final Channel channel, final ConnectionContext context) {
-        Http2MultiplexCodecBuilder multiplexCodecBuilder = forClient(H2PushStreamHandler.INSTANCE)
+        Http2FrameCodecBuilder multiplexCodecBuilder = forClient()
                 // The max concurrent streams is made available via a publisher and may be consumed asynchronously
                 // (e.g. when offloading is enabled), so we manually control the SETTINGS ACK frames.
                 .autoAckSettingsFrame(false)
@@ -51,7 +52,8 @@ final class H2ClientParentChannelInitializer implements ChannelInitializer {
 
         // TODO(scott): more configuration. header validation, settings stream, etc...
 
-        channel.pipeline().addLast(multiplexCodecBuilder.build());
+        channel.pipeline().addLast(multiplexCodecBuilder.build(),
+                new Http2MultiplexHandler(H2PushStreamHandler.INSTANCE));
         return context;
     }
 
