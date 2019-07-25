@@ -60,7 +60,6 @@ import io.netty.channel.EventLoop;
 import io.netty.handler.codec.http2.DefaultHttp2GoAwayFrame;
 import io.netty.handler.codec.http2.DefaultHttp2PingFrame;
 import io.netty.handler.codec.http2.Http2GoAwayFrame;
-import io.netty.handler.codec.http2.Http2MultiplexCodec;
 import io.netty.handler.codec.http2.Http2PingFrame;
 import io.netty.handler.codec.http2.Http2SettingsAckFrame;
 import io.netty.handler.codec.http2.Http2SettingsFrame;
@@ -170,8 +169,7 @@ final class H2ClientParentConnectionContext extends NettyChannelListenableAsyncC
                     pipeline = channel.pipeline();
                     parentChannelInitializer = new H2ParentClientConnection(connection, subscriber,
                             delayedCancellable,
-                            NettyPipelineSslUtils.isSslEnabled(pipeline),
-                            pipeline.lastContext(), config.h2HeadersFactory(), reqRespFactory);
+                            NettyPipelineSslUtils.isSslEnabled(pipeline), config.h2HeadersFactory(), reqRespFactory);
                 } catch (Throwable cause) {
                     channel.close();
                     subscriber.onSubscribe(IGNORE_CANCEL);
@@ -302,7 +300,6 @@ final class H2ClientParentConnectionContext extends NettyChannelListenableAsyncC
     private static final class H2ParentClientConnection extends ChannelInboundHandlerAdapter implements
                                                                                              Http2ParentConnection {
         private final Http2StreamChannelBootstrap bs;
-        private final ChannelHandlerContext http2MultiplexCodecContext;
         private final boolean waitForSslHandshake;
         private final H2ClientParentConnectionContext connection;
         private final DelayedCancellable delayedCancellable;
@@ -316,15 +313,12 @@ final class H2ClientParentConnectionContext extends NettyChannelListenableAsyncC
                                  Subscriber<? super Http2ParentConnection> subscriber,
                                  DelayedCancellable delayedCancellable,
                                  boolean waitForSslHandshake,
-                                 ChannelHandlerContext http2MultiplexCodecContext,
                                  HttpHeadersFactory headersFactory,
                                  StreamingHttpRequestResponseFactory reqRespFactory) {
-            assert http2MultiplexCodecContext.handler() instanceof Http2MultiplexCodec;
             this.connection = connection;
             this.subscriber = requireNonNull(subscriber);
             this.delayedCancellable = delayedCancellable;
             this.waitForSslHandshake = waitForSslHandshake;
-            this.http2MultiplexCodecContext = requireNonNull(http2MultiplexCodecContext);
             this.headersFactory = requireNonNull(headersFactory);
             this.reqRespFactory = requireNonNull(reqRespFactory);
             bs = new Http2StreamChannelBootstrap(connection.channel());
@@ -466,11 +460,7 @@ final class H2ClientParentConnectionContext extends NettyChannelListenableAsyncC
                     try {
                         final EventExecutor e = connection.channel().eventLoop();
                         promise = e.newPromise();
-                        if (e.inEventLoop()) {
-                            bs.open0(http2MultiplexCodecContext, promise);
-                        } else {
-                            e.execute(() -> bs.open0(http2MultiplexCodecContext, promise));
-                        }
+                        bs.open(promise);
                         sequentialCancellable = new SequentialCancellable(() -> promise.cancel(true));
                     } catch (Throwable cause) {
                         deliverTerminalFromSource(subscriber, cause);
