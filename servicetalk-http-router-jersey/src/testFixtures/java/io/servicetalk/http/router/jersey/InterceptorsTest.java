@@ -25,6 +25,10 @@ import javax.ws.rs.core.Application;
 import static java.util.Arrays.asList;
 
 public class InterceptorsTest extends AbstractFilterInterceptorTest {
+    public InterceptorsTest(final RouterApi api) {
+        super(api);
+    }
+
     public static class TestApplication extends Application {
         @Override
         public Set<Class<?>> getClasses() {

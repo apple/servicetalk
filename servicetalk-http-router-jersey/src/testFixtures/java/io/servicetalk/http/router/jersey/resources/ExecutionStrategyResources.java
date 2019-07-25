@@ -254,7 +254,8 @@ public final class ExecutionStrategyResources {
             return content.ignoreElements().concat(getThreadingInfoSingleBuffer().toPublisher());
         }
 
-        private static Map<String, String> getThreadingInfo(final ConnectionContext ctx, final StreamingHttpRequest req,
+        private static Map<String, String> getThreadingInfo(final ConnectionContext ctx,
+                                                            final StreamingHttpRequest req,
                                                             final UriInfo uriInfo) {
             // Use the opportunity to assert that other context objects are valid
             if (!req.path().equals('/' + uriInfo.getPath())) {

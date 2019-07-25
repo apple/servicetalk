@@ -47,6 +47,7 @@ import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.http.api.HttpHeaderValues.APPLICATION_JSON;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
+import static io.servicetalk.http.router.jersey.AbstractNonParameterizedJerseyStreamingHttpServiceTest.RouterApi.BLOCKING_STREAMING;
 import static io.servicetalk.http.router.jersey.ExecutionStrategyTest.TestExecutorStrategy.DEFAULT;
 import static io.servicetalk.http.router.jersey.ExecutionStrategyTest.TestExecutorStrategy.EXEC;
 import static io.servicetalk.http.router.jersey.ExecutionStrategyTest.TestExecutorStrategy.NO_OFFLOADS;
@@ -64,9 +65,10 @@ import static java.util.Collections.singletonMap;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assume.assumeThat;
 
 @RunWith(Parameterized.class)
-public final class ExecutionStrategyTest extends AbstractJerseyStreamingHttpServiceTest {
+public final class ExecutionStrategyTest extends AbstractNonParameterizedJerseyStreamingHttpServiceTest {
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     @ClassRule
@@ -132,21 +134,21 @@ public final class ExecutionStrategyTest extends AbstractJerseyStreamingHttpServ
         GET(false) {
             @Override
             String sendTestRequest(final String path,
-                                   final AbstractJerseyStreamingHttpServiceTest reqHelper) {
+                                   final AbstractNonParameterizedJerseyStreamingHttpServiceTest reqHelper) {
                 return reqHelper.sendAndAssertStatusOnly(reqHelper.get(path), OK);
             }
         },
         GET_RS(true) {
             @Override
             String sendTestRequest(final String path,
-                                   final AbstractJerseyStreamingHttpServiceTest reqHelper) {
+                                   final AbstractNonParameterizedJerseyStreamingHttpServiceTest reqHelper) {
                 return GET.sendTestRequest(path, reqHelper);
             }
         },
         POST_RS(true) {
             @Override
             String sendTestRequest(final String path,
-                                   final AbstractJerseyStreamingHttpServiceTest reqHelper) {
+                                   final AbstractNonParameterizedJerseyStreamingHttpServiceTest reqHelper) {
                 return reqHelper.sendAndAssertStatusOnly(reqHelper.post(path, "{\"foo\":\"bar\"}", APPLICATION_JSON),
                         OK);
             }
@@ -158,7 +160,7 @@ public final class ExecutionStrategyTest extends AbstractJerseyStreamingHttpServ
             this.rs = rs;
         }
 
-        abstract String sendTestRequest(String path, AbstractJerseyStreamingHttpServiceTest reqHelper);
+        abstract String sendTestRequest(String path, AbstractNonParameterizedJerseyStreamingHttpServiceTest reqHelper);
     }
 
     private static final Map<String, TestMode> SUB_SUB_PATH_TEST_MODES;
@@ -179,28 +181,34 @@ public final class ExecutionStrategyTest extends AbstractJerseyStreamingHttpServ
     private final TestMode testMode;
     private final String path;
 
-    public ExecutionStrategyTest(final TestExecutorStrategy routerExecutionStrategy,
+    public ExecutionStrategyTest(
+                                 final TestExecutorStrategy routerExecutionStrategy,
                                  final TestExecutorStrategy classExecutionStrategy,
                                  final TestExecutorStrategy methodExecutionStrategy,
                                  final TestMode testMode,
-                                 final String path) {
+                                 final String path,
+                                 final RouterApi api) {
+        super(api);
         this.routerExecutionStrategy = routerExecutionStrategy;
         this.classExecutionStrategy = classExecutionStrategy;
         this.methodExecutionStrategy = methodExecutionStrategy;
         this.testMode = testMode;
         this.path = path;
+        assumeThat("Don't deadlock", routerExecutionStrategy == NO_OFFLOADS && api == BLOCKING_STREAMING, is(false));
     }
 
-    @Parameters(name = "{4} :: r={0}, c={1}, m={2} {3}")
+    @Parameters(name = "{5} {4} :: r={0}, c={1}, m={2} {3}")
     public static Collection<Object[]> data() {
         final List<Object[]> parameters = new ArrayList<>();
-        stream(TestExecutorStrategy.values()).forEach(routerExecutionStrategy -> {
-            ROOT_PATHS_EXEC_STRATS.forEach((rootPath, classExecutionStrategy) -> {
-                SUB_PATHS_EXEC_STRATS.forEach((subPath, methodExecutionStrategy) -> {
-                    SUB_SUB_PATH_TEST_MODES.forEach((subSubPath, testMode) -> {
-                        final String path = rootPath + subPath + subSubPath;
-                        parameters.add(new Object[]{routerExecutionStrategy, classExecutionStrategy,
-                                methodExecutionStrategy, testMode, path});
+        stream(AbstractNonParameterizedJerseyStreamingHttpServiceTest.RouterApi.values()).forEach(api -> {
+            stream(TestExecutorStrategy.values()).forEach(routerExecutionStrategy -> {
+                ROOT_PATHS_EXEC_STRATS.forEach((rootPath, classExecutionStrategy) -> {
+                    SUB_PATHS_EXEC_STRATS.forEach((subPath, methodExecutionStrategy) -> {
+                        SUB_SUB_PATH_TEST_MODES.forEach((subSubPath, testMode) -> {
+                            final String path = rootPath + subPath + subSubPath;
+                            parameters.add(new Object[]{routerExecutionStrategy, classExecutionStrategy,
+                                    methodExecutionStrategy, testMode, path, api});
+                        });
                     });
                 });
             });
@@ -340,7 +348,11 @@ public final class ExecutionStrategyTest extends AbstractJerseyStreamingHttpServ
         assertThat(context, threadingInfo.get(EXEC_NAME), isGlobalExecutor());
         assertThat(context, threadingInfo.get(THREAD_NAME), isGlobalExecutorThread());
         if (testMode.rs) {
-            assertThat(context, threadingInfo.get(RS_THREAD_NAME), isGlobalExecutorThread());
+            if (testMode == POST_RS && api == BLOCKING_STREAMING) {
+                assertThat(context, threadingInfo.get(RS_THREAD_NAME), isIoExecutorThread());
+            } else {
+                assertThat(context, threadingInfo.get(RS_THREAD_NAME), isGlobalExecutorThread());
+            }
         }
     }
 
@@ -358,7 +370,11 @@ public final class ExecutionStrategyTest extends AbstractJerseyStreamingHttpServ
         assertThat(context, threadingInfo.get(EXEC_NAME), isRouterExecutor());
         assertThat(context, threadingInfo.get(THREAD_NAME), isRouterExecutorThread());
         if (testMode.rs) {
-            assertThat(context, threadingInfo.get(RS_THREAD_NAME), isRouterExecutorThread());
+            if (testMode == POST_RS && api == BLOCKING_STREAMING) {
+                assertThat(context, threadingInfo.get(RS_THREAD_NAME), isIoExecutorThread());
+            } else {
+                assertThat(context, threadingInfo.get(RS_THREAD_NAME), isRouterExecutorThread());
+            }
         }
     }
 

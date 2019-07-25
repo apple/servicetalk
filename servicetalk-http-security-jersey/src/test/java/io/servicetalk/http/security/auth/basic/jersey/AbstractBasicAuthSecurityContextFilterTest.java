@@ -142,7 +142,7 @@ public abstract class AbstractBasicAuthSecurityContextFilterTest {
         serverContext = HttpServers.forAddress(localAddress(0))
                 .appendServiceFilter(builder.buildServer())
                 .listenStreamingAndAwait(new HttpJerseyRouterBuilder()
-                        .build(application(withUserInfo ? TEST_USER_INFO_KEY : null)));
+                        .buildStreaming(application(withUserInfo ? TEST_USER_INFO_KEY : null)));
 
         httpClient = HttpClients.forSingleAddress(serverHostAndPort(serverContext)).buildBlocking();
     }

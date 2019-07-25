@@ -41,7 +41,8 @@ public final class HelloWorldJaxRsServer {
     public static void main(String[] args) throws Exception {
         // Create configurable starter for HTTP server.
         ServerContext serverContext = HttpServers.forPort(8080)
-                .listenStreamingAndAwait(new HttpJerseyRouterBuilder().build(new HelloWorldJaxRsApplication()));
+                .listenStreamingAndAwait(new HttpJerseyRouterBuilder()
+                        .buildStreaming(new HelloWorldJaxRsApplication()));
 
         LOGGER.info("Listening on {}", serverContext.listenAddress());
 

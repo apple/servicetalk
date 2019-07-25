@@ -16,8 +16,12 @@
 package io.servicetalk.http.router.jersey;
 
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.http.api.BlockingHttpService;
+import io.servicetalk.http.api.BlockingStreamingHttpService;
+import io.servicetalk.http.api.HttpApiConversions;
 import io.servicetalk.http.api.HttpExecutionStrategy;
-import io.servicetalk.http.api.StreamingHttpRequest;
+import io.servicetalk.http.api.HttpRequestMetaData;
+import io.servicetalk.http.api.HttpService;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.transport.api.ConnectionContext;
 
@@ -39,7 +43,7 @@ import static java.util.Objects.requireNonNull;
  */
 public final class HttpJerseyRouterBuilder {
     private int publisherInputStreamQueueCapacity = 16;
-    private BiFunction<ConnectionContext, StreamingHttpRequest, String> baseUriFunction =
+    private BiFunction<ConnectionContext, HttpRequestMetaData, String> baseUriFunction =
             (ctx, req) -> getBaseRequestUri(ctx, req, false);
     private Function<String, HttpExecutionStrategy> routeStrategyFactory = __ -> null;
 
@@ -60,16 +64,16 @@ public final class HttpJerseyRouterBuilder {
     }
 
     /**
-     * Set the function used to compute the base URI for incoming {@link StreamingHttpRequest}s.
+     * Set the function used to compute the base URI for the incoming HTTP request.
      * <b>The computed base URI must have {@code /} as path, and no query nor fragment.</b>
      *
      * @param baseUriFunction a {@link BiFunction} that computes a base URI {@link String}
-     * for the provided {@link ConnectionContext} and {@link StreamingHttpRequest}.
+     * for the provided {@link ConnectionContext} and {@link HttpRequestMetaData}.
      * @return this
      * @see <a href="https://tools.ietf.org/html/rfc3986#section-3">URI Syntax Components</a>
      */
     public HttpJerseyRouterBuilder baseUriFunction(
-            final BiFunction<ConnectionContext, StreamingHttpRequest, String> baseUriFunction) {
+            final BiFunction<ConnectionContext, HttpRequestMetaData, String> baseUriFunction) {
 
         this.baseUriFunction = requireNonNull(baseUriFunction);
         return this;
@@ -91,14 +95,33 @@ public final class HttpJerseyRouterBuilder {
     }
 
     /**
+     * Build the {@link HttpService} for the specified JAX-RS {@link Application}.
+     *
+     * @param application the {@link Application} to route requests to.
+     * @return the {@link HttpService}.
+     */
+    public HttpService build(final Application application) {
+        return toAggregated(from(application));
+    }
+
+    /**
+     * Build the {@link HttpService} for the specified JAX-RS {@link Application} class.
+     *
+     * @param applicationClass the {@link Application} class to instantiate and route requests to.
+     * @return the {@link HttpService}.
+     */
+    public HttpService build(final Class<? extends Application> applicationClass) {
+        return toAggregated(from(applicationClass));
+    }
+
+    /**
      * Build the {@link StreamingHttpService} for the specified JAX-RS {@link Application}.
      *
      * @param application the {@link Application} to route requests to.
      * @return the {@link StreamingHttpService}.
      */
-    public StreamingHttpService build(final Application application) {
-        return new DefaultJerseyStreamingHttpRouter(application, publisherInputStreamQueueCapacity, baseUriFunction,
-                routeStrategyFactory);
+    public StreamingHttpService buildStreaming(final Application application) {
+        return from(application);
     }
 
     /**
@@ -107,8 +130,74 @@ public final class HttpJerseyRouterBuilder {
      * @param applicationClass the {@link Application} class to instantiate and route requests to.
      * @return the {@link StreamingHttpService}.
      */
-    public StreamingHttpService build(final Class<? extends Application> applicationClass) {
+    public StreamingHttpService buildStreaming(final Class<? extends Application> applicationClass) {
+        return from(applicationClass);
+    }
+
+    /**
+     * Build the {@link BlockingHttpService} for the specified JAX-RS {@link Application}.
+     *
+     * @param application the {@link Application} to route requests to.
+     * @return the {@link BlockingHttpService}.
+     */
+    public BlockingHttpService buildBlocking(final Application application) {
+        return toBlocking(from(application));
+    }
+
+    /**
+     * Build the {@link BlockingHttpService} for the specified JAX-RS {@link Application} class.
+     *
+     * @param applicationClass the {@link Application} class to instantiate and route requests to.
+     * @return the {@link BlockingHttpService}.
+     */
+    public BlockingHttpService buildBlocking(final Class<? extends Application> applicationClass) {
+        return toBlocking(from(applicationClass));
+    }
+
+    /**
+     * Build the {@link BlockingStreamingHttpService} for the specified JAX-RS {@link Application}.
+     *
+     * @param application the {@link Application} to route requests to.
+     * @return the {@link BlockingStreamingHttpService}.
+     */
+    public BlockingStreamingHttpService buildBlockingStreaming(final Application application) {
+        return toBlockingStreaming(from(application));
+    }
+
+    /**
+     * Build the {@link BlockingStreamingHttpService} for the specified JAX-RS {@link Application} class.
+     *
+     * @param applicationClass the {@link Application} class to instantiate and route requests to.
+     * @return the {@link BlockingStreamingHttpService}.
+     */
+    public BlockingStreamingHttpService buildBlockingStreaming(final Class<? extends Application> applicationClass) {
+        return toBlockingStreaming(from(applicationClass));
+    }
+
+    // Some tests need access to router.configuration() which is no longer exposed after conversion/wrapping so we let
+    // tests do the API conversions using these methods. This ensures that once this implementation changes (or
+    // potentially API conversions may no longer be needed in the future) that we don't forget to update the tests
+    // accordingly.
+
+    DefaultJerseyStreamingHttpRouter from(final Class<? extends Application> applicationClass) {
         return new DefaultJerseyStreamingHttpRouter(applicationClass, publisherInputStreamQueueCapacity,
                 baseUriFunction, routeStrategyFactory);
+    }
+
+    DefaultJerseyStreamingHttpRouter from(final Application application) {
+        return new DefaultJerseyStreamingHttpRouter(application, publisherInputStreamQueueCapacity, baseUriFunction,
+                routeStrategyFactory);
+    }
+
+    static HttpService toAggregated(DefaultJerseyStreamingHttpRouter router) {
+        return HttpApiConversions.toHttpService(router);
+    }
+
+    static BlockingHttpService toBlocking(DefaultJerseyStreamingHttpRouter router) {
+        return HttpApiConversions.toBlockingHttpService(router);
+    }
+
+    static BlockingStreamingHttpService toBlockingStreaming(DefaultJerseyStreamingHttpRouter router) {
+        return HttpApiConversions.toBlockingStreamingHttpService(router);
     }
 }
