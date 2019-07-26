@@ -15,25 +15,34 @@
  */
 package io.servicetalk.grpc.protoc;
 
-import com.google.protobuf.DescriptorProtos.FileDescriptorProto;
-import com.google.protobuf.DescriptorProtos.FileOptions;
-import com.google.protobuf.DescriptorProtos.ServiceDescriptorProto;
 import com.google.protobuf.compiler.PluginProtos.CodeGeneratorRequest;
 import com.google.protobuf.compiler.PluginProtos.CodeGeneratorResponse;
-import com.squareup.javapoet.TypeSpec;
+import com.squareup.javapoet.ClassName;
 
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 
 import static com.google.protobuf.compiler.PluginProtos.CodeGeneratorRequest.parseFrom;
+import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toMap;
 
 /**
  * This class implements the
- * <a href="https://developers.google.com/protocol-buffers/docs/reference/cpp/google.protobuf.compiler.plugin.pb">plugin.proto</a>
+ * <a href="https://developers.google.com/protocol-buffers/docs/reference/cpp/google.protobuf.compiler.plugin.pb">
+ * plugin.proto</a>
  * interface to produce ServiceTalk code corresponding to .proto service definitions.
  */
 public final class Main {
+    private Main() {
+        // no instances
+    }
+
     /**
      * Program entry point. It is expected a {@link CodeGeneratorRequest} will be read from stdin,
      * and a {@link CodeGeneratorResponse} will be written to stdout.
@@ -49,7 +58,12 @@ public final class Main {
         try {
             return generate(request);
         } catch (final Throwable t) {
-            return CodeGeneratorResponse.newBuilder().setError("ServiceTalk code generation failed: " + t).build();
+            final StringWriter sw = new StringWriter(1024);
+            sw.append("ServiceTalk code generation failed: ");
+            try (PrintWriter pw = new PrintWriter(sw)) {
+                t.printStackTrace(pw);
+            }
+            return CodeGeneratorResponse.newBuilder().setError(sw.toString()).build();
         }
     }
 
@@ -58,33 +72,22 @@ public final class Main {
 
         final Set<String> filesToGenerate = new HashSet<>(request.getFileToGenerateList());
 
-        for (final FileDescriptorProto protoFile : request.getProtoFileList()) {
-            final FileGenerator fileGenerator;
-            if (protoFile.hasOptions()) {
-                final FileOptions fileOptions = protoFile.getOptions();
-                fileGenerator = new FileGenerator(protoFile.getName(),
-                        protoFile.hasPackage() ? protoFile.getPackage() : null,
-                        protoFile.getServiceCount(),
-                        fileOptions.hasDeprecated() && fileOptions.getDeprecated(),
-                        fileOptions.hasJavaMultipleFiles() && fileOptions.getJavaMultipleFiles(),
-                        fileOptions.hasJavaPackage() ? fileOptions.getJavaPackage() : null,
-                        fileOptions.hasJavaOuterClassname() ? fileOptions.getJavaOuterClassname() : null);
-            } else {
-                fileGenerator = new FileGenerator(protoFile.getName(),
-                        protoFile.hasPackage() ? protoFile.getPackage() : null,
-                        protoFile.getServiceCount());
-            }
+        final List<FileDescriptor> fileDescriptors =
+                request.getProtoFileList().stream().map(FileDescriptor::new).collect(toList());
 
-            // Generate code for this file
-            if (filesToGenerate.contains(protoFile.getName())) {
-                for (final ServiceDescriptorProto serviceProto : protoFile.getServiceList()) {
-                    final TypeSpec.Builder serviceClassBuilder = fileGenerator.newServiceClassBuilder(serviceProto);
-                    // TODO(david) generate methods in serviceClassBuilder
-                }
-            }
+        final Map<String, ClassName> messageTypesMap = fileDescriptors.stream()
+                .map(FileDescriptor::messageTypesMap)
+                .map(Map::entrySet)
+                .flatMap(Set::stream)
+                .collect(toMap(Entry::getKey, Entry::getValue));
 
-            fileGenerator.writeTo(responseBuilder);
-        }
+        fileDescriptors.stream()
+                .filter(f -> filesToGenerate.contains(f.protoFileName()))
+                .forEach(f -> {
+                    final Generator generator = new Generator(f, messageTypesMap);
+                    f.protoServices().forEach(generator::generate);
+                    f.writeTo(responseBuilder);
+                });
 
         return responseBuilder.build();
     }
