@@ -66,7 +66,6 @@ import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.AsyncCloseables.toListenableAsyncCloseable;
 import static io.servicetalk.concurrent.api.Single.defer;
-import static io.servicetalk.http.api.HttpHeaderNames.HOST;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -78,16 +77,16 @@ import static java.util.Objects.requireNonNull;
  *
  * @see <a href="https://tools.ietf.org/html/rfc7230#section-5.3.2">absolute-form rfc7230#section-5.3.2</a>
  */
-final class DefaultMultiAddressUrlHttpClientBuilder extends MultiAddressHttpClientBuilder<HostAndPort,
+final class DefaultMultiAddressHttpClientBuilder extends MultiAddressHttpClientBuilder<HostAndPort,
         InetSocketAddress> {
     // https://tools.ietf.org/html/rfc2068#section-10.3 says:
     // A user agent SHOULD NOT automatically redirect a request more than 5 times,
     // since such redirects usually indicate an infinite loop.
     private static final int DEFAULT_MAX_REDIRECTS = 5;
 
+    private static final String HTTPS_SCHEME = "https";
+
     private final DefaultSingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builderTemplate;
-    private Function<HttpRequestMetaData, String> effectiveSchemeFunction =
-            metaData -> metaData.effectivePort() == 443 ? "https" : "http";
 
     private int maxRedirects = DEFAULT_MAX_REDIRECTS;
     @Nullable
@@ -98,7 +97,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder extends MultiAddressHttpClie
     private BiConsumer<HostAndPort, ClientSslConfigBuilder<?
             extends SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress>>> sslConfigFunction;
 
-    DefaultMultiAddressUrlHttpClientBuilder(
+    DefaultMultiAddressHttpClientBuilder(
             final DefaultSingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builderTemplate) {
         this.builderTemplate = requireNonNull(builderTemplate);
     }
@@ -110,9 +109,9 @@ final class DefaultMultiAddressUrlHttpClientBuilder extends MultiAddressHttpClie
             final HttpClientBuildContext<HostAndPort, InetSocketAddress> buildContext = builderTemplate.copyBuildCtx();
 
             final ClientFactory clientFactory = new ClientFactory(buildContext.builder,
-                    clientFilterFactory, unresolvedAddressToHostFunction, sslConfigFunction);
+                    clientFilterFactory, unresolvedAddressToHostFunction, sslConfigFunction, maxRedirects);
 
-            CachingKeyFactory keyFactory = closeables.prepend(new CachingKeyFactory(effectiveSchemeFunction));
+            final CachingKeyFactory keyFactory = closeables.prepend(new CachingKeyFactory());
 
             FilterableStreamingHttpClient urlClient = closeables.prepend(
                     new StreamingUrlHttpClient(buildContext.executionContext, clientFactory, keyFactory,
@@ -138,32 +137,47 @@ final class DefaultMultiAddressUrlHttpClientBuilder extends MultiAddressHttpClie
             implements Function<HttpRequestMetaData, UrlKey>, AsyncCloseable {
 
         private final ConcurrentMap<String, UrlKey> urlKeyCache = new ConcurrentHashMap<>();
-        private final Function<HttpRequestMetaData, String> effectiveSchemeFunction;
-
-        CachingKeyFactory(final Function<HttpRequestMetaData, String> effectiveSchemeFunction) {
-            this.effectiveSchemeFunction = effectiveSchemeFunction;
-        }
 
         @Override
         public UrlKey apply(final HttpRequestMetaData metaData) {
-            final String host = metaData.effectiveHost();
+            final String host = metaData.host();
             if (host == null) {
                 throw new IllegalArgumentException(
-                        "StreamingHttpRequest does not contain information about target server address." +
-                                " Request-target: " + metaData.requestTarget() +
-                                ", HOST header: " + metaData.headers().get(HOST));
+                        "Request-target does not contain target host address: " + metaData.requestTarget() +
+                                ", expected absolute-form URL");
             }
 
-            final String scheme = metaData.scheme() != null ? metaData.scheme() :
-                    effectiveSchemeFunction.apply(metaData);
+            final String scheme = metaData.scheme();
+            if (scheme == null) {
+                throw new IllegalArgumentException("Request-target does not contains scheme: " +
+                        metaData.requestTarget() + ", expected absolute-form URL");
+            }
 
-            final int effectivePort = metaData.effectivePort();
-            final int port = effectivePort >= 0 ? effectivePort :
-                    ("https".equalsIgnoreCase(scheme) ? 443 : 80);
-            final String key = scheme + host + ':' + port;
+            final int parsedPort = metaData.port();
+            final int port = parsedPort >= 0 ? parsedPort : (HTTPS_SCHEME.equals(scheme) ? 443 : 80);
+
+            metaData.requestTarget(absoluteToRelativeFormRequestTarget(metaData.requestTarget(), scheme, host));
+
+            final String key = scheme + ':' + host + ':' + port;
             final UrlKey urlKey = urlKeyCache.get(key);
             return urlKey != null ? urlKey : urlKeyCache.computeIfAbsent(key, ignore ->
                     new UrlKey(scheme, HostAndPort.of(host, port)));
+        }
+
+        private static String absoluteToRelativeFormRequestTarget(final String requestTarget,
+                                                                  final String scheme, final String host) {
+            final int fromIndex = scheme.length() + 3 + host.length();
+            final int relativeReferenceIdx = requestTarget.indexOf('/', fromIndex);
+            if (relativeReferenceIdx < 0) {
+                if (fromIndex == requestTarget.length()) {
+                    return "/";
+                } else {
+                    throw new IllegalArgumentException("Cannot infer relative reference from the request-target: " +
+                            requestTarget);
+                }
+            } else {
+                return requestTarget.substring(relativeReferenceIdx);
+            }
         }
 
         @Override
@@ -226,6 +240,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder extends MultiAddressHttpClie
         @Nullable
         private BiConsumer<HostAndPort, ClientSslConfigBuilder<? extends
                 SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress>>> sslConfigFunction;
+        private final int maxRedirects;
 
         ClientFactory(
                 final DefaultSingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builderTemplate,
@@ -233,11 +248,13 @@ final class DefaultMultiAddressUrlHttpClientBuilder extends MultiAddressHttpClie
                 @Nullable final Function<HostAndPort, CharSequence> hostHeaderTransformer,
                 @Nullable final BiConsumer<HostAndPort, ClientSslConfigBuilder<? extends
                         SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress>>>
-                        sslConfigFunction) {
+                        sslConfigFunction,
+                final int maxRedirects) {
             this.builderTemplate = builderTemplate;
             this.clientFilterFactory = clientFilterFactory;
             this.hostHeaderTransformer = hostHeaderTransformer;
             this.sslConfigFunction = sslConfigFunction;
+            this.maxRedirects = maxRedirects;
         }
 
         @Override
@@ -250,7 +267,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder extends MultiAddressHttpClie
                 buildContext.builder.unresolvedAddressToHost(hostHeaderTransformer);
             }
 
-            if ("https".equalsIgnoreCase(urlKey.scheme)) {
+            if (HTTPS_SCHEME.equals(urlKey.scheme)) {
                 final ClientSslConfigBuilder<DefaultSingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress>>
                         sslConfigBuilder = buildContext.builder.enableSsl();
                 if (sslConfigFunction != null) {
@@ -263,7 +280,13 @@ final class DefaultMultiAddressUrlHttpClientBuilder extends MultiAddressHttpClie
                 buildContext.builder.appendClientFilter(clientFilterFactory.asClientFilter(urlKey.hostAndPort));
             }
 
-            return buildContext.build();
+            final StreamingHttpClient client = buildContext.build();
+            // Need to wrap each client in order for relative redirects with origin-form request target to work
+            return maxRedirects <= 0 ? client : new FilterableClientToClient(
+                    new RedirectingHttpRequesterFilter(true, maxRedirects).create(client),
+                    buildContext.executionContext.executionStrategy(),
+                    buildContext.builder.buildStrategyInfluencerForClient(
+                            buildContext.executionContext.executionStrategy()));
         }
     }
 
@@ -426,13 +449,6 @@ final class DefaultMultiAddressUrlHttpClientBuilder extends MultiAddressHttpClie
     public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> maxPipelinedRequests(
             final int maxPipelinedRequests) {
         builderTemplate.maxPipelinedRequests(maxPipelinedRequests);
-        return this;
-    }
-
-    @Override
-    public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> effectiveScheme(
-            final Function<HttpRequestMetaData, String> effectiveSchemeFunction) {
-        this.effectiveSchemeFunction = effectiveSchemeFunction;
         return this;
     }
 

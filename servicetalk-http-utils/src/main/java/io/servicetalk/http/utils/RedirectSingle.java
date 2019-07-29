@@ -128,7 +128,9 @@ final class RedirectSingle extends SubscribableSingle<StreamingHttpResponse> {
 
         @Override
         public void onSuccess(@Nullable final StreamingHttpResponse result) {
-            if (result == null || !shouldRedirect(redirectCount + 1, result, request.method())) {
+            if (result == null || !shouldRedirect(redirectCount + 1, result, request.method(),
+                    redirectSingle.onlyRelative)) {
+
                 target.onSuccess(result);
                 return;
             }
@@ -140,18 +142,27 @@ final class RedirectSingle extends SubscribableSingle<StreamingHttpResponse> {
                 target.onError(cause);
                 return;
             }
-            // Bail on the redirect if non-relative when that was requested or a redirect request is impossible to infer
-            if (newRequest == null ||
-                    redirectSingle.onlyRelative && (
-                            request.effectiveHost() == null ||
-                            !request.effectiveHost().equalsIgnoreCase(newRequest.effectiveHost()) ||
-                            request.effectivePort() != newRequest.effectivePort())) {
-                if (LOGGER.isTraceEnabled()) {
-                    LOGGER.trace("Ignoring non-relative redirect to '{}' for original request '{}' using onlyRelative",
-                            result.headers().get(LOCATION), redirectSingle.originalRequest);
-                }
+            if (newRequest == null) {
                 target.onSuccess(result);
                 return;
+            }
+            // Bail on the redirect if non-relative when that was requested or a redirect request is impossible to infer
+            if (redirectSingle.onlyRelative) {
+                if (request.effectiveHost() == null ||
+                        !request.effectiveHost().equalsIgnoreCase(newRequest.effectiveHost()) ||
+                        request.effectivePort() != newRequest.effectivePort()) {
+                    if (LOGGER.isTraceEnabled()) {
+                        LOGGER.trace("Ignoring non-relative redirect to '{}' for original request '{}' using onlyRelative",
+                                result.headers().get(LOCATION), redirectSingle.originalRequest);
+                    }
+                    target.onSuccess(result);
+                    return;
+                } else if (newRequest.scheme() != null) {
+                    // Rewrite absolute-form location to relative-form request-target in case only relative redirects
+                    // are supported
+                    newRequest.requestTarget(
+                            absoluteToRelativeFormRequestTarget(newRequest.requestTarget(), newRequest.scheme()));
+                }
             }
             if (LOGGER.isTraceEnabled()) {
                 LOGGER.trace("Execute redirect to '{}' for original request '{}'",
@@ -164,13 +175,29 @@ final class RedirectSingle extends SubscribableSingle<StreamingHttpResponse> {
                             target, redirectSingle, newRequest, redirectCount + 1, sequentialCancellable));
         }
 
+        private static String absoluteToRelativeFormRequestTarget(final String requestTarget,
+                                                                  final String scheme) {
+            final int fromIndex = scheme.length() + 3;
+            final int relativeReferenceIdx = requestTarget.indexOf('/', fromIndex);
+            if (relativeReferenceIdx < 0) {
+                if (fromIndex == requestTarget.length()) {
+                    return "/";
+                } else {
+                    throw new IllegalArgumentException("Cannot infer relative reference from the request-target: " +
+                            requestTarget);
+                }
+            } else {
+                return requestTarget.substring(relativeReferenceIdx);
+            }
+        }
+
         @Override
         public void onError(final Throwable t) {
             target.onError(t);
         }
 
         private boolean shouldRedirect(final int redirectCount, final StreamingHttpResponse response,
-                                       final HttpRequestMethod originalMethod) {
+                                       final HttpRequestMethod originalMethod, final boolean onlyRelative) {
             final int statusCode = response.status().code();
 
             if (statusCode < 300 || statusCode > 308) {
@@ -213,6 +240,16 @@ final class RedirectSingle extends SubscribableSingle<StreamingHttpResponse> {
                         return false;
                     }
 
+                    if (!onlyRelative) {
+                        if (locationHeader.length() < 8) {
+                            // Shorter than "http://" + 1 for host name
+                            return false;
+                        }
+
+                        final String prefix = locationHeader.subSequence(0, 8).toString().toLowerCase();
+                        return prefix.startsWith("https://") || prefix.startsWith("http://");
+                    }
+
                     if (statusCode == 307 || statusCode == 308) {
                         // TODO: remove these cases when we will support repeatable payload
                         return GET.name().equals(originalMethod.name()) || HEAD.name().equals(originalMethod.name());
@@ -223,9 +260,9 @@ final class RedirectSingle extends SubscribableSingle<StreamingHttpResponse> {
         }
 
         @Nullable
-        private static StreamingHttpRequest prepareRedirectRequest(
-                final StreamingHttpRequest request, final StreamingHttpResponse response,
-                final StreamingHttpRequestFactory requestFactory) {
+        private static StreamingHttpRequest prepareRedirectRequest(final StreamingHttpRequest request,
+                                                                   final StreamingHttpResponse response,
+                                                                   final StreamingHttpRequestFactory requestFactory) {
             final HttpRequestMethod method = defineRedirectMethod(request.method());
             final CharSequence locationHeader = response.headers().get(LOCATION);
             assert locationHeader != null;
@@ -237,7 +274,7 @@ final class RedirectSingle extends SubscribableSingle<StreamingHttpResponse> {
             // TODO CONTENT_LENGTH could be non ZERO, when we will support repeatable payloadBody
             headers.set(CONTENT_LENGTH, ZERO);
 
-            String redirectHost = redirectRequest.effectiveHost();
+            String redirectHost = redirectRequest.host();
             if (redirectHost == null) {
                 // origin-form request-target in Location header, extract host & port info from original request
                 redirectHost = request.effectiveHost();

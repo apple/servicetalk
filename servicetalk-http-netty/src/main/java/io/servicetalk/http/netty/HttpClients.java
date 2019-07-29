@@ -52,10 +52,11 @@ public final class HttpClients {
      * When a <a href="https://tools.ietf.org/html/rfc3986#section-4.2">relative URL</a> is passed in the {@link
      * StreamingHttpRequest#requestTarget(String)} this client requires a {@link HttpHeaderNames#HOST} present in
      * order to infer the remote address.
+     *
      * @return new builder with default configuration
      */
-    public static MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> forMultiAddressUrl() {
-        return new DefaultMultiAddressUrlHttpClientBuilder(forUnknownHostAndPort());
+    public static MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> forMultiAddress() {
+        return new DefaultMultiAddressHttpClientBuilder(forUnknownHostAndPort());
     }
 
     /**
@@ -71,10 +72,10 @@ public final class HttpClients {
      * The lifecycle of the provided {@link ServiceDiscoverer} should be managed by the caller.
      * @return new builder with default configuration
      */
-    public static MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> forMultiAddressUrl(
+    public static MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> forMultiAddress(
             final ServiceDiscoverer<HostAndPort, InetSocketAddress, ? extends ServiceDiscovererEvent<InetSocketAddress>>
                     serviceDiscoverer) {
-        return new DefaultMultiAddressUrlHttpClientBuilder(
+        return new DefaultMultiAddressHttpClientBuilder(
                 new DefaultSingleAddressHttpClientBuilder<>(serviceDiscoverer));
     }
 
