@@ -29,34 +29,43 @@
 
 syntax = "proto3";
 
-option java_multiple_files = false;
-// TODO(david) remove .foo suffix when plugin generates all needed code
-option java_package = "io.servicetalk.examples.grpc.helloworld.foo";
+option java_multiple_files = true;
+option java_package = "io.servicetalk.grpc.protoc.test.multi";
 option java_outer_classname = "HelloWorldProto";
 
-package helloworld;
+package test.multi;
 
 // The greeting service definition.
 service Greeter {
     // A unary RPC method
-    rpc SayHello (HelloRequest) returns (HelloReply) {}
+    rpc SayHello (UserRequest) returns (HelloReply) {}
 
     // A bi-directional streaming RPC method
-    rpc SayHelloToFromMany (stream HelloRequest) returns (stream HelloReply) {}
+    rpc SayHelloToFromMany (stream UserRequest) returns (stream HelloReply) {}
 
     // A uni-directional streaming RPC method where request objects are streaming
-    rpc SayHelloToMany (HelloRequest) returns (stream HelloReply) {}
+    rpc SayHelloToMany (UserRequest) returns (stream HelloReply) {}
 
     // A uni-directional streaming RPC method where response objects are streaming
-    rpc SayHelloFromMany (stream HelloRequest) returns (HelloReply) {}
+    rpc SayHelloFromMany (stream UserRequest) returns (HelloReply) {}
+}
+
+// The farewell service definition.
+service Fareweller {
+    rpc SayGoodbye (UserRequest) returns (GoodbyeReply) {}
 }
 
 // The request message containing the user's name.
-message HelloRequest {
+message UserRequest {
     string name = 1;
 }
 
 // The response message containing the greetings
 message HelloReply {
+    string message = 1;
+}
+
+// The response message containing the farewells
+message GoodbyeReply {
     string message = 1;
 }
