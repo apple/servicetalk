@@ -258,7 +258,7 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends ListenableA
             return failed(NO_ACTIVE_HOSTS_SELECT_CNX_EXCEPTION);
         }
 
-        final int cursor = indexUpdater.getAndUpdate(this, i -> (++i & Integer.MAX_VALUE)) % activeHosts.size();
+        final int cursor = (indexUpdater.getAndIncrement(this) & Integer.MAX_VALUE) % activeHosts.size();
         final Host<ResolvedAddress, C> host = activeHosts.get(cursor);
         assert host != null : "Host can't be null.";
         assert host.address != null : "Host address can't be null.";
