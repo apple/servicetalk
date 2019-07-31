@@ -29,13 +29,20 @@ final class Types {
     private static final String grpcProtobufPkg = grpcBasePkg + ".protobuf";
 
     static final ClassName BlockingIterable = bestGuess(concurrentPkg + ".BlockingIterable");
+
     static final ClassName AsyncCloseable = bestGuess(concurrentApiPkg + ".AsyncCloseable");
     static final ClassName Completable = bestGuess(concurrentApiPkg + ".Completable");
+    static final ClassName ListenableAsyncCloseable = bestGuess(concurrentApiPkg + ".ListenableAsyncCloseable");
     static final ClassName Publisher = bestGuess(concurrentApiPkg + ".Publisher");
     static final ClassName Single = bestGuess(concurrentApiPkg + ".Single");
 
+    static final ClassName BlockingGrpcClient = bestGuess(grpcApiPkg + ".BlockingGrpcClient");
     static final ClassName BlockingGrpcService = bestGuess(grpcApiPkg + ".BlockingGrpcService");
     static final ClassName DefaultGrpcClientMetadata = bestGuess(grpcApiPkg + ".DefaultGrpcClientMetadata");
+    static final ClassName GrpcClient = bestGuess(grpcApiPkg + ".GrpcClient");
+    static final ClassName GrpcClientCallFactory = bestGuess(grpcApiPkg + ".GrpcClientCallFactory");
+    static final ClassName GrpcClientFactory = bestGuess(grpcApiPkg + ".GrpcClientFactory");
+    static final ClassName GrpcClientFilterFactory = bestGuess(grpcApiPkg + ".GrpcClientFilterFactory");
     static final ClassName GrpcExecutionStrategy = bestGuess(grpcApiPkg + ".GrpcExecutionStrategy");
     static final ClassName GrpcPayloadWriter = bestGuess(grpcApiPkg + ".GrpcPayloadWriter");
     static final ClassName GrpcRoutes = bestGuess(grpcApiPkg + ".GrpcRoutes");
@@ -44,6 +51,20 @@ final class Types {
     static final ClassName GrpcServiceContext = bestGuess(grpcApiPkg + ".GrpcServiceContext");
     static final ClassName GrpcServiceFactory = bestGuess(grpcApiPkg + ".GrpcServiceFactory");
     static final ClassName GrpcServiceFilterFactory = bestGuess(grpcApiPkg + ".GrpcServiceFilterFactory");
+
+    static final ClassName BlockingClientCall = bestGuess(GrpcClientCallFactory + ".BlockingClientCall");
+    static final ClassName BlockingRequestStreamingClientCall =
+            bestGuess(GrpcClientCallFactory + ".BlockingRequestStreamingClientCall");
+    static final ClassName BlockingResponseStreamingClientCall =
+            bestGuess(GrpcClientCallFactory + ".BlockingResponseStreamingClientCall");
+    static final ClassName BlockingStreamingClientCall =
+            bestGuess(GrpcClientCallFactory + ".BlockingStreamingClientCall");
+    static final ClassName ClientCall = bestGuess(GrpcClientCallFactory + ".ClientCall");
+    static final ClassName RequestStreamingClientCall =
+            bestGuess(GrpcClientCallFactory + ".RequestStreamingClientCall");
+    static final ClassName ResponseStreamingClientCall =
+            bestGuess(GrpcClientCallFactory + ".ResponseStreamingClientCall");
+    static final ClassName StreamingClientCall = bestGuess(GrpcClientCallFactory + ".StreamingClientCall");
 
     static final ClassName AllGrpcRoutes = bestGuess(grpcRoutesFqcn + ".AllGrpcRoutes");
     static final ClassName RequestStreamingRoute = bestGuess(grpcRoutesFqcn + ".RequestStreamingRoute");
