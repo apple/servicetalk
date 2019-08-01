@@ -24,6 +24,7 @@ buildscript {
   dependencies {
     classpath "io.servicetalk:servicetalk-gradle-plugin-internal:$project.version"
     classpath "com.github.jengelman.gradle.plugins:shadow:4.0.4"
+    // TODO find a way to share this version with servicetalk-grpc-gradle-plugin/build.gradle
     classpath "com.google.protobuf:protobuf-gradle-plugin:0.8.10"
   }
 }
@@ -32,17 +33,6 @@ apply plugin: "servicetalk-library"
 apply plugin: "com.github.johnrengelman.shadow"
 apply plugin: "com.google.protobuf"
 
-// TODO(david) reactivate checkstyle/spotbugs/pmd when ready
-checkstyle {
-  sourceSets = []
-}
-spotbugs {
-  sourceSets = []
-}
-pmd {
-  sourceSets = []
-}
-
 dependencies {
   implementation "io.servicetalk:servicetalk-bom-internal:$project.version"
 
@@ -50,6 +40,9 @@ dependencies {
   implementation "com.google.protobuf:protobuf-java"
   implementation "com.squareup:javapoet"
   implementation "io.servicetalk:servicetalk-annotations:$project.version"
+
+  testImplementation "io.servicetalk:servicetalk-grpc-api:$project.version"
+  testImplementation "io.servicetalk:servicetalk-grpc-protobuf:$project.version"
 }
 
 jar {
