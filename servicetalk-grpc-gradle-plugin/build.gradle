@@ -31,6 +31,7 @@ dependencies {
   compile gradleApi()
   compile localGroovy()
   // these are plugins that are applied by the plugin
+  // TODO find a way to share this version with servicetalk-grpc-protoc/build.gradle
   compile "com.google.protobuf:protobuf-gradle-plugin:0.8.10"
 }
 

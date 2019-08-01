@@ -29,36 +29,23 @@
 
 syntax = "proto3";
 
-import "test_shared.proto";
+package test.shared;
 
-option java_multiple_files = false;
-option java_package = "io.servicetalk.grpc.protoc.test.single";
-option java_outer_classname = "HelloWorldProto";
-
-package test.single;
-
-// The greeting service definition.
-service Greeter {
-    rpc SayHello (UserRequest) returns (HelloReply) {}
-    rpc SayHelloToFromMany (stream UserRequest) returns (stream HelloReply) {}
-    rpc SayHelloToMany (UserRequest) returns (stream HelloReply) {}
-    rpc SayHelloFromMany (stream UserRequest) returns (HelloReply) {}
-}
-
-// The farewell service definition.
-service Fareweller {
-    rpc SayGoodbye (UserRequest) returns (test.shared.GoodbyeReply) {}
-    rpc GetAllUntils (test.shared.Generic.Empty) returns (stream test.shared.AllUntils) {
-        option deprecated = true;
-    }
-}
-
-// The request message containing the user's name.
-message UserRequest {
-    string name = 1;
-}
-
-// The response message containing the greetings
-message HelloReply {
+// The response message containing the farewells
+message GoodbyeReply {
     string message = 1;
+    enum Until {
+        NEXT_TIME = 0;
+        FOREVER = 1;
+    }
+    Until until = 2;
+    int32 old_field = 3 [deprecated=true];
+}
+
+message AllUntils {
+    repeated GoodbyeReply.Until until = 1;
+}
+
+message Generic {
+    message Empty {}
 }
