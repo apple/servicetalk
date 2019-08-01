@@ -49,7 +49,6 @@ import io.servicetalk.grpc.api.GrpcServiceContext;
 import io.servicetalk.grpc.api.GrpcServiceFactory;
 import io.servicetalk.grpc.api.GrpcServiceFilterFactory;
 import io.servicetalk.grpc.protobuf.ProtoBufSerializationProviderBuilder;
-import io.servicetalk.transport.api.ConnectionContext;
 
 public final class HelloWorldProto {
   private HelloWorldProto() {}
@@ -1543,7 +1542,7 @@ public final class HelloWorldProto {
     }
 
     public interface BlockingSayHelloRpc {
-      HelloReply sayHello(ConnectionContext ctx, HelloRequest request) throws Exception;
+      HelloReply sayHello(GrpcServiceContext ctx, HelloRequest request) throws Exception;
     }
 
     public interface BlockingSayHelloToFromManyRpc {
