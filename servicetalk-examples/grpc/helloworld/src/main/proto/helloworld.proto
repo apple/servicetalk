@@ -30,8 +30,7 @@
 syntax = "proto3";
 
 option java_multiple_files = false;
-// TODO(david) remove .foo suffix when plugin generates all needed code
-option java_package = "io.servicetalk.examples.grpc.helloworld.foo";
+option java_package = "io.servicetalk.examples.grpc.helloworld";
 option java_outer_classname = "HelloWorldProto";
 
 package helloworld;
