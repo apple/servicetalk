@@ -19,13 +19,18 @@ final class Words {
     static final String append = "append";
     static final String appendServiceFilter = append + "ServiceFilter";
     static final String builder = "builder";
-    static final String closeable = "closeable";
-    static final String closeAsync = "closeAsync";
+    static final String client = "client";
+    static final String close = "close";
+    static final String closeable = close + "able";
+    static final String closeAsync = close + "Async";
     static final String closeAsyncGracefully = closeAsync + "Gracefully";
+    static final String closeGracefully = close + "Gracefully";
     static final String ctx = "ctx";
     static final String delegate = "delegate";
     static final String existing = "existing";
-    static final String filterFactory = "filterFactory";
+    static final String factory = "factory";
+    static final String onClose = "onClose";
+    static final String metadata = "metadata";
     static final String path = "path";
     static final String request = "request";
     static final String routes = "routes";
@@ -36,9 +41,13 @@ final class Words {
 
     static final String Blocking = "Blocking";
     static final String Builder = "Builder";
+    static final String Call = "Call";
+    static final String Default = "Default";
     static final String Metadata = "Metadata";
     static final String Factory = "Factory";
+    static final String Filter = "Filter";
     static final String Rpc = "Rpc";
+    static final String To = "To";
 
     private Words() {
         // no instance
