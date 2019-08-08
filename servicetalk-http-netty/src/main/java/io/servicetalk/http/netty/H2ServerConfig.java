@@ -22,21 +22,15 @@ import javax.annotation.Nullable;
 import static io.servicetalk.http.netty.H2ToStH1Utils.DEFAULT_GRACEFUL_SHUTDOWN_TIMEOUT_MILLIS;
 import static java.util.Objects.requireNonNull;
 
-final class H2ClientConfig {
+final class H2ServerConfig {
     private HttpHeadersFactory h2HeadersFactory;
     @Nullable
     private String h2FrameLogger;
     private int gracefulShutdownTimeoutMs;
 
-    H2ClientConfig() {
+    H2ServerConfig() {
         h2HeadersFactory = H2HeadersFactory.INSTANCE;
         gracefulShutdownTimeoutMs = DEFAULT_GRACEFUL_SHUTDOWN_TIMEOUT_MILLIS;
-    }
-
-    H2ClientConfig(H2ClientConfig rhs) {
-        h2HeadersFactory = rhs.h2HeadersFactory;
-        h2FrameLogger = rhs.h2FrameLogger;
-        gracefulShutdownTimeoutMs = rhs.gracefulShutdownTimeoutMs;
     }
 
     HttpHeadersFactory h2HeadersFactory() {
@@ -69,7 +63,7 @@ final class H2ClientConfig {
      *
      * @return a read only version of this object.
      */
-    ReadOnlyH2ClientConfig asReadOnly() {
-        return new ReadOnlyH2ClientConfig(this);
+    ReadOnlyH2ServerConfig asReadOnly() {
+        return new ReadOnlyH2ServerConfig(this);
     }
 }

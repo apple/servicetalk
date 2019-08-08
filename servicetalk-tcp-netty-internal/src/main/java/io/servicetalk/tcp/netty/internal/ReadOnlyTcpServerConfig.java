@@ -39,7 +39,7 @@ import static java.util.Collections.unmodifiableMap;
 public class ReadOnlyTcpServerConfig {
 
     //TODO 3.x: Add back attributes
-    protected final boolean autoRead;
+    protected boolean autoRead;
     @SuppressWarnings("rawtypes")
     protected final Map<ChannelOption, Object> options;
     protected int backlog = NetUtil.SOMAXCONN;

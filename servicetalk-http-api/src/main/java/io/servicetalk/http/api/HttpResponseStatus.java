@@ -326,6 +326,8 @@ public final class HttpResponseStatus {
     private final String reasonPhrase;
     private final StatusClass statusClass;
     private final Buffer encodedAsBuffer;
+    @Nullable
+    private String statusCodeCharSequence;
 
     private HttpResponseStatus(final int statusCode, final String reasonPhrase) {
         this.statusCode = statusCode;
@@ -494,6 +496,18 @@ public final class HttpResponseStatus {
      */
     public int code() {
         return statusCode;
+    }
+
+    /**
+     * Get the {@link #code()} as a {@link CharSequence}.
+     *
+     * @return the {@link #code()} as a {@link CharSequence}.
+     */
+    public CharSequence codeAsCharSequence() {
+        if (statusCodeCharSequence == null) {
+            statusCodeCharSequence = Integer.toString(statusCode);
+        }
+        return statusCodeCharSequence;
     }
 
     /**

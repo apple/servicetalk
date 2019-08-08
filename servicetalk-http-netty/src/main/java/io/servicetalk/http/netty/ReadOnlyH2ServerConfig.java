@@ -19,13 +19,13 @@ import io.servicetalk.http.api.HttpHeadersFactory;
 
 import javax.annotation.Nullable;
 
-final class ReadOnlyH2ClientConfig {
+final class ReadOnlyH2ServerConfig {
     private final HttpHeadersFactory h2HeadersFactory;
     @Nullable
     private final String h2FrameLogger;
     private final int gracefulShutdownTimeoutMs;
 
-    ReadOnlyH2ClientConfig(H2ClientConfig rhs) {
+    ReadOnlyH2ServerConfig(H2ServerConfig rhs) {
         h2HeadersFactory = rhs.h2HeadersFactory();
         h2FrameLogger = rhs.h2FrameLogger();
         gracefulShutdownTimeoutMs = rhs.gracefulShutdownTimeoutMs();

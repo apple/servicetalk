@@ -38,6 +38,7 @@ import static io.servicetalk.http.api.HttpHeaderValues.KEEP_ALIVE;
 import static io.servicetalk.http.netty.HeaderUtils.indexOf;
 
 final class H2ToStH1Utils {
+    static final int DEFAULT_GRACEFUL_SHUTDOWN_TIMEOUT_MILLIS = 30000;
     /**
      * HTTP/2 version described in <a href="https://tools.ietf.org/html/rfc7540">RFC 7540</a>.
      */
@@ -186,8 +187,14 @@ final class H2ToStH1Utils {
     /**
      * <a href="https://tools.ietf.org/html/rfc7540#section-8.1.4">REFUSED_STREAM</a> is always retryable.
      */
-    static final class StreamRefusedException extends RuntimeException implements RetryableException {
-        StreamRefusedException(String message) {
+    static final class H2StreamRefusedException extends RuntimeException implements RetryableException {
+        H2StreamRefusedException(String message) {
+            super(message);
+        }
+    }
+
+    static final class H2StreamResetException extends RuntimeException {
+        H2StreamResetException(String message) {
             super(message);
         }
     }
