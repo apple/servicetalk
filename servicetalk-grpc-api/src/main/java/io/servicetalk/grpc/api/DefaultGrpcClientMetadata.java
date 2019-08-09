@@ -34,7 +34,7 @@ public class DefaultGrpcClientMetadata extends DefaultGrpcMetadata implements Gr
      */
     protected DefaultGrpcClientMetadata(final String path) {
         super(path);
-        this.strategy = null;
+        strategy = null;
     }
 
     /**
