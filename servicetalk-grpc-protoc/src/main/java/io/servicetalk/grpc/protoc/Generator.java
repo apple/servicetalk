@@ -19,6 +19,7 @@ import com.google.protobuf.DescriptorProtos.MethodDescriptorProto;
 import com.google.protobuf.DescriptorProtos.ServiceDescriptorProto;
 import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.CodeBlock;
+import com.squareup.javapoet.FieldSpec;
 import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.ParameterizedTypeName;
 import com.squareup.javapoet.TypeSpec;
@@ -83,6 +84,7 @@ import static io.servicetalk.grpc.protoc.Words.Call;
 import static io.servicetalk.grpc.protoc.Words.Default;
 import static io.servicetalk.grpc.protoc.Words.Factory;
 import static io.servicetalk.grpc.protoc.Words.Filter;
+import static io.servicetalk.grpc.protoc.Words.INSTANCE;
 import static io.servicetalk.grpc.protoc.Words.Metadata;
 import static io.servicetalk.grpc.protoc.Words.Rpc;
 import static io.servicetalk.grpc.protoc.Words.To;
@@ -414,16 +416,20 @@ final class Generator {
         state.serviceProto.getMethodList().forEach(methodProto -> {
             final String name = sanitizeIdentifier(methodProto.getName(), false) + Metadata;
 
+            ClassName metaDataClassName = ClassName.bestGuess(name);
             final TypeSpec classSpec = classBuilder(name)
                     .addModifiers(PUBLIC, STATIC, FINAL)
                     .superclass(DefaultGrpcClientMetadata)
+                    .addField(FieldSpec.builder(metaDataClassName, INSTANCE, PUBLIC, STATIC, FINAL)
+                            .initializer("new $T()", metaDataClassName)
+                            .build())
                     .addMethod(constructorBuilder()
                             .addModifiers(PUBLIC)
                             .addStatement("super($T.$L.$L())", state.rpcPathsEnumClass, routeName(methodProto), path)
                             .build())
                     .build();
 
-            state.clientMetaDatas.add(new ClientMetaData(methodProto, ClassName.bestGuess(name)));
+            state.clientMetaDatas.add(new ClientMetaData(methodProto, metaDataClassName));
             serviceClassBuilder.addType(classSpec);
         });
     }
@@ -476,12 +482,7 @@ final class Generator {
         final TypeSpec.Builder classSpecBuilder = newFilterDelegateCommonMethods(state.clientFilterClass,
                 state.filterableClientClass)
                 .addMethod(newDelegatingCompletableMethodSpec(onClose, delegate))
-                .addMethod(methodBuilder(close)
-                        .addModifiers(PUBLIC)
-                        .addAnnotation(Override.class)
-                        .addException(Exception.class)
-                        .addStatement("$L.$L().toFuture().get()", delegate, closeAsync)
-                        .build());
+                .addMethod(newDelegatingCompletableToBlockingMethodSpec(close, closeAsync));
 
         state.clientMetaDatas.forEach(clientMetaData ->
                 classSpecBuilder.addMethod(newRpcMethodSpec(clientMetaData.methodProto, EnumSet.of(INTERFACE, CLIENT),
@@ -676,18 +677,9 @@ final class Generator {
                         // TODO: Cache client
                         .addStatement("return new $T($L)", defaultClientClass, factory)
                         .build())
-                .addMethod(methodBuilder(close)
-                        .addModifiers(PUBLIC)
-                        .addAnnotation(Override.class)
-                        .addException(Exception.class)
-                        .addStatement("$L.$L().toFuture().get()", factory, closeAsync)
-                        .build())
-                .addMethod(methodBuilder(closeGracefully)
-                        .addModifiers(PUBLIC)
-                        .addAnnotation(Override.class)
-                        .addException(Exception.class)
-                        .addStatement("$L.$L().toFuture().get()", factory, closeAsyncGracefully)
-                        .build());
+                .addMethod(newDelegatingCompletableToBlockingMethodSpec(close, closeAsync, factory))
+                .addMethod(newDelegatingCompletableToBlockingMethodSpec(closeGracefully, closeAsyncGracefully,
+                        factory));
 
         final MethodSpec.Builder constructorBuilder = constructorBuilder()
                 .addModifiers(PRIVATE)
@@ -716,12 +708,8 @@ final class Generator {
                 .addMethod(newDelegatingCompletableMethodSpec(onClose, factory))
                 .addMethod(newDelegatingCompletableMethodSpec(closeAsync, factory))
                 .addMethod(newDelegatingCompletableMethodSpec(closeAsyncGracefully, factory))
-                .addMethod(methodBuilder(close)
-                        .addModifiers(PUBLIC)
-                        .addAnnotation(Override.class)
-                        .addException(Exception.class)
-                        .addStatement("$L().toFuture().get()", closeAsyncGracefully)
-                        .build());
+                .addMethod(newDelegatingCompletableToBlockingMethodSpec(close, closeAsync))
+                .addMethod(newDelegatingCompletableToBlockingMethodSpec(closeGracefully, closeAsyncGracefully));
 
         final MethodSpec.Builder constructorBuilder = constructorBuilder()
                 .addModifiers(PRIVATE)
@@ -752,7 +740,8 @@ final class Generator {
                             inClass, outClass), callFieldName, PRIVATE, FINAL)
                     .addMethod(newRpcMethodSpec(clientMetaData.methodProto, rpcMethodSpecsFlags,
                             (n, b) -> b.addAnnotation(Override.class)
-                                    .addStatement("return $L(new $T(), $L)", n, clientMetaData.className, request)))
+                                    .addStatement("return $L($T.$L, $L)", n, clientMetaData.className, INSTANCE,
+                                            request)))
                     .addMethod(newRpcMethodSpec(clientMetaData.methodProto, rpcMethodSpecsFlags,
                             (__, b) -> b.addAnnotation(Override.class)
                                     .addParameter(clientMetaData.className, metadata, FINAL)
@@ -792,7 +781,7 @@ final class Generator {
         state.clientMetaDatas.forEach(clientMetaData -> typeSpecBuilder
                 .addMethod(newRpcMethodSpec(clientMetaData.methodProto, EnumSet.of(CLIENT),
                         (n, b) -> b.addAnnotation(Override.class)
-                                .addStatement("return $L(new $T(), $L)", n, clientMetaData.className, request)))
+                                .addStatement("return $L($T.$L, $L)", n, clientMetaData.className, INSTANCE, request)))
                 .addMethod(newRpcMethodSpec(clientMetaData.methodProto, EnumSet.of(CLIENT),
                         (n, b) -> b.addAnnotation(Override.class)
                                 .addParameter(clientMetaData.className, metadata, FINAL)
@@ -819,13 +808,7 @@ final class Generator {
                         // TODO: Cache client
                         .addStatement("return $L", client)
                         .build())
-                .addMethod(newDelegatingMethodSpec(close, client, null, ClassName.get(Exception.class)))
-                .addMethod(methodBuilder(closeGracefully)
-                        .addModifiers(PUBLIC)
-                        .addAnnotation(Override.class)
-                        .addException(Exception.class)
-                        .addStatement("$L.$L().toFuture().get()", client, closeAsyncGracefully)
-                        .build());
+                .addMethod(newDelegatingMethodSpec(close, client, null, ClassName.get(Exception.class)));
 
         state.clientMetaDatas.forEach(clientMetaData -> {
             final CodeBlock requestExpression = clientMetaData.methodProto.getClientStreaming() ?
@@ -973,5 +956,26 @@ final class Generator {
         }
 
         return methodSpecBuilder.build();
+    }
+
+    private static MethodSpec newDelegatingCompletableToBlockingMethodSpec(final String blockingMethodName,
+                                                                           final String completableMethodName) {
+        return methodBuilder(blockingMethodName)
+                .addModifiers(PUBLIC)
+                .addAnnotation(Override.class)
+                .addException(Exception.class)
+                .addStatement("$L().toFuture().get()", completableMethodName)
+                .build();
+    }
+
+    private static MethodSpec newDelegatingCompletableToBlockingMethodSpec(final String blockingMethodName,
+                                                                           final String completableMethodName,
+                                                                           final String fieldName) {
+        return methodBuilder(blockingMethodName)
+                .addModifiers(PUBLIC)
+                .addAnnotation(Override.class)
+                .addException(Exception.class)
+                .addStatement("$L.$L().toFuture().get()", fieldName, completableMethodName)
+                .build();
     }
 }
