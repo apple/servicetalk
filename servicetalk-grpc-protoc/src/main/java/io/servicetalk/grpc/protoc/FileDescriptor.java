@@ -67,8 +67,8 @@ final class FileDescriptor implements GenerationContext {
             javaPackageName = fileOptions.hasJavaPackage() ? fileOptions.getJavaPackage() : null;
             outerClassName = fileOptions.hasJavaOuterClassname() ? fileOptions.getJavaOuterClassname() : null;
         } else {
-            this.deprecated = false;
-            this.multipleClassFiles = false;
+            deprecated = false;
+            multipleClassFiles = false;
             javaPackageName = null;
             outerClassName = null;
         }
