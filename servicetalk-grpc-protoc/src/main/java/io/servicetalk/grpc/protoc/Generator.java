@@ -482,7 +482,7 @@ final class Generator {
         final TypeSpec.Builder classSpecBuilder = newFilterDelegateCommonMethods(state.clientFilterClass,
                 state.filterableClientClass)
                 .addMethod(newDelegatingCompletableMethodSpec(onClose, delegate))
-                .addMethod(newDelegatingCompletableToBlockingMethodSpec(close, closeAsync));
+                .addMethod(newDelegatingCompletableToBlockingMethodSpec(close, closeAsync, delegate));
 
         state.clientMetaDatas.forEach(clientMetaData ->
                 classSpecBuilder.addMethod(newRpcMethodSpec(clientMetaData.methodProto, EnumSet.of(INTERFACE, CLIENT),
@@ -708,8 +708,9 @@ final class Generator {
                 .addMethod(newDelegatingCompletableMethodSpec(onClose, factory))
                 .addMethod(newDelegatingCompletableMethodSpec(closeAsync, factory))
                 .addMethod(newDelegatingCompletableMethodSpec(closeAsyncGracefully, factory))
-                .addMethod(newDelegatingCompletableToBlockingMethodSpec(close, closeAsync))
-                .addMethod(newDelegatingCompletableToBlockingMethodSpec(closeGracefully, closeAsyncGracefully));
+                .addMethod(newDelegatingCompletableToBlockingMethodSpec(close, closeAsync, factory))
+                .addMethod(newDelegatingCompletableToBlockingMethodSpec(closeGracefully, closeAsyncGracefully,
+                        factory));
 
         final MethodSpec.Builder constructorBuilder = constructorBuilder()
                 .addModifiers(PRIVATE)
@@ -956,16 +957,6 @@ final class Generator {
         }
 
         return methodSpecBuilder.build();
-    }
-
-    private static MethodSpec newDelegatingCompletableToBlockingMethodSpec(final String blockingMethodName,
-                                                                           final String completableMethodName) {
-        return methodBuilder(blockingMethodName)
-                .addModifiers(PUBLIC)
-                .addAnnotation(Override.class)
-                .addException(Exception.class)
-                .addStatement("$L().toFuture().get()", completableMethodName)
-                .build();
     }
 
     private static MethodSpec newDelegatingCompletableToBlockingMethodSpec(final String blockingMethodName,
