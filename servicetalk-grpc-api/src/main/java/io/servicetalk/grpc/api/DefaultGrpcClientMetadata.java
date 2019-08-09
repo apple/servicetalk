@@ -25,7 +25,7 @@ import static java.util.Objects.requireNonNull;
 public class DefaultGrpcClientMetadata extends DefaultGrpcMetadata implements GrpcClientMetadata {
 
     @Nullable
-    private GrpcExecutionStrategy strategy;
+    private final GrpcExecutionStrategy strategy;
 
     /**
      * Creates a new instance.
@@ -34,15 +34,24 @@ public class DefaultGrpcClientMetadata extends DefaultGrpcMetadata implements Gr
      */
     protected DefaultGrpcClientMetadata(final String path) {
         super(path);
+        this.strategy = null;
     }
 
-    @Override
-    public GrpcExecutionStrategy strategy() {
-        return strategy;
-    }
-
-    @Override
-    public void strategy(final GrpcExecutionStrategy strategy) {
+    /**
+     * Creates a new instance.
+     *
+     * @param path for the associated <a href="https://www.grpc.io">gRPC</a> method.
+     * @param strategy {@link GrpcExecutionStrategy} to use for the associated <a href="https://www.grpc.io">gRPC</a>
+     * method.
+     */
+    protected DefaultGrpcClientMetadata(final String path,
+                                        final GrpcExecutionStrategy strategy) {
+        super(path);
         this.strategy = requireNonNull(strategy);
+    }
+
+    @Override
+    public final GrpcExecutionStrategy strategy() {
+        return strategy;
     }
 }

@@ -416,7 +416,7 @@ final class Generator {
         state.serviceProto.getMethodList().forEach(methodProto -> {
             final String name = sanitizeIdentifier(methodProto.getName(), false) + Metadata;
 
-            ClassName metaDataClassName = ClassName.bestGuess(name);
+            final ClassName metaDataClassName = ClassName.bestGuess(name);
             final TypeSpec classSpec = classBuilder(name)
                     .addModifiers(PUBLIC, STATIC, FINAL)
                     .superclass(DefaultGrpcClientMetadata)
@@ -424,8 +424,14 @@ final class Generator {
                             .initializer("new $T()", metaDataClassName)
                             .build())
                     .addMethod(constructorBuilder()
-                            .addModifiers(PUBLIC)
+                            .addModifiers(PRIVATE)
                             .addStatement("super($T.$L.$L())", state.rpcPathsEnumClass, routeName(methodProto), path)
+                            .build())
+                    .addMethod(constructorBuilder()
+                            .addModifiers(PUBLIC)
+                            .addParameter(GrpcExecutionStrategy, strategy, FINAL)
+                            .addStatement("super($T.$L.$L(), $L)", state.rpcPathsEnumClass, routeName(methodProto),
+                                    path, strategy)
                             .build())
                     .build();
 
