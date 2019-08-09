@@ -48,6 +48,7 @@ final class Words {
     static final String Filter = "Filter";
     static final String Rpc = "Rpc";
     static final String To = "To";
+    static final String INSTANCE = "INSTANCE";
 
     private Words() {
         // no instance

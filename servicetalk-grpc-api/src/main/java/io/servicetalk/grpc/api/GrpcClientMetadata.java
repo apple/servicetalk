@@ -31,13 +31,4 @@ public interface GrpcClientMetadata extends GrpcMetadata {
      */
     @Nullable
     GrpcExecutionStrategy strategy();
-
-    /**
-     * Sets the {@link GrpcExecutionStrategy} to use for the associated
-     * <a href="https://www.grpc.io">gRPC</a> method.
-     *
-     * @param strategy {@link GrpcExecutionStrategy} to use for the associated
-     * <a href="https://www.grpc.io">gRPC</a> method.
-     */
-    void strategy(GrpcExecutionStrategy strategy);
 }
