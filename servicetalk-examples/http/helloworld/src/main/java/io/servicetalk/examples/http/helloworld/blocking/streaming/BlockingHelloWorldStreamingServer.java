@@ -25,10 +25,8 @@ public final class BlockingHelloWorldStreamingServer {
     public static void main(String[] args) throws Exception {
         HttpServers.forPort(8080).listenBlockingStreamingAndAwait((ctx, request, response) -> {
             try (HttpPayloadWriter<String> payloadWriter = response.sendMetaData(textSerializer())) {
-                payloadWriter.write("Hello\n");
-                payloadWriter.write("World\n");
-                payloadWriter.write("From\n");
-                payloadWriter.write("ServiceTalk\n");
+                payloadWriter.write("Hello");
+                payloadWriter.write(" World!");
             }
         }).awaitShutdown();
     }
