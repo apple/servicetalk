@@ -27,7 +27,7 @@ public final class HelloWorldStreamingServer {
         HttpServers.forPort(8080)
                 .listenStreamingAndAwait((ctx, request, responseFactory) ->
                         succeeded(responseFactory.ok()
-                                .payloadBody(from("Hello\n", "World\n", "From\n", "ServiceTalk\n"), textSerializer())))
+                                .payloadBody(from("Hello", " World!"), textSerializer())))
                 .awaitShutdown();
     }
 }
