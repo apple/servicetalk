@@ -187,13 +187,13 @@ final class H2ToStH1Utils {
     /**
      * <a href="https://tools.ietf.org/html/rfc7540#section-8.1.4">REFUSED_STREAM</a> is always retryable.
      */
-    static final class H2StreamRefusedException extends RuntimeException implements RetryableException {
+    static final class H2StreamRefusedException extends H2StreamResetException implements RetryableException {
         H2StreamRefusedException(String message) {
             super(message);
         }
     }
 
-    static final class H2StreamResetException extends RuntimeException {
+    static class H2StreamResetException extends RuntimeException {
         H2StreamResetException(String message) {
             super(message);
         }
