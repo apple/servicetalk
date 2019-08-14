@@ -23,14 +23,10 @@ import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.http.api.StreamingHttpRequest;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpHeaderValues;
-import io.netty.handler.codec.http.HttpScheme;
-import io.netty.handler.codec.http2.DefaultHttp2DataFrame;
 import io.netty.handler.codec.http2.DefaultHttp2HeadersFrame;
 import io.netty.handler.codec.http2.Http2DataFrame;
 import io.netty.handler.codec.http2.Http2Headers;
@@ -38,12 +34,9 @@ import io.netty.handler.codec.http2.Http2HeadersFrame;
 
 import javax.annotation.Nullable;
 
-import static io.netty.buffer.Unpooled.EMPTY_BUFFER;
 import static io.netty.handler.codec.http2.Http2Headers.PseudoHeaderName.AUTHORITY;
 import static io.netty.handler.codec.http2.Http2Headers.PseudoHeaderName.METHOD;
 import static io.netty.handler.codec.http2.Http2Headers.PseudoHeaderName.PATH;
-import static io.servicetalk.buffer.netty.BufferUtil.newBufferFrom;
-import static io.servicetalk.buffer.netty.BufferUtil.toByteBufNoThrow;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderNames.HOST;
 import static io.servicetalk.http.api.HttpHeaderValues.ZERO;
@@ -55,16 +48,13 @@ import static io.servicetalk.http.netty.H2ToStH1Utils.h2HeadersSanitizeForH1;
 import static io.servicetalk.http.netty.HeaderUtils.clientMaySendPayloadBodyFor;
 import static io.servicetalk.http.netty.HeaderUtils.shouldAddZeroContentLength;
 
-final class H2ToStH1ServerDuplexHandler extends ChannelDuplexHandler {
+final class H2ToStH1ServerDuplexHandler extends AbstractH2DuplexHandler {
     private boolean readHeaders;
-    private final HttpScheme scheme;
-    private final HttpHeadersFactory headersFactory;
     private final BufferAllocator allocator;
 
-    H2ToStH1ServerDuplexHandler(boolean sslEnabled, BufferAllocator allocator, HttpHeadersFactory headersFactory) {
-        this.scheme = sslEnabled ? HttpScheme.HTTPS : HttpScheme.HTTP;
+    H2ToStH1ServerDuplexHandler(BufferAllocator allocator, HttpHeadersFactory headersFactory) {
+        super(headersFactory);
         this.allocator = allocator;
-        this.headersFactory = headersFactory;
     }
 
     @Override
@@ -73,25 +63,12 @@ final class H2ToStH1ServerDuplexHandler extends ChannelDuplexHandler {
             HttpResponseMetaData metaData = (HttpResponseMetaData) msg;
             HttpHeaders h1Headers = metaData.headers();
             Http2Headers h2Headers = h1HeadersToH2Headers(h1Headers);
-            h2Headers.status(metaData.status().toString());
-            h2Headers.scheme(scheme.name());
+            h2Headers.status(metaData.status().codeAsCharSequence());
             ctx.write(new DefaultHttp2HeadersFrame(h2Headers, false), promise);
         } else if (msg instanceof Buffer) {
-            ByteBuf byteBuf = toByteBufNoThrow((Buffer) msg);
-            if (byteBuf == null) {
-                promise.setFailure(new IllegalArgumentException("unsupported Buffer type:" + msg));
-                ctx.close();
-            } else {
-                ctx.write(new DefaultHttp2DataFrame(byteBuf.retain(), false), promise);
-            }
+            writeBuffer(ctx, msg, promise);
         } else if (msg instanceof HttpHeaders) {
-            HttpHeaders h1Headers = (HttpHeaders) msg;
-            Http2Headers h2Headers = h1HeadersToH2Headers(h1Headers);
-            if (h2Headers.isEmpty()) {
-                ctx.write(new DefaultHttp2DataFrame(EMPTY_BUFFER, true), promise);
-            } else {
-                ctx.write(new DefaultHttp2HeadersFrame(h2Headers, true), promise);
-            }
+            writeTrailers(ctx, msg, promise);
         } else {
             ctx.write(msg, promise);
         }
@@ -134,15 +111,7 @@ final class H2ToStH1ServerDuplexHandler extends ChannelDuplexHandler {
                 ctx.fireChannelRead(request);
             }
         } else if (msg instanceof Http2DataFrame) {
-            Http2DataFrame dataFrame = (Http2DataFrame) msg;
-            if (dataFrame.content().isReadable()) {
-                ctx.fireChannelRead(newBufferFrom(dataFrame.content()));
-            } else {
-                dataFrame.release();
-            }
-            if (dataFrame.isEndStream()) {
-                ctx.fireChannelRead(headersFactory.newEmptyTrailers());
-            }
+            readDataFrame(ctx, msg);
         } else {
             ctx.fireChannelRead(msg);
         }

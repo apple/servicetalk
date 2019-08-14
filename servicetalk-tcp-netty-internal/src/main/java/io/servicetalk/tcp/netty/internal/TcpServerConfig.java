@@ -47,6 +47,17 @@ public final class TcpServerConfig extends ReadOnlyTcpServerConfig {
     }
 
     /**
+     * Determine if auto read should be enabled.
+     *
+     * @param autoRead {@code true} to enable auto read.
+     * @return this.
+     */
+    public TcpServerConfig autoRead(boolean autoRead) {
+        super.autoRead = autoRead;
+        return this;
+    }
+
+    /**
      * The maximum queue length for incoming connection indications (a request to connect) is set to the backlog
      * parameter. If a connection indication arrives when the queue is full, the connection may time out.
      *

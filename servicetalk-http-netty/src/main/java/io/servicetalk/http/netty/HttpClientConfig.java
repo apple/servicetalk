@@ -26,8 +26,8 @@ import static java.util.Objects.requireNonNull;
 final class HttpClientConfig {
 
     private final TcpClientConfig tcpClientConfig;
+    private final H2ClientConfig h2ClientConfig;
     private HttpHeadersFactory headersFactory = DefaultHttpHeadersFactory.INSTANCE;
-    private H2ClientConfig h2ClientConfig = new H2ClientConfig();
     private boolean h2PriorKnowledge;
     private int maxInitialLineLength = 4096;
     private int maxHeaderSize = 8192;
@@ -39,6 +39,7 @@ final class HttpClientConfig {
 
     HttpClientConfig(final TcpClientConfig tcpClientConfig) {
         this.tcpClientConfig = requireNonNull(tcpClientConfig);
+        h2ClientConfig = new H2ClientConfig();
     }
 
     HttpClientConfig(final HttpClientConfig from) {
@@ -51,7 +52,7 @@ final class HttpClientConfig {
         maxPipelinedRequests = from.maxPipelinedRequests;
         headersEncodedSizeEstimate = from.headersEncodedSizeEstimate;
         trailersEncodedSizeEstimate = from.trailersEncodedSizeEstimate;
-        this.connectAddress = from.connectAddress;
+        connectAddress = from.connectAddress;
     }
 
     TcpClientConfig tcpClientConfig() {
