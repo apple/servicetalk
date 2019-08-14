@@ -69,7 +69,7 @@ public class Tls13Test {
 
     @Test
     public void requiredCipher() throws Exception {
-        try(ServerContext serverContext = HttpServers.forAddress(localAddress(0))
+        try (ServerContext serverContext = HttpServers.forAddress(localAddress(0))
                 .enableSsl(DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey)
                 .protocols(TLS1_3)
                 .ciphers(singletonList(TLS1_3_REQUIRED_CIPHER))
