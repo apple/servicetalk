@@ -173,12 +173,8 @@ final class DefaultMultiAddressHttpClientBuilder extends MultiAddressHttpClientB
             final int fromIndex = scheme.length() + 3 + host.length();
             final int relativeReferenceIdx = requestTarget.indexOf('/', fromIndex);
             if (relativeReferenceIdx < 0) {
-                if (fromIndex == requestTarget.length()) {
-                    return "/";
-                } else {
-                    throw new IllegalArgumentException("Cannot infer relative reference from the request-target: " +
-                            requestTarget);
-                }
+                throw new IllegalArgumentException("Cannot infer relative reference from the request-target: " +
+                        requestTarget);
             } else {
                 return requestTarget.substring(relativeReferenceIdx);
             }

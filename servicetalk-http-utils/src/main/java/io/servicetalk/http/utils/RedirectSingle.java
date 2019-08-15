@@ -151,18 +151,31 @@ final class RedirectSingle extends SubscribableSingle<StreamingHttpResponse> {
                 if (request.effectiveHost() == null ||
                         !request.effectiveHost().equalsIgnoreCase(newRequest.effectiveHost()) ||
                         request.effectivePort() != newRequest.effectivePort()) {
-                    if (LOGGER.isTraceEnabled()) {
-                        LOGGER.trace(
-                                "Ignoring non-relative redirect to '{}' for original request '{}' using onlyRelative",
-                                result.headers().get(LOCATION), redirectSingle.originalRequest);
+                    if (LOGGER.isDebugEnabled()) {
+                        LOGGER.debug("Ignoring non-relative redirect to '{}' for original request '{}': {}",
+                                result.headers().get(LOCATION), redirectSingle.originalRequest,
+                                "Only relative redirects are allowed");
                     }
                     target.onSuccess(result);
                     return;
                 } else if (newRequest.scheme() != null) {
                     // Rewrite absolute-form location to relative-form request-target in case only relative redirects
                     // are supported
-                    newRequest.requestTarget(
-                            absoluteToRelativeFormRequestTarget(newRequest.requestTarget(), newRequest.scheme()));
+                    final String absoluteFormRequestTarget = newRequest.requestTarget();
+                    final String relativeRequestTarget = absoluteToRelativeFormRequestTarget(
+                            absoluteFormRequestTarget, newRequest.scheme());
+
+                    if (relativeRequestTarget == null) {
+                        if (LOGGER.isDebugEnabled()) {
+                            LOGGER.debug("Ignoring non-relative redirect to '{}' for original request '{}': {}",
+                                    absoluteFormRequestTarget, redirectSingle.originalRequest,
+                                    "Cannot infer relative request-target from the provided absolute-form");
+                        }
+                        target.onSuccess(result);
+                        return;
+                    } else {
+                        newRequest.requestTarget(relativeRequestTarget);
+                    }
                 }
             }
             if (LOGGER.isTraceEnabled()) {
@@ -180,20 +193,12 @@ final class RedirectSingle extends SubscribableSingle<StreamingHttpResponse> {
         // This code is similar to
         // io.servicetalk.http.netty.DefaultMultiAddressHttpClientBuilder#absoluteToRelativeFormRequestTarget
         // but cannot be shared because we don't have an internal module for http
+        @Nullable
         private static String absoluteToRelativeFormRequestTarget(final String requestTarget,
                                                                   final String scheme) {
             final int fromIndex = scheme.length() + 3;
             final int relativeReferenceIdx = requestTarget.indexOf('/', fromIndex);
-            if (relativeReferenceIdx < 0) {
-                if (fromIndex == requestTarget.length()) {
-                    return "/";
-                } else {
-                    throw new IllegalArgumentException("Cannot infer relative reference from the request-target: " +
-                            requestTarget);
-                }
-            } else {
-                return requestTarget.substring(relativeReferenceIdx);
-            }
+            return relativeReferenceIdx < 0 ? null : requestTarget.substring(relativeReferenceIdx);
         }
 
         @Override

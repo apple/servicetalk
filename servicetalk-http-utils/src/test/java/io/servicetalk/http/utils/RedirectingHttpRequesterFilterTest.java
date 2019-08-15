@@ -452,6 +452,21 @@ public class RedirectingHttpRequesterFilterTest {
     }
 
     @Test
+    public void absoluteTargetRedirectForOnlyRelativeWithAbsoluteRelativeLocationWithoutPath() throws Exception {
+        StreamingHttpClient redirectingRequester = newClient(new RedirectingHttpRequesterFilter(true));
+
+        StreamingHttpRequest request = redirectingRequester.get("http://servicetalk.io/path");
+        request.headers().set(REQUESTED_STATUS, String.valueOf(SEE_OTHER.code()));
+        request.headers().set(REQUESTED_LOCATION, "http://servicetalk.io");
+
+        StreamingHttpResponse response = redirectingRequester.request(defaultStrategy(), request).toFuture().get();
+        assertNotNull(response);
+        assertEquals(SEE_OTHER, response.status());
+        assertThat(response.headers().get(LOCATION), equalTo("http://servicetalk.io"));
+        verify(httpClient, times(1)).request(any(), any());
+    }
+
+    @Test
     public void absoluteTargetRedirectForOnlyRelativeWithNonRelativeLocationDoesntRedirect() throws Exception {
         StreamingHttpClient redirectingRequester = newClient(new RedirectingHttpRequesterFilter(true));
 

@@ -18,8 +18,6 @@ package io.servicetalk.http.netty;
 import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.concurrent.api.TestSingleSubscriber;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
-import io.servicetalk.http.api.DefaultHttpHeadersFactory;
-import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpRequest;
@@ -96,34 +94,28 @@ public class MultiAddressHttpClientTest {
         client = afterClassCloseables.append(HttpClients.forMultiAddress()
                 .buildStreaming());
 
-        final HttpHeaders httpHeaders = DefaultHttpHeadersFactory.INSTANCE.newHeaders().set(CONTENT_LENGTH, ZERO);
         httpService = (ctx, request, factory) -> {
             if (HTTP_1_1.equals(request.version()) && !request.headers().contains(HOST)) {
-                StreamingHttpResponse resp = factory.newResponse(BAD_REQUEST);
-                resp.headers().set(httpHeaders);
-                return succeeded(resp);
+                return succeeded(factory.badRequest().setHeader(CONTENT_LENGTH, ZERO));
             }
 
             if (OPTIONS.equals(request.method()) || CONNECT.equals(request.method())) {
-                StreamingHttpResponse resp = factory.ok();
-                resp.headers().set(httpHeaders);
-                return succeeded(resp);
+                return succeeded(factory.ok().setHeader(CONTENT_LENGTH, ZERO));
             }
+
+            StreamingHttpResponse response;
             try {
                 HttpResponseStatus status = HttpResponseStatus.of(parseInt(request.path().substring(1)), "");
-                StreamingHttpResponse response = factory.newResponse(status);
-                response.headers().set(httpHeaders);
-                response.addHeader(X_RECEIVED_REQUEST_TARGET, request.requestTarget());
+                response = factory.newResponse(status);
                 final CharSequence locationHeader = request.headers().get(X_REQUESTED_LOCATION);
                 if (locationHeader != null) {
                     response.headers().set(LOCATION, locationHeader);
                 }
-                return succeeded(response);
             } catch (Exception e) {
-                StreamingHttpResponse resp = factory.newResponse(BAD_REQUEST);
-                resp.headers().set(httpHeaders);
-                return succeeded(resp);
+                response = factory.badRequest();
             }
+            return succeeded(response.setHeader(CONTENT_LENGTH, ZERO)
+                    .setHeader(X_RECEIVED_REQUEST_TARGET, request.requestTarget()));
         };
         final ServerContext serverCtx = startNewLocalServer(httpService, afterClassCloseables);
 
@@ -173,6 +165,13 @@ public class MultiAddressHttpClientTest {
     public void requestWithAbsoluteFormRequestTargetWithoutHostHeader() throws Exception {
         StreamingHttpRequest request = client.get(format("http://%s/200?param=value#tag", hostHeader));
         requestAndValidate(request, OK, "/200?param=value#tag");
+    }
+
+    @Test
+    public void requestWithAbsoluteFormRequestTargetWithoutPath() throws Exception {
+        StreamingHttpRequest request = client.get(format("http://%s", hostHeader));
+        toSource(client.request(request)).subscribe(subscriber);
+        assertThat(subscriber.error(), is(instanceOf(IllegalArgumentException.class)));
     }
 
     @Test(expected = ExecutionException.class)
