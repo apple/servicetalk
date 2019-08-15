@@ -62,6 +62,8 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
+import static io.netty.handler.codec.http.HttpScheme.HTTP;
+import static io.netty.handler.codec.http.HttpScheme.HTTPS;
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.AsyncCloseables.toListenableAsyncCloseable;
@@ -154,7 +156,7 @@ final class DefaultMultiAddressHttpClientBuilder extends MultiAddressHttpClientB
             }
 
             final int parsedPort = metaData.port();
-            final int port = parsedPort >= 0 ? parsedPort : (HTTPS_SCHEME.equals(scheme) ? 443 : 80);
+            final int port = parsedPort >= 0 ? parsedPort : (HTTPS_SCHEME.equals(scheme) ? HTTPS : HTTP).port();
 
             metaData.requestTarget(absoluteToRelativeFormRequestTarget(metaData.requestTarget(), scheme, host));
 
@@ -164,6 +166,8 @@ final class DefaultMultiAddressHttpClientBuilder extends MultiAddressHttpClientB
                     new UrlKey(scheme, HostAndPort.of(host, port)));
         }
 
+        // This code is similar to io.servicetalk.http.utils.RedirectSingle#absoluteToRelativeFormRequestTarget
+        // but cannot be shared because we don't have an internal module for http
         private static String absoluteToRelativeFormRequestTarget(final String requestTarget,
                                                                   final String scheme, final String host) {
             final int fromIndex = scheme.length() + 3 + host.length();
@@ -276,17 +280,16 @@ final class DefaultMultiAddressHttpClientBuilder extends MultiAddressHttpClientB
                 sslConfigBuilder.finish();
             }
 
+            if (maxRedirects > 0) {
+                // Need to wrap each client in order for relative redirects with origin-form request target to work
+                buildContext.builder.appendClientFilter(new RedirectingHttpRequesterFilter(true, maxRedirects));
+            }
+
             if (clientFilterFactory != null) {
                 buildContext.builder.appendClientFilter(clientFilterFactory.asClientFilter(urlKey.hostAndPort));
             }
 
-            final StreamingHttpClient client = buildContext.build();
-            // Need to wrap each client in order for relative redirects with origin-form request target to work
-            return maxRedirects <= 0 ? client : new FilterableClientToClient(
-                    new RedirectingHttpRequesterFilter(true, maxRedirects).create(client),
-                    buildContext.executionContext.executionStrategy(),
-                    buildContext.builder.buildStrategyInfluencerForClient(
-                            buildContext.executionContext.executionStrategy()));
+            return buildContext.build();
         }
     }
 

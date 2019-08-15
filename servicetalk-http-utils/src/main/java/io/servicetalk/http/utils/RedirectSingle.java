@@ -152,7 +152,8 @@ final class RedirectSingle extends SubscribableSingle<StreamingHttpResponse> {
                         !request.effectiveHost().equalsIgnoreCase(newRequest.effectiveHost()) ||
                         request.effectivePort() != newRequest.effectivePort()) {
                     if (LOGGER.isTraceEnabled()) {
-                        LOGGER.trace("Ignoring non-relative redirect to '{}' for original request '{}' using onlyRelative",
+                        LOGGER.trace(
+                                "Ignoring non-relative redirect to '{}' for original request '{}' using onlyRelative",
                                 result.headers().get(LOCATION), redirectSingle.originalRequest);
                     }
                     target.onSuccess(result);
@@ -175,6 +176,10 @@ final class RedirectSingle extends SubscribableSingle<StreamingHttpResponse> {
                             target, redirectSingle, newRequest, redirectCount + 1, sequentialCancellable));
         }
 
+
+        // This code is similar to
+        // io.servicetalk.http.netty.DefaultMultiAddressHttpClientBuilder#absoluteToRelativeFormRequestTarget
+        // but cannot be shared because we don't have an internal module for http
         private static String absoluteToRelativeFormRequestTarget(final String requestTarget,
                                                                   final String scheme) {
             final int fromIndex = scheme.length() + 3;
@@ -240,14 +245,9 @@ final class RedirectSingle extends SubscribableSingle<StreamingHttpResponse> {
                         return false;
                     }
 
-                    if (!onlyRelative) {
-                        if (locationHeader.length() < 8) {
-                            // Shorter than "http://" + 1 for host name
-                            return false;
-                        }
-
-                        final String prefix = locationHeader.subSequence(0, 8).toString().toLowerCase();
-                        return prefix.startsWith("https://") || prefix.startsWith("http://");
+                    if (!onlyRelative && locationHeader.toString().indexOf("://") <= 0) {
+                        // Check that Location header value represented as a full URL: scheme://.+
+                        return false;
                     }
 
                     if (statusCode == 307 || statusCode == 308) {

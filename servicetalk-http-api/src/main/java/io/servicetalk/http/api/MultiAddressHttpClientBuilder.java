@@ -178,7 +178,7 @@ public abstract class MultiAddressHttpClientBuilder<U, R>
     /**
      * Set a maximum number of redirects to follow.
      *
-     * @param maxRedirects A maximum number of redirects to follow. Use a non positive number to disable redirects.
+     * @param maxRedirects A maximum number of redirects to follow. {@code 0} disables redirects.
      * @return {@code this}.
      */
     public abstract MultiAddressHttpClientBuilder<U, R> maxRedirects(int maxRedirects);
