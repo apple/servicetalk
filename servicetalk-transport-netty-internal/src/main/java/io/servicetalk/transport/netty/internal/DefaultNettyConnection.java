@@ -41,8 +41,6 @@ import io.netty.channel.ChannelPipeline;
 import io.netty.channel.EventLoop;
 import io.netty.channel.socket.ChannelInputShutdownReadComplete;
 import io.netty.channel.socket.ChannelOutputShutdownEvent;
-import io.netty.handler.ssl.SniHandler;
-import io.netty.handler.ssl.SslHandler;
 import io.netty.handler.ssl.SslHandshakeCompletionEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -172,9 +170,8 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
     }
 
     /**
-     * Given a {@link Channel} this will initialize the {@link ChannelPipeline} and create a
-     * {@link DefaultNettyConnection}. The resulting single will complete after the TLS handshake has completed
-     * (if applicable) or otherwise after the channel is active and ready to use.
+     * Given a {@link Channel} this will initialize the {@link ChannelPipeline} just to create a
+     * {@link DefaultNettyConnection}. It is assumed this is a child channel and all TLS handshaking is completed.
      * @param channel A newly created {@link Channel}.
      * @param allocator The {@link BufferAllocator} to use for the {@link DefaultNettyConnection}.
      * @param executor The {@link Executor} to use for the {@link DefaultNettyConnection}.
@@ -240,8 +237,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
                     initializer.init(channel, connection);
                     ChannelPipeline pipeline = connection.channel().pipeline();
                     nettyInboundHandler = new NettyToStChannelInboundHandler<>(connection, subscriber,
-                            delayedCancellable,
-                            pipeline.get(SslHandler.class) != null || pipeline.get(SniHandler.class) != null);
+                            delayedCancellable, NettyPipelineSslUtils.isSslEnabled(pipeline));
                 } catch (Throwable cause) {
                     channel.close();
                     subscriber.onSubscribe(IGNORE_CANCEL);

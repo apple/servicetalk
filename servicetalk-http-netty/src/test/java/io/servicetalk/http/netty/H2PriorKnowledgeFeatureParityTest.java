@@ -36,6 +36,8 @@ import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.HttpResponseStatus;
+import io.servicetalk.http.api.HttpServerBuilder;
+import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.HttpSetCookie;
 import io.servicetalk.http.api.ReservedBlockingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpClient;
@@ -44,6 +46,10 @@ import io.servicetalk.http.api.StreamingHttpConnectionFilter;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequester;
 import io.servicetalk.http.api.StreamingHttpResponse;
+import io.servicetalk.http.api.StreamingHttpResponseFactory;
+import io.servicetalk.http.api.StreamingHttpService;
+import io.servicetalk.http.api.StreamingHttpServiceFilter;
+import io.servicetalk.http.api.StreamingHttpServiceFilterFactory;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
 
@@ -62,9 +68,10 @@ import io.netty.handler.codec.http2.DefaultHttp2Headers;
 import io.netty.handler.codec.http2.DefaultHttp2HeadersFrame;
 import io.netty.handler.codec.http2.DefaultHttp2SettingsFrame;
 import io.netty.handler.codec.http2.Http2DataFrame;
+import io.netty.handler.codec.http2.Http2FrameCodecBuilder;
 import io.netty.handler.codec.http2.Http2Headers;
 import io.netty.handler.codec.http2.Http2HeadersFrame;
-import io.netty.handler.codec.http2.Http2MultiplexCodecBuilder;
+import io.netty.handler.codec.http2.Http2MultiplexHandler;
 import io.netty.handler.codec.http2.Http2Settings;
 import io.netty.handler.codec.http2.Http2SettingsAckFrame;
 import org.junit.After;
@@ -77,7 +84,10 @@ import org.junit.runners.Parameterized;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
+import java.io.Writer;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -87,14 +97,14 @@ import java.util.Queue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import javax.annotation.Nullable;
 
 import static io.netty.handler.codec.http.HttpHeaderNames.CONTENT_TYPE;
-import static io.netty.handler.codec.http.HttpResponseStatus.OK;
+import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.HttpEventKey.MAX_CONCURRENCY;
 import static io.servicetalk.http.api.HttpHeaderNames.COOKIE;
@@ -116,6 +126,7 @@ import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.Matchers.emptyIterable;
 import static org.hamcrest.Matchers.hasItems;
+import static org.hamcrest.Matchers.isEmptyString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -123,10 +134,11 @@ import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 
 @RunWith(Parameterized.class)
-public class H2ClientPriorKnowledgeFeatureParityTest {
+public class H2PriorKnowledgeFeatureParityTest {
     private static final String EXPECT_FAIL_HEADER = "please_fail_expect";
     private static final AsyncContextMap.Key<String> K1 = AsyncContextMap.Key.newKey("k1");
     private static final AsyncContextMap.Key<String> K2 = AsyncContextMap.Key.newKey("k2");
@@ -142,7 +154,7 @@ public class H2ClientPriorKnowledgeFeatureParityTest {
     private HttpExecutionStrategy clientExecutionStrategy;
     private boolean h2PriorKnowledge;
 
-    public H2ClientPriorKnowledgeFeatureParityTest(HttpTestExecutionStrategy strategy, boolean h2PriorKnowledge) {
+    public H2PriorKnowledgeFeatureParityTest(HttpTestExecutionStrategy strategy, boolean h2PriorKnowledge) {
         clientExecutionStrategy = strategy.executorSupplier.get();
         serverEventLoopGroup = createEventLoopGroup(2, new DefaultThreadFactory("server-io", true, NORM_PRIORITY));
         this.h2PriorKnowledge = h2PriorKnowledge;
@@ -173,20 +185,21 @@ public class H2ClientPriorKnowledgeFeatureParityTest {
 
     @Test
     public void multiplePostRequests() throws Exception {
-        multipleRequests(false);
+        multipleRequests(false, 10);
     }
 
     @Test
     public void multipleGetRequests() throws Exception {
-        multipleRequests(true);
+        multipleRequests(true, 10);
     }
 
-    private void multipleRequests(boolean get) throws Exception {
-        InetSocketAddress serverAddress = h2PriorKnowledge ? bindH2EchoServer() : bindHttpEchoServer();
+    private void multipleRequests(boolean get, int numberRequests) throws Exception {
+        assert numberRequests > 0;
+        InetSocketAddress serverAddress = bindHttpEchoServer();
         String responseBody = "hello world";
         try (BlockingHttpClient client = forSingleAddress(HostAndPort.of(serverAddress))
                 .h2PriorKnowledge(h2PriorKnowledge).executionStrategy(clientExecutionStrategy).buildBlocking()) {
-            for (int i = 0; i < 5; ++i) {
+            for (int i = 0; i < numberRequests; ++i) {
                 HttpResponse response = client.request((get ? client.get("/" + i) : client.post("/" + i))
                         .payloadBody(responseBody, textSerializer()));
                 assertEquals(responseBody, response.payloadBody(textDeserializer()));
@@ -196,7 +209,7 @@ public class H2ClientPriorKnowledgeFeatureParityTest {
 
     @Test
     public void cookiesRoundTrip() throws Exception {
-        InetSocketAddress serverAddress = h2PriorKnowledge ? bindH2EchoServer() : bindHttpEchoServer();
+        InetSocketAddress serverAddress = bindHttpEchoServer();
         try (BlockingHttpClient client = forSingleAddress(HostAndPort.of(serverAddress))
                 .h2PriorKnowledge(h2PriorKnowledge).executionStrategy(clientExecutionStrategy).buildBlocking()) {
             HttpRequest request = client.get("/");
@@ -218,165 +231,191 @@ public class H2ClientPriorKnowledgeFeatureParityTest {
     }
 
     @Test
-    public void headerCookieRemovalAndIteration() throws Exception {
-        InetSocketAddress serverAddress = h2PriorKnowledge ? bindH2EchoServer() : bindHttpEchoServer();
+    public void serverHeaderCookieRemovalAndIteration() throws Exception {
+        InetSocketAddress serverAddress = bindHttpSynchronousResponseServer(
+                request -> headerCookieRemovalAndIteration(request.headers()));
         try (BlockingHttpClient client = forSingleAddress(HostAndPort.of(serverAddress))
                 .h2PriorKnowledge(h2PriorKnowledge).executionStrategy(clientExecutionStrategy).buildBlocking()) {
-            HttpRequest request = client.get("/");
-            HttpHeaders headers = request.headers();
-
-            // Single COOKIE header entry with duplicate cookie names.
-            headers.add(COOKIE, "name1=value1; name2=value2; name1=value3");
-            assertEquals(headers.getCookie("name1"), new DefaultHttpCookiePair("name1", "value1"));
-            assertEquals(headers.getCookie("name2"), new DefaultHttpCookiePair("name2", "value2"));
-
-            assertIteratorHasItems(headers.getCookiesIterator(), new DefaultHttpCookiePair("name1", "value1"),
-                    new DefaultHttpCookiePair("name2", "value2"), new DefaultHttpCookiePair("name1", "value3"));
-            assertIteratorHasItems(headers.getCookiesIterator("name1"), new DefaultHttpCookiePair("name1", "value1"),
-                    new DefaultHttpCookiePair("name1", "value3"));
-            assertIteratorHasItems(headers.getCookiesIterator("name2"), new DefaultHttpCookiePair("name2", "value2"));
-
-            assertTrue(headers.removeCookies("name1"));
-            assertEmptyIterator(headers.getCookiesIterator("name1"));
-            assertIteratorHasItems(headers.getCookiesIterator("name2"), new DefaultHttpCookiePair("name2", "value2"));
-
-            assertTrue(headers.removeCookies("name2"));
-            assertEmptyIterator(headers.getCookiesIterator("name1"));
-            assertEmptyIterator(headers.getCookiesIterator("name2"));
-            assertEmptyIterator(headers.valuesIterator(COOKIE));
-
-            // Simulate the same behavior as above, but with addCookie
-            headers.addCookie("name1", "value1");
-            headers.addCookie("name2", "value2");
-            headers.addCookie("name1", "value3");
-            // Netty's value iterator does not preserve insertion order. This is a limitation of Netty's header
-            // data structure and will not be fixed for 4.1.
-            if (h2PriorKnowledge) {
-                assertEquals(headers.getCookie("name1"), new DefaultHttpCookiePair("name1", "value3"));
-            } else {
-                assertEquals(headers.getCookie("name1"), new DefaultHttpCookiePair("name1", "value1"));
-            }
-            assertEquals(headers.getCookie("name2"), new DefaultHttpCookiePair("name2", "value2"));
-
-            assertIteratorHasItems(headers.getCookiesIterator(), new DefaultHttpCookiePair("name1", "value1"),
-                    new DefaultHttpCookiePair("name2", "value2"), new DefaultHttpCookiePair("name1", "value3"));
-            assertIteratorHasItems(headers.getCookiesIterator("name1"), new DefaultHttpCookiePair("name1", "value1"),
-                    new DefaultHttpCookiePair("name1", "value3"));
-            assertIteratorHasItems(headers.getCookiesIterator("name2"), new DefaultHttpCookiePair("name2", "value2"));
-
-            assertTrue(headers.removeCookies("name1"));
-            assertEmptyIterator(headers.getCookiesIterator("name1"));
-            assertIteratorHasItems(headers.getCookiesIterator("name2"), new DefaultHttpCookiePair("name2", "value2"));
-
-            assertTrue(headers.removeCookies("name2"));
-            assertEmptyIterator(headers.getCookiesIterator("name1"));
-            assertEmptyIterator(headers.getCookiesIterator("name2"));
-            assertEmptyIterator(headers.valuesIterator(COOKIE));
-
-            // Split headers across 2 header entries, with duplicate cookie names.
-            headers.add(COOKIE, "name1=value1; name2=value2; name1=value3");
-            headers.add(COOKIE, "name2=value4; name1=value5; name3=value6");
-            if (h2PriorKnowledge) {
-                assertEquals(headers.getCookie("name1"), new DefaultHttpCookiePair("name1", "value5"));
-                assertEquals(headers.getCookie("name2"), new DefaultHttpCookiePair("name2", "value4"));
-                assertEquals(headers.getCookie("name3"), new DefaultHttpCookiePair("name3", "value6"));
-            } else {
-                assertEquals(headers.getCookie("name1"), new DefaultHttpCookiePair("name1", "value1"));
-                assertEquals(headers.getCookie("name2"), new DefaultHttpCookiePair("name2", "value2"));
-                assertEquals(headers.getCookie("name3"), new DefaultHttpCookiePair("name3", "value6"));
-            }
-
-            assertIteratorHasItems(headers.getCookiesIterator(), new DefaultHttpCookiePair("name1", "value1"),
-                    new DefaultHttpCookiePair("name2", "value2"), new DefaultHttpCookiePair("name1", "value3"),
-                    new DefaultHttpCookiePair("name2", "value4"), new DefaultHttpCookiePair("name1", "value5"),
-                    new DefaultHttpCookiePair("name3", "value6"));
-            assertIteratorHasItems(headers.getCookiesIterator("name1"), new DefaultHttpCookiePair("name1", "value1"),
-                    new DefaultHttpCookiePair("name1", "value3"), new DefaultHttpCookiePair("name1", "value5"));
-            assertIteratorHasItems(headers.getCookiesIterator("name2"), new DefaultHttpCookiePair("name2", "value2"),
-                    new DefaultHttpCookiePair("name2", "value4"));
-            assertIteratorHasItems(headers.getCookiesIterator("name3"), new DefaultHttpCookiePair("name3", "value6"));
-
-            assertTrue(headers.removeCookies("name2"));
-            assertIteratorHasItems(headers.getCookiesIterator("name1"), new DefaultHttpCookiePair("name1", "value1"),
-                    new DefaultHttpCookiePair("name1", "value3"), new DefaultHttpCookiePair("name1", "value5"));
-            assertEmptyIterator(headers.getCookiesIterator("name2"));
-            assertIteratorHasItems(headers.getCookiesIterator("name3"), new DefaultHttpCookiePair("name3", "value6"));
-
-            assertTrue(headers.removeCookies("name1"));
-            assertEmptyIterator(headers.getCookiesIterator("name1"));
-            assertEmptyIterator(headers.getCookiesIterator("name2"));
-            assertIteratorHasItems(headers.getCookiesIterator("name3"), new DefaultHttpCookiePair("name3", "value6"));
-
-            assertTrue(headers.removeCookies("name3"));
-            assertEmptyIterator(headers.getCookiesIterator("name1"));
-            assertEmptyIterator(headers.getCookiesIterator("name2"));
-            assertEmptyIterator(headers.getCookiesIterator("name3"));
-            assertEmptyIterator(headers.valuesIterator(COOKIE));
-
-            // Test partial name matches don't inadvertently match.
-            headers.add(COOKIE, "foo=bar");
-
-            assertEquals(headers.getCookie("foo"), new DefaultHttpCookiePair("foo", "bar"));
-            assertNull(headers.getCookie("baz"));
-            assertNull(headers.getCookie("foo="));
-            assertNull(headers.getCookie("fo"));
-            assertNull(headers.getCookie("f"));
-
-            assertFalse(headers.removeCookies("foo="));
-            assertFalse(headers.removeCookies("fo"));
-            assertFalse(headers.removeCookies("f"));
-            assertEquals(headers.getCookie("foo"), new DefaultHttpCookiePair("foo", "bar"));
-
-            assertEmptyIterator(headers.getCookiesIterator("foo="));
-            assertEmptyIterator(headers.getCookiesIterator("fo"));
-            assertEmptyIterator(headers.getCookiesIterator("f"));
-
-            assertTrue(headers.removeCookies("foo"));
-            assertNull(headers.getCookie("foo"));
-            assertEmptyIterator(headers.getCookiesIterator("foo"));
-            assertEmptyIterator(headers.valuesIterator(COOKIE));
+            assertThat(client.request(client.get("/").payloadBody("", textSerializer()))
+                    .payloadBody(textDeserializer()), isEmptyString());
         }
     }
 
     @Test
-    public void headerSetCookieRemovalAndIteration() throws Exception {
-        InetSocketAddress serverAddress = h2PriorKnowledge ? bindH2EchoServer() : bindHttpEchoServer();
+    public void clientHeaderCookieRemovalAndIteration() throws Exception {
+        InetSocketAddress serverAddress = bindHttpEchoServer();
         try (BlockingHttpClient client = forSingleAddress(HostAndPort.of(serverAddress))
                 .h2PriorKnowledge(h2PriorKnowledge).executionStrategy(clientExecutionStrategy).buildBlocking()) {
             HttpRequest request = client.get("/");
-            HttpHeaders headers = request.headers();
-
-            headers.add(SET_COOKIE, "qwerty=12345; Domain=somecompany.co.uk; Path=/1; " +
-                    "Expires=Wed, 30 Aug 2019 00:00:00 GMT");
-
-            assertFalse(headers.removeCookies("qwerty="));
-            assertFalse(headers.removeCookies("qwert"));
-            assertNull(headers.getSetCookie("qwerty="));
-            assertNull(headers.getSetCookie("qwert"));
-            assertFalse(headers.getSetCookiesIterator("qwerty=").hasNext());
-            assertFalse(headers.getSetCookiesIterator("qwert").hasNext());
-            assertEmptyIterator(headers.getSetCookiesIterator("qwerty=", "somecompany.co.uk", "/1"));
-            assertEmptyIterator(headers.getSetCookiesIterator("qwert", "somecompany.co.uk", "/1"));
-
-            assertSetCookie1(headers.getSetCookie("qwerty"));
-            Iterator<? extends HttpSetCookie> itr = headers.getSetCookiesIterator("qwerty");
-            assertTrue(itr.hasNext());
-            assertSetCookie1(itr.next());
-            assertFalse(itr.hasNext());
-
-            itr = headers.getSetCookiesIterator("qwerty", "somecompany.co.uk", "/1");
-            assertTrue(itr.hasNext());
-            assertSetCookie1(itr.next());
-            assertFalse(itr.hasNext());
-
-            assertTrue(headers.removeSetCookies("qwerty", "somecompany.co.uk", "/1"));
-            assertNull(headers.getSetCookie("qwerty"));
-
-            headers.add(SET_COOKIE, "qwerty=12345; Domain=somecompany.co.uk; Path=/1; " +
-                    "Expires=Wed, 30 Aug 2019 00:00:00 GMT");
-            assertTrue(headers.removeSetCookies("qwerty"));
-            assertNull(headers.getSetCookie("qwerty"));
+            headerCookieRemovalAndIteration(request.headers());
         }
+    }
+
+    private void headerCookieRemovalAndIteration(HttpHeaders headers) {
+        // Single COOKIE header entry with duplicate cookie names.
+        headers.add(COOKIE, "name1=value1; name2=value2; name1=value3");
+        assertEquals(headers.getCookie("name1"), new DefaultHttpCookiePair("name1", "value1"));
+        assertEquals(headers.getCookie("name2"), new DefaultHttpCookiePair("name2", "value2"));
+
+        assertIteratorHasItems(headers.getCookiesIterator(), new DefaultHttpCookiePair("name1", "value1"),
+                new DefaultHttpCookiePair("name2", "value2"), new DefaultHttpCookiePair("name1", "value3"));
+        assertIteratorHasItems(headers.getCookiesIterator("name1"), new DefaultHttpCookiePair("name1", "value1"),
+                new DefaultHttpCookiePair("name1", "value3"));
+        assertIteratorHasItems(headers.getCookiesIterator("name2"), new DefaultHttpCookiePair("name2", "value2"));
+
+        assertTrue(headers.removeCookies("name1"));
+        assertEmptyIterator(headers.getCookiesIterator("name1"));
+        assertIteratorHasItems(headers.getCookiesIterator("name2"), new DefaultHttpCookiePair("name2", "value2"));
+
+        assertTrue(headers.removeCookies("name2"));
+        assertEmptyIterator(headers.getCookiesIterator("name1"));
+        assertEmptyIterator(headers.getCookiesIterator("name2"));
+        assertEmptyIterator(headers.valuesIterator(COOKIE));
+
+        // Simulate the same behavior as above, but with addCookie
+        headers.addCookie("name1", "value1");
+        headers.addCookie("name2", "value2");
+        headers.addCookie("name1", "value3");
+        // Netty's value iterator does not preserve insertion order. This is a limitation of Netty's header
+        // data structure and will not be fixed for 4.1.
+        if (h2PriorKnowledge) {
+            assertEquals(headers.getCookie("name1"), new DefaultHttpCookiePair("name1", "value3"));
+        } else {
+            assertEquals(headers.getCookie("name1"), new DefaultHttpCookiePair("name1", "value1"));
+        }
+        assertEquals(headers.getCookie("name2"), new DefaultHttpCookiePair("name2", "value2"));
+
+        assertIteratorHasItems(headers.getCookiesIterator(), new DefaultHttpCookiePair("name1", "value1"),
+                new DefaultHttpCookiePair("name2", "value2"), new DefaultHttpCookiePair("name1", "value3"));
+        assertIteratorHasItems(headers.getCookiesIterator("name1"), new DefaultHttpCookiePair("name1", "value1"),
+                new DefaultHttpCookiePair("name1", "value3"));
+        assertIteratorHasItems(headers.getCookiesIterator("name2"), new DefaultHttpCookiePair("name2", "value2"));
+
+        assertTrue(headers.removeCookies("name1"));
+        assertEmptyIterator(headers.getCookiesIterator("name1"));
+        assertIteratorHasItems(headers.getCookiesIterator("name2"), new DefaultHttpCookiePair("name2", "value2"));
+
+        assertTrue(headers.removeCookies("name2"));
+        assertEmptyIterator(headers.getCookiesIterator("name1"));
+        assertEmptyIterator(headers.getCookiesIterator("name2"));
+        assertEmptyIterator(headers.valuesIterator(COOKIE));
+
+        // Split headers across 2 header entries, with duplicate cookie names.
+        headers.add(COOKIE, "name1=value1; name2=value2; name1=value3");
+        headers.add(COOKIE, "name2=value4; name1=value5; name3=value6");
+        if (h2PriorKnowledge) {
+            assertEquals(headers.getCookie("name1"), new DefaultHttpCookiePair("name1", "value5"));
+            assertEquals(headers.getCookie("name2"), new DefaultHttpCookiePair("name2", "value4"));
+            assertEquals(headers.getCookie("name3"), new DefaultHttpCookiePair("name3", "value6"));
+        } else {
+            assertEquals(headers.getCookie("name1"), new DefaultHttpCookiePair("name1", "value1"));
+            assertEquals(headers.getCookie("name2"), new DefaultHttpCookiePair("name2", "value2"));
+            assertEquals(headers.getCookie("name3"), new DefaultHttpCookiePair("name3", "value6"));
+        }
+
+        assertIteratorHasItems(headers.getCookiesIterator(), new DefaultHttpCookiePair("name1", "value1"),
+                new DefaultHttpCookiePair("name2", "value2"), new DefaultHttpCookiePair("name1", "value3"),
+                new DefaultHttpCookiePair("name2", "value4"), new DefaultHttpCookiePair("name1", "value5"),
+                new DefaultHttpCookiePair("name3", "value6"));
+        assertIteratorHasItems(headers.getCookiesIterator("name1"), new DefaultHttpCookiePair("name1", "value1"),
+                new DefaultHttpCookiePair("name1", "value3"), new DefaultHttpCookiePair("name1", "value5"));
+        assertIteratorHasItems(headers.getCookiesIterator("name2"), new DefaultHttpCookiePair("name2", "value2"),
+                new DefaultHttpCookiePair("name2", "value4"));
+        assertIteratorHasItems(headers.getCookiesIterator("name3"), new DefaultHttpCookiePair("name3", "value6"));
+
+        assertTrue(headers.removeCookies("name2"));
+        assertIteratorHasItems(headers.getCookiesIterator("name1"), new DefaultHttpCookiePair("name1", "value1"),
+                new DefaultHttpCookiePair("name1", "value3"), new DefaultHttpCookiePair("name1", "value5"));
+        assertEmptyIterator(headers.getCookiesIterator("name2"));
+        assertIteratorHasItems(headers.getCookiesIterator("name3"), new DefaultHttpCookiePair("name3", "value6"));
+
+        assertTrue(headers.removeCookies("name1"));
+        assertEmptyIterator(headers.getCookiesIterator("name1"));
+        assertEmptyIterator(headers.getCookiesIterator("name2"));
+        assertIteratorHasItems(headers.getCookiesIterator("name3"), new DefaultHttpCookiePair("name3", "value6"));
+
+        assertTrue(headers.removeCookies("name3"));
+        assertEmptyIterator(headers.getCookiesIterator("name1"));
+        assertEmptyIterator(headers.getCookiesIterator("name2"));
+        assertEmptyIterator(headers.getCookiesIterator("name3"));
+        assertEmptyIterator(headers.valuesIterator(COOKIE));
+
+        // Test partial name matches don't inadvertently match.
+        headers.add(COOKIE, "foo=bar");
+
+        assertEquals(headers.getCookie("foo"), new DefaultHttpCookiePair("foo", "bar"));
+        assertNull(headers.getCookie("baz"));
+        assertNull(headers.getCookie("foo="));
+        assertNull(headers.getCookie("fo"));
+        assertNull(headers.getCookie("f"));
+
+        assertFalse(headers.removeCookies("foo="));
+        assertFalse(headers.removeCookies("fo"));
+        assertFalse(headers.removeCookies("f"));
+        assertEquals(headers.getCookie("foo"), new DefaultHttpCookiePair("foo", "bar"));
+
+        assertEmptyIterator(headers.getCookiesIterator("foo="));
+        assertEmptyIterator(headers.getCookiesIterator("fo"));
+        assertEmptyIterator(headers.getCookiesIterator("f"));
+
+        assertTrue(headers.removeCookies("foo"));
+        assertNull(headers.getCookie("foo"));
+        assertEmptyIterator(headers.getCookiesIterator("foo"));
+        assertEmptyIterator(headers.valuesIterator(COOKIE));
+    }
+
+    @Test
+    public void serverHeaderSetCookieRemovalAndIteration() throws Exception {
+        InetSocketAddress serverAddress = bindHttpSynchronousResponseServer(
+                request -> headerSetCookieRemovalAndIteration(request.headers()));
+        try (BlockingHttpClient client = forSingleAddress(HostAndPort.of(serverAddress))
+                .h2PriorKnowledge(h2PriorKnowledge).executionStrategy(clientExecutionStrategy).buildBlocking()) {
+            assertThat(client.request(client.get("/").payloadBody("", textSerializer()))
+                    .payloadBody(textDeserializer()), isEmptyString());
+        }
+    }
+
+    @Test
+    public void clientHeaderSetCookieRemovalAndIteration() throws Exception {
+        InetSocketAddress serverAddress = bindHttpEchoServer();
+        try (BlockingHttpClient client = forSingleAddress(HostAndPort.of(serverAddress))
+                .h2PriorKnowledge(h2PriorKnowledge).executionStrategy(clientExecutionStrategy).buildBlocking()) {
+            HttpRequest request = client.get("/");
+            headerSetCookieRemovalAndIteration(request.headers());
+        }
+    }
+
+    private void headerSetCookieRemovalAndIteration(HttpHeaders headers) {
+        headers.add(SET_COOKIE, "qwerty=12345; Domain=somecompany.co.uk; Path=/1; " +
+                "Expires=Wed, 30 Aug 2019 00:00:00 GMT");
+
+        assertFalse(headers.removeCookies("qwerty="));
+        assertFalse(headers.removeCookies("qwert"));
+        assertNull(headers.getSetCookie("qwerty="));
+        assertNull(headers.getSetCookie("qwert"));
+        assertFalse(headers.getSetCookiesIterator("qwerty=").hasNext());
+        assertFalse(headers.getSetCookiesIterator("qwert").hasNext());
+        assertEmptyIterator(headers.getSetCookiesIterator("qwerty=", "somecompany.co.uk", "/1"));
+        assertEmptyIterator(headers.getSetCookiesIterator("qwert", "somecompany.co.uk", "/1"));
+
+        assertSetCookie1(headers.getSetCookie("qwerty"));
+        Iterator<? extends HttpSetCookie> itr = headers.getSetCookiesIterator("qwerty");
+        assertTrue(itr.hasNext());
+        assertSetCookie1(itr.next());
+        assertFalse(itr.hasNext());
+
+        itr = headers.getSetCookiesIterator("qwerty", "somecompany.co.uk", "/1");
+        assertTrue(itr.hasNext());
+        assertSetCookie1(itr.next());
+        assertFalse(itr.hasNext());
+
+        assertTrue(headers.removeSetCookies("qwerty", "somecompany.co.uk", "/1"));
+        assertNull(headers.getSetCookie("qwerty"));
+
+        headers.add(SET_COOKIE, "qwerty=12345; Domain=somecompany.co.uk; Path=/1; " +
+                "Expires=Wed, 30 Aug 2019 00:00:00 GMT");
+        assertTrue(headers.removeSetCookies("qwerty"));
+        assertNull(headers.getSetCookie("qwerty"));
     }
 
     private static void assertSetCookie1(@Nullable HttpSetCookie setCookie) {
@@ -389,10 +428,10 @@ public class H2ClientPriorKnowledgeFeatureParityTest {
     }
 
     @Test
-    public void reserveConnectionMultipleRequests() throws Exception {
+    public void clientReserveConnectionMultipleRequests() throws Exception {
         String responseBody1 = "1.hello world.1";
         String responseBody2 = "2.hello world.2";
-        InetSocketAddress serverAddress = h2PriorKnowledge ? bindH2EchoServer() : bindHttpEchoServer();
+        InetSocketAddress serverAddress = bindHttpEchoServer();
         try (BlockingHttpClient client = forSingleAddress(HostAndPort.of(serverAddress))
                 .h2PriorKnowledge(h2PriorKnowledge).executionStrategy(clientExecutionStrategy).buildBlocking()) {
             HttpRequest request = client.get("/");
@@ -411,8 +450,41 @@ public class H2ClientPriorKnowledgeFeatureParityTest {
     }
 
     @Test
-    public void writeTrailers() throws Exception {
-        InetSocketAddress serverAddress = h2PriorKnowledge ? bindH2EchoServer() : bindHttpEchoServer();
+    public void serverWriteTrailers() throws Exception {
+        String payloadBody = "foo";
+        String myTrailerName = "mytrailer";
+        h1ServerContext = HttpServers.forAddress(localAddress(0))
+                .h2PriorKnowledge(h2PriorKnowledge).listenStreaming(
+                        (ctx, request, responseFactory) ->
+                                request.payloadBody()
+                                .map(Buffer::readableBytes)
+                                .collect(AtomicInteger::new, (contentSize, bufferSize) -> {
+                                    contentSize.addAndGet(bufferSize);
+                                    return contentSize;
+                                })
+                                .flatMap(contentSize -> Single.succeeded(
+                                    responseFactory.ok().transform(() -> null, (buffer, none) -> buffer,
+                                            (none, trailers) -> {
+                                                trailers.add(myTrailerName, Integer.toString(contentSize.get()));
+                                                return trailers;
+                                            })
+                                ))).toFuture().get();
+
+        InetSocketAddress serverAddress = (InetSocketAddress) h1ServerContext.listenAddress();
+        try (BlockingHttpClient client = forSingleAddress(HostAndPort.of(serverAddress))
+                .h2PriorKnowledge(h2PriorKnowledge).executionStrategy(clientExecutionStrategy).buildBlocking()) {
+            HttpRequest request = client.post("/").payloadBody(payloadBody, textSerializer());
+            HttpResponse response = client.request(request);
+            assertEquals(0, response.payloadBody().readableBytes());
+            CharSequence responseTrailer = response.trailers().get(myTrailerName);
+            assertNotNull(responseTrailer);
+            assertEquals(payloadBody.length(), Integer.parseInt(responseTrailer.toString()));
+        }
+    }
+
+    @Test
+    public void clientWriteTrailers() throws Exception {
+        InetSocketAddress serverAddress = bindHttpEchoServer();
         try (BlockingHttpClient client = forSingleAddress(HostAndPort.of(serverAddress))
                 .h2PriorKnowledge(h2PriorKnowledge).executionStrategy(clientExecutionStrategy).buildBlocking()) {
             String payloadBody = "foo";
@@ -429,8 +501,29 @@ public class H2ClientPriorKnowledgeFeatureParityTest {
     }
 
     @Test
+    public void serverFilterAsyncContext() throws Exception {
+        final Queue<Throwable> errorQueue = new ConcurrentLinkedQueue<>();
+        InetSocketAddress serverAddress = bindHttpEchoServer(service -> new StreamingHttpServiceFilter(service) {
+            @Override
+            public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
+                                                        final StreamingHttpRequest request,
+                                                        final StreamingHttpResponseFactory responseFactory) {
+                return asyncContextTestRequest(errorQueue, delegate(), ctx, request, responseFactory);
+            }
+        });
+        try (BlockingHttpClient client = forSingleAddress(HostAndPort.of(serverAddress))
+                .h2PriorKnowledge(h2PriorKnowledge).executionStrategy(clientExecutionStrategy).buildBlocking()) {
+            final String responseBody = "foo";
+            HttpResponse response = client.request(client.post("/0")
+                    .payloadBody(responseBody, textSerializer()));
+            assertEquals(responseBody, response.payloadBody(textDeserializer()));
+            assertEmpty(errorQueue);
+        }
+    }
+
+    @Test
     public void clientFilterAsyncContext() throws Exception {
-        InetSocketAddress serverAddress = h2PriorKnowledge ? bindH2EchoServer() : bindHttpEchoServer();
+        InetSocketAddress serverAddress = bindHttpEchoServer();
         final Queue<Throwable> errorQueue = new ConcurrentLinkedQueue<>();
         try (BlockingHttpClient client = forSingleAddress(HostAndPort.of(serverAddress))
                 .h2PriorKnowledge(h2PriorKnowledge).executionStrategy(clientExecutionStrategy)
@@ -453,8 +546,8 @@ public class H2ClientPriorKnowledgeFeatureParityTest {
     }
 
     @Test
-    public void connectionFilterAsyncContext() throws Exception {
-        InetSocketAddress serverAddress = h2PriorKnowledge ? bindH2EchoServer() : bindHttpEchoServer();
+    public void clientConnectionFilterAsyncContext() throws Exception {
+        InetSocketAddress serverAddress = bindHttpEchoServer();
         final Queue<Throwable> errorQueue = new ConcurrentLinkedQueue<>();
         try (BlockingHttpClient client = forSingleAddress(HostAndPort.of(serverAddress))
                 .h2PriorKnowledge(h2PriorKnowledge).executionStrategy(clientExecutionStrategy)
@@ -475,10 +568,62 @@ public class H2ClientPriorKnowledgeFeatureParityTest {
     }
 
     @Test
-    public void gracefulClose() throws Exception {
+    public void serverGracefulClose() throws Exception {
         assumeFullDuplex();
 
-        InetSocketAddress serverAddress = h2PriorKnowledge ? bindH2EchoServer() : bindHttpEchoServer();
+        CountDownLatch serverReceivedRequestLatch = new CountDownLatch(1);
+        InetSocketAddress serverAddress = bindHttpEchoServer(service -> new StreamingHttpServiceFilter(service) {
+            @Override
+            public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
+                                                        final StreamingHttpRequest request,
+                                                        final StreamingHttpResponseFactory responseFactory) {
+                serverReceivedRequestLatch.countDown();
+                return delegate().handle(ctx, request, responseFactory);
+            }
+        });
+        StreamingHttpClient client = forSingleAddress(HostAndPort.of(serverAddress))
+                .h2PriorKnowledge(h2PriorKnowledge).executionStrategy(clientExecutionStrategy).buildStreaming();
+        SpScPublisherProcessor<Buffer> requestBody = new SpScPublisherProcessor<>(16);
+        // We want to make a request, and intentionally not complete it. While the request is in process we invoke
+        // closeAsyncGracefully and verify that we wait until the request has completed before the underlying
+        // transport is closed.
+        StreamingHttpRequest request = client.post("/").payloadBody(requestBody);
+        StreamingHttpResponse response = client.request(request).toFuture().get();
+
+        // Wait for the server the process the request.
+        serverReceivedRequestLatch.await();
+
+        // Initiate graceful close on the server
+        assertNotNull(h1ServerContext);
+        CountDownLatch onServerCloseLatch = new CountDownLatch(1);
+        h1ServerContext.onClose().subscribe(onServerCloseLatch::countDown);
+        h1ServerContext.closeAsyncGracefully().subscribe();
+
+        try (BlockingHttpClient client2 = forSingleAddress(HostAndPort.of(serverAddress))
+                .h2PriorKnowledge(h2PriorKnowledge).executionStrategy(clientExecutionStrategy).buildBlocking()) {
+            try {
+                client2.request(client2.get("/"));
+                fail("server has initiated graceful close, subsequent connections/requests are expected to fail.");
+            } catch (Throwable cause) {
+                // expected
+            }
+        }
+
+        // We expect this to timeout, because we have not completed the outstanding request.
+        assertFalse(onServerCloseLatch.await(300, MILLISECONDS));
+
+        requestBody.sendOnComplete();
+
+        HttpResponse fullResponse = response.toResponse().toFuture().get();
+        assertEquals(0, fullResponse.payloadBody().readableBytes());
+        onServerCloseLatch.await();
+    }
+
+    @Test
+    public void clientGracefulClose() throws Exception {
+        assumeFullDuplex();
+
+        InetSocketAddress serverAddress = bindHttpEchoServer();
         StreamingHttpClient client = forSingleAddress(HostAndPort.of(serverAddress))
                 .h2PriorKnowledge(h2PriorKnowledge).executionStrategy(clientExecutionStrategy).buildStreaming();
         CountDownLatch onCloseLatch = new CountDownLatch(1);
@@ -505,7 +650,7 @@ public class H2ClientPriorKnowledgeFeatureParityTest {
     public void fullDuplexMode() throws Exception {
         assumeFullDuplex();
 
-        InetSocketAddress serverAddress = h2PriorKnowledge ? bindH2EchoServer() : bindHttpEchoServer();
+        InetSocketAddress serverAddress = bindHttpEchoServer();
         try (StreamingHttpClient client = forSingleAddress(HostAndPort.of(serverAddress))
                 .h2PriorKnowledge(h2PriorKnowledge).executionStrategy(clientExecutionStrategy).buildStreaming()) {
             SpScPublisherProcessor<Buffer> requestBody1 = new SpScPublisherProcessor<>(16);
@@ -631,7 +776,7 @@ public class H2ClientPriorKnowledgeFeatureParityTest {
     }
 
     private void continue100(boolean failExpectation) throws Exception {
-        InetSocketAddress serverAddress = h2PriorKnowledge ? bindH2EchoServer() : bindHttpEchoServer();
+        InetSocketAddress serverAddress = bindHttpEchoServer();
         try (StreamingHttpClient client = forSingleAddress(HostAndPort.of(serverAddress))
                 .h2PriorKnowledge(h2PriorKnowledge).executionStrategy(clientExecutionStrategy).buildStreaming()) {
             SpScPublisherProcessor<Buffer> requestBody1 = new SpScPublisherProcessor<>(16);
@@ -659,10 +804,6 @@ public class H2ClientPriorKnowledgeFeatureParityTest {
         }
     }
 
-    private InetSocketAddress bindH2Server(ChannelHandler childChannelHandler) {
-        return bindH2Server(childChannelHandler, p -> { });
-    }
-
     private InetSocketAddress bindH2Server(ChannelHandler childChannelHandler,
                                            Consumer<ChannelPipeline> parentChannelInitializer) {
         ServerBootstrap sb = new ServerBootstrap();
@@ -671,7 +812,9 @@ public class H2ClientPriorKnowledgeFeatureParityTest {
         sb.childHandler(new ChannelInitializer<Channel>() {
             @Override
             protected void initChannel(final Channel ch) {
-                ch.pipeline().addLast(Http2MultiplexCodecBuilder.forServer(childChannelHandler).build());
+                ch.pipeline().addLast(
+                        Http2FrameCodecBuilder.forServer().build(),
+                        new Http2MultiplexHandler(childChannelHandler));
                 parentChannelInitializer.accept(ch.pipeline());
             }
         });
@@ -679,17 +822,18 @@ public class H2ClientPriorKnowledgeFeatureParityTest {
         return (InetSocketAddress) serverAcceptorChannel.localAddress();
     }
 
-    private InetSocketAddress bindH2EchoServer() {
-        return bindH2Server(new ChannelInitializer<Channel>() {
-            @Override
-            protected void initChannel(final Channel ch) {
-                ch.pipeline().addLast(EchoHttp2Handler.INSTANCE);
-            }
-        });
+    private InetSocketAddress bindHttpEchoServer() throws Exception {
+        return bindHttpEchoServer(null);
     }
 
-    private InetSocketAddress bindHttpEchoServer() throws ExecutionException, InterruptedException {
-        h1ServerContext = HttpServers.forAddress(localAddress(0)).listenStreaming(
+    private InetSocketAddress bindHttpEchoServer(@Nullable StreamingHttpServiceFilterFactory filterFactory)
+            throws Exception {
+        HttpServerBuilder serverBuilder = HttpServers.forAddress(localAddress(0))
+                .h2PriorKnowledge(h2PriorKnowledge);
+        if (filterFactory != null) {
+            serverBuilder.appendServiceFilter(filterFactory);
+        }
+        h1ServerContext = serverBuilder.listenStreaming(
                 (ctx, request, responseFactory) -> {
                     StreamingHttpResponse resp;
                     if (request.headers().contains(EXPECT, CONTINUE)) {
@@ -710,6 +854,78 @@ public class H2ClientPriorKnowledgeFeatureParityTest {
                     return succeeded(resp);
                 }).toFuture().get();
         return (InetSocketAddress) h1ServerContext.listenAddress();
+    }
+
+    private InetSocketAddress bindHttpSynchronousResponseServer(Consumer<StreamingHttpRequest> headerConsumer)
+            throws Exception {
+        h1ServerContext = HttpServers.forAddress(localAddress(0))
+                .h2PriorKnowledge(h2PriorKnowledge).listenStreaming(
+                        (ctx, request, responseFactory) -> {
+                            try {
+                                headerConsumer.accept(request);
+                            } catch (Throwable cause) {
+                                return succeeded(responseFactory.internalServerError()
+                                        .payloadBody(from(throwableToString(cause)), textSerializer()));
+                            }
+                            StreamingHttpResponse resp = responseFactory.ok();
+                            CharSequence contentType = request.headers().get(CONTENT_TYPE);
+                            if (contentType != null) {
+                                resp.headers().add(CONTENT_TYPE, contentType);
+                            }
+                            return succeeded(resp);
+                        }).toFuture().get();
+        return (InetSocketAddress) h1ServerContext.listenAddress();
+    }
+
+    private static String throwableToString(Throwable aThrowable) {
+        final Writer result = new StringWriter();
+        final PrintWriter printWriter = new PrintWriter(result);
+        aThrowable.printStackTrace(printWriter);
+        return result.toString();
+    }
+
+    private static Single<StreamingHttpResponse> asyncContextTestRequest(
+            Queue<Throwable> errorQueue, final StreamingHttpService delegate,
+            final HttpServiceContext ctx, final StreamingHttpRequest request,
+            final StreamingHttpResponseFactory responseFactory) {
+        final String v1 = "v1";
+        final String v2 = "v2";
+        AsyncContext.put(K1, v1);
+        return delegate.handle(ctx, request, responseFactory).map(streamingHttpResponse -> {
+            AsyncContext.put(K2, v2);
+            assertAsyncContext(K1, v1, errorQueue);
+            assertAsyncContext(K2, v2, errorQueue);
+            return streamingHttpResponse.transformRawPayloadBody(pub -> {
+                AsyncContext.put(K2, v2);
+                assertAsyncContext(K1, v1, errorQueue);
+                assertAsyncContext(K2, v2, errorQueue);
+                return pub.beforeSubscriber(() -> new PublisherSource.Subscriber<Object>() {
+                    @Override
+                    public void onSubscribe(final PublisherSource.Subscription subscription) {
+                        assertAsyncContext(K1, v1, errorQueue);
+                        assertAsyncContext(K2, v2, errorQueue);
+                    }
+
+                    @Override
+                    public void onNext(@Nullable final Object o) {
+                        assertAsyncContext(K1, v1, errorQueue);
+                        assertAsyncContext(K2, v2, errorQueue);
+                    }
+
+                    @Override
+                    public void onError(final Throwable t) {
+                        assertAsyncContext(K1, v1, errorQueue);
+                        assertAsyncContext(K2, v2, errorQueue);
+                    }
+
+                    @Override
+                    public void onComplete() {
+                        assertAsyncContext(K1, v1, errorQueue);
+                        assertAsyncContext(K2, v2, errorQueue);
+                    }
+                });
+            });
+        });
     }
 
     private static Single<StreamingHttpResponse> asyncContextTestRequest(Queue<Throwable> errorQueue,
@@ -888,7 +1104,7 @@ public class H2ClientPriorKnowledgeFeatureParityTest {
                         outHeaders.status(io.netty.handler.codec.http.HttpResponseStatus.CONTINUE.codeAsText());
                     }
                 } else {
-                    outHeaders.status(OK.codeAsText());
+                    outHeaders.status(io.netty.handler.codec.http.HttpResponseStatus.OK.codeAsText());
                 }
 
                 CharSequence contentType = headers.headers().get(CONTENT_TYPE);

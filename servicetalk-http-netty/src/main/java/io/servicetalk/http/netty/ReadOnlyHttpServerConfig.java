@@ -20,16 +20,20 @@ import io.servicetalk.tcp.netty.internal.ReadOnlyTcpServerConfig;
 
 final class ReadOnlyHttpServerConfig {
     private final ReadOnlyTcpServerConfig tcpConfig;
+    private final ReadOnlyH2ServerConfig h2ServerConfig;
     private final HttpHeadersFactory headersFactory;
     private final long clientCloseTimeoutMs;
     private final int maxInitialLineLength;
     private final int maxHeaderSize;
     private final int headersEncodedSizeEstimate;
     private final int trailersEncodedSizeEstimate;
+    private final boolean h2PriorKnowledge;
 
     ReadOnlyHttpServerConfig(final HttpServerConfig from) {
         tcpConfig = from.tcpConfig().asReadOnly();
+        h2ServerConfig = from.h2ServerConfig().asReadOnly();
         headersFactory = from.headersFactory();
+        h2PriorKnowledge = from.isH2PriorKnowledge();
         clientCloseTimeoutMs = from.clientCloseTimeoutMs();
         maxInitialLineLength = from.maxInitialLineLength();
         maxHeaderSize = from.maxHeaderSize();
@@ -39,6 +43,14 @@ final class ReadOnlyHttpServerConfig {
 
     HttpHeadersFactory headersFactory() {
         return headersFactory;
+    }
+
+    ReadOnlyH2ServerConfig h2ServerConfig() {
+        return h2ServerConfig;
+    }
+
+    boolean isH2PriorKnowledge() {
+        return h2PriorKnowledge;
     }
 
     long clientCloseTimeoutMs() {

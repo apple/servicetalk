@@ -23,23 +23,38 @@ import static java.util.Objects.requireNonNull;
 
 final class HttpServerConfig {
     private final TcpServerConfig tcpConfig;
+    private final H2ServerConfig h2ServerConfig;
     private HttpHeadersFactory headersFactory = DefaultHttpHeadersFactory.INSTANCE;
     private long clientCloseTimeoutMs = 500;
     private int maxInitialLineLength = 4096;
     private int maxHeaderSize = 8192;
     private int headersEncodedSizeEstimate = 256;
     private int trailersEncodedSizeEstimate = 256;
+    private boolean h2PriorKnowledge;
 
     HttpServerConfig() {
         tcpConfig = new TcpServerConfig(false);
+        h2ServerConfig = new H2ServerConfig();
     }
 
     HttpHeadersFactory headersFactory() {
         return headersFactory;
     }
 
+    H2ServerConfig h2ServerConfig() {
+        return h2ServerConfig;
+    }
+
     void headersFactory(final HttpHeadersFactory headersFactory) {
         this.headersFactory = requireNonNull(headersFactory);
+    }
+
+    boolean isH2PriorKnowledge() {
+        return h2PriorKnowledge;
+    }
+
+    void h2PriorKnowledge(boolean h2PriorKnowledge) {
+        this.h2PriorKnowledge = h2PriorKnowledge;
     }
 
     long clientCloseTimeoutMs() {

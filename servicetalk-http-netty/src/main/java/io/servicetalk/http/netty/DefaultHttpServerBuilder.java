@@ -17,6 +17,7 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.HttpServerBuilder;
@@ -49,6 +50,25 @@ final class DefaultHttpServerBuilder extends HttpServerBuilder {
     @Override
     public HttpServerBuilder headersFactory(final HttpHeadersFactory headersFactory) {
         config.headersFactory(headersFactory);
+        return this;
+    }
+
+    @Override
+    public HttpServerBuilder h2HeadersFactory(final HttpHeadersFactory headersFactory) {
+        config.h2ServerConfig().h2HeadersFactory(headersFactory);
+        return this;
+    }
+
+    @Override
+    public HttpServerBuilder h2PriorKnowledge(final boolean h2PriorKnowledge) {
+        config.tcpConfig().autoRead(h2PriorKnowledge);
+        config.h2PriorKnowledge(h2PriorKnowledge);
+        return this;
+    }
+
+    @Override
+    public HttpServerBuilder h2FrameLogger(@Nullable final String h2FrameLogger) {
+        config.h2ServerConfig().h2FrameLogger(h2FrameLogger);
         return this;
     }
 
@@ -152,7 +172,11 @@ final class DefaultHttpServerBuilder extends HttpServerBuilder {
                                              boolean drainRequestPayloadBody) {
         ReadOnlyHttpServerConfig roConfig = this.config.asReadOnly();
         executionContextBuilder.executionStrategy(strategy);
-        return NettyHttpServer.bind(executionContextBuilder.build(), roConfig, address, connectionAcceptor,
-                service, drainRequestPayloadBody);
+        final HttpExecutionContext httpExecutionContext = executionContextBuilder.build();
+        return roConfig.isH2PriorKnowledge() ?
+                H2ServerParentConnectionContext.bind(httpExecutionContext, roConfig, address, connectionAcceptor,
+                        service, drainRequestPayloadBody) :
+                NettyHttpServer.bind(httpExecutionContext, roConfig, address, connectionAcceptor,
+                        service, drainRequestPayloadBody);
     }
 }
