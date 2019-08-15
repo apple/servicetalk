@@ -28,10 +28,9 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.MessageLite;
 import com.google.protobuf.Parser;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import javax.annotation.Nullable;
@@ -41,7 +40,7 @@ import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 
 final class ProtoBufSerializationProvider<T extends MessageLite> implements SerializationProvider {
-
+    private static final int LENGTH_PREFIXED_MESSAGE_PREFIX_BYTES = 5;
     private final Class<T> targetClass;
     private final GrpcMessageEncoding messageEncoding;
     private final ProtoSerializer serializer;
@@ -87,31 +86,27 @@ final class ProtoBufSerializationProvider<T extends MessageLite> implements Seri
 
     private static boolean isCompressed(Buffer buffer) throws SerializationException {
         byte compressionFlag = buffer.readByte();
-        switch (compressionFlag) {
-            case 1:
-                return true;
-            case 0:
-                return false;
-            default:
-                throw new SerializationException("compression flag must be 0 or 1 but was:  " + compressionFlag);
+        if (compressionFlag == 0) {
+            return false;
+        } else if (compressionFlag == 1) {
+            return true;
         }
+        throw new SerializationException("compression flag must be 0 or 1 but was:  " + compressionFlag);
     }
 
     private static final class ProtoDeserializer<T> implements StreamingDeserializer<T> {
-        private enum State {
-            ReadCompressed,
-            AccumulateLength,
-            ReadLength,
-            AccumulateData,
-            ParseData
-        }
-
         private final Parser<T> parser;
         private final CompositeBuffer accumulate;
 
         private boolean compressed;
         private int lengthOfData = -1;
-        private State state = State.ReadCompressed;
+        /**
+         * <ul>
+         *     <li>{@code true} - read Length-Prefixed-Message header</li>
+         *     <li>{@code false} - read Length-Prefixed-Message Message</li>
+         * </ul>
+         */
+        private boolean stateReadHeader = true;
 
         ProtoDeserializer(final Parser<T> parser,
                           @SuppressWarnings("unused") final GrpcMessageEncoding grpcMessageEncoding) {
@@ -121,81 +116,78 @@ final class ProtoBufSerializationProvider<T extends MessageLite> implements Seri
 
         @Override
         public Iterable<T> deserialize(Buffer toDeserialize) {
-            if (toDeserialize.readableBytes() == 0) {
-                return emptyList(); // Nothing to read
+            if (toDeserialize.readableBytes() < 0) {
+                return emptyList(); // We don't have any additional data to process, so bail for now.
             }
+            @Nullable
             List<T> parsedData = null;
-            InputStream dataToParse = null;
 
             for (;;) {
-                switch (state) {
-                    case ReadCompressed:
-                        compressed = isCompressed(toDeserialize);
-                        // TODO (nkant) : handle compression
-                        assert !compressed;
-                        state = State.AccumulateLength;
-                        break;
-                    case AccumulateLength:
-                        toDeserialize = addToAccumulateIfAccumulating(toDeserialize);
-
-                        if (toDeserialize.readableBytes() >= 4) {
-                            state = State.ReadLength;
-                            break;
-                        }
+                if (stateReadHeader) {
+                    toDeserialize = addToAccumulateIfAccumulating(toDeserialize);
+                    // If we don't have more than a full header, just bail and try again later when more data arrives.
+                    if (toDeserialize.readableBytes() <= LENGTH_PREFIXED_MESSAGE_PREFIX_BYTES) {
                         return addToAccumulateIfRequiredAndReturn(toDeserialize, parsedData);
-                    case ReadLength:
-                        // https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md specifies size as 4 bytes
-                        // unsigned int However netty buffers only support up to Integer.MAX_VALUE, and even
-                        // grpc-java (Google's implementation) only supports up to Integer.MAX_VALUE, so for
-                        // simplicity we will just used signed int for now.
-                        lengthOfData = toDeserialize.readInt();
-                        state = State.AccumulateData;
-                        break;
-                    case AccumulateData:
-                        assert lengthOfData >= 0;
-                        toDeserialize = addToAccumulateIfAccumulating(toDeserialize);
+                    }
 
-                        if (toDeserialize.readableBytes() >= lengthOfData) {
-                            // TODO: we should be able to use slice() here instead of copying to heap but for some
-                            // reason slice is garbling the indices
-                            byte[] data = new byte[lengthOfData];
-                            toDeserialize.readBytes(data, 0, lengthOfData);
-                            dataToParse = new ByteArrayInputStream(data);
-                            if (accumulate.readableBytes() == 0) {
-                                // No leftover bytes, discard accumulate
-                                accumulate.discardSomeReadBytes();
-                            }
-                            lengthOfData = -1;
-                            compressed = false;
-                            state = State.ParseData;
-                            break;
-                        }
+                    compressed = isCompressed(toDeserialize);
+                    // TODO (nkant) : handle compression
+                    assert !compressed;
+
+                    // https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md specifies size as 4 bytes
+                    // unsigned int However netty buffers only support up to Integer.MAX_VALUE, and even
+                    // grpc-java (Google's implementation) only supports up to Integer.MAX_VALUE, so for
+                    // simplicity we will just used signed int for now.
+                    lengthOfData = toDeserialize.readInt();
+                    if (lengthOfData < 0) { // TODO(scott): is 0 length valid?
+                        throw new SerializationException("Message-Length invalid: " + lengthOfData);
+                    }
+
+                    stateReadHeader = false;
+                } else {
+                    assert lengthOfData >= 0;
+                    toDeserialize = addToAccumulateIfAccumulating(toDeserialize);
+                    if (toDeserialize.readableBytes() < lengthOfData) {
                         return addToAccumulateIfRequiredAndReturn(toDeserialize, parsedData);
-                    case ParseData:
-                        assert dataToParse != null;
-                        T t;
-                        try {
-                            state = State.ReadCompressed;
-                            t = parser.parseFrom(dataToParse);
-                        } catch (InvalidProtocolBufferException e) {
-                            throw new SerializationException(e);
+                    }
+
+                    final T t;
+                    final ByteBuffer byteBuffer = toDeserialize.toNioBuffer(toDeserialize.readerIndex(), lengthOfData);
+                    try {
+                        t = parser.parseFrom(byteBuffer);
+                    } catch (InvalidProtocolBufferException e) {
+                        throw new SerializationException(e);
+                    }
+
+                    // The NIO buffer indexes are not connected to the Buffer indexes, so we need to update
+                    // our indexes and discard any bytes if necessary.
+                    toDeserialize.skipBytes(lengthOfData);
+                    if (toDeserialize == accumulate) {
+                        accumulate.discardSomeReadBytes();
+                    }
+
+                    // We parsed the expected data, update the state to prepare for parsing the next frame.
+                    lengthOfData = -1;
+                    stateReadHeader = true;
+                    compressed = false;
+
+                    // If we don't have more than a full header, just bail and try again later when more data arrives.
+                    if (toDeserialize.readableBytes() <= LENGTH_PREFIXED_MESSAGE_PREFIX_BYTES) {
+                        // Before we bail out, we need to save the accumulated data for next time.
+                        if (toDeserialize != accumulate && toDeserialize.readableBytes() != 0) {
+                            accumulate.addBuffer(toDeserialize, true);
                         }
-                        if (toDeserialize.readableBytes() == 0) {
-                            if (parsedData == null) {
-                                return singletonList(t);
-                            } else {
-                                parsedData.add(t);
-                                return parsedData;
-                            }
-                        } else {
-                            if (parsedData == null) {
-                                parsedData = new ArrayList<>();
-                            }
-                            parsedData.add(t);
+                        if (parsedData == null) {
+                            return singletonList(t);
                         }
-                        break;
-                    default:
-                        throw new IllegalStateException("Unknown parse state: " + state);
+                        parsedData.add(t);
+                        return parsedData;
+                    } else {
+                        if (parsedData == null) {
+                            parsedData = new ArrayList<>(4);
+                        }
+                        parsedData.add(t);
+                    }
                 }
             }
         }
@@ -213,7 +205,7 @@ final class ProtoBufSerializationProvider<T extends MessageLite> implements Seri
         }
 
         private Buffer addToAccumulateIfAccumulating(Buffer toDeserialize) {
-            if (accumulate.readableBytes() > 0) {
+            if (toDeserialize != accumulate && accumulate.readableBytes() > 0) {
                 accumulate.addBuffer(toDeserialize, true);
                 return accumulate;
             }

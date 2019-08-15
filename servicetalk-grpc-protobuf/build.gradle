@@ -23,10 +23,13 @@ buildscript {
 
   dependencies {
     classpath "io.servicetalk:servicetalk-gradle-plugin-internal:$project.version"
+    // TODO find a way to share this version with servicetalk-grpc-gradle-plugin/build.gradle
+    classpath "com.google.protobuf:protobuf-gradle-plugin:0.8.10"
   }
 }
 
 apply plugin: "servicetalk-library"
+apply plugin: "com.google.protobuf"
 
 dependencies {
   implementation "io.servicetalk:servicetalk-bom-internal:$project.version"
@@ -40,8 +43,34 @@ dependencies {
   implementation "org.slf4j:slf4j-api"
   implementation "com.google.code.findbugs:jsr305"
 
+  testImplementation "com.google.protobuf:protobuf-java"
   testImplementation "io.servicetalk:servicetalk-test-resources:$project.version"
   testImplementation "junit:junit"
   testImplementation "org.hamcrest:hamcrest-library"
   testImplementation "org.mockito:mockito-core"
+}
+
+// Versions for managed dependencies are not available as properties so we retrieve it from a concrete dependency
+def protobufVersion = configurations.compileClasspath.resolvedConfiguration.firstLevelModuleDependencies
+    .findAll { it.moduleName == "protobuf-java" }[0].moduleVersion
+
+protobuf {
+  protoc {
+    artifact = "com.google.protobuf:protoc:$protobufVersion"
+  }
+}
+
+// Add the generated code used for tests to the source set.
+sourceSets {
+  test {
+    resources {
+      srcDir "src"
+      srcDir "${protobuf.generatedFilesBaseDir}/source/test/java"
+    }
+  }
+
+}
+
+clean {
+  delete protobuf.generatedFilesBaseDir
 }
