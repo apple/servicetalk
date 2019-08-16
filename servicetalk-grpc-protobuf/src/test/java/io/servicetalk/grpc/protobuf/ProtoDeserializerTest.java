@@ -18,82 +18,56 @@ package io.servicetalk.grpc.protobuf;
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.serialization.api.StreamingDeserializer;
 
-import com.google.protobuf.MessageLite;
 import com.google.protobuf.Parser;
-import org.junit.Before;
 import org.junit.Test;
-import org.mockito.Mockito;
 
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.grpc.api.GrpcMessageEncoding.None;
+import static io.servicetalk.grpc.protobuf.test.TestProtos.DummyMessage;
 import static java.util.Arrays.asList;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.StreamSupport.stream;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 public class ProtoDeserializerTest {
 
-    @SuppressWarnings("unchecked")
-    private final Parser<DummyMessage> parser = Mockito.mock(Parser.class);
+    private final Parser<DummyMessage> parser = DummyMessage.parser();
     private final ProtoBufSerializationProvider<DummyMessage> serializationProvider =
             new ProtoBufSerializationProvider<>(DummyMessage.class, None, parser);
 
-    @Before
-    public void setUp() throws Exception {
-        when(parser.parseFrom(any(InputStream.class))).thenAnswer(invocation -> {
-            InputStream is = invocation.getArgument(0);
-            StringBuilder msg = new StringBuilder();
-            byte[] data = new byte[32];
-            int read;
-            try {
-                while ((read = is.read(data)) > 0) {
-                    msg.append(new String(data, 0, read, StandardCharsets.US_ASCII));
-                }
-            } finally {
-                is.close();
-            }
-            DummyMessage dummyMessage = mock(DummyMessage.class);
-            when(dummyMessage.getMessage()).thenReturn(msg.toString());
-            return dummyMessage;
-        });
-    }
-
     @Test
-    public void singleMessageAligned() {
+    public void singleMessageAligned() throws IOException {
         List<String> deserialized = deserialize(grpcBufferFor("Hello"));
         assertThat("Unexpected messages deserialized.", deserialized, contains("Hello"));
     }
 
     @Test
-    public void singleMessageAlignedAsIterable() {
+    public void singleMessageAlignedAsIterable() throws IOException {
         List<String> deserialized = deserialize(new Buffer[]{grpcBufferFor("Hello")});
         assertThat("Unexpected messages deserialized.", deserialized, contains("Hello"));
     }
 
     @Test
-    public void multipleMessagesAligned() {
+    public void multipleMessagesAligned() throws IOException {
         List<String> deserialized = deserialize(grpcBufferFor("Hello1"), grpcBufferFor("Hello2"));
         assertThat("Unexpected messages deserialized.", deserialized, contains("Hello1", "Hello2"));
     }
 
     @Test
-    public void multipleMessagesInSingleBuffer() {
+    public void multipleMessagesInSingleBuffer() throws IOException {
         List<String> deserialized = deserialize(grpcBufferFor("Hello1", "Hello2"));
         assertThat("Unexpected messages deserialized.", deserialized, contains("Hello1", "Hello2"));
     }
 
     @Test
-    public void splitMessageInBuffers() {
+    public void splitMessageInBuffers() throws IOException {
         Buffer msg = grpcBufferFor("Hello");
         List<Buffer> buffers = new ArrayList<>();
         while (msg.readableBytes() > 0) {
@@ -118,17 +92,15 @@ public class ProtoDeserializerTest {
                 .map(DummyMessage::getMessage).collect(toList());
     }
 
-    private Buffer grpcBufferFor(final String... messages) {
+    private Buffer grpcBufferFor(final String... messages) throws IOException {
         Buffer buffer = DEFAULT_ALLOCATOR.newBuffer();
+        OutputStream out = Buffer.asOutputStream(buffer);
         for (String message : messages) {
-            byte[] data = message.getBytes(StandardCharsets.US_ASCII);
-            buffer.writeByte(0).writeInt(data.length).writeBytes(data);
+            DummyMessage msg = DummyMessage.newBuilder().setMessage(message).build();
+            buffer.writeByte(0); // no compression
+            buffer.writeInt(msg.getSerializedSize());
+            msg.writeTo(out);
         }
         return buffer;
-    }
-
-    private interface DummyMessage extends MessageLite {
-
-        String getMessage();
     }
 }
