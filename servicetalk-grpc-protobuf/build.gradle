@@ -50,7 +50,8 @@ dependencies {
 }
 
 println "version: $project.version"
-configurations.testCompileClasspath.resolvedConfiguration.firstLevelModuleDependencies
+configurations.testCompileClasspath.resolvedConfiguration
+//    .firstLevelModuleDependencies
 //    .findAll { it.moduleName == "protobuf-java" }[0].moduleVersion
     .each { println it }
 
