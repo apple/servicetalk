@@ -64,7 +64,6 @@ protobuf {
 sourceSets {
   test {
     resources {
-      srcDir "src"
       srcDir "${protobuf.generatedFilesBaseDir}/source/test/java"
     }
   }
