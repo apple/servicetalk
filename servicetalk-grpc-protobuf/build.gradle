@@ -50,8 +50,8 @@ dependencies {
 }
 
 // Versions for managed dependencies are not available as properties so we retrieve it from a concrete dependency
-//def protobufVersion = configurations.compileClasspath.resolvedConfiguration.firstLevelModuleDependencies
-//    .findAll { it.moduleName == "protobuf-java" }[0].moduleVersion
+def protobufVersion = configurations.compileClasspath.resolvedConfiguration.firstLevelModuleDependencies
+    .findAll { it.moduleName == "protobuf-java" }[0].moduleVersion
 
 protobuf {
   protoc {
