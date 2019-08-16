@@ -116,7 +116,7 @@ final class ProtoBufSerializationProvider<T extends MessageLite> implements Seri
 
         @Override
         public Iterable<T> deserialize(Buffer toDeserialize) {
-            if (toDeserialize.readableBytes() < 0) {
+            if (toDeserialize.readableBytes() <= 0) {
                 return emptyList(); // We don't have any additional data to process, so bail for now.
             }
             @Nullable
@@ -152,9 +152,8 @@ final class ProtoBufSerializationProvider<T extends MessageLite> implements Seri
                     }
 
                     final T t;
-                    final ByteBuffer byteBuffer = toDeserialize.toNioBuffer(toDeserialize.readerIndex(), lengthOfData);
                     try {
-                        t = parser.parseFrom(byteBuffer);
+                        t = parser.parseFrom(toDeserialize.toNioBuffer(toDeserialize.readerIndex(), lengthOfData));
                     } catch (InvalidProtocolBufferException e) {
                         throw new SerializationException(e);
                     }
@@ -167,6 +166,7 @@ final class ProtoBufSerializationProvider<T extends MessageLite> implements Seri
                     }
 
                     // We parsed the expected data, update the state to prepare for parsing the next frame.
+                    final int oldLengthOfData = lengthOfData;
                     lengthOfData = -1;
                     stateReadHeader = true;
                     compressed = false;
@@ -184,7 +184,8 @@ final class ProtoBufSerializationProvider<T extends MessageLite> implements Seri
                         return parsedData;
                     } else {
                         if (parsedData == null) {
-                            parsedData = new ArrayList<>(4);
+                            // assume roughly uniform message sizes when estimating the initial size of the array.
+                            parsedData = new ArrayList<>(1 + toDeserialize.readableBytes() / oldLengthOfData);
                         }
                         parsedData.add(t);
                     }
