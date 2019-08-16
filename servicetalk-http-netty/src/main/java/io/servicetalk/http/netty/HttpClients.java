@@ -56,7 +56,7 @@ public final class HttpClients {
      * @return new builder with default configuration
      */
     public static MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> forMultiAddressUrl() {
-        return new DefaultMultiAddressHttpClientBuilder(forUnknownHostAndPort());
+        return new DefaultMultiAddressUrlHttpClientBuilder(forUnknownHostAndPort());
     }
 
     /**
@@ -75,7 +75,7 @@ public final class HttpClients {
     public static MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> forMultiAddressUrl(
             final ServiceDiscoverer<HostAndPort, InetSocketAddress, ? extends ServiceDiscovererEvent<InetSocketAddress>>
                     serviceDiscoverer) {
-        return new DefaultMultiAddressHttpClientBuilder(
+        return new DefaultMultiAddressUrlHttpClientBuilder(
                 new DefaultSingleAddressHttpClientBuilder<>(serviceDiscoverer));
     }
 

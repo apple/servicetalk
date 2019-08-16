@@ -79,7 +79,7 @@ import static java.util.Objects.requireNonNull;
  *
  * @see <a href="https://tools.ietf.org/html/rfc7230#section-5.3.2">absolute-form rfc7230#section-5.3.2</a>
  */
-final class DefaultMultiAddressHttpClientBuilder extends MultiAddressHttpClientBuilder<HostAndPort,
+final class DefaultMultiAddressUrlHttpClientBuilder extends MultiAddressHttpClientBuilder<HostAndPort,
         InetSocketAddress> {
     // https://tools.ietf.org/html/rfc2068#section-10.3 says:
     // A user agent SHOULD NOT automatically redirect a request more than 5 times,
@@ -99,7 +99,7 @@ final class DefaultMultiAddressHttpClientBuilder extends MultiAddressHttpClientB
     private BiConsumer<HostAndPort, ClientSslConfigBuilder<?
             extends SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress>>> sslConfigFunction;
 
-    DefaultMultiAddressHttpClientBuilder(
+    DefaultMultiAddressUrlHttpClientBuilder(
             final DefaultSingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builderTemplate) {
         this.builderTemplate = requireNonNull(builderTemplate);
     }

@@ -39,7 +39,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
-public class DefaultMultiAddressHttpClientBuilderTest {
+public class DefaultMultiAddressUrlHttpClientBuilderTest {
 
     @ClassRule
     public static final ExecutionContextRule CTX = immediate();
