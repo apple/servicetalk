@@ -44,7 +44,7 @@ public class ProtoDeserializerTest {
 
     @Test
     public void zeroLengthMessageAligned() throws IOException {
-        List<String> deserialized = deserialize(grpcBufferFor(new String[]{ null }));
+        List<String> deserialized = deserialize(grpcBufferFor(new String[]{null}));
         assertThat("Unexpected messages deserialized.", deserialized, contains(""));
     }
 
