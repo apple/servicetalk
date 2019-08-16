@@ -123,6 +123,16 @@ public abstract class MultiAddressHttpClientBuilder<U, R>
     public abstract MultiAddressHttpClientBuilder<U, R> unresolvedAddressToHost(
             Function<U, CharSequence> unresolvedAddressToHostFunction);
 
+    @Override
+    public abstract MultiAddressHttpClientBuilder<U, R> appendClientFilter(StreamingHttpClientFilterFactory factory);
+
+    @Override
+    public MultiAddressHttpClientBuilder<U, R> appendClientFilter(final Predicate<StreamingHttpRequest> predicate,
+                                                                  final StreamingHttpClientFilterFactory factory) {
+        super.appendClientFilter(predicate, factory);
+        return this;
+    }
+
     /**
      * Append the filter to the chain of filters used to decorate the {@link StreamingHttpClient} created by this
      * builder for a given {@code UnresolvedAddress}.
