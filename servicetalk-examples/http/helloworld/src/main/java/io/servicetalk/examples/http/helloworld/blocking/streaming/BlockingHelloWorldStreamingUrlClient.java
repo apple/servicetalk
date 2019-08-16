@@ -25,7 +25,7 @@ import static io.servicetalk.http.api.HttpSerializationProviders.textDeserialize
 public final class BlockingHelloWorldStreamingUrlClient {
 
     public static void main(String[] args) throws Exception {
-        try (BlockingStreamingHttpClient client = HttpClients.forMultiAddress().buildBlockingStreaming()) {
+        try (BlockingStreamingHttpClient client = HttpClients.forMultiAddressUrl().buildBlockingStreaming()) {
             BlockingStreamingHttpResponse response = client.request(client.get("http://localhost:8080/sayHello"));
             System.out.println(response.toString((name, value) -> value));
             try (BlockingIterator<String> payload = response.payloadBody(textDeserializer()).iterator()) {

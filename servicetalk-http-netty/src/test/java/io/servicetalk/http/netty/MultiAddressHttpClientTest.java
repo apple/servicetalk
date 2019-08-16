@@ -91,7 +91,7 @@ public class MultiAddressHttpClientTest {
     public static void beforeClass() throws Exception {
         afterClassCloseables = newCompositeCloseable();
 
-        client = afterClassCloseables.append(HttpClients.forMultiAddress()
+        client = afterClassCloseables.append(HttpClients.forMultiAddressUrl()
                 .buildStreaming());
 
         httpService = (ctx, request, factory) -> {

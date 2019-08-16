@@ -53,7 +53,7 @@ public class HttpProxyTest {
     }
 
     public void startProxy() throws Exception {
-        final HttpClient proxyClient = HttpClients.forMultiAddress().build();
+        final HttpClient proxyClient = HttpClients.forMultiAddressUrl().build();
         final ServerContext serverContext = HttpServers.forPort(0)
                 .listenAndAwait((ctx, request, responseFactory) -> {
                     proxyRequestCount.incrementAndGet();

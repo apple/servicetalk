@@ -49,7 +49,7 @@ public class DefaultMultiAddressHttpClientBuilderTest {
 
     @Test
     public void buildWithDefaults() throws Exception {
-        StreamingHttpRequester newRequester = HttpClients.forMultiAddress()
+        StreamingHttpRequester newRequester = HttpClients.forMultiAddressUrl()
                 .ioExecutor(CTX.ioExecutor())
                 .executionStrategy(defaultStrategy(CTX.executor()))
                 .buildStreaming();
@@ -59,7 +59,7 @@ public class DefaultMultiAddressHttpClientBuilderTest {
 
     @Test
     public void buildAggregatedWithDefaults() throws Exception {
-        HttpRequester newAggregatedRequester = HttpClients.forMultiAddress()
+        HttpRequester newAggregatedRequester = HttpClients.forMultiAddressUrl()
                 .ioExecutor(CTX.ioExecutor())
                 .executionStrategy(defaultStrategy(CTX.executor()))
                 .build();
@@ -69,7 +69,7 @@ public class DefaultMultiAddressHttpClientBuilderTest {
 
     @Test
     public void buildBlockingWithDefaults() throws Exception {
-        BlockingStreamingHttpRequester newBlockingRequester = HttpClients.forMultiAddress()
+        BlockingStreamingHttpRequester newBlockingRequester = HttpClients.forMultiAddressUrl()
                 .ioExecutor(CTX.ioExecutor())
                 .executionStrategy(defaultStrategy(CTX.executor()))
                 .buildBlockingStreaming();
@@ -79,7 +79,7 @@ public class DefaultMultiAddressHttpClientBuilderTest {
 
     @Test
     public void buildBlockingAggregatedWithDefaults() throws Exception {
-        BlockingHttpRequester newBlockingAggregatedRequester = HttpClients.forMultiAddress()
+        BlockingHttpRequester newBlockingAggregatedRequester = HttpClients.forMultiAddressUrl()
                 .ioExecutor(CTX.ioExecutor())
                 .executionStrategy(defaultStrategy(CTX.executor()))
                 .buildBlocking();
@@ -92,7 +92,7 @@ public class DefaultMultiAddressHttpClientBuilderTest {
     public void buildWithProvidedServiceDiscoverer() throws Exception {
         ServiceDiscoverer<HostAndPort, InetSocketAddress,
                 ServiceDiscovererEvent<InetSocketAddress>> mockedServiceDiscoverer = mock(ServiceDiscoverer.class);
-        StreamingHttpRequester newRequester = HttpClients.forMultiAddress(mockedServiceDiscoverer)
+        StreamingHttpRequester newRequester = HttpClients.forMultiAddressUrl(mockedServiceDiscoverer)
                 .ioExecutor(CTX.ioExecutor())
                 .executionStrategy(defaultStrategy(CTX.executor()))
                 .buildStreaming();

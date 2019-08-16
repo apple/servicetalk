@@ -25,7 +25,7 @@ import static io.servicetalk.http.api.HttpSerializationProviders.textDeserialize
 public final class HelloWorldStreamingUrlClient {
 
     public static void main(String[] args) throws Exception {
-        try (StreamingHttpClient client = HttpClients.forMultiAddress().buildStreaming()) {
+        try (StreamingHttpClient client = HttpClients.forMultiAddressUrl().buildStreaming()) {
             // This example is demonstrating asynchronous execution, but needs to prevent the main thread from exiting
             // before the response has been processed. This isn't typical usage for a streaming API but is useful for
             // demonstration purposes.
