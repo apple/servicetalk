@@ -86,7 +86,7 @@ final class DefaultMultiAddressHttpClientBuilder extends MultiAddressHttpClientB
     // since such redirects usually indicate an infinite loop.
     private static final int DEFAULT_MAX_REDIRECTS = 5;
 
-    private static final String HTTPS_SCHEME = "https";
+    private static final String HTTPS_SCHEME = HTTPS.toString();
 
     private final DefaultSingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builderTemplate;
 
