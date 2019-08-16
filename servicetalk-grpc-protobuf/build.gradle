@@ -43,7 +43,6 @@ dependencies {
   implementation "org.slf4j:slf4j-api"
   implementation "com.google.code.findbugs:jsr305"
 
-  testImplementation "com.google.protobuf:protobuf-java"
   testImplementation "io.servicetalk:servicetalk-test-resources:$project.version"
   testImplementation "junit:junit"
   testImplementation "org.hamcrest:hamcrest-library"
