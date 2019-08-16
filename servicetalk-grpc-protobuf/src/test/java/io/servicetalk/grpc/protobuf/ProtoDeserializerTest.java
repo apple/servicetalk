@@ -43,6 +43,30 @@ public class ProtoDeserializerTest {
             new ProtoBufSerializationProvider<>(DummyMessage.class, None, parser);
 
     @Test
+    public void zeroLengthMessageAligned() throws IOException {
+        List<String> deserialized = deserialize(grpcBufferFor(new String[]{ null }));
+        assertThat("Unexpected messages deserialized.", deserialized, contains(""));
+    }
+
+    @Test
+    public void zeroLengthFirstMessageAligned() throws IOException {
+        List<String> deserialized = deserialize(grpcBufferFor(null, "Hello"));
+        assertThat("Unexpected messages deserialized.", deserialized, contains("", "Hello"));
+    }
+
+    @Test
+    public void zeroLengthLastMessageAligned() throws IOException {
+        List<String> deserialized = deserialize(grpcBufferFor("Hello", null));
+        assertThat("Unexpected messages deserialized.", deserialized, contains("Hello", ""));
+    }
+
+    @Test
+    public void zeroLengthMiddleMessageAligned() throws IOException {
+        List<String> deserialized = deserialize(grpcBufferFor("Hello1", null, "Hello2"));
+        assertThat("Unexpected messages deserialized.", deserialized, contains("Hello1", "", "Hello2"));
+    }
+
+    @Test
     public void singleMessageAligned() throws IOException {
         List<String> deserialized = deserialize(grpcBufferFor("Hello"));
         assertThat("Unexpected messages deserialized.", deserialized, contains("Hello"));
@@ -96,7 +120,11 @@ public class ProtoDeserializerTest {
         Buffer buffer = DEFAULT_ALLOCATOR.newBuffer();
         OutputStream out = Buffer.asOutputStream(buffer);
         for (String message : messages) {
-            DummyMessage msg = DummyMessage.newBuilder().setMessage(message).build();
+            DummyMessage.Builder builder = DummyMessage.newBuilder();
+            if (message != null) {
+                builder.setMessage(message);
+            }
+            DummyMessage msg = builder.build();
             buffer.writeByte(0); // no compression
             buffer.writeInt(msg.getSerializedSize());
             msg.writeTo(out);
