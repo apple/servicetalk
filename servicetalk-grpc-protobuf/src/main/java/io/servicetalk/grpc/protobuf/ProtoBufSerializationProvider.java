@@ -35,11 +35,12 @@ import java.util.List;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
+import static java.lang.Math.max;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 
 final class ProtoBufSerializationProvider<T extends MessageLite> implements SerializationProvider {
-    private static final int LENGTH_PREFIXED_MESSAGE_PREFIX_BYTES = 5;
+    private static final int LENGTH_PREFIXED_MESSAGE_HEADER_BYTES = 5;
     private final Class<T> targetClass;
     private final GrpcMessageEncoding messageEncoding;
     private final ProtoSerializer serializer;
@@ -125,7 +126,7 @@ final class ProtoBufSerializationProvider<T extends MessageLite> implements Seri
                 if (stateReadHeader) {
                     toDeserialize = addToAccumulateIfAccumulating(toDeserialize);
                     // If we don't have more than a full header, just bail and try again later when more data arrives.
-                    if (toDeserialize.readableBytes() <= LENGTH_PREFIXED_MESSAGE_PREFIX_BYTES) {
+                    if (toDeserialize.readableBytes() < LENGTH_PREFIXED_MESSAGE_HEADER_BYTES) {
                         return addToAccumulateIfRequiredAndReturn(toDeserialize, parsedData);
                     }
 
@@ -138,7 +139,7 @@ final class ProtoBufSerializationProvider<T extends MessageLite> implements Seri
                     // grpc-java (Google's implementation) only supports up to Integer.MAX_VALUE, so for
                     // simplicity we will just used signed int for now.
                     lengthOfData = toDeserialize.readInt();
-                    if (lengthOfData < 0) { // TODO(scott): is 0 length valid?
+                    if (lengthOfData < 0) {
                         throw new SerializationException("Message-Length invalid: " + lengthOfData);
                     }
 
@@ -171,7 +172,7 @@ final class ProtoBufSerializationProvider<T extends MessageLite> implements Seri
                     compressed = false;
 
                     // If we don't have more than a full header, just bail and try again later when more data arrives.
-                    if (toDeserialize.readableBytes() <= LENGTH_PREFIXED_MESSAGE_PREFIX_BYTES) {
+                    if (toDeserialize.readableBytes() < LENGTH_PREFIXED_MESSAGE_HEADER_BYTES) {
                         // Before we bail out, we need to save the accumulated data for next time.
                         if (toDeserialize != accumulate && toDeserialize.readableBytes() != 0) {
                             accumulate.addBuffer(toDeserialize, true);
@@ -184,7 +185,8 @@ final class ProtoBufSerializationProvider<T extends MessageLite> implements Seri
                     } else {
                         if (parsedData == null) {
                             // assume roughly uniform message sizes when estimating the initial size of the array.
-                            parsedData = new ArrayList<>(1 + toDeserialize.readableBytes() / oldLengthOfData);
+                            parsedData = new ArrayList<>(1 + max(1, toDeserialize.readableBytes() /
+                                    (oldLengthOfData + LENGTH_PREFIXED_MESSAGE_HEADER_BYTES)));
                         }
                         parsedData.add(t);
                     }
