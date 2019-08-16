@@ -43,6 +43,7 @@ dependencies {
   implementation "org.slf4j:slf4j-api"
   implementation "com.google.code.findbugs:jsr305"
 
+  testImplementation "com.google.protobuf:protobuf-java"
   testImplementation "io.servicetalk:servicetalk-test-resources:$project.version"
   testImplementation "junit:junit"
   testImplementation "org.hamcrest:hamcrest-library"
@@ -50,7 +51,7 @@ dependencies {
 }
 
 // Versions for managed dependencies are not available as properties so we retrieve it from a concrete dependency
-def protobufVersion = configurations.compileClasspath.resolvedConfiguration.firstLevelModuleDependencies
+def protobufVersion = configurations.testCompileClasspath.resolvedConfiguration.firstLevelModuleDependencies
     .findAll { it.moduleName == "protobuf-java" }[0].moduleVersion
 
 protobuf {
