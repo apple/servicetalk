@@ -17,6 +17,7 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.http.api.HttpHeadersFactory;
 
+import java.util.function.BiPredicate;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.http.netty.H2ToStH1Utils.DEFAULT_GRACEFUL_SHUTDOWN_TIMEOUT_MILLIS;
@@ -24,12 +25,14 @@ import static java.util.Objects.requireNonNull;
 
 final class H2ServerConfig {
     private HttpHeadersFactory h2HeadersFactory;
+    private BiPredicate<CharSequence, CharSequence> h2HeadersSensitivityDetector;
     @Nullable
     private String h2FrameLogger;
     private int gracefulShutdownTimeoutMs;
 
     H2ServerConfig() {
         h2HeadersFactory = H2HeadersFactory.INSTANCE;
+        h2HeadersSensitivityDetector = H2HeadersFactory.DEFAULT_SENSITIVITY_DETECTOR;
         gracefulShutdownTimeoutMs = DEFAULT_GRACEFUL_SHUTDOWN_TIMEOUT_MILLIS;
     }
 
@@ -39,6 +42,14 @@ final class H2ServerConfig {
 
     void h2HeadersFactory(final HttpHeadersFactory headersFactory) {
         this.h2HeadersFactory = requireNonNull(headersFactory);
+    }
+
+    BiPredicate<CharSequence, CharSequence> h2HeadersSensitivityDetector() {
+        return h2HeadersSensitivityDetector;
+    }
+
+    void h2HeadersSensitivityDetector(final BiPredicate<CharSequence, CharSequence> h2HeadersSensitivityDetector) {
+        this.h2HeadersSensitivityDetector = requireNonNull(h2HeadersSensitivityDetector);
     }
 
     @Nullable

@@ -20,11 +20,24 @@ import io.servicetalk.http.api.HttpHeadersFactory;
 
 import io.netty.handler.codec.http2.DefaultHttp2Headers;
 
+import java.util.function.BiPredicate;
+
+import static io.servicetalk.http.api.CharSequences.contentEqualsIgnoreCase;
+import static io.servicetalk.http.api.HttpHeaderNames.AUTHORIZATION;
+import static io.servicetalk.http.api.HttpHeaderNames.COOKIE;
+import static io.servicetalk.http.api.HttpHeaderNames.SET_COOKIE;
+
 /**
  * A {@link HttpHeadersFactory} optimized for HTTP/2.
  */
 public final class H2HeadersFactory implements HttpHeadersFactory {
+
     public static final HttpHeadersFactory INSTANCE = new H2HeadersFactory(true, true);
+
+    static final BiPredicate<CharSequence, CharSequence> DEFAULT_SENSITIVITY_DETECTOR = (name, value) ->
+            contentEqualsIgnoreCase(AUTHORIZATION, name) ||
+            contentEqualsIgnoreCase(COOKIE, name) ||
+            contentEqualsIgnoreCase(SET_COOKIE, name);
 
     private final boolean validateNames;
     private final boolean validateCookies;

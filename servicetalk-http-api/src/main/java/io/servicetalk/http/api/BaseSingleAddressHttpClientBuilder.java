@@ -24,6 +24,7 @@ import io.servicetalk.transport.api.ClientSslConfigBuilder;
 import io.servicetalk.transport.api.IoExecutor;
 
 import java.net.SocketOption;
+import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
@@ -51,6 +52,10 @@ abstract class BaseSingleAddressHttpClientBuilder<U, R, SDE extends ServiceDisco
 
     @Override
     public abstract BaseSingleAddressHttpClientBuilder<U, R, SDE> h2HeadersFactory(HttpHeadersFactory headersFactory);
+
+    @Override
+    public abstract BaseSingleAddressHttpClientBuilder<U, R, SDE> h2HeadersSensitivityDetector(
+            BiPredicate<CharSequence, CharSequence> sensitivityDetector);
 
     @Override
     public abstract BaseSingleAddressHttpClientBuilder<U, R, SDE> h2PriorKnowledge(boolean h2PriorKnowledge);

@@ -17,22 +17,29 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.http.api.HttpHeadersFactory;
 
+import java.util.function.BiPredicate;
 import javax.annotation.Nullable;
 
 final class ReadOnlyH2ClientConfig {
     private final HttpHeadersFactory h2HeadersFactory;
+    private final BiPredicate<CharSequence, CharSequence> h2HeadersSensitivityDetector;
     @Nullable
     private final String h2FrameLogger;
     private final int gracefulShutdownTimeoutMs;
 
     ReadOnlyH2ClientConfig(H2ClientConfig rhs) {
         h2HeadersFactory = rhs.h2HeadersFactory();
+        h2HeadersSensitivityDetector = rhs.h2HeadersSensitivityDetector();
         h2FrameLogger = rhs.h2FrameLogger();
         gracefulShutdownTimeoutMs = rhs.gracefulShutdownTimeoutMs();
     }
 
     HttpHeadersFactory h2HeadersFactory() {
         return h2HeadersFactory;
+    }
+
+    BiPredicate<CharSequence, CharSequence> h2HeadersSensitivityDetector() {
+        return h2HeadersSensitivityDetector;
     }
 
     @Nullable

@@ -26,6 +26,8 @@ import io.netty.handler.codec.http2.Http2FrameCodecBuilder;
 import io.netty.handler.codec.http2.Http2FrameLogger;
 import io.netty.handler.codec.http2.Http2MultiplexHandler;
 
+import java.util.function.BiPredicate;
+
 import static io.netty.handler.codec.http2.Http2FrameCodecBuilder.forClient;
 import static io.netty.handler.logging.LogLevel.TRACE;
 
@@ -38,14 +40,19 @@ final class H2ClientParentChannelInitializer implements ChannelInitializer {
 
     @Override
     public ConnectionContext init(final Channel channel, final ConnectionContext context) {
-        Http2FrameCodecBuilder multiplexCodecBuilder = forClient()
+        final Http2FrameCodecBuilder multiplexCodecBuilder = forClient()
                 // The max concurrent streams is made available via a publisher and may be consumed asynchronously
                 // (e.g. when offloading is enabled), so we manually control the SETTINGS ACK frames.
                 .autoAckSettingsFrame(false)
                 // We don't want to rely upon Netty to manage the graceful close timeout, because we expect
                 // the user to apply their own timeout at the call site.
                 .gracefulShutdownTimeoutMillis(-1);
-        String h2FrameLogger = config.h2FrameLogger();
+
+        final BiPredicate<CharSequence, CharSequence> h2HeadersSensitivityDetector =
+                config.h2HeadersSensitivityDetector();
+        multiplexCodecBuilder.headerSensitivityDetector(h2HeadersSensitivityDetector::test);
+
+        final String h2FrameLogger = config.h2FrameLogger();
         if (h2FrameLogger != null) {
             multiplexCodecBuilder.frameLogger(new Http2FrameLogger(TRACE, h2FrameLogger));
         }
@@ -66,7 +73,7 @@ final class H2ClientParentChannelInitializer implements ChannelInitializer {
         }
 
         @Override
-        public void channelRegistered(ChannelHandlerContext ctx) {
+        public void channelRegistered(final ChannelHandlerContext ctx) {
             ctx.close(); // push streams are not supported
         }
     }
