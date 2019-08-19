@@ -54,6 +54,32 @@ public abstract class GrpcServerBuilder {
     public abstract GrpcServerBuilder headersFactory(HttpHeadersFactory headersFactory);
 
     /**
+     * Set the {@link HttpHeadersFactory} to use when HTTP/2 is used.
+     *
+     * @param headersFactory the {@link HttpHeadersFactory} to use when HTTP/2 is used.
+     * @return {@code this}.
+     */
+    public abstract GrpcServerBuilder h2HeadersFactory(HttpHeadersFactory headersFactory);
+
+    /**
+     * Enable HTTP/2 via
+     * <a href="https://tools.ietf.org/html/rfc7540#section-3.4">Prior Knowledge</a>.
+     * @param h2PriorKnowledge {@code true} to enable HTTP/2 via
+     * <a href="https://tools.ietf.org/html/rfc7540#section-3.4">Prior Knowledge</a>.
+     *
+     * @return {@code this}.
+     */
+    public abstract GrpcServerBuilder h2PriorKnowledge(boolean h2PriorKnowledge);
+
+    /**
+     * Set the name of the frame logger when HTTP/2 is used.
+     *
+     * @param h2FrameLogger the name of the frame logger, or {@code null} to disable.
+     * @return {@code this}.
+     */
+    public abstract GrpcServerBuilder h2FrameLogger(@Nullable String h2FrameLogger);
+
+    /**
      * Set how long to wait (in milliseconds) for a client to close the connection (if no keep-alive is set) before the
      * server will close the connection.
      *
