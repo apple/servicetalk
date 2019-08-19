@@ -61,6 +61,24 @@ final class DefaultGrpcServerBuilder extends GrpcServerBuilder implements Server
     }
 
     @Override
+    public GrpcServerBuilder h2HeadersFactory(final HttpHeadersFactory headersFactory) {
+        httpServerBuilder.h2HeadersFactory(headersFactory);
+        return this;
+    }
+
+    @Override
+    public GrpcServerBuilder h2PriorKnowledge(final boolean h2PriorKnowledge) {
+        httpServerBuilder.h2PriorKnowledge(h2PriorKnowledge);
+        return this;
+    }
+
+    @Override
+    public GrpcServerBuilder h2FrameLogger(@Nullable final String h2FrameLogger) {
+        httpServerBuilder.h2FrameLogger(h2FrameLogger);
+        return this;
+    }
+
+    @Override
     public GrpcServerBuilder clientCloseTimeout(final long clientCloseTimeoutMs) {
         httpServerBuilder.clientCloseTimeout(clientCloseTimeoutMs);
         return this;
