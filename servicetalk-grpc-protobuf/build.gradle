@@ -49,8 +49,6 @@ dependencies {
   testImplementation "org.mockito:mockito-core"
 }
 
-// Versions for managed dependencies are not available as properties so we retrieve it from a concrete dependency
-// Attempts to extract from configurations lead to transitive dependency failures.
 def protobufVersion = "3.9.0"
 
 protobuf {
