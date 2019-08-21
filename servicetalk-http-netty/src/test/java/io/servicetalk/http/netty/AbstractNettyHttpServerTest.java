@@ -141,8 +141,8 @@ public abstract class AbstractNettyHttpServerTest {
                 .executionStrategy(defaultStrategy(serverExecutor))
                 .socketOption(StandardSocketOptions.SO_SNDBUF, 100);
         if (sslEnabled) {
-            serverBuilder.enableSsl(DefaultTestCerts::loadServerPem,
-                    DefaultTestCerts::loadServerKey).finish();
+            serverBuilder.secure().commit(DefaultTestCerts::loadServerPem,
+                    DefaultTestCerts::loadServerKey);
         }
         serverContext = awaitIndefinitelyNonNull(listen(serverBuilder.ioExecutor(serverIoExecutor)
                 .appendConnectionAcceptorFilter(original -> new DelegatingConnectionAcceptor(connectionAcceptor)))
@@ -151,7 +151,7 @@ public abstract class AbstractNettyHttpServerTest {
 
         final SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> clientBuilder = newClientBuilder();
         if (sslEnabled) {
-            clientBuilder.enableSsl().trustManager(DefaultTestCerts::loadMutualAuthCaPem).finish();
+            clientBuilder.secure().trustManager(DefaultTestCerts::loadMutualAuthCaPem).commit();
         }
         httpClient = clientBuilder.ioExecutor(clientIoExecutor)
                 .executionStrategy(defaultStrategy(clientExecutor)).buildStreaming();

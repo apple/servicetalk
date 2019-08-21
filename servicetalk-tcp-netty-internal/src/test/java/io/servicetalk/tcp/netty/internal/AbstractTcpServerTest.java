@@ -21,13 +21,14 @@ import io.servicetalk.concurrent.api.Executors;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.test.resources.DefaultTestCerts;
 import io.servicetalk.transport.api.ConnectionAcceptor;
+import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
-import io.servicetalk.transport.api.SslConfig;
-import io.servicetalk.transport.api.SslConfigBuilders;
-import io.servicetalk.transport.api.TestSslConfigBuilders;
+import io.servicetalk.transport.netty.internal.AddressUtils;
+import io.servicetalk.transport.netty.internal.ClientSecurityConfig;
 import io.servicetalk.transport.netty.internal.ExecutionContextRule;
 import io.servicetalk.transport.netty.internal.IoThreadFactory;
 import io.servicetalk.transport.netty.internal.NettyConnection;
+import io.servicetalk.transport.netty.internal.ServerSecurityConfig;
 
 import org.junit.After;
 import org.junit.Before;
@@ -99,9 +100,11 @@ public abstract class AbstractTcpServerTest {
     TcpClientConfig getTcpClientConfig() {
         TcpClientConfig tcpClientConfig = new TcpClientConfig(false);
         if (sslEnabled) {
-            final SslConfig sslConfig = TestSslConfigBuilders.forClientWithoutVerificationOrSni()
-                    .trustManager(DefaultTestCerts::loadMutualAuthCaPem).build();
-            tcpClientConfig = tcpClientConfig.sslConfig(sslConfig);
+            HostAndPort serverHostAndPort = AddressUtils.serverHostAndPort(serverContext);
+            ClientSecurityConfig securityConfig = new ClientSecurityConfig(serverHostAndPort.hostName(),
+                    serverHostAndPort.port());
+            securityConfig.trustManager(DefaultTestCerts::loadMutualAuthCaPem);
+            tcpClientConfig.secure(securityConfig.asReadOnly());
         }
         return tcpClientConfig;
     }
@@ -115,11 +118,9 @@ public abstract class AbstractTcpServerTest {
     TcpServerConfig getTcpServerConfig() {
         TcpServerConfig tcpServerConfig = new TcpServerConfig(false);
         if (sslEnabled) {
-            final SslConfig sslConfig = SslConfigBuilders.forServer(
-                    DefaultTestCerts::loadServerPem,
-                    DefaultTestCerts::loadServerKey)
-                    .build();
-            tcpServerConfig = tcpServerConfig.sslConfig(sslConfig);
+            ServerSecurityConfig securityConfig = new ServerSecurityConfig();
+            securityConfig.keyManager(DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey);
+            tcpServerConfig.secure(securityConfig.asReadOnly());
         }
         return tcpServerConfig;
     }

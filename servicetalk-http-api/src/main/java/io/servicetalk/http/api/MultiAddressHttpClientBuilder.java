@@ -20,7 +20,7 @@ import io.servicetalk.client.api.ConnectionFactoryFilter;
 import io.servicetalk.client.api.LoadBalancerFactory;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
-import io.servicetalk.transport.api.ClientSslConfigBuilder;
+import io.servicetalk.transport.api.ClientSecurityConfigurator;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.IoExecutor;
 
@@ -98,9 +98,8 @@ public abstract class MultiAddressHttpClientBuilder<U, R>
      * @param sslConfigFunction The function to use for configuring SSL/TLS for https requests.
      * @return {@code this}
      */
-    public abstract MultiAddressHttpClientBuilder<U, R> configureSsl(
-            BiConsumer<HostAndPort, ClientSslConfigBuilder<? extends SingleAddressHttpClientBuilder<U, R>>>
-                    sslConfigFunction);
+    public abstract MultiAddressHttpClientBuilder<U, R> secure(
+            BiConsumer<HostAndPort, ClientSecurityConfigurator> sslConfigFunction);
 
     @Override
     public abstract MultiAddressHttpClientBuilder<U, R> appendConnectionFilter(

@@ -16,16 +16,16 @@
 package io.servicetalk.tcp.netty.internal;
 
 import io.servicetalk.transport.api.ServiceTalkSocketOptions;
-import io.servicetalk.transport.api.SslConfig;
 import io.servicetalk.transport.netty.internal.BuilderUtils;
 import io.servicetalk.transport.netty.internal.FlushStrategy;
+import io.servicetalk.transport.netty.internal.ReadOnlyServerSecurityConfig;
 import io.servicetalk.transport.netty.internal.WireLoggingInitializer;
 
 import io.netty.handler.ssl.SslContext;
-import io.netty.util.DomainMappingBuilder;
+import io.netty.util.DomainNameMappingBuilder;
 
-import java.io.InputStream;
 import java.net.SocketOption;
+import java.util.HashMap;
 import java.util.Map;
 import javax.annotation.Nullable;
 
@@ -36,6 +36,9 @@ import static java.util.Objects.requireNonNull;
  * Configuration for TCP based servers. <p>Internal use only.</p>
  */
 public final class TcpServerConfig extends ReadOnlyTcpServerConfig {
+
+    @Nullable
+    private Map<String, ReadOnlyServerSecurityConfig> sniConfigs;
 
     /**
      * New instance.
@@ -73,51 +76,32 @@ public final class TcpServerConfig extends ReadOnlyTcpServerConfig {
     }
 
     /**
-     * Allows to setup SNI.
-     * You can either use {@link #sslConfig(SslConfig)} or this method.
-     * @param mappings mapping hostnames to the ssl configuration that should be used.
-     * @param defaultConfig the configuration to use if no hostnames matched from {@code mappings}.
+     * Add security related config.
+     *
+     * @param securityConfig the {@link ReadOnlyServerSecurityConfig} for the passed hostnames.
+     * @param sniHostnames SNI hostnames for which this config is defined.
      * @return this.
-     * @throws IllegalStateException if the {@link SslConfig#keyCertChainSupplier()}, {@link SslConfig#keySupplier()},
-     * or {@link SslConfig#trustCertChainSupplier()}
-     * throws when {@link InputStream#close()} is called.
      */
-    public TcpServerConfig sniConfig(@Nullable Map<String, SslConfig> mappings, SslConfig defaultConfig) {
-        if (sslContext != null) {
-            throw new IllegalStateException("sslConfig(...) was already used");
-        } else {
-            if (mappings != null) {
-                DomainMappingBuilder<SslContext> builder = new DomainMappingBuilder<>(forServer(defaultConfig));
-
-                for (Map.Entry<String, SslConfig> entry : mappings.entrySet()) {
-                    SslContext ctx = forServer(entry.getValue());
-                    builder.add(entry.getKey(), ctx);
-                }
-                this.mappings = builder.build();
-            } else {
-                this.mappings = null;
-            }
+    public TcpServerConfig secure(ReadOnlyServerSecurityConfig securityConfig, String... sniHostnames) {
+        requireNonNull(securityConfig);
+        requireNonNull(sniHostnames);
+        if (sniConfigs == null) {
+            sniConfigs = new HashMap<>();
+        }
+        for (String sniHostname : sniHostnames) {
+            sniConfigs.put(sniHostname, securityConfig);
         }
         return this;
     }
 
     /**
-     * Enable SSL/TLS using the provided {@link SslConfig}. To disable it pass in {@code null}.
-     * @param config the {@link SslConfig}.
+     * Add security related config.
+     *
+     * @param securityConfig the {@link ReadOnlyServerSecurityConfig} to use.
      * @return this.
-     * @throws IllegalStateException if the {@link SslConfig#keyCertChainSupplier()}, {@link SslConfig#keySupplier()},
-     * or {@link SslConfig#trustCertChainSupplier()}
-     * throws when {@link InputStream#close()} is called.
      */
-    public TcpServerConfig sslConfig(@Nullable SslConfig config) {
-        if (config != null) {
-            if (mappings != null) {
-                throw new IllegalStateException("sniConfig(...) was already used");
-            }
-            sslContext = forServer(config);
-        } else {
-            sslContext = null;
-        }
+    public TcpServerConfig secure(ReadOnlyServerSecurityConfig securityConfig) {
+        sslContext = forServer(securityConfig);
         return this;
     }
 
@@ -178,6 +162,16 @@ public final class TcpServerConfig extends ReadOnlyTcpServerConfig {
      * @return {@link ReadOnlyTcpServerConfig}.
      */
     public ReadOnlyTcpServerConfig asReadOnly() {
+        if (sniConfigs != null) {
+            if (sslContext == null) {
+                throw new IllegalStateException("No default security config defined but found sni config mappings.");
+            }
+            DomainNameMappingBuilder<SslContext> mappingBuilder = new DomainNameMappingBuilder<>(sslContext);
+            for (Map.Entry<String, ReadOnlyServerSecurityConfig> sniConfigEntries : sniConfigs.entrySet()) {
+                mappingBuilder.add(sniConfigEntries.getKey(), forServer(sniConfigEntries.getValue()));
+            }
+            mappings = mappingBuilder.build();
+        }
         return new ReadOnlyTcpServerConfig(this);
     }
 }

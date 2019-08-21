@@ -20,7 +20,6 @@ import io.servicetalk.client.api.ConnectionFactoryFilter;
 import io.servicetalk.client.api.LoadBalancerFactory;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
-import io.servicetalk.transport.api.ClientSslConfigBuilder;
 import io.servicetalk.transport.api.IoExecutor;
 
 import java.net.SocketOption;
@@ -112,12 +111,4 @@ abstract class BaseSingleAddressHttpClientBuilder<U, R, SDE extends ServiceDisco
     @Override
     public abstract BaseSingleAddressHttpClientBuilder<U, R, SDE> unresolvedAddressToHost(
             Function<U, CharSequence> unresolvedAddressToHostFunction);
-
-    /**
-     * Enable SSL/TLS, and return a builder for configuring it. Call {@link ClientSslConfigBuilder#finish()} to
-     * return to configuring the HTTP client.
-     *
-     * @return an {@link ClientSslConfigBuilder} for configuring SSL/TLS.
-     */
-    public abstract ClientSslConfigBuilder<? extends BaseSingleAddressHttpClientBuilder<U, R, SDE>> enableSsl();
 }

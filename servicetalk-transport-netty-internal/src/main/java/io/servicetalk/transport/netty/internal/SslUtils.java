@@ -15,7 +15,7 @@
  */
 package io.servicetalk.transport.netty.internal;
 
-import io.servicetalk.transport.api.SslConfig;
+import io.servicetalk.transport.api.SecurityConfigurator;
 
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.handler.ssl.ApplicationProtocolConfig;
@@ -35,7 +35,7 @@ import javax.net.ssl.SSLParameters;
 /**
  * Utility for SSL.
  */
-public final class SslUtils {
+final class SslUtils {
     private SslUtils() {
         // Utility class
     }
@@ -52,10 +52,10 @@ public final class SslUtils {
      * @param hostnameVerificationPort the non-authoritative port.
      * @return a {@link SslHandler}
      */
-    public static SslHandler newHandler(SslContext context, ByteBufAllocator allocator,
-                                        @Nullable String hostnameVerificationAlgorithm,
-                                        @Nullable String hostnameVerificationHost,
-                                        int hostnameVerificationPort) {
+    static SslHandler newHandler(SslContext context, ByteBufAllocator allocator,
+                                 @Nullable String hostnameVerificationAlgorithm,
+                                 @Nullable String hostnameVerificationHost,
+                                 int hostnameVerificationPort) {
         if (hostnameVerificationHost == null) {
             return newHandler(context, allocator);
         }
@@ -87,7 +87,7 @@ public final class SslUtils {
      * @param allocator the {@link ByteBufAllocator} which will be used
      * @return a {@link SslHandler}
      */
-    public static SslHandler newHandler(SslContext context, ByteBufAllocator allocator) {
+    static SslHandler newHandler(SslContext context, ByteBufAllocator allocator) {
         return context.newHandler(allocator);
     }
 
@@ -97,14 +97,14 @@ public final class SslUtils {
      * @param config the config to convert.
      * @return the new config.
      */
-    public static ApplicationProtocolConfig toNettyApplicationProtocol(
-            io.servicetalk.transport.api.ApplicationProtocolConfig config) {
-        if (config == io.servicetalk.transport.api.ApplicationProtocolConfig.DISABLED) {
+    static ApplicationProtocolConfig toNettyApplicationProtocol(ReadOnlySecurityConfig config) {
+        SecurityConfigurator.ApplicationProtocolNegotiation apn = config.applicationProtocolNegotiation();
+        if (apn == null) {
             return ApplicationProtocolConfig.DISABLED;
         }
 
         final ApplicationProtocolConfig.Protocol protocol;
-        switch (config.protocol()) {
+        switch (apn) {
             case ALPN:
                 protocol = ApplicationProtocolConfig.Protocol.ALPN;
                 break;
@@ -122,7 +122,9 @@ public final class SslUtils {
         }
 
         final ApplicationProtocolConfig.SelectedListenerFailureBehavior selectedListenerFailureBehavior;
-        switch (config.selectedListenerFailureBehavior()) {
+        SecurityConfigurator.SelectedListenerFailureBehavior stSelectedBehavior = config.selectedBehavior();
+        assert stSelectedBehavior != null;
+        switch (stSelectedBehavior) {
             case ACCEPT:
                 selectedListenerFailureBehavior = ApplicationProtocolConfig.SelectedListenerFailureBehavior.ACCEPT;
                 break;
@@ -138,7 +140,9 @@ public final class SslUtils {
         }
 
         final ApplicationProtocolConfig.SelectorFailureBehavior selectorFailureBehavior;
-        switch (config.selectorFailureBehavior()) {
+        SecurityConfigurator.SelectorFailureBehavior stSelectorBehavior = config.selectorBehavior();
+        assert stSelectorBehavior != null;
+        switch (stSelectorBehavior) {
             case CHOOSE_MY_LAST_PROTOCOL:
                 selectorFailureBehavior = ApplicationProtocolConfig.SelectorFailureBehavior.CHOOSE_MY_LAST_PROTOCOL;
                 break;
@@ -162,7 +166,7 @@ public final class SslUtils {
      * @return the netty provider.
      */
     @Nullable
-    public static SslProvider toNettySslProvider(SslConfig.SslProvider provider) {
+    static SslProvider toNettySslProvider(SecurityConfigurator.SslProvider provider) {
         switch (provider) {
             case AUTO:
                 return null;

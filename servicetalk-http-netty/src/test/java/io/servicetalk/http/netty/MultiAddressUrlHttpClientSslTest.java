@@ -121,7 +121,7 @@ public class MultiAddressUrlHttpClientSslTest {
         when(SECURE_STREAMING_HTTP_SERVICE.closeAsync()).thenReturn(completed());
         when(SECURE_STREAMING_HTTP_SERVICE.closeAsyncGracefully()).thenReturn(completed());
         secureServerCtx = HttpServers.forAddress(localAddress(0))
-                .enableSsl(DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey).finish()
+                .secure().commit(DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey)
                 .ioExecutor(CTX.ioExecutor())
                 .executionStrategy(noOffloadsStrategy())
                 .listenStreamingAndAwait(SECURE_STREAMING_HTTP_SERVICE);
@@ -200,7 +200,7 @@ public class MultiAddressUrlHttpClientSslTest {
     public void requesterWithSecureSslConfigProvider() throws Exception {
         try (BlockingHttpRequester client = HttpClients.forMultiAddressUrl()
                 .effectiveScheme(__ -> "https")
-                .configureSsl((hap, config) -> config.disableHostnameVerification()
+                .secure((hap, config) -> config.disableHostnameVerification()
                         .trustManager(DefaultTestCerts::loadMutualAuthCaPem))
                 .ioExecutor(CTX.ioExecutor())
                 .executionStrategy(defaultStrategy(CTX.executor()))
@@ -214,7 +214,7 @@ public class MultiAddressUrlHttpClientSslTest {
 
         requestAndValidate(requester, "/", serverHostHeader);
         requestAndValidate(requester, format("http://%s/", serverHostHeader), serverHostHeader);
-        // Do not test default SslConfig, because our generated certificates require custom trust manager
+        // Do not test default security config, because our generated certificates require custom trust manager
 
         verify(STREAMING_HTTP_SERVICE, times(2)).handle(any(), any(), any());
         verify(SECURE_STREAMING_HTTP_SERVICE, never()).handle(any(), any(), any());
