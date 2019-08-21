@@ -159,7 +159,7 @@ public abstract class HttpServerBuilder {
      * specified hostnames.
      *
      * @return {@link HttpServerSecurityConfigurator} to configure security for this server. It is
-     * mandatory to call any one of the {@code commit} method after all configuration is done.
+     * mandatory to call any one of the {@code commit} methods after all configuration is done.
      */
     public abstract HttpServerSecurityConfigurator secure();
 
@@ -174,7 +174,7 @@ public abstract class HttpServerBuilder {
      * @param sniHostnames <a href="https://tools.ietf.org/html/rfc6066#section-3">SNI</a> hostnames for which this
      * config is being defined.
      * @return {@link HttpServerSecurityConfigurator} to configure security for this server. It is
-     * mandatory to call any one of the {@code commit} method after all configuration is done.
+     * mandatory to call any one of the {@code commit} methods after all configuration is done.
      */
     public abstract HttpServerSecurityConfigurator secure(String... sniHostnames);
 

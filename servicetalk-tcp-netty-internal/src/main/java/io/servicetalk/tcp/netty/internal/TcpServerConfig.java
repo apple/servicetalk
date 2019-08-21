@@ -27,6 +27,7 @@ import io.netty.util.DomainNameMappingBuilder;
 import java.net.SocketOption;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.transport.netty.internal.SslContextFactory.forServer;
@@ -164,10 +165,10 @@ public final class TcpServerConfig extends ReadOnlyTcpServerConfig {
     public ReadOnlyTcpServerConfig asReadOnly() {
         if (sniConfigs != null) {
             if (sslContext == null) {
-                throw new IllegalStateException("No default security config defined but found sni config mappings.");
+                throw new IllegalStateException("No default security config defined but found SNI config mappings.");
             }
             DomainNameMappingBuilder<SslContext> mappingBuilder = new DomainNameMappingBuilder<>(sslContext);
-            for (Map.Entry<String, ReadOnlyServerSecurityConfig> sniConfigEntries : sniConfigs.entrySet()) {
+            for (Entry<String, ReadOnlyServerSecurityConfig> sniConfigEntries : sniConfigs.entrySet()) {
                 mappingBuilder.add(sniConfigEntries.getKey(), forServer(sniConfigEntries.getValue()));
             }
             mappings = mappingBuilder.build();
