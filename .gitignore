@@ -3,17 +3,18 @@ hs_err_pid*
 
 # intellij
 /.idea
-/*.iml
+*.iml
 /*.ipr
 /*.iws
 /out/
 /.shelf/
 
 # gradle
-/.gradle/
-/.out/
-/buildSrc/build
-/.dist/
+.gradle/
+.out/
+build/
+/buildSrc/.gradle/
+.dist/
 
 # Eclipse
 /bin/

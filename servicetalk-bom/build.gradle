@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,80 +14,18 @@
  * limitations under the License.
  */
 
-buildscript {
-  if (!repositories) {
-    repositories {
-      jcenter()
-      maven { url "https://plugins.gradle.org/m2/" }
-    }
-  }
-
-  dependencies {
-    classpath "io.servicetalk:servicetalk-gradle-plugin-internal:$project.version"
-  }
-}
-
-plugins {
-  id "io.spring.dependency-management" version "1.0.5.RELEASE"
-}
-
 apply plugin: "servicetalk-core"
+apply plugin: "java-platform"
+apply plugin: "maven-publish"
 
-project.configure(project) {
-  io.servicetalk.gradle.plugin.internal.ServiceTalkLibraryPlugin.applyCheckstylePlugin(gradle.rootProject)
-  io.servicetalk.gradle.plugin.internal.ServiceTalkLibraryPlugin.addQualityTask(gradle.rootProject)
+rootProject.subprojects.findAll { !it.name.contains("bom") && !it.name.contains("examples") }.each {
+  dependencies.constraints.add("api", it)
 }
 
-dependencyManagement {
-  dependencies {
-    // First Party ServiceTalk Dependencies
-    dependency "io.servicetalk:servicetalk-annotations:$project.version"
-    dependency "io.servicetalk:servicetalk-buffer-api:$project.version"
-    dependency "io.servicetalk:servicetalk-buffer-netty:$project.version"
-    dependency "io.servicetalk:servicetalk-client-api:$project.version"
-    dependency "io.servicetalk:servicetalk-client-api-internal:$project.version"
-    dependency "io.servicetalk:servicetalk-client-api-internal-testFixtures:$project.version"
-    dependency "io.servicetalk:servicetalk-concurrent:$project.version"
-    dependency "io.servicetalk:servicetalk-concurrent-api:$project.version"
-    dependency "io.servicetalk:servicetalk-concurrent-api-testFixtures:$project.version"
-    dependency "io.servicetalk:servicetalk-concurrent-api-internal:$project.version"
-    dependency "io.servicetalk:servicetalk-concurrent-internal:$project.version"
-    dependency "io.servicetalk:servicetalk-concurrent-internal-testFixtures:$project.version"
-    dependency "io.servicetalk:servicetalk-concurrent-internal-api:$project.version"
-    dependency "io.servicetalk:servicetalk-concurrent-reactivestreams:$project.version"
-    dependency "io.servicetalk:servicetalk-data-jackson:$project.version"
-    dependency "io.servicetalk:servicetalk-data-jackson-jersey:$project.version"
-    dependency "io.servicetalk:servicetalk-dns-discovery-netty:$project.version"
-    dependency "io.servicetalk:servicetalk-grpc-api:$project.version"
-    dependency "io.servicetalk:servicetalk-grpc-netty:$project.version"
-    dependency "io.servicetalk:servicetalk-grpc-protobuf:$project.version"
-    dependency "io.servicetalk:servicetalk-http-all-netty:$project.version"
-    dependency "io.servicetalk:servicetalk-http-api:$project.version"
-    dependency "io.servicetalk:servicetalk-http-api-testFixtures:$project.version"
-    dependency "io.servicetalk:servicetalk-http-netty:$project.version"
-    dependency "io.servicetalk:servicetalk-http-router-jersey:$project.version"
-    dependency "io.servicetalk:servicetalk-http-router-jersey-testFixtures:$project.version"
-    dependency "io.servicetalk:servicetalk-http-router-jersey-internal:$project.version"
-    dependency "io.servicetalk:servicetalk-http-router-predicate:$project.version"
-    dependency "io.servicetalk:servicetalk-http-security-jersey:$project.version"
-    dependency "io.servicetalk:servicetalk-http-utils:$project.version"
-    dependency "io.servicetalk:servicetalk-loadbalancer:$project.version"
-    dependency "io.servicetalk:servicetalk-log4j2-mdc:$project.version"
-    dependency "io.servicetalk:servicetalk-log4j2-mdc-utils:$project.version"
-    dependency "io.servicetalk:servicetalk-opentracing-inmemory:$project.version"
-    dependency "io.servicetalk:servicetalk-opentracing-inmemory-api:$project.version"
-    dependency "io.servicetalk:servicetalk-opentracing-asynccontext:$project.version"
-    dependency "io.servicetalk:servicetalk-opentracing-http:$project.version"
-    dependency "io.servicetalk:servicetalk-opentracing-log4j2:$project.version"
-    dependency "io.servicetalk:servicetalk-opentracing-zipkin-publisher:$project.version"
-    dependency "io.servicetalk:servicetalk-opentracing-internal:$project.version"
-    dependency "io.servicetalk:servicetalk-serialization-api:$project.version"
-    dependency "io.servicetalk:servicetalk-tcp-netty-internal:$project.version"
-    dependency "io.servicetalk:servicetalk-tcp-netty-internal-testFixtures:$project.version"
-    dependency "io.servicetalk:servicetalk-test-resources:$project.version"
-    dependency "io.servicetalk:servicetalk-transport-api:$project.version"
-    dependency "io.servicetalk:servicetalk-transport-netty:$project.version"
-    dependency "io.servicetalk:servicetalk-transport-netty-internal:$project.version"
-    dependency "io.servicetalk:servicetalk-transport-netty-internal-testFixtures:$project.version"
+publishing {
+  publications {
+    serviceTalkBom(MavenPublication) {
+      from components.javaPlatform
+    }
   }
 }

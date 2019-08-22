@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,13 +14,12 @@
  * limitations under the License.
  */
 
-apply plugin: "servicetalk-library"
-apply plugin: "groovy"
-apply plugin: "java-gradle-plugin"
-apply from: "plugin-config.gradle"
+ apply plugin: "idea"
 
-// Ignore Spotbugs for this module
-spotbugs {
- ignoreFailures = true
- showProgress = false
+// We do not use the custom ServiceTalk build plugins so we have to configure the
+// language level manually
+idea {
+  module {
+    languageLevel = new org.gradle.plugins.ide.idea.model.IdeaLanguageLevel("1.8")
+  }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,36 +13,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-buildscript {
-  if (!repositories) {
-    repositories {
-      jcenter()
-      maven { url "https://plugins.gradle.org/m2/" }
-    }
-  }
-
-  dependencies {
-    classpath "io.servicetalk:servicetalk-gradle-plugin-internal:$project.version"
-  }
-}
 
 apply plugin: "servicetalk-library"
 
 dependencies {
-  implementation "io.servicetalk:servicetalk-bom-internal:$project.version"
+  api platform(project(":servicetalk-bom-internal"))
 
-  api "io.servicetalk:servicetalk-concurrent:$project.version"
+  api project(":servicetalk-concurrent")
   api "org.reactivestreams:reactive-streams"
 
+  implementation project(":servicetalk-annotations")
   implementation "com.google.code.findbugs:jsr305"
-  implementation "io.servicetalk:servicetalk-annotations:$project.version"
   implementation "org.jctools:jctools-core"
   implementation "org.slf4j:slf4j-api"
 
-  testImplementation "io.servicetalk:servicetalk-test-resources:$project.version"
+  testImplementation project(":servicetalk-test-resources")
+  testImplementation "junit:junit"
+  testImplementation "org.hamcrest:hamcrest-library"
   testImplementation "org.mockito:mockito-core"
 
+  testFixturesImplementation platform(project(":servicetalk-bom-internal"))
+  testFixturesImplementation project(":servicetalk-annotations")
   testFixturesImplementation "junit:junit"
-  testFixturesImplementation "org.hamcrest:hamcrest-library"
-  testFixturesImplementation "org.mockito:mockito-core"
+  testFixturesImplementation "com.google.code.findbugs:jsr305"
 }

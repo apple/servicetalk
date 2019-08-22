@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,58 +13,43 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-buildscript {
-  if (!repositories) {
-    repositories {
-      jcenter()
-      maven { url "https://plugins.gradle.org/m2/" }
-    }
-  }
-
-  dependencies {
-    classpath "io.servicetalk:servicetalk-gradle-plugin-internal:$project.version"
-  }
-}
 
 plugins {
-  id 'com.github.johnrengelman.shadow' version '4.0.3'
-  id "me.champeau.gradle.jmh" version "0.4.8"
+  id "com.github.johnrengelman.shadow" version "5.1.0"
+  id "me.champeau.gradle.jmh" version "0.5.0-rc-2"
 }
 
 apply plugin: "servicetalk-library"
-apply plugin: "me.champeau.gradle.jmh"
 
 dependencies {
-  implementation "io.servicetalk:servicetalk-bom-internal:$project.version"
+  api platform(project(":servicetalk-bom-internal"))
 
-  compile "io.servicetalk:servicetalk-buffer-netty:$project.version"
-  compile "io.servicetalk:servicetalk-concurrent-api:$project.version"
-  compile "io.servicetalk:servicetalk-concurrent-api-internal:$project.version"
-  compile "io.servicetalk:servicetalk-http-api:$project.version"
-  compile "io.servicetalk:servicetalk-http-netty:$project.version"
-  compile "org.openjdk.jmh:jmh-core:1.21"
-
+  implementation project(":servicetalk-annotations")
+  implementation project(":servicetalk-buffer-netty")
+  implementation project(":servicetalk-concurrent-api")
+  implementation project(":servicetalk-concurrent-api-internal")
+  implementation project(":servicetalk-http-api")
+  implementation project(":servicetalk-http-netty")
+  implementation project(":servicetalk-transport-netty-internal")
   implementation "com.google.code.findbugs:jsr305"
-  implementation "io.servicetalk:servicetalk-annotations:$project.version"
+  implementation "io.netty:netty-codec-http"
+  implementation "org.openjdk.jmh:jmh-core"
 
-  testImplementation "io.servicetalk:servicetalk-concurrent-internal:$project.version"
-  testImplementation "io.servicetalk:servicetalk-concurrent-api-internal:$project.version"
-  testImplementation "io.servicetalk:servicetalk-concurrent-internal-testFixtures:$project.version"
-  testImplementation "io.servicetalk:servicetalk-test-resources:$project.version"
+  testImplementation testFixtures(project(":servicetalk-concurrent-internal"))
+  testImplementation project(":servicetalk-concurrent-internal")
+  testImplementation project(":servicetalk-concurrent-api-internal")
+  testImplementation project(":servicetalk-test-resources")
   testImplementation "junit:junit"
   testImplementation "org.hamcrest:hamcrest-library"
 }
 
 jmh {
   include = ".*Benchmark"
-//  iterations = 5
   jmhVersion = "$jmhVersion"
   jvmArgsPrepend = "-Dio.netty.maxDirectMemory=9223372036854775807 -Djmh.executor=CUSTOM -Djmh.executor.class=io.servicetalk.benchmark.concurrent.AsyncContextFriendlyExecutor"
-  // jvmArgsPrepend = "-XX:+UnlockCommercialFeatures -XX:+FlightRecorder"
 }
 
 jmhJar {
   append('META-INF/spring.handlers')
   append('META-INF/spring.schemas')
-  exclude 'LICENSE'
 }
