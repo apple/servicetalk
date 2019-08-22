@@ -59,6 +59,7 @@ import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.BiConsumer;
+import java.util.function.BiPredicate;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
@@ -379,6 +380,13 @@ final class DefaultMultiAddressUrlHttpClientBuilder extends MultiAddressHttpClie
     protected MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> h2HeadersFactory(
             final HttpHeadersFactory headersFactory) {
         builderTemplate.h2HeadersFactory(headersFactory);
+        return this;
+    }
+
+    @Override
+    protected MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> h2HeadersSensitivityDetector(
+            final BiPredicate<CharSequence, CharSequence> h2HeadersSensitivityDetector) {
+        builderTemplate.h2HeadersSensitivityDetector(h2HeadersSensitivityDetector);
         return this;
     }
 

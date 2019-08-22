@@ -20,11 +20,16 @@ import io.servicetalk.http.api.HttpHeadersFactory;
 
 import io.netty.handler.codec.http2.DefaultHttp2Headers;
 
+import java.util.function.BiPredicate;
+
 /**
  * A {@link HttpHeadersFactory} optimized for HTTP/2.
  */
 public final class H2HeadersFactory implements HttpHeadersFactory {
+
     public static final HttpHeadersFactory INSTANCE = new H2HeadersFactory(true, true);
+
+    static final BiPredicate<CharSequence, CharSequence> DEFAULT_SENSITIVITY_DETECTOR = (name, value) -> false;
 
     private final boolean validateNames;
     private final boolean validateCookies;

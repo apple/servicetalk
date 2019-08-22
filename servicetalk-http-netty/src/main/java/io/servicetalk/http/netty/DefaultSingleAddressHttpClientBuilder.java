@@ -52,6 +52,7 @@ import io.netty.util.NetUtil;
 
 import java.net.InetSocketAddress;
 import java.net.SocketOption;
+import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
@@ -388,6 +389,13 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
     @Override
     public SingleAddressHttpClientBuilder<U, R> h2HeadersFactory(final HttpHeadersFactory headersFactory) {
         config.h2ClientConfig().h2HeadersFactory(headersFactory);
+        return this;
+    }
+
+    @Override
+    public SingleAddressHttpClientBuilder<U, R> h2HeadersSensitivityDetector(
+            final BiPredicate<CharSequence, CharSequence> h2HeadersSensitivityDetector) {
+        config.h2ClientConfig().h2HeadersSensitivityDetector(h2HeadersSensitivityDetector);
         return this;
     }
 

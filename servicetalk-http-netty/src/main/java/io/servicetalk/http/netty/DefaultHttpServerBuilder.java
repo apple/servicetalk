@@ -33,6 +33,7 @@ import java.io.InputStream;
 import java.net.SocketAddress;
 import java.net.SocketOption;
 import java.util.Map;
+import java.util.function.BiPredicate;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
 import javax.net.ssl.KeyManagerFactory;
@@ -56,6 +57,13 @@ final class DefaultHttpServerBuilder extends HttpServerBuilder {
     @Override
     public HttpServerBuilder h2HeadersFactory(final HttpHeadersFactory headersFactory) {
         config.h2ServerConfig().h2HeadersFactory(headersFactory);
+        return this;
+    }
+
+    @Override
+    public HttpServerBuilder h2HeadersSensitivityDetector(
+            final BiPredicate<CharSequence, CharSequence> h2HeadersSensitivityDetector) {
+        config.h2ServerConfig().h2HeadersSensitivityDetector(h2HeadersSensitivityDetector);
         return this;
     }
 

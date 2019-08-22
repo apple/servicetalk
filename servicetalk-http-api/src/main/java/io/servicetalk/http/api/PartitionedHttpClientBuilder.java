@@ -29,6 +29,7 @@ import io.servicetalk.transport.api.IoExecutor;
 
 import java.net.SocketOption;
 import java.util.function.BiFunction;
+import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
@@ -69,6 +70,10 @@ public abstract class PartitionedHttpClientBuilder<U, R>
 
     @Override
     public abstract PartitionedHttpClientBuilder<U, R> h2HeadersFactory(HttpHeadersFactory headersFactory);
+
+    @Override
+    public abstract PartitionedHttpClientBuilder<U, R> h2HeadersSensitivityDetector(
+            BiPredicate<CharSequence, CharSequence> sensitivityDetector);
 
     @Override
     public abstract PartitionedHttpClientBuilder<U, R> h2PriorKnowledge(boolean h2PriorKnowledge);

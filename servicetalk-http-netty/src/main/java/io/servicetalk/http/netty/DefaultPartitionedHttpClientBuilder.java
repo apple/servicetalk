@@ -57,6 +57,7 @@ import io.servicetalk.transport.api.ClientSslConfigBuilder;
 import io.servicetalk.transport.api.IoExecutor;
 
 import java.net.SocketOption;
+import java.util.function.BiPredicate;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
@@ -267,6 +268,13 @@ class DefaultPartitionedHttpClientBuilder<U, R> extends PartitionedHttpClientBui
     @Override
     public PartitionedHttpClientBuilder<U, R> h2HeadersFactory(final HttpHeadersFactory headersFactory) {
         builderTemplate.h2HeadersFactory(headersFactory);
+        return this;
+    }
+
+    @Override
+    public PartitionedHttpClientBuilder<U, R> h2HeadersSensitivityDetector(
+            final BiPredicate<CharSequence, CharSequence> h2HeadersSensitivityDetector) {
+        builderTemplate.h2HeadersSensitivityDetector(h2HeadersSensitivityDetector);
         return this;
     }
 

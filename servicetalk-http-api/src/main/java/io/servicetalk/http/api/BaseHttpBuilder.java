@@ -19,6 +19,7 @@ import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.transport.api.IoExecutor;
 
 import java.net.SocketOption;
+import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
@@ -98,6 +99,18 @@ abstract class BaseHttpBuilder<ResolvedAddress> {
      * @return {@code this.}
      */
     abstract BaseHttpBuilder<ResolvedAddress> h2HeadersFactory(HttpHeadersFactory headersFactory);
+
+    /**
+     * Set the sensitivity detector to determine if a header {@code name}/{@code value} pair should be treated as
+     * <a href="https://tools.ietf.org/html/rfc7541#section-7.1.3">sensitive</a>.
+     *
+     * @param sensitivityDetector the {@link BiPredicate}&lt;{@link CharSequence}, {@link CharSequence}&gt; that returns
+     * {@code true} if a header &lt;{@code name}, {@code value}&gt; pair should be treated as
+     * <a href="https://tools.ietf.org/html/rfc7541#section-7.1.3">sensitive</a>, {@code false} otherwise.
+     * @return {@code this.}
+     */
+    abstract BaseHttpBuilder<ResolvedAddress> h2HeadersSensitivityDetector(
+            BiPredicate<CharSequence, CharSequence> sensitivityDetector);
 
     /**
      * Enable HTTP/2 via

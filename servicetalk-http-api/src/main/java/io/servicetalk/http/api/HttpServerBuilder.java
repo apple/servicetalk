@@ -28,6 +28,7 @@ import io.servicetalk.transport.api.SslConfig;
 import java.io.InputStream;
 import java.net.SocketOption;
 import java.util.Map;
+import java.util.function.BiPredicate;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
@@ -70,11 +71,23 @@ public abstract class HttpServerBuilder {
     public abstract HttpServerBuilder h2HeadersFactory(HttpHeadersFactory headersFactory);
 
     /**
+     * Set the sensitivity detector to determine if a header {@code name}/{@code value} pair should be treated as
+     * <a href="https://tools.ietf.org/html/rfc7541#section-7.1.3">sensitive</a>.
+     *
+     * @param sensitivityDetector the {@link BiPredicate}&lt;{@link CharSequence}, {@link CharSequence}&gt; that returns
+     * {@code true} if a header &lt;{@code name}, {@code value}&gt; pair should be treated as
+     * <a href="https://tools.ietf.org/html/rfc7541#section-7.1.3">sensitive</a>, {@code false} otherwise.
+     * @return {@code this.}
+     */
+    public abstract HttpServerBuilder h2HeadersSensitivityDetector(
+            BiPredicate<CharSequence, CharSequence> sensitivityDetector);
+
+    /**
      * Enable HTTP/2 via
      * <a href="https://tools.ietf.org/html/rfc7540#section-3.4">Prior Knowledge</a>.
+     *
      * @param h2PriorKnowledge {@code true} to enable HTTP/2 via
      * <a href="https://tools.ietf.org/html/rfc7540#section-3.4">Prior Knowledge</a>.
-     *
      * @return {@code this}.
      */
     public abstract HttpServerBuilder h2PriorKnowledge(boolean h2PriorKnowledge);
@@ -284,6 +297,7 @@ public abstract class HttpServerBuilder {
      * <pre>
      *     filter1 =&gt; filter2 =&gt; filter3
      * </pre>
+     *
      * @param factory {@link ConnectionAcceptorFactory} to append. Lifetime of this
      * {@link ConnectionAcceptorFactory} is managed by this builder and the server started thereof.
      * @return {@code this}
@@ -312,6 +326,7 @@ public abstract class HttpServerBuilder {
      * <pre>
      *     filter1 =&gt; filter2 =&gt; filter3 =&gt; service
      * </pre>
+     *
      * @param factory {@link StreamingHttpServiceFilterFactory} to append.
      * @return {@code this}
      */
@@ -342,6 +357,7 @@ public abstract class HttpServerBuilder {
      * <pre>
      *     filter1 =&gt; filter2 =&gt; filter3 =&gt; service
      * </pre>
+     *
      * @param predicate the {@link Predicate} to test if the filter must be applied.
      * @param factory {@link StreamingHttpServiceFilterFactory} to append.
      * @return {@code this}
