@@ -28,7 +28,6 @@ import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
 import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequest;
-import io.servicetalk.transport.api.ClientSslConfigBuilder;
 import io.servicetalk.transport.api.IoExecutor;
 
 import java.net.SocketOption;
@@ -97,7 +96,7 @@ public abstract class GrpcClientBuilder<U, R>
                                                                    StreamingHttpConnectionFilterFactory factory);
 
     @Override
-    public abstract ClientSslConfigBuilder<? extends GrpcClientBuilder<U, R>> enableSsl();
+    public abstract GrpcClientSecurityConfigurator<U, R> secure();
 
     @Override
     public abstract GrpcClientBuilder<U, R> serviceDiscoverer(
