@@ -46,12 +46,15 @@ import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpHeaderNames.HOST;
 import static io.servicetalk.http.api.HttpHeaderNames.LOCATION;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
+import static io.servicetalk.http.api.HttpRequestMethod.CONNECT;
 import static io.servicetalk.http.api.HttpRequestMethod.DELETE;
 import static io.servicetalk.http.api.HttpRequestMethod.GET;
 import static io.servicetalk.http.api.HttpRequestMethod.HEAD;
+import static io.servicetalk.http.api.HttpRequestMethod.OPTIONS;
 import static io.servicetalk.http.api.HttpRequestMethod.PATCH;
 import static io.servicetalk.http.api.HttpRequestMethod.POST;
 import static io.servicetalk.http.api.HttpRequestMethod.PUT;
+import static io.servicetalk.http.api.HttpRequestMethod.TRACE;
 import static io.servicetalk.http.api.HttpResponseStatus.BAD_REQUEST;
 import static io.servicetalk.http.api.HttpResponseStatus.FOUND;
 import static io.servicetalk.http.api.HttpResponseStatus.INTERNAL_SERVER_ERROR;
@@ -193,6 +196,13 @@ public class RedirectingHttpRequesterFilterTest {
         testNoRedirectWasDone(MAX_REDIRECTS, PUT, PERMANENT_REDIRECT, "/new-location");
         testNoRedirectWasDone(MAX_REDIRECTS, PATCH, PERMANENT_REDIRECT, "/new-location");
         testNoRedirectWasDone(MAX_REDIRECTS, DELETE, PERMANENT_REDIRECT, "/new-location");
+    }
+
+    @Test
+    public void traceConnectOptionsRequestsDoesNotRedirect() throws Exception {
+        testNoRedirectWasDone(MAX_REDIRECTS, TRACE, SEE_OTHER, "/new-location");
+        testNoRedirectWasDone(MAX_REDIRECTS, CONNECT, SEE_OTHER, "/new-location");
+        testNoRedirectWasDone(MAX_REDIRECTS, OPTIONS, SEE_OTHER, "/new-location");
     }
 
     private void testNoRedirectWasDone(final int maxRedirects,
@@ -338,7 +348,7 @@ public class RedirectingHttpRequesterFilterTest {
     }
 
     @Test
-    public void redirectForOnlyRelativeWithAbsoluteRelativeLocationWithPortDoesntRedirect() throws Exception {
+    public void redirectForOnlyRelativeWithAbsoluteRelativeLocationWithPortDoesNotRedirect() throws Exception {
         StreamingHttpClient client = newClient(new RedirectingHttpRequesterFilter(true));
 
         StreamingHttpRequest request = client.get("/path");
@@ -386,7 +396,7 @@ public class RedirectingHttpRequesterFilterTest {
     }
 
     @Test
-    public void redirectForOnlyRelativeWithAbsoluteNonRelativeLocationDoesntRedirect() throws Exception {
+    public void redirectForOnlyRelativeWithAbsoluteNonRelativeLocationDoesNotRedirect() throws Exception {
         StreamingHttpClient client = newClient(new RedirectingHttpRequesterFilter(true));
 
         StreamingHttpRequest request = client.get("/path");
@@ -395,6 +405,17 @@ public class RedirectingHttpRequesterFilterTest {
         request.headers().set(REQUESTED_LOCATION, "http://non-relative.servicetalk.io/new-location");
 
         verifyDoesNotRedirect(client, request, "http://non-relative.servicetalk.io/new-location");
+    }
+
+    @Test
+    public void doesNotRedirectIfRemoteHostIsUnknown() throws Exception {
+        StreamingHttpClient client = newClient(new RedirectingHttpRequesterFilter(true));
+
+        StreamingHttpRequest request = client.get("/path");
+        request.headers().set(REQUESTED_STATUS, String.valueOf(SEE_OTHER.code()));
+        request.headers().set(REQUESTED_LOCATION, "/new-location");
+
+        verifyDoesNotRedirect(client, request, "/new-location");
     }
 
     @Test
@@ -429,7 +450,7 @@ public class RedirectingHttpRequesterFilterTest {
     }
 
     @Test
-    public void absoluteTargetRedirectForOnlyRelativeWithNonRelativeLocationDoesntRedirect() throws Exception {
+    public void absoluteTargetRedirectForOnlyRelativeWithNonRelativeLocationDoesNotRedirect() throws Exception {
         StreamingHttpClient client = newClient(new RedirectingHttpRequesterFilter(true));
 
         StreamingHttpRequest request = client.get("http://servicetalk.io/path");
