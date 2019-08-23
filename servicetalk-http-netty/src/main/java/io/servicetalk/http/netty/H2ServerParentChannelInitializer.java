@@ -23,6 +23,8 @@ import io.netty.handler.codec.http2.Http2FrameCodecBuilder;
 import io.netty.handler.codec.http2.Http2FrameLogger;
 import io.netty.handler.codec.http2.Http2MultiplexHandler;
 
+import java.util.function.BiPredicate;
+
 import static io.netty.handler.codec.http2.Http2FrameCodecBuilder.forServer;
 import static io.netty.handler.logging.LogLevel.TRACE;
 
@@ -38,11 +40,16 @@ final class H2ServerParentChannelInitializer implements ChannelInitializer {
 
     @Override
     public ConnectionContext init(final Channel channel, final ConnectionContext context) {
-        Http2FrameCodecBuilder multiplexCodecBuilder = forServer()
+        final Http2FrameCodecBuilder multiplexCodecBuilder = forServer()
                 // We don't want to rely upon Netty to manage the graceful close timeout, because we expect
                 // the user to apply their own timeout at the call site.
                 .gracefulShutdownTimeoutMillis(-1);
-        String h2FrameLogger = config.h2FrameLogger();
+
+        final BiPredicate<CharSequence, CharSequence> h2HeadersSensitivityDetector =
+                config.h2HeadersSensitivityDetector();
+        multiplexCodecBuilder.headerSensitivityDetector(h2HeadersSensitivityDetector::test);
+
+        final String h2FrameLogger = config.h2FrameLogger();
         if (h2FrameLogger != null) {
             multiplexCodecBuilder.frameLogger(new Http2FrameLogger(TRACE, h2FrameLogger));
         }

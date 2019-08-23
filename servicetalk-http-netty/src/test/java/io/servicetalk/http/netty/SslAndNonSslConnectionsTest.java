@@ -105,7 +105,7 @@ public class SslAndNonSslConnectionsTest {
         when(SECURE_STREAMING_HTTP_SERVICE.closeAsync()).thenReturn(completed());
         when(SECURE_STREAMING_HTTP_SERVICE.closeAsyncGracefully()).thenReturn(completed());
         secureServerCtx = HttpServers.forAddress(localAddress(0))
-                .enableSsl(DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey).finish()
+                .secure().commit(DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey)
                 .executionStrategy(noOffloadsStrategy())
                 .listenStreamingAndAwait(SECURE_STREAMING_HTTP_SERVICE);
         final String secureServerHostHeader = hostHeader(serverHostAndPort(secureServerCtx));
@@ -140,7 +140,7 @@ public class SslAndNonSslConnectionsTest {
     public void secureClientToNonSecureServerClosesConnection() throws Exception {
         assert serverCtx != null;
         try (BlockingHttpClient client = HttpClients.forSingleAddress(serverHostAndPort(serverCtx))
-                .enableSsl().disableHostnameVerification().trustManager(DefaultTestCerts::loadMutualAuthCaPem).finish()
+                .secure().disableHostnameVerification().trustManager(DefaultTestCerts::loadMutualAuthCaPem).commit()
                 .buildBlocking()) {
             client.request(client.get("/"));
         }
@@ -165,7 +165,7 @@ public class SslAndNonSslConnectionsTest {
     public void singleAddressClientWithSslToSecureServer() throws Exception {
         assert secureServerCtx != null;
         try (BlockingHttpClient client = HttpClients.forSingleAddress(serverHostAndPort(secureServerCtx))
-                .enableSsl().disableHostnameVerification().trustManager(DefaultTestCerts::loadMutualAuthCaPem).finish()
+                .secure().disableHostnameVerification().trustManager(DefaultTestCerts::loadMutualAuthCaPem).commit()
                 .buildBlocking()) {
             testRequestResponse(client, "/", true);
         }
@@ -174,7 +174,7 @@ public class SslAndNonSslConnectionsTest {
     @Test
     public void multiAddressClientWithSslToSecureServer() throws Exception {
         try (BlockingHttpClient client = HttpClients.forMultiAddressUrl()
-                .configureSsl((hap, config) -> config.disableHostnameVerification()
+                .secure((hap, config) -> config.disableHostnameVerification()
                         .trustManager(DefaultTestCerts::loadMutualAuthCaPem))
                 .buildBlocking()) {
             testRequestResponse(client, secureRequestTarget, true);

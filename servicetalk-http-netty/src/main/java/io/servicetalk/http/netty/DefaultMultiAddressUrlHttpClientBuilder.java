@@ -37,7 +37,7 @@ import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.MultiAddressHttpClientBuilder;
 import io.servicetalk.http.api.MultiAddressHttpClientFilterFactory;
-import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
+import io.servicetalk.http.api.SingleAddressHttpClientSecurityConfigurator;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
 import io.servicetalk.http.api.StreamingHttpConnection;
@@ -48,10 +48,9 @@ import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.netty.DefaultSingleAddressHttpClientBuilder.HttpClientBuildContext;
 import io.servicetalk.http.utils.RedirectingHttpRequesterFilter;
-import io.servicetalk.transport.api.ClientSslConfigBuilder;
+import io.servicetalk.transport.api.ClientSecurityConfigurator;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.IoExecutor;
-import io.servicetalk.transport.api.SslConfig;
 
 import java.net.InetSocketAddress;
 import java.net.SocketOption;
@@ -59,6 +58,7 @@ import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.BiConsumer;
+import java.util.function.BiPredicate;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
@@ -96,8 +96,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder extends MultiAddressHttpClie
     @Nullable
     private Function<HostAndPort, CharSequence> unresolvedAddressToHostFunction;
     @Nullable
-    private BiConsumer<HostAndPort, ClientSslConfigBuilder<?
-            extends SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress>>> sslConfigFunction;
+    private BiConsumer<HostAndPort, ClientSecurityConfigurator> sslConfigFunction;
 
     DefaultMultiAddressUrlHttpClientBuilder(
             final DefaultSingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builderTemplate) {
@@ -111,7 +110,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder extends MultiAddressHttpClie
             final HttpClientBuildContext<HostAndPort, InetSocketAddress> buildContext = builderTemplate.copyBuildCtx();
 
             final ClientFactory clientFactory = new ClientFactory(buildContext.builder,
-                    clientFilterFactory, unresolvedAddressToHostFunction, sslConfigFunction, maxRedirects);
+                    clientFilterFactory, unresolvedAddressToHostFunction, sslConfigFunction);
 
             final CachingKeyFactory keyFactory = closeables.prepend(new CachingKeyFactory());
 
@@ -221,10 +220,6 @@ final class DefaultMultiAddressUrlHttpClientBuilder extends MultiAddressHttpClie
         }
     }
 
-    /**
-     * Creates a new {@link SingleAddressHttpClientBuilder} with appropriate {@link SslConfig} for specified
-     * {@link HostAndPort}.
-     */
     private static final class ClientFactory implements Function<UrlKey, FilterableStreamingHttpClient> {
 
         private final DefaultSingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builderTemplate;
@@ -233,23 +228,17 @@ final class DefaultMultiAddressUrlHttpClientBuilder extends MultiAddressHttpClie
         @Nullable
         private final Function<HostAndPort, CharSequence> hostHeaderTransformer;
         @Nullable
-        private BiConsumer<HostAndPort, ClientSslConfigBuilder<? extends
-                SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress>>> sslConfigFunction;
-        private final int maxRedirects;
+        private BiConsumer<HostAndPort, ClientSecurityConfigurator> sslConfigFunction;
 
         ClientFactory(
                 final DefaultSingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builderTemplate,
                 @Nullable final MultiAddressHttpClientFilterFactory<HostAndPort> clientFilterFactory,
                 @Nullable final Function<HostAndPort, CharSequence> hostHeaderTransformer,
-                @Nullable final BiConsumer<HostAndPort, ClientSslConfigBuilder<? extends
-                        SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress>>>
-                        sslConfigFunction,
-                final int maxRedirects) {
+                @Nullable final BiConsumer<HostAndPort, ClientSecurityConfigurator> sslConfigFunction) {
             this.builderTemplate = builderTemplate;
             this.clientFilterFactory = clientFilterFactory;
             this.hostHeaderTransformer = hostHeaderTransformer;
             this.sslConfigFunction = sslConfigFunction;
-            this.maxRedirects = maxRedirects;
         }
 
         @Override
@@ -262,13 +251,13 @@ final class DefaultMultiAddressUrlHttpClientBuilder extends MultiAddressHttpClie
                 buildContext.builder.unresolvedAddressToHost(hostHeaderTransformer);
             }
 
-            if (HTTPS_SCHEME.equals(urlKey.scheme)) {
-                final ClientSslConfigBuilder<DefaultSingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress>>
-                        sslConfigBuilder = buildContext.builder.enableSsl();
+            if (HTTPS_SCHEME.equalsIgnoreCase(urlKey.scheme)) {
+                final SingleAddressHttpClientSecurityConfigurator<HostAndPort, InetSocketAddress> securityConfigurator =
+                        buildContext.builder.secure();
                 if (sslConfigFunction != null) {
-                    sslConfigFunction.accept(urlKey.hostAndPort, sslConfigBuilder);
+                    sslConfigFunction.accept(urlKey.hostAndPort, securityConfigurator);
                 }
-                sslConfigBuilder.finish();
+                securityConfigurator.commit();
             }
 
             if (clientFilterFactory != null) {
@@ -395,6 +384,13 @@ final class DefaultMultiAddressUrlHttpClientBuilder extends MultiAddressHttpClie
     }
 
     @Override
+    protected MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> h2HeadersSensitivityDetector(
+            final BiPredicate<CharSequence, CharSequence> h2HeadersSensitivityDetector) {
+        builderTemplate.h2HeadersSensitivityDetector(h2HeadersSensitivityDetector);
+        return this;
+    }
+
+    @Override
     protected MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> h2PriorKnowledge(
             final boolean h2PriorKnowledge) {
         builderTemplate.h2PriorKnowledge(h2PriorKnowledge);
@@ -442,9 +438,8 @@ final class DefaultMultiAddressUrlHttpClientBuilder extends MultiAddressHttpClie
     }
 
     @Override
-    public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> configureSsl(
-            BiConsumer<HostAndPort, ClientSslConfigBuilder<? extends
-                    SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress>>> sslConfigFunction) {
+    public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> secure(
+            final BiConsumer<HostAndPort, ClientSecurityConfigurator> sslConfigFunction) {
         this.sslConfigFunction = requireNonNull(sslConfigFunction);
         return this;
     }

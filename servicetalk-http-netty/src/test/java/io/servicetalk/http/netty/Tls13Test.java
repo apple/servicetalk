@@ -18,8 +18,8 @@ package io.servicetalk.http.netty;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.test.resources.DefaultTestCerts;
+import io.servicetalk.transport.api.SecurityConfigurator.SslProvider;
 import io.servicetalk.transport.api.ServerContext;
-import io.servicetalk.transport.api.SslConfig.SslProvider;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -33,8 +33,8 @@ import static io.servicetalk.http.api.HttpHeaderValues.TEXT_PLAIN_UTF_8;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.HttpSerializationProviders.textDeserializer;
 import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
-import static io.servicetalk.transport.api.SslConfig.SslProvider.JDK;
-import static io.servicetalk.transport.api.SslConfig.SslProvider.OPENSSL;
+import static io.servicetalk.transport.api.SecurityConfigurator.SslProvider.JDK;
+import static io.servicetalk.transport.api.SecurityConfigurator.SslProvider.OPENSSL;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static java.util.Arrays.asList;
@@ -70,23 +70,23 @@ public class Tls13Test {
     @Test
     public void requiredCipher() throws Exception {
         try (ServerContext serverContext = HttpServers.forAddress(localAddress(0))
-                .enableSsl(DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey)
+                .secure()
                 .protocols(TLS1_3)
                 .ciphers(singletonList(TLS1_3_REQUIRED_CIPHER))
                 .provider(serverSslProvider)
-                .finish()
+                .commit(DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey)
                 .listenBlockingAndAwait((ctx, request, responseFactory) -> responseFactory.ok()
                         .payloadBody(request.payloadBody(textDeserializer()), textSerializer()))) {
 
             try (BlockingHttpClient client = HttpClients.forSingleAddress(serverHostAndPort(serverContext))
-                    .enableSsl()
+                    .secure()
                     .protocols(TLS1_3)
                     .ciphers(singletonList(TLS1_3_REQUIRED_CIPHER))
                     .disableHostnameVerification()
                     // required for generated test certificates
                     .trustManager(DefaultTestCerts::loadMutualAuthCaPem)
                     .provider(clientSslProvider)
-                    .finish()
+                    .commit()
                     .buildBlocking()) {
 
                 String requestPayload = "hello " + TLS1_3;

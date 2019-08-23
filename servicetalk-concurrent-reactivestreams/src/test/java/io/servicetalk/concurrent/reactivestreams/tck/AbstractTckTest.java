@@ -21,10 +21,6 @@ import org.reactivestreams.tck.TestEnvironment;
 abstract class AbstractTckTest<T> extends PublisherVerification<T> {
 
     AbstractTckTest() {
-        super(newTestEnvironment());
-    }
-
-    private static TestEnvironment newTestEnvironment() {
-        return new TestEnvironment();
+        super(new TestEnvironment(5000, 50, 50));
     }
 }

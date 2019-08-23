@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 package io.servicetalk.transport.netty.internal;
-
-import io.servicetalk.transport.api.SslConfig;
 
 import io.netty.handler.ssl.ClientAuth;
 import io.netty.handler.ssl.SslContext;
@@ -43,12 +41,8 @@ public final class SslContextFactory {
      * @param config SSL config.
      * @return A new {@link SslContext} for a client.
      */
-    public static SslContext forClient(SslConfig config) {
+    public static SslContext forClient(ReadOnlyClientSecurityConfig config) {
         requireNonNull(config);
-        if (config.isServer()) {
-            throw new IllegalArgumentException("SslConfig was built for server");
-        }
-
         SslContextBuilder builder = SslContextBuilder.forClient()
                 .sessionCacheSize(config.sessionCacheSize()).sessionTimeout(config.sessionTimeout());
         configureTrustManager(config, builder);
@@ -69,10 +63,11 @@ public final class SslContextFactory {
                     closeAndRethrowUnchecked(keySupplier);
                 }
             }
-            builder.sslProvider(SslUtils.toNettySslProvider(config.provider()));
         }
+        builder.sslProvider(SslUtils.toNettySslProvider(config.provider()));
+
         builder.ciphers(config.ciphers());
-        builder.applicationProtocolConfig(SslUtils.toNettyApplicationProtocol(config.apn()));
+        builder.applicationProtocolConfig(SslUtils.toNettyApplicationProtocol(config));
         try {
             return new WrappingSslContext(builder.build(), config.protocols());
         } catch (SSLException e) {
@@ -86,11 +81,8 @@ public final class SslContextFactory {
      * @param config SSL config.
      * @return A new {@link SslContext} for a server.
      */
-    public static SslContext forServer(SslConfig config) {
+    public static SslContext forServer(ReadOnlyServerSecurityConfig config) {
         requireNonNull(config);
-        if (!config.isServer()) {
-            throw new IllegalArgumentException("SslConfig for clients cannot be used when building a server");
-        }
         SslContextBuilder builder;
 
         KeyManagerFactory keyManagerFactory = config.keyManagerFactory();
@@ -110,11 +102,11 @@ public final class SslContextFactory {
                     closeAndRethrowUnchecked(keySupplier);
                 }
             }
-            builder.sslProvider(SslUtils.toNettySslProvider(config.provider()));
         }
+        builder.sslProvider(SslUtils.toNettySslProvider(config.provider()));
 
         builder.sessionCacheSize(config.sessionCacheSize()).sessionTimeout(config.sessionTimeout())
-                .applicationProtocolConfig(SslUtils.toNettyApplicationProtocol(config.apn()));
+                .applicationProtocolConfig(SslUtils.toNettyApplicationProtocol(config));
 
         switch (config.clientAuth()) {
             case NONE:
@@ -140,7 +132,7 @@ public final class SslContextFactory {
         }
     }
 
-    private static void configureTrustManager(SslConfig config, SslContextBuilder builder) {
+    private static void configureTrustManager(ReadOnlySecurityConfig config, SslContextBuilder builder) {
         if (config.trustManagerFactory() != null) {
             builder.trustManager(config.trustManagerFactory());
         } else {
