@@ -18,6 +18,7 @@ package io.servicetalk.grpc.netty;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.grpc.api.GrpcServerBuilder;
+import io.servicetalk.grpc.api.GrpcServerSecurityConfigurator;
 import io.servicetalk.grpc.api.GrpcServiceFactory;
 import io.servicetalk.grpc.api.GrpcServiceFactory.ServerBinder;
 import io.servicetalk.http.api.BlockingHttpService;
@@ -25,6 +26,7 @@ import io.servicetalk.http.api.BlockingStreamingHttpService;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.HttpServerBuilder;
+import io.servicetalk.http.api.HttpServerSecurityConfigurator;
 import io.servicetalk.http.api.HttpService;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpService;
@@ -33,17 +35,11 @@ import io.servicetalk.transport.api.ConnectionAcceptorFactory;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.ServerContext;
-import io.servicetalk.transport.api.ServerSslConfigBuilder;
-import io.servicetalk.transport.api.SslConfig;
 import io.servicetalk.transport.netty.internal.ExecutionContextBuilder;
 
-import java.io.InputStream;
 import java.net.SocketOption;
-import java.util.Map;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 import javax.annotation.Nullable;
-import javax.net.ssl.KeyManagerFactory;
 
 final class DefaultGrpcServerBuilder extends GrpcServerBuilder implements ServerBinder {
 
@@ -115,26 +111,15 @@ final class DefaultGrpcServerBuilder extends GrpcServerBuilder implements Server
     }
 
     @Override
-    public GrpcServerBuilder sniConfig(@Nullable final Map<String, SslConfig> mappings, final SslConfig defaultConfig) {
-        throw new UnsupportedOperationException("SSL not yet supported.");
+    public GrpcServerSecurityConfigurator secure() {
+        HttpServerSecurityConfigurator secure = httpServerBuilder.secure();
+        return new DefaultGrpcServerSecurityConfigurator(secure, this);
     }
 
     @Override
-    public ServerSslConfigBuilder<GrpcServerBuilder> enableSsl(final KeyManagerFactory keyManagerFactory) {
-        throw new UnsupportedOperationException("SSL not yet supported.");
-    }
-
-    @Override
-    public ServerSslConfigBuilder<GrpcServerBuilder> enableSsl(final Supplier<InputStream> keyCertChainSupplier,
-                                                               final Supplier<InputStream> keySupplier) {
-        throw new UnsupportedOperationException("SSL not yet supported.");
-    }
-
-    @Override
-    public ServerSslConfigBuilder<GrpcServerBuilder> enableSsl(final Supplier<InputStream> keyCertChainSupplier,
-                                                               final Supplier<InputStream> keySupplier,
-                                                               final String keyPassword) {
-        throw new UnsupportedOperationException("SSL not yet supported.");
+    public GrpcServerSecurityConfigurator secure(final String... sniHostnames) {
+        HttpServerSecurityConfigurator secure = httpServerBuilder.secure(sniHostnames);
+        return new DefaultGrpcServerSecurityConfigurator(secure, this);
     }
 
     @Override
