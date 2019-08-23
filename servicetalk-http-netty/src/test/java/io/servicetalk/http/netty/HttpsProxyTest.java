@@ -138,7 +138,7 @@ public class HttpsProxyTest {
 
     public void startServer() throws Exception {
         final ServerContext serverContext = HttpServers.forPort(0)
-                .enableSsl(DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey).finish()
+                .secure().commit(DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey)
                 .listenAndAwait((ctx, request, responseFactory) -> succeeded(responseFactory.ok()
                         .payloadBody("host: " + request.headers().get(HOST), textSerializer())));
         serverPort = serverHostAndPort(serverContext).port();
@@ -146,7 +146,7 @@ public class HttpsProxyTest {
 
     public void createClient() {
         client = HttpClients.forSingleAddressViaProxy("localhost", serverPort, "localhost", proxyPort)
-                .enableSsl().disableHostnameVerification().trustManager(DefaultTestCerts::loadMutualAuthCaPem).finish()
+                .secure().disableHostnameVerification().trustManager(DefaultTestCerts::loadMutualAuthCaPem).commit()
                 .build();
     }
 

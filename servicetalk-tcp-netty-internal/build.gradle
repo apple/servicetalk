@@ -46,7 +46,6 @@ dependencies {
   testImplementation "io.servicetalk:servicetalk-concurrent-api-testFixtures:$project.version"
   testImplementation "io.servicetalk:servicetalk-concurrent-internal-testFixtures:$project.version"
   testImplementation "io.servicetalk:servicetalk-test-resources:$project.version"
-  testImplementation "io.servicetalk:servicetalk-transport-api-testFixtures:$project.version"
   testImplementation "io.servicetalk:servicetalk-transport-netty-internal-testFixtures:$project.version"
 
   testFixturesImplementation "io.servicetalk:servicetalk-concurrent-api-testFixtures:$project.version"
