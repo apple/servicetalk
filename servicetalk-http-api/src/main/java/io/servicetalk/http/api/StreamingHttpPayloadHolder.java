@@ -17,8 +17,10 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
+import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
+import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.SingleSource.Processor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
@@ -28,6 +30,7 @@ import io.servicetalk.http.api.HttpDataSourceTransformations.HttpObjectTrailersS
 import io.servicetalk.http.api.HttpDataSourceTransformations.HttpTransportBufferFilterOperator;
 import io.servicetalk.http.api.HttpDataSourceTransformations.PayloadAndTrailers;
 
+import java.util.Map;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
 import javax.annotation.Nullable;
@@ -231,15 +234,60 @@ final class StreamingHttpPayloadHolder implements PayloadInfo {
             assert trailersSingle != null;
             // trailersSingle will always be used in a serial fashion relative to the payloadBody. The RS operators used
             // to provide this sequential subscription will take care of visibility for the state Object when accessed
-            // in the trailersSingle map operation.
-            final MutableReference stateForSubscriber = new MutableReference();
-            trailersSingle = trailersSingle.map(trailers -> {
-                Object reference = stateForSubscriber.reference();
-                return trailersTransformer.payloadComplete(reference, trailers);
+            // in a trailersSingle operation.
+            final TrailerTransformerState trailerTransformerState = new TrailerTransformerState();
+            trailersSingle = trailersSingle.liftSync(subscriber -> new SingleSource.Subscriber<HttpHeaders>() {
+                @Override
+                public void onSubscribe(final Cancellable cancellable) {
+                    subscriber.onSubscribe(cancellable);
+                }
+
+                @Override
+                public void onSuccess(@Nullable HttpHeaders result) {
+                    assert trailerTransformerState.isStateSet();
+                    assert result != null;
+                    final HttpHeaders trailersForError = trailerTransformerState.trailersForError();
+                    if (trailersForError != null) {
+                        // Payload emitted error but user recovered
+                        for (Map.Entry<CharSequence, CharSequence> trailer : trailersForError) {
+                            result.add(trailer.getKey(), trailer.getValue());
+                        }
+                    } else {
+                        try {
+                            result = trailersTransformer.payloadComplete(trailerTransformerState.state(), result);
+                        } catch (Throwable t) {
+                            subscriber.onError(t);
+                            return;
+                        }
+                    }
+                    subscriber.onSuccess(result);
+                }
+
+                @Override
+                public void onError(final Throwable t) {
+                    assert trailerTransformerState.isStateSet();
+                    if (trailerTransformerState.payloadErrorCause() == t) {
+                        // Same error for payload and trailers, we recovered from payload error, hence should use the
+                        // trailers specified by the user.
+                        HttpHeaders trailers = trailerTransformerState.trailersForError();
+                        assert trailers != null;
+                        subscriber.onSuccess(trailers);
+                    } else {
+                        HttpHeaders trailersForError;
+                        try {
+                            trailersForError = trailersTransformer.catchPayloadFailure(trailerTransformerState.state(),
+                                    t, headersFactory.newEmptyTrailers());
+                        } catch (Throwable throwable) {
+                            subscriber.onError(t);
+                            return;
+                        }
+                        subscriber.onSuccess(trailersForError);
+                    }
+                }
             });
             payloadBody = (raw ? rawPayload() : payloadBody()).liftSync(subscriber -> {
                 Object state = trailersTransformer.newState();
-                stateForSubscriber.reference(state);
+                trailerTransformerState.reference(state);
                 return new PublisherSource.Subscriber<Object>() {
                     @Override
                     public void onSubscribe(final Subscription subscription) {
@@ -256,8 +304,16 @@ final class StreamingHttpPayloadHolder implements PayloadInfo {
                     public void onError(final Throwable t) {
                         // If payload fails we will never emit original trailers from the combined payload+trailers
                         // Publisher
-                        trailersTransformer.payloadFailed(state, t, headersFactory.newEmptyTrailers());
-                        subscriber.onError(t);
+                        HttpHeaders trailersForError;
+                        try {
+                            trailersForError = trailersTransformer.catchPayloadFailure(state, t,
+                                    headersFactory.newEmptyTrailers());
+                        } catch (Throwable throwable) {
+                            subscriber.onError(t);
+                            return;
+                        }
+                        trailerTransformerState.trailersForError(t, trailersForError);
+                        subscriber.onComplete();
                     }
 
                     @Override
@@ -302,17 +358,42 @@ final class StreamingHttpPayloadHolder implements PayloadInfo {
         return payloadBody.filter(o -> !(o instanceof HttpHeaders));
     }
 
-    private static final class MutableReference {
-        @Nullable
-        private Object ref;
+    private static final class TrailerTransformerState {
+        private static final Object NULL_STATE = new Object();
 
         @Nullable
-        Object reference() {
-            return ref;
+        private Object state;
+        @Nullable
+        private Throwable payloadErrorCause;
+        @Nullable
+        private HttpHeaders trailersForError;
+
+        @Nullable
+        Object state() {
+            return state == NULL_STATE ? null : state;
         }
 
-        void reference(Object ref) {
-            this.ref = ref;
+        void reference(@Nullable Object state) {
+            this.state = state == null ? NULL_STATE : state;
+        }
+
+        @Nullable
+        HttpHeaders trailersForError() {
+            return trailersForError;
+        }
+
+        void trailersForError(Throwable cause, HttpHeaders trailersForError) {
+            payloadErrorCause = requireNonNull(cause);
+            this.trailersForError = requireNonNull(trailersForError);
+        }
+
+        @Nullable
+        Throwable payloadErrorCause() {
+            return payloadErrorCause;
+        }
+
+        boolean isStateSet() {
+            return state != null;
         }
     }
 }

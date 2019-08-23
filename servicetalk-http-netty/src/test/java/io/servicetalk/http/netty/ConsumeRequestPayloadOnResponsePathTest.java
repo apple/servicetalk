@@ -179,8 +179,8 @@ public class ConsumeRequestPayloadOnResponsePathTest {
                                 }
 
                                 @Override
-                                public HttpHeaders payloadFailed(final AtomicInteger __, final Throwable ___,
-                                                                 final HttpHeaders trailers) {
+                                public HttpHeaders catchPayloadFailure(final AtomicInteger __, final Throwable ___,
+                                                                       final HttpHeaders trailers) {
                                     return trailers;
                                 }
                             });

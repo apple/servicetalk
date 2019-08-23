@@ -15,6 +15,8 @@
  */
 package io.servicetalk.http.api;
 
+import javax.annotation.Nullable;
+
 /**
  * A contract for transforming trailers for a streaming HTTP request/response.
  *
@@ -28,6 +30,7 @@ public interface TrailersTransformer<State, Payload> {
      *
      * @return A new instance of the {@link State}.
      */
+    @Nullable
     State newState();
 
     /**
@@ -37,7 +40,7 @@ public interface TrailersTransformer<State, Payload> {
      * @param payload {@link Payload} to accept.
      * @return Potentially transformed {@link Payload} instance.
      */
-    Payload accept(State state, Payload payload);
+    Payload accept(@Nullable State state, Payload payload);
 
     /**
      * Invoked once all {@link Payload} instances are {@link #accept(Object, Object) accepted} and the payload stream
@@ -47,16 +50,21 @@ public interface TrailersTransformer<State, Payload> {
      * @param trailers Trailer for the streaming HTTP request/response that is transformed.
      * @return Potentially transformed trailers.
      */
-    HttpHeaders payloadComplete(State state, HttpHeaders trailers);
+    HttpHeaders payloadComplete(@Nullable State state, HttpHeaders trailers);
 
     /**
      * Invoked once all {@link Payload} instances are {@link #accept(Object, Object) accepted} and the payload stream
      * has terminated with an error.
+     * <p>
+     * This method suppresses the passed {@code cause} if it returns successfully. In order to propagate the
+     * {@code cause}, one should throw the same from this method.
      *
      * @param state {@link State} instance created previously by this transformer.
      * @param cause of the payload stream failure.
      * @param trailers Trailer for the streaming HTTP request/response that is transformed.
-     * @return Potentially transformed trailers.
+     * @return Potentially transformed trailers. <strong>This will swallow the passed {@code cause}. In order to
+     * propagate the {@code cause}, it should be re-thrown.</strong>
+     * @throws Throwable If the error has to be propagated
      */
-    HttpHeaders payloadFailed(State state, Throwable cause, HttpHeaders trailers);
+    HttpHeaders catchPayloadFailure(@Nullable State state, Throwable cause, HttpHeaders trailers) throws Throwable;
 }

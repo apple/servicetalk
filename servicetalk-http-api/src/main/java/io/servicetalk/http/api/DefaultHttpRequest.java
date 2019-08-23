@@ -25,8 +25,6 @@ import static java.util.Objects.requireNonNull;
 
 final class DefaultHttpRequest extends AbstractDelegatingHttpRequest
         implements HttpRequest, TrailersTransformer<Object, Buffer> {
-    private static final Object NULL_TRAILER_TRANSFORMER_STATE = new Object();
-
     private Buffer payloadBody;
     @Nullable
     private HttpHeaders trailers;
@@ -194,7 +192,7 @@ final class DefaultHttpRequest extends AbstractDelegatingHttpRequest
 
     @Override
     public Object newState() {
-        return NULL_TRAILER_TRANSFORMER_STATE;
+        return null;
     }
 
     @Override
@@ -209,7 +207,7 @@ final class DefaultHttpRequest extends AbstractDelegatingHttpRequest
     }
 
     @Override
-    public HttpHeaders payloadFailed(final Object __, final Throwable cause, final HttpHeaders ___) {
+    public HttpHeaders catchPayloadFailure(final Object __, final Throwable cause, final HttpHeaders ___) {
         assert trailers != null;
         return trailers;
     }

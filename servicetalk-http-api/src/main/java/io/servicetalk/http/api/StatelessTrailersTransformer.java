@@ -21,11 +21,9 @@ package io.servicetalk.http.api;
  * @param <Payload> Type of payload this transformer receives.
  */
 public class StatelessTrailersTransformer<Payload> implements TrailersTransformer<Object, Payload> {
-    private static final Object NULL_STATE = new Object();
-
     @Override
     public final Object newState() {
-        return NULL_STATE;
+        return null;
     }
 
     @Override
@@ -39,7 +37,8 @@ public class StatelessTrailersTransformer<Payload> implements TrailersTransforme
     }
 
     @Override
-    public final HttpHeaders payloadFailed(final Object __, final Throwable cause, final HttpHeaders trailers) {
+    public final HttpHeaders catchPayloadFailure(final Object __, final Throwable cause, final HttpHeaders trailers)
+            throws Throwable {
         return payloadFailed(cause, trailers);
     }
 
@@ -64,14 +63,16 @@ public class StatelessTrailersTransformer<Payload> implements TrailersTransforme
     }
 
     /**
-     * Same as {@link #payloadFailed(Object, Throwable, HttpHeaders)} but without the state.
+     * Same as {@link #catchPayloadFailure(Object, Throwable, HttpHeaders)} but without the state.
      *
      * @param cause of the payload stream failure.
      * @param trailers Trailer for the streaming HTTP request/response that is transformed.
-     * @return Potentially transformed trailers.
+     * @return Potentially transformed trailers. <strong>This will swallow the passed {@code cause}. In order to
+     * propagate the {@code cause}, it should be re-thrown.</strong>
+     * @throws Throwable If the error has to be propagated
      */
     protected HttpHeaders payloadFailed(@SuppressWarnings("unused") final Throwable cause,
-                                        final HttpHeaders trailers) {
-        return trailers;
+                                        @SuppressWarnings("unused") final HttpHeaders trailers) throws Throwable {
+        throw cause;
     }
 }
