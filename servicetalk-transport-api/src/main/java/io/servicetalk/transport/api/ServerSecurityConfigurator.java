@@ -40,7 +40,7 @@ public interface ServerSecurityConfigurator extends SecurityConfigurator {
         OPTIONAL,
 
         /**
-         * Indicates that the {@link SSLEngine} will *require* client authentication.
+         * Indicates that the {@link SSLEngine} will <strong>require</strong> client authentication.
          */
         REQUIRE
     }

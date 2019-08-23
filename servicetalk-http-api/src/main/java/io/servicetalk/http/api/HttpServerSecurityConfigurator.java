@@ -24,7 +24,7 @@ import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.TrustManagerFactory;
 
 /**
- * A {@link ServerSecurityConfigurator} for HTTP.
+ * A {@link ServerSecurityConfigurator} for {@link HttpServerBuilder}.
  */
 public interface HttpServerSecurityConfigurator extends ServerSecurityConfigurator {
     @Override

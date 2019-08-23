@@ -24,7 +24,7 @@ import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.TrustManagerFactory;
 
 /**
- * A {@link ClientSecurityConfigurator} for {@link SingleAddressHttpClientBuilder}.
+ * A {@link ClientSecurityConfigurator} for {@link PartitionedHttpClientSecurityConfigurator}.
  * @param <U> the type of address before resolution (unresolved address)
  * @param <R> the type of address after resolution (resolved address)
  */
