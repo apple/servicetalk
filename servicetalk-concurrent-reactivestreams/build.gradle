@@ -51,3 +51,5 @@ dependencies {
 task tck(type: Test) {
   useTestNG()
 }
+
+test.dependsOn tck
