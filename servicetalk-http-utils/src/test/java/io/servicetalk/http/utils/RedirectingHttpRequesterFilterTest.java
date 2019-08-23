@@ -390,15 +390,24 @@ public class RedirectingHttpRequesterFilterTest {
 
     @Test
     public void redirectFromHttpToHttps() throws Exception {
+        crossSchemeRedirects("http", "https");
+    }
+
+    @Test
+    public void redirectFromHttpsToHttp() throws Exception {
+        crossSchemeRedirects("https", "http");
+    }
+
+    private void crossSchemeRedirects(String fromScheme, String toScheme) throws Exception {
         StreamingHttpClient client = newClient(new RedirectingHttpRequesterFilter(false));
 
-        StreamingHttpRequest request = client.get("http://servicetalk.io/path");
+        StreamingHttpRequest request = client.get(fromScheme + "://servicetalk.io/path");
         request.headers().set(HOST, "servicetalk.io");
         request.headers().set(REQUESTED_STATUS, String.valueOf(SEE_OTHER.code()));
-        request.headers().set(REQUESTED_LOCATION, "https://servicetalk.io//new-location");
+        request.headers().set(REQUESTED_LOCATION, toScheme + "://servicetalk.io//new-location");
 
         StreamingHttpResponse response = verifyRedirects(client, request);
-        assertThat(response.headers().get(RECEIVED_SCHEME), is("https"));
+        assertThat(response.headers().get(RECEIVED_SCHEME), is(toScheme));
     }
 
     @Test
