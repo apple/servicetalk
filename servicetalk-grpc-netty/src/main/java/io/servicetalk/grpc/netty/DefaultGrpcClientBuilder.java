@@ -22,15 +22,16 @@ import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.grpc.api.GrpcClientBuilder;
 import io.servicetalk.grpc.api.GrpcClientCallFactory;
+import io.servicetalk.grpc.api.GrpcClientSecurityConfigurator;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
+import io.servicetalk.http.api.SingleAddressHttpClientSecurityConfigurator;
 import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
 import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequest;
-import io.servicetalk.transport.api.ClientSslConfigBuilder;
 import io.servicetalk.transport.api.IoExecutor;
 
 import java.net.SocketOption;
@@ -151,8 +152,9 @@ final class DefaultGrpcClientBuilder<U, R> extends GrpcClientBuilder<U, R> {
     }
 
     @Override
-    public ClientSslConfigBuilder<? extends GrpcClientBuilder<U, R>> enableSsl() {
-        throw new UnsupportedOperationException("SSL not yet supported.");
+    public GrpcClientSecurityConfigurator<U, R> secure() {
+        SingleAddressHttpClientSecurityConfigurator<U, R> httpConfigurator = httpClientBuilder.secure();
+        return new DefaultGrpcClientSecurityConfigurator<>(httpConfigurator, this);
     }
 
     @Override
