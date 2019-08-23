@@ -83,6 +83,7 @@ public class RedirectingHttpRequesterFilterTest {
 
     private static final String REQUESTED_STATUS = "Requested-Status";
     private static final String REQUESTED_LOCATION = "Requested-Location";
+    private static final String RECEIVED_SCHEME = "Received-Scheme";
     private static final int MAX_REDIRECTS = 5;
     private static final BufferAllocator allocator = DEFAULT_ALLOCATOR;
     private static final StreamingHttpRequestResponseFactory reqRespFactory =
@@ -105,6 +106,10 @@ public class RedirectingHttpRequesterFilterTest {
                 CharSequence redirectLocation = request.headers().get(REQUESTED_LOCATION);
                 if (redirectLocation != null) {
                     response.headers().set(LOCATION, redirectLocation);
+                }
+                final String scheme = request.scheme();
+                if (scheme != null) {
+                    response.setHeader(RECEIVED_SCHEME, scheme);
                 }
                 return succeeded(response);
             } catch (Throwable t) {
@@ -392,7 +397,8 @@ public class RedirectingHttpRequesterFilterTest {
         request.headers().set(REQUESTED_STATUS, String.valueOf(SEE_OTHER.code()));
         request.headers().set(REQUESTED_LOCATION, "https://servicetalk.io//new-location");
 
-        verifyRedirects(client, request);
+        StreamingHttpResponse response = verifyRedirects(client, request);
+        assertThat(response.headers().get(RECEIVED_SCHEME), is("https"));
     }
 
     @Test
@@ -471,13 +477,14 @@ public class RedirectingHttpRequesterFilterTest {
         verifyRedirects(client, request);
     }
 
-    private void verifyRedirects(StreamingHttpClient client, StreamingHttpRequest request) throws Exception {
-        verifyRedirects(client, request, 2);
+    private StreamingHttpResponse verifyRedirects(StreamingHttpClient client,
+                                                  StreamingHttpRequest request) throws Exception {
+        return verifyRedirects(client, request, 2);
     }
 
-    private void verifyRedirects(StreamingHttpClient client, StreamingHttpRequest request,
-                                 int numberOfInvocations) throws Exception {
-        verifyResponse(client, request, OK, null, numberOfInvocations);
+    private StreamingHttpResponse verifyRedirects(StreamingHttpClient client, StreamingHttpRequest request,
+                                                  int numberOfInvocations) throws Exception {
+        return verifyResponse(client, request, OK, null, numberOfInvocations);
     }
 
     private void verifyDoesNotRedirect(StreamingHttpClient client, StreamingHttpRequest request,
@@ -485,13 +492,15 @@ public class RedirectingHttpRequesterFilterTest {
         verifyResponse(client, request, SEE_OTHER, expectedLocation, 1);
     }
 
-    private void verifyResponse(StreamingHttpClient client, StreamingHttpRequest request,
-                                HttpResponseStatus expectedStatus, @Nullable  CharSequence expectedLocation,
-                                int numberOfInvocations) throws Exception {
+    private StreamingHttpResponse verifyResponse(StreamingHttpClient client, StreamingHttpRequest request,
+                                                 HttpResponseStatus expectedStatus,
+                                                 @Nullable CharSequence expectedLocation,
+                                                 int numberOfInvocations) throws Exception {
         StreamingHttpResponse response = client.request(defaultStrategy(), request).toFuture().get();
         assertThat(response, is(notNullValue()));
         assertThat(response.status(), is(expectedStatus));
         assertThat(response.headers().get(LOCATION), is(expectedLocation));
         verify(httpClient, times(numberOfInvocations)).request(any(), any());
+        return response;
     }
 }
