@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,6 @@ import io.servicetalk.client.api.partition.PartitionAttributes;
 import io.servicetalk.client.api.partition.PartitionMapFactory;
 import io.servicetalk.client.api.partition.PartitionedServiceDiscovererEvent;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
-import io.servicetalk.transport.api.ClientSslConfigBuilder;
 import io.servicetalk.transport.api.IoExecutor;
 
 import java.net.SocketOption;
@@ -130,9 +129,6 @@ public abstract class PartitionedHttpClientBuilder<U, R>
             Function<U, CharSequence> unresolvedAddressToHostFunction);
 
     @Override
-    public abstract ClientSslConfigBuilder<? extends PartitionedHttpClientBuilder<U, R>> enableSsl();
-
-    @Override
     public abstract PartitionedHttpClientBuilder<U, R> appendClientFilter(StreamingHttpClientFilterFactory function);
 
     @Override
@@ -141,6 +137,17 @@ public abstract class PartitionedHttpClientBuilder<U, R>
         return (PartitionedHttpClientBuilder<U, R>)
                 super.appendClientFilter(predicate, factory);
     }
+
+    /**
+     * Initiate security configuration for this client. Calling
+     * {@link PartitionedHttpClientSecurityConfigurator#commit()} on the returned
+     * {@link PartitionedHttpClientSecurityConfigurator} will commit the configuration.
+     *
+     * @return {@link PartitionHttpClientBuilderConfigurator} to configure security for this client. It is
+     * mandatory to call {@link PartitionedHttpClientSecurityConfigurator#commit() commit} after all configuration is
+     * done.
+     */
+    public abstract PartitionedHttpClientSecurityConfigurator<U, R> secure();
 
     /**
      * Sets the maximum amount of {@link ServiceDiscovererEvent} objects that will be queued for each partition.

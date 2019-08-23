@@ -43,6 +43,7 @@ import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.PartitionHttpClientBuilderConfigurator;
 import io.servicetalk.http.api.PartitionedHttpClientBuilder;
+import io.servicetalk.http.api.PartitionedHttpClientSecurityConfigurator;
 import io.servicetalk.http.api.ReservedStreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
@@ -53,7 +54,6 @@ import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.netty.DefaultSingleAddressHttpClientBuilder.HttpClientBuildContext;
-import io.servicetalk.transport.api.ClientSslConfigBuilder;
 import io.servicetalk.transport.api.IoExecutor;
 
 import java.net.SocketOption;
@@ -374,8 +374,8 @@ class DefaultPartitionedHttpClientBuilder<U, R> extends PartitionedHttpClientBui
     }
 
     @Override
-    public ClientSslConfigBuilder<PartitionedHttpClientBuilder<U, R>> enableSsl() {
-        return builderTemplate.enableSsl(() -> this);
+    public PartitionedHttpClientSecurityConfigurator<U, R> secure() {
+        return new DefaultPartitionedHttpClientSecurityConfigurator<>(builderTemplate.secure(), this);
     }
 
     @Override

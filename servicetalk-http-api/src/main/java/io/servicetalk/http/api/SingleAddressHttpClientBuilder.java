@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,6 @@ import io.servicetalk.client.api.ConnectionFactoryFilter;
 import io.servicetalk.client.api.LoadBalancerFactory;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
-import io.servicetalk.transport.api.ClientSslConfigBuilder;
 import io.servicetalk.transport.api.IoExecutor;
 
 import java.net.SocketOption;
@@ -133,6 +132,14 @@ public abstract class SingleAddressHttpClientBuilder<U, R>
                 super.appendClientFilter(predicate, factory);
     }
 
-    @Override
-    public abstract ClientSslConfigBuilder<? extends SingleAddressHttpClientBuilder<U, R>> enableSsl();
+    /**
+     * Initiate security configuration for this client. Calling
+     * {@link SingleAddressHttpClientSecurityConfigurator#commit()} on the returned
+     * {@link SingleAddressHttpClientSecurityConfigurator} will commit the configuration.
+     *
+     * @return {@link SingleAddressHttpClientSecurityConfigurator} to configure security for this client. It is
+     * mandatory to call {@link SingleAddressHttpClientSecurityConfigurator#commit() commit} after all configuration is
+     * done.
+     */
+    public abstract SingleAddressHttpClientSecurityConfigurator<U, R> secure();
 }

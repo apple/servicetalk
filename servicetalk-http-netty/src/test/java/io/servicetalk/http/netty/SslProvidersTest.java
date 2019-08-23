@@ -19,8 +19,8 @@ import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.test.resources.DefaultTestCerts;
+import io.servicetalk.transport.api.SecurityConfigurator.SslProvider;
 import io.servicetalk.transport.api.ServerContext;
-import io.servicetalk.transport.api.SslConfig.SslProvider;
 import io.servicetalk.transport.netty.NettyIoExecutors;
 import io.servicetalk.transport.netty.internal.IoThreadFactory;
 
@@ -39,8 +39,8 @@ import static io.servicetalk.http.api.HttpHeaderValues.TEXT_PLAIN_UTF_8;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.HttpSerializationProviders.textDeserializer;
 import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
-import static io.servicetalk.transport.api.SslConfig.SslProvider.JDK;
-import static io.servicetalk.transport.api.SslConfig.SslProvider.OPENSSL;
+import static io.servicetalk.transport.api.SecurityConfigurator.SslProvider.JDK;
+import static io.servicetalk.transport.api.SecurityConfigurator.SslProvider.OPENSSL;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static java.util.Arrays.asList;
@@ -63,9 +63,9 @@ public class SslProvidersTest {
         payloadBody = randomString(payloadLength);
 
         serverContext = HttpServers.forAddress(localAddress(0))
-                .enableSsl(DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey)
+                .secure()
                 .provider(serverSslProvider)
-                .finish()
+                .commit(DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey)
                 .listenBlockingAndAwait((ctx, request, responseFactory) -> {
                     assertThat(request.path(), is("/path"));
                     assertThat(request.headers().get(CONTENT_TYPE), is(TEXT_PLAIN_UTF_8));
@@ -77,12 +77,12 @@ public class SslProvidersTest {
 
         client = HttpClients.forSingleAddress(serverHostAndPort(serverContext))
                 .ioExecutor(NettyIoExecutors.createIoExecutor(new IoThreadFactory("client-io")))
-                .enableSsl()
+                .secure()
                 .disableHostnameVerification()
                 // required for generated test certificates
                 .trustManager(DefaultTestCerts::loadMutualAuthCaPem)
                 .provider(clientSslProvider)
-                .finish()
+                .commit()
                 .buildBlocking();
     }
 

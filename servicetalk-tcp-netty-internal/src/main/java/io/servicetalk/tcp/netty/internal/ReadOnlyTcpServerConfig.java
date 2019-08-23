@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -106,15 +106,6 @@ public class ReadOnlyTcpServerConfig {
     }
 
     /**
-     * Returns the {@link SslContext}.
-     * @return {@link SslContext}.
-     */
-    @Nullable
-    public SslContext sslContext() {
-        return sslContext;
-    }
-
-    /**
      * Returns the idle timeout as expressed via option {@link ServiceTalkSocketOptions#IDLE_TIMEOUT}.
      * @return idle timeout.
      */
@@ -131,13 +122,39 @@ public class ReadOnlyTcpServerConfig {
     }
 
     /**
+     * Returns {@code true} if any {@link #domainNameMapping()} is enabled.
+     *
+     * @return {@code true} if any {@link #domainNameMapping()} is enabled.
+     */
+    public boolean isSniEnabled() {
+        return mappings != null;
+    }
+
+    /**
      * Gets {@link DomainNameMapping}, if any.
      *
      * @return Configured mapping, {@code null} if none configured.
+     * @throws IllegalStateException If {@link #isSniEnabled()} returns {@code false}.
+     */
+    public DomainNameMapping<SslContext> domainNameMapping() {
+        if (mappings == null) {
+            throw new IllegalStateException("No SNI Mappings are defined.");
+        }
+        return mappings;
+    }
+
+    /**
+     * Returns the {@link SslContext}.
+     *
+     * @return {@link SslContext}.
+     * @throws IllegalStateException If {@link #isSniEnabled()} returns {@code true}.
      */
     @Nullable
-    public DomainNameMapping<SslContext> domainNameMapping() {
-        return mappings;
+    public SslContext sslContext() {
+        if (mappings != null) {
+            throw new IllegalStateException("SNI Mappings found.");
+        }
+        return sslContext;
     }
 
     /**

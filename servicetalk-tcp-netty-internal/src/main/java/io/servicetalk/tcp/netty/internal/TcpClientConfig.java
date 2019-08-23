@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,14 +16,12 @@
 package io.servicetalk.tcp.netty.internal;
 
 import io.servicetalk.transport.api.ServiceTalkSocketOptions;
-import io.servicetalk.transport.api.SslConfig;
 import io.servicetalk.transport.netty.internal.BuilderUtils;
 import io.servicetalk.transport.netty.internal.FlushStrategy;
+import io.servicetalk.transport.netty.internal.ReadOnlyClientSecurityConfig;
 import io.servicetalk.transport.netty.internal.WireLoggingInitializer;
 
-import java.io.InputStream;
 import java.net.SocketOption;
-import javax.annotation.Nullable;
 
 import static io.servicetalk.transport.netty.internal.SslContextFactory.forClient;
 import static java.util.Objects.requireNonNull;
@@ -62,26 +60,16 @@ public final class TcpClientConfig extends ReadOnlyTcpClientConfig {
     }
 
     /**
-     * Enable SSL/TLS using the provided {@link SslConfig}. To disable it pass in {@code null}.
+     * Add security related config.
      *
-     * @param config the {@link SslConfig}.
+     * @param config the {@link ReadOnlyClientSecurityConfig}.
      * @return this.
-     * @throws IllegalStateException if the {@link SslConfig#keyCertChainSupplier()}, {@link SslConfig#keySupplier()},
-     * or {@link SslConfig#trustCertChainSupplier()} throws when
-     * {@link InputStream#close()} is called.
      */
-    public TcpClientConfig sslConfig(@Nullable SslConfig config) {
-        if (config != null) {
-            sslContext = forClient(config);
-            sslHostnameVerificationAlgorithm = config.hostnameVerificationAlgorithm();
-            sslHostnameVerificationHost = config.hostnameVerificationHost();
-            sslHostnameVerificationPort = config.hostnameVerificationPort();
-        } else {
-            sslContext = null;
-            sslHostnameVerificationAlgorithm = null;
-            sslHostnameVerificationHost = null;
-            sslHostnameVerificationPort = -1;
-        }
+    public TcpClientConfig secure(ReadOnlyClientSecurityConfig config) {
+        sslContext = forClient(requireNonNull(config));
+        sslHostnameVerificationAlgorithm = config.hostnameVerificationAlgorithm();
+        sslHostnameVerificationHost = config.hostnameVerificationHost();
+        sslHostnameVerificationPort = config.hostnameVerificationPort();
         return this;
     }
 
