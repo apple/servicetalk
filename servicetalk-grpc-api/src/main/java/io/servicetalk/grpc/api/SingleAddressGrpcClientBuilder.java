@@ -28,7 +28,6 @@ import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequest;
-import io.servicetalk.transport.api.ClientSslConfigBuilder;
 import io.servicetalk.transport.api.IoExecutor;
 
 import java.net.SocketOption;
@@ -110,12 +109,15 @@ interface SingleAddressGrpcClientBuilder<U, R,
                                                                      StreamingHttpConnectionFilterFactory factory);
 
     /**
-     * Enable SSL/TLS, and return a builder for configuring it. Call {@link ClientSslConfigBuilder#finish()} to
-     * return to configuring the gRPC client.
+     * Initiate security configuration for this client. Calling
+     * {@link GrpcClientSecurityConfigurator#commit()} on the returned {@link GrpcClientSecurityConfigurator} will
+     * commit the configuration.
      *
-     * @return an {@link ClientSslConfigBuilder} for configuring SSL/TLS.
+     * @return {@link GrpcClientSecurityConfigurator} to configure security for this client. It is
+     * mandatory to call {@link GrpcClientSecurityConfigurator#commit() commit} after all configuration is
+     * done.
      */
-    ClientSslConfigBuilder<? extends SingleAddressGrpcClientBuilder<U, R, SDE>> enableSsl();
+    GrpcClientSecurityConfigurator<U, R> secure();
 
     /**
      * Set a {@link ServiceDiscoverer} to resolve addresses of remote servers to connect to.
