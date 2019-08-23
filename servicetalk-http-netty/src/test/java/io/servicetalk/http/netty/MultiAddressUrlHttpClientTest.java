@@ -170,8 +170,7 @@ public class MultiAddressUrlHttpClientTest {
     @Test
     public void requestWithAbsoluteFormRequestTargetWithoutPath() throws Exception {
         StreamingHttpRequest request = client.get(format("http://%s", hostHeader));
-        toSource(client.request(request)).subscribe(subscriber);
-        assertThat(subscriber.error(), is(instanceOf(IllegalArgumentException.class)));
+        requestAndValidate(request, BAD_REQUEST, "/");
     }
 
     @Test(expected = ExecutionException.class)

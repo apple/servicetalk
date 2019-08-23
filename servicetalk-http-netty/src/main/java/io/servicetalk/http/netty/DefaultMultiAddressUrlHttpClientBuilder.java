@@ -170,14 +170,9 @@ final class DefaultMultiAddressUrlHttpClientBuilder extends MultiAddressHttpClie
         // but cannot be shared because we don't have an internal module for http
         private static String absoluteToRelativeFormRequestTarget(final String requestTarget,
                                                                   final String scheme, final String host) {
-            final int fromIndex = scheme.length() + 3 + host.length();
+            final int fromIndex = scheme.length() + 3 + host.length();  // +3 because of "://" delimiter after scheme
             final int relativeReferenceIdx = requestTarget.indexOf('/', fromIndex);
-            if (relativeReferenceIdx < 0) {
-                throw new IllegalArgumentException("Cannot infer relative reference from the request-target: " +
-                        requestTarget);
-            } else {
-                return requestTarget.substring(relativeReferenceIdx);
-            }
+            return relativeReferenceIdx < 0 ? "/" : requestTarget.substring(relativeReferenceIdx);
         }
 
         @Override
@@ -274,11 +269,6 @@ final class DefaultMultiAddressUrlHttpClientBuilder extends MultiAddressHttpClie
                     sslConfigFunction.accept(urlKey.hostAndPort, sslConfigBuilder);
                 }
                 sslConfigBuilder.finish();
-            }
-
-            if (maxRedirects > 0) {
-                // Need to wrap each client in order for relative redirects with origin-form request target to work
-                buildContext.builder.appendClientFilter(new RedirectingHttpRequesterFilter(true, maxRedirects));
             }
 
             if (clientFilterFactory != null) {
