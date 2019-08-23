@@ -28,9 +28,7 @@ import io.servicetalk.http.api.HttpDataSourceTransformations.HttpObjectTrailersS
 import io.servicetalk.http.api.HttpDataSourceTransformations.HttpTransportBufferFilterOperator;
 import io.servicetalk.http.api.HttpDataSourceTransformations.PayloadAndTrailers;
 
-import java.util.function.BiFunction;
 import java.util.function.Function;
-import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 import javax.annotation.Nullable;
 
@@ -122,14 +120,12 @@ final class StreamingHttpPayloadHolder implements PayloadInfo {
         payloadBody = transformer.apply(emptyOrRawPayload());
     }
 
-    public <T> void transform(Supplier<T> stateSupplier, BiFunction<Buffer, T, Buffer> transformer,
-                              BiFunction<T, HttpHeaders, HttpHeaders> trailersTransformer) {
-        transformWithTrailersUnchecked(false, stateSupplier, transformer, trailersTransformer);
+    public <T> void transform(final TrailersTransformer<T, Buffer> trailersTransformer) {
+        transformWithTrailersUnchecked(false, trailersTransformer);
     }
 
-    public <T> void transformRaw(Supplier<T> stateSupplier, BiFunction<Object, T, ?> transformer,
-                                 BiFunction<T, HttpHeaders, HttpHeaders> trailersTransformer) {
-        transformWithTrailersUnchecked(true, stateSupplier, transformer, trailersTransformer);
+    public <T> void transformRaw(final TrailersTransformer<T, Object> trailersTransformer) {
+        transformWithTrailersUnchecked(true, trailersTransformer);
     }
 
     Single<PayloadAndTrailers> aggregate() {
@@ -221,11 +217,11 @@ final class StreamingHttpPayloadHolder implements PayloadInfo {
         payloadInfo.setOnlyEmitsBuffer(true);
     }
 
-    private <T> void transformWithTrailersUnchecked(boolean raw, Supplier<T> stateSupplier, BiFunction transformer,
-                                                    BiFunction<T, HttpHeaders, HttpHeaders> trailersTransformer) {
+    @SuppressWarnings("unchecked")
+    private void transformWithTrailersUnchecked(boolean raw, final TrailersTransformer trailersTransformer) {
         if (payloadBody == null) {
-            T state = stateSupplier.get();
-            trailersSingle = succeeded(trailersTransformer.apply(state, headersFactory.newEmptyTrailers()));
+            Object state = trailersTransformer.newState();
+            trailersSingle = succeeded(trailersTransformer.payloadComplete(state, headersFactory.newEmptyTrailers()));
             payloadBody = empty();
         } else {
             splitTrailersIfRequired();
@@ -236,11 +232,13 @@ final class StreamingHttpPayloadHolder implements PayloadInfo {
             // trailersSingle will always be used in a serial fashion relative to the payloadBody. The RS operators used
             // to provide this sequential subscription will take care of visibility for the state Object when accessed
             // in the trailersSingle map operation.
-            final MutableReference<T> stateForSubscriber = new MutableReference<>();
-            trailersSingle = trailersSingle.map(trailers ->
-                    trailersTransformer.apply(stateForSubscriber.reference(), trailers));
+            final MutableReference stateForSubscriber = new MutableReference();
+            trailersSingle = trailersSingle.map(trailers -> {
+                Object reference = stateForSubscriber.reference();
+                return trailersTransformer.payloadComplete(reference, trailers);
+            });
             payloadBody = (raw ? rawPayload() : payloadBody()).liftSync(subscriber -> {
-                T state = stateSupplier.get();
+                Object state = trailersTransformer.newState();
                 stateForSubscriber.reference(state);
                 return new PublisherSource.Subscriber<Object>() {
                     @Override
@@ -248,14 +246,17 @@ final class StreamingHttpPayloadHolder implements PayloadInfo {
                         subscriber.onSubscribe(subscription);
                     }
 
-                    @SuppressWarnings("unchecked")
                     @Override
                     public void onNext(@Nullable final Object object) {
-                        subscriber.onNext(transformer.apply(object, state));
+                        assert object != null;
+                        subscriber.onNext(trailersTransformer.accept(state, object));
                     }
 
                     @Override
                     public void onError(final Throwable t) {
+                        // If payload fails we will never emit original trailers from the combined payload+trailers
+                        // Publisher
+                        trailersTransformer.payloadFailed(state, t, headersFactory.newEmptyTrailers());
                         subscriber.onError(t);
                     }
 
@@ -301,16 +302,16 @@ final class StreamingHttpPayloadHolder implements PayloadInfo {
         return payloadBody.filter(o -> !(o instanceof HttpHeaders));
     }
 
-    private static final class MutableReference<T> {
+    private static final class MutableReference {
         @Nullable
-        private T ref;
+        private Object ref;
 
         @Nullable
-        T reference() {
+        Object reference() {
             return ref;
         }
 
-        void reference(T ref) {
+        void reference(Object ref) {
             this.ref = ref;
         }
     }

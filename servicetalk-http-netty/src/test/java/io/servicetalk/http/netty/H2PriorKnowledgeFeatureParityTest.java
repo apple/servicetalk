@@ -40,6 +40,7 @@ import io.servicetalk.http.api.HttpServerBuilder;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.HttpSetCookie;
 import io.servicetalk.http.api.ReservedBlockingHttpConnection;
+import io.servicetalk.http.api.StatelessTrailersTransformer;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpClientFilter;
 import io.servicetalk.http.api.StreamingHttpConnectionFilter;
@@ -462,13 +463,11 @@ public class H2PriorKnowledgeFeatureParityTest {
                                     contentSize.addAndGet(bufferSize);
                                     return contentSize;
                                 })
-                                .flatMap(contentSize -> Single.succeeded(
-                                    responseFactory.ok().transform(() -> null, (buffer, none) -> buffer,
-                                            (none, trailers) -> {
-                                                trailers.add(myTrailerName, Integer.toString(contentSize.get()));
-                                                return trailers;
-                                            })
-                                ))).toFuture().get();
+                                .flatMap(contentSize ->
+                                        succeeded(responseFactory.ok()
+                                                .transform(new ContentSizeTrailersTransformer(myTrailerName,
+                                                        contentSize)))))
+                .toFuture().get();
 
         InetSocketAddress serverAddress = (InetSocketAddress) h1ServerContext.listenAddress();
         try (BlockingHttpClient client = forSingleAddress(HostAndPort.of(serverAddress))
@@ -1128,5 +1127,21 @@ public class H2PriorKnowledgeFeatureParityTest {
         List<T> list = new ArrayList<>();
         itr.forEachRemaining(list::add);
         assertThat(list, hasItems(items));
+    }
+
+    private static final class ContentSizeTrailersTransformer extends StatelessTrailersTransformer<Buffer> {
+        private final String trailerName;
+        private final AtomicInteger contentSize;
+
+        ContentSizeTrailersTransformer(final String trailerName, final AtomicInteger contentSize) {
+            this.trailerName = trailerName;
+            this.contentSize = contentSize;
+        }
+
+        @Override
+        protected HttpHeaders payloadComplete(final HttpHeaders trailers) {
+            trailers.add(trailerName, Integer.toString(contentSize.get()));
+            return trailers;
+        }
     }
 }

@@ -20,9 +20,7 @@ import io.servicetalk.concurrent.BlockingIterable;
 import io.servicetalk.concurrent.CloseableIterable;
 import io.servicetalk.concurrent.api.Single;
 
-import java.util.function.BiFunction;
 import java.util.function.Function;
-import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 
 import static io.servicetalk.concurrent.api.Publisher.fromIterable;
@@ -88,18 +86,14 @@ final class DefaultBlockingStreamingHttpResponse extends AbstractDelegatingHttpR
     }
 
     @Override
-    public <T> BlockingStreamingHttpResponse transform(
-            final Supplier<T> stateSupplier, final BiFunction<Buffer, T, Buffer> transformer,
-            final BiFunction<T, HttpHeaders, HttpHeaders> trailersTransformer) {
-        original.transform(stateSupplier, transformer, trailersTransformer);
+    public <T> BlockingStreamingHttpResponse transform(final TrailersTransformer<T, Buffer> trailersTransformer) {
+        original.transform(trailersTransformer);
         return this;
     }
 
     @Override
-    public <T> BlockingStreamingHttpResponse transformRaw(
-            final Supplier<T> stateSupplier, final BiFunction<Object, T, ?> transformer,
-            final BiFunction<T, HttpHeaders, HttpHeaders> trailersTransformer) {
-        original.transformRaw(stateSupplier, transformer, trailersTransformer);
+    public <T> BlockingStreamingHttpResponse transformRaw(final TrailersTransformer<T, Object> trailersTransformer) {
+        original.transformRaw(trailersTransformer);
         return this;
     }
 

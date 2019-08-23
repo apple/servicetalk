@@ -23,7 +23,9 @@ import javax.annotation.Nullable;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static java.util.Objects.requireNonNull;
 
-final class DefaultHttpRequest extends AbstractDelegatingHttpRequest implements HttpRequest {
+final class DefaultHttpRequest extends AbstractDelegatingHttpRequest
+        implements HttpRequest, TrailersTransformer<Object, Buffer> {
+    private static final Object NULL_TRAILER_TRANSFORMER_STATE = new Object();
 
     private Buffer payloadBody;
     @Nullable
@@ -185,8 +187,30 @@ final class DefaultHttpRequest extends AbstractDelegatingHttpRequest implements 
     public HttpHeaders trailers() {
         if (trailers == null) {
             trailers = original.payloadHolder().headersFactory().newTrailers();
-            original.transform(() -> null, (buffer, o) -> buffer, (o, httpHeaders) -> trailers);
+            original.transform(this);
         }
+        return trailers;
+    }
+
+    @Override
+    public Object newState() {
+        return NULL_TRAILER_TRANSFORMER_STATE;
+    }
+
+    @Override
+    public Buffer accept(final Object __, final Buffer buffer) {
+        return buffer;
+    }
+
+    @Override
+    public HttpHeaders payloadComplete(final Object __, final HttpHeaders ___) {
+        assert trailers != null;
+        return trailers;
+    }
+
+    @Override
+    public HttpHeaders payloadFailed(final Object __, final Throwable cause, final HttpHeaders ___) {
+        assert trailers != null;
         return trailers;
     }
 

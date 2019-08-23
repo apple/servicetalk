@@ -20,9 +20,7 @@ import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 
-import java.util.function.BiFunction;
 import java.util.function.Function;
-import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 import javax.annotation.Nullable;
 
@@ -95,18 +93,14 @@ final class DefaultStreamingHttpResponse extends DefaultHttpResponseMetaData
     }
 
     @Override
-    public <T> StreamingHttpResponse transform(Supplier<T> stateSupplier,
-                                                    BiFunction<Buffer, T, Buffer> transformer,
-                                                    BiFunction<T, HttpHeaders, HttpHeaders> trailersTransformer) {
-        payloadHolder.transform(stateSupplier, transformer, trailersTransformer);
+    public <T> StreamingHttpResponse transform(final TrailersTransformer<T, Buffer> trailersTransformer) {
+        payloadHolder.transform(trailersTransformer);
         return this;
     }
 
     @Override
-    public <T> StreamingHttpResponse transformRaw(Supplier<T> stateSupplier,
-                                                       BiFunction<Object, T, ?> transformer,
-                                                       BiFunction<T, HttpHeaders, HttpHeaders> trailersTransformer) {
-        payloadHolder.transformRaw(stateSupplier, transformer, trailersTransformer);
+    public <T> StreamingHttpResponse transformRaw(final TrailersTransformer<T, Object> trailersTransformer) {
+        payloadHolder.transformRaw(trailersTransformer);
         return this;
     }
 
