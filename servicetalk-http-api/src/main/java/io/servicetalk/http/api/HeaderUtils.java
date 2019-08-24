@@ -740,7 +740,7 @@ public final class HeaderUtils {
      * @param value the character to validate.
      */
     private static void validateHeaderNameToken(final byte value) {
-        if (value >= 0 && value <= 32 || value < 0) {
+        if (value <= 32) {
             throw new IllegalArgumentException("invalid token detected: " + value);
         }
         switch (value) {
