@@ -50,7 +50,7 @@ final class ServiceTalkBufferAllocator extends AbstractByteBufAllocator implemen
     @Override
     protected ByteBuf newHeapBuffer(int initialCapacity, int maxCapacity) {
         return io.netty.util.internal.PlatformDependent.hasUnsafe() ?
-                new UnreleasableUnsafeHeapByteBuf(this, initialCapacity, maxCapacity) :
+                new UnreleasableNoZeroingHeapByteBuf(this, initialCapacity, maxCapacity) :
                 new UnreleasableHeapByteBuf(this, initialCapacity, maxCapacity);
     }
 
