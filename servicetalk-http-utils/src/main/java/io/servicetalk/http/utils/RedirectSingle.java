@@ -21,7 +21,6 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.internal.SubscribableSingle;
 import io.servicetalk.concurrent.internal.SequentialCancellable;
 import io.servicetalk.http.api.HttpExecutionStrategy;
-import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpRequest;
@@ -97,6 +96,8 @@ final class RedirectSingle extends SubscribableSingle<StreamingHttpResponse> {
         private final Subscriber<? super StreamingHttpResponse> target;
         private final RedirectSingle redirectSingle;
         private final StreamingHttpRequest request;
+        @Nullable
+        private final String scheme;
         private final int redirectCount;
         private final SequentialCancellable sequentialCancellable;
 
@@ -114,6 +115,7 @@ final class RedirectSingle extends SubscribableSingle<StreamingHttpResponse> {
             this.target = target;
             this.redirectSingle = redirectSingle;
             this.request = request;
+            this.scheme = request.scheme();
             this.redirectCount = redirectCount;
             this.sequentialCancellable = sequentialCancellable;
         }
@@ -129,6 +131,7 @@ final class RedirectSingle extends SubscribableSingle<StreamingHttpResponse> {
         @Override
         public void onSuccess(@Nullable final StreamingHttpResponse result) {
             if (result == null || !shouldRedirect(redirectCount + 1, result, request.method())) {
+
                 target.onSuccess(result);
                 return;
             }
@@ -140,18 +143,33 @@ final class RedirectSingle extends SubscribableSingle<StreamingHttpResponse> {
                 target.onError(cause);
                 return;
             }
-            // Bail on the redirect if non-relative when that was requested or a redirect request is impossible to infer
-            if (newRequest == null ||
-                    redirectSingle.onlyRelative && (
-                            request.effectiveHost() == null ||
-                            !request.effectiveHost().equalsIgnoreCase(newRequest.effectiveHost()) ||
-                            request.effectivePort() != newRequest.effectivePort())) {
-                if (LOGGER.isTraceEnabled()) {
-                    LOGGER.trace("Ignoring non-relative redirect to '{}' for original request '{}' using onlyRelative",
-                            result.headers().get(LOCATION), redirectSingle.originalRequest);
-                }
+            if (newRequest == null) {
                 target.onSuccess(result);
                 return;
+            }
+            String newScheme = newRequest.scheme();
+
+            // Bail on the redirect if non-relative when that was requested or a redirect request is impossible to infer
+            if (redirectSingle.onlyRelative) {
+                if (request.effectiveHost() == null ||
+                        !request.effectiveHost().equalsIgnoreCase(newRequest.effectiveHost()) ||
+                        request.effectivePort() != newRequest.effectivePort()) {
+                    if (LOGGER.isDebugEnabled()) {
+                        LOGGER.debug("Ignoring non-relative redirect to '{}' for original request '{}': {}",
+                                newRequest.requestTarget(), redirectSingle.originalRequest,
+                                "Only relative redirects are allowed");
+                    }
+                    target.onSuccess(result);
+                    return;
+                } else if (newScheme != null) {
+                    // Rewrite absolute-form location to relative-form request-target in case only relative redirects
+                    // are supported and this is a relative redirect
+                    newRequest.requestTarget(
+                            absoluteToRelativeFormRequestTarget(newRequest.requestTarget(), newScheme));
+                }
+            } else if (newScheme == null && scheme != null) {
+                // Rewrite relative-form location to absolute-form request-target for multi-address client
+                newRequest.requestTarget(scheme + "://" + newRequest.headers().get(HOST) + newRequest.requestTarget());
             }
             if (LOGGER.isTraceEnabled()) {
                 LOGGER.trace("Execute redirect to '{}' for original request '{}'",
@@ -162,6 +180,16 @@ final class RedirectSingle extends SubscribableSingle<StreamingHttpResponse> {
                     redirectSingle.requester.request(redirectSingle.strategy, newRequest)))
                         .subscribe(new RedirectSubscriber(
                             target, redirectSingle, newRequest, redirectCount + 1, sequentialCancellable));
+        }
+
+        // This code is similar to
+        // io.servicetalk.http.netty.DefaultMultiAddressHttpClientBuilder#absoluteToRelativeFormRequestTarget
+        // but cannot be shared because we don't have an internal module for http
+        private static String absoluteToRelativeFormRequestTarget(final String requestTarget,
+                                                                  final String scheme) {
+            final int fromIndex = scheme.length() + 3;  // +3 because of "://" delimiter after scheme
+            final int relativeReferenceIdx = requestTarget.indexOf('/', fromIndex);
+            return relativeReferenceIdx < 0 ? "/" : requestTarget.substring(relativeReferenceIdx);
         }
 
         @Override
@@ -223,9 +251,9 @@ final class RedirectSingle extends SubscribableSingle<StreamingHttpResponse> {
         }
 
         @Nullable
-        private static StreamingHttpRequest prepareRedirectRequest(
-                final StreamingHttpRequest request, final StreamingHttpResponse response,
-                final StreamingHttpRequestFactory requestFactory) {
+        private static StreamingHttpRequest prepareRedirectRequest(final StreamingHttpRequest request,
+                                                                   final StreamingHttpResponse response,
+                                                                   final StreamingHttpRequestFactory requestFactory) {
             final HttpRequestMethod method = defineRedirectMethod(request.method());
             final CharSequence locationHeader = response.headers().get(LOCATION);
             assert locationHeader != null;
@@ -233,11 +261,7 @@ final class RedirectSingle extends SubscribableSingle<StreamingHttpResponse> {
             final StreamingHttpRequest redirectRequest =
                     requestFactory.newRequest(method, locationHeader.toString()).version(request.version());
 
-            final HttpHeaders headers = redirectRequest.headers();
-            // TODO CONTENT_LENGTH could be non ZERO, when we will support repeatable payloadBody
-            headers.set(CONTENT_LENGTH, ZERO);
-
-            String redirectHost = redirectRequest.effectiveHost();
+            String redirectHost = redirectRequest.host();
             if (redirectHost == null) {
                 // origin-form request-target in Location header, extract host & port info from original request
                 redirectHost = request.effectiveHost();
@@ -246,8 +270,11 @@ final class RedirectSingle extends SubscribableSingle<StreamingHttpResponse> {
                     return null;
                 }
                 final int redirectPort = request.effectivePort();
-                headers.set(HOST, redirectPort < 0 ? redirectHost : redirectHost + ':' + redirectPort);
+                redirectRequest.setHeader(HOST, redirectPort < 0 ? redirectHost : redirectHost + ':' + redirectPort);
             }
+
+            // TODO CONTENT_LENGTH could be non ZERO, when we will support repeatable payloadBody
+            redirectRequest.setHeader(CONTENT_LENGTH, ZERO);
 
             // NOTE: for security reasons we do not keep any headers from original request.
             // If users need to add some custom or authentication headers, they have to apply them via filters.

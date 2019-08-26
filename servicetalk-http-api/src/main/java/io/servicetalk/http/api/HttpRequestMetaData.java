@@ -67,10 +67,10 @@ public interface HttpRequestMetaData extends HttpMetaData {
 
     /**
      * The <a href="https://tools.ietf.org/html/rfc3986#section-3.1">scheme component</a> derived
-     * from {@link #requestTarget()}.
+     * from {@link #requestTarget()} in lower case.
      *
      * @return The <a href="https://tools.ietf.org/html/rfc3986#section-3.1">scheme component</a> derived
-     * from {@link #requestTarget()}, or {@code null} if none can be derived.
+     * from {@link #requestTarget()} in lower case, or {@code null} if none can be derived.
      */
     @Nullable
     String scheme();

@@ -46,12 +46,15 @@ import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpHeaderNames.HOST;
 import static io.servicetalk.http.api.HttpHeaderNames.LOCATION;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
+import static io.servicetalk.http.api.HttpRequestMethod.CONNECT;
 import static io.servicetalk.http.api.HttpRequestMethod.DELETE;
 import static io.servicetalk.http.api.HttpRequestMethod.GET;
 import static io.servicetalk.http.api.HttpRequestMethod.HEAD;
+import static io.servicetalk.http.api.HttpRequestMethod.OPTIONS;
 import static io.servicetalk.http.api.HttpRequestMethod.PATCH;
 import static io.servicetalk.http.api.HttpRequestMethod.POST;
 import static io.servicetalk.http.api.HttpRequestMethod.PUT;
+import static io.servicetalk.http.api.HttpRequestMethod.TRACE;
 import static io.servicetalk.http.api.HttpResponseStatus.BAD_REQUEST;
 import static io.servicetalk.http.api.HttpResponseStatus.FOUND;
 import static io.servicetalk.http.api.HttpResponseStatus.INTERNAL_SERVER_ERROR;
@@ -65,9 +68,8 @@ import static io.servicetalk.http.api.HttpResponseStatus.TEMPORARY_REDIRECT;
 import static io.servicetalk.http.api.HttpResponseStatus.USE_PROXY;
 import static io.servicetalk.http.api.TestStreamingHttpClient.from;
 import static java.lang.Integer.parseUnsignedInt;
-import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -81,6 +83,7 @@ public class RedirectingHttpRequesterFilterTest {
 
     private static final String REQUESTED_STATUS = "Requested-Status";
     private static final String REQUESTED_LOCATION = "Requested-Location";
+    private static final String RECEIVED_SCHEME = "Received-Scheme";
     private static final int MAX_REDIRECTS = 5;
     private static final BufferAllocator allocator = DEFAULT_ALLOCATOR;
     private static final StreamingHttpRequestResponseFactory reqRespFactory =
@@ -103,6 +106,10 @@ public class RedirectingHttpRequesterFilterTest {
                 CharSequence redirectLocation = request.headers().get(REQUESTED_LOCATION);
                 if (redirectLocation != null) {
                     response.headers().set(LOCATION, redirectLocation);
+                }
+                final String scheme = request.scheme();
+                if (scheme != null) {
+                    response.setHeader(RECEIVED_SCHEME, scheme);
                 }
                 return succeeded(response);
             } catch (Throwable t) {
@@ -196,26 +203,28 @@ public class RedirectingHttpRequesterFilterTest {
         testNoRedirectWasDone(MAX_REDIRECTS, DELETE, PERMANENT_REDIRECT, "/new-location");
     }
 
+    @Test
+    public void traceConnectOptionsRequestsDoesNotRedirect() throws Exception {
+        testNoRedirectWasDone(MAX_REDIRECTS, TRACE, SEE_OTHER, "/new-location");
+        testNoRedirectWasDone(MAX_REDIRECTS, CONNECT, SEE_OTHER, "/new-location");
+        testNoRedirectWasDone(MAX_REDIRECTS, OPTIONS, SEE_OTHER, "/new-location");
+    }
+
     private void testNoRedirectWasDone(final int maxRedirects,
                                        final HttpRequestMethod method,
                                        final HttpResponseStatus requestedStatus,
                                        @Nullable final CharSequence requestedLocation) throws Exception {
 
-        StreamingHttpClient redirectingRequester =
-                newClient(new RedirectingHttpRequesterFilter(false, maxRedirects));
+        StreamingHttpClient client = newClient(new RedirectingHttpRequesterFilter(false, maxRedirects));
 
-        StreamingHttpRequest request = redirectingRequester.newRequest(method, "/path");
+        StreamingHttpRequest request = client.newRequest(method, "/path");
         request.headers().set(HOST, "servicetalk.io");
         request.headers().set(REQUESTED_STATUS, String.valueOf(requestedStatus.code()));
         if (requestedLocation != null) {
             request.headers().set(REQUESTED_LOCATION, requestedLocation);
         }
 
-        StreamingHttpResponse response = redirectingRequester.request(defaultStrategy(), request).toFuture().get();
-        assertNotNull(response);
-        assertEquals(requestedStatus, response.status());
-        assertEquals(requestedLocation, response.headers().get(LOCATION));
-        verify(httpClient).request(any(), any());
+        verifyResponse(client, request, requestedStatus, requestedLocation, 1);
         clearInvocations(httpClient);
     }
 
@@ -225,31 +234,26 @@ public class RedirectingHttpRequesterFilterTest {
         when(httpClient.request(any(), any())).thenAnswer(a -> createRedirectResponse(counter.incrementAndGet()));
 
         final int maxRedirects = MAX_REDIRECTS;
-        StreamingHttpClient redirectingRequester = newClient(
-                new RedirectingHttpRequesterFilter(false, maxRedirects));
+        StreamingHttpClient client = newClient(new RedirectingHttpRequesterFilter(maxRedirects));
 
-        StreamingHttpRequest request = redirectingRequester.get("/path");
+        StreamingHttpRequest request = client.get("/path");
         request.headers().set(HOST, "servicetalk.io");
 
-        StreamingHttpResponse response = redirectingRequester.request(defaultStrategy(), request).toFuture().get();
-        assertNotNull(response);
-        assertEquals(MOVED_PERMANENTLY, response.status());
-        assertEquals("/location-" + (maxRedirects + 1), response.headers().get(LOCATION));
-        verify(httpClient, times(maxRedirects + 1)).request(any(), any());
+        verifyResponse(client, request, MOVED_PERMANENTLY, "/location-" + (maxRedirects + 1), maxRedirects + 1);
     }
 
     @Test
     public void requestWithNullResponse() throws Exception {
         when(httpClient.request(any(), any())).thenReturn(succeeded(null));
 
-        StreamingHttpClient redirectingRequester = newClient(new RedirectingHttpRequesterFilter(false));
+        StreamingHttpClient client = newClient(new RedirectingHttpRequesterFilter(false));
 
-        StreamingHttpRequest request = redirectingRequester.get("/path");
+        StreamingHttpRequest request = client.get("/path");
         request.headers().set(HOST, "servicetalk.io");
         request.headers().set(REQUESTED_STATUS, String.valueOf(MOVED_PERMANENTLY.code()));
         request.headers().set(REQUESTED_LOCATION, "/new-location");
 
-        StreamingHttpResponse response = redirectingRequester.request(defaultStrategy(), request).toFuture().get();
+        StreamingHttpResponse response = client.request(defaultStrategy(), request).toFuture().get();
         assertNull(response);
     }
 
@@ -292,18 +296,14 @@ public class RedirectingHttpRequesterFilterTest {
     private void testRequestForRedirect(final HttpRequestMethod method,
                                         final HttpResponseStatus requestedStatus) throws Exception {
 
-        StreamingHttpClient redirectingRequester = newClient(new RedirectingHttpRequesterFilter(false));
+        StreamingHttpClient client = newClient(new RedirectingHttpRequesterFilter(true));
 
-        StreamingHttpRequest request = redirectingRequester.newRequest(method, "/path");
+        StreamingHttpRequest request = client.newRequest(method, "/path");
         request.headers().set(HOST, "servicetalk.io");
         request.headers().set(REQUESTED_STATUS, String.valueOf(requestedStatus.code()));
         request.headers().set(REQUESTED_LOCATION, "/new-location");
 
-        StreamingHttpResponse response = redirectingRequester.request(defaultStrategy(), request).toFuture().get();
-        assertNotNull(response);
-        assertEquals(OK, response.status());
-        assertNull(response.headers().get(LOCATION));
-        verify(httpClient, times(2)).request(any(), any());
+        verifyRedirects(client, request);
         clearInvocations(httpClient);
     }
 
@@ -315,16 +315,12 @@ public class RedirectingHttpRequesterFilterTest {
                 createRedirectResponse(3),
                 succeeded(reqRespFactory.ok()));
 
-        StreamingHttpClient redirectingRequester = newClient(new RedirectingHttpRequesterFilter(false));
+        StreamingHttpClient client = newClient(new RedirectingHttpRequesterFilter());
 
-        StreamingHttpRequest request = redirectingRequester.get("/path");
+        StreamingHttpRequest request = client.get("/path");
         request.headers().set(HOST, "servicetalk.io");
 
-        StreamingHttpResponse response = redirectingRequester.request(defaultStrategy(), request).toFuture().get();
-        assertNotNull(response);
-        assertEquals(OK, response.status());
-        assertNull(response.headers().get(LOCATION));
-        verify(httpClient, times(4)).request(any(), any());
+        verifyRedirects(client, request, 4);
     }
 
     private static Single<StreamingHttpResponse> createRedirectResponse(final int i) {
@@ -335,110 +331,185 @@ public class RedirectingHttpRequesterFilterTest {
 
     @Test
     public void getRequestForRedirectWithAbsoluteFormRequestTarget() throws Exception {
-        StreamingHttpClient redirectingRequester = newClient(new RedirectingHttpRequesterFilter(false));
+        StreamingHttpClient client = newClient(new RedirectingHttpRequesterFilter());
 
-        StreamingHttpRequest request = redirectingRequester.get("http://servicetalk.io/path");
+        StreamingHttpRequest request = client.get("http://servicetalk.io/path");
         request.headers().set(REQUESTED_STATUS, String.valueOf(SEE_OTHER.code()));
         request.headers().set(REQUESTED_LOCATION, "/new-location");
 
-        StreamingHttpResponse response = redirectingRequester.request(defaultStrategy(), request).toFuture().get();
-        assertNotNull(response);
-        assertEquals(OK, response.status());
-        assertNull(response.headers().get(LOCATION));
-        verify(httpClient, times(2)).request(any(), any());
+        verifyRedirects(client, request);
     }
 
     @Test
     public void redirectForOnlyRelativeWithAbsoluteRelativeLocation() throws Exception {
-        StreamingHttpClient redirectingRequester = newClient(new RedirectingHttpRequesterFilter(true));
+        StreamingHttpClient client = newClient(new RedirectingHttpRequesterFilter());
 
-        StreamingHttpRequest request = redirectingRequester.get("/path");
+        StreamingHttpRequest request = client.get("/path");
         request.headers().set(HOST, "servicetalk.io");
         request.headers().set(REQUESTED_STATUS, String.valueOf(SEE_OTHER.code()));
         request.headers().set(REQUESTED_LOCATION, "http://servicetalk.io/new-location");
 
-        StreamingHttpResponse response = redirectingRequester.request(defaultStrategy(), request).toFuture().get();
-        assertNotNull(response);
-        assertEquals(OK, response.status());
-        assertNull(response.headers().get(LOCATION));
-        verify(httpClient, times(2)).request(any(), any());
+        verifyRedirects(client, request);
     }
 
     @Test
-    public void redirectForOnlyRelativeWithAbsoluteRelativeLocationWithPortDoesntRedirect() throws Exception {
-        StreamingHttpClient redirectingRequester = newClient(new RedirectingHttpRequesterFilter(true));
+    public void redirectForOnlyRelativeWithAbsoluteRelativeLocationWithPortDoesNotRedirect() throws Exception {
+        StreamingHttpClient client = newClient(new RedirectingHttpRequesterFilter(true));
 
-        StreamingHttpRequest request = redirectingRequester.get("/path");
+        StreamingHttpRequest request = client.get("/path");
         request.headers().set(HOST, "servicetalk.io");
         request.headers().set(REQUESTED_STATUS, String.valueOf(SEE_OTHER.code()));
         request.headers().set(REQUESTED_LOCATION, "http://servicetalk.io:80/new-location");
 
-        StreamingHttpResponse response = redirectingRequester.request(defaultStrategy(), request).toFuture().get();
-        assertNotNull(response);
-        assertEquals(SEE_OTHER, response.status());
-        assertThat(response.headers().get(LOCATION), equalTo("http://servicetalk.io:80/new-location"));
-        verify(httpClient, times(1)).request(any(), any());
+        verifyDoesNotRedirect(client, request, "http://servicetalk.io:80/new-location");
     }
 
     @Test
     public void redirectForOnlyRelativeWithRelativeLocation() throws Exception {
-        StreamingHttpClient redirectingRequester = newClient(new RedirectingHttpRequesterFilter(true));
+        StreamingHttpClient client = newClient(new RedirectingHttpRequesterFilter(true));
 
-        StreamingHttpRequest request = redirectingRequester.get("/path");
+        StreamingHttpRequest request = client.get("/path");
         request.headers().set(HOST, "servicetalk.io");
         request.headers().set(REQUESTED_STATUS, String.valueOf(SEE_OTHER.code()));
         request.headers().set(REQUESTED_LOCATION, "/new-location");
 
-        StreamingHttpResponse response = redirectingRequester.request(defaultStrategy(), request).toFuture().get();
-        assertNotNull(response);
-        assertEquals(OK, response.status());
-        assertNull(response.headers().get(LOCATION));
-        verify(httpClient, times(2)).request(any(), any());
+        verifyRedirects(client, request);
     }
 
     @Test
-    public void redirectForOnlyRelativeWithAbsoluteNonRelativeLocationDoesntRedirect() throws Exception {
-        StreamingHttpClient redirectingRequester = newClient(new RedirectingHttpRequesterFilter(true));
+    public void redirectForNotOnlyRelativeWithRelativeLocation() throws Exception {
+        StreamingHttpClient client = newClient(new RedirectingHttpRequesterFilter(false));
 
-        StreamingHttpRequest request = redirectingRequester.get("/path");
+        StreamingHttpRequest request = client.get("http://servicetalk.io/path");
+        request.headers().set(HOST, "servicetalk.io");
+        request.headers().set(REQUESTED_STATUS, String.valueOf(SEE_OTHER.code()));
+        request.headers().set(REQUESTED_LOCATION, "/new-location");
+
+        verifyRedirects(client, request);
+    }
+
+    @Test
+    public void redirectFromHttpToHttps() throws Exception {
+        crossSchemeRedirects("http", "https");
+    }
+
+    @Test
+    public void redirectFromHttpsToHttp() throws Exception {
+        crossSchemeRedirects("https", "http");
+    }
+
+    private void crossSchemeRedirects(String fromScheme, String toScheme) throws Exception {
+        StreamingHttpClient client = newClient(new RedirectingHttpRequesterFilter(false));
+
+        StreamingHttpRequest request = client.get(fromScheme + "://servicetalk.io/path");
+        request.headers().set(HOST, "servicetalk.io");
+        request.headers().set(REQUESTED_STATUS, String.valueOf(SEE_OTHER.code()));
+        request.headers().set(REQUESTED_LOCATION, toScheme + "://servicetalk.io//new-location");
+
+        StreamingHttpResponse response = verifyRedirects(client, request);
+        assertThat(response.headers().get(RECEIVED_SCHEME), is(toScheme));
+    }
+
+    @Test
+    public void redirectForOnlyRelativeWithAbsoluteNonRelativeLocationDoesNotRedirect() throws Exception {
+        StreamingHttpClient client = newClient(new RedirectingHttpRequesterFilter(true));
+
+        StreamingHttpRequest request = client.get("/path");
         request.headers().set(HOST, "servicetalk.io");
         request.headers().set(REQUESTED_STATUS, String.valueOf(SEE_OTHER.code()));
         request.headers().set(REQUESTED_LOCATION, "http://non-relative.servicetalk.io/new-location");
 
-        StreamingHttpResponse response = redirectingRequester.request(defaultStrategy(), request).toFuture().get();
-        assertNotNull(response);
-        assertEquals(SEE_OTHER, response.status());
-        assertThat(response.headers().get(LOCATION), equalTo("http://non-relative.servicetalk.io/new-location"));
-        verify(httpClient, times(1)).request(any(), any());
+        verifyDoesNotRedirect(client, request, "http://non-relative.servicetalk.io/new-location");
+    }
+
+    @Test
+    public void doesNotRedirectIfRemoteHostIsUnknown() throws Exception {
+        StreamingHttpClient client = newClient(new RedirectingHttpRequesterFilter(true));
+
+        StreamingHttpRequest request = client.get("/path");
+        request.headers().set(REQUESTED_STATUS, String.valueOf(SEE_OTHER.code()));
+        request.headers().set(REQUESTED_LOCATION, "/new-location");
+
+        verifyDoesNotRedirect(client, request, "/new-location");
     }
 
     @Test
     public void absoluteTargetRedirectForOnlyRelativeWithAbsoluteRelativeLocation() throws Exception {
-        StreamingHttpClient redirectingRequester = newClient(new RedirectingHttpRequesterFilter(true));
-
-        StreamingHttpRequest request = redirectingRequester.get("http://servicetalk.io/path");
-        request.headers().set(REQUESTED_STATUS, String.valueOf(SEE_OTHER.code()));
-        request.headers().set(REQUESTED_LOCATION, "http://servicetalk.io/new-location");
-
-        StreamingHttpResponse response = redirectingRequester.request(defaultStrategy(), request).toFuture().get();
-        assertNotNull(response);
-        assertEquals(OK, response.status());
-        assertNull(response.headers().get(LOCATION));
-        verify(httpClient, times(2)).request(any(), any());
+        absoluteTargetRedirectWithAbsoluteRelativeLocation(true);
     }
 
     @Test
-    public void absoluteTargetRedirectForOnlyRelativeWithNonRelativeLocationDoesntRedirect() throws Exception {
-        StreamingHttpClient redirectingRequester = newClient(new RedirectingHttpRequesterFilter(true));
+    public void absoluteTargetRedirectForNotOnlyRelativeWithAbsoluteRelativeLocation() throws Exception {
+        absoluteTargetRedirectWithAbsoluteRelativeLocation(false);
+    }
 
-        StreamingHttpRequest request = redirectingRequester.get("http://servicetalk.io/path");
+    private void absoluteTargetRedirectWithAbsoluteRelativeLocation(final boolean onlyRelative) throws Exception {
+        StreamingHttpClient client = newClient(new RedirectingHttpRequesterFilter(onlyRelative));
+
+        StreamingHttpRequest request = client.get("http://servicetalk.io/path");
+        request.headers().set(REQUESTED_STATUS, String.valueOf(SEE_OTHER.code()));
+        request.headers().set(REQUESTED_LOCATION, "http://servicetalk.io/new-location");
+
+        verifyRedirects(client, request);
+    }
+
+    @Test
+    public void absoluteTargetRedirectForOnlyRelativeWithAbsoluteRelativeLocationWithoutPath() throws Exception {
+        StreamingHttpClient client = newClient(new RedirectingHttpRequesterFilter(true));
+
+        StreamingHttpRequest request = client.get("http://servicetalk.io/path");
+        request.headers().set(REQUESTED_STATUS, String.valueOf(SEE_OTHER.code()));
+        request.headers().set(REQUESTED_LOCATION, "http://servicetalk.io");
+
+        verifyRedirects(client, request);
+    }
+
+    @Test
+    public void absoluteTargetRedirectForOnlyRelativeWithNonRelativeLocationDoesNotRedirect() throws Exception {
+        StreamingHttpClient client = newClient(new RedirectingHttpRequesterFilter(true));
+
+        StreamingHttpRequest request = client.get("http://servicetalk.io/path");
         request.headers().set(REQUESTED_STATUS, String.valueOf(SEE_OTHER.code()));
         request.headers().set(REQUESTED_LOCATION, "http://non-relative.servicetalk.io/new-location");
 
-        StreamingHttpResponse response = redirectingRequester.request(defaultStrategy(), request).toFuture().get();
-        assertNotNull(response);
-        assertEquals(SEE_OTHER, response.status());
-        assertThat(response.headers().get(LOCATION), equalTo("http://non-relative.servicetalk.io/new-location"));
-        verify(httpClient, times(1)).request(any(), any());
+        verifyDoesNotRedirect(client, request, "http://non-relative.servicetalk.io/new-location");
+    }
+
+    @Test
+    public void absoluteTargetRedirectForNotOnlyRelativeWithNonRelativeLocationRedirect() throws Exception {
+        StreamingHttpClient client = newClient(new RedirectingHttpRequesterFilter(false));
+
+        StreamingHttpRequest request = client.get("http://servicetalk.io/path");
+        request.headers().set(REQUESTED_STATUS, String.valueOf(SEE_OTHER.code()));
+        request.headers().set(REQUESTED_LOCATION, "http://non-relative.servicetalk.io/new-location");
+
+        verifyRedirects(client, request);
+    }
+
+    private StreamingHttpResponse verifyRedirects(StreamingHttpClient client,
+                                                  StreamingHttpRequest request) throws Exception {
+        return verifyRedirects(client, request, 2);
+    }
+
+    private StreamingHttpResponse verifyRedirects(StreamingHttpClient client, StreamingHttpRequest request,
+                                                  int numberOfInvocations) throws Exception {
+        return verifyResponse(client, request, OK, null, numberOfInvocations);
+    }
+
+    private void verifyDoesNotRedirect(StreamingHttpClient client, StreamingHttpRequest request,
+                                       CharSequence expectedLocation) throws Exception {
+        verifyResponse(client, request, SEE_OTHER, expectedLocation, 1);
+    }
+
+    private StreamingHttpResponse verifyResponse(StreamingHttpClient client, StreamingHttpRequest request,
+                                                 HttpResponseStatus expectedStatus,
+                                                 @Nullable CharSequence expectedLocation,
+                                                 int numberOfInvocations) throws Exception {
+        StreamingHttpResponse response = client.request(defaultStrategy(), request).toFuture().get();
+        assertThat(response, is(notNullValue()));
+        assertThat(response.status(), is(expectedStatus));
+        assertThat(response.headers().get(LOCATION), is(expectedLocation));
+        verify(httpClient, times(numberOfInvocations)).request(any(), any());
+        return response;
     }
 }
