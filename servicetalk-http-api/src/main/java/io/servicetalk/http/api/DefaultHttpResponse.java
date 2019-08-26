@@ -99,15 +99,14 @@ final class DefaultHttpResponse extends AbstractDelegatingHttpResponse
     }
 
     @Override
-    public HttpHeaders payloadComplete(final Object __, final HttpHeaders ___) {
-        assert trailers != null;
-        return trailers;
+    public HttpHeaders payloadComplete(final Object __, final HttpHeaders extTrailers) {
+        return trailers == null ? extTrailers : trailers;
     }
 
     @Override
-    public HttpHeaders catchPayloadFailure(final Object __, final Throwable cause, final HttpHeaders ___) {
-        assert trailers != null;
-        return trailers;
+    public HttpHeaders catchPayloadFailure(final Object __, final Throwable cause, final HttpHeaders ___)
+            throws Throwable {
+        throw cause;
     }
 
     @Override
