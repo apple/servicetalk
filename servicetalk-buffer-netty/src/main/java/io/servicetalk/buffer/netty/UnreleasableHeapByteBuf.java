@@ -20,7 +20,7 @@ import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.Unpooled;
 import io.netty.buffer.UnpooledHeapByteBuf;
 
-final class UnreleasableHeapByteBuf extends UnpooledHeapByteBuf {
+class UnreleasableHeapByteBuf extends UnpooledHeapByteBuf {
 
     UnreleasableHeapByteBuf(ByteBufAllocator alloc, int initialCapacity, int maxCapacity) {
         super(alloc, initialCapacity, maxCapacity);
