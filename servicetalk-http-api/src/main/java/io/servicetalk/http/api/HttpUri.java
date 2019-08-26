@@ -500,7 +500,7 @@ final class HttpUri {
         for (int i = begin + 1; i < uri.length(); ++i) {
             final char c = uri.charAt(i);
             if (c == ':') {
-                throw new IllegalArgumentException("invalid first path segment");
+                throw new IllegalArgumentException("invalid first path segment: " + uri);
             } else if (c == '/' || c == '?' || c == '#') {
                 return;
             }

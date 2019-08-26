@@ -38,6 +38,7 @@ import static java.util.Objects.requireNonNull;
  * <p>
  * It also provides a good set of default settings and configurations, which could be used by most users as-is or
  * could be overridden to address specific use cases.
+ *
  * @param <U> the type of address before resolution (unresolved address)
  * @param <R> the type of address after resolution (resolved address)
  * @see <a href="https://tools.ietf.org/html/rfc7230#section-5.3.2">absolute-form rfc7230#section-5.3.2</a>
@@ -82,15 +83,6 @@ public abstract class MultiAddressHttpClientBuilder<U, R>
 
     @Override
     public abstract MultiAddressHttpClientBuilder<U, R> disableHostHeaderFallback();
-
-    /**
-     * Sets a function that is used to determine the scheme of a request if the request-target is not absolute-form.
-     *
-     * @param effectiveSchemeFunction the function to use.
-     * @return {@code this}
-     */
-    public abstract MultiAddressHttpClientBuilder<U, R> effectiveScheme(
-            Function<HttpRequestMetaData, String> effectiveSchemeFunction);
 
     /**
      * Sets a function that is used for configuring SSL/TLS for https requests.
@@ -155,6 +147,7 @@ public abstract class MultiAddressHttpClientBuilder<U, R>
      * <pre>
      *     filter1 =&gt; filter2 =&gt; filter3 =&gt; client
      * </pre>
+     *
      * @param factory {@link MultiAddressHttpClientFilterFactory} to decorate a {@link StreamingHttpClient} for the
      * purpose of filtering.
      * @return {@code this}
@@ -177,6 +170,7 @@ public abstract class MultiAddressHttpClientBuilder<U, R>
      * <pre>
      *     filter1 =&gt; filter2 =&gt; filter3 =&gt; client
      * </pre>
+     *
      * @param predicate the {@link Predicate} to test if the filter must be applied.
      * @param factory {@link MultiAddressHttpClientFilterFactory} to decorate a {@link StreamingHttpClient} for the
      * purpose of filtering.
@@ -193,7 +187,7 @@ public abstract class MultiAddressHttpClientBuilder<U, R>
     /**
      * Set a maximum number of redirects to follow.
      *
-     * @param maxRedirects A maximum number of redirects to follow. Use a nonpositive number to disable redirects.
+     * @param maxRedirects A maximum number of redirects to follow. {@code 0} disables redirects.
      * @return {@code this}.
      */
     public abstract MultiAddressHttpClientBuilder<U, R> maxRedirects(int maxRedirects);
