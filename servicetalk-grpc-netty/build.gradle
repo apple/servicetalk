@@ -23,10 +23,13 @@ buildscript {
 
   dependencies {
     classpath "io.servicetalk:servicetalk-gradle-plugin-internal:$project.version"
+    // TODO find a way to share this version with servicetalk-grpc-gradle-plugin/build.gradle
+    classpath "io.servicetalk:servicetalk-grpc-gradle-plugin:$project.version"
   }
 }
 
 apply plugin: "servicetalk-library"
+apply plugin: "servicetalk-grpc"
 
 dependencies {
   implementation "io.servicetalk:servicetalk-bom-internal:$project.version"
@@ -39,8 +42,23 @@ dependencies {
   implementation "org.slf4j:slf4j-api"
   implementation "com.google.code.findbugs:jsr305"
 
+  testImplementation "io.servicetalk:servicetalk-concurrent-api-testFixtures:$project.version"
+  testImplementation "io.servicetalk:servicetalk-concurrent-internal-testFixtures:$project.version"
   testImplementation "io.servicetalk:servicetalk-test-resources:$project.version"
+  testImplementation "io.servicetalk:servicetalk-transport-netty-internal-testFixtures:$project.version"
+  testImplementation "io.servicetalk:servicetalk-grpc-protobuf:$project.version"
   testImplementation "junit:junit"
   testImplementation "org.hamcrest:hamcrest-library"
   testImplementation "org.mockito:mockito-core"
+}
+
+serviceTalkGrpc {
+  protobufVersion = project.property("protobufVersion")
+
+  // The following hack must be omitted in users projects and is necessary here only because we want to use the locally built version of the plugin
+  serviceTalkProtocPluginPath = "${project.rootProject.rootDir}/../servicetalk-grpc-protoc/build/buildExecutable/protoc-gen-servicetalk_grpc.exe"
+}
+
+clean {
+  delete protobuf.generatedFilesBaseDir
 }

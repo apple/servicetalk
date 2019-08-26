@@ -15,6 +15,7 @@
  */
 package io.servicetalk.grpc.api;
 
+import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.http.api.HttpDeserializer;
@@ -24,6 +25,7 @@ import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.HttpResponseFactory;
 import io.servicetalk.http.api.HttpResponseMetaData;
+import io.servicetalk.http.api.HttpSerializer;
 import io.servicetalk.http.api.StatelessTrailersTransformer;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
@@ -70,10 +72,16 @@ final class GrpcUtils {
         headers.set(CONTENT_TYPE, GRPC_CONTENT_TYPE);
     }
 
-    static StreamingHttpResponse newResponse(final StreamingHttpResponseFactory responseFactory,
-                                             final BufferAllocator allocator) {
+    static <T> StreamingHttpResponse newResponse(final StreamingHttpResponseFactory responseFactory,
+                                                 @Nullable final Publisher<T> payload,
+                                                 @Nullable final HttpSerializer<T> serializer,
+                                                 final BufferAllocator allocator) {
         final StreamingHttpResponse response = responseFactory.ok();
         initResponse(response);
+        if (payload != null) {
+            assert serializer != null;
+            response.payloadBody(payload, serializer);
+        }
         return response.transformRaw(new GrpcStatusUpdater(allocator, STATUS_OK));
     }
 
@@ -93,7 +101,7 @@ final class GrpcUtils {
 
     static StreamingHttpResponse newErrorResponse(final StreamingHttpResponseFactory responseFactory,
                                                   final Throwable cause, final BufferAllocator allocator) {
-        StreamingHttpResponse response = newResponse(responseFactory, allocator);
+        StreamingHttpResponse response = newResponse(responseFactory, null, null, allocator);
         response.transformRaw(new ErrorUpdater(cause, allocator));
         return response;
     }
@@ -123,8 +131,14 @@ final class GrpcUtils {
 
     static <Resp> Publisher<Resp> validateResponseAndGetPayload(final StreamingHttpResponse response,
                                                                 final HttpDeserializer<Resp> deserializer) {
-        response.transformRaw(new GrpcStatusValidator(response.headers()));
-        return response.payloadBody(deserializer);
+        return deserializer.deserialize(response.headers(), response.payloadBodyAndTrailers().map(o -> {
+            if (o instanceof HttpHeaders) {
+                validateGrpcStatus((HttpHeaders) o, response.headers());
+            } else if (!(o instanceof Buffer)) {
+                throw new IllegalArgumentException("Unexpected payload type: " + o.getClass());
+            }
+            return o;
+        }).filter(o -> !(o instanceof HttpHeaders)).map(o -> (Buffer) o));
     }
 
     static <Resp> Resp validateResponseAndGetPayload(final HttpResponse response,

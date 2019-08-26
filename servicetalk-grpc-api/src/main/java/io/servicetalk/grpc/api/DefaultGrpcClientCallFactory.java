@@ -139,8 +139,9 @@ final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
             final GrpcExecutionStrategy strategy = metadata.strategy();
             final BlockingStreamingHttpResponse response = strategy == null ? client.request(httpRequest) :
                     client.request(strategy, httpRequest);
-            return response.payloadBody(serializationProvider.deserializerFor(getMessageEncoding(metadata),
-                    responseClass));
+            return validateResponseAndGetPayload(response.toStreamingResponse(),
+                    serializationProvider.deserializerFor(getMessageEncoding(metadata), responseClass))
+                    .toIterable();
         };
     }
 
