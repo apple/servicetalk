@@ -67,6 +67,19 @@ public class HttpRequestDecoderTest {
     }
 
     @Test
+    public void noContentNoTrailers() {
+        EmbeddedChannel channel = newEmbeddedChannel();
+        byte[] beforeContentBytes = ("GET /some/path?foo=bar&baz=yyy HTTP/1.1" + "\r\n" +
+                "Connection: keep-alive" + "\r\n" +
+                "User-Agent: unit-test" + "\r\n" +
+                "Content-Length: 0" + "\r\n" + "\r\n").getBytes(US_ASCII);
+        assertTrue(channel.writeInbound(wrappedBuffer(beforeContentBytes)));
+
+        validateHttpRequest(channel, 0);
+        assertFalse(channel.finishAndReleaseAll());
+    }
+
+    @Test
     public void contentLengthNoTrailers() {
         EmbeddedChannel channel = newEmbeddedChannel();
         byte[] content = new byte[128];
@@ -378,10 +391,14 @@ public class HttpRequestDecoderTest {
         assertEquals(GET, request.method());
         assertEquals(HTTP_1_1, request.version());
         assertStandardHeaders(request.headers());
-        if (expectedContentLength >= 0) {
+        if (expectedContentLength > 0) {
             assertSingleHeaderValue(request.headers(), CONTENT_LENGTH, String.valueOf(expectedContentLength));
             Buffer chunk = channel.readInbound();
             assertEquals(expectedContentLength, chunk.readableBytes());
+            HttpHeaders trailers = channel.readInbound();
+            assertTrue(trailers.isEmpty());
+        } else if (expectedContentLength == 0) {
+            assertSingleHeaderValue(request.headers(), CONTENT_LENGTH, String.valueOf(expectedContentLength));
             HttpHeaders trailers = channel.readInbound();
             assertTrue(trailers.isEmpty());
         } else {
