@@ -93,8 +93,11 @@ final class EndpointEnhancingRequestFilter implements ContainerRequestFilter {
 
     @Override
     public void filter(final ContainerRequestContext requestCtx) {
-        enhancedEndpointCache.enhance(requestScope, ctxRefProvider, routeStrategiesConfigProvider,
-                (UriRoutingContext) requestCtx.getUriInfo());
+        // If we don't have a ConnectionContext then the request isn't from ServiceTalk and need not be filtered.
+        if (ctxRefProvider.get().get() != null) {
+            enhancedEndpointCache.enhance(requestScope, ctxRefProvider, routeStrategiesConfigProvider,
+                    (UriRoutingContext) requestCtx.getUriInfo());
+        }
     }
 
     private interface EnhancedEndpoint extends Endpoint, ResourceInfo {
