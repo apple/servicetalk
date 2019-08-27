@@ -24,6 +24,7 @@ import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.HttpResponseFactory;
 import io.servicetalk.http.api.HttpResponseMetaData;
+import io.servicetalk.http.api.StatelessTrailersTransformer;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.serialization.api.SerializationException;
@@ -73,16 +74,27 @@ final class GrpcUtils {
                                              final BufferAllocator allocator) {
         final StreamingHttpResponse response = responseFactory.ok();
         initResponse(response);
-        return response.transform(() -> null, (buffer, __) -> buffer, (__, trailers) -> {
-            GrpcUtils.setStatus(trailers, STATUS_OK, null, allocator);
-            return trailers;
-        });
+        return response.transformRaw(new GrpcStatusUpdater(allocator, STATUS_OK));
     }
 
     static HttpResponse newResponse(final HttpResponseFactory responseFactory, final BufferAllocator allocator) {
         final HttpResponse response = responseFactory.ok();
         initResponse(response);
         setStatus(response.trailers(), STATUS_OK, null, allocator);
+        return response;
+    }
+
+    static HttpResponse newErrorResponse(final HttpResponseFactory responseFactory, final Throwable cause,
+                                         final BufferAllocator allocator) {
+        HttpResponse response = newResponse(responseFactory, allocator);
+        setStatus(response.trailers(), cause, allocator);
+        return response;
+    }
+
+    static StreamingHttpResponse newErrorResponse(final StreamingHttpResponseFactory responseFactory,
+                                                  final Throwable cause, final BufferAllocator allocator) {
+        StreamingHttpResponse response = newResponse(responseFactory, allocator);
+        response.transformRaw(new ErrorUpdater(cause, allocator));
         return response;
     }
 
@@ -98,12 +110,20 @@ final class GrpcUtils {
         }
     }
 
+    static void setStatus(final HttpHeaders trailers, final Throwable cause, final BufferAllocator allocator) {
+        if (cause instanceof GrpcStatusException) {
+            GrpcStatusException grpcStatusException = (GrpcStatusException) cause;
+            GrpcUtils.setStatus(trailers, grpcStatusException.status(), grpcStatusException.applicationStatus(),
+                    allocator);
+        } else {
+            GrpcUtils.setStatus(trailers, GrpcStatus.fromCodeValue(GrpcStatusCode.UNKNOWN.value()), null,
+                    allocator);
+        }
+    }
+
     static <Resp> Publisher<Resp> validateResponseAndGetPayload(final StreamingHttpResponse response,
                                                                 final HttpDeserializer<Resp> deserializer) {
-        response.transform(() -> null, (buffer, __) -> buffer, (__, trailers) -> {
-            validateGrpcStatus(trailers, response.headers());
-            return trailers;
-        });
+        response.transformRaw(new GrpcStatusValidator(response.headers()));
         return response.payloadBody(deserializer);
     }
 
@@ -212,6 +232,59 @@ final class GrpcUtils {
             StatusHolder(@Nullable Status status) {
                 this.status = status;
             }
+        }
+    }
+
+    static final class GrpcStatusUpdater extends StatelessTrailersTransformer<Object> {
+        private final BufferAllocator allocator;
+        private final GrpcStatus successStatus;
+
+        GrpcStatusUpdater(final BufferAllocator allocator, final GrpcStatus successStatus) {
+            this.allocator = allocator;
+            this.successStatus = successStatus;
+        }
+
+        @Override
+        protected HttpHeaders payloadComplete(final HttpHeaders trailers) {
+            GrpcUtils.setStatus(trailers, successStatus, null, allocator);
+            return trailers;
+        }
+
+        @Override
+        protected HttpHeaders payloadFailed(final Throwable cause, final HttpHeaders trailers) {
+            setStatus(trailers, cause, allocator);
+            // Swallow exception as we are converting it to the trailers.
+            return trailers;
+        }
+    }
+
+    private static final class GrpcStatusValidator extends StatelessTrailersTransformer<Object> {
+        private final HttpHeaders responseHeaders;
+
+        GrpcStatusValidator(final HttpHeaders responseHeaders) {
+            this.responseHeaders = responseHeaders;
+        }
+
+        @Override
+        protected HttpHeaders payloadComplete(final HttpHeaders trailers) {
+            validateGrpcStatus(trailers, responseHeaders);
+            return trailers;
+        }
+    }
+
+    private static final class ErrorUpdater extends StatelessTrailersTransformer<Object> {
+        private final Throwable cause;
+        private final BufferAllocator allocator;
+
+        ErrorUpdater(final Throwable cause, final BufferAllocator allocator) {
+            this.cause = cause;
+            this.allocator = allocator;
+        }
+
+        @Override
+        protected HttpHeaders payloadComplete(final HttpHeaders trailers) {
+            setStatus(trailers, cause, allocator);
+            return trailers;
         }
     }
 }
