@@ -24,6 +24,7 @@ import io.servicetalk.concurrent.internal.TerminalNotification;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
 import org.junit.runner.RunWith;
@@ -70,7 +71,7 @@ import static org.mockito.Mockito.when;
 @RunWith(Parameterized.class)
 public class StreamingHttpPayloadHolderTest {
 
-    //@Rule
+    @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
 
     private enum UpdateMode {

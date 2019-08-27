@@ -30,6 +30,9 @@ import io.servicetalk.http.api.HttpDataSourceTransformations.HttpObjectTrailersS
 import io.servicetalk.http.api.HttpDataSourceTransformations.HttpTransportBufferFilterOperator;
 import io.servicetalk.http.api.HttpDataSourceTransformations.PayloadAndTrailers;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.Map;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
@@ -50,6 +53,7 @@ import static java.util.Objects.requireNonNull;
  * A holder of HTTP payload and associated information.
  */
 final class StreamingHttpPayloadHolder implements PayloadInfo {
+    private static final Logger LOGGER = LoggerFactory.getLogger(StreamingHttpPayloadHolder.class);
 
     private final HttpHeaders headers;
     private final BufferAllocator allocator;
@@ -266,23 +270,26 @@ final class StreamingHttpPayloadHolder implements PayloadInfo {
                 @Override
                 public void onError(final Throwable t) {
                     assert trailerTransformerState.isStateSet();
-                    if (trailerTransformerState.payloadErrorCause() == t) {
+                    Throwable payloadErrorCause = trailerTransformerState.payloadErrorCause();
+                    HttpHeaders trailersForError;
+                    if (payloadErrorCause != null) {
                         // Same error for payload and trailers, we recovered from payload error, hence should use the
                         // trailers specified by the user.
-                        HttpHeaders trailers = trailerTransformerState.trailersForError();
-                        assert trailers != null;
-                        subscriber.onSuccess(trailers);
+                        trailersForError = trailerTransformerState.trailersForError();
+                        assert trailersForError != null;
+                        if (payloadErrorCause != t) {
+                            LOGGER.info("Trailers source emitted error different than payload, Ignoring.", t);
+                        }
                     } else {
-                        HttpHeaders trailersForError;
                         try {
                             trailersForError = trailersTransformer.catchPayloadFailure(trailerTransformerState.state(),
                                     t, headersFactory.newEmptyTrailers());
                         } catch (Throwable throwable) {
-                            subscriber.onError(t);
+                            subscriber.onError(throwable);
                             return;
                         }
-                        subscriber.onSuccess(trailersForError);
                     }
+                    subscriber.onSuccess(trailersForError);
                 }
             });
             payloadBody = (raw ? rawPayload() : payloadBody()).liftSync(subscriber -> {
