@@ -1,0 +1,67 @@
+= ServiceTalk gRPC Gradle Plugin
+
+Gradle plugin for configuring gRPC client and server code generation.
+
+== Usage
+
+[source,groovy]
+----
+buildscript {
+  dependencies {
+    classpath "io.servicetalk:servicetalk-grpc-gradle-plugin:$serviceTalk.version"
+  }
+}
+
+apply plugin: "java"
+apply plugin: "servicetalk-grpc"
+
+serviceTalkGrpc {
+  protobufVersion = "3.9.0"
+}
+----
+
+`protobufVersion` is the only mandatory configuration option for the `serviceTalkGrpc` plugin.
+
+=== Generated Code Location
+
+By default the plugin generates code in `$buildDir/generated/source/proto/$sourceSet.name/java`.
+This can be changed thanks to the `generatedCodeDir` option:
+
+[source,groovy]
+----
+serviceTalkGrpc {
+  protobufVersion = "3.9.0"
+  generatedCodeDir = "$projectDir/generated"
+}
+----
+
+
+=== Source Sets
+
+By default the plugin compiles `.proto` files from `src/{main,test}/proto` to `<generatedCodeDir>/{main,test}/java`.
+Additional source locations can be configured with the `proto` source set:
+
+[source,groovy]
+----
+sourceSets {
+  main {
+    proto {
+      // In addition to the default 'src/main/proto'
+      srcDir 'src/main/protobuf'
+    }
+  }
+}
+----
+
+=== IDE Integration
+
+The plugin automatically adds generated sources to IDEA and Eclipse  projects so that compiling from IDE just works.
+If necessary, this can be disabled by setting `generateIdeConfiguration` to `false`:
+
+[source,groovy]
+----
+serviceTalkGrpc {
+  protobufVersion = "3.9.0"
+  generateIdeConfiguration = false
+}
+----

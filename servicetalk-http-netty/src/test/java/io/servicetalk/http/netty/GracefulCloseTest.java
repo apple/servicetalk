@@ -15,9 +15,12 @@
  */
 package io.servicetalk.http.netty;
 
+import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
+import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.ReservedStreamingHttpConnection;
+import io.servicetalk.http.api.StatelessTrailersTransformer;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.transport.api.ServerContext;
@@ -62,8 +65,7 @@ public class GracefulCloseTest {
             StreamingHttpResponse resp = responseFactory.ok().payloadBody(from("Hello"), textSerializer());
             switch (trailerAddType) {
                 case Regular:
-                    resp.transform(() -> null, (buffer, __) -> buffer,
-                            (__, trailers) -> trailers.add("foo", "bar"));
+                    resp.transform(new StaticTrailersTransformer());
                     break;
                 case Duplicate:
                     resp.transformRawPayloadBody(publisher ->
@@ -106,5 +108,13 @@ public class GracefulCloseTest {
         assertThat("Unexpected response.", resp.status().code(), equalTo(HttpResponseStatus.OK.code()));
         // Drain response.
         resp.payloadBody().toFuture().get();
+    }
+
+    private static class StaticTrailersTransformer extends StatelessTrailersTransformer<Buffer> {
+        @Override
+        protected HttpHeaders payloadComplete(final HttpHeaders trailers) {
+            trailers.add("foo", "bar");
+            return trailers;
+        }
     }
 }
