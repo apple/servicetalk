@@ -203,6 +203,34 @@ public final class GrpcStatus {
     }
 
     @Override
+    public boolean equals(final Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+
+        final GrpcStatus that = (GrpcStatus) o;
+
+        if (code != that.code) {
+            return false;
+        }
+        if (cause != null ? !cause.equals(that.cause) : that.cause != null) {
+            return false;
+        }
+        return description != null ? description.equals(that.description) : that.description == null;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = code.hashCode();
+        result = 31 * result + (cause != null ? cause.hashCode() : 0);
+        result = 31 * result + (description != null ? description.hashCode() : 0);
+        return result;
+    }
+
+    @Override
     public String toString() {
         return "GrpcStatus{" +
                 "code=" + code +
