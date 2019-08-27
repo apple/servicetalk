@@ -31,6 +31,7 @@ import io.servicetalk.grpc.api.GrpcRoutes.ResponseStreamingRoute;
 import io.servicetalk.grpc.api.GrpcRoutes.Route;
 import io.servicetalk.grpc.api.GrpcRoutes.StreamingRoute;
 import io.servicetalk.grpc.api.GrpcServiceFactory.ServerBinder;
+import io.servicetalk.grpc.api.GrpcUtils.GrpcStatusUpdater;
 import io.servicetalk.http.api.BlockingHttpService;
 import io.servicetalk.http.api.HttpApiConversions.ServiceAdapterHolder;
 import io.servicetalk.http.api.HttpDeserializer;
@@ -57,7 +58,6 @@ import static io.servicetalk.grpc.api.GrpcRouteConversions.toRequestStreamingRou
 import static io.servicetalk.grpc.api.GrpcRouteConversions.toResponseStreamingRoute;
 import static io.servicetalk.grpc.api.GrpcRouteConversions.toRoute;
 import static io.servicetalk.grpc.api.GrpcRouteConversions.toStreaming;
-import static io.servicetalk.grpc.api.GrpcStatusCode.UNIMPLEMENTED;
 import static io.servicetalk.grpc.api.GrpcUtils.newResponse;
 import static io.servicetalk.grpc.api.GrpcUtils.readGrpcMessageEncoding;
 import static io.servicetalk.grpc.api.GrpcUtils.uncheckedCast;
@@ -77,14 +77,11 @@ final class GrpcRouter {
     private final Map<String, RouteProvider> blockingRoutes;
     private final Map<String, RouteProvider> blockingStreamingRoutes;
 
+    private static final GrpcStatus STATUS_UNIMPLEMENTED = GrpcStatus.fromCodeValue(GrpcStatusCode.OK.value());
     private static final StreamingHttpService notFound = (ctx, request, responseFactory) -> {
         final StreamingHttpResponse response = responseFactory.ok();
         response.version(request.version());
-        response.transform(() -> null, (buffer, __) -> buffer, (__, trailers) -> {
-            GrpcUtils.setStatus(trailers, UNIMPLEMENTED.status(), null,
-                    ctx.executionContext().bufferAllocator());
-            return trailers;
-        });
+        response.transformRaw(new GrpcStatusUpdater(ctx.executionContext().bufferAllocator(), STATUS_UNIMPLEMENTED));
         return succeeded(response);
     };
 
