@@ -16,13 +16,10 @@
 package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.Buffer;
-import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 
-import java.util.function.BiFunction;
 import java.util.function.Function;
-import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 
 /**
@@ -131,32 +128,20 @@ public interface StreamingHttpRequest extends HttpRequestMetaData {
     /**
      * Returns a {@link StreamingHttpRequest} with its underlying payload transformed to {@link Buffer}s,
      * with access to the trailers.
-     * @param stateSupplier Create a new state {@link Object} that will be provided to the {@code transformer} on each
-     * invocation. The state will be persistent for each {@link Subscriber} of the underlying payload body.
-     * @param transformer Responsible for transforming each {@link Buffer} of the payload body.
-     * @param trailersTransformer Invoked after all payload has been consumed with the state and the trailers. The
-     * return value of this {@link BiFunction} will be the trailers for the {@link StreamingHttpRequest}.
+     * @param trailersTransformer {@link TrailersTransformer} to use for this transform.
      * @param <T> The type of state used during the transformation.
      * @return {@code this}
      */
-    <T> StreamingHttpRequest transform(Supplier<T> stateSupplier,
-                                       BiFunction<Buffer, T, Buffer> transformer,
-                                       BiFunction<T, HttpHeaders, HttpHeaders> trailersTransformer);
+    <T> StreamingHttpRequest transform(TrailersTransformer<T, Buffer> trailersTransformer);
 
     /**
      * Returns a {@link StreamingHttpRequest} with its underlying payload transformed to {@link Object}s,
      * with access to the trailers.
-     * @param stateSupplier Create a new state {@link Object} that will be provided to the {@code transformer} on each
-     * invocation. The state will be persistent for each {@link Subscriber} of the underlying payload body.
-     * @param transformer Responsible for transforming each {@link Object} of the payload body.
-     * @param trailersTransformer Invoked after all payload has been consumed with the state and the trailers. The
-     * return value of this {@link BiFunction} will be the trailers for the {@link StreamingHttpRequest}.
+     * @param trailersTransformer {@link TrailersTransformer} to use for this transform.
      * @param <T> The type of state used during the transformation.
      * @return {@code this}
      */
-    <T> StreamingHttpRequest transformRaw(Supplier<T> stateSupplier,
-                                          BiFunction<Object, T, ?> transformer,
-                                          BiFunction<T, HttpHeaders, HttpHeaders> trailersTransformer);
+    <T> StreamingHttpRequest transformRaw(TrailersTransformer<T, Object> trailersTransformer);
 
     /**
      * Translates this {@link StreamingHttpRequest} to a {@link HttpRequest}.
