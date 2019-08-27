@@ -64,7 +64,6 @@ sourceSets {
       srcDir "${protobuf.generatedFilesBaseDir}/source/test/java"
     }
   }
-
 }
 
 clean {
