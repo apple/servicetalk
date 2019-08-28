@@ -17,6 +17,7 @@ package io.servicetalk.transport.netty.internal;
 
 import io.servicetalk.transport.api.ConnectionContext;
 
+import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.Channel;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslHandler;
@@ -59,8 +60,8 @@ public class SslClientChannelInitializer implements ChannelInitializer {
 
     @Override
     public ConnectionContext init(Channel channel, ConnectionContext context) {
-        final SslHandler sslHandler = newHandler(sslContext, channel.alloc(), hostnameVerificationAlgorithm,
-                                           hostnameVerificationHost, hostnameVerificationPort);
+        final SslHandler sslHandler = newHandler(sslContext, PooledByteBufAllocator.DEFAULT,
+                hostnameVerificationAlgorithm, hostnameVerificationHost, hostnameVerificationPort);
         if (deferSslHandler) {
             channel.pipeline().addLast(new DeferSslHandler(channel, sslHandler));
         } else {

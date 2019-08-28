@@ -17,6 +17,9 @@ package io.servicetalk.transport.netty.internal;
 
 import io.servicetalk.transport.api.ConnectionContext;
 
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
+import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.Channel;
 import io.netty.handler.ssl.SniHandler;
 import io.netty.handler.ssl.SslContext;
@@ -24,6 +27,7 @@ import io.netty.handler.ssl.SslHandler;
 import io.netty.util.DomainNameMapping;
 
 import javax.annotation.Nullable;
+import javax.net.ssl.SSLEngine;
 
 import static java.util.Objects.requireNonNull;
 
@@ -31,6 +35,8 @@ import static java.util.Objects.requireNonNull;
  * SSL {@link ChannelInitializer} for servers.
  */
 public class SslServerChannelInitializer implements ChannelInitializer {
+
+    private static final ByteBufAllocator POOLED_ALLOCATOR = PooledByteBufAllocator.DEFAULT;
 
     @Nullable
     private final DomainNameMapping<SslContext> domainNameMapping;
@@ -58,12 +64,28 @@ public class SslServerChannelInitializer implements ChannelInitializer {
     @Override
     public ConnectionContext init(Channel channel, ConnectionContext context) {
         if (sslContext != null) {
-            SslHandler sslHandler = SslUtils.newHandler(sslContext, channel.alloc());
+            SslHandler sslHandler = SslUtils.newHandler(sslContext, POOLED_ALLOCATOR);
             channel.pipeline().addLast(sslHandler);
         } else {
             assert domainNameMapping != null;
-            channel.pipeline().addLast(new SniHandler(domainNameMapping));
+            channel.pipeline().addLast(new SniHandlerWithPooledAllocator(domainNameMapping));
         }
         return context;
+    }
+
+    /**
+     * Overrides the {@link ByteBufAllocator} used by {@link SslHandler} when it needs to copy data to direct memory if
+     * required by {@link SSLEngine}. {@link SslHandler} releases allocated direct {@link ByteBuf}s after processing.
+     */
+    private static final class SniHandlerWithPooledAllocator extends SniHandler {
+
+        SniHandlerWithPooledAllocator(final DomainNameMapping<SslContext> domainNameMapping) {
+            super(domainNameMapping);
+        }
+
+        @Override
+        protected SslHandler newSslHandler(final SslContext context, final ByteBufAllocator ignore) {
+            return super.newSslHandler(context, POOLED_ALLOCATOR);
+        }
     }
 }

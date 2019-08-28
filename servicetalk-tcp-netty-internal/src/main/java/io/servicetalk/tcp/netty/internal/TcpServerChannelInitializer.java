@@ -18,11 +18,14 @@ package io.servicetalk.tcp.netty.internal;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
 import io.servicetalk.transport.netty.internal.IdleTimeoutInitializer;
-import io.servicetalk.transport.netty.internal.PooledRecvByteBufAllocatorInitializer;
+import io.servicetalk.transport.netty.internal.PooledRecvByteBufAllocatorUtils;
 import io.servicetalk.transport.netty.internal.SslServerChannelInitializer;
+import io.servicetalk.transport.netty.internal.WireLoggingInitializer;
 
 import io.netty.channel.Channel;
 import io.netty.handler.ssl.SslContext;
+
+import javax.annotation.Nullable;
 
 /**
  * {@link ChannelInitializer} for TCP.
@@ -36,28 +39,33 @@ public class TcpServerChannelInitializer implements ChannelInitializer {
      *
      * @param config to use for initialization.
      */
-    public TcpServerChannelInitializer(ReadOnlyTcpServerConfig config) {
+    public TcpServerChannelInitializer(final ReadOnlyTcpServerConfig config) {
         ChannelInitializer delegate = ChannelInitializer.defaultInitializer();
-        delegate = delegate.andThen(new PooledRecvByteBufAllocatorInitializer());
         if (config.idleTimeoutMs() > 0) {
             delegate = delegate.andThen(new IdleTimeoutInitializer(config.idleTimeoutMs()));
         }
-        if (config.isSniEnabled()) {
-            delegate = delegate.andThen(new SslServerChannelInitializer(config.domainNameMapping()));
-        } else {
-            final SslContext sslContext = config.sslContext();
-            if (sslContext != null) {
-                delegate = delegate.andThen(new SslServerChannelInitializer(sslContext));
-            }
-        }
-        if (config.wireLoggingInitializer() != null) {
-            delegate = delegate.andThen(config.wireLoggingInitializer());
+
+        delegate = delegate.andThen(PooledRecvByteBufAllocatorUtils.wrap(sslInitializer(config)));
+
+        final WireLoggingInitializer wireLoggingInitializer = config.wireLoggingInitializer();
+        if (wireLoggingInitializer != null) {
+            delegate = delegate.andThen(wireLoggingInitializer);
         }
         this.delegate = delegate;
     }
 
+    @Nullable
+    private static ChannelInitializer sslInitializer(final ReadOnlyTcpServerConfig config) {
+        if (config.isSniEnabled()) {
+            return new SslServerChannelInitializer(config.domainNameMapping());
+        } else {
+            final SslContext sslContext = config.sslContext();
+            return sslContext != null ? new SslServerChannelInitializer(sslContext) : null;
+        }
+    }
+
     @Override
-    public ConnectionContext init(Channel channel, ConnectionContext context) {
+    public ConnectionContext init(final Channel channel, final ConnectionContext context) {
         return delegate.init(channel, context);
     }
 }
