@@ -15,15 +15,13 @@
  */
 package io.servicetalk.examples.grpc.helloworld.blocking;
 
-import io.servicetalk.concurrent.BlockingIterable;
-import io.servicetalk.examples.grpc.helloworld.HelloWorldProto;
-import io.servicetalk.examples.grpc.helloworld.HelloWorldProto.Greeter.BlockingGreeterService;
-import io.servicetalk.examples.grpc.helloworld.HelloWorldProto.Greeter.ServiceFactory;
-import io.servicetalk.examples.grpc.helloworld.HelloWorldProto.HelloReply;
-import io.servicetalk.grpc.api.GrpcPayloadWriter;
 import io.servicetalk.grpc.api.GrpcServiceContext;
 import io.servicetalk.grpc.netty.GrpcServers;
-import io.servicetalk.transport.api.ConnectionContext;
+
+import io.grpc.examples.helloworld.Greeter.BlockingGreeterService;
+import io.grpc.examples.helloworld.Greeter.ServiceFactory;
+import io.grpc.examples.helloworld.HelloReply;
+import io.grpc.examples.helloworld.HelloRequest;
 
 public class BlockingHelloWorldServer {
 
@@ -36,47 +34,8 @@ public class BlockingHelloWorldServer {
     private static final class MyGreeterService implements BlockingGreeterService {
 
         @Override
-        public HelloReply sayHello(final GrpcServiceContext ctx, final HelloWorldProto.HelloRequest request) {
+        public HelloReply sayHello(final GrpcServiceContext ctx, final HelloRequest request) {
             return HelloReply.newBuilder().setMessage("Hello " + request.getName()).build();
-        }
-
-        @Override
-        public void sayHelloToFromMany(final GrpcServiceContext ctx,
-                                       final BlockingIterable<HelloWorldProto.HelloRequest> request,
-                                       final GrpcPayloadWriter<HelloReply> responseWriter)  throws Exception {
-            try {
-                for (HelloWorldProto.HelloRequest req : request) {
-                    responseWriter.write(HelloReply.newBuilder().setMessage("Hello " + req.getName()).build());
-                }
-            } finally {
-                responseWriter.close();
-            }
-        }
-
-        @Override
-        public void sayHelloToMany(final GrpcServiceContext ctx, final HelloWorldProto.HelloRequest request,
-                                   final GrpcPayloadWriter<HelloReply> responseWriter) throws Exception {
-            try {
-                for (int i = 0; i < 10; i++) {
-                    responseWriter.write(HelloReply.newBuilder().setMessage("Hello " + i + ": " + request.getName())
-                            .build());
-                }
-            } finally {
-                responseWriter.close();
-            }
-        }
-
-        @Override
-        public HelloReply sayHelloFromMany(final GrpcServiceContext ctx,
-                                           final BlockingIterable<HelloWorldProto.HelloRequest> request) {
-            StringBuilder names = new StringBuilder();
-            for (HelloWorldProto.HelloRequest req : request) {
-                if (names.length() != 0) {
-                    names.append(",");
-                }
-                names.append(req.getName());
-            }
-            return HelloReply.newBuilder().setMessage("Hello " + names.toString()).build();
         }
     }
 }

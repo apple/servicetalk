@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,25 +13,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.examples.grpc.helloworld.async;
+package io.servicetalk.examples.grpc.routeguide.async;
 
 import io.servicetalk.grpc.netty.GrpcClients;
 
-import io.grpc.examples.helloworld.Greeter.ClientFactory;
-import io.grpc.examples.helloworld.Greeter.GreeterClient;
-import io.grpc.examples.helloworld.HelloRequest;
+import io.grpc.examples.routeguide.Point;
+import io.grpc.examples.routeguide.RouteGuide;
+import io.grpc.examples.routeguide.RouteGuide.ClientFactory;
 
 import java.util.concurrent.CountDownLatch;
 
-public final class HelloWorldClient {
+public final class RouteGuideClient {
 
     public static void main(String[] args) throws Exception {
-        try (GreeterClient client = GrpcClients.forAddress("localhost", 8080).build(new ClientFactory())) {
+        try (RouteGuide.RouteGuideClient client = GrpcClients.forAddress("localhost", 8080)
+                .h2PriorKnowledge(true)
+                .build(new ClientFactory())) {
             // This example is demonstrating asynchronous execution, but needs to prevent the main thread from exiting
             // before the response has been processed. This isn't typical usage for a streaming API but is useful for
             // demonstration purposes.
             CountDownLatch responseProcessedLatch = new CountDownLatch(1);
-            client.sayHello(HelloRequest.newBuilder().setName("Foo").build())
+            client.getFeature(Point.newBuilder().setLatitude(123456).setLongitude(-123456).build())
                     .whenFinally(responseProcessedLatch::countDown)
                     .subscribe(System.out::println);
 

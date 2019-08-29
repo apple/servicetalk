@@ -13,26 +13,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.examples.grpc.helloworld.blocking.streaming;
+package io.servicetalk.examples.grpc.routeguide.blocking.streaming;
 
-import io.servicetalk.examples.grpc.helloworld.HelloWorldProto.Greeter.BlockingGreeterClient;
-import io.servicetalk.examples.grpc.helloworld.HelloWorldProto.Greeter.ClientFactory;
-import io.servicetalk.examples.grpc.helloworld.HelloWorldProto.HelloReply;
-import io.servicetalk.examples.grpc.helloworld.HelloWorldProto.HelloRequest;
 import io.servicetalk.grpc.netty.GrpcClients;
+
+import io.grpc.examples.routeguide.Point;
+import io.grpc.examples.routeguide.RouteGuide.BlockingRouteGuideClient;
+import io.grpc.examples.routeguide.RouteGuide.ClientFactory;
+import io.grpc.examples.routeguide.RouteSummary;
 
 import static java.util.Arrays.asList;
 
-public final class BlockingHelloWorldStreamingClient {
+public final class BlockingRouteGuideRequestStreamingClient {
 
     public static void main(String[] args) throws Exception {
-        try (BlockingGreeterClient client = GrpcClients.forAddress("localhost", 8080)
+        try (BlockingRouteGuideClient client = GrpcClients.forAddress("localhost", 8080)
+                .h2PriorKnowledge(true)
                 .buildBlocking(new ClientFactory())) {
-            Iterable<HelloRequest> request = asList(HelloRequest.newBuilder().setName("Foo 1").build(),
-                    HelloRequest.newBuilder().setName("Foo 2").build());
-            for (HelloReply reply : client.sayHelloToFromMany(request)) {
-                System.out.println(reply);
-            }
+            RouteSummary routeSummary = client.recordRoute(
+                    asList(Point.newBuilder().setLatitude(123456).setLongitude(-123456).build(),
+                            Point.newBuilder().setLatitude(789000).setLongitude(-789000).build()));
+            System.out.println(routeSummary);
         }
     }
 }

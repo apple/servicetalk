@@ -15,17 +15,14 @@
  */
 package io.servicetalk.examples.grpc.helloworld.async;
 
-import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.examples.grpc.helloworld.HelloWorldProto.Greeter.GreeterService;
-import io.servicetalk.examples.grpc.helloworld.HelloWorldProto.Greeter.ServiceFactory;
-import io.servicetalk.examples.grpc.helloworld.HelloWorldProto.HelloReply;
-import io.servicetalk.examples.grpc.helloworld.HelloWorldProto.HelloRequest;
 import io.servicetalk.grpc.api.GrpcServiceContext;
 import io.servicetalk.grpc.netty.GrpcServers;
 
-import java.time.Duration;
-import java.util.function.Function;
+import io.grpc.examples.helloworld.Greeter.GreeterService;
+import io.grpc.examples.helloworld.Greeter.ServiceFactory;
+import io.grpc.examples.helloworld.HelloReply;
+import io.grpc.examples.helloworld.HelloRequest;
 
 import static io.servicetalk.concurrent.api.Single.succeeded;
 
@@ -42,41 +39,6 @@ public class HelloWorldServer {
         @Override
         public Single<HelloReply> sayHello(final GrpcServiceContext ctx, final HelloRequest request) {
             return succeeded(HelloReply.newBuilder().setMessage("Hello " + request.getName()).build());
-        }
-
-        @Override
-        public Publisher<HelloReply> sayHelloToFromMany(final GrpcServiceContext ctx,
-                                                        final Publisher<HelloRequest> request) {
-            return request.map(req -> HelloReply.newBuilder().setMessage("Hello " + req.getName()).build());
-        }
-
-        @Override
-        public Publisher<HelloReply> sayHelloToMany(final GrpcServiceContext ctx, final HelloRequest request) {
-            return ctx.executionContext().executor()
-                    .timer(Duration.ofMillis(100))
-                    .repeat(count -> count < 10)
-                    .map(new Function<Void, HelloReply>() {
-
-                        private int count;
-
-                        @Override
-                        public HelloReply apply(final Void __) {
-                            return HelloReply.newBuilder().setMessage(", Hello " + ++count + ": " + request.getName())
-                                    .build();
-                        }
-                    });
-        }
-
-        @Override
-        public Single<HelloReply> sayHelloFromMany(final GrpcServiceContext ctx,
-                                                   final Publisher<HelloRequest> request) {
-            return request.collect(StringBuilder::new, (names, req) -> {
-                if (names.length() != 0) {
-                    names.append(",");
-                }
-                names.append(req.getName());
-                return names;
-            }).map(names -> HelloReply.newBuilder().setMessage("Hello " + names.toString()).build());
         }
     }
 }
