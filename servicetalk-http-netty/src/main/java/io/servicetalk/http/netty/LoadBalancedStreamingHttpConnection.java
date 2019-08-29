@@ -15,6 +15,7 @@
  */
 package io.servicetalk.http.netty;
 
+import io.servicetalk.client.api.LoadBalancedConnection;
 import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.internal.ReservableRequestConcurrencyController;
 import io.servicetalk.concurrent.api.Completable;
@@ -45,7 +46,7 @@ import static java.util.Objects.requireNonNull;
  * Makes the wrapped {@link StreamingHttpConnection} aware of the {@link LoadBalancer}.
  */
 final class LoadBalancedStreamingHttpConnection
-        implements ReservedStreamingHttpConnection, ReservableRequestConcurrencyController,
+        implements LoadBalancedConnection, ReservedStreamingHttpConnection, ReservableRequestConcurrencyController,
                    // Since we do not have filters for reserved connection, we rely on the original implementation to
                    // be an influencer hence we can try to correctly delegate when possible.
                    // Reserved connection given to the user will use the correct strategy and influencer chain since
@@ -56,7 +57,8 @@ final class LoadBalancedStreamingHttpConnection
     private final HttpExecutionStrategy streamingStrategy;
     private final HttpExecutionStrategyInfluencer strategyInfluencer;
 
-    LoadBalancedStreamingHttpConnection(FilterableStreamingHttpConnection filteredConnection,
+    <FLC extends FilterableStreamingHttpConnection & LoadBalancedConnection>
+    LoadBalancedStreamingHttpConnection(FLC filteredConnection,
                                         ReservableRequestConcurrencyController limiter,
                                         HttpExecutionStrategy streamingStrategy,
                                         HttpExecutionStrategyInfluencer strategyInfluencer) {
@@ -155,5 +157,10 @@ final class LoadBalancedStreamingHttpConnection
     @Override
     public HttpExecutionStrategy influenceStrategy(final HttpExecutionStrategy strategy) {
         return strategyInfluencer.influenceStrategy(strategy);
+    }
+
+    @Override
+    public float score() {
+        return ((LoadBalancedConnection) filteredConnection).score();
     }
 }

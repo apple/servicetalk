@@ -17,6 +17,7 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.client.api.ConnectionFactoryFilter;
+import io.servicetalk.client.api.LoadBalancedConnection;
 import io.servicetalk.client.api.LoadBalancerFactory;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
@@ -105,8 +106,10 @@ abstract class BaseSingleAddressHttpClientBuilder<U, R, SDE extends ServiceDisco
             ServiceDiscoverer<U, R, ? extends SDE> serviceDiscoverer);
 
     @Override
-    public abstract BaseSingleAddressHttpClientBuilder<U, R, SDE> loadBalancerFactory(
-            LoadBalancerFactory<R, StreamingHttpConnection> loadBalancerFactory);
+    public abstract <FLC extends FilterableStreamingHttpConnection & LoadBalancedConnection>
+    BaseSingleAddressHttpClientBuilder<U, R, SDE> loadBalancerFactory(
+            LoadBalancerFactory<R> loadBalancerFactory,
+            Function<FilterableStreamingHttpConnection, ? extends FLC> protocolBinder);
 
     @Override
     public abstract BaseSingleAddressHttpClientBuilder<U, R, SDE> unresolvedAddressToHost(

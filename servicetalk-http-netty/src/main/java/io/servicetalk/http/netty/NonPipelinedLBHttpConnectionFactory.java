@@ -16,6 +16,7 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.client.api.ConnectionFactoryFilter;
+import io.servicetalk.client.api.LoadBalancedConnection;
 import io.servicetalk.client.api.internal.ReservableRequestConcurrencyController;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
@@ -25,22 +26,25 @@ import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
 import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 
+import java.util.function.Function;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.client.api.internal.ReservableRequestConcurrencyControllers.newSingleController;
 import static io.servicetalk.http.api.HttpEventKey.MAX_CONCURRENCY;
 import static io.servicetalk.http.netty.StreamingConnectionFactory.buildStreaming;
 
-final class NonPipelinedLBHttpConnectionFactory<ResolvedAddress>
-        extends AbstractLBHttpConnectionFactory<ResolvedAddress> {
+final class NonPipelinedLBHttpConnectionFactory<ResolvedAddress,
+        FLC extends FilterableStreamingHttpConnection & LoadBalancedConnection>
+        extends AbstractLBHttpConnectionFactory<ResolvedAddress, FLC> {
     NonPipelinedLBHttpConnectionFactory(
             final ReadOnlyHttpClientConfig config, final HttpExecutionContext executionContext,
             @Nullable final StreamingHttpConnectionFilterFactory connectionFilterFunction,
             final StreamingHttpRequestResponseFactory reqRespFactory,
             final HttpExecutionStrategyInfluencer strategyInfluencer,
-            final ConnectionFactoryFilter<ResolvedAddress, FilterableStreamingHttpConnection> connectionFactoryFilter) {
+            final ConnectionFactoryFilter<ResolvedAddress, FilterableStreamingHttpConnection> connectionFactoryFilter,
+            final Function<FilterableStreamingHttpConnection, FLC> protocolBinding) {
         super(config, executionContext, connectionFilterFunction, reqRespFactory, strategyInfluencer,
-                connectionFactoryFilter);
+                connectionFactoryFilter, protocolBinding);
     }
 
     @Override

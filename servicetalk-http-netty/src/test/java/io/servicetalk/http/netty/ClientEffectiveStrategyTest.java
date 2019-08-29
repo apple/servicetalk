@@ -17,6 +17,7 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.client.api.ConnectionFactory;
+import io.servicetalk.client.api.LoadBalancedConnection;
 import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.LoadBalancerFactory;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
@@ -35,7 +36,6 @@ import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpClientFilter;
 import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
-import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpConnectionFilter;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequester;
@@ -559,7 +559,8 @@ public class ClientEffectiveStrategyTest {
                                     new StreamingHttpConnectionFilter(connection) { });
                         }
                         if (addLoadBalancer) {
-                            clientBuilder.loadBalancerFactory(new LoadBalancerFactoryImpl());
+                            clientBuilder.loadBalancerFactory(new LoadBalancerFactoryImpl(),
+                                    StaticScoreHttpProtocolBinder.provideStaticScoreIfNeeded(1));
                         }
                         if (addFilter) {
                             // Here since we do not override mergeForEffectiveStrategy, it will default to offload-all.
@@ -603,13 +604,12 @@ public class ClientEffectiveStrategyTest {
         }
     }
 
-    private static class LoadBalancerFactoryImpl
-            implements LoadBalancerFactory<InetSocketAddress, StreamingHttpConnection> {
+    private static class LoadBalancerFactoryImpl implements LoadBalancerFactory<InetSocketAddress> {
         @Override
-        public LoadBalancer<StreamingHttpConnection> newLoadBalancer(
-                final Publisher<? extends ServiceDiscovererEvent<InetSocketAddress>> eventPublisher,
-                final ConnectionFactory<InetSocketAddress, ? extends StreamingHttpConnection> connectionFactory) {
-            return RoundRobinLoadBalancer.<InetSocketAddress, StreamingHttpConnection>newRoundRobinFactory()
+        public <C extends LoadBalancedConnection> LoadBalancer<C>
+        newLoadBalancer(final Publisher<? extends ServiceDiscovererEvent<InetSocketAddress>> eventPublisher,
+                        final ConnectionFactory<InetSocketAddress, C> connectionFactory) {
+            return RoundRobinLoadBalancer.<InetSocketAddress>newRoundRobinFactory()
                     .newLoadBalancer(eventPublisher, connectionFactory);
         }
     }

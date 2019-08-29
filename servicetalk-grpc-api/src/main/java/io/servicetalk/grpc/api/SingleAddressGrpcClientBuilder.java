@@ -18,6 +18,7 @@ package io.servicetalk.grpc.api;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.client.api.ConnectionFactory;
 import io.servicetalk.client.api.ConnectionFactoryFilter;
+import io.servicetalk.client.api.LoadBalancedConnection;
 import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.LoadBalancerFactory;
 import io.servicetalk.client.api.ServiceDiscoverer;
@@ -25,12 +26,12 @@ import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpHeadersFactory;
-import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.transport.api.IoExecutor;
 
 import java.net.SocketOption;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
@@ -134,8 +135,15 @@ interface SingleAddressGrpcClientBuilder<U, R,
      * Set a {@link LoadBalancerFactory} to generate {@link LoadBalancer} objects.
      *
      * @param loadBalancerFactory The {@link LoadBalancerFactory} which generates {@link LoadBalancer} objects.
+     * @param protocolBinder The {@link Function} that bridges the HTTP protocol to the {@link LoadBalancedConnection}
+     * which exposes a {@link LoadBalancedConnection#score()} function which may inform the {@link LoadBalancer} created
+     * from the provided {@code loadBalancerFactory} while making connection selection decisions.
+     * @param <FLC> the type of {@link LoadBalancedConnection} after binding to the {@link
+     * FilterableStreamingHttpConnection}.
      * @return {@code this}.
      */
+    <FLC extends FilterableStreamingHttpConnection & LoadBalancedConnection>
     SingleAddressGrpcClientBuilder<U, R, SDE> loadBalancerFactory(
-            LoadBalancerFactory<R, StreamingHttpConnection> loadBalancerFactory);
+            LoadBalancerFactory<R> loadBalancerFactory,
+            Function<FilterableStreamingHttpConnection, FLC> protocolBinder);
 }

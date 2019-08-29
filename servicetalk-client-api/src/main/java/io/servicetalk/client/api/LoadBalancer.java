@@ -21,6 +21,7 @@ import io.servicetalk.concurrent.api.Single;
 
 import java.net.SocketAddress;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 /**
  * Given multiple {@link SocketAddress}es select the most desired {@link SocketAddress} to use. This is typically used
@@ -28,7 +29,7 @@ import java.util.function.Function;
  *
  * @param <C> The type of connection.
  */
-public interface LoadBalancer<C extends ListenableAsyncCloseable> extends ListenableAsyncCloseable {
+public interface LoadBalancer<C extends LoadBalancedConnection> extends ListenableAsyncCloseable {
 
     /**
      * Select the most appropriate connection for a request. Returned connection may be used concurrently for other
@@ -38,9 +39,8 @@ public interface LoadBalancer<C extends ListenableAsyncCloseable> extends Listen
      *                 This selector should return {@code null} if the connection <strong>MUST</strong> not be selected.
      *                 This selector is guaranteed to be called for any connection that is returned from this method.
      * @return a {@link Single} that completes with the most appropriate connection to use.
-     * @param <CC> Type of connection returned.
      */
-    <CC extends C> Single<CC> selectConnection(Function<C, CC> selector);
+    Single<C> selectConnection(Predicate<C> selector);
 
     /**
      * A {@link Publisher} of events provided by this {@link LoadBalancer}. This maybe used to broadcast internal state

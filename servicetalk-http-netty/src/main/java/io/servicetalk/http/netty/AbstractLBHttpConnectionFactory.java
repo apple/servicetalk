@@ -17,6 +17,7 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.client.api.ConnectionFactory;
 import io.servicetalk.client.api.ConnectionFactoryFilter;
+import io.servicetalk.client.api.LoadBalancedConnection;
 import io.servicetalk.client.api.internal.ReservableRequestConcurrencyController;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
@@ -24,19 +25,20 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
-import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.netty.internal.NettyConnectionContext;
 
+import java.util.function.Function;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.emptyAsyncCloseable;
 import static java.util.Objects.requireNonNull;
 
-abstract class AbstractLBHttpConnectionFactory<ResolvedAddress>
-        implements ConnectionFactory<ResolvedAddress, StreamingHttpConnection> {
+abstract class AbstractLBHttpConnectionFactory<ResolvedAddress,
+        FLC extends FilterableStreamingHttpConnection & LoadBalancedConnection>
+        implements ConnectionFactory<ResolvedAddress, LoadBalancedStreamingHttpConnection> {
     private final ListenableAsyncCloseable close = emptyAsyncCloseable();
     @Nullable
     final StreamingHttpConnectionFilterFactory connectionFilterFunction;
@@ -45,13 +47,15 @@ abstract class AbstractLBHttpConnectionFactory<ResolvedAddress>
     final StreamingHttpRequestResponseFactory reqRespFactory;
     final HttpExecutionStrategyInfluencer strategyInfluencer;
     final ConnectionFactory<ResolvedAddress, FilterableStreamingHttpConnection> filterableConnectionFactory;
+    private final Function<FilterableStreamingHttpConnection, ? extends FLC> protocolBinding;
 
     AbstractLBHttpConnectionFactory(
             final ReadOnlyHttpClientConfig config, final HttpExecutionContext executionContext,
             @Nullable final StreamingHttpConnectionFilterFactory connectionFilterFunction,
             final StreamingHttpRequestResponseFactory reqRespFactory,
             final HttpExecutionStrategyInfluencer strategyInfluencer,
-            final ConnectionFactoryFilter<ResolvedAddress, FilterableStreamingHttpConnection> connectionFactoryFilter) {
+            final ConnectionFactoryFilter<ResolvedAddress, FilterableStreamingHttpConnection> connectionFactoryFilter,
+            final Function<FilterableStreamingHttpConnection, ? extends FLC> protocolBinding) {
         this.connectionFilterFunction = connectionFilterFunction;
         this.config = requireNonNull(config);
         this.executionContext = requireNonNull(executionContext);
@@ -79,10 +83,11 @@ abstract class AbstractLBHttpConnectionFactory<ResolvedAddress>
                         return close.closeAsyncGracefully();
                     }
         });
+        this.protocolBinding = protocolBinding;
     }
 
     @Override
-    public final Single<StreamingHttpConnection> newConnection(final ResolvedAddress resolvedAddress) {
+    public final Single<LoadBalancedStreamingHttpConnection> newConnection(final ResolvedAddress resolvedAddress) {
         return filterableConnectionFactory.newConnection(resolvedAddress)
                 .map(conn -> {
                     FilterableStreamingHttpConnection filteredConnection = connectionFilterFunction != null ?
@@ -94,7 +99,7 @@ abstract class AbstractLBHttpConnectionFactory<ResolvedAddress>
                     } else {
                         onClosing = filteredConnection.onClose();
                     }
-                    return new LoadBalancedStreamingHttpConnection(filteredConnection,
+                    return new LoadBalancedStreamingHttpConnection(protocolBinding.apply(filteredConnection),
                             newConcurrencyController(filteredConnection, onClosing),
                             executionContext.executionStrategy(), strategyInfluencer);
                 });

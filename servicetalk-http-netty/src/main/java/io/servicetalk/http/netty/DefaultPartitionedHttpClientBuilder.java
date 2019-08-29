@@ -18,6 +18,7 @@ package io.servicetalk.http.netty;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.client.api.ClientGroup;
 import io.servicetalk.client.api.ConnectionFactoryFilter;
+import io.servicetalk.client.api.LoadBalancedConnection;
 import io.servicetalk.client.api.LoadBalancerFactory;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.internal.DefaultPartitionedClientGroup;
@@ -47,7 +48,6 @@ import io.servicetalk.http.api.PartitionedHttpClientSecurityConfigurator;
 import io.servicetalk.http.api.ReservedStreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
-import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
@@ -70,13 +70,13 @@ import static java.util.Objects.requireNonNull;
 class DefaultPartitionedHttpClientBuilder<U, R> extends PartitionedHttpClientBuilder<U, R> {
 
     private final Function<HttpRequestMetaData, PartitionAttributesBuilder> partitionAttributesBuilderFactory;
-    private final DefaultSingleAddressHttpClientBuilder<U, R> builderTemplate;
+    private final DefaultSingleAddressHttpClientBuilder<U, R, ?> builderTemplate;
     private PartitionHttpClientBuilderConfigurator<U, R> clientFilterFunction = (__, ___) -> { };
     private PartitionMapFactory partitionMapFactory = PowerSetPartitionMapFactory.INSTANCE;
     private int serviceDiscoveryMaxQueueSize = 32;
 
     DefaultPartitionedHttpClientBuilder(
-            final DefaultSingleAddressHttpClientBuilder<U, R> builderTemplate,
+            final DefaultSingleAddressHttpClientBuilder<U, R, ?> builderTemplate,
             final Function<HttpRequestMetaData, PartitionAttributesBuilder> partitionAttributesBuilderFactory) {
         this.builderTemplate = requireNonNull(builderTemplate);
         this.partitionAttributesBuilderFactory = requireNonNull(partitionAttributesBuilderFactory);
@@ -89,7 +89,7 @@ class DefaultPartitionedHttpClientBuilder<U, R> extends PartitionedHttpClientBui
         final PartitionedClientFactory<U, R, FilterableStreamingHttpClient>
                 clientFactory = (pa, sd) -> {
             // build new context, user may have changed anything on the builder from the filter
-            DefaultSingleAddressHttpClientBuilder<U, R> builder = buildContext.builder.copyBuildCtx().builder;
+            DefaultSingleAddressHttpClientBuilder<U, R, ?> builder = buildContext.builder.copyBuildCtx().builder;
             builder.serviceDiscoverer(sd);
             clientFilterFunction.configureForPartition(pa, builder);
             return builder.buildStreaming();
@@ -150,6 +150,7 @@ class DefaultPartitionedHttpClientBuilder<U, R> extends PartitionedHttpClientBui
         @Override
         public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
                                                      final StreamingHttpRequest request) {
+
             return defer(() -> selectClient(request).request(strategy, request).subscribeShareContext());
         }
 
@@ -354,9 +355,11 @@ class DefaultPartitionedHttpClientBuilder<U, R> extends PartitionedHttpClientBui
     }
 
     @Override
-    public PartitionedHttpClientBuilder<U, R> loadBalancerFactory(
-            final LoadBalancerFactory<R, StreamingHttpConnection> loadBalancerFactory) {
-        builderTemplate.loadBalancerFactory(loadBalancerFactory);
+    public <FLC extends FilterableStreamingHttpConnection & LoadBalancedConnection>
+    PartitionedHttpClientBuilder<U, R> loadBalancerFactory(
+            final LoadBalancerFactory<R> loadBalancerFactory,
+            final Function<FilterableStreamingHttpConnection, ? extends FLC> protocolBinder) {
+        builderTemplate.loadBalancerFactory(loadBalancerFactory, protocolBinder);
         return this;
     }
 

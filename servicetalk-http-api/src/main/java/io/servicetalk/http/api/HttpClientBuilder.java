@@ -18,6 +18,7 @@ package io.servicetalk.http.api;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.client.api.ConnectionFactory;
 import io.servicetalk.client.api.ConnectionFactoryFilter;
+import io.servicetalk.client.api.LoadBalancedConnection;
 import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.LoadBalancerFactory;
 import io.servicetalk.client.api.ServiceDiscoverer;
@@ -209,10 +210,17 @@ abstract class HttpClientBuilder<U, R, SDE extends ServiceDiscovererEvent<R>> ex
      * Set a {@link LoadBalancerFactory} to generate {@link LoadBalancer} objects.
      *
      * @param loadBalancerFactory The {@link LoadBalancerFactory} which generates {@link LoadBalancer} objects.
+     * @param protocolBinder The {@link Function} that bridges the HTTP protocol to the {@link LoadBalancedConnection}
+     * which exposes a {@link LoadBalancedConnection#score()} function which may inform the {@link LoadBalancer} created
+     * from the provided {@code loadBalancerFactory} while making connection selection decisions.
+     * @param <FLC> the type of {@link LoadBalancedConnection} after binding to the {@link
+     * FilterableStreamingHttpConnection}.
      * @return {@code this}.
      */
-    public abstract HttpClientBuilder<U, R, SDE> loadBalancerFactory(
-            LoadBalancerFactory<R, StreamingHttpConnection> loadBalancerFactory);
+    public abstract <FLC extends FilterableStreamingHttpConnection & LoadBalancedConnection>
+    HttpClientBuilder<U, R, SDE> loadBalancerFactory(
+            LoadBalancerFactory<R> loadBalancerFactory,
+            Function<FilterableStreamingHttpConnection, ? extends FLC> protocolBinder);
 
     /**
      * Build a new {@link StreamingHttpClient}, using a default {@link ExecutionContext}.

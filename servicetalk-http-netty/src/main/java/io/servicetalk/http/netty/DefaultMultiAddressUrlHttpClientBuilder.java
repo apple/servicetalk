@@ -18,6 +18,7 @@ package io.servicetalk.http.netty;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.client.api.ClientGroup;
 import io.servicetalk.client.api.ConnectionFactoryFilter;
+import io.servicetalk.client.api.LoadBalancedConnection;
 import io.servicetalk.client.api.LoadBalancerFactory;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
@@ -40,7 +41,6 @@ import io.servicetalk.http.api.MultiAddressHttpClientFilterFactory;
 import io.servicetalk.http.api.SingleAddressHttpClientSecurityConfigurator;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
-import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
@@ -88,7 +88,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder extends MultiAddressHttpClie
 
     private static final String HTTPS_SCHEME = HTTPS.toString();
 
-    private final DefaultSingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builderTemplate;
+    private final DefaultSingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress, ?> builderTemplate;
 
     private int maxRedirects = DEFAULT_MAX_REDIRECTS;
     @Nullable
@@ -99,7 +99,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder extends MultiAddressHttpClie
     private BiConsumer<HostAndPort, ClientSecurityConfigurator> sslConfigFunction;
 
     DefaultMultiAddressUrlHttpClientBuilder(
-            final DefaultSingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builderTemplate) {
+            final DefaultSingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress, ?> builderTemplate) {
         this.builderTemplate = requireNonNull(builderTemplate);
     }
 
@@ -222,7 +222,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder extends MultiAddressHttpClie
 
     private static final class ClientFactory implements Function<UrlKey, FilterableStreamingHttpClient> {
 
-        private final DefaultSingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builderTemplate;
+        private final DefaultSingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress, ?> builderTemplate;
         @Nullable
         private final MultiAddressHttpClientFilterFactory<HostAndPort> clientFilterFactory;
         @Nullable
@@ -231,7 +231,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder extends MultiAddressHttpClie
         private BiConsumer<HostAndPort, ClientSecurityConfigurator> sslConfigFunction;
 
         ClientFactory(
-                final DefaultSingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builderTemplate,
+                final DefaultSingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress, ?> builderTemplate,
                 @Nullable final MultiAddressHttpClientFilterFactory<HostAndPort> clientFilterFactory,
                 @Nullable final Function<HostAndPort, CharSequence> hostHeaderTransformer,
                 @Nullable final BiConsumer<HostAndPort, ClientSecurityConfigurator> sslConfigFunction) {
@@ -515,9 +515,11 @@ final class DefaultMultiAddressUrlHttpClientBuilder extends MultiAddressHttpClie
     }
 
     @Override
-    public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> loadBalancerFactory(
-            final LoadBalancerFactory<InetSocketAddress, StreamingHttpConnection> loadBalancerFactory) {
-        builderTemplate.loadBalancerFactory(loadBalancerFactory);
+    public <FLC extends FilterableStreamingHttpConnection & LoadBalancedConnection>
+    MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> loadBalancerFactory(
+            final LoadBalancerFactory<InetSocketAddress> loadBalancerFactory,
+            final Function<FilterableStreamingHttpConnection, ? extends FLC> protocolBinder) {
+        builderTemplate.loadBalancerFactory(loadBalancerFactory, protocolBinder);
         return this;
     }
 

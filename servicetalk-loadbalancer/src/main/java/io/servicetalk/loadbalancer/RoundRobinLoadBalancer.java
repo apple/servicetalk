@@ -17,6 +17,7 @@ package io.servicetalk.loadbalancer;
 
 import io.servicetalk.client.api.ConnectionFactory;
 import io.servicetalk.client.api.ConnectionRejectedException;
+import io.servicetalk.client.api.LoadBalancedConnection;
 import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.LoadBalancerFactory;
 import io.servicetalk.client.api.NoAvailableHostException;
@@ -44,7 +45,7 @@ import java.util.Map.Entry;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
-import java.util.function.Function;
+import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.client.api.internal.LoadBalancerReadyEvent.LOAD_BALANCER_NOT_READY_EVENT;
@@ -72,7 +73,7 @@ import static java.util.stream.Collectors.toList;
  * <li>Round robining is done at address level.</li>
  * <li>Connections are created lazily, without any concurrency control on their creation.
  * This can lead to over-provisioning connections when dealing with a requests surge.</li>
- * <li>Existing connections are reused unless a selector passed to {@link #selectConnection(Function)} suggests
+ * <li>Existing connections are reused unless a selector passed to {@link #selectConnection(Predicate)} suggests
  * otherwise.
  * This can lead to situations where connections will be used to their maximum capacity (for example in the context of
  * pipelining) before new connections are created.</li>
@@ -82,7 +83,7 @@ import static java.util.stream.Collectors.toList;
  * @param <ResolvedAddress> The resolved address type.
  * @param <C> The type of connection.
  */
-public final class RoundRobinLoadBalancer<ResolvedAddress, C extends ListenableAsyncCloseable>
+public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalancedConnection>
         implements LoadBalancer<C> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RoundRobinLoadBalancer.class);
@@ -227,18 +228,23 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends ListenableA
     /**
      * Create a {@link LoadBalancerFactory} that creates instances of {@link RoundRobinLoadBalancer}.
      * @param <ResolvedAddress> The resolved address type.
-     * @param <C> The type of connection.
      * @return a {@link LoadBalancerFactory} that creates instances of {@link RoundRobinLoadBalancer}.
      */
-    public static <ResolvedAddress, C extends ListenableAsyncCloseable>
-                                    LoadBalancerFactory<ResolvedAddress, C> newRoundRobinFactory() {
-        return (eventPublisher, connectionFactory) -> new RoundRobinLoadBalancer<>(eventPublisher,
-                connectionFactory,
-                comparingInt(Object::hashCode));
+    public static <ResolvedAddress> LoadBalancerFactory<ResolvedAddress> newRoundRobinFactory() {
+        return new LoadBalancerFactory<ResolvedAddress>() {
+            @Override
+            public <C extends LoadBalancedConnection> LoadBalancer<C> newLoadBalancer(
+                    final Publisher<? extends ServiceDiscovererEvent<ResolvedAddress>> eventPublisher,
+                    final ConnectionFactory<ResolvedAddress, C> connectionFactory) {
+                return new RoundRobinLoadBalancer<>(eventPublisher,
+                        connectionFactory,
+                        comparingInt(Object::hashCode));
+            }
+        };
     }
 
     @Override
-    public <CC extends C> Single<CC> selectConnection(Function<C, CC> selector) {
+    public Single<C> selectConnection(Predicate<C> selector) {
         return defer(() -> selectConnection0(selector).subscribeShareContext());
     }
 
@@ -247,7 +253,7 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends ListenableA
         return eventStream;
     }
 
-    private <CC extends C> Single<CC> selectConnection0(Function<? super C, CC> selector) {
+    private Single<C> selectConnection0(Predicate<C> selector) {
         if (closed) {
             return failed(LB_CLOSED_SELECT_CNX_EXCEPTION);
         }
@@ -272,9 +278,8 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends ListenableA
         final int attempts = size < MIN_SEARCH_SPACE ? size : (int) (size * SEARCH_FACTOR);
         for (int i = 0; i < attempts; i++) {
             final C connection = connections.get(rnd.nextInt(size));
-            final CC selection = selector.apply(connection);
-            if (selection != null) {
-                return succeeded(selection);
+            if (selector.test(connection)) {
+                return succeeded(connection);
             }
         }
 
@@ -283,8 +288,7 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends ListenableA
                 .flatMap(newCnx -> {
                     // Invoke the selector before adding the connection to the pool, otherwise, connection can be used
                     // concurrently and hence a new connection can be rejected by the selector.
-                    CC selection = selector.apply(newCnx);
-                    if (selection == null) {
+                    if (!selector.test(newCnx)) {
                         newCnx.closeAsync().subscribe();
                         // Failure in selection could be temporary, hence add it to the queue and be consistent with the
                         // fact that select failure does not close a connection.
@@ -315,7 +319,7 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends ListenableA
 
                             return failed(LB_CLOSED_SELECT_CNX_EXCEPTION);
                         }
-                        return succeeded(selection);
+                        return succeeded(newCnx);
                     }
                     return failed(new ConnectionRejectedException("Failed to add newly created connection for host: " +
                             host.address + ", host inactive? " + (host.connections == Host.INACTIVE)));
