@@ -138,7 +138,7 @@ public final class PooledRecvByteBufAllocatorUtils {
 
     /**
      * {@link ChannelInboundHandler} implementation that will ensure no pooled {@link ByteBuf}s are passed to the user
-     * and so no leaks are produced if the user not call {@link ReferenceCountUtil#release(Object)}.
+     * and so no leaks are produced if the user does not call {@link ReferenceCountUtil#release(Object)}.
      * <p>
      * This handler has to be added to the {@link ChannelPipeline} when {@link PooledRecvByteBufAllocator} is used for
      * reading data from the socket. The allocated {@link ByteBuf}s must be copied and released before handed over to
