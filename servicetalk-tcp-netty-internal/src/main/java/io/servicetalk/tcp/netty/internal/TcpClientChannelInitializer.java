@@ -19,13 +19,15 @@ import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
 import io.servicetalk.transport.netty.internal.DeferSslHandler;
 import io.servicetalk.transport.netty.internal.IdleTimeoutInitializer;
-import io.servicetalk.transport.netty.internal.PooledRecvByteBufAllocatorUtils;
 import io.servicetalk.transport.netty.internal.SslClientChannelInitializer;
 import io.servicetalk.transport.netty.internal.WireLoggingInitializer;
 
 import io.netty.channel.Channel;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslHandler;
+
+import static io.servicetalk.transport.netty.internal.PooledRecvByteBufAllocatorInitializers.COPY_HANDLER_INITIALIZER;
+import static io.servicetalk.transport.netty.internal.PooledRecvByteBufAllocatorInitializers.POOLED_RECV_ALLOCATOR_INITIALIZER;
 
 /**
  * {@link ChannelInitializer} for TCP client.
@@ -50,17 +52,21 @@ public class TcpClientChannelInitializer implements ChannelInitializer {
      * @param deferSslHandler {@code true} to wrap the {@link SslHandler} in a {@link DeferSslHandler}.
      */
     public TcpClientChannelInitializer(final ReadOnlyTcpClientConfig config, final boolean deferSslHandler) {
-        ChannelInitializer delegate = ChannelInitializer.defaultInitializer();
+        ChannelInitializer delegate = ChannelInitializer.defaultInitializer()
+                .andThen(POOLED_RECV_ALLOCATOR_INITIALIZER);
+
         if (config.idleTimeoutMs() > 0) {
             delegate = delegate.andThen(new IdleTimeoutInitializer(config.idleTimeoutMs()));
         }
 
         final SslContext sslContext = config.sslContext();
-        final ChannelInitializer sslInitializer = sslContext == null ? null :
-                new SslClientChannelInitializer(sslContext, config.sslHostnameVerificationAlgorithm(),
-                        config.sslHostnameVerificationHost(), config.sslHostnameVerificationPort(), deferSslHandler);
+        if (sslContext != null) {
+            delegate = delegate.andThen(new SslClientChannelInitializer(sslContext,
+                    config.sslHostnameVerificationAlgorithm(), config.sslHostnameVerificationHost(),
+                    config.sslHostnameVerificationPort(), deferSslHandler));
+        }
 
-        delegate = delegate.andThen(PooledRecvByteBufAllocatorUtils.wrap(sslInitializer));
+        delegate = delegate.andThen(COPY_HANDLER_INITIALIZER);
 
         final WireLoggingInitializer wireLoggingInitializer = config.wireLoggingInitializer();
         if (wireLoggingInitializer != null) {

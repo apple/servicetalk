@@ -32,42 +32,33 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.ReferenceCountUtil;
 import io.netty.util.UncheckedBooleanSupplier;
 
-import javax.annotation.Nullable;
-
 import static java.util.Objects.requireNonNull;
 
 /**
  * Utilities to configure pooled {@link RecvByteBufAllocator} for reading data from the socket.
  */
-public final class PooledRecvByteBufAllocatorUtils {
+public final class PooledRecvByteBufAllocatorInitializers {
 
-    private static final ChannelInitializer POOLED_RECV_ALLOCATOR_INITIALIZER = (channel, context) -> {
+    /**
+     * Initializer to configure {@link RecvByteBufAllocator} backed by a pooled {@link ByteBufAllocator}.
+     */
+    public static final ChannelInitializer POOLED_RECV_ALLOCATOR_INITIALIZER = (channel, context) -> {
         final RecvByteBufAllocator recvByteBufAllocator = channel.config().getRecvByteBufAllocator();
         channel.config().setRecvByteBufAllocator(new PooledRecvByteBufAllocator(recvByteBufAllocator));
         return context;
     };
 
-    private static final ChannelInitializer COPY_HANDLER_INITIALIZER = (channel, context) -> {
+    /**
+     * Initializer to configure {@link ChannelInboundHandler} that will ensure no pooled {@link ByteBuf}s are passed to
+     * the user and so no leaks are produced if the user does not call {@link ReferenceCountUtil#release(Object)}.
+     */
+    public static final ChannelInitializer COPY_HANDLER_INITIALIZER = (channel, context) -> {
         channel.pipeline().addLast(CopyByteBufHandler.INSTANCE);
         return context;
     };
 
-    private static final ChannelInitializer POOLED_RECV_ALLOCATOR_THEN_COPY_INITIALIZER =
-            POOLED_RECV_ALLOCATOR_INITIALIZER.andThen(COPY_HANDLER_INITIALIZER);
-
-    private PooledRecvByteBufAllocatorUtils() {
+    private PooledRecvByteBufAllocatorInitializers() {
         // No instances
-    }
-
-    /**
-     * Wraps provided {@link ChannelInitializer} with properly configured pooled {@link RecvByteBufAllocator}.
-     *
-     * @param channelInitializer the {@link ChannelInitializer} to wrap
-     * @return {@link ChannelInitializer} that properly configures pooled {@link RecvByteBufAllocator}
-     */
-    public static ChannelInitializer wrap(@Nullable final ChannelInitializer channelInitializer) {
-        return channelInitializer == null ? POOLED_RECV_ALLOCATOR_THEN_COPY_INITIALIZER :
-                POOLED_RECV_ALLOCATOR_INITIALIZER.andThen(channelInitializer).andThen(COPY_HANDLER_INITIALIZER);
     }
 
     /**
@@ -137,9 +128,6 @@ public final class PooledRecvByteBufAllocatorUtils {
     }
 
     /**
-     * {@link ChannelInboundHandler} implementation that will ensure no pooled {@link ByteBuf}s are passed to the user
-     * and so no leaks are produced if the user does not call {@link ReferenceCountUtil#release(Object)}.
-     * <p>
      * This handler has to be added to the {@link ChannelPipeline} when {@link PooledRecvByteBufAllocator} is used for
      * reading data from the socket. The allocated {@link ByteBuf}s must be copied and released before handed over to
      * the user.

@@ -18,14 +18,14 @@ package io.servicetalk.tcp.netty.internal;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
 import io.servicetalk.transport.netty.internal.IdleTimeoutInitializer;
-import io.servicetalk.transport.netty.internal.PooledRecvByteBufAllocatorUtils;
 import io.servicetalk.transport.netty.internal.SslServerChannelInitializer;
 import io.servicetalk.transport.netty.internal.WireLoggingInitializer;
 
 import io.netty.channel.Channel;
 import io.netty.handler.ssl.SslContext;
 
-import javax.annotation.Nullable;
+import static io.servicetalk.transport.netty.internal.PooledRecvByteBufAllocatorInitializers.COPY_HANDLER_INITIALIZER;
+import static io.servicetalk.transport.netty.internal.PooledRecvByteBufAllocatorInitializers.POOLED_RECV_ALLOCATOR_INITIALIZER;
 
 /**
  * {@link ChannelInitializer} for TCP.
@@ -40,28 +40,29 @@ public class TcpServerChannelInitializer implements ChannelInitializer {
      * @param config to use for initialization.
      */
     public TcpServerChannelInitializer(final ReadOnlyTcpServerConfig config) {
-        ChannelInitializer delegate = ChannelInitializer.defaultInitializer();
+        ChannelInitializer delegate = ChannelInitializer.defaultInitializer()
+                .andThen(POOLED_RECV_ALLOCATOR_INITIALIZER);
+
         if (config.idleTimeoutMs() > 0) {
             delegate = delegate.andThen(new IdleTimeoutInitializer(config.idleTimeoutMs()));
         }
 
-        delegate = delegate.andThen(PooledRecvByteBufAllocatorUtils.wrap(sslInitializer(config)));
+        if (config.isSniEnabled()) {
+            delegate = delegate.andThen(new SslServerChannelInitializer(config.domainNameMapping()));
+        } else {
+            final SslContext sslContext = config.sslContext();
+            if (sslContext != null) {
+                delegate = delegate.andThen(new SslServerChannelInitializer(sslContext));
+            }
+        }
+
+        delegate = delegate.andThen(COPY_HANDLER_INITIALIZER);
 
         final WireLoggingInitializer wireLoggingInitializer = config.wireLoggingInitializer();
         if (wireLoggingInitializer != null) {
             delegate = delegate.andThen(wireLoggingInitializer);
         }
         this.delegate = delegate;
-    }
-
-    @Nullable
-    private static ChannelInitializer sslInitializer(final ReadOnlyTcpServerConfig config) {
-        if (config.isSniEnabled()) {
-            return new SslServerChannelInitializer(config.domainNameMapping());
-        } else {
-            final SslContext sslContext = config.sslContext();
-            return sslContext != null ? new SslServerChannelInitializer(sslContext) : null;
-        }
     }
 
     @Override
