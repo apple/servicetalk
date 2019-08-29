@@ -37,7 +37,7 @@ import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.MultiAddressHttpClientBuilder;
 import io.servicetalk.http.api.MultiAddressHttpClientFilterFactory;
-import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
+import io.servicetalk.http.api.SingleAddressHttpClientSecurityConfigurator;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
 import io.servicetalk.http.api.StreamingHttpConnection;
@@ -48,10 +48,9 @@ import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.netty.DefaultSingleAddressHttpClientBuilder.HttpClientBuildContext;
 import io.servicetalk.http.utils.RedirectingHttpRequesterFilter;
-import io.servicetalk.transport.api.ClientSslConfigBuilder;
+import io.servicetalk.transport.api.ClientSecurityConfigurator;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.IoExecutor;
-import io.servicetalk.transport.api.SslConfig;
 
 import java.net.InetSocketAddress;
 import java.net.SocketOption;
@@ -59,14 +58,16 @@ import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.BiConsumer;
+import java.util.function.BiPredicate;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
+import static io.netty.handler.codec.http.HttpScheme.HTTP;
+import static io.netty.handler.codec.http.HttpScheme.HTTPS;
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.AsyncCloseables.toListenableAsyncCloseable;
 import static io.servicetalk.concurrent.api.Single.defer;
-import static io.servicetalk.http.api.HttpHeaderNames.HOST;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -85,9 +86,9 @@ final class DefaultMultiAddressUrlHttpClientBuilder extends MultiAddressHttpClie
     // since such redirects usually indicate an infinite loop.
     private static final int DEFAULT_MAX_REDIRECTS = 5;
 
+    private static final String HTTPS_SCHEME = HTTPS.toString();
+
     private final DefaultSingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builderTemplate;
-    private Function<HttpRequestMetaData, String> effectiveSchemeFunction =
-            metaData -> metaData.effectivePort() == 443 ? "https" : "http";
 
     private int maxRedirects = DEFAULT_MAX_REDIRECTS;
     @Nullable
@@ -95,8 +96,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder extends MultiAddressHttpClie
     @Nullable
     private Function<HostAndPort, CharSequence> unresolvedAddressToHostFunction;
     @Nullable
-    private BiConsumer<HostAndPort, ClientSslConfigBuilder<?
-            extends SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress>>> sslConfigFunction;
+    private BiConsumer<HostAndPort, ClientSecurityConfigurator> sslConfigFunction;
 
     DefaultMultiAddressUrlHttpClientBuilder(
             final DefaultSingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builderTemplate) {
@@ -112,7 +112,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder extends MultiAddressHttpClie
             final ClientFactory clientFactory = new ClientFactory(buildContext.builder,
                     clientFilterFactory, unresolvedAddressToHostFunction, sslConfigFunction);
 
-            CachingKeyFactory keyFactory = closeables.prepend(new CachingKeyFactory(effectiveSchemeFunction));
+            final CachingKeyFactory keyFactory = closeables.prepend(new CachingKeyFactory());
 
             FilterableStreamingHttpClient urlClient = closeables.prepend(
                     new StreamingUrlHttpClient(buildContext.executionContext, clientFactory, keyFactory,
@@ -138,32 +138,40 @@ final class DefaultMultiAddressUrlHttpClientBuilder extends MultiAddressHttpClie
             implements Function<HttpRequestMetaData, UrlKey>, AsyncCloseable {
 
         private final ConcurrentMap<String, UrlKey> urlKeyCache = new ConcurrentHashMap<>();
-        private final Function<HttpRequestMetaData, String> effectiveSchemeFunction;
-
-        CachingKeyFactory(final Function<HttpRequestMetaData, String> effectiveSchemeFunction) {
-            this.effectiveSchemeFunction = effectiveSchemeFunction;
-        }
 
         @Override
         public UrlKey apply(final HttpRequestMetaData metaData) {
-            final String host = metaData.effectiveHost();
+            final String host = metaData.host();
             if (host == null) {
                 throw new IllegalArgumentException(
-                        "StreamingHttpRequest does not contain information about target server address." +
-                                " Request-target: " + metaData.requestTarget() +
-                                ", HOST header: " + metaData.headers().get(HOST));
+                        "Request-target does not contain target host address: " + metaData.requestTarget() +
+                                ", expected absolute-form URL");
             }
 
-            final String scheme = metaData.scheme() != null ? metaData.scheme() :
-                    effectiveSchemeFunction.apply(metaData);
+            final String scheme = metaData.scheme();
+            if (scheme == null) {
+                throw new IllegalArgumentException("Request-target does not contains scheme: " +
+                        metaData.requestTarget() + ", expected absolute-form URL");
+            }
 
-            final int effectivePort = metaData.effectivePort();
-            final int port = effectivePort >= 0 ? effectivePort :
-                    ("https".equalsIgnoreCase(scheme) ? 443 : 80);
-            final String key = scheme + host + ':' + port;
+            final int parsedPort = metaData.port();
+            final int port = parsedPort >= 0 ? parsedPort : (HTTPS_SCHEME.equals(scheme) ? HTTPS : HTTP).port();
+
+            metaData.requestTarget(absoluteToRelativeFormRequestTarget(metaData.requestTarget(), scheme, host));
+
+            final String key = scheme + ':' + host + ':' + port;
             final UrlKey urlKey = urlKeyCache.get(key);
             return urlKey != null ? urlKey : urlKeyCache.computeIfAbsent(key, ignore ->
                     new UrlKey(scheme, HostAndPort.of(host, port)));
+        }
+
+        // This code is similar to io.servicetalk.http.utils.RedirectSingle#absoluteToRelativeFormRequestTarget
+        // but cannot be shared because we don't have an internal module for http
+        private static String absoluteToRelativeFormRequestTarget(final String requestTarget,
+                                                                  final String scheme, final String host) {
+            final int fromIndex = scheme.length() + 3 + host.length();  // +3 because of "://" delimiter after scheme
+            final int relativeReferenceIdx = requestTarget.indexOf('/', fromIndex);
+            return relativeReferenceIdx < 0 ? "/" : requestTarget.substring(relativeReferenceIdx);
         }
 
         @Override
@@ -212,10 +220,6 @@ final class DefaultMultiAddressUrlHttpClientBuilder extends MultiAddressHttpClie
         }
     }
 
-    /**
-     * Creates a new {@link SingleAddressHttpClientBuilder} with appropriate {@link SslConfig} for specified
-     * {@link HostAndPort}.
-     */
     private static final class ClientFactory implements Function<UrlKey, FilterableStreamingHttpClient> {
 
         private final DefaultSingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builderTemplate;
@@ -224,16 +228,13 @@ final class DefaultMultiAddressUrlHttpClientBuilder extends MultiAddressHttpClie
         @Nullable
         private final Function<HostAndPort, CharSequence> hostHeaderTransformer;
         @Nullable
-        private BiConsumer<HostAndPort, ClientSslConfigBuilder<? extends
-                SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress>>> sslConfigFunction;
+        private BiConsumer<HostAndPort, ClientSecurityConfigurator> sslConfigFunction;
 
         ClientFactory(
                 final DefaultSingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builderTemplate,
                 @Nullable final MultiAddressHttpClientFilterFactory<HostAndPort> clientFilterFactory,
                 @Nullable final Function<HostAndPort, CharSequence> hostHeaderTransformer,
-                @Nullable final BiConsumer<HostAndPort, ClientSslConfigBuilder<? extends
-                        SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress>>>
-                        sslConfigFunction) {
+                @Nullable final BiConsumer<HostAndPort, ClientSecurityConfigurator> sslConfigFunction) {
             this.builderTemplate = builderTemplate;
             this.clientFilterFactory = clientFilterFactory;
             this.hostHeaderTransformer = hostHeaderTransformer;
@@ -250,13 +251,13 @@ final class DefaultMultiAddressUrlHttpClientBuilder extends MultiAddressHttpClie
                 buildContext.builder.unresolvedAddressToHost(hostHeaderTransformer);
             }
 
-            if ("https".equalsIgnoreCase(urlKey.scheme)) {
-                final ClientSslConfigBuilder<DefaultSingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress>>
-                        sslConfigBuilder = buildContext.builder.enableSsl();
+            if (HTTPS_SCHEME.equalsIgnoreCase(urlKey.scheme)) {
+                final SingleAddressHttpClientSecurityConfigurator<HostAndPort, InetSocketAddress> securityConfigurator =
+                        buildContext.builder.secure();
                 if (sslConfigFunction != null) {
-                    sslConfigFunction.accept(urlKey.hostAndPort, sslConfigBuilder);
+                    sslConfigFunction.accept(urlKey.hostAndPort, securityConfigurator);
                 }
-                sslConfigBuilder.finish();
+                securityConfigurator.commit();
             }
 
             if (clientFilterFactory != null) {
@@ -383,6 +384,13 @@ final class DefaultMultiAddressUrlHttpClientBuilder extends MultiAddressHttpClie
     }
 
     @Override
+    protected MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> h2HeadersSensitivityDetector(
+            final BiPredicate<CharSequence, CharSequence> h2HeadersSensitivityDetector) {
+        builderTemplate.h2HeadersSensitivityDetector(h2HeadersSensitivityDetector);
+        return this;
+    }
+
+    @Override
     protected MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> h2PriorKnowledge(
             final boolean h2PriorKnowledge) {
         builderTemplate.h2PriorKnowledge(h2PriorKnowledge);
@@ -430,16 +438,8 @@ final class DefaultMultiAddressUrlHttpClientBuilder extends MultiAddressHttpClie
     }
 
     @Override
-    public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> effectiveScheme(
-            final Function<HttpRequestMetaData, String> effectiveSchemeFunction) {
-        this.effectiveSchemeFunction = effectiveSchemeFunction;
-        return this;
-    }
-
-    @Override
-    public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> configureSsl(
-            BiConsumer<HostAndPort, ClientSslConfigBuilder<? extends
-                    SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress>>> sslConfigFunction) {
+    public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> secure(
+            final BiConsumer<HostAndPort, ClientSecurityConfigurator> sslConfigFunction) {
         this.sslConfigFunction = requireNonNull(sslConfigFunction);
         return this;
     }

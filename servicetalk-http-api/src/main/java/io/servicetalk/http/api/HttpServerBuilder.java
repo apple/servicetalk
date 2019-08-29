@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,16 +22,11 @@ import io.servicetalk.transport.api.ConnectionAcceptor;
 import io.servicetalk.transport.api.ConnectionAcceptorFactory;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.ServerContext;
-import io.servicetalk.transport.api.ServerSslConfigBuilder;
-import io.servicetalk.transport.api.SslConfig;
 
-import java.io.InputStream;
 import java.net.SocketOption;
-import java.util.Map;
+import java.util.function.BiPredicate;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 import javax.annotation.Nullable;
-import javax.net.ssl.KeyManagerFactory;
 
 import static io.servicetalk.http.api.BlockingUtils.blockingInvocation;
 import static io.servicetalk.http.api.HttpApiConversions.toStreamingHttpService;
@@ -60,6 +55,44 @@ public abstract class HttpServerBuilder {
      * @return this
      */
     public abstract HttpServerBuilder headersFactory(HttpHeadersFactory headersFactory);
+
+    /**
+     * Set the {@link HttpHeadersFactory} to use when HTTP/2 is used.
+     *
+     * @param headersFactory the {@link HttpHeadersFactory} to use when HTTP/2 is used.
+     * @return {@code this.}
+     */
+    public abstract HttpServerBuilder h2HeadersFactory(HttpHeadersFactory headersFactory);
+
+    /**
+     * Set the sensitivity detector to determine if a header {@code name}/{@code value} pair should be treated as
+     * <a href="https://tools.ietf.org/html/rfc7541#section-7.1.3">sensitive</a>.
+     *
+     * @param sensitivityDetector the {@link BiPredicate}&lt;{@link CharSequence}, {@link CharSequence}&gt; that returns
+     * {@code true} if a header &lt;{@code name}, {@code value}&gt; pair should be treated as
+     * <a href="https://tools.ietf.org/html/rfc7541#section-7.1.3">sensitive</a>, {@code false} otherwise.
+     * @return {@code this.}
+     */
+    public abstract HttpServerBuilder h2HeadersSensitivityDetector(
+            BiPredicate<CharSequence, CharSequence> sensitivityDetector);
+
+    /**
+     * Enable HTTP/2 via
+     * <a href="https://tools.ietf.org/html/rfc7540#section-3.4">Prior Knowledge</a>.
+     *
+     * @param h2PriorKnowledge {@code true} to enable HTTP/2 via
+     * <a href="https://tools.ietf.org/html/rfc7540#section-3.4">Prior Knowledge</a>.
+     * @return {@code this}.
+     */
+    public abstract HttpServerBuilder h2PriorKnowledge(boolean h2PriorKnowledge);
+
+    /**
+     * Set the name of the frame logger when HTTP/2 is used.
+     *
+     * @param h2FrameLogger the name of the frame logger, or {@code null} to disable.
+     * @return {@code this}.
+     */
+    public abstract HttpServerBuilder h2FrameLogger(@Nullable String h2FrameLogger);
 
     /**
      * Set how long to wait (in milliseconds) for a client to close the connection (if no keep-alive is set) before the
@@ -117,66 +150,33 @@ public abstract class HttpServerBuilder {
     public abstract HttpServerBuilder backlog(int backlog);
 
     /**
-     * Allows to setup SNI.
+     * Initiate security configuration for this server. Calling any {@code commit} method on the returned
+     * {@link HttpServerSecurityConfigurator} will commit the configuration.
      * <p>
-     * You can either use {@link #enableSsl(Supplier, Supplier)}/{@link #enableSsl(Supplier, Supplier, String)}
-     * or this method.
+     * Additionally use {@link #secure(String...)} to define configurations for specific
+     * <a href="https://tools.ietf.org/html/rfc6066#section-3">SNI</a> hostnames. If such configuration is additionally
+     * defined then configuration using this method is used as default if the hostname does not match any of the
+     * specified hostnames.
      *
-     * @param mappings mapping hostnames to the ssl configuration that should be used.
-     * @param defaultConfig the configuration to use if no hostnames matched from {@code mappings}.
-     * @return this.
-     * @throws IllegalStateException if the {@link SslConfig#keyCertChainSupplier()}, {@link SslConfig#keySupplier()},
-     * or {@link SslConfig#trustCertChainSupplier()} throws when
-     * {@link InputStream#close()} is called.
+     * @return {@link HttpServerSecurityConfigurator} to configure security for this server. It is
+     * mandatory to call any one of the {@code commit} methods after all configuration is done.
      */
-    public abstract HttpServerBuilder sniConfig(@Nullable Map<String, SslConfig> mappings, SslConfig defaultConfig);
+    public abstract HttpServerSecurityConfigurator secure();
 
     /**
-     * Enable SSL/TLS, and return a builder for configuring it. Call {@link ServerSslConfigBuilder#finish()} to
-     * return to configuring the HTTP server.
+     * Initiate security configuration for this server for the passed {@code sniHostnames}.
+     * Calling any {@code commit} method on the returned {@link HttpServerSecurityConfigurator} will commit the
+     * configuration.
+     * <p>
+     * When using this method, it is mandatory to also define the default configuration using {@link #secure()} which
+     * is used when the hostname does not match any of the specified {@code sniHostnames}.
      *
-     * @param keyManagerFactory an {@link KeyManagerFactory}.
-     * @return an {@link ServerSslConfigBuilder} for configuring SSL/TLS.
+     * @param sniHostnames <a href="https://tools.ietf.org/html/rfc6066#section-3">SNI</a> hostnames for which this
+     * config is being defined.
+     * @return {@link HttpServerSecurityConfigurator} to configure security for this server. It is
+     * mandatory to call any one of the {@code commit} methods after all configuration is done.
      */
-    public abstract ServerSslConfigBuilder<HttpServerBuilder> enableSsl(KeyManagerFactory keyManagerFactory);
-
-    /**
-     * Enable SSL/TLS, and return a builder for configuring it. Call {@link ServerSslConfigBuilder#finish()} to
-     * return to configuring the HTTP server.
-     *
-     * @param keyCertChainSupplier an {@link Supplier} that will provide an input stream for a X.509 certificate chain
-     * in PEM format.
-     * <p>
-     * The responsibility to call {@link InputStream#close()} is transferred to callers of the {@link Supplier}.
-     * If this is not the desired behavior then wrap the {@link InputStream} and override {@link InputStream#close()}.
-     * @param keySupplier an {@link Supplier} that will provide an input stream for a KCS#8 private key in PEM format.
-     * <p>
-     * The responsibility to call {@link InputStream#close()} is transferred to callers of the {@link Supplier}.
-     * If this is not the desired behavior then wrap the {@link InputStream} and override {@link InputStream#close()}.
-     * @return an {@link ServerSslConfigBuilder} for configuring SSL/TLS.
-     */
-    public abstract ServerSslConfigBuilder<HttpServerBuilder> enableSsl(Supplier<InputStream> keyCertChainSupplier,
-                                                                        Supplier<InputStream> keySupplier);
-
-    /**
-     * Enable SSL/TLS, and return a builder for configuring it. Call {@link ServerSslConfigBuilder#finish()} to
-     * return to configuring the HTTP server.
-     *
-     * @param keyCertChainSupplier an {@link Supplier} that will provide an input stream for a X.509 certificate chain
-     * in PEM format.
-     * <p>
-     * The responsibility to call {@link InputStream#close()} is transferred to callers of the {@link Supplier}.
-     * If this is not the desired behavior then wrap the {@link InputStream} and override {@link InputStream#close()}.
-     * @param keySupplier an {@link Supplier} that will provide an input stream for a KCS#8 private key in PEM format.
-     * <p>
-     * The responsibility to call {@link InputStream#close()} is transferred to callers of the {@link Supplier}.
-     * If this is not the desired behavior then wrap the {@link InputStream} and override {@link InputStream#close()}.
-     * @param keyPassword the password of the {@code keyFile} if it's password-protected.
-     * @return an {@link ServerSslConfigBuilder} for configuring SSL/TLS.
-     */
-    public abstract ServerSslConfigBuilder<HttpServerBuilder> enableSsl(Supplier<InputStream> keyCertChainSupplier,
-                                                                        Supplier<InputStream> keySupplier,
-                                                                        String keyPassword);
+    public abstract HttpServerSecurityConfigurator secure(String... sniHostnames);
 
     /**
      * Add a {@link SocketOption} that is applied.
@@ -258,6 +258,7 @@ public abstract class HttpServerBuilder {
      * <pre>
      *     filter1 =&gt; filter2 =&gt; filter3
      * </pre>
+     *
      * @param factory {@link ConnectionAcceptorFactory} to append. Lifetime of this
      * {@link ConnectionAcceptorFactory} is managed by this builder and the server started thereof.
      * @return {@code this}
@@ -286,6 +287,7 @@ public abstract class HttpServerBuilder {
      * <pre>
      *     filter1 =&gt; filter2 =&gt; filter3 =&gt; service
      * </pre>
+     *
      * @param factory {@link StreamingHttpServiceFilterFactory} to append.
      * @return {@code this}
      */
@@ -316,6 +318,7 @@ public abstract class HttpServerBuilder {
      * <pre>
      *     filter1 =&gt; filter2 =&gt; filter3 =&gt; service
      * </pre>
+     *
      * @param predicate the {@link Predicate} to test if the filter must be applied.
      * @param factory {@link StreamingHttpServiceFilterFactory} to append.
      * @return {@code this}

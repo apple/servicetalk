@@ -32,6 +32,7 @@ import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.http.api.HttpServerBuilder;
+import io.servicetalk.http.api.StatelessTrailersTransformer;
 import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
@@ -291,9 +292,9 @@ public class ContentHeadersTest extends AbstractNettyHttpServerTest {
     private static UnaryOperator<HttpMetaData> transform() {
         return describe(input -> {
             if (input instanceof StreamingHttpRequest) {
-                return ((StreamingHttpRequest) input).transform(() -> null, (b, __) -> b, (__, t) -> t);
+                return ((StreamingHttpRequest) input).transform(new StatelessTrailersTransformer<>());
             } else if (input instanceof StreamingHttpResponse) {
-                return ((StreamingHttpResponse) input).transform(() -> null, (b, __) -> b, (__, t) -> t);
+                return ((StreamingHttpResponse) input).transform(new StatelessTrailersTransformer<>());
             } else {
                 fail("Unexpected metadata type: " + input.getClass());
                 throw new IllegalStateException();
@@ -304,9 +305,9 @@ public class ContentHeadersTest extends AbstractNettyHttpServerTest {
     private static UnaryOperator<HttpMetaData> transformRaw() {
         return describe(input -> {
             if (input instanceof StreamingHttpRequest) {
-                return ((StreamingHttpRequest) input).transformRaw(() -> null, (b, __) -> b, (__, t) -> t);
+                return ((StreamingHttpRequest) input).transformRaw(new StatelessTrailersTransformer<>());
             } else if (input instanceof StreamingHttpResponse) {
-                return ((StreamingHttpResponse) input).transformRaw(() -> null, (b, __) -> b, (__, t) -> t);
+                return ((StreamingHttpResponse) input).transformRaw(new StatelessTrailersTransformer<>());
             } else {
                 fail("Unexpected metadata type: " + input.getClass());
                 throw new IllegalStateException();

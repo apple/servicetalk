@@ -16,7 +16,6 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.concurrent.Cancellable;
-import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.CompletableSource.Processor;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
@@ -61,6 +60,7 @@ import io.servicetalk.transport.netty.internal.NettyConnectionContext;
 import io.servicetalk.transport.netty.internal.NoopWriteEventsListener;
 
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelPipeline;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -70,7 +70,6 @@ import java.util.Queue;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
-import java.util.function.Predicate;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.net.ssl.SSLSession;
@@ -86,6 +85,7 @@ import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderValues.ZERO;
 import static io.servicetalk.http.api.StreamingHttpRequests.newTransportRequest;
 import static io.servicetalk.http.netty.AbstractStreamingHttpConnection.determineFlushStrategyForApi;
+import static io.servicetalk.http.netty.HeaderUtils.LAST_CHUNK_PREDICATE;
 import static io.servicetalk.http.netty.HeaderUtils.addResponseTransferEncodingIfNecessary;
 import static io.servicetalk.http.netty.HeaderUtils.canAddResponseContentLength;
 import static io.servicetalk.http.netty.HeaderUtils.setResponseContentLength;
@@ -96,8 +96,6 @@ import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater
 final class NettyHttpServer {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(NettyHttpServer.class);
-    private static final Predicate<Object> LAST_HTTP_PAYLOAD_CHUNK_OBJECT_PREDICATE =
-            p -> p instanceof HttpHeaders;
 
     private NettyHttpServer() {
         // No instances
@@ -118,14 +116,14 @@ final class NettyHttpServer {
                             new NettyHttpServerConnection.CompositeFlushStrategy(tcpServerConfig.flushStrategy());
                     return DefaultNettyConnection.initChannel(
                             channel, executionContext.bufferAllocator(), executionContext.executor(),
-                            new TerminalPredicate<>(LAST_HTTP_PAYLOAD_CHUNK_OBJECT_PREDICATE), closeHandler,
+                            new TerminalPredicate<>(LAST_CHUNK_PREDICATE), closeHandler,
                             flushStrategy, new TcpServerChannelInitializer(tcpServerConfig)
                                     .andThen(getChannelInitializer(config, closeHandler)),
                             executionContext.executionStrategy())
                         .map(conn -> new NettyHttpServerConnection(conn, service, executionContext.executionStrategy(),
                                 flushStrategy, config.headersFactory(), drainRequestPayloadBody));
                 },
-                serverConnection -> serverConnection.process().subscribe())
+                serverConnection -> serverConnection.process(true).subscribe())
             .map(delegate -> {
                 LOGGER.debug("Started HTTP server for address {}.", delegate.listenAddress());
                 // The ServerContext returned by TcpServerBinder takes care of closing the connectionAcceptor.
@@ -137,15 +135,16 @@ final class NettyHttpServer {
                                                             final CloseHandler closeHandler) {
         return (channel, context) -> {
             Queue<HttpRequestMethod> methodQueue = new ArrayDeque<>(2);
-            channel.pipeline().addLast(new HttpRequestDecoder(methodQueue, config.headersFactory(),
+            final ChannelPipeline pipeline = channel.pipeline();
+            pipeline.addLast(new HttpRequestDecoder(methodQueue, config.headersFactory(),
                     config.maxInitialLineLength(), config.maxHeaderSize(), closeHandler));
-            channel.pipeline().addLast(new HttpResponseEncoder(methodQueue, config.headersEncodedSizeEstimate(),
+            pipeline.addLast(new HttpResponseEncoder(methodQueue, config.headersEncodedSizeEstimate(),
                     config.trailersEncodedSizeEstimate(), closeHandler));
             return context;
         };
     }
 
-    private static final class NettyHttpServerContext implements ServerContext {
+    static final class NettyHttpServerContext implements ServerContext {
         private final ServerContext delegate;
         private final ListenableAsyncCloseable asyncCloseable;
 
@@ -186,7 +185,7 @@ final class NettyHttpServer {
         }
     }
 
-    private static final class NettyHttpServerConnection extends HttpServiceContext implements NettyConnectionContext {
+    static final class NettyHttpServerConnection extends HttpServiceContext implements NettyConnectionContext {
         private static final Logger LOGGER = LoggerFactory.getLogger(NettyHttpServerConnection.class);
         private final StreamingHttpService service;
         private final HttpExecutionStrategy strategy;
@@ -219,14 +218,14 @@ final class NettyHttpServer {
             this.drainRequestPayloadBody = drainRequestPayloadBody;
         }
 
-        Completable process() {
+        Completable process(final boolean handleMultipleRequests) {
             final Single<StreamingHttpRequest> requestSingle =
                     connection.read().liftSyncToSingle(new SpliceFlatStreamToMetaSingle<>(
                             (HttpRequestMetaData meta, Publisher<Object> payload) ->
                                     newTransportRequest(meta.method(), meta.requestTarget(), meta.version(),
                                             meta.headers(), executionContext().bufferAllocator(), payload,
                                             headersFactory)));
-            return handleRequestAndWriteResponse(requestSingle);
+            return handleRequestAndWriteResponse(requestSingle, handleMultipleRequests);
         }
 
         @Override
@@ -234,7 +233,8 @@ final class NettyHttpServer {
             return compositeFlushStrategy.updateFlushStrategy(strategyProvider);
         }
 
-        private Completable handleRequestAndWriteResponse(final Single<StreamingHttpRequest> requestSingle) {
+        private Completable handleRequestAndWriteResponse(final Single<StreamingHttpRequest> requestSingle,
+                                                          final boolean handleMultipleRequests) {
             final Publisher<Object> responseObjectPublisher = requestSingle.flatMapPublisher(rawRequest -> {
                 // We transform the request and delay the completion of the result flattened stream to avoid
                 // resubscribing to the NettyChannelPublisher before the previous subscriber has terminated. Otherwise
@@ -313,7 +313,8 @@ final class NettyHttpServer {
 
                 return responsePublisher.concat(requestCompletion);
             });
-            return connection.write(responseObjectPublisher.repeat(val -> true)
+            return connection.write(
+                    (handleMultipleRequests ? responseObjectPublisher.repeat(val -> true) : responseObjectPublisher)
                     // We generate synthetic callbacks to WriteEventsListener as there is a single write per connection
                     // but FlushStrategy are implemented considering individual responses.
                     // Since this operator is present on the flattened single write stream, with or without pipelined
@@ -452,7 +453,7 @@ final class NettyHttpServer {
          * connection and intercept all changes to {@link FlushStrategy}. If a user provided {@link FlushStrategy} is
          * registered, this class manages the interaction with that {@link FlushStrategy}.
          */
-        private static final class CompositeFlushStrategy implements FlushStrategy, FlushStrategy.WriteEventsListener {
+        static final class CompositeFlushStrategy implements FlushStrategy, FlushStrategy.WriteEventsListener {
 
             private static final WriteEventsListener INIT = new NoopWriteEventsListener() { };
             private static final WriteEventsListener CANCELLED = new NoopWriteEventsListener() { };
@@ -612,7 +613,7 @@ final class NettyHttpServer {
         @Override
         public void onComplete() {
             final Object oldState = stateUpdater.getAndSet(this, TerminalNotification.complete());
-            if (oldState instanceof CompletableSource.Subscriber) {
+            if (oldState instanceof Subscriber) {
                 ((Subscriber) oldState).onComplete();
             }
         }
@@ -620,7 +621,7 @@ final class NettyHttpServer {
         @Override
         public void onError(final Throwable t) {
             final Object oldState = stateUpdater.getAndSet(this, TerminalNotification.error(t));
-            if (oldState instanceof CompletableSource.Subscriber) {
+            if (oldState instanceof Subscriber) {
                 ((Subscriber) oldState).onError(t);
             }
         }

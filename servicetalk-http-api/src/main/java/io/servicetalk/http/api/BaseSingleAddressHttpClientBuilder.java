@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,10 +20,10 @@ import io.servicetalk.client.api.ConnectionFactoryFilter;
 import io.servicetalk.client.api.LoadBalancerFactory;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
-import io.servicetalk.transport.api.ClientSslConfigBuilder;
 import io.servicetalk.transport.api.IoExecutor;
 
 import java.net.SocketOption;
+import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
@@ -51,6 +51,10 @@ abstract class BaseSingleAddressHttpClientBuilder<U, R, SDE extends ServiceDisco
 
     @Override
     public abstract BaseSingleAddressHttpClientBuilder<U, R, SDE> h2HeadersFactory(HttpHeadersFactory headersFactory);
+
+    @Override
+    public abstract BaseSingleAddressHttpClientBuilder<U, R, SDE> h2HeadersSensitivityDetector(
+            BiPredicate<CharSequence, CharSequence> sensitivityDetector);
 
     @Override
     public abstract BaseSingleAddressHttpClientBuilder<U, R, SDE> h2PriorKnowledge(boolean h2PriorKnowledge);
@@ -107,12 +111,4 @@ abstract class BaseSingleAddressHttpClientBuilder<U, R, SDE extends ServiceDisco
     @Override
     public abstract BaseSingleAddressHttpClientBuilder<U, R, SDE> unresolvedAddressToHost(
             Function<U, CharSequence> unresolvedAddressToHostFunction);
-
-    /**
-     * Enable SSL/TLS, and return a builder for configuring it. Call {@link ClientSslConfigBuilder#finish()} to
-     * return to configuring the HTTP client.
-     *
-     * @return an {@link ClientSslConfigBuilder} for configuring SSL/TLS.
-     */
-    public abstract ClientSslConfigBuilder<? extends BaseSingleAddressHttpClientBuilder<U, R, SDE>> enableSsl();
 }

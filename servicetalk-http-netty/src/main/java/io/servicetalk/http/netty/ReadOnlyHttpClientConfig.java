@@ -21,7 +21,6 @@ import io.servicetalk.tcp.netty.internal.ReadOnlyTcpClientConfig;
 import javax.annotation.Nullable;
 
 final class ReadOnlyHttpClientConfig {
-
     private final ReadOnlyTcpClientConfig tcpClientConfig;
     private final ReadOnlyH2ClientConfig h2ClientConfig;
     private final HttpHeadersFactory headersFactory;

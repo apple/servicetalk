@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,8 @@ import io.netty.util.DomainNameMapping;
 
 import javax.annotation.Nullable;
 
+import static java.util.Objects.requireNonNull;
+
 /**
  * SSL {@link ChannelInitializer} for servers.
  */
@@ -40,7 +42,7 @@ public class SslServerChannelInitializer implements ChannelInitializer {
      * @param sslContext to use for configuring SSL.
      */
     public SslServerChannelInitializer(SslContext sslContext) {
-        this.sslContext = sslContext;
+        this.sslContext = requireNonNull(sslContext);
         domainNameMapping = null;
     }
 
@@ -49,7 +51,7 @@ public class SslServerChannelInitializer implements ChannelInitializer {
      * @param domainNameMapping to use for configuring SSL.
      */
     public SslServerChannelInitializer(DomainNameMapping<SslContext> domainNameMapping) {
-        this.domainNameMapping = domainNameMapping;
+        this.domainNameMapping = requireNonNull(domainNameMapping);
         sslContext = null;
     }
 
@@ -58,7 +60,8 @@ public class SslServerChannelInitializer implements ChannelInitializer {
         if (sslContext != null) {
             SslHandler sslHandler = SslUtils.newHandler(sslContext, channel.alloc());
             channel.pipeline().addLast(sslHandler);
-        } else if (domainNameMapping != null) {
+        } else {
+            assert domainNameMapping != null;
             channel.pipeline().addLast(new SniHandler(domainNameMapping));
         }
         return context;

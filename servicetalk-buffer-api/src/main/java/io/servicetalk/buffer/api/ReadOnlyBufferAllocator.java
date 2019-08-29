@@ -25,6 +25,7 @@ import java.nio.charset.CoderResult;
 import static io.servicetalk.buffer.api.EmptyBuffer.EMPTY_BUFFER;
 import static java.nio.ByteBuffer.allocate;
 import static java.nio.ByteBuffer.allocateDirect;
+import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
@@ -66,6 +67,10 @@ final class ReadOnlyBufferAllocator implements BufferAllocator {
 
     @Override
     public Buffer fromSequence(CharSequence data, Charset charset, boolean direct) {
+        if (charset == US_ASCII) {
+            return fromAscii(data, direct);
+        }
+
         if (data.length() == 0) {
             return EMPTY_BUFFER;
         }
@@ -110,9 +115,7 @@ final class ReadOnlyBufferAllocator implements BufferAllocator {
             return EMPTY_BUFFER;
         }
         ByteBuffer byteBuffer = direct ? allocateDirect(data.length()) : allocate(data.length());
-        // Just do a raw cast. If the character is not within the valid ascii range we preserve the data as much as
-        // possible.
-        data.codePoints().forEach(c -> byteBuffer.put((byte) c));
+        byteBuffer.put(data.toString().getBytes(US_ASCII));
         byteBuffer.flip();
         return new ReadOnlyByteBuffer(byteBuffer);
     }

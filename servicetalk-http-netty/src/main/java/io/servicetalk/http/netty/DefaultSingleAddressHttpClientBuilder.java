@@ -37,14 +37,13 @@ import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
 import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.MultiAddressHttpClientFilterFactory;
 import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
+import io.servicetalk.http.api.SingleAddressHttpClientSecurityConfigurator;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
 import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.tcp.netty.internal.TcpClientConfig;
-import io.servicetalk.transport.api.ChainingSslConfigBuilders;
-import io.servicetalk.transport.api.ClientSslConfigBuilder;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.IoExecutor;
 
@@ -52,8 +51,8 @@ import io.netty.util.NetUtil;
 
 import java.net.InetSocketAddress;
 import java.net.SocketOption;
+import java.util.function.BiPredicate;
 import java.util.function.Function;
-import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
 import static io.netty.util.NetUtil.toSocketAddressString;
@@ -392,6 +391,13 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
     }
 
     @Override
+    public SingleAddressHttpClientBuilder<U, R> h2HeadersSensitivityDetector(
+            final BiPredicate<CharSequence, CharSequence> h2HeadersSensitivityDetector) {
+        config.h2ClientConfig().h2HeadersSensitivityDetector(h2HeadersSensitivityDetector);
+        return this;
+    }
+
+    @Override
     public SingleAddressHttpClientBuilder<U, R> h2PriorKnowledge(final boolean h2PriorKnowledge) {
         config.tcpClientConfig().autoRead(h2PriorKnowledge);
         config.h2PriorKnowledge(h2PriorKnowledge);
@@ -503,20 +509,14 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
     }
 
     @Override
-    public ClientSslConfigBuilder<DefaultSingleAddressHttpClientBuilder<U, R>> enableSsl() {
+    public SingleAddressHttpClientSecurityConfigurator<U, R> secure() {
         assert address != null;
-        return ChainingSslConfigBuilders.forClient(
-                () -> this, sslConfig -> config.tcpClientConfig().sslConfig(sslConfig),
-                unresolvedHostFunction(address).toString(),
-                unresolvedPortFunction(address));
-    }
-
-    <F> ClientSslConfigBuilder<F> enableSsl(Supplier<F> finisher) {
-        assert address != null;
-        return ChainingSslConfigBuilders.forClient(
-                finisher, sslConfig -> config.tcpClientConfig().sslConfig(sslConfig),
-                unresolvedHostFunction(address).toString(),
-                unresolvedPortFunction(address));
+        return new DefaultSingleAddressHttpClientSecurityConfigurator<>(
+                unresolvedHostFunction(address).toString(), unresolvedPortFunction(address),
+                securityConfig -> {
+                    config.tcpClientConfig().secure(securityConfig);
+                    return DefaultSingleAddressHttpClientBuilder.this;
+                });
     }
 
     void appendToStrategyInfluencer(MultiAddressHttpClientFilterFactory<U> multiAddressHttpClientFilterFactory) {

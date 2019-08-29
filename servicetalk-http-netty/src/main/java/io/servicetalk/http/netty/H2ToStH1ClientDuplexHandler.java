@@ -24,27 +24,19 @@ import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.http.api.StreamingHttpResponse;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpHeaderValues;
 import io.netty.handler.codec.http.HttpScheme;
-import io.netty.handler.codec.http2.DefaultHttp2DataFrame;
 import io.netty.handler.codec.http2.DefaultHttp2HeadersFrame;
 import io.netty.handler.codec.http2.Http2DataFrame;
 import io.netty.handler.codec.http2.Http2Headers;
 import io.netty.handler.codec.http2.Http2HeadersFrame;
-import io.netty.handler.codec.http2.Http2ResetFrame;
 
 import javax.annotation.Nullable;
 
-import static io.netty.buffer.Unpooled.EMPTY_BUFFER;
-import static io.netty.handler.codec.http2.Http2Error.REFUSED_STREAM;
 import static io.netty.handler.codec.http2.Http2Headers.PseudoHeaderName.STATUS;
-import static io.servicetalk.buffer.netty.BufferUtil.newBufferFrom;
-import static io.servicetalk.buffer.netty.BufferUtil.toByteBufNoThrow;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderNames.HOST;
 import static io.servicetalk.http.api.HttpHeaderValues.ZERO;
@@ -52,24 +44,22 @@ import static io.servicetalk.http.api.HttpRequestMethod.CONNECT;
 import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.INFORMATIONAL_1XX;
 import static io.servicetalk.http.api.StreamingHttpResponses.newResponse;
 import static io.servicetalk.http.netty.H2ToStH1Utils.HTTP_2_0;
-import static io.servicetalk.http.netty.H2ToStH1Utils.StreamRefusedException;
 import static io.servicetalk.http.netty.H2ToStH1Utils.h1HeadersToH2Headers;
 import static io.servicetalk.http.netty.H2ToStH1Utils.h2HeadersSanitizeForH1;
 import static io.servicetalk.http.netty.HeaderUtils.canAddResponseTransferEncodingProtocol;
 import static io.servicetalk.http.netty.HeaderUtils.shouldAddZeroContentLength;
 
-final class H2ToStH1ClientDuplexHandler extends ChannelDuplexHandler {
+final class H2ToStH1ClientDuplexHandler extends AbstractH2DuplexHandler {
     private boolean readHeaders;
     private final HttpScheme scheme;
-    private final HttpHeadersFactory headersFactory;
     private final BufferAllocator allocator;
     @Nullable
     private HttpRequestMethod method;
 
     H2ToStH1ClientDuplexHandler(boolean sslEnabled, BufferAllocator allocator, HttpHeadersFactory headersFactory) {
+        super(headersFactory);
         this.scheme = sslEnabled ? HttpScheme.HTTPS : HttpScheme.HTTP;
         this.allocator = allocator;
-        this.headersFactory = headersFactory;
     }
 
     @Override
@@ -97,21 +87,9 @@ final class H2ToStH1ClientDuplexHandler extends ChannelDuplexHandler {
             }
             ctx.write(new DefaultHttp2HeadersFrame(h2Headers, false), promise);
         } else if (msg instanceof Buffer) {
-            ByteBuf byteBuf = toByteBufNoThrow((Buffer) msg);
-            if (byteBuf == null) {
-                promise.setFailure(new IllegalArgumentException("unsupported Buffer type:" + msg));
-                ctx.close();
-            } else {
-                ctx.write(new DefaultHttp2DataFrame(byteBuf.retain(), false), promise);
-            }
+            writeBuffer(ctx, msg, promise);
         } else if (msg instanceof HttpHeaders) {
-            HttpHeaders h1Headers = (HttpHeaders) msg;
-            Http2Headers h2Headers = h1HeadersToH2Headers(h1Headers);
-            if (h2Headers.isEmpty()) {
-                ctx.write(new DefaultHttp2DataFrame(EMPTY_BUFFER, true), promise);
-            } else {
-                ctx.write(new DefaultHttp2HeadersFrame(h2Headers, true), promise);
-            }
+            writeTrailers(ctx, msg, promise);
         } else {
             ctx.write(msg, promise);
         }
@@ -165,20 +143,7 @@ final class H2ToStH1ClientDuplexHandler extends ChannelDuplexHandler {
                 ctx.fireChannelRead(response);
             }
         } else if (msg instanceof Http2DataFrame) {
-            Http2DataFrame dataFrame = (Http2DataFrame) msg;
-            if (dataFrame.content().isReadable()) {
-                ctx.fireChannelRead(newBufferFrom(dataFrame.content()));
-            } else {
-                dataFrame.release();
-            }
-            if (dataFrame.isEndStream()) {
-                ctx.fireChannelRead(headersFactory.newEmptyTrailers());
-            }
-        } else if (msg instanceof Http2ResetFrame) {
-            Http2ResetFrame resetFrame = (Http2ResetFrame) msg;
-            if (resetFrame.errorCode() == REFUSED_STREAM.code()) {
-                ctx.fireExceptionCaught(new StreamRefusedException("stream refused"));
-            }
+            readDataFrame(ctx, msg);
         } else {
             ctx.fireChannelRead(msg);
         }

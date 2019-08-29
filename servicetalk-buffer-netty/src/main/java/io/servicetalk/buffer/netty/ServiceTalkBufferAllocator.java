@@ -31,6 +31,8 @@ import java.nio.charset.Charset;
 
 import static io.servicetalk.buffer.api.EmptyBuffer.EMPTY_BUFFER;
 import static io.servicetalk.concurrent.internal.PlatformDependent.useDirectBufferWithoutZeroing;
+import static java.nio.charset.StandardCharsets.US_ASCII;
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
  * Our own {@link AbstractByteBufAllocator} implementation which will not use leak-detection and depends on the GC
@@ -50,7 +52,7 @@ final class ServiceTalkBufferAllocator extends AbstractByteBufAllocator implemen
     @Override
     protected ByteBuf newHeapBuffer(int initialCapacity, int maxCapacity) {
         return io.netty.util.internal.PlatformDependent.hasUnsafe() ?
-                new UnreleasableUnsafeHeapByteBuf(this, initialCapacity, maxCapacity) :
+                new UnreleasableNoZeroingHeapByteBuf(this, initialCapacity, maxCapacity) :
                 new UnreleasableHeapByteBuf(this, initialCapacity, maxCapacity);
     }
 
@@ -103,12 +105,24 @@ final class ServiceTalkBufferAllocator extends AbstractByteBufAllocator implemen
 
     @Override
     public Buffer fromSequence(CharSequence data, Charset charset) {
+        if (charset == US_ASCII) {
+            return fromAscii(data);
+        }
+        if (charset == UTF_8) {
+            return fromUtf8(data);
+        }
         return data.length() == 0 ? EMPTY_BUFFER : new NettyBuffer<>(ByteBufUtil.encodeString(this,
                 data instanceof CharBuffer ? (CharBuffer) data : CharBuffer.wrap(data), charset));
     }
 
     @Override
     public Buffer fromSequence(CharSequence data, Charset charset, boolean direct) {
+        if (charset == US_ASCII) {
+            return fromAscii(data, direct);
+        }
+        if (charset == UTF_8) {
+            return fromUtf8(data, direct);
+        }
         return data.length() == 0 ? EMPTY_BUFFER : new NettyBuffer<>(ByteBufUtil.encodeString(direct ?
                         forceDirectAllocator : forceHeapAllocator,
                 data instanceof CharBuffer ? (CharBuffer) data : CharBuffer.wrap(data), charset));

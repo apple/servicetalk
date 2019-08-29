@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import io.servicetalk.transport.netty.internal.PooledRecvByteBufAllocatorInitial
 import io.servicetalk.transport.netty.internal.SslServerChannelInitializer;
 
 import io.netty.channel.Channel;
+import io.netty.handler.ssl.SslContext;
 
 /**
  * {@link ChannelInitializer} for TCP.
@@ -41,10 +42,13 @@ public class TcpServerChannelInitializer implements ChannelInitializer {
         if (config.idleTimeoutMs() > 0) {
             delegate = delegate.andThen(new IdleTimeoutInitializer(config.idleTimeoutMs()));
         }
-        if (config.sslContext() != null) {
-            delegate = delegate.andThen(new SslServerChannelInitializer(config.sslContext()));
-        } else if (config.domainNameMapping() != null) {
+        if (config.isSniEnabled()) {
             delegate = delegate.andThen(new SslServerChannelInitializer(config.domainNameMapping()));
+        } else {
+            final SslContext sslContext = config.sslContext();
+            if (sslContext != null) {
+                delegate = delegate.andThen(new SslServerChannelInitializer(sslContext));
+            }
         }
         if (config.wireLoggingInitializer() != null) {
             delegate = delegate.andThen(config.wireLoggingInitializer());

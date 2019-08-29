@@ -15,19 +15,72 @@
  */
 package io.servicetalk.http.netty;
 
-final class H2ClientConfig extends ReadOnlyH2ClientConfig {
+import io.servicetalk.http.api.HttpHeadersFactory;
+
+import java.util.function.BiPredicate;
+import javax.annotation.Nullable;
+
+import static io.servicetalk.http.netty.H2ToStH1Utils.DEFAULT_GRACEFUL_SHUTDOWN_TIMEOUT_MILLIS;
+import static java.util.Objects.requireNonNull;
+
+final class H2ClientConfig {
+
+    private HttpHeadersFactory h2HeadersFactory;
+    private BiPredicate<CharSequence, CharSequence> h2HeadersSensitivityDetector;
+    @Nullable
+    private String h2FrameLogger;
+    private int gracefulShutdownTimeoutMs;
 
     H2ClientConfig() {
+        h2HeadersFactory = H2HeadersFactory.INSTANCE;
+        h2HeadersSensitivityDetector = H2HeadersFactory.DEFAULT_SENSITIVITY_DETECTOR;
+        gracefulShutdownTimeoutMs = DEFAULT_GRACEFUL_SHUTDOWN_TIMEOUT_MILLIS;
     }
 
     H2ClientConfig(H2ClientConfig rhs) {
-        super(rhs);
+        h2HeadersFactory = rhs.h2HeadersFactory;
+        h2HeadersSensitivityDetector = rhs.h2HeadersSensitivityDetector;
+        h2FrameLogger = rhs.h2FrameLogger;
+        gracefulShutdownTimeoutMs = rhs.gracefulShutdownTimeoutMs;
+    }
+
+    HttpHeadersFactory h2HeadersFactory() {
+        return h2HeadersFactory;
+    }
+
+    void h2HeadersFactory(final HttpHeadersFactory headersFactory) {
+        this.h2HeadersFactory = requireNonNull(headersFactory);
+    }
+
+    BiPredicate<CharSequence, CharSequence> h2HeadersSensitivityDetector() {
+        return h2HeadersSensitivityDetector;
+    }
+
+    void h2HeadersSensitivityDetector(final BiPredicate<CharSequence, CharSequence> h2HeadersSensitivityDetector) {
+        this.h2HeadersSensitivityDetector = requireNonNull(h2HeadersSensitivityDetector);
+    }
+
+    @Nullable
+    String h2FrameLogger() {
+        return h2FrameLogger;
+    }
+
+    void h2FrameLogger(@Nullable String h2FrameLogger) {
+        this.h2FrameLogger = h2FrameLogger;
+    }
+
+    int gracefulShutdownTimeoutMs() {
+        return gracefulShutdownTimeoutMs;
+    }
+
+    void gracefulShutdownTimeoutMs(int gracefulShutdownTimeoutMs) {
+        this.gracefulShutdownTimeoutMs = gracefulShutdownTimeoutMs;
     }
 
     /**
      * Returns an immutable view of this config, any changes to this config will not alter the returned view.
      *
-     * @return {@link H2ClientConfig}.
+     * @return a read only version of this object.
      */
     ReadOnlyH2ClientConfig asReadOnly() {
         return new ReadOnlyH2ClientConfig(this);

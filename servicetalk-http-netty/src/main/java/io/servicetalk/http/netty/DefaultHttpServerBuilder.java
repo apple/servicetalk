@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,24 +17,20 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.HttpServerBuilder;
+import io.servicetalk.http.api.HttpServerSecurityConfigurator;
 import io.servicetalk.http.api.StreamingHttpService;
-import io.servicetalk.transport.api.ChainingSslConfigBuilders;
 import io.servicetalk.transport.api.ConnectionAcceptor;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.ServerContext;
-import io.servicetalk.transport.api.ServerSslConfigBuilder;
-import io.servicetalk.transport.api.SslConfig;
 
-import java.io.InputStream;
 import java.net.SocketAddress;
 import java.net.SocketOption;
-import java.util.Map;
-import java.util.function.Supplier;
+import java.util.function.BiPredicate;
 import javax.annotation.Nullable;
-import javax.net.ssl.KeyManagerFactory;
 
 final class DefaultHttpServerBuilder extends HttpServerBuilder {
 
@@ -49,6 +45,32 @@ final class DefaultHttpServerBuilder extends HttpServerBuilder {
     @Override
     public HttpServerBuilder headersFactory(final HttpHeadersFactory headersFactory) {
         config.headersFactory(headersFactory);
+        return this;
+    }
+
+    @Override
+    public HttpServerBuilder h2HeadersFactory(final HttpHeadersFactory headersFactory) {
+        config.h2ServerConfig().h2HeadersFactory(headersFactory);
+        return this;
+    }
+
+    @Override
+    public HttpServerBuilder h2HeadersSensitivityDetector(
+            final BiPredicate<CharSequence, CharSequence> h2HeadersSensitivityDetector) {
+        config.h2ServerConfig().h2HeadersSensitivityDetector(h2HeadersSensitivityDetector);
+        return this;
+    }
+
+    @Override
+    public HttpServerBuilder h2PriorKnowledge(final boolean h2PriorKnowledge) {
+        config.tcpConfig().autoRead(h2PriorKnowledge);
+        config.h2PriorKnowledge(h2PriorKnowledge);
+        return this;
+    }
+
+    @Override
+    public HttpServerBuilder h2FrameLogger(@Nullable final String h2FrameLogger) {
+        config.h2ServerConfig().h2FrameLogger(h2FrameLogger);
         return this;
     }
 
@@ -89,30 +111,19 @@ final class DefaultHttpServerBuilder extends HttpServerBuilder {
     }
 
     @Override
-    public HttpServerBuilder sniConfig(@Nullable final Map<String, SslConfig> mappings, final SslConfig defaultConfig) {
-        config.tcpConfig().sniConfig(mappings, defaultConfig);
-        return this;
+    public HttpServerSecurityConfigurator secure() {
+        return new DefaultHttpServerSecurityConfigurator(securityConfig -> {
+            config.tcpConfig().secure(securityConfig);
+            return DefaultHttpServerBuilder.this;
+        });
     }
 
     @Override
-    public ServerSslConfigBuilder<HttpServerBuilder> enableSsl(final KeyManagerFactory keyManagerFactory) {
-        return ChainingSslConfigBuilders.forServer(() -> this, sslConfig -> config.tcpConfig().sslConfig(sslConfig),
-                keyManagerFactory);
-    }
-
-    @Override
-    public ServerSslConfigBuilder<HttpServerBuilder> enableSsl(final Supplier<InputStream> keyCertChainSupplier,
-                                                               final Supplier<InputStream> keySupplier) {
-        return ChainingSslConfigBuilders.forServer(() -> this, sslConfig -> config.tcpConfig().sslConfig(sslConfig),
-                keyCertChainSupplier, keySupplier);
-    }
-
-    @Override
-    public ServerSslConfigBuilder<HttpServerBuilder> enableSsl(final Supplier<InputStream> keyCertChainSupplier,
-                                                               final Supplier<InputStream> keySupplier,
-                                                               final String keyPassword) {
-        return ChainingSslConfigBuilders.forServer(() -> this, sslConfig -> config.tcpConfig().sslConfig(sslConfig),
-                keyCertChainSupplier, keySupplier, keyPassword);
+    public HttpServerSecurityConfigurator secure(final String... sniHostnames) {
+        return new DefaultHttpServerSecurityConfigurator(securityConfig -> {
+            config.tcpConfig().secure(securityConfig, sniHostnames);
+            return DefaultHttpServerBuilder.this;
+        });
     }
 
     @Override
@@ -152,7 +163,11 @@ final class DefaultHttpServerBuilder extends HttpServerBuilder {
                                              boolean drainRequestPayloadBody) {
         ReadOnlyHttpServerConfig roConfig = this.config.asReadOnly();
         executionContextBuilder.executionStrategy(strategy);
-        return NettyHttpServer.bind(executionContextBuilder.build(), roConfig, address, connectionAcceptor,
-                service, drainRequestPayloadBody);
+        final HttpExecutionContext httpExecutionContext = executionContextBuilder.build();
+        return roConfig.isH2PriorKnowledge() ?
+                H2ServerParentConnectionContext.bind(httpExecutionContext, roConfig, address, connectionAcceptor,
+                        service, drainRequestPayloadBody) :
+                NettyHttpServer.bind(httpExecutionContext, roConfig, address, connectionAcceptor,
+                        service, drainRequestPayloadBody);
     }
 }

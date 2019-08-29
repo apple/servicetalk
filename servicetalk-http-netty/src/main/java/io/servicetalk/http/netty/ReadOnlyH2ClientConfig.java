@@ -17,34 +17,29 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.http.api.HttpHeadersFactory;
 
+import java.util.function.BiPredicate;
 import javax.annotation.Nullable;
 
-import static java.util.Objects.requireNonNull;
-
-class ReadOnlyH2ClientConfig {
-    private static final int DEFAULT_GRACEFUL_SHUTDOWN_TIMEOUT_MILLIS = 30000;
-    private HttpHeadersFactory h2HeadersFactory;
+final class ReadOnlyH2ClientConfig {
+    private final HttpHeadersFactory h2HeadersFactory;
+    private final BiPredicate<CharSequence, CharSequence> h2HeadersSensitivityDetector;
     @Nullable
-    private String h2FrameLogger;
-    private int gracefulShutdownTimeoutMs;
+    private final String h2FrameLogger;
+    private final int gracefulShutdownTimeoutMs;
 
-    ReadOnlyH2ClientConfig() {
-        h2HeadersFactory = H2HeadersFactory.INSTANCE;
-        gracefulShutdownTimeoutMs = DEFAULT_GRACEFUL_SHUTDOWN_TIMEOUT_MILLIS;
-    }
-
-    ReadOnlyH2ClientConfig(ReadOnlyH2ClientConfig rhs) {
-        h2HeadersFactory = rhs.h2HeadersFactory;
-        h2FrameLogger = rhs.h2FrameLogger;
-        gracefulShutdownTimeoutMs = rhs.gracefulShutdownTimeoutMs;
+    ReadOnlyH2ClientConfig(H2ClientConfig rhs) {
+        h2HeadersFactory = rhs.h2HeadersFactory();
+        h2HeadersSensitivityDetector = rhs.h2HeadersSensitivityDetector();
+        h2FrameLogger = rhs.h2FrameLogger();
+        gracefulShutdownTimeoutMs = rhs.gracefulShutdownTimeoutMs();
     }
 
     HttpHeadersFactory h2HeadersFactory() {
         return h2HeadersFactory;
     }
 
-    void h2HeadersFactory(final HttpHeadersFactory headersFactory) {
-        this.h2HeadersFactory = requireNonNull(headersFactory);
+    BiPredicate<CharSequence, CharSequence> h2HeadersSensitivityDetector() {
+        return h2HeadersSensitivityDetector;
     }
 
     @Nullable
@@ -52,15 +47,7 @@ class ReadOnlyH2ClientConfig {
         return h2FrameLogger;
     }
 
-    void h2FrameLogger(@Nullable String h2FrameLogger) {
-        this.h2FrameLogger = h2FrameLogger;
-    }
-
     int gracefulShutdownTimeoutMs() {
         return gracefulShutdownTimeoutMs;
-    }
-
-    void gracefulShutdownTimeoutMs(int gracefulShutdownTimeoutMs) {
-        this.gracefulShutdownTimeoutMs = gracefulShutdownTimeoutMs;
     }
 }

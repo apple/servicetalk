@@ -54,7 +54,7 @@ import io.netty.util.ByteProcessor;
 import javax.annotation.Nullable;
 
 import static io.netty.handler.codec.http.HttpConstants.CR;
-import static io.netty.handler.codec.http.HttpConstants.LF;
+import static io.netty.util.ByteProcessor.FIND_LF;
 import static io.netty.util.ByteProcessor.FIND_LINEAR_WHITESPACE;
 import static io.netty.util.ByteProcessor.FIND_NON_LINEAR_WHITESPACE;
 import static io.servicetalk.buffer.netty.BufferUtil.newBufferFrom;
@@ -611,7 +611,7 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
     private long contentLength() {
         if (contentLength == Long.MIN_VALUE) {
             assert message != null;
-            contentLength = getContentLength(message, -1L);
+            contentLength = getContentLength(message);
         }
         return contentLength;
     }
@@ -699,11 +699,11 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
     private static int findCRLF(ByteBuf buffer, int startIndex, final int maxLineSize) {
         final int maxToIndex = startIndex + maxLineSize;
         for (;;) {
-            int toIndex = min(buffer.writerIndex(), maxToIndex);
-            int lfIndex = buffer.indexOf(startIndex, toIndex, LF);
+            final int toIndex = min(buffer.writerIndex(), maxToIndex);
+            final int lfIndex = findLF(buffer, startIndex, toIndex);
             if (lfIndex == -1) {
                 if (toIndex - startIndex == maxLineSize) {
-                    throw new IllegalStateException("could not find CRLF within " + maxLineSize + " bytes.");
+                    throw new IllegalStateException("Could not find CRLF within " + maxLineSize + " bytes.");
                 }
                 return -2;
             } else if (lfIndex == buffer.readerIndex()) {
@@ -721,6 +721,13 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
                 throw new TooLongFrameException("An HTTP line is larger than " + maxLineSize + " bytes.");
             }
         }
+    }
+
+    private static int findLF(final ByteBuf buffer, final int fromIndex, final int toIndex) {
+        if (fromIndex >= toIndex) {
+            return -1;
+        }
+        return buffer.forEachByte(fromIndex, toIndex - fromIndex, FIND_LF);
     }
 
     static void splitInitialLineError() {
@@ -752,7 +759,7 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
         return -1;
     }
 
-    private static long getContentLength(HttpMetaData message, long defaultValue) {
+    private static long getContentLength(HttpMetaData message) {
         CharSequence value = message.headers().get(CONTENT_LENGTH);
         if (value != null) {
             return Long.parseLong(value.toString());
@@ -766,7 +773,7 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
         }
 
         // Otherwise we don't.
-        return defaultValue;
+        return -1;
     }
 
     static HttpProtocolVersion nettyBufferToHttpVersion(ByteBuf buffer, int start, int length) {

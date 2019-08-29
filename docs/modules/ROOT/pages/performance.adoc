@@ -526,9 +526,7 @@ in cases where we have scope on the xref:servicetalk::performance.adoc#reference
 and can ensure they won't leak into user code. The `PooledByteBufAllocator` itself has some configuration options
 that we currently don't expose. There are some internal system properties exposed by Netty which can be used to tweak
 the default configuration. Note these are not a public API from ServiceTalk's perspective and are subject to change
-at any time. For more info checkout the
-link:https://www.facebook.com/notes/facebook-engineering/scalable-memory-allocation-using-jemalloc/480222803919[jemalloc inspired buffer pool]
-and the
+at any time. For more info checkout the link:https://jemalloc.net[jemalloc inspired buffer pool] and the
 link:https://netty.io/4.1/api/index.html?io/netty/buffer/PooledByteBufAllocator.html[PooledByteBufAllocator source].
 Here are a few options for motivation:
 

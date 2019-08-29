@@ -15,18 +15,21 @@
  */
 package io.servicetalk.http.netty;
 
+import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.PlatformDependent;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.DefaultHttpHeadersFactory;
+import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpServiceFilter;
+import io.servicetalk.http.api.TrailersTransformer;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.netty.internal.AddressUtils;
 
@@ -90,14 +93,14 @@ public class ConsumeRequestPayloadOnResponsePathTest {
     @Test
     public void testConsumeRequestPayloadBeforeTrailersSent() throws Exception {
         test((responseSingle, request) -> responseSingle.map(response ->
-                response.transformRaw(() -> null, (payloadChunk, __) -> payloadChunk, (__, trailers) -> {
+                response.transformRaw(new SuccessOnlyTrailersTransformer<>(trailers -> {
                     try {
                         consumePayloadBody(request).toFuture().get();
                     } catch (Exception e) {
                         PlatformDependent.throwException(e);
                     }
                     return trailers;
-                })));
+                }))));
     }
 
     @Test
@@ -156,10 +159,31 @@ public class ConsumeRequestPayloadOnResponsePathTest {
                     final StreamingHttpResponse response = responseFactory.ok()
                             .addHeader(TRAILER, X_TOTAL_LENGTH)
                             .payloadBody(from("Response\n", "Payload\n", "Body\n"), textSerializer())
-                            .transform(AtomicInteger::new, (chunk, total) -> {
-                                total.addAndGet(chunk.readableBytes());
-                                return chunk;
-                            }, (total, trailers) -> trailers.add(X_TOTAL_LENGTH, String.valueOf(total.get())));
+                            .transform(new TrailersTransformer<AtomicInteger, Buffer>() {
+                                @Override
+                                public AtomicInteger newState() {
+                                    return new AtomicInteger();
+                                }
+
+                                @Override
+                                public Buffer accept(final AtomicInteger total, final Buffer chunk) {
+                                    total.addAndGet(chunk.readableBytes());
+                                    return chunk;
+                                }
+
+                                @Override
+                                public HttpHeaders payloadComplete(final AtomicInteger total,
+                                                                   final HttpHeaders trailers) {
+                                    trailers.add(X_TOTAL_LENGTH, String.valueOf(total.get()));
+                                    return trailers;
+                                }
+
+                                @Override
+                                public HttpHeaders catchPayloadFailure(final AtomicInteger __, final Throwable ___,
+                                                                       final HttpHeaders trailers) {
+                                    return trailers;
+                                }
+                            });
 
                     return succeeded(response);
                 })) {

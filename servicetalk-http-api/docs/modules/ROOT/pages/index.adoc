@@ -142,10 +142,8 @@ link:{sourceroot}servicetalk-examples/http/helloworld/src/main/java/io/serviceta
 ----
 HttpServers.forPort(8080).listenBlockingStreamingAndAwait((ctx, request, response) -> {
   try (HttpPayloadWriter<String> payloadWriter = response.sendMetaData(textSerializer())) {
-    payloadWriter.write("Hello\n");
-    payloadWriter.write("World\n");
-    payloadWriter.write("From\n");
-    payloadWriter.write("ServiceTalk\n");
+    payloadWriter.write("Hello");
+    payloadWriter.write(" World!");
   }
 }).awaitShutdown();
 ----
@@ -184,7 +182,7 @@ link:{sourceroot}servicetalk-examples/http/helloworld/src/main/java/io/serviceta
 HttpServers.forPort(8080)
   .listenStreamingAndAwait((ctx, request, responseFactory) ->
     succeeded(responseFactory.ok()
-      .payloadBody(from("Hello\n", "World\n", "From\n", "ServiceTalk\n"), textSerializer())))
+      .payloadBody(from("Hello", " World!"), textSerializer())))
   .awaitShutdown();
 ----
 
@@ -193,8 +191,8 @@ A `Client` is generally responsible for managing multiple `Connections`. There a
 
 ==== SingleAddress Client
 This `Client` will connect to a single unresolved address, that is provided while creating the client. The unresolved
-address is resolved via an asynchronous DNS resolver (see <<Service Discovery>> for more details). This `Client` is for
-use cases where you want to issue requests to a single service (that may have multiple instances).
+address is resolved via an asynchronous DNS resolver by default (see <<Service Discovery>>). This `Client` is for use
+cases where you want to issue requests to a single service (that may have multiple instances).
 
 ==== MultiAddress Client
 This `Client` parses the link:https://tools.ietf.org/html/rfc7230#section-5.3[request-target] to determine the remote
@@ -223,7 +221,7 @@ of a request/response can be visualized in the below diagram:
 ----
 
 The link:{sourceroot}servicetalk-client-api/src/main/java/io/servicetalk/client/api/LoadBalancer.java[LoadBalancer] is consulted
-for each request to determine which connection should be used. The `LoadBalancer` interface is extensible and an
+for each request to determine which connection should be used. The `LoadBalancer` interface is extensible and
 the reference implementation provides a
 link:{sourceroot}servicetalk-loadbalancer/src/main/java/io/servicetalk/loadbalancer/RoundRobinLoadBalancer.java[Round Robin algorithm].
 
@@ -284,7 +282,7 @@ control flow.
 === Service Discovery
 Another core component of the `Client` is the
 link:{sourceroot}servicetalk-client-api/src/main/java/io/servicetalk/client/api/ServiceDiscoverer.java[ServiceDiscoverer]. The
-`ServiceDiscoverer` is responsible for resolving a service address into a set of addresses used to create
+`ServiceDiscoverer` is responsible for resolving a service address into a set of resolved addresses used to create
 `Connection`(s) by the `LoadBalancer`. The default implementation for HTTP is DNS and will resolve the IP addresses of
 each service address every link:https://tools.ietf.org/html/rfc1035#section-3.2.1[TTL] seconds. ``ServiceDiscoverer``s
 are typically not invoked in the request/response path and addresses are resolved "out of band", a.k.a in the
@@ -369,9 +367,9 @@ link:{sourceroot}servicetalk-examples/http/helloworld/src/main/java/io/serviceta
 [source, java]
 ----
 try (HttpClient client = HttpClients.forSingleAddress("localhost", 8080).build()) {
-// This example is demonstrating asynchronous execution, but needs to prevent the main thread from exiting
-// before the response has been processed. This isn't typical usage for a streaming API but is useful for
-// demonstration purposes.
+// This example is demonstrating asynchronous execution, but needs to prevent the main
+// thread from exiting before the response has been processed. This isn't typical usage
+// for a streaming API but is useful for demonstration purposes.
   CountDownLatch responseProcessedLatch = new CountDownLatch(1);
   client.request(client.get("/sayHello"))
         .doFinally(responseProcessedLatch::countDown)
@@ -399,9 +397,9 @@ link:{sourceroot}servicetalk-examples/http/helloworld/src/main/java/io/serviceta
 [source, java]
 ----
 try (StreamingHttpClient client = HttpClients.forSingleAddress("localhost", 8080).buildStreaming()) {
-// This example is demonstrating asynchronous execution, but needs to prevent the main thread from exiting
-// before the response has been processed. This isn't typical usage for a streaming API but is useful for
-// demonstration purposes.
+// This example is demonstrating asynchronous execution, but needs to prevent the main thread from
+// exiting before the response has been processed. This isn't typical usage for a streaming API but
+// is useful for demonstration purposes.
   CountDownLatch responseProcessedLatch = new CountDownLatch(1);
   client.request(client.get("/sayHello"))
         .beforeOnSuccess(response -> System.out.println(response.toString((name, value) -> value)))
