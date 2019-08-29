@@ -40,6 +40,11 @@ import static java.util.Objects.requireNonNull;
 public final class PooledRecvByteBufAllocatorInitializers {
 
     /**
+     * {@link PooledByteBufAllocator} to use internally when we know memory won't be leaked.
+     */
+    public static final PooledByteBufAllocator POOLED_ALLOCATOR = PooledByteBufAllocator.DEFAULT;
+
+    /**
      * Initializer to configure {@link RecvByteBufAllocator} backed by a pooled {@link ByteBufAllocator}.
      */
     public static final ChannelInitializer POOLED_RECV_ALLOCATOR_INITIALIZER = (channel, context) -> {
@@ -118,7 +123,7 @@ public final class PooledRecvByteBufAllocatorInitializers {
 
         @Override
         public ByteBuf allocate(final ByteBufAllocator alloc) {
-            return delegate().allocate(alloc.isDirectBufferPooled() ? alloc : PooledByteBufAllocator.DEFAULT);
+            return delegate().allocate(alloc.isDirectBufferPooled() ? alloc : POOLED_ALLOCATOR);
         }
 
         @Override

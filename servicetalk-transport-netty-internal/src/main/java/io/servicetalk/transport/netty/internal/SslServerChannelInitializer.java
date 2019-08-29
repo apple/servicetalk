@@ -19,7 +19,6 @@ import io.servicetalk.transport.api.ConnectionContext;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
-import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.Channel;
 import io.netty.handler.ssl.SniHandler;
 import io.netty.handler.ssl.SslContext;
@@ -29,14 +28,13 @@ import io.netty.util.DomainNameMapping;
 import javax.annotation.Nullable;
 import javax.net.ssl.SSLEngine;
 
+import static io.servicetalk.transport.netty.internal.PooledRecvByteBufAllocatorInitializers.POOLED_ALLOCATOR;
 import static java.util.Objects.requireNonNull;
 
 /**
  * SSL {@link ChannelInitializer} for servers.
  */
 public class SslServerChannelInitializer implements ChannelInitializer {
-
-    private static final ByteBufAllocator POOLED_ALLOCATOR = PooledByteBufAllocator.DEFAULT;
 
     @Nullable
     private final DomainNameMapping<SslContext> domainNameMapping;
