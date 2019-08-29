@@ -333,8 +333,7 @@ final class GrpcRouter {
                     toStreamingHttpService((ctx, request, response) -> {
                         final GrpcServiceContext serviceContext = new DefaultGrpcServiceContext(request.path(), ctx);
                         final HttpDeserializer<Req> deserializer =
-                                serializationProvider.deserializerFor(readGrpcMessageEncoding(request),
-                                        requestClass);
+                                serializationProvider.deserializerFor(readGrpcMessageEncoding(request), requestClass);
                         final HttpSerializer<Resp> serializer =
                                 serializationProvider.serializerFor(serviceContext, responseClass);
                         final DefaultGrpcPayloadWriter<Resp> grpcPayloadWriter =
@@ -342,9 +341,10 @@ final class GrpcRouter {
                         try {
                             route.handle(serviceContext, request.payloadBody(deserializer), grpcPayloadWriter);
                         } catch (Throwable t) {
-                            HttpPayloadWriter<Resp> payloadWriter = grpcPayloadWriter.payloadWriter();
+                            final HttpPayloadWriter<Resp> payloadWriter = grpcPayloadWriter.payloadWriter();
                             setStatus(payloadWriter.trailers(), t, ctx.executionContext().bufferAllocator());
-                            payloadWriter.close();
+                        } finally {
+                            grpcPayloadWriter.close();
                         }
                     }, strategy -> executionStrategy == null ? strategy : executionStrategy), () -> toStreaming(route),
                     () -> toRequestStreamingRoute(route), () -> toResponseStreamingRoute(route),
