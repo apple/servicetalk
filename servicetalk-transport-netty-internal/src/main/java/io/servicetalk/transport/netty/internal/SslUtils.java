@@ -45,7 +45,8 @@ final class SslUtils {
      * a hostname.
      *
      * @param context the {@link SslContext} which will be used to create the {@link SslHandler}
-     * @param allocator the {@link ByteBufAllocator} which will be used
+     * @param allocator the {@link ByteBufAllocator} which will be used to allocate direct memory if required for
+     * {@link SSLEngine}
      * @param hostnameVerificationAlgorithm see {@link SSLParameters#setEndpointIdentificationAlgorithm(String)}.
      * If this is {@code null} or empty then you will be vulnerable to a MITM attack.
      * @param hostnameVerificationHost the non-authoritative name of the host.
