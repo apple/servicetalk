@@ -18,7 +18,6 @@ package io.servicetalk.http.netty;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.client.api.ClientGroup;
 import io.servicetalk.client.api.ConnectionFactoryFilter;
-import io.servicetalk.client.api.LoadBalancedConnection;
 import io.servicetalk.client.api.LoadBalancerFactory;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
@@ -31,6 +30,7 @@ import io.servicetalk.concurrent.api.internal.SubscribableCompletable;
 import io.servicetalk.http.api.FilterableReservedStreamingHttpConnection;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
+import io.servicetalk.http.api.FilterableStreamingHttpLoadBalancedConnection;
 import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpHeadersFactory;
@@ -79,8 +79,8 @@ import static java.util.Objects.requireNonNull;
  *
  * @see <a href="https://tools.ietf.org/html/rfc7230#section-5.3.2">absolute-form rfc7230#section-5.3.2</a>
  */
-final class DefaultMultiAddressUrlHttpClientBuilder extends MultiAddressHttpClientBuilder<HostAndPort,
-        InetSocketAddress> {
+final class DefaultMultiAddressUrlHttpClientBuilder
+        extends MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> {
     // https://tools.ietf.org/html/rfc2068#section-10.3 says:
     // A user agent SHOULD NOT automatically redirect a request more than 5 times,
     // since such redirects usually indicate an infinite loop.
@@ -88,7 +88,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder extends MultiAddressHttpClie
 
     private static final String HTTPS_SCHEME = HTTPS.toString();
 
-    private final DefaultSingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress, ?> builderTemplate;
+    private final DefaultSingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builderTemplate;
 
     private int maxRedirects = DEFAULT_MAX_REDIRECTS;
     @Nullable
@@ -99,7 +99,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder extends MultiAddressHttpClie
     private BiConsumer<HostAndPort, ClientSecurityConfigurator> sslConfigFunction;
 
     DefaultMultiAddressUrlHttpClientBuilder(
-            final DefaultSingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress, ?> builderTemplate) {
+            final DefaultSingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builderTemplate) {
         this.builderTemplate = requireNonNull(builderTemplate);
     }
 
@@ -222,7 +222,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder extends MultiAddressHttpClie
 
     private static final class ClientFactory implements Function<UrlKey, FilterableStreamingHttpClient> {
 
-        private final DefaultSingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress, ?> builderTemplate;
+        private final DefaultSingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builderTemplate;
         @Nullable
         private final MultiAddressHttpClientFilterFactory<HostAndPort> clientFilterFactory;
         @Nullable
@@ -231,7 +231,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder extends MultiAddressHttpClie
         private BiConsumer<HostAndPort, ClientSecurityConfigurator> sslConfigFunction;
 
         ClientFactory(
-                final DefaultSingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress, ?> builderTemplate,
+                final DefaultSingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builderTemplate,
                 @Nullable final MultiAddressHttpClientFilterFactory<HostAndPort> clientFilterFactory,
                 @Nullable final Function<HostAndPort, CharSequence> hostHeaderTransformer,
                 @Nullable final BiConsumer<HostAndPort, ClientSecurityConfigurator> sslConfigFunction) {
@@ -515,10 +515,10 @@ final class DefaultMultiAddressUrlHttpClientBuilder extends MultiAddressHttpClie
     }
 
     @Override
-    public <FLC extends FilterableStreamingHttpConnection & LoadBalancedConnection>
-    MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> loadBalancerFactory(
+    public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> loadBalancerFactory(
             final LoadBalancerFactory<InetSocketAddress> loadBalancerFactory,
-            final Function<FilterableStreamingHttpConnection, ? extends FLC> protocolBinder) {
+            final Function<FilterableStreamingHttpConnection,
+                    FilterableStreamingHttpLoadBalancedConnection> protocolBinder) {
         builderTemplate.loadBalancerFactory(loadBalancerFactory, protocolBinder);
         return this;
     }

@@ -17,6 +17,7 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.client.api.LoadBalancedConnection;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
+import io.servicetalk.http.api.FilterableStreamingHttpLoadBalancedConnection;
 import io.servicetalk.http.api.StreamingHttpConnectionFilter;
 
 import java.util.function.Function;
@@ -27,7 +28,7 @@ import java.util.function.Function;
  * FilterableStreamingHttpConnection}.
  */
 public final class StaticScoreHttpProtocolBinder extends StreamingHttpConnectionFilter
-        implements FilterableStreamingHttpConnection, LoadBalancedConnection {
+        implements FilterableStreamingHttpLoadBalancedConnection {
 
     private final float score;
 
@@ -47,13 +48,11 @@ public final class StaticScoreHttpProtocolBinder extends StreamingHttpConnection
      *
      * @param score the static score to return for this {@link LoadBalancedConnection} unless the provided {@link
      * FilterableStreamingHttpConnection} is an instance of {@link LoadBalancedConnection} and scoring is delegated.
-     * @param <FLC> type of {@link LoadBalancedConnection} after wrapping.
      * @return the wrapped connection
      */
-    @SuppressWarnings("unchecked")
-    public static <FLC extends FilterableStreamingHttpConnection & LoadBalancedConnection>
-    Function<FilterableStreamingHttpConnection, ? extends FLC> provideStaticScoreIfNeeded(float score) {
-        return conn -> conn instanceof LoadBalancedConnection ?
-                (FLC) conn : (FLC) new StaticScoreHttpProtocolBinder(conn, score);
+    public static Function<FilterableStreamingHttpConnection, FilterableStreamingHttpLoadBalancedConnection>
+    provideStaticScoreIfNeeded(float score) {
+        return conn -> conn instanceof FilterableStreamingHttpLoadBalancedConnection ?
+                (FilterableStreamingHttpLoadBalancedConnection) conn : new StaticScoreHttpProtocolBinder(conn, score);
     }
 }

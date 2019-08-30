@@ -24,6 +24,7 @@ import io.servicetalk.client.api.LoadBalancerFactory;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
+import io.servicetalk.http.api.FilterableStreamingHttpLoadBalancedConnection;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
@@ -138,12 +139,9 @@ interface SingleAddressGrpcClientBuilder<U, R,
      * @param protocolBinder The {@link Function} that bridges the HTTP protocol to the {@link LoadBalancedConnection}
      * which exposes a {@link LoadBalancedConnection#score()} function which may inform the {@link LoadBalancer} created
      * from the provided {@code loadBalancerFactory} while making connection selection decisions.
-     * @param <FLC> the type of {@link LoadBalancedConnection} after binding to the {@link
-     * FilterableStreamingHttpConnection}.
      * @return {@code this}.
      */
-    <FLC extends FilterableStreamingHttpConnection & LoadBalancedConnection>
     SingleAddressGrpcClientBuilder<U, R, SDE> loadBalancerFactory(
             LoadBalancerFactory<R> loadBalancerFactory,
-            Function<FilterableStreamingHttpConnection, FLC> protocolBinder);
+            Function<FilterableStreamingHttpConnection, FilterableStreamingHttpLoadBalancedConnection> protocolBinder);
 }

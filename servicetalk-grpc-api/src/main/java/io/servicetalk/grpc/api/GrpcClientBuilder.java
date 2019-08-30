@@ -17,12 +17,12 @@ package io.servicetalk.grpc.api;
 
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.client.api.ConnectionFactoryFilter;
-import io.servicetalk.client.api.LoadBalancedConnection;
 import io.servicetalk.client.api.LoadBalancerFactory;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
+import io.servicetalk.http.api.FilterableStreamingHttpLoadBalancedConnection;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
@@ -104,10 +104,9 @@ public abstract class GrpcClientBuilder<U, R>
             ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> serviceDiscoverer);
 
     @Override
-    public abstract <FLC extends FilterableStreamingHttpConnection & LoadBalancedConnection>
-    GrpcClientBuilder<U, R> loadBalancerFactory(
+    public abstract GrpcClientBuilder<U, R> loadBalancerFactory(
             LoadBalancerFactory<R> loadBalancerFactory,
-            Function<FilterableStreamingHttpConnection, FLC> protocolBinder);
+            Function<FilterableStreamingHttpConnection, FilterableStreamingHttpLoadBalancedConnection> protocolBinder);
 
     /**
      * Append the filter to the chain of filters used to decorate the client created by this builder.

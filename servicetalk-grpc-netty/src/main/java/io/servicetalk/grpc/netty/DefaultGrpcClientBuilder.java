@@ -17,7 +17,6 @@ package io.servicetalk.grpc.netty;
 
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.client.api.ConnectionFactoryFilter;
-import io.servicetalk.client.api.LoadBalancedConnection;
 import io.servicetalk.client.api.LoadBalancerFactory;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
@@ -25,6 +24,7 @@ import io.servicetalk.grpc.api.GrpcClientBuilder;
 import io.servicetalk.grpc.api.GrpcClientCallFactory;
 import io.servicetalk.grpc.api.GrpcClientSecurityConfigurator;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
+import io.servicetalk.http.api.FilterableStreamingHttpLoadBalancedConnection;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
@@ -166,10 +166,10 @@ final class DefaultGrpcClientBuilder<U, R> extends GrpcClientBuilder<U, R> {
     }
 
     @Override
-    public <FLC extends FilterableStreamingHttpConnection & LoadBalancedConnection>
-    GrpcClientBuilder<U, R> loadBalancerFactory(
+    public GrpcClientBuilder<U, R> loadBalancerFactory(
             final LoadBalancerFactory<R> loadBalancerFactory,
-            final Function<FilterableStreamingHttpConnection, FLC> protocolBinder) {
+            final Function<FilterableStreamingHttpConnection,
+                    FilterableStreamingHttpLoadBalancedConnection> protocolBinder) {
         httpClientBuilder.loadBalancerFactory(loadBalancerFactory, protocolBinder);
         return this;
     }

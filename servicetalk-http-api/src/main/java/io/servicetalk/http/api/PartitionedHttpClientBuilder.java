@@ -17,7 +17,6 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.client.api.ConnectionFactoryFilter;
-import io.servicetalk.client.api.LoadBalancedConnection;
 import io.servicetalk.client.api.LoadBalancerFactory;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
@@ -122,10 +121,9 @@ public abstract class PartitionedHttpClientBuilder<U, R>
             ServiceDiscoverer<U, R, ? extends PartitionedServiceDiscovererEvent<R>> serviceDiscoverer);
 
     @Override
-    public abstract <FLC extends FilterableStreamingHttpConnection & LoadBalancedConnection>
-    PartitionedHttpClientBuilder<U, R>
-    loadBalancerFactory(LoadBalancerFactory<R> loadBalancerFactory,
-                        Function<FilterableStreamingHttpConnection, ? extends FLC> protocolBinder);
+    public abstract PartitionedHttpClientBuilder<U, R> loadBalancerFactory(
+            LoadBalancerFactory<R> loadBalancerFactory,
+            Function<FilterableStreamingHttpConnection, FilterableStreamingHttpLoadBalancedConnection> protocolBinder);
 
     @Override
     public abstract PartitionedHttpClientBuilder<U, R> unresolvedAddressToHost(

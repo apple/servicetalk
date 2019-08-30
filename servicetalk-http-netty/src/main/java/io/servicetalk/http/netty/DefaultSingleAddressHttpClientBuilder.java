@@ -32,6 +32,7 @@ import io.servicetalk.http.api.CharSequences;
 import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
+import io.servicetalk.http.api.FilterableStreamingHttpLoadBalancedConnection;
 import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
@@ -74,12 +75,8 @@ import static java.util.Objects.requireNonNull;
  *
  * @param <U> the type of address before resolution (unresolved address)
  * @param <R> the type of address after resolution (resolved address)
- * @param <FLC> the type of {@link LoadBalancedConnection} after binding to the {@link
- * FilterableStreamingHttpConnection}
  */
-final class DefaultSingleAddressHttpClientBuilder<U, R,
-        FLC extends FilterableStreamingHttpConnection & LoadBalancedConnection>
-        extends SingleAddressHttpClientBuilder<U, R> {
+final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHttpClientBuilder<U, R> {
     @Nullable
     private final U address;
     @Nullable
@@ -88,7 +85,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R,
     private final HttpExecutionContextBuilder executionContextBuilder;
     private final ClientStrategyInfluencerChainBuilder influencerChainBuilder;
     private LoadBalancerFactory<R> loadBalancerFactory;
-    private Function<FilterableStreamingHttpConnection, ? extends FLC> protocolBinder;
+    private Function<FilterableStreamingHttpConnection, FilterableStreamingHttpLoadBalancedConnection> protocolBinder;
     private ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> serviceDiscoverer;
     private Function<U, CharSequence> hostToCharSequenceFunction = this::toAuthorityForm;
     @Nullable
@@ -134,7 +131,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R,
     }
 
     private DefaultSingleAddressHttpClientBuilder(@Nullable final U address,
-                                                  final DefaultSingleAddressHttpClientBuilder<U, R, FLC> from) {
+                                                  final DefaultSingleAddressHttpClientBuilder<U, R> from) {
         this.address = address;
         this.proxyAddress = from.proxyAddress;
         config = new HttpClientConfig(from.config);
@@ -151,34 +148,34 @@ final class DefaultSingleAddressHttpClientBuilder<U, R,
         connectionFactoryFilter = from.connectionFactoryFilter;
     }
 
-    private DefaultSingleAddressHttpClientBuilder<U, R, FLC> copy() {
+    private DefaultSingleAddressHttpClientBuilder<U, R> copy() {
         return new DefaultSingleAddressHttpClientBuilder<>(address, this);
     }
 
-    private DefaultSingleAddressHttpClientBuilder<U, R, FLC> copy(final U address) {
+    private DefaultSingleAddressHttpClientBuilder<U, R> copy(final U address) {
         return new DefaultSingleAddressHttpClientBuilder<>(requireNonNull(address), this);
     }
 
-    static DefaultSingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress, ?> forHostAndPort(
+    static DefaultSingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> forHostAndPort(
             final HostAndPort address) {
         return new DefaultSingleAddressHttpClientBuilder<>(address, globalDnsServiceDiscoverer());
     }
 
-    static DefaultSingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress, ?> forHostAndPortViaProxy(
+    static DefaultSingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> forHostAndPortViaProxy(
             final HostAndPort address, final HostAndPort proxyAddress) {
         return new DefaultSingleAddressHttpClientBuilder<>(address, proxyAddress,
                 hostAndPort -> toSocketAddressString(hostAndPort.hostName(), hostAndPort.port()),
                 globalDnsServiceDiscoverer());
     }
 
-    static <U> DefaultSingleAddressHttpClientBuilder<U, InetSocketAddress, ?> forResolvedAddress(
+    static <U> DefaultSingleAddressHttpClientBuilder<U, InetSocketAddress> forResolvedAddress(
             final U u, final InetSocketAddress address) {
         ServiceDiscoverer<U, InetSocketAddress, ServiceDiscovererEvent<InetSocketAddress>> sd =
                 new NoopServiceDiscoverer<>(u, address);
         return new DefaultSingleAddressHttpClientBuilder<>(u, sd);
     }
 
-    static DefaultSingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress, ?> forResolvedAddressViaProxy(
+    static DefaultSingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> forResolvedAddressViaProxy(
             final HostAndPort u, final InetSocketAddress address, final HostAndPort proxyAddress) {
         ServiceDiscoverer<HostAndPort, InetSocketAddress, ServiceDiscovererEvent<InetSocketAddress>> sd =
                 new NoopServiceDiscoverer<>(u, address);
@@ -186,25 +183,25 @@ final class DefaultSingleAddressHttpClientBuilder<U, R,
                 hostAndPort -> toSocketAddressString(hostAndPort.hostName(), hostAndPort.port()), sd);
     }
 
-    static DefaultSingleAddressHttpClientBuilder<InetSocketAddress, InetSocketAddress, ?> forResolvedAddressViaProxy(
+    static DefaultSingleAddressHttpClientBuilder<InetSocketAddress, InetSocketAddress> forResolvedAddressViaProxy(
             final InetSocketAddress u, final InetSocketAddress address, final InetSocketAddress proxyAddress) {
         ServiceDiscoverer<InetSocketAddress, InetSocketAddress, ServiceDiscovererEvent<InetSocketAddress>> sd =
                 new NoopServiceDiscoverer<>(u, address);
         return new DefaultSingleAddressHttpClientBuilder<>(u, proxyAddress, NetUtil::toSocketAddressString, sd);
     }
 
-    static DefaultSingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress, ?> forUnknownHostAndPort() {
+    static DefaultSingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> forUnknownHostAndPort() {
         return new DefaultSingleAddressHttpClientBuilder<>(globalDnsServiceDiscoverer());
     }
 
     static final class HttpClientBuildContext<U, R> {
-        final DefaultSingleAddressHttpClientBuilder<U, R, ?> builder;
+        final DefaultSingleAddressHttpClientBuilder<U, R> builder;
         final HttpExecutionContext executionContext;
         final StreamingHttpRequestResponseFactory reqRespFactory;
         @Nullable
         final U proxyAddress;
 
-        HttpClientBuildContext(final DefaultSingleAddressHttpClientBuilder<U, R, ?> builder,
+        HttpClientBuildContext(final DefaultSingleAddressHttpClientBuilder<U, R> builder,
                                final HttpExecutionContext executionContext,
                                final StreamingHttpRequestResponseFactory reqRespFactory,
                                @Nullable final U proxyAddress) {
@@ -334,7 +331,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R,
 
     private HttpClientBuildContext<U, R> buildContext0(@Nullable U address) {
 
-        final DefaultSingleAddressHttpClientBuilder<U, R, FLC> clonedBuilder = address == null ? copy() : copy(address);
+        final DefaultSingleAddressHttpClientBuilder<U, R> clonedBuilder = address == null ? copy() : copy(address);
         final HttpExecutionContext exec = clonedBuilder.executionContextBuilder.build();
         final StreamingHttpRequestResponseFactory reqRespFactory = clonedBuilder.config.isH2PriorKnowledge() ?
                 new DefaultStreamingHttpRequestResponseFactory(exec.bufferAllocator(),
@@ -351,7 +348,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R,
     }
 
     @Override
-    public DefaultSingleAddressHttpClientBuilder<U, R, FLC> ioExecutor(final IoExecutor ioExecutor) {
+    public DefaultSingleAddressHttpClientBuilder<U, R> ioExecutor(final IoExecutor ioExecutor) {
         executionContextBuilder.ioExecutor(ioExecutor);
         return this;
     }
@@ -363,31 +360,31 @@ final class DefaultSingleAddressHttpClientBuilder<U, R,
     }
 
     @Override
-    public DefaultSingleAddressHttpClientBuilder<U, R, FLC> bufferAllocator(final BufferAllocator allocator) {
+    public DefaultSingleAddressHttpClientBuilder<U, R> bufferAllocator(final BufferAllocator allocator) {
         executionContextBuilder.bufferAllocator(allocator);
         return this;
     }
 
     @Override
-    public <T> DefaultSingleAddressHttpClientBuilder<U, R, FLC> socketOption(SocketOption<T> option, T value) {
+    public <T> DefaultSingleAddressHttpClientBuilder<U, R> socketOption(SocketOption<T> option, T value) {
         config.tcpClientConfig().socketOption(option, value);
         return this;
     }
 
     @Override
-    public DefaultSingleAddressHttpClientBuilder<U, R, FLC> enableWireLogging(final String loggerName) {
+    public DefaultSingleAddressHttpClientBuilder<U, R> enableWireLogging(final String loggerName) {
         config.tcpClientConfig().enableWireLogging(loggerName);
         return this;
     }
 
     @Override
-    public DefaultSingleAddressHttpClientBuilder<U, R, FLC> disableWireLogging() {
+    public DefaultSingleAddressHttpClientBuilder<U, R> disableWireLogging() {
         config.tcpClientConfig().disableWireLogging();
         return this;
     }
 
     @Override
-    public DefaultSingleAddressHttpClientBuilder<U, R, FLC> headersFactory(final HttpHeadersFactory headersFactory) {
+    public DefaultSingleAddressHttpClientBuilder<U, R> headersFactory(final HttpHeadersFactory headersFactory) {
         config.headersFactory(headersFactory);
         return this;
     }
@@ -419,39 +416,39 @@ final class DefaultSingleAddressHttpClientBuilder<U, R,
     }
 
     @Override
-    public DefaultSingleAddressHttpClientBuilder<U, R, FLC> maxInitialLineLength(final int maxInitialLineLength) {
+    public DefaultSingleAddressHttpClientBuilder<U, R> maxInitialLineLength(final int maxInitialLineLength) {
         config.maxInitialLineLength(maxInitialLineLength);
         return this;
     }
 
     @Override
-    public DefaultSingleAddressHttpClientBuilder<U, R, FLC> maxHeaderSize(final int maxHeaderSize) {
+    public DefaultSingleAddressHttpClientBuilder<U, R> maxHeaderSize(final int maxHeaderSize) {
         config.maxHeaderSize(maxHeaderSize);
         return this;
     }
 
     @Override
-    public DefaultSingleAddressHttpClientBuilder<U, R, FLC> headersEncodedSizeEstimate(
+    public DefaultSingleAddressHttpClientBuilder<U, R> headersEncodedSizeEstimate(
             final int headersEncodedSizeEstimate) {
         config.headersEncodedSizeEstimate(headersEncodedSizeEstimate);
         return this;
     }
 
     @Override
-    public DefaultSingleAddressHttpClientBuilder<U, R, FLC> trailersEncodedSizeEstimate(
+    public DefaultSingleAddressHttpClientBuilder<U, R> trailersEncodedSizeEstimate(
             final int trailersEncodedSizeEstimate) {
         config.trailersEncodedSizeEstimate(trailersEncodedSizeEstimate);
         return this;
     }
 
     @Override
-    public DefaultSingleAddressHttpClientBuilder<U, R, FLC> maxPipelinedRequests(final int maxPipelinedRequests) {
+    public DefaultSingleAddressHttpClientBuilder<U, R> maxPipelinedRequests(final int maxPipelinedRequests) {
         config.maxPipelinedRequests(maxPipelinedRequests);
         return this;
     }
 
     @Override
-    public DefaultSingleAddressHttpClientBuilder<U, R, FLC> appendConnectionFilter(
+    public DefaultSingleAddressHttpClientBuilder<U, R> appendConnectionFilter(
             final StreamingHttpConnectionFilterFactory factory) {
         if (connectionFilterFactory == null) {
             connectionFilterFactory = requireNonNull(factory);
@@ -463,7 +460,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R,
     }
 
     @Override
-    public DefaultSingleAddressHttpClientBuilder<U, R, FLC> appendConnectionFactoryFilter(
+    public DefaultSingleAddressHttpClientBuilder<U, R> appendConnectionFactoryFilter(
             final ConnectionFactoryFilter<R, FilterableStreamingHttpConnection> factory) {
         connectionFactoryFilter = connectionFactoryFilter.append(factory);
         influencerChainBuilder.add(factory);
@@ -471,26 +468,26 @@ final class DefaultSingleAddressHttpClientBuilder<U, R,
     }
 
     @Override
-    public DefaultSingleAddressHttpClientBuilder<U, R, FLC> disableHostHeaderFallback() {
+    public DefaultSingleAddressHttpClientBuilder<U, R> disableHostHeaderFallback() {
         hostHeaderFilterFactoryFunction = null;
         return this;
     }
 
     @Override
-    public DefaultSingleAddressHttpClientBuilder<U, R, FLC> disableWaitForLoadBalancer() {
+    public DefaultSingleAddressHttpClientBuilder<U, R> disableWaitForLoadBalancer() {
         lbReadyFilterEnabled = false;
         return this;
     }
 
     @Override
-    public DefaultSingleAddressHttpClientBuilder<U, R, FLC> unresolvedAddressToHost(
+    public DefaultSingleAddressHttpClientBuilder<U, R> unresolvedAddressToHost(
             Function<U, CharSequence> unresolvedAddressToHostFunction) {
         this.hostToCharSequenceFunction = requireNonNull(unresolvedAddressToHostFunction);
         return this;
     }
 
     @Override
-    public DefaultSingleAddressHttpClientBuilder<U, R, FLC> appendClientFilter(
+    public DefaultSingleAddressHttpClientBuilder<U, R> appendClientFilter(
             final StreamingHttpClientFilterFactory factory) {
         if (clientFilterFactory == null) {
             clientFilterFactory = requireNonNull(factory);
@@ -502,20 +499,20 @@ final class DefaultSingleAddressHttpClientBuilder<U, R,
     }
 
     @Override
-    public DefaultSingleAddressHttpClientBuilder<U, R, FLC> serviceDiscoverer(
+    public DefaultSingleAddressHttpClientBuilder<U, R> serviceDiscoverer(
             final ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> serviceDiscoverer) {
         this.serviceDiscoverer = requireNonNull(serviceDiscoverer);
         return this;
     }
 
     @Override
-    public <IFLC extends FilterableStreamingHttpConnection & LoadBalancedConnection>
-    DefaultSingleAddressHttpClientBuilder<U, R, ?> loadBalancerFactory(
+    public DefaultSingleAddressHttpClientBuilder<U, R> loadBalancerFactory(
             final LoadBalancerFactory<R> loadBalancerFactory,
-            final Function<FilterableStreamingHttpConnection, ? extends IFLC> protocolBinder) {
+            final Function<FilterableStreamingHttpConnection,
+                    FilterableStreamingHttpLoadBalancedConnection> protocolBinder) {
         this.loadBalancerFactory = requireNonNull(loadBalancerFactory);
         influencerChainBuilder.add(loadBalancerFactory);
-        this.protocolBinder = (Function<FilterableStreamingHttpConnection, ? extends FLC>) protocolBinder;
+        this.protocolBinder = protocolBinder;
         return this;
     }
 
