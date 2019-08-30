@@ -18,11 +18,14 @@ package io.servicetalk.tcp.netty.internal;
 import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
 import io.servicetalk.transport.netty.internal.IdleTimeoutInitializer;
-import io.servicetalk.transport.netty.internal.PooledRecvByteBufAllocatorInitializer;
 import io.servicetalk.transport.netty.internal.SslServerChannelInitializer;
+import io.servicetalk.transport.netty.internal.WireLoggingInitializer;
 
 import io.netty.channel.Channel;
 import io.netty.handler.ssl.SslContext;
+
+import static io.servicetalk.transport.netty.internal.PooledRecvByteBufAllocatorInitializers.COPY_HANDLER_INITIALIZER;
+import static io.servicetalk.transport.netty.internal.PooledRecvByteBufAllocatorInitializers.POOLED_RECV_ALLOCATOR_INITIALIZER;
 
 /**
  * {@link ChannelInitializer} for TCP.
@@ -36,12 +39,14 @@ public class TcpServerChannelInitializer implements ChannelInitializer {
      *
      * @param config to use for initialization.
      */
-    public TcpServerChannelInitializer(ReadOnlyTcpServerConfig config) {
-        ChannelInitializer delegate = ChannelInitializer.defaultInitializer();
-        delegate = delegate.andThen(new PooledRecvByteBufAllocatorInitializer());
+    public TcpServerChannelInitializer(final ReadOnlyTcpServerConfig config) {
+        ChannelInitializer delegate = ChannelInitializer.defaultInitializer()
+                .andThen(POOLED_RECV_ALLOCATOR_INITIALIZER);
+
         if (config.idleTimeoutMs() > 0) {
             delegate = delegate.andThen(new IdleTimeoutInitializer(config.idleTimeoutMs()));
         }
+
         if (config.isSniEnabled()) {
             delegate = delegate.andThen(new SslServerChannelInitializer(config.domainNameMapping()));
         } else {
@@ -50,14 +55,18 @@ public class TcpServerChannelInitializer implements ChannelInitializer {
                 delegate = delegate.andThen(new SslServerChannelInitializer(sslContext));
             }
         }
-        if (config.wireLoggingInitializer() != null) {
-            delegate = delegate.andThen(config.wireLoggingInitializer());
+
+        delegate = delegate.andThen(COPY_HANDLER_INITIALIZER);
+
+        final WireLoggingInitializer wireLoggingInitializer = config.wireLoggingInitializer();
+        if (wireLoggingInitializer != null) {
+            delegate = delegate.andThen(wireLoggingInitializer);
         }
         this.delegate = delegate;
     }
 
     @Override
-    public ConnectionContext init(Channel channel, ConnectionContext context) {
+    public ConnectionContext init(final Channel channel, final ConnectionContext context) {
         return delegate.init(channel, context);
     }
 }
