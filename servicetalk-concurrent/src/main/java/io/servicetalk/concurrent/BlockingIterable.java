@@ -22,6 +22,8 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 import java.util.function.LongSupplier;
 
+import javax.annotation.Nullable;
+
 import static java.lang.System.nanoTime;
 import static java.util.Objects.requireNonNull;
 import static java.util.Spliterators.spliteratorUnknownSize;
@@ -111,5 +113,51 @@ public interface BlockingIterable<T> extends CloseableIterable<T> {
     default BlockingSpliterator<T> spliterator() {
         BlockingIterator<T> iterator = iterator();
         return new SpliteratorToBlockingSpliterator<>(iterator, spliteratorUnknownSize(iterator, 0));
+    }
+
+    /**
+     * A {@link BlockingIterable} that supports to dynamically emitting items using {@link #emit(Object)}.
+     * <p>
+     * If multiple {@link BlockingIterator}s are created by this {@link BlockingIterable} then an implementation
+     * will choose how to distribute the items emitted from {@link #emit(Object)} to those {@link BlockingIterator}s.
+     * There is no common guarantee about the nature of that distribution.
+     *
+     * @param <T> the type of elements returned by the {@link BlockingIterator}.
+     */
+    interface Processor<T> extends BlockingIterable<T>, AutoCloseable {
+
+        /**
+         * Emits the passed {@code nextItem} from the {@link BlockingIterator} when called.
+         *
+         * @param nextItem to emit from the {@link BlockingIterator} when called.
+         * @throws Exception If the item could not be emitted.
+         */
+        void emit(@Nullable T nextItem) throws Exception;
+
+        /**
+         * Terminates this {@link BlockingIterable} and all the current or future {@link BlockingIterator}s with a
+         * failure.
+         * <p>
+         * After this method returns, any subsequent calls to {@link #emit(Object)} <strong>MUST</strong> throw an
+         * {@link Exception}. All current and future {@link BlockingIterator}s created by this {@link BlockingIterable}
+         * <strong>MUST</strong> eventually throw an {@link Exception} which is the same as passed {@code cause} or
+         * wraps the same.
+         *
+         * @param cause for the failure.
+         * @throws Exception If this {@link BlockingIterable} can not be terminated with a failure.
+         */
+        void fail(Throwable cause) throws Exception;
+
+        /**
+         * Closes this {@link BlockingIterable} and all the current or future {@link BlockingIterator}s.
+         * <p>
+         * After this method returns, any subsequent calls to {@link #emit(Object)} <strong>MUST</strong> throw an
+         * {@link Exception}. All current and future {@link BlockingIterator}s created by this {@link BlockingIterable}
+         * <strong>MUST</strong> eventually return {@code false} from the various {@code hasNext} methods.
+         *
+         * @throws Exception If closure failed.
+         */
+        @Override
+        void close() throws Exception;
     }
 }

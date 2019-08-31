@@ -15,6 +15,8 @@
  */
 package io.servicetalk.concurrent.api;
 
+import io.servicetalk.concurrent.BlockingIterable;
+import io.servicetalk.concurrent.BlockingIterator;
 import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.SingleSource;
 
@@ -48,5 +50,29 @@ public final class Processors {
      */
     public static <T> SingleSource.Processor<T, T> newSingleProcessor() {
         return new SingleProcessor<>();
+    }
+
+    /**
+     * Create a new {@link BlockingIterable.Processor}.
+     *
+     * @param <T> the type of elements emitted by the returned {@link BlockingIterable}.
+     * @return a new {@link BlockingIterable.Processor}.
+     */
+    public static <T> BlockingIterable.Processor<T> newBlockingIterableProcessor() {
+        return new DefaultBlockingIterableProcessor<>(32);
+    }
+
+    /**
+     * Create a new {@link BlockingIterable.Processor}.
+     *
+     * @param maxBufferSize Maximum number of items that are requested to be sent via
+     * {@link BlockingIterable.Processor#emit(Object)} but not yet emitted from a {@link BlockingIterator}. If this
+     * buffer size is reached a subsequent call to {@link BlockingIterable.Processor#emit(Object) emit} will block till
+     * an item is emitted from a {@link BlockingIterator}.
+     * @param <T> the type of elements emitted by the returned {@link BlockingIterable}.
+     * @return a new {@link BlockingIterable.Processor}.
+     */
+    public static <T> BlockingIterable.Processor<T> newBlockingIterableProcessor(int maxBufferSize) {
+        return new DefaultBlockingIterableProcessor<>(maxBufferSize);
     }
 }
