@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 package io.servicetalk.gradle.plugin.internal
 
 import org.gradle.api.GradleException
-import org.gradle.api.JavaVersion
 import org.gradle.api.Project
 import org.gradle.api.Task
 import org.gradle.api.XmlProvider
@@ -27,11 +26,7 @@ import org.gradle.api.tasks.SourceSet
 import org.gradle.api.tasks.bundling.Jar
 import org.gradle.api.tasks.javadoc.Javadoc
 
-import static org.gradle.api.JavaVersion.VERSION_1_8
-
 final class ProjectUtils {
-  static final JavaVersion TARGET_VERSION = VERSION_1_8
-
   static void enforceUtf8FileSystem() {
     def fenc = System.getProperty("file.encoding")
     if (!"UTF-8".equalsIgnoreCase(fenc)) {

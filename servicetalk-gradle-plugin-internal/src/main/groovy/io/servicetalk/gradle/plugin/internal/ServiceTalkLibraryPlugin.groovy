@@ -31,7 +31,9 @@ import static io.servicetalk.gradle.plugin.internal.ProjectUtils.createJavadocJa
 import static io.servicetalk.gradle.plugin.internal.ProjectUtils.createSourcesJarTask
 import static io.servicetalk.gradle.plugin.internal.ProjectUtils.getOrCreateJavadocTask
 import static io.servicetalk.gradle.plugin.internal.ProjectUtils.locateBuildLevelConfigFile
-import static io.servicetalk.gradle.plugin.internal.ProjectUtils.TARGET_VERSION
+import static io.servicetalk.gradle.plugin.internal.Versions.PMD_VERSION
+import static io.servicetalk.gradle.plugin.internal.Versions.SPOTBUGS_VERSION
+import static io.servicetalk.gradle.plugin.internal.Versions.TARGET_VERSION
 
 final class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
   void apply(Project project) {
@@ -128,7 +130,7 @@ final class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
       pluginManager.apply("pmd")
 
       pmd {
-        toolVersion = "6.17.0"
+        toolVersion = PMD_VERSION
         ruleSets = []
         ruleSetConfig = resources.text.fromString(getClass().getResourceAsStream("pmd/basic.xml").text)
       }
@@ -150,7 +152,7 @@ final class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
       pluginManager.apply("com.github.spotbugs")
 
       spotbugs {
-        toolVersion = "3.1.12"
+        toolVersion = SPOTBUGS_VERSION
       }
 
       // This task defaults to XML reporting for CI, but humans like HTML

@@ -14,11 +14,15 @@
  * limitations under the License.
  */
 
+// No direct access to properties from here so we need to load them again
+Properties props = new Properties()
+props.load(new FileInputStream("$project.projectDir/../gradle.properties"))
+
 dependencies {
   compile gradleApi()
   compile localGroovy()
-  compile "com.jfrog.bintray.gradle:gradle-bintray-plugin:1.8.4"
-  compile "gradle.plugin.com.github.spotbugs:spotbugs-gradle-plugin:2.0.0"
+  compile "com.jfrog.bintray.gradle:gradle-bintray-plugin:$props.bintrayPluginVersion"
+  compile "gradle.plugin.com.github.spotbugs:spotbugs-gradle-plugin:$props.spotbugsPluginVersion"
 }
 
 gradlePlugin {

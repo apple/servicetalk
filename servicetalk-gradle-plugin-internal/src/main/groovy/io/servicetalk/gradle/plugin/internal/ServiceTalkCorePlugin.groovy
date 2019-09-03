@@ -27,7 +27,8 @@ import static io.servicetalk.gradle.plugin.internal.ProjectUtils.copyResource
 import static io.servicetalk.gradle.plugin.internal.ProjectUtils.enforceUtf8FileSystem
 import static io.servicetalk.gradle.plugin.internal.ProjectUtils.locateBuildLevelConfigFile
 import static io.servicetalk.gradle.plugin.internal.ProjectUtils.writeToFile
-import static io.servicetalk.gradle.plugin.internal.ProjectUtils.TARGET_VERSION
+import static io.servicetalk.gradle.plugin.internal.Versions.CHECKSTYLE_VERSION
+import static io.servicetalk.gradle.plugin.internal.Versions.TARGET_VERSION
 
 class ServiceTalkCorePlugin implements Plugin<Project> {
   void apply(Project project) {
@@ -43,7 +44,7 @@ class ServiceTalkCorePlugin implements Plugin<Project> {
       pluginManager.apply("checkstyle")
 
       checkstyle {
-        toolVersion = "8.24"
+        toolVersion = CHECKSTYLE_VERSION
         configDir = file("$buildDir/checkstyle")
       }
 
@@ -83,8 +84,8 @@ class ServiceTalkCorePlugin implements Plugin<Project> {
         // The classpath field must be non-null, but could be empty because it's not required for this task:
         classpath = project.files([])
         source = fileTree(".") {
-          includes = ["docker/**", "gradle/**", "*.gradle", "*.properties", "scripts/**"]
-          excludes = ["gradle/wrapper/**", "build/**"]
+          includes = ["docker/**", "gradle/**", "*.gradle", "*.properties", "scripts/**", "buildSrc/**"]
+          excludes = ["gradle/wrapper/**", "**/build/**", "**/.gradle/**"]
         }
       }
 
