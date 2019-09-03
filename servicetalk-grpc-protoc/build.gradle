@@ -14,18 +14,9 @@
  * limitations under the License.
  */
 buildscript {
-  if (!repositories) {
-    repositories {
-      jcenter()
-      maven { url "https://plugins.gradle.org/m2/" }
-    }
-  }
-
   dependencies {
-    classpath "io.servicetalk:servicetalk-gradle-plugin-internal:$project.version"
     classpath "com.github.jengelman.gradle.plugins:shadow:4.0.4"
-    // TODO find a way to share this version with servicetalk-grpc-gradle-plugin/build.gradle
-    classpath "com.google.protobuf:protobuf-gradle-plugin:0.8.10"
+    classpath "com.google.protobuf:protobuf-gradle-plugin:$protobufGradlePluginVersion"
   }
 }
 
@@ -34,15 +25,15 @@ apply plugin: "com.github.johnrengelman.shadow"
 apply plugin: "com.google.protobuf"
 
 dependencies {
-  implementation "io.servicetalk:servicetalk-bom-internal:$project.version"
+  api platform(project(":servicetalk-bom-internal"))
 
+  implementation project(":servicetalk-annotations")
   implementation "com.google.code.findbugs:jsr305"
   implementation "com.google.protobuf:protobuf-java"
   implementation "com.squareup:javapoet"
-  implementation "io.servicetalk:servicetalk-annotations:$project.version"
 
-  testImplementation "io.servicetalk:servicetalk-grpc-api:$project.version"
-  testImplementation "io.servicetalk:servicetalk-grpc-protobuf:$project.version"
+  testImplementation project(":servicetalk-grpc-api")
+  testImplementation project(":servicetalk-grpc-protobuf")
 }
 
 jar {
@@ -79,7 +70,7 @@ exit1
     outputFile.executable = true
   }
 }
-test.dependsOn buildExecutable
+check.dependsOn buildExecutable
 assemble.dependsOn buildExecutable
 ideaModule.dependsOn buildExecutable
 
@@ -99,10 +90,6 @@ publishing {
     }
   }
 }
-
-// Versions for managed dependencies are not available as properties so we retrieve it from a concrete dependency
-def protobufVersion = configurations.compileClasspath.resolvedConfiguration.firstLevelModuleDependencies
-    .findAll { it.moduleName == "protobuf-java" }[0].moduleVersion
 
 protobuf {
   protoc {

@@ -15,7 +15,8 @@
   ~ limitations under the License.
   -->
 <FindBugsFilter>
-  <!-- If we don't override equals in this way we won't be able to use equality comparison with other ServiceTalk HttpHeaders. -->
+  <!-- If we don't override equals in this way we won't be able to use equality comparison
+       with other ServiceTalk HttpHeaders. -->
   <Match>
     <Class name="io.servicetalk.http.netty.ServiceTalkToNettyHttpHeaders"/>
     <Method name="equals"/>

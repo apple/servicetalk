@@ -13,75 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-// TODO find a way to re-use most of the config from servicetalk-gradle-plugin-internal/build.gradle
-plugins {
-  id "com.jfrog.bintray" version "1.8.4"
-}
 
+apply plugin: "servicetalk-library"
 apply plugin: "groovy"
-apply plugin: "idea"
-apply plugin: "maven-publish"
-
-repositories {
-  jcenter()
-  maven { url "https://plugins.gradle.org/m2/" }
-}
-
-dependencies {
-  compile gradleApi()
-  compile localGroovy()
-  // these are plugins that are applied by the plugin
-  // TODO find a way to share this version with servicetalk-grpc-protoc/build.gradle
-  compile "com.google.protobuf:protobuf-gradle-plugin:0.8.10"
-}
+apply plugin: "java-gradle-plugin"
+apply from: "plugin-config.gradle"
 
 processResources {
-  filesMatching('META-INF/gradle-plugins/servicetalk-grpc.properties') {
+  filesMatching("META-INF/servicetalk-grpc-gradle-plugin.properties") {
     expand(
         "projectVersion": project.version
     )
   }
 }
 
-jar {
-  manifest {
-    attributes "Built-JDK": System.getProperty("java.version"),
-        "Specification-Title": project.name,
-        "Specification-Version": "${-> project.version}",
-        "Specification-Vendor": "Apple Inc.",
-        "Implementation-Title": project.name,
-        "Implementation-Version": "${-> project.version}",
-        "Implementation-Vendor": "Apple Inc.",
-        "Automatic-Module-Name": "io.${project.name.replace("-", ".")}"
-  }
-}
-
-publishing {
-  publications {
-    mavenJava(MavenPublication) {
-      // publish jars, sources and docs
-      from components.java
-    }
-  }
-}
-
-if (System.getenv("BINTRAY_USER") && System.getenv("BINTRAY_KEY")) {
-  bintray {
-    user = System.getenv("BINTRAY_USER")
-    key = System.getenv("BINTRAY_KEY")
-    publications = ["mavenJava"]
-    pkg {
-      userOrg = "servicetalk"
-      repo = "servicetalk"
-      name = project.name
-      licenses = ["Apache-2.0"]
-      vcsUrl = "https://github.com/apple/servicetalk.git"
-    }
-    override = true
-    publish = true
-  }
-}
-
-if (!hasProperty('releaseBuild') && !version.toString().endsWith("-SNAPSHOT")) {
-  version += "-SNAPSHOT"
+// Ignore Spotbugs for this module
+spotbugs {
+ ignoreFailures = true
+ showProgress = false
 }

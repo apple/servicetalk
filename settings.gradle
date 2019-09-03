@@ -13,53 +13,65 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-enableFeaturePreview("IMPROVED_POM_SUPPORT")
+
 rootProject.name = "servicetalk"
 
-includeBuild "servicetalk-gradle-plugin-internal"
-includeBuild "servicetalk-bom"
-includeBuild "servicetalk-bom-internal"
-includeBuild "servicetalk-annotations"
-includeBuild "servicetalk-buffer-api"
-includeBuild "servicetalk-buffer-netty"
-includeBuild "servicetalk-client-api"
-includeBuild "servicetalk-client-api-internal"
-includeBuild "servicetalk-concurrent"
-includeBuild "servicetalk-concurrent-api"
-includeBuild "servicetalk-concurrent-api-internal"
-includeBuild "servicetalk-concurrent-internal"
-includeBuild "servicetalk-concurrent-reactivestreams"
-includeBuild "servicetalk-data-jackson"
-includeBuild "servicetalk-data-jackson-jersey"
-includeBuild "servicetalk-dns-discovery-netty"
-includeBuild "servicetalk-grpc-api"
-includeBuild "servicetalk-grpc-gradle-plugin"
-includeBuild "servicetalk-grpc-netty"
-includeBuild "servicetalk-grpc-protobuf"
-includeBuild "servicetalk-grpc-protoc"
-includeBuild "servicetalk-http-api"
-includeBuild "servicetalk-http-netty"
-includeBuild "servicetalk-http-router-jersey"
-includeBuild "servicetalk-http-router-jersey-internal"
-includeBuild "servicetalk-http-router-predicate"
-includeBuild "servicetalk-http-security-jersey"
-includeBuild "servicetalk-http-utils"
-includeBuild "servicetalk-loadbalancer"
-includeBuild "servicetalk-log4j2-mdc"
-includeBuild "servicetalk-log4j2-mdc-utils"
-includeBuild "servicetalk-serialization-api"
-includeBuild "servicetalk-tcp-netty-internal"
-includeBuild "servicetalk-test-resources"
-includeBuild "servicetalk-transport-api"
-includeBuild "servicetalk-transport-netty"
-includeBuild "servicetalk-transport-netty-internal"
-includeBuild "servicetalk-benchmarks"
-includeBuild "servicetalk-opentracing-inmemory"
-includeBuild "servicetalk-opentracing-inmemory-api"
-includeBuild "servicetalk-opentracing-internal"
-includeBuild "servicetalk-opentracing-log4j2"
-includeBuild "servicetalk-opentracing-asynccontext"
-includeBuild "servicetalk-opentracing-zipkin-publisher"
-includeBuild "servicetalk-opentracing-http"
-includeBuild "servicetalk-oio-api"
-includeBuild "servicetalk-examples"
+include "servicetalk-annotations",
+        "servicetalk-benchmarks",
+        "servicetalk-bom",
+        "servicetalk-bom-internal",
+        "servicetalk-buffer-api",
+        "servicetalk-buffer-netty",
+        "servicetalk-client-api",
+        "servicetalk-client-api-internal",
+        "servicetalk-concurrent",
+        "servicetalk-concurrent-api",
+        "servicetalk-concurrent-api-internal",
+        "servicetalk-concurrent-internal",
+        "servicetalk-concurrent-reactivestreams",
+        "servicetalk-data-jackson",
+        "servicetalk-data-jackson-jersey",
+        "servicetalk-dns-discovery-netty",
+        "servicetalk-examples:grpc:helloworld",
+        "servicetalk-examples:http:helloworld",
+        "servicetalk-examples:http:jaxrs",
+        "servicetalk-examples:http:metadata",
+        "servicetalk-examples:http:serialization",
+        "servicetalk-examples:http:service-composition",
+        "servicetalk-gradle-plugin-internal",
+        "servicetalk-grpc-api",
+        "servicetalk-grpc-gradle-plugin",
+        "servicetalk-grpc-netty",
+        "servicetalk-grpc-protobuf",
+        "servicetalk-grpc-protoc",
+        "servicetalk-http-api",
+        "servicetalk-http-netty",
+        "servicetalk-http-router-jersey",
+        "servicetalk-http-router-jersey-internal",
+        "servicetalk-http-router-predicate",
+        "servicetalk-http-security-jersey",
+        "servicetalk-http-utils",
+        "servicetalk-loadbalancer",
+        "servicetalk-log4j2-mdc",
+        "servicetalk-log4j2-mdc-utils",
+        "servicetalk-oio-api",
+        "servicetalk-opentracing-inmemory",
+        "servicetalk-opentracing-inmemory-api",
+        "servicetalk-opentracing-internal",
+        "servicetalk-opentracing-log4j2",
+        "servicetalk-opentracing-asynccontext",
+        "servicetalk-opentracing-zipkin-publisher",
+        "servicetalk-opentracing-http",
+        "servicetalk-serialization-api",
+        "servicetalk-tcp-netty-internal",
+        "servicetalk-test-resources",
+        "servicetalk-transport-api",
+        "servicetalk-transport-netty",
+        "servicetalk-transport-netty-internal"
+
+project(":servicetalk-examples:grpc:helloworld").name = "servicetalk-examples-grpc-helloworld"
+project(":servicetalk-examples:http:helloworld").name = "servicetalk-examples-http-helloworld"
+project(":servicetalk-examples:http:jaxrs").name = "servicetalk-examples-http-jaxrs"
+project(":servicetalk-examples:http:metadata").name = "servicetalk-examples-http-metadata"
+project(":servicetalk-examples:http:serialization").name = "servicetalk-examples-http-serialization"
+project(":servicetalk-examples:http:service-composition").name = "servicetalk-examples-http-service-composition"

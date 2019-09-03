@@ -91,6 +91,9 @@
   <!-- General formatting -->
   <module name="FileTabCharacter"/>
   <module name="JavadocPackage"/>
+  <module name="LineLength">
+    <property name="max" value="120"/>
+  </module>
   <module name="NewlineAtEndOfFile">
     <property name="lineSeparator" value="lf"/>
   </module>
@@ -245,9 +248,6 @@
     <module name="OuterTypeFilename"/>
     <module name="UncommentedMain"/>
     <module name="UpperEll"/>
-    <module name="LineLength">
-      <property name="max" value="120"/>
-    </module>
 
     <!-- Coding -->
     <module name="ArrayTrailingComma"/>

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,46 +14,33 @@
  * limitations under the License.
  */
 
-buildscript {
-  if (!repositories) {
-    repositories {
-      jcenter()
-      maven { url "https://plugins.gradle.org/m2/" }
-    }
-  }
-
-  dependencies {
-    classpath "io.servicetalk:servicetalk-gradle-plugin-internal:$project.version"
-  }
-}
-
 apply plugin: "servicetalk-library"
 
 dependencies {
-  implementation "io.servicetalk:servicetalk-bom-internal:$project.version"
+  api platform(project(":servicetalk-bom-internal"))
 
+  implementation project(":servicetalk-annotations")
+  implementation project(":servicetalk-buffer-netty")
+  implementation project(":servicetalk-concurrent-api-internal")
+  implementation project(":servicetalk-concurrent-internal")
+  implementation project(":servicetalk-data-jackson")
+  implementation project(":servicetalk-http-api")
+  implementation project(":servicetalk-http-router-jersey")
+  implementation project(":servicetalk-http-router-jersey-internal")
+  implementation project(":servicetalk-http-utils")
+  implementation project(":servicetalk-transport-netty")
   implementation "com.google.code.findbugs:jsr305"
-  implementation "io.servicetalk:servicetalk-annotations:$project.version"
-  implementation "io.servicetalk:servicetalk-buffer-netty:$project.version"
-  implementation "io.servicetalk:servicetalk-concurrent-api-internal:$project.version"
-  implementation "io.servicetalk:servicetalk-concurrent-internal:$project.version"
-  implementation "io.servicetalk:servicetalk-data-jackson:$project.version"
-  implementation "io.servicetalk:servicetalk-http-api:$project.version"
-  implementation "io.servicetalk:servicetalk-http-router-jersey:$project.version"
-  implementation "io.servicetalk:servicetalk-http-router-jersey-internal:$project.version"
-  implementation "io.servicetalk:servicetalk-http-utils:$project.version"
-  implementation "io.servicetalk:servicetalk-transport-netty:$project.version"
   implementation "org.glassfish.jersey.core:jersey-server"
   implementation "org.slf4j:slf4j-api"
 
-  testImplementation "io.servicetalk:servicetalk-concurrent-api-testFixtures:$project.version"
-  testImplementation "io.servicetalk:servicetalk-concurrent-internal-testFixtures:$project.version"
-  testImplementation "io.servicetalk:servicetalk-http-netty:$project.version"
-  testImplementation "io.servicetalk:servicetalk-http-router-jersey-testFixtures:$project.version"
-  testImplementation "io.servicetalk:servicetalk-http-router-predicate:$project.version"
-  testImplementation "io.servicetalk:servicetalk-test-resources:$project.version"
-  testImplementation "io.servicetalk:servicetalk-transport-netty-internal:$project.version"
-  testImplementation "io.servicetalk:servicetalk-transport-netty-internal-testFixtures:$project.version"
+  testImplementation testFixtures(project(":servicetalk-concurrent-api"))
+  testImplementation testFixtures(project(":servicetalk-concurrent-internal"))
+  testImplementation testFixtures(project(":servicetalk-transport-netty-internal"))
+  testImplementation testFixtures(project(":servicetalk-http-router-jersey"))
+  testImplementation project(":servicetalk-http-netty")
+  testImplementation project(":servicetalk-http-router-predicate")
+  testImplementation project(":servicetalk-test-resources")
+  testImplementation project(":servicetalk-transport-netty-internal")
   testImplementation "junit:junit"
   testImplementation "net.javacrumbs.json-unit:json-unit"
   testImplementation "org.glassfish.jersey.inject:jersey-hk2"

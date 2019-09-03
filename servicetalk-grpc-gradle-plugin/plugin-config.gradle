@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,12 +14,21 @@
  * limitations under the License.
  */
 
-apply plugin: "servicetalk-library"
+// No direct access to properties from here so we need to load them again
+Properties props = new Properties()
+props.load(new FileInputStream("$project.projectDir/../gradle.properties"))
 
 dependencies {
-  api platform(project(":servicetalk-bom-internal"))
+  compile gradleApi()
+  compile localGroovy()
+  compile "com.google.protobuf:protobuf-gradle-plugin:$props.protobufGradlePluginVersion"
+}
 
-  implementation project(":servicetalk-annotations")
-
-  implementation "com.google.code.findbugs:jsr305"
+gradlePlugin {
+  plugins {
+    serviceTalkGrpcPlugin {
+      id = "servicetalk-grpc"
+      implementationClass = "io.servicetalk.grpc.gradle.plugin.ServiceTalkGrpcPlugin"
+    }
+  }
 }

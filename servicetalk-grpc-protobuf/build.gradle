@@ -13,56 +13,39 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-buildscript {
-  if (!repositories) {
-    repositories {
-      jcenter()
-      maven { url "https://plugins.gradle.org/m2/" }
-    }
-  }
 
+buildscript {
   dependencies {
-    classpath "io.servicetalk:servicetalk-gradle-plugin-internal:$project.version"
-    // TODO find a way to share this version with servicetalk-grpc-gradle-plugin/build.gradle
-    classpath "com.google.protobuf:protobuf-gradle-plugin:0.8.10"
+    classpath "com.google.protobuf:protobuf-gradle-plugin:$protobufGradlePluginVersion"
   }
 }
 
 apply plugin: "servicetalk-library"
 apply plugin: "com.google.protobuf"
 
-dependencies {
-  implementation "io.servicetalk:servicetalk-bom-internal:$project.version"
+ideaModule.dependsOn "generateTestProto"
 
-  api "io.servicetalk:servicetalk-grpc-api:$project.version"
+dependencies {
+  api platform(project(":servicetalk-bom-internal"))
+
+  api project(":servicetalk-grpc-api")
   api "com.google.protobuf:protobuf-java"
   api "com.google.api.grpc:proto-google-common-protos"
 
-  implementation "io.servicetalk:servicetalk-annotations:$project.version"
-  implementation "io.servicetalk:servicetalk-buffer-netty:$project.version"
+  implementation project(":servicetalk-annotations")
+  implementation project(":servicetalk-buffer-netty")
   implementation "org.slf4j:slf4j-api"
   implementation "com.google.code.findbugs:jsr305"
 
-  testImplementation "io.servicetalk:servicetalk-test-resources:$project.version"
+  testImplementation project(":servicetalk-test-resources")
   testImplementation "junit:junit"
   testImplementation "org.hamcrest:hamcrest-library"
   testImplementation "org.mockito:mockito-core"
 }
 
-def protobufVersion = "3.9.0"
-
 protobuf {
   protoc {
     artifact = "com.google.protobuf:protoc:$protobufVersion"
-  }
-}
-
-// Add the generated code used for tests to the source set.
-sourceSets {
-  test {
-    resources {
-      srcDir "${protobuf.generatedFilesBaseDir}/source/test/java"
-    }
   }
 }
 
