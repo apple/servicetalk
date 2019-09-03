@@ -22,6 +22,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -97,5 +98,39 @@ public class DefaultBlockingIterableProcessorTest {
         BlockingIterator<Integer> iterator = processor.iterator();
         processor.next(null);
         assertThat("Unexpected item received.", iterator.next(), is(nullValue()));
+    }
+
+    @Test
+    public void iteratorCloseAfterProcessorTermination() throws Exception {
+        BlockingIterator<Integer> iterator = processor.iterator();
+        processor.close();
+        iterator.close();
+        expectedException.expect(instanceOf(CancellationException.class));
+        iterator.hasNext();
+    }
+
+    @Test
+    public void iteratorCloseAfterProcessorFail() throws Exception {
+        BlockingIterator<Integer> iterator = processor.iterator();
+        processor.fail(DELIBERATE_EXCEPTION);
+        iterator.close();
+        expectedException.expect(instanceOf(CancellationException.class));
+        iterator.hasNext();
+    }
+
+    @Test
+    public void postIteratorCloseHasNextThrows() throws Exception {
+        BlockingIterator<Integer> iterator = processor.iterator();
+        iterator.close();
+        expectedException.expect(instanceOf(CancellationException.class));
+        iterator.hasNext();
+    }
+
+    @Test
+    public void postIteratorCloseNextThrows() throws Exception {
+        BlockingIterator<Integer> iterator = processor.iterator();
+        iterator.close();
+        expectedException.expect(instanceOf(CancellationException.class));
+        iterator.next();
     }
 }
