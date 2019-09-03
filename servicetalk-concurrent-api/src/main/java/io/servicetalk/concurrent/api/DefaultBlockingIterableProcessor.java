@@ -41,11 +41,11 @@ final class DefaultBlockingIterableProcessor<T> implements BlockingIterable.Proc
 
     @Override
     public BlockingIterator<T> iterator() {
-        return new PollingBlockingIterator();
+        return new PollingBlockingIterator<>(buffer);
     }
 
     @Override
-    public void emit(@Nullable final T nextItem) throws Exception {
+    public void next(@Nullable final T nextItem) throws Exception {
         verifyOpen("Can not emit items to a closed iterable.");
 
         buffer.put(maskNull(nextItem));
@@ -53,7 +53,7 @@ final class DefaultBlockingIterableProcessor<T> implements BlockingIterable.Proc
 
     @Override
     public void fail(final Throwable cause) throws Exception {
-        verifyOpen("Iterable already closed.");
+        verifyOpen("Can not fail iterable that is already closed.");
 
         terminationReason = TerminalNotification.error(cause);
         buffer.put(terminationReason);
@@ -81,11 +81,16 @@ final class DefaultBlockingIterableProcessor<T> implements BlockingIterable.Proc
         return nextItem == null ? NULL_MASK : nextItem;
     }
 
-    private final class PollingBlockingIterator implements BlockingIterator<T> {
+    private static final class PollingBlockingIterator<T> implements BlockingIterator<T> {
         @Nullable
         private Object next;
         @Nullable
         private TerminalNotification terminal;
+        private final BlockingQueue<Object> buffer;
+
+        PollingBlockingIterator(final BlockingQueue<Object> buffer) {
+            this.buffer = buffer;
+        }
 
         @Override
         public boolean hasNext(final long timeout, final TimeUnit unit) throws TimeoutException {

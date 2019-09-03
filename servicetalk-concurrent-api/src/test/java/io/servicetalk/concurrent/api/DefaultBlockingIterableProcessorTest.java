@@ -44,8 +44,8 @@ public class DefaultBlockingIterableProcessorTest {
 
     @Test
     public void emitBuffersNoIterator() throws Exception {
-        processor.emit(1);
-        processor.emit(2);
+        processor.next(1);
+        processor.next(2);
         BlockingIterator<Integer> iterator = processor.iterator();
         assertThat("Unexpected item received.", iterator.next(), is(1));
         assertThat("Unexpected item received.", iterator.next(), is(2));
@@ -56,8 +56,8 @@ public class DefaultBlockingIterableProcessorTest {
     @Test
     public void emitBuffersNoDemand() throws Exception {
         BlockingIterator<Integer> iterator = processor.iterator();
-        processor.emit(1);
-        processor.emit(2);
+        processor.next(1);
+        processor.next(2);
         assertThat("Unexpected item received.", iterator.next(), is(1));
         assertThat("Unexpected item received.", iterator.next(), is(2));
         processor.close();
@@ -82,20 +82,20 @@ public class DefaultBlockingIterableProcessorTest {
     public void emitAfterClose() throws Exception {
         processor.close();
         expectedException.expect(IllegalStateException.class);
-        processor.emit(1);
+        processor.next(1);
     }
 
     @Test
     public void emitAfterFail() throws Exception {
         processor.fail(DELIBERATE_EXCEPTION);
         expectedException.expect(sameInstance(DELIBERATE_EXCEPTION));
-        processor.emit(1);
+        processor.next(1);
     }
 
     @Test
     public void emitNull() throws Exception {
         BlockingIterator<Integer> iterator = processor.iterator();
-        processor.emit(null);
+        processor.next(null);
         assertThat("Unexpected item received.", iterator.next(), is(nullValue()));
     }
 }

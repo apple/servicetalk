@@ -116,11 +116,24 @@ public interface BlockingIterable<T> extends CloseableIterable<T> {
     }
 
     /**
-     * A {@link BlockingIterable} that supports to dynamically emitting items using {@link #emit(Object)}.
+     * A {@link BlockingIterable} that supports to dynamically emitting items using {@link #next(Object)}.
      * <p>
      * If multiple {@link BlockingIterator}s are created by this {@link BlockingIterable} then an implementation
-     * will choose how to distribute the items emitted from {@link #emit(Object)} to those {@link BlockingIterator}s.
+     * will choose how to distribute the items emitted from {@link #next(Object)} to those {@link BlockingIterator}s.
      * There is no common guarantee about the nature of that distribution.
+     * <h2>Lifetime</h2>
+     * There are two aspects of the lifetime of this {@code Processor}, one from the producer side and one from the
+     * consumer side ({@link BlockingIterator}.
+     *
+     * <h3>Producer Lifetime</h3>
+     * A producer <strong>MUST</strong> invoke either {@link #close()} (successful termination) or
+     * {@link #fail(Throwable)} (unsuccessful termination) to correctly terminate the producer side of this
+     * {@code Processor}.
+     *
+     * <h3>Consumer Lifetime</h3>
+     * A consumer can prematurely indicate termination by calling {@link BlockingIterator#close()}. However, if a
+     * consumer receives a termination from the producer end ({@link BlockingIterator#hasNext(long, TimeUnit)} returns
+     * {@code false}), then it need not call {@link BlockingIterator#close()}.
      *
      * @param <T> the type of elements returned by the {@link BlockingIterator}.
      */
@@ -132,13 +145,13 @@ public interface BlockingIterable<T> extends CloseableIterable<T> {
          * @param nextItem to emit from the {@link BlockingIterator} when called.
          * @throws Exception If the item could not be emitted.
          */
-        void emit(@Nullable T nextItem) throws Exception;
+        void next(@Nullable T nextItem) throws Exception;
 
         /**
          * Terminates this {@link BlockingIterable} and all the current or future {@link BlockingIterator}s with a
          * failure.
          * <p>
-         * After this method returns, any subsequent calls to {@link #emit(Object)} <strong>MUST</strong> throw an
+         * After this method returns, any subsequent calls to {@link #next(Object)} <strong>MUST</strong> throw an
          * {@link Exception}. All current and future {@link BlockingIterator}s created by this {@link BlockingIterable}
          * <strong>MUST</strong> eventually throw an {@link Exception} which is the same as passed {@code cause} or
          * wraps the same.
@@ -151,7 +164,7 @@ public interface BlockingIterable<T> extends CloseableIterable<T> {
         /**
          * Closes this {@link BlockingIterable} and all the current or future {@link BlockingIterator}s.
          * <p>
-         * After this method returns, any subsequent calls to {@link #emit(Object)} <strong>MUST</strong> throw an
+         * After this method returns, any subsequent calls to {@link #next(Object)} <strong>MUST</strong> throw an
          * {@link Exception}. All current and future {@link BlockingIterator}s created by this {@link BlockingIterable}
          * <strong>MUST</strong> eventually return {@code false} from the various {@code hasNext} methods.
          *

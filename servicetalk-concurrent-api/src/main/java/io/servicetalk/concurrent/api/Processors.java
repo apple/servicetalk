@@ -66,8 +66,8 @@ public final class Processors {
      * Create a new {@link BlockingIterable.Processor}.
      *
      * @param maxBufferSize Maximum number of items that are requested to be sent via
-     * {@link BlockingIterable.Processor#emit(Object)} but not yet emitted from a {@link BlockingIterator}. If this
-     * buffer size is reached a subsequent call to {@link BlockingIterable.Processor#emit(Object) emit} will block till
+     * {@link BlockingIterable.Processor#next(Object)} but not yet emitted from a {@link BlockingIterator}. If this
+     * buffer size is reached a subsequent call to {@link BlockingIterable.Processor#next(Object) emit} will block till
      * an item is emitted from a {@link BlockingIterator}.
      * @param <T> the type of elements emitted by the returned {@link BlockingIterable}.
      * @return a new {@link BlockingIterable.Processor}.
