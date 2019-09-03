@@ -40,6 +40,7 @@ final class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
     applyJavaLibraryPlugin project
     configureTestFixtures project
     configureTests project
+    enforceCheckstyleRoot project
     applyPmdPlugin project
     applySpotBugsPlugin project
     addQualityTask project
@@ -113,6 +114,12 @@ final class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
             "-XX:+AggressiveOpts", "-XX:+TieredCompilation", "-XX:+UseBiasedLocking",
                 "-XX:+OptimizeStringConcat", "-XX:+HeapDumpOnOutOfMemoryError"
       }
+    }
+  }
+
+  private static void enforceCheckstyleRoot(Project project) {
+    project.configure(project) {
+      check.dependsOn checkstyleRoot
     }
   }
 
