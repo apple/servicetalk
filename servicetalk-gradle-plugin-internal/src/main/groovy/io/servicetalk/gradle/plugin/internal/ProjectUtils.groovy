@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
  */
 package io.servicetalk.gradle.plugin.internal
 
+import org.gradle.api.GradleException
 import org.gradle.api.Project
 import org.gradle.api.Task
 import org.gradle.api.XmlProvider
@@ -25,7 +26,14 @@ import org.gradle.api.tasks.SourceSet
 import org.gradle.api.tasks.bundling.Jar
 import org.gradle.api.tasks.javadoc.Javadoc
 
-class ProjectUtils {
+final class ProjectUtils {
+  static void enforceUtf8FileSystem() {
+    def fenc = System.getProperty("file.encoding")
+    if (!"UTF-8".equalsIgnoreCase(fenc)) {
+      throw new GradleException("File encoding must be UTF-8 but is $fenc, consider using a file system that " +
+          "supports it or setting the JAVA_TOOL_OPTIONS env var to: -Dfile.encoding=UTF-8");
+    }
+  }
 
   static void addBuildContextExtensions(Project project) {
     project.ext {
@@ -121,41 +129,26 @@ class ProjectUtils {
     }
   }
 
-  /**
-   * MavenPublication currently wrongly outputs BOM dependencies as regular dependencies instead of
-   * outputting them in a dependencyManagement, with 'pom' type and 'import' scope.
-   * This method corrects the issue.
-   */
-  static void fixBomDependencies(MavenPom pom) {
-    pom.withXml {
-      Node rootNode = it.asNode()
-      Node dependenciesNode = rootNode["dependencies"].find() as Node
-      if (!dependenciesNode) {
-        return
-      }
-
-      List<Node> bomDependencies = dependenciesNode.children().findAll { it["artifactId"].text().contains("-bom") } as List<Node>
-      if (!bomDependencies) {
-        return
-      }
-
-      bomDependencies.each { dependenciesNode.remove(it) }
-      Node managedDependenciesNode = getOrCreateNode(getOrCreateNode(rootNode, "dependencyManagement"), "dependencies")
-      bomDependencies.collect {
-        getOrCreateNode(it, "type").setValue("pom")
-        getOrCreateNode(it, "scope").setValue("import")
-        it
-      }.each {
-        managedDependenciesNode.append(it)
-      }
-    }
+  static File locateBuildLevelConfigFile(Project project, String path) {
+    File configFile = project.file("$project.rootProject.projectDir/$path")
+    configFile.exists() ? configFile : project.file("$project.projectDir/$path")
   }
 
-  static Node getOrCreateNode(Node parentNode, String tag) {
-    def node = parentNode[tag].find()
-    if (!node) {
-      node = parentNode.appendNode(tag)
+  private static void addQualityTask(Project project) {
+    project.configure(project) {
+      project.task("quality") {
+        description = "Run all quality analyzers for all source sets"
+        group = "verification"
+        if (tasks.findByName("checkstyle")) {
+          dependsOn tasks.checkstyle
+        }
+        if (tasks.findByName("pmd")) {
+          dependsOn tasks.pmd
+        }
+        if (tasks.findByName("spotbugs")) {
+          dependsOn tasks.spotbugs
+        }
+      }
     }
-    node
   }
 }

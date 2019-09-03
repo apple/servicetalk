@@ -13,50 +13,40 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-buildscript {
-  if (!repositories) {
-    repositories {
-      jcenter()
-      maven { url "https://plugins.gradle.org/m2/" }
-    }
-  }
-
-  dependencies {
-    classpath "io.servicetalk:servicetalk-gradle-plugin-internal:$project.version"
-  }
-}
 
 apply plugin: "servicetalk-library"
 
 dependencies {
-  implementation "io.servicetalk:servicetalk-bom-internal:$project.version"
+  api platform(project(":servicetalk-bom-internal"))
 
-  api "io.servicetalk:servicetalk-buffer-api:$project.version"
-  api "io.servicetalk:servicetalk-client-api:$project.version"
-  api "io.servicetalk:servicetalk-concurrent-api:$project.version"
-  api "io.servicetalk:servicetalk-serialization-api:$project.version"
-  api "io.servicetalk:servicetalk-transport-api:$project.version"
-  api "io.servicetalk:servicetalk-oio-api:$project.version"
+  api project(":servicetalk-buffer-api")
+  api project(":servicetalk-client-api")
+  api project(":servicetalk-concurrent-api")
+  api project(":servicetalk-serialization-api")
+  api project(":servicetalk-transport-api")
+  api project(":servicetalk-oio-api")
 
+  implementation project(":servicetalk-annotations")
+  implementation project(":servicetalk-client-api-internal")
+  implementation project(":servicetalk-concurrent-internal")
+  implementation project(":servicetalk-concurrent-api-internal")
   implementation "com.google.code.findbugs:jsr305"
-  implementation "io.servicetalk:servicetalk-annotations:$project.version"
-  implementation "io.servicetalk:servicetalk-client-api-internal:$project.version"
-  implementation "io.servicetalk:servicetalk-concurrent-internal:$project.version"
-  implementation "io.servicetalk:servicetalk-concurrent-api-internal:$project.version"
   implementation "org.slf4j:slf4j-api"
 
-  testImplementation "io.servicetalk:servicetalk-buffer-netty:$project.version"
-  testImplementation "io.servicetalk:servicetalk-concurrent-api-testFixtures:$project.version"
-  testImplementation "io.servicetalk:servicetalk-concurrent-internal-testFixtures:$project.version"
-  testImplementation "io.servicetalk:servicetalk-transport-netty-internal:$project.version"
-  testImplementation "io.servicetalk:servicetalk-transport-netty-internal-testFixtures:$project.version"
-  testImplementation "io.servicetalk:servicetalk-test-resources:$project.version"
+  testImplementation testFixtures(project(":servicetalk-concurrent-api"))
+  testImplementation testFixtures(project(":servicetalk-concurrent-internal"))
+  testImplementation testFixtures(project(":servicetalk-transport-netty-internal"))
+  testImplementation project(":servicetalk-buffer-netty")
+  testImplementation project(":servicetalk-test-resources")
+  testImplementation project(":servicetalk-transport-netty-internal")
   testImplementation "junit:junit"
   testImplementation "org.hamcrest:hamcrest-library"
   testImplementation "org.mockito:mockito-core"
 
-  testFixturesImplementation "io.servicetalk:servicetalk-buffer-netty:$project.version"
-  testFixturesImplementation "io.servicetalk:servicetalk-concurrent-internal-testFixtures:$project.version"
+  testFixturesImplementation platform(project(":servicetalk-bom-internal"))
+  testFixturesImplementation testFixtures(project(":servicetalk-concurrent-internal"))
+  testFixturesImplementation project(":servicetalk-buffer-netty")
+  testFixturesImplementation "com.google.code.findbugs:jsr305"
   testFixturesImplementation "junit:junit"
   testFixturesImplementation "org.hamcrest:hamcrest-library"
   testFixturesImplementation "org.mockito:mockito-core"

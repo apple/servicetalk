@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,43 +13,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-buildscript {
-  if (!repositories) {
-    repositories {
-      jcenter()
-      maven { url "https://plugins.gradle.org/m2/" }
-    }
-  }
-
-  dependencies {
-    classpath "io.servicetalk:servicetalk-gradle-plugin-internal:$project.version"
-  }
-}
 
 apply plugin: "servicetalk-library"
 
 dependencies {
-  implementation "io.servicetalk:servicetalk-bom-internal:$project.version"
+  api platform(project(":servicetalk-bom-internal"))
 
-  api "io.servicetalk:servicetalk-opentracing-inmemory-api:$project.version"
+  api project(":servicetalk-opentracing-inmemory-api")
 
+  implementation project(":servicetalk-annotations")
+  implementation project(":servicetalk-transport-netty-internal")
   implementation "com.google.code.findbugs:jsr305"
-  implementation "io.zipkin.zipkin2:zipkin:$zipkinVersion"
-  implementation "io.netty:netty-transport"
   implementation "io.netty:netty-codec"
+  implementation "io.netty:netty-transport"
   implementation group: "io.netty", name: "netty-transport-native-epoll", classifier: "linux-x86_64"
   implementation group: "io.netty", name: "netty-transport-native-kqueue", classifier: "osx-x86_64"
-  implementation "io.servicetalk:servicetalk-annotations:$project.version"
-  implementation "io.servicetalk:servicetalk-transport-netty-internal:$project.version"
+  implementation "io.zipkin.zipkin2:zipkin"
   implementation "org.slf4j:slf4j-api"
 
-  testImplementation "io.servicetalk:servicetalk-opentracing-inmemory:$project.version"
-  testImplementation "io.servicetalk:servicetalk-opentracing-asynccontext:$project.version"
-  testImplementation "io.servicetalk:servicetalk-buffer-netty:$project.version"
-  testImplementation "io.servicetalk:servicetalk-concurrent-api-testFixtures:$project.version"
-  testImplementation "io.servicetalk:servicetalk-concurrent-internal-testFixtures:$project.version"
-  testImplementation "io.servicetalk:servicetalk-transport-netty-internal-testFixtures:$project.version"
-  testImplementation "io.servicetalk:servicetalk-test-resources:$project.version"
+  testImplementation testFixtures(project(":servicetalk-concurrent-api"))
+  testImplementation testFixtures(project(":servicetalk-concurrent-internal"))
+  testImplementation testFixtures(project(":servicetalk-transport-netty-internal"))
+  testImplementation project(":servicetalk-buffer-netty")
+  testImplementation project(":servicetalk-opentracing-asynccontext")
+  testImplementation project(":servicetalk-opentracing-inmemory")
+  testImplementation project(":servicetalk-test-resources")
   testImplementation "junit:junit"
   testImplementation "org.hamcrest:hamcrest-library"
   testImplementation "org.mockito:mockito-core"

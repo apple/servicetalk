@@ -183,7 +183,6 @@ final class H2ToStH1Utils {
         return http2Headers;
     }
 
-
     /**
      * <a href="https://tools.ietf.org/html/rfc7540#section-8.1.4">REFUSED_STREAM</a> is always retryable.
      */

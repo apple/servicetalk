@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,14 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package io.servicetalk.gradle.plugin.internal
 
-apply plugin: "servicetalk-library"
-apply plugin: "groovy"
-apply plugin: "java-gradle-plugin"
-apply from: "plugin-config.gradle"
+import org.gradle.api.JavaVersion
 
-// Ignore Spotbugs for this module
-spotbugs {
- ignoreFailures = true
- showProgress = false
+import static org.gradle.api.JavaVersion.VERSION_1_8
+
+final class Versions {
+  static final String CHECKSTYLE_VERSION = "8.24"
+  static final String PMD_VERSION = "6.17.0"
+  static final String SPOTBUGS_VERSION = "3.1.12"
+  static final JavaVersion TARGET_VERSION = VERSION_1_8
 }

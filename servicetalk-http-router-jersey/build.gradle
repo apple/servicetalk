@@ -14,52 +14,44 @@
  * limitations under the License.
  */
 
-buildscript {
-  if (!repositories) {
-    repositories {
-      jcenter()
-      maven { url "https://plugins.gradle.org/m2/" }
-    }
-  }
-
-  dependencies {
-    classpath "io.servicetalk:servicetalk-gradle-plugin-internal:$project.version"
-  }
-}
-
 apply plugin: "servicetalk-library"
 
 dependencies {
-  implementation "io.servicetalk:servicetalk-bom-internal:$project.version"
+  api platform(project(":servicetalk-bom-internal"))
 
-  api "io.servicetalk:servicetalk-http-api:$project.version"
+  api project(":servicetalk-http-api")
   api "javax.ws.rs:javax.ws.rs-api"
 
+  implementation project(":servicetalk-annotations")
+  implementation project(":servicetalk-concurrent-api-internal")
+  implementation project(":servicetalk-concurrent-internal")
+  implementation project(":servicetalk-data-jackson")
+  implementation project(":servicetalk-http-router-jersey-internal")
+  implementation project(":servicetalk-http-utils")
   implementation "com.google.code.findbugs:jsr305"
   implementation "com.sun.activation:javax.activation"
   implementation "com.sun.xml.bind:jaxb-core"
   implementation "com.sun.xml.bind:jaxb-impl"
-  implementation "io.servicetalk:servicetalk-annotations:$project.version"
-  implementation "io.servicetalk:servicetalk-concurrent-api-internal:$project.version"
-  implementation "io.servicetalk:servicetalk-concurrent-internal:$project.version"
-  implementation "io.servicetalk:servicetalk-data-jackson:$project.version"
-  implementation "io.servicetalk:servicetalk-http-router-jersey-internal:$project.version"
-  implementation "io.servicetalk:servicetalk-http-utils:$project.version"
   implementation "javax.xml.bind:jaxb-api"
   implementation "org.glassfish.jersey.core:jersey-server"
   implementation "org.slf4j:slf4j-api"
 
+  testImplementation "junit:junit"
+  testImplementation "org.mockito:mockito-core"
+
   testRuntime "org.glassfish.jersey.media:jersey-media-json-jackson"
 
-  testFixturesImplementation "io.servicetalk:servicetalk-concurrent-api-testFixtures:$project.version"
-  testFixturesImplementation "io.servicetalk:servicetalk-concurrent-internal-testFixtures:$project.version"
-  testFixturesImplementation "io.servicetalk:servicetalk-data-jackson:$project.version"
-  testFixturesImplementation "io.servicetalk:servicetalk-http-netty:$project.version"
-  testFixturesImplementation "io.servicetalk:servicetalk-http-router-predicate:$project.version"
-  testFixturesImplementation "io.servicetalk:servicetalk-test-resources:$project.version"
-  testFixturesImplementation "io.servicetalk:servicetalk-transport-netty:$project.version"
-  testFixturesImplementation "io.servicetalk:servicetalk-transport-netty-internal:$project.version"
-  testFixturesImplementation "io.servicetalk:servicetalk-transport-netty-internal-testFixtures:$project.version"
+  testFixturesImplementation platform(project(":servicetalk-bom-internal"))
+  testFixturesImplementation testFixtures(project(":servicetalk-concurrent-api"))
+  testFixturesImplementation testFixtures(project(":servicetalk-concurrent-internal"))
+  testFixturesImplementation testFixtures(project(":servicetalk-transport-netty-internal"))
+  testFixturesImplementation project(":servicetalk-data-jackson")
+  testFixturesImplementation project(":servicetalk-http-netty")
+  testFixturesImplementation project(":servicetalk-http-router-predicate")
+  testFixturesImplementation project(":servicetalk-test-resources")
+  testFixturesImplementation project(":servicetalk-transport-netty")
+  testFixturesImplementation project(":servicetalk-transport-netty-internal")
+  testFixturesImplementation "com.google.code.findbugs:jsr305"
   testFixturesImplementation "junit:junit"
   testFixturesImplementation "net.javacrumbs.json-unit:json-unit"
   testFixturesImplementation "org.glassfish.jersey.inject:jersey-hk2"
