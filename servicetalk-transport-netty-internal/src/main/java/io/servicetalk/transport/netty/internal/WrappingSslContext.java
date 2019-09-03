@@ -71,48 +71,52 @@ final class WrappingSslContext extends DelegatingSslContext {
      */
     private static final class SslHandlerWithPooledAllocator extends SslHandler {
 
+        @Nullable
+        private ChannelHandlerContext wrappedCtx;
+
         SslHandlerWithPooledAllocator(SSLEngine engine, boolean startTls, Executor delegatedTaskExecutor) {
             super(engine, startTls, delegatedTaskExecutor);
         }
 
         @Override
         public void handlerAdded(ChannelHandlerContext ctx) throws Exception {
-            super.handlerAdded(wrapCtx(ctx));
+            wrappedCtx = new DelegatingChannelHandlerContextWithPooledAllocator(ctx);
+            super.handlerAdded(wrappedCtx);
         }
 
         @Override
         public void disconnect(ChannelHandlerContext ctx, ChannelPromise promise) throws Exception {
-            super.disconnect(wrapCtx(ctx), promise);
+            super.disconnect(wrappedCtx(), promise);
         }
 
         @Override
         public void close(ChannelHandlerContext ctx, ChannelPromise promise) throws Exception {
-            super.close(wrapCtx(ctx), promise);
+            super.close(wrappedCtx(), promise);
         }
 
         @Override
         public void flush(ChannelHandlerContext ctx) throws Exception {
-            super.flush(wrapCtx(ctx));
+            super.flush(wrappedCtx());
         }
 
         @Override
         public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-            super.channelRead(wrapCtx(ctx), msg);
+            super.channelRead(wrappedCtx(), msg);
         }
 
         @Override
         public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-            super.channelInactive(wrapCtx(ctx));
+            super.channelInactive(wrappedCtx());
         }
 
         @Override
         public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
-            super.userEventTriggered(wrapCtx(ctx), evt);
+            super.userEventTriggered(wrappedCtx(), evt);
         }
 
-        private static ChannelHandlerContext wrapCtx(ChannelHandlerContext ctx) {
-            return ctx instanceof DelegatingChannelHandlerContextWithPooledAllocator ? ctx :
-                    new DelegatingChannelHandlerContextWithPooledAllocator(ctx);
+        private ChannelHandlerContext wrappedCtx() {
+            assert wrappedCtx != null;
+            return wrappedCtx;
         }
     }
 
