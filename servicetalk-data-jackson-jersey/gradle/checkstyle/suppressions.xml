@@ -20,5 +20,6 @@
 
 <suppressions>
   <!-- CheckStyle wrongly thinks a Junit TestSuite is a utility class -->
-  <suppress checks="HideUtilityClassConstructor" files="io/servicetalk/data/jackson/jersey/JerseyDataJacksonTestSuite.java"/>
+  <suppress checks="HideUtilityClassConstructor"
+            files="io/servicetalk/data/jackson/jersey/JerseyDataJacksonTestSuite.java"/>
 </suppressions>

@@ -84,7 +84,7 @@ class ServiceTalkCorePlugin implements Plugin<Project> {
         classpath = project.files([])
         source = fileTree(".") {
           includes = ["docker/**", "gradle/**", "*.gradle", "*.properties", "scripts/**"]
-          excludes = ["gradle/wrapper/**"]
+          excludes = ["gradle/wrapper/**", "build/**"]
         }
       }
 

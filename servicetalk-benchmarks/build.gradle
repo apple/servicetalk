@@ -46,7 +46,9 @@ dependencies {
 jmh {
   include = ".*Benchmark"
   jmhVersion = "$jmhVersion"
-  jvmArgsPrepend = "-Dio.netty.maxDirectMemory=9223372036854775807 -Djmh.executor=CUSTOM -Djmh.executor.class=io.servicetalk.benchmark.concurrent.AsyncContextFriendlyExecutor"
+  jvmArgsPrepend = "-Dio.netty.maxDirectMemory=9223372036854775807 " +
+                   "-Djmh.executor=CUSTOM " +
+                   "-Djmh.executor.class=io.servicetalk.benchmark.concurrent.AsyncContextFriendlyExecutor"
 }
 
 jmhJar {
