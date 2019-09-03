@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,11 +19,15 @@ import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
 import io.servicetalk.transport.netty.internal.DeferSslHandler;
 import io.servicetalk.transport.netty.internal.IdleTimeoutInitializer;
-import io.servicetalk.transport.netty.internal.PooledRecvByteBufAllocatorInitializer;
 import io.servicetalk.transport.netty.internal.SslClientChannelInitializer;
+import io.servicetalk.transport.netty.internal.WireLoggingInitializer;
 
 import io.netty.channel.Channel;
+import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslHandler;
+
+import static io.servicetalk.transport.netty.internal.PooledRecvByteBufAllocatorInitializers.COPY_HANDLER_INITIALIZER;
+import static io.servicetalk.transport.netty.internal.PooledRecvByteBufAllocatorInitializers.POOLED_RECV_ALLOCATOR_INITIALIZER;
 
 /**
  * {@link ChannelInitializer} for TCP client.
@@ -37,7 +41,7 @@ public class TcpClientChannelInitializer implements ChannelInitializer {
      *
      * @param config to use for initialization.
      */
-    public TcpClientChannelInitializer(ReadOnlyTcpClientConfig config) {
+    public TcpClientChannelInitializer(final ReadOnlyTcpClientConfig config) {
         this(config, false);
     }
 
@@ -47,25 +51,32 @@ public class TcpClientChannelInitializer implements ChannelInitializer {
      * @param config to use for initialization.
      * @param deferSslHandler {@code true} to wrap the {@link SslHandler} in a {@link DeferSslHandler}.
      */
-    public TcpClientChannelInitializer(ReadOnlyTcpClientConfig config, boolean deferSslHandler) {
-        ChannelInitializer delegate = ChannelInitializer.defaultInitializer();
-        delegate = delegate.andThen(new PooledRecvByteBufAllocatorInitializer());
+    public TcpClientChannelInitializer(final ReadOnlyTcpClientConfig config, final boolean deferSslHandler) {
+        ChannelInitializer delegate = ChannelInitializer.defaultInitializer()
+                .andThen(POOLED_RECV_ALLOCATOR_INITIALIZER);
+
         if (config.idleTimeoutMs() > 0) {
             delegate = delegate.andThen(new IdleTimeoutInitializer(config.idleTimeoutMs()));
         }
-        if (config.sslContext() != null) {
-            delegate = delegate.andThen(new SslClientChannelInitializer(config.sslContext(),
+
+        final SslContext sslContext = config.sslContext();
+        if (sslContext != null) {
+            delegate = delegate.andThen(new SslClientChannelInitializer(sslContext,
                     config.sslHostnameVerificationAlgorithm(), config.sslHostnameVerificationHost(),
                     config.sslHostnameVerificationPort(), deferSslHandler));
         }
-        if (config.wireLoggingInitializer() != null) {
-            delegate = delegate.andThen(config.wireLoggingInitializer());
+
+        delegate = delegate.andThen(COPY_HANDLER_INITIALIZER);
+
+        final WireLoggingInitializer wireLoggingInitializer = config.wireLoggingInitializer();
+        if (wireLoggingInitializer != null) {
+            delegate = delegate.andThen(wireLoggingInitializer);
         }
         this.delegate = delegate;
     }
 
     @Override
-    public ConnectionContext init(Channel channel, ConnectionContext context) {
+    public ConnectionContext init(final Channel channel, final ConnectionContext context) {
         return delegate.init(channel, context);
     }
 }

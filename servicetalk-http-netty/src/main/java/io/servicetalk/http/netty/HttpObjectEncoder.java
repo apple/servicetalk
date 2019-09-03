@@ -37,7 +37,6 @@ import io.servicetalk.transport.netty.internal.CloseHandler;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
-import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelOutboundHandlerAdapter;
 import io.netty.channel.ChannelPromise;
@@ -62,6 +61,7 @@ import static io.servicetalk.http.api.CharSequences.unwrapBuffer;
 import static io.servicetalk.http.api.HeaderUtils.isTransferEncodingChunked;
 import static io.servicetalk.http.netty.HeaderUtils.calculateContentLength;
 import static io.servicetalk.http.netty.HttpKeepAlive.shouldClose;
+import static io.servicetalk.transport.netty.internal.PooledRecvByteBufAllocatorInitializers.POOLED_ALLOCATOR;
 import static java.lang.Long.toHexString;
 import static java.lang.Math.max;
 import static java.nio.charset.StandardCharsets.US_ASCII;
@@ -125,7 +125,7 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelOutbound
             // We prefer a direct allocation here because it is expected the resulted encoded Buffer will be written
             // to a socket. In order to do the write to the socket the memory typically needs to be allocated in direct
             // memory and will be copied to direct memory if not. Using a direct buffer will avoid the copy.
-            ByteBuf byteBuf = PooledByteBufAllocator.DEFAULT.buffer((int) headersEncodedSizeAccumulator);
+            ByteBuf byteBuf = POOLED_ALLOCATOR.buffer((int) headersEncodedSizeAccumulator);
             Buffer stBuf = newBufferFrom(byteBuf);
 
             // Encode the message.
@@ -255,7 +255,7 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelOutbound
                                              PromiseCombiner promiseCombiner) {
         if (contentLength > 0) {
             String lengthHex = toHexString(contentLength);
-            ByteBuf buf = PooledByteBufAllocator.DEFAULT.buffer(lengthHex.length() + 2);
+            ByteBuf buf = POOLED_ALLOCATOR.buffer(lengthHex.length() + 2);
             buf.writeCharSequence(lengthHex, US_ASCII);
             writeShortBE(buf, CRLF_SHORT);
             promiseCombiner.add(ctx.write(buf));
@@ -273,7 +273,7 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelOutbound
         if (headers.isEmpty()) {
             ctx.write(ZERO_CRLF_CRLF_BUF.duplicate(), promise);
         } else {
-            ByteBuf buf = PooledByteBufAllocator.DEFAULT.buffer((int) trailersEncodedSizeAccumulator);
+            ByteBuf buf = POOLED_ALLOCATOR.buffer((int) trailersEncodedSizeAccumulator);
             writeMediumBE(buf, ZERO_CRLF_MEDIUM);
             encodeHeaders(headers, buf);
             writeShortBE(buf, CRLF_SHORT);

@@ -23,6 +23,7 @@ import io.netty.handler.ssl.SslHandler;
 
 import javax.annotation.Nullable;
 
+import static io.servicetalk.transport.netty.internal.PooledRecvByteBufAllocatorInitializers.POOLED_ALLOCATOR;
 import static io.servicetalk.transport.netty.internal.SslUtils.newHandler;
 import static java.util.Objects.requireNonNull;
 
@@ -59,8 +60,8 @@ public class SslClientChannelInitializer implements ChannelInitializer {
 
     @Override
     public ConnectionContext init(Channel channel, ConnectionContext context) {
-        final SslHandler sslHandler = newHandler(sslContext, channel.alloc(), hostnameVerificationAlgorithm,
-                                           hostnameVerificationHost, hostnameVerificationPort);
+        final SslHandler sslHandler = newHandler(sslContext, POOLED_ALLOCATOR,
+                hostnameVerificationAlgorithm, hostnameVerificationHost, hostnameVerificationPort);
         if (deferSslHandler) {
             channel.pipeline().addLast(new DeferSslHandler(channel, sslHandler));
         } else {

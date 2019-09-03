@@ -15,4 +15,8 @@
   ~ limitations under the License.
   -->
 <FindBugsFilter>
+  <!-- Generated code by protobuf can be ignored -->
+  <Match>
+    <Source name="TesterProto.java"/>
+  </Match>
 </FindBugsFilter>
