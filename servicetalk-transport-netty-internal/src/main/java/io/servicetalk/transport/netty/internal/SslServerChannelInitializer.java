@@ -29,6 +29,7 @@ import javax.annotation.Nullable;
 import javax.net.ssl.SSLEngine;
 
 import static io.servicetalk.transport.netty.internal.PooledRecvByteBufAllocatorInitializers.POOLED_ALLOCATOR;
+import static io.servicetalk.transport.netty.internal.SslUtils.newHandler;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -62,7 +63,7 @@ public class SslServerChannelInitializer implements ChannelInitializer {
     @Override
     public ConnectionContext init(Channel channel, ConnectionContext context) {
         if (sslContext != null) {
-            SslHandler sslHandler = SslUtils.newHandler(sslContext, POOLED_ALLOCATOR);
+            SslHandler sslHandler = newHandler(sslContext, POOLED_ALLOCATOR);
             channel.pipeline().addLast(sslHandler);
         } else {
             assert domainNameMapping != null;
