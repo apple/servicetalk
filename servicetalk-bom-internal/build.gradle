@@ -78,12 +78,8 @@ dependencies {
 
 publishing {
   publications {
-    serviceTalkBomInternal(MavenPublication) {
+    mavenJava(MavenPublication) {
       from components.javaPlatform
     }
   }
-}
-
-bintray {
-  publications = ["serviceTalkBomInternal"]
 }
