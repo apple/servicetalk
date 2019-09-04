@@ -29,3 +29,7 @@ publishing {
     }
   }
 }
+
+bintray {
+  publications = ["serviceTalkBom"]
+}
