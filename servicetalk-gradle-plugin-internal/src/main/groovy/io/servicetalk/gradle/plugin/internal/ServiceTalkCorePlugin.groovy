@@ -31,12 +31,15 @@ import static io.servicetalk.gradle.plugin.internal.Versions.CHECKSTYLE_VERSION
 import static io.servicetalk.gradle.plugin.internal.Versions.TARGET_VERSION
 
 class ServiceTalkCorePlugin implements Plugin<Project> {
-  void apply(Project project) {
+  void apply(Project project, boolean includeBintrayPlugin = true) {
     enforceUtf8FileSystem()
     addBuildContextExtensions project
     applyCheckstylePlugin project
     applyIdeaPlugin project
-    applyBintrayPlugin project
+
+    if (includeBintrayPlugin) {
+      applyBintrayPlugin project
+    }
   }
 
   private static void applyCheckstylePlugin(Project project) {
