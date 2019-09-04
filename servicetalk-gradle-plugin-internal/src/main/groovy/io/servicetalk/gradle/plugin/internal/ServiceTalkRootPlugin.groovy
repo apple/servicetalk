@@ -22,7 +22,7 @@ import static io.servicetalk.gradle.plugin.internal.ProjectUtils.addQualityTask
 
 final class ServiceTalkRootPlugin extends ServiceTalkCorePlugin {
   void apply(Project project) {
-    super.apply project
+    super.apply(project, false)
 
     enforceCheckstyleRoot project
     addJavadocAllTask project

@@ -24,7 +24,7 @@ rootProject.subprojects.findAll { !it.name.contains("bom") && !it.name.contains(
 
 publishing {
   publications {
-    serviceTalkBom(MavenPublication) {
+    mavenJava(MavenPublication) {
       from components.javaPlatform
     }
   }
