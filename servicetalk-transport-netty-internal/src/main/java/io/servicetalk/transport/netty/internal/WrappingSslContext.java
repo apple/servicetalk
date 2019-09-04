@@ -24,7 +24,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.ChannelProgressivePromise;
 import io.netty.channel.ChannelPromise;
-import io.netty.handler.ssl.DelegatingSslContext;
+import io.netty.handler.ssl.ApplicationProtocolNegotiator;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslHandler;
 import io.netty.util.Attribute;
@@ -36,28 +36,85 @@ import java.util.List;
 import java.util.concurrent.Executor;
 import javax.annotation.Nullable;
 import javax.net.ssl.SSLEngine;
+import javax.net.ssl.SSLSessionContext;
 
 import static io.servicetalk.transport.netty.internal.PooledRecvByteBufAllocatorInitializers.POOLED_ALLOCATOR;
+import static java.util.Objects.requireNonNull;
 
-final class WrappingSslContext extends DelegatingSslContext {
+final class WrappingSslContext extends SslContext {
+
+    private final SslContext ctx;
     @Nullable
     private final String[] protocols;
 
-    WrappingSslContext(SslContext context, @Nullable List<String> protocols) {
-        super(context);
+    WrappingSslContext(SslContext ctx, @Nullable List<String> protocols) {
+        this.ctx = requireNonNull(ctx);
         this.protocols = protocols == null ? null : protocols.toArray(new String[0]);
     }
 
     @Override
-    protected void initEngine(SSLEngine engine) {
+    public boolean isClient() {
+        return ctx.isClient();
+    }
+
+    @Override
+    public List<String> cipherSuites() {
+        return ctx.cipherSuites();
+    }
+
+    @Override
+    public long sessionCacheSize() {
+        return ctx.sessionCacheSize();
+    }
+
+    @Override
+    public long sessionTimeout() {
+        return ctx.sessionTimeout();
+    }
+
+    @Override
+    public ApplicationProtocolNegotiator applicationProtocolNegotiator() {
+        return ctx.applicationProtocolNegotiator();
+    }
+
+    @Override
+    public SSLEngine newEngine(ByteBufAllocator alloc) {
+        SSLEngine engine = ctx.newEngine(alloc);
+        initEngine(engine);
+        return engine;
+    }
+
+    @Override
+    public SSLEngine newEngine(ByteBufAllocator alloc, String peerHost, int peerPort) {
+        SSLEngine engine = ctx.newEngine(alloc, peerHost, peerPort);
+        initEngine(engine);
+        return engine;
+    }
+
+    private void initEngine(SSLEngine engine) {
         if (protocols != null) {
             engine.setEnabledProtocols(protocols);
         }
     }
 
     @Override
+    public SSLSessionContext sessionContext() {
+        return ctx.sessionContext();
+    }
+
+    @Override
+    protected SslHandler newHandler(ByteBufAllocator alloc, boolean startTls) {
+        return new SslHandlerWithPooledAllocator(newEngine(alloc), startTls);
+    }
+
+    @Override
     protected SslHandler newHandler(ByteBufAllocator alloc, boolean startTls, Executor executor) {
         return new SslHandlerWithPooledAllocator(newEngine(alloc), startTls, executor);
+    }
+
+    @Override
+    protected SslHandler newHandler(ByteBufAllocator alloc, String peerHost, int peerPort, boolean startTls) {
+        return new SslHandlerWithPooledAllocator(newEngine(alloc, peerHost, peerPort), startTls);
     }
 
     @Override
@@ -73,6 +130,10 @@ final class WrappingSslContext extends DelegatingSslContext {
 
         @Nullable
         private ChannelHandlerContext wrappedCtx;
+
+        SslHandlerWithPooledAllocator(SSLEngine engine, boolean startTls) {
+            super(engine, startTls);
+        }
 
         SslHandlerWithPooledAllocator(SSLEngine engine, boolean startTls, Executor delegatedTaskExecutor) {
             super(engine, startTls, delegatedTaskExecutor);
@@ -122,7 +183,7 @@ final class WrappingSslContext extends DelegatingSslContext {
 
     /**
      * {@link ChannelHandlerContext} that delegates all calls to the original {@link ChannelHandlerContext}, but
-     * returns {@link PooledByteBufAllocator}.
+     * returns {@link PooledByteBufAllocator} when {@link ChannelHandlerContext#alloc()} is invoked.
      */
     private static final class DelegatingChannelHandlerContextWithPooledAllocator implements ChannelHandlerContext {
 

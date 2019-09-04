@@ -24,7 +24,6 @@ import io.netty.handler.ssl.SslHandler;
 import io.netty.handler.ssl.SslProvider;
 import io.netty.util.NetUtil;
 import io.netty.util.ReferenceCountUtil;
-import io.netty.util.concurrent.ImmediateExecutor;
 
 import java.net.InetSocketAddress;
 import java.util.Collections;
@@ -62,8 +61,7 @@ final class SslUtils {
             return newHandler(context, allocator);
         }
 
-        SslHandler handler = context.newHandler(allocator, hostnameVerificationHost, hostnameVerificationPort,
-                ImmediateExecutor.INSTANCE);
+        SslHandler handler = context.newHandler(allocator, hostnameVerificationHost, hostnameVerificationPort);
         SSLEngine engine = handler.engine();
         try {
             SSLParameters parameters = engine.getSSLParameters();
@@ -91,7 +89,7 @@ final class SslUtils {
      * @return a {@link SslHandler}
      */
     static SslHandler newHandler(SslContext context, ByteBufAllocator allocator) {
-        return context.newHandler(allocator, ImmediateExecutor.INSTANCE);
+        return context.newHandler(allocator);
     }
 
     /**

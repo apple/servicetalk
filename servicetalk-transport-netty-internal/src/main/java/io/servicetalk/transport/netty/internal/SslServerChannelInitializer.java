@@ -24,7 +24,6 @@ import io.netty.handler.ssl.SniHandler;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslHandler;
 import io.netty.util.DomainNameMapping;
-import io.netty.util.concurrent.ImmediateExecutor;
 
 import javax.annotation.Nullable;
 import javax.net.ssl.SSLEngine;
@@ -85,7 +84,7 @@ public class SslServerChannelInitializer implements ChannelInitializer {
 
         @Override
         protected SslHandler newSslHandler(final SslContext context, final ByteBufAllocator ignore) {
-            return context.newHandler(POOLED_ALLOCATOR, ImmediateExecutor.INSTANCE);
+            return super.newSslHandler(context, POOLED_ALLOCATOR);
         }
     }
 }
