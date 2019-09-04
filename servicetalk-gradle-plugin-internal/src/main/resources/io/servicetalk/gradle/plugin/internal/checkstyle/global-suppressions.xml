@@ -36,4 +36,8 @@
   <suppress checks="JavadocMethod" files=".*[\\/]src[\\/]testFixtures[\\/].*"/>
   <suppress checks="JavadocPackage" files=".*[\\/]src[\\/]testFixtures[\\/].*"/>
   <suppress checks="JavadocType" files=".*[\\/]src[\\/]testFixtures[\\/].*"/>
+
+  <!-- docs -->
+  <suppress checks="LineLength" files="docs[\\/]generation[\\/]package-lock.json"/>
+  <suppress checks="LineLength" files="docs[\\/]modules[\\/]ROOT[\\/]pages[\\/].*\.adoc"/>
 </suppressions>

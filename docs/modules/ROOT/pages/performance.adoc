@@ -401,8 +401,8 @@ By default ServiceTalk size the IO Thread-pool as follows:
 [NOTE]
 ====
 Available processors: CPU cores (logical
-https://en.wikipedia.org/wiki/Hyper-threading[Simultaneous Multithreading (SMT)] cores if available) or container compute
-units as defined by https://en.wikipedia.org/wiki/Cgroups[Linux cgroups]
+https://en.wikipedia.org/wiki/Hyper-threading[Simultaneous Multithreading (SMT)] cores if available) or container
+compute units as defined by https://en.wikipedia.org/wiki/Cgroups[Linux cgroups]
 ====
 The number of IO threads generally correlates to the number of available processors because this is how much logical
 concurrency available to your application. The IO threads are shared across connections and even requests the number of
@@ -561,10 +561,10 @@ link:https://netty.io/wiki/forked-tomcat-native.html#artifacts[JAR] of the SSL i
 
 You should also investigate the configuration of SSL which may impact performance. For example selecting the cipher
 suite and encryption/link:https://www.cloudflare.com/learning/ssl/what-happens-in-a-tls-handshake[handshake]/
-link:https://en.wikipedia.org/wiki/Message_authentication_code[MAC] algorithms may have an impact on performance if you are able to
-link:https://en.wikipedia.org/wiki/AES_instruction_set[hardware acceleration]. Performance shouldn't be the only
-consideration here as you must consider the security characteristics and what protocols your peers are likely to support
-(if they are out of your control). It is recommended to consult reputable resources (such as
+link:https://en.wikipedia.org/wiki/Message_authentication_code[MAC] algorithms may have an impact on performance if you
+are able to link:https://en.wikipedia.org/wiki/AES_instruction_set[hardware acceleration]. Performance shouldn't be the
+only consideration here as you must consider the security characteristics and what protocols your peers are likely to
+support (if they are out of your control). It is recommended to consult reputable resources (such as
 link:https://wiki.mozilla.org/Security/Server_Side_TLS[Mozilla Server Side TLS]) to learn more.
 
 [source, java]

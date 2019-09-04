@@ -1,3 +1,19 @@
+/*
+ * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 if (!repositories) {
   repositories {
     jcenter()
@@ -71,7 +87,8 @@ for (location in ["local", "remote"]) {
     // args "--verbose"
 
     // write a basic result file s.t. gradle can consider task up-to-date
-    // writing a result file in case validation fails is not easily possible with JavaExec, but also not strictly necessary
+    // writing a result file in case validation fails is not easily possible with JavaExec,
+    // but also not strictly necessary
     doFirst { delete(outputFile) }
     doLast { outputFile.text = "Success." }
   }
@@ -173,7 +190,8 @@ for (location in ["local", "remote"]) {
                   if (responseCode != 200 &&
                       responseCode != 403/* github auth */ &&
                       responseCode != 429 /* github rate limiting */) {
-                    errors.add("$submittedHtmlFile: Unexpected HTTP status code `$responseCode` for external link `$submittedHref`.")
+                    errors.add("$submittedHtmlFile: Unexpected HTTP status code `$responseCode` " +
+                        "for external link `$submittedHref`.")
                   }
                 } catch (IOException e) {
                   println("Ignoring I/O error for external link `$submittedHref`. (Error message: $e.message)")
