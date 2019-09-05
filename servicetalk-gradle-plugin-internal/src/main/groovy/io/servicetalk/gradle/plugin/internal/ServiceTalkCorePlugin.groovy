@@ -146,6 +146,16 @@ class ServiceTalkCorePlugin implements Plugin<Project> {
           user = bintrayUser
           key = bintrayKey
           publications = ["mavenJava"]
+
+          // Temporary workaround for https://github.com/bintray/gradle-bintray-plugin/issues/229
+          def groupPath = project.group.replaceAll('\\.', '/')
+          filesSpec {
+            from "$buildDir/publications/mavenJava"
+            include "module.json"
+            into "$groupPath/$project.name/$project.version"
+            rename ".*", "$project.name-${project.version}.module"
+          }
+
           pkg {
             userOrg = "servicetalk"
             repo = "servicetalk"
