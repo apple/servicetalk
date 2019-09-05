@@ -16,7 +16,6 @@
 
 apply plugin: "servicetalk-core"
 apply plugin: "java-platform"
-apply plugin: "maven-publish"
 
 dependencies {
   constraints {
