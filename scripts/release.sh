@@ -66,10 +66,9 @@ rm -rf .cache .out
 ./gradlew --no-daemon validateLocalSite
 popd
 
-for file in gradle.properties */gradle.properties; do
-    sed "s/^version=.*/version=$version/" "$file" > "$file.tmp"
-    mv "$file.tmp" "$file"
-done
+sed "s/^version=.*/version=$version/" gradle.properties > gradle.properties.tmp
+mv gradle.properties.tmp gradle.properties
+
 for file in docs/antora.yml */docs/antora.yml; do
     sed "s/^version:.*/version: ${version%.*}/" "$file" > "$file.tmp"
     mv "$file.tmp" "$file"
@@ -91,10 +90,9 @@ $git push origin "$version"
 
 echo "Preparing repository for next development version $nextVersion"
 
-for file in gradle.properties */gradle.properties; do
-    sed "s/^version=.*/version=$nextVersion/" "$file" > "$file.tmp"
-    mv "$file.tmp" "$file"
-done
+sed "s/^version=.*/version=$nextVersion/" gradle.properties > gradle.properties.tmp
+mv gradle.properties.tmp gradle.properties
+
 for file in docs/antora.yml */docs/antora.yml; do
     sed "s/^version:.*/version: SNAPSHOT/" "$file" > "$file.tmp"
     mv "$file.tmp" "$file"
