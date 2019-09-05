@@ -17,10 +17,9 @@ located in the 'license' directory of the distribution file, for the
 license terms of the components that this product depends on.
 ------------------------------------------------------------------------
 
-This product contains a modified portion of 'Netty', an open source
-networking library, which can be obtained at:
+This product contains a portion of 'protobuf', which is available under a "3-clause BSD" license and can be obtained at:
 
   * LICENSE:
-    * license/LICENSE.netty.txt (Apache License 2.0)
+    * license/LICENSE.protobuf.txt (3-clause BSD)
   * HOMEPAGE:
-    * https://netty.io
+    * https://developers.google.com/protocol-buffers/

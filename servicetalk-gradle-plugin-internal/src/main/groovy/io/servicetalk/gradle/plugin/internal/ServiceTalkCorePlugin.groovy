@@ -15,11 +15,15 @@
  */
 package io.servicetalk.gradle.plugin.internal
 
+import com.jfrog.bintray.gradle.tasks.BintrayUploadTask
 import org.gradle.api.GradleException
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.XmlProvider
 import org.gradle.api.plugins.quality.Checkstyle
+import org.gradle.api.publish.PublishingExtension
+import org.gradle.api.publish.maven.MavenPublication
+import org.gradle.api.publish.maven.internal.artifact.FileBasedMavenArtifact
 
 import static io.servicetalk.gradle.plugin.internal.ProjectUtils.addBuildContextExtensions
 import static io.servicetalk.gradle.plugin.internal.ProjectUtils.appendNodes
@@ -31,13 +35,14 @@ import static io.servicetalk.gradle.plugin.internal.Versions.CHECKSTYLE_VERSION
 import static io.servicetalk.gradle.plugin.internal.Versions.TARGET_VERSION
 
 class ServiceTalkCorePlugin implements Plugin<Project> {
-  void apply(Project project, boolean includeBintrayPlugin = true) {
+  void apply(Project project, boolean publishesArtifacts = true) {
     enforceUtf8FileSystem()
     addBuildContextExtensions project
     applyCheckstylePlugin project
     applyIdeaPlugin project
 
-    if (includeBintrayPlugin) {
+    if (publishesArtifacts) {
+      applyMavenPublishPlugin project
       applyBintrayPlugin project
     }
   }
@@ -124,6 +129,12 @@ class ServiceTalkCorePlugin implements Plugin<Project> {
     }
   }
 
+  private static void applyMavenPublishPlugin(Project project) {
+    project.configure(project) {
+      pluginManager.apply("maven-publish")
+    }
+  }
+
   private static void applyBintrayPlugin(Project project) {
     project.configure(project) {
       pluginManager.apply("com.jfrog.bintray")
@@ -147,6 +158,7 @@ class ServiceTalkCorePlugin implements Plugin<Project> {
           user = bintrayUser
           key = bintrayKey
           publications = ["mavenJava"]
+
           pkg {
             userOrg = "servicetalk"
             repo = "servicetalk"
@@ -157,6 +169,27 @@ class ServiceTalkCorePlugin implements Plugin<Project> {
           override = true
           publish = true
         }
+
+        // Temporary workaround for https://github.com/bintray/gradle-bintray-plugin/issues/229
+        PublishingExtension publishing = project.extensions.getByType(PublishingExtension)
+        project.tasks.withType(BintrayUploadTask) {
+          doFirst {
+            publishing.publications.withType(MavenPublication).each { publication ->
+              File moduleFile = project.buildDir.toPath()
+                  .resolve("publications/${publication.name}/module.json").toFile()
+
+              if (moduleFile.exists()) {
+                publication.artifact(new FileBasedMavenArtifact(moduleFile) {
+                  @Override
+                  protected String getDefaultExtension() {
+                    return "module"
+                  }
+                })
+              }
+            }
+          }
+        }
+
       }
     }
   }
