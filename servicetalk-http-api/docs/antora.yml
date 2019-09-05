@@ -1,5 +1,5 @@
 name: servicetalk-http-api
 title: ServiceTalk HTTP API
-version: 0.17
+version: SNAPSHOT
 nav:
   - modules/ROOT/nav.adoc
