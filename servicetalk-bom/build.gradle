@@ -16,7 +16,6 @@
 
 apply plugin: "servicetalk-core"
 apply plugin: "java-platform"
-apply plugin: "maven-publish"
 
 rootProject.subprojects.findAll { !it.name.contains("bom") && !it.name.contains("examples") }.each {
   dependencies.constraints.add("api", it)

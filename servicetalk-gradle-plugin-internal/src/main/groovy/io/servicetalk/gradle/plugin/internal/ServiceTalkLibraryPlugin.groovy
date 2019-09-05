@@ -51,7 +51,6 @@ final class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
   private static void applyJavaLibraryPlugin(Project project) {
     project.configure(project) {
       pluginManager.apply("java-library")
-      pluginManager.apply("maven-publish")
 
       sourceCompatibility = TARGET_VERSION
       targetCompatibility = TARGET_VERSION
