@@ -31,8 +31,7 @@ public interface CompositeCloseable extends AsyncCloseable, GracefulAutoCloseabl
      * method subscribes to the passed in {@link AsyncCloseable} and the current composite set at the same time.
      * If an order of closure is required, then use {@link #append(AsyncCloseable)} or {@link #prepend(AsyncCloseable)}.
      *
-     * @param <T> the type of {@link AsyncCloseable} to be merged @param closeable {@link AsyncCloseable} that is closed
-     * when this {@link CompositeCloseable} is closed.
+     * @param <T> the type of {@link AsyncCloseable} to be merged
      * @param closeable {@link AsyncCloseable} that is closed when this {@link CompositeCloseable} is closed.
      * @return {@code T}
      */

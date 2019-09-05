@@ -134,7 +134,7 @@ final class ProjectUtils {
     configFile.exists() ? configFile : project.file("$project.projectDir/$path")
   }
 
-  private static void addQualityTask(Project project) {
+  static void addQualityTask(Project project) {
     project.configure(project) {
       project.task("quality") {
         description = "Run all quality analyzers for all source sets"

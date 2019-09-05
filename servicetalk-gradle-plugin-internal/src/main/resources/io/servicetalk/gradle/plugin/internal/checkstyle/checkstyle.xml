@@ -241,6 +241,8 @@
       <property name="ignoreCase" value="true"/>
       <property name="message" value="Javadoc has illegal @author tag"/>
     </module>
+    <module name="InvalidJavadocPosition"/>
+    <module name="JavadocBlockTagLocation"/>
 
     <!-- Miscellaneous -->
     <module name="ArrayTypeStyle"/>
@@ -290,6 +292,8 @@
     <module name="StringLiteralEquality"/>
     <module name="SuperClone"/>
     <module name="SuperFinalize"/>
+    <module name="UnnecessarySemicolonInEnumeration"/>
+    <module name="UnnecessarySemicolonInTryWithResources"/>
 
     <!-- Naming Conventions -->
     <module name="ConstantName">
