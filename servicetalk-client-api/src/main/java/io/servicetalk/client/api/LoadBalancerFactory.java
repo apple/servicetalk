@@ -19,10 +19,9 @@ import io.servicetalk.concurrent.api.Publisher;
 
 /**
  * A factory for creating {@link LoadBalancer} instances.
+ *
  * @param <ResolvedAddress> The type of address after resolution.
- * @param <C> The type of {@link LoadBalancedConnection}.
- * new connections. Returned {@link LoadBalancer} will own the responsibility for this {@link ConnectionFactory}
- * and hence will call {@link ConnectionFactory#closeAsync()} when {@link LoadBalancer#closeAsync()} is called.
+ * @param <C> The type of connection.
  */
 @FunctionalInterface
 public interface LoadBalancerFactory<ResolvedAddress, C extends LoadBalancedConnection> {
@@ -32,6 +31,8 @@ public interface LoadBalancerFactory<ResolvedAddress, C extends LoadBalancedConn
      * @param eventPublisher A stream of {@link ServiceDiscovererEvent}s which the {@link LoadBalancer} can use to
      * connect to physical hosts. Typically generated from a {@link ServiceDiscoverer}.
      * @param connectionFactory {@link ConnectionFactory} that the returned {@link LoadBalancer} will use to generate
+     * new connections. Returned {@link LoadBalancer} will own the responsibility for this {@link ConnectionFactory}
+     * and hence will call {@link ConnectionFactory#closeAsync()} when {@link LoadBalancer#closeAsync()} is called.
      * @return a new {@link LoadBalancer}.
      */
     LoadBalancer<? extends C> newLoadBalancer(

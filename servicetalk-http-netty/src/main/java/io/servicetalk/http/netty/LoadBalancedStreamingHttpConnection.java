@@ -15,13 +15,11 @@
  */
 package io.servicetalk.http.netty;
 
-import io.servicetalk.client.api.LoadBalancedConnection;
 import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.internal.ReservableRequestConcurrencyController;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.FilterableStreamingHttpLoadBalancedConnection;
 import io.servicetalk.http.api.HttpEventKey;
 import io.servicetalk.http.api.HttpExecutionContext;
@@ -54,7 +52,7 @@ final class LoadBalancedStreamingHttpConnection implements FilterableStreamingHt
                    // we wrap before returning to the user.
                    HttpExecutionStrategyInfluencer {
     private final ReservableRequestConcurrencyController limiter;
-    private final FilterableStreamingHttpConnection filteredConnection;
+    private final FilterableStreamingHttpLoadBalancedConnection filteredConnection;
     private final HttpExecutionStrategy streamingStrategy;
     private final HttpExecutionStrategyInfluencer strategyInfluencer;
 
@@ -161,6 +159,6 @@ final class LoadBalancedStreamingHttpConnection implements FilterableStreamingHt
 
     @Override
     public float score() {
-        return ((LoadBalancedConnection) filteredConnection).score();
+        return filteredConnection.score();
     }
 }
