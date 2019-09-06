@@ -84,7 +84,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
     private final HttpClientConfig config;
     private final HttpExecutionContextBuilder executionContextBuilder;
     private final ClientStrategyInfluencerChainBuilder influencerChainBuilder;
-    private LoadBalancerFactory loadBalancerFactory;
+    private LoadBalancerFactory<R, FilterableStreamingHttpLoadBalancedConnection> loadBalancerFactory;
     private Function<FilterableStreamingHttpConnection, FilterableStreamingHttpLoadBalancedConnection> protocolBinder;
     private ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> serviceDiscoverer;
     private Function<U, CharSequence> hostToCharSequenceFunction = this::toAuthorityForm;
@@ -272,8 +272,10 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
                                 connectionFactoryFilter, protocolBinder);
             }
 
-            final LoadBalancer<LoadBalancedStreamingHttpConnection> lb = closeOnException.prepend(
-                    loadBalancerFactory.newLoadBalancer(sdEvents, connectionFactory));
+            @SuppressWarnings("unchecked")
+            final LoadBalancer<LoadBalancedStreamingHttpConnection> lb =
+                    (LoadBalancer<LoadBalancedStreamingHttpConnection>) closeOnException.prepend(
+                    this.loadBalancerFactory.newLoadBalancer(sdEvents, connectionFactory));
 
             StreamingHttpClientFilterFactory currClientFilterFactory = clientFilterFactory;
 
@@ -507,7 +509,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
 
     @Override
     public DefaultSingleAddressHttpClientBuilder<U, R> loadBalancerFactory(
-            final LoadBalancerFactory loadBalancerFactory,
+            final LoadBalancerFactory<R, FilterableStreamingHttpLoadBalancedConnection> loadBalancerFactory,
             final Function<FilterableStreamingHttpConnection,
                     FilterableStreamingHttpLoadBalancedConnection> protocolBinder) {
         this.loadBalancerFactory = requireNonNull(loadBalancerFactory);
@@ -586,20 +588,20 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
         return Integer.parseInt(cs.subSequence(colon + 1, cs.length() - 1).toString());
     }
 
-    private static final class StrategyInfluencingLoadBalancerFactory<R>
-            implements LoadBalancerFactory<R>, HttpExecutionStrategyInfluencer {
+    private static final class StrategyInfluencingLoadBalancerFactory<R, C extends LoadBalancedConnection>
+            implements LoadBalancerFactory<R, C>, HttpExecutionStrategyInfluencer {
 
 
-        private final LoadBalancerFactory<R> delegate;
+        private final LoadBalancerFactory<R, C> delegate;
 
-        private StrategyInfluencingLoadBalancerFactory(final LoadBalancerFactory<R> delegate) {
+        private StrategyInfluencingLoadBalancerFactory(final LoadBalancerFactory<R, C> delegate) {
             this.delegate = delegate;
         }
 
         @Override
-        public <C extends LoadBalancedConnection> LoadBalancer<C> newLoadBalancer(
+        public LoadBalancer<? extends C> newLoadBalancer(
                 final Publisher<? extends ServiceDiscovererEvent<R>> eventPublisher,
-                final ConnectionFactory<R, C> connectionFactory) {
+                final ConnectionFactory<R, ? extends C> connectionFactory) {
             return delegate.newLoadBalancer(eventPublisher, connectionFactory);
         }
 

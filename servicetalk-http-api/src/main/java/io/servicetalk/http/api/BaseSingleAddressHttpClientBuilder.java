@@ -106,7 +106,7 @@ abstract class BaseSingleAddressHttpClientBuilder<U, R, SDE extends ServiceDisco
 
     @Override
     public abstract BaseSingleAddressHttpClientBuilder<U, R, SDE> loadBalancerFactory(
-            LoadBalancerFactory<R> loadBalancerFactory,
+            LoadBalancerFactory<R, FilterableStreamingHttpLoadBalancedConnection> loadBalancerFactory,
             Function<FilterableStreamingHttpConnection, FilterableStreamingHttpLoadBalancedConnection> protocolBinder);
 
     @Override

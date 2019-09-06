@@ -142,6 +142,6 @@ interface SingleAddressGrpcClientBuilder<U, R,
      * @return {@code this}.
      */
     SingleAddressGrpcClientBuilder<U, R, SDE> loadBalancerFactory(
-            LoadBalancerFactory<R> loadBalancerFactory,
+            LoadBalancerFactory<R, FilterableStreamingHttpLoadBalancedConnection> loadBalancerFactory,
             Function<FilterableStreamingHttpConnection, FilterableStreamingHttpLoadBalancedConnection> protocolBinder);
 }

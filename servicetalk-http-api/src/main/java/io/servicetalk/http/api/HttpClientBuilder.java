@@ -217,7 +217,7 @@ abstract class HttpClientBuilder<U, R, SDE extends ServiceDiscovererEvent<R>> ex
      * @return {@code this}.
      */
     public abstract HttpClientBuilder<U, R, SDE> loadBalancerFactory(
-            LoadBalancerFactory<R> loadBalancerFactory,
+            LoadBalancerFactory<R, FilterableStreamingHttpLoadBalancedConnection> loadBalancerFactory,
             Function<FilterableStreamingHttpConnection, FilterableStreamingHttpLoadBalancedConnection> protocolBinder);
 
     /**

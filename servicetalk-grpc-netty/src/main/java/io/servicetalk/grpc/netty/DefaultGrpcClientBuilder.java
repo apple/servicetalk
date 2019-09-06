@@ -167,7 +167,7 @@ final class DefaultGrpcClientBuilder<U, R> extends GrpcClientBuilder<U, R> {
 
     @Override
     public GrpcClientBuilder<U, R> loadBalancerFactory(
-            final LoadBalancerFactory<R> loadBalancerFactory,
+            final LoadBalancerFactory<R, FilterableStreamingHttpLoadBalancedConnection> loadBalancerFactory,
             final Function<FilterableStreamingHttpConnection,
                     FilterableStreamingHttpLoadBalancedConnection> protocolBinder) {
         httpClientBuilder.loadBalancerFactory(loadBalancerFactory, protocolBinder);

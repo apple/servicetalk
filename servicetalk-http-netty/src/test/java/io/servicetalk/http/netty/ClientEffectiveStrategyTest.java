@@ -604,12 +604,13 @@ public class ClientEffectiveStrategyTest {
         }
     }
 
-    private static class LoadBalancerFactoryImpl implements LoadBalancerFactory<InetSocketAddress> {
+    private static class LoadBalancerFactoryImpl<C extends LoadBalancedConnection>
+            implements LoadBalancerFactory<InetSocketAddress, C> {
         @Override
-        public <C extends LoadBalancedConnection> LoadBalancer<C>
+        public LoadBalancer<? extends C>
         newLoadBalancer(final Publisher<? extends ServiceDiscovererEvent<InetSocketAddress>> eventPublisher,
-                        final ConnectionFactory<InetSocketAddress, C> connectionFactory) {
-            return RoundRobinLoadBalancer.<InetSocketAddress>newRoundRobinFactory()
+                        final ConnectionFactory<InetSocketAddress, ? extends C> connectionFactory) {
+            return RoundRobinLoadBalancer.<InetSocketAddress, C>newRoundRobinFactory()
                     .newLoadBalancer(eventPublisher, connectionFactory);
         }
     }

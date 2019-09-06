@@ -122,7 +122,7 @@ public abstract class PartitionedHttpClientBuilder<U, R>
 
     @Override
     public abstract PartitionedHttpClientBuilder<U, R> loadBalancerFactory(
-            LoadBalancerFactory<R> loadBalancerFactory,
+            LoadBalancerFactory<R, FilterableStreamingHttpLoadBalancedConnection> loadBalancerFactory,
             Function<FilterableStreamingHttpConnection, FilterableStreamingHttpLoadBalancedConnection> protocolBinder);
 
     @Override

@@ -16,11 +16,11 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.client.api.ConnectionFactoryFilter;
-import io.servicetalk.client.api.LoadBalancedConnection;
 import io.servicetalk.client.api.internal.ReservableRequestConcurrencyController;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
+import io.servicetalk.http.api.FilterableStreamingHttpLoadBalancedConnection;
 import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
 import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
@@ -36,16 +36,15 @@ import static io.netty.handler.codec.http2.Http2CodecUtil.SMALLEST_MAX_CONCURREN
 import static io.servicetalk.client.api.internal.ReservableRequestConcurrencyControllers.newController;
 import static io.servicetalk.http.api.HttpEventKey.MAX_CONCURRENCY;
 
-final class H2LBHttpConnectionFactory<ResolvedAddress,
-        FLC extends FilterableStreamingHttpConnection & LoadBalancedConnection>
-        extends AbstractLBHttpConnectionFactory<ResolvedAddress, FLC> {
+final class H2LBHttpConnectionFactory<ResolvedAddress> extends AbstractLBHttpConnectionFactory<ResolvedAddress> {
     H2LBHttpConnectionFactory(
             final ReadOnlyHttpClientConfig config, final HttpExecutionContext executionContext,
             @Nullable final StreamingHttpConnectionFilterFactory connectionFilterFunction,
             final StreamingHttpRequestResponseFactory reqRespFactory,
             final HttpExecutionStrategyInfluencer strategyInfluencer,
             final ConnectionFactoryFilter<ResolvedAddress, FilterableStreamingHttpConnection> connectionFactoryFilter,
-            final Function<FilterableStreamingHttpConnection, ? extends FLC> protocolBinding) {
+            final Function<FilterableStreamingHttpConnection,
+                    FilterableStreamingHttpLoadBalancedConnection> protocolBinding) {
         super(config, executionContext, connectionFilterFunction, reqRespFactory, strategyInfluencer,
                 connectionFactoryFilter, protocolBinding);
     }

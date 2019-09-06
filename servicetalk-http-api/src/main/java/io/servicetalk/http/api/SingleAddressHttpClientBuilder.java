@@ -116,7 +116,7 @@ public abstract class SingleAddressHttpClientBuilder<U, R>
 
     @Override
     public abstract SingleAddressHttpClientBuilder<U, R> loadBalancerFactory(
-            LoadBalancerFactory<R> loadBalancerFactory,
+            LoadBalancerFactory<R, FilterableStreamingHttpLoadBalancedConnection> loadBalancerFactory,
             Function<FilterableStreamingHttpConnection, FilterableStreamingHttpLoadBalancedConnection> protocolBinder);
 
     @Override

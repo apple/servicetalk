@@ -228,19 +228,14 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
     /**
      * Create a {@link LoadBalancerFactory} that creates instances of {@link RoundRobinLoadBalancer}.
      * @param <ResolvedAddress> The resolved address type.
+     * @param <C> The type of connection.
      * @return a {@link LoadBalancerFactory} that creates instances of {@link RoundRobinLoadBalancer}.
      */
-    public static <ResolvedAddress> LoadBalancerFactory<ResolvedAddress> newRoundRobinFactory() {
-        return new LoadBalancerFactory<ResolvedAddress>() {
-            @Override
-            public <C extends LoadBalancedConnection> LoadBalancer<C> newLoadBalancer(
-                    final Publisher<? extends ServiceDiscovererEvent<ResolvedAddress>> eventPublisher,
-                    final ConnectionFactory<ResolvedAddress, C> connectionFactory) {
-                return new RoundRobinLoadBalancer<>(eventPublisher,
-                        connectionFactory,
-                        comparingInt(Object::hashCode));
-            }
-        };
+    public static <ResolvedAddress, C extends LoadBalancedConnection>
+    LoadBalancerFactory<ResolvedAddress, C> newRoundRobinFactory() {
+        return (eventPublisher, connectionFactory) -> new RoundRobinLoadBalancer<>(eventPublisher,
+                connectionFactory,
+                comparingInt(Object::hashCode));
     }
 
     @Override

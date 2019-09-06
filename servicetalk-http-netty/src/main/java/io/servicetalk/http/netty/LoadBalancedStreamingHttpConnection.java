@@ -22,6 +22,7 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
+import io.servicetalk.http.api.FilterableStreamingHttpLoadBalancedConnection;
 import io.servicetalk.http.api.HttpEventKey;
 import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpExecutionStrategy;
@@ -45,8 +46,8 @@ import static java.util.Objects.requireNonNull;
 /**
  * Makes the wrapped {@link StreamingHttpConnection} aware of the {@link LoadBalancer}.
  */
-final class LoadBalancedStreamingHttpConnection
-        implements LoadBalancedConnection, ReservedStreamingHttpConnection, ReservableRequestConcurrencyController,
+final class LoadBalancedStreamingHttpConnection implements FilterableStreamingHttpLoadBalancedConnection,
+                   ReservedStreamingHttpConnection, ReservableRequestConcurrencyController,
                    // Since we do not have filters for reserved connection, we rely on the original implementation to
                    // be an influencer hence we can try to correctly delegate when possible.
                    // Reserved connection given to the user will use the correct strategy and influencer chain since
@@ -57,8 +58,7 @@ final class LoadBalancedStreamingHttpConnection
     private final HttpExecutionStrategy streamingStrategy;
     private final HttpExecutionStrategyInfluencer strategyInfluencer;
 
-    <FLC extends FilterableStreamingHttpConnection & LoadBalancedConnection>
-    LoadBalancedStreamingHttpConnection(FLC filteredConnection,
+    LoadBalancedStreamingHttpConnection(FilterableStreamingHttpLoadBalancedConnection filteredConnection,
                                         ReservableRequestConcurrencyController limiter,
                                         HttpExecutionStrategy streamingStrategy,
                                         HttpExecutionStrategyInfluencer strategyInfluencer) {

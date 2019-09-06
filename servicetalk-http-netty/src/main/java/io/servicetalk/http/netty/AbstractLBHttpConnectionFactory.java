@@ -17,12 +17,12 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.client.api.ConnectionFactory;
 import io.servicetalk.client.api.ConnectionFactoryFilter;
-import io.servicetalk.client.api.LoadBalancedConnection;
 import io.servicetalk.client.api.internal.ReservableRequestConcurrencyController;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
+import io.servicetalk.http.api.FilterableStreamingHttpLoadBalancedConnection;
 import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
 import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
@@ -36,8 +36,7 @@ import javax.annotation.Nullable;
 import static io.servicetalk.concurrent.api.AsyncCloseables.emptyAsyncCloseable;
 import static java.util.Objects.requireNonNull;
 
-abstract class AbstractLBHttpConnectionFactory<ResolvedAddress,
-        FLC extends FilterableStreamingHttpConnection & LoadBalancedConnection>
+abstract class AbstractLBHttpConnectionFactory<ResolvedAddress>
         implements ConnectionFactory<ResolvedAddress, LoadBalancedStreamingHttpConnection> {
     private final ListenableAsyncCloseable close = emptyAsyncCloseable();
     @Nullable
@@ -47,7 +46,8 @@ abstract class AbstractLBHttpConnectionFactory<ResolvedAddress,
     final StreamingHttpRequestResponseFactory reqRespFactory;
     final HttpExecutionStrategyInfluencer strategyInfluencer;
     final ConnectionFactory<ResolvedAddress, FilterableStreamingHttpConnection> filterableConnectionFactory;
-    private final Function<FilterableStreamingHttpConnection, ? extends FLC> protocolBinding;
+    private final Function<FilterableStreamingHttpConnection,
+            FilterableStreamingHttpLoadBalancedConnection> protocolBinding;
 
     AbstractLBHttpConnectionFactory(
             final ReadOnlyHttpClientConfig config, final HttpExecutionContext executionContext,
@@ -55,7 +55,8 @@ abstract class AbstractLBHttpConnectionFactory<ResolvedAddress,
             final StreamingHttpRequestResponseFactory reqRespFactory,
             final HttpExecutionStrategyInfluencer strategyInfluencer,
             final ConnectionFactoryFilter<ResolvedAddress, FilterableStreamingHttpConnection> connectionFactoryFilter,
-            final Function<FilterableStreamingHttpConnection, ? extends FLC> protocolBinding) {
+            final Function<FilterableStreamingHttpConnection,
+                    FilterableStreamingHttpLoadBalancedConnection> protocolBinding) {
         this.connectionFilterFunction = connectionFilterFunction;
         this.config = requireNonNull(config);
         this.executionContext = requireNonNull(executionContext);

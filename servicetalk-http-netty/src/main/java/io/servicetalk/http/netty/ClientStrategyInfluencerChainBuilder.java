@@ -59,7 +59,7 @@ final class ClientStrategyInfluencerChainBuilder {
         }
     }
 
-    void add(LoadBalancerFactory<?> lb) {
+    void add(LoadBalancerFactory<?, ?> lb) {
         if (!clientChain.prependIfInfluencer(lb)) {
             // If the load balancer is not influencing strategy, then the default is to offload all.
             clientChain.prepend(defaultStreamingInfluencer());

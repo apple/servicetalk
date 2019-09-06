@@ -105,7 +105,7 @@ public abstract class GrpcClientBuilder<U, R>
 
     @Override
     public abstract GrpcClientBuilder<U, R> loadBalancerFactory(
-            LoadBalancerFactory<R> loadBalancerFactory,
+            LoadBalancerFactory<R, FilterableStreamingHttpLoadBalancedConnection> loadBalancerFactory,
             Function<FilterableStreamingHttpConnection, FilterableStreamingHttpLoadBalancedConnection> protocolBinder);
 
     /**

@@ -356,7 +356,7 @@ class DefaultPartitionedHttpClientBuilder<U, R> extends PartitionedHttpClientBui
 
     @Override
     public PartitionedHttpClientBuilder<U, R> loadBalancerFactory(
-            final LoadBalancerFactory<R> loadBalancerFactory,
+            final LoadBalancerFactory<R, FilterableStreamingHttpLoadBalancedConnection> loadBalancerFactory,
             final Function<FilterableStreamingHttpConnection,
                     FilterableStreamingHttpLoadBalancedConnection> protocolBinder) {
         builderTemplate.loadBalancerFactory(loadBalancerFactory, protocolBinder);

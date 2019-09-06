@@ -516,7 +516,8 @@ final class DefaultMultiAddressUrlHttpClientBuilder
 
     @Override
     public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> loadBalancerFactory(
-            final LoadBalancerFactory<InetSocketAddress> loadBalancerFactory,
+            final LoadBalancerFactory<InetSocketAddress,
+                    FilterableStreamingHttpLoadBalancedConnection> loadBalancerFactory,
             final Function<FilterableStreamingHttpConnection,
                     FilterableStreamingHttpLoadBalancedConnection> protocolBinder) {
         builderTemplate.loadBalancerFactory(loadBalancerFactory, protocolBinder);

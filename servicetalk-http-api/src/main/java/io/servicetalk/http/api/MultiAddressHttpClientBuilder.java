@@ -117,7 +117,7 @@ public abstract class MultiAddressHttpClientBuilder<U, R>
     @Override
     public abstract
     MultiAddressHttpClientBuilder<U, R> loadBalancerFactory(
-            LoadBalancerFactory<R> loadBalancerFactory,
+            LoadBalancerFactory<R, FilterableStreamingHttpLoadBalancedConnection> loadBalancerFactory,
             Function<FilterableStreamingHttpConnection, FilterableStreamingHttpLoadBalancedConnection> protocolBinding);
 
     @Override
