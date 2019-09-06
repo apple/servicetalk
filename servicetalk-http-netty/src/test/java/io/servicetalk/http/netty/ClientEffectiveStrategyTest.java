@@ -29,13 +29,13 @@ import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.BlockingStreamingHttpClient;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
+import io.servicetalk.http.api.FilterableStreamingHttpLoadBalancedConnection;
 import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpClientFilter;
 import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
-import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpConnectionFilter;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequester;
@@ -559,7 +559,8 @@ public class ClientEffectiveStrategyTest {
                                     new StreamingHttpConnectionFilter(connection) { });
                         }
                         if (addLoadBalancer) {
-                            clientBuilder.loadBalancerFactory(new LoadBalancerFactoryImpl());
+                            clientBuilder.loadBalancerFactory(new LoadBalancerFactoryImpl(),
+                                    StaticScoreHttpProtocolBinder.provideStaticScoreIfNeeded(1));
                         }
                         if (addFilter) {
                             // Here since we do not override mergeForEffectiveStrategy, it will default to offload-all.
@@ -604,12 +605,14 @@ public class ClientEffectiveStrategyTest {
     }
 
     private static class LoadBalancerFactoryImpl
-            implements LoadBalancerFactory<InetSocketAddress, StreamingHttpConnection> {
+            implements LoadBalancerFactory<InetSocketAddress, FilterableStreamingHttpLoadBalancedConnection> {
         @Override
-        public LoadBalancer<StreamingHttpConnection> newLoadBalancer(
-                final Publisher<? extends ServiceDiscovererEvent<InetSocketAddress>> eventPublisher,
-                final ConnectionFactory<InetSocketAddress, ? extends StreamingHttpConnection> connectionFactory) {
-            return RoundRobinLoadBalancer.<InetSocketAddress, StreamingHttpConnection>newRoundRobinFactory()
+        public LoadBalancer<? extends FilterableStreamingHttpLoadBalancedConnection>
+        newLoadBalancer(final Publisher<? extends ServiceDiscovererEvent<InetSocketAddress>> eventPublisher,
+                        final ConnectionFactory<InetSocketAddress,
+                                ? extends FilterableStreamingHttpLoadBalancedConnection> connectionFactory) {
+            return RoundRobinLoadBalancer.<InetSocketAddress,
+                    FilterableStreamingHttpLoadBalancedConnection>newRoundRobinFactory()
                     .newLoadBalancer(eventPublisher, connectionFactory);
         }
     }

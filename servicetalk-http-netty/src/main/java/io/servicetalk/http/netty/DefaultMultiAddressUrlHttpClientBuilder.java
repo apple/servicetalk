@@ -30,6 +30,7 @@ import io.servicetalk.concurrent.api.internal.SubscribableCompletable;
 import io.servicetalk.http.api.FilterableReservedStreamingHttpConnection;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
+import io.servicetalk.http.api.FilterableStreamingHttpLoadBalancedConnection;
 import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpHeadersFactory;
@@ -40,7 +41,6 @@ import io.servicetalk.http.api.MultiAddressHttpClientFilterFactory;
 import io.servicetalk.http.api.SingleAddressHttpClientSecurityConfigurator;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
-import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
@@ -79,8 +79,8 @@ import static java.util.Objects.requireNonNull;
  *
  * @see <a href="https://tools.ietf.org/html/rfc7230#section-5.3.2">absolute-form rfc7230#section-5.3.2</a>
  */
-final class DefaultMultiAddressUrlHttpClientBuilder extends MultiAddressHttpClientBuilder<HostAndPort,
-        InetSocketAddress> {
+final class DefaultMultiAddressUrlHttpClientBuilder
+        extends MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> {
     // https://tools.ietf.org/html/rfc2068#section-10.3 says:
     // A user agent SHOULD NOT automatically redirect a request more than 5 times,
     // since such redirects usually indicate an infinite loop.
@@ -516,8 +516,11 @@ final class DefaultMultiAddressUrlHttpClientBuilder extends MultiAddressHttpClie
 
     @Override
     public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> loadBalancerFactory(
-            final LoadBalancerFactory<InetSocketAddress, StreamingHttpConnection> loadBalancerFactory) {
-        builderTemplate.loadBalancerFactory(loadBalancerFactory);
+            final LoadBalancerFactory<InetSocketAddress,
+                    FilterableStreamingHttpLoadBalancedConnection> loadBalancerFactory,
+            final Function<FilterableStreamingHttpConnection,
+                    FilterableStreamingHttpLoadBalancedConnection> protocolBinder) {
+        builderTemplate.loadBalancerFactory(loadBalancerFactory, protocolBinder);
         return this;
     }
 

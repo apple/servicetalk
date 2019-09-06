@@ -20,11 +20,13 @@ import io.servicetalk.client.api.internal.ReservableRequestConcurrencyController
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
+import io.servicetalk.http.api.FilterableStreamingHttpLoadBalancedConnection;
 import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
 import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 
+import java.util.function.Function;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.client.api.internal.ReservableRequestConcurrencyControllers.newSingleController;
@@ -38,9 +40,11 @@ final class NonPipelinedLBHttpConnectionFactory<ResolvedAddress>
             @Nullable final StreamingHttpConnectionFilterFactory connectionFilterFunction,
             final StreamingHttpRequestResponseFactory reqRespFactory,
             final HttpExecutionStrategyInfluencer strategyInfluencer,
-            final ConnectionFactoryFilter<ResolvedAddress, FilterableStreamingHttpConnection> connectionFactoryFilter) {
+            final ConnectionFactoryFilter<ResolvedAddress, FilterableStreamingHttpConnection> connectionFactoryFilter,
+            final Function<FilterableStreamingHttpConnection,
+                    FilterableStreamingHttpLoadBalancedConnection> protocolBinding) {
         super(config, executionContext, connectionFilterFunction, reqRespFactory, strategyInfluencer,
-                connectionFactoryFilter);
+                connectionFactoryFilter, protocolBinding);
     }
 
     @Override

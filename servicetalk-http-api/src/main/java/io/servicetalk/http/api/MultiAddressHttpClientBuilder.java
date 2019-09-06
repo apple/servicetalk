@@ -115,8 +115,10 @@ public abstract class MultiAddressHttpClientBuilder<U, R>
             ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> serviceDiscoverer);
 
     @Override
-    public abstract MultiAddressHttpClientBuilder<U, R> loadBalancerFactory(
-            LoadBalancerFactory<R, StreamingHttpConnection> loadBalancerFactory);
+    public abstract
+    MultiAddressHttpClientBuilder<U, R> loadBalancerFactory(
+            LoadBalancerFactory<R, FilterableStreamingHttpLoadBalancedConnection> loadBalancerFactory,
+            Function<FilterableStreamingHttpConnection, FilterableStreamingHttpLoadBalancedConnection> protocolBinding);
 
     @Override
     public abstract MultiAddressHttpClientBuilder<U, R> unresolvedAddressToHost(

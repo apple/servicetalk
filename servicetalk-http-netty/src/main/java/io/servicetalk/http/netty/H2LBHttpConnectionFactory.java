@@ -20,6 +20,7 @@ import io.servicetalk.client.api.internal.ReservableRequestConcurrencyController
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
+import io.servicetalk.http.api.FilterableStreamingHttpLoadBalancedConnection;
 import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
 import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
@@ -28,6 +29,7 @@ import io.servicetalk.tcp.netty.internal.ReadOnlyTcpClientConfig;
 import io.servicetalk.tcp.netty.internal.TcpClientChannelInitializer;
 import io.servicetalk.tcp.netty.internal.TcpConnector;
 
+import java.util.function.Function;
 import javax.annotation.Nullable;
 
 import static io.netty.handler.codec.http2.Http2CodecUtil.SMALLEST_MAX_CONCURRENT_STREAMS;
@@ -40,9 +42,11 @@ final class H2LBHttpConnectionFactory<ResolvedAddress> extends AbstractLBHttpCon
             @Nullable final StreamingHttpConnectionFilterFactory connectionFilterFunction,
             final StreamingHttpRequestResponseFactory reqRespFactory,
             final HttpExecutionStrategyInfluencer strategyInfluencer,
-            final ConnectionFactoryFilter<ResolvedAddress, FilterableStreamingHttpConnection> connectionFactoryFilter) {
+            final ConnectionFactoryFilter<ResolvedAddress, FilterableStreamingHttpConnection> connectionFactoryFilter,
+            final Function<FilterableStreamingHttpConnection,
+                    FilterableStreamingHttpLoadBalancedConnection> protocolBinding) {
         super(config, executionContext, connectionFilterFunction, reqRespFactory, strategyInfluencer,
-                connectionFactoryFilter);
+                connectionFactoryFilter, protocolBinding);
     }
 
     @Override
