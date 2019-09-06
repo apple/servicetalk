@@ -14,31 +14,18 @@
  * limitations under the License.
  */
 
-buildscript {
-  if (!repositories) {
-    repositories {
-      jcenter()
-      maven { url "https://plugins.gradle.org/m2/" }
-    }
-  }
-
-  dependencies {
-    classpath "io.servicetalk:servicetalk-gradle-plugin-internal:$project.version"
-  }
-}
-
 apply plugin: "servicetalk-library"
 
 dependencies {
-  implementation "io.servicetalk:servicetalk-bom-internal:$project.version"
+  api platform(project(":servicetalk-bom-internal"))
 
-  api "io.servicetalk:servicetalk-http-api:$project.version"
+  api project(":servicetalk-http-api")
   api "javax.ws.rs:javax.ws.rs-api"
 
+  implementation project(":servicetalk-annotations")
+  implementation project(":servicetalk-concurrent-api-internal")
+  implementation project(":servicetalk-concurrent-internal")
+  implementation project(":servicetalk-http-utils")
   implementation "com.google.code.findbugs:jsr305"
-  implementation "io.servicetalk:servicetalk-annotations:$project.version"
-  implementation "io.servicetalk:servicetalk-concurrent-api-internal:$project.version"
-  implementation "io.servicetalk:servicetalk-concurrent-internal:$project.version"
-  implementation "io.servicetalk:servicetalk-http-utils:$project.version"
   implementation "org.glassfish.jersey.core:jersey-common"
 }

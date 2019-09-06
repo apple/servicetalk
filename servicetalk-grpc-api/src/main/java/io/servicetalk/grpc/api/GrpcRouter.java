@@ -33,7 +33,6 @@ import io.servicetalk.grpc.api.GrpcRoutes.StreamingRoute;
 import io.servicetalk.grpc.api.GrpcServiceFactory.ServerBinder;
 import io.servicetalk.grpc.api.GrpcUtils.GrpcStatusUpdater;
 import io.servicetalk.http.api.BlockingHttpService;
-import io.servicetalk.http.api.BlockingStreamingHttpServerResponse;
 import io.servicetalk.http.api.HttpApiConversions.ServiceAdapterHolder;
 import io.servicetalk.http.api.HttpDeserializer;
 import io.servicetalk.http.api.HttpExecutionStrategy;
@@ -337,7 +336,7 @@ final class GrpcRouter {
                         final HttpSerializer<Resp> serializer =
                                 serializationProvider.serializerFor(serviceContext, responseClass);
                         final DefaultGrpcPayloadWriter<Resp> grpcPayloadWriter =
-                                new DefaultGrpcPayloadWriter<>(response, serializer);
+                                new DefaultGrpcPayloadWriter<>(response.sendMetaData(serializer));
                         try {
                             route.handle(serviceContext, request.payloadBody(deserializer), grpcPayloadWriter);
                         } catch (Throwable t) {
@@ -408,38 +407,28 @@ final class GrpcRouter {
     }
 
     private static final class DefaultGrpcPayloadWriter<Resp> implements GrpcPayloadWriter<Resp> {
-        private final BlockingStreamingHttpServerResponse response;
-        private final HttpSerializer<Resp> serializer;
-        @Nullable
-        private HttpPayloadWriter<Resp> payloadWriter;
+        private final HttpPayloadWriter<Resp> payloadWriter;
 
-        DefaultGrpcPayloadWriter(final BlockingStreamingHttpServerResponse response,
-                                 final HttpSerializer<Resp> serializer) {
-            this.response = response;
-            this.serializer = serializer;
+        DefaultGrpcPayloadWriter(final HttpPayloadWriter<Resp> payloadWriter) {
+            this.payloadWriter = payloadWriter;
         }
 
         @Override
         public void write(final Resp resp) throws IOException {
-            payloadWriter().write(resp);
+            payloadWriter.write(resp);
         }
 
         @Override
         public void close() throws IOException {
-            payloadWriter().close();
+            payloadWriter.close();
         }
 
         @Override
         public void flush() throws IOException {
-            if (payloadWriter != null) {
-                payloadWriter.flush();
-            }
+            payloadWriter.flush();
         }
 
         HttpPayloadWriter<Resp> payloadWriter() {
-            if (payloadWriter == null) {
-                payloadWriter = response.sendMetaData(serializer);
-            }
             return payloadWriter;
         }
     }

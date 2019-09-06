@@ -44,18 +44,22 @@ class ServiceTalkGrpcPlugin implements Plugin<Project> {
 
     project.afterEvaluate {
       Properties pluginProperties = new Properties()
-      pluginProperties.load(getClass().getResourceAsStream("/META-INF/gradle-plugins/servicetalk-grpc.properties"))
+      pluginProperties.load(getClass().getResourceAsStream("/META-INF/servicetalk-grpc-gradle-plugin.properties"))
+
+      // In order to locate servicetalk-grpc-protoc we need either the ServiceTalk version for artifact resolution
+      // or be provided with a direct path to the protoc plugin executable
       def serviceTalkVersion = pluginProperties."implementation-version"
-      if (serviceTalkVersion == null) {
-        throw new IllegalStateException("Failed to retrieve ServiceTalk version from plugin meta.")
+      def serviceTalkProtocPluginPath = extension.serviceTalkProtocPluginPath
+      if (!serviceTalkVersion && !serviceTalkProtocPluginPath) {
+        throw new IllegalStateException("Failed to retrieve ServiceTalk version from plugin meta " +
+          "and `serviceTalkGrpc.serviceTalkProtocPluginPath` is not set.")
       }
 
       def protobufVersion = extension.protobufVersion
-      if (protobufVersion == null) {
+      if (!protobufVersion) {
         throw new InvalidUserDataException("Please set `serviceTalkGrpc.protobufVersion`.")
       }
 
-      def serviceTalkProtocPluginPath = extension.serviceTalkProtocPluginPath
 
       project.configure(project) {
         Task ideaTask = extension.generateIdeConfiguration ? project.tasks.findByName("ideaModule") : null
@@ -68,7 +72,7 @@ class ServiceTalkGrpcPlugin implements Plugin<Project> {
 
           plugins {
             servicetalk_grpc {
-              if (serviceTalkProtocPluginPath != null) {
+              if (serviceTalkProtocPluginPath) {
                 path = file(serviceTalkProtocPluginPath)
               } else {
                 artifact = "io.servicetalk:servicetalk-grpc-protoc:$serviceTalkVersion"

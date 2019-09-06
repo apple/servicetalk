@@ -183,10 +183,13 @@ final class GrpcUtils {
             // there is any.
             grpcHeaders = trailers;
         }
-        final GrpcStatusCode grpcStatusCode = GrpcStatusCode.fromCodeValue(statusCode);
-        if (grpcStatusCode.value() != GrpcStatusCode.OK.value()) {
-            throw new GrpcStatus(grpcStatusCode, null, grpcHeaders.get(GRPC_STATUS_MESSAGE_TRAILER))
-                    .asException(new StatusSupplier(grpcHeaders));
+
+        if (statusCode != null) {
+            final GrpcStatusCode grpcStatusCode = GrpcStatusCode.fromCodeValue(statusCode);
+            if (grpcStatusCode.value() != GrpcStatusCode.OK.value()) {
+                throw new GrpcStatus(grpcStatusCode, null, grpcHeaders.get(GRPC_STATUS_MESSAGE_TRAILER))
+                        .asException(new StatusSupplier(grpcHeaders));
+            }
         }
     }
 
@@ -268,20 +271,6 @@ final class GrpcUtils {
         protected HttpHeaders payloadFailed(final Throwable cause, final HttpHeaders trailers) {
             setStatus(trailers, cause, allocator);
             // Swallow exception as we are converting it to the trailers.
-            return trailers;
-        }
-    }
-
-    private static final class GrpcStatusValidator extends StatelessTrailersTransformer<Object> {
-        private final HttpHeaders responseHeaders;
-
-        GrpcStatusValidator(final HttpHeaders responseHeaders) {
-            this.responseHeaders = responseHeaders;
-        }
-
-        @Override
-        protected HttpHeaders payloadComplete(final HttpHeaders trailers) {
-            validateGrpcStatus(trailers, responseHeaders);
             return trailers;
         }
     }

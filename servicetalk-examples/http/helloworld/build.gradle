@@ -13,23 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-if (!repositories) {
-  repositories {
-    jcenter()
-    maven { url "https://plugins.gradle.org/m2/" }
-  }
-}
 
-apply plugin: "idea"
 apply plugin: "java"
+apply from: "../../gradle/idea.gradle"
 
 dependencies {
-  // `servicetalk-bom` brings consistent version of ServiceTalk modules.
-  implementation "io.servicetalk:servicetalk-bom:$project.version"
-
-  // The version for all ServiceTalk dependencies will be resolved based on information in `servicetalk-bom`.
-  implementation "io.servicetalk:servicetalk-annotations"
-  implementation "io.servicetalk:servicetalk-http-netty"
+  implementation project(":servicetalk-annotations")
+  implementation project(":servicetalk-http-netty")
 
   runtime "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
 }

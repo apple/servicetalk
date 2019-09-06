@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,120 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-plugins {
-  id "com.jfrog.bintray" version "1.8.4"
-}
 
+apply plugin: "servicetalk-library"
 apply plugin: "groovy"
-apply plugin: "idea"
-apply plugin: "maven-publish"
-apply plugin: "checkstyle"
+apply plugin: "java-gradle-plugin"
+apply from: "plugin-config.gradle"
 
-repositories {
-  jcenter()
-  maven { url "https://plugins.gradle.org/m2/" }
-}
-
-dependencies {
-  compile gradleApi()
-  compile localGroovy()
-  // these are plugins that are applied by the plugin
-  compile "org.asciidoctor:asciidoctor-gradle-plugin:1.5.8.1"
-  compile "gradle.plugin.com.github.spotbugs:spotbugs-gradle-plugin:1.6.9"
-  compile "com.jfrog.bintray.gradle:gradle-bintray-plugin:1.8.4"
-}
-
-checkstyle {
-  toolVersion = "8.16"
-  configDir = file("$projectDir/src/main/resources/io/servicetalk/gradle/plugin/internal/checkstyle")
-}
-
-// Overwrite the default set of file for Checkstyle analysis from only java files to all files of the source set
-// See: https://docs.gradle.org/current/dsl/org.gradle.api.plugins.quality.Checkstyle.html#org.gradle.api.plugins.quality.Checkstyle:source
-sourceSets.all {
-  tasks.getByName(it.getTaskName("checkstyle", null)).setSource(it.getAllSource())
-}
-
-task checkstyleRoot(type: Checkstyle) {
-  description = "Run Checkstyle analysis for files in the root directory"
-  classpath = sourceSets.main.output
-  source = fileTree(".") {
-    includes = ["*.gradle", "*.properties", "gradle/**"]
-    excludes = ["gradle/wrapper/**"]
-  }
-}
-
-task checkstyle {
-  description = "Run Checkstyle analysis for all source sets"
-  group = "verification"
-  dependsOn tasks.withType(Checkstyle)
-}
-
-tasks.withType(Checkstyle) {
-  group = "verification"
-}
-
-task quality {
-  description = "Run all quality analysers for all source sets"
-  group = "verification"
-  dependsOn tasks.checkstyle
-}
-
-jar {
-  manifest {
-    attributes "Built-JDK": System.getProperty("java.version"),
-        "Specification-Title": project.name,
-        "Specification-Version": "${-> project.version}",
-        "Specification-Vendor": "Apple Inc.",
-        "Implementation-Title": project.name,
-        "Implementation-Version": "${-> project.version}",
-        "Implementation-Vendor": "Apple Inc.",
-        "Automatic-Module-Name": "io.${project.name.replace("-", ".")}"
-  }
-}
-
-publishing {
-  publications {
-    mavenJava(MavenPublication) {
-      // publish jars, sources and docs
-      from components.java
-    }
-  }
-}
-
-if (System.getenv("BINTRAY_USER") && System.getenv("BINTRAY_KEY")) {
-  bintray {
-      user = System.getenv("BINTRAY_USER")
-      key = System.getenv("BINTRAY_KEY")
-      publications = ["mavenJava"]
-      pkg {
-          userOrg = "servicetalk"
-          repo = "servicetalk"
-          name = project.name
-          licenses = ["Apache-2.0"]
-          vcsUrl = "https://github.com/apple/servicetalk.git"
-      }
-      override = true
-      publish = true
-  }
-}
-
-idea {
-  module {
-    iml {
-      withXml {
-        // Without this, gradle/intellij sees .java files and makes it a source directory instead of a resource
-        // directory. This then causes building in intellij to fail when it tries to compile the template .java files.
-        for (def sourceFolder : it.asNode().component.content.sourceFolder) {
-          if (sourceFolder.@url.endsWith("/resources")) {
-            sourceFolder.@type = "java-resource"
-          }
-        }
-      }
-    }
-  }
-}
-
-if (!hasProperty('releaseBuild') && !version.toString().endsWith("-SNAPSHOT")) {
-  version += "-SNAPSHOT"
+// Ignore Spotbugs for this module
+spotbugs {
+ ignoreFailures = true
+ showProgress = false
 }

@@ -15,10 +15,11 @@
  */
 package io.servicetalk.examples.grpc.helloworld.async;
 
-import io.servicetalk.examples.grpc.helloworld.HelloWorldProto.Greeter.ClientFactory;
-import io.servicetalk.examples.grpc.helloworld.HelloWorldProto.Greeter.GreeterClient;
-import io.servicetalk.examples.grpc.helloworld.HelloWorldProto.HelloRequest;
 import io.servicetalk.grpc.netty.GrpcClients;
+
+import io.grpc.examples.helloworld.Greeter.ClientFactory;
+import io.grpc.examples.helloworld.Greeter.GreeterClient;
+import io.grpc.examples.helloworld.HelloRequest;
 
 import java.util.concurrent.CountDownLatch;
 

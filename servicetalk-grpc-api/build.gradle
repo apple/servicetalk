@@ -13,35 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-buildscript {
-  if (!repositories) {
-    repositories {
-      jcenter()
-      maven { url "https://plugins.gradle.org/m2/" }
-    }
-  }
-
-  dependencies {
-    classpath "io.servicetalk:servicetalk-gradle-plugin-internal:$project.version"
-  }
-}
 
 apply plugin: "servicetalk-library"
 
 dependencies {
-  implementation "io.servicetalk:servicetalk-bom-internal:$project.version"
+  api platform(project(":servicetalk-bom-internal"))
 
-  api "io.servicetalk:servicetalk-http-api:$project.version"
-  api "io.servicetalk:servicetalk-concurrent-api:$project.version"
+  api project(":servicetalk-concurrent-api")
+  api project(":servicetalk-http-api")
   api "com.google.api.grpc:proto-google-common-protos"
 
-  implementation "io.servicetalk:servicetalk-annotations:$project.version"
-  implementation "io.servicetalk:servicetalk-concurrent-internal:$project.version"
-  implementation "io.servicetalk:servicetalk-concurrent-api-internal:$project.version"
+  implementation project(":servicetalk-annotations")
+  implementation project(":servicetalk-concurrent-api-internal")
+  implementation project(":servicetalk-concurrent-internal")
   implementation "org.slf4j:slf4j-api"
   implementation "com.google.code.findbugs:jsr305"
 
-  testImplementation "io.servicetalk:servicetalk-test-resources:$project.version"
+  testImplementation project(":servicetalk-test-resources")
   testImplementation "junit:junit"
   testImplementation "org.hamcrest:hamcrest-library"
   testImplementation "org.mockito:mockito-core"

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,137 +13,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import org.gradle.api.internal.artifacts.dependencies.DefaultExternalModuleDependency
 
-final TEST_FIXTURES_DEPENDENCY_SUFFIX = '-testFixtures'
-
-buildscript {
-  if (!repositories) {
+if (!repositories) {
+  allprojects {
+    buildscript {
+      repositories {
+        jcenter()
+        maven { url "https://plugins.gradle.org/m2/" }
+      }
+    }
     repositories {
       jcenter()
       maven { url "https://plugins.gradle.org/m2/" }
     }
   }
-
-  dependencies {
-    classpath "io.servicetalk:servicetalk-gradle-plugin-internal:$project.version"
-  }
 }
 
-if (!repositories) {
-  repositories {
-    jcenter()
-    maven { url "https://plugins.gradle.org/m2/" }
-  }
-}
+apply plugin: "servicetalk-root"
 
-// Composite builds do not correctly substitute test fixtures dependencies
-// because they target a custom configuration (namely: testFixturesRuntime).
-// We work around this problem by replacing test fixtures artifact dependencies
-// by module dependencies using the appropriate configuration.
-// Note that this workaround may not be required in the future, as the composite
-// build feature evolves and improves in Gradle.
-ext.replaceTestFixtures = { includedBuild, name ->
-  includedBuild.configuredBuild.rootProject.allprojects { prj ->
-    def config = prj.configurations.findByName(name)
-    if (config) {
-      config.dependencies.findAll { it.group == 'io.servicetalk' && it.name.endsWith(TEST_FIXTURES_DEPENDENCY_SUFFIX) }.each {
-        def projectDependency =
-            new DefaultExternalModuleDependency(
-                it.group,
-                it.name.substring(0, it.name.length() - TEST_FIXTURES_DEPENDENCY_SUFFIX.length()),
-                it.version,
-                'testFixturesRuntime')
-        config.dependencies.add(projectDependency)
-        config.dependencies.remove(it)
-      }
-    }
-  }
-}
-gradle.includedBuilds.each {
-  replaceTestFixtures(it, 'testImplementation')
-  replaceTestFixtures(it, 'testFixturesImplementation')
-}
-
-project.configure(project) {
-  io.servicetalk.gradle.plugin.internal.ServiceTalkLibraryPlugin.applyIdeaPlugin(gradle.rootProject)
-  io.servicetalk.gradle.plugin.internal.ServiceTalkLibraryPlugin.applyEclipsePlugin(gradle.rootProject)
-  io.servicetalk.gradle.plugin.internal.ServiceTalkLibraryPlugin.applyCheckstylePlugin(gradle.rootProject)
-}
-
-ext.findTasks = { taskName, excludedBuilds = [] ->
-  gradle.includedBuilds.findAll { !excludedBuilds.contains(it.name) }.collect { it.configuredBuild.rootProject.getTasksByName(taskName, true) }.flatten()
-}
-
-// Add tasks for composite:
-
-task clean {
-  doFirst {
-    delete file("$projectDir/build")
-  }
-  dependsOn findTasks('clean')
-}
-
-task javadoc {
-  dependsOn findTasks('javadoc')
-}
-
-task test {
-  dependsOn findTasks('test')
-}
-
-task build {
-  dependsOn checkstyleRoot
-  dependsOn findTasks('build')
-}
-
-task assemble {
-  dependsOn findTasks('assemble')
-}
-
-task checkstyle(overwrite: true) {
-  dependsOn checkstyleRoot
-  dependsOn findTasks('checkstyle', ['servicetalk-examples'])
-}
-
-task pmd {
-  dependsOn findTasks('pmd',
-    ['servicetalk-bom', 'servicetalk-bom-internal', 'servicetalk-examples', 'servicetalk-gradle-plugin-internal'])
-}
-
-task spotbugs {
-  dependsOn findTasks('spotbugs',
-    ['servicetalk-bom', 'servicetalk-bom-internal', 'servicetalk-examples', 'servicetalk-gradle-plugin-internal'])
-}
-
-task validateLocalDocSite(type:Exec) {
+task validateLocalDocSite(type: Exec) {
   workingDir 'docs/generation'
   commandLine './gradlew', 'validateLocalSite'
 }
-
-task quality {
-  dependsOn tasks.assemble
-  dependsOn tasks.checkstyle
-  dependsOn tasks.pmd
-  dependsOn tasks.spotbugs
-  dependsOn tasks.validateLocalDocSite
-}
-
-task check {
-  dependsOn tasks.quality
-  dependsOn findTasks('check')
-}
-
-task bintrayUpload {
-  dependsOn findTasks('bintrayUpload', ['servicetalk-benchmarks', 'servicetalk-examples'])
-}
-
-// Override behavior for existing tasks:
-
-task publish(overwrite: true) {
-  dependsOn findTasks('publish', ['servicetalk-benchmarks', 'servicetalk-examples'])
-}
-
-task publishToMavenLocal(overwrite: true) {
-  dependsOn findTasks('publishToMavenLocal', ['servicetalk-benchmarks', 'servicetalk-examples'])
-}
+quality.dependsOn validateLocalDocSite

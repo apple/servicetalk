@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,44 +13,33 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-buildscript {
-  if (!repositories) {
-    repositories {
-      jcenter()
-      maven { url "https://plugins.gradle.org/m2/" }
-    }
-  }
-
-  dependencies {
-    classpath "io.servicetalk:servicetalk-gradle-plugin-internal:$project.version"
-  }
-}
 
 apply plugin: "servicetalk-library"
 
 dependencies {
-  implementation "io.servicetalk:servicetalk-bom-internal:$project.version"
+  api platform(project(":servicetalk-bom-internal"))
 
-  api "io.servicetalk:servicetalk-buffer-netty:$project.version"
-  api "io.servicetalk:servicetalk-concurrent-api:$project.version"
-  api "io.servicetalk:servicetalk-transport-api:$project.version"
+  api project(":servicetalk-buffer-netty")
+  api project(":servicetalk-concurrent-api")
+  api project(":servicetalk-transport-api")
   api "io.netty:netty-handler"
 
+  implementation project(":servicetalk-annotations")
+  implementation project(":servicetalk-concurrent-api-internal")
+  implementation project(":servicetalk-concurrent-internal")
   implementation "com.google.code.findbugs:jsr305"
   implementation group: "io.netty", name: "netty-transport-native-epoll", classifier: "linux-x86_64"
   implementation group: "io.netty", name: "netty-transport-native-kqueue", classifier: "osx-x86_64"
-  implementation "io.servicetalk:servicetalk-annotations:$project.version"
-  implementation "io.servicetalk:servicetalk-concurrent-api-internal:$project.version"
-  implementation "io.servicetalk:servicetalk-concurrent-internal:$project.version"
   implementation "org.slf4j:slf4j-api"
 
-  testImplementation "io.servicetalk:servicetalk-concurrent-api-testFixtures:$project.version"
-  testImplementation "io.servicetalk:servicetalk-concurrent-internal-testFixtures:$project.version"
-  testImplementation "io.servicetalk:servicetalk-test-resources:$project.version"
+  testImplementation testFixtures(project(":servicetalk-concurrent-api"))
+  testImplementation testFixtures(project(":servicetalk-concurrent-internal"))
+  testImplementation project(":servicetalk-test-resources")
   testImplementation "junit:junit"
   testImplementation "org.hamcrest:hamcrest-library"
   testImplementation "org.mockito:mockito-core"
 
+  testFixturesImplementation platform(project(":servicetalk-bom-internal"))
   testFixturesImplementation "junit:junit"
   testFixturesImplementation "org.hamcrest:hamcrest-library"
   testFixturesImplementation "org.mockito:mockito-core"

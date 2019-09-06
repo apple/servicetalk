@@ -13,37 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-buildscript {
-  if (!repositories) {
-    repositories {
-      jcenter()
-      maven { url "https://plugins.gradle.org/m2/" }
-    }
-  }
-
-  dependencies {
-    classpath "io.servicetalk:servicetalk-gradle-plugin-internal:$project.version"
-  }
-}
 
 apply plugin: "servicetalk-library"
 
 dependencies {
-  implementation "io.servicetalk:servicetalk-bom-internal:$project.version"
+  api platform(project(":servicetalk-bom-internal"))
 
-  api "io.servicetalk:servicetalk-http-api:$project.version"
+  api project(":servicetalk-http-api")
 
+  implementation project(":servicetalk-annotations")
   implementation "com.google.code.findbugs:jsr305"
-  implementation "io.servicetalk:servicetalk-annotations:$project.version"
 
-  testImplementation "io.servicetalk:servicetalk-concurrent-api-testFixtures:$project.version"
-  testImplementation "io.servicetalk:servicetalk-concurrent-internal:$project.version"
-  testImplementation "io.servicetalk:servicetalk-concurrent-internal-testFixtures:$project.version"
-  testImplementation "io.servicetalk:servicetalk-buffer-netty:$project.version"
-  testImplementation "io.servicetalk:servicetalk-http-netty:$project.version"
-  testImplementation "io.servicetalk:servicetalk-transport-netty:$project.version"
-  testImplementation "io.servicetalk:servicetalk-transport-netty-internal-testFixtures:$project.version"
-  testImplementation "io.servicetalk:servicetalk-test-resources:$project.version"
+  testImplementation testFixtures(project(":servicetalk-concurrent-api"))
+  testImplementation testFixtures(project(":servicetalk-concurrent-internal"))
+  testImplementation testFixtures(project(":servicetalk-transport-netty-internal"))
+  testImplementation project(":servicetalk-concurrent-internal")
+  testImplementation project(":servicetalk-buffer-netty")
+  testImplementation project(":servicetalk-http-netty")
+  testImplementation project(":servicetalk-transport-netty")
+  testImplementation project(":servicetalk-test-resources")
   testImplementation "junit:junit"
   testImplementation "org.hamcrest:hamcrest-library"
   testImplementation "org.mockito:mockito-core"

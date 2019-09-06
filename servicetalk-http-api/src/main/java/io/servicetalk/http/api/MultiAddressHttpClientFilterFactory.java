@@ -54,8 +54,7 @@ public interface MultiAddressHttpClientFilterFactory<U> {
      * <pre>
      *     filter1 =&gt; filter2 =&gt; filter3 =&gt; client
      * </pre>
-     * @param before the function to apply before this function is applied @return a composed function that first
-     * applies the {@code before} function and then applies this function
+     * @param before the function to apply before this function is applied
      * @return a composed function that first applies the {@code before} function and then applies this function
      */
     default MultiAddressHttpClientFilterFactory<U> append(MultiAddressHttpClientFilterFactory<U> before) {
