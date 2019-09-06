@@ -19,7 +19,6 @@ import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.client.api.ConnectionFactory;
 import io.servicetalk.client.api.ConnectionFactoryFilter;
 import io.servicetalk.client.api.DefaultServiceDiscovererEvent;
-import io.servicetalk.client.api.LoadBalancedConnection;
 import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.LoadBalancerFactory;
 import io.servicetalk.client.api.ServiceDiscoverer;
@@ -588,20 +587,21 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
         return Integer.parseInt(cs.subSequence(colon + 1, cs.length() - 1).toString());
     }
 
-    private static final class StrategyInfluencingLoadBalancerFactory<R, C extends LoadBalancedConnection>
-            implements LoadBalancerFactory<R, C>, HttpExecutionStrategyInfluencer {
+    private static final class StrategyInfluencingLoadBalancerFactory<R> implements LoadBalancerFactory<R,
+            FilterableStreamingHttpLoadBalancedConnection>, HttpExecutionStrategyInfluencer {
 
 
-        private final LoadBalancerFactory<R, C> delegate;
+        private final LoadBalancerFactory<R, FilterableStreamingHttpLoadBalancedConnection> delegate;
 
-        private StrategyInfluencingLoadBalancerFactory(final LoadBalancerFactory<R, C> delegate) {
+        private StrategyInfluencingLoadBalancerFactory(
+                final LoadBalancerFactory<R, FilterableStreamingHttpLoadBalancedConnection> delegate) {
             this.delegate = delegate;
         }
 
         @Override
-        public LoadBalancer<? extends C> newLoadBalancer(
+        public LoadBalancer<? extends FilterableStreamingHttpLoadBalancedConnection> newLoadBalancer(
                 final Publisher<? extends ServiceDiscovererEvent<R>> eventPublisher,
-                final ConnectionFactory<R, ? extends C> connectionFactory) {
+                final ConnectionFactory<R, ? extends FilterableStreamingHttpLoadBalancedConnection> connectionFactory) {
             return delegate.newLoadBalancer(eventPublisher, connectionFactory);
         }
 

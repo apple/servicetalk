@@ -17,7 +17,6 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.client.api.ConnectionFactory;
-import io.servicetalk.client.api.LoadBalancedConnection;
 import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.LoadBalancerFactory;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
@@ -30,6 +29,7 @@ import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.BlockingStreamingHttpClient;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
+import io.servicetalk.http.api.FilterableStreamingHttpLoadBalancedConnection;
 import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
@@ -604,13 +604,15 @@ public class ClientEffectiveStrategyTest {
         }
     }
 
-    private static class LoadBalancerFactoryImpl<C extends LoadBalancedConnection>
-            implements LoadBalancerFactory<InetSocketAddress, C> {
+    private static class LoadBalancerFactoryImpl
+            implements LoadBalancerFactory<InetSocketAddress, FilterableStreamingHttpLoadBalancedConnection> {
         @Override
-        public LoadBalancer<? extends C>
+        public LoadBalancer<? extends FilterableStreamingHttpLoadBalancedConnection>
         newLoadBalancer(final Publisher<? extends ServiceDiscovererEvent<InetSocketAddress>> eventPublisher,
-                        final ConnectionFactory<InetSocketAddress, ? extends C> connectionFactory) {
-            return RoundRobinLoadBalancer.<InetSocketAddress, C>newRoundRobinFactory()
+                        final ConnectionFactory<InetSocketAddress,
+                                ? extends FilterableStreamingHttpLoadBalancedConnection> connectionFactory) {
+            return RoundRobinLoadBalancer.<InetSocketAddress,
+                    FilterableStreamingHttpLoadBalancedConnection>newRoundRobinFactory()
                     .newLoadBalancer(eventPublisher, connectionFactory);
         }
     }
