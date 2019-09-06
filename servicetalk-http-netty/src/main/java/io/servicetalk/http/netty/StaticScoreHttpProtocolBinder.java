@@ -23,11 +23,10 @@ import io.servicetalk.http.api.StreamingHttpConnectionFilter;
 import java.util.function.Function;
 
 /**
- * TODO(jayv): potentially move to HttpLoadBalancers factory?
  * Provides a default HTTP protocol binding based on a static scoring function to an otherwise non-scored {@link
  * FilterableStreamingHttpConnection}.
  */
-public final class StaticScoreHttpProtocolBinder extends StreamingHttpConnectionFilter
+final class StaticScoreHttpProtocolBinder extends StreamingHttpConnectionFilter
         implements FilterableStreamingHttpLoadBalancedConnection {
 
     private final float score;
@@ -50,7 +49,7 @@ public final class StaticScoreHttpProtocolBinder extends StreamingHttpConnection
      * FilterableStreamingHttpConnection} is an instance of {@link LoadBalancedConnection} and scoring is delegated.
      * @return the wrapped connection
      */
-    public static Function<FilterableStreamingHttpConnection, FilterableStreamingHttpLoadBalancedConnection>
+    static Function<FilterableStreamingHttpConnection, FilterableStreamingHttpLoadBalancedConnection>
     provideStaticScoreIfNeeded(float score) {
         return conn -> conn instanceof FilterableStreamingHttpLoadBalancedConnection ?
                 (FilterableStreamingHttpLoadBalancedConnection) conn : new StaticScoreHttpProtocolBinder(conn, score);

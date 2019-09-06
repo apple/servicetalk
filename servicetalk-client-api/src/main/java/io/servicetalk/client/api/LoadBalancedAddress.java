@@ -19,10 +19,10 @@ import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Single;
 
 /**
- * Minimal contract required by a load balancer managing addresses.
+ * An address managed by a {@link LoadBalancer}.
  * <p>
- * Note: {@link ScoreSupplier} contract provides this resource's availability, where 0.0 means lowest availability, 1.0
- * highest availability.
+ * Note: {@link ScoreSupplier} contract provides this address' score, where 0.0 is the lowest score and 1.0 is the
+ * highest. {@link LoadBalancer}s prefer addresses with a higher score.
  * @param <C> type of {@link LoadBalancedConnection}.
  */
 public interface LoadBalancedAddress<C extends LoadBalancedConnection> extends ListenableAsyncCloseable, ScoreSupplier {

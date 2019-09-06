@@ -18,10 +18,10 @@ package io.servicetalk.client.api;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 
 /**
- * Minimal contract required by a load balancer managing connections.
+ * A connection managed by a {@link LoadBalancer}.
  * <p>
- * Note: {@link ScoreSupplier} contract provides this resource's availability, where 0.0 means lowest availability, 1.0
- * highest availability.
+ * Note: {@link ScoreSupplier} contract provides this connection's score, where 0.0 is the lowest score and 1.0 is the
+ * highest. {@link LoadBalancer}s prefer connections with a higher score.
  */
 public interface LoadBalancedConnection extends ListenableAsyncCloseable, ScoreSupplier {
 }
