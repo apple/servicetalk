@@ -106,7 +106,7 @@ public class RoundRobinLoadBalancerTest {
     private DelegatingConnectionFactory connectionFactory;
 
     private static <T> Predicate<T> any() {
-      return __ -> true;
+        return __ -> true;
     }
 
     @Before
