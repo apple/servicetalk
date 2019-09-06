@@ -13,29 +13,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.examples.grpc.helloworld.async.streaming;
+package io.servicetalk.examples.grpc.routeguide.async.streaming;
 
-import io.servicetalk.examples.grpc.helloworld.HelloWorldProto.Greeter.ClientFactory;
-import io.servicetalk.examples.grpc.helloworld.HelloWorldProto.Greeter.GreeterClient;
-import io.servicetalk.examples.grpc.helloworld.HelloWorldProto.HelloRequest;
 import io.servicetalk.grpc.netty.GrpcClients;
+
+import io.grpc.examples.routeguide.Point;
+import io.grpc.examples.routeguide.RouteGuide;
+import io.grpc.examples.routeguide.RouteGuide.ClientFactory;
 
 import java.util.concurrent.CountDownLatch;
 
 import static io.servicetalk.concurrent.api.Publisher.from;
 
-public class HelloWorldStreamingClient {
+public final class RouteGuideRequestStreamingClient {
 
     public static void main(String[] args) throws Exception {
-        try (GreeterClient client = GrpcClients.forAddress("localhost", 8080).build(new ClientFactory())) {
+        try (RouteGuide.RouteGuideClient client = GrpcClients.forAddress("localhost", 8080)
+                .h2PriorKnowledge(true)
+                .build(new ClientFactory())) {
             // This example is demonstrating asynchronous execution, but needs to prevent the main thread from exiting
             // before the response has been processed. This isn't typical usage for a streaming API but is useful for
             // demonstration purposes.
             CountDownLatch responseProcessedLatch = new CountDownLatch(1);
-            client.sayHelloToFromMany(from(HelloRequest.newBuilder().setName("Foo 1").build(),
-                    HelloRequest.newBuilder().setName("Foo 2").build()))
+            client.recordRoute(from(Point.newBuilder().setLatitude(123456).setLongitude(-123456).build(),
+                            Point.newBuilder().setLatitude(789000).setLongitude(-789000).build()))
                     .whenFinally(responseProcessedLatch::countDown)
-                    .forEach(System.out::println);
+                    .subscribe(System.out::println);
 
             responseProcessedLatch.await();
         }

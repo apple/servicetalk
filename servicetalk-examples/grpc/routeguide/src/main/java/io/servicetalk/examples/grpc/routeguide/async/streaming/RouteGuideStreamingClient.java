@@ -13,29 +13,39 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.examples.grpc.helloworld.async.streaming;
+package io.servicetalk.examples.grpc.routeguide.async.streaming;
 
-import io.servicetalk.examples.grpc.helloworld.HelloWorldProto.Greeter.ClientFactory;
-import io.servicetalk.examples.grpc.helloworld.HelloWorldProto.Greeter.GreeterClient;
-import io.servicetalk.examples.grpc.helloworld.HelloWorldProto.HelloRequest;
 import io.servicetalk.grpc.netty.GrpcClients;
+
+import io.grpc.examples.routeguide.Point;
+import io.grpc.examples.routeguide.RouteGuide;
+import io.grpc.examples.routeguide.RouteGuide.ClientFactory;
+import io.grpc.examples.routeguide.RouteNote;
 
 import java.util.concurrent.CountDownLatch;
 
 import static io.servicetalk.concurrent.api.Publisher.from;
 
-public class HelloWorldRequestStreamingClient {
+public final class RouteGuideStreamingClient {
 
     public static void main(String[] args) throws Exception {
-        try (GreeterClient client = GrpcClients.forAddress("localhost", 8080).build(new ClientFactory())) {
+        try (RouteGuide.RouteGuideClient client = GrpcClients.forAddress("localhost", 8080)
+                .h2PriorKnowledge(true)
+                .build(new ClientFactory())) {
             // This example is demonstrating asynchronous execution, but needs to prevent the main thread from exiting
             // before the response has been processed. This isn't typical usage for a streaming API but is useful for
             // demonstration purposes.
             CountDownLatch responseProcessedLatch = new CountDownLatch(1);
-            client.sayHelloFromMany(from(HelloRequest.newBuilder().setName("Foo 1").build(),
-                    HelloRequest.newBuilder().setName("Foo 2").build()))
+            client.routeChat(from(RouteNote.newBuilder()
+                    .setLocation(Point.newBuilder().setLatitude(123456).setLongitude(-123456).build())
+                    .setMessage("First note.")
+                    .build(),
+                    RouteNote.newBuilder()
+                    .setLocation(Point.newBuilder().setLatitude(123456).setLongitude(-123456).build())
+                    .setMessage("Querying notes.")
+                    .build()))
                     .whenFinally(responseProcessedLatch::countDown)
-                    .subscribe(System.out::println);
+                    .forEach(System.out::println);
 
             responseProcessedLatch.await();
         }
