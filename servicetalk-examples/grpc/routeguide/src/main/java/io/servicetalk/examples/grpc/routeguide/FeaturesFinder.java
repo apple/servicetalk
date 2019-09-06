@@ -23,7 +23,7 @@ import java.net.URL;
 import java.util.Collection;
 import javax.annotation.Nullable;
 
-public interface FeaturesFinder extends Iterable<Feature>{
+public interface FeaturesFinder extends Iterable<Feature> {
     @Nullable
     Feature findFeature(Point point);
 

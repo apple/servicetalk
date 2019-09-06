@@ -1,11 +1,11 @@
 /*
- * Copyright 2015 The gRPC Authors
+ * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *   http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright 2015 The gRPC Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *   http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -77,7 +77,7 @@ public class BlockingRouteGuideServer {
         @Override
         public Feature getFeature(final GrpcServiceContext ctx, final Point request) {
             Feature feature = featuresFinder.findFeature(request);
-            return feature != null ? feature : Feature.newBuilder().setName("").build();
+            return feature != null ? feature : Feature.newBuilder().build();
         }
 
         @Override
@@ -125,8 +125,6 @@ public class BlockingRouteGuideServer {
                     responseWriter.flush();
                     notes.add(routeNote);
                 }
-            } catch (Throwable t) {
-                t.printStackTrace();
             } finally {
                 responseWriter.close();
             }

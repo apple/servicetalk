@@ -17,7 +17,7 @@ located in the 'license' directory of the distribution file, for the
 license terms of the components that this product depends on.
 ------------------------------------------------------------------------
 
-This produce contains a modified portion of 'grpc-java', an open source
+This product contains a modified portion of 'grpc-java', an open source
 library, which can be obtained at:
 
   * LICENSE:

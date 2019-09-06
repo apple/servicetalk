@@ -32,8 +32,9 @@ public final class BlockingRouteGuideStreamingClient {
         try (BlockingRouteGuideClient client = GrpcClients.forAddress("localhost", 8080)
                 .h2PriorKnowledge(true)
                 .buildBlocking(new ClientFactory())) {
+            BlockingIterator<RouteNote> response;
             try (BlockingIterable.Processor<RouteNote> request = newBlockingIterableProcessor()){
-                BlockingIterator<RouteNote> response = client.routeChat(request).iterator();
+                response = client.routeChat(request).iterator();
                 request.next(RouteNote.newBuilder()
                         .setLocation(Point.newBuilder().setLatitude(123456).setLongitude(-123456).build())
                         .setMessage("First note.")
@@ -42,8 +43,8 @@ public final class BlockingRouteGuideStreamingClient {
                         .setLocation(Point.newBuilder().setLatitude(123456).setLongitude(-123456).build())
                         .setMessage("Querying notes.")
                         .build());
-                System.out.println(response.next());
-                System.out.println(response.next());
+            }
+            while (response.hasNext()) {
                 System.out.println(response.next());
             }
         }
