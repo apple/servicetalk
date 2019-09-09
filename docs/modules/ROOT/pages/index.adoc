@@ -11,7 +11,8 @@ See the link:https://docs.servicetalk.io/[ServiceTalk docs] for more information
 
 == Getting Started
 
-All ServiceTalk released artifacts are available in link:https://repo1.maven.org/maven2/io/servicetalk/[the Maven central repository].
+All ServiceTalk released artifacts are available in
+link:https://repo1.maven.org/maven2/io/servicetalk/[the Maven central repository].
 
 The easiest way to get started is to add ServiceTalk's bill-of-material (BOM) dependency to your project's build.
 
@@ -49,7 +50,8 @@ enableFeaturePreview("IMPROVED_POM_SUPPORT") // <2>
 
 With this in place, you can add the ServiceTalk module dependencies you need without specifying their versions.
 
-Refer to the link:https://docs.servicetalk.io/[ServiceTalk docs] for various examples that will get you started with the different features of ServiceTalk.
+Refer to the link:https://docs.servicetalk.io/[ServiceTalk docs] for various examples that will get you started with the
+different features of ServiceTalk.
 
 NOTE: Builds of the development version are available
       in link:https://oss.sonatype.org/content/repositories/snapshots/io/servicetalk/[Sonatype's snapshots Maven repository].
@@ -59,8 +61,9 @@ NOTE: Builds of the development version are available
 IMPORTANT: If you're intending to contribute to ServiceTalk,
            make sure to first read the xref:CONTRIBUTING.adoc[contribution guidelines].
 
-ServiceTalk uses link:https://gradle.org[Gradle] as its build tool and only requires JDK 8 or higher to be pre-installed.
-ServiceTalk ships with the Gradle Wrapper, which means that there is no need to install Gradle on your machine beforehand.
+ServiceTalk uses link:https://gradle.org[Gradle] as its build tool and only requires JDK 8 or higher to be
+pre-installed. ServiceTalk ships with the Gradle Wrapper, which means that there is no need to install Gradle on your
+machine beforehand.
 
 IMPORTANT: ServiceTalk's source code is UTF-8 encoded: make sure your filesystem supports it before attempting to build
 the project. Setting the `JAVA_TOOL_OPTIONS` env var to `-Dfile.encoding=UTF-8` should help building the project in

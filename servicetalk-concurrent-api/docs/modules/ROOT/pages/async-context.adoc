@@ -61,10 +61,10 @@ passing state through their APIs. In this case users can <<Disable AsyncContext>
 However these benefits don't come for free. Some of the costs of the static API are as follows:
 
 * Complexity of implementation
-** ServiceTalk is on the hook for making sure the state is saved/restored across asynchronous boundaries. This means that
-ReactiveStreams operators, Executors, and the offloading strategy must accounted for when relying upon `AsyncContext`.
-In order to accomplish this ServiceTalk's asynchronous control flow needs to account for `AsyncContext` and provide
-tools for users to use if they have existing code outside of ServiceTalk control flow.
+** ServiceTalk is on the hook for making sure the state is saved/restored across asynchronous boundaries. This means
+that ReactiveStreams operators, Executors, and the offloading strategy must accounted for when relying upon
+`AsyncContext`. In order to accomplish this ServiceTalk's asynchronous control flow needs to account for `AsyncContext`
+and provide tools for users to use if they have existing code outside of ServiceTalk control flow.
 * Understandability
 ** The control flow in ServiceTalk can be relatively complex. ServiceTalk uses ReactiveStreams and function composition
 as a core abstraction which can be difficult to reason about relative to traditional imperative programming. On top of

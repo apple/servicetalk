@@ -16,7 +16,8 @@ maintained in the https://github.com/apple/servicetalk[upstream project].
 
 === Build from Local Projects
 
-* Takes upstream project docs from local Git repos assumed to exist in a sibling directory (see link:site-local.yml[_site-local.yml_]).
+* Takes upstream project docs from local Git repos assumed to exist in a sibling directory
+(see link:site-local.yml[_site-local.yml_]).
 * Builds the site (open by clicking the link printed in console output).
 * Source code links in the docs link to files locally.
 * Validates the generated HTML and checks for dangling links.

@@ -1,4 +1,2 @@
 * xref:index.adoc[HTTP Router - Jersey]
 ** xref:evolve-to-async.adoc[Evolving to asynchronous]
-
-

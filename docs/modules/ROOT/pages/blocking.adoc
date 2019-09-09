@@ -35,8 +35,8 @@ event loop.
 == How is it safe to block?
 
 Simply put, ServiceTalk makes sure that no user code is called on the event loop. In order to do that, it uses an
-link:{sourceroot}servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Executor.java[Executor] to __offload__
-invocation of user code out of the event loop to a different thread.
+link:{sourceroot}servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Executor.java[Executor] to
+__offload__ invocation of user code out of the event loop to a different thread.
 
 [#user-code-and-eventloop]
 === User code and event loop
@@ -64,7 +64,8 @@ An link:{sourceroot}servicetalk-transport-api/src/main/java/io/servicetalk/trans
 has two primary purposes:
 
 . Define which interaction paths require offloading.
-. Optionally specify an link:{sourceroot}servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Executor.java[Executor]
+. Optionally specify an
+link:{sourceroot}servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Executor.java[Executor]
 to use for offloading. In absence of a specified `Executor`, ServiceTalk will use a default `Executor`.
 
 At a general transport layer (no application level protocol), only two offload paths are available:
