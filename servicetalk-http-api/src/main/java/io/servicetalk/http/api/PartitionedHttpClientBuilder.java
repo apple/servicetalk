@@ -122,7 +122,8 @@ public abstract class PartitionedHttpClientBuilder<U, R>
 
     @Override
     public abstract PartitionedHttpClientBuilder<U, R> loadBalancerFactory(
-            LoadBalancerFactory<R, StreamingHttpConnection> loadBalancerFactory);
+            LoadBalancerFactory<R, FilterableStreamingHttpLoadBalancedConnection> loadBalancerFactory,
+            Function<FilterableStreamingHttpConnection, FilterableStreamingHttpLoadBalancedConnection> protocolBinder);
 
     @Override
     public abstract PartitionedHttpClientBuilder<U, R> unresolvedAddressToHost(

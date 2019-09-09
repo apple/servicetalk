@@ -31,6 +31,7 @@ import io.servicetalk.http.api.CharSequences;
 import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
+import io.servicetalk.http.api.FilterableStreamingHttpLoadBalancedConnection;
 import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
@@ -40,7 +41,6 @@ import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.http.api.SingleAddressHttpClientSecurityConfigurator;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
-import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.tcp.netty.internal.TcpClientConfig;
@@ -83,7 +83,8 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
     private final HttpClientConfig config;
     private final HttpExecutionContextBuilder executionContextBuilder;
     private final ClientStrategyInfluencerChainBuilder influencerChainBuilder;
-    private LoadBalancerFactory<R, StreamingHttpConnection> loadBalancerFactory;
+    private LoadBalancerFactory<R, FilterableStreamingHttpLoadBalancedConnection> loadBalancerFactory;
+    private Function<FilterableStreamingHttpConnection, FilterableStreamingHttpLoadBalancedConnection> protocolBinder;
     private ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> serviceDiscoverer;
     private Function<U, CharSequence> hostToCharSequenceFunction = this::toAuthorityForm;
     @Nullable
@@ -112,7 +113,8 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
         config = new HttpClientConfig(new TcpClientConfig(false));
         executionContextBuilder = new HttpExecutionContextBuilder();
         influencerChainBuilder = new ClientStrategyInfluencerChainBuilder();
-        this.loadBalancerFactory = new StrategyInfluencingLoadBalancerFactory<>();
+        this.loadBalancerFactory = new StrategyInfluencingLoadBalancerFactory<>(newRoundRobinFactory());
+        this.protocolBinder = StaticScoreHttpProtocolBinder.provideStaticScoreIfNeeded(1);
         this.serviceDiscoverer = requireNonNull(serviceDiscoverer);
     }
 
@@ -122,7 +124,8 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
         config = new HttpClientConfig(new TcpClientConfig(false));
         executionContextBuilder = new HttpExecutionContextBuilder();
         influencerChainBuilder = new ClientStrategyInfluencerChainBuilder();
-        this.loadBalancerFactory = newRoundRobinFactory();
+        this.loadBalancerFactory = new StrategyInfluencingLoadBalancerFactory<>(newRoundRobinFactory());
+        this.protocolBinder = StaticScoreHttpProtocolBinder.provideStaticScoreIfNeeded(1);
         this.serviceDiscoverer = requireNonNull(serviceDiscoverer);
     }
 
@@ -134,6 +137,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
         executionContextBuilder = new HttpExecutionContextBuilder(from.executionContextBuilder);
         influencerChainBuilder = from.influencerChainBuilder.copy();
         this.loadBalancerFactory = from.loadBalancerFactory;
+        this.protocolBinder = from.protocolBinder;
         this.serviceDiscoverer = from.serviceDiscoverer;
         clientFilterFactory = from.clientFilterFactory;
         connectionFilterFactory = from.connectionFilterFactory;
@@ -246,29 +250,31 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
             }
 
             // closed by the LoadBalancer
-            final ConnectionFactory<R, StreamingHttpConnection> connectionFactory;
+            final ConnectionFactory<R, LoadBalancedStreamingHttpConnection> connectionFactory;
             if (roConfig.isH2PriorKnowledge()) {
                 connectionFactory = new H2LBHttpConnectionFactory<>(roConfig, ctx.executionContext,
                         connectionFilterFactory, reqRespFactory,
                         influencerChainBuilder.buildForConnectionFactory(
-                                ctx.executionContext.executionStrategy()), connectionFactoryFilter);
+                                ctx.executionContext.executionStrategy()), connectionFactoryFilter,
+                        protocolBinder);
             } else {
                 connectionFactory = reservedConnectionsPipelineEnabled(roConfig) ?
                         new PipelinedLBHttpConnectionFactory<>(roConfig, ctx.executionContext,
                                 connectionFilterFactory, reqRespFactory,
                                 influencerChainBuilder.buildForConnectionFactory(
-                                        ctx.executionContext.executionStrategy()), connectionFactoryFilter) :
+                                        ctx.executionContext.executionStrategy()),
+                                connectionFactoryFilter, protocolBinder) :
                         new NonPipelinedLBHttpConnectionFactory<>(roConfig, ctx.executionContext,
                                 connectionFilterFactory, reqRespFactory,
                                 influencerChainBuilder.buildForConnectionFactory(
-                                        ctx.executionContext.executionStrategy()), connectionFactoryFilter);
+                                        ctx.executionContext.executionStrategy()),
+                                connectionFactoryFilter, protocolBinder);
             }
 
-            final LoadBalancer<? extends StreamingHttpConnection> lbfUntypedForCast =
-                    closeOnException.prepend(loadBalancerFactory.newLoadBalancer(sdEvents, connectionFactory));
             @SuppressWarnings("unchecked")
             final LoadBalancer<LoadBalancedStreamingHttpConnection> lb =
-                    (LoadBalancer<LoadBalancedStreamingHttpConnection>) lbfUntypedForCast;
+                    (LoadBalancer<LoadBalancedStreamingHttpConnection>) closeOnException.prepend(
+                    this.loadBalancerFactory.newLoadBalancer(sdEvents, connectionFactory));
 
             StreamingHttpClientFilterFactory currClientFilterFactory = clientFilterFactory;
 
@@ -502,9 +508,12 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
 
     @Override
     public DefaultSingleAddressHttpClientBuilder<U, R> loadBalancerFactory(
-            final LoadBalancerFactory<R, StreamingHttpConnection> loadBalancerFactory) {
+            final LoadBalancerFactory<R, FilterableStreamingHttpLoadBalancedConnection> loadBalancerFactory,
+            final Function<FilterableStreamingHttpConnection,
+                    FilterableStreamingHttpLoadBalancedConnection> protocolBinder) {
         this.loadBalancerFactory = requireNonNull(loadBalancerFactory);
         influencerChainBuilder.add(loadBalancerFactory);
+        this.protocolBinder = protocolBinder;
         return this;
     }
 
@@ -578,21 +587,26 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
         return Integer.parseInt(cs.subSequence(colon + 1, cs.length() - 1).toString());
     }
 
-    private static final class StrategyInfluencingLoadBalancerFactory<R>
-            implements LoadBalancerFactory<R, StreamingHttpConnection>, HttpExecutionStrategyInfluencer {
+    private static final class StrategyInfluencingLoadBalancerFactory<R> implements LoadBalancerFactory<R,
+            FilterableStreamingHttpLoadBalancedConnection>, HttpExecutionStrategyInfluencer {
 
-        private final LoadBalancerFactory<R, StreamingHttpConnection> delegate = newRoundRobinFactory();
+
+        private final LoadBalancerFactory<R, FilterableStreamingHttpLoadBalancedConnection> delegate;
+
+        private StrategyInfluencingLoadBalancerFactory(
+                final LoadBalancerFactory<R, FilterableStreamingHttpLoadBalancedConnection> delegate) {
+            this.delegate = delegate;
+        }
 
         @Override
-        public LoadBalancer<StreamingHttpConnection> newLoadBalancer(
+        public LoadBalancer<? extends FilterableStreamingHttpLoadBalancedConnection> newLoadBalancer(
                 final Publisher<? extends ServiceDiscovererEvent<R>> eventPublisher,
-                final ConnectionFactory<R, ? extends StreamingHttpConnection> connectionFactory) {
+                final ConnectionFactory<R, ? extends FilterableStreamingHttpLoadBalancedConnection> connectionFactory) {
             return delegate.newLoadBalancer(eventPublisher, connectionFactory);
         }
 
         @Override
         public HttpExecutionStrategy influenceStrategy(final HttpExecutionStrategy strategy) {
-            // We know that round robin load balancer does not block.
             return strategy;
         }
     }

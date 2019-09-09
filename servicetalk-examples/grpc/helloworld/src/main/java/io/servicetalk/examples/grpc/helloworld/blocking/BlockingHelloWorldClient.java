@@ -15,11 +15,12 @@
  */
 package io.servicetalk.examples.grpc.helloworld.blocking;
 
-import io.servicetalk.examples.grpc.helloworld.HelloWorldProto.Greeter.BlockingGreeterClient;
-import io.servicetalk.examples.grpc.helloworld.HelloWorldProto.Greeter.ClientFactory;
-import io.servicetalk.examples.grpc.helloworld.HelloWorldProto.HelloReply;
-import io.servicetalk.examples.grpc.helloworld.HelloWorldProto.HelloRequest;
 import io.servicetalk.grpc.netty.GrpcClients;
+
+import io.grpc.examples.helloworld.Greeter.BlockingGreeterClient;
+import io.grpc.examples.helloworld.Greeter.ClientFactory;
+import io.grpc.examples.helloworld.HelloReply;
+import io.grpc.examples.helloworld.HelloRequest;
 
 public final class BlockingHelloWorldClient {
 

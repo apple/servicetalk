@@ -23,7 +23,6 @@ import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
 import io.servicetalk.http.api.MultiAddressHttpClientFilterFactory;
 import io.servicetalk.http.api.StrategyInfluencerChainBuilder;
 import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
-import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
 
 import static io.servicetalk.http.api.HttpExecutionStrategyInfluencer.defaultStreamingInfluencer;
@@ -60,7 +59,7 @@ final class ClientStrategyInfluencerChainBuilder {
         }
     }
 
-    void add(LoadBalancerFactory<?, StreamingHttpConnection> lb) {
+    void add(LoadBalancerFactory<?, ?> lb) {
         if (!clientChain.prependIfInfluencer(lb)) {
             // If the load balancer is not influencing strategy, then the default is to offload all.
             clientChain.prepend(defaultStreamingInfluencer());

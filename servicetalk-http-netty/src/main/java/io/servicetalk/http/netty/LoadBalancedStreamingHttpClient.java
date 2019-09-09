@@ -30,17 +30,17 @@ import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.utils.BeforeFinallyOnHttpResponseOperator;
 
-import java.util.function.Function;
+import java.util.function.Predicate;
 
 import static io.servicetalk.client.api.internal.RequestConcurrencyController.Result.Accepted;
 import static java.util.Objects.requireNonNull;
 
 final class LoadBalancedStreamingHttpClient implements FilterableStreamingHttpClient {
 
-    private static final Function<LoadBalancedStreamingHttpConnection, LoadBalancedStreamingHttpConnection>
-            SELECTOR_FOR_REQUEST = conn -> conn.tryRequest() == Accepted ? conn : null;
-    private static final Function<LoadBalancedStreamingHttpConnection, LoadBalancedStreamingHttpConnection>
-            SELECTOR_FOR_RESERVE = conn -> conn.tryReserve() ? conn : null;
+    private static final Predicate<LoadBalancedStreamingHttpConnection>
+            SELECTOR_FOR_REQUEST = conn -> conn.tryRequest() == Accepted;
+    private static final Predicate<LoadBalancedStreamingHttpConnection>
+            SELECTOR_FOR_RESERVE = LoadBalancedStreamingHttpConnection::tryReserve;
 
     // TODO Proto specific LB after upgrade and worry about SSL
     private final HttpExecutionContext executionContext;

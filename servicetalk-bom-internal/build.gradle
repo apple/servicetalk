@@ -17,9 +17,13 @@
 apply plugin: "servicetalk-core"
 apply plugin: "java-platform"
 
+javaPlatform {
+  allowDependencies()
+}
+
 dependencies {
   constraints {
-    // Netty Dependencies
+    // Netty Dependencies used by ServiceTalk
     api "io.netty:netty-buffer:$nettyVersion"
     api "io.netty:netty-codec-http:$nettyVersion"
     api "io.netty:netty-codec-http2:$nettyVersion"
@@ -73,6 +77,9 @@ dependencies {
     api "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
     api "org.apache.logging.log4j:log4j-core:$log4jVersion"
   }
+
+  // All other Netty dependencies resolved as runtime via Netty's BOM
+  runtime platform("io.netty:netty-bom:$nettyVersion")
 }
 
 publishing {

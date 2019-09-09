@@ -15,7 +15,6 @@
  */
 package io.servicetalk.client.api;
 
-import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Publisher;
 
 /**
@@ -25,7 +24,7 @@ import io.servicetalk.concurrent.api.Publisher;
  * @param <C> The type of connection.
  */
 @FunctionalInterface
-public interface LoadBalancerFactory<ResolvedAddress, C extends ListenableAsyncCloseable> {
+public interface LoadBalancerFactory<ResolvedAddress, C extends LoadBalancedConnection> {
 
     /**
      * Create a new {@link LoadBalancer}.
@@ -36,6 +35,7 @@ public interface LoadBalancerFactory<ResolvedAddress, C extends ListenableAsyncC
      * and hence will call {@link ConnectionFactory#closeAsync()} when {@link LoadBalancer#closeAsync()} is called.
      * @return a new {@link LoadBalancer}.
      */
-    LoadBalancer<C> newLoadBalancer(Publisher<? extends ServiceDiscovererEvent<ResolvedAddress>> eventPublisher,
-                                    ConnectionFactory<ResolvedAddress, ? extends C> connectionFactory);
+    LoadBalancer<? extends C> newLoadBalancer(
+            Publisher<? extends ServiceDiscovererEvent<ResolvedAddress>> eventPublisher,
+            ConnectionFactory<ResolvedAddress, ? extends C> connectionFactory);
 }

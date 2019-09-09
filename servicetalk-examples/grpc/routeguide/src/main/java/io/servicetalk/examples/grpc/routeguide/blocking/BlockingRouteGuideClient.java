@@ -13,23 +13,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.examples.grpc.helloworld.blocking.streaming;
+package io.servicetalk.examples.grpc.routeguide.blocking;
 
-import io.servicetalk.examples.grpc.helloworld.HelloWorldProto.Greeter.BlockingGreeterClient;
-import io.servicetalk.examples.grpc.helloworld.HelloWorldProto.Greeter.ClientFactory;
-import io.servicetalk.examples.grpc.helloworld.HelloWorldProto.HelloRequest;
 import io.servicetalk.grpc.netty.GrpcClients;
 
-import static java.util.Arrays.asList;
+import io.grpc.examples.routeguide.Feature;
+import io.grpc.examples.routeguide.Point;
+import io.grpc.examples.routeguide.RouteGuide;
+import io.grpc.examples.routeguide.RouteGuide.ClientFactory;
 
-public final class BlockingHelloWorldRequestStreamingClient {
+import java.util.concurrent.CountDownLatch;
+
+public final class BlockingRouteGuideClient {
 
     public static void main(String[] args) throws Exception {
-        try (BlockingGreeterClient client = GrpcClients.forAddress("localhost", 8080)
+        try (RouteGuide.BlockingRouteGuideClient client = GrpcClients.forAddress("localhost", 8080)
+                .h2PriorKnowledge(true)
                 .buildBlocking(new ClientFactory())) {
-            Iterable<HelloRequest> request = asList(HelloRequest.newBuilder().setName("Foo 1").build(),
-                    HelloRequest.newBuilder().setName("Foo 2").build());
-            System.out.println(client.sayHelloFromMany(request));
+            Feature feature = client.getFeature(Point.newBuilder()
+                    .setLatitude(123456).setLongitude(-123456).build());
+            System.out.println(feature);
         }
     }
 }
