@@ -19,6 +19,12 @@ if (!repositories) {
     jcenter()
     maven { url "https://plugins.gradle.org/m2/" }
   }
+} else {
+  // We need to manually load ProjectUtils in order to use it at this early point of the script evaluation
+  File sourceFile = file("../servicetalk-gradle-plugin-internal/src/main/groovy/io/servicetalk/gradle/plugin/internal" +
+      "/ProjectUtils.groovy")
+  Class groovyClass = new GroovyClassLoader(this.class.classLoader).parseClass(sourceFile)
+  groovyClass.getDeclaredMethod("inheritRepositoriesFromBuildscript", Project).invoke(null, project)
 }
 
 apply plugin: "java-gradle-plugin"

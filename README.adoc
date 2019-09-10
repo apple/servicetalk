@@ -70,9 +70,8 @@ non-UTF-8 environments. Editors and IDEs must also support UTF-8 in order to suc
 
 ==== Gradle Repositories
 
-If you have defined repositories or repository mirrors in your global Gradle config (`~/.gradle/init.gradle`),
-make sure that the `plugins.gradle.org` repository is available both for `buildscript` and standard dependencies.
-As a reference, the following repositories configuration is what ServiceTalk uses in the absence of a global configuration:
+ServiceTalk's build produces custom Gradle plugins and thus has regular (i.e. non-`buildscript`) dependencies
+on other plugins. This is the reason why the repositories that are provided if none are configured globally are the following:
 
 [source,groovy]
 ----
@@ -90,8 +89,11 @@ allprojects {
 }
 ----
 
-This is needed because ServiceTalk builds custom Gradle plugins and thus has regular (i.e. non-`buildscript`) dependencies
-on other plugins.
+If you have defined repositories or repository mirrors in your global Gradle config (`~/.gradle/init.gradle`),
+the build will detect them and attempt to inherit `buildscript` repositories into the main `repositories`
+of the sub-projects that produce custom Gradle plugins.
+
+NOTE: This inheritance mechanism can be disabled by setting a Gradle property: `-PdisableInheritBuildscriptRepositories`
 
 ==== Build Commands
 

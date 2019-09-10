@@ -19,14 +19,68 @@ import org.gradle.api.GradleException
 import org.gradle.api.Project
 import org.gradle.api.Task
 import org.gradle.api.XmlProvider
+import org.gradle.api.artifacts.repositories.IvyArtifactRepository
+import org.gradle.api.artifacts.repositories.MavenArtifactRepository
+import org.gradle.api.internal.artifacts.repositories.AbstractArtifactRepository
 import org.gradle.api.java.archives.Manifest
 import org.gradle.api.plugins.JavaBasePlugin
-import org.gradle.api.publish.maven.MavenPom
 import org.gradle.api.tasks.SourceSet
 import org.gradle.api.tasks.bundling.Jar
 import org.gradle.api.tasks.javadoc.Javadoc
 
+import java.lang.reflect.Field
+
 final class ProjectUtils {
+  private static final String DISABLE_REPOS_INHERIT_PROP = "disableInheritBuildscriptRepositories"
+
+  /**
+   * It is necessary to have access to plugins repositories in order to build ServiceTalk's Gradle plugins.
+   * Typically these repositories are defined in the `buildscript.repositories` of the build script,
+   * so this method attempts to copy them to the main `repositories`, if they are not already there.
+   */
+  static void inheritRepositoriesFromBuildscript(Project project) {
+    if (project.hasProperty(DISABLE_REPOS_INHERIT_PROP)) {
+      return
+    }
+
+    // We only consider URL-bearing repositories in order to have something concrete to compare,
+    // since org.gradle.api.artifacts.repositories.ArtifactRepository doesn't expose an `equal` method
+    def repoFilter = { it instanceof IvyArtifactRepository || it instanceof MavenArtifactRepository }
+
+    def configuredRepos =
+        project.repositories
+            .findAll(repoFilter)
+            .collect { new Tuple(it.class, it.url) }
+            .toSet()
+
+    def missingRepos = project.buildscript.repositories
+        .findAll(repoFilter)
+        .findAll { !configuredRepos.contains(new Tuple(it.class, it.url)) }
+        .toSet()
+
+    if (missingRepos) {
+      if (!project.parent) {
+        project.logger.quiet("Some repositories are only configured for buildscript, " +
+            "which typically entails that this build will fail because it won't be able to resolve plugins that are " +
+            "used as regular dependencies (required by ServiceTalk plugins).\n\n" +
+            "Attempting to resolve the issue by adding the following repositories: {}\n\n" +
+            "(if problematic, this behavior can be disabled with: -P{})\n",
+            missingRepos.collect { it.displayName }, DISABLE_REPOS_INHERIT_PROP)
+      }
+
+      // This code is unfortunate but there's no way to re-use an existing repository in another container
+      // as it has already been uniquely named in its original container, and repositories are not cloneable
+      // nor do they expose a copy constructor/method
+      Field isPartOfContainerField = AbstractArtifactRepository.class.getDeclaredField("isPartOfContainer")
+      isPartOfContainerField.accessible = true
+
+      missingRepos.each { repo ->
+        isPartOfContainerField.set(repo, false)
+        project.repositories.addRepository(repo, repo.name)
+      }
+    }
+  }
+
   static void enforceUtf8FileSystem() {
     def fenc = System.getProperty("file.encoding")
     if (!"UTF-8".equalsIgnoreCase(fenc)) {
