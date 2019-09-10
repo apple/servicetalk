@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-io.servicetalk.gradle.plugin.internal.ProjectUtils.inheritRepositoriesFromBuildscript project
+io.servicetalk.gradle.plugin.internal.ProjectUtils.inheritRepositoriesFromBuildscript(project)
 
 apply plugin: "servicetalk-library"
 apply plugin: "groovy"
