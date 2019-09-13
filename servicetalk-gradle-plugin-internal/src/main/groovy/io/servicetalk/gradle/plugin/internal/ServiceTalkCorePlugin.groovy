@@ -16,7 +16,6 @@
 package io.servicetalk.gradle.plugin.internal
 
 import com.jfrog.bintray.gradle.tasks.BintrayUploadTask
-import org.gradle.api.GradleException
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.XmlProvider
@@ -28,6 +27,7 @@ import org.gradle.api.publish.maven.internal.artifact.FileBasedMavenArtifact
 import static io.servicetalk.gradle.plugin.internal.ProjectUtils.addBuildContextExtensions
 import static io.servicetalk.gradle.plugin.internal.ProjectUtils.appendNodes
 import static io.servicetalk.gradle.plugin.internal.ProjectUtils.copyResource
+import static io.servicetalk.gradle.plugin.internal.ProjectUtils.enforceProjectVersionScheme
 import static io.servicetalk.gradle.plugin.internal.ProjectUtils.enforceUtf8FileSystem
 import static io.servicetalk.gradle.plugin.internal.ProjectUtils.locateBuildLevelConfigFile
 import static io.servicetalk.gradle.plugin.internal.ProjectUtils.writeToFile
@@ -38,6 +38,7 @@ class ServiceTalkCorePlugin implements Plugin<Project> {
   void apply(Project project, boolean publishesArtifacts = true) {
     enforceUtf8FileSystem()
     addBuildContextExtensions project
+    enforceProjectVersionScheme project
     applyCheckstylePlugin project
     applyIdeaPlugin project
 
@@ -137,17 +138,6 @@ class ServiceTalkCorePlugin implements Plugin<Project> {
   private static void applyBintrayPlugin(Project project) {
     project.configure(project) {
       pluginManager.apply("com.jfrog.bintray")
-
-      def endsWithSnapshot = project.version.toString().toUpperCase().endsWith("-SNAPSHOT")
-      if (project.ext.isReleaseBuild) {
-        if (endsWithSnapshot) {
-          throw new GradleException("Project version for a release build must not contain a '-SNAPSHOT' suffix")
-        }
-      } else {
-        if (!endsWithSnapshot) {
-          project.version += "-SNAPSHOT"
-        }
-      }
 
       // bintray publishing information
       def bintrayUser = System.getenv("BINTRAY_USER")

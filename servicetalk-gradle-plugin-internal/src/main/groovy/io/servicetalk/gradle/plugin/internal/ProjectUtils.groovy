@@ -42,6 +42,20 @@ final class ProjectUtils {
     }
   }
 
+  static void enforceProjectVersionScheme(Project project) {
+    def endsWithSnapshot = project.version.toString().toUpperCase().endsWith("-SNAPSHOT")
+    if (project.ext.isReleaseBuild) {
+      if (endsWithSnapshot) {
+        throw new GradleException("Project version for a release build must not contain a '-SNAPSHOT' suffix")
+      }
+    } else if (!endsWithSnapshot) {
+      if (!project.parent) {
+        project.logger.quiet("Adding missing '-SNAPSHOT' suffix to project version $project.version for non-release build.")
+      }
+      project.version += "-SNAPSHOT"
+    }
+  }
+
   static void addManifestAttributes(Project project, Manifest manifest) {
     manifest.attributes("Built-JDK": System.getProperty("java.version"),
         "Specification-Title": project.name,
