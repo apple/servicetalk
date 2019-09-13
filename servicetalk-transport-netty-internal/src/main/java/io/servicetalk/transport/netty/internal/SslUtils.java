@@ -19,6 +19,7 @@ import io.servicetalk.transport.api.SecurityConfigurator;
 
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.handler.ssl.ApplicationProtocolConfig;
+import io.netty.handler.ssl.OpenSsl;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslHandler;
 import io.netty.handler.ssl.SslProvider;
@@ -167,10 +168,12 @@ final class SslUtils {
      * @return the netty provider.
      */
     @Nullable
-    static SslProvider toNettySslProvider(SecurityConfigurator.SslProvider provider) {
+    static SslProvider toNettySslProvider(SecurityConfigurator.SslProvider provider,
+                                          @Nullable SecurityConfigurator.ApplicationProtocolNegotiation protocol) {
         switch (provider) {
             case AUTO:
-                return null;
+                return protocol == SecurityConfigurator.ApplicationProtocolNegotiation.ALPN ?
+                        (OpenSsl.isAlpnSupported() ? SslProvider.OPENSSL : SslProvider.JDK) : null;
             case JDK:
                 return SslProvider.JDK;
             case OPENSSL:

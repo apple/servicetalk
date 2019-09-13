@@ -89,6 +89,7 @@ import static io.servicetalk.http.netty.HeaderUtils.LAST_CHUNK_PREDICATE;
 import static io.servicetalk.http.netty.HeaderUtils.addResponseTransferEncodingIfNecessary;
 import static io.servicetalk.http.netty.HeaderUtils.canAddResponseContentLength;
 import static io.servicetalk.http.netty.HeaderUtils.setResponseContentLength;
+import static io.servicetalk.http.netty.HttpDebugUtils.showPipeline;
 import static io.servicetalk.transport.netty.internal.CloseHandler.forPipelinedRequestResponse;
 import static io.servicetalk.transport.netty.internal.FlushStrategies.flushOnEach;
 import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater;
@@ -105,30 +106,41 @@ final class NettyHttpServer {
                                       final ReadOnlyHttpServerConfig config,
                                       final SocketAddress address,
                                       @Nullable final ConnectionAcceptor connectionAcceptor,
-                                      StreamingHttpService service,
+                                      final StreamingHttpService service,
                                       final boolean drainRequestPayloadBody) {
+        assert !config.isH2PriorKnowledge();
         // This state is read only, so safe to keep a copy across Subscribers
         final ReadOnlyTcpServerConfig tcpServerConfig = config.tcpConfig();
         return TcpServerBinder.bind(address, tcpServerConfig, executionContext, connectionAcceptor,
-                channel -> {
-                    final CloseHandler closeHandler = forPipelinedRequestResponse(false, channel.config());
-                    final NettyHttpServerConnection.CompositeFlushStrategy flushStrategy =
-                            new NettyHttpServerConnection.CompositeFlushStrategy(tcpServerConfig.flushStrategy());
-                    return DefaultNettyConnection.initChannel(
-                            channel, executionContext.bufferAllocator(), executionContext.executor(),
-                            new TerminalPredicate<>(LAST_CHUNK_PREDICATE), closeHandler,
-                            flushStrategy, new TcpServerChannelInitializer(tcpServerConfig)
-                                    .andThen(getChannelInitializer(config, closeHandler)),
-                            executionContext.executionStrategy())
-                        .map(conn -> new NettyHttpServerConnection(conn, service, executionContext.executionStrategy(),
-                                flushStrategy, config.headersFactory(), drainRequestPayloadBody));
-                },
+                channel -> initChannel(channel, executionContext, config,
+                        new TcpServerChannelInitializer(tcpServerConfig), service, drainRequestPayloadBody),
                 serverConnection -> serverConnection.process(true).subscribe())
-            .map(delegate -> {
-                LOGGER.debug("Started HTTP server for address {}.", delegate.listenAddress());
-                // The ServerContext returned by TcpServerBinder takes care of closing the connectionAcceptor.
-                return new NettyHttpServerContext(delegate, service);
-            });
+                .map(delegate -> {
+                    LOGGER.debug("Started HTTP server for address {}.", delegate.listenAddress());
+                    // The ServerContext returned by TcpServerBinder takes care of closing the connectionAcceptor.
+                    return new NettyHttpServerContext(delegate, service);
+                });
+    }
+
+    static Single<NettyHttpServerConnection> initChannel(final Channel channel,
+                                                         final HttpExecutionContext httpExecutionContext,
+                                                         final ReadOnlyHttpServerConfig config,
+                                                         final ChannelInitializer initializer,
+                                                         final StreamingHttpService service,
+                                                         final boolean drainRequestPayloadBody) {
+        final CloseHandler closeHandler = forPipelinedRequestResponse(false, channel.config());
+        final NettyHttpServerConnection.CompositeFlushStrategy flushStrategy =
+                new NettyHttpServerConnection.CompositeFlushStrategy(config.tcpConfig().flushStrategy());
+
+        Single<NettyHttpServerConnection> result = DefaultNettyConnection.initChannel(channel,
+                httpExecutionContext.bufferAllocator(), httpExecutionContext.executor(),
+                new TerminalPredicate<>(LAST_CHUNK_PREDICATE), closeHandler, flushStrategy,
+                initializer.andThen(getChannelInitializer(config, closeHandler)),
+                httpExecutionContext.executionStrategy())
+                .map(conn -> new NettyHttpServerConnection(conn, service, httpExecutionContext.executionStrategy(),
+                        flushStrategy, config.headersFactory(), drainRequestPayloadBody));
+
+        return showPipeline(result, "HTTP/1.1", channel.pipeline());
     }
 
     private static ChannelInitializer getChannelInitializer(final ReadOnlyHttpServerConfig config,

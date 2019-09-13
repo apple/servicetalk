@@ -23,9 +23,12 @@ import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.HttpServerBuilder;
 import io.servicetalk.http.api.HttpServerSecurityConfigurator;
 import io.servicetalk.http.api.StreamingHttpService;
+import io.servicetalk.tcp.netty.internal.ReadOnlyTcpServerConfig;
 import io.servicetalk.transport.api.ConnectionAcceptor;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.ServerContext;
+
+import io.netty.handler.ssl.SslContext;
 
 import java.net.SocketAddress;
 import java.net.SocketOption;
@@ -157,17 +160,32 @@ final class DefaultHttpServerBuilder extends HttpServerBuilder {
     }
 
     @Override
-    protected Single<ServerContext> doListen(@Nullable ConnectionAcceptor connectionAcceptor,
-                                             StreamingHttpService service,
-                                             HttpExecutionStrategy strategy,
-                                             boolean drainRequestPayloadBody) {
-        ReadOnlyHttpServerConfig roConfig = this.config.asReadOnly();
+    protected Single<ServerContext> doListen(@Nullable final ConnectionAcceptor connectionAcceptor,
+                                             final StreamingHttpService service,
+                                             final HttpExecutionStrategy strategy,
+                                             final boolean drainRequestPayloadBody) {
+        final ReadOnlyHttpServerConfig roConfig = this.config.asReadOnly();
         executionContextBuilder.executionStrategy(strategy);
         final HttpExecutionContext httpExecutionContext = executionContextBuilder.build();
-        return roConfig.isH2PriorKnowledge() ?
-                H2ServerParentConnectionContext.bind(httpExecutionContext, roConfig, address, connectionAcceptor,
+        if (roConfig.isH2PriorKnowledge()) {
+            return H2ServerParentConnectionContext.bind(httpExecutionContext, roConfig, address, connectionAcceptor,
+                    service, drainRequestPayloadBody);
+        }
+        return useAlpn(roConfig.tcpConfig()) ?
+                AlpnServerContext.bind(httpExecutionContext, roConfig, address, connectionAcceptor,
                         service, drainRequestPayloadBody) :
                 NettyHttpServer.bind(httpExecutionContext, roConfig, address, connectionAcceptor,
                         service, drainRequestPayloadBody);
+    }
+
+    private static boolean useAlpn(final ReadOnlyTcpServerConfig config) {
+        if (config.isSniEnabled()) {
+            return true;
+        }
+        final SslContext sslContext = config.sslContext();
+        if (sslContext == null) {
+            return false;
+        }
+        return sslContext.applicationProtocolNegotiator() != null;
     }
 }

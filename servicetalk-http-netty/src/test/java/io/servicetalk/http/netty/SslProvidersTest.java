@@ -45,6 +45,7 @@ import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static java.util.Arrays.asList;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.Assert.assertThat;
 
 @RunWith(Parameterized.class)
@@ -67,6 +68,7 @@ public class SslProvidersTest {
                 .provider(serverSslProvider)
                 .commit(DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey)
                 .listenBlockingAndAwait((ctx, request, responseFactory) -> {
+                    assertThat(ctx.sslSession(), is(notNullValue()));
                     assertThat(request.path(), is("/path"));
                     assertThat(request.headers().get(CONTENT_TYPE), is(TEXT_PLAIN_UTF_8));
                     assertThat(request.payloadBody(textDeserializer()), is("request-payload-body-" + payloadBody));
