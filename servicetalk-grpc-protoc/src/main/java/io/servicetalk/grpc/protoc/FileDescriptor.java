@@ -28,8 +28,10 @@ import com.squareup.javapoet.TypeSpec;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import javax.annotation.Nullable;
 
 import static com.squareup.javapoet.MethodSpec.constructorBuilder;
@@ -54,6 +56,8 @@ final class FileDescriptor implements GenerationContext {
     @Nullable
     private final String outerClassName;
     private final List<TypeSpec.Builder> serviceClassBuilders;
+    @Nullable
+    private Set<String> reservedJavaTypeName;
 
     FileDescriptor(final FileDescriptorProto protoFile) {
         this.protoFile = protoFile;
@@ -108,7 +112,23 @@ final class FileDescriptor implements GenerationContext {
 
     @Override
     public String deconflictJavaTypeName(final String name) {
-        return name.equals(outerJavaClassName()) ? name + '0' : name;
+        if (reservedJavaTypeName == null) {
+            reservedJavaTypeName = new HashSet<>();
+            reservedJavaTypeName.add(outerJavaClassName());
+        }
+
+        if (reservedJavaTypeName.add(name)) {
+            return name;
+        }
+
+        int i = 0;
+        String uniqueName;
+        do {
+            uniqueName = name + i;
+            i++;
+        } while (!reservedJavaTypeName.add(uniqueName));
+
+        return uniqueName;
     }
 
     @Override

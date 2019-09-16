@@ -26,6 +26,10 @@ service Test {
     rpc TestConflict (TestRequest) returns (TestReply) {}
 }
 
+service TestRpc {
+    rpc Test (TestRequest) returns (TestReply) {}
+}
+
 message TestRequest {
     string message = 1;
 }
