@@ -151,7 +151,8 @@ final class H2ServerParentConnectionContext extends H2ParentConnectionContext im
                                                 // level we can use DefaultNettyConnection.initChannel instead of this
                                                 // custom method.
                                                 connection.flushStrategyHolder.currentStrategy(),
-                                                connection.executionContext().executionStrategy());
+                                                connection.executionContext().executionStrategy(),
+                                                connection.sslSession());
 
                                 // ServiceTalk HTTP service handler
                                 final CompositeFlushStrategy streamFlushStrategy =

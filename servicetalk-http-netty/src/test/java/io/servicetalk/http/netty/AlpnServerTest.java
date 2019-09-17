@@ -36,7 +36,6 @@ import java.nio.channels.ClosedChannelException;
 import java.util.Collection;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.HttpSerializationProviders.textDeserializer;
 import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
@@ -51,6 +50,7 @@ import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAnd
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.Assert.assertThat;
 import static org.junit.rules.ExpectedException.none;
 
@@ -123,8 +123,10 @@ public class AlpnServerTest {
                 .provider(OPENSSL)
                 .applicationProtocolNegotiation(ALPN, NO_ADVERTISE, ACCEPT, supportedProtocols)
                 .commit(DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey)
-                .listen((ctx, request, responseFactory) ->
-                        succeeded(responseFactory.ok().payloadBody(PAYLOAD_BODY, textSerializer())))
+                .listenBlocking((ctx, request, responseFactory) -> {
+                    assertThat(ctx.sslSession(), is(notNullValue()));
+                    return responseFactory.ok().payloadBody(PAYLOAD_BODY, textSerializer());
+                })
                 .toFuture().get();
     }
 

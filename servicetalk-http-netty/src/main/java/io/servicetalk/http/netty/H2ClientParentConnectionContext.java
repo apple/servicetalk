@@ -242,7 +242,8 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext im
                                     // closure based upon stream state.
                                     UNSUPPORTED_PROTOCOL_CLOSE_HANDLER,
                                     parentContext.flushStrategyHolder.currentStrategy(),
-                                    parentContext.executionContext().executionStrategy());
+                                    parentContext.executionContext().executionStrategy(),
+                                    parentContext.sslSession());
 
                     // In h2 a stream is 1 to 1 with a request/response life cycle. This means there is no concept of
                     // pipelining on a stream so we can use the non-pipelined connection which is more light weight.

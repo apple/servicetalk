@@ -124,7 +124,14 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
 
     private DefaultNettyConnection(Channel channel, BufferAllocator allocator, Executor executor,
                                    TerminalPredicate<Read> terminalMsgPredicate, CloseHandler closeHandler,
-                                   FlushStrategy flushStrategy, final ExecutionStrategy executionStrategy) {
+                                   FlushStrategy flushStrategy, ExecutionStrategy executionStrategy) {
+        this(channel, allocator, executor, terminalMsgPredicate, closeHandler, flushStrategy, executionStrategy, null);
+    }
+
+    private DefaultNettyConnection(Channel channel, BufferAllocator allocator, Executor executor,
+                                   TerminalPredicate<Read> terminalMsgPredicate, CloseHandler closeHandler,
+                                   FlushStrategy flushStrategy, ExecutionStrategy executionStrategy,
+                                   @Nullable SSLSession sslSession) {
         super(channel, executor);
         nettyChannelPublisher = new NettyChannelPublisher<>(channel, terminalMsgPredicate, closeHandler);
         this.readPublisher = nettyChannelPublisher.recoverWith(this::enrichErrorPublisher);
@@ -159,6 +166,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
         } else {
             onClosing = null;
         }
+        this.sslSession = sslSession;
     }
 
     @SuppressWarnings("unchecked")
@@ -187,9 +195,10 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
      */
     public static <Read, Write> DefaultNettyConnection<Read, Write> initChildChannel(
             Channel channel, BufferAllocator allocator, Executor executor, TerminalPredicate<Read> terminalMsgPredicate,
-            CloseHandler closeHandler, FlushStrategy flushStrategy, ExecutionStrategy executionStrategy) {
+            CloseHandler closeHandler, FlushStrategy flushStrategy, ExecutionStrategy executionStrategy,
+            @Nullable SSLSession sslSession) {
         DefaultNettyConnection<Read, Write> connection = new DefaultNettyConnection<>(channel, allocator,
-                executor, terminalMsgPredicate, closeHandler, flushStrategy, executionStrategy);
+                executor, terminalMsgPredicate, closeHandler, flushStrategy, executionStrategy, sslSession);
         channel.pipeline().addLast(new NettyToStChannelInboundHandler<>(connection, null,
                 null, false));
         return connection;
