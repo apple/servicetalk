@@ -188,6 +188,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
      * @param closeHandler Manages the half closure of the {@link DefaultNettyConnection}.
      * @param flushStrategy Manages flushing of data for the {@link DefaultNettyConnection}.
      * @param executionStrategy Used to derive the {@link #executionContext()}.
+     * @param sslSession Provides access to the {@link SSLSession} associated with this connection.
      * @param <Read> Type of objects read from the {@link NettyConnection}.
      * @param <Write> Type of objects written to the {@link NettyConnection}.
      * @return A {@link Single} that completes with a {@link DefaultNettyConnection} after the channel is activated and
