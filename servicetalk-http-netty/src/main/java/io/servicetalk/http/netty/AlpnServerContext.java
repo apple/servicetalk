@@ -89,10 +89,10 @@ final class AlpnServerContext {
         return new SubscribableSingle<AlpnConnectionContext>() {
             @Override
             protected void handleSubscribe(final Subscriber<? super AlpnConnectionContext> subscriber) {
+                final AlpnConnectionContext context;
                 try {
-                    final AlpnConnectionContext context = new AlpnConnectionContext(channel, httpExecutionContext);
+                    context = new AlpnConnectionContext(channel, httpExecutionContext);
                     new TcpServerChannelInitializer(config.tcpConfig()).init(channel, context);
-                    channel.pipeline().addLast(new AlpnServerHandler(context, subscriber));
                 } catch (Throwable cause) {
                     channel.close();
                     subscriber.onSubscribe(IGNORE_CANCEL);
@@ -100,6 +100,9 @@ final class AlpnServerContext {
                     return;
                 }
                 subscriber.onSubscribe(channel::close);
+                // We have to add to the pipeline AFTER we call onSubscribe, because adding to the pipeline may invoke
+                // callbacks that interact with the subscriber.
+                channel.pipeline().addLast(new AlpnServerHandler(context, subscriber));
             }
         }.flatMap(alpnContext -> {
             final String protocol = alpnContext.protocol();
