@@ -102,7 +102,6 @@ final class AlpnServerContext {
                 subscriber.onSubscribe(channel::close);
             }
         }.flatMap(alpnContext -> {
-            assert alpnContext.sslSession() != null;
             final String protocol = alpnContext.protocol();
             assert protocol != null;
             switch (protocol) {
