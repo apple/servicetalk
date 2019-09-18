@@ -17,9 +17,11 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.client.api.ConnectionFactory;
 import io.servicetalk.client.api.ConnectionFactoryFilter;
+import io.servicetalk.client.api.ConsumableEvent;
 import io.servicetalk.client.api.internal.ReservableRequestConcurrencyController;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
+import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.FilterableStreamingHttpLoadBalancedConnection;
@@ -33,7 +35,10 @@ import io.servicetalk.transport.netty.internal.NettyConnectionContext;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.client.api.internal.ReservableRequestConcurrencyControllers.newController;
+import static io.servicetalk.client.api.internal.ReservableRequestConcurrencyControllers.newSingleController;
 import static io.servicetalk.concurrent.api.AsyncCloseables.emptyAsyncCloseable;
+import static io.servicetalk.http.api.HttpEventKey.MAX_CONCURRENCY;
 import static java.util.Objects.requireNonNull;
 
 abstract class AbstractLBHttpConnectionFactory<ResolvedAddress>
@@ -101,15 +106,22 @@ abstract class AbstractLBHttpConnectionFactory<ResolvedAddress>
                         onClosing = filteredConnection.onClose();
                     }
                     return new LoadBalancedStreamingHttpConnection(protocolBinding.apply(filteredConnection),
-                            newConcurrencyController(filteredConnection, onClosing),
+                            newConcurrencyController(filteredConnection, onClosing, initialMaxConcurrency(conn)),
                             executionContext.executionStrategy(), strategyInfluencer);
                 });
     }
 
     abstract Single<FilterableStreamingHttpConnection> newFilterableConnection(ResolvedAddress resolvedAddress);
 
-    abstract ReservableRequestConcurrencyController newConcurrencyController(
-            FilterableStreamingHttpConnection connection, Completable onClosing);
+    abstract int initialMaxConcurrency(FilterableStreamingHttpConnection connection);
+
+    private ReservableRequestConcurrencyController newConcurrencyController(
+            FilterableStreamingHttpConnection connection, Completable onClosing, int initialMaxConcurrency) {
+        final Publisher<? extends ConsumableEvent<Integer>> maxConcurrency =
+                connection.transportEventStream(MAX_CONCURRENCY);
+        return initialMaxConcurrency == 1 ? newSingleController(maxConcurrency, onClosing) :
+                newController(maxConcurrency, onClosing, initialMaxConcurrency);
+    }
 
     @Override
     public final Completable onClose() {

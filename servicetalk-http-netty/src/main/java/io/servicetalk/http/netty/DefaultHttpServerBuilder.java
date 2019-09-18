@@ -23,18 +23,16 @@ import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.HttpServerBuilder;
 import io.servicetalk.http.api.HttpServerSecurityConfigurator;
 import io.servicetalk.http.api.StreamingHttpService;
-import io.servicetalk.tcp.netty.internal.ReadOnlyTcpServerConfig;
 import io.servicetalk.transport.api.ConnectionAcceptor;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.ServerContext;
-
-import io.netty.handler.ssl.ApplicationProtocolNegotiator;
-import io.netty.handler.ssl.SslContext;
 
 import java.net.SocketAddress;
 import java.net.SocketOption;
 import java.util.function.BiPredicate;
 import javax.annotation.Nullable;
+
+import static io.servicetalk.http.netty.AlpnChannelHandler.useAlpn;
 
 final class DefaultHttpServerBuilder extends HttpServerBuilder {
 
@@ -177,26 +175,5 @@ final class DefaultHttpServerBuilder extends HttpServerBuilder {
                         service, drainRequestPayloadBody) :
                 NettyHttpServer.bind(httpExecutionContext, roConfig, address, connectionAcceptor,
                         service, drainRequestPayloadBody);
-    }
-
-    private static boolean useAlpn(final ReadOnlyTcpServerConfig config) {
-        if (config.isSniEnabled()) {
-            for (final SslContext sslContext : config.domainNameMapping().asMap().values()) {
-                if (useAlpn(sslContext)) {
-                    return true;
-                }
-            }
-            return false;
-        }
-        return useAlpn(config.sslContext());
-    }
-
-    private static boolean useAlpn(@Nullable final SslContext sslContext) {
-        if (sslContext == null) {
-            return false;
-        }
-        @SuppressWarnings("deprecation")
-        final ApplicationProtocolNegotiator apn = sslContext.applicationProtocolNegotiator();
-        return apn != null && !apn.protocols().isEmpty();
     }
 }
