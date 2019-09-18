@@ -214,5 +214,10 @@ final class AlpnServerContext {
         public ConnectionContext init(final Channel channel, final ConnectionContext context) {
             return context;
         }
+
+        @Override
+        public ChannelInitializer andThen(final ChannelInitializer after) {
+            return after;
+        }
     }
 }
