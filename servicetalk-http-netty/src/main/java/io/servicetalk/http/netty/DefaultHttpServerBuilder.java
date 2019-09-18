@@ -28,6 +28,7 @@ import io.servicetalk.transport.api.ConnectionAcceptor;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.ServerContext;
 
+import io.netty.handler.ssl.ApplicationProtocolNegotiator;
 import io.netty.handler.ssl.SslContext;
 
 import java.net.SocketAddress;
@@ -186,6 +187,8 @@ final class DefaultHttpServerBuilder extends HttpServerBuilder {
         if (sslContext == null) {
             return false;
         }
-        return sslContext.applicationProtocolNegotiator() != null;
+        @SuppressWarnings("deprecation")
+        final ApplicationProtocolNegotiator apn = sslContext.applicationProtocolNegotiator();
+        return apn != null && !apn.protocols().isEmpty();
     }
 }
