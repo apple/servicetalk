@@ -15,8 +15,6 @@
  */
 package io.servicetalk.transport.netty.internal;
 
-import io.servicetalk.transport.api.ConnectionContext;
-
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.channel.Channel;
@@ -61,7 +59,7 @@ public class SslServerChannelInitializer implements ChannelInitializer {
     }
 
     @Override
-    public ConnectionContext init(Channel channel, ConnectionContext context) {
+    public void init(Channel channel) {
         if (sslContext != null) {
             SslHandler sslHandler = newHandler(sslContext, POOLED_ALLOCATOR);
             channel.pipeline().addLast(sslHandler);
@@ -69,7 +67,6 @@ public class SslServerChannelInitializer implements ChannelInitializer {
             assert domainNameMapping != null;
             channel.pipeline().addLast(new SniHandlerWithPooledAllocator(domainNameMapping));
         }
-        return context;
     }
 
     /**

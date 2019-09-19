@@ -85,10 +85,8 @@ public final class TcpClient {
                         executionContext.bufferAllocator(), executionContext.executor(),
                         new TerminalPredicate<>(buffer -> false), UNSUPPORTED_PROTOCOL_CLOSE_HANDLER,
                         config.flushStrategy(), new TcpClientChannelInitializer(config)
-                                .andThen((channel2, context) -> {
-                            channel2.pipeline().addLast(BufferHandler.INSTANCE);
-                            return context;
-                }), executionContext.executionStrategy())).toFuture().get();
+                                .andThen((channel2) -> channel2.pipeline().addLast(BufferHandler.INSTANCE)),
+                        executionContext.executionStrategy())).toFuture().get();
     }
 
     /**

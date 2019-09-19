@@ -90,7 +90,7 @@ public class NettyChannelPublisherTest {
         channel = new EmbeddedChannel();
         NettyConnection<Integer, Object> connection = DefaultNettyConnection.initChannel(channel, DEFAULT_ALLOCATOR,
             immediate(), new TerminalPredicate<>(terminalPredicate), UNSUPPORTED_PROTOCOL_CLOSE_HANDLER,
-            defaultFlushStrategy(), (channel, context) -> {
+            defaultFlushStrategy(), channel -> {
                     channel.pipeline().addLast(new ChannelOutboundHandlerAdapter() {
                         @Override
                         public void read(ChannelHandlerContext ctx) throws Exception {
@@ -98,7 +98,6 @@ public class NettyChannelPublisherTest {
                             super.read(ctx);
                         }
                     });
-                    return context;
                 }, OFFLOAD_ALL_STRATEGY).toFuture().get();
         publisher = connection.read();
         channel.config().setAutoRead(false);

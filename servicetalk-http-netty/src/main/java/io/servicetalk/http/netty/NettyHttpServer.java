@@ -143,14 +143,13 @@ final class NettyHttpServer {
 
     private static ChannelInitializer getChannelInitializer(final ReadOnlyHttpServerConfig config,
                                                             final CloseHandler closeHandler) {
-        return (channel, context) -> {
+        return channel -> {
             Queue<HttpRequestMethod> methodQueue = new ArrayDeque<>(2);
             final ChannelPipeline pipeline = channel.pipeline();
             pipeline.addLast(new HttpRequestDecoder(methodQueue, config.headersFactory(),
                     config.maxInitialLineLength(), config.maxHeaderSize(), closeHandler));
             pipeline.addLast(new HttpResponseEncoder(methodQueue, config.headersEncodedSizeEstimate(),
                     config.trailersEncodedSizeEstimate(), closeHandler));
-            return context;
         };
     }
 

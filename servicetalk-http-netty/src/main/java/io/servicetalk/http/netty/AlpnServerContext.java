@@ -79,10 +79,8 @@ final class AlpnServerContext {
                                                               final HttpExecutionContext httpExecutionContext,
                                                               final StreamingHttpService service,
                                                               final boolean drainRequestPayloadBody) {
-        return new AlpnChannelSingle(channel, httpExecutionContext,
-                new TcpServerChannelInitializer(config.tcpConfig()), true).flatMap(alpnContext -> {
-            final String protocol = alpnContext.protocol();
-            assert protocol != null;
+        final TcpServerChannelInitializer tcpInitializer = new TcpServerChannelInitializer(config.tcpConfig());
+        return new AlpnChannelSingle(channel, tcpInitializer, true).flatMap(protocol -> {
             switch (protocol) {
                 case HTTP_1_1:
                     return NettyHttpServer.initChannel(channel, httpExecutionContext, config,

@@ -244,7 +244,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
                     // that NettyToStChannelInboundHandler will not see them. This is currently not an issue and would
                     // require some pipeline modifications if we wanted to insert NettyToStChannelInboundHandler first,
                     // but not allow any other handlers to be after it.
-                    initializer.init(channel, connection);
+                    initializer.init(channel);
                     ChannelPipeline pipeline = connection.channel().pipeline();
                     nettyInboundHandler = new NettyToStChannelInboundHandler<>(connection, subscriber,
                             delayedCancellable, NettyPipelineSslUtils.isSslEnabled(pipeline));

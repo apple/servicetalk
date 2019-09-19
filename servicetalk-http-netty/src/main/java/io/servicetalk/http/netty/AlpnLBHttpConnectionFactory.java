@@ -65,11 +65,8 @@ final class AlpnLBHttpConnectionFactory<ResolvedAddress> extends AbstractLBHttpC
     }
 
     private Single<FilterableStreamingHttpConnection> createConnection(final Channel channel) {
-        return new AlpnChannelSingle(channel, executionContext,
-                new TcpClientChannelInitializer(config.tcpClientConfig()), false).flatMap(alpnContext -> {
-            final ReadOnlyTcpClientConfig tcpConfig = config.tcpClientConfig();
-            final String protocol = alpnContext.protocol();
-            assert protocol != null;
+        final TcpClientChannelInitializer tcpInitializer = new TcpClientChannelInitializer(config.tcpClientConfig());
+        return new AlpnChannelSingle(channel, tcpInitializer, false).flatMap(protocol -> {
             switch (protocol) {
                 case HTTP_1_1:
                     return StreamingConnectionFactory.createConnection(channel, executionContext, config,
@@ -82,7 +79,7 @@ final class AlpnLBHttpConnectionFactory<ResolvedAddress> extends AbstractLBHttpC
                 case HTTP_2:
                     return H2ClientParentConnectionContext.initChannel(channel,
                             executionContext.bufferAllocator(), executionContext.executor(),
-                            config.h2ClientConfig(), reqRespFactory, tcpConfig.flushStrategy(),
+                            config.h2ClientConfig(), reqRespFactory, config.tcpClientConfig().flushStrategy(),
                             executionContext.executionStrategy(),
                             new H2ClientParentChannelInitializer(config.h2ClientConfig()));
                 default:

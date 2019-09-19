@@ -18,12 +18,8 @@ package io.servicetalk.http.netty;
 import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.internal.SubscribableSingle;
-import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.tcp.netty.internal.ReadOnlyTcpServerConfig;
-import io.servicetalk.transport.api.ConnectionContext;
-import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
-import io.servicetalk.transport.netty.internal.NettyChannelListenableAsyncCloseable;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
@@ -35,9 +31,7 @@ import io.netty.handler.ssl.SslHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.net.SocketAddress;
 import javax.annotation.Nullable;
-import javax.net.ssl.SSLSession;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.http.netty.ApplicationProtocolNames.HTTP_1_1;
@@ -45,27 +39,24 @@ import static io.servicetalk.http.netty.ApplicationProtocolNames.HTTP_1_1;
 /**
  * A {@link Single} that initializes ALPN handler and completes after protocol negotiation.
  */
-final class AlpnChannelSingle extends SubscribableSingle<AlpnChannelSingle.AlpnConnectionContext> {
+final class AlpnChannelSingle extends SubscribableSingle<String> {
 
     private final Channel channel;
-    private final HttpExecutionContext executionContext;
     private final ChannelInitializer channelInitializer;
     private final boolean forceChannelRead;
 
-    AlpnChannelSingle(final Channel channel, final HttpExecutionContext executionContext,
-                      final ChannelInitializer channelInitializer, final boolean forceChannelRead) {
+    AlpnChannelSingle(final Channel channel,
+                      final ChannelInitializer channelInitializer,
+                      final boolean forceChannelRead) {
         this.channel = channel;
-        this.executionContext = executionContext;
         this.channelInitializer = channelInitializer;
         this.forceChannelRead = forceChannelRead;
     }
 
     @Override
-    protected void handleSubscribe(final Subscriber<? super AlpnConnectionContext> subscriber) {
-        final AlpnConnectionContext context;
+    protected void handleSubscribe(final Subscriber<? super String> subscriber) {
         try {
-            context = new AlpnConnectionContext(channel, executionContext);
-            channelInitializer.init(channel, context);
+            channelInitializer.init(channel);
         } catch (Throwable cause) {
             channel.close();
             subscriber.onSubscribe(IGNORE_CANCEL);
@@ -75,7 +66,7 @@ final class AlpnChannelSingle extends SubscribableSingle<AlpnChannelSingle.AlpnC
         subscriber.onSubscribe(channel::close);
         // We have to add to the pipeline AFTER we call onSubscribe, because adding to the pipeline may invoke
         // callbacks that interact with the subscriber.
-        channel.pipeline().addLast(new AlpnChannelHandler(context, subscriber, forceChannelRead));
+        channel.pipeline().addLast(new AlpnChannelHandler(subscriber, forceChannelRead));
     }
 
     /**
@@ -86,16 +77,13 @@ final class AlpnChannelSingle extends SubscribableSingle<AlpnChannelSingle.AlpnC
 
         private static final Logger LOGGER = LoggerFactory.getLogger(AlpnChannelHandler.class);
 
-        private final AlpnConnectionContext connectionContext;
         @Nullable
-        private SingleSource.Subscriber<? super AlpnConnectionContext> subscriber;
+        private SingleSource.Subscriber<? super String> subscriber;
         private final boolean forceRead;
 
-        AlpnChannelHandler(final AlpnConnectionContext connectionContext,
-                           final SingleSource.Subscriber<? super AlpnConnectionContext> subscriber,
+        AlpnChannelHandler(final SingleSource.Subscriber<? super String> subscriber,
                            final boolean forceRead) {
             super(HTTP_1_1);
-            this.connectionContext = connectionContext;
             this.subscriber = subscriber;
             this.forceRead = forceRead;
         }
@@ -114,12 +102,10 @@ final class AlpnChannelSingle extends SubscribableSingle<AlpnChannelSingle.AlpnC
         @Override
         protected void configurePipeline(final ChannelHandlerContext ctx, final String protocol) {
             LOGGER.debug("{} ALPN negotiated {} protocol", ctx.channel(), protocol);
-            connectionContext.protocol = protocol;
-
             assert subscriber != null;
-            final SingleSource.Subscriber<? super AlpnConnectionContext> subscriberCopy = subscriber;
+            final SingleSource.Subscriber<? super String> subscriberCopy = subscriber;
             subscriber = null;
-            subscriberCopy.onSuccess(connectionContext);
+            subscriberCopy.onSuccess(protocol);
         }
 
         @Override
@@ -140,53 +126,12 @@ final class AlpnChannelSingle extends SubscribableSingle<AlpnChannelSingle.AlpnC
 
         private boolean failSubscriber(final Throwable cause) {
             if (subscriber != null) {
-                final SingleSource.Subscriber<? super AlpnConnectionContext> subscriberCopy = subscriber;
+                final SingleSource.Subscriber<? super String> subscriberCopy = subscriber;
                 subscriber = null;
                 subscriberCopy.onError(cause);
                 return true;
             }
             return false;
-        }
-    }
-
-    /**
-     * A {@link ConnectionContext} used for {@link ChannelInitializer} before ALPN completes.
-     */
-    static final class AlpnConnectionContext extends NettyChannelListenableAsyncCloseable implements ConnectionContext {
-
-        private final ExecutionContext executionContext;
-        @Nullable
-        private String protocol;
-
-        AlpnConnectionContext(final Channel channel, final ExecutionContext executionContext) {
-            super(channel, executionContext.executor());
-            this.executionContext = executionContext;
-        }
-
-        @Override
-        public SocketAddress localAddress() {
-            return channel().localAddress();
-        }
-
-        @Override
-        public SocketAddress remoteAddress() {
-            return channel().remoteAddress();
-        }
-
-        @Nullable
-        @Override
-        public SSLSession sslSession() {
-            return null;
-        }
-
-        @Override
-        public ExecutionContext executionContext() {
-            return executionContext;
-        }
-
-        @Nullable
-        String protocol() {
-            return protocol;
         }
     }
 
@@ -235,8 +180,8 @@ final class AlpnChannelSingle extends SubscribableSingle<AlpnChannelSingle.AlpnC
         }
 
         @Override
-        public ConnectionContext init(final Channel channel, final ConnectionContext context) {
-            return context;
+        public void init(final Channel channel) {
+            // NOOP
         }
 
         @Override

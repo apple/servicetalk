@@ -15,8 +15,6 @@
  */
 package io.servicetalk.transport.netty.internal;
 
-import io.servicetalk.transport.api.ConnectionContext;
-
 import io.netty.channel.Channel;
 import io.netty.handler.logging.LoggingHandler;
 
@@ -40,8 +38,7 @@ public class WireLoggingInitializer implements ChannelInitializer {
     }
 
     @Override
-    public ConnectionContext init(Channel channel, ConnectionContext context) {
+    public void init(Channel channel) {
         channel.pipeline().addLast(loggingHandler);
-        return context;
     }
 }

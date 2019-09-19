@@ -47,20 +47,16 @@ public final class PooledRecvByteBufAllocatorInitializers {
     /**
      * Initializer to configure {@link RecvByteBufAllocator} backed by a pooled {@link ByteBufAllocator}.
      */
-    public static final ChannelInitializer POOLED_RECV_ALLOCATOR_INITIALIZER = (channel, context) -> {
-        final RecvByteBufAllocator recvByteBufAllocator = channel.config().getRecvByteBufAllocator();
-        channel.config().setRecvByteBufAllocator(new PooledRecvByteBufAllocator(recvByteBufAllocator));
-        return context;
-    };
+    public static final ChannelInitializer POOLED_RECV_ALLOCATOR_INITIALIZER = channel ->
+            channel.config().setRecvByteBufAllocator(new PooledRecvByteBufAllocator(
+                    channel.config().getRecvByteBufAllocator()));
 
     /**
      * Initializer to configure {@link ChannelInboundHandler} that will ensure no pooled {@link ByteBuf}s are passed to
      * the user and so no leaks are produced if the user does not call {@link ReferenceCountUtil#release(Object)}.
      */
-    public static final ChannelInitializer COPY_HANDLER_INITIALIZER = (channel, context) -> {
-        channel.pipeline().addLast(CopyByteBufHandler.INSTANCE);
-        return context;
-    };
+    public static final ChannelInitializer COPY_HANDLER_INITIALIZER = channel ->
+            channel.pipeline().addLast(CopyByteBufHandler.INSTANCE);
 
     private PooledRecvByteBufAllocatorInitializers() {
         // No instances
