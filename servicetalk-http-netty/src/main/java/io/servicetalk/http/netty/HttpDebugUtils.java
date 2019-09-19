@@ -18,7 +18,7 @@ package io.servicetalk.http.netty;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.netty.internal.NettyConnectionContext;
 
-import io.netty.channel.ChannelPipeline;
+import io.netty.channel.Channel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,10 +37,10 @@ final class HttpDebugUtils {
 
     static <T extends NettyConnectionContext> Single<T> showPipeline(final Single<T> contextSingle,
                                                                      final String protocolName,
-                                                                     final ChannelPipeline pipeline) {
+                                                                     final Channel channel) {
         if (LOGGER.isDebugEnabled()) {
-            return contextSingle.whenOnSuccess(ctx -> LOGGER.debug("{} pipeline initialized: {}",
-                    protocolName, join(", ", pipeline.names())));
+            return contextSingle.whenOnSuccess(ctx -> LOGGER.debug("{} {} pipeline initialized: {}",
+                    channel, protocolName, join(", ", channel.pipeline().names())));
         }
         return contextSingle;
     }

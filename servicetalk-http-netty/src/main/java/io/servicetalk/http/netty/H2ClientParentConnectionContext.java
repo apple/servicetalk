@@ -69,6 +69,7 @@ import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverTerminalFromSource;
 import static io.servicetalk.http.api.HttpEventKey.MAX_CONCURRENCY;
 import static io.servicetalk.http.netty.HeaderUtils.LAST_CHUNK_PREDICATE;
+import static io.servicetalk.http.netty.HttpDebugUtils.showPipeline;
 import static io.servicetalk.transport.netty.internal.ChannelSet.CHANNEL_CLOSEABLE_KEY;
 import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
 import static java.util.Objects.requireNonNull;
@@ -89,7 +90,7 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext im
                                                         FlushStrategy parentFlushStrategy,
                                                         HttpExecutionStrategy executionStrategy,
                                                         ChannelInitializer initializer) {
-        return new SubscribableSingle<H2ClientParentConnection>() {
+        return showPipeline(new SubscribableSingle<H2ClientParentConnection>() {
             @Override
             protected void handleSubscribe(final Subscriber<? super H2ClientParentConnection> subscriber) {
                 final DefaultH2ClientParentConnection parentChannelInitializer;
@@ -123,7 +124,7 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext im
                 // callbacks that interact with the subscriber.
                 pipeline.addLast(parentChannelInitializer);
             }
-        };
+        }, "HTTP/2.0", channel);
     }
 
     private static final class DefaultH2ClientParentConnection extends AbstractH2ParentConnection implements

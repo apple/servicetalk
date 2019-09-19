@@ -25,13 +25,11 @@ import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
 import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.http.netty.AlpnChannelHandler.AlpnConnectionContext;
+import io.servicetalk.http.netty.AlpnChannelHandler.NoopChannelInitializer;
 import io.servicetalk.http.netty.H2ClientParentConnectionContext.H2ClientParentConnection;
 import io.servicetalk.tcp.netty.internal.ReadOnlyTcpClientConfig;
 import io.servicetalk.tcp.netty.internal.TcpClientChannelInitializer;
 import io.servicetalk.tcp.netty.internal.TcpConnector;
-import io.servicetalk.transport.netty.internal.CloseHandler;
-import io.servicetalk.transport.netty.internal.DefaultNettyConnection;
-import io.servicetalk.transport.netty.internal.NettyConnection;
 
 import io.netty.channel.Channel;
 import org.slf4j.Logger;
@@ -44,10 +42,8 @@ import static io.netty.handler.codec.http2.Http2CodecUtil.SMALLEST_MAX_CONCURREN
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.http.netty.DefaultSingleAddressHttpClientBuilder.reservedConnectionsPipelineEnabled;
-import static io.servicetalk.http.netty.HeaderUtils.LAST_CHUNK_PREDICATE;
 import static io.servicetalk.transport.api.SecurityConfigurator.ApplicationProtocolNames.HTTP_1_1;
 import static io.servicetalk.transport.api.SecurityConfigurator.ApplicationProtocolNames.HTTP_2;
-import static io.servicetalk.transport.netty.internal.CloseHandler.forPipelinedRequestResponse;
 
 final class AlpnLBHttpConnectionFactory<ResolvedAddress> extends AbstractLBHttpConnectionFactory<ResolvedAddress> {
 
@@ -99,13 +95,8 @@ final class AlpnLBHttpConnectionFactory<ResolvedAddress> extends AbstractLBHttpC
             assert protocol != null;
             switch (protocol) {
                 case HTTP_1_1:
-                    final CloseHandler closeHandler = forPipelinedRequestResponse(true, channel.config());
-                    return DefaultNettyConnection.initChannel(channel, executionContext.bufferAllocator(),
-                            executionContext.executor(),
-                            new NettyConnection.TerminalPredicate<>(LAST_CHUNK_PREDICATE), closeHandler,
-                            tcpConfig.flushStrategy(),
-                            new HttpClientChannelInitializer(config, closeHandler),
-                            executionContext.executionStrategy())
+                    return StreamingConnectionFactory.createConnection(channel, executionContext, config,
+                            NoopChannelInitializer.INSTANCE)
                             .map(conn -> reservedConnectionsPipelineEnabled(config) ?
                                     new PipelinedStreamingHttpConnection(conn, config, executionContext,
                                             reqRespFactory) :

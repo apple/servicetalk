@@ -20,14 +20,13 @@ import io.servicetalk.concurrent.api.internal.SubscribableSingle;
 import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.netty.AlpnChannelHandler.AlpnConnectionContext;
+import io.servicetalk.http.netty.AlpnChannelHandler.NoopChannelInitializer;
 import io.servicetalk.http.netty.NettyHttpServer.NettyHttpServerConnection;
 import io.servicetalk.tcp.netty.internal.ReadOnlyTcpServerConfig;
 import io.servicetalk.tcp.netty.internal.TcpServerBinder;
 import io.servicetalk.tcp.netty.internal.TcpServerChannelInitializer;
 import io.servicetalk.transport.api.ConnectionAcceptor;
-import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ServerContext;
-import io.servicetalk.transport.netty.internal.ChannelInitializer;
 import io.servicetalk.transport.netty.internal.NettyConnectionContext;
 
 import io.netty.channel.Channel;
@@ -115,24 +114,5 @@ final class AlpnServerContext {
                     return failed(new IllegalStateException("Unknown ALPN protocol negotiated: " + protocol));
             }
         });
-    }
-
-    private static final class NoopChannelInitializer implements ChannelInitializer {
-
-        static final ChannelInitializer INSTANCE = new NoopChannelInitializer();
-
-        private NoopChannelInitializer() {
-            // Singleton
-        }
-
-        @Override
-        public ConnectionContext init(final Channel channel, final ConnectionContext context) {
-            return context;
-        }
-
-        @Override
-        public ChannelInitializer andThen(final ChannelInitializer after) {
-            return after;
-        }
     }
 }

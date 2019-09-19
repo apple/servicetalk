@@ -72,7 +72,7 @@ final class AlpnChannelHandler extends ApplicationProtocolNegotiationHandler {
 
     @Override
     protected void configurePipeline(final ChannelHandlerContext ctx, final String protocol) {
-        LOGGER.debug("ALPN negotiated {} protocol", protocol);
+        LOGGER.debug("{} ALPN negotiated {} protocol", ctx.channel(), protocol);
         connectionContext.protocol = protocol;
 
         assert subscriber != null;
@@ -179,5 +179,27 @@ final class AlpnChannelHandler extends ApplicationProtocolNegotiationHandler {
         @SuppressWarnings("deprecation")
         final ApplicationProtocolNegotiator apn = sslContext.applicationProtocolNegotiator();
         return apn != null && !apn.protocols().isEmpty();
+    }
+
+    /**
+     * {@link ChannelInitializer} that does not do anything.
+     */
+    static final class NoopChannelInitializer implements ChannelInitializer {
+
+        static final ChannelInitializer INSTANCE = new NoopChannelInitializer();
+
+        private NoopChannelInitializer() {
+            // Singleton
+        }
+
+        @Override
+        public ConnectionContext init(final Channel channel, final ConnectionContext context) {
+            return context;
+        }
+
+        @Override
+        public ChannelInitializer andThen(final ChannelInitializer after) {
+            return after;
+        }
     }
 }
