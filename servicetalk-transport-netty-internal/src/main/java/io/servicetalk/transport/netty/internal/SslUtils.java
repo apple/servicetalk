@@ -33,6 +33,8 @@ import javax.net.ssl.SNIHostName;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLParameters;
 
+import static io.netty.handler.ssl.OpenSsl.isAlpnSupported;
+
 /**
  * Utility for SSL.
  */
@@ -173,10 +175,15 @@ final class SslUtils {
         switch (provider) {
             case AUTO:
                 return protocol == SecurityConfigurator.ApplicationProtocolNegotiation.ALPN ?
-                        (OpenSsl.isAlpnSupported() ? SslProvider.OPENSSL : SslProvider.JDK) : null;
+                        (isAlpnSupported() ? SslProvider.OPENSSL : SslProvider.JDK) : null;
             case JDK:
                 return SslProvider.JDK;
             case OPENSSL:
+                OpenSsl.ensureAvailability();
+                if (protocol == SecurityConfigurator.ApplicationProtocolNegotiation.ALPN && !isAlpnSupported()) {
+                    throw new IllegalArgumentException(
+                            "ALPN configured but not supported by installed version of OpenSSL");
+                }
                 return SslProvider.OPENSSL;
             default:
                 throw new Error();
