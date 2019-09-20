@@ -114,10 +114,10 @@ public final class TcpServerBinder {
                                     .subscribeOn(executionContext.executor()));
                 }
                 connectionSingle.whenOnError(cause -> {
-                    // Getting the remote-address may involve volatile reads and potentially a
-                    // syscall, so guard it.
+                    // Getting the remote-address may involve volatile reads and potentially a syscall, so guard it.
                     if (LOGGER.isDebugEnabled()) {
-                        LOGGER.debug("Rejected connection from {}", channel.remoteAddress(), cause);
+                        LOGGER.debug("Failed to create a connection for remote address {}", channel.remoteAddress(),
+                                cause);
                     }
                     channel.close();
                 }).subscribe(connectionConsumer);
