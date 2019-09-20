@@ -164,7 +164,8 @@ final class AlpnServerContext {
     private static final class AlpnServerHandler extends ApplicationProtocolNegotiationHandler {
 
         private final AlpnConnectionContext connectionContext;
-        private final SingleSource.Subscriber<? super AlpnConnectionContext> subscriber;
+        @Nullable
+        private SingleSource.Subscriber<? super AlpnConnectionContext> subscriber;
 
         AlpnServerHandler(final AlpnConnectionContext connectionContext,
                           final SingleSource.Subscriber<? super AlpnConnectionContext> subscriber) {
@@ -185,7 +186,11 @@ final class AlpnServerContext {
         protected void configurePipeline(final ChannelHandlerContext ctx, final String protocol) {
             LOGGER.debug("ALPN negotiated {} protocol", protocol);
             connectionContext.protocol = protocol;
-            subscriber.onSuccess(connectionContext);
+
+            assert subscriber != null;
+            final SingleSource.Subscriber<? super AlpnConnectionContext> subscriberCopy = subscriber;
+            subscriber = null;
+            subscriberCopy.onSuccess(connectionContext);
         }
 
         @Override
@@ -199,8 +204,12 @@ final class AlpnServerContext {
         }
 
         private void failSubscriber(final ChannelHandlerContext ctx, final Throwable cause) {
-            ctx.close();
-            subscriber.onError(cause);
+            if (subscriber != null) {
+                ctx.close();
+                final SingleSource.Subscriber<? super AlpnConnectionContext> subscriberCopy = subscriber;
+                subscriber = null;
+                subscriberCopy.onError(cause);
+            }
         }
     }
 
