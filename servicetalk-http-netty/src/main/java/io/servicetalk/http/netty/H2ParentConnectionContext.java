@@ -52,6 +52,7 @@ import java.util.concurrent.Delayed;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import javax.annotation.Nullable;
 import javax.net.ssl.SSLSession;
 
@@ -72,6 +73,8 @@ class H2ParentConnectionContext extends NettyChannelListenableAsyncCloseable imp
     private static final ClosedChannelException CLOSED_HANDLER_REMOVED =
             unknownStackTrace(new ClosedChannelException(), H2ClientParentConnectionContext.class,
                     "handlerRemoved(..)");
+    private static final AtomicIntegerFieldUpdater<H2ParentConnectionContext> activeChildChannelsUpdater =
+            AtomicIntegerFieldUpdater.newUpdater(H2ParentConnectionContext.class, "activeChildChannels");
     private static final Logger LOGGER = LoggerFactory.getLogger(H2ParentConnectionContext.class);
     private static final ScheduledFuture<?> GRACEFUL_CLOSE_PING_PENDING = new NoopScheduledFuture();
     private static final ScheduledFuture<?> GRACEFUL_CLOSE_PING_ACK_RECV = new NoopScheduledFuture();
@@ -86,7 +89,7 @@ class H2ParentConnectionContext extends NettyChannelListenableAsyncCloseable imp
     private SSLSession sslSession;
     @Nullable
     private ScheduledFuture<?> gracefulCloseTimeoutFuture;
-    private int activeChildChannels;
+    private volatile int activeChildChannels;
 
     H2ParentConnectionContext(Channel channel, BufferAllocator allocator,
                               Executor executor, FlushStrategy flushStrategy,
@@ -214,10 +217,9 @@ class H2ParentConnectionContext extends NettyChannelListenableAsyncCloseable imp
     }
 
     final void trackActiveStream(Channel streamChannel) {
-        assert channel().eventLoop().inEventLoop(); // the state is currently not thread safe
-        ++activeChildChannels;
+        activeChildChannelsUpdater.incrementAndGet(this);
         streamChannel.closeFuture().addListener(future1 -> {
-            --activeChildChannels;
+            activeChildChannelsUpdater.decrementAndGet(this);
             tryFinishGracefulClose();
         });
     }
