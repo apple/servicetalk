@@ -181,12 +181,12 @@ final class SslUtils {
             case OPENSSL:
                 OpenSsl.ensureAvailability();
                 if (protocol == SecurityConfigurator.ApplicationProtocolNegotiation.ALPN && !isAlpnSupported()) {
-                    throw new IllegalArgumentException(
+                    throw new IllegalStateException(
                             "ALPN configured but not supported by installed version of OpenSSL");
                 }
                 return SslProvider.OPENSSL;
             default:
-                throw new Error();
+                throw new Error("Unknown SSL provider specified: " + provider);
         }
     }
 }
