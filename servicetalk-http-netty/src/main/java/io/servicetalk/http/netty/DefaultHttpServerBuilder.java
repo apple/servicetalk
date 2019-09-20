@@ -181,9 +181,17 @@ final class DefaultHttpServerBuilder extends HttpServerBuilder {
 
     private static boolean useAlpn(final ReadOnlyTcpServerConfig config) {
         if (config.isSniEnabled()) {
-            return true;
+            for (final SslContext sslContext : config.domainNameMapping().asMap().values()) {
+                if (useAlpn(sslContext)) {
+                    return true;
+                }
+            }
+            return false;
         }
-        final SslContext sslContext = config.sslContext();
+        return useAlpn(config.sslContext());
+    }
+
+    private static boolean useAlpn(@Nullable final SslContext sslContext) {
         if (sslContext == null) {
             return false;
         }
