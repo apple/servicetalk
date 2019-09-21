@@ -16,11 +16,9 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.concurrent.api.internal.SubscribableSingle;
 import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.StreamingHttpService;
-import io.servicetalk.http.netty.AlpnChannelHandler.AlpnConnectionContext;
-import io.servicetalk.http.netty.AlpnChannelHandler.NoopChannelInitializer;
+import io.servicetalk.http.netty.AlpnChannelSingle.NoopChannelInitializer;
 import io.servicetalk.http.netty.NettyHttpServer.NettyHttpServerConnection;
 import io.servicetalk.tcp.netty.internal.ReadOnlyTcpServerConfig;
 import io.servicetalk.tcp.netty.internal.TcpServerBinder;
@@ -36,7 +34,6 @@ import org.slf4j.LoggerFactory;
 import java.net.SocketAddress;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.http.netty.ApplicationProtocolNames.HTTP_1_1;
 import static io.servicetalk.http.netty.ApplicationProtocolNames.HTTP_2;
@@ -82,25 +79,8 @@ final class AlpnServerContext {
                                                               final HttpExecutionContext httpExecutionContext,
                                                               final StreamingHttpService service,
                                                               final boolean drainRequestPayloadBody) {
-        return new SubscribableSingle<AlpnConnectionContext>() {
-            @Override
-            protected void handleSubscribe(final Subscriber<? super AlpnConnectionContext> subscriber) {
-                final AlpnConnectionContext context;
-                try {
-                    context = new AlpnConnectionContext(channel, httpExecutionContext);
-                    new TcpServerChannelInitializer(config.tcpConfig()).init(channel, context);
-                } catch (Throwable cause) {
-                    channel.close();
-                    subscriber.onSubscribe(IGNORE_CANCEL);
-                    subscriber.onError(cause);
-                    return;
-                }
-                subscriber.onSubscribe(channel::close);
-                // We have to add to the pipeline AFTER we call onSubscribe, because adding to the pipeline may invoke
-                // callbacks that interact with the subscriber.
-                channel.pipeline().addLast(new AlpnChannelHandler(context, subscriber, true));
-            }
-        }.flatMap(alpnContext -> {
+        return new AlpnChannelSingle(channel, httpExecutionContext,
+                new TcpServerChannelInitializer(config.tcpConfig()), true).flatMap(alpnContext -> {
             final String protocol = alpnContext.protocol();
             assert protocol != null;
             switch (protocol) {

@@ -32,7 +32,7 @@ import java.net.SocketOption;
 import java.util.function.BiPredicate;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.http.netty.AlpnChannelHandler.useAlpn;
+import static io.servicetalk.http.netty.AlpnChannelSingle.useAlpn;
 
 final class DefaultHttpServerBuilder extends HttpServerBuilder {
 

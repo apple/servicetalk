@@ -17,37 +17,30 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.client.api.ConnectionFactoryFilter;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.concurrent.api.internal.SubscribableSingle;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.FilterableStreamingHttpLoadBalancedConnection;
 import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
 import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
-import io.servicetalk.http.netty.AlpnChannelHandler.AlpnConnectionContext;
-import io.servicetalk.http.netty.AlpnChannelHandler.NoopChannelInitializer;
+import io.servicetalk.http.netty.AlpnChannelSingle.NoopChannelInitializer;
 import io.servicetalk.http.netty.H2ClientParentConnectionContext.H2ClientParentConnection;
 import io.servicetalk.tcp.netty.internal.ReadOnlyTcpClientConfig;
 import io.servicetalk.tcp.netty.internal.TcpClientChannelInitializer;
 import io.servicetalk.tcp.netty.internal.TcpConnector;
 
 import io.netty.channel.Channel;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
 import static io.netty.handler.codec.http2.Http2CodecUtil.SMALLEST_MAX_CONCURRENT_STREAMS;
-import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.http.netty.DefaultSingleAddressHttpClientBuilder.reservedConnectionsPipelineEnabled;
 import static io.servicetalk.transport.api.SecurityConfigurator.ApplicationProtocolNames.HTTP_1_1;
 import static io.servicetalk.transport.api.SecurityConfigurator.ApplicationProtocolNames.HTTP_2;
 
 final class AlpnLBHttpConnectionFactory<ResolvedAddress> extends AbstractLBHttpConnectionFactory<ResolvedAddress> {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(AlpnLBHttpConnectionFactory.class);
 
     AlpnLBHttpConnectionFactory(
             final ReadOnlyHttpClientConfig config, final HttpExecutionContext executionContext,
@@ -63,33 +56,15 @@ final class AlpnLBHttpConnectionFactory<ResolvedAddress> extends AbstractLBHttpC
 
     @Override
     Single<FilterableStreamingHttpConnection> newFilterableConnection(final ResolvedAddress resolvedAddress) {
-        final ReadOnlyTcpClientConfig roTcpClientConfig = config.tcpClientConfig();
         // This state is read only, so safe to keep a copy across Subscribers
+        final ReadOnlyTcpClientConfig roTcpClientConfig = config.tcpClientConfig();
         return TcpConnector.connect(null, resolvedAddress, roTcpClientConfig, executionContext)
                 .flatMap(this::createConnection);
     }
 
     private Single<FilterableStreamingHttpConnection> createConnection(final Channel channel) {
-
-        return new SubscribableSingle<AlpnConnectionContext>() {
-            @Override
-            protected void handleSubscribe(final Subscriber<? super AlpnConnectionContext> subscriber) {
-                final AlpnConnectionContext context;
-                try {
-                    context = new AlpnConnectionContext(channel, executionContext);
-                    new TcpClientChannelInitializer(config.tcpClientConfig()).init(channel, context);
-                } catch (Throwable cause) {
-                    channel.close();
-                    subscriber.onSubscribe(IGNORE_CANCEL);
-                    subscriber.onError(cause);
-                    return;
-                }
-                subscriber.onSubscribe(channel::close);
-                // We have to add to the pipeline AFTER we call onSubscribe, because adding to the pipeline may invoke
-                // callbacks that interact with the subscriber.
-                channel.pipeline().addLast(new AlpnChannelHandler(context, subscriber, false));
-            }
-        }.flatMap(alpnContext -> {
+        return new AlpnChannelSingle(channel, executionContext,
+                new TcpClientChannelInitializer(config.tcpClientConfig()), false).flatMap(alpnContext -> {
             final ReadOnlyTcpClientConfig tcpConfig = config.tcpClientConfig();
             final String protocol = alpnContext.protocol();
             assert protocol != null;

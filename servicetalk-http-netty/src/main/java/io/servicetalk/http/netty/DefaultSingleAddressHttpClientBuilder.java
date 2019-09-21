@@ -62,7 +62,7 @@ import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseabl
 import static io.servicetalk.concurrent.api.Publisher.failed;
 import static io.servicetalk.concurrent.api.Publisher.never;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
-import static io.servicetalk.http.netty.AlpnChannelHandler.useAlpn;
+import static io.servicetalk.http.netty.AlpnChannelSingle.useAlpn;
 import static io.servicetalk.http.netty.GlobalDnsServiceDiscoverer.globalDnsServiceDiscoverer;
 import static io.servicetalk.http.netty.H2ToStH1Utils.HTTP_2_0;
 import static io.servicetalk.loadbalancer.RoundRobinLoadBalancer.newRoundRobinFactory;
@@ -257,8 +257,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
             if (roConfig.isH2PriorKnowledge()) {
                 connectionFactory = new H2LBHttpConnectionFactory<>(roConfig, ctx.executionContext,
                         connectionFilterFactory, reqRespFactory,
-                        influencerChainBuilder.buildForConnectionFactory(
-                                ctx.executionContext.executionStrategy()),
+                        influencerChainBuilder.buildForConnectionFactory(ctx.executionContext.executionStrategy()),
                         connectionFactoryFilter, protocolBinder);
             } else if (useAlpn(sslContext)) {
                 if (roConfig.hasProxy()) {
@@ -266,21 +265,18 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
                 }
                 connectionFactory = new AlpnLBHttpConnectionFactory<>(roConfig, ctx.executionContext,
                         connectionFilterFactory, reqRespFactory,
-                        influencerChainBuilder.buildForConnectionFactory(
-                                ctx.executionContext.executionStrategy()),
+                        influencerChainBuilder.buildForConnectionFactory(ctx.executionContext.executionStrategy()),
+                        connectionFactoryFilter, protocolBinder);
+            } else if (reservedConnectionsPipelineEnabled(roConfig)) {
+                connectionFactory = new PipelinedLBHttpConnectionFactory<>(roConfig, ctx.executionContext,
+                        connectionFilterFactory, reqRespFactory,
+                        influencerChainBuilder.buildForConnectionFactory(ctx.executionContext.executionStrategy()),
                         connectionFactoryFilter, protocolBinder);
             } else {
-                connectionFactory = reservedConnectionsPipelineEnabled(roConfig) ?
-                        new PipelinedLBHttpConnectionFactory<>(roConfig, ctx.executionContext,
-                                connectionFilterFactory, reqRespFactory,
-                                influencerChainBuilder.buildForConnectionFactory(
-                                        ctx.executionContext.executionStrategy()),
-                                connectionFactoryFilter, protocolBinder) :
-                        new NonPipelinedLBHttpConnectionFactory<>(roConfig, ctx.executionContext,
-                                connectionFilterFactory, reqRespFactory,
-                                influencerChainBuilder.buildForConnectionFactory(
-                                        ctx.executionContext.executionStrategy()),
-                                connectionFactoryFilter, protocolBinder);
+                connectionFactory = new NonPipelinedLBHttpConnectionFactory<>(roConfig, ctx.executionContext,
+                        connectionFilterFactory, reqRespFactory,
+                        influencerChainBuilder.buildForConnectionFactory(ctx.executionContext.executionStrategy()),
+                        connectionFactoryFilter, protocolBinder);
             }
 
             @SuppressWarnings("unchecked")
