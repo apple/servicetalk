@@ -16,6 +16,8 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.client.api.ConnectionFactoryFilter;
+import io.servicetalk.client.api.internal.ReservableRequestConcurrencyController;
+import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.FilterableStreamingHttpLoadBalancedConnection;
@@ -31,6 +33,8 @@ import java.util.function.Function;
 import javax.annotation.Nullable;
 
 import static io.netty.handler.codec.http2.Http2CodecUtil.SMALLEST_MAX_CONCURRENT_STREAMS;
+import static io.servicetalk.client.api.internal.ReservableRequestConcurrencyControllers.newController;
+import static io.servicetalk.http.api.HttpEventKey.MAX_CONCURRENCY;
 
 final class H2LBHttpConnectionFactory<ResolvedAddress> extends AbstractLBHttpConnectionFactory<ResolvedAddress> {
     H2LBHttpConnectionFactory(
@@ -59,7 +63,9 @@ final class H2LBHttpConnectionFactory<ResolvedAddress> extends AbstractLBHttpCon
     }
 
     @Override
-    int initialMaxConcurrency(final FilterableStreamingHttpConnection connection) {
-        return SMALLEST_MAX_CONCURRENT_STREAMS;
+    ReservableRequestConcurrencyController newConcurrencyController(final FilterableStreamingHttpConnection connection,
+                                                                    final Completable onClosing) {
+        return newController(connection.transportEventStream(MAX_CONCURRENCY), onClosing,
+                SMALLEST_MAX_CONCURRENT_STREAMS);
     }
 }
