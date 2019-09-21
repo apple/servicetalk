@@ -44,8 +44,8 @@ import javax.net.ssl.SSLSession;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.Single.failed;
-import static io.servicetalk.transport.api.SecurityConfigurator.ApplicationProtocolNames.HTTP_1_1;
-import static io.servicetalk.transport.api.SecurityConfigurator.ApplicationProtocolNames.HTTP_2;
+import static io.servicetalk.http.netty.ApplicationProtocolNames.HTTP_1_1;
+import static io.servicetalk.http.netty.ApplicationProtocolNames.HTTP_2;
 
 final class AlpnServerContext {
 
