@@ -38,9 +38,9 @@ import javax.annotation.Nullable;
 import static io.servicetalk.client.api.internal.ReservableRequestConcurrencyControllers.newController;
 import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.http.api.HttpEventKey.MAX_CONCURRENCY;
+import static io.servicetalk.http.netty.ApplicationProtocolNames.HTTP_1_1;
+import static io.servicetalk.http.netty.ApplicationProtocolNames.HTTP_2;
 import static io.servicetalk.http.netty.DefaultSingleAddressHttpClientBuilder.reservedConnectionsPipelineEnabled;
-import static io.servicetalk.transport.api.SecurityConfigurator.ApplicationProtocolNames.HTTP_1_1;
-import static io.servicetalk.transport.api.SecurityConfigurator.ApplicationProtocolNames.HTTP_2;
 
 final class AlpnLBHttpConnectionFactory<ResolvedAddress> extends AbstractLBHttpConnectionFactory<ResolvedAddress> {
 
@@ -95,7 +95,8 @@ final class AlpnLBHttpConnectionFactory<ResolvedAddress> extends AbstractLBHttpC
     ReservableRequestConcurrencyController newConcurrencyController(final FilterableStreamingHttpConnection connection,
                                                                     final Completable onClosing) {
         // We set initialMaxConcurrency to 1 here because we don't know what type of connection will be created when
-        // ALPN completes. The actual maxConcurrency value will be set later, when we create a connection.
+        // ALPN completes. The actual maxConcurrency value will be will be updated by the MAX_CONCURRENCY stream,
+        // when we create a connection.
         return newController(connection.transportEventStream(MAX_CONCURRENCY), onClosing, 1);
     }
 }
