@@ -92,7 +92,10 @@ final class AlpnLBHttpConnectionFactory<ResolvedAddress> extends AbstractLBHttpC
     }
 
     @Override
-    ReservableRequestConcurrencyController newConcurrencyController(final FilterableStreamingHttpConnection connection, final Completable onClosing) {
+    ReservableRequestConcurrencyController newConcurrencyController(final FilterableStreamingHttpConnection connection,
+                                                                    final Completable onClosing) {
+        // We set initialMaxConcurrency to 1 here because we don't know what type of connection will be created when
+        // ALPN completes. The actual maxConcurrency value will be set later, when we create a connection.
         return newController(connection.transportEventStream(MAX_CONCURRENCY), onClosing, 1);
     }
 }

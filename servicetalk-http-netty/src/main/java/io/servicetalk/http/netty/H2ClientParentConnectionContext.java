@@ -17,6 +17,7 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.client.api.ConsumableEvent;
+import io.servicetalk.client.api.internal.IgnoreConsumedEvent;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.SingleSource.Subscriber;
@@ -63,6 +64,7 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import javax.annotation.Nullable;
 import javax.net.ssl.SSLSession;
 
+import static io.netty.handler.codec.http2.Http2CodecUtil.SMALLEST_MAX_CONCURRENT_STREAMS;
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.Publisher.failed;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
@@ -129,6 +131,10 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext im
 
     private static final class DefaultH2ClientParentConnection extends AbstractH2ParentConnection implements
                                                                                              H2ClientParentConnection {
+
+        private static final IgnoreConsumedEvent<Integer> DEFAULT_H2_MAX_CONCURRENCY_EVENT =
+                new IgnoreConsumedEvent<>(SMALLEST_MAX_CONCURRENT_STREAMS);
+
         private final Http2StreamChannelBootstrap bs;
         private final HttpHeadersFactory headersFactory;
         private final StreamingHttpRequestResponseFactory reqRespFactory;
@@ -147,6 +153,8 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext im
             this.headersFactory = requireNonNull(headersFactory);
             this.reqRespFactory = requireNonNull(reqRespFactory);
             maxConcurrencyPublisher = new SpScPublisherProcessor<>(16);
+            // Set maxConcurrency to the initial value recommended by the HTTP/2 spec
+            maxConcurrencyPublisher.sendOnNext(DEFAULT_H2_MAX_CONCURRENCY_EVENT);
             bs = new Http2StreamChannelBootstrap(connection.channel());
         }
 
@@ -171,7 +179,7 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext im
 
         @Override
         boolean ackSettings(final ChannelHandlerContext ctx, final Http2SettingsFrame settingsFrame) {
-            Long maxConcurrentStreams = settingsFrame.settings().maxConcurrentStreams();
+            final Long maxConcurrentStreams = settingsFrame.settings().maxConcurrentStreams();
             if (maxConcurrentStreams == null) {
                 return true;
             }
