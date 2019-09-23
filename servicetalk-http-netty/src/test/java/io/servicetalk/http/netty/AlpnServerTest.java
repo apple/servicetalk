@@ -89,31 +89,31 @@ public class AlpnServerTest {
                 {asList(HTTP_2, HTTP_1_1), asList(HTTP_1_1, HTTP_2), HttpProtocolVersion.of(2, 0), null},
                 {asList(HTTP_2, HTTP_1_1), singletonList(HTTP_2), HttpProtocolVersion.of(2, 0), null},
                 {asList(HTTP_2, HTTP_1_1), singletonList(HTTP_1_1), HttpProtocolVersion.HTTP_1_1, null},
-                {asList(HTTP_2, HTTP_1_1), singletonList("h3"), HttpProtocolVersion.HTTP_1_1, null},
+                {asList(HTTP_2, HTTP_1_1), singletonList("unknown"), HttpProtocolVersion.HTTP_1_1, null},
 
                 {asList(HTTP_1_1, HTTP_2), asList(HTTP_2, HTTP_1_1), HttpProtocolVersion.HTTP_1_1, null},
                 {asList(HTTP_1_1, HTTP_2), asList(HTTP_1_1, HTTP_2), HttpProtocolVersion.HTTP_1_1, null},
                 {asList(HTTP_1_1, HTTP_2), singletonList(HTTP_2), HttpProtocolVersion.of(2, 0), null},
                 {asList(HTTP_1_1, HTTP_2), singletonList(HTTP_1_1), HttpProtocolVersion.HTTP_1_1, null},
-                {asList(HTTP_1_1, HTTP_2), singletonList("h3"), HttpProtocolVersion.HTTP_1_1, null},
+                {asList(HTTP_1_1, HTTP_2), singletonList("unknown"), HttpProtocolVersion.HTTP_1_1, null},
 
                 {singletonList(HTTP_2), asList(HTTP_2, HTTP_1_1), HttpProtocolVersion.of(2, 0), null},
                 {singletonList(HTTP_2), asList(HTTP_1_1, HTTP_2), HttpProtocolVersion.of(2, 0), null},
                 {singletonList(HTTP_2), singletonList(HTTP_2), HttpProtocolVersion.of(2, 0), null},
                 {singletonList(HTTP_2), singletonList(HTTP_1_1), HttpProtocolVersion.HTTP_1_1, null},
-                {singletonList(HTTP_2), singletonList("h3"), HttpProtocolVersion.HTTP_1_1, null},
+                {singletonList(HTTP_2), singletonList("unknown"), HttpProtocolVersion.HTTP_1_1, null},
 
                 {singletonList(HTTP_1_1), asList(HTTP_2, HTTP_1_1), HttpProtocolVersion.HTTP_1_1, null},
                 {singletonList(HTTP_1_1), asList(HTTP_1_1, HTTP_2), HttpProtocolVersion.HTTP_1_1, null},
                 {singletonList(HTTP_1_1), singletonList(HTTP_2), HttpProtocolVersion.HTTP_1_1, null},
                 {singletonList(HTTP_1_1), singletonList(HTTP_1_1), HttpProtocolVersion.HTTP_1_1, null},
-                {singletonList(HTTP_1_1), singletonList("h3"), HttpProtocolVersion.HTTP_1_1, null},
+                {singletonList(HTTP_1_1), singletonList("unknown"), HttpProtocolVersion.HTTP_1_1, null},
 
-                {singletonList("h3"), asList(HTTP_2, HTTP_1_1), HttpProtocolVersion.HTTP_1_1, null},
-                {singletonList("h3"), asList(HTTP_1_1, HTTP_2), HttpProtocolVersion.HTTP_1_1, null},
-                {singletonList("h3"), singletonList(HTTP_2), HttpProtocolVersion.HTTP_1_1, null},
-                {singletonList("h3"), singletonList(HTTP_1_1), HttpProtocolVersion.HTTP_1_1, null},
-                {singletonList("h3"), singletonList("h3"), null, ClosedChannelException.class},
+                {singletonList("unknown"), asList(HTTP_2, HTTP_1_1), HttpProtocolVersion.HTTP_1_1, null},
+                {singletonList("unknown"), asList(HTTP_1_1, HTTP_2), HttpProtocolVersion.HTTP_1_1, null},
+                {singletonList("unknown"), singletonList(HTTP_2), HttpProtocolVersion.HTTP_1_1, null},
+                {singletonList("unknown"), singletonList(HTTP_1_1), HttpProtocolVersion.HTTP_1_1, null},
+                {singletonList("unknown"), singletonList("unknown"), null, ClosedChannelException.class},
         });
     }
 

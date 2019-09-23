@@ -205,7 +205,7 @@ final class AlpnServerContext {
         public void exceptionCaught(final ChannelHandlerContext ctx, final Throwable cause) {
             LOGGER.warn("{} Failed to select the application-level protocol:", ctx.channel(), cause);
             if (!failSubscriber(cause)) {
-                // Propagate exception in the pipeline if subscribed is already complete
+                // Propagate exception in the pipeline if subscriber is already complete
                 ctx.fireExceptionCaught(cause);
                 ctx.close();
             }
