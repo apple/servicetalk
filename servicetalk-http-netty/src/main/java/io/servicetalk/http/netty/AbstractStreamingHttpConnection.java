@@ -54,6 +54,8 @@ import static java.util.Objects.requireNonNull;
 abstract class AbstractStreamingHttpConnection<CC extends NettyConnectionContext>
         implements FilterableStreamingHttpConnection, ClientInvoker<FlushStrategy> {
 
+    private static final IgnoreConsumedEvent<Integer> ZERO_MAX_CONCURRECNY_EVENT = new IgnoreConsumedEvent<>(0);
+
     final CC connection;
     final HttpExecutionContext executionContext;
     private final Publisher<? extends ConsumableEvent<Integer>> maxConcurrencySetting;
@@ -67,7 +69,7 @@ abstract class AbstractStreamingHttpConnection<CC extends NettyConnectionContext
         this.executionContext = requireNonNull(executionContext);
         this.reqRespFactory = requireNonNull(reqRespFactory);
         maxConcurrencySetting = from(new IgnoreConsumedEvent<>(maxPipelinedRequests))
-                .concat(connection.onClosing()).concat(succeeded(new IgnoreConsumedEvent<>(0)));
+                .concat(connection.onClosing()).concat(succeeded(ZERO_MAX_CONCURRECNY_EVENT));
         this.headersFactory = headersFactory;
     }
 

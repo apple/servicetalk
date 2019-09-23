@@ -132,15 +132,13 @@ final class NettyHttpServer {
         final NettyHttpServerConnection.CompositeFlushStrategy flushStrategy =
                 new NettyHttpServerConnection.CompositeFlushStrategy(config.tcpConfig().flushStrategy());
 
-        Single<NettyHttpServerConnection> result = DefaultNettyConnection.initChannel(channel,
+        return showPipeline(DefaultNettyConnection.initChannel(channel,
                 httpExecutionContext.bufferAllocator(), httpExecutionContext.executor(),
                 new TerminalPredicate<>(LAST_CHUNK_PREDICATE), closeHandler, flushStrategy,
                 initializer.andThen(getChannelInitializer(config, closeHandler)),
                 httpExecutionContext.executionStrategy())
                 .map(conn -> new NettyHttpServerConnection(conn, service, httpExecutionContext.executionStrategy(),
-                        flushStrategy, config.headersFactory(), drainRequestPayloadBody));
-
-        return showPipeline(result, "HTTP/1.1", channel.pipeline());
+                        flushStrategy, config.headersFactory(), drainRequestPayloadBody)), "HTTP/1.1", channel);
     }
 
     private static ChannelInitializer getChannelInitializer(final ReadOnlyHttpServerConfig config,
