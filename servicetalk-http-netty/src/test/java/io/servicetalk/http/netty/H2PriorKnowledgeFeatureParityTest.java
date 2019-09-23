@@ -105,6 +105,7 @@ import java.util.function.Consumer;
 import javax.annotation.Nullable;
 
 import static io.netty.handler.codec.http.HttpHeaderNames.CONTENT_TYPE;
+import static io.netty.handler.codec.http2.Http2CodecUtil.SMALLEST_MAX_CONCURRENT_STREAMS;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.HttpEventKey.MAX_CONCURRENCY;
@@ -127,7 +128,9 @@ import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.Matchers.emptyIterable;
 import static org.hamcrest.Matchers.hasItems;
+import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isEmptyString;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -697,6 +700,8 @@ public class H2PriorKnowledgeFeatureParityTest {
 
     @Test
     public void clientRespectsSettingsFrame() throws Exception {
+        assumeTrue(h2PriorKnowledge);   // only h2 supports settings frames
+
         int expectedMaxConcurrent = 1;
         BlockingQueue<FilterableStreamingHttpConnection> connectionQueue = new LinkedBlockingQueue<>();
         BlockingQueue<Publisher<? extends ConsumableEvent<Integer>>> maxConcurrentPubQueue =
@@ -735,22 +740,28 @@ public class H2PriorKnowledgeFeatureParityTest {
             SpScPublisherProcessor<Buffer> requestPayload = new SpScPublisherProcessor<>(16);
             client.request(client.post("/0").payloadBody(requestPayload)).toFuture().get();
 
+            serverChannelLatch.await();
             Channel serverParentChannel = serverParentChannelRef.get();
             serverParentChannel.writeAndFlush(new DefaultHttp2SettingsFrame(
                     new Http2Settings().maxConcurrentStreams(expectedMaxConcurrent))).syncUninterruptibly();
 
             Iterator<? extends ConsumableEvent<Integer>> maxItr = maxConcurrentPubQueue.take().toIterable().iterator();
+            // Verify that the initial maxConcurrency value is the default number
+            assertThat("No initial maxConcurrency value", maxItr.hasNext(), is(true));
+            ConsumableEvent<Integer> next = maxItr.next();
+            assertThat(next, is(notNullValue()));
+            assertThat("First event is not the default", next.event(), is(SMALLEST_MAX_CONCURRENT_STREAMS));
             // We previously made a request, and intentionally didn't complete the request body. We want to verify
-            // that we have received the SETTINGS frame reducing the total number of streams to 1. After this point
-            // we want to issue a new request and verify it selects a new connection.
-            if (maxItr.hasNext()) {
-                ConsumableEvent<Integer> next = maxItr.next();
-                assertNotNull(next);
-                Integer nextValue = next.event();
-                assertNotNull(nextValue);
-                assertEquals(expectedMaxConcurrent, nextValue.intValue());
-            }
+            // that we have received the SETTINGS frame reducing the total number of streams to 1.
+            assertThat("No maxConcurrency value received", maxItr.hasNext(), is(true));
+            next = maxItr.next();
+            assertThat(next, is(notNullValue()));
+            assertThat("maxConcurrency did not change to the expected value", next.event(), is(expectedMaxConcurrent));
 
+            // Wait for a server to receive a settings ack
+            serverSettingsAckLatch.await();
+
+            // After this point we want to issue a new request and verify that client selects a new connection.
             SpScPublisherProcessor<Buffer> requestPayload2 = new SpScPublisherProcessor<>(16);
             client.request(client.post("/1").payloadBody(requestPayload2)).toFuture().get();
 
