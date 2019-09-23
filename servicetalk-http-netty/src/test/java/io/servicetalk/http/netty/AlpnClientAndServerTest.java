@@ -32,7 +32,6 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
-import java.nio.channels.ClosedChannelException;
 import java.util.Collection;
 import javax.annotation.Nullable;
 
@@ -55,7 +54,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.rules.ExpectedException.none;
 
 @RunWith(Parameterized.class)
-public class AlpnServerTest {
+public class AlpnClientAndServerTest {
 
     private static final String PAYLOAD_BODY = "Hello World!";
 
@@ -71,12 +70,12 @@ public class AlpnServerTest {
     @Nullable
     private final Class<? extends Throwable> expectedExceptionType;
 
-    public AlpnServerTest(Collection<String> serverAlpnProtocols,
-                          Collection<String> clientAlpnProtocols,
-                          HttpProtocolVersion expectedProtocol,
-                          @Nullable Class<? extends Throwable> expectedExceptionType) throws Exception {
-        serverContext = startServer(serverAlpnProtocols);
-        client = startClient(serverHostAndPort(serverContext), clientAlpnProtocols, expectedProtocol);
+    public AlpnClientAndServerTest(Collection<String> serverAlpnProtocols,
+                                   Collection<String> clientAlpnProtocols,
+                                   HttpProtocolVersion expectedProtocol,
+                                   @Nullable Class<? extends Throwable> expectedExceptionType) throws Exception {
+        serverContext = startServer(serverAlpnProtocols, expectedProtocol);
+        client = startClient(serverHostAndPort(serverContext), clientAlpnProtocols);
         this.expectedProtocol = expectedProtocol;
         this.expectedExceptionType = expectedExceptionType;
     }
@@ -113,28 +112,27 @@ public class AlpnServerTest {
                 {singletonList("unknown"), asList(HTTP_1_1, HTTP_2), HttpProtocolVersion.HTTP_1_1, null},
                 {singletonList("unknown"), singletonList(HTTP_2), HttpProtocolVersion.HTTP_1_1, null},
                 {singletonList("unknown"), singletonList(HTTP_1_1), HttpProtocolVersion.HTTP_1_1, null},
-                {singletonList("unknown"), singletonList("unknown"), null, ClosedChannelException.class},
+                {singletonList("unknown"), singletonList("unknown"), null, IllegalStateException.class},
         });
     }
 
-    private static ServerContext startServer(Collection<String> supportedProtocols) throws Exception {
+    private static ServerContext startServer(Collection<String> supportedProtocols,
+                                             HttpProtocolVersion expectedProtocol) throws Exception {
         return HttpServers.forAddress(localAddress(0))
                 .secure()
                 .provider(OPENSSL)
                 .applicationProtocolNegotiation(ALPN, NO_ADVERTISE, ACCEPT, supportedProtocols)
                 .commit(DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey)
                 .listenBlocking((ctx, request, responseFactory) -> {
+                    assertThat(request.version(), is(expectedProtocol));
                     assertThat(ctx.sslSession(), is(notNullValue()));
                     return responseFactory.ok().payloadBody(PAYLOAD_BODY, textSerializer());
                 })
                 .toFuture().get();
     }
 
-    private static BlockingHttpClient startClient(HostAndPort hostAndPort, Collection<String> supportedProtocols,
-                                                  HttpProtocolVersion expectedProtocol) {
+    private static BlockingHttpClient startClient(HostAndPort hostAndPort, Collection<String> supportedProtocols) {
         return HttpClients.forSingleAddress(hostAndPort)
-                // TODO: remove h2PriorKnowledge setting when client will support ALPN
-                .h2PriorKnowledge(HttpProtocolVersion.of(2, 0).equals(expectedProtocol))
                 .secure()
                 .disableHostnameVerification()
                 // required for generated test certificates

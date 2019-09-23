@@ -17,15 +17,18 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpExecutionContext;
-import io.servicetalk.tcp.netty.internal.ReadOnlyTcpClientConfig;
 import io.servicetalk.tcp.netty.internal.TcpClientChannelInitializer;
 import io.servicetalk.tcp.netty.internal.TcpConnector;
+import io.servicetalk.transport.netty.internal.ChannelInitializer;
 import io.servicetalk.transport.netty.internal.CloseHandler;
 import io.servicetalk.transport.netty.internal.DefaultNettyConnection;
 import io.servicetalk.transport.netty.internal.NettyConnection;
 import io.servicetalk.transport.netty.internal.NettyConnection.TerminalPredicate;
 
+import io.netty.channel.Channel;
+
 import static io.servicetalk.http.netty.HeaderUtils.LAST_CHUNK_PREDICATE;
+import static io.servicetalk.http.netty.HttpDebugUtils.showPipeline;
 import static io.servicetalk.transport.netty.internal.CloseHandler.forPipelinedRequestResponse;
 
 final class StreamingConnectionFactory {
@@ -34,19 +37,21 @@ final class StreamingConnectionFactory {
     }
 
     static <ResolvedAddress> Single<? extends NettyConnection<Object, Object>> buildStreaming(
-            final HttpExecutionContext executionContext, ResolvedAddress resolvedAddress,
-            ReadOnlyHttpClientConfig roConfig) {
-        // This state is read only, so safe to keep a copy across Subscribers
-        final ReadOnlyTcpClientConfig roTcpClientConfig = roConfig.tcpClientConfig();
-        return TcpConnector.connect(null, resolvedAddress, roTcpClientConfig, executionContext)
-                .flatMap(channel -> {
-                    CloseHandler closeHandler = forPipelinedRequestResponse(true, channel.config());
-                    return DefaultNettyConnection.initChannel(channel, executionContext.bufferAllocator(),
-                            executionContext.executor(), new TerminalPredicate<>(LAST_CHUNK_PREDICATE), closeHandler,
-                            roTcpClientConfig.flushStrategy(), new TcpClientChannelInitializer(
-                                    roConfig.tcpClientConfig(), roConfig.hasProxy())
-                                    .andThen(new HttpClientChannelInitializer(roConfig, closeHandler)),
-                            executionContext.executionStrategy());
-                });
+            final HttpExecutionContext executionContext, final ResolvedAddress resolvedAddress,
+            final ReadOnlyHttpClientConfig roConfig) {
+        return TcpConnector.connect(null, resolvedAddress, roConfig.tcpClientConfig(), executionContext)
+                .flatMap(channel -> createConnection(channel, executionContext, roConfig,
+                        new TcpClientChannelInitializer(roConfig.tcpClientConfig(), roConfig.hasProxy())));
+    }
+
+    static Single<? extends DefaultNettyConnection<Object, Object>> createConnection(final Channel channel,
+            final HttpExecutionContext executionContext, final ReadOnlyHttpClientConfig config,
+            final ChannelInitializer initializer) {
+        final CloseHandler closeHandler = forPipelinedRequestResponse(true, channel.config());
+        return showPipeline(DefaultNettyConnection.initChannel(channel, executionContext.bufferAllocator(),
+                executionContext.executor(), new TerminalPredicate<>(LAST_CHUNK_PREDICATE), closeHandler,
+                config.tcpClientConfig().flushStrategy(),
+                initializer.andThen(new HttpClientChannelInitializer(config, closeHandler)),
+                executionContext.executionStrategy()), "HTTP/1.1", channel);
     }
 }
