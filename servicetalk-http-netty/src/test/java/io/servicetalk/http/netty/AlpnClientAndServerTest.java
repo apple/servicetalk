@@ -112,7 +112,7 @@ public class AlpnClientAndServerTest {
                 {singletonList("unknown"), asList(HTTP_1_1, HTTP_2), HttpProtocolVersion.HTTP_1_1, null},
                 {singletonList("unknown"), singletonList(HTTP_2), HttpProtocolVersion.HTTP_1_1, null},
                 {singletonList("unknown"), singletonList(HTTP_1_1), HttpProtocolVersion.HTTP_1_1, null},
-                {singletonList("unknown"), singletonList("unknown"), null, IllegalStateException.class}
+                {singletonList("unknown"), singletonList("unknown"), null, IllegalStateException.class},
         });
     }
 

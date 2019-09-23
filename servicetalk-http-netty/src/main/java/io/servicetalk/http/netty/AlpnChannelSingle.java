@@ -39,8 +39,8 @@ import java.net.SocketAddress;
 import javax.annotation.Nullable;
 import javax.net.ssl.SSLSession;
 
-import static io.servicetalk.http.netty.ApplicationProtocolNames.HTTP_1_1;
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
+import static io.servicetalk.http.netty.ApplicationProtocolNames.HTTP_1_1;
 
 /**
  * A {@link Single} that initializes ALPN handler and completes after protocol negotiation.
@@ -104,8 +104,9 @@ final class AlpnChannelSingle extends SubscribableSingle<AlpnChannelSingle.AlpnC
         public void handlerAdded(final ChannelHandlerContext ctx) throws Exception {
             super.handlerAdded(ctx);
             if (forceRead) {
-                // Force a read to get the SSL handshake started. We initialize pipeline before SslHandshakeCompletionEvent
-                // will complete, therefore, no data will be propagated before we finish initialization.
+                // Force a read to get the SSL handshake started. We initialize pipeline before
+                // SslHandshakeCompletionEvent will complete, therefore, no data will be propagated before we finish
+                // initialization.
                 ctx.read();
             }
         }
@@ -120,8 +121,6 @@ final class AlpnChannelSingle extends SubscribableSingle<AlpnChannelSingle.AlpnC
             subscriber = null;
             subscriberCopy.onSuccess(connectionContext);
         }
-
-
 
         @Override
         protected void handshakeFailure(final ChannelHandlerContext ctx, final Throwable cause) {
@@ -149,7 +148,6 @@ final class AlpnChannelSingle extends SubscribableSingle<AlpnChannelSingle.AlpnC
             return false;
         }
     }
-
 
     /**
      * A {@link ConnectionContext} used for {@link ChannelInitializer} before ALPN completes.
