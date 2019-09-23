@@ -27,12 +27,12 @@ final class ApplicationProtocolNames {
     /**
      * {@code "http/1.1"}: HTTP version 1.1
      */
-    public static final String HTTP_1_1 = "http/1.1";
+    static final String HTTP_1_1 = "http/1.1";
 
     /**
      * {@code "h2"}: HTTP version 2
      */
-    public static final String HTTP_2 = "h2";
+    static final String HTTP_2 = "h2";
 
     private ApplicationProtocolNames() {
         // No instances
