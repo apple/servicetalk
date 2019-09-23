@@ -163,6 +163,8 @@ final class AlpnServerContext {
 
     private static final class AlpnServerHandler extends ApplicationProtocolNegotiationHandler {
 
+        private static final Logger LOGGER = LoggerFactory.getLogger(AlpnServerHandler.class);
+
         private final AlpnConnectionContext connectionContext;
         @Nullable
         private SingleSource.Subscriber<? super AlpnConnectionContext> subscriber;
@@ -195,21 +197,28 @@ final class AlpnServerContext {
 
         @Override
         protected void handshakeFailure(final ChannelHandlerContext ctx, final Throwable cause) {
-            failSubscriber(ctx, cause);
+            LOGGER.warn("{} TLS handshake failed:", ctx.channel(), cause);
+            failSubscriber(cause);
         }
 
         @Override
         public void exceptionCaught(final ChannelHandlerContext ctx, final Throwable cause) {
-            failSubscriber(ctx, cause);
+            LOGGER.warn("{} Failed to select the application-level protocol:", ctx.channel(), cause);
+            if (!failSubscriber(cause)) {
+                // Propagate exception in the pipeline if subscribed is already complete
+                ctx.fireExceptionCaught(cause);
+                ctx.close();
+            }
         }
 
-        private void failSubscriber(final ChannelHandlerContext ctx, final Throwable cause) {
+        private boolean failSubscriber(final Throwable cause) {
             if (subscriber != null) {
-                ctx.close();
                 final SingleSource.Subscriber<? super AlpnConnectionContext> subscriberCopy = subscriber;
                 subscriber = null;
                 subscriberCopy.onError(cause);
+                return true;
             }
+            return false;
         }
     }
 
