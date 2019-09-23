@@ -75,7 +75,7 @@ class H2ParentConnectionContext extends NettyChannelListenableAsyncCloseable imp
                     "handlerRemoved(..)");
     private static final AtomicIntegerFieldUpdater<H2ParentConnectionContext> activeChildChannelsUpdater =
             AtomicIntegerFieldUpdater.newUpdater(H2ParentConnectionContext.class, "activeChildChannels");
-    private static final Logger LOGGER = LoggerFactory.getLogger(H2ClientParentConnectionContext.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(H2ParentConnectionContext.class);
     private static final ScheduledFuture<?> GRACEFUL_CLOSE_PING_PENDING = new NoopScheduledFuture();
     private static final ScheduledFuture<?> GRACEFUL_CLOSE_PING_ACK_RECV = new NoopScheduledFuture();
     private static final long GRACEFUL_CLOSE_PING_CONTENT = ThreadLocalRandom.current().nextLong();
@@ -245,10 +245,15 @@ class H2ParentConnectionContext extends NettyChannelListenableAsyncCloseable imp
 
         @Override
         public final void handlerAdded(ChannelHandlerContext ctx) {
-            delayedCancellable.delayedCancellable(ctx.channel()::close);
+            final Channel channel = ctx.channel();
+            delayedCancellable.delayedCancellable(channel::close);
             // Double check In the event of a late handler (or test utility like EmbeddedChannel) check activeness.
-            if (ctx.channel().isActive()) {
+            if (channel.isActive()) {
                 doChannelActive(ctx);
+            }
+            if (!channel.config().isAutoRead()) {
+                // auto read is required for h2
+                channel.config().setAutoRead(true);
             }
         }
 

@@ -30,10 +30,10 @@ import static io.netty.handler.logging.LogLevel.TRACE;
 
 final class H2ServerParentChannelInitializer implements ChannelInitializer {
     private final ReadOnlyH2ServerConfig config;
-    private final io.netty.channel.ChannelInitializer streamChannelInitializer;
+    private final io.netty.channel.ChannelInitializer<Channel> streamChannelInitializer;
 
     H2ServerParentChannelInitializer(final ReadOnlyH2ServerConfig config,
-                                     final io.netty.channel.ChannelInitializer streamChannelInitializer) {
+                                     final io.netty.channel.ChannelInitializer<Channel> streamChannelInitializer) {
         this.config = config;
         this.streamChannelInitializer = streamChannelInitializer;
     }

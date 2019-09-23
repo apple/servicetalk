@@ -19,6 +19,7 @@ import io.servicetalk.transport.api.SecurityConfigurator;
 
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.handler.ssl.ApplicationProtocolConfig;
+import io.netty.handler.ssl.OpenSsl;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslHandler;
 import io.netty.handler.ssl.SslProvider;
@@ -31,6 +32,8 @@ import javax.annotation.Nullable;
 import javax.net.ssl.SNIHostName;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLParameters;
+
+import static io.netty.handler.ssl.OpenSsl.isAlpnSupported;
 
 /**
  * Utility for SSL.
@@ -167,16 +170,23 @@ final class SslUtils {
      * @return the netty provider.
      */
     @Nullable
-    static SslProvider toNettySslProvider(SecurityConfigurator.SslProvider provider) {
+    static SslProvider toNettySslProvider(SecurityConfigurator.SslProvider provider,
+                                          @Nullable SecurityConfigurator.ApplicationProtocolNegotiation protocol) {
         switch (provider) {
             case AUTO:
-                return null;
+                return protocol == SecurityConfigurator.ApplicationProtocolNegotiation.ALPN ?
+                        (isAlpnSupported() ? SslProvider.OPENSSL : SslProvider.JDK) : null;
             case JDK:
                 return SslProvider.JDK;
             case OPENSSL:
+                OpenSsl.ensureAvailability();
+                if (protocol == SecurityConfigurator.ApplicationProtocolNegotiation.ALPN && !isAlpnSupported()) {
+                    throw new IllegalStateException(
+                            "ALPN configured but not supported by installed version of OpenSSL");
+                }
                 return SslProvider.OPENSSL;
             default:
-                throw new Error();
+                throw new Error("Unknown SSL provider specified: " + provider);
         }
     }
 }
