@@ -17,6 +17,18 @@
 <FindBugsFilter>
   <!-- Generated code by protobuf can be ignored -->
   <Match>
-    <Source name="TesterProto.java"/>
+    <Or>
+      <Source name="~CompatGrpc\.java"/>
+      <Source name="~TesterGrpc\.java"/>
+      <Source name="~CompatProto\.java"/>
+      <Source name="~TesterProto\.java"/>
+    </Or>
+  </Match>
+  <Match>
+    <Source name="ProtocolCompatibilityTest.java"/>
+    <Or>
+      <Bug pattern="SF_SWITCH_FALLTHROUGH"/>
+      <Bug pattern="SF_SWITCH_NO_DEFAULT"/>
+    </Or>
   </Match>
 </FindBugsFilter>
