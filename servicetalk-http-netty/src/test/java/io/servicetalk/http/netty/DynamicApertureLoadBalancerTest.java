@@ -82,7 +82,7 @@ public class DynamicApertureLoadBalancerTest {
         try {
             int nThreads = Runtime.getRuntime().availableProcessors();
             exec = Executors.newFixedThreadPool(nThreads);
-            List<Callable<Integer>> tasks = IntStream.range(0, 2 * nThreads)
+            List<Callable<Integer>> tasks = IntStream.range(0, nThreads)
                     .mapToObj(__ ->
                             (Callable<Integer>) () -> {
                                 HttpResponse response = client.request(client.get("/test"));

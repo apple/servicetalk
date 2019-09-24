@@ -15,6 +15,7 @@
  */
 package io.servicetalk.loadbalancer;
 
+import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.ScoreSupplier;
 
 import java.util.List;
@@ -22,10 +23,26 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.BiFunction;
 import java.util.function.Predicate;
 
+/**
+ * This {@link LoadBalancer} selection algorithm is based on work by Michael David Mitzenmacher in The Power of Two
+ * Choices in Randomized Load Balancing.
+ *
+ * @param <T> type of {@link ScoreSupplier} resource.
+ *
+ * @see <a href="https://www.eecs.harvard.edu/~michaelm/postscripts/tpds2001.pdf">Mitzenmacher (2001) The Power of Two
+ * Choices in Randomized Load Balancing</a>
+ */
 public class P2CSelector<T extends ScoreSupplier> implements BiFunction<List<T>, Predicate<T>, T> {
 
     private final int maxEffort;
 
+    /**
+     * Creates a new instance.
+     *
+     * @param maxEffort maximum nr of match attempts against the {@code selector} {@link Predicate} with selections from
+     * the provided {@code entries}, such that selection time is bound by {@code O(maxEffort)} upon which a {@code
+     * NULL} value is returned.
+     */
     public P2CSelector(int maxEffort) {
         this.maxEffort = maxEffort;
     }
@@ -45,7 +62,7 @@ public class P2CSelector<T extends ScoreSupplier> implements BiFunction<List<T>,
                 }
                 return null;
             default:
-                for (int j = maxEffort; j > 0 && size > 1; j--) {
+                for (int j = maxEffort; j > 0; j--) {
                     int i1 = rnd.nextInt(size);
                     int i2 = rnd.nextInt(size);
 
