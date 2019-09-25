@@ -15,6 +15,7 @@
  */
 package io.servicetalk.concurrent.api.single;
 
+import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.ExecutorRule;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TestCancellable;
@@ -49,9 +50,9 @@ public class SingleToPublisherTest {
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
     @Rule
-    public final ExecutorRule executorRule = ExecutorRule.newRule();
+    public final ExecutorRule<Executor> executorRule = ExecutorRule.newRule();
 
-    private TestPublisherSubscriber<String> verifier = new TestPublisherSubscriber<>();
+    private final TestPublisherSubscriber<String> verifier = new TestPublisherSubscriber<>();
 
     @Test
     public void testSuccessBeforeRequest() {
@@ -225,6 +226,8 @@ public class SingleToPublisherTest {
                         errors.add(new AssertionError("Invalid thread invoked onSuccess " +
                                 "(from Completable). Thread: " + currentThread()));
                     }
+                })
+                .afterOnSuccess(__ -> {
                     if (receivedOnSuccessFromSingle != null) {
                         receivedOnSuccessFromSingle.countDown();
                     }
@@ -248,11 +251,10 @@ public class SingleToPublisherTest {
                                 "(from Publisher). Thread: " + currentThread()));
                     }
                 })
-                .beforeOnComplete(analyzed::countDown)
-                .beforeOnError(__ -> analyzed.countDown())
                 .afterOnSubscribe(__ -> receivedOnSubscribe.countDown())
-        )
-                .subscribe(subscriber);
+                .afterOnComplete(analyzed::countDown)
+                .afterOnError(__ -> analyzed.countDown())
+        ).subscribe(subscriber);
         single.onSubscribe(new TestCancellable()); // await subscribe
         receivedOnSubscribe.await();
         assertThat("Single not subscribed.", single.isSubscribed(), is(true));
