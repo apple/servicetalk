@@ -32,7 +32,7 @@ import java.util.function.Predicate;
  * @see <a href="https://www.eecs.harvard.edu/~michaelm/postscripts/tpds2001.pdf">Mitzenmacher (2001) The Power of Two
  * Choices in Randomized Load Balancing</a>
  */
-public class P2CSelector<T extends ScoreSupplier> implements BiFunction<List<T>, Predicate<T>, T> {
+final class P2CSelector<T extends ScoreSupplier> implements BiFunction<List<T>, Predicate<T>, T> {
 
     private final int maxEffort;
 
@@ -43,7 +43,7 @@ public class P2CSelector<T extends ScoreSupplier> implements BiFunction<List<T>,
      * the provided {@code entries}, such that selection time is bound by {@code O(maxEffort)} upon which a {@code
      * NULL} value is returned.
      */
-    public P2CSelector(int maxEffort) {
+    P2CSelector(int maxEffort) {
         this.maxEffort = maxEffort;
     }
 

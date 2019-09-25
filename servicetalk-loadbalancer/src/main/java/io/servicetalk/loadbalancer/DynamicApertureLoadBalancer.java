@@ -36,13 +36,14 @@ import org.slf4j.LoggerFactory;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
-import static io.servicetalk.loadbalancer.LoadBalancerUtils.NO_AVAILABLE_CONNECTION_SELECT_MATCH_CNX_EXCEPTION;
+import static io.servicetalk.loadbalancer.LoadBalancerUtils.noAvailableConnectionSelectMatchCnxException;
 
 public final class DynamicApertureLoadBalancer<R, C extends LoadBalancedConnection> implements LoadBalancer<C> {
 
@@ -68,7 +69,7 @@ public final class DynamicApertureLoadBalancer<R, C extends LoadBalancedConnecti
 
         final List<AsyncCloseable> closeables = new ArrayList<>();
         final DefaultAddressFactory<R, C> addressFactory = new DefaultAddressFactory<>(connectionFactory,
-                evt -> new ConnectionAwareLoadBalancedAddress<>(evt.address(), connectionFactory));
+                (evt, cf) -> new ConnectionAwareLoadBalancedAddress<>(evt.address(), cf));
         closeables.add(addressFactory);
 
         addressSelector = new DynamicApertureListBasedAddressSelector<>(bottomScore, topScore,
@@ -79,7 +80,7 @@ public final class DynamicApertureLoadBalancer<R, C extends LoadBalancedConnecti
         closeables.add(connSelector);
 
         final Cancellable cancellable = subscribeToServiceDiscovery(
-                sdePublisher.map(addressFactory),
+                sdePublisher.map(addressFactory).filter(Objects::nonNull), // NULL when addressFactory closed
                 addressSelector::add,
                 address -> {
                     addressSelector.remove(address);
@@ -97,6 +98,10 @@ public final class DynamicApertureLoadBalancer<R, C extends LoadBalancedConnecti
 
     @Override
     public Single<C> selectConnection(final Predicate<C> selector) {
+        return Single.defer(() -> select0(selector).subscribeShareContext());
+    }
+
+    private Single<C> select0(final Predicate<C> selector) {
         addressSelector.optimizeAperture(false);
         return connSelector.select(selector)
                 .recoverWith(ex -> {
@@ -106,7 +111,7 @@ public final class DynamicApertureLoadBalancer<R, C extends LoadBalancedConnecti
                                     .beforeOnSuccess(connSelector::add)
                                     .flatMap(lc -> selector.test(lc) ?
                                             Single.succeeded(lc) :
-                                            Single.failed(NO_AVAILABLE_CONNECTION_SELECT_MATCH_CNX_EXCEPTION))
+                                            Single.failed(noAvailableConnectionSelectMatchCnxException()))
                     );
                 });
     }

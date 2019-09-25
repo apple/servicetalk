@@ -17,7 +17,6 @@ package io.servicetalk.loadbalancer;
 
 import io.servicetalk.client.api.LoadBalancedAddress;
 import io.servicetalk.client.api.LoadBalancedConnection;
-import io.servicetalk.client.api.NoAvailableHostException;
 import io.servicetalk.concurrent.api.AsyncCloseable;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
@@ -30,7 +29,16 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.function.BiFunction;
 import java.util.function.Predicate;
 
-class DynamicApertureListBasedAddressSelector<C extends LoadBalancedConnection> implements AddressSelector<C> {
+import static io.servicetalk.concurrent.api.Single.defer;
+import static io.servicetalk.concurrent.api.Single.failed;
+import static io.servicetalk.concurrent.api.Single.succeeded;
+import static io.servicetalk.loadbalancer.LoadBalancerUtils.LB_CLOSED_SELECT_CNX_EXCEPTION;
+import static io.servicetalk.loadbalancer.LoadBalancerUtils.NO_ACTIVE_HOSTS_SELECT_CNX_EXCEPTION;
+import static io.servicetalk.loadbalancer.LoadBalancerUtils.newCloseable;
+import static io.servicetalk.loadbalancer.LoadBalancerUtils.noAvailableAddressesSelectMatchCnxException;
+import static io.servicetalk.loadbalancer.LoadBalancerUtils.selectAddressFailedSelectCnxException;
+
+final class DynamicApertureListBasedAddressSelector<C extends LoadBalancedConnection> implements AddressSelector<C> {
 
     private static final AtomicLongFieldUpdater<DynamicApertureListBasedAddressSelector> apertureRefreshTimeUpdater =
             AtomicLongFieldUpdater.newUpdater(DynamicApertureListBasedAddressSelector.class, "apertureRefreshTime");
@@ -67,7 +75,7 @@ class DynamicApertureListBasedAddressSelector<C extends LoadBalancedConnection> 
         assert bottomScore < topScore;
         this.apertureRefreshNs = apertureRefreshTime.toNanos();
         this.selector = selector;
-        closeable = LoadBalancerUtils.newCloseable(() -> {
+        closeable = newCloseable(() -> {
             HashSet<AsyncCloseable> addresses = new HashSet<>();
             addresses.addAll(availableAddresses.close());
             addresses.addAll(activeAddresses.close());
@@ -77,20 +85,23 @@ class DynamicApertureListBasedAddressSelector<C extends LoadBalancedConnection> 
 
     @Override
     public Single<LoadBalancedAddress<C>> select() {
-        List<LoadBalancedAddress<C>> actives = activeAddresses.currentEntries();
-        if (actives.size() == 0) {
-            if (activeAddresses.isClosed()) {
-                return Single.failed(LoadBalancerUtils.LB_CLOSED_SELECT_CNX_EXCEPTION);
-            }
-            // TODO(jayv): this could delay completion until active addresses have been observed
-            return Single.failed(LoadBalancerUtils.NO_ACTIVE_HOSTS_SELECT_CNX_EXCEPTION);
-        }
+        return defer(() -> select0().subscribeShareContext());
+    }
+
+    private Single<LoadBalancedAddress<C>> select0() {
         optimizeAperture(false);
-        LoadBalancedAddress<C> addr = selector.apply(actives, __ -> true);
-        if (addr == null) {
-            return Single.failed(new NoAvailableHostException("No Available connection matching predicate"));
+        try {
+            List<LoadBalancedAddress<C>> entries = activeAddresses.currentEntries();
+            LoadBalancedAddress<C> addr = selector.apply(entries, __ -> true);
+            return addr == null ?
+                    failed(activeAddresses.isClosed() ? LB_CLOSED_SELECT_CNX_EXCEPTION :
+                            entries.isEmpty() ?
+                                    NO_ACTIVE_HOSTS_SELECT_CNX_EXCEPTION :
+                                    noAvailableAddressesSelectMatchCnxException()) :
+                    succeeded(addr);
+        } catch (Throwable t) {
+            return failed(selectAddressFailedSelectCnxException(t));
         }
-        return Single.succeeded(addr);
     }
 
     void optimizeAperture(boolean forced) {
@@ -170,8 +181,8 @@ class DynamicApertureListBasedAddressSelector<C extends LoadBalancedConnection> 
         activeAddresses.remove(address);
     }
 
-    @Override
-    public boolean isReady() {
+    // For use by the LB SD mutator thread only
+    boolean isReady() {
         return !activeAddresses.currentEntries().isEmpty();
     }
 

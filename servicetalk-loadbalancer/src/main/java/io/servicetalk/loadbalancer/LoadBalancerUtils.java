@@ -37,15 +37,27 @@ final class LoadBalancerUtils {
             unknownStackTrace(new NoAvailableHostException("No hosts are available to connect."),
                     AddressSelector.class, "select()");
 
-    static final RuntimeException NO_AVAILABLE_CONNECTION_SELECT_CNX_EXCEPTION =
-            unknownStackTrace(new RuntimeException("No connections are available to select."),
-                    ConnectionSelector.class, "select()");
-
-    static final RuntimeException NO_AVAILABLE_CONNECTION_SELECT_MATCH_CNX_EXCEPTION =
-            unknownStackTrace(new RuntimeException("No connections matching predicate are available to select."),
-                    ConnectionSelector.class, "select()");
-
     private LoadBalancerUtils() {  /* no instances */ }
+
+    static RuntimeException selectAddressFailedSelectCnxException(Throwable cause) {
+        return new RuntimeException("No hosts selected, failed executing selector", cause);
+    }
+
+    static RuntimeException selectConnectionFailedSelectCnxException(Throwable cause) {
+        return new RuntimeException("No connection selected, failed executing selector", cause);
+    }
+
+    static RuntimeException noAvailableAddressesSelectMatchCnxException() {
+        return new RuntimeException("No hosts matching predicate are available to select.");
+    }
+
+    static RuntimeException noAvailableConnectionSelectCnxException() {
+        return new RuntimeException("No connections are available to select.");
+    }
+
+    static RuntimeException noAvailableConnectionSelectMatchCnxException() {
+        return new RuntimeException("No connections matching predicate are available to select.");
+    }
 
     static ListenableAsyncCloseable newCloseable(Supplier<Iterable<? extends AsyncCloseable>> closablesSupplier) {
         return AsyncCloseables.toAsyncCloseable(graceful -> {

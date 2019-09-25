@@ -27,8 +27,7 @@ import java.util.function.Predicate;
  * {@link LoadBalancedConnection}s.
  * @param <C> type of LoadBalancedConnection.
  */
-
-public interface ConnectionSelector<C extends LoadBalancedConnection> extends ListenableAsyncCloseable {
+interface ConnectionSelector<C extends LoadBalancedConnection> extends ListenableAsyncCloseable {
 
     /**
      * Returns an asynchronously produced {@link LoadBalancedConnection} matching a given {@link Predicate}.

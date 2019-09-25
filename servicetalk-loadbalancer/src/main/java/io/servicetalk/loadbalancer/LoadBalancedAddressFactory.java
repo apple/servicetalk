@@ -20,11 +20,13 @@ import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 
 import java.util.function.Function;
+import javax.annotation.Nullable;
 
 interface LoadBalancedAddressFactory<R,
         SDER extends ServiceDiscovererEvent<R>,
         SDEA extends ServiceDiscovererEvent<? extends LoadBalancedAddress>>
         extends Function<SDER, SDEA>, ListenableAsyncCloseable {
 
+    @Nullable
     SDEA apply(SDER event);
 }

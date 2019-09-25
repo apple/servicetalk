@@ -17,12 +17,21 @@ package io.servicetalk.loadbalancer;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import static java.util.Collections.emptyList;
 import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater;
 
-// TODO(jayv) this should implement BinarySearch to allow more effective updates
+/**
+ * This {@link List}-backed persistent data-structure helps with algorithms that require random access to a read-only
+ * snapshot of the data and allows for atomic {@link #add(Object)}, {@link #remove(Object)} and terminal {@link
+ * #close()}.
+ * <p>
+ * {@link CopyOnWriteArrayList} is similar, but doesn't expose a snapshot with random access nor a terminal state.
+ *
+ * @param <T> type of element in the list.
+ */
 final class CowList<T> {
 
     private static final List CLOSED_LIST = new ArrayList();
@@ -30,13 +39,15 @@ final class CowList<T> {
             currentEntriesUpdater = newUpdater(CowList.class, List.class, "currentEntries");
     private volatile List<T> currentEntries = emptyList();
 
-    public boolean add(final T entry) {
+    // TODO(jayv) this should implement BinarySearch to allow more effective add/remove
+    boolean add(final T entry) {
         List<T> current, entriesAdded;
         do {
             current = this.currentEntries;
             if (current == CLOSED_LIST) {
                 return false;
             }
+            // TODO(jayv) ideally the underlying data structure makes add()/remove() idempotent
             if (current.contains(entry)) {
                 return true;
             }
@@ -46,7 +57,8 @@ final class CowList<T> {
         return true;
     }
 
-    public void remove(final T entry) {
+    // TODO(jayv) this should implement BinarySearch to allow more effective add/remove
+    void remove(final T entry) {
         List<T> current, entriesRemoved;
         do {
             current = this.currentEntries;
@@ -58,11 +70,11 @@ final class CowList<T> {
         } while (!currentEntriesUpdater.compareAndSet(this, current, entriesRemoved));
     }
 
-    public List<T> currentEntries() {
+    List<T> currentEntries() {
         return currentEntries;
     }
 
-    public List<T> close() {
+    List<T> close() {
         List<T> current;
         do {
             current = currentEntries;
@@ -73,7 +85,7 @@ final class CowList<T> {
         return current;
     }
 
-    public boolean isClosed() {
+    boolean isClosed() {
         return currentEntries == CLOSED_LIST;
     }
 }

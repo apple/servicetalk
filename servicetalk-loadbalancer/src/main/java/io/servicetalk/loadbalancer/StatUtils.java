@@ -22,7 +22,7 @@ import java.util.concurrent.ThreadLocalRandom;
 /**
  * Statistical computation algorithms for streaming data with near O(1) memory requirement.
  */
-public final class StatUtils {
+final class StatUtils {
 
     private StatUtils() {
         // no instances
@@ -40,7 +40,7 @@ public final class StatUtils {
      * @see <a href="http://www.eckner.com/papers/Algorithms%20for%20Unevenly%20Spaced%20Time%20Series.pdf"> Eckner
      * (2019) Algorithms for Unevenly Spaced Time Series: Moving Averages and Other Rolling Operators (4.2 pp. 10)</a>
      */
-    public static class UnevenExpWeightedMovingAvg {
+    static class UnevenExpWeightedMovingAvg {
 
         /**
          * Mean lifetime, exponential decay.
@@ -60,7 +60,7 @@ public final class StatUtils {
          * <p>
          * @param halfLife time till the previously observed value decays to 50% of its initial value.
          */
-        public UnevenExpWeightedMovingAvg(final Duration halfLife) {
+        UnevenExpWeightedMovingAvg(final Duration halfLife) {
             tau = (long) (halfLife.toNanos() / Math.log(2));
         }
 
@@ -138,7 +138,7 @@ public final class StatUtils {
      * @see <a href="https://arxiv.org/pdf/1407.1121.pdf">Ma, Muthukrishnan, Sandler (2014) Frugal Streaming for
      * Estimating Quantiles:One (or two) memory suffices (Algorithm 3 Frugal-2U, pp. 5)</a>
      */
-    public static class StreamingQuantile {
+    static class StreamingQuantile {
 
         /**
          * Quantile to estimate, designated by {@code h/k} in the paper.
@@ -169,7 +169,7 @@ public final class StatUtils {
          *
          * @param quantile the value for the quantile to estimate
          */
-        public StreamingQuantile(final float quantile) {
+        StreamingQuantile(final float quantile) {
             hk = quantile;
         }
 

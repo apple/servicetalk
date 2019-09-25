@@ -22,6 +22,7 @@ import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.loadbalancer.StatUtils.UnevenExpWeightedMovingAvg;
 
 import java.time.Duration;
 
@@ -31,8 +32,8 @@ class ConnectionAwareLoadBalancedAddress<R, C extends LoadBalancedConnection, SD
     // Probably want this to be a low value, to notice spikes in load quickly
     public static final long SCORE_CACHE_TTL = Duration.ofSeconds(1).toNanos();
     private final CowList<C> connections = new CowList<>();
-    private final StatUtils.UnevenExpWeightedMovingAvg ewma =
-            new StatUtils.UnevenExpWeightedMovingAvg(Duration.ofSeconds(15));
+    private final UnevenExpWeightedMovingAvg ewma =
+            new UnevenExpWeightedMovingAvg(Duration.ofSeconds(15));
     private final R address;
     private final ConnectionFactory<R, C> cf;
     private final float cancelValue;

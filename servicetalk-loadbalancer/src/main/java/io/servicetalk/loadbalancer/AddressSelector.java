@@ -26,7 +26,7 @@ import io.servicetalk.concurrent.api.Single;
  * {@link LoadBalancedAddress}es.
  * @param <C> the type of {@link LoadBalancedConnection}.
  */
-public interface AddressSelector<C extends LoadBalancedConnection> extends ListenableAsyncCloseable {
+interface AddressSelector<C extends LoadBalancedConnection> extends ListenableAsyncCloseable {
 
     /**
      * Returns an asynchronously produced {@link LoadBalancedAddress}.
@@ -48,13 +48,4 @@ public interface AddressSelector<C extends LoadBalancedConnection> extends Liste
      * @param address the {@link LoadBalancedAddress}.
      */
     void remove(LoadBalancedAddress<C> address);
-
-    /**
-     * TODO(jayv): not convinced this is a good API
-     *
-     * Returns {@code TRUE} if this entity is likely to be able to select a {@link LoadBalancedAddress} immediately.
-     *
-     * @return {@code TRUE} if this entity is likely to be able to select a {@link LoadBalancedAddress} immediately.
-     */
-    boolean isReady();
 }

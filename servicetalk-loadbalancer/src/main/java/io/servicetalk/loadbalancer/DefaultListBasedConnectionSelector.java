@@ -24,7 +24,14 @@ import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.Predicate;
 
-class DefaultListBasedConnectionSelector<C extends LoadBalancedConnection> implements ConnectionSelector<C> {
+import static io.servicetalk.concurrent.api.Single.failed;
+import static io.servicetalk.concurrent.api.Single.succeeded;
+import static io.servicetalk.loadbalancer.LoadBalancerUtils.LB_CLOSED_SELECT_CNX_EXCEPTION;
+import static io.servicetalk.loadbalancer.LoadBalancerUtils.noAvailableConnectionSelectCnxException;
+import static io.servicetalk.loadbalancer.LoadBalancerUtils.noAvailableConnectionSelectMatchCnxException;
+import static io.servicetalk.loadbalancer.LoadBalancerUtils.selectConnectionFailedSelectCnxException;
+
+final class DefaultListBasedConnectionSelector<C extends LoadBalancedConnection> implements ConnectionSelector<C> {
 
     private final CowList<C> connections = new CowList<>();
     private final ListenableAsyncCloseable closeable;
@@ -37,18 +44,23 @@ class DefaultListBasedConnectionSelector<C extends LoadBalancedConnection> imple
 
     @Override
     public Single<C> select(final Predicate<C> predicate) {
-        List<C> entries = connections.currentEntries();
-        if (entries.size() == 0) {
-            if (connections.isClosed()) {
-                return Single.failed(LoadBalancerUtils.LB_CLOSED_SELECT_CNX_EXCEPTION);
-            }
-            return Single.failed(LoadBalancerUtils.NO_AVAILABLE_CONNECTION_SELECT_CNX_EXCEPTION);
+        return Single.defer(() -> select0(predicate).subscribeShareContext());
+    }
+
+    private Single<C> select0(final Predicate<C> predicate) {
+        try {
+            List<C> entries = connections.currentEntries();
+            C selection = selector.apply(entries, predicate);
+            return selection == null ?
+                    failed(connections.isClosed() ?
+                            LB_CLOSED_SELECT_CNX_EXCEPTION :
+                            entries.isEmpty() ?
+                                    noAvailableConnectionSelectCnxException() :
+                                    noAvailableConnectionSelectMatchCnxException()) :
+                    succeeded(selection);
+        } catch (Throwable t) {
+            return failed(selectConnectionFailedSelectCnxException(t));
         }
-        C selection = selector.apply(entries, predicate);
-        if (selection == null) {
-            return Single.failed(LoadBalancerUtils.NO_AVAILABLE_CONNECTION_SELECT_CNX_EXCEPTION);
-        }
-        return Single.succeeded(selection);
     }
 
     @Override
