@@ -190,12 +190,9 @@ public class SingleToPublisherTest {
         TestPublisherSubscriber<String> subscriber = new TestPublisherSubscriber<>();
         TestSingle<String> single = new TestSingle.Builder<String>().disableAutoOnSubscribe().build();
         CountDownLatch analyzed = publishOnOriginalIsPreserved0(errors, subscriber, single, null);
-        subscriber.request(Long.MAX_VALUE);
         single.onError(DELIBERATE_EXCEPTION);
         analyzed.await();
         assertThat("Unexpected errors observed: " + errors, errors, hasSize(0));
-        assertThat("Unexpected items received: " + subscriber.items(), subscriber.items(), hasSize(0));
-        assertThat("Subscriber is not marked as failed", subscriber.isErrored(), is(true));
         Throwable err = subscriber.takeError();
         assertThat("No error received.", err, is(notNullValue()));
         assertThat("Wrong error received.", err, is(sameInstance(DELIBERATE_EXCEPTION)));
