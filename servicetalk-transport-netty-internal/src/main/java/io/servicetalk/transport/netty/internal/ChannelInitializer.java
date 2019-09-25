@@ -15,8 +15,6 @@
  */
 package io.servicetalk.transport.netty.internal;
 
-import io.servicetalk.transport.api.ConnectionContext;
-
 import io.netty.channel.AdaptiveRecvByteBufAllocator;
 import io.netty.channel.Channel;
 
@@ -26,15 +24,14 @@ import io.netty.channel.Channel;
 public interface ChannelInitializer {
 
     /**
-     * Configures the passed channel and optionally alters the passed {@link ConnectionContext}.
+     * Configures the passed {@link Channel}.
+     * <p>
      * Typically, an initializer should add handlers to the channel at the end.
      * This makes it possible for the code using the initializer to create the order of the handlers in the pipeline.
      *
-     * @param channel Netty channel.
-     * @param context Service context for the channel.
-     * @return Service context for the channel which may or may not be the same as the passed {@code context}.
+     * @param channel Netty {@link Channel}.
      */
-    ConnectionContext init(Channel channel, ConnectionContext context);
+    void init(Channel channel);
 
     /**
      * Returns a new {@link ChannelInitializer} which will first invoke this initializer and then {@code after}.
@@ -43,7 +40,10 @@ public interface ChannelInitializer {
      * @return A new composite initializer.
      */
     default ChannelInitializer andThen(ChannelInitializer after) {
-        return (channel, context) -> after.init(channel, init(channel, context));
+        return channel -> {
+            init(channel);
+            after.init(channel);
+        };
     }
 
     /**
@@ -52,12 +52,9 @@ public interface ChannelInitializer {
      * @return Default initializer for ServiceTalk.
      */
     static ChannelInitializer defaultInitializer() {
-        return (channel, context) -> {
-            channel.config().setRecvByteBufAllocator(
-                    new AdaptiveRecvByteBufAllocator(512, 32768, 65536)
-                            .respectMaybeMoreData(false)
-                            .maxMessagesPerRead(4));
-            return context;
-        };
+        return channel -> channel.config().setRecvByteBufAllocator(
+                new AdaptiveRecvByteBufAllocator(512, 32768, 65536)
+                        .respectMaybeMoreData(false)
+                        .maxMessagesPerRead(4));
     }
 }

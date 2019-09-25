@@ -16,7 +16,6 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.http.api.HttpRequestMethod;
-import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
 import io.servicetalk.transport.netty.internal.CloseHandler;
 
@@ -44,13 +43,12 @@ final class HttpClientChannelInitializer implements ChannelInitializer {
     }
 
     @Override
-    public ConnectionContext init(final Channel channel, final ConnectionContext ctx) {
+    public void init(final Channel channel) {
         Queue<HttpRequestMethod> methodQueue = new ArrayDeque<>(min(8, roConfig.maxPipelinedRequests()));
         final ChannelPipeline pipeline = channel.pipeline();
         pipeline.addLast(new HttpResponseDecoder(methodQueue, roConfig.headersFactory(),
                 roConfig.maxInitialLineLength(), roConfig.maxHeaderSize(), closeHandler));
         pipeline.addLast(new HttpRequestEncoder(methodQueue,
                 roConfig.headersEncodedSizeEstimate(), roConfig.trailersEncodedSizeEstimate(), closeHandler));
-        return ctx;
     }
 }

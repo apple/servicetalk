@@ -15,7 +15,6 @@
  */
 package io.servicetalk.http.netty;
 
-import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
 
 import io.netty.channel.Channel;
@@ -39,7 +38,7 @@ final class H2ClientParentChannelInitializer implements ChannelInitializer {
     }
 
     @Override
-    public ConnectionContext init(final Channel channel, final ConnectionContext context) {
+    public void init(final Channel channel) {
         final Http2FrameCodecBuilder multiplexCodecBuilder = forClient()
                 // The max concurrent streams is made available via a publisher and may be consumed asynchronously
                 // (e.g. when offloading is enabled), so we manually control the SETTINGS ACK frames.
@@ -61,7 +60,6 @@ final class H2ClientParentChannelInitializer implements ChannelInitializer {
 
         channel.pipeline().addLast(multiplexCodecBuilder.build(),
                 new Http2MultiplexHandler(H2PushStreamHandler.INSTANCE));
-        return context;
     }
 
     @ChannelHandler.Sharable
