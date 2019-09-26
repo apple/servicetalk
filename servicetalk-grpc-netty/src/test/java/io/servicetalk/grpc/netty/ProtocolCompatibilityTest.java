@@ -489,11 +489,11 @@ public class ProtocolCompatibilityTest {
         for (final AutoCloseable ac : acs) {
             try {
                 ac.close();
-            } catch (final Exception e) {
+            } catch (final Throwable t) {
                 if (re == null) {
                     re = new RuntimeException("Failure(s) when to closing: " + Arrays.toString(acs));
                 }
-                re.addSuppressed(e);
+                re.addSuppressed(t);
             }
         }
 
@@ -806,8 +806,8 @@ public class ProtocolCompatibilityTest {
                         try {
                             responseObserver.onNext(response(request.getId()));
                             responseObserver.onCompleted();
-                        } catch (final Exception e) {
-                            responseObserver.onError(e);
+                        } catch (final Throwable t) {
+                            responseObserver.onError(t);
                         }
                     }
 
@@ -832,8 +832,8 @@ public class ProtocolCompatibilityTest {
                                 try {
                                     responseObserver.onNext(response(sum));
                                     responseObserver.onCompleted();
-                                } catch (final Exception e) {
-                                    responseObserver.onError(e);
+                                } catch (final Throwable t) {
+                                    responseObserver.onError(t);
                                 }
                             }
                         };
