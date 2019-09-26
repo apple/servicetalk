@@ -535,20 +535,18 @@ public class ProtocolCompatibilityTest {
             }
 
             private void maybeThrowFromRpc() {
-                switch (errorMode) {
-                    case SIMPLE:
-                        throwGrpcStatusException();
-                    case STATUS:
-                        throwGrpcStatusExceptionWithStatus();
+                if (errorMode == ErrorMode.SIMPLE) {
+                    throwGrpcStatusException();
+                } else if (errorMode == ErrorMode.STATUS) {
+                    throwGrpcStatusExceptionWithStatus();
                 }
             }
 
             private CompatResponse response(final int value) {
-                switch (errorMode) {
-                    case SIMPLE_IN_RESPONSE:
-                        throwGrpcStatusException();
-                    case STATUS_IN_RESPONSE:
-                        throwGrpcStatusExceptionWithStatus();
+                if (errorMode == ErrorMode.SIMPLE_IN_RESPONSE) {
+                    throwGrpcStatusException();
+                } else if (errorMode == ErrorMode.STATUS_IN_RESPONSE) {
+                    throwGrpcStatusExceptionWithStatus();
                 }
                 return computeResponse(value);
             }
@@ -584,11 +582,10 @@ public class ProtocolCompatibilityTest {
                     }
 
                     private void maybeThrowFromFilter() {
-                        switch (errorMode) {
-                            case SIMPLE_IN_FILTER:
-                                throwGrpcStatusException();
-                            case STATUS_IN_FILTER:
-                                throwGrpcStatusExceptionWithStatus();
+                        if (errorMode == ErrorMode.SIMPLE_IN_FILTER) {
+                            throwGrpcStatusException();
+                        } else if (errorMode == ErrorMode.STATUS_IN_FILTER) {
+                            throwGrpcStatusExceptionWithStatus();
                         }
                     }
                 });
@@ -834,16 +831,12 @@ public class ProtocolCompatibilityTest {
                     }
 
                     private CompatResponse response(final int value) throws Exception {
-                        switch (errorMode) {
-                            case NONE:
-                                return computeResponse(value);
-                            case SIMPLE:
-                                throw Status.INVALID_ARGUMENT.augmentDescription(CUSTOM_ERROR_MESSAGE).asException();
-                            case STATUS:
-                                throw StatusProto.toStatusException(newStatus());
-                            default:
-                                throw new Error();
+                        if (errorMode == ErrorMode.SIMPLE) {
+                            throw Status.INVALID_ARGUMENT.augmentDescription(CUSTOM_ERROR_MESSAGE).asException();
+                        } else if (errorMode == ErrorMode.STATUS) {
+                            throw StatusProto.toStatusException(newStatus());
                         }
+                        return computeResponse(value);
                     }
                 })
                 .build().start();
