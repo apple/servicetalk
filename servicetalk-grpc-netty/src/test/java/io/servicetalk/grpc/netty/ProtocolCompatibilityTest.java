@@ -791,8 +791,8 @@ public class ProtocolCompatibilityTest {
                         for (int i = 0; i < request.getId(); ++i) {
                             try {
                                 responseObserver.onNext(response(i));
-                            } catch (final Exception e) {
-                                responseObserver.onError(e);
+                            } catch (final Throwable t) {
+                                responseObserver.onError(t);
                                 return;
                             }
                         }
@@ -809,18 +809,18 @@ public class ProtocolCompatibilityTest {
                             public void onNext(final CompatRequest demoRequest) {
                                 try {
                                     responseObserver.onNext(response(demoRequest.getId()));
-                                } catch (final Exception e) {
-                                    onError(e);
+                                } catch (final Throwable t) {
+                                    onError(t);
                                 }
                             }
 
                             @Override
-                            public void onError(final Throwable throwable) {
+                            public void onError(final Throwable t) {
                                 if (errored) {
                                     return;
                                 }
                                 errored = true;
-                                responseObserver.onError(throwable);
+                                responseObserver.onError(t);
                             }
 
                             @Override
