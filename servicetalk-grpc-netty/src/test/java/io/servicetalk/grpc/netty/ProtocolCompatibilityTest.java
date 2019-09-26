@@ -36,6 +36,11 @@ import io.servicetalk.grpc.netty.CompatProto.Compat.ScalarCallMetadata;
 import io.servicetalk.grpc.netty.CompatProto.Compat.ServerStreamingCallMetadata;
 import io.servicetalk.grpc.netty.CompatProto.RequestContainer.CompatRequest;
 import io.servicetalk.grpc.netty.CompatProto.ResponseContainer.CompatResponse;
+import io.servicetalk.http.api.HttpServiceContext;
+import io.servicetalk.http.api.StreamingHttpRequest;
+import io.servicetalk.http.api.StreamingHttpResponse;
+import io.servicetalk.http.api.StreamingHttpResponseFactory;
+import io.servicetalk.http.api.StreamingHttpServiceFilter;
 import io.servicetalk.test.resources.DefaultTestCerts;
 import io.servicetalk.transport.api.ServerContext;
 
@@ -133,10 +138,12 @@ public class ProtocolCompatibilityTest {
     private enum ErrorMode {
         NONE,
         SIMPLE,
-        SIMPLE_IN_FILTER,
+        SIMPLE_IN_SERVER_FILTER,
+        SIMPLE_IN_SERVICE_FILTER,
         SIMPLE_IN_RESPONSE,
         STATUS,
-        STATUS_IN_FILTER,
+        STATUS_IN_SERVER_FILTER,
+        STATUS_IN_SERVICE_FILTER,
         STATUS_IN_RESPONSE
     }
 
@@ -236,8 +243,16 @@ public class ProtocolCompatibilityTest {
     }
 
     @Theory
-    public void grpcToServiceTalkErrorViaFilter(@FromDataPoints("ssl") final boolean ssl) throws Exception {
-        final TestServerContext server = serviceTalkServer(ErrorMode.SIMPLE_IN_FILTER, ssl);
+    public void grpcToServiceTalkErrorViaServiceFilter(@FromDataPoints("ssl") final boolean ssl) throws Exception {
+        final TestServerContext server = serviceTalkServer(ErrorMode.SIMPLE_IN_SERVICE_FILTER, ssl);
+        final CompatClient client = grpcClient(server.listenAddress(), null, ssl);
+        testError(client, server, false);
+    }
+
+    @Ignore("GrpcStatusException thrown in server filters are not currently handled")
+    @Theory
+    public void grpcToServiceTalkErrorViaServerFilter(@FromDataPoints("ssl") final boolean ssl) throws Exception {
+        final TestServerContext server = serviceTalkServer(ErrorMode.SIMPLE_IN_SERVER_FILTER, ssl);
         final CompatClient client = grpcClient(server.listenAddress(), null, ssl);
         testError(client, server, false);
     }
@@ -258,8 +273,18 @@ public class ProtocolCompatibilityTest {
     }
 
     @Theory
-    public void grpcToServiceTalkErrorWithStatusViaFilter(@FromDataPoints("ssl") final boolean ssl) throws Exception {
-        final TestServerContext server = serviceTalkServer(ErrorMode.STATUS_IN_FILTER, ssl);
+    public void grpcToServiceTalkErrorWithStatusViaServiceFilter(@FromDataPoints("ssl") final boolean ssl)
+            throws Exception {
+        final TestServerContext server = serviceTalkServer(ErrorMode.STATUS_IN_SERVICE_FILTER, ssl);
+        final CompatClient client = grpcClient(server.listenAddress(), null, ssl);
+        testError(client, server, true);
+    }
+
+    @Ignore("GrpcStatusException thrown in server filters are not currently handled")
+    @Theory
+    public void grpcToServiceTalkErrorWithStatusViaServerFilter(@FromDataPoints("ssl") final boolean ssl)
+            throws Exception {
+        final TestServerContext server = serviceTalkServer(ErrorMode.STATUS_IN_SERVER_FILTER, ssl);
         final CompatClient client = grpcClient(server.listenAddress(), null, ssl);
         testError(client, server, true);
     }
@@ -272,8 +297,18 @@ public class ProtocolCompatibilityTest {
     }
 
     @Theory
-    public void serviceTalkToServiceTalkErrorViaFilter(@FromDataPoints("ssl") final boolean ssl) throws Exception {
-        final TestServerContext server = serviceTalkServer(ErrorMode.SIMPLE_IN_FILTER, ssl);
+    public void serviceTalkToServiceTalkErrorViaServiceFilter(@FromDataPoints("ssl") final boolean ssl)
+            throws Exception {
+        final TestServerContext server = serviceTalkServer(ErrorMode.SIMPLE_IN_SERVICE_FILTER, ssl);
+        final CompatClient client = serviceTalkClient(server.listenAddress(), ssl);
+        testError(client, server, false);
+    }
+
+    @Ignore("GrpcStatusException thrown in server filters are not currently handled")
+    @Theory
+    public void serviceTalkToServiceTalkErrorViaServerFilter(@FromDataPoints("ssl") final boolean ssl)
+            throws Exception {
+        final TestServerContext server = serviceTalkServer(ErrorMode.SIMPLE_IN_SERVER_FILTER, ssl);
         final CompatClient client = serviceTalkClient(server.listenAddress(), ssl);
         testError(client, server, false);
     }
@@ -286,9 +321,18 @@ public class ProtocolCompatibilityTest {
     }
 
     @Theory
-    public void serviceTalkToServiceTalkErrorWithStatusViaFilter(@FromDataPoints("ssl") final boolean ssl)
+    public void serviceTalkToServiceTalkErrorWithStatusViaServiceFilter(@FromDataPoints("ssl") final boolean ssl)
             throws Exception {
-        final TestServerContext server = serviceTalkServer(ErrorMode.STATUS_IN_FILTER, ssl);
+        final TestServerContext server = serviceTalkServer(ErrorMode.STATUS_IN_SERVICE_FILTER, ssl);
+        final CompatClient client = serviceTalkClient(server.listenAddress(), ssl);
+        testError(client, server, true);
+    }
+
+    @Ignore("GrpcStatusException thrown in server filters are not currently handled")
+    @Theory
+    public void serviceTalkToServiceTalkErrorWithStatusViaServerFilter(@FromDataPoints("ssl") final boolean ssl)
+            throws Exception {
+        final TestServerContext server = serviceTalkServer(ErrorMode.STATUS_IN_SERVER_FILTER, ssl);
         final CompatClient client = serviceTalkClient(server.listenAddress(), ssl);
         testError(client, server, true);
     }
@@ -477,8 +521,21 @@ public class ProtocolCompatibilityTest {
         return builder.build(new Compat.ClientFactory());
     }
 
-    private static GrpcServerBuilder serviceTalkServerBuilder(final boolean ssl) {
-        final GrpcServerBuilder serverBuilder = GrpcServers.forPort(0).h2PriorKnowledge(true);
+    private static GrpcServerBuilder serviceTalkServerBuilder(final ErrorMode errorMode, final boolean ssl) {
+        final GrpcServerBuilder serverBuilder = GrpcServers.forPort(0).h2PriorKnowledge(true)
+                .appendHttpServiceFilter(service -> new StreamingHttpServiceFilter(service) {
+                    @Override
+                    public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
+                                                                final StreamingHttpRequest req,
+                                                                final StreamingHttpResponseFactory resFactory) {
+                        if (errorMode == ErrorMode.SIMPLE_IN_SERVER_FILTER) {
+                            throwGrpcStatusException();
+                        } else if (errorMode == ErrorMode.STATUS_IN_SERVER_FILTER) {
+                            throwGrpcStatusExceptionWithStatus();
+                        }
+                        return delegate().handle(ctx, req, resFactory);
+                    }
+                });
         return ssl ?
                 serverBuilder.secure().provider(OPENSSL)
                         .applicationProtocolNegotiation(ALPN, NO_ADVERTISE, ACCEPT, ALPN_SUPPORTED_PROTOCOLS)
@@ -487,7 +544,7 @@ public class ProtocolCompatibilityTest {
     }
 
     private static TestServerContext serviceTalkServerBlocking(final boolean ssl) throws Exception {
-        final ServerContext serverContext = serviceTalkServerBuilder(ssl)
+        final ServerContext serverContext = serviceTalkServerBuilder(ErrorMode.NONE, ssl)
                 .listenAndAwait(new Compat.ServiceFactory.Builder()
                         .scalarCallBlocking((ctx, request) -> computeResponse(request.getId()))
                         .build());
@@ -582,15 +639,15 @@ public class ProtocolCompatibilityTest {
                     }
 
                     private void maybeThrowFromFilter() {
-                        if (errorMode == ErrorMode.SIMPLE_IN_FILTER) {
+                        if (errorMode == ErrorMode.SIMPLE_IN_SERVICE_FILTER) {
                             throwGrpcStatusException();
-                        } else if (errorMode == ErrorMode.STATUS_IN_FILTER) {
+                        } else if (errorMode == ErrorMode.STATUS_IN_SERVICE_FILTER) {
                             throwGrpcStatusExceptionWithStatus();
                         }
                     }
                 });
 
-        final ServerContext serverContext = serviceTalkServerBuilder(ssl).listenAndAwait(serviceFactory);
+        final ServerContext serverContext = serviceTalkServerBuilder(errorMode, ssl).listenAndAwait(serviceFactory);
         return TestServerContext.fromServiceTalkServerContext(serverContext);
     }
 
