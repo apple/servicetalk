@@ -119,7 +119,7 @@ public class TcpServerBinderConnectionAcceptorTest extends AbstractTcpServerTest
                 @Override
                 ChannelInitializer getChannelInitializer(Function<NettyConnection<Buffer, Buffer>, Completable> service,
                                                          ExecutionContext executionContext) {
-                    return (channel, context) -> {
+                    return channel -> {
                         throw DELIBERATE_EXCEPTION;
                     };
                 }

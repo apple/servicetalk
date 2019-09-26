@@ -15,7 +15,6 @@
  */
 package io.servicetalk.http.netty;
 
-import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
 
 import io.netty.channel.Channel;
@@ -30,16 +29,16 @@ import static io.netty.handler.logging.LogLevel.TRACE;
 
 final class H2ServerParentChannelInitializer implements ChannelInitializer {
     private final ReadOnlyH2ServerConfig config;
-    private final io.netty.channel.ChannelInitializer streamChannelInitializer;
+    private final io.netty.channel.ChannelInitializer<Channel> streamChannelInitializer;
 
     H2ServerParentChannelInitializer(final ReadOnlyH2ServerConfig config,
-                                     final io.netty.channel.ChannelInitializer streamChannelInitializer) {
+                                     final io.netty.channel.ChannelInitializer<Channel> streamChannelInitializer) {
         this.config = config;
         this.streamChannelInitializer = streamChannelInitializer;
     }
 
     @Override
-    public ConnectionContext init(final Channel channel, final ConnectionContext context) {
+    public void init(final Channel channel) {
         final Http2FrameCodecBuilder multiplexCodecBuilder = forServer()
                 // We don't want to rely upon Netty to manage the graceful close timeout, because we expect
                 // the user to apply their own timeout at the call site.
@@ -57,6 +56,5 @@ final class H2ServerParentChannelInitializer implements ChannelInitializer {
         // TODO(scott): more configuration. header validation, settings stream, etc...
 
         channel.pipeline().addLast(multiplexCodecBuilder.build(), new Http2MultiplexHandler(streamChannelInitializer));
-        return context;
     }
 }

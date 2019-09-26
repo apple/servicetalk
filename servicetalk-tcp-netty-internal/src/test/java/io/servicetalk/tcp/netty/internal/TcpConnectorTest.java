@@ -92,7 +92,7 @@ public final class TcpConnectorTest extends AbstractTcpServerTest {
                 .flatMap(channel -> DefaultNettyConnection.<Buffer, Buffer>initChannel(channel,
                         CLIENT_CTX.bufferAllocator(), CLIENT_CTX.executor(),
                         new NettyConnection.TerminalPredicate<>(o -> true), UNSUPPORTED_PROTOCOL_CLOSE_HANDLER,
-                        defaultFlushStrategy(), (channel2, context) -> {
+                        defaultFlushStrategy(), channel2 -> {
                             channel2.pipeline().addLast(new ChannelInboundHandlerAdapter() {
                                 @Override
                                 public void channelRegistered(ChannelHandlerContext ctx) {
@@ -106,7 +106,6 @@ public final class TcpConnectorTest extends AbstractTcpServerTest {
                                     ctx.fireChannelActive();
                                 }
                             });
-                            return context;
                         }, CLIENT_CTX.executionStrategy())
                 ).toFuture().get();
         connection.closeAsync().toFuture().get();

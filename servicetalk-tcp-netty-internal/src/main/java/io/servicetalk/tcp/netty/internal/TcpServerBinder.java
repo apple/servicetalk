@@ -78,10 +78,11 @@ public final class TcpServerBinder {
      * @return a {@link Single} that completes with a {@link ServerContext} that represents a socket which is bound and
      * listening on the {@code listenAddress}.
      */
-    public static <T extends ConnectionContext> Single<ServerContext> bind(
-         SocketAddress listenAddress, ReadOnlyTcpServerConfig config, ExecutionContext executionContext,
-         @Nullable ConnectionAcceptor connectionAcceptor,
-         Function<Channel, Single<T>> connectionFunction, Consumer<T> connectionConsumer) {
+    public static <T extends ConnectionContext> Single<ServerContext> bind(SocketAddress listenAddress,
+            final ReadOnlyTcpServerConfig config, final ExecutionContext executionContext,
+            @Nullable final ConnectionAcceptor connectionAcceptor,
+            final Function<Channel, Single<T>> connectionFunction, final Consumer<T> connectionConsumer) {
+
         requireNonNull(connectionFunction);
         requireNonNull(connectionConsumer);
         listenAddress = toNettyAddress(listenAddress);
@@ -105,24 +106,21 @@ public final class TcpServerBinder {
             protected void initChannel(Channel channel) {
                 Single<T> connectionSingle = connectionFunction.apply(channel);
                 if (connectionAcceptor != null) {
-                    connectionSingle = connectionSingle
-                            .flatMap(conn ->
-                                    // Defer is required to isolate context for ConnectionAcceptor#accept and the rest
-                                    // of connection processing.
-                                    defer(() -> connectionAcceptor.accept(conn).concat(succeeded(conn)))
-                                            // subscribeOn is required to offload calls to connectionAcceptor#accept
-                                            .subscribeOn(executionContext.executor()))
-                            .whenOnError(cause -> {
-                                // Getting the remote-address may involve volatile reads and potentially a
-                                // syscall, so guard it.
-                                if (LOGGER.isDebugEnabled()) {
-                                    LOGGER.debug("Rejected connection from {}", channel.remoteAddress(), cause);
-                                }
-                                channel.close();
-                            });
+                    connectionSingle = connectionSingle.flatMap(conn ->
+                            // Defer is required to isolate context for ConnectionAcceptor#accept and the rest
+                            // of connection processing.
+                            defer(() -> connectionAcceptor.accept(conn).concat(succeeded(conn)))
+                                    // subscribeOn is required to offload calls to connectionAcceptor#accept
+                                    .subscribeOn(executionContext.executor()));
                 }
-
-                connectionSingle.subscribe(connectionConsumer);
+                connectionSingle.whenOnError(cause -> {
+                    // Getting the remote-address may involve volatile reads and potentially a syscall, so guard it.
+                    if (LOGGER.isDebugEnabled()) {
+                        LOGGER.debug("Failed to create a connection for remote address {}", channel.remoteAddress(),
+                                cause);
+                    }
+                    channel.close();
+                }).subscribe(connectionConsumer);
             }
         });
 
@@ -146,7 +144,6 @@ public final class TcpServerBinder {
         };
     }
 
-    @SuppressWarnings("deprecation")
     private static void configure(ReadOnlyTcpServerConfig config, BufferAllocator bufferAllocator,
                                   ServerBootstrap bs, @Nullable EventLoopGroup eventLoopGroup,
                                   Class<? extends SocketAddress> bindAddressClass) {
@@ -164,9 +161,6 @@ public final class TcpServerBinder {
 
         // we disable auto read so we can handle stuff in the ConnectionFilter before we accept any content.
         bs.childOption(ChannelOption.AUTO_READ, config.isAutoRead());
-        if (!config.isAutoRead()) {
-            bs.childOption(ChannelOption.MAX_MESSAGES_PER_READ, 1);
-        }
 
         bs.option(ChannelOption.SO_BACKLOG, config.backlog());
 

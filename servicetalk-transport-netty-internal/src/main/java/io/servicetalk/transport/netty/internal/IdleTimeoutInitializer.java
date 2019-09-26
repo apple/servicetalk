@@ -15,8 +15,6 @@
  */
 package io.servicetalk.transport.netty.internal;
 
-import io.servicetalk.transport.api.ConnectionContext;
-
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.timeout.IdleState;
@@ -56,7 +54,7 @@ public class IdleTimeoutInitializer implements ChannelInitializer {
     }
 
     @Override
-    public ConnectionContext init(Channel channel, ConnectionContext context) {
+    public void init(Channel channel) {
         if (timeoutMs > 0) {
             LOGGER.debug("Channel idle timeout is {}ms.", timeoutMs);
             channel.pipeline().addLast(new IdleStateHandler(0, 0, timeoutMs, TimeUnit.MILLISECONDS) {
@@ -76,6 +74,5 @@ public class IdleTimeoutInitializer implements ChannelInitializer {
                 }
             });
         }
-        return context;
     }
 }

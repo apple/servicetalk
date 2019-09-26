@@ -64,7 +64,7 @@ public final class SslContextFactory {
                 }
             }
         }
-        builder.sslProvider(SslUtils.toNettySslProvider(config.provider()));
+        builder.sslProvider(SslUtils.toNettySslProvider(config.provider(), config.applicationProtocolNegotiation()));
 
         builder.ciphers(config.ciphers());
         builder.applicationProtocolConfig(SslUtils.toNettyApplicationProtocol(config));
@@ -103,7 +103,6 @@ public final class SslContextFactory {
                 }
             }
         }
-        builder.sslProvider(SslUtils.toNettySslProvider(config.provider()));
 
         builder.sessionCacheSize(config.sessionCacheSize()).sessionTimeout(config.sessionTimeout())
                 .applicationProtocolConfig(SslUtils.toNettyApplicationProtocol(config));
@@ -124,7 +123,7 @@ public final class SslContextFactory {
         configureTrustManager(config, builder);
         builder.ciphers(config.ciphers());
 
-        builder.sslProvider(SslUtils.toNettySslProvider(config.provider()));
+        builder.sslProvider(SslUtils.toNettySslProvider(config.provider(), config.applicationProtocolNegotiation()));
         try {
             return new WrappingSslContext(builder.build(), config.protocols());
         } catch (SSLException e) {

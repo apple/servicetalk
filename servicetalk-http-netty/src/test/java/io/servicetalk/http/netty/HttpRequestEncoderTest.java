@@ -414,10 +414,9 @@ public class HttpRequestEncoderTest {
                                     SEC.executor(), new TerminalPredicate<>(o -> o instanceof HttpHeaders),
                                     UNSUPPORTED_PROTOCOL_CLOSE_HANDLER, defaultFlushStrategy(),
                                     new TcpServerChannelInitializer(sConfig).andThen(
-                                            (c, cc) -> {
-                                                serverChannelRef.compareAndSet(null, c);
+                                            channel2 -> {
+                                                serverChannelRef.compareAndSet(null, channel2);
                                                 serverChannelLatch.countDown();
-                                                return cc;
                                             }), defaultStrategy()),
                             connection -> { }).toFuture().get());
             HttpClientConfig cConfig = new HttpClientConfig(new TcpClientConfig(true));
@@ -432,20 +431,17 @@ public class HttpRequestEncoderTest {
                         new TerminalPredicate<>(o -> o instanceof HttpHeaders), closeHandler, defaultFlushStrategy(),
                         new TcpClientChannelInitializer(cConfig.tcpClientConfig())
                             .andThen(new HttpClientChannelInitializer(cConfig.asReadOnly(), closeHandler))
-                            .andThen((channel2, context) -> {
-                                channel2.pipeline().addLast(new ChannelInboundHandlerAdapter() {
-                                    @Override
-                                    public void userEventTriggered(ChannelHandlerContext ctx, Object evt) {
-                                        // Propagate the user event in the pipeline before triggering the test
-                                        // condition.
-                                        ctx.fireUserEventTriggered(evt);
-                                        if (evt instanceof ChannelInputShutdownReadComplete) {
-                                            serverCloseTrigger.onComplete();
-                                        }
+                            .andThen(channel2 -> channel2.pipeline().addLast(new ChannelInboundHandlerAdapter() {
+                                @Override
+                                public void userEventTriggered(ChannelHandlerContext ctx, Object evt) {
+                                    // Propagate the user event in the pipeline before triggering the test
+                                    // condition.
+                                    ctx.fireUserEventTriggered(evt);
+                                    if (evt instanceof ChannelInputShutdownReadComplete) {
+                                        serverCloseTrigger.onComplete();
                                     }
-                                });
-                                return context;
-                            }), defaultStrategy());
+                                }
+                            })), defaultStrategy());
                     }
             ).toFuture().get());
 

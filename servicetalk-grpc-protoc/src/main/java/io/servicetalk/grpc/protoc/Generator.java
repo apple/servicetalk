@@ -196,7 +196,7 @@ final class Generator {
     }
 
     private void addRpcPathsEnum(final State state, final TypeSpec.Builder serviceClassBuilder) {
-        final TypeSpec.Builder rpcPathsEnumBuilder = enumBuilder("RpcPaths")
+        final TypeSpec.Builder rpcPathsEnumBuilder = enumBuilder(context.deconflictJavaTypeName("RpcPaths"))
                 .addModifiers(PUBLIC)
                 .addField(String.class, path, PRIVATE, FINAL)
                 .addMethod(constructorBuilder()
@@ -247,7 +247,8 @@ final class Generator {
         state.serviceRpcInterfaces = new ArrayList<>(2 * state.serviceProto.getMethodCount());
 
         state.serviceProto.getMethodList().forEach(methodProto -> Stream.of(false, true).forEach(blocking -> {
-            final String name = (blocking ? Blocking : "") + sanitizeIdentifier(methodProto.getName(), false) + Rpc;
+            final String name = context.deconflictJavaTypeName((blocking ? Blocking : "") +
+                    sanitizeIdentifier(methodProto.getName(), false) + Rpc);
 
             final TypeSpec.Builder interfaceSpecBuilder = interfaceBuilder(name)
                     .addModifiers(PUBLIC)
@@ -414,7 +415,8 @@ final class Generator {
         state.clientMetaDatas = new ArrayList<>(state.serviceProto.getMethodCount());
 
         state.serviceProto.getMethodList().forEach(methodProto -> {
-            final String name = sanitizeIdentifier(methodProto.getName(), false) + Metadata;
+            final String name = context.deconflictJavaTypeName(sanitizeIdentifier(methodProto.getName(), false) +
+                    Metadata);
 
             final ClassName metaDataClassName = ClassName.bestGuess(name);
             final TypeSpec classSpec = classBuilder(name)
@@ -838,9 +840,9 @@ final class Generator {
         return typeSpecBuilder.build();
     }
 
-    private static TypeSpec newServiceInterfaceSpec(final State state, final boolean blocking) {
-        final String name = (blocking ? Blocking : "") + sanitizeIdentifier(state.serviceProto.getName(), false) +
-                "Service";
+    private TypeSpec newServiceInterfaceSpec(final State state, final boolean blocking) {
+        final String name = context.deconflictJavaTypeName((blocking ? Blocking : "") +
+                sanitizeIdentifier(state.serviceProto.getName(), false) + "Service");
 
         final TypeSpec.Builder interfaceSpecBuilder = interfaceBuilder(name)
                 .addModifiers(PUBLIC)

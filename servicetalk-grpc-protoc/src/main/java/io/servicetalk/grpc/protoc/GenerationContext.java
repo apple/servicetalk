@@ -20,6 +20,8 @@ import com.google.protobuf.DescriptorProtos.ServiceDescriptorProto;
 import com.squareup.javapoet.TypeSpec;
 
 interface GenerationContext {
+    String deconflictJavaTypeName(String name);
+
     TypeSpec.Builder newServiceClassBuilder(ServiceDescriptorProto serviceProto);
 
     String methodPath(ServiceDescriptorProto serviceProto, MethodDescriptorProto methodProto);

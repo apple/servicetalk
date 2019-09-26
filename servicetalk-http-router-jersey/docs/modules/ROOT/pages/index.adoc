@@ -355,8 +355,7 @@ ServiceTalk in a Java EE application container.
 
 The ServiceTalk JAX-RS `Feature` that enables the router functionalities
 is automatically registered with Jersey using its
-https://jersey.github.io/documentation/latest/deployment.html#deployment.autodiscoverable[auto-discoverable
-features].
+https://eclipse-ee4j.github.io/jersey.github.io/documentation/latest/deployment.html#deployment.autodiscoverable[auto-discoverable features].
 
 If this router is used in a context where Jersey’s auto-discovery has
 been disabled, users must manually register

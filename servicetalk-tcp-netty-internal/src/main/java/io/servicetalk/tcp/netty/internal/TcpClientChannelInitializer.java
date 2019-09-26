@@ -15,7 +15,6 @@
  */
 package io.servicetalk.tcp.netty.internal;
 
-import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
 import io.servicetalk.transport.netty.internal.DeferSslHandler;
 import io.servicetalk.transport.netty.internal.IdleTimeoutInitializer;
@@ -76,7 +75,7 @@ public class TcpClientChannelInitializer implements ChannelInitializer {
     }
 
     @Override
-    public ConnectionContext init(final Channel channel, final ConnectionContext context) {
-        return delegate.init(channel, context);
+    public void init(final Channel channel) {
+        delegate.init(channel);
     }
 }

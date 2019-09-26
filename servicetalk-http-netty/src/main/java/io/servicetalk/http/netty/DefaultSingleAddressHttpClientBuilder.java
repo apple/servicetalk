@@ -47,6 +47,7 @@ import io.servicetalk.tcp.netty.internal.TcpClientConfig;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.IoExecutor;
 
+import io.netty.handler.ssl.SslContext;
 import io.netty.util.NetUtil;
 
 import java.net.InetSocketAddress;
@@ -61,6 +62,7 @@ import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseabl
 import static io.servicetalk.concurrent.api.Publisher.failed;
 import static io.servicetalk.concurrent.api.Publisher.never;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
+import static io.servicetalk.http.netty.AlpnChannelSingle.useAlpn;
 import static io.servicetalk.http.netty.GlobalDnsServiceDiscoverer.globalDnsServiceDiscoverer;
 import static io.servicetalk.http.netty.H2ToStH1Utils.HTTP_2_0;
 import static io.servicetalk.loadbalancer.RoundRobinLoadBalancer.newRoundRobinFactory;
@@ -243,7 +245,8 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
             ConnectionFactoryFilter<R, FilterableStreamingHttpConnection> connectionFactoryFilter =
                     this.connectionFactoryFilter;
 
-            if (roConfig.hasProxy() && roConfig.tcpClientConfig().sslContext() != null) {
+            final SslContext sslContext = roConfig.tcpClientConfig().sslContext();
+            if (roConfig.hasProxy() && sslContext != null) {
                 assert roConfig.connectAddress() != null;
                 connectionFactoryFilter = new ProxyConnectConnectionFactoryFilter<R, FilterableStreamingHttpConnection>(
                         roConfig.connectAddress(), reqRespFactory).append(connectionFactoryFilter);
@@ -254,21 +257,26 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
             if (roConfig.isH2PriorKnowledge()) {
                 connectionFactory = new H2LBHttpConnectionFactory<>(roConfig, ctx.executionContext,
                         connectionFilterFactory, reqRespFactory,
-                        influencerChainBuilder.buildForConnectionFactory(
-                                ctx.executionContext.executionStrategy()), connectionFactoryFilter,
-                        protocolBinder);
+                        influencerChainBuilder.buildForConnectionFactory(ctx.executionContext.executionStrategy()),
+                        connectionFactoryFilter, protocolBinder);
+            } else if (useAlpn(sslContext)) {
+                if (roConfig.hasProxy()) {
+                    throw new IllegalStateException("Proxying is not yet supported with ALPN");
+                }
+                connectionFactory = new AlpnLBHttpConnectionFactory<>(roConfig, ctx.executionContext,
+                        connectionFilterFactory, reqRespFactory,
+                        influencerChainBuilder.buildForConnectionFactory(ctx.executionContext.executionStrategy()),
+                        connectionFactoryFilter, protocolBinder);
+            } else if (reservedConnectionsPipelineEnabled(roConfig)) {
+                connectionFactory = new PipelinedLBHttpConnectionFactory<>(roConfig, ctx.executionContext,
+                        connectionFilterFactory, reqRespFactory,
+                        influencerChainBuilder.buildForConnectionFactory(ctx.executionContext.executionStrategy()),
+                        connectionFactoryFilter, protocolBinder);
             } else {
-                connectionFactory = reservedConnectionsPipelineEnabled(roConfig) ?
-                        new PipelinedLBHttpConnectionFactory<>(roConfig, ctx.executionContext,
-                                connectionFilterFactory, reqRespFactory,
-                                influencerChainBuilder.buildForConnectionFactory(
-                                        ctx.executionContext.executionStrategy()),
-                                connectionFactoryFilter, protocolBinder) :
-                        new NonPipelinedLBHttpConnectionFactory<>(roConfig, ctx.executionContext,
-                                connectionFilterFactory, reqRespFactory,
-                                influencerChainBuilder.buildForConnectionFactory(
-                                        ctx.executionContext.executionStrategy()),
-                                connectionFactoryFilter, protocolBinder);
+                connectionFactory = new NonPipelinedLBHttpConnectionFactory<>(roConfig, ctx.executionContext,
+                        connectionFilterFactory, reqRespFactory,
+                        influencerChainBuilder.buildForConnectionFactory(ctx.executionContext.executionStrategy()),
+                        connectionFactoryFilter, protocolBinder);
             }
 
             @SuppressWarnings("unchecked")
@@ -278,7 +286,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
 
             StreamingHttpClientFilterFactory currClientFilterFactory = clientFilterFactory;
 
-            if (roConfig.hasProxy() && roConfig.tcpClientConfig().sslContext() == null) {
+            if (roConfig.hasProxy() && sslContext == null) {
                 // If we're talking to a proxy over http (not https), rewrite the request-target to absolute-form, as
                 // specified by the RFC: https://tools.ietf.org/html/rfc7230#section-5.3.2
                 currClientFilterFactory = appendFilter(currClientFilterFactory,
@@ -537,7 +545,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
     }
 
     // TODO(derek): Temporary, so we can re-enable the ability to create non-pipelined connections for perf testing.
-    private static boolean reservedConnectionsPipelineEnabled(final ReadOnlyHttpClientConfig roConfig) {
+    static boolean reservedConnectionsPipelineEnabled(final ReadOnlyHttpClientConfig roConfig) {
         return roConfig.maxPipelinedRequests() > 1 ||
                 Boolean.valueOf(System.getProperty("io.servicetalk.http.netty.reserved.connections.pipeline", "true"));
     }

@@ -48,6 +48,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.http.netty.HeaderUtils.LAST_CHUNK_PREDICATE;
+import static io.servicetalk.http.netty.HttpDebugUtils.showPipeline;
 import static io.servicetalk.transport.netty.internal.ChannelSet.CHANNEL_CLOSEABLE_KEY;
 import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
 import static java.util.Objects.requireNonNull;
@@ -73,13 +74,17 @@ final class H2ServerParentConnectionContext extends H2ParentConnectionContext im
                                       final ReadOnlyHttpServerConfig config,
                                       final SocketAddress listenAddress,
                                       @Nullable final ConnectionAcceptor connectionAcceptor,
-                                      StreamingHttpService service,
+                                      final StreamingHttpService service,
                                       final boolean drainRequestPayloadBody) {
+
+        assert config.isH2PriorKnowledge();
         final ReadOnlyTcpServerConfig tcpServerConfig = config.tcpConfig();
+        if (!tcpServerConfig.isAutoRead()) {
+            throw new IllegalStateException("H2 requires auto read to be enabled");
+        }
         return TcpServerBinder.bind(listenAddress, tcpServerConfig, executionContext, connectionAcceptor,
                 channel -> H2ServerParentConnectionContext.initChannel(listenAddress, channel,
-                        executionContext.bufferAllocator(), executionContext.executor(), config,
-                        tcpServerConfig.flushStrategy(), executionContext.executionStrategy(),
+                        executionContext, config,
                         new TcpServerChannelInitializer(tcpServerConfig), service, drainRequestPayloadBody),
                 serverConnection -> { /* nothing to do as h2 uses auto read on the parent channel */ })
                 .map(delegate -> {
@@ -89,12 +94,13 @@ final class H2ServerParentConnectionContext extends H2ParentConnectionContext im
                 });
     }
 
-    private static Single<H2ServerParentConnectionContext> initChannel(
-            SocketAddress listenAddress, Channel channel, BufferAllocator allocator, Executor executor,
-            ReadOnlyHttpServerConfig config, FlushStrategy parentFlushStrategy, HttpExecutionStrategy executionStrategy,
-            ChannelInitializer initializer, StreamingHttpService service, final boolean drainRequestPayloadBody) {
+    static Single<H2ServerParentConnectionContext> initChannel(final SocketAddress listenAddress,
+                final Channel channel, final HttpExecutionContext httpExecutionContext,
+                final ReadOnlyHttpServerConfig config, final ChannelInitializer initializer,
+                final StreamingHttpService service, final boolean drainRequestPayloadBody) {
+
         final ReadOnlyH2ServerConfig h2ServerConfig = config.h2ServerConfig();
-        return new SubscribableSingle<H2ServerParentConnectionContext>() {
+        return showPipeline(new SubscribableSingle<H2ServerParentConnectionContext>() {
             @Override
             protected void handleSubscribe(final Subscriber<? super H2ServerParentConnectionContext> subscriber) {
                 final DefaultH2ServerParentConnection parentChannelInitializer;
@@ -102,6 +108,10 @@ final class H2ServerParentConnectionContext extends H2ParentConnectionContext im
                 final ChannelPipeline pipeline;
                 try {
                     delayedCancellable = new DelayedCancellable();
+                    final FlushStrategy parentFlushStrategy = config.tcpConfig().flushStrategy();
+                    final BufferAllocator allocator = httpExecutionContext.bufferAllocator();
+                    final Executor executor = httpExecutionContext.executor();
+                    final HttpExecutionStrategy executionStrategy = httpExecutionContext.executionStrategy();
                     H2ServerParentConnectionContext connection = new H2ServerParentConnectionContext(channel,
                             allocator, executor, parentFlushStrategy, h2ServerConfig.gracefulShutdownTimeoutMs(),
                             executionStrategy, listenAddress);
@@ -112,7 +122,7 @@ final class H2ServerParentConnectionContext extends H2ParentConnectionContext im
                     // that NettyToStChannelInboundHandler will not see them. This is currently not an issue and would
                     // require some pipeline modifications if we wanted to insert NettyToStChannelInboundHandler first,
                     // but not allow any other handlers to be after it.
-                    initializer.init(channel, connection);
+                    initializer.init(channel);
                     pipeline = channel.pipeline();
 
                     parentChannelInitializer = new DefaultH2ServerParentConnection(connection, subscriber,
@@ -141,7 +151,8 @@ final class H2ServerParentConnectionContext extends H2ParentConnectionContext im
                                                 // level we can use DefaultNettyConnection.initChannel instead of this
                                                 // custom method.
                                                 connection.flushStrategyHolder.currentStrategy(),
-                                                connection.executionContext().executionStrategy());
+                                                connection.executionContext().executionStrategy(),
+                                                connection.sslSession());
 
                                 // ServiceTalk HTTP service handler
                                 final CompositeFlushStrategy streamFlushStrategy =
@@ -151,7 +162,7 @@ final class H2ServerParentConnectionContext extends H2ParentConnectionContext im
                                         drainRequestPayloadBody)
                                         .process(false).subscribe();
                             }
-                    }).init(channel, connection);
+                    }).init(channel);
                 } catch (Throwable cause) {
                     channel.close();
                     subscriber.onSubscribe(IGNORE_CANCEL);
@@ -163,7 +174,7 @@ final class H2ServerParentConnectionContext extends H2ParentConnectionContext im
                 // callbacks that interact with the subscriber.
                 pipeline.addLast(parentChannelInitializer);
             }
-        };
+        }, "HTTP/2.0", channel);
     }
 
     private static final class DefaultH2ServerParentConnection extends AbstractH2ParentConnection {

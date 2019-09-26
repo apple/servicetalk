@@ -121,10 +121,7 @@ public class TcpServer {
     // Visible to allow tests to override.
     ChannelInitializer getChannelInitializer(final Function<NettyConnection<Buffer, Buffer>, Completable> service,
                                              final ExecutionContext executionContext) {
-        return (channel, context) -> {
-            channel.pipeline().addLast(BufferHandler.INSTANCE);
-            return context;
-        };
+        return channel -> channel.pipeline().addLast(BufferHandler.INSTANCE);
     }
 
     /**
