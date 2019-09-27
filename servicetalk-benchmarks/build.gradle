@@ -22,7 +22,7 @@ plugins {
 apply plugin: "servicetalk-library"
 
 dependencies {
-  api platform(project(":servicetalk-bom-internal"))
+  implementation platform(project(":servicetalk-bom-internal"))
 
   implementation project(":servicetalk-annotations")
   implementation project(":servicetalk-buffer-netty")

@@ -25,7 +25,7 @@ apply plugin: "com.github.johnrengelman.shadow"
 apply plugin: "com.google.protobuf"
 
 dependencies {
-  api platform(project(":servicetalk-bom-internal"))
+  implementation platform(project(":servicetalk-bom-internal"))
 
   implementation project(":servicetalk-annotations")
   implementation "com.google.code.findbugs:jsr305"

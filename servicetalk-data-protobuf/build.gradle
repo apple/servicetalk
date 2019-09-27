@@ -26,7 +26,7 @@ apply plugin: "com.google.protobuf"
 ideaModule.dependsOn "generateTestProto"
 
 dependencies {
-  api platform(project(":servicetalk-bom-internal"))
+  implementation platform(project(":servicetalk-bom-internal"))
 
   api project(":servicetalk-buffer-api")
   api project(":servicetalk-concurrent-api")

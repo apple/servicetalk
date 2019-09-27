@@ -18,7 +18,7 @@ apply plugin: "servicetalk-library"
 apply plugin: "servicetalk-grpc"
 
 dependencies {
-  api platform(project(":servicetalk-bom-internal"))
+  implementation platform(project(":servicetalk-bom-internal"))
 
   api project(":servicetalk-grpc-api")
   api project(":servicetalk-http-netty")
