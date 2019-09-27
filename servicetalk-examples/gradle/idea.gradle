@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
- apply plugin: "idea"
+apply plugin: "idea"
 
 // We do not use the custom ServiceTalk build plugins so we have to configure the
 // language level manually
@@ -22,4 +22,10 @@ idea {
   module {
     languageLevel = new org.gradle.plugins.ide.idea.model.IdeaLanguageLevel("1.8")
   }
+}
+
+dependencies {
+  // The following is only needed because these examples sit within the same repo as ServiceTalk:
+  // users projects would use servicetalk-bom instead
+  implementation project(":servicetalk-bom-internal")
 }
