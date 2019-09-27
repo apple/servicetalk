@@ -19,4 +19,5 @@
     "https://checkstyle.org/dtds/suppressions_1_2.dtd">
 
 <suppressions>
+  <suppress checks="VisibilityModifier" files="io/servicetalk/grpc/netty/ProtocolCompatibilityTest.java"/>
 </suppressions>

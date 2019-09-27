@@ -17,6 +17,11 @@
 <FindBugsFilter>
   <!-- Generated code by protobuf can be ignored -->
   <Match>
-    <Source name="TesterProto.java"/>
+    <Or>
+      <Source name="~CompatGrpc\.java"/>
+      <Source name="~TesterGrpc\.java"/>
+      <Source name="~CompatProto\.java"/>
+      <Source name="~TesterProto\.java"/>
+    </Or>
   </Match>
 </FindBugsFilter>

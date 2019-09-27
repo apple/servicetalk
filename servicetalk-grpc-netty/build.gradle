@@ -31,8 +31,18 @@ dependencies {
   testImplementation testFixtures(project(":servicetalk-concurrent-api"))
   testImplementation testFixtures(project(":servicetalk-concurrent-internal"))
   testImplementation testFixtures(project(":servicetalk-transport-netty-internal"))
+  testImplementation project(":servicetalk-concurrent-api-internal")
   testImplementation project(":servicetalk-grpc-protobuf")
   testImplementation project(":servicetalk-test-resources")
+  testImplementation "io.grpc:grpc-core:$grpcVersion"
+  testImplementation("io.grpc:grpc-netty:$grpcVersion") {
+    exclude group: "io.netty"
+  }
+  testImplementation "io.grpc:grpc-protobuf:$grpcVersion"
+  testImplementation "io.grpc:grpc-stub:$grpcVersion"
+  testImplementation "io.netty:netty-transport-native-unix-common"
+  testImplementation "io.netty:netty-tcnative-boringssl-static"
+  testImplementation "javax.annotation:javax.annotation-api"
   testImplementation "junit:junit"
   testImplementation "org.hamcrest:hamcrest-library"
   testImplementation "org.mockito:mockito-core"
@@ -44,9 +54,35 @@ serviceTalkGrpc {
   // The following setting must be omitted in users projects and is necessary here
   // only because we want to use the locally built version of the plugin
   serviceTalkProtocPluginPath =
-    "${project.rootProject.rootDir}/servicetalk-grpc-protoc/build/buildExecutable/protoc-gen-servicetalk_grpc.exe"
+      "${project.rootProject.rootDir}/servicetalk-grpc-protoc/build/buildExecutable/protoc-gen-servicetalk_grpc.exe"
 }
 
 afterEvaluate {
   generateTestProto.dependsOn(":servicetalk-grpc-protoc:buildExecutable")
+}
+
+// Configure grpc-java as required by ProtocolCompatibilityTest
+def generatedBaseDir = "$projectDir/generated"
+
+protobuf {
+  plugins {
+    grpc {
+      artifact = "io.grpc:protoc-gen-grpc-java:$grpcVersion"
+    }
+  }
+  generateProtoTasks {
+    configure(all()) {
+      project.tasks.ideaModule.dependsOn(it)
+      plugins {
+        grpc {}
+      }
+    }
+  }
+  generatedFilesBaseDir = generatedBaseDir
+}
+
+idea {
+  module {
+    testSourceDirs += files("$generatedBaseDir/source/proto/test/grpc")
+  }
 }
