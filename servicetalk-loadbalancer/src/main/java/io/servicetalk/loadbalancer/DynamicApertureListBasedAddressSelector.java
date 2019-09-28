@@ -17,24 +17,23 @@ package io.servicetalk.loadbalancer;
 
 import io.servicetalk.client.api.LoadBalancedAddress;
 import io.servicetalk.client.api.LoadBalancedConnection;
-import io.servicetalk.concurrent.api.AsyncCloseable;
+import io.servicetalk.concurrent.api.AsyncCloseables;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Single;
 
 import java.time.Duration;
-import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.function.BiFunction;
 import java.util.function.Predicate;
 
+import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.loadbalancer.LoadBalancerUtils.LB_CLOSED_SELECT_CNX_EXCEPTION;
 import static io.servicetalk.loadbalancer.LoadBalancerUtils.NO_ACTIVE_HOSTS_SELECT_CNX_EXCEPTION;
-import static io.servicetalk.loadbalancer.LoadBalancerUtils.newCloseable;
 import static io.servicetalk.loadbalancer.LoadBalancerUtils.noAvailableAddressesSelectMatchCnxException;
 import static io.servicetalk.loadbalancer.LoadBalancerUtils.selectAddressFailedSelectCnxException;
 
@@ -70,17 +69,15 @@ final class DynamicApertureListBasedAddressSelector<C extends LoadBalancedConnec
             final Duration apertureRefreshTime,
             final BiFunction<List<LoadBalancedAddress<C>>,
                     Predicate<LoadBalancedAddress<C>>, LoadBalancedAddress<C>> selector) {
+        // TODO(jayv) these will change from static scores to inferring direction of the score up/down to drive resize
+        assert bottomScore < topScore;
         this.bottomScore = bottomScore;
         this.upperScore = topScore;
-        assert bottomScore < topScore;
         this.apertureRefreshNs = apertureRefreshTime.toNanos();
         this.selector = selector;
-        closeable = newCloseable(() -> {
-            HashSet<AsyncCloseable> addresses = new HashSet<>();
-            addresses.addAll(availableAddresses.close());
-            addresses.addAll(activeAddresses.close());
-            return addresses;
-        });
+        closeable = AsyncCloseables.toListenableAsyncCloseable(newCompositeCloseable()
+                .mergeAll(availableAddresses)
+                .mergeAll(activeAddresses));
     }
 
     @Override
@@ -170,7 +167,7 @@ final class DynamicApertureListBasedAddressSelector<C extends LoadBalancedConnec
 
     @Override
     public void add(final LoadBalancedAddress<C> address) {
-        if (!availableAddresses.add(address)) {
+        if (!availableAddresses.addIfAbsent(address)) {
             address.closeAsync().subscribe();
         }
     }

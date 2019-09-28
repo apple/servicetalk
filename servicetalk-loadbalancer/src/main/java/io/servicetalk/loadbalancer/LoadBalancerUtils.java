@@ -17,14 +17,7 @@ package io.servicetalk.loadbalancer;
 
 import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.NoAvailableHostException;
-import io.servicetalk.concurrent.api.AsyncCloseable;
-import io.servicetalk.concurrent.api.AsyncCloseables;
-import io.servicetalk.concurrent.api.CompositeCloseable;
-import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 
-import java.util.function.Supplier;
-
-import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.internal.ThrowableUtil.unknownStackTrace;
 
 final class LoadBalancerUtils {
@@ -57,12 +50,5 @@ final class LoadBalancerUtils {
 
     static RuntimeException noAvailableConnectionSelectMatchCnxException() {
         return new RuntimeException("No connections matching predicate are available to select.");
-    }
-
-    static ListenableAsyncCloseable newCloseable(Supplier<Iterable<? extends AsyncCloseable>> closablesSupplier) {
-        return AsyncCloseables.toAsyncCloseable(graceful -> {
-            final CompositeCloseable cc = newCompositeCloseable().prependAll(closablesSupplier.get());
-            return graceful ? cc.closeAsyncGracefully() : cc.closeAsync();
-        });
     }
 }

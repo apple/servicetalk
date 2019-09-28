@@ -16,6 +16,7 @@
 package io.servicetalk.loadbalancer;
 
 import io.servicetalk.client.api.LoadBalancedConnection;
+import io.servicetalk.concurrent.api.AsyncCloseables;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Single;
@@ -39,7 +40,7 @@ final class DefaultListBasedConnectionSelector<C extends LoadBalancedConnection>
 
     DefaultListBasedConnectionSelector(BiFunction<List<C>, Predicate<C>, C> selector) {
         this.selector = selector;
-        closeable = LoadBalancerUtils.newCloseable(connections::close);
+        closeable = AsyncCloseables.toListenableAsyncCloseable(connections);
     }
 
     @Override

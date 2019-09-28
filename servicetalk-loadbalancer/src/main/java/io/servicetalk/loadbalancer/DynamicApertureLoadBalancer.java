@@ -22,8 +22,8 @@ import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.client.api.internal.LoadBalancerReadyEvent;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.PublisherSource;
-import io.servicetalk.concurrent.api.AsyncCloseable;
 import io.servicetalk.concurrent.api.Completable;
+import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
@@ -34,18 +34,19 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Objects;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
+import static io.servicetalk.concurrent.api.AsyncCloseables.toAsyncCloseable;
+import static io.servicetalk.concurrent.api.AsyncCloseables.toListenableAsyncCloseable;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.loadbalancer.LoadBalancerUtils.noAvailableConnectionSelectMatchCnxException;
 
-public final class DynamicApertureLoadBalancer<R, C extends LoadBalancedConnection> implements LoadBalancer<C> {
+final class DynamicApertureLoadBalancer<R, C extends LoadBalancedConnection> implements LoadBalancer<C> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DynamicApertureLoadBalancer.class);
 
@@ -54,12 +55,12 @@ public final class DynamicApertureLoadBalancer<R, C extends LoadBalancedConnecti
     private final SpScPublisherProcessor<Object> eventStream = new SpScPublisherProcessor<>(32);
     private final ListenableAsyncCloseable closeable;
 
-    public DynamicApertureLoadBalancer(final Publisher<? extends ServiceDiscovererEvent<R>> sdePublisher,
+    DynamicApertureLoadBalancer(final Publisher<? extends ServiceDiscovererEvent<R>> sdePublisher,
                                        final ConnectionFactory<R, C> connectionFactory) {
         this(sdePublisher, connectionFactory, 0.5f, 0.95f, Duration.ofSeconds(30), 3, 5);
     }
 
-    public DynamicApertureLoadBalancer(final Publisher<? extends ServiceDiscovererEvent<R>> sdePublisher,
+    DynamicApertureLoadBalancer(final Publisher<? extends ServiceDiscovererEvent<R>> sdePublisher,
                                        final ConnectionFactory<R, C> connectionFactory,
                                        final float bottomScore,
                                        final float topScore,
@@ -67,17 +68,13 @@ public final class DynamicApertureLoadBalancer<R, C extends LoadBalancedConnecti
                                        final int maxEffortAddress,
                                        final int maxEffortConnection) {
 
-        final List<AsyncCloseable> closeables = new ArrayList<>();
         final DefaultAddressFactory<R, C> addressFactory = new DefaultAddressFactory<>(connectionFactory,
                 (evt, cf) -> new ConnectionAwareLoadBalancedAddress<>(evt.address(), cf));
-        closeables.add(addressFactory);
 
         addressSelector = new DynamicApertureListBasedAddressSelector<>(bottomScore, topScore,
                 apertureRefreshTime, new P2CSelector<>(maxEffortAddress));
-        closeables.add(addressSelector);
 
         connSelector = new DefaultListBasedConnectionSelector<>(new P2CSelector<>(maxEffortConnection));
-        closeables.add(connSelector);
 
         final Cancellable cancellable = subscribeToServiceDiscovery(
                 sdePublisher.map(addressFactory).filter(Objects::nonNull), // NULL when addressFactory closed
@@ -90,10 +87,15 @@ public final class DynamicApertureLoadBalancer<R, C extends LoadBalancedConnecti
                 addressSelector::isReady,
                 eventStream);
 
-        closeable = LoadBalancerUtils.newCloseable(() -> {
+        closeable = toListenableAsyncCloseable(toAsyncCloseable(g -> {
             cancellable.cancel();
-            return closeables;
-        });
+            CompositeCloseable cc = newCompositeCloseable()
+                    .prependAll(addressFactory, addressSelector, connSelector);
+            if (g) {
+                return cc.closeAsyncGracefully();
+            }
+            return cc.closeAsync();
+        }));
     }
 
     @Override

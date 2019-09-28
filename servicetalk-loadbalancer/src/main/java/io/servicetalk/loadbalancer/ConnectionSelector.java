@@ -45,7 +45,7 @@ interface ConnectionSelector<C extends LoadBalancedConnection> extends Listenabl
     void add(C connection);
 
     /**
-     * Announces unavailability of a {@link LoadBalancedConnection}, eg. from Service Discovery.
+     * Announces unavailability of a {@link LoadBalancedConnection}.
      *
      * @param connection the {@link LoadBalancedConnection}.
      */

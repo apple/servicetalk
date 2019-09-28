@@ -25,20 +25,24 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.loadbalancer.StatUtils.UnevenExpWeightedMovingAvg;
 
 import java.time.Duration;
+import java.util.List;
+
+import static io.servicetalk.concurrent.api.AsyncCloseables.toListenableAsyncCloseable;
+import static java.lang.System.nanoTime;
 
 class ConnectionAwareLoadBalancedAddress<R, C extends LoadBalancedConnection, SDE extends ServiceDiscovererEvent<R>>
         implements LoadBalancedAddress<C>, ServiceDiscoveryAwareLoadBalancedAddress<C, R, SDE> {
 
-    // Probably want this to be a low value, to notice spikes in load quickly
-    public static final long SCORE_CACHE_TTL = Duration.ofSeconds(1).toNanos();
     private final CowList<C> connections = new CowList<>();
-    private final UnevenExpWeightedMovingAvg ewma =
+    // TODO(jayv) Configuration of the decay parameters should be externalized
+    private final UnevenExpWeightedMovingAvg availability =
+            new UnevenExpWeightedMovingAvg(Duration.ofSeconds(15));
+    private final UnevenExpWeightedMovingAvg latency =
             new UnevenExpWeightedMovingAvg(Duration.ofSeconds(15));
     private final R address;
     private final ConnectionFactory<R, C> cf;
     private final float cancelValue;
-    private volatile long lastComputed;
-    private final ListenableAsyncCloseable closeable;
+    private final ListenableAsyncCloseable closeable = toListenableAsyncCloseable(connections);
 
     ConnectionAwareLoadBalancedAddress(final R address, final ConnectionFactory<R, C> cf) {
         this(address, cf, 0.5f);
@@ -48,36 +52,41 @@ class ConnectionAwareLoadBalancedAddress<R, C extends LoadBalancedConnection, SD
         this.address = address;
         this.cf = cf;
         this.cancelValue = cancelValue;
-        closeable = LoadBalancerUtils.newCloseable(connections::close);
     }
 
     @Override
     public float score() {
-        long now = System.nanoTime();
-        if ((lastComputed - now) > SCORE_CACHE_TTL) {
-            for (C entry : connections.currentEntries()) {
-                ewma.observe(entry.score());
-            }
-            lastComputed = now;
-            return ewma.value();
+        float avgConnScore = 0;
+        List<C> entries = connections.currentEntries();
+        for (C entry : entries) {
+            avgConnScore += entry.score();
         }
-        return ewma.valueDecayed();
+        float meanConnScore = avgConnScore / entries.size();
+        // TODO(jayv) probably want to weigh both components differently
+        // TODO(jayv) in addition to the mean we may be interested in sumsquares and stddev, to penalize higher variance
+        // TODO(jayv) always calculate the mean over all connections? this is unbounded, having the computation be
+        // encapsulated doesn't give visibility to the component requesting the calculation to put a bound on effort
+        // TODO(jayv) what to do with connect() latency score
+        return availability.value() * meanConnScore; // * f(latency) => latency to score
     }
 
     @Override
     public Single<C> newConnection() {
+        final Timer connectTimer = new Timer(); // RS provides happens-before
         return cf.newConnection(address)
+                .beforeOnSubscribe(__ -> connectTimer.start())
                 .beforeOnSuccess(lbc -> {
                     if (!connections.add(lbc)) {
                         // Failed to add connection, already closed
                         lbc.closeAsync().subscribe();
                         return;
                     }
+                    latency.observe((float) connectTimer.stop() / 1_000_000);
                     lbc.onClose().beforeFinally(() -> connections.remove(lbc)).subscribe();
-                    ewma.observe(1);
+                    availability.observe(1);
                 })
-                .beforeOnError(__ -> ewma.observe(0))
-                .beforeCancel(() -> ewma.observe(cancelValue));
+                .beforeOnError(__ -> availability.observe(0))
+                .beforeCancel(() -> availability.observe(cancelValue));
     }
 
     @Override
@@ -97,7 +106,7 @@ class ConnectionAwareLoadBalancedAddress<R, C extends LoadBalancedConnection, SD
 
     @Override
     public void onEvent(final SDE event) {
-        ewma.set(event.isAvailable() ? 1 : 0);
+        availability.set(event.isAvailable() ? 1 : 0);
     }
 
     @Override
@@ -117,5 +126,17 @@ class ConnectionAwareLoadBalancedAddress<R, C extends LoadBalancedConnection, SD
     @Override
     public int hashCode() {
         return address.hashCode();
+    }
+
+    private static final class Timer {
+        private long startTime = -1;
+
+        void start() {
+            startTime = nanoTime();
+        }
+
+        long stop() {
+            return nanoTime() - startTime;
+        }
     }
 }
