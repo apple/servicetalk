@@ -17,9 +17,7 @@
 apply plugin: "servicetalk-library"
 
 dependencies {
-  implementation platform(project(":servicetalk-bom-internal"))
-
-  api "com.fasterxml.jackson.core:jackson-databind"
+  api "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
   api project(":servicetalk-buffer-api")
   api project(":servicetalk-concurrent-api")
 
@@ -27,13 +25,13 @@ dependencies {
   implementation project(":servicetalk-concurrent-api-internal")
   implementation project(":servicetalk-concurrent-internal")
   implementation project(":servicetalk-serialization-api")
-  implementation "com.google.code.findbugs:jsr305"
+  implementation "com.google.code.findbugs:jsr305:$jsr305Version"
 
   testImplementation testFixtures(project(":servicetalk-concurrent-api"))
   testImplementation testFixtures(project(":servicetalk-concurrent-internal"))
   testImplementation project(":servicetalk-test-resources")
   testImplementation project(":servicetalk-buffer-netty")
-  testImplementation "junit:junit"
-  testImplementation "org.hamcrest:hamcrest-library"
-  testImplementation "org.mockito:mockito-core"
+  testImplementation "junit:junit:$junitVersion"
+  testImplementation "org.hamcrest:hamcrest-library:$hamcrestVersion"
+  testImplementation "org.mockito:mockito-core:$mockitoCoreVersion"
 }

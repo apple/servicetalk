@@ -17,18 +17,16 @@
 apply plugin: "servicetalk-library"
 
 dependencies {
-  implementation platform(project(":servicetalk-bom-internal"))
-
   api project(":servicetalk-http-api")
-  api "io.opentracing:opentracing-api"
+  api "io.opentracing:opentracing-api:$openTracingVersion"
 
   implementation project(":servicetalk-annotations")
   implementation project(":servicetalk-http-utils")
   implementation project(":servicetalk-opentracing-inmemory")
   implementation project(":servicetalk-opentracing-inmemory-api")
   implementation project(":servicetalk-opentracing-internal")
-  implementation "com.google.code.findbugs:jsr305"
-  implementation "org.slf4j:slf4j-api"
+  implementation "com.google.code.findbugs:jsr305:$jsr305Version"
+  implementation "org.slf4j:slf4j-api:$slf4jVersion"
 
   testImplementation testFixtures(project(":servicetalk-concurrent-api"))
   testImplementation testFixtures(project(":servicetalk-concurrent-internal"))
@@ -38,7 +36,7 @@ dependencies {
   testImplementation project(":servicetalk-http-netty")
   testImplementation project(":servicetalk-opentracing-asynccontext")
   testImplementation project(":servicetalk-test-resources")
-  testImplementation "junit:junit"
-  testImplementation "org.hamcrest:hamcrest-library"
-  testImplementation "org.mockito:mockito-core"
+  testImplementation "junit:junit:$junitVersion"
+  testImplementation "org.hamcrest:hamcrest-library:$hamcrestVersion"
+  testImplementation "org.mockito:mockito-core:$mockitoCoreVersion"
 }

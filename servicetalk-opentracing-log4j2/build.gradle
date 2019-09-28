@@ -17,21 +17,19 @@
 apply plugin: "servicetalk-library"
 
 dependencies {
-  implementation platform(project(":servicetalk-bom-internal"))
-
   api project(":servicetalk-log4j2-mdc-utils")
 
   implementation project(":servicetalk-annotations")
   implementation project(":servicetalk-concurrent-api") // Just for javadocs
   implementation project(":servicetalk-opentracing-inmemory-api")
   implementation project(":servicetalk-opentracing-asynccontext")
-  implementation "com.google.code.findbugs:jsr305"
+  implementation "com.google.code.findbugs:jsr305:$jsr305Version"
   implementation "org.apache.logging.log4j:log4j-api"
-  implementation "org.slf4j:slf4j-api"
+  implementation "org.slf4j:slf4j-api:$slf4jVersion"
 
   testImplementation testFixtures(project(":servicetalk-log4j2-mdc-utils"))
-  testImplementation "junit:junit"
-  testImplementation "org.hamcrest:hamcrest-library"
-  testImplementation "org.apache.logging.log4j:log4j-slf4j-impl"
-  testImplementation "org.apache.logging.log4j:log4j-core"
+  testImplementation "junit:junit:$junitVersion"
+  testImplementation "org.hamcrest:hamcrest-library:$hamcrestVersion"
+  testImplementation "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
+  testImplementation "org.apache.logging.log4j:log4j-core:$log4jVersion"
 }

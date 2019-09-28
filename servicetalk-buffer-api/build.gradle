@@ -17,11 +17,9 @@
 apply plugin: "servicetalk-library"
 
 dependencies {
-  implementation platform(project(":servicetalk-bom-internal"))
-
   implementation project(":servicetalk-annotations")
 
-  testImplementation "junit:junit"
-  testImplementation "org.hamcrest:hamcrest-library"
-  testImplementation "org.mockito:mockito-core"
+  testImplementation "junit:junit:$junitVersion"
+  testImplementation "org.hamcrest:hamcrest-library:$hamcrestVersion"
+  testImplementation "org.mockito:mockito-core:$mockitoCoreVersion"
 }

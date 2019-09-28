@@ -23,9 +23,3 @@ idea {
     languageLevel = new org.gradle.plugins.ide.idea.model.IdeaLanguageLevel("1.8")
   }
 }
-
-dependencies {
-  // The following is only needed because these examples sit within the same repo as ServiceTalk:
-  // users projects would use servicetalk-bom instead
-  implementation project(":servicetalk-bom-internal")
-}

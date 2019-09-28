@@ -18,15 +18,13 @@ apply plugin: "servicetalk-library"
 apply plugin: "servicetalk-grpc"
 
 dependencies {
-  implementation platform(project(":servicetalk-bom-internal"))
-
   api project(":servicetalk-grpc-api")
   api project(":servicetalk-http-netty")
 
   implementation project(":servicetalk-annotations")
   implementation project(":servicetalk-transport-netty-internal")
-  implementation "org.slf4j:slf4j-api"
-  implementation "com.google.code.findbugs:jsr305"
+  implementation "org.slf4j:slf4j-api:$slf4jVersion"
+  implementation "com.google.code.findbugs:jsr305:$jsr305Version"
 
   testImplementation testFixtures(project(":servicetalk-concurrent-api"))
   testImplementation testFixtures(project(":servicetalk-concurrent-internal"))
@@ -40,12 +38,12 @@ dependencies {
   }
   testImplementation "io.grpc:grpc-protobuf:$grpcVersion"
   testImplementation "io.grpc:grpc-stub:$grpcVersion"
-  testImplementation "io.netty:netty-transport-native-unix-common"
-  testImplementation "io.netty:netty-tcnative-boringssl-static"
-  testImplementation "javax.annotation:javax.annotation-api"
-  testImplementation "junit:junit"
-  testImplementation "org.hamcrest:hamcrest-library"
-  testImplementation "org.mockito:mockito-core"
+  testImplementation "io.netty:netty-transport-native-unix-common:$nettyVersion"
+  testImplementation "io.netty:netty-tcnative-boringssl-static:$tcnativeVersion"
+  testImplementation "javax.annotation:javax.annotation-api:$javaxAnnotationsApiVersion"
+  testImplementation "junit:junit:$junitVersion"
+  testImplementation "org.hamcrest:hamcrest-library:$hamcrestVersion"
+  testImplementation "org.mockito:mockito-core:$mockitoCoreVersion"
 }
 
 serviceTalkGrpc {

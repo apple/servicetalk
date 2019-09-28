@@ -17,8 +17,6 @@
 apply plugin: "servicetalk-library"
 
 dependencies {
-  implementation platform(project(":servicetalk-bom-internal"))
-
   api project(":servicetalk-concurrent-api")
   api project(":servicetalk-http-api")
 
@@ -32,10 +30,10 @@ dependencies {
   implementation project(":servicetalk-tcp-netty-internal")
   implementation project(":servicetalk-transport-netty")
   implementation project(":servicetalk-transport-netty-internal")
-  implementation "com.google.code.findbugs:jsr305"
-  implementation "io.netty:netty-codec-http"
-  implementation "io.netty:netty-codec-http2"
-  implementation "org.slf4j:slf4j-api"
+  implementation "com.google.code.findbugs:jsr305:$jsr305Version"
+  implementation "io.netty:netty-codec-http:$nettyVersion"
+  implementation "io.netty:netty-codec-http2:$nettyVersion"
+  implementation "org.slf4j:slf4j-api:$slf4jVersion"
 
   testImplementation testFixtures(project(":servicetalk-concurrent-api"))
   testImplementation testFixtures(project(":servicetalk-concurrent-internal"))
@@ -43,9 +41,9 @@ dependencies {
   testImplementation testFixtures(project(":servicetalk-transport-netty-internal"))
   testImplementation project(":servicetalk-data-jackson")
   testImplementation project(":servicetalk-test-resources")
-  testImplementation "io.netty:netty-transport-native-unix-common"
-  testImplementation "io.netty:netty-tcnative-boringssl-static"
-  testImplementation "junit:junit"
-  testImplementation "org.hamcrest:hamcrest-library"
-  testImplementation "org.mockito:mockito-core"
+  testImplementation "io.netty:netty-transport-native-unix-common:$nettyVersion"
+  testImplementation "io.netty:netty-tcnative-boringssl-static:$tcnativeVersion"
+  testImplementation "junit:junit:$junitVersion"
+  testImplementation "org.hamcrest:hamcrest-library:$hamcrestVersion"
+  testImplementation "org.mockito:mockito-core:$mockitoCoreVersion"
 }

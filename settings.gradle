@@ -21,7 +21,6 @@ rootProject.name = "servicetalk"
 include "servicetalk-annotations",
         "servicetalk-benchmarks",
         "servicetalk-bom",
-        "servicetalk-bom-internal",
         "servicetalk-buffer-api",
         "servicetalk-buffer-netty",
         "servicetalk-client-api",
