@@ -21,19 +21,26 @@ import io.servicetalk.client.api.LoadBalancerFactory;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
+import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.FilterableStreamingHttpLoadBalancedConnection;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpHeadersFactory;
+import io.servicetalk.http.api.StreamingHttpClientFilter;
 import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
 import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequest;
+import io.servicetalk.http.api.StreamingHttpRequester;
+import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.transport.api.IoExecutor;
 
 import java.net.SocketOption;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
+
+import static io.servicetalk.concurrent.api.Single.failed;
+import static io.servicetalk.grpc.api.GrpcStatus.fromThrowable;
 
 /**
  * A builder for building a <a href="https://www.grpc.io">gRPC</a> client.
@@ -43,6 +50,8 @@ import javax.annotation.Nullable;
  */
 public abstract class GrpcClientBuilder<U, R>
         implements SingleAddressGrpcClientBuilder<U, R, ServiceDiscovererEvent<R>> {
+    private boolean appendedCatchAllFilter;
+
     @Override
     public abstract GrpcClientBuilder<U, R> ioExecutor(IoExecutor ioExecutor);
 
@@ -123,7 +132,11 @@ public abstract class GrpcClientBuilder<U, R>
      * @param factory {@link StreamingHttpClientFilterFactory} to decorate a client for the purpose of filtering.
      * @return {@code this}
      */
-    public abstract GrpcClientBuilder<U, R> appendHttpClientFilter(StreamingHttpClientFilterFactory factory);
+    public final GrpcClientBuilder<U, R> appendHttpClientFilter(StreamingHttpClientFilterFactory factory) {
+        appendCatchAllFilterIfRequired();
+        doAppendHttpClientFilter(factory);
+        return this;
+    }
 
     /**
      * Append the filter to the chain of filters used to decorate the client created by this builder, for every request
@@ -142,8 +155,12 @@ public abstract class GrpcClientBuilder<U, R>
      * @param factory {@link StreamingHttpClientFilterFactory} to decorate a client for the purpose of filtering.
      * @return {@code this}
      */
-    public abstract GrpcClientBuilder<U, R> appendHttpClientFilter(Predicate<StreamingHttpRequest> predicate,
-                                                                   StreamingHttpClientFilterFactory factory);
+    public final GrpcClientBuilder<U, R> appendHttpClientFilter(Predicate<StreamingHttpRequest> predicate,
+                                                                StreamingHttpClientFilterFactory factory) {
+        appendCatchAllFilterIfRequired();
+        doAppendHttpClientFilter(predicate, factory);
+        return this;
+    }
 
     /**
      * Builds a <a href="https://www.grpc.io">gRPC</a> client.
@@ -217,6 +234,65 @@ public abstract class GrpcClientBuilder<U, R>
      * @return A new {@link GrpcClientCallFactory}.
      */
     protected abstract GrpcClientCallFactory newGrpcClientCallFactory();
+
+    /**
+     * Append the filter to the chain of filters used to decorate the client created by this builder.
+     * <p>
+     * The order of execution of these filters are in order of append. If 3 filters are added as follows:
+     * <pre>
+     *     builder.append(filter1).append(filter2).append(filter3)
+     * </pre>
+     * making a request to a client wrapped by this filter chain the order of invocation of these filters will be:
+     * <pre>
+     *     filter1 =&gt; filter2 =&gt; filter3 =&gt; client
+     * </pre>
+     *
+     * @param factory {@link StreamingHttpClientFilterFactory} to decorate a client for the purpose of filtering.
+     */
+    protected abstract void doAppendHttpClientFilter(StreamingHttpClientFilterFactory factory);
+
+    /**
+     * Append the filter to the chain of filters used to decorate the client created by this builder, for every request
+     * that passes the provided {@link Predicate}.
+     * <p>
+     * The order of execution of these filters are in order of append. If 3 filters are added as follows:
+     * <pre>
+     *     builder.append(filter1).append(filter2).append(filter3)
+     * </pre>
+     * making a request to a client wrapped by this filter chain the order of invocation of these filters will be:
+     * <pre>
+     *     filter1 =&gt; filter2 =&gt; filter3 =&gt; client
+     * </pre>
+     *
+     * @param predicate the {@link Predicate} to test if the filter must be applied.
+     * @param factory {@link StreamingHttpClientFilterFactory} to decorate a client for the purpose of filtering.
+     */
+    protected abstract void doAppendHttpClientFilter(Predicate<StreamingHttpRequest> predicate,
+                                                     StreamingHttpClientFilterFactory factory);
+
+    private void appendCatchAllFilterIfRequired() {
+        if (!appendedCatchAllFilter) {
+            doAppendHttpClientFilter(client -> new StreamingHttpClientFilter(client) {
+                @Override
+                protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
+                                                                final HttpExecutionStrategy strategy,
+                                                                final StreamingHttpRequest request) {
+                    Single<StreamingHttpResponse> resp;
+                    try {
+                        resp = super.request(delegate, strategy, request);
+                    } catch (Throwable t) {
+                        return failed(toGrpcException(t));
+                    }
+                    return resp.recoverWith(t -> failed(toGrpcException(t)));
+                }
+            });
+            appendedCatchAllFilter = true;
+        }
+    }
+
+    private static GrpcStatusException toGrpcException(Throwable cause) {
+        return fromThrowable(cause).asException();
+    }
 
     /**
      * An interface to create multiple <a href="https://www.grpc.io">gRPC</a> clients sharing the

@@ -159,19 +159,6 @@ final class DefaultGrpcServerBuilder extends GrpcServerBuilder implements Server
     }
 
     @Override
-    public GrpcServerBuilder appendHttpServiceFilter(final StreamingHttpServiceFilterFactory factory) {
-        httpServerBuilder.appendServiceFilter(factory);
-        return this;
-    }
-
-    @Override
-    public GrpcServerBuilder appendHttpServiceFilter(final Predicate<StreamingHttpRequest> predicate,
-                                                     final StreamingHttpServiceFilterFactory factory) {
-        httpServerBuilder.appendServiceFilter(predicate, factory);
-        return this;
-    }
-
-    @Override
     public GrpcServerBuilder ioExecutor(final IoExecutor ioExecutor) {
         contextBuilder.ioExecutor(ioExecutor);
         httpServerBuilder.ioExecutor(ioExecutor);
@@ -196,6 +183,17 @@ final class DefaultGrpcServerBuilder extends GrpcServerBuilder implements Server
     protected Single<ServerContext> doListen(final GrpcServiceFactory<?, ?, ?> serviceFactory) {
         ExecutionContext executionContext = contextBuilder.build();
         return serviceFactory.bind(this, executionContext);
+    }
+
+    @Override
+    protected void doAppendHttpServiceFilter(final StreamingHttpServiceFilterFactory factory) {
+        httpServerBuilder.appendServiceFilter(factory);
+    }
+
+    @Override
+    protected void doAppendHttpServiceFilter(final Predicate<StreamingHttpRequest> predicate,
+                                             final StreamingHttpServiceFilterFactory factory) {
+        httpServerBuilder.appendServiceFilter(predicate, factory);
     }
 
     @Override
