@@ -18,7 +18,6 @@ apply plugin: "servicetalk-library"
 
 dependencies {
   api project(":servicetalk-concurrent")
-  api "org.reactivestreams:reactive-streams:$reactiveStreamsVersion"
 
   implementation project(":servicetalk-annotations")
   implementation "com.google.code.findbugs:jsr305:$jsr305Version"
