@@ -137,23 +137,16 @@ final class GrpcUtils {
         // check for error here first. If we see trailers later in payloadBodyAndTrailers(), we will check for error
         // there.
         final HttpHeaders respHeaders = response.headers();
-        final CharSequence statusCode = respHeaders.get(GRPC_STATUS_CODE_TRAILER);
-        if (statusCode != null) {
-            GrpcStatusException ex = newErrorFromStatus(respHeaders, statusCode);
-            if (ex != null) {
-                return Publisher.failed(ex);
-            }
+        GrpcStatusException grpcStatusException = extractGrpcExceptionFromHeaders(respHeaders);
+        if (grpcStatusException != null) {
+            return Publisher.failed(grpcStatusException);
         }
         return deserializer.deserialize(respHeaders, response.payloadBodyAndTrailers().map(o -> {
             if (o instanceof HttpHeaders) {
                 // We have already checked for error in headers above, now we just check in trailers.
-                final HttpHeaders trailers = (HttpHeaders) o;
-                final CharSequence stCodeTrailers = trailers.get(GRPC_STATUS_CODE_TRAILER);
-                if (stCodeTrailers != null) {
-                    GrpcStatusException ex = newErrorFromStatus(trailers, stCodeTrailers);
-                    if (ex != null) {
-                        throw ex;
-                    }
+                GrpcStatusException ex = extractGrpcExceptionFromHeaders((HttpHeaders) o);
+                if (ex != null) {
+                    throw ex;
                 }
             } else if (!(o instanceof Buffer)) {
                 throw new IllegalArgumentException("Unexpected payload type: " + o.getClass());
@@ -171,24 +164,15 @@ final class GrpcUtils {
         // the status in both headers and trailers.
 
         // We will try the trailers first as this is the most likely place to find the GRPC related headers.
-        CharSequence statusCode = trailers.get(GRPC_STATUS_CODE_TRAILER);
-        final HttpHeaders grpcHeaders;
-
-        if (statusCode == null) {
-            // There was no grpc-status in the trailers, so everything must be in the headers.
-            statusCode = headers.get(GRPC_STATUS_CODE_TRAILER);
-            grpcHeaders = headers;
-        } else {
-            // We found the statusCode in the trailers so the message also must be in the trailers if
-            // there is any.
-            grpcHeaders = trailers;
+        GrpcStatusException grpcStatusException = extractGrpcExceptionFromHeaders(trailers);
+        if (grpcStatusException != null) {
+            throw grpcStatusException;
         }
 
-        if (statusCode != null) {
-            GrpcStatusException ex = newErrorFromStatus(grpcHeaders, statusCode);
-            if (ex != null) {
-                throw ex;
-            }
+        // There was no grpc-status in the trailers, so error may be in the headers.
+        grpcStatusException = extractGrpcExceptionFromHeaders(headers);
+        if (grpcStatusException != null) {
+            throw grpcStatusException;
         }
         return response.payloadBody(deserializer);
     }
@@ -197,7 +181,7 @@ final class GrpcUtils {
         final CharSequence encoding = httpMetaData.headers().get(GRPC_MESSAGE_ENCODING_KEY);
         // identity is a special header for no compression
         if (encoding != null && !contentEqualsIgnoreCase(encoding, IDENTITY)) {
-            String lowercaseEncoding = encoding.toString().toLowerCase();
+            final String lowercaseEncoding = encoding.toString().toLowerCase();
             throw new SerializationException("Compression " + lowercaseEncoding + " not supported");
         } else {
             return None;
@@ -212,11 +196,14 @@ final class GrpcUtils {
     }
 
     @Nullable
-    private static GrpcStatusException newErrorFromStatus(final HttpHeaders headers, final CharSequence statusCode) {
-        final GrpcStatusCode grpcStatusCode = GrpcStatusCode.fromCodeValue(statusCode);
-        if (grpcStatusCode.value() != GrpcStatusCode.OK.value()) {
-            return new GrpcStatus(grpcStatusCode, null, headers.get(GRPC_STATUS_MESSAGE_TRAILER))
-                    .asException(new StatusSupplier(headers));
+    private static GrpcStatusException extractGrpcExceptionFromHeaders(final HttpHeaders headers) {
+        final CharSequence statusCode = headers.get(GRPC_STATUS_CODE_TRAILER);
+        if (statusCode != null) {
+            final GrpcStatusCode grpcStatusCode = GrpcStatusCode.fromCodeValue(statusCode);
+            if (grpcStatusCode.value() != GrpcStatusCode.OK.value()) {
+                return new GrpcStatus(grpcStatusCode, null, headers.get(GRPC_STATUS_MESSAGE_TRAILER))
+                        .asException(new StatusSupplier(headers));
+            }
         }
         return null;
     }

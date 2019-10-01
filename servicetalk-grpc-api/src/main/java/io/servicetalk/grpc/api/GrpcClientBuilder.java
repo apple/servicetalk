@@ -277,7 +277,7 @@ public abstract class GrpcClientBuilder<U, R>
                 protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                                 final HttpExecutionStrategy strategy,
                                                                 final StreamingHttpRequest request) {
-                    Single<StreamingHttpResponse> resp;
+                    final Single<StreamingHttpResponse> resp;
                     try {
                         resp = super.request(delegate, strategy, request);
                     } catch (Throwable t) {
