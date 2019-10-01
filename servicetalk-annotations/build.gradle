@@ -17,7 +17,5 @@
 apply plugin: "servicetalk-library"
 
 dependencies {
-  api platform(project(":servicetalk-bom-internal"))
-
-  implementation "com.google.code.findbugs:jsr305"
+  implementation "com.google.code.findbugs:jsr305:$jsr305Version"
 }

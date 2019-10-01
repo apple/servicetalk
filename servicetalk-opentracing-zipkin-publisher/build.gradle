@@ -17,19 +17,17 @@
 apply plugin: "servicetalk-library"
 
 dependencies {
-  api platform(project(":servicetalk-bom-internal"))
-
   api project(":servicetalk-opentracing-inmemory-api")
 
   implementation project(":servicetalk-annotations")
   implementation project(":servicetalk-transport-netty-internal")
-  implementation "com.google.code.findbugs:jsr305"
-  implementation "io.netty:netty-codec"
-  implementation "io.netty:netty-transport"
-  implementation group: "io.netty", name: "netty-transport-native-epoll", classifier: "linux-x86_64"
-  implementation group: "io.netty", name: "netty-transport-native-kqueue", classifier: "osx-x86_64"
-  implementation "io.zipkin.zipkin2:zipkin"
-  implementation "org.slf4j:slf4j-api"
+  implementation "com.google.code.findbugs:jsr305:$jsr305Version"
+  implementation "io.netty:netty-codec:$nettyVersion"
+  implementation "io.netty:netty-transport:$nettyVersion"
+  implementation "io.netty:netty-transport-native-epoll:$nettyVersion:linux-x86_64"
+  implementation "io.netty:netty-transport-native-kqueue:$nettyVersion:osx-x86_64"
+  implementation "io.zipkin.zipkin2:zipkin:$zipkinVersion"
+  implementation "org.slf4j:slf4j-api:$slf4jVersion"
 
   testImplementation testFixtures(project(":servicetalk-concurrent-api"))
   testImplementation testFixtures(project(":servicetalk-concurrent-internal"))
@@ -38,7 +36,7 @@ dependencies {
   testImplementation project(":servicetalk-opentracing-asynccontext")
   testImplementation project(":servicetalk-opentracing-inmemory")
   testImplementation project(":servicetalk-test-resources")
-  testImplementation "junit:junit"
-  testImplementation "org.hamcrest:hamcrest-library"
-  testImplementation "org.mockito:mockito-core"
+  testImplementation "junit:junit:$junitVersion"
+  testImplementation "org.hamcrest:hamcrest-library:$hamcrestVersion"
+  testImplementation "org.mockito:mockito-core:$mockitoCoreVersion"
 }
