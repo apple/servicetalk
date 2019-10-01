@@ -17,12 +17,10 @@
 apply plugin: "servicetalk-library"
 
 dependencies {
-  api platform(project(":servicetalk-bom-internal"))
-
   api project(":servicetalk-opentracing-inmemory-api")
 
   implementation project(":servicetalk-annotations")
   implementation project(":servicetalk-opentracing-internal")
-  implementation "com.google.code.findbugs:jsr305"
-  implementation "org.slf4j:slf4j-api"
+  implementation "com.google.code.findbugs:jsr305:$jsr305Version"
+  implementation "org.slf4j:slf4j-api:$slf4jVersion"
 }

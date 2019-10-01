@@ -17,17 +17,15 @@
 apply plugin: "servicetalk-library"
 
 dependencies {
-  api platform(project(":servicetalk-bom-internal"))
-
   api project(":servicetalk-buffer-api")
 
   implementation project(":servicetalk-annotations")
   implementation project(":servicetalk-concurrent-internal")
-  implementation "com.google.code.findbugs:jsr305"
-  implementation "io.netty:netty-buffer"
-  implementation "org.slf4j:slf4j-api"
+  implementation "com.google.code.findbugs:jsr305:$jsr305Version"
+  implementation "io.netty:netty-buffer:$nettyVersion"
+  implementation "org.slf4j:slf4j-api:$slf4jVersion"
 
   testImplementation project(":servicetalk-test-resources")
-  testImplementation "junit:junit"
-  testImplementation "org.mockito:mockito-core"
+  testImplementation "junit:junit:$junitVersion"
+  testImplementation "org.mockito:mockito-core:$mockitoCoreVersion"
 }

@@ -26,8 +26,6 @@ apply plugin: "com.google.protobuf"
 ideaModule.dependsOn "generateTestProto"
 
 dependencies {
-  api platform(project(":servicetalk-bom-internal"))
-
   api project(":servicetalk-buffer-api")
   api project(":servicetalk-concurrent-api")
 
@@ -35,16 +33,16 @@ dependencies {
   implementation project(":servicetalk-concurrent-api-internal")
   implementation project(":servicetalk-concurrent-internal")
   implementation project(":servicetalk-serialization-api")
-  implementation "com.google.code.findbugs:jsr305"
-  implementation "com.google.protobuf:protobuf-java"
+  implementation "com.google.code.findbugs:jsr305:$jsr305Version"
+  implementation "com.google.protobuf:protobuf-java:$protobufVersion"
 
   testImplementation testFixtures(project(":servicetalk-concurrent-api"))
   testImplementation testFixtures(project(":servicetalk-concurrent-internal"))
   testImplementation project(":servicetalk-test-resources")
   testImplementation project(":servicetalk-buffer-netty")
-  testImplementation "junit:junit"
-  testImplementation "org.hamcrest:hamcrest-library"
-  testImplementation "org.mockito:mockito-core"
+  testImplementation "junit:junit:$junitVersion"
+  testImplementation "org.hamcrest:hamcrest-library:$hamcrestVersion"
+  testImplementation "org.mockito:mockito-core:$mockitoCoreVersion"
 }
 
 protobuf {

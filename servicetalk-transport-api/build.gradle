@@ -17,19 +17,17 @@
 apply plugin: "servicetalk-library"
 
 dependencies {
-  api platform(project(":servicetalk-bom-internal"))
-
   api project(":servicetalk-buffer-api")
   api project(":servicetalk-concurrent-api")
 
   implementation project(":servicetalk-annotations")
   implementation project(":servicetalk-concurrent-internal")
-  implementation "com.google.code.findbugs:jsr305"
+  implementation "com.google.code.findbugs:jsr305:$jsr305Version"
 
   testImplementation testFixtures(project(":servicetalk-concurrent-api"))
   testImplementation testFixtures(project(":servicetalk-concurrent-internal"))
   testImplementation project(":servicetalk-test-resources")
-  testImplementation "junit:junit"
-  testImplementation "org.hamcrest:hamcrest-library"
-  testImplementation "org.mockito:mockito-core"
+  testImplementation "junit:junit:$junitVersion"
+  testImplementation "org.hamcrest:hamcrest-library:$hamcrestVersion"
+  testImplementation "org.mockito:mockito-core:$mockitoCoreVersion"
 }
