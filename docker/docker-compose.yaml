@@ -55,14 +55,14 @@ services:
     depends_on: [runtime-setup]
     environment:
       - CI
-    command: bash -cl "./gradlew --no-daemon --parallel clean test"
+    command: bash -cl "./gradlew --no-daemon --parallel --max-workers=2 clean test"
 
   quality:
     << : *common
     depends_on: [runtime-setup]
     environment:
       - CI
-    command: bash -cl "./gradlew --no-daemon --parallel clean quality"
+    command: bash -cl "./gradlew --no-daemon --parallel --max-workers=2 clean quality"
 
   publish-snapshot:
     << : *common
