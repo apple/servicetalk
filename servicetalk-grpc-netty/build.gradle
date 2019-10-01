@@ -40,7 +40,7 @@ dependencies {
   testImplementation "io.grpc:grpc-stub:$grpcVersion"
   testImplementation "io.netty:netty-transport-native-unix-common:$nettyVersion"
   testImplementation "io.netty:netty-tcnative-boringssl-static:$tcnativeVersion"
-  testImplementation "javax.annotation:javax.annotation-api:$javaxAnnotationsApiVersion"
+  testImplementation "jakarta.annotation:jakarta.annotation-api:$javaxAnnotationsApiVersion"
   testImplementation "junit:junit:$junitVersion"
   testImplementation "org.hamcrest:hamcrest-library:$hamcrestVersion"
   testImplementation "org.mockito:mockito-core:$mockitoCoreVersion"

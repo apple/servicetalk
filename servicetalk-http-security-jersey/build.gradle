@@ -17,7 +17,7 @@
 apply plugin: "servicetalk-library"
 
 dependencies {
-  api "javax.ws.rs:javax.ws.rs-api:$jaxRsVersion"
+  api "jakarta.ws.rs:jakarta.ws.rs-api:$jaxRsVersion"
 
   implementation project(":servicetalk-annotations")
   implementation project(":servicetalk-concurrent-api")
