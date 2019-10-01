@@ -16,6 +16,6 @@
 
 name: servicetalk-http-router-jersey
 title: ServiceTalk HTTP Router - Jersey
-version: SNAPSHOT
+version: 0.18
 nav:
   - modules/ROOT/nav.adoc
