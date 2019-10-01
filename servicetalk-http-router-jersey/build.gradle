@@ -18,7 +18,7 @@ apply plugin: "servicetalk-library"
 
 dependencies {
   api project(":servicetalk-http-api")
-  api "javax.ws.rs:javax.ws.rs-api:$jaxRsVersion"
+  api "jakarta.ws.rs:jakarta.ws.rs-api:$jaxRsVersion"
 
   implementation project(":servicetalk-annotations")
   implementation project(":servicetalk-concurrent-api-internal")
@@ -27,10 +27,10 @@ dependencies {
   implementation project(":servicetalk-http-router-jersey-internal")
   implementation project(":servicetalk-http-utils")
   implementation "com.google.code.findbugs:jsr305:$jsr305Version"
-  implementation "com.sun.activation:javax.activation:$javaxActivationVersion"
+  implementation "com.sun.activation:jakarta.activation:$javaxActivationVersion"
   implementation "com.sun.xml.bind:jaxb-core:$javaxJaxbCoreVersion"
   implementation "com.sun.xml.bind:jaxb-impl:$javaxJaxbImplVersion"
-  implementation "javax.xml.bind:jaxb-api:$javaxJaxbApiVersion"
+  implementation "jakarta.xml.bind:jakarta.xml.bind-api:$javaxJaxbApiVersion"
   implementation "org.glassfish.jersey.core:jersey-server:$jerseyVersion"
   implementation "org.slf4j:slf4j-api:$slf4jVersion"
 
