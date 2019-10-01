@@ -71,7 +71,9 @@ services:
       - CI
       - BINTRAY_USER
       - BINTRAY_KEY
-    command: bash -cl "./gradlew --no-daemon clean check && ./gradlew --no-daemon bintrayUpload"
+    command: >
+      bash -cl "./gradlew --no-daemon --parallel --max-workers=4 clean check &&
+      ./gradlew --no-daemon bintrayUpload"
 
   publish-release:
     << : *common
@@ -81,7 +83,7 @@ services:
       - BINTRAY_USER
       - BINTRAY_KEY
     command: >
-      bash -cl "./gradlew --no-daemon -PreleaseBuild=true clean check &&
+      bash -cl "./gradlew --no-daemon --parallel --max-workers=4 -PreleaseBuild=true clean check &&
       ./gradlew --no-daemon -PreleaseBuild=true bintrayUpload"
 
   shell:
