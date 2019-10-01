@@ -17,20 +17,21 @@
 apply plugin: "servicetalk-library"
 
 dependencies {
-  api platform(project(":servicetalk-bom-internal"))
-
   api project(":servicetalk-concurrent-api")
   api project(":servicetalk-http-api")
-  api "com.google.api.grpc:proto-google-common-protos"
+  api ("com.google.api.grpc:proto-google-common-protos:$protoGoogleCommonProtosVersion") {
+    exclude group: "com.google.protobuf"
+  }
 
   implementation project(":servicetalk-annotations")
   implementation project(":servicetalk-concurrent-api-internal")
   implementation project(":servicetalk-concurrent-internal")
-  implementation "org.slf4j:slf4j-api"
-  implementation "com.google.code.findbugs:jsr305"
+  implementation "org.slf4j:slf4j-api:$slf4jVersion"
+  implementation "com.google.code.findbugs:jsr305:$jsr305Version"
+  implementation "com.google.protobuf:protobuf-java:$protobufVersion"
 
   testImplementation project(":servicetalk-test-resources")
-  testImplementation "junit:junit"
-  testImplementation "org.hamcrest:hamcrest-library"
-  testImplementation "org.mockito:mockito-core"
+  testImplementation "junit:junit:$junitVersion"
+  testImplementation "org.hamcrest:hamcrest-library:$hamcrestVersion"
+  testImplementation "org.mockito:mockito-core:$mockitoCoreVersion"
 }

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
- apply plugin: "idea"
+apply plugin: "idea"
 
 // We do not use the custom ServiceTalk build plugins so we have to configure the
 // language level manually

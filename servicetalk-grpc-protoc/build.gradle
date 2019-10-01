@@ -15,7 +15,7 @@
  */
 buildscript {
   dependencies {
-    classpath "com.github.jengelman.gradle.plugins:shadow:4.0.4"
+    classpath "com.github.jengelman.gradle.plugins:shadow:$shadowPluginVersion"
     classpath "com.google.protobuf:protobuf-gradle-plugin:$protobufGradlePluginVersion"
   }
 }
@@ -25,12 +25,10 @@ apply plugin: "com.github.johnrengelman.shadow"
 apply plugin: "com.google.protobuf"
 
 dependencies {
-  api platform(project(":servicetalk-bom-internal"))
-
   implementation project(":servicetalk-annotations")
-  implementation "com.google.code.findbugs:jsr305"
-  implementation "com.google.protobuf:protobuf-java"
-  implementation "com.squareup:javapoet"
+  implementation "com.google.code.findbugs:jsr305:$jsr305Version"
+  implementation "com.google.protobuf:protobuf-java:$protobufVersion"
+  implementation "com.squareup:javapoet:$javaPoetVersion"
 
   testImplementation project(":servicetalk-grpc-api")
   testImplementation project(":servicetalk-grpc-protobuf")

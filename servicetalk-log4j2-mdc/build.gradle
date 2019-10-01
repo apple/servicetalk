@@ -17,12 +17,10 @@
 apply plugin: "servicetalk-library"
 
 dependencies {
-  api platform(project(":servicetalk-bom-internal"))
-
   implementation project(":servicetalk-annotations")
   implementation project(":servicetalk-log4j2-mdc-utils")
-  implementation "com.google.code.findbugs:jsr305"
+  implementation "com.google.code.findbugs:jsr305:$jsr305Version"
 
-  testImplementation "junit:junit"
-  testImplementation "org.hamcrest:hamcrest-library"
+  testImplementation "junit:junit:$junitVersion"
+  testImplementation "org.hamcrest:hamcrest-library:$hamcrestVersion"
 }

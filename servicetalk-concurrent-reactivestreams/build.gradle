@@ -17,22 +17,21 @@
 apply plugin: "servicetalk-library"
 
 dependencies {
-  api platform(project(":servicetalk-bom-internal"))
-
   api project(":servicetalk-concurrent-api")
-  api "org.reactivestreams:reactive-streams"
+  api "org.reactivestreams:reactive-streams:$reactiveStreamsVersion"
 
   implementation project(":servicetalk-annotations")
-  implementation "com.google.code.findbugs:jsr305"
-  implementation "org.slf4j:slf4j-api"
+  implementation "com.google.code.findbugs:jsr305:$jsr305Version"
+  implementation "org.slf4j:slf4j-api:$slf4jVersion"
 
   testImplementation testFixtures(project(":servicetalk-concurrent-api"))
   testImplementation testFixtures(project(":servicetalk-concurrent-internal"))
   testImplementation project(":servicetalk-test-resources")
-  testImplementation "org.mockito:mockito-core"
-  testImplementation "org.hamcrest:hamcrest-library"
-  testImplementation "org.reactivestreams:reactive-streams-tck"
-  testImplementation "org.testng:testng"
+  testImplementation "junit:junit:$junitVersion"
+  testImplementation "org.mockito:mockito-core:$mockitoCoreVersion"
+  testImplementation "org.hamcrest:hamcrest-library:$hamcrestVersion"
+  testImplementation "org.reactivestreams:reactive-streams-tck:$reactiveStreamsVersion"
+  testImplementation "org.testng:testng:$testngVersion"
 }
 
 // We need testng for the reactive-streams-tck
