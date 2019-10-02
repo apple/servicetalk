@@ -310,9 +310,12 @@ public class PublisherConcatMapIterableTest {
                 .map((Function<String, String>) s -> {
                     throw DELIBERATE_EXCEPTION;
                 })).subscribe(subscriber);
+        publisher.onSubscribe(subscription);
+        assertTrue(subscriber.subscriptionReceived());
         publisher.onNext(asList("one", "two", "three"));
         subscriber.request(1);
         assertThat(subscriber.takeError(), is(DELIBERATE_EXCEPTION));
+        assertThat("Subscription was not cancelled.", subscription.isCancelled(), is(true));
     }
 
     @Test

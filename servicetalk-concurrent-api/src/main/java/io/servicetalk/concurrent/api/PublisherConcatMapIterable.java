@@ -180,19 +180,23 @@ final class PublisherConcatMapIterable<T, U> extends AbstractSynchronousPublishe
                         switch (errorHandlingStrategyInDrain) {
                             case PropagateAndCancel:
                                 terminated = true;
+                                doCancel(sourceSubscription);
                                 try {
                                     target.onError(cause);
                                 } catch (Throwable cause2) {
                                     LOGGER.info("Ignoring exception from onError of Subscriber {}.", target, cause2);
-                                    doCancel(sourceSubscription);
                                 }
                                 break;
                             case Propagate:
                                 terminated = true;
                                 target.onError(cause);
                                 break;
-                            default:
+                            case Throw:
+                                // let the exception propagate so the upstream source can do the cleanup.
                                 throw cause;
+                            default:
+                                throw new IllegalArgumentException("Unknown error handling strategy: " +
+                                        errorHandlingStrategyInDrain);
                         }
                     }
                     if (terminalNotification != null && !hasNext) {
