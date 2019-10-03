@@ -212,7 +212,6 @@ public class ProtocolCompatibilityTest {
         testError(client, server, true);
     }
 
-    @Ignore("Trailers-Only responses are not currently handled")
     @Theory
     public void serviceTalkToGrpcJavaError(@FromDataPoints("ssl") final boolean ssl) throws Exception {
         final TestServerContext server = grpcJavaServer(ErrorMode.SIMPLE, ssl);
@@ -220,7 +219,6 @@ public class ProtocolCompatibilityTest {
         testError(client, server, false);
     }
 
-    @Ignore("Trailers-Only responses are not currently handled")
     @Theory
     public void serviceTalkToGrpcJavaErrorWithStatus(@FromDataPoints("ssl") final boolean ssl) throws Exception {
         final TestServerContext server = grpcJavaServer(ErrorMode.STATUS, ssl);
@@ -250,7 +248,6 @@ public class ProtocolCompatibilityTest {
         testError(client, server, false);
     }
 
-    @Ignore("GrpcStatusException thrown in server filters are not currently handled")
     @Theory
     public void grpcJavaToServiceTalkErrorViaServerFilter(@FromDataPoints("ssl") final boolean ssl) throws Exception {
         final TestServerContext server = serviceTalkServer(ErrorMode.SIMPLE_IN_SERVER_FILTER, ssl);
@@ -282,7 +279,6 @@ public class ProtocolCompatibilityTest {
         testError(client, server, true);
     }
 
-    @Ignore("GrpcStatusException thrown in server filters are not currently handled")
     @Theory
     public void grpcJavaToServiceTalkErrorWithStatusViaServerFilter(@FromDataPoints("ssl") final boolean ssl)
             throws Exception {
@@ -306,7 +302,6 @@ public class ProtocolCompatibilityTest {
         testError(client, server, false);
     }
 
-    @Ignore("GrpcStatusException thrown in server filters are not currently handled")
     @Theory
     public void serviceTalkToServiceTalkErrorViaServerFilter(@FromDataPoints("ssl") final boolean ssl)
             throws Exception {
@@ -330,7 +325,6 @@ public class ProtocolCompatibilityTest {
         testError(client, server, true);
     }
 
-    @Ignore("GrpcStatusException thrown in server filters are not currently handled")
     @Theory
     public void serviceTalkToServiceTalkErrorWithStatusViaServerFilter(@FromDataPoints("ssl") final boolean ssl)
             throws Exception {

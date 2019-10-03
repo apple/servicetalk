@@ -20,6 +20,7 @@ import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TestPublisherSubscriber;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
+import io.servicetalk.grpc.api.GrpcClientBuilder;
 import io.servicetalk.grpc.api.GrpcPayloadWriter;
 import io.servicetalk.grpc.api.GrpcServiceContext;
 import io.servicetalk.grpc.api.GrpcStatusCode;
@@ -33,6 +34,19 @@ import io.servicetalk.grpc.netty.TesterProto.Tester.ServiceFactory;
 import io.servicetalk.grpc.netty.TesterProto.Tester.TesterClient;
 import io.servicetalk.grpc.netty.TesterProto.Tester.TesterService;
 import io.servicetalk.grpc.netty.TesterProto.Tester.TesterServiceFilter;
+import io.servicetalk.http.api.FilterableStreamingHttpClient;
+import io.servicetalk.http.api.HttpExecutionStrategy;
+import io.servicetalk.http.api.HttpServiceContext;
+import io.servicetalk.http.api.StreamingHttpClientFilter;
+import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
+import io.servicetalk.http.api.StreamingHttpRequest;
+import io.servicetalk.http.api.StreamingHttpRequester;
+import io.servicetalk.http.api.StreamingHttpResponse;
+import io.servicetalk.http.api.StreamingHttpResponseFactory;
+import io.servicetalk.http.api.StreamingHttpService;
+import io.servicetalk.http.api.StreamingHttpServiceFilter;
+import io.servicetalk.http.api.StreamingHttpServiceFilterFactory;
+import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
 
 import com.google.rpc.Status;
@@ -43,6 +57,7 @@ import org.junit.rules.Timeout;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import java.net.InetSocketAddress;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -52,6 +67,7 @@ import java.util.concurrent.Future;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
+import static io.servicetalk.concurrent.internal.PlatformDependent.throwException;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
@@ -71,11 +87,24 @@ import static org.mockito.Mockito.when;
 
 @RunWith(Parameterized.class)
 public class ErrorHandlingTest {
+    private static final StreamingHttpClientFilterFactory IDENTITY_CLIENT_FILTER =
+            c -> new StreamingHttpClientFilter(c) { };
+    private static final StreamingHttpServiceFilterFactory IDENTITY_FILTER =
+            s -> new StreamingHttpServiceFilter(s) { };
+
     private final TestMode testMode;
     private final TestResponse cannedResponse;
     private final BlockingTesterClient blockingClient;
 
     private enum TestMode {
+        HttpClientFilterThrows,
+        HttpClientFilterThrowsGrpcException,
+        HttpClientFilterEmitsError,
+        HttpClientFilterEmitsGrpcException,
+        HttpFilterThrows,
+        HttpFilterThrowsGrpcException,
+        HttpFilterEmitsError,
+        HttpFilterEmitsGrpcException,
         FilterThrows,
         FilterThrowsGrpcException,
         FilterEmitsError,
@@ -106,7 +135,41 @@ public class ErrorHandlingTest {
         cannedResponse = TestResponse.newBuilder().setMessage("foo").build();
         ServiceFactory serviceFactory;
         TesterService filter = mock(TesterService.class);
+        StreamingHttpServiceFilterFactory serviceFilterFactory = IDENTITY_FILTER;
+        StreamingHttpClientFilterFactory clientFilterFactory = IDENTITY_CLIENT_FILTER;
         switch (testMode) {
+            case HttpClientFilterThrows:
+                clientFilterFactory = new ErrorProducingClientFilter(true, DELIBERATE_EXCEPTION);
+                serviceFactory = setupForSuccess();
+                break;
+            case HttpClientFilterThrowsGrpcException:
+                clientFilterFactory = new ErrorProducingClientFilter(true, cannedException);
+                serviceFactory = setupForSuccess();
+                break;
+            case HttpClientFilterEmitsError:
+                clientFilterFactory = new ErrorProducingClientFilter(false, DELIBERATE_EXCEPTION);
+                serviceFactory = setupForSuccess();
+                break;
+            case HttpClientFilterEmitsGrpcException:
+                clientFilterFactory = new ErrorProducingClientFilter(false, cannedException);
+                serviceFactory = setupForSuccess();
+                break;
+            case HttpFilterThrows:
+                serviceFilterFactory = new ErrorProducingSvcFilter(true, DELIBERATE_EXCEPTION);
+                serviceFactory = setupForSuccess();
+                break;
+            case HttpFilterThrowsGrpcException:
+                serviceFilterFactory = new ErrorProducingSvcFilter(true, cannedException);
+                serviceFactory = setupForSuccess();
+                break;
+            case HttpFilterEmitsError:
+                serviceFilterFactory = new ErrorProducingSvcFilter(false, DELIBERATE_EXCEPTION);
+                serviceFactory = setupForSuccess();
+                break;
+            case HttpFilterEmitsGrpcException:
+                serviceFilterFactory = new ErrorProducingSvcFilter(false, cannedException);
+                serviceFactory = setupForSuccess();
+                break;
             case FilterThrows:
                 setupForServiceThrows(filter, DELIBERATE_EXCEPTION);
                 serviceFactory = configureFilter(filter);
@@ -156,9 +219,12 @@ public class ErrorHandlingTest {
             default:
                 throw new IllegalArgumentException("Unknown mode: " + testMode);
         }
-        serverContext = GrpcServers.forPort(0).listenAndAwait(serviceFactory);
-        client = GrpcClients.forAddress(serverHostAndPort(serverContext)).build(new ClientFactory());
-        blockingClient = GrpcClients.forAddress(serverHostAndPort(serverContext)).buildBlocking(new ClientFactory());
+        serverContext = GrpcServers.forPort(0).appendHttpServiceFilter(serviceFilterFactory)
+                .listenAndAwait(serviceFactory);
+        GrpcClientBuilder<HostAndPort, InetSocketAddress> clientBuilder =
+                GrpcClients.forAddress(serverHostAndPort(serverContext)).appendHttpClientFilter(clientFilterFactory);
+        client = clientBuilder.build(new ClientFactory());
+        blockingClient = clientBuilder.buildBlocking(new ClientFactory());
     }
 
     private ServiceFactory configureFilter(final TesterService filter) {
@@ -168,6 +234,33 @@ public class ErrorHandlingTest {
         serviceFactory.appendServiceFilter(original ->
                 new ErrorSimulatingTesterServiceFilter(original, filter));
         return serviceFactory;
+    }
+
+    private ServiceFactory setupForSuccess() {
+        return new ServiceFactory(new TesterService() {
+            @Override
+            public Publisher<TestResponse> testBiDiStream(final GrpcServiceContext ctx,
+                                                          final Publisher<TestRequest> request) {
+                return request.map(testRequest -> TestResponse.newBuilder().setMessage(testRequest.getName()).build());
+            }
+
+            @Override
+            public Single<TestResponse> testRequestStream(final GrpcServiceContext ctx,
+                                                          final Publisher<TestRequest> request) {
+                return request.collect(StringBuilder::new, (names, testRequest) -> names.append(testRequest.getName()))
+                        .map(names -> TestResponse.newBuilder().setMessage(names.toString()).build());
+            }
+
+            @Override
+            public Publisher<TestResponse> testResponseStream(final GrpcServiceContext ctx, final TestRequest request) {
+                return Publisher.from(TestResponse.newBuilder().setMessage(request.getName()).build());
+            }
+
+            @Override
+            public Single<TestResponse> test(final GrpcServiceContext ctx, final TestRequest request) {
+                return Single.succeeded(TestResponse.newBuilder().setMessage(request.getName()).build());
+            }
+        });
     }
 
     private ServiceFactory setupForServiceThrows(final Throwable toThrow) {
@@ -287,7 +380,7 @@ public class ErrorHandlingTest {
     public void scalarFromBlockingClient() throws Exception {
         try {
             blockingClient.test(TestRequest.newBuilder().build());
-            fail("Expected failure.");
+            fail("Expected blocking scalar response to fail.");
         } catch (GrpcStatusException e) {
             assertThat("Unexpected grpc status.", e.status().code(), equalTo(expectedStatus()));
         }
@@ -309,7 +402,7 @@ public class ErrorHandlingTest {
     public void requestStreamingFromBlockingClient() throws Exception {
         try {
             blockingClient.testRequestStream(singletonList(TestRequest.newBuilder().setName("foo").build()));
-            fail("Expected failure.");
+            fail("Expected blocking request streaming to fail.");
         } catch (GrpcStatusException e) {
             assertThat("Unexpected grpc status.", e.status().code(), equalTo(expectedStatus()));
         }
@@ -336,6 +429,14 @@ public class ErrorHandlingTest {
                 resp.next(); // should throw
                 fail("Expected streaming response to fail");
                 break;
+            case HttpClientFilterThrows:
+            case HttpClientFilterThrowsGrpcException:
+            case HttpClientFilterEmitsError:
+            case HttpClientFilterEmitsGrpcException:
+            case HttpFilterThrows:
+            case HttpFilterThrowsGrpcException:
+            case HttpFilterEmitsError:
+            case HttpFilterEmitsGrpcException:
             case FilterThrows:
             case FilterThrowsGrpcException:
             case FilterEmitsError:
@@ -373,6 +474,14 @@ public class ErrorHandlingTest {
                 assertThat("Unexpected termination.", cause, is(notNullValue()));
                 verifyException(cause);
                 break;
+            case HttpClientFilterThrows:
+            case HttpClientFilterThrowsGrpcException:
+            case HttpClientFilterEmitsError:
+            case HttpClientFilterEmitsGrpcException:
+            case HttpFilterThrows:
+            case HttpFilterThrowsGrpcException:
+            case HttpFilterEmitsError:
+            case HttpFilterEmitsGrpcException:
             case FilterThrows:
             case FilterThrowsGrpcException:
             case FilterEmitsError:
@@ -410,6 +519,10 @@ public class ErrorHandlingTest {
 
     private GrpcStatusCode expectedStatus() {
         switch (testMode) {
+            case HttpClientFilterThrows:
+            case HttpClientFilterEmitsError:
+            case HttpFilterThrows:
+            case HttpFilterEmitsError:
             case FilterThrows:
             case FilterEmitsError:
             case ServiceThrows:
@@ -418,6 +531,10 @@ public class ErrorHandlingTest {
             case ServiceEmitsDataThenError:
             case BlockingServiceWritesThenThrows:
                 return GrpcStatusCode.UNKNOWN;
+            case HttpClientFilterThrowsGrpcException:
+            case HttpClientFilterEmitsGrpcException:
+            case HttpFilterThrowsGrpcException:
+            case HttpFilterEmitsGrpcException:
             case FilterEmitsGrpcException:
             case FilterThrowsGrpcException:
             case ServiceThrowsGrpcException:
@@ -460,6 +577,58 @@ public class ErrorHandlingTest {
         public Single<TestResponse> testRequestStream(final GrpcServiceContext ctx,
                                                       final Publisher<TestRequest> request) {
             return simulator.testRequestStream(ctx, request);
+        }
+    }
+
+    private static final class ErrorProducingClientFilter implements StreamingHttpClientFilterFactory {
+
+        private final boolean throwEx;
+        private final Throwable cause;
+
+        ErrorProducingClientFilter(final boolean throwEx, final Throwable cause) {
+            this.throwEx = throwEx;
+            this.cause = cause;
+        }
+
+        @Override
+        public StreamingHttpClientFilter create(final FilterableStreamingHttpClient client) {
+            return new StreamingHttpClientFilter(client) {
+                @Override
+                protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
+                                                                final HttpExecutionStrategy strategy,
+                                                                final StreamingHttpRequest request) {
+                    if (throwEx) {
+                        return throwException(cause);
+                    }
+                    return Single.failed(cause);
+                }
+            };
+        }
+    }
+
+    private static final class ErrorProducingSvcFilter implements StreamingHttpServiceFilterFactory {
+
+        private final boolean throwEx;
+        private final Throwable cause;
+
+        ErrorProducingSvcFilter(final boolean throwEx, final Throwable cause) {
+            this.throwEx = throwEx;
+            this.cause = cause;
+        }
+
+        @Override
+        public StreamingHttpServiceFilter create(final StreamingHttpService service) {
+            return new StreamingHttpServiceFilter(service) {
+                @Override
+                public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
+                                                            final StreamingHttpRequest request,
+                                                            final StreamingHttpResponseFactory responseFactory) {
+                    if (throwEx) {
+                        return throwException(cause);
+                    }
+                    return Single.failed(cause);
+                }
+            };
         }
     }
 }
