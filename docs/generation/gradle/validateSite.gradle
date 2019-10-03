@@ -33,6 +33,7 @@ def excludedLinks = [
     "https://oss.sonatype.org/content/repositories/snapshots/io/servicetalk/",
     "https://repo1.maven.org/maven2/io/servicetalk/",
     "https://docs.servicetalk.io/",
+    "https://jersey.github.io", // old link, jersey docs were moved to https://eclipse-ee4j.github.io/jersey/
     "https://reactivex.io/", // untrusted cert
     "https://jemalloc.net" // untrusted cert
 ]
