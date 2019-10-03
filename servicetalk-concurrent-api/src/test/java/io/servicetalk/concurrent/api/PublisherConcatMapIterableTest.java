@@ -16,6 +16,7 @@
 package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.BlockingIterable;
+import io.servicetalk.concurrent.internal.DeliberateException;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -23,6 +24,7 @@ import org.junit.rules.ExpectedException;
 
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
@@ -40,6 +42,7 @@ import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class PublisherConcatMapIterableTest {
     @Rule
@@ -250,6 +253,36 @@ public class PublisherConcatMapIterableTest {
     }
 
     @Test
+    public void exceptionFromBufferedOnNextThenOnErrorIsPropagated() {
+        testExceptionFromBufferedOnNextThenTerminalIsPropagated(publisher::onError);
+    }
+
+    @Test
+    public void exceptionFromBufferedOnNextThenOnCompleteIsPropagated() {
+        testExceptionFromBufferedOnNextThenTerminalIsPropagated(__ -> publisher.onComplete());
+    }
+
+    private void testExceptionFromBufferedOnNextThenTerminalIsPropagated(Consumer<DeliberateException> emitTerminal) {
+        final DeliberateException ex2 = new DeliberateException();
+        final AtomicBoolean errored = new AtomicBoolean();
+        toSource(publisher.flatMapConcatIterable(identity())
+                .map((Function<String, String>) s -> {
+                    if (!errored.getAndSet(true)) {
+                        publisher.onError(DELIBERATE_EXCEPTION);
+                    }
+                    throw ex2;
+                })).subscribe(subscriber);
+        subscriber.request(3);
+        try {
+            publisher.onNext(asList("one", "two", "three"));
+            fail("Failure not propagated from onNext");
+        } catch (DeliberateException de) {
+            emitTerminal.accept(de);
+            assertThat(subscriber.takeError(), is(de));
+        }
+    }
+
+    @Test
     public void exceptionFromOnCompleteIsPropagated() {
         toSource(publisher.flatMapConcatIterable(identity())
                 .whenOnComplete(() -> {
@@ -277,9 +310,12 @@ public class PublisherConcatMapIterableTest {
                 .map((Function<String, String>) s -> {
                     throw DELIBERATE_EXCEPTION;
                 })).subscribe(subscriber);
+        publisher.onSubscribe(subscription);
+        assertTrue(subscriber.subscriptionReceived());
         publisher.onNext(asList("one", "two", "three"));
         subscriber.request(1);
         assertThat(subscriber.takeError(), is(DELIBERATE_EXCEPTION));
+        assertThat("Subscription was not cancelled.", subscription.isCancelled(), is(true));
     }
 
     @Test

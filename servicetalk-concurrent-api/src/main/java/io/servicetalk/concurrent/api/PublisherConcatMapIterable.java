@@ -97,7 +97,8 @@ final class PublisherConcatMapIterable<T, U> extends AbstractSynchronousPublishe
             // its subscriber and cancel the subscription.
             Iterator<? extends U> currentIterator = requireNonNull(mapper.apply(u).iterator());
             this.currentIterator = currentIterator;
-            tryDrainIterator(currentIterator, sourceSubscription, terminalNotification, requestN, false);
+            tryDrainIterator(currentIterator, sourceSubscription, terminalNotification, requestN,
+                    ErrorHandlingStrategyInDrain.Throw);
         }
 
         @Override
@@ -106,7 +107,8 @@ final class PublisherConcatMapIterable<T, U> extends AbstractSynchronousPublishe
             assert sourceSubscription != null;
             TerminalNotification terminalNotification = TerminalNotification.error(t);
             this.terminalNotification = terminalNotification;
-            tryDrainIterator(currentIterator, sourceSubscription, terminalNotification, requestN, false);
+            tryDrainIterator(currentIterator, sourceSubscription, terminalNotification, requestN,
+                    ErrorHandlingStrategyInDrain.Propagate);
         }
 
         @Override
@@ -115,7 +117,8 @@ final class PublisherConcatMapIterable<T, U> extends AbstractSynchronousPublishe
             assert sourceSubscription != null;
             TerminalNotification terminalNotification = TerminalNotification.complete();
             this.terminalNotification = terminalNotification;
-            tryDrainIterator(currentIterator, sourceSubscription, terminalNotification, requestN, false);
+            tryDrainIterator(currentIterator, sourceSubscription, terminalNotification, requestN,
+                    ErrorHandlingStrategyInDrain.Propagate);
         }
 
         @Override
@@ -127,7 +130,8 @@ final class PublisherConcatMapIterable<T, U> extends AbstractSynchronousPublishe
             } else {
                 tryDrainIterator(currentIterator, sourceSubscription, terminalNotification,
                         requestNUpdater.accumulateAndGet(this, n,
-                                FlowControlUtil::addWithOverflowProtectionIfNotNegative), true);
+                                FlowControlUtil::addWithOverflowProtectionIfNotNegative),
+                        ErrorHandlingStrategyInDrain.PropagateAndCancel);
             }
         }
 
@@ -150,9 +154,15 @@ final class PublisherConcatMapIterable<T, U> extends AbstractSynchronousPublishe
             sourceSubscription.cancel();
         }
 
+        private enum ErrorHandlingStrategyInDrain {
+            PropagateAndCancel,
+            Propagate,
+            Throw
+        }
+
         private void tryDrainIterator(Iterator<? extends U> currentIterator, Subscription sourceSubscription,
                                       @Nullable TerminalNotification terminalNotification, long requestN,
-                                      boolean drainFromSubscription) {
+                                      ErrorHandlingStrategyInDrain errorHandlingStrategyInDrain) {
             boolean hasNext = false;
             boolean terminated = false;
             do {
@@ -167,16 +177,26 @@ final class PublisherConcatMapIterable<T, U> extends AbstractSynchronousPublishe
                             target.onNext(currentIterator.next());
                         }
                     } catch (Throwable cause) {
-                        if (drainFromSubscription) {
-                            terminated = true;
-                            try {
-                                target.onError(cause);
-                            } catch (Throwable cause2) {
-                                LOGGER.info("Ignoring exception from onError of Subscriber {}.", target, cause2);
+                        switch (errorHandlingStrategyInDrain) {
+                            case PropagateAndCancel:
+                                terminated = true;
                                 doCancel(sourceSubscription);
-                            }
-                        } else {
-                            throw cause; // let the exception propagate so the upstream source can do the cleanup.
+                                try {
+                                    target.onError(cause);
+                                } catch (Throwable cause2) {
+                                    LOGGER.info("Ignoring exception from onError of Subscriber {}.", target, cause2);
+                                }
+                                break;
+                            case Propagate:
+                                terminated = true;
+                                target.onError(cause);
+                                break;
+                            case Throw:
+                                // let the exception propagate so the upstream source can do the cleanup.
+                                throw cause;
+                            default:
+                                throw new IllegalArgumentException("Unknown error handling strategy: " +
+                                        errorHandlingStrategyInDrain);
                         }
                     }
                     if (terminalNotification != null && !hasNext) {
