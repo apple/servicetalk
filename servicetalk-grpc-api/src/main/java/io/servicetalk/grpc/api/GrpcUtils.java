@@ -131,9 +131,23 @@ final class GrpcUtils {
 
     static <Resp> Publisher<Resp> validateResponseAndGetPayload(final StreamingHttpResponse response,
                                                                 final HttpDeserializer<Resp> deserializer) {
-        return deserializer.deserialize(response.headers(), response.payloadBodyAndTrailers().map(o -> {
+        // In case of server error, gRPC may return only one HEADER frame with endStream=true. Our
+        // HTTP1-based implementation translates them into response headers so we need to look for
+        // the status in both headers and trailers. Since this is streaming response and we have the headers now, we
+        // check for error here first. If we see trailers later in payloadBodyAndTrailers(), we will check for error
+        // there.
+        final HttpHeaders respHeaders = response.headers();
+        GrpcStatusException grpcStatusException = extractGrpcExceptionFromHeaders(respHeaders);
+        if (grpcStatusException != null) {
+            return Publisher.failed(grpcStatusException);
+        }
+        return deserializer.deserialize(respHeaders, response.payloadBodyAndTrailers().map(o -> {
             if (o instanceof HttpHeaders) {
-                validateGrpcStatus((HttpHeaders) o, response.headers());
+                // We have already checked for error in headers above, now we just check in trailers.
+                GrpcStatusException ex = extractGrpcExceptionFromHeaders((HttpHeaders) o);
+                if (ex != null) {
+                    throw ex;
+                }
             } else if (!(o instanceof Buffer)) {
                 throw new IllegalArgumentException("Unexpected payload type: " + o.getClass());
             }
@@ -143,7 +157,23 @@ final class GrpcUtils {
 
     static <Resp> Resp validateResponseAndGetPayload(final HttpResponse response,
                                                      final HttpDeserializer<Resp> deserializer) {
-        validateGrpcStatus(response.trailers(), response.headers());
+        final HttpHeaders trailers = response.trailers();
+        final HttpHeaders headers = response.headers();
+        // In case of server error, gRPC may return only one HEADER frame with endStream=true. Our
+        // HTTP1-based implementation translates them into response headers so we need to look for
+        // the status in both headers and trailers.
+
+        // We will try the trailers first as this is the most likely place to find the GRPC related headers.
+        GrpcStatusException grpcStatusException = extractGrpcExceptionFromHeaders(trailers);
+        if (grpcStatusException != null) {
+            throw grpcStatusException;
+        }
+
+        // There was no grpc-status in the trailers, so error may be in the headers.
+        grpcStatusException = extractGrpcExceptionFromHeaders(headers);
+        if (grpcStatusException != null) {
+            throw grpcStatusException;
+        }
         return response.payloadBody(deserializer);
     }
 
@@ -151,7 +181,7 @@ final class GrpcUtils {
         final CharSequence encoding = httpMetaData.headers().get(GRPC_MESSAGE_ENCODING_KEY);
         // identity is a special header for no compression
         if (encoding != null && !contentEqualsIgnoreCase(encoding, IDENTITY)) {
-            String lowercaseEncoding = encoding.toString().toLowerCase();
+            final String lowercaseEncoding = encoding.toString().toLowerCase();
             throw new SerializationException("Compression " + lowercaseEncoding + " not supported");
         } else {
             return None;
@@ -165,32 +195,17 @@ final class GrpcUtils {
         headers.set(CONTENT_TYPE, GRPC_CONTENT_TYPE);
     }
 
-    private static void validateGrpcStatus(final HttpHeaders trailers, final HttpHeaders headers) {
-        // In case of server error, gRPC may return only one HEADER frame with endStream=true. Our
-        // HTTP1-based implementation translates them into response headers so we need to look for
-        // the status in both headers and trailers.
-
-        // We will try the trailers first as this is the most likely place to find the GRPC related headers.
-        CharSequence statusCode = trailers.get(GRPC_STATUS_CODE_TRAILER);
-        final HttpHeaders grpcHeaders;
-
-        if (statusCode == null) {
-            // There was no grpc-status in the trailers, so everything must be in the headers.
-            statusCode = headers.get(GRPC_STATUS_CODE_TRAILER);
-            grpcHeaders = headers;
-        } else {
-            // We found the statusCode in the trailers so the message also must be in the trailers if
-            // there is any.
-            grpcHeaders = trailers;
-        }
-
+    @Nullable
+    private static GrpcStatusException extractGrpcExceptionFromHeaders(final HttpHeaders headers) {
+        final CharSequence statusCode = headers.get(GRPC_STATUS_CODE_TRAILER);
         if (statusCode != null) {
             final GrpcStatusCode grpcStatusCode = GrpcStatusCode.fromCodeValue(statusCode);
             if (grpcStatusCode.value() != GrpcStatusCode.OK.value()) {
-                throw new GrpcStatus(grpcStatusCode, null, grpcHeaders.get(GRPC_STATUS_MESSAGE_TRAILER))
-                        .asException(new StatusSupplier(grpcHeaders));
+                return new GrpcStatus(grpcStatusCode, null, headers.get(GRPC_STATUS_MESSAGE_TRAILER))
+                        .asException(new StatusSupplier(headers));
             }
         }
+        return null;
     }
 
     @Nullable

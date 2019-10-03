@@ -21,7 +21,11 @@ import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.HttpRequest;
+import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpRequest;
+import io.servicetalk.http.api.StreamingHttpResponse;
+import io.servicetalk.http.api.StreamingHttpResponseFactory;
+import io.servicetalk.http.api.StreamingHttpServiceFilter;
 import io.servicetalk.http.api.StreamingHttpServiceFilterFactory;
 import io.servicetalk.transport.api.ConnectionAcceptor;
 import io.servicetalk.transport.api.ConnectionAcceptorFactory;
@@ -32,12 +36,15 @@ import java.net.SocketOption;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.internal.FutureUtils.awaitResult;
+import static io.servicetalk.grpc.api.GrpcUtils.newErrorResponse;
 
 /**
  * A builder for building a <a href="https://www.grpc.io">gRPC</a> server.
  */
 public abstract class GrpcServerBuilder {
+    private boolean appendedCatchAllFilter;
 
     /**
      * Sets the {@link HttpHeadersFactory} to be used for creating {@link HttpHeaders} when decoding requests.
@@ -251,7 +258,11 @@ public abstract class GrpcServerBuilder {
      * @param factory {@link StreamingHttpServiceFilterFactory} to append.
      * @return {@code this}.
      */
-    public abstract GrpcServerBuilder appendHttpServiceFilter(StreamingHttpServiceFilterFactory factory);
+    public final GrpcServerBuilder appendHttpServiceFilter(StreamingHttpServiceFilterFactory factory) {
+        appendCatchAllFilterIfRequired();
+        doAppendHttpServiceFilter(factory);
+        return this;
+    }
 
     /**
      * Append the filter to the chain of filters used to decorate the service used by this builder, for every request
@@ -269,8 +280,12 @@ public abstract class GrpcServerBuilder {
      * @param factory {@link StreamingHttpServiceFilterFactory} to append.
      * @return {@code this}.
      */
-    public abstract GrpcServerBuilder appendHttpServiceFilter(Predicate<StreamingHttpRequest> predicate,
-                                                              StreamingHttpServiceFilterFactory factory);
+    public final GrpcServerBuilder appendHttpServiceFilter(Predicate<StreamingHttpRequest> predicate,
+                                                           StreamingHttpServiceFilterFactory factory) {
+        appendCatchAllFilterIfRequired();
+        doAppendHttpServiceFilter(predicate, factory);
+        return this;
+    }
 
     /**
      * Sets the {@link IoExecutor} to be used by this server.
@@ -333,4 +348,59 @@ public abstract class GrpcServerBuilder {
      * throws an {@link Exception} if the server could not be started.
      */
     protected abstract Single<ServerContext> doListen(GrpcServiceFactory<?, ?, ?> serviceFactory);
+
+    /**
+     * Append the filter to the chain of filters used to decorate the service used by this builder.
+     * <p>
+     * The order of execution of these filters are in order of append. If 3 filters are added as follows:
+     * <pre>
+     *     builder.append(filter1).append(filter2).append(filter3)
+     * </pre>
+     * accepting a request by a service wrapped by this filter chain, the order of invocation of these filters will be:
+     * <pre>
+     *     filter1 =&gt; filter2 =&gt; filter3 =&gt; service
+     * </pre>
+     * @param factory {@link StreamingHttpServiceFilterFactory} to append.
+     */
+    protected abstract void doAppendHttpServiceFilter(StreamingHttpServiceFilterFactory factory);
+
+    /**
+     * Append the filter to the chain of filters used to decorate the service used by this builder, for every request
+     * that passes the provided {@link Predicate}.
+     * <p>
+     * The order of execution of these filters are in order of append. If 3 filters are added as follows:
+     * <pre>
+     *     builder.append(filter1).append(filter2).append(filter3)
+     * </pre>
+     * accepting a request by a service wrapped by this filter chain, the order of invocation of these filters will be:
+     * <pre>
+     *     filter1 =&gt; filter2 =&gt; filter3 =&gt; service
+     * </pre>
+     * @param predicate the {@link Predicate} to test if the filter must be applied.
+     * @param factory {@link StreamingHttpServiceFilterFactory} to append.
+     */
+    protected abstract void doAppendHttpServiceFilter(Predicate<StreamingHttpRequest> predicate,
+                                                      StreamingHttpServiceFilterFactory factory);
+
+    private void appendCatchAllFilterIfRequired() {
+        if (!appendedCatchAllFilter) {
+            doAppendHttpServiceFilter(service -> new StreamingHttpServiceFilter(service) {
+                @Override
+                public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
+                                                            final StreamingHttpRequest request,
+                                                            final StreamingHttpResponseFactory responseFactory) {
+                    final Single<StreamingHttpResponse> handle;
+                    try {
+                        handle = super.handle(ctx, request, responseFactory);
+                    } catch (Throwable cause) {
+                        return succeeded(newErrorResponse(responseFactory, cause,
+                                ctx.executionContext().bufferAllocator()));
+                    }
+                    return handle.recoverWith(cause -> succeeded(newErrorResponse(responseFactory, cause,
+                            ctx.executionContext().bufferAllocator())));
+                }
+            });
+            appendedCatchAllFilter = true;
+        }
+    }
 }

@@ -175,20 +175,18 @@ final class DefaultGrpcClientBuilder<U, R> extends GrpcClientBuilder<U, R> {
     }
 
     @Override
-    public GrpcClientBuilder<U, R> appendHttpClientFilter(final StreamingHttpClientFilterFactory factory) {
-        httpClientBuilder.appendClientFilter(factory);
-        return this;
-    }
-
-    @Override
-    public GrpcClientBuilder<U, R> appendHttpClientFilter(final Predicate<StreamingHttpRequest> predicate,
-                                                          final StreamingHttpClientFilterFactory factory) {
-        httpClientBuilder.appendClientFilter(predicate, factory);
-        return this;
-    }
-
-    @Override
     protected GrpcClientCallFactory newGrpcClientCallFactory() {
         return GrpcClientCallFactory.from(httpClientBuilder.buildStreaming());
+    }
+
+    @Override
+    protected void doAppendHttpClientFilter(final StreamingHttpClientFilterFactory factory) {
+        httpClientBuilder.appendClientFilter(factory);
+    }
+
+    @Override
+    public void doAppendHttpClientFilter(final Predicate<StreamingHttpRequest> predicate,
+                                         final StreamingHttpClientFilterFactory factory) {
+        httpClientBuilder.appendClientFilter(predicate, factory);
     }
 }
