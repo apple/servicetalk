@@ -22,6 +22,7 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.internal.SpScPublisherProcessor;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.grpc.api.GrpcClientBuilder;
+import io.servicetalk.grpc.api.GrpcExecutionStrategy;
 import io.servicetalk.grpc.api.GrpcServerBuilder;
 import io.servicetalk.grpc.api.GrpcServiceContext;
 import io.servicetalk.grpc.api.GrpcStatus;
@@ -49,6 +50,7 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import io.grpc.ManagedChannel;
 import io.grpc.Server;
 import io.grpc.Status;
+import io.grpc.Status.Code;
 import io.grpc.StatusRuntimeException;
 import io.grpc.netty.GrpcSslContexts;
 import io.grpc.netty.NettyChannelBuilder;
@@ -72,13 +74,18 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.stream.IntStream;
 import javax.annotation.Nullable;
 
 import static com.google.protobuf.Any.pack;
+import static io.grpc.Status.Code.CANCELLED;
 import static io.servicetalk.concurrent.api.Processors.newSingleProcessor;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.internal.ServiceTalkTestTimeout.DEFAULT_TIMEOUT_SECONDS;
+import static io.servicetalk.grpc.api.GrpcExecutionStrategies.defaultStrategy;
+import static io.servicetalk.grpc.api.GrpcExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.test.resources.DefaultTestCerts.loadServerKey;
 import static io.servicetalk.test.resources.DefaultTestCerts.loadServerPem;
 import static io.servicetalk.transport.api.SecurityConfigurator.ApplicationProtocolNegotiation.ALPN;
@@ -151,189 +158,254 @@ public class ProtocolCompatibilityTest {
     @DataPoints("ssl")
     public static boolean[] ssl = new boolean[]{false, true};
 
+    @DataPoints("streaming")
+    public static boolean[] streaming = new boolean[]{false, true};
+
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
 
     @Theory
-    public void grpcJavaToGrpcJava(@FromDataPoints("ssl") final boolean ssl) throws Exception {
+    public void grpcJavaToGrpcJava(@FromDataPoints("ssl") final boolean ssl,
+                                   @FromDataPoints("streaming") final boolean streaming) throws Exception {
         final TestServerContext server = grpcJavaServer(ErrorMode.NONE, ssl);
         final CompatClient client = grpcJavaClient(server.listenAddress(), null, ssl);
-        testRequestResponse(client, server);
+        testBlockingRequestResponse(client, server, streaming);
     }
 
     @Theory
-    public void serviceTalkToGrpcJava(@FromDataPoints("ssl") final boolean ssl) throws Exception {
+    public void serviceTalkToGrpcJava(@FromDataPoints("ssl") final boolean ssl,
+                                      @FromDataPoints("streaming") final boolean streaming) throws Exception {
         final TestServerContext server = grpcJavaServer(ErrorMode.NONE, ssl);
         final CompatClient client = serviceTalkClient(server.listenAddress(), ssl);
-        testRequestResponse(client, server);
+        testBlockingRequestResponse(client, server, streaming);
     }
 
     @Theory
-    public void grpcJavaToServiceTalk(@FromDataPoints("ssl") final boolean ssl) throws Exception {
+    public void grpcJavaToServiceTalk(@FromDataPoints("ssl") final boolean ssl,
+                                      @FromDataPoints("streaming") final boolean streaming) throws Exception {
         final TestServerContext server = serviceTalkServer(ErrorMode.NONE, ssl);
         final CompatClient client = grpcJavaClient(server.listenAddress(), null, ssl);
-        testRequestResponse(client, server);
+        testBlockingRequestResponse(client, server, streaming);
     }
 
     @Ignore("gRPC compression not supported by ServiceTalk yet")
     @Theory
-    public void grpcJavaToServiceTalkCompressedGzip(@FromDataPoints("ssl") final boolean ssl) throws Exception {
+    public void grpcJavaToServiceTalkCompressedGzip(@FromDataPoints("ssl") final boolean ssl,
+                                                    @FromDataPoints("streaming") final boolean streaming)
+            throws Exception {
         final TestServerContext server = serviceTalkServer(ErrorMode.NONE, ssl);
         // Only gzip is supported by GRPC out of the box atm.
         final CompatClient client = grpcJavaClient(server.listenAddress(), "gzip", ssl);
-        testRequestResponse(client, server);
+        testBlockingRequestResponse(client, server, streaming);
     }
 
     @Theory
-    public void serviceTalkToServiceTalk(@FromDataPoints("ssl") final boolean ssl) throws Exception {
+    public void serviceTalkToServiceTalk(@FromDataPoints("ssl") final boolean ssl,
+                                         @FromDataPoints("streaming") final boolean streaming) throws Exception {
         final TestServerContext server = serviceTalkServer(ErrorMode.NONE, ssl);
         final CompatClient client = serviceTalkClient(server.listenAddress(), ssl);
-        testRequestResponse(client, server);
+        testBlockingRequestResponse(client, server, streaming);
     }
 
     @Theory
-    public void serviceTalkToServiceTalkBlocking(@FromDataPoints("ssl") final boolean ssl) throws Exception {
+    public void serviceTalkToServiceTalkBlocking(@FromDataPoints("ssl") final boolean ssl)
+            throws Exception {
         final TestServerContext server = serviceTalkServerBlocking(ssl);
         final BlockingCompatClient client = serviceTalkClient(server.listenAddress(), ssl).asBlockingClient();
-        testRequestResponse(client, server);
+        testBlockingRequestResponse(client, server);
     }
 
     @Theory
-    public void grpcJavaToGrpcJavaError(@FromDataPoints("ssl") final boolean ssl) throws Exception {
+    public void grpcJavaToGrpcJavaError(@FromDataPoints("ssl") final boolean ssl,
+                                        @FromDataPoints("streaming") final boolean streaming) throws Exception {
         final TestServerContext server = grpcJavaServer(ErrorMode.SIMPLE, ssl);
         final CompatClient client = grpcJavaClient(server.listenAddress(), null, ssl);
-        testError(client, server, false);
+        testGrpcError(client, server, false, streaming);
     }
 
     @Theory
-    public void grpcJavaToGrpcJavaErrorWithStatus(@FromDataPoints("ssl") final boolean ssl) throws Exception {
+    public void grpcJavaToGrpcJavaErrorWithStatus(@FromDataPoints("ssl") final boolean ssl,
+                                                  @FromDataPoints("streaming") final boolean streaming)
+            throws Exception {
         final TestServerContext server = grpcJavaServer(ErrorMode.STATUS, ssl);
         final CompatClient client = grpcJavaClient(server.listenAddress(), null, ssl);
-        testError(client, server, true);
+        testGrpcError(client, server, true, streaming);
     }
 
     @Theory
-    public void serviceTalkToGrpcJavaError(@FromDataPoints("ssl") final boolean ssl) throws Exception {
+    public void serviceTalkToGrpcJavaError(@FromDataPoints("ssl") final boolean ssl,
+                                           @FromDataPoints("streaming") final boolean streaming) throws Exception {
         final TestServerContext server = grpcJavaServer(ErrorMode.SIMPLE, ssl);
         final CompatClient client = serviceTalkClient(server.listenAddress(), ssl);
-        testError(client, server, false);
+        testGrpcError(client, server, false, streaming);
     }
 
     @Theory
-    public void serviceTalkToGrpcJavaErrorWithStatus(@FromDataPoints("ssl") final boolean ssl) throws Exception {
+    public void serviceTalkToGrpcJavaErrorWithStatus(@FromDataPoints("ssl") final boolean ssl,
+                                                     @FromDataPoints("streaming") final boolean streaming)
+            throws Exception {
         final TestServerContext server = grpcJavaServer(ErrorMode.STATUS, ssl);
         final CompatClient client = serviceTalkClient(server.listenAddress(), ssl);
-        testError(client, server, true);
+        testGrpcError(client, server, true, streaming);
     }
 
     @Theory
-    public void grpcJavaToServiceTalkError(@FromDataPoints("ssl") final boolean ssl) throws Exception {
+    public void grpcJavaToServiceTalkError(@FromDataPoints("ssl") final boolean ssl,
+                                           @FromDataPoints("streaming") final boolean streaming) throws Exception {
         final TestServerContext server = serviceTalkServer(ErrorMode.SIMPLE, ssl);
         final CompatClient client = grpcJavaClient(server.listenAddress(), null, ssl);
-        testError(client, server, false);
+        testGrpcError(client, server, false, streaming);
     }
 
-    @Ignore("GrpcStatusException thrown late (e.g. in a map operator) are not currently handled")
     @Theory
-    public void grpcJavaToServiceTalkErrorInResponse(@FromDataPoints("ssl") final boolean ssl) throws Exception {
+    public void grpcJavaToServiceTalkErrorInScalarResponse(@FromDataPoints("ssl") final boolean ssl)
+            throws Exception {
         final TestServerContext server = serviceTalkServer(ErrorMode.SIMPLE_IN_RESPONSE, ssl);
         final CompatClient client = grpcJavaClient(server.listenAddress(), null, ssl);
-        testError(client, server, false);
+        testGrpcError(client, server, false, false);
     }
 
     @Theory
-    public void grpcJavaToServiceTalkErrorViaServiceFilter(@FromDataPoints("ssl") final boolean ssl) throws Exception {
+    public void grpcJavaToServiceTalkErrorInStreamingResponse(@FromDataPoints("ssl") final boolean ssl)
+            throws Exception {
+        final TestServerContext server = serviceTalkServer(ErrorMode.SIMPLE_IN_RESPONSE, ssl);
+        final CompatClient client = grpcJavaClient(server.listenAddress(), null, ssl);
+        testStreamResetOnUnexpectedErrorOnServiceTalkServer(client, server);
+    }
+
+    @Theory
+    public void grpcJavaToServiceTalkErrorInResponseNoOffload(@FromDataPoints("ssl") final boolean ssl,
+                                                              @FromDataPoints("streaming") final boolean streaming)
+            throws Exception {
+        final TestServerContext server = serviceTalkServer(ErrorMode.SIMPLE_IN_RESPONSE, ssl, noOffloadsStrategy());
+        final CompatClient client = grpcJavaClient(server.listenAddress(), null, ssl);
+        testGrpcError(client, server, false, streaming);
+    }
+
+    @Theory
+    public void grpcJavaToServiceTalkErrorViaServiceFilter(@FromDataPoints("ssl") final boolean ssl,
+                                                           @FromDataPoints("streaming") final boolean streaming)
+            throws Exception {
         final TestServerContext server = serviceTalkServer(ErrorMode.SIMPLE_IN_SERVICE_FILTER, ssl);
         final CompatClient client = grpcJavaClient(server.listenAddress(), null, ssl);
-        testError(client, server, false);
+        testGrpcError(client, server, false, streaming);
     }
 
     @Theory
-    public void grpcJavaToServiceTalkErrorViaServerFilter(@FromDataPoints("ssl") final boolean ssl) throws Exception {
+    public void grpcJavaToServiceTalkErrorViaServerFilter(@FromDataPoints("ssl") final boolean ssl,
+                                                          @FromDataPoints("streaming") final boolean streaming)
+            throws Exception {
         final TestServerContext server = serviceTalkServer(ErrorMode.SIMPLE_IN_SERVER_FILTER, ssl);
         final CompatClient client = grpcJavaClient(server.listenAddress(), null, ssl);
-        testError(client, server, false);
+        testGrpcError(client, server, false, streaming);
     }
 
     @Theory
-    public void grpcJavaToServiceTalkErrorWithStatus(@FromDataPoints("ssl") final boolean ssl) throws Exception {
+    public void grpcJavaToServiceTalkErrorWithStatus(@FromDataPoints("ssl") final boolean ssl,
+                                                     @FromDataPoints("streaming") final boolean streaming)
+            throws Exception {
         final TestServerContext server = serviceTalkServer(ErrorMode.STATUS, ssl);
         final CompatClient client = grpcJavaClient(server.listenAddress(), null, ssl);
-        testError(client, server, true);
+        testGrpcError(client, server, true, streaming);
     }
 
-    @Ignore("GrpcStatusException thrown late (e.g. in a map operator) are not currently handled")
     @Theory
-    public void grpcJavaToServiceTalkErrorWithStatusInResponse(@FromDataPoints("ssl") final boolean ssl)
+    public void grpcJavaToServiceTalkErrorWithStatusInScalarResponse(@FromDataPoints("ssl") final boolean ssl)
             throws Exception {
         final TestServerContext server = serviceTalkServer(ErrorMode.STATUS_IN_RESPONSE, ssl);
         final CompatClient client = grpcJavaClient(server.listenAddress(), null, ssl);
-        testError(client, server, true);
+        testGrpcError(client, server, true, false);
     }
 
     @Theory
-    public void grpcJavaToServiceTalkErrorWithStatusViaServiceFilter(@FromDataPoints("ssl") final boolean ssl)
+    public void grpcJavaToServiceTalkErrorWithStatusInStreamingResponse(@FromDataPoints("ssl") final boolean ssl)
+            throws Exception {
+        final TestServerContext server = serviceTalkServer(ErrorMode.STATUS_IN_RESPONSE, ssl);
+        final CompatClient client = grpcJavaClient(server.listenAddress(), null, ssl);
+        testStreamResetOnUnexpectedErrorOnServiceTalkServer(client, server);
+    }
+
+    @Theory
+    public void grpcJavaToServiceTalkErrorWithStatusInResponseNoOffloads(
+            @FromDataPoints("ssl") final boolean ssl,
+            @FromDataPoints("streaming") final boolean streaming) throws Exception {
+        final TestServerContext server = serviceTalkServer(ErrorMode.STATUS_IN_RESPONSE, ssl, noOffloadsStrategy());
+        final CompatClient client = grpcJavaClient(server.listenAddress(), null, ssl);
+        testGrpcError(client, server, true, streaming);
+    }
+
+    @Theory
+    public void grpcJavaToServiceTalkErrorWithStatusViaServiceFilter(
+            @FromDataPoints("ssl") final boolean ssl, @FromDataPoints("streaming") final boolean streaming)
             throws Exception {
         final TestServerContext server = serviceTalkServer(ErrorMode.STATUS_IN_SERVICE_FILTER, ssl);
         final CompatClient client = grpcJavaClient(server.listenAddress(), null, ssl);
-        testError(client, server, true);
+        testGrpcError(client, server, true, streaming);
     }
 
     @Theory
-    public void grpcJavaToServiceTalkErrorWithStatusViaServerFilter(@FromDataPoints("ssl") final boolean ssl)
+    public void grpcJavaToServiceTalkErrorWithStatusViaServerFilter(
+            @FromDataPoints("ssl") final boolean ssl, @FromDataPoints("streaming") final boolean streaming)
             throws Exception {
         final TestServerContext server = serviceTalkServer(ErrorMode.STATUS_IN_SERVER_FILTER, ssl);
         final CompatClient client = grpcJavaClient(server.listenAddress(), null, ssl);
-        testError(client, server, true);
+        testGrpcError(client, server, true, streaming);
     }
 
     @Theory
-    public void serviceTalkToServiceTalkError(@FromDataPoints("ssl") final boolean ssl) throws Exception {
+    public void serviceTalkToServiceTalkError(@FromDataPoints("ssl") final boolean ssl,
+                                              @FromDataPoints("streaming") final boolean streaming) throws Exception {
         final TestServerContext server = serviceTalkServer(ErrorMode.SIMPLE, ssl);
         final CompatClient client = serviceTalkClient(server.listenAddress(), ssl);
-        testError(client, server, false);
+        testGrpcError(client, server, false, streaming);
     }
 
     @Theory
-    public void serviceTalkToServiceTalkErrorViaServiceFilter(@FromDataPoints("ssl") final boolean ssl)
+    public void serviceTalkToServiceTalkErrorViaServiceFilter(@FromDataPoints("ssl") final boolean ssl,
+                                                              @FromDataPoints("streaming") final boolean streaming)
             throws Exception {
         final TestServerContext server = serviceTalkServer(ErrorMode.SIMPLE_IN_SERVICE_FILTER, ssl);
         final CompatClient client = serviceTalkClient(server.listenAddress(), ssl);
-        testError(client, server, false);
+        testGrpcError(client, server, false, streaming);
     }
 
     @Theory
-    public void serviceTalkToServiceTalkErrorViaServerFilter(@FromDataPoints("ssl") final boolean ssl)
+    public void serviceTalkToServiceTalkErrorViaServerFilter(@FromDataPoints("ssl") final boolean ssl,
+                                                             @FromDataPoints("streaming") final boolean streaming)
             throws Exception {
         final TestServerContext server = serviceTalkServer(ErrorMode.SIMPLE_IN_SERVER_FILTER, ssl);
         final CompatClient client = serviceTalkClient(server.listenAddress(), ssl);
-        testError(client, server, false);
+        testGrpcError(client, server, false, streaming);
     }
 
     @Theory
-    public void serviceTalkToServiceTalkErrorWithStatus(@FromDataPoints("ssl") final boolean ssl) throws Exception {
+    public void serviceTalkToServiceTalkErrorWithStatus(@FromDataPoints("ssl") final boolean ssl,
+                                                        @FromDataPoints("streaming") final boolean streaming)
+            throws Exception {
         final TestServerContext server = serviceTalkServer(ErrorMode.STATUS, ssl);
         final CompatClient client = serviceTalkClient(server.listenAddress(), ssl);
-        testError(client, server, true);
+        testGrpcError(client, server, true, streaming);
     }
 
     @Theory
-    public void serviceTalkToServiceTalkErrorWithStatusViaServiceFilter(@FromDataPoints("ssl") final boolean ssl)
+    public void serviceTalkToServiceTalkErrorWithStatusViaServiceFilter(
+            @FromDataPoints("ssl") final boolean ssl, @FromDataPoints("streaming") final boolean streaming)
             throws Exception {
         final TestServerContext server = serviceTalkServer(ErrorMode.STATUS_IN_SERVICE_FILTER, ssl);
         final CompatClient client = serviceTalkClient(server.listenAddress(), ssl);
-        testError(client, server, true);
+        testGrpcError(client, server, true, streaming);
     }
 
     @Theory
-    public void serviceTalkToServiceTalkErrorWithStatusViaServerFilter(@FromDataPoints("ssl") final boolean ssl)
+    public void serviceTalkToServiceTalkErrorWithStatusViaServerFilter(
+            @FromDataPoints("ssl") final boolean ssl, @FromDataPoints("streaming") final boolean streaming)
             throws Exception {
         final TestServerContext server = serviceTalkServer(ErrorMode.STATUS_IN_SERVER_FILTER, ssl);
         final CompatClient client = serviceTalkClient(server.listenAddress(), ssl);
-        testError(client, server, true);
+        testGrpcError(client, server, true, streaming);
     }
 
-    private static void testRequestResponse(final BlockingCompatClient client, final TestServerContext server)
+    private static void testBlockingRequestResponse(final BlockingCompatClient client, final TestServerContext server)
             throws Exception {
         try {
             final CompatResponse response1 = client.scalarCall(CompatRequest.newBuilder().setId(1).build());
@@ -343,7 +415,8 @@ public class ProtocolCompatibilityTest {
         }
     }
 
-    private static void testRequestResponse(final CompatClient client, final TestServerContext server)
+    private static void testBlockingRequestResponse(final CompatClient client, final TestServerContext server,
+                                                    final boolean streaming)
             throws Exception {
         try {
             // scalarCall basically echos
@@ -383,52 +456,85 @@ public class ProtocolCompatibilityTest {
         }
     }
 
-    private static void testError(final CompatClient client, final TestServerContext server, final boolean withStatus)
-            throws Exception {
+    private void testStreamResetOnUnexpectedErrorOnServiceTalkServer(final CompatClient client,
+                                                                     final TestServerContext server) throws Exception {
         try {
-            final Single<CompatResponse> scalarResponse =
-                    client.scalarCall(CompatRequest.newBuilder().setId(1).build());
-
-            try {
-                scalarResponse.toFuture().get();
-                fail("No error received");
-            } catch (final Exception e) {
-                final Throwable t = e.getCause();
-                if (t instanceof StatusRuntimeException) {
-                    // underlying client is gRPC
-                    assertStatusRuntimeException((StatusRuntimeException) t, withStatus);
-                } else if (t instanceof GrpcStatusException) {
-                    // underlying client is ServiceTalk
-                    assertGrpcStatusException((GrpcStatusException) t, withStatus);
-                } else {
-                    t.printStackTrace();
-                    fail("Unexpected exception type: " + t);
-                }
-            }
-
             final Publisher<CompatResponse> streamingResponse = client.bidirectionalStreamingCall(Publisher.from(
                     CompatRequest.newBuilder().setId(3).build(),
                     CompatRequest.newBuilder().setId(4).build(),
                     CompatRequest.newBuilder().setId(5).build()
             ));
-            try {
-                streamingResponse.toFuture().get();
-                fail("No error received");
-            } catch (final Exception e) {
-                final Throwable t = e.getCause();
-                if (t instanceof StatusRuntimeException) {
-                    // underlying client is gRPC
-                    assertStatusRuntimeException((StatusRuntimeException) t, withStatus);
-                } else if (t instanceof GrpcStatusException) {
-                    // underlying client is ServiceTalk
-                    assertGrpcStatusException((GrpcStatusException) t, withStatus);
-                } else {
-                    t.printStackTrace();
-                    fail("Unexpected exception type: " + t);
-                }
+            streamingResponse.toFuture().get();
+        } catch (ExecutionException e) {
+            final Throwable cause = e.getCause();
+            if (cause instanceof StatusRuntimeException) {
+                final StatusRuntimeException sre = (StatusRuntimeException) cause;
+                final Code code = sre.getStatus().getCode();
+                assertEquals("Unexpected grpc error code: " + code, code, CANCELLED);
+            } else {
+                cause.printStackTrace();
+                fail("Unexpected exception type: " + cause);
             }
         } finally {
             closeAll(client, server);
+        }
+    }
+
+    private static void testGrpcError(final CompatClient client, final TestServerContext server,
+                                      final boolean withStatus, final boolean streaming)
+            throws Exception {
+        if (streaming) {
+            testGrpcErrorStreaming(client, server, withStatus);
+        } else {
+            testGrpcErrorScalar(client, server, withStatus);
+        }
+    }
+
+    private static void testGrpcErrorStreaming(final CompatClient client, final TestServerContext server,
+                                               final boolean withStatus)
+            throws Exception {
+        try {
+            final Publisher<CompatResponse> streamingResponse = client.bidirectionalStreamingCall(Publisher.from(
+                    CompatRequest.newBuilder().setId(3).build(),
+                    CompatRequest.newBuilder().setId(4).build(),
+                    CompatRequest.newBuilder().setId(5).build()
+            ));
+            validateGrpcErrorInResponse(streamingResponse.toFuture(), withStatus);
+        } finally {
+            closeAll(client, server);
+        }
+    }
+
+    private static void testGrpcErrorScalar(final CompatClient client, final TestServerContext server,
+                                            final boolean withStatus)
+            throws Exception {
+        try {
+            final Single<CompatResponse> scalarResponse =
+                    client.scalarCall(CompatRequest.newBuilder().setId(1).build());
+
+            validateGrpcErrorInResponse(scalarResponse.toFuture(), withStatus);
+        } finally {
+            closeAll(client, server);
+        }
+    }
+
+    private static void validateGrpcErrorInResponse(final Future<?> future, final boolean withStatus)
+            throws InvalidProtocolBufferException {
+        try {
+            future.get();
+            fail("No error received");
+        } catch (final Exception e) {
+            final Throwable t = e.getCause();
+            if (t instanceof StatusRuntimeException) {
+                // underlying client is gRPC
+                assertStatusRuntimeException((StatusRuntimeException) t, withStatus);
+            } else if (t instanceof GrpcStatusException) {
+                // underlying client is ServiceTalk
+                assertGrpcStatusException((GrpcStatusException) t, withStatus);
+            } else {
+                t.printStackTrace();
+                fail("Unexpected exception type: " + t);
+            }
         }
     }
 
@@ -557,6 +663,11 @@ public class ProtocolCompatibilityTest {
     }
 
     private static TestServerContext serviceTalkServer(final ErrorMode errorMode, final boolean ssl) throws Exception {
+        return serviceTalkServer(errorMode, ssl, defaultStrategy());
+    }
+
+    private static TestServerContext serviceTalkServer(final ErrorMode errorMode, final boolean ssl,
+                                                       final GrpcExecutionStrategy executionStrategy) throws Exception {
         final Compat.ServiceFactory serviceFactory = new Compat.ServiceFactory(new Compat.CompatService() {
             @Override
             public Publisher<CompatResponse> bidirectionalStreamingCall(final GrpcServiceContext ctx,
@@ -638,7 +749,9 @@ public class ProtocolCompatibilityTest {
             }
         });
 
-        final ServerContext serverContext = serviceTalkServerBuilder(errorMode, ssl).listenAndAwait(serviceFactory);
+        final ServerContext serverContext = serviceTalkServerBuilder(errorMode, ssl)
+                .executionStrategy(executionStrategy)
+                .listenAndAwait(serviceFactory);
         return TestServerContext.fromServiceTalkServerContext(serverContext);
     }
 
