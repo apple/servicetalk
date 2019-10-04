@@ -17,13 +17,13 @@ package io.servicetalk.grpc.netty;
 
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.grpc.api.GrpcExecutionStrategy;
 import io.servicetalk.grpc.api.GrpcServerBuilder;
 import io.servicetalk.grpc.api.GrpcServerSecurityConfigurator;
 import io.servicetalk.grpc.api.GrpcServiceFactory;
 import io.servicetalk.grpc.api.GrpcServiceFactory.ServerBinder;
 import io.servicetalk.http.api.BlockingHttpService;
 import io.servicetalk.http.api.BlockingStreamingHttpService;
-import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.HttpServerBuilder;
 import io.servicetalk.http.api.HttpServerSecurityConfigurator;
@@ -173,7 +173,7 @@ final class DefaultGrpcServerBuilder extends GrpcServerBuilder implements Server
     }
 
     @Override
-    public GrpcServerBuilder executionStrategy(final HttpExecutionStrategy strategy) {
+    public GrpcServerBuilder executionStrategy(final GrpcExecutionStrategy strategy) {
         contextBuilder.executionStrategy(strategy);
         httpServerBuilder.executionStrategy(strategy);
         return this;

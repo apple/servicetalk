@@ -23,9 +23,9 @@ import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.grpc.api.GrpcClientBuilder;
 import io.servicetalk.grpc.api.GrpcClientCallFactory;
 import io.servicetalk.grpc.api.GrpcClientSecurityConfigurator;
+import io.servicetalk.grpc.api.GrpcExecutionStrategy;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.FilterableStreamingHttpLoadBalancedConnection;
-import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.http.api.SingleAddressHttpClientSecurityConfigurator;
@@ -60,7 +60,7 @@ final class DefaultGrpcClientBuilder<U, R> extends GrpcClientBuilder<U, R> {
     }
 
     @Override
-    public GrpcClientBuilder<U, R> executionStrategy(final HttpExecutionStrategy strategy) {
+    public GrpcClientBuilder<U, R> executionStrategy(final GrpcExecutionStrategy strategy) {
         httpClientBuilder.executionStrategy(strategy);
         return this;
     }
