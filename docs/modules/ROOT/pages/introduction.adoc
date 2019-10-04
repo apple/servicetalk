@@ -8,14 +8,14 @@ of application developers who need service to service communication it presents 
 
 * Threading Model
 ** fully asynchronous and requires knowledge of EventLoop threading model
-** back-pressure requires manual association of source of data and sink of data
 ** executing CPU intensive or "blocking" code requires manual thread hops
 ** ordering issues when code executes both on and off the EventLoop thread
 * Usability
-** APIs not be tailored toward specific protocols (e.g. request/response, RPC, etc..)
+** APIs not tailored toward common application use cases (e.g. request/response, RPC, etc..)
 ** Asynchronous programming paradigm presents a barrier to entry in scenarios where it may not be required for
 scalability. It may be required as the user base grows, and only in subset of cases for the application.
 ** Error propagation follows multiple paths depending on the event and state of Channel
+** back-pressure requires manual association of source of data and sink of data
 * Lacking Feature Set
 ** Smart Client (e.g. client-side load balancing, service discovery, retry, circuit breaking, etc...) features missing
 
