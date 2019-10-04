@@ -50,6 +50,7 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import io.grpc.ManagedChannel;
 import io.grpc.Server;
 import io.grpc.Status;
+import io.grpc.Status.Code;
 import io.grpc.StatusRuntimeException;
 import io.grpc.netty.GrpcSslContexts;
 import io.grpc.netty.NettyChannelBuilder;
@@ -465,10 +466,10 @@ public class ProtocolCompatibilityTest {
             ));
             streamingResponse.toFuture().get();
         } catch (ExecutionException e) {
-            Throwable cause = e.getCause();
+            final Throwable cause = e.getCause();
             if (cause instanceof StatusRuntimeException) {
-                StatusRuntimeException sre = (StatusRuntimeException) cause;
-                Status.Code code = sre.getStatus().getCode();
+                final StatusRuntimeException sre = (StatusRuntimeException) cause;
+                final Code code = sre.getStatus().getCode();
                 assertEquals("Unexpected grpc error code: " + code, code, CANCELLED);
             } else {
                 cause.printStackTrace();
