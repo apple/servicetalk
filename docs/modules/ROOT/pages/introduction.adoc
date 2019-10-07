@@ -15,7 +15,7 @@ of application developers who need service to service communication it presents 
 ** Asynchronous programming paradigm presents a barrier to entry in scenarios where it may not be required for
 scalability. It may be required as the user base grows, and only in subset of cases for the application.
 ** Error propagation follows multiple paths depending on the event and state of Channel
-** back-pressure requires manual association of source of data and sink of data
+** back-pressure requires manual association between source of data and sink of data
 * Lacking Feature Set
 ** Smart Client (e.g. client-side load balancing, service discovery, retry, circuit breaking, etc...) features missing
 
