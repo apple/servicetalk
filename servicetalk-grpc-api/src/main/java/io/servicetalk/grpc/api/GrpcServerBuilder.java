@@ -309,7 +309,7 @@ public abstract class GrpcServerBuilder {
      * @param strategy {@link HttpExecutionStrategy} to use by this server.
      * @return {@code this}.
      */
-    public abstract GrpcServerBuilder executionStrategy(HttpExecutionStrategy strategy);
+    public abstract GrpcServerBuilder executionStrategy(GrpcExecutionStrategy strategy);
 
     /**
      * Starts this server and returns the {@link ServerContext} after the server has been successfully started.

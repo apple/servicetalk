@@ -16,7 +16,6 @@
 package io.servicetalk.grpc.api;
 
 import io.servicetalk.buffer.api.BufferAllocator;
-import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.StreamingHttpConnection;
@@ -47,12 +46,12 @@ interface BaseGrpcClientBuilder<U, R> {
     BaseGrpcClientBuilder<U, R> bufferAllocator(BufferAllocator allocator);
 
     /**
-     * Sets the {@link HttpExecutionStrategy} for all clients created from this builder.
+     * Sets the {@link GrpcExecutionStrategy} for all clients created from this builder.
      *
-     * @param strategy {@link HttpExecutionStrategy} to use.
+     * @param strategy {@link GrpcExecutionStrategy} to use.
      * @return {@code this}.
      */
-    BaseGrpcClientBuilder<U, R> executionStrategy(HttpExecutionStrategy strategy);
+    BaseGrpcClientBuilder<U, R> executionStrategy(GrpcExecutionStrategy strategy);
 
     /**
      * Add a {@link SocketOption} for all clients created by this builder.
