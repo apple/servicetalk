@@ -665,11 +665,9 @@ final class NettyHttpServer {
 
         @Override
         public void onError(final Throwable t) {
-            if (t instanceof ClosedChannelException) {
-                if (t.getCause() instanceof ClosedChannelException) {
-                    LOGGER.debug("Closing the channel", t);
-                    return;
-                }
+            if (t instanceof ClosedChannelException && t.getCause() instanceof ClosedChannelException) {
+                LOGGER.debug("Closing the channel", t);
+                return;
             }
             LOGGER.warn("Unexpected exception on the connection", t);
         }
