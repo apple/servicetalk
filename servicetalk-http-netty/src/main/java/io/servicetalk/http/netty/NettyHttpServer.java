@@ -29,7 +29,6 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.internal.SubscribableCompletable;
 import io.servicetalk.concurrent.internal.DuplicateSubscribeException;
 import io.servicetalk.concurrent.internal.RejectedSubscribeError;
-import io.servicetalk.concurrent.internal.SequentialCancellable;
 import io.servicetalk.concurrent.internal.TerminalNotification;
 import io.servicetalk.http.api.DefaultHttpExecutionContext;
 import io.servicetalk.http.api.EmptyHttpHeaders;
@@ -650,18 +649,18 @@ final class NettyHttpServer {
         }
     }
 
-    private static final class ErrorLoggingHttpSubscriber extends SequentialCancellable
-            implements CompletableSource.Subscriber {
+    private static final class ErrorLoggingHttpSubscriber implements CompletableSource.Subscriber {
 
         private static final Logger LOGGER = LoggerFactory.getLogger(ErrorLoggingHttpSubscriber.class);
 
         @Override
         public void onSubscribe(final Cancellable cancellable) {
-            nextCancellable(cancellable);
+            // We never cancel from this Subscriber
         }
 
         @Override
         public void onComplete() {
+            LOGGER.debug("HTTP/1.1 connection completed");
         }
 
         @Override
