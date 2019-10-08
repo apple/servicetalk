@@ -59,7 +59,7 @@ public abstract class GrpcClientBuilder<U, R>
     public abstract GrpcClientBuilder<U, R> bufferAllocator(BufferAllocator allocator);
 
     @Override
-    public abstract GrpcClientBuilder<U, R> executionStrategy(HttpExecutionStrategy strategy);
+    public abstract GrpcClientBuilder<U, R> executionStrategy(GrpcExecutionStrategy strategy);
 
     @Override
     public abstract <T> GrpcClientBuilder<U, R> socketOption(SocketOption<T> option, T value);

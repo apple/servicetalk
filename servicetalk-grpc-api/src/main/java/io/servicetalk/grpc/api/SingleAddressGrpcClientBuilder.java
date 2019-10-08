@@ -25,7 +25,6 @@ import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.FilterableStreamingHttpLoadBalancedConnection;
-import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequest;
@@ -46,7 +45,7 @@ interface SingleAddressGrpcClientBuilder<U, R,
     SingleAddressGrpcClientBuilder<U, R, SDE> bufferAllocator(BufferAllocator allocator);
 
     @Override
-    SingleAddressGrpcClientBuilder<U, R, SDE> executionStrategy(HttpExecutionStrategy strategy);
+    SingleAddressGrpcClientBuilder<U, R, SDE> executionStrategy(GrpcExecutionStrategy strategy);
 
     @Override
     <T> SingleAddressGrpcClientBuilder<U, R, SDE> socketOption(SocketOption<T> option, T value);
