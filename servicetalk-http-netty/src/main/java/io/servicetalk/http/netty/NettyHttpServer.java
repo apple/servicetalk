@@ -16,6 +16,7 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.CompletableSource.Processor;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
@@ -28,6 +29,7 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.internal.SubscribableCompletable;
 import io.servicetalk.concurrent.internal.DuplicateSubscribeException;
 import io.servicetalk.concurrent.internal.RejectedSubscribeError;
+import io.servicetalk.concurrent.internal.SequentialCancellable;
 import io.servicetalk.concurrent.internal.TerminalNotification;
 import io.servicetalk.http.api.DefaultHttpExecutionContext;
 import io.servicetalk.http.api.EmptyHttpHeaders;
@@ -65,6 +67,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.SocketAddress;
+import java.nio.channels.ClosedChannelException;
 import java.util.ArrayDeque;
 import java.util.Queue;
 import java.util.concurrent.RejectedExecutionException;
@@ -80,6 +83,7 @@ import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Completable.defer;
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.succeeded;
+import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.http.api.HttpApiConversions.mayHaveTrailers;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderValues.ZERO;
@@ -114,7 +118,7 @@ final class NettyHttpServer {
         return TcpServerBinder.bind(address, tcpServerConfig, executionContext, connectionAcceptor,
                 channel -> initChannel(channel, executionContext, config,
                         new TcpServerChannelInitializer(tcpServerConfig), service, drainRequestPayloadBody),
-                serverConnection -> serverConnection.process(true).subscribe())
+                NettyHttpServer::startProcessing)
                 .map(delegate -> {
                     LOGGER.debug("Started HTTP server for address {}.", delegate.listenAddress());
                     // The ServerContext returned by TcpServerBinder takes care of closing the connectionAcceptor.
@@ -139,6 +143,11 @@ final class NettyHttpServer {
                 httpExecutionContext.executionStrategy())
                 .map(conn -> new NettyHttpServerConnection(conn, service, httpExecutionContext.executionStrategy(),
                         flushStrategy, config.headersFactory(), drainRequestPayloadBody)), "HTTP/1.1", channel);
+    }
+
+    static void startProcessing(final NettyHttpServerConnection serverConnection) {
+        toSource(serverConnection.process(true))
+                .subscribe(new ErrorLoggingHttpSubscriber());
     }
 
     private static ChannelInitializer getChannelInitializer(final ReadOnlyHttpServerConfig config,
@@ -638,6 +647,32 @@ final class NettyHttpServer {
         @Override
         public void cancel() {
             state = CANCELLED;
+        }
+    }
+
+    private static final class ErrorLoggingHttpSubscriber extends SequentialCancellable
+            implements CompletableSource.Subscriber {
+
+        private static final Logger LOGGER = LoggerFactory.getLogger(ErrorLoggingHttpSubscriber.class);
+
+        @Override
+        public void onSubscribe(final Cancellable cancellable) {
+            nextCancellable(cancellable);
+        }
+
+        @Override
+        public void onComplete() {
+        }
+
+        @Override
+        public void onError(final Throwable t) {
+            if (t instanceof ClosedChannelException) {
+                if (t.getCause() instanceof ClosedChannelException) {
+                    LOGGER.debug("Closing the channel", t);
+                    return;
+                }
+            }
+            LOGGER.warn("Unexpected exception on the connection", t);
         }
     }
 }
