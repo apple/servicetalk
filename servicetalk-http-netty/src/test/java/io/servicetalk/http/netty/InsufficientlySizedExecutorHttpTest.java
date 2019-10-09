@@ -165,7 +165,7 @@ public class InsufficientlySizedExecutorHttpTest {
     }
 
     @After
-    public void tearDown() {
+    public void tearDown() throws Exception {
         CompositeCloseable closeable = newCompositeCloseable();
         if (client != null) {
             closeable.append(client);
@@ -174,6 +174,7 @@ public class InsufficientlySizedExecutorHttpTest {
             closeable.append(server);
         }
         closeable.append(executor);
+        closeable.close();
     }
 
     private static Object[] newParam(final int capacity, final boolean threadBased) {
