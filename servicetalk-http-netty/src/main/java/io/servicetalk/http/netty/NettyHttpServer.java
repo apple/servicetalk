@@ -52,6 +52,7 @@ import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
 import io.servicetalk.transport.netty.internal.CloseHandler;
+import io.servicetalk.transport.netty.internal.CloseHandler.CloseEventObservedException;
 import io.servicetalk.transport.netty.internal.DefaultNettyConnection;
 import io.servicetalk.transport.netty.internal.FlushStrategy;
 import io.servicetalk.transport.netty.internal.FlushStrategyHolder;
@@ -660,12 +661,12 @@ final class NettyHttpServer {
 
         @Override
         public void onComplete() {
-            LOGGER.debug("HTTP/1.1 connection completed");
+            // NOOP
         }
 
         @Override
         public void onError(final Throwable t) {
-            if (t instanceof ClosedChannelException && t.getCause() instanceof ClosedChannelException) {
+            if (t instanceof CloseEventObservedException && t.getCause() instanceof ClosedChannelException) {
                 LOGGER.debug("Closing the channel", t);
                 return;
             }

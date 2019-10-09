@@ -177,7 +177,11 @@ public abstract class CloseHandler {
         }
     }
 
-    private static final class CloseEventObservedException extends ClosedChannelException {
+    /**
+     * {@link ClosedChannelException} with additional meta-data to provide more context on what side initiated the close
+     * event.
+     */
+    public static final class CloseEventObservedException extends ClosedChannelException {
         private static final long serialVersionUID = -4181001701486049092L;
 
         private final CloseEvent event;
