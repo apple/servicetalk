@@ -26,7 +26,6 @@ import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.transport.api.ConnectionAcceptor;
 import io.servicetalk.transport.api.ConnectionContext;
 
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -131,7 +130,6 @@ public class NettyHttpServerConnectionAcceptorTest extends AbstractNettyHttpServ
         return parameters;
     }
 
-    @Ignore("Flaky on CI: https://github.com/apple/servicetalk/issues/452")
     @Test
     public void testAcceptConnection() throws Exception {
         try {
