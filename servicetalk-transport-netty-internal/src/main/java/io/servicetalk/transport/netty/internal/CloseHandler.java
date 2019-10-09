@@ -142,7 +142,7 @@ public abstract class CloseHandler {
      * These events indicate an event was observed from the protocol or {@link Channel} that indicates the end of the
      * {@link Channel} and no further requests should be attempted.
      */
-    enum CloseEvent {
+    public enum CloseEvent {
         /**
          * Outbound protocol close command observed eg. HTTP header: {@code Connection: close}.
          */
@@ -193,6 +193,15 @@ public abstract class CloseHandler {
             this.event = closeEvent;
             this.channelDetails = channel.toString();
             initCause(cause);
+        }
+
+        /**
+         * {@link CloseEvent} was observed from the protocol or {@link Channel}.
+         *
+         * @return {@link CloseEvent} was observed
+         */
+        public CloseEvent event() {
+            return event;
         }
 
         @Override
