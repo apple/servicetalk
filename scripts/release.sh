@@ -62,8 +62,7 @@ $git pull
 $git log -n1
 
 pushd docs/generation
-rm -rf .cache .out
-./gradlew --no-daemon validateLocalSite
+./gradlew --no-daemon clean validateLocalSite
 popd
 
 sed "s/^version=.*/version=$version/" gradle.properties > gradle.properties.tmp
