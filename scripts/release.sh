@@ -76,7 +76,6 @@ for file in docs/modules/ROOT/nav.adoc */docs/modules/ROOT/nav.adoc; do
     sed "s/^:page-version: .*/:page-version: ${version%.*}/" "$file" > "$file.tmp"
     mv "$file.tmp" "$file"
 done
-./scripts/update-git-ref-in-antora-components-attributes.sh "$version"
 ./scripts/manage-antora-remote-versions.sh "$version"
 
 if [ -n "${DRYRUN:-}" ]; then
@@ -104,7 +103,6 @@ for file in docs/modules/ROOT/nav.adoc */docs/modules/ROOT/nav.adoc; do
     sed "s/^:page-version: .*/:page-version: SNAPSHOT/" "$file" > "$file.tmp"
     mv "$file.tmp" "$file"
 done
-./scripts/update-git-ref-in-antora-components-attributes.sh "master"
 
 $git commit -a -m "Preparing for $nextVersion development"
 $git push origin master

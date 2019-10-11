@@ -30,7 +30,8 @@ task buildLocalSite(type: NodeTask) { task ->
   script = file('./node_modules/.bin/antora')
   args = [
       "--stacktrace",
-      "--attribute", isReleaseBuild ? "is-release-version=defined" : "sourceroot=file://${file(servicetalkRoot)}/",
+      "--attribute", isReleaseBuild ? "is-release-version=defined" : "is-snapshot-version=defined",
+      "--attribute", "source-root=file://${file(servicetalkRoot)}",
       "site-local.yml",
   ]
 

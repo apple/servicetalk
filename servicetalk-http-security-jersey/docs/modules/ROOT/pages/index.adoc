@@ -1,4 +1,11 @@
-include::ROOT:partial$component-attributes.adoc[]
+// Configure {source-root} values based on how this document is rendered: on GitHub or not
+ifdef::env-github[]
+ifndef::source-root[:source-root: ]
+endif::[]
+ifndef::env-github[]
+ifndef::source-root[:source-root: https://github.com/apple/servicetalk/blob/{page-origin-refname}]
+endif::[]
+
 = Security Utils for Jersey Router
 
 This module provides JAX-RS filters that set `javax.ws.rs.core.SecurityContext` for requests authenticated with
@@ -16,12 +23,12 @@ for the whole ServiceTalk HTTP server or to specific paths with the `HttpPredica
 
 TIP: This is similar to configuring security at JavaEE container level in `web.xml`.
 
-link:{sourceroot}servicetalk-http-security-jersey/src/main/java/io/servicetalk/http/security/auth/basic/jersey/BasicAuthSecurityContextFilters.java[`BasicAuthSecurityContextFilters`]
+link:{source-root}/servicetalk-http-security-jersey/src/main/java/io/servicetalk/http/security/auth/basic/jersey/BasicAuthSecurityContextFilters.java[`BasicAuthSecurityContextFilters`]
 provides factory methods for the two main types of JAX-RS filters:
 
 * Globally bound filters, which are applied to all resources of the JAX-RS `javax.ws.rs.core.Application`,
 * Name bound filters, which needs to be manually applied to specific resources via the provided
-link:{sourceroot}servicetalk-http-security-jersey/src/main/java/io/servicetalk/http/security/auth/basic/jersey/BasicAuthenticated.java[`@BasicAuthenticated`] annotation.
+link:{source-root}/servicetalk-http-security-jersey/src/main/java/io/servicetalk/http/security/auth/basic/jersey/BasicAuthenticated.java[`@BasicAuthenticated`] annotation.
 
 Each of these main types come in two different flavors:
 

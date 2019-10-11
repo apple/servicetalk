@@ -1,4 +1,11 @@
-include::ROOT:partial$component-attributes.adoc[]
+// Configure {source-root} values based on how this document is rendered: on GitHub or not
+ifdef::env-github[]
+ifndef::source-root[:source-root: ]
+endif::[]
+ifndef::env-github[]
+ifndef::source-root[:source-root: https://github.com/apple/servicetalk/blob/{page-origin-refname}]
+endif::[]
+
 = HTTP
 
 This module defines the ServiceTalk client and server API for the link:https://tools.ietf.org/html/rfc7231[HTTP/1.x]
@@ -9,7 +16,7 @@ xref:{page-version}@servicetalk::introduction.adoc#blocking-and-aggregated[block
 
 ==== Blocking Client
 See
-link:{sourceroot}servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/blocking/BlockingHelloWorldClient.java[BlockingHelloWorldClient].
+link:{source-root}/servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/blocking/BlockingHelloWorldClient.java[BlockingHelloWorldClient].
 [source, java]
 ----
 try (BlockingHttpClient client = HttpClients.forSingleAddress("localhost", 8080).buildBlocking()) {
@@ -20,7 +27,7 @@ try (BlockingHttpClient client = HttpClients.forSingleAddress("localhost", 8080)
 
 ==== Blocking Server
 See
-link:{sourceroot}servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/blocking/BlockingHelloWorldServer.java[BlockingHelloWorldServer].
+link:{source-root}/servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/blocking/BlockingHelloWorldServer.java[BlockingHelloWorldServer].
 [source, java]
 ----
 HttpServers.forPort(8080)
@@ -50,17 +57,17 @@ the socket to the HTTP `Service` is visualized as follows:
 ----
 
 Each `Service` has access to a
-link:{sourceroot}servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpServiceContext.java[HttpServiceContext] which provides additional context
-(via link:{sourceroot}servicetalk-transport-api/src/main/java/io/servicetalk/transport/api/ConnectionContext.java[ConnectionContext]) into the
+link:{source-root}/servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpServiceContext.java[HttpServiceContext] which provides additional context
+(via link:{source-root}/servicetalk-transport-api/src/main/java/io/servicetalk/transport/api/ConnectionContext.java[ConnectionContext]) into the
 `Connection`/transport details for each request/response. This means that the `HttpService` may be invoked for multiple
 connections, from different threads, and even concurrently.
 
 === Service Filters
 Filters provide a means to filter/intercept and modify each request/response life cycle. `Service` Filters are used to
 implement
-link:{sourceroot}servicetalk-opentracing-http/src/main/java/io/servicetalk/opentracing/http/TracingHttpServiceFilter.java[tracing]
+link:{source-root}/servicetalk-opentracing-http/src/main/java/io/servicetalk/opentracing/http/TracingHttpServiceFilter.java[tracing]
 metrics, logging,
-link:{sourceroot}servicetalk-http-utils/src/main/java/io/servicetalk/http/utils/auth/BasicAuthHttpServiceFilter.java[basic auth],
+link:{source-root}/servicetalk-http-utils/src/main/java/io/servicetalk/http/utils/auth/BasicAuthHttpServiceFilter.java[basic auth],
 and any other extension that needs request/response level visibility. The diagram below describes the control flow
 as related to `Service` filters:
 
@@ -74,9 +81,9 @@ as related to `Service` filters:
 ----
 
 To implement a `Service` filter you should implement the
-link:{sourceroot}servicetalk-http-api/src/main/java/io/servicetalk/http/api/StreamingHttpServiceFilterFactory.java[Service Filter Factory] and append it
+link:{source-root}/servicetalk-http-api/src/main/java/io/servicetalk/http/api/StreamingHttpServiceFilterFactory.java[Service Filter Factory] and append it
 on the `HttpServerBuilder` via
-link:{sourceroot}servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpServerBuilder.java[HttpServerBuilder#appendServiceFilter(..)].
+link:{source-root}/servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpServerBuilder.java[HttpServerBuilder#appendServiceFilter(..)].
 
 NOTE: Currently we only support writing `Filters` for the <<asynchronous-and-streaming, Asynchronous and Streaming>>
 programming paradigm but plan to add support for the others soon. The
@@ -89,8 +96,8 @@ In practice it is common for a HTTP `Service` to handle many different types of 
 processing requirements. The control flow in ServiceTalk is represented by a "Router". A "Router" is a `Service` that
 owns the responsibility of multiplexing the control flow. ServiceTalk does not mandate a specific "Router"
 implementation but provides a couple reference implementations for common use cases (e.g.
-link:{sourceroot}servicetalk-http-router-predicate[Predicate Router] and
-link:{sourceroot}servicetalk-http-router-jersey[JAX-RS via Jersey]). The general component diagram of a "Router" is as follows:
+link:{source-root}/servicetalk-http-router-predicate[Predicate Router] and
+link:{source-root}/servicetalk-http-router-jersey[JAX-RS via Jersey]). The general component diagram of a "Router" is as follows:
 
 [ditaa]
 ----
@@ -119,7 +126,7 @@ response (including the payload body) is also a single aggregated object. The `S
 object and there are no asynchronous primitives involved.
 
 See
-link:{sourceroot}servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/blocking/BlockingHelloWorldServer.java[BlockingHelloWorldServer].
+link:{source-root}/servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/blocking/BlockingHelloWorldServer.java[BlockingHelloWorldServer].
 [source, java]
 ----
 HttpServers.forPort(8080)
@@ -132,14 +139,14 @@ HttpServers.forPort(8080)
 ==== Blocking and Streaming
 This programming paradigm exposes the request payload body as an
 link:https://docs.oracle.com/javase/8/docs/api/java/lang/Iterable.html[Iterable] of
-link:{sourceroot}servicetalk-buffer-api/src/main/java/io/servicetalk/buffer/api/Buffer.java[Buffer]s and the response payload
+link:{source-root}/servicetalk-buffer-api/src/main/java/io/servicetalk/buffer/api/Buffer.java[Buffer]s and the response payload
 body is written via an
-link:{sourceroot}servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpPayloadWriter.java[HttpPayloadWriter] or an
-link:{sourceroot}servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpOutputStream.java[HttpOutputStream]. There are no asynchronous primitives
+link:{source-root}/servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpPayloadWriter.java[HttpPayloadWriter] or an
+link:{source-root}/servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpOutputStream.java[HttpOutputStream]. There are no asynchronous primitives
 involved.
 
 See
-link:{sourceroot}servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/blocking/streaming/BlockingHelloWorldStreamingServer.java[BlockingHelloWorldStreamingServer].
+link:{source-root}/servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/blocking/streaming/BlockingHelloWorldStreamingServer.java[BlockingHelloWorldStreamingServer].
 [source, java]
 ----
 HttpServers.forPort(8080).listenBlockingStreamingAndAwait((ctx, request, response) -> {
@@ -154,11 +161,11 @@ HttpServers.forPort(8080).listenBlockingStreamingAndAwait((ctx, request, respons
 ==== Asynchronous and Aggregated
 This programming paradigm exposes the request payload body as a single aggregated object, and the response payload body
 is also a single aggregated object. The `Service` provides the response by completing a
-link:{sourceroot}servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Single.java[Single] which is an
+link:{source-root}/servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Single.java[Single] which is an
 asynchronous primitive.
 
 See
-link:{sourceroot}servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/async/HelloWorldServer.java[HelloWorldServer].
+link:{source-root}/servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/async/HelloWorldServer.java[HelloWorldServer].
 [source, java]
 ----
 HttpServers.forPort(8080)
@@ -170,15 +177,15 @@ HttpServers.forPort(8080)
 [#asynchronous-and-streaming]
 ==== Asynchronous and Streaming
 This programming paradigm exposes the request payload body as a
-link:{sourceroot}servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Publisher.java[Publisher] typically of
-link:{sourceroot}servicetalk-buffer-api/src/main/java/io/servicetalk/buffer/api/Buffer.java[Buffer]s (although other types like
+link:{source-root}/servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Publisher.java[Publisher] typically of
+link:{source-root}/servicetalk-buffer-api/src/main/java/io/servicetalk/buffer/api/Buffer.java[Buffer]s (although other types like
 file regions may be added), the response meta-data is provided by completing a
-link:{sourceroot}servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Single.java[Single], and the response
+link:{source-root}/servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Single.java[Single], and the response
 payload body is written via a
-link:{sourceroot}servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Publisher.java[Publisher].
+link:{source-root}/servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Publisher.java[Publisher].
 
 See
-link:{sourceroot}servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/async/streaming/HelloWorldStreamingServer.java[HelloWorldStreamingServer].
+link:{source-root}/servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/async/streaming/HelloWorldStreamingServer.java[HelloWorldStreamingServer].
 [source, java]
 ----
 HttpServers.forPort(8080)
@@ -201,10 +208,10 @@ This `Client` parses the link:https://tools.ietf.org/html/rfc7230#section-5.3[re
 address for each request. This `Client` simulates a browser type of use case.
 
 Each of the above ``Client``s can be created via the
-link:{sourceroot}servicetalk-http-netty/src/main/java/io/servicetalk/http/netty/HttpClients.java[HttpClients] static factory.
+link:{source-root}/servicetalk-http-netty/src/main/java/io/servicetalk/http/netty/HttpClients.java[HttpClients] static factory.
 
 The `Client` manages multiple `Connections` via a
-link:{sourceroot}servicetalk-client-api/src/main/java/io/servicetalk/client/api/LoadBalancer.java[LoadBalancer]. The control flow
+link:{source-root}/servicetalk-client-api/src/main/java/io/servicetalk/client/api/LoadBalancer.java[LoadBalancer]. The control flow
 of a request/response can be visualized in the below diagram:
 
 [ditaa]
@@ -222,15 +229,15 @@ of a request/response can be visualized in the below diagram:
                                              +--------------+     +----------------------+     +--------+
 ----
 
-The link:{sourceroot}servicetalk-client-api/src/main/java/io/servicetalk/client/api/LoadBalancer.java[LoadBalancer] is consulted
+The link:{source-root}/servicetalk-client-api/src/main/java/io/servicetalk/client/api/LoadBalancer.java[LoadBalancer] is consulted
 for each request to determine which connection should be used. The `LoadBalancer` interface is extensible and
 the reference implementation provides a
-link:{sourceroot}servicetalk-loadbalancer/src/main/java/io/servicetalk/loadbalancer/RoundRobinLoadBalancer.java[Round Robin algorithm].
+link:{source-root}/servicetalk-loadbalancer/src/main/java/io/servicetalk/loadbalancer/RoundRobinLoadBalancer.java[Round Robin algorithm].
 
 === Client Filters
 Filters provide a means to filter/intercept and modify each request/response life cycle. `Client` Filters are used to
 implement
-link:{sourceroot}servicetalk-opentracing-http/src/main/java/io/servicetalk/opentracing/http/TracingHttpRequesterFilter.java[tracing]
+link:{source-root}/servicetalk-opentracing-http/src/main/java/io/servicetalk/opentracing/http/TracingHttpRequesterFilter.java[tracing]
 metrics, logging, authorization, and any other extension that needs request/response level visibility.
 
 [ditaa]
@@ -249,9 +256,9 @@ metrics, logging, authorization, and any other extension that needs request/resp
 ----
 
 To implement a `Client` filter you should implement the
-link:{sourceroot}servicetalk-http-api/src/main/java/io/servicetalk/http/api/StreamingHttpClientFilterFactory.java[Client Filter Factory] and append it on
+link:{source-root}/servicetalk-http-api/src/main/java/io/servicetalk/http/api/StreamingHttpClientFilterFactory.java[Client Filter Factory] and append it on
 the `HttpClientBuilder` via
-link:{sourceroot}servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpClientBuilder.java[HttpClientBuilder#appendClientFilter(..)].
+link:{source-root}/servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpClientBuilder.java[HttpClientBuilder#appendClientFilter(..)].
 
 NOTE: Currently we only support writing `Filters` for the <<client-asynchronous-and-streaming, Asynchronous and Streaming>>
 programming paradigm but plan to add support for the others soon. The
@@ -261,7 +268,7 @@ paradigm.
 === Connection Filters
 The `Client` doesn't have visibility into `Connection` specific information. For example, the `Connection` layer knows
 about transport details such as connected remote address and other elements in the
-link:{sourceroot}servicetalk-transport-api/src/main/java/io/servicetalk/transport/api/ConnectionContext.java[ConnectionContext].
+link:{source-root}/servicetalk-transport-api/src/main/java/io/servicetalk/transport/api/ConnectionContext.java[ConnectionContext].
 If you have use cases that require this information in the request/response control flow you can use a
 `Connection Filter`. The diagram below illustrates how the `Connection Filter` interacts with the request/response
 control flow.
@@ -283,7 +290,7 @@ control flow.
 
 === Service Discovery
 Another core component of the `Client` is the
-link:{sourceroot}servicetalk-client-api/src/main/java/io/servicetalk/client/api/ServiceDiscoverer.java[ServiceDiscoverer]. The
+link:{source-root}/servicetalk-client-api/src/main/java/io/servicetalk/client/api/ServiceDiscoverer.java[ServiceDiscoverer]. The
 `ServiceDiscoverer` is responsible for resolving a service address into a set of resolved addresses used to create
 `Connection`(s) by the `LoadBalancer`. The default implementation for HTTP is DNS and will resolve the IP addresses of
 each service address every link:https://tools.ietf.org/html/rfc1035#section-3.2.1[TTL] seconds. ``ServiceDiscoverer``s
@@ -323,7 +330,7 @@ response (including the payload body) is also a single aggregated object. The `C
 object and there are no asynchronous primitives involved.
 
 See
-link:{sourceroot}servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/blocking/BlockingHelloWorldClient.java[BlockingHelloWorldClient]
+link:{source-root}/servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/blocking/BlockingHelloWorldClient.java[BlockingHelloWorldClient]
 [source, java]
 ----
 try (BlockingHttpClient client = HttpClients.forSingleAddress("localhost", 8080).buildBlocking()) {
@@ -336,14 +343,14 @@ try (BlockingHttpClient client = HttpClients.forSingleAddress("localhost", 8080)
 ==== Blocking and Streaming
 This programming paradigm expects the request payload body as an
 link:https://docs.oracle.com/javase/8/docs/api/java/lang/Iterable.html[Iterable] of
-link:{sourceroot}servicetalk-buffer-api/src/main/java/io/servicetalk/buffer/api/Buffer.java[Buffer]s and the response payload
+link:{source-root}/servicetalk-buffer-api/src/main/java/io/servicetalk/buffer/api/Buffer.java[Buffer]s and the response payload
 body is consumed via an
 link:https://docs.oracle.com/javase/8/docs/api/java/lang/Iterable.html[Iterable] of
-link:{sourceroot}servicetalk-buffer-api/src/main/java/io/servicetalk/buffer/api/Buffer.java[Buffer]s. There are no asynchronous
+link:{source-root}/servicetalk-buffer-api/src/main/java/io/servicetalk/buffer/api/Buffer.java[Buffer]s. There are no asynchronous
 primitives involved.
 
 See
-link:{sourceroot}servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/blocking/streaming/BlockingHelloWorldStreamingClient.java[BlockingHelloWorldStreamingClient]
+link:{source-root}/servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/blocking/streaming/BlockingHelloWorldStreamingClient.java[BlockingHelloWorldStreamingClient]
 [source, java]
 ----
 try (BlockingStreamingHttpClient client = HttpClients.forSingleAddress("localhost", 8080)
@@ -362,11 +369,11 @@ try (BlockingStreamingHttpClient client = HttpClients.forSingleAddress("localhos
 ==== Asynchronous and Aggregated
 This programming paradigm expects the request payload body as a single aggregated object, and the response payload body
 is also a single aggregated object. The `HttpClient` provides the response via a
-link:{sourceroot}servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Single.java[Single] which is an
+link:{source-root}/servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Single.java[Single] which is an
 asynchronous primitive.
 
 See
-link:{sourceroot}servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/async/HelloWorldClient.java[HelloWorldClient]
+link:{source-root}/servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/async/HelloWorldClient.java[HelloWorldClient]
 [source, java]
 ----
 try (HttpClient client = HttpClients.forSingleAddress("localhost", 8080).build()) {
@@ -388,15 +395,15 @@ try (HttpClient client = HttpClients.forSingleAddress("localhost", 8080).build()
 [#client-asynchronous-and-streaming]
 ==== Asynchronous and Streaming
 This programming paradigm expects the request payload body as a
-link:{sourceroot}servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Publisher.java[Publisher] typically of
-link:{sourceroot}servicetalk-buffer-api/src/main/java/io/servicetalk/buffer/api/Buffer.java[Buffer]s (although other types like
+link:{source-root}/servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Publisher.java[Publisher] typically of
+link:{source-root}/servicetalk-buffer-api/src/main/java/io/servicetalk/buffer/api/Buffer.java[Buffer]s (although other types like
 file regions may be added), the response meta-data is provided via a
-link:{sourceroot}servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Single.java[Single], and the response
+link:{source-root}/servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Single.java[Single], and the response
 payload body is written via a
-link:{sourceroot}servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Publisher.java[Publisher].
+link:{source-root}/servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Publisher.java[Publisher].
 
 See
-link:{sourceroot}servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/async/streaming/HelloWorldStreamingClient.java[HelloWorldStreamingClient]
+link:{source-root}/servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/async/streaming/HelloWorldStreamingClient.java[HelloWorldStreamingClient]
 [source, java]
 ----
 try (StreamingHttpClient client = HttpClients.forSingleAddress("localhost", 8080).buildStreaming()) {
@@ -416,15 +423,15 @@ try (StreamingHttpClient client = HttpClients.forSingleAddress("localhost", 8080
 
 == Serialization
 Serialization factories are made available in the
-link:{sourceroot}servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpSerializationProviders.java[HttpSerializationProviders] static factory
+link:{source-root}/servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpSerializationProviders.java[HttpSerializationProviders] static factory
 class.
 
 The core abstractions
-link:{sourceroot}servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpDeserializer.java[HttpDeserializer] and
-link:{sourceroot}servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpSerializer.java[HttpSerializer] are designed to be coupled to a
+link:{source-root}/servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpDeserializer.java[HttpDeserializer] and
+link:{source-root}/servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpSerializer.java[HttpSerializer] are designed to be coupled to a
 specific Java type `T` and accessed via a
-link:{sourceroot}servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpSerializationProvider.java[HttpSerializationProvider]. The
-link:{sourceroot}servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpDeserializer.java[HttpDeserializer] and
-link:{sourceroot}servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpSerializer.java[HttpSerializer] are also designed to handle the HTTP
+link:{source-root}/servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpSerializationProvider.java[HttpSerializationProvider]. The
+link:{source-root}/servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpDeserializer.java[HttpDeserializer] and
+link:{source-root}/servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpSerializer.java[HttpSerializer] are also designed to handle the HTTP
 headers data behind the scenes. This means either checking if `content-type` format is compatible with the
 deserialization format and also adding a `content-type` header identifying the resulting serialization format.

@@ -1,4 +1,3 @@
-include::ROOT:partial$component-attributes.adoc[]
 = ServiceTalk Data Jackson Jersey
 
 This module provides Jackson-based JSON serialization and deserialization for ServiceTalk Jersey router.

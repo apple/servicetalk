@@ -1,4 +1,11 @@
-include::ROOT:partial$component-attributes.adoc[]
+// Configure {source-root} values based on how this document is rendered: on GitHub or not
+ifdef::env-github[]
+ifndef::source-root[:source-root: ]
+endif::[]
+ifndef::env-github[]
+ifndef::source-root[:source-root: https://github.com/apple/servicetalk/blob/{page-origin-refname}]
+endif::[]
+
 = Offloads with asynchronous sources
 
 This document elaborates how asynchronous sources provide ways to offload. General philosophy of writing blocking code
@@ -25,7 +32,7 @@ link:https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.2/README
 in parallel.
 
 **By default, in ServiceTalk, signals are not executed on an event loop thread, but instead executed using an
-link:{sourceroot}servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Executor.java[Executor]
+link:{source-root}/servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Executor.java[Executor]
 provided by the application in the order they are received.**
 
 ==== Implications

@@ -1,5 +1,0 @@
-:git-ref: master
-
-ifndef::sourceroot[]
-:sourceroot: https://github.com/apple/servicetalk/blob/{git-ref}/
-endif::[]

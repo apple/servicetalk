@@ -1,5 +1,13 @@
-include::ROOT:partial$component-attributes.adoc[]
+// Configure {source-root} values based on how this document is rendered: on GitHub or not
+ifdef::env-github[]
+ifndef::source-root[:source-root: ]
+endif::[]
+ifndef::env-github[]
+ifndef::source-root[:source-root: https://github.com/apple/servicetalk/blob/{page-origin-refname}]
+endif::[]
+
 = ServiceTalk Performance
+
 This section will discuss the design, trade-offs, and performance tuning options and recommendations for your
 ServiceTalk applications.
 
@@ -153,7 +161,7 @@ optimal strategy if you select the appropriate programming paradigm for the
 xref:{page-version}@servicetalk-http-api::index.adoc#client-programming-paradigms[client] and
 xref:{page-version}@servicetalk-http-api::index.adoc#service-programming-paradigms[service]. If you are willing to use an
 *_advanced, internal, experimental, subject to change at any time_* API there is also
-link:{sourceroot}servicetalk-transport-netty-internal/src/main/java/io/servicetalk/transport/netty/internal/FlushStrategies.java[FlushStrategies]
+link:{source-root}/servicetalk-transport-netty-internal/src/main/java/io/servicetalk/transport/netty/internal/FlushStrategies.java[FlushStrategies]
 that provides control over flushing. Here is a quick summary of this internal API.
 
 [%header,cols="1,3,3"]
@@ -232,10 +240,10 @@ _`FlushStrategies` and related APIs are advanced, internal, and subject to chang
 
 [#ExecutionStrategy]
 ==== ExecutionStrategy (offloading)
-link:{sourceroot}servicetalk-transport-api/src/main/java/io/servicetalk/transport/api/ExecutionStrategy.java[ExecutionStrategy]
+link:{source-root}/servicetalk-transport-api/src/main/java/io/servicetalk/transport/api/ExecutionStrategy.java[ExecutionStrategy]
 is the core abstraction ServiceTalk uses to drive offloading delivering signals and data from the IO EventLoop threads.
 For HTTP there is
-link:{sourceroot}servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpExecutionStrategy.java[HttpExecutionStrategy]
+link:{source-root}/servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpExecutionStrategy.java[HttpExecutionStrategy]
 which adds protocol specific offload points to be used by the clients and services. See
 xref:{page-version}@servicetalk::performance.adoc#safe-to-block[Safe to Block] for more context into offloading and
 threading models.
@@ -246,7 +254,7 @@ xref:{page-version}@servicetalk-http-api::index.adoc#service-programming-paradig
 protocol it is likely there are higher level constructs such as
 xref:{page-version}@servicetalk-http-api::index.adoc#routers[routers] that provide a per-route API customization (e.g.
 xref:{page-version}@servicetalk-http-router-jersey::evolve-to-async.adoc[JAX-RS via Jersey] and
-link:{sourceroot}servicetalk-http-router-predicate[Predicate Router]).
+link:{source-root}/servicetalk-http-router-predicate[Predicate Router]).
 
 If you are using the appropriate programming model,
 have reviewed xref:{page-version}@servicetalk-http-api::evolve-to-async.adoc[the docs on Evolving to Asynchronous], and
@@ -258,7 +266,7 @@ xref:{page-version}@servicetalk-http-api::evolve-to-async.adoc#server[server])
 2. per client/server (see xref:{page-version}@servicetalk-http-api::evolve-to-async.adoc#client[client] and
 xref:{page-version}@servicetalk-http-api::evolve-to-async.adoc#server[server])
 3. Filters implement
-link:{sourceroot}servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpExecutionStrategyInfluencer.java[`HttpExecutionStrategyInfluencer`]
+link:{source-root}/servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpExecutionStrategyInfluencer.java[`HttpExecutionStrategyInfluencer`]
 (or similar for your protocol) APIs
 
 [IMPORTANT]
@@ -275,7 +283,7 @@ also enable ServiceTalk to apply optimizations behind the scenes (e.g.
 xref:{page-version}@servicetalk::performance.adoc#flushstrategy[flushing] and
 xref:{page-version}@servicetalk::performance.adoc#ExecutionStrategy[offloading]). A paradigm is chosen when constructing
 the client or server, transforming a client on demand on a per-request basis (e.g.
-link:{sourceroot}servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpClient.java#L77-L79[HttpClient#asBlockingClient()]
+link:{source-root}/servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpClient.java#L77-L79[HttpClient#asBlockingClient()]
 ), or leveraging a service xref:{page-version}@servicetalk-http-api::index.adoc#routers[router's] per-route ability to
 support the different paradigms. The following table is a summary of how the programming paradigm affects flushing and
 offloading. Please consider reading the detailed documentation on
@@ -503,9 +511,9 @@ This convenience and safety comes at a performance cost. Intercepting all the co
 flow (e.g. async operators) requires wrapping to _save_ and _restore_ the current context before/after the
 asynchronous control flow boundary. In order to provide a static API `ThreadLocal` is also required, although an
 optimization (e.g.
-link:{sourceroot}servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/AsyncContextMapHolder.java[AsyncContextMapHolder]
+link:{source-root}/servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/AsyncContextMapHolder.java[AsyncContextMapHolder]
 ) is used to minimize this cost. This `ThreadLocal` optimization is enabled by default and can be enabled by using our
-link:{sourceroot}servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/DefaultThreadFactory.java[DefaultThreadFactory]
+link:{source-root}/servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/DefaultThreadFactory.java[DefaultThreadFactory]
 if you use a custom `Executor`.
 
 In benchmarks with high throughput and asynchronous operators you will likely see a drop in throughput.

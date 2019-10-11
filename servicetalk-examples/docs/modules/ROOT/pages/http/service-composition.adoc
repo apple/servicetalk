@@ -1,5 +1,12 @@
+// Configure {source-root} values based on how this document is rendered: on GitHub or not
+ifdef::env-github[]
+ifndef::source-root[:source-root: ]
+endif::[]
+ifndef::env-github[]
+ifndef::source-root[:source-root: https://github.com/apple/servicetalk/blob/{page-origin-refname}]
+endif::[]
+
 :doctype: book
-include::ROOT:partial$component-attributes.adoc[]
 
 = Service Composition
 
@@ -15,10 +22,10 @@ These backend services do show more usage of ServiceTalk APIs but are not the fo
 
 This example has two distinct bootstrap locations:
 
-* link:{sourceroot}servicetalk-examples/http/service-composition/src/main/java/io/servicetalk/examples/http/service/composition/GatewayServer.java[GatewayServer]
+* link:{source-root}/servicetalk-examples/http/service-composition/src/main/java/io/servicetalk/examples/http/service/composition/GatewayServer.java[GatewayServer]
 is a main class and starts only the gateway server with all the endpoints. This
 server is started on port `8080`.
-* link:{sourceroot}servicetalk-examples/http/service-composition/src/main/java/io/servicetalk/examples/http/service/composition/backends/BackendsStarter.java[BackendsStarter]
+* link:{source-root}/servicetalk-examples/http/service-composition/src/main/java/io/servicetalk/examples/http/service/composition/backends/BackendsStarter.java[BackendsStarter]
 is a main class that starts the other services, viz.,
 `Recommendation`, `Metadata`, `User` and `Rating` service.
 
@@ -32,7 +39,7 @@ A service that composes multiple downstream service results into an externally c
 
 === Result
 
-The result is a complex object link:{sourceroot}servicetalk-examples/http/service-composition/src/main/java/io/servicetalk/examples/http/service/composition/pojo/FullRecommendation.java[FullRecommendation]
+The result is a complex object link:{source-root}/servicetalk-examples/http/service-composition/src/main/java/io/servicetalk/examples/http/service/composition/pojo/FullRecommendation.java[FullRecommendation]
 as follows:
 
 [source,java]
@@ -49,7 +56,7 @@ Each component of this data is fetched from different backends as described belo
 
 == Recommendation Backend
 
-A link:{sourceroot}servicetalk-examples/http/service-composition/src/main/java/io/servicetalk/examples/http/service/composition/backends/RecommendationBackend.java[backend service]
+A link:{source-root}/servicetalk-examples/http/service-composition/src/main/java/io/servicetalk/examples/http/service/composition/backends/RecommendationBackend.java[backend service]
 that provides recommendation (entities) for a particular user.
 Each recommended entity contains:
 
@@ -67,17 +74,17 @@ information is materialized using the following backends:
 
 == Metadata Backend
 
-A link:{sourceroot}servicetalk-examples/http/service-composition/src/main/java/io/servicetalk/examples/http/service/composition/backends/MetadataBackend.java[backend service]
+A link:{source-root}/servicetalk-examples/http/service-composition/src/main/java/io/servicetalk/examples/http/service/composition/backends/MetadataBackend.java[backend service]
 that provides details about the entity given an `entityId`.
 
 == User Backend
 
-A link:{sourceroot}servicetalk-examples/http/service-composition/src/main/java/io/servicetalk/examples/http/service/composition/backends/UserBackend.java[backend service]
+A link:{source-root}/servicetalk-examples/http/service-composition/src/main/java/io/servicetalk/examples/http/service/composition/backends/UserBackend.java[backend service]
 that provides details about a user given a `userId`.
 
 == Rating Backend
 
-A link:{sourceroot}servicetalk-examples/http/service-composition/src/main/java/io/servicetalk/examples/http/service/composition/backends/RatingBackend.java[backend service]
+A link:{source-root}/servicetalk-examples/http/service-composition/src/main/java/io/servicetalk/examples/http/service/composition/backends/RatingBackend.java[backend service]
 that provides ratings of an entity given an `entityId`.
 
 == Objective
@@ -92,7 +99,7 @@ paradigms can co-exist in a single HTTP server.
 
 === Asynchronous streaming
 
-This is an link:{sourceroot}servicetalk-examples/http/service-composition/src/main/java/io/servicetalk/examples/http/service/composition/StreamingGatewayService.java[endpoint]
+This is an link:{source-root}/servicetalk-examples/http/service-composition/src/main/java/io/servicetalk/examples/http/service/composition/StreamingGatewayService.java[endpoint]
 that streams `FullRecommendation` JSON.
 This is a simulation of a push based API that streams data back to the user as and when it is available.
 It queries the streaming recommendation endpoint of the recommendation backend described above.
@@ -104,7 +111,7 @@ http://localhost:8080/recommendations/streaming?userId=1
 
 === Asynchronous aggregated
 
-This is an link:{sourceroot}servicetalk-examples/http/service-composition/src/main/java/io/servicetalk/examples/http/service/composition/GatewayService.java[endpoint]
+This is an link:{source-root}/servicetalk-examples/http/service-composition/src/main/java/io/servicetalk/examples/http/service/composition/GatewayService.java[endpoint]
 that creates a single JSON array containing one or more
 ``FullRecommendation``s. Although the result is a single JSON array, the elements of the array are still fetched from the
 other services asynchronously.
@@ -117,7 +124,7 @@ http://localhost:8080/recommendations/aggregated?userId=1
 
 === Blocking
 
-This is an link:{sourceroot}servicetalk-examples/http/service-composition/src/main/java/io/servicetalk/examples/http/service/composition/BlockingGatewayService.java[endpoint]
+This is an link:{source-root}/servicetalk-examples/http/service-composition/src/main/java/io/servicetalk/examples/http/service/composition/BlockingGatewayService.java[endpoint]
 that uses blocking Http client and server APIs to sequentially query
 all other services for each recommendation.
 

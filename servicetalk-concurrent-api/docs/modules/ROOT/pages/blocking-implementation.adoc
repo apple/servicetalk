@@ -1,4 +1,11 @@
-include::ROOT:partial$component-attributes.adoc[]
+// Configure {source-root} values based on how this document is rendered: on GitHub or not
+ifdef::env-github[]
+ifndef::source-root[:source-root: ]
+endif::[]
+ifndef::env-github[]
+ifndef::source-root[:source-root: https://github.com/apple/servicetalk/blob/{page-origin-refname}]
+endif::[]
+
 = Blocking Support (Implementation Details)
 
 As described in xref:blocking.adoc[blocking.adoc], ServiceTalk by default allows users to write blocking
@@ -41,9 +48,9 @@ image::executor-thread-selection.png[Executor inference]
 The above interaction has a few important points:
 
 - All operators inherit the `Executor` from the source, unless overridden explicitly by the user.
-- A link:{sourceroot}servicetalk-concurrent-internal//src/main/java/io/servicetalk/concurrent/internal/SignalOffloader.java[`SignalOffloader`]
+- A link:{source-root}/servicetalk-concurrent-internal//src/main/java/io/servicetalk/concurrent/internal/SignalOffloader.java[`SignalOffloader`]
  is chosen when a `Subscriber` subscribes to a source decorated by zero or more operators.
-- The chosen link:{sourceroot}servicetalk-concurrent-internal//src/main/java/io/servicetalk/concurrent/internal/SignalOffloader.java[`SignalOffloader`]
+- The chosen link:{source-root}/servicetalk-concurrent-internal//src/main/java/io/servicetalk/concurrent/internal/SignalOffloader.java[`SignalOffloader`]
  is passed to all operators and then to the source, per `Subscriber`.
 
 The above interaction provides all operators and the source an opportunity to piggy-back on the same `Executor` for all
