@@ -1,1 +1,5 @@
-* xref:index.adoc[HTTP Router - Jersey]
+ifndef::page-version[]
+:page-version: SNAPSHOT
+endif::[]
+
+include::{page-version}@servicetalk::partial$nav-versioned.adoc[]

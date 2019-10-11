@@ -2,21 +2,21 @@ include::ROOT:partial$component-attributes.adoc[]
 = Offloads in HTTP
 
 This document elaborates how HTTP APIs provide ways to influence offloading. General philosophy of writing blocking code
-while using ServiceTalk is explained xref:servicetalk::blocking.adoc[here] and is a recommended read.
+while using ServiceTalk is explained xref:{page-version}@servicetalk::blocking.adoc[here] and is a recommended read.
 
 == An optimal execution strategy
 
-As described in xref:servicetalk::blocking.adoc#influencing-offloading-decisions[Influencing offloading decisions],
-ServiceTalk tries to calculate an optimal execution strategy based on various inputs. This section describes how this
-calculation is done for those inputs.
+As described in xref:{page-version}@servicetalk::blocking.adoc#influencing-offloading-decisions[Influencing offloading
+decisions], ServiceTalk tries to calculate an optimal execution strategy based on various inputs. This section describes
+how this calculation is done for those inputs.
 
 === Streaming core
 
 ServiceTalk core is based on the asynchronous streaming programming model and hence exposes different points where user
 code may interact with the event loop.
 
-(Refer to xref:servicetalk::blocking.adoc#user-code-and-eventloop[User code and Eventloop] to understand data and control
-signals terminology)
+(Refer to xref:{page-version}@servicetalk::blocking.adoc#user-code-and-eventloop[User code and Eventloop] to understand
+data and control signals terminology).
 
 ==== Client
 
@@ -51,9 +51,9 @@ we have the following points that require offloads:
 [#programming-models]
 === Programming models
 
-xref:servicetalk::index.adoc#programming-paradigms[Programming model] plays an important role in determining an appropriate
-offloading strategy since they naturally omit some paths that user code can not interact with the event loop. The
-following matrix elaborates the paths which require offloading with a (✓) and which do not with a (✗).
+xref:{page-version}@servicetalk::index.adoc#programming-paradigms[Programming model] plays an important role in
+determining an appropriate offloading strategy since they naturally omit some paths that user code can not interact with
+the event loop. The following matrix elaborates the paths which require offloading with a (✓) and which do not with a (✗).
 
 ==== Client
 
@@ -135,7 +135,7 @@ and link:{sourceroot}servicetalk-http-utils/src/main/java/io/servicetalk/http/ut
 
 Blocking programming model is easy to start and understand but it may not be the correct tool for all scenarios.
 In fact, ServiceTalk assumes that applications typically have a mixed profile where different parts follow different
-xref:servicetalk::introduction.adoc#programming-paradigms[programming paradigms]. One of the goals of ServiceTalk is to
-help users evolve from a blocking programming model to a completely asynchronous programming model without the need to
-completely rewrite the entire application. The process for this evolution is elaborated in
+xref:{page-version}@servicetalk::introduction.adoc#programming-paradigms[programming paradigms]. One of the goals of
+ServiceTalk is to help users evolve from a blocking programming model to a completely asynchronous programming model
+without the need to completely rewrite the entire application. The process for this evolution is elaborated in
 xref:evolve-to-async.adoc[this document].

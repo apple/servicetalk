@@ -2,7 +2,7 @@ include::ROOT:partial$component-attributes.adoc[]
 = Offloads with asynchronous sources
 
 This document elaborates how asynchronous sources provide ways to offload. General philosophy of writing blocking code
-while using ServiceTalk is explained xref:servicetalk::blocking.adoc[here] and is a recommended read.
+while using ServiceTalk is explained xref:{page-version}@servicetalk::blocking.adoc[here] and is a recommended read.
 
 == Execution chain
 

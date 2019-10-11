@@ -35,7 +35,8 @@ safe out of the box. This section clarifies some aspects, considerations and cho
 === Blocking API on top of async
 In order to build a library that supports both blocking and asynchronous APIs, we use an asynchronous core and build
 blocking APIs on top. In case of our blocking APIs, it means there is some overhead involved to orchestrate the hand-off
-(aka xref:servicetalk::blocking.adoc[offloading]) between EventLoop threads and application worker threads.
+(aka xref:{page-version}@servicetalk::blocking.adoc[offloading]) between EventLoop threads and application worker
+threads.
 
 Network libraries that dedicate a single thread per connection to do IO and execute user code from that thread may have
 better throughput and latency as long as the concurrent connection count is lowfootnote:[overhead of kernel/user-space
@@ -47,8 +48,9 @@ scenario, although our benchmarks have shown results within an acceptable thresh
 architecture.
 
 A strategy to avoid the thread hopping is to opt-in to executing user code on the EventLoop thread. However this will
-have an adverse effect on latency and responsiveness if you execute xref:servicetalk::blocking.adoc[blocking] code. See
-xref:servicetalk-http-api::evolve-to-async.adoc[Evolving to Asynchronous docs] for more details.
+have an adverse effect on latency and responsiveness if you execute
+xref:{page-version}@servicetalk::blocking.adoc[blocking] code. See
+xref:{page-version}@servicetalk-http-api::evolve-to-async.adoc[Evolving to Asynchronous docs] for more details.
 
 [#reference-counting]
 === Reference Counting
@@ -90,8 +92,8 @@ asynchronous sources are typically referred to as link:https://reactivex.io/docu
 ServiceTalk. Operators help us transparently propagate demand across business logic thus enabling end-to-end flow
 control. This streamlined control flow and end-to-end back-pressure with operators comes with a trade-off which in
 practice typically involves additional object allocation and as a side effect may lead to deeper stack traces. In
-ServiceTalk we implement our own xref:servicetalk-concurrent-api::index.adoc[operators] in order to keep allocation and
-minimize synchronization while strictly enforcing back-pressure.
+ServiceTalk we implement our own xref:{page-version}@servicetalk-concurrent-api::index.adoc[operators] in order to keep
+allocation and minimize synchronization while strictly enforcing back-pressure.
 
 We believe that using function composition increases readability for complex asynchronous systems as compared to
 callbacks, thus following ServiceTalk's design philosophy of favoring ease of use. However, if your benchmarks indicate
@@ -105,17 +107,17 @@ Because ServiceTalk is asynchronous and non-blocking at the core it needs to def
 that potentially blocks IO EventLoop threads. Read the chapter on xref:blocking.adoc#safe-to-block[Blocking] for more
 details.
 
-`ServiceTalk` has xref:servicetalk-concurrent-api::blocking#executor-affinity[Executor Affinity] which ensures that the
-same `Executor` is used for each `Subscriber` chain on asynchronous operator boundaries. By default when using the
-streaming APIs this requires wrapping on the asynchronous operator boundaries and may result in additional thread hops
-between ``Executor``s (and even if ``Executor`` happens to be the same). Depending upon the use case, performance costs
-maybe relatively high but we have the following compensatory strategies in place:
+`ServiceTalk` has xref:{page-version}@servicetalk-concurrent-api::blocking#executor-affinity[Executor Affinity] which
+ensures that the same `Executor` is used for each `Subscriber` chain on asynchronous operator boundaries. By default
+when using the streaming APIs this requires wrapping on the asynchronous operator boundaries and may result in
+additional thread hops between ``Executor``s (and even if ``Executor`` happens to be the same). Depending upon the use
+case, performance costs maybe relatively high but we have the following compensatory strategies in place:
 
 * ServiceTalk team is investigating ways to reduce the cost of offloading for streaming APIs
-* choosing the appropriate xref:servicetalk::performance.adoc#offloading-and-flushing[programming model] for your use
-case allows us to be more optimal and reduce offloading
+* choosing the appropriate xref:{page-version}@servicetalk::performance.adoc#offloading-and-flushing[programming model]
+for your use case allows us to be more optimal and reduce offloading
 * you can opt-out of (some or all) offloading via
-xref:servicetalk::performance.adoc#ExecutionStrategy[ExecutionStrategy]
+xref:{page-version}@servicetalk::performance.adoc#ExecutionStrategy[ExecutionStrategy]
 
 == Tuning options and recommendations
 
@@ -148,8 +150,8 @@ Exposing flush controls on the public API is non-trivial when you have asynchron
 be ordered with respect to the data, and care must be taken not to drop these signals during data transformations.
 ServiceTalk currently doesn't expose a way to control flush strategies in the public API but may be able to infer a more
 optimal strategy if you select the appropriate programming paradigm for the
-xref:servicetalk-http-api::index.adoc#client-programming-paradigms[client] and
-xref:servicetalk-http-api::index.adoc#service-programming-paradigms[service]. If you are willing to use an
+xref:{page-version}@servicetalk-http-api::index.adoc#client-programming-paradigms[client] and
+xref:{page-version}@servicetalk-http-api::index.adoc#service-programming-paradigms[service]. If you are willing to use an
 *_advanced, internal, experimental, subject to change at any time_* API there is also
 link:{sourceroot}servicetalk-transport-netty-internal/src/main/java/io/servicetalk/transport/netty/internal/FlushStrategies.java[FlushStrategies]
 that provides control over flushing. Here is a quick summary of this internal API.
@@ -235,26 +237,26 @@ is the core abstraction ServiceTalk uses to drive offloading delivering signals 
 For HTTP there is
 link:{sourceroot}servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpExecutionStrategy.java[HttpExecutionStrategy]
 which adds protocol specific offload points to be used by the clients and services. See
-xref:servicetalk::performance.adoc#safe-to-block[Safe to Block] for more context into offloading and threading
-models.
+xref:{page-version}@servicetalk::performance.adoc#safe-to-block[Safe to Block] for more context into offloading and
+threading models.
 
 It is possible to override the `ExecutionStrategy`, but first make sure you are using the appropriate programming
-paradigm for xref:servicetalk-http-api::index.adoc#client-programming-paradigms[client] and
-xref:servicetalk-http-api::index.adoc#service-programming-paradigms[service]. Depending upon your protocol it is likely
-there are higher level constructs such as xref:servicetalk-http-api::index.adoc#routers[routers] that provide a
-per-route API customization (e.g.
-xref:servicetalk-http-router-jersey::evolve-to-async.adoc[JAX-RS via Jersey] and
+paradigm for xref:{page-version}@servicetalk-http-api::index.adoc#client-programming-paradigms[client] and
+xref:{page-version}@servicetalk-http-api::index.adoc#service-programming-paradigms[service]. Depending upon your
+protocol it is likely there are higher level constructs such as
+xref:{page-version}@servicetalk-http-api::index.adoc#routers[routers] that provide a per-route API customization (e.g.
+xref:{page-version}@servicetalk-http-router-jersey::evolve-to-async.adoc[JAX-RS via Jersey] and
 link:{sourceroot}servicetalk-http-router-predicate[Predicate Router]).
 
 If you are using the appropriate programming model,
-have reviewed xref:servicetalk-http-api::evolve-to-async.adoc[the docs on Evolving to Asynchronous], and are confident
-you (or a library you use) will *not* execute blocking code in control flow in question, then ServiceTalk allows you to
-override `ExecutionStrategy` at multiple levels:
+have reviewed xref:{page-version}@servicetalk-http-api::evolve-to-async.adoc[the docs on Evolving to Asynchronous], and
+are confident you (or a library you use) will *not* execute blocking code in control flow in question, then ServiceTalk
+allows you to override `ExecutionStrategy` at multiple levels:
 
-1. per request (see xref:servicetalk-http-api::evolve-to-async.adoc#client[client] and
-xref:servicetalk-http-api::evolve-to-async.adoc#server[server])
-2. per client/server (see xref:servicetalk-http-api::evolve-to-async.adoc#client[client] and
-xref:servicetalk-http-api::evolve-to-async.adoc#server[server])
+1. per request (see xref:{page-version}@servicetalk-http-api::evolve-to-async.adoc#client[client] and
+xref:{page-version}@servicetalk-http-api::evolve-to-async.adoc#server[server])
+2. per client/server (see xref:{page-version}@servicetalk-http-api::evolve-to-async.adoc#client[client] and
+xref:{page-version}@servicetalk-http-api::evolve-to-async.adoc#server[server])
 3. Filters implement
 link:{sourceroot}servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpExecutionStrategyInfluencer.java[`HttpExecutionStrategyInfluencer`]
 (or similar for your protocol) APIs
@@ -267,17 +269,17 @@ can be considered non-blocking] that are applied will block.
 [#programming-models]
 ==== Choosing the optimal programming model
 Selecting the appropriate programming paradigm can help simplify your application logic (see
-xref:servicetalk-http-api::index.adoc#client-programming-paradigms[client programming paradigms] and
-xref:servicetalk-http-api::index.adoc#service-programming-paradigms[service programming paradigms]) and also
-enable ServiceTalk to apply optimizations behind the scenes (e.g.
-xref:servicetalk::performance.adoc#flushstrategy[flushing] and
-xref:servicetalk::performance.adoc#ExecutionStrategy[offloading]). A paradigm is chosen when constructing the client
-or server, transforming a client on demand on a per-request basis (e.g.
+xref:{page-version}@servicetalk-http-api::index.adoc#client-programming-paradigms[client programming paradigms] and
+xref:{page-version}@servicetalk-http-api::index.adoc#service-programming-paradigms[service programming paradigms]) and
+also enable ServiceTalk to apply optimizations behind the scenes (e.g.
+xref:{page-version}@servicetalk::performance.adoc#flushstrategy[flushing] and
+xref:{page-version}@servicetalk::performance.adoc#ExecutionStrategy[offloading]). A paradigm is chosen when constructing
+the client or server, transforming a client on demand on a per-request basis (e.g.
 link:{sourceroot}servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpClient.java#L77-L79[HttpClient#asBlockingClient()]
-), or leveraging a service xref:servicetalk-http-api::index.adoc#routers[router's] per-route ability to support the
-different paradigms. The following table is a summary of how the programming paradigm affects flushing and offloading.
-Please consider reading the detailed documentation on
-xref:servicetalk-http-api::blocking.adoc#programming-models[HTTP Programming models].
+), or leveraging a service xref:{page-version}@servicetalk-http-api::index.adoc#routers[router's] per-route ability to
+support the different paradigms. The following table is a summary of how the programming paradigm affects flushing and
+offloading. Please consider reading the detailed documentation on
+xref:{page-version}@servicetalk-http-api::blocking.adoc#programming-models[HTTP Programming models].
 
 [%header,cols="1,3,3,3,3"]
 |===
@@ -338,7 +340,8 @@ Flush Each Item
 
 This table clarifies how merely choosing the _programming model_ depending on your use-case can improve efficiency. If
 you can in addition completely opt-out of the offloading (consult with
-xref:servicetalk::performance.adoc#ExecutionStrategy[offloading]), you will get the best possible performance.
+xref:{page-version}@servicetalk::performance.adoc#ExecutionStrategy[offloading]), you will get the best possible
+performance.
 
 [#jersey-programming-models]
 ==== JAX-RS Jersey Router Programming Model
@@ -407,12 +410,12 @@ compute units as defined by https://en.wikipedia.org/wiki/Cgroups[Linux cgroups]
 The number of IO threads generally correlates to the number of available processors because this is how much logical
 concurrency available to your application. The IO threads are shared across connections and even requests the number of
 IO threads is not directly related to the number of requests. If you read and understand the consequences of disabling
-xref:servicetalk::performance.adoc#ExecutionStrategy[offloading] then your business logic will execution directly on an
-IO thread. As your business logic consumes more processing time (e.g. CPU cycles, blocking calls, etc...) it may be
-beneficial to have more than just `Runtime.getRuntime().availableProcessors()` threads. However the more processing time
-you take for a single request/connection, the more latency is incurred by other connections which share the same IO
-thread. You should also consider that more threads generally means more context switches. Like anything performance
-related your mileage may vary and you should benchmark your specific use case.
+xref:{page-version}@servicetalk::performance.adoc#ExecutionStrategy[offloading] then your business logic will execution
+directly on an IO thread. As your business logic consumes more processing time (e.g. CPU cycles, blocking calls, etc...)
+it may be beneficial to have more than just `Runtime.getRuntime().availableProcessors()` threads. However the more
+processing time you take for a single request/connection, the more latency is incurred by other connections which share
+the same IO thread. You should also consider that more threads generally means more context switches. Like anything
+performance related your mileage may vary and you should benchmark your specific use case.
 
 In benchmarks which deal in memory data and consume minimal processing time (e.g. HTTP/1.x server responding to `GET`
 request with in memory payload, no compression, encryption, etc...) setting the number of IO threads the equal to number
@@ -493,8 +496,8 @@ cutting concerns that do not have corresponding provisions throughout all layers
 link:http://www.slf4j.org/manual.html#mdc[MDC], auth, etc...). However when moving to an asynchronous execution model
 you are no longer guaranteed to be the sole occupant of a thread over the lifetime of your request/response processing,
 and therefore `ThreadLocal` is not directly usable in the same way. For this reason ServiceTalk offers
-xref:servicetalk-concurrent-api::async-context.adoc[`AsyncContext`] which provides a static API similar to what
-`ThreadLocal` provides in one-request-per-thread execution model.
+xref:{page-version}@servicetalk-concurrent-api::async-context.adoc[`AsyncContext`] which provides a static API similar
+to what `ThreadLocal` provides in one-request-per-thread execution model.
 
 This convenience and safety comes at a performance cost. Intercepting all the code paths in the asynchronous control
 flow (e.g. async operators) requires wrapping to _save_ and _restore_ the current context before/after the
@@ -522,11 +525,12 @@ static {
 === Netty PooledByteBufAllocator
 ServiceTalk leverages Netty's
 link:https://netty.io/4.1/api/index.html?io/netty/buffer/PooledByteBufAllocator.html[PooledByteBufAllocator] internally
-in cases where we have scope on the xref:servicetalk::performance.adoc#reference-counting[reference counted] objects
-and can ensure they won't leak into user code. The `PooledByteBufAllocator` itself has some configuration options
-that we currently don't expose. There are some internal system properties exposed by Netty which can be used to tweak
-the default configuration. Note these are not a public API from ServiceTalk's perspective and are subject to change
-at any time. For more info checkout the link:https://jemalloc.net[jemalloc inspired buffer pool] and the
+in cases where we have scope on the
+xref:{page-version}@servicetalk::performance.adoc#reference-counting[reference counted] objects and can ensure they
+won't leak into user code. The `PooledByteBufAllocator` itself has some configuration options that we currently don't
+expose. There are some internal system properties exposed by Netty which can be used to tweak the default configuration.
+Note these are not a public API from ServiceTalk's perspective and are subject to change at any time. For more info
+checkout the link:https://jemalloc.net[jemalloc inspired buffer pool] and the
 link:https://netty.io/4.1/api/index.html?io/netty/buffer/PooledByteBufAllocator.html[PooledByteBufAllocator source].
 Here are a few options for motivation:
 
@@ -583,9 +587,9 @@ HttpResponse resp = client.request(client.get("/"));
 
 === Netty LEAK-detection
 ServiceTalk is built on top of Netty. Netty supports
-xref:servicetalk::performance.adoc#reference-counting[reference counting] of `ByteBuf` objects (reference counting
-is xref:servicetalk::performance.adoc#reference-counting[not exposed] by ServiceTalk). To help debug reference counting
-related bugs Netty provides a
+xref:{page-version}@servicetalk::performance.adoc#reference-counting[reference counting] of `ByteBuf` objects (reference
+counting is xref:{page-version}@servicetalk::performance.adoc#reference-counting[not exposed] by ServiceTalk). To help
+debug reference counting related bugs Netty provides a
 link:https://netty.io/wiki/reference-counted-objects.html#leak-detection-levels[leak detector for `DirectByteBuffers`].
 The default `SIMPLE` detector has a relatively small overhead (intended to be used in production) by sampling a small
 subset of buffer allocations and add additional tracking information. This overhead can be avoided at the risk of
@@ -617,14 +621,14 @@ top.
 
 ==== Clients and Server types
 * HTTP Clients and Servers in all programming models (see
-xref:servicetalk::performance.adoc#programming-models[programming models] for performance implications)
+xref:{page-version}@servicetalk::performance.adoc#programming-models[programming models] for performance implications)
     ** Async Aggregated
     ** Async Streaming
     ** Blocking Aggregated
     ** Blocking Streaming
 
 * JAX-RS Jersey router performance
-    ** all xref:servicetalk::performance.adoc#jersey-programming-models[Jersey Router programming models]
+    ** all xref:{page-version}@servicetalk::performance.adoc#jersey-programming-models[Jersey Router programming models]
     ** common JAX-RS data types (`String`, `byte[]`, `InputStream`, `OutputStream`)
     ** Reactive Streams types (`Single<T>`, `Publisher<T>`, `Publisher<Buffer>`)
     ** JSON with Jersey Jackson module & `ServiceTalk` Jersey Jackson module

@@ -1,7 +1,7 @@
 include::ROOT:partial$component-attributes.adoc[]
 = Evolving to asynchronous
 
-Evolution to full asynchronous routes is elaborated xref:servicetalk-http-api::evolve-to-async.adoc[here].
+Evolution to full asynchronous routes is elaborated xref:{page-version}@servicetalk-http-api::evolve-to-async.adoc[here].
 This document describes the capabilities of jersey router with respect to specifying strategy per route.
 
 == Explicit route strategy
