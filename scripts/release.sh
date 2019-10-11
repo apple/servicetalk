@@ -70,7 +70,7 @@ sed "s/^version=.*/version=$version/" gradle.properties > gradle.properties.tmp
 mv gradle.properties.tmp gradle.properties
 
 for file in docs/antora.yml */docs/antora.yml; do
-    sed "s/^version:.*/version: ${version%.*}/" "$file" > "$file.tmp"
+    sed "s/^version:.*/version: '${version%.*}'/" "$file" > "$file.tmp"
     mv "$file.tmp" "$file"
 done
 ./scripts/update-git-ref-in-antora-components-attributes.sh "$version"
