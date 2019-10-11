@@ -22,7 +22,7 @@ if (!repositories) {
 
 // links that are allowed to be http rather than https
 def httpLinks = [
-    //"http://somedomain.tld/someoptionalpath"
+    "http://www.slf4j.org/"
 ]
 
 // links to exclude from validation (for example because they require authentication)
