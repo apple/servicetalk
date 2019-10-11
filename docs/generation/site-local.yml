@@ -15,7 +15,7 @@
 #
 
 runtime:
-  cache_dir: .cache
+  cache_dir: .out/cache
 site:
   title: ServiceTalk Docs
   start_page: servicetalk::index.adoc

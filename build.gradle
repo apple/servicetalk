@@ -33,6 +33,6 @@ apply plugin: "servicetalk-root"
 
 task validateLocalDocSite(type: Exec) {
   workingDir 'docs/generation'
-  commandLine './gradlew', 'validateLocalSite'
+  commandLine './gradlew', 'clean', 'validateLocalSite'
 }
 quality.dependsOn validateLocalDocSite
