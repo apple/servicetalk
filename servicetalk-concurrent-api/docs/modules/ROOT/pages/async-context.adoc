@@ -30,7 +30,7 @@ public static Single<Resposne> authenticate(Single<Response> responseSingle) {
 
 ServiceTalk is a fully asynchronous framework and therefore multiple requests may be multiplexed on the same thread.
 Also depending on the application's threading model a single request may be processed on different threads. This means
-that `ThreadLocal` and derivatives such as https://www.slf4j.org/manual.html#mdc[`MDC`] would not work as expected. To
+that `ThreadLocal` and derivatives such as http://www.slf4j.org/manual.html#mdc[`MDC`] would not work as expected. To
 overcome this limitation, we provide an `AsyncContext` which hooks into the internal async machinery to make sure
 thread local context data is propagated along with the request.
 
@@ -48,7 +48,7 @@ API has a few benefits:
 asynchronous execution and also share threads for processing different requests. For example the
 link:https://github.com/opentracing/opentracing-java/blob/master/opentracing-api/src/main/java/io/opentracing/Tracer.java[OpenTracing APIs]
 and the
-link:https://www.slf4j.org/api/org/slf4j/MDC.html[MDC APIs] assume state is stored in some static structure.
+link:http://www.slf4j.org/api/org/slf4j/MDC.html[MDC APIs] assume state is stored in some static structure.
 * API is decoupled from application data APIs
 ** A use case for `AsyncContext` is to retain distributed tracing state. This state maybe useful across different APIs
 and maybe burdensome to account for this state in every API (e.g. gRPC and generated code). It also maybe error prone to
