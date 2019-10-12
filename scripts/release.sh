@@ -72,7 +72,7 @@ for file in docs/antora.yml */docs/antora.yml; do
     sed "s/^version:.*/version: '${version%.*}'/" "$file" > "$file.tmp"
     mv "$file.tmp" "$file"
 done
-for file in docs/modules/ROOT/nav.adoc */modules/ROOT/nav.adoc; do
+for file in docs/modules/ROOT/nav.adoc */docs/modules/ROOT/nav.adoc; do
     sed "s/^:page-version: .*/:page-version: ${version%.*}/" "$file" > "$file.tmp"
     mv "$file.tmp" "$file"
 done
@@ -100,7 +100,7 @@ for file in docs/antora.yml */docs/antora.yml; do
     sed "s/^version:.*/version: SNAPSHOT/" "$file" > "$file.tmp"
     mv "$file.tmp" "$file"
 done
-for file in docs/modules/ROOT/nav.adoc */modules/ROOT/nav.adoc; do
+for file in docs/modules/ROOT/nav.adoc */docs/modules/ROOT/nav.adoc; do
     sed "s/^:page-version: .*/:page-version: SNAPSHOT/" "$file" > "$file.tmp"
     mv "$file.tmp" "$file"
 done
