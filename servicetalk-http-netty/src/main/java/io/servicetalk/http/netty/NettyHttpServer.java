@@ -668,10 +668,12 @@ final class NettyHttpServer {
         @Override
         public void onError(final Throwable t) {
             if (t instanceof CloseEventObservedException && t.getCause() instanceof ClosedChannelException) {
-                LOGGER.debug("Closing the channel", t);
+                LOGGER.trace("Expected error received while processing connection, {}",
+                        "no more requests will be received on this connection.", t);
                 return;
             }
-            LOGGER.warn("Unexpected exception on the connection", t);
+            LOGGER.warn("Unexpected error received while processing connection, {}",
+                    "no more requests will be received on this connection.", t);
         }
     }
 }
