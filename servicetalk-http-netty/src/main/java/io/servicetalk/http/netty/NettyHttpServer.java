@@ -118,7 +118,7 @@ final class NettyHttpServer {
         return TcpServerBinder.bind(address, tcpServerConfig, executionContext, connectionAcceptor,
                 channel -> initChannel(channel, executionContext, config,
                         new TcpServerChannelInitializer(tcpServerConfig), service, drainRequestPayloadBody),
-                NettyHttpServer::startProcessing)
+                serverConnection -> startProcessing(serverConnection, true))
                 .map(delegate -> {
                     LOGGER.debug("Started HTTP server for address {}.", delegate.listenAddress());
                     // The ServerContext returned by TcpServerBinder takes care of closing the connectionAcceptor.
@@ -145,8 +145,9 @@ final class NettyHttpServer {
                         flushStrategy, config.headersFactory(), drainRequestPayloadBody)), "HTTP/1.1", channel);
     }
 
-    static void startProcessing(final NettyHttpServerConnection serverConnection) {
-        toSource(serverConnection.process(true))
+    static void startProcessing(final NettyHttpServerConnection serverConnection,
+                                final boolean handleMultipleRequests) {
+        toSource(serverConnection.process(handleMultipleRequests))
                 .subscribe(new ErrorLoggingHttpSubscriber());
     }
 
@@ -236,7 +237,7 @@ final class NettyHttpServer {
             this.drainRequestPayloadBody = drainRequestPayloadBody;
         }
 
-        Completable process(final boolean handleMultipleRequests) {
+        private Completable process(final boolean handleMultipleRequests) {
             final Single<StreamingHttpRequest> requestSingle =
                     connection.read().liftSyncToSingle(new SpliceFlatStreamToMetaSingle<>(
                             (HttpRequestMetaData meta, Publisher<Object> payload) ->
