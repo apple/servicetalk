@@ -1,1 +1,5 @@
-* xref:index.adoc[Data Jackson Jersey]
+ifndef::page-version[]
+:page-version: SNAPSHOT
+endif::[]
+
+include::{page-version}@servicetalk::partial$nav-versioned.adoc[]

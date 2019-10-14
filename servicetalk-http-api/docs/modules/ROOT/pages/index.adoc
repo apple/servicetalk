@@ -2,9 +2,10 @@ include::ROOT:partial$component-attributes.adoc[]
 = HTTP
 
 This module defines the ServiceTalk client and server API for the link:https://tools.ietf.org/html/rfc7231[HTTP/1.x]
-protocol. This module supports all the different xref:servicetalk:ROOT:introduction.adoc#programmingp-paradigms[Programming Paradigms] for client
-and server. Here is a quick start example of the xref:servicetalk:ROOT:introduction.adoc#blocking-and-aggregated[blocking and aggregated]
-paradigm:
+protocol. This module supports all the different
+xref:{page-version}@servicetalk::introduction.adoc#programmingp-paradigms[Programming Paradigms] for client and server.
+Here is a quick start example of the
+xref:{page-version}@servicetalk::introduction.adoc#blocking-and-aggregated[blocking and aggregated] paradigm:
 
 ==== Blocking Client
 See
@@ -108,7 +109,8 @@ link:{sourceroot}servicetalk-http-router-jersey[JAX-RS via Jersey]). The general
 
 [#service-programming-paradigms]
 === Service Programming Paradigms
-HTTP `Service` supports all the variations described in xref:servicetalk:ROOT:introduction.adoc#programming-paradigms[Programming Paradigms].
+HTTP `Service` supports all the variations described in
+xref:{page-version}@servicetalk::introduction.adoc#programming-paradigms[Programming Paradigms].
 
 [#blocking-and-aggregated]
 ==== Blocking and Aggregated
@@ -311,7 +313,8 @@ background.
 
 [#client-programming-paradigms]
 === Client Programming Paradigms
-HTTP Client supports all the variations described in xref:servicetalk:ROOT:introduction.adoc#programming-paradigms[Programming Paradigms].
+HTTP Client supports all the variations described in
+xref:{page-version}@servicetalk::introduction.adoc#programming-paradigms[Programming Paradigms].
 
 [#client-blocking-and-aggregated]
 ==== Blocking and Aggregated

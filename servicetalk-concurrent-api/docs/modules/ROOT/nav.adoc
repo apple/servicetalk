@@ -1,4 +1,5 @@
-* xref:index.adoc[Concurrent API]
-** xref:blocking.adoc[Blocking]
-** xref:blocking-implementation.adoc[Blocking Implementation]
-** xref:async-context.adoc[Async Context]
+ifndef::page-version[]
+:page-version: SNAPSHOT
+endif::[]
+
+include::{page-version}@servicetalk::partial$nav-versioned.adoc[]

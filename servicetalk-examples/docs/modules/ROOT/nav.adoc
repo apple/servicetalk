@@ -1,6 +1,5 @@
-* xref:http/index.adoc[HTTP Examples]
-** xref:http/index.adoc#HelloWorld[Hello World]
-** xref:http/index.adoc#Serialization[Serialization]
-** xref:http/index.adoc#JAXRS[JAX-RS]
-** xref:http/index.adoc#MetaData[MetaData]
-** xref:http/service-composition.adoc[Service Composition]
+ifndef::page-version[]
+:page-version: SNAPSHOT
+endif::[]
+
+include::{page-version}@servicetalk::partial$nav-versioned.adoc[]

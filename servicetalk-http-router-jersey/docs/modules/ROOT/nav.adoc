@@ -1,2 +1,5 @@
-* xref:index.adoc[HTTP Router - Jersey]
-** xref:evolve-to-async.adoc[Evolving to asynchronous]
+ifndef::page-version[]
+:page-version: SNAPSHOT
+endif::[]
+
+include::{page-version}@servicetalk::partial$nav-versioned.adoc[]
