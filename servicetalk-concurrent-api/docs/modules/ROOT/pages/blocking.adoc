@@ -1,6 +1,6 @@
 // Configure {source-root} values based on how this document is rendered: on GitHub or not
 ifdef::env-github[]
-ifndef::source-root[:source-root: ]
+:source-root:
 endif::[]
 ifndef::env-github[]
 ifndef::source-root[:source-root: https://github.com/apple/servicetalk/blob/{page-origin-refname}]
