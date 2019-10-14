@@ -49,6 +49,7 @@ import javax.annotation.Nullable;
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.http.netty.HeaderUtils.LAST_CHUNK_PREDICATE;
 import static io.servicetalk.http.netty.HttpDebugUtils.showPipeline;
+import static io.servicetalk.http.netty.NettyHttpServer.startProcessing;
 import static io.servicetalk.transport.netty.internal.ChannelSet.CHANNEL_CLOSEABLE_KEY;
 import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
 import static java.util.Objects.requireNonNull;
@@ -157,10 +158,9 @@ final class H2ServerParentConnectionContext extends H2ParentConnectionContext im
                                 // ServiceTalk HTTP service handler
                                 final CompositeFlushStrategy streamFlushStrategy =
                                         new CompositeFlushStrategy(parentFlushStrategy);
-                                new NettyHttpServer.NettyHttpServerConnection(streamConnection, service,
+                                startProcessing(new NettyHttpServer.NettyHttpServerConnection(streamConnection, service,
                                         executionStrategy, streamFlushStrategy, h2ServerConfig.h2HeadersFactory(),
-                                        drainRequestPayloadBody)
-                                        .process(false).subscribe();
+                                        drainRequestPayloadBody), false);
                             }
                     }).init(channel);
                 } catch (Throwable cause) {

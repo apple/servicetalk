@@ -62,7 +62,7 @@ final class AlpnServerContext {
                 serverConnection -> {
                     // Start processing requests on http/1.1 connection:
                     if (serverConnection instanceof NettyHttpServerConnection) {
-                        ((NettyHttpServerConnection) serverConnection).process(true).subscribe();
+                        NettyHttpServer.startProcessing((NettyHttpServerConnection) serverConnection, true);
                     }
                     // Nothing to do otherwise as h2 uses auto read on the parent channel
                 })
