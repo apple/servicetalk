@@ -62,15 +62,18 @@ $git pull
 $git log -n1
 
 pushd docs/generation
-rm -rf .cache .out
-./gradlew --no-daemon validateLocalSite
+./gradlew --no-daemon clean validateLocalSite
 popd
 
 sed "s/^version=.*/version=$version/" gradle.properties > gradle.properties.tmp
 mv gradle.properties.tmp gradle.properties
 
 for file in docs/antora.yml */docs/antora.yml; do
-    sed "s/^version:.*/version: ${version%.*}/" "$file" > "$file.tmp"
+    sed "s/^version:.*/version: '${version%.*}'/" "$file" > "$file.tmp"
+    mv "$file.tmp" "$file"
+done
+for file in docs/modules/ROOT/nav.adoc */docs/modules/ROOT/nav.adoc; do
+    sed "s/^:page-version: .*/:page-version: ${version%.*}/" "$file" > "$file.tmp"
     mv "$file.tmp" "$file"
 done
 ./scripts/update-git-ref-in-antora-components-attributes.sh "$version"
@@ -95,6 +98,10 @@ mv gradle.properties.tmp gradle.properties
 
 for file in docs/antora.yml */docs/antora.yml; do
     sed "s/^version:.*/version: SNAPSHOT/" "$file" > "$file.tmp"
+    mv "$file.tmp" "$file"
+done
+for file in docs/modules/ROOT/nav.adoc */docs/modules/ROOT/nav.adoc; do
+    sed "s/^:page-version: .*/:page-version: SNAPSHOT/" "$file" > "$file.tmp"
     mv "$file.tmp" "$file"
 done
 ./scripts/update-git-ref-in-antora-components-attributes.sh "master"

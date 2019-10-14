@@ -1,0 +1,2 @@
+* xref:{page-version}@servicetalk-http-api::blocking.adoc[Blocking]
+** xref:{page-version}@servicetalk-http-api::evolve-to-async.adoc[Evolving to asynchronous]

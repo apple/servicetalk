@@ -311,7 +311,7 @@ public static class CustomSecurityFilter implements ContainerRequestFilter {
 ----
 
 NOTE: ServiceTalk provides security filters that can be used with Basic authenticated requests.
-Refer to xref:servicetalk-http-security-jersey::index.adoc#auth-basic[Basic Auth for Jersey Router] for more information.
+Refer to xref:{page-version}@servicetalk-http-security-jersey::index.adoc#auth-basic[Basic Auth for Jersey Router] for more information.
 
 === Exception Mappers
 
@@ -393,7 +393,7 @@ ServerContext serverContext = HttpServers.forPort(8080)
 
 TIP: It is important to have a good understanding of ServiceTalk's threading model
 before considering tuning execution strategies.
-Refer to ServiceTalk's xref:servicetalk::index.adoc[main documentation]
+Refer to ServiceTalk's xref:{page-version}@servicetalk::index.adoc[main documentation]
 to learn more about it.
 
 By default, the Jersey router uses ServiceTalk’s global executor to
@@ -488,7 +488,8 @@ Be sure to thoroughly test the routes for which you intend to disable offloading
 
 IMPORTANT: It is currently not possible to disable offloading if any JAX-RS resource uses `@Suspended AsyncResponse`,
 `CompletionStage` responses or Server-Sent Events. A workaround for this consists in using the Predicate router
-to selectively offload such resources, as shown in this link:{sourceroot}servicetalk-http-router-jersey/src/testFixtures/java/io/servicetalk/http/router/jersey/MixedModeResourceTest.java[test]
+to selectively offload such resources, as shown in this
+link:{sourceroot}servicetalk-http-router-jersey/src/testFixtures/java/io/servicetalk/http/router/jersey/MixedModeResourceTest.java[test].
 
 These different options combined together yield different effects at
 different level of the application code. The following table details

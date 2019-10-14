@@ -73,8 +73,8 @@ At a general transport layer (no application level protocol), only two offload p
 . Sending data to the transport.
 . Receiving data from the transport.
 
-However, different protocols, eg: xref:servicetalk-http-api::blocking.adoc[HTTP] may provide more sophisticated
-offloading paths that can be controlled by a strategy.
+However, different protocols, eg: xref:{page-version}@servicetalk-http-api::blocking.adoc[HTTP] may provide more
+sophisticated offloading paths that can be controlled by a strategy.
 
 [#influencing-offloading-decisions]
 ==== Influencing offloading decisions
@@ -87,7 +87,7 @@ user code can interact with the event loop and hence make some offloading redund
 . __Presence of user code__: ServiceTalk is flexible and allows users to add code at different places.
 Presence of any user code is deemed as unsafe and hence requires offloading. If users are sure the added code does not
 block, they can declare so through the constructs provided at the
-xref:servicetalk-http-api::blocking.adoc[protocol level].
+xref:{page-version}@servicetalk-http-api::blocking.adoc[protocol level].
 . __Override execution strategy__: ServiceTalk provides a way for users to override the
 link:{sourceroot}servicetalk-transport-api/src/main/java/io/servicetalk/transport/api/ExecutionStrategy.java[Execution Strategy]
 used for a client/server. This disables all intelligence around finding the optimized strategy and just use the provided
@@ -100,7 +100,7 @@ ServiceTalk acknowledges that [.underline]#writing completely asynchronous code 
 Practically, applications will have a mixed profile such that some paths are completely asynchronous and some paths have
 blocking code. This is the reason it provides ways to selectively opt-in for disabling offloading for the same
 client/server. These selective opt-ins are specific to protocols, for example as elaborated under
-xref:servicetalk-http-api::blocking.adoc[HTTP]. In addition there is a way to override the strategy for a
+xref:{page-version}@servicetalk-http-api::blocking.adoc[HTTP]. In addition there is a way to override the strategy for a
 client/server but it comes with additional responsibility from the user assuming "you know what you are doing".
 
 === ServiceTalk developers

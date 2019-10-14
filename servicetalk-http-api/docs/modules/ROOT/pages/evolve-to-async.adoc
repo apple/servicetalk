@@ -3,9 +3,9 @@ include::ROOT:partial$component-attributes.adoc[]
 
 Blocking programming model is easy to start and understand but it may not be the correct tool for all scenarios.
 In fact, ServiceTalk assumes that applications typically have a mixed profile where different parts follow different
-xref:servicetalk::introduction.adoc#programming-paradigms[programming paradigms]. One of the goals of ServiceTalk is to
-help users evolve from a blocking programming model to a completely asynchronous programming model without the need to
-completely rewrite the entire application. This document elaborates how to follow such an evolution.
+xref:{page-version}@servicetalk::introduction.adoc#programming-paradigms[programming paradigms]. One of the goals of
+ServiceTalk is to help users evolve from a blocking programming model to a completely asynchronous programming model
+without the need to completely rewrite the entire application. This document elaborates how to follow such an evolution.
 
 === Overview
 
@@ -25,9 +25,9 @@ ServiceTalk follows the below principles for providing a path to no offloading:
 
 === Asynchronous and offloading
 
-As described xref:servicetalk::blocking.adoc[here], ServiceTalk assumes presence of blocking user code even when
-using ServiceTalk's asynchronous APIs. So, in order to eliminate offloading for a request there are __at least__ the
-following steps that are required:
+As described xref:{page-version}@servicetalk::blocking.adoc[here], ServiceTalk assumes presence of blocking user code
+even when using ServiceTalk's asynchronous APIs. So, in order to eliminate offloading for a request there are
+__at least__ the following steps that are required:
 
 1. Make sure that there is no blocking code for processing of a request.
 2. Only use asynchronous APIs for processing of a request.
@@ -161,5 +161,6 @@ executed before executing the actual route for a request.
 
 Making sure that all routes can independently specify their strategy makes it easier to reason about the impacts of
 changing these strategies. ServiceTalk provided routers provide ways to explicitly specify a route strategy, implicit
-inference capabilities may vary. See xref:servicetalk-http-router-jersey::evolve-to-async.adoc[Jersey Router]
-to see its capabilities for per route strategies.
+inference capabilities may vary. Check out
+xref:{page-version}@servicetalk-http-router-jersey::evolve-to-async.adoc[Jersey Router] to see its capabilities for per
+route strategies.
