@@ -1,4 +1,11 @@
-include::ROOT:partial$component-attributes.adoc[]
+// Configure {source-root} values based on how this document is rendered: on GitHub or not
+ifdef::env-github[]
+:source-root:
+endif::[]
+ifndef::env-github[]
+ifndef::source-root[:source-root: https://github.com/apple/servicetalk/blob/{page-origin-refname}]
+endif::[]
+
 = Evolving to asynchronous
 
 Blocking programming model is easy to start and understand but it may not be the correct tool for all scenarios.
@@ -56,7 +63,7 @@ of operation.
 HTTP clients for all programming models provide methods to make requests with or without `HttpExecutionStrategy`.
 
 See
-link:{sourceroot}servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpClient.java[HttpClient].
+link:{source-root}/servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpClient.java[HttpClient].
 [source, java]
 ----
 Single<HttpResponse> request(HttpRequest request);
@@ -66,7 +73,7 @@ Single<HttpResponse> request(HttpExecutionStrategy strategy, HttpRequest request
 
 In order to disable offloading for a specific request one has to use a specific `HttpExecutionStrategy` that does not
 do any offloading. Such a strategy is available out of the box in
-link:{sourceroot}servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpExecutionStrategies.java[HttpExecutionStrategies]
+link:{source-root}/servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpExecutionStrategies.java[HttpExecutionStrategies]
 and can be used as below:
 
 [source, java]
@@ -87,7 +94,7 @@ If it is certain that no blocking requests will be made using a client without e
 then one can disable offloading for the entire client using the following option on the client builder.
 
 See
-link:{sourceroot}servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpClientBuilder.java[HttpClientBuilder].
+link:{source-root}/servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpClientBuilder.java[HttpClientBuilder].
 [source,java]
 ----
 clientBuilder.executionStrategy(HttpExecutionStrategies.noOffloadsStrategy());
@@ -117,7 +124,7 @@ Execution strategy for a server can be specified on the server builder just like
 offloading for the entire server, the following option can be used:
 
 See
-link:{sourceroot}servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpServerBuilder.java[HttpServerBuilder].
+link:{source-root}/servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpServerBuilder.java[HttpServerBuilder].
 [source,java]
 ----
 serverBuilder.executionStrategy(HttpExecutionStrategies.noOffloadsStrategy());
@@ -145,7 +152,7 @@ This auto-inference is only used if no strategy is explicitly specified for that
 A router may also provide a capability for a route to explicitly define an execution strategy that is used to invoke
 that route. In presence of such an explicit strategy, auto-inference of the route strategy is disabled. In order to
 disable offloads, one should use
-link:{sourceroot}servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpExecutionStrategies.java[`HttpExecutionStrategies.noOffloadsStrategy()`]
+link:{source-root}/servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpExecutionStrategies.java[`HttpExecutionStrategies.noOffloadsStrategy()`]
 
 ==== Recommended approach
 

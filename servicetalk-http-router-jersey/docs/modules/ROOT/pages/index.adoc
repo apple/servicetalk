@@ -1,4 +1,11 @@
-include::ROOT:partial$component-attributes.adoc[]
+// Configure {source-root} values based on how this document is rendered: on GitHub or not
+ifdef::env-github[]
+:source-root:
+endif::[]
+ifndef::env-github[]
+ifndef::source-root[:source-root: https://github.com/apple/servicetalk/blob/{page-origin-refname}]
+endif::[]
+
 = Jersey HTTP Router
 
 ServiceTalk offers JAX-RS support via its Jersey HTTP router module.
@@ -489,7 +496,7 @@ Be sure to thoroughly test the routes for which you intend to disable offloading
 IMPORTANT: It is currently not possible to disable offloading if any JAX-RS resource uses `@Suspended AsyncResponse`,
 `CompletionStage` responses or Server-Sent Events. A workaround for this consists in using the Predicate router
 to selectively offload such resources, as shown in this
-link:{sourceroot}servicetalk-http-router-jersey/src/testFixtures/java/io/servicetalk/http/router/jersey/MixedModeResourceTest.java[test].
+link:{source-root}/servicetalk-http-router-jersey/src/testFixtures/java/io/servicetalk/http/router/jersey/MixedModeResourceTest.java[test].
 
 These different options combined together yield different effects at
 different level of the application code. The following table details

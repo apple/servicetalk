@@ -1,4 +1,3 @@
-include::ROOT:partial$component-attributes.adoc[]
 = ServiceTalk Concurrent API
 
 This package provides the concurrent API for ServiceTalk based applications. Included are Reactive

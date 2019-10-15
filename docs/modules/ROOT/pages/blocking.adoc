@@ -1,4 +1,11 @@
-include::ROOT:partial$component-attributes.adoc[]
+// Configure {source-root} values based on how this document is rendered: on GitHub or not
+ifdef::env-github[]
+:source-root:
+endif::[]
+ifndef::env-github[]
+ifndef::source-root[:source-root: https://github.com/apple/servicetalk/blob/{page-origin-refname}]
+endif::[]
+
 = May I block?
 
 IMPORTANT: By default, users are free to write blocking code when using ServiceTalk.
@@ -35,7 +42,7 @@ event loop.
 == How is it safe to block?
 
 Simply put, ServiceTalk makes sure that no user code is called on the event loop. In order to do that, it uses an
-link:{sourceroot}servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Executor.java[Executor] to
+link:{source-root}/servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Executor.java[Executor] to
 __offload__ invocation of user code out of the event loop to a different thread.
 
 [#user-code-and-eventloop]
@@ -56,16 +63,16 @@ image::blocking-scenarios.png[Data and control flow in an execution chain]
 ServiceTalk uses different `publishOn` and `subscribeOn` operators on these asynchronous primitives to implement
 offloading. Implementation details of those operators are out of scope of this document but the usage of these operators
 is encapsulated in an
-link:{sourceroot}servicetalk-transport-api/src/main/java/io/servicetalk/transport/api/ExecutionStrategy.java[Execution Strategy]
+link:{source-root}/servicetalk-transport-api/src/main/java/io/servicetalk/transport/api/ExecutionStrategy.java[Execution Strategy]
 
 ==== Execution Strategy
 
-An link:{sourceroot}servicetalk-transport-api/src/main/java/io/servicetalk/transport/api/ExecutionStrategy.java[Execution Strategy]
+An link:{source-root}/servicetalk-transport-api/src/main/java/io/servicetalk/transport/api/ExecutionStrategy.java[Execution Strategy]
 has two primary purposes:
 
 . Define which interaction paths require offloading.
 . Optionally specify an
-link:{sourceroot}servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Executor.java[Executor]
+link:{source-root}/servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Executor.java[Executor]
 to use for offloading. In absence of a specified `Executor`, ServiceTalk will use a default `Executor`.
 
 At a general transport layer (no application level protocol), only two offload paths are available:
@@ -89,7 +96,7 @@ Presence of any user code is deemed as unsafe and hence requires offloading. If 
 block, they can declare so through the constructs provided at the
 xref:{page-version}@servicetalk-http-api::blocking.adoc[protocol level].
 . __Override execution strategy__: ServiceTalk provides a way for users to override the
-link:{sourceroot}servicetalk-transport-api/src/main/java/io/servicetalk/transport/api/ExecutionStrategy.java[Execution Strategy]
+link:{source-root}/servicetalk-transport-api/src/main/java/io/servicetalk/transport/api/ExecutionStrategy.java[Execution Strategy]
 used for a client/server. This disables all intelligence around finding the optimized strategy and just use the provided
 strategy.
 
