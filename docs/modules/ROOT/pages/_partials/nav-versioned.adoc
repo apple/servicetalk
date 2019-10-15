@@ -31,3 +31,4 @@ include::{page-version}@servicetalk-http-router-jersey:ROOT:partial$nav-versione
 ** xref:{page-version}@servicetalk-data-jackson-jersey::index.adoc[Data Jackson Jersey]
 * xref:{page-version}@servicetalk::CONTRIBUTING.adoc[Contributing]
 * xref:{page-version}@servicetalk::CODE_OF_CONDUCT.adoc[Code of Conduct]
+* xref:{page-version}@servicetalk::javadoc/index.adoc[Javadoc]

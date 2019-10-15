@@ -1,0 +1,3 @@
+= Javadoc placeholder
+
+This page should be replaced by the actual javadoc.
