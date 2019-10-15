@@ -1,4 +1,11 @@
-include::ROOT:partial$component-attributes.adoc[]
+// Configure {source-root} values based on how this document is rendered: on GitHub or not
+ifdef::env-github[]
+:source-root:
+endif::[]
+ifndef::env-github[]
+ifndef::source-root[:source-root: https://github.com/apple/servicetalk/blob/{page-origin-refname}]
+endif::[]
+
 = Evolving to asynchronous
 
 Evolution to full asynchronous routes is elaborated xref:{page-version}@servicetalk-http-api::evolve-to-async.adoc[here].

@@ -1,4 +1,3 @@
-include::ROOT:partial$component-attributes.adoc[]
 = Examples
 
 This repository is a collection of examples on how to use different facets of ServiceTalk.

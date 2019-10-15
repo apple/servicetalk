@@ -1,4 +1,11 @@
-include::ROOT:partial$component-attributes.adoc[]
+// Configure {source-root} values based on how this document is rendered: on GitHub or not
+ifdef::env-github[]
+:source-root:
+endif::[]
+ifndef::env-github[]
+ifndef::source-root[:source-root: https://github.com/apple/servicetalk/blob/{page-origin-refname}]
+endif::[]
+
 = AsyncContext
 
 == High Level Usage
@@ -176,11 +183,11 @@ Due to the shared state across the asynchronous boundaries we need to make sure 
 boundary, save the `original` context before executing user code on the new thread, restore the `current` context
 while executing user code, and then restore the `original` context. This requires object wrapping/unwrapping and
 leveraging `ThreadLocal` (or an
-link:{sourceroot}servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/AsyncContextMapHolder.java[AsyncContextMapHolder]
+link:{source-root}/servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/AsyncContextMapHolder.java[AsyncContextMapHolder]
 ) to retain the state. We also need to capture the current context at `subscribe`, propagate it up the operator chain,
 and capture it effectively in the source (or in a wrapped `Subscriber` just outside the source). These mechanics are
 similar to how the
-link:{sourceroot}servicetalk-concurrent-internal/src/main/java/io/servicetalk/concurrent/internal/SignalOffloader.java[SignalOffloader]
+link:{source-root}/servicetalk-concurrent-internal/src/main/java/io/servicetalk/concurrent/internal/SignalOffloader.java[SignalOffloader]
 is captured and propagated, and we use a similar approach here.
 
 === Understandability
@@ -233,6 +240,6 @@ passing it. The `ThreadLocal` class provides general retention of thread local s
 frequency in which we need to save/restore the static state has been shown to introduce non-trivial costs. Since we know
 that all of our threads will require this thread local state we can have our threads explicitly have a `AsyncContext`
 member variable (see
-link:{sourceroot}servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/AsyncContextMapHolder.java[AsyncContextMapHolder]
+link:{source-root}/servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/AsyncContextMapHolder.java[AsyncContextMapHolder]
 ). There is also additional wrapping/unwrapping introduced on the asynchronous boundaries so there is additional object
 allocation.

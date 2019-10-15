@@ -1,4 +1,11 @@
-include::ROOT:partial$component-attributes.adoc[]
+// Configure {source-root} values based on how this document is rendered: on GitHub or not
+ifdef::env-github[]
+:source-root:
+endif::[]
+ifndef::env-github[]
+ifndef::source-root[:source-root: https://github.com/apple/servicetalk/blob/{page-origin-refname}]
+endif::[]
+
 = ServiceTalk
 
 == Conceptual Overview
@@ -97,16 +104,16 @@ happening regardless if anyone is "listening" for the results.
 
 [#asynchronous-primitives-publisher]
 ==== Publisher
-A link:{sourceroot}servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Publisher.java[Publisher]
+A link:{source-root}/servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Publisher.java[Publisher]
 represents an asynchronous stream of data. There is a
-link:{sourceroot}servicetalk-concurrent/src/main/java/io/servicetalk/concurrent/PublisherSource.java#L59-L102[`PublisherSource.Subscriber<T>`]
-that link:{sourceroot}servicetalk-concurrent/src/main/java/io/servicetalk/concurrent/PublisherSource.java#L43[subscribes] and
+link:{source-root}/servicetalk-concurrent/src/main/java/io/servicetalk/concurrent/PublisherSource.java#L59-L102[`PublisherSource.Subscriber<T>`]
+that link:{source-root}/servicetalk-concurrent/src/main/java/io/servicetalk/concurrent/PublisherSource.java#L43[subscribes] and
 requests more data via a
-link:{sourceroot}servicetalk-concurrent/src/main/java/io/servicetalk/concurrent/PublisherSource.java#L116-L129[PublisherSource.Subscription].
+link:{source-root}/servicetalk-concurrent/src/main/java/io/servicetalk/concurrent/PublisherSource.java#L116-L129[PublisherSource.Subscription].
 
 Users are generally not expected to `subscribe` to a `PublisherSource`, or even deal directly with a `PublisherSource`.
 Instead, most users are expected to use the
-link:{sourceroot}servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Publisher.java[Publisher] API
+link:{source-root}/servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Publisher.java[Publisher] API
 which provides many operators to define asynchronous and streaming control flow.
 
 For more details on the API contract please review the
@@ -114,23 +121,23 @@ link:https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.2/README
 
 [#asynchronous-primitives-single]
 ==== Single
-A link:{sourceroot}servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Single.java[Single] shares all
+A link:{source-root}/servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Single.java[Single] shares all
 the same semantics as <<Publisher>>, but it either terminates with a
-link:{sourceroot}servicetalk-concurrent/src/main/java/io/servicetalk/concurrent/SingleSource.java#L45-L71[single value, or an error].
+link:{source-root}/servicetalk-concurrent/src/main/java/io/servicetalk/concurrent/SingleSource.java#L45-L71[single value, or an error].
 
 Users are generally not expected to `subscribe` to a `SingleSource`, or even deal directly with a `SingleSource`.
 Instead, most users are expected to use the
-link:{sourceroot}servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Single.java[Single] API which
+link:{source-root}/servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Single.java[Single] API which
 provides many operators to define asynchronous and streaming control flow.
 
 ==== Completable
-A link:{sourceroot}servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Completable.java[Completable]
+A link:{source-root}/servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Completable.java[Completable]
 shares all the same semantics as <<Publisher>>, but it either terminates
-link:{sourceroot}servicetalk-concurrent/src/main/java/io/servicetalk/concurrent/CompletableSource.java#L39-63[successfully, or with an error].
+link:{source-root}/servicetalk-concurrent/src/main/java/io/servicetalk/concurrent/CompletableSource.java#L39-63[successfully, or with an error].
 
 Users are generally not expected to `subscribe` to a `CompletableSource`, or even deal directly with a
 `CompletableSource`. Instead, most users are expected to use the
-link:{sourceroot}servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Completable.java[Completable]
+link:{source-root}/servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Completable.java[Completable]
 API which provides many operators to define asynchronous and streaming control flow.
 
 === Design Philosophy
