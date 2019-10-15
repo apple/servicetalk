@@ -27,13 +27,11 @@ def httpLinks = [
 
 // links to exclude from validation (for example because they require authentication)
 def excludedLinks = [
-    //"http://somedomain.tld/someoptionalpath"
     // Exclude the repo (and others) until they're public, otherwise the 404's fail the validation.
     "https://github.com/apple/servicetalk",
     "https://oss.sonatype.org/content/repositories/snapshots/io/servicetalk/",
     "https://repo1.maven.org/maven2/io/servicetalk/",
     "https://docs.servicetalk.io/",
-    "https://jersey.github.io", // old link, jersey docs were moved to https://eclipse-ee4j.github.io/jersey/
     "https://reactivex.io/", // untrusted cert
     "https://jemalloc.net" // untrusted cert
 ]
@@ -58,7 +56,7 @@ for (location in ["local", "remote"]) {
   def configureValidateHtmlFilesTask = "configureValidate${capitalizedLocation}HtmlFiles"
   def validateHtmlLinksTask = "validate${capitalizedLocation}HtmlLinks"
 
-  def htmlFiles = fileTree("$buildDir/$location").matching { include "**/*.html" }
+  def htmlFiles = fileTree("$buildDir/$location").matching { include "**/SNAPSHOT/*.html" }
 
   task(validateSiteTask) {
     dependsOn validateHtmlFilesTask, validateHtmlLinksTask
