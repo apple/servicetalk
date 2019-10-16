@@ -78,12 +78,6 @@ final class DefaultGrpcClientBuilder<U, R> extends GrpcClientBuilder<U, R> {
     }
 
     @Override
-    public GrpcClientBuilder<U, R> disableWireLogging() {
-        httpClientBuilder.disableWireLogging();
-        return this;
-    }
-
-    @Override
     public GrpcClientBuilder<U, R> headersFactory(final HttpHeadersFactory headersFactory) {
         httpClientBuilder.headersFactory(headersFactory);
         return this;

@@ -62,9 +62,6 @@ public abstract class PartitionedHttpClientBuilder<U, R>
     public abstract PartitionedHttpClientBuilder<U, R> enableWireLogging(String loggerName);
 
     @Override
-    public abstract PartitionedHttpClientBuilder<U, R> disableWireLogging();
-
-    @Override
     public abstract PartitionedHttpClientBuilder<U, R> headersFactory(HttpHeadersFactory headersFactory);
 
     @Override

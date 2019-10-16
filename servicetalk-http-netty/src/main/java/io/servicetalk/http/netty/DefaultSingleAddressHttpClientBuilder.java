@@ -387,12 +387,6 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
     }
 
     @Override
-    public DefaultSingleAddressHttpClientBuilder<U, R> disableWireLogging() {
-        config.tcpClientConfig().disableWireLogging();
-        return this;
-    }
-
-    @Override
     public DefaultSingleAddressHttpClientBuilder<U, R> headersFactory(final HttpHeadersFactory headersFactory) {
         config.headersFactory(headersFactory);
         return this;

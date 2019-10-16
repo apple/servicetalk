@@ -364,12 +364,6 @@ final class DefaultMultiAddressUrlHttpClientBuilder
     }
 
     @Override
-    public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> disableWireLogging() {
-        builderTemplate.disableWireLogging();
-        return this;
-    }
-
-    @Override
     public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> headersFactory(
             final HttpHeadersFactory headersFactory) {
         builderTemplate.headersFactory(headersFactory);

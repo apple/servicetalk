@@ -61,9 +61,6 @@ public abstract class MultiAddressHttpClientBuilder<U, R>
     public abstract MultiAddressHttpClientBuilder<U, R> enableWireLogging(String loggerName);
 
     @Override
-    public abstract MultiAddressHttpClientBuilder<U, R> disableWireLogging();
-
-    @Override
     public abstract MultiAddressHttpClientBuilder<U, R> headersFactory(HttpHeadersFactory headersFactory);
 
     @Override

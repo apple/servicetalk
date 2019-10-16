@@ -135,18 +135,6 @@ public final class TcpServerConfig extends ReadOnlyTcpServerConfig {
     }
 
     /**
-     * Disable previously configured wire-logging for this server.
-     * If wire-logging has not been configured before, this method has no effect.
-     *
-     * @return {@code this}.
-     * @see #enableWireLogging(String)
-     */
-    public TcpServerConfig disableWireLogging() {
-        wireLoggingInitializer = null;
-        return this;
-    }
-
-    /**
      * Sets {@link FlushStrategy} to use for all connections accepted by this server.
      *
      * @param flushStrategy {@link FlushStrategy} to use for all connections accepted by this server.

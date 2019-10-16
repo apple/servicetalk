@@ -56,9 +56,6 @@ public abstract class SingleAddressHttpClientBuilder<U, R>
     public abstract SingleAddressHttpClientBuilder<U, R> enableWireLogging(String loggerName);
 
     @Override
-    public abstract SingleAddressHttpClientBuilder<U, R> disableWireLogging();
-
-    @Override
     public abstract SingleAddressHttpClientBuilder<U, R> headersFactory(HttpHeadersFactory headersFactory);
 
     @Override
