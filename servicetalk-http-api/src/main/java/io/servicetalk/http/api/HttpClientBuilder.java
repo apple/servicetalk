@@ -59,9 +59,6 @@ abstract class HttpClientBuilder<U, R, SDE extends ServiceDiscovererEvent<R>> ex
     public abstract HttpClientBuilder<U, R, SDE> enableWireLogging(String loggerName);
 
     @Override
-    public abstract HttpClientBuilder<U, R, SDE> disableWireLogging();
-
-    @Override
     public abstract HttpClientBuilder<U, R, SDE> headersFactory(HttpHeadersFactory headersFactory);
 
     @Override

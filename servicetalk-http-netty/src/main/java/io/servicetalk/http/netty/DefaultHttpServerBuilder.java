@@ -141,12 +141,6 @@ final class DefaultHttpServerBuilder extends HttpServerBuilder {
     }
 
     @Override
-    public HttpServerBuilder disableWireLogging() {
-        config.tcpConfig().disableWireLogging();
-        return this;
-    }
-
-    @Override
     public HttpServerBuilder ioExecutor(final IoExecutor ioExecutor) {
         executionContextBuilder.ioExecutor(ioExecutor);
         return this;

@@ -131,33 +131,31 @@ public class NettyHttpServerConnectionDrainTest {
         fail("Request should not complete normally");
     }
 
-    private void closeClient(@Nullable final AutoCloseable client) throws Exception {
+    private static void closeClient(@Nullable final AutoCloseable client) throws Exception {
         if (client != null) {
             client.close();
         }
     }
 
-    private void postLargePayloadAndAssertResponseOk(final BlockingHttpClient client) throws Exception {
+    private static void postLargePayloadAndAssertResponseOk(final BlockingHttpClient client) throws Exception {
         HttpResponse response = client.request(client.post("/").payloadBody(LARGE_TEXT, textSerializer()));
         assertThat(response.payloadBody(textDeserializer()), equalTo("OK"));
     }
 
-    private StreamingHttpService respondOkWithoutReadingRequest(Runnable onRequest) {
+    private static StreamingHttpService respondOkWithoutReadingRequest(Runnable onRequest) {
         return (ctx, request, responseFactory) -> {
             onRequest.run();
             return succeeded(responseFactory.ok().payloadBody(from("OK"), textSerializer()));
         };
     }
 
-    private StreamingHttpService respondOkWithoutReadingRequest() {
+    private static StreamingHttpService respondOkWithoutReadingRequest() {
         return respondOkWithoutReadingRequest(() -> { });
     }
 
-    private ServerContext server(boolean autoDrain, StreamingHttpService handler) throws Exception {
+    private static ServerContext server(boolean autoDrain, StreamingHttpService handler) throws Exception {
         HttpServerBuilder httpServerBuilder = HttpServers.forAddress(AddressUtils.localAddress(0));
-        if (autoDrain) {
-            httpServerBuilder = httpServerBuilder.enableDrainingRequestPayloadBody();
-        } else {
+        if (!autoDrain) {
             httpServerBuilder = httpServerBuilder.disableDrainingRequestPayloadBody();
         }
         ServerContext serverContext = httpServerBuilder

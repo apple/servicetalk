@@ -44,9 +44,6 @@ abstract class BaseSingleAddressHttpClientBuilder<U, R, SDE extends ServiceDisco
     public abstract BaseSingleAddressHttpClientBuilder<U, R, SDE> enableWireLogging(String loggerName);
 
     @Override
-    public abstract BaseSingleAddressHttpClientBuilder<U, R, SDE> disableWireLogging();
-
-    @Override
     public abstract BaseSingleAddressHttpClientBuilder<U, R, SDE> headersFactory(HttpHeadersFactory headersFactory);
 
     @Override

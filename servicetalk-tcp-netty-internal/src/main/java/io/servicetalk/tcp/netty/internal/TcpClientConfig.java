@@ -102,18 +102,6 @@ public final class TcpClientConfig extends ReadOnlyTcpClientConfig {
     }
 
     /**
-     * Disable previously configured wire-logging for this client.
-     * If wire-logging has not been configured before, this method has no effect.
-     *
-     * @return {@code this}.
-     * @see #enableWireLogging(String)
-     */
-    public TcpClientConfig disableWireLogging() {
-        wireLoggingInitializer = null;
-        return this;
-    }
-
-    /**
      * Sets {@link FlushStrategy} to use for all connections created by this client.
      *
      * @param flushStrategy {@link FlushStrategy} to use for all connections created by this client.

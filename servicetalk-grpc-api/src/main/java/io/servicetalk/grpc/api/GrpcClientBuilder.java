@@ -68,9 +68,6 @@ public abstract class GrpcClientBuilder<U, R>
     public abstract GrpcClientBuilder<U, R> enableWireLogging(String loggerName);
 
     @Override
-    public abstract GrpcClientBuilder<U, R> disableWireLogging();
-
-    @Override
     public abstract GrpcClientBuilder<U, R> headersFactory(HttpHeadersFactory headersFactory);
 
     @Override

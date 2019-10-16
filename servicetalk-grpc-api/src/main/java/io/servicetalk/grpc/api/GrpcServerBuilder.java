@@ -183,15 +183,6 @@ public abstract class GrpcServerBuilder {
     public abstract GrpcServerBuilder enableWireLogging(String loggerName);
 
     /**
-     * Disable previously configured wire-logging for this server.
-     * If wire-logging has not been configured before, this method has no effect.
-     *
-     * @return {@code this}.
-     * @see #enableWireLogging(String)
-     */
-    public abstract GrpcServerBuilder disableWireLogging();
-
-    /**
      * Disables automatic consumption of request {@link StreamingHttpRequest#payloadBody() payload body} when it is not
      * consumed by the service.
      * <p>
@@ -206,24 +197,6 @@ public abstract class GrpcServerBuilder {
      * @return {@code this}.
      */
     public abstract GrpcServerBuilder disableDrainingRequestPayloadBody();
-
-    /**
-     * Enables automatic consumption of request {@link StreamingHttpRequest#payloadBody() payload body} when it is not
-     * consumed by the service.
-     * <p>
-     * For <a href="https://tools.ietf.org/html/rfc7230#section-6.3">persistent HTTP connections</a> it is required to
-     * eventually consume the entire request payload to enable reading of the next request. This is required because
-     * requests are pipelined for HTTP/1.1, so if the previous request is not completely read, next request can not be
-     * read from the socket. For cases when there is a possibility that user may forget to consume request payload,
-     * ServiceTalk automatically consumes request payload body. This automatic consumption behavior may create some
-     * overhead and {@link #disableDrainingRequestPayloadBody() can be disabled} when it is guaranteed that all request
-     * paths consumes all request payloads eventually. An example of guaranteed consumption are
-     * {@link HttpRequest non-streaming APIs}.
-     *
-     * @return {@code this}.
-     * @see #disableDrainingRequestPayloadBody()
-     */
-    public abstract GrpcServerBuilder enableDrainingRequestPayloadBody();
 
     /**
      * Append the filter to the chain of filters used to decorate the {@link ConnectionAcceptor} used by this builder.

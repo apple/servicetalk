@@ -54,9 +54,6 @@ interface SingleAddressGrpcClientBuilder<U, R,
     SingleAddressGrpcClientBuilder<U, R, SDE> enableWireLogging(String loggerName);
 
     @Override
-    SingleAddressGrpcClientBuilder<U, R, SDE> disableWireLogging();
-
-    @Override
     SingleAddressGrpcClientBuilder<U, R, SDE> headersFactory(HttpHeadersFactory headersFactory);
 
     @Override

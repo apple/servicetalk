@@ -72,15 +72,6 @@ interface BaseGrpcClientBuilder<U, R> {
     BaseGrpcClientBuilder<U, R> enableWireLogging(String loggerName);
 
     /**
-     * Disable previously configured wire-logging for clients created by this builder.
-     * If wire-logging has not been configured before, this method has no effect.
-     *
-     * @return {@code this}.
-     * @see #enableWireLogging(String)
-     */
-    BaseGrpcClientBuilder<U, R> disableWireLogging();
-
-    /**
      * Set the {@link HttpHeadersFactory} to be used for creating {@link HttpHeaders} when decoding responses.
      *
      * @param headersFactory the {@link HttpHeadersFactory} to use.

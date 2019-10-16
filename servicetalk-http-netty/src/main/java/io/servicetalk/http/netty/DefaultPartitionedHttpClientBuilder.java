@@ -255,12 +255,6 @@ class DefaultPartitionedHttpClientBuilder<U, R> extends PartitionedHttpClientBui
     }
 
     @Override
-    public PartitionedHttpClientBuilder<U, R> disableWireLogging() {
-        builderTemplate.disableWireLogging();
-        return this;
-    }
-
-    @Override
     public PartitionedHttpClientBuilder<U, R> headersFactory(final HttpHeadersFactory headersFactory) {
         builderTemplate.headersFactory(headersFactory);
         return this;

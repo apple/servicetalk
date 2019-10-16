@@ -135,20 +135,8 @@ final class DefaultGrpcServerBuilder extends GrpcServerBuilder implements Server
     }
 
     @Override
-    public GrpcServerBuilder disableWireLogging() {
-        httpServerBuilder.disableWireLogging();
-        return this;
-    }
-
-    @Override
     public GrpcServerBuilder disableDrainingRequestPayloadBody() {
         httpServerBuilder.disableDrainingRequestPayloadBody();
-        return this;
-    }
-
-    @Override
-    public GrpcServerBuilder enableDrainingRequestPayloadBody() {
-        httpServerBuilder.enableDrainingRequestPayloadBody();
         return this;
     }
 
