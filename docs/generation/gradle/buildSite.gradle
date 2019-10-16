@@ -75,39 +75,3 @@ task buildRemoteSite(type: NodeTask) { task ->
     println("Generated remote site at: file://$outputDir/index.html")
   }
 }
-
-task publishRemoteSite(type: Exec) {
-  // important to run this as a self-contained CI step with GitHub deploy key,
-  // hence no task dependency on `buildRemoteSite`
-
-  executable = "bash"
-
-  args = [
-      "-c",
-      """
-      set -xe
-
-      BRANCH_NAME=\$(git symbolic-ref -q HEAD)
-      BRANCH_NAME=\${BRANCH_NAME##refs/heads/}
-      GIT_AUTHOR=\$(git --no-pager show -s --format='%an <%ae>' HEAD)
-      if ( ! git remote get-url docs ); then
-        git remote add docs git@github.com:apple/servicetalk.git
-      fi
-      git fetch docs +gh-pages:gh-pages
-      git worktree add gh-pages gh-pages
-      cd gh-pages
-
-      rm -rf *
-      touch .nojekyll
-      cp -r ../.out/remote/* .
-      git add * .nojekyll
-
-      git commit --author="\$GIT_AUTHOR" -m "Publish docsite"
-      git push docs gh-pages
-
-      cd ..
-      rm -rf gh-pages
-      git worktree prune
-    """.stripIndent()
-  ]
-}
