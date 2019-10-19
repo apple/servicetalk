@@ -43,10 +43,10 @@ public final class FlushStrategies {
 
     /**
      * Creates a {@link FlushStrategy} that will {@link FlushSender#flush() flush writes} on each call to
-     * the returned {@link WriteEventsListener#itemWritten()} from {@link FlushStrategy#apply(FlushSender)}.
+     * the returned {@link WriteEventsListener#itemWritten(Object)} from {@link FlushStrategy#apply(FlushSender)}.
      *
      * @return A {@link FlushStrategy} that will {@link FlushSender#flush() flush writes} on each call to the returned
-     * {@link WriteEventsListener#itemWritten()} from {@link FlushStrategy#apply(FlushSender)}.
+     * {@link WriteEventsListener#itemWritten(Object)} from {@link FlushStrategy#apply(FlushSender)}.
      */
     public static FlushStrategy flushOnEach() {
         return FLUSH_ON_EACH;

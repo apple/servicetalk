@@ -15,6 +15,8 @@
  */
 package io.servicetalk.transport.netty.internal;
 
+import javax.annotation.Nullable;
+
 /**
  * A strategy that defines how to flush writes on a connection.
  */
@@ -63,7 +65,7 @@ public interface FlushStrategy {
      * will be made:
      * <ul>
      *     <li>At most one call to {@link #writeStarted()}</li>
-     *     <li>Zero or more calls to {@link #itemWritten()}</li>
+     *     <li>Zero or more calls to {@link #itemWritten(Object)}</li>
      *     <li>At most one call to {@link #writeTerminated()}</li>
      *     <li>At most one call to {@link #writeCancelled()}</li>
      *     <li>At least one call to either {@link #writeTerminated()} or {@link #writeCancelled()}</li>
@@ -72,9 +74,9 @@ public interface FlushStrategy {
      * <a href="https://docs.oracle.com/javase/specs/jls/se8/html/jls-17.html#jls-17.4.5">happens-before</a> a call to
      * any other methods.
      * <p>
-     * None of {@link #writeStarted()}, {@link #itemWritten()} and {@link #writeTerminated()} can be called concurrently
-     * with each other but {@link #writeCancelled()} can be called concurrently with {@link #itemWritten()} or
-     * {@link #writeTerminated()}.
+     * None of {@link #writeStarted()}, {@link #itemWritten(Object)} and {@link #writeTerminated()} can be called
+     * concurrently with each other but {@link #writeCancelled()} can be called concurrently with
+     * {@link #itemWritten(Object)} or {@link #writeTerminated()}.
      */
     interface WriteEventsListener {
 
@@ -82,7 +84,7 @@ public interface FlushStrategy {
          * For each new {@link WriteEventsListener} returned from {@link FlushStrategy#apply(FlushSender)}, this method
          * will be called at most once before any items are written to the connection.
          * <p>
-         * This will be followed by zero or more calls to {@link #itemWritten()} and at most one call to
+         * This will be followed by zero or more calls to {@link #itemWritten(Object)} and at most one call to
          * {@link #writeTerminated()} and {@link #writeCancelled()} or both.
          */
         void writeStarted();
@@ -94,8 +96,10 @@ public interface FlushStrategy {
          * This will be followed by zero or more calls to this method and at most one call to {@link #writeTerminated()}
          * and {@link #writeCancelled()} or both.
          * {@link #writeCancelled()} can be called concurrently with this method.
+         *
+         * @param written Item that was written.
          */
-        void itemWritten();
+        void itemWritten(@Nullable Object written);
 
         /**
          * For each new {@link WriteEventsListener} returned from {@link FlushStrategy#apply(FlushSender)}, this method
@@ -109,7 +113,7 @@ public interface FlushStrategy {
          * For each new {@link WriteEventsListener} returned from {@link FlushStrategy#apply(FlushSender)}, this method
          * will be called at most once when writes are cancelled.
          * <p>
-         * {@link #itemWritten()} or {@link #writeTerminated()} <em>MAY</em> be called concurrently or after this
+         * {@link #itemWritten(Object)} or {@link #writeTerminated()} <em>MAY</em> be called concurrently or after this
          * method.
          */
         void writeCancelled();

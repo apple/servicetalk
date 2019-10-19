@@ -16,6 +16,7 @@
 package io.servicetalk.transport.netty.internal;
 
 import io.servicetalk.concurrent.Cancellable;
+import io.servicetalk.transport.netty.internal.NettyConnectionContext.FlushStrategyProvider;
 
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
@@ -62,7 +63,7 @@ public final class FlushStrategyHolder {
      *
      * @return A {@link Cancellable} that will cancel this update.
      */
-    public Cancellable updateFlushStrategy(final NettyConnectionContext.FlushStrategyProvider strategyProvider) {
+    public Cancellable updateFlushStrategy(final FlushStrategyProvider strategyProvider) {
         for (;;) {
             final FlushStrategy cStrategy = flushStrategy;
             FlushStrategy newStrategy = strategyProvider.computeFlushStrategy(cStrategy,

@@ -24,7 +24,7 @@ import io.servicetalk.concurrent.internal.DelayedCancellable;
 import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.StreamingHttpService;
-import io.servicetalk.http.netty.NettyHttpServer.NettyHttpServerConnection.CompositeFlushStrategy;
+import io.servicetalk.http.netty.NettyHttpServer.NettyHttpServerConnection;
 import io.servicetalk.tcp.netty.internal.ReadOnlyTcpServerConfig;
 import io.servicetalk.tcp.netty.internal.TcpServerBinder;
 import io.servicetalk.tcp.netty.internal.TcpServerChannelInitializer;
@@ -49,7 +49,6 @@ import javax.annotation.Nullable;
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.http.netty.HeaderUtils.LAST_CHUNK_PREDICATE;
 import static io.servicetalk.http.netty.HttpDebugUtils.showPipeline;
-import static io.servicetalk.http.netty.NettyHttpServer.startProcessing;
 import static io.servicetalk.transport.netty.internal.ChannelSet.CHANNEL_CLOSEABLE_KEY;
 import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
 import static java.util.Objects.requireNonNull;
@@ -156,11 +155,9 @@ final class H2ServerParentConnectionContext extends H2ParentConnectionContext im
                                                 connection.sslSession());
 
                                 // ServiceTalk HTTP service handler
-                                final CompositeFlushStrategy streamFlushStrategy =
-                                        new CompositeFlushStrategy(parentFlushStrategy);
-                                startProcessing(new NettyHttpServer.NettyHttpServerConnection(streamConnection, service,
-                                        executionStrategy, streamFlushStrategy, h2ServerConfig.h2HeadersFactory(),
-                                        drainRequestPayloadBody), false);
+                                new NettyHttpServerConnection(streamConnection, service,
+                                        executionStrategy, h2ServerConfig.h2HeadersFactory(),
+                                        drainRequestPayloadBody).process(false);
                             }
                     }).init(channel);
                 } catch (Throwable cause) {
