@@ -267,13 +267,8 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
                         connectionFilterFactory, reqRespFactory,
                         influencerChainBuilder.buildForConnectionFactory(ctx.executionContext.executionStrategy()),
                         connectionFactoryFilter, protocolBinder);
-            } else if (reservedConnectionsPipelineEnabled(roConfig)) {
-                connectionFactory = new PipelinedLBHttpConnectionFactory<>(roConfig, ctx.executionContext,
-                        connectionFilterFactory, reqRespFactory,
-                        influencerChainBuilder.buildForConnectionFactory(ctx.executionContext.executionStrategy()),
-                        connectionFactoryFilter, protocolBinder);
             } else {
-                connectionFactory = new NonPipelinedLBHttpConnectionFactory<>(roConfig, ctx.executionContext,
+                connectionFactory = new PipelinedLBHttpConnectionFactory<>(roConfig, ctx.executionContext,
                         connectionFilterFactory, reqRespFactory,
                         influencerChainBuilder.buildForConnectionFactory(ctx.executionContext.executionStrategy()),
                         connectionFactoryFilter, protocolBinder);
@@ -536,12 +531,6 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
 
     HttpExecutionStrategyInfluencer buildStrategyInfluencerForClient(HttpExecutionStrategy strategy) {
         return influencerChainBuilder.buildForClient(strategy);
-    }
-
-    // TODO(derek): Temporary, so we can re-enable the ability to create non-pipelined connections for perf testing.
-    static boolean reservedConnectionsPipelineEnabled(final ReadOnlyHttpClientConfig roConfig) {
-        return roConfig.maxPipelinedRequests() > 1 ||
-                Boolean.valueOf(System.getProperty("io.servicetalk.http.netty.reserved.connections.pipeline", "true"));
     }
 
     private CharSequence toAuthorityForm(final U address) {
