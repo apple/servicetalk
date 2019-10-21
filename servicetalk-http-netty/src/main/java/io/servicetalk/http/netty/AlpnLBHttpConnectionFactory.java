@@ -40,7 +40,6 @@ import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.http.api.HttpEventKey.MAX_CONCURRENCY;
 import static io.servicetalk.http.netty.ApplicationProtocolNames.HTTP_1_1;
 import static io.servicetalk.http.netty.ApplicationProtocolNames.HTTP_2;
-import static io.servicetalk.http.netty.DefaultSingleAddressHttpClientBuilder.reservedConnectionsPipelineEnabled;
 
 final class AlpnLBHttpConnectionFactory<ResolvedAddress> extends AbstractLBHttpConnectionFactory<ResolvedAddress> {
 
@@ -72,7 +71,7 @@ final class AlpnLBHttpConnectionFactory<ResolvedAddress> extends AbstractLBHttpC
                     return StreamingConnectionFactory.createConnection(channel, executionContext, config,
                             NoopChannelInitializer.INSTANCE)
                             .map(conn -> new PipelinedStreamingHttpConnection(conn, config, executionContext,
-                                            reqRespFactory);
+                                            reqRespFactory));
                 case HTTP_2:
                     return H2ClientParentConnectionContext.initChannel(channel,
                             executionContext.bufferAllocator(), executionContext.executor(),
