@@ -70,55 +70,42 @@ abstract class AbstractHttpConfig<TcpConfig, ReadOnlyView> {
     abstract ReadOnlyView asReadOnly();
 
     final void protocols(final ProtocolConfig... protocols) {
-        // reset current configs:
+        requireNonNull(protocols);
+        if (protocols.length < 1) {
+            throw new IllegalArgumentException("A list of protocols should contain at least one ProtocolConfig");
+        }
+
         h1Config = null;
         h2Config = null;
-
         for (ProtocolConfig protocol : protocols) {
             if (protocol instanceof H1ProtocolConfig) {
                 h1Config((H1ProtocolConfig) protocol);
-            }
-            if (protocol instanceof H2ProtocolConfig) {
+            } else if (protocol instanceof H2ProtocolConfig) {
                 h2Config((H2ProtocolConfig) protocol);
+            } else {
+                throw new IllegalArgumentException("Unsupported ProtocolConfig: " + protocol.getClass().getName() +
+                        ", see " + HttpProtocolConfigs.class.getName());
             }
-        }
-
-        if (h1Config == null && h2Config == null) {
-            throw new IllegalStateException("No supported HTTP configuration provided");
         }
     }
 
-    private void h1Config(@Nullable final H1ProtocolConfig h1Config) {
+    private void h1Config(final H1ProtocolConfig h1Config) {
+        if (this.h1Config != null) {
+            throw new IllegalArgumentException("Duplicated configuration for HTTP/1.1 was found");
+        }
         this.h1Config = h1Config;
-        if (h2Config != null) {
-            if (h1Config != null) {
-                supportedAlpnProtocols = unmodifiableList(asList(h2Config.alpnId(), h1Config.alpnId()));
-            } else {
-                supportedAlpnProtocols = singletonList(h2Config.alpnId());
-            }
-        } else {
-            // We intentionally do not configure a list of ALPN IDs when only h1Config is provided, because it's
-            // not required for HTTP/1.1 and users' environment may not support ALPN
-            supportedAlpnProtocols = emptyList();
-        }
+        // We intentionally do not configure a list of ALPN IDs when only h1Config is provided, because it's
+        // not required for HTTP/1.1 and users' environment may not support ALPN
+        supportedAlpnProtocols = h2Config == null ? emptyList() :
+                unmodifiableList(asList(h2Config.alpnId(), h1Config.alpnId()));
     }
 
-    private void h2Config(@Nullable final H2ProtocolConfig h2Config) {
-        this.h2Config = h2Config;
-        if (h1Config != null) {
-            if (h2Config != null) {
-                supportedAlpnProtocols = unmodifiableList(asList(h1Config.alpnId(), h2Config.alpnId()));
-            } else {
-                // We intentionally do not configure a list of ALPN IDs when only h1Config is provided, because it's
-                // not required for HTTP/1.1 and users' environment may not support ALPN
-                supportedAlpnProtocols = emptyList();
-            }
-        } else {
-            if (h2Config != null) {
-                supportedAlpnProtocols = singletonList(h2Config.alpnId());
-            } else {
-                supportedAlpnProtocols = emptyList();
-            }
+    private void h2Config(final H2ProtocolConfig h2Config) {
+        if (this.h2Config != null) {
+            throw new IllegalArgumentException("Duplicated configuration for HTTP/2 was found");
         }
+        this.h2Config = h2Config;
+        supportedAlpnProtocols = h1Config == null ? singletonList(h2Config.alpnId()) :
+                unmodifiableList(asList(h1Config.alpnId(), h2Config.alpnId()));
     }
 }

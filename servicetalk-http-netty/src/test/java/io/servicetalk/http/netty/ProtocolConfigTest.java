@@ -16,15 +16,22 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
+import io.servicetalk.http.api.HttpServerBuilder;
+import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
+import io.servicetalk.transport.api.HostAndPort;
+import io.servicetalk.transport.api.ProtocolConfig;
 
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.Timeout;
 
+import java.net.InetSocketAddress;
+
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h1Default;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h2Default;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
+import static org.hamcrest.Matchers.startsWith;
 import static org.junit.rules.ExpectedException.none;
 
 public class ProtocolConfigTest {
@@ -37,35 +44,115 @@ public class ProtocolConfigTest {
 
     @Test
     public void clientDoesNotSupportH2cUpgrade() {
+        SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builder =
+                HttpClients.forSingleAddress("localhost", 8080)
+                        .protocols(h2Default(), h1Default());
+
         expectedException.expect(IllegalStateException.class);
         expectedException.expectMessage("Cleartext HTTP/1.1 -> HTTP/2 (h2c) upgrade is not supported");
-        HttpClients.forSingleAddress("localhost", 8080)
-                .protocols(h2Default(), h1Default())
-                .build();
+        builder.build();
     }
 
     @Test
     public void serverDoesNotSupportH2cUpgrade() {
+        HttpServerBuilder builder = HttpServers.forAddress(localAddress(0))
+                .protocols(h2Default(), h1Default());
+
         expectedException.expect(IllegalStateException.class);
         expectedException.expectMessage("Cleartext HTTP/1.1 -> HTTP/2 (h2c) upgrade is not supported");
-        HttpServers.forAddress(localAddress(0))
-                .protocols(h2Default(), h1Default())
-                .listenBlocking((ctx, request, responseFactory) -> responseFactory.noContent());
+        builder.listenBlocking((ctx, request, responseFactory) -> responseFactory.noContent());
+    }
+
+    @Test
+    public void clientWithNullProtocolConfig() {
+        SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builder =
+                HttpClients.forSingleAddress("localhost", 8080);
+
+        expectedException.expect(NullPointerException.class);
+        builder.protocols(null);
+    }
+
+    @Test
+    public void serverWithNullProtocolConfig() {
+        HttpServerBuilder builder = HttpServers.forAddress(localAddress(0));
+
+        expectedException.expect(NullPointerException.class);
+        builder.protocols(null);
+    }
+
+    @Test
+    public void clientWithEmptyProtocolConfig() {
+        SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builder =
+                HttpClients.forSingleAddress("localhost", 8080);
+
+        expectedException.expect(IllegalArgumentException.class);
+        expectedException.expectMessage("A list of protocols should contain at least one ProtocolConfig");
+        builder.protocols(new ProtocolConfig[0]);
+    }
+
+    @Test
+    public void serverWithEmptyProtocolConfig() {
+        HttpServerBuilder builder = HttpServers.forAddress(localAddress(0));
+
+        expectedException.expect(IllegalArgumentException.class);
+        expectedException.expectMessage("A list of protocols should contain at least one ProtocolConfig");
+        builder.protocols(new ProtocolConfig[0]);
     }
 
     @Test
     public void clientWithUnsupportedProtocolConfig() {
-        expectedException.expect(IllegalStateException.class);
-        expectedException.expectMessage("No supported HTTP configuration provided");
-        HttpClients.forSingleAddress("localhost", 8080)
-                .protocols(() -> "unknown");
+        SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builder =
+                HttpClients.forSingleAddress("localhost", 8080);
+
+        expectedException.expect(IllegalArgumentException.class);
+        expectedException.expectMessage(startsWith("Unsupported ProtocolConfig"));
+        builder.protocols(() -> "unknown");
     }
 
     @Test
     public void serverWithUnsupportedProtocolConfig() {
-        expectedException.expect(IllegalStateException.class);
-        expectedException.expectMessage("No supported HTTP configuration provided");
-        HttpServers.forAddress(localAddress(0))
-                .protocols(() -> "unknown");
+        HttpServerBuilder builder = HttpServers.forAddress(localAddress(0));
+
+        expectedException.expect(IllegalArgumentException.class);
+        expectedException.expectMessage(startsWith("Unsupported ProtocolConfig"));
+        builder.protocols(() -> "unknown");
+    }
+
+    @Test
+    public void clientWithDuplicatedH1ProtocolConfig() {
+        SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builder =
+                HttpClients.forSingleAddress("localhost", 8080);
+
+        expectedException.expect(IllegalArgumentException.class);
+        expectedException.expectMessage(startsWith("Duplicated configuration"));
+        builder.protocols(h1Default(), h1Default());
+    }
+
+    @Test
+    public void clientWithDuplicatedH2ProtocolConfig() {
+        SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> builder =
+                HttpClients.forSingleAddress("localhost", 8080);
+
+        expectedException.expect(IllegalArgumentException.class);
+        expectedException.expectMessage(startsWith("Duplicated configuration"));
+        builder.protocols(h2Default(), h2Default());
+    }
+
+    @Test
+    public void serverWithDuplicatedH1ProtocolConfig() {
+        HttpServerBuilder builder = HttpServers.forAddress(localAddress(0));
+
+        expectedException.expect(IllegalArgumentException.class);
+        expectedException.expectMessage(startsWith("Duplicated configuration"));
+        builder.protocols(h1Default(), h1Default());
+    }
+
+    @Test
+    public void serverWithDuplicatedH2ProtocolConfig() {
+        HttpServerBuilder builder = HttpServers.forAddress(localAddress(0));
+
+        expectedException.expect(IllegalArgumentException.class);
+        expectedException.expectMessage(startsWith("Duplicated configuration"));
+        builder.protocols(h2Default(), h2Default());
     }
 }
