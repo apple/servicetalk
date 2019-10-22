@@ -18,7 +18,6 @@ package io.servicetalk.grpc.api;
 import io.servicetalk.transport.api.ServerSecurityConfigurator;
 
 import java.io.InputStream;
-import java.util.Collection;
 import java.util.function.Supplier;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.TrustManagerFactory;
@@ -35,11 +34,6 @@ public interface GrpcServerSecurityConfigurator extends ServerSecurityConfigurat
 
     @Override
     GrpcServerSecurityConfigurator protocols(String... protocols);
-
-    @Override
-    GrpcServerSecurityConfigurator applicationProtocolNegotiation(
-            ApplicationProtocolNegotiation apn, SelectorFailureBehavior selectorBehavior,
-            SelectedListenerFailureBehavior selectedBehavior, Collection<String> supportedProtocols);
 
     @Override
     GrpcServerSecurityConfigurator ciphers(Iterable<String> ciphers);

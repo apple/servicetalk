@@ -39,9 +39,10 @@ final class StreamingConnectionFactory {
     static <ResolvedAddress> Single<? extends NettyConnection<Object, Object>> buildStreaming(
             final HttpExecutionContext executionContext, final ResolvedAddress resolvedAddress,
             final ReadOnlyHttpClientConfig roConfig) {
-        return TcpConnector.connect(null, resolvedAddress, roConfig.tcpClientConfig(), executionContext)
+        // We disable auto read so we can handle stuff in the ConnectionFilter before we accept any content.
+        return TcpConnector.connect(null, resolvedAddress, roConfig.tcpConfig(), false, executionContext)
                 .flatMap(channel -> createConnection(channel, executionContext, roConfig,
-                        new TcpClientChannelInitializer(roConfig.tcpClientConfig(), roConfig.hasProxy())));
+                        new TcpClientChannelInitializer(roConfig.tcpConfig(), roConfig.hasProxy())));
     }
 
     static Single<? extends DefaultNettyConnection<Object, Object>> createConnection(final Channel channel,
@@ -50,8 +51,8 @@ final class StreamingConnectionFactory {
         final CloseHandler closeHandler = forPipelinedRequestResponse(true, channel.config());
         return showPipeline(DefaultNettyConnection.initChannel(channel, executionContext.bufferAllocator(),
                 executionContext.executor(), new TerminalPredicate<>(LAST_CHUNK_PREDICATE), closeHandler,
-                config.tcpClientConfig().flushStrategy(),
-                initializer.andThen(new HttpClientChannelInitializer(config, closeHandler)),
+                config.tcpConfig().flushStrategy(),
+                initializer.andThen(new HttpClientChannelInitializer(config.h1Config(), closeHandler)),
                 executionContext.executionStrategy()), "HTTP/1.1", channel);
     }
 }

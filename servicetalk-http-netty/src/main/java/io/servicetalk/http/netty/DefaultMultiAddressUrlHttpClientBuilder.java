@@ -33,7 +33,6 @@ import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.FilterableStreamingHttpLoadBalancedConnection;
 import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpExecutionStrategy;
-import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.MultiAddressHttpClientBuilder;
@@ -51,6 +50,7 @@ import io.servicetalk.http.utils.RedirectingHttpRequesterFilter;
 import io.servicetalk.transport.api.ClientSecurityConfigurator;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.IoExecutor;
+import io.servicetalk.transport.api.ProtocolConfig;
 
 import java.net.InetSocketAddress;
 import java.net.SocketOption;
@@ -58,7 +58,6 @@ import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.BiConsumer;
-import java.util.function.BiPredicate;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
@@ -364,70 +363,8 @@ final class DefaultMultiAddressUrlHttpClientBuilder
     }
 
     @Override
-    public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> headersFactory(
-            final HttpHeadersFactory headersFactory) {
-        builderTemplate.headersFactory(headersFactory);
-        return this;
-    }
-
-    @Override
-    protected MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> h2HeadersFactory(
-            final HttpHeadersFactory headersFactory) {
-        builderTemplate.h2HeadersFactory(headersFactory);
-        return this;
-    }
-
-    @Override
-    protected MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> h2HeadersSensitivityDetector(
-            final BiPredicate<CharSequence, CharSequence> h2HeadersSensitivityDetector) {
-        builderTemplate.h2HeadersSensitivityDetector(h2HeadersSensitivityDetector);
-        return this;
-    }
-
-    @Override
-    protected MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> h2PriorKnowledge(
-            final boolean h2PriorKnowledge) {
-        builderTemplate.h2PriorKnowledge(h2PriorKnowledge);
-        return this;
-    }
-
-    @Override
-    protected MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> h2FrameLogger(final String h2FrameLogger) {
-        builderTemplate.h2FrameLogger(h2FrameLogger);
-        return this;
-    }
-
-    @Override
-    public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> maxInitialLineLength(
-            final int maxInitialLineLength) {
-        builderTemplate.maxInitialLineLength(maxInitialLineLength);
-        return this;
-    }
-
-    @Override
-    public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> maxHeaderSize(final int maxHeaderSize) {
-        builderTemplate.maxHeaderSize(maxHeaderSize);
-        return this;
-    }
-
-    @Override
-    public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> headersEncodedSizeEstimate(
-            final int headersEncodedSizeEstimate) {
-        builderTemplate.headersEncodedSizeEstimate(headersEncodedSizeEstimate);
-        return this;
-    }
-
-    @Override
-    public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> trailersEncodedSizeEstimate(
-            final int trailersEncodedSizeEstimate) {
-        builderTemplate.trailersEncodedSizeEstimate(trailersEncodedSizeEstimate);
-        return this;
-    }
-
-    @Override
-    public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> maxPipelinedRequests(
-            final int maxPipelinedRequests) {
-        builderTemplate.maxPipelinedRequests(maxPipelinedRequests);
+    public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> protocols(ProtocolConfig... protocols) {
+        builderTemplate.protocols(protocols);
         return this;
     }
 

@@ -57,6 +57,7 @@ import static io.servicetalk.http.api.CharSequences.newAsciiString;
 import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.netty.HttpClients.forResolvedAddress;
+import static io.servicetalk.http.netty.HttpProtocolConfigs.h1;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static java.lang.Thread.currentThread;
@@ -97,7 +98,8 @@ public abstract class AbstractHttpServiceAsyncContextTest {
                 final int finalI = i;
                 executorService.execute(() -> {
                     SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> clientBuilder =
-                            forResolvedAddress(serverHostAndPort(ctx)).maxPipelinedRequests(numRequests);
+                            forResolvedAddress(serverHostAndPort(ctx))
+                                    .protocols(h1().maxPipelinedRequests(numRequests).build());
                     try (StreamingHttpClient client = (!useImmediate ? clientBuilder :
                             clientBuilder.executionStrategy(noOffloadsStrategy())).buildStreaming()) {
                         try (StreamingHttpConnection connection = client.reserveConnection(client.get("/"))

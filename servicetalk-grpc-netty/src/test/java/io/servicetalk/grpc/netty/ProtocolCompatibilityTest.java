@@ -88,9 +88,6 @@ import static io.servicetalk.grpc.api.GrpcExecutionStrategies.defaultStrategy;
 import static io.servicetalk.grpc.api.GrpcExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.test.resources.DefaultTestCerts.loadServerKey;
 import static io.servicetalk.test.resources.DefaultTestCerts.loadServerPem;
-import static io.servicetalk.transport.api.SecurityConfigurator.ApplicationProtocolNegotiation.ALPN;
-import static io.servicetalk.transport.api.SecurityConfigurator.SelectedListenerFailureBehavior.ACCEPT;
-import static io.servicetalk.transport.api.SecurityConfigurator.SelectorFailureBehavior.NO_ADVERTISE;
 import static io.servicetalk.transport.api.SecurityConfigurator.SslProvider.OPENSSL;
 import static java.util.Collections.singleton;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -614,17 +611,16 @@ public class ProtocolCompatibilityTest {
 
     private static CompatClient serviceTalkClient(final SocketAddress serverAddress, final boolean ssl) {
         final GrpcClientBuilder<InetSocketAddress, InetSocketAddress> builder =
-                GrpcClients.forResolvedAddress((InetSocketAddress) serverAddress).h2PriorKnowledge(true);
+                GrpcClients.forResolvedAddress((InetSocketAddress) serverAddress);
         if (ssl) {
             builder.secure().provider(OPENSSL)
-                    .applicationProtocolNegotiation(ALPN, NO_ADVERTISE, ACCEPT, ALPN_SUPPORTED_PROTOCOLS)
                     .trustManager(DefaultTestCerts::loadServerPem).commit();
         }
         return builder.build(new Compat.ClientFactory());
     }
 
     private static GrpcServerBuilder serviceTalkServerBuilder(final ErrorMode errorMode, final boolean ssl) {
-        final GrpcServerBuilder serverBuilder = GrpcServers.forPort(0).h2PriorKnowledge(true)
+        final GrpcServerBuilder serverBuilder = GrpcServers.forPort(0)
                 .appendHttpServiceFilter(service -> new StreamingHttpServiceFilter(service) {
                     @Override
                     public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
@@ -640,7 +636,6 @@ public class ProtocolCompatibilityTest {
                 });
         return ssl ?
                 serverBuilder.secure().provider(OPENSSL)
-                        .applicationProtocolNegotiation(ALPN, NO_ADVERTISE, ACCEPT, ALPN_SUPPORTED_PROTOCOLS)
                         .commit(DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey) :
                 serverBuilder;
     }

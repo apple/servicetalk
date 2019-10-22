@@ -21,7 +21,6 @@ import io.servicetalk.transport.netty.internal.ClientSecurityConfig;
 import io.servicetalk.transport.netty.internal.ReadOnlyClientSecurityConfig;
 
 import java.io.InputStream;
-import java.util.Collection;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import javax.net.ssl.KeyManagerFactory;
@@ -62,14 +61,6 @@ final class DefaultSingleAddressHttpClientSecurityConfigurator<U, R>
     @Override
     public SingleAddressHttpClientSecurityConfigurator<U, R> protocols(final String... protocols) {
         config.protocols(protocols);
-        return this;
-    }
-
-    @Override
-    public SingleAddressHttpClientSecurityConfigurator<U, R> applicationProtocolNegotiation(
-            final ApplicationProtocolNegotiation apn, final SelectorFailureBehavior selectorBehavior,
-            final SelectedListenerFailureBehavior selectedBehavior, final Collection<String> supportedProtocols) {
-        config.applicationProtocolNegotiation(apn, selectorBehavior, selectedBehavior, supportedProtocols);
         return this;
     }
 

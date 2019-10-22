@@ -19,20 +19,17 @@ import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpExecutionStrategy;
-import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.HttpServerBuilder;
 import io.servicetalk.http.api.HttpServerSecurityConfigurator;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.transport.api.ConnectionAcceptor;
 import io.servicetalk.transport.api.IoExecutor;
+import io.servicetalk.transport.api.ProtocolConfig;
 import io.servicetalk.transport.api.ServerContext;
 
 import java.net.SocketAddress;
 import java.net.SocketOption;
-import java.util.function.BiPredicate;
 import javax.annotation.Nullable;
-
-import static io.servicetalk.http.netty.AlpnChannelSingle.useAlpn;
 
 final class DefaultHttpServerBuilder extends HttpServerBuilder {
 
@@ -45,64 +42,8 @@ final class DefaultHttpServerBuilder extends HttpServerBuilder {
     }
 
     @Override
-    public HttpServerBuilder headersFactory(final HttpHeadersFactory headersFactory) {
-        config.headersFactory(headersFactory);
-        return this;
-    }
-
-    @Override
-    public HttpServerBuilder h2HeadersFactory(final HttpHeadersFactory headersFactory) {
-        config.h2ServerConfig().h2HeadersFactory(headersFactory);
-        return this;
-    }
-
-    @Override
-    public HttpServerBuilder h2HeadersSensitivityDetector(
-            final BiPredicate<CharSequence, CharSequence> h2HeadersSensitivityDetector) {
-        config.h2ServerConfig().h2HeadersSensitivityDetector(h2HeadersSensitivityDetector);
-        return this;
-    }
-
-    @Override
-    public HttpServerBuilder h2PriorKnowledge(final boolean h2PriorKnowledge) {
-        config.tcpConfig().autoRead(h2PriorKnowledge);
-        config.h2PriorKnowledge(h2PriorKnowledge);
-        return this;
-    }
-
-    @Override
-    public HttpServerBuilder h2FrameLogger(@Nullable final String h2FrameLogger) {
-        config.h2ServerConfig().h2FrameLogger(h2FrameLogger);
-        return this;
-    }
-
-    @Override
-    public HttpServerBuilder clientCloseTimeout(final long clientCloseTimeoutMs) {
-        config.clientCloseTimeout(clientCloseTimeoutMs);
-        return this;
-    }
-
-    @Override
-    public HttpServerBuilder maxInitialLineLength(final int maxInitialLineLength) {
-        config.maxInitialLineLength(maxInitialLineLength);
-        return this;
-    }
-
-    @Override
-    public HttpServerBuilder maxHeaderSize(final int maxHeaderSize) {
-        config.maxHeaderSize(maxHeaderSize);
-        return this;
-    }
-
-    @Override
-    public HttpServerBuilder headersEncodedSizeEstimate(final int headersEncodedSizeEstimate) {
-        config.headersEncodedSizeEstimate(headersEncodedSizeEstimate);
-        return this;
-    }
-
-    @Override
-    public HttpServerBuilder trailersEncodedSizeEstimate(final int trailersEncodedSizeEstimate) {
-        config.trailersEncodedSizeEstimate(trailersEncodedSizeEstimate);
+    public HttpServerBuilder protocols(final ProtocolConfig... protocols) {
+        config.protocols(protocols);
         return this;
     }
 
@@ -164,7 +105,7 @@ final class DefaultHttpServerBuilder extends HttpServerBuilder {
             return H2ServerParentConnectionContext.bind(httpExecutionContext, roConfig, address, connectionAcceptor,
                     service, drainRequestPayloadBody);
         }
-        return useAlpn(roConfig.tcpConfig()) ?
+        return roConfig.tcpConfig().isAlpnConfigured() ?
                 AlpnServerContext.bind(httpExecutionContext, roConfig, address, connectionAcceptor,
                         service, drainRequestPayloadBody) :
                 NettyHttpServer.bind(httpExecutionContext, roConfig, address, connectionAcceptor,

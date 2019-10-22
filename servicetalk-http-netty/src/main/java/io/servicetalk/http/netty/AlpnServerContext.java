@@ -35,8 +35,8 @@ import java.net.SocketAddress;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Single.failed;
-import static io.servicetalk.http.netty.ApplicationProtocolNames.HTTP_1_1;
-import static io.servicetalk.http.netty.ApplicationProtocolNames.HTTP_2;
+import static io.servicetalk.http.netty.AlpnIds.HTTP_1_1;
+import static io.servicetalk.http.netty.AlpnIds.HTTP_2;
 
 final class AlpnServerContext {
 
@@ -52,11 +52,13 @@ final class AlpnServerContext {
                                       @Nullable final ConnectionAcceptor connectionAcceptor,
                                       final StreamingHttpService service,
                                       final boolean drainRequestPayloadBody) {
-
+        assert config.h1Config() != null && config.h2Config() != null;
         final ReadOnlyTcpServerConfig tcpConfig = config.tcpConfig();
-        assert tcpConfig.isSniEnabled() || tcpConfig.sslContext() != null;
+        assert tcpConfig.sslContext() != null;
 
-        return TcpServerBinder.bind(listenAddress, tcpConfig, executionContext, connectionAcceptor,
+        // We disable auto read by default so we can handle stuff in the ConnectionFilter before we accept any content.
+        // In case ALPN negotiates h2, h2 connection MUST enable auto read for its Channel.
+        return TcpServerBinder.bind(listenAddress, tcpConfig, false, executionContext, connectionAcceptor,
                 channel -> initChannel(listenAddress, channel, config, executionContext, service,
                         drainRequestPayloadBody),
                 serverConnection -> {

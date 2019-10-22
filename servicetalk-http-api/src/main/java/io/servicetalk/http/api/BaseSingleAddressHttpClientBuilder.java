@@ -21,12 +21,11 @@ import io.servicetalk.client.api.LoadBalancerFactory;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.transport.api.IoExecutor;
+import io.servicetalk.transport.api.ProtocolConfig;
 
 import java.net.SocketOption;
-import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import javax.annotation.Nullable;
 
 abstract class BaseSingleAddressHttpClientBuilder<U, R, SDE extends ServiceDiscovererEvent<R>>
         extends HttpClientBuilder<U, R, SDE> {
@@ -44,37 +43,7 @@ abstract class BaseSingleAddressHttpClientBuilder<U, R, SDE extends ServiceDisco
     public abstract BaseSingleAddressHttpClientBuilder<U, R, SDE> enableWireLogging(String loggerName);
 
     @Override
-    public abstract BaseSingleAddressHttpClientBuilder<U, R, SDE> headersFactory(HttpHeadersFactory headersFactory);
-
-    @Override
-    public abstract BaseSingleAddressHttpClientBuilder<U, R, SDE> h2HeadersFactory(HttpHeadersFactory headersFactory);
-
-    @Override
-    public abstract BaseSingleAddressHttpClientBuilder<U, R, SDE> h2HeadersSensitivityDetector(
-            BiPredicate<CharSequence, CharSequence> sensitivityDetector);
-
-    @Override
-    public abstract BaseSingleAddressHttpClientBuilder<U, R, SDE> h2PriorKnowledge(boolean h2PriorKnowledge);
-
-    @Override
-    public abstract BaseSingleAddressHttpClientBuilder<U, R, SDE> h2FrameLogger(@Nullable String h2FrameLogger);
-
-    @Override
-    public abstract BaseSingleAddressHttpClientBuilder<U, R, SDE> maxInitialLineLength(int maxInitialLineLength);
-
-    @Override
-    public abstract BaseSingleAddressHttpClientBuilder<U, R, SDE> maxHeaderSize(int maxHeaderSize);
-
-    @Override
-    public abstract BaseSingleAddressHttpClientBuilder<U, R, SDE> headersEncodedSizeEstimate(
-            int headersEncodedSizeEstimate);
-
-    @Override
-    public abstract BaseSingleAddressHttpClientBuilder<U, R, SDE> trailersEncodedSizeEstimate(
-            int trailersEncodedSizeEstimate);
-
-    @Override
-    public abstract BaseSingleAddressHttpClientBuilder<U, R, SDE> maxPipelinedRequests(int maxPipelinedRequests);
+    public abstract BaseSingleAddressHttpClientBuilder<U, R, SDE> protocols(ProtocolConfig... protocols);
 
     @Override
     public abstract BaseSingleAddressHttpClientBuilder<U, R, SDE> appendConnectionFilter(

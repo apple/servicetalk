@@ -67,11 +67,13 @@ public final class TcpConnector {
      * @param localAddress The local address to bind to, or {@code null}.
      * @param resolvedRemoteAddress The address to connect to. This address should already be resolved at this point.
      * @param config The {@link ReadOnlyTcpClientConfig} to use while connecting.
+     * @param autoRead if {@code true} auto read will be enabled for new {@link Channel}s.
      * @param executionContext The {@link ExecutionContext} to use for the returned {@link NettyConnection}.
      * @return A {@link Single} that completes with a new {@link Channel} when connected.
      */
     public static Single<Channel> connect(@Nullable SocketAddress localAddress, Object resolvedRemoteAddress,
-                                          ReadOnlyTcpClientConfig config, ExecutionContext executionContext) {
+                                          ReadOnlyTcpClientConfig config, boolean autoRead,
+                                          ExecutionContext executionContext) {
         requireNonNull(resolvedRemoteAddress);
         requireNonNull(config);
         requireNonNull(executionContext);
@@ -79,13 +81,14 @@ public final class TcpConnector {
             @Override
             protected void handleSubscribe(final Subscriber<? super Channel> subscriber) {
                 connectFutureToListener(localAddress, resolvedRemoteAddress, subscriber,
-                        connect0(localAddress, resolvedRemoteAddress, config, executionContext, subscriber));
+                        connect0(localAddress, resolvedRemoteAddress, config, autoRead, executionContext, subscriber));
             }
         };
     }
 
     private static Future<?> connect0(@Nullable SocketAddress localAddress, Object resolvedRemoteAddress,
-                                      ReadOnlyTcpClientConfig config, ExecutionContext executionContext,
+                                      ReadOnlyTcpClientConfig config, boolean autoRead,
+                                      ExecutionContext executionContext,
                                       SingleSource.Subscriber<? super Channel> subscriber) {
         // We have to subscribe before any possibility that we complete the single, so subscribe now and hookup the
         // cancellable after we get the future.
@@ -105,7 +108,7 @@ public final class TcpConnector {
             EventLoop loop = toEventLoopAwareNettyIoExecutor(executionContext.ioExecutor()).eventLoopGroup().next();
             if (!(resolvedRemoteAddress instanceof FileDescriptorSocketAddress)) {
                 return attachCancelSubscriber(connectWithBootstrap(localAddress, resolvedRemoteAddress, config,
-                        loop, executionContext.bufferAllocator(), handler), cancellable);
+                        autoRead, loop, executionContext.bufferAllocator(), handler), cancellable);
             }
             if (localAddress != null) {
                 return loop.newFailedFuture(new IllegalArgumentException("local address cannot be specified when " +
@@ -116,7 +119,7 @@ public final class TcpConnector {
                 return loop.newFailedFuture(new IllegalArgumentException(
                         FileDescriptorSocketAddress.class.getSimpleName() + " not supported"));
             }
-            return attachCancelSubscriber(initFileDescriptorBasedChannel(config, loop, channel,
+            return attachCancelSubscriber(initFileDescriptorBasedChannel(config, autoRead, loop, channel,
                     executionContext.bufferAllocator(), handler), cancellable);
         } catch (Throwable cause) {
             cancellable.delayedCancellable(IGNORE_CANCEL);
@@ -131,7 +134,7 @@ public final class TcpConnector {
 
     private static ChannelFuture connectWithBootstrap(
             @Nullable SocketAddress localAddress, Object resolvedRemoteAddress, ReadOnlyTcpClientConfig config,
-            EventLoop loop, BufferAllocator bufferAllocator, ChannelHandler handler) {
+            boolean autoRead, EventLoop loop, BufferAllocator bufferAllocator, ChannelHandler handler) {
         final SocketAddress nettyresolvedRemoteAddress = toNettyAddress(resolvedRemoteAddress);
         Bootstrap bs = new Bootstrap();
         bs.resolver(NoopNettyAddressResolverGroup.INSTANCE);
@@ -143,9 +146,7 @@ public final class TcpConnector {
             //noinspection unchecked
             bs.option(opt.getKey(), opt.getValue());
         }
-
-        // we disable auto read so we can handle stuff in the ConnectionFilter before we accept any content.
-        bs.option(ChannelOption.AUTO_READ, config.isAutoRead());
+        bs.option(ChannelOption.AUTO_READ, autoRead);
 
         // Set the correct ByteBufAllocator based on our BufferAllocator to minimize memory copies.
         bs.option(ChannelOption.ALLOCATOR, BufferUtil.getByteBufAllocator(bufferAllocator));
@@ -155,15 +156,13 @@ public final class TcpConnector {
     }
 
     private static ChannelFuture initFileDescriptorBasedChannel(
-            ReadOnlyTcpClientConfig config, EventLoop loop, Channel channel,
+            ReadOnlyTcpClientConfig config, boolean autoRead, EventLoop loop, Channel channel,
             BufferAllocator bufferAllocator, ChannelHandler handler) {
         for (@SuppressWarnings("rawtypes") Map.Entry<ChannelOption, Object> opt : config.options().entrySet()) {
             //noinspection unchecked
             channel.config().setOption(opt.getKey(), opt.getValue());
         }
-
-        // we disable auto read so we can handle stuff in the ConnectionFilter before we accept any content.
-        channel.config().setOption(ChannelOption.AUTO_READ, config.isAutoRead());
+        channel.config().setOption(ChannelOption.AUTO_READ, autoRead);
 
         // Set the correct ByteBufAllocator based on our BufferAllocator to minimize memory copies.
         channel.config().setAllocator(BufferUtil.getByteBufAllocator(bufferAllocator));

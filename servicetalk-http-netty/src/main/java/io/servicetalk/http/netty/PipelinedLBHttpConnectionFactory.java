@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,14 +48,17 @@ final class PipelinedLBHttpConnectionFactory<ResolvedAddress> extends AbstractLB
 
     @Override
     Single<FilterableStreamingHttpConnection> newFilterableConnection(final ResolvedAddress resolvedAddress) {
+        assert config.h1Config() != null;
         return buildStreaming(executionContext, resolvedAddress, config)
-                .map(conn -> new PipelinedStreamingHttpConnection(conn, config, executionContext, reqRespFactory));
+                .map(conn -> new PipelinedStreamingHttpConnection(conn, config.h1Config(), executionContext,
+                        reqRespFactory));
     }
 
     @Override
     ReservableRequestConcurrencyController newConcurrencyController(final FilterableStreamingHttpConnection connection,
                                                                     Completable onClosing) {
+        assert config.h1Config() != null;
         return newController(connection.transportEventStream(MAX_CONCURRENCY), onClosing,
-                config.maxPipelinedRequests());
+                config.h1Config().maxPipelinedRequests());
     }
 }

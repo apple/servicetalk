@@ -38,8 +38,8 @@ import javax.annotation.Nullable;
 import static io.servicetalk.client.api.internal.ReservableRequestConcurrencyControllers.newController;
 import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.http.api.HttpEventKey.MAX_CONCURRENCY;
-import static io.servicetalk.http.netty.ApplicationProtocolNames.HTTP_1_1;
-import static io.servicetalk.http.netty.ApplicationProtocolNames.HTTP_2;
+import static io.servicetalk.http.netty.AlpnIds.HTTP_1_1;
+import static io.servicetalk.http.netty.AlpnIds.HTTP_2;
 
 final class AlpnLBHttpConnectionFactory<ResolvedAddress> extends AbstractLBHttpConnectionFactory<ResolvedAddress> {
 
@@ -53,31 +53,38 @@ final class AlpnLBHttpConnectionFactory<ResolvedAddress> extends AbstractLBHttpC
                     FilterableStreamingHttpLoadBalancedConnection> protocolBinding) {
         super(config, executionContext, connectionFilterFunction, reqRespFactory, strategyInfluencer,
                 connectionFactoryFilter, protocolBinding);
+        assert config.h1Config() != null && config.h2Config() != null;
     }
 
     @Override
     Single<FilterableStreamingHttpConnection> newFilterableConnection(final ResolvedAddress resolvedAddress) {
         // This state is read only, so safe to keep a copy across Subscribers
-        final ReadOnlyTcpClientConfig roTcpClientConfig = config.tcpClientConfig();
-        return TcpConnector.connect(null, resolvedAddress, roTcpClientConfig, executionContext)
+        final ReadOnlyTcpClientConfig roTcpClientConfig = config.tcpConfig();
+        // We disable auto read by default so we can handle stuff in the ConnectionFilter before we accept any content.
+        // In case ALPN negotiates h2, h2 connection MUST enable auto read for its Channel.
+        return TcpConnector.connect(null, resolvedAddress, roTcpClientConfig, false, executionContext)
                 .flatMap(this::createConnection);
     }
 
     private Single<FilterableStreamingHttpConnection> createConnection(final Channel channel) {
         return new AlpnChannelSingle(channel,
-                new TcpClientChannelInitializer(config.tcpClientConfig()), false).flatMap(protocol -> {
+                new TcpClientChannelInitializer(config.tcpConfig()), false).flatMap(protocol -> {
             switch (protocol) {
                 case HTTP_1_1:
+                    final H1ProtocolConfig h1Config = config.h1Config();
+                    assert h1Config != null;
                     return StreamingConnectionFactory.createConnection(channel, executionContext, config,
                             NoopChannelInitializer.INSTANCE)
-                            .map(conn -> new PipelinedStreamingHttpConnection(conn, config, executionContext,
-                                            reqRespFactory));
+                            .map(conn -> new PipelinedStreamingHttpConnection(conn, h1Config, executionContext,
+                                    reqRespFactory));
                 case HTTP_2:
+                    final H2ProtocolConfig h2Config = config.h2Config();
+                    assert h2Config != null;
                     return H2ClientParentConnectionContext.initChannel(channel,
                             executionContext.bufferAllocator(), executionContext.executor(),
-                            config.h2ClientConfig(), reqRespFactory, config.tcpClientConfig().flushStrategy(),
+                            h2Config, reqRespFactory, config.tcpConfig().flushStrategy(),
                             executionContext.executionStrategy(),
-                            new H2ClientParentChannelInitializer(config.h2ClientConfig()));
+                            new H2ClientParentChannelInitializer(h2Config));
                 default:
                     return failed(new IllegalStateException("Unknown ALPN protocol negotiated: " + protocol));
             }

@@ -48,6 +48,7 @@ import java.util.concurrent.Executors;
 
 import static io.servicetalk.concurrent.api.Single.collectUnordered;
 import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
+import static io.servicetalk.http.netty.HttpProtocolConfigs.h1;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 
 public class ClientClosureRaceTest {
@@ -121,28 +122,32 @@ public class ClientClosureRaceTest {
 
     @Test
     public void testSequential() throws Exception {
-        final HttpClient client = newClientBuilder().maxPipelinedRequests(1).build();
+        final HttpClient client = newClientBuilder().build();
         runIterations(() -> client.request(client.get("/foo")).flatMap(
                 response -> client.request(client.get("/bar"))));
     }
 
     @Test
     public void testSequentialPosts() throws Exception {
-        final HttpClient client = newClientBuilder().maxPipelinedRequests(1).build();
+        final HttpClient client = newClientBuilder().build();
         runIterations(() -> client.request(client.post("/foo").payloadBody("Some payload", textSerializer())).flatMap(
                 response -> client.request(client.post("/bar").payloadBody("Another payload", textSerializer()))));
     }
 
     @Test
     public void testPipelined() throws Exception {
-        final HttpClient client = newClientBuilder().maxPipelinedRequests(2).build();
+        final HttpClient client = newClientBuilder()
+                .protocols(h1().maxPipelinedRequests(2).build())
+                .build();
         runIterations(() -> collectUnordered(client.request(client.get("/foo")),
                 client.request(client.get("/bar"))));
     }
 
     @Test
     public void testPipelinedPosts() throws Exception {
-        final HttpClient client = newClientBuilder().maxPipelinedRequests(2).build();
+        final HttpClient client = newClientBuilder()
+                .protocols(h1().maxPipelinedRequests(2).build())
+                .build();
         runIterations(() -> collectUnordered(
                 client.request(client.get("/foo").payloadBody("Some payload", textSerializer())),
                 client.request(client.get("/bar").payloadBody("Another payload", textSerializer()))));

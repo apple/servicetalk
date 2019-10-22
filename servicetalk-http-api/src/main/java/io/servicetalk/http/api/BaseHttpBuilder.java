@@ -17,12 +17,13 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.transport.api.IoExecutor;
+import io.servicetalk.transport.api.ProtocolConfig;
+
+import org.slf4j.event.Level;
 
 import java.net.SocketOption;
-import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import javax.annotation.Nullable;
 
 import static io.servicetalk.http.api.StrategyInfluencerAwareConversions.toConditionalConnectionFilterFactory;
 
@@ -58,7 +59,7 @@ abstract class BaseHttpBuilder<ResolvedAddress> {
     public abstract BaseHttpBuilder<ResolvedAddress> executionStrategy(HttpExecutionStrategy strategy);
 
     /**
-     * Add a {@link SocketOption} for all connections created by this builder.
+     * Adds a {@link SocketOption} for all connections created by this builder.
      *
      * @param option the option to apply.
      * @param value the value.
@@ -68,7 +69,9 @@ abstract class BaseHttpBuilder<ResolvedAddress> {
     public abstract <T> BaseHttpBuilder<ResolvedAddress> socketOption(SocketOption<T> option, T value);
 
     /**
-     * Enable wire-logging for connections created by this builder. All wire events will be logged at trace level.
+     * Enables wire-logging for connections created by this builder.
+     * <p>
+     * All wire events will be logged at {@link Level#TRACE TRACE} level.
      *
      * @param loggerName The name of the logger to log wire events.
      * @return {@code this}.
@@ -76,104 +79,18 @@ abstract class BaseHttpBuilder<ResolvedAddress> {
     public abstract BaseHttpBuilder<ResolvedAddress> enableWireLogging(String loggerName);
 
     /**
-     * Set the {@link HttpHeadersFactory} to be used for creating {@link HttpHeaders} when decoding responses.
-     *
-     * @param headersFactory the {@link HttpHeadersFactory} to use.
-     * @return {@code this}.
-     */
-    public abstract BaseHttpBuilder<ResolvedAddress> headersFactory(HttpHeadersFactory headersFactory);
-
-    /**
-     * Set the {@link HttpHeadersFactory} to use when HTTP/2 is used.
-     *
-     * @param headersFactory the {@link HttpHeadersFactory} to use when HTTP/2 is used.
-     * @return {@code this.}
-     */
-    abstract BaseHttpBuilder<ResolvedAddress> h2HeadersFactory(HttpHeadersFactory headersFactory);
-
-    /**
-     * Set the sensitivity detector to determine if a header {@code name}/{@code value} pair should be treated as
-     * <a href="https://tools.ietf.org/html/rfc7541#section-7.1.3">sensitive</a>.
-     *
-     * @param sensitivityDetector the {@link BiPredicate}&lt;{@link CharSequence}, {@link CharSequence}&gt; that returns
-     * {@code true} if a header &lt;{@code name}, {@code value}&gt; pair should be treated as
-     * <a href="https://tools.ietf.org/html/rfc7541#section-7.1.3">sensitive</a>, {@code false} otherwise.
-     * @return {@code this.}
-     */
-    abstract BaseHttpBuilder<ResolvedAddress> h2HeadersSensitivityDetector(
-            BiPredicate<CharSequence, CharSequence> sensitivityDetector);
-
-    /**
-     * Enable HTTP/2 via
-     * <a href="https://tools.ietf.org/html/rfc7540#section-3.4">Prior Knowledge</a>.
-     * @param h2PriorKnowledge {@code true} to enable HTTP/2 via
-     * <a href="https://tools.ietf.org/html/rfc7540#section-3.4">Prior Knowledge</a>.
-     *
-     * @return {@code this}.
-     */
-    abstract BaseHttpBuilder<ResolvedAddress> h2PriorKnowledge(boolean h2PriorKnowledge);
-
-    /**
-     * Set the name of the frame logger when HTTP/2 is used.
-     *
-     * @param h2FrameLogger the name of the frame logger, or {@code null} to disable.
-     * @return {@code this}.
-     */
-    abstract BaseHttpBuilder<ResolvedAddress> h2FrameLogger(@Nullable String h2FrameLogger);
-
-    /**
-     * Set the maximum size of the initial HTTP line for created connections.
-     *
-     * @param maxInitialLineLength The {@link StreamingHttpConnection} will throw TooLongFrameException if the initial
-     * HTTP line exceeds this length.
-     * @return {@code this}.
-     */
-    public abstract BaseHttpBuilder<ResolvedAddress> maxInitialLineLength(int maxInitialLineLength);
-
-    /**
-     * Set the maximum total size of HTTP headers, which could be sent by created connections.
-     *
-     * @param maxHeaderSize The {@link StreamingHttpConnection} will throw TooLongFrameException if the total size of
-     * all HTTP headers exceeds this length.
-     * @return {@code this}.
-     */
-    public abstract BaseHttpBuilder<ResolvedAddress> maxHeaderSize(int maxHeaderSize);
-
-    /**
-     * Set the value used to calculate an exponential moving average of the encoded size of the initial line and the
-     * headers for a guess for future buffer allocations.
-     *
-     * @param headersEncodedSizeEstimate An estimated size of encoded initial line and headers.
-     * @return {@code this}.
-     */
-    public abstract BaseHttpBuilder<ResolvedAddress> headersEncodedSizeEstimate(
-            int headersEncodedSizeEstimate);
-
-    /**
-     * Set the value used to calculate an exponential moving average of the encoded size of the trailers for a guess for
-     * future buffer allocations.
-     *
-     * @param trailersEncodedSizeEstimate An estimated size of encoded trailers.
-     * @return {@code this}.
-     */
-    public abstract BaseHttpBuilder<ResolvedAddress> trailersEncodedSizeEstimate(
-            int trailersEncodedSizeEstimate);
-
-    /**
-     * Set the maximum number of pipelined HTTP requests to queue up, anything above this will be rejected,
-     * 1 means pipelining is disabled and requests and responses are processed sequentially.
+     * Configurations of various HTTP protocol versions.
      * <p>
-     * Request pipelining requires HTTP 1.1.
-     * <p>
-     * <b>Note:</b> {@link HttpClient#reserveConnection reserved connections} will not be restricted by this setting.
+     * <b>Note:</b> the order of specified protocols will reflect on priorities for ALPN in case the connections are
+     * secured.
      *
-     * @param maxPipelinedRequests number of pipelined requests to queue up
+     * @param protocols {@link ProtocolConfig} for each protocol that should be supported.
      * @return {@code this}.
      */
-    public abstract BaseHttpBuilder<ResolvedAddress> maxPipelinedRequests(int maxPipelinedRequests);
+    public abstract BaseHttpBuilder<ResolvedAddress> protocols(ProtocolConfig... protocols);
 
     /**
-     * Disable automatically setting {@code Host} headers by inferring from the address or {@link StreamingHttpRequest}.
+     * Disables automatically setting {@code Host} headers by inferring from the address or {@link HttpMetaData}.
      * <p>
      * This setting disables the default filter such that no {@code Host} header will be manipulated.
      *
@@ -183,7 +100,7 @@ abstract class BaseHttpBuilder<ResolvedAddress> {
     public abstract BaseHttpBuilder<ResolvedAddress> disableHostHeaderFallback();
 
     /**
-     * Append the filter to the chain of filters used to decorate the {@link StreamingHttpConnection} created by this
+     * Appends the filter to the chain of filters used to decorate the {@link StreamingHttpConnection} created by this
      * builder.
      * <p>
      * Filtering allows you to wrap a {@link StreamingHttpConnection} and modify behavior during request/response
@@ -206,7 +123,7 @@ abstract class BaseHttpBuilder<ResolvedAddress> {
             StreamingHttpConnectionFilterFactory factory);
 
     /**
-     * Append the filter to the chain of filters used to decorate the {@link StreamingHttpConnection} created by this
+     * Appends the filter to the chain of filters used to decorate the {@link StreamingHttpConnection} created by this
      * builder, for every request that passes the provided {@link Predicate}.
      * <p>
      * Filtering allows you to wrap a {@link StreamingHttpConnection} and modify behavior during request/response

@@ -25,15 +25,14 @@ import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.FilterableStreamingHttpLoadBalancedConnection;
-import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.transport.api.IoExecutor;
+import io.servicetalk.transport.api.ProtocolConfig;
 
 import java.net.SocketOption;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import javax.annotation.Nullable;
 
 interface SingleAddressGrpcClientBuilder<U, R,
         SDE extends ServiceDiscovererEvent<R>> extends BaseGrpcClientBuilder<U, R> {
@@ -54,28 +53,7 @@ interface SingleAddressGrpcClientBuilder<U, R,
     SingleAddressGrpcClientBuilder<U, R, SDE> enableWireLogging(String loggerName);
 
     @Override
-    SingleAddressGrpcClientBuilder<U, R, SDE> headersFactory(HttpHeadersFactory headersFactory);
-
-    @Override
-    SingleAddressGrpcClientBuilder<U, R, SDE> h2HeadersFactory(HttpHeadersFactory headersFactory);
-
-    @Override
-    SingleAddressGrpcClientBuilder<U, R, SDE> h2PriorKnowledge(boolean h2PriorKnowledge);
-
-    @Override
-    SingleAddressGrpcClientBuilder<U, R, SDE> h2FrameLogger(@Nullable String h2FrameLogger);
-
-    @Override
-    SingleAddressGrpcClientBuilder<U, R, SDE> maxInitialLineLength(int maxInitialLineLength);
-
-    @Override
-    SingleAddressGrpcClientBuilder<U, R, SDE> maxHeaderSize(int maxHeaderSize);
-
-    @Override
-    SingleAddressGrpcClientBuilder<U, R, SDE> headersEncodedSizeEstimate(int headersEncodedSizeEstimate);
-
-    @Override
-    SingleAddressGrpcClientBuilder<U, R, SDE> trailersEncodedSizeEstimate(int trailersEncodedSizeEstimate);
+    SingleAddressGrpcClientBuilder<U, R, SDE> protocols(ProtocolConfig... protocols);
 
     /**
      * Append the filter to the chain of filters used to decorate the {@link ConnectionFactory} used by this

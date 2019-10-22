@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,7 +32,6 @@ import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.tcp.netty.internal.ReadOnlyTcpServerConfig;
 import io.servicetalk.tcp.netty.internal.TcpClientChannelInitializer;
-import io.servicetalk.tcp.netty.internal.TcpClientConfig;
 import io.servicetalk.tcp.netty.internal.TcpConnector;
 import io.servicetalk.tcp.netty.internal.TcpServerBinder;
 import io.servicetalk.tcp.netty.internal.TcpServerChannelInitializer;
@@ -89,6 +88,7 @@ import static java.lang.Integer.toHexString;
 import static java.lang.String.valueOf;
 import static java.lang.Thread.NORM_PRIORITY;
 import static java.nio.charset.StandardCharsets.US_ASCII;
+import static java.util.Collections.emptyList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -406,9 +406,9 @@ public class HttpRequestEncoderTest {
             CountDownLatch serverChannelLatch = new CountDownLatch(1);
             AtomicReference<Channel> serverChannelRef = new AtomicReference<>();
 
-            ReadOnlyTcpServerConfig sConfig = new TcpServerConfig(true).asReadOnly();
+            ReadOnlyTcpServerConfig sConfig = new TcpServerConfig().asReadOnly(emptyList());
             ServerContext serverContext = resources.prepend(
-                    TcpServerBinder.bind(localAddress(0), sConfig,
+                    TcpServerBinder.bind(localAddress(0), sConfig, false,
                             SEC, null,
                             channel -> DefaultNettyConnection.initChannel(channel, SEC.bufferAllocator(),
                                     SEC.executor(), new TerminalPredicate<>(o -> o instanceof HttpHeaders),
@@ -419,18 +419,18 @@ public class HttpRequestEncoderTest {
                                                 serverChannelLatch.countDown();
                                             }), defaultStrategy()),
                             connection -> { }).toFuture().get());
-            HttpClientConfig cConfig = new HttpClientConfig(new TcpClientConfig(true));
+            ReadOnlyHttpClientConfig cConfig = new HttpClientConfig().asReadOnly();
+            assert cConfig.h1Config() != null;
 
             NettyConnection<Object, Object> conn = resources.prepend(
-            TcpConnector.connect(null, serverHostAndPort(serverContext),
-                    cConfig.tcpClientConfig().asReadOnly(), CEC)
+            TcpConnector.connect(null, serverHostAndPort(serverContext), cConfig.tcpConfig(), false, CEC)
             .flatMap(channel -> {
                 CloseHandler closeHandler = spy(forPipelinedRequestResponse(true, channel.config()));
                 closeHandlerRef.compareAndSet(null, closeHandler);
                 return DefaultNettyConnection.initChannel(channel, CEC.bufferAllocator(), CEC.executor(),
                         new TerminalPredicate<>(o -> o instanceof HttpHeaders), closeHandler, defaultFlushStrategy(),
-                        new TcpClientChannelInitializer(cConfig.tcpClientConfig())
-                            .andThen(new HttpClientChannelInitializer(cConfig.asReadOnly(), closeHandler))
+                        new TcpClientChannelInitializer(cConfig.tcpConfig())
+                            .andThen(new HttpClientChannelInitializer(cConfig.h1Config(), closeHandler))
                             .andThen(channel2 -> channel2.pipeline().addLast(new ChannelInboundHandlerAdapter() {
                                 @Override
                                 public void userEventTriggered(ChannelHandlerContext ctx, Object evt) {

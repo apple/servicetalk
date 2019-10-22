@@ -25,7 +25,6 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.FilterableStreamingHttpLoadBalancedConnection;
 import io.servicetalk.http.api.HttpExecutionStrategy;
-import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.StreamingHttpClientFilter;
 import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
 import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
@@ -33,11 +32,11 @@ import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequester;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.transport.api.IoExecutor;
+import io.servicetalk.transport.api.ProtocolConfig;
 
 import java.net.SocketOption;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.grpc.api.GrpcStatus.fromThrowable;
@@ -68,28 +67,7 @@ public abstract class GrpcClientBuilder<U, R>
     public abstract GrpcClientBuilder<U, R> enableWireLogging(String loggerName);
 
     @Override
-    public abstract GrpcClientBuilder<U, R> headersFactory(HttpHeadersFactory headersFactory);
-
-    @Override
-    public abstract GrpcClientBuilder<U, R> h2HeadersFactory(HttpHeadersFactory headersFactory);
-
-    @Override
-    public abstract GrpcClientBuilder<U, R> h2PriorKnowledge(boolean h2PriorKnowledge);
-
-    @Override
-    public abstract GrpcClientBuilder<U, R> h2FrameLogger(@Nullable String h2FrameLogger);
-
-    @Override
-    public abstract GrpcClientBuilder<U, R> maxInitialLineLength(int maxInitialLineLength);
-
-    @Override
-    public abstract GrpcClientBuilder<U, R> maxHeaderSize(int maxHeaderSize);
-
-    @Override
-    public abstract GrpcClientBuilder<U, R> headersEncodedSizeEstimate(int headersEncodedSizeEstimate);
-
-    @Override
-    public abstract GrpcClientBuilder<U, R> trailersEncodedSizeEstimate(int trailersEncodedSizeEstimate);
+    public abstract GrpcClientBuilder<U, R> protocols(ProtocolConfig... protocols);
 
     @Override
     public abstract GrpcClientBuilder<U, R> appendConnectionFactoryFilter(

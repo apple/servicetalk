@@ -18,15 +18,12 @@ package io.servicetalk.http.netty;
 import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.internal.SubscribableSingle;
-import io.servicetalk.tcp.netty.internal.ReadOnlyTcpServerConfig;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
 import io.netty.handler.ssl.ApplicationProtocolNegotiationHandler;
-import io.netty.handler.ssl.ApplicationProtocolNegotiator;
-import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,7 +31,7 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
-import static io.servicetalk.http.netty.ApplicationProtocolNames.HTTP_1_1;
+import static io.servicetalk.http.netty.AlpnIds.HTTP_1_1;
 
 /**
  * A {@link Single} that initializes ALPN handler and completes after protocol negotiation.
@@ -133,39 +130,6 @@ final class AlpnChannelSingle extends SubscribableSingle<String> {
             }
             return false;
         }
-    }
-
-    /**
-     * Tells if ALPN should be used based on {@link ReadOnlyTcpServerConfig}.
-     *
-     * @param config {@link ReadOnlyTcpServerConfig} to make a decision
-     * @return {@code true} if ALPN should be used
-     */
-    static boolean useAlpn(final ReadOnlyTcpServerConfig config) {
-        if (config.isSniEnabled()) {
-            for (final SslContext sslContext : config.domainNameMapping().asMap().values()) {
-                if (useAlpn(sslContext)) {
-                    return true;
-                }
-            }
-            return false;
-        }
-        return useAlpn(config.sslContext());
-    }
-
-    /**
-     * Tells if ALPN should be used based on {@link SslContext}.
-     *
-     * @param sslContext {@link SslContext} to make a decision
-     * @return {@code true} if ALPN should be used
-     */
-    static boolean useAlpn(@Nullable final SslContext sslContext) {
-        if (sslContext == null) {
-            return false;
-        }
-        @SuppressWarnings("deprecation")
-        final ApplicationProtocolNegotiator apn = sslContext.applicationProtocolNegotiator();
-        return apn != null && !apn.protocols().isEmpty();
     }
 
     /**

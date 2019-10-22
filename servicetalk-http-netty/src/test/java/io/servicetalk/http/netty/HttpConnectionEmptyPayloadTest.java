@@ -42,6 +42,7 @@ import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpRequestMethod.HEAD;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.netty.HttpClients.forResolvedAddress;
+import static io.servicetalk.http.netty.HttpProtocolConfigs.h1;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static io.servicetalk.transport.netty.internal.ExecutionContextRule.immediate;
@@ -79,7 +80,7 @@ public class HttpConnectionEmptyPayloadTest {
 
             StreamingHttpClient client = closeable.merge(forResolvedAddress(serverHostAndPort(serverContext))
                     .ioExecutor(executionContextRule.ioExecutor())
-                    .maxPipelinedRequests(3)
+                    .protocols(h1().maxPipelinedRequests(3).build())
                     .executionStrategy(defaultStrategy(executionContextRule.executor()))
                     .buildStreaming());
             StreamingHttpConnection connection = closeable.merge(

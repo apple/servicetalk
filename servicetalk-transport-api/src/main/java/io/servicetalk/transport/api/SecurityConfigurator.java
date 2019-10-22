@@ -16,7 +16,6 @@
 package io.servicetalk.transport.api;
 
 import java.io.InputStream;
-import java.util.Collection;
 import java.util.function.Supplier;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.TrustManagerFactory;
@@ -42,27 +41,6 @@ public interface SecurityConfigurator {
          * Auto detect which implementation to use.
          */
         AUTO
-    }
-
-    /**
-     * Defines which application level protocol negotiation to use.
-     */
-    enum ApplicationProtocolNegotiation {
-        NONE, NPN, ALPN, NPN_AND_ALPN
-    }
-
-    /**
-     * Defines the most common behaviors for the peer that selects the application protocol.
-     */
-    enum SelectorFailureBehavior {
-        FATAL_ALERT, NO_ADVERTISE, CHOOSE_MY_LAST_PROTOCOL
-    }
-
-    /**
-     * Defines the most common behaviors for the peer which is notified of the selected protocol.
-     */
-    enum SelectedListenerFailureBehavior {
-        ACCEPT, FATAL_ALERT, CHOOSE_MY_LAST_PROTOCOL
     }
 
     /**
@@ -95,21 +73,6 @@ public interface SecurityConfigurator {
      * @see SSLEngine#setEnabledProtocols(String[])
      */
     SecurityConfigurator protocols(String... protocols);
-
-    /**
-     * Specify the application level protocol negotiation technique to use.
-     * <p>
-     * See <a href="https://tools.ietf.org/html/rfc7301">ALPN</a> for reference.
-     * @param apn application level protocol negotiation to use.
-     * @param selectorBehavior How the peer selecting the protocol should behave.
-     * @param selectedBehavior How the peer being notified of the selected protocol should behave.
-     * @param supportedProtocols The order of iteration determines the preference of support for protocols.
-     * @return {@code this}.
-     */
-    SecurityConfigurator applicationProtocolNegotiation(ApplicationProtocolNegotiation apn,
-                                                        SelectorFailureBehavior selectorBehavior,
-                                                        SelectedListenerFailureBehavior selectedBehavior,
-                                                        Collection<String> supportedProtocols);
 
     /**
      * The cipher suites to enable, in the order of preference.

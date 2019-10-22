@@ -20,7 +20,6 @@ import io.servicetalk.http.api.PartitionedHttpClientSecurityConfigurator;
 import io.servicetalk.http.api.SingleAddressHttpClientSecurityConfigurator;
 
 import java.io.InputStream;
-import java.util.Collection;
 import java.util.function.Supplier;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.TrustManagerFactory;
@@ -58,14 +57,6 @@ final class DefaultPartitionedHttpClientSecurityConfigurator<U, R>
     @Override
     public PartitionedHttpClientSecurityConfigurator<U, R> protocols(final String... protocols) {
         delegate.protocols(protocols);
-        return this;
-    }
-
-    @Override
-    public PartitionedHttpClientSecurityConfigurator<U, R> applicationProtocolNegotiation(
-            final ApplicationProtocolNegotiation apn, final SelectorFailureBehavior selectorBehavior,
-            final SelectedListenerFailureBehavior selectedBehavior, final Collection<String> supportedProtocols) {
-        delegate.applicationProtocolNegotiation(apn, selectorBehavior, selectedBehavior, supportedProtocols);
         return this;
     }
 

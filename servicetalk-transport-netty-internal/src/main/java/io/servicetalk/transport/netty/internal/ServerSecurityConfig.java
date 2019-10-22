@@ -15,14 +15,10 @@
  */
 package io.servicetalk.transport.netty.internal;
 
-import io.servicetalk.transport.api.SecurityConfigurator.ApplicationProtocolNegotiation;
-import io.servicetalk.transport.api.SecurityConfigurator.SelectedListenerFailureBehavior;
-import io.servicetalk.transport.api.SecurityConfigurator.SelectorFailureBehavior;
 import io.servicetalk.transport.api.SecurityConfigurator.SslProvider;
 import io.servicetalk.transport.api.ServerSecurityConfigurator.ClientAuth;
 
 import java.io.InputStream;
-import java.util.Collection;
 import java.util.function.Supplier;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.TrustManagerFactory;
@@ -62,24 +58,6 @@ public class ServerSecurityConfig extends ReadOnlyServerSecurityConfig {
      */
     public void protocols(final String... protocols) {
         this.protocols = asList(protocols);
-    }
-
-    /**
-     * Specify the application level protocol negotiation technique to use.
-     * <p>
-     * See <a href="https://tools.ietf.org/html/rfc7301">ALPN</a> for reference.
-     * @param apn application level protocol negotiation to use.
-     * @param selectorBehavior How the peer selecting the protocol should behave.
-     * @param selectedBehavior How the peer being notified of the selected protocol should behave.
-     * @param supportedProtocols The order of iteration determines the preference of support for protocols.
-     */
-    public void applicationProtocolNegotiation(
-            final ApplicationProtocolNegotiation apn, final SelectorFailureBehavior selectorBehavior,
-            final SelectedListenerFailureBehavior selectedBehavior, final Collection<String> supportedProtocols) {
-        this.apn = requireNonNull(apn);
-        this.selectorBehavior = requireNonNull(selectorBehavior);
-        this.selectedBehavior = requireNonNull(selectedBehavior);
-        this.supportedProtocols = requireNonNull(supportedProtocols);
     }
 
     /**

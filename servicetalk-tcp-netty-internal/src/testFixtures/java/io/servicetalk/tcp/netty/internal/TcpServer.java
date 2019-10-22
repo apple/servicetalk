@@ -39,6 +39,7 @@ import javax.annotation.Nullable;
 import static io.servicetalk.transport.api.ConnectionAcceptor.ACCEPT_ALL;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
+import static java.util.Collections.emptyList;
 
 /**
  * A utility to create a TCP server for tests.
@@ -52,7 +53,7 @@ public class TcpServer {
      * New instance with default configuration.
      */
     public TcpServer() {
-        this(new TcpServerConfig(false));
+        this(new TcpServerConfig());
     }
 
     /**
@@ -61,7 +62,7 @@ public class TcpServer {
      * @param config for the server.
      */
     public TcpServer(TcpServerConfig config) {
-        this.config = config.asReadOnly();
+        this.config = config.asReadOnly(emptyList());
     }
 
     /**
@@ -102,7 +103,7 @@ public class TcpServer {
                               Function<NettyConnection<Buffer, Buffer>, Completable> service,
                               ExecutionStrategy executionStrategy)
             throws ExecutionException, InterruptedException {
-        return TcpServerBinder.bind(localAddress(port), config,
+        return TcpServerBinder.bind(localAddress(port), config, false,
                 executionContext, connectionAcceptor,
                 channel -> DefaultNettyConnection.<Buffer, Buffer>initChannel(channel,
                         executionContext.bufferAllocator(), executionContext.executor(),

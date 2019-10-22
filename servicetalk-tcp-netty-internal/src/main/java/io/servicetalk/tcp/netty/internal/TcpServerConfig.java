@@ -15,75 +15,43 @@
  */
 package io.servicetalk.tcp.netty.internal;
 
-import io.servicetalk.transport.api.ServiceTalkSocketOptions;
-import io.servicetalk.transport.netty.internal.BuilderUtils;
-import io.servicetalk.transport.netty.internal.FlushStrategy;
 import io.servicetalk.transport.netty.internal.ReadOnlyServerSecurityConfig;
-import io.servicetalk.transport.netty.internal.WireLoggingInitializer;
 
-import io.netty.handler.ssl.SslContext;
-import io.netty.util.DomainNameMappingBuilder;
+import io.netty.util.NetUtil;
 
-import java.net.SocketOption;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.transport.netty.internal.SslContextFactory.forServer;
 import static java.util.Objects.requireNonNull;
 
 /**
- * Configuration for TCP based servers. <p>Internal use only.</p>
+ * Configuration for TCP based servers.
  */
-public final class TcpServerConfig extends ReadOnlyTcpServerConfig {
+public final class TcpServerConfig extends AbstractTcpConfig<ReadOnlyServerSecurityConfig, ReadOnlyTcpServerConfig> {
 
     @Nullable
     private Map<String, ReadOnlyServerSecurityConfig> sniConfigs;
+    private int backlog = NetUtil.SOMAXCONN;
 
-    /**
-     * New instance.
-     *
-     * @param autoRead If the channels accepted by the server will have auto-read enabled.
-     */
-    public TcpServerConfig(boolean autoRead) {
-        super(autoRead);
+    @Nullable
+    Map<String, ReadOnlyServerSecurityConfig> sniConfigs() {
+        return sniConfigs;
     }
 
-    /**
-     * Determine if auto read should be enabled.
-     *
-     * @param autoRead {@code true} to enable auto read.
-     * @return this.
-     */
-    public TcpServerConfig autoRead(boolean autoRead) {
-        super.autoRead = autoRead;
-        return this;
-    }
-
-    /**
-     * The maximum queue length for incoming connection indications (a request to connect) is set to the backlog
-     * parameter. If a connection indication arrives when the queue is full, the connection may time out.
-     *
-     * @param backlog the backlog to use when accepting connections.
-     * @return this.
-     */
-    public TcpServerConfig backlog(int backlog) {
-        if (backlog < 0) {
-            throw new IllegalArgumentException("backlog must be >= 0");
-        }
-        this.backlog = backlog;
-        return this;
+    int backlog() {
+        return backlog;
     }
 
     /**
      * Add security related config.
      *
-     * @param securityConfig the {@link ReadOnlyServerSecurityConfig} for the passed hostnames.
-     * @param sniHostnames SNI hostnames for which this config is defined.
-     * @return this.
+     * @param securityConfig the {@link ReadOnlyServerSecurityConfig} for the passed hostnames
+     * @param sniHostnames SNI hostnames for which this config is defined
+     * @return {@code this}
      */
-    public TcpServerConfig secure(ReadOnlyServerSecurityConfig securityConfig, String... sniHostnames) {
+    public TcpServerConfig secure(final ReadOnlyServerSecurityConfig securityConfig, final String... sniHostnames) {
         requireNonNull(securityConfig);
         requireNonNull(sniHostnames);
         if (sniConfigs == null) {
@@ -96,71 +64,22 @@ public final class TcpServerConfig extends ReadOnlyTcpServerConfig {
     }
 
     /**
-     * Add security related config.
+     * The maximum queue length for incoming connection indications (a request to connect) is set to the backlog
+     * parameter. If a connection indication arrives when the queue is full, the connection may time out.
      *
-     * @param securityConfig the {@link ReadOnlyServerSecurityConfig} to use.
-     * @return this.
+     * @param backlog the backlog to use when accepting connections
+     * @return {@code this}
      */
-    public TcpServerConfig secure(ReadOnlyServerSecurityConfig securityConfig) {
-        sslContext = forServer(securityConfig);
-        return this;
-    }
-
-    /**
-     * Add a {@link SocketOption} that is applied.
-     *
-     * @param <T> the type of the value.
-     * @param option the option to apply.
-     * @param value the value.
-     * @return this.
-     */
-    public <T> TcpServerConfig socketOption(SocketOption<T> option, T value) {
-        if (option == ServiceTalkSocketOptions.IDLE_TIMEOUT) {
-            idleTimeoutMs = (Long) value;
-        } else {
-            BuilderUtils.addOption(options, option, value);
+    public TcpServerConfig backlog(final int backlog) {
+        if (backlog < 0) {
+            throw new IllegalArgumentException("backlog must be >= 0");
         }
+        this.backlog = backlog;
         return this;
     }
 
-    /**
-     * Enable wire-logging for this server. All wire events will be logged at trace level.
-     *
-     * @param loggerName The name of the logger to log wire events.
-     * @return {@code this}.
-     */
-    public TcpServerConfig enableWireLogging(String loggerName) {
-        wireLoggingInitializer = new WireLoggingInitializer(loggerName);
-        return this;
-    }
-
-    /**
-     * Sets {@link FlushStrategy} to use for all connections accepted by this server.
-     *
-     * @param flushStrategy {@link FlushStrategy} to use for all connections accepted by this server.
-     * @return {@code this}.
-     */
-    public TcpServerConfig flushStrategy(FlushStrategy flushStrategy) {
-        this.flushStrategy = requireNonNull(flushStrategy);
-        return this;
-    }
-
-    /**
-     * Returns an immutable view of this config, any changes to this config will not alter the returned view.
-     *
-     * @return {@link ReadOnlyTcpServerConfig}.
-     */
-    public ReadOnlyTcpServerConfig asReadOnly() {
-        if (sniConfigs != null) {
-            if (sslContext == null) {
-                throw new IllegalStateException("No default security config defined but found SNI config mappings.");
-            }
-            DomainNameMappingBuilder<SslContext> mappingBuilder = new DomainNameMappingBuilder<>(sslContext);
-            for (Entry<String, ReadOnlyServerSecurityConfig> sniConfigEntries : sniConfigs.entrySet()) {
-                mappingBuilder.add(sniConfigEntries.getKey(), forServer(sniConfigEntries.getValue()));
-            }
-            mappings = mappingBuilder.build();
-        }
-        return new ReadOnlyTcpServerConfig(this);
+    @Override
+    public ReadOnlyTcpServerConfig asReadOnly(final List<String> supportedAlpnProtocols) {
+        return new ReadOnlyTcpServerConfig(this, supportedAlpnProtocols);
     }
 }

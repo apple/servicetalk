@@ -48,13 +48,13 @@ final class HttpResponseDecoder extends HttpObjectDecoder<HttpResponseMetaData> 
     private final Queue<HttpRequestMethod> methodQueue;
 
     HttpResponseDecoder(Queue<HttpRequestMethod> methodQueue, HttpHeadersFactory headersFactory,
-                        int maxInitialLineLength, int maxHeaderSize) {
-        this(methodQueue, headersFactory, maxInitialLineLength, maxHeaderSize, UNSUPPORTED_PROTOCOL_CLOSE_HANDLER);
+                        int maxStartLineLength, int maxHeaderFieldLength) {
+        this(methodQueue, headersFactory, maxStartLineLength, maxHeaderFieldLength, UNSUPPORTED_PROTOCOL_CLOSE_HANDLER);
     }
 
     HttpResponseDecoder(Queue<HttpRequestMethod> methodQueue, HttpHeadersFactory headersFactory,
-                        int maxInitialLineLength, int maxHeaderSize, final CloseHandler closeHandler) {
-        super(headersFactory, maxInitialLineLength, maxHeaderSize, closeHandler);
+                        int maxStartLineLength, int maxHeaderFieldLength, final CloseHandler closeHandler) {
+        super(headersFactory, maxStartLineLength, maxHeaderFieldLength, closeHandler);
         this.methodQueue = requireNonNull(methodQueue);
     }
 

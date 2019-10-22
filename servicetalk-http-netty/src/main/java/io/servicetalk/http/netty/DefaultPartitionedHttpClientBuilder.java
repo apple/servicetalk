@@ -39,7 +39,6 @@ import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.FilterableStreamingHttpLoadBalancedConnection;
 import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpExecutionStrategy;
-import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.PartitionHttpClientBuilderConfigurator;
@@ -55,11 +54,10 @@ import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.netty.DefaultSingleAddressHttpClientBuilder.HttpClientBuildContext;
 import io.servicetalk.transport.api.IoExecutor;
+import io.servicetalk.transport.api.ProtocolConfig;
 
 import java.net.SocketOption;
-import java.util.function.BiPredicate;
 import java.util.function.Function;
-import javax.annotation.Nullable;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.concurrent.api.Completable.completed;
@@ -255,63 +253,8 @@ class DefaultPartitionedHttpClientBuilder<U, R> extends PartitionedHttpClientBui
     }
 
     @Override
-    public PartitionedHttpClientBuilder<U, R> headersFactory(final HttpHeadersFactory headersFactory) {
-        builderTemplate.headersFactory(headersFactory);
-        return this;
-    }
-
-    @Override
-    public PartitionedHttpClientBuilder<U, R> h2HeadersFactory(final HttpHeadersFactory headersFactory) {
-        builderTemplate.h2HeadersFactory(headersFactory);
-        return this;
-    }
-
-    @Override
-    public PartitionedHttpClientBuilder<U, R> h2HeadersSensitivityDetector(
-            final BiPredicate<CharSequence, CharSequence> h2HeadersSensitivityDetector) {
-        builderTemplate.h2HeadersSensitivityDetector(h2HeadersSensitivityDetector);
-        return this;
-    }
-
-    @Override
-    public PartitionedHttpClientBuilder<U, R> h2PriorKnowledge(final boolean h2PriorKnowledge) {
-        builderTemplate.h2PriorKnowledge(h2PriorKnowledge);
-        return this;
-    }
-
-    @Override
-    public PartitionedHttpClientBuilder<U, R> h2FrameLogger(@Nullable final String h2FrameLogger) {
-        builderTemplate.h2FrameLogger(h2FrameLogger);
-        return this;
-    }
-
-    @Override
-    public PartitionedHttpClientBuilder<U, R> maxInitialLineLength(final int maxInitialLineLength) {
-        builderTemplate.maxInitialLineLength(maxInitialLineLength);
-        return this;
-    }
-
-    @Override
-    public PartitionedHttpClientBuilder<U, R> maxHeaderSize(final int maxHeaderSize) {
-        builderTemplate.maxHeaderSize(maxHeaderSize);
-        return this;
-    }
-
-    @Override
-    public PartitionedHttpClientBuilder<U, R> headersEncodedSizeEstimate(final int headersEncodedSizeEstimate) {
-        builderTemplate.headersEncodedSizeEstimate(headersEncodedSizeEstimate);
-        return this;
-    }
-
-    @Override
-    public PartitionedHttpClientBuilder<U, R> trailersEncodedSizeEstimate(final int trailersEncodedSizeEstimate) {
-        builderTemplate.trailersEncodedSizeEstimate(trailersEncodedSizeEstimate);
-        return this;
-    }
-
-    @Override
-    public PartitionedHttpClientBuilder<U, R> maxPipelinedRequests(final int maxPipelinedRequests) {
-        builderTemplate.maxPipelinedRequests(maxPipelinedRequests);
+    public PartitionedHttpClientBuilder<U, R> protocols(ProtocolConfig... protocols) {
+        builderTemplate.protocols(protocols);
         return this;
     }
 

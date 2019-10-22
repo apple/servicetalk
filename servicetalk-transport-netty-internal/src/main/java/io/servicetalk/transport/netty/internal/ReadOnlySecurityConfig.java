@@ -15,20 +15,15 @@
  */
 package io.servicetalk.transport.netty.internal;
 
-import io.servicetalk.transport.api.SecurityConfigurator.ApplicationProtocolNegotiation;
-import io.servicetalk.transport.api.SecurityConfigurator.SelectedListenerFailureBehavior;
-import io.servicetalk.transport.api.SecurityConfigurator.SelectorFailureBehavior;
 import io.servicetalk.transport.api.SecurityConfigurator.SslProvider;
 
 import java.io.InputStream;
-import java.util.Collection;
 import java.util.List;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.TrustManagerFactory;
 
-import static java.util.Collections.unmodifiableCollection;
 import static java.util.Collections.unmodifiableList;
 
 /**
@@ -49,16 +44,6 @@ class ReadOnlySecurityConfig {
     long sessionTimeout;
     SslProvider provider = SslProvider.AUTO;
 
-    // Application protocol config.
-    @Nullable
-    ApplicationProtocolNegotiation apn;
-    @Nullable
-    SelectorFailureBehavior selectorBehavior;
-    @Nullable
-    SelectedListenerFailureBehavior selectedBehavior;
-    @Nullable
-    Collection<String> supportedProtocols;
-
     @Nullable
     protected KeyManagerFactory keyManagerFactory;
     protected Supplier<InputStream> keyCertChainSupplier = nullSupplier();
@@ -77,10 +62,6 @@ class ReadOnlySecurityConfig {
         sessionCacheSize = from.sessionCacheSize;
         sessionTimeout = from.sessionTimeout;
         provider = from.provider;
-        apn = from.apn;
-        selectorBehavior = from.selectorBehavior;
-        selectedBehavior = from.selectedBehavior;
-        supportedProtocols = from.supportedProtocols == null ? null : unmodifiableCollection(from.supportedProtocols);
         keyManagerFactory = from.keyManagerFactory;
         keyCertChainSupplier = from.keyCertChainSupplier;
         keySupplier = from.keySupplier;
@@ -116,26 +97,6 @@ class ReadOnlySecurityConfig {
 
     SslProvider provider() {
         return provider;
-    }
-
-    @Nullable
-    ApplicationProtocolNegotiation applicationProtocolNegotiation() {
-        return apn;
-    }
-
-    @Nullable
-    SelectorFailureBehavior selectorBehavior() {
-        return selectorBehavior;
-    }
-
-    @Nullable
-    SelectedListenerFailureBehavior selectedBehavior() {
-        return selectedBehavior;
-    }
-
-    @Nullable
-    Collection<String> supportedProtocols() {
-        return supportedProtocols;
     }
 
     @Nullable

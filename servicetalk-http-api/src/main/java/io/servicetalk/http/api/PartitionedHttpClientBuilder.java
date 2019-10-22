@@ -25,13 +25,12 @@ import io.servicetalk.client.api.partition.PartitionMapFactory;
 import io.servicetalk.client.api.partition.PartitionedServiceDiscovererEvent;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.transport.api.IoExecutor;
+import io.servicetalk.transport.api.ProtocolConfig;
 
 import java.net.SocketOption;
 import java.util.function.BiFunction;
-import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import javax.annotation.Nullable;
 
 /**
  * A builder of homogeneous {@link StreamingHttpClient} instances which call the server associated with a partition
@@ -62,35 +61,7 @@ public abstract class PartitionedHttpClientBuilder<U, R>
     public abstract PartitionedHttpClientBuilder<U, R> enableWireLogging(String loggerName);
 
     @Override
-    public abstract PartitionedHttpClientBuilder<U, R> headersFactory(HttpHeadersFactory headersFactory);
-
-    @Override
-    public abstract PartitionedHttpClientBuilder<U, R> h2HeadersFactory(HttpHeadersFactory headersFactory);
-
-    @Override
-    public abstract PartitionedHttpClientBuilder<U, R> h2HeadersSensitivityDetector(
-            BiPredicate<CharSequence, CharSequence> sensitivityDetector);
-
-    @Override
-    public abstract PartitionedHttpClientBuilder<U, R> h2PriorKnowledge(boolean h2PriorKnowledge);
-
-    @Override
-    public abstract PartitionedHttpClientBuilder<U, R> h2FrameLogger(@Nullable String h2FrameLogger);
-
-    @Override
-    public abstract PartitionedHttpClientBuilder<U, R> maxInitialLineLength(int maxInitialLineLength);
-
-    @Override
-    public abstract PartitionedHttpClientBuilder<U, R> maxHeaderSize(int maxHeaderSize);
-
-    @Override
-    public abstract PartitionedHttpClientBuilder<U, R> headersEncodedSizeEstimate(int headersEncodedSizeEstimate);
-
-    @Override
-    public abstract PartitionedHttpClientBuilder<U, R> trailersEncodedSizeEstimate(int trailersEncodedSizeEstimate);
-
-    @Override
-    public abstract PartitionedHttpClientBuilder<U, R> maxPipelinedRequests(int maxPipelinedRequests);
+    public abstract PartitionedHttpClientBuilder<U, R> protocols(ProtocolConfig... protocols);
 
     @Override
     public abstract PartitionedHttpClientBuilder<U, R> appendConnectionFilter(
@@ -137,7 +108,7 @@ public abstract class PartitionedHttpClientBuilder<U, R>
     }
 
     /**
-     * Initiate security configuration for this client. Calling
+     * Initiates security configuration for this client. Calling
      * {@link PartitionedHttpClientSecurityConfigurator#commit()} on the returned
      * {@link PartitionedHttpClientSecurityConfigurator} will commit the configuration.
      *
@@ -160,7 +131,7 @@ public abstract class PartitionedHttpClientBuilder<U, R>
     public abstract PartitionedHttpClientBuilder<U, R> serviceDiscoveryMaxQueueSize(int serviceDiscoveryMaxQueueSize);
 
     /**
-     * Set {@link PartitionMapFactory} to use by all {@link StreamingHttpClient}s created by this builder.
+     * Sets {@link PartitionMapFactory} to use by all {@link StreamingHttpClient}s created by this builder.
      *
      * @param partitionMapFactory {@link PartitionMapFactory} to use.
      * @return {@code this}.
@@ -168,8 +139,8 @@ public abstract class PartitionedHttpClientBuilder<U, R>
     public abstract PartitionedHttpClientBuilder<U, R> partitionMapFactory(PartitionMapFactory partitionMapFactory);
 
     /**
-     * A function that allows customizing the {@link SingleAddressHttpClientBuilder} used to create the client for a
-     * given partition based on its {@link PartitionAttributes}.
+     * Sets a function that allows customizing the {@link SingleAddressHttpClientBuilder} used to create the client for
+     * a given partition based on its {@link PartitionAttributes}.
      *
      * @param clientFilterFunction {@link BiFunction} used to customize the {@link SingleAddressHttpClientBuilder}
      * before creating the client for the partition

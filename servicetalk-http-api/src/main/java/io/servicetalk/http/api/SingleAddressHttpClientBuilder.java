@@ -21,12 +21,11 @@ import io.servicetalk.client.api.LoadBalancerFactory;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.transport.api.IoExecutor;
+import io.servicetalk.transport.api.ProtocolConfig;
 
 import java.net.SocketOption;
-import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import javax.annotation.Nullable;
 
 /**
  * A builder of {@link StreamingHttpClient} instances which call a single server based on the provided unresolved
@@ -56,35 +55,7 @@ public abstract class SingleAddressHttpClientBuilder<U, R>
     public abstract SingleAddressHttpClientBuilder<U, R> enableWireLogging(String loggerName);
 
     @Override
-    public abstract SingleAddressHttpClientBuilder<U, R> headersFactory(HttpHeadersFactory headersFactory);
-
-    @Override
-    public abstract SingleAddressHttpClientBuilder<U, R> h2HeadersFactory(HttpHeadersFactory headersFactory);
-
-    @Override
-    public abstract SingleAddressHttpClientBuilder<U, R> h2HeadersSensitivityDetector(
-            BiPredicate<CharSequence, CharSequence> sensitivityDetector);
-
-    @Override
-    public abstract SingleAddressHttpClientBuilder<U, R> h2PriorKnowledge(boolean h2PriorKnowledge);
-
-    @Override
-    public abstract SingleAddressHttpClientBuilder<U, R> h2FrameLogger(@Nullable String h2FrameLogger);
-
-    @Override
-    public abstract SingleAddressHttpClientBuilder<U, R> maxInitialLineLength(int maxInitialLineLength);
-
-    @Override
-    public abstract SingleAddressHttpClientBuilder<U, R> maxHeaderSize(int maxHeaderSize);
-
-    @Override
-    public abstract SingleAddressHttpClientBuilder<U, R> headersEncodedSizeEstimate(int headersEncodedSizeEstimate);
-
-    @Override
-    public abstract SingleAddressHttpClientBuilder<U, R> trailersEncodedSizeEstimate(int trailersEncodedSizeEstimate);
-
-    @Override
-    public abstract SingleAddressHttpClientBuilder<U, R> maxPipelinedRequests(int maxPipelinedRequests);
+    public abstract SingleAddressHttpClientBuilder<U, R> protocols(ProtocolConfig... protocols);
 
     @Override
     public abstract SingleAddressHttpClientBuilder<U, R> appendConnectionFilter(
@@ -131,7 +102,7 @@ public abstract class SingleAddressHttpClientBuilder<U, R>
     }
 
     /**
-     * Initiate security configuration for this client. Calling
+     * Initiates security configuration for this client. Calling
      * {@link SingleAddressHttpClientSecurityConfigurator#commit()} on the returned
      * {@link SingleAddressHttpClientSecurityConfigurator} will commit the configuration.
      *

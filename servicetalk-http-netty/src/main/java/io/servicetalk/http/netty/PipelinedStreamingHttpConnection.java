@@ -31,7 +31,7 @@ final class PipelinedStreamingHttpConnection
     private final NettyConnection<Object, Object> nettyConnection;
 
     PipelinedStreamingHttpConnection(final NettyConnection<Object, Object> connection,
-                                     final ReadOnlyHttpClientConfig config,
+                                     final H1ProtocolConfig config,
                                      final HttpExecutionContext executionContext,
                                      final StreamingHttpRequestResponseFactory reqRespFactory) {
         super(new DefaultNettyPipelinedConnection<>(connection, config.maxPipelinedRequests()),

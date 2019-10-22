@@ -29,7 +29,6 @@ import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.TestStreamingHttpConnection;
-import io.servicetalk.tcp.netty.internal.TcpClientConfig;
 import io.servicetalk.transport.netty.internal.ExecutionContextRule;
 import io.servicetalk.transport.netty.internal.NettyConnection;
 
@@ -45,6 +44,7 @@ import static io.servicetalk.concurrent.api.Completable.never;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
+import static io.servicetalk.http.netty.HttpProtocolConfigs.h1;
 import static io.servicetalk.transport.netty.internal.ExecutionContextRule.immediate;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -87,8 +87,6 @@ public class PipelinedHttpConnectionTest {
         when(connection.onClose()).thenReturn(never());
         when(connection.onClosing()).thenReturn(never());
         when(connection.executionContext()).thenReturn(ctx);
-        HttpClientConfig config = new HttpClientConfig(new TcpClientConfig(true));
-        config.maxPipelinedRequests(2);
         readPublisher1 = new TestPublisher<>();
         readPublisher2 = new TestPublisher<>();
         writePublisher1 = new TestPublisher<>();
@@ -101,7 +99,7 @@ public class PipelinedHttpConnectionTest {
         when(connection.read()).thenReturn(readPublisher1, readPublisher2);
 
         pipe = TestStreamingHttpConnection.from(
-                new PipelinedStreamingHttpConnection(connection, config.asReadOnly(),
+                new PipelinedStreamingHttpConnection(connection, h1().maxPipelinedRequests(2).build(),
                         new ExecutionContextToHttpExecutionContext(ctx, defaultStrategy()),
                         reqRespFactory
                 ));

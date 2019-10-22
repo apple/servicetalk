@@ -98,7 +98,7 @@ public abstract class AbstractTcpServerTest {
 
     // Visible for overriding.
     TcpClientConfig getTcpClientConfig() {
-        TcpClientConfig tcpClientConfig = new TcpClientConfig(false);
+        TcpClientConfig tcpClientConfig = new TcpClientConfig();
         if (sslEnabled) {
             HostAndPort serverHostAndPort = AddressUtils.serverHostAndPort(serverContext);
             ClientSecurityConfig securityConfig = new ClientSecurityConfig(serverHostAndPort.hostName(),
@@ -116,7 +116,7 @@ public abstract class AbstractTcpServerTest {
 
     // Visible for overriding.
     TcpServerConfig getTcpServerConfig() {
-        TcpServerConfig tcpServerConfig = new TcpServerConfig(false);
+        TcpServerConfig tcpServerConfig = new TcpServerConfig();
         if (sslEnabled) {
             ServerSecurityConfig securityConfig = new ServerSecurityConfig();
             securityConfig.keyManager(DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey);
