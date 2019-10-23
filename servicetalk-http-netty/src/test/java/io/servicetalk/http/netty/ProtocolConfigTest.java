@@ -86,7 +86,7 @@ public class ProtocolConfigTest {
                 HttpClients.forSingleAddress("localhost", 8080);
 
         expectedException.expect(IllegalArgumentException.class);
-        expectedException.expectMessage("A list of protocols should contain at least one ProtocolConfig");
+        expectedException.expectMessage("No protocols specified");
         builder.protocols(new ProtocolConfig[0]);
     }
 
@@ -95,7 +95,7 @@ public class ProtocolConfigTest {
         HttpServerBuilder builder = HttpServers.forAddress(localAddress(0));
 
         expectedException.expect(IllegalArgumentException.class);
-        expectedException.expectMessage("A list of protocols should contain at least one ProtocolConfig");
+        expectedException.expectMessage("No protocols specified");
         builder.protocols(new ProtocolConfig[0]);
     }
 
