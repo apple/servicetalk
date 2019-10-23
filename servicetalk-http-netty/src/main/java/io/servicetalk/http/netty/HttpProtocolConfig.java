@@ -20,6 +20,7 @@ import io.servicetalk.transport.api.ProtocolConfig;
 import java.util.List;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.http.netty.HttpProtocolConfigs.h1Default;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
@@ -27,9 +28,8 @@ import static java.util.Collections.unmodifiableList;
 import static java.util.Objects.requireNonNull;
 
 final class HttpProtocolConfig {
-
     @Nullable
-    private H1ProtocolConfig h1Config;
+    private H1ProtocolConfig h1Config = h1Default();
     @Nullable
     private H2ProtocolConfig h2Config;
     private List<String> supportedAlpnProtocols = emptyList();
@@ -51,7 +51,7 @@ final class HttpProtocolConfig {
     void protocols(final ProtocolConfig... protocols) {
         requireNonNull(protocols);
         if (protocols.length < 1) {
-            throw new IllegalArgumentException("A list of protocols should contain at least one ProtocolConfig");
+            throw new IllegalArgumentException("No protocols specified");
         }
 
         h1Config = null;
