@@ -222,14 +222,14 @@ HttpServers.forPort(8080)
             @Override
             public Completable accept(final ConnectionContext ctx) {
 
-                ((NettyConnectionContext)ctx).updateFlushStrategy((current, isOrig) -> FlushStrategies.flushOnEnd())
+                ((NettyConnectionContext)ctx).updateFlushStrategy((current, isOrig) -> FlushStrategies.flushOnEnd());
 
                 return delegate.accept(ctx);
             }
         })
         .listenStreamingAndAwait((ctx, request, responseFactory) -> {
 
-            ((NettyConnectionContext)ctx).updateFlushStrategy((current, isOrig) -> FlushStrategies.flushOnEnd())
+            ((NettyConnectionContext)ctx).updateFlushStrategy((current, isOrig) -> FlushStrategies.flushOnEnd());
 
             return Single.succeeded(responseFactory.ok()
                     .payloadBody(somePayload));
@@ -493,7 +493,7 @@ DefaultHttpHeadersFactory headersFactory = new DefaultHttpHeadersFactory(false /
                                                                          false /* cookies */);
 
 HttpClients.forSingleAddress("localhost", 8080)
-                .headersFactory(headersFactory)
+                .protocols(HttpProtocolConfigs.h1().headersFactory(headersFactory).build())
                 .buildBlocking();
 ----
 
@@ -584,11 +584,8 @@ link:https://wiki.mozilla.org/Security/Server_Side_TLS[Mozilla Server Side TLS])
 
 // add the netty dependency to your build, eg: "io.netty:netty-tcnative-boringssl-static:2.0.25.Final"
 
-BlockingHttpClient client = HttpClients.forSingleAddress("netty.io", 443)
-        .sslConfig(
-                SslConfigBuilder.forClient("netty.io", 443)
-                        .provider(SslConfig.SslProvider.OPENSSL) // SslProvider.JDK | SslProvider.AUTO
-                        .build())
+BlockingHttpClient client = HttpClients.forSingleAddress("servicetalk.io", 443)
+        .secure().provider(SecurityConfigurator.SslProvider.OPENSSL).commit()
         .buildBlocking();
 HttpResponse resp = client.request(client.get("/"));
 ----
