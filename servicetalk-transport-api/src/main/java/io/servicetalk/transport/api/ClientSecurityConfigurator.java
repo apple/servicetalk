@@ -57,6 +57,8 @@ public interface ClientSecurityConfigurator extends SecurityConfigurator {
      * Determines what algorithm to use for hostname verification.
      *
      * @param hostNameVerificationAlgorithm The algorithm to use when verifying the host name.
+     * See <a href="https://docs.oracle.com/javase/8/docs/technotes/guides/security/StandardNames.html#jssenames">
+     * Supported algorithm names</a>.
      * @return {@code this}.
      * @see SSLParameters#setEndpointIdentificationAlgorithm(String)
      */
@@ -66,6 +68,8 @@ public interface ClientSecurityConfigurator extends SecurityConfigurator {
      * Determines what algorithm to use for hostname verification.
      *
      * @param hostNameVerificationAlgorithm The algorithm to use when verifying the host name.
+     * See <a href="https://docs.oracle.com/javase/8/docs/technotes/guides/security/StandardNames.html#jssenames">
+     * Supported algorithm names</a>.
      * @param hostNameVerificationHost the host name used to verify the
      * <a href="https://tools.ietf.org/search/rfc2818#section-3.1">server identity</a>.
      * @return {@code this}.
@@ -78,6 +82,8 @@ public interface ClientSecurityConfigurator extends SecurityConfigurator {
      * Determines what algorithm to use for hostname verification.
      *
      * @param hostNameVerificationAlgorithm The algorithm to use when verifying the host name.
+     * See <a href="https://docs.oracle.com/javase/8/docs/technotes/guides/security/StandardNames.html#jssenames">
+     * Supported algorithm names</a>.
      * @param hostNameVerificationHost the host name used to verify the
      * <a href="https://tools.ietf.org/search/rfc2818#section-3.1">server identity</a>.
      * @param hostNameVerificationPort The port which maybe used to verify the
