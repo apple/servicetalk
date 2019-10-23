@@ -34,6 +34,7 @@ import io.netty.channel.ChannelOutboundHandlerAdapter;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.embedded.EmbeddedChannel;
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
@@ -73,6 +74,7 @@ import static org.hamcrest.Matchers.hasSize;
 public class FlushStrategyOnServerTest {
 
     private static final Object FLUSH = new Object();
+    private static final IoExecutor ioExecutor = createIoExecutor(1);
 
     private final BlockingQueue<Object> writeEvents;
 
@@ -83,8 +85,7 @@ public class FlushStrategyOnServerTest {
 
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
-    private final IoExecutor ioExecutor;
-    private HttpHeadersFactory headersFactory;
+    private final HttpHeadersFactory headersFactory;
 
     public FlushStrategyOnServerTest(final HttpExecutionStrategy executionStrategy) throws Exception {
         writeEvents = new LinkedBlockingQueue<>();
@@ -100,7 +101,7 @@ public class FlushStrategyOnServerTest {
                 writeEvents.add(FLUSH);
                 ctx.flush();
             }
-       });
+        });
         executor = newCachedThreadExecutor();
         useAggregatedResponse = new AtomicBoolean();
         StreamingHttpService service = (ctx, request, responseFactory) -> {
@@ -110,7 +111,6 @@ public class FlushStrategyOnServerTest {
             }
             return succeeded(resp);
         };
-        ioExecutor = createIoExecutor(1);
         DefaultHttpExecutionContext httpExecutionContext =
                 new DefaultHttpExecutionContext(DEFAULT_ALLOCATOR, ioExecutor, executor, executionStrategy);
         ReadOnlyHttpServerConfig config = new HttpServerConfig().asReadOnly();
@@ -127,9 +127,14 @@ public class FlushStrategyOnServerTest {
         return asList(noOffloadsStrategy(), defaultStrategy(), customStrategyBuilder().offloadAll().build());
     }
 
+    @AfterClass
+    public static void afterClass() throws Exception {
+        ioExecutor.closeAsyncGracefully().toFuture().get();
+    }
+
     @After
     public void tearDown() throws Exception {
-        newCompositeCloseable().appendAll(serverConnection, executor, ioExecutor)
+        newCompositeCloseable().appendAll(serverConnection, executor)
                 .closeAsyncGracefully().toFuture().get();
     }
 
@@ -152,6 +157,17 @@ public class FlushStrategyOnServerTest {
     }
 
     @Test
+    public void twoStreamingResponsesFlushOnEach() throws Exception {
+        useAggregatedResponse.set(false);
+        sendARequest();
+        verifyStreamingResponseWrite();
+
+        useAggregatedResponse.set(false);
+        sendARequest();
+        verifyStreamingResponseWrite();
+    }
+
+    @Test
     public void streamingResponsesFlushOnEach() throws Exception {
         useAggregatedResponse.set(false);
         sendARequest();
@@ -167,6 +183,17 @@ public class FlushStrategyOnServerTest {
         useAggregatedResponse.set(false);
         sendARequest();
         verifyStreamingResponseWrite();
+    }
+
+    @Test
+    public void streamingAndThenAggregatedResponse() throws Exception {
+        useAggregatedResponse.set(false);
+        sendARequest();
+        verifyStreamingResponseWrite();
+
+        useAggregatedResponse.set(true);
+        sendARequest();
+        assertAggregatedResponseWrite();
     }
 
     private void assertAggregatedResponseWrite() throws Exception {
