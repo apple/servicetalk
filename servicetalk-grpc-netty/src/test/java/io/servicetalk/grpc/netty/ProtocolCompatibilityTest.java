@@ -616,7 +616,7 @@ public class ProtocolCompatibilityTest {
         final GrpcClientBuilder<InetSocketAddress, InetSocketAddress> builder =
                 GrpcClients.forResolvedAddress((InetSocketAddress) serverAddress).h2PriorKnowledge(true);
         if (ssl) {
-            builder.secure().provider(OPENSSL)
+            builder.secure().disableHostnameVerification().provider(OPENSSL)
                     .applicationProtocolNegotiation(ALPN, NO_ADVERTISE, ACCEPT, ALPN_SUPPORTED_PROTOCOLS)
                     .trustManager(DefaultTestCerts::loadServerPem).commit();
         }

@@ -24,7 +24,7 @@ import static java.util.Objects.requireNonNull;
  */
 public class ReadOnlyClientSecurityConfig extends ReadOnlySecurityConfig {
     @Nullable
-    protected String hostnameVerificationAlgorithm;
+    protected String hostnameVerificationAlgorithm = "HTTPS";
     @Nullable
     protected String hostNameVerificationHost;
     /**
