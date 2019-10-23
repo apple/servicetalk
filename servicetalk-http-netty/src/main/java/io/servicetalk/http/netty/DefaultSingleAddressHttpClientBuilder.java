@@ -333,9 +333,9 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
         final HttpExecutionContext exec = clonedBuilder.executionContextBuilder.build();
         final StreamingHttpRequestResponseFactory reqRespFactory = clonedBuilder.config.isH2PriorKnowledge() ?
                 new DefaultStreamingHttpRequestResponseFactory(exec.bufferAllocator(),
-                        clonedBuilder.config.h2Config().headersFactory(), HTTP_2_0) :
+                        clonedBuilder.config.protocolConfigs().h2Config().headersFactory(), HTTP_2_0) :
                 new DefaultStreamingHttpRequestResponseFactory(exec.bufferAllocator(),
-                        clonedBuilder.config.h1Config().headersFactory(), HTTP_1_1);
+                        clonedBuilder.config.protocolConfigs().h1Config().headersFactory(), HTTP_1_1);
 
         return new HttpClientBuildContext<>(clonedBuilder, exec, reqRespFactory, proxyAddress);
     }
@@ -377,7 +377,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
 
     @Override
     public DefaultSingleAddressHttpClientBuilder<U, R> protocols(final ProtocolConfig... protocols) {
-        config.protocols(protocols);
+        config.protocolConfigs().protocols(protocols);
         return this;
     }
 

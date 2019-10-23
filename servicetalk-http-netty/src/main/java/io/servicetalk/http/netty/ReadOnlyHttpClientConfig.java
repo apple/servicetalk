@@ -16,19 +16,43 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.tcp.netty.internal.ReadOnlyTcpClientConfig;
-import io.servicetalk.tcp.netty.internal.TcpClientConfig;
 
 import javax.annotation.Nullable;
 
-final class ReadOnlyHttpClientConfig
-        extends AbstractReadOnlyHttpConfig<ReadOnlyTcpClientConfig, TcpClientConfig, ReadOnlyHttpClientConfig> {
+final class ReadOnlyHttpClientConfig {
 
+    private final ReadOnlyTcpClientConfig tcpConfig;
+    @Nullable
+    private final H1ProtocolConfig h1Config;
+    @Nullable
+    private final H2ProtocolConfig h2Config;
     @Nullable
     private final CharSequence connectAddress;
 
     ReadOnlyHttpClientConfig(final HttpClientConfig from) {
-        super(from.tcpConfig().asReadOnly(from.supportedAlpnProtocols()), from);
+        final HttpProtocolConfig configs = from.protocolConfigs();
+        tcpConfig = from.tcpConfig().asReadOnly(configs.supportedAlpnProtocols());
+        h1Config = configs.h1Config();
+        h2Config = configs.h2Config();
         connectAddress = from.connectAddress();
+    }
+
+    ReadOnlyTcpClientConfig tcpConfig() {
+        return tcpConfig;
+    }
+
+    @Nullable
+    H1ProtocolConfig h1Config() {
+        return h1Config;
+    }
+
+    @Nullable
+    H2ProtocolConfig h2Config() {
+        return h2Config;
+    }
+
+    boolean isH2PriorKnowledge() {
+        return h2Config != null && h1Config == null;
     }
 
     @Nullable

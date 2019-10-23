@@ -43,7 +43,7 @@ final class DefaultHttpServerBuilder extends HttpServerBuilder {
 
     @Override
     public HttpServerBuilder protocols(final ProtocolConfig... protocols) {
-        config.protocols(protocols);
+        config.protocolConfigs().protocols(protocols);
         return this;
     }
 

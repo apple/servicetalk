@@ -19,22 +19,34 @@ import io.servicetalk.tcp.netty.internal.TcpClientConfig;
 
 import javax.annotation.Nullable;
 
-final class HttpClientConfig extends AbstractHttpConfig<TcpClientConfig, ReadOnlyHttpClientConfig> {
+final class HttpClientConfig {
 
+    private final TcpClientConfig tcpConfig;
+    private final HttpProtocolConfig protocolConfigs;
     @Nullable
     private CharSequence connectAddress;
 
     HttpClientConfig() {
-        super(new TcpClientConfig());
+        tcpConfig = new TcpClientConfig();
+        protocolConfigs = new HttpProtocolConfig();
     }
 
     HttpClientConfig(final HttpClientConfig from) {
-        super(new TcpClientConfig(from.tcpConfig()), from);
+        tcpConfig = from.tcpConfig();
+        protocolConfigs = from.protocolConfigs();
         connectAddress = from.connectAddress;
     }
 
+    TcpClientConfig tcpConfig() {
+        return tcpConfig;
+    }
+
+    HttpProtocolConfig protocolConfigs() {
+        return protocolConfigs;
+    }
+
     boolean isH2PriorKnowledge() {
-        return h2Config() != null && h1Config() == null;
+        return protocolConfigs.h2Config() != null && protocolConfigs.h1Config() == null;
     }
 
     @Nullable
@@ -47,10 +59,9 @@ final class HttpClientConfig extends AbstractHttpConfig<TcpClientConfig, ReadOnl
         return this;
     }
 
-    @Override
     ReadOnlyHttpClientConfig asReadOnly() {
         final ReadOnlyHttpClientConfig roConfig = new ReadOnlyHttpClientConfig(this);
-        if (roConfig.tcpConfig().sslContext() == null && h1Config() != null && h2Config() != null) {
+        if (roConfig.tcpConfig().sslContext() == null && roConfig.h1Config() != null && roConfig.h2Config() != null) {
             throw new IllegalStateException("Cleartext HTTP/1.1 -> HTTP/2 (h2c) upgrade is not supported");
         }
         return roConfig;

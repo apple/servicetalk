@@ -20,56 +20,35 @@ import io.servicetalk.transport.api.ProtocolConfig;
 import java.util.List;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.http.netty.HttpProtocolConfigs.h1Default;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static java.util.Collections.unmodifiableList;
 import static java.util.Objects.requireNonNull;
 
-abstract class AbstractHttpConfig<TcpConfig, ReadOnlyView> {
+final class HttpProtocolConfig {
 
-    private final TcpConfig tcpConfig;
     @Nullable
     private H1ProtocolConfig h1Config;
     @Nullable
     private H2ProtocolConfig h2Config;
     private List<String> supportedAlpnProtocols = emptyList();
 
-    protected AbstractHttpConfig(final TcpConfig tcpConfig) {
-        this.tcpConfig = requireNonNull(tcpConfig);
-        h1Config = h1Default();
-    }
-
-    protected AbstractHttpConfig(final TcpConfig tcpConfigCopy,
-                                 final AbstractHttpConfig<TcpConfig, ReadOnlyView> from) {
-        tcpConfig = tcpConfigCopy;
-        h1Config = from.h1Config;
-        h2Config = from.h2Config;
-        supportedAlpnProtocols = from.supportedAlpnProtocols(); // no need to copy because this list is always immutable
-    }
-
-    final TcpConfig tcpConfig() {
-        return tcpConfig;
-    }
-
     @Nullable
-    final H1ProtocolConfig h1Config() {
+    H1ProtocolConfig h1Config() {
         return h1Config;
     }
 
     @Nullable
-    final H2ProtocolConfig h2Config() {
+    H2ProtocolConfig h2Config() {
         return h2Config;
     }
 
-    final List<String> supportedAlpnProtocols() {
+    List<String> supportedAlpnProtocols() {
         return supportedAlpnProtocols;
     }
 
-    abstract ReadOnlyView asReadOnly();
-
-    final void protocols(final ProtocolConfig... protocols) {
+    void protocols(final ProtocolConfig... protocols) {
         requireNonNull(protocols);
         if (protocols.length < 1) {
             throw new IllegalArgumentException("A list of protocols should contain at least one ProtocolConfig");

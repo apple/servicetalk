@@ -17,16 +17,27 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.tcp.netty.internal.TcpServerConfig;
 
-final class HttpServerConfig extends AbstractHttpConfig<TcpServerConfig, ReadOnlyHttpServerConfig> {
+final class HttpServerConfig {
+
+    private final TcpServerConfig tcpConfig;
+    private final HttpProtocolConfig protocolConfigs;
 
     HttpServerConfig() {
-        super(new TcpServerConfig());
+        tcpConfig = new TcpServerConfig();
+        protocolConfigs = new HttpProtocolConfig();
     }
 
-    @Override
+    TcpServerConfig tcpConfig() {
+        return tcpConfig;
+    }
+
+    HttpProtocolConfig protocolConfigs() {
+        return protocolConfigs;
+    }
+
     ReadOnlyHttpServerConfig asReadOnly() {
         final ReadOnlyHttpServerConfig roConfig = new ReadOnlyHttpServerConfig(this);
-        if (roConfig.tcpConfig().sslContext() == null && h1Config() != null && h2Config() != null) {
+        if (roConfig.tcpConfig().sslContext() == null && roConfig.h1Config() != null && roConfig.h2Config() != null) {
             throw new IllegalStateException("Cleartext HTTP/1.1 -> HTTP/2 (h2c) upgrade is not supported");
         }
         return roConfig;
