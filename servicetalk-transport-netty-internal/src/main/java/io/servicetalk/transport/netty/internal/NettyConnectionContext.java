@@ -40,6 +40,13 @@ public interface NettyConnectionContext extends ConnectionContext {
     Cancellable updateFlushStrategy(FlushStrategyProvider strategyProvider);
 
     /**
+     * Returns the {@link FlushStrategy} used by default for this {@link NettyConnectionContext}.
+     *
+     * @return The {@link FlushStrategy} used by default for this {@link NettyConnectionContext}.
+     */
+    FlushStrategy defaultFlushStrategy();
+
+    /**
      * Returns a {@link Single}&lt;{@link Throwable}&gt; that may terminate with an error, if an error is observed at
      * the transport.
      *

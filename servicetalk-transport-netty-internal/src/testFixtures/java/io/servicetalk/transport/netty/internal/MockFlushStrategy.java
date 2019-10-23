@@ -72,12 +72,12 @@ public final class MockFlushStrategy implements FlushStrategy {
     }
 
     /**
-     * Verifies whether {@link WriteEventsListener#itemWritten()} was called for the {@link WriteEventsListener}
+     * Verifies whether {@link WriteEventsListener#itemWritten(Object)} was called for the {@link WriteEventsListener}
      * returned from {@link #apply(FlushSender)}.
-     * @param count Number of times {@link WriteEventsListener#itemWritten()} is expected to be called.
+     * @param count Number of times {@link WriteEventsListener#itemWritten(Object)} is expected to be called.
      */
     public void verifyItemWritten(int count) {
-        writeVerifier.verify(writeListener, times(count)).itemWritten();
+        writeVerifier.verify(writeListener, times(count)).itemWritten(any());
     }
 
     /**
@@ -111,9 +111,9 @@ public final class MockFlushStrategy implements FlushStrategy {
     }
 
     /**
-     * Invoke some code on the first invocation of {@link WriteEventsListener#itemWritten()}.
+     * Invoke some code on the first invocation of {@link WriteEventsListener#itemWritten(Object)}.
      * @param senderConsumer A {@link Consumer} that is given the {@link FlushSender} after
-     * {@link WriteEventsListener#itemWritten()}.
+     * {@link WriteEventsListener#itemWritten(Object)}.
      */
     public void afterFirstWrite(Consumer<FlushSender> senderConsumer) {
         doAnswer(new Answer<Void>() {
@@ -125,6 +125,6 @@ public final class MockFlushStrategy implements FlushStrategy {
                 }
                 return null;
             }
-        }).when(writeListener).itemWritten();
+        }).when(writeListener).itemWritten(any());
     }
 }

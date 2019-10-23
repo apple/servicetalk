@@ -442,6 +442,11 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
     }
 
     @Override
+    public FlushStrategy defaultFlushStrategy() {
+        return flushStrategyHolder.currentStrategy();
+    }
+
+    @Override
     public Single<Throwable> transportError() {
         return fromSource(transportError).publishOn(executionContext().executor());
     }

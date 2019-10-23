@@ -613,7 +613,7 @@ public class ProtocolCompatibilityTest {
         final GrpcClientBuilder<InetSocketAddress, InetSocketAddress> builder =
                 GrpcClients.forResolvedAddress((InetSocketAddress) serverAddress);
         if (ssl) {
-            builder.secure().provider(OPENSSL)
+            builder.secure().disableHostnameVerification().provider(OPENSSL)
                     .trustManager(DefaultTestCerts::loadServerPem).commit();
         }
         return builder.build(new Compat.ClientFactory());

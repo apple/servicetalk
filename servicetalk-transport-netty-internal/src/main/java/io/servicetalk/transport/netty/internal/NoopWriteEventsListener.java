@@ -29,7 +29,7 @@ public abstract class NoopWriteEventsListener implements WriteEventsListener {
     }
 
     @Override
-    public void itemWritten() {
+    public void itemWritten(Object __) {
         // No op
     }
 

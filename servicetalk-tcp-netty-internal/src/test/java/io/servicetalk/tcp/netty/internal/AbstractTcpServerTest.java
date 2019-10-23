@@ -104,6 +104,7 @@ public abstract class AbstractTcpServerTest {
             ClientSecurityConfig securityConfig = new ClientSecurityConfig(serverHostAndPort.hostName(),
                     serverHostAndPort.port());
             securityConfig.trustManager(DefaultTestCerts::loadMutualAuthCaPem);
+            securityConfig.disableHostnameVerification();
             tcpClientConfig.secure(securityConfig.asReadOnly());
         }
         return tcpClientConfig;

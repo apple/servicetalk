@@ -49,8 +49,8 @@ public class FlushStrategiesTest {
     @Test
     public void testFlushOnEach() {
         setupFor(flushOnEach());
-        listener.itemWritten();
-        listener.itemWritten();
+        listener.itemWritten(1);
+        listener.itemWritten(2);
         verifyFlush(2);
     }
 
@@ -101,7 +101,7 @@ public class FlushStrategiesTest {
     public void testDurationComplete() {
         setupForBatch(2);
         durationSource.onComplete();
-        listener.itemWritten();
+        listener.itemWritten(1);
         verifyZeroInteractions(flushSender);
         listener.writeTerminated();
         verifyFlush(1);
@@ -112,8 +112,8 @@ public class FlushStrategiesTest {
         setupForBatch(2);
         durationSource.onError(DELIBERATE_EXCEPTION);
         verifyZeroInteractions(flushSender);
-        listener.itemWritten();
-        listener.itemWritten();
+        listener.itemWritten(1);
+        listener.itemWritten(2);
         verify(flushSender).flush();
     }
 
@@ -128,7 +128,7 @@ public class FlushStrategiesTest {
     @Test
     public void testDurationCompletePostComplete() {
         setupForBatch(2);
-        listener.itemWritten();
+        listener.itemWritten(1);
         listener.writeTerminated();
         durationSource.onComplete();
         verify(flushSender).flush();
@@ -137,7 +137,7 @@ public class FlushStrategiesTest {
     @Test
     public void testFlushOnEndComplete() {
         setupFor(flushOnEnd());
-        listener.itemWritten();
+        listener.itemWritten(1);
         verifyFlush(0);
         listener.writeTerminated();
         verifyFlush(1);
@@ -147,7 +147,7 @@ public class FlushStrategiesTest {
     public void testFlushWith() {
         setupFor(flushWith(durationSource));
         durationSource.onSubscribe(subscription);
-        listener.itemWritten();
+        listener.itemWritten(1);
         verifyFlush(0);
         assertTrue(durationSource.isSubscribed());
         durationSource.onNext("1");
@@ -175,7 +175,7 @@ public class FlushStrategiesTest {
 
     private void testBatch(int batchSize, int sendItemCount) {
         for (int i = 0; i < sendItemCount; i++) {
-            listener.itemWritten();
+            listener.itemWritten(i);
         }
         verifyFlush(sendItemCount / batchSize);
     }

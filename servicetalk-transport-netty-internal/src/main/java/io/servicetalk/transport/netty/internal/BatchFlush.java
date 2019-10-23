@@ -64,7 +64,7 @@ final class BatchFlush implements FlushStrategy {
         }
 
         @Override
-        public void itemWritten() {
+        public void itemWritten(Object __) {
             if (++unflushedCount == batchSize) {
                 unflushedCount = 0;
                 sender.flush();

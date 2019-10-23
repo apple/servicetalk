@@ -39,6 +39,7 @@ import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
+import io.servicetalk.transport.netty.internal.FlushStrategy;
 import io.servicetalk.transport.netty.internal.NettyConnectionContext;
 
 import io.netty.channel.Channel;
@@ -258,6 +259,11 @@ public class ConnectionFactoryFilterTest {
         @Override
         public Cancellable updateFlushStrategy(final FlushStrategyProvider strategyProvider) {
             return delegate.updateFlushStrategy(strategyProvider);
+        }
+
+        @Override
+        public FlushStrategy defaultFlushStrategy() {
+            return delegate.defaultFlushStrategy();
         }
 
         @Override
