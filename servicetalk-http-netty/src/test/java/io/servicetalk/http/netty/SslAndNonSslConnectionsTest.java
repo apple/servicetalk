@@ -32,11 +32,14 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.junit.rules.Timeout;
 import org.mockito.stubbing.Answer;
 
 import java.nio.channels.ClosedChannelException;
+import java.security.cert.CertificateException;
 import javax.annotation.Nullable;
+import javax.net.ssl.SSLHandshakeException;
 
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Single.succeeded;
@@ -47,6 +50,7 @@ import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.transport.netty.internal.AddressUtils.hostHeader;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -59,6 +63,8 @@ import static org.mockito.Mockito.when;
 
 public class SslAndNonSslConnectionsTest {
 
+    @Rule
+    public final ExpectedException expectedException = ExpectedException.none();
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
 
@@ -127,21 +133,23 @@ public class SslAndNonSslConnectionsTest {
         clearInvocations(STREAMING_HTTP_SERVICE, SECURE_STREAMING_HTTP_SERVICE);
     }
 
-    @Test(expected = ClosedChannelException.class)
+    @Test
     public void nonSecureClientToSecureServerClosesConnection() throws Exception {
         assert secureServerCtx != null;
         try (BlockingHttpClient client = HttpClients.forSingleAddress(serverHostAndPort(secureServerCtx))
                 .buildBlocking()) {
+            expectedException.expect(instanceOf(ClosedChannelException.class));
             client.request(client.get("/"));
         }
     }
 
-    @Test(expected = ClosedChannelException.class)
+    @Test
     public void secureClientToNonSecureServerClosesConnection() throws Exception {
         assert serverCtx != null;
         try (BlockingHttpClient client = HttpClients.forSingleAddress(serverHostAndPort(serverCtx))
                 .secure().disableHostnameVerification().trustManager(DefaultTestCerts::loadMutualAuthCaPem).commit()
                 .buildBlocking()) {
+            expectedException.expect(instanceOf(ClosedChannelException.class));
             client.request(client.get("/"));
         }
     }
@@ -167,6 +175,19 @@ public class SslAndNonSslConnectionsTest {
         try (BlockingHttpClient client = HttpClients.forSingleAddress(serverHostAndPort(secureServerCtx))
                 .secure().disableHostnameVerification().trustManager(DefaultTestCerts::loadMutualAuthCaPem).commit()
                 .buildBlocking()) {
+            testRequestResponse(client, "/", true);
+        }
+    }
+
+    @Test
+    public void hostNameVerificationIsEnabledByDefault() throws Exception {
+        assert secureServerCtx != null;
+        try (BlockingHttpClient client = HttpClients.forSingleAddress(serverHostAndPort(secureServerCtx))
+                .secure().trustManager(DefaultTestCerts::loadMutualAuthCaPem).commit()
+                .buildBlocking()) {
+            expectedException.expect(instanceOf(SSLHandshakeException.class));
+            // Hostname verification failure
+            expectedException.expectCause(instanceOf(CertificateException.class));
             testRequestResponse(client, "/", true);
         }
     }

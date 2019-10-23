@@ -151,7 +151,8 @@ public abstract class AbstractNettyHttpServerTest {
 
         final SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> clientBuilder = newClientBuilder();
         if (sslEnabled) {
-            clientBuilder.secure().trustManager(DefaultTestCerts::loadMutualAuthCaPem).commit();
+            clientBuilder.secure().disableHostnameVerification()
+                    .trustManager(DefaultTestCerts::loadMutualAuthCaPem).commit();
         }
         httpClient = clientBuilder.ioExecutor(clientIoExecutor)
                 .executionStrategy(defaultStrategy(clientExecutor)).buildStreaming();
