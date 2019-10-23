@@ -219,6 +219,11 @@ public final class DefaultNettyPipelinedConnection<Req, Resp> implements NettyPi
         return connection.updateFlushStrategy(strategyProvider);
     }
 
+    @Override
+    public FlushStrategy defaultFlushStrategy() {
+        return connection.defaultFlushStrategy();
+    }
+
     private static final class WriteQueue<Resp> extends SequentialTaskQueue<Task<Resp>> {
 
         private final ResponseQueue<Resp> responseQueue;

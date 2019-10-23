@@ -341,6 +341,11 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext im
         }
 
         @Override
+        public FlushStrategy defaultFlushStrategy() {
+            return parentContext.defaultFlushStrategy();
+        }
+
+        @Override
         public Single<Throwable> transportError() {
             return parentContext.transportError();
         }

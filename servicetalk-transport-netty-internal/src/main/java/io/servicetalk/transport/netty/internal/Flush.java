@@ -106,7 +106,7 @@ final class Flush {
                 enqueueFlush = true;
             }
             subscriber.onNext(t);
-            writeEventsListener.itemWritten();
+            writeEventsListener.itemWritten(t);
         }
 
         @Override

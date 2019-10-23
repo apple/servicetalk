@@ -109,6 +109,11 @@ class H2ParentConnectionContext extends NettyChannelListenableAsyncCloseable imp
     }
 
     @Override
+    public FlushStrategy defaultFlushStrategy() {
+        return flushStrategyHolder.currentStrategy();
+    }
+
+    @Override
     public final Single<Throwable> transportError() {
         return fromSource(transportError).publishOn(executionContext().executor());
     }
