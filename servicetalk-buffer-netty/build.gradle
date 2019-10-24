@@ -18,11 +18,11 @@ apply plugin: "servicetalk-library"
 
 dependencies {
   api project(":servicetalk-buffer-api")
+  api "io.netty:netty-buffer:$nettyVersion"
 
   implementation project(":servicetalk-annotations")
   implementation project(":servicetalk-concurrent-internal")
   implementation "com.google.code.findbugs:jsr305:$jsr305Version"
-  implementation "io.netty:netty-buffer:$nettyVersion"
   implementation "org.slf4j:slf4j-api:$slf4jVersion"
 
   testImplementation project(":servicetalk-test-resources")
