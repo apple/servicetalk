@@ -15,12 +15,20 @@
  */
 package io.servicetalk.http.api;
 
-import io.servicetalk.transport.api.ProtocolConfig;
-
 /**
  * Defines configuration options for HTTP protocol versions.
  */
-public interface HttpProtocolConfig extends ProtocolConfig {
+public interface HttpProtocolConfig {
+
+    /**
+     * TLS Application-Layer Protocol Negotiation (ALPN) Protocol ID of the protocol this configuration is for.
+     *
+     * @return string representation of ALPN Identification Sequence
+     * @see <a href=
+     * "https://www.iana.org/assignments/tls-extensiontype-values/tls-extensiontype-values.xhtml#alpn-protocol-ids">
+     * TLS Application-Layer Protocol Negotiation (ALPN) Protocol IDs</a>
+     */
+    String alpnId();
 
     /**
      * {@link HttpHeadersFactory} to be used for creating {@link HttpHeaders} when decoding HTTP messages.
