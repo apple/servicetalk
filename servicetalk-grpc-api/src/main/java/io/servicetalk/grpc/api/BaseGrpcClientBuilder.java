@@ -16,6 +16,7 @@
 package io.servicetalk.grpc.api;
 
 import io.servicetalk.buffer.api.BufferAllocator;
+import io.servicetalk.http.api.HttpProtocolConfig;
 import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequest;
@@ -74,10 +75,10 @@ interface BaseGrpcClientBuilder<U, R> {
      * <b>Note:</b> the order of specified protocols will reflect on priorities for ALPN in case the connections are
      * secured.
      *
-     * @param protocols {@link GrpcProtocolConfig} for each protocol that should be supported.
+     * @param protocols {@link HttpProtocolConfig} for each protocol that should be supported.
      * @return {@code this}.
      */
-    BaseGrpcClientBuilder<U, R> protocols(GrpcProtocolConfig... protocols);
+    BaseGrpcClientBuilder<U, R> protocols(HttpProtocolConfig... protocols);
 
     /**
      * Append the filter to the chain of filters used to decorate the {@link StreamingHttpConnection} created by this

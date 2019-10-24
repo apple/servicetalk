@@ -25,6 +25,7 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.FilterableStreamingHttpLoadBalancedConnection;
 import io.servicetalk.http.api.HttpExecutionStrategy;
+import io.servicetalk.http.api.HttpProtocolConfig;
 import io.servicetalk.http.api.StreamingHttpClientFilter;
 import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
 import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
@@ -66,7 +67,7 @@ public abstract class GrpcClientBuilder<U, R>
     public abstract GrpcClientBuilder<U, R> enableWireLogging(String loggerName);
 
     @Override
-    public abstract GrpcClientBuilder<U, R> protocols(GrpcProtocolConfig... protocols);
+    public abstract GrpcClientBuilder<U, R> protocols(HttpProtocolConfig... protocols);
 
     @Override
     public abstract GrpcClientBuilder<U, R> appendConnectionFactoryFilter(

@@ -18,6 +18,7 @@ package io.servicetalk.grpc.api;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpExecutionStrategy;
+import io.servicetalk.http.api.HttpProtocolConfig;
 import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpRequest;
@@ -49,10 +50,10 @@ public abstract class GrpcServerBuilder {
      * <b>Note:</b> the order of specified protocols will reflect on priorities for ALPN in case the connections are
      * {@link #secure() secured}.
      *
-     * @param protocols {@link GrpcProtocolConfig} for each protocol that should be supported.
+     * @param protocols {@link HttpProtocolConfig} for each protocol that should be supported.
      * @return {@code this}.
      */
-    public abstract GrpcServerBuilder protocols(GrpcProtocolConfig... protocols);
+    public abstract GrpcServerBuilder protocols(HttpProtocolConfig... protocols);
 
     /**
      * The maximum queue length for incoming connection indications (a request to connect) is set to the backlog
