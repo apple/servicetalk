@@ -19,7 +19,6 @@ import io.servicetalk.transport.api.SecurityConfigurator;
 
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.handler.ssl.ApplicationProtocolConfig;
-import io.netty.handler.ssl.JdkSsl;
 import io.netty.handler.ssl.OpenSsl;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslHandler;
@@ -38,6 +37,7 @@ import javax.net.ssl.SSLParameters;
 import static io.netty.handler.ssl.ApplicationProtocolConfig.Protocol.ALPN;
 import static io.netty.handler.ssl.ApplicationProtocolConfig.SelectedListenerFailureBehavior.ACCEPT;
 import static io.netty.handler.ssl.ApplicationProtocolConfig.SelectorFailureBehavior.NO_ADVERTISE;
+import static io.netty.handler.ssl.SslProvider.isAlpnSupported;
 
 /**
  * Utility for SSL.
@@ -124,9 +124,9 @@ final class SslUtils {
         switch (provider) {
             case AUTO:
                 if (alpn) {
-                    if (OpenSsl.isAlpnSupported()) {
+                    if (isAlpnSupported(SslProvider.OPENSSL)) {
                         return SslProvider.OPENSSL;
-                    } else if (JdkSsl.isAlpnSupported()) {
+                    } else if (isAlpnSupported(SslProvider.JDK)) {
                         return SslProvider.JDK;
                     } else {
                         throw new IllegalStateException("ALPN configured but not supported by the current classpath: " +
@@ -136,7 +136,7 @@ final class SslUtils {
                 }
                 return null;
             case JDK:
-                if (alpn && !JdkSsl.isAlpnSupported()) {
+                if (alpn && !isAlpnSupported(SslProvider.JDK)) {
                     throw new IllegalStateException(
                             "ALPN configured but not supported by the current classpath. For more information, " +
                                     "see https://www.eclipse.org/jetty/documentation/current/alpn-chapter.html");
@@ -144,7 +144,7 @@ final class SslUtils {
                 return SslProvider.JDK;
             case OPENSSL:
                 OpenSsl.ensureAvailability();
-                if (alpn && !OpenSsl.isAlpnSupported()) {
+                if (alpn && !isAlpnSupported(SslProvider.OPENSSL)) {
                     throw new IllegalStateException(
                             "ALPN configured but not supported by installed version of OpenSSL");
                 }
