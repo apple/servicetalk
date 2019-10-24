@@ -16,14 +16,14 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.http.api.HttpClient;
-import io.servicetalk.http.api.HttpHeaders;
-import io.servicetalk.http.api.HttpHeadersFactory;
-import io.servicetalk.transport.api.ProtocolConfig;
+import io.servicetalk.http.api.HttpProtocolConfig;
 
 /**
  * Configuration for <a href="https://tools.ietf.org/html/rfc7230">HTTP/1.1</a> protocol.
+ *
+ * @see HttpProtocolConfigs#h1Default()
  */
-public interface H1ProtocolConfig extends ProtocolConfig {
+public interface H1ProtocolConfig extends HttpProtocolConfig {
 
     @Override
     default String alpnId() {
@@ -65,13 +65,6 @@ public interface H1ProtocolConfig extends ProtocolConfig {
      * <a href="https://tools.ietf.org/html/rfc7230#section-4.1.2trailers">trailer fields</a> to parse
      */
     int maxHeaderFieldLength();
-
-    /**
-     * {@link HttpHeadersFactory} to be used for creating {@link HttpHeaders} when decoding HTTP messages.
-     *
-     * @return {@link HttpHeadersFactory} to be used for creating {@link HttpHeaders} when decoding HTTP messages
-     */
-    HttpHeadersFactory headersFactory();
 
     /**
      * Value used to calculate an exponential moving average of the encoded size of the HTTP

@@ -17,11 +17,11 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.BlockingHttpClient;
+import io.servicetalk.http.api.HttpProtocolConfig;
 import io.servicetalk.http.api.HttpProtocolVersion;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.test.resources.DefaultTestCerts;
 import io.servicetalk.transport.api.HostAndPort;
-import io.servicetalk.transport.api.ProtocolConfig;
 import io.servicetalk.transport.api.ServerContext;
 
 import io.netty.handler.codec.DecoderException;
@@ -140,7 +140,7 @@ public class AlpnClientAndServerTest {
                 .buildBlocking();
     }
 
-    private static ProtocolConfig[] toProtocolConfigs(List<String> supportedProtocols) {
+    private static HttpProtocolConfig[] toProtocolConfigs(List<String> supportedProtocols) {
         return supportedProtocols.stream()
                 .map(id -> {
                     switch (id) {
@@ -151,7 +151,7 @@ public class AlpnClientAndServerTest {
                         default:
                             throw new IllegalArgumentException("Unsupported protocol: " + id);
                     }
-                }).toArray(ProtocolConfig[]::new);
+                }).toArray(HttpProtocolConfig[]::new);
     }
 
     @After

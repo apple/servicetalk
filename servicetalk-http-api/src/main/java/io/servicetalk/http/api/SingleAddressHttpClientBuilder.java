@@ -21,7 +21,6 @@ import io.servicetalk.client.api.LoadBalancerFactory;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
 import io.servicetalk.transport.api.IoExecutor;
-import io.servicetalk.transport.api.ProtocolConfig;
 
 import java.net.SocketOption;
 import java.util.function.Function;
@@ -55,7 +54,7 @@ public abstract class SingleAddressHttpClientBuilder<U, R>
     public abstract SingleAddressHttpClientBuilder<U, R> enableWireLogging(String loggerName);
 
     @Override
-    public abstract SingleAddressHttpClientBuilder<U, R> protocols(ProtocolConfig... protocols);
+    public abstract SingleAddressHttpClientBuilder<U, R> protocols(HttpProtocolConfig... protocols);
 
     @Override
     public abstract SingleAddressHttpClientBuilder<U, R> appendConnectionFilter(

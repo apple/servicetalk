@@ -28,7 +28,6 @@ import io.servicetalk.http.api.FilterableStreamingHttpLoadBalancedConnection;
 import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.transport.api.IoExecutor;
-import io.servicetalk.transport.api.ProtocolConfig;
 
 import java.net.SocketOption;
 import java.util.function.Function;
@@ -53,7 +52,7 @@ interface SingleAddressGrpcClientBuilder<U, R,
     SingleAddressGrpcClientBuilder<U, R, SDE> enableWireLogging(String loggerName);
 
     @Override
-    SingleAddressGrpcClientBuilder<U, R, SDE> protocols(ProtocolConfig... protocols);
+    SingleAddressGrpcClientBuilder<U, R, SDE> protocols(GrpcProtocolConfig... protocols);
 
     /**
      * Append the filter to the chain of filters used to decorate the {@link ConnectionFactory} used by this

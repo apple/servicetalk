@@ -20,7 +20,6 @@ import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.transport.api.IoExecutor;
-import io.servicetalk.transport.api.ProtocolConfig;
 
 import java.net.SocketOption;
 import java.util.function.Predicate;
@@ -75,10 +74,10 @@ interface BaseGrpcClientBuilder<U, R> {
      * <b>Note:</b> the order of specified protocols will reflect on priorities for ALPN in case the connections are
      * secured.
      *
-     * @param protocols {@link ProtocolConfig} for each protocol that should be supported.
+     * @param protocols {@link GrpcProtocolConfig} for each protocol that should be supported.
      * @return {@code this}.
      */
-    BaseGrpcClientBuilder<U, R> protocols(ProtocolConfig... protocols);
+    BaseGrpcClientBuilder<U, R> protocols(GrpcProtocolConfig... protocols);
 
     /**
      * Append the filter to the chain of filters used to decorate the {@link StreamingHttpConnection} created by this

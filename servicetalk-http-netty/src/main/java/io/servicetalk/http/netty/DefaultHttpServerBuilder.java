@@ -19,12 +19,12 @@ import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpExecutionStrategy;
+import io.servicetalk.http.api.HttpProtocolConfig;
 import io.servicetalk.http.api.HttpServerBuilder;
 import io.servicetalk.http.api.HttpServerSecurityConfigurator;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.transport.api.ConnectionAcceptor;
 import io.servicetalk.transport.api.IoExecutor;
-import io.servicetalk.transport.api.ProtocolConfig;
 import io.servicetalk.transport.api.ServerContext;
 
 import java.net.SocketAddress;
@@ -42,8 +42,8 @@ final class DefaultHttpServerBuilder extends HttpServerBuilder {
     }
 
     @Override
-    public HttpServerBuilder protocols(final ProtocolConfig... protocols) {
-        config.protocolConfigs().protocols(protocols);
+    public HttpServerBuilder protocols(final HttpProtocolConfig... protocols) {
+        config.httpConfig().protocols(protocols);
         return this;
     }
 

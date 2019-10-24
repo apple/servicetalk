@@ -15,9 +15,7 @@
  */
 package io.servicetalk.http.netty;
 
-import io.servicetalk.http.api.HttpHeaders;
-import io.servicetalk.http.api.HttpHeadersFactory;
-import io.servicetalk.transport.api.ProtocolConfig;
+import io.servicetalk.http.api.HttpProtocolConfig;
 
 import org.slf4j.event.Level;
 
@@ -26,20 +24,15 @@ import javax.annotation.Nullable;
 
 /**
  * Configuration for <a href="https://tools.ietf.org/html/rfc7540">HTTP/2</a> protocol.
+ *
+ * @see HttpProtocolConfigs#h2Default()
  */
-public interface H2ProtocolConfig extends ProtocolConfig {
+public interface H2ProtocolConfig extends HttpProtocolConfig {
 
     @Override
     default String alpnId() {
         return AlpnIds.HTTP_2;
     }
-
-    /**
-     * {@link HttpHeadersFactory} to be used for creating {@link HttpHeaders} when decoding HTTP messages.
-     *
-     * @return {@link HttpHeadersFactory} to be used for creating {@link HttpHeaders} when decoding HTTP messages
-     */
-    HttpHeadersFactory headersFactory();
 
     /**
      * Sensitivity detector to determine if a header {@code name}/{@code value} pair should be treated as

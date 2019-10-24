@@ -24,6 +24,8 @@ import static java.util.Objects.requireNonNull;
 
 /**
  * Builder for {@link H1ProtocolConfig}.
+ *
+ * @see HttpProtocolConfigs#h1()
  */
 public final class H1ProtocolConfigBuilder {
 
@@ -35,6 +37,18 @@ public final class H1ProtocolConfigBuilder {
     private int trailersEncodedSizeEstimate = 256;
 
     H1ProtocolConfigBuilder() {
+    }
+
+    /**
+     * Sets the {@link HttpHeadersFactory} to be used for creating {@link HttpHeaders} when decoding HTTP messages.
+     *
+     * @param headersFactory {@link HttpHeadersFactory} to be used for creating {@link HttpHeaders} when decoding HTTP
+     * messages
+     * @return {@code this}
+     */
+    public H1ProtocolConfigBuilder headersFactory(final HttpHeadersFactory headersFactory) {
+        this.headersFactory = requireNonNull(headersFactory);
+        return this;
     }
 
     /**
@@ -87,18 +101,6 @@ public final class H1ProtocolConfigBuilder {
     }
 
     /**
-     * Sets the {@link HttpHeadersFactory} to be used for creating {@link HttpHeaders} when decoding HTTP messages.
-     *
-     * @param headersFactory {@link HttpHeadersFactory} to be used for creating {@link HttpHeaders} when decoding HTTP
-     * messages
-     * @return {@code this}
-     */
-    public H1ProtocolConfigBuilder headersFactory(final HttpHeadersFactory headersFactory) {
-        this.headersFactory = requireNonNull(headersFactory);
-        return this;
-    }
-
-    /**
      * Sets the value used to calculate an exponential moving average of the encoded size of the HTTP
      * <a href="https://tools.ietf.org/html/rfc7230#section-3.1">start line</a> and
      * <a href="https://tools.ietf.org/html/rfc7230#section-3.2">header fields</a> for a guess for future buffer
@@ -134,28 +136,33 @@ public final class H1ProtocolConfigBuilder {
      * @return a new {@link H1ProtocolConfig}
      */
     public H1ProtocolConfig build() {
-        return new DefaultH1ProtocolConfig(maxPipelinedRequests, maxStartLineLength, maxHeaderFieldLength,
-                headersFactory, headersEncodedSizeEstimate, trailersEncodedSizeEstimate);
+        return new DefaultH1ProtocolConfig(headersFactory, maxPipelinedRequests, maxStartLineLength,
+                maxHeaderFieldLength, headersEncodedSizeEstimate, trailersEncodedSizeEstimate);
     }
 
     private static final class DefaultH1ProtocolConfig implements H1ProtocolConfig {
 
+        private final HttpHeadersFactory headersFactory;
         private final int maxPipelinedRequests;
         private final int maxStartLineLength;
         private final int maxHeaderFieldLength;
-        private final HttpHeadersFactory headersFactory;
         private final int headersEncodedSizeEstimate;
         private final int trailersEncodedSizeEstimate;
 
-        DefaultH1ProtocolConfig(final int maxPipelinedRequests, final int maxStartLineLength,
-                                final int maxHeaderFieldLength, final HttpHeadersFactory headersFactory,
+        DefaultH1ProtocolConfig(final HttpHeadersFactory headersFactory, final int maxPipelinedRequests,
+                                final int maxStartLineLength, final int maxHeaderFieldLength,
                                 final int headersEncodedSizeEstimate, final int trailersEncodedSizeEstimate) {
+            this.headersFactory = headersFactory;
             this.maxPipelinedRequests = maxPipelinedRequests;
             this.maxStartLineLength = maxStartLineLength;
-            this.headersFactory = headersFactory;
             this.maxHeaderFieldLength = maxHeaderFieldLength;
             this.headersEncodedSizeEstimate = headersEncodedSizeEstimate;
             this.trailersEncodedSizeEstimate = trailersEncodedSizeEstimate;
+        }
+
+        @Override
+        public HttpHeadersFactory headersFactory() {
+            return headersFactory;
         }
 
         @Override
@@ -171,11 +178,6 @@ public final class H1ProtocolConfigBuilder {
         @Override
         public int maxHeaderFieldLength() {
             return maxHeaderFieldLength;
-        }
-
-        @Override
-        public HttpHeadersFactory headersFactory() {
-            return headersFactory;
         }
 
         @Override

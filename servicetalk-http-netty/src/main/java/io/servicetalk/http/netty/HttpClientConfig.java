@@ -22,13 +22,13 @@ import javax.annotation.Nullable;
 final class HttpClientConfig {
 
     private final TcpClientConfig tcpConfig;
-    private final HttpProtocolConfig protocolConfigs;
+    private final HttpConfig protocolConfigs;
     @Nullable
     private CharSequence connectAddress;
 
     HttpClientConfig() {
         tcpConfig = new TcpClientConfig();
-        protocolConfigs = new HttpProtocolConfig();
+        protocolConfigs = new HttpConfig();
     }
 
     HttpClientConfig(final HttpClientConfig from) {
@@ -41,7 +41,7 @@ final class HttpClientConfig {
         return tcpConfig;
     }
 
-    HttpProtocolConfig protocolConfigs() {
+    HttpConfig protocolConfigs() {
         return protocolConfigs;
     }
 
@@ -54,9 +54,8 @@ final class HttpClientConfig {
         return connectAddress;
     }
 
-    HttpClientConfig connectAddress(@Nullable final CharSequence connectAddress) {
+    void connectAddress(@Nullable final CharSequence connectAddress) {
         this.connectAddress = connectAddress;
-        return this;
     }
 
     ReadOnlyHttpClientConfig asReadOnly() {

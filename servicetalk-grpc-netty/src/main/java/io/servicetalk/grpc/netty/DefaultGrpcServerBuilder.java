@@ -18,6 +18,7 @@ package io.servicetalk.grpc.netty;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.grpc.api.GrpcExecutionStrategy;
+import io.servicetalk.grpc.api.GrpcProtocolConfig;
 import io.servicetalk.grpc.api.GrpcServerBuilder;
 import io.servicetalk.grpc.api.GrpcServerSecurityConfigurator;
 import io.servicetalk.grpc.api.GrpcServiceFactory;
@@ -33,14 +34,13 @@ import io.servicetalk.http.api.StreamingHttpServiceFilterFactory;
 import io.servicetalk.transport.api.ConnectionAcceptorFactory;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.IoExecutor;
-import io.servicetalk.transport.api.ProtocolConfig;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.netty.internal.ExecutionContextBuilder;
 
 import java.net.SocketOption;
 import java.util.function.Predicate;
 
-import static io.servicetalk.http.netty.HttpProtocolConfigs.h2Default;
+import static io.servicetalk.grpc.netty.GrpcProtocolConfigs.h2Default;
 
 final class DefaultGrpcServerBuilder extends GrpcServerBuilder implements ServerBinder {
 
@@ -52,7 +52,7 @@ final class DefaultGrpcServerBuilder extends GrpcServerBuilder implements Server
     }
 
     @Override
-    public GrpcServerBuilder protocols(final ProtocolConfig... protocols) {
+    public GrpcServerBuilder protocols(final GrpcProtocolConfig... protocols) {
         httpServerBuilder.protocols(protocols);
         return this;
     }

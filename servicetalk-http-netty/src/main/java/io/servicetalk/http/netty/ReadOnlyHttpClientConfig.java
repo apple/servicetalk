@@ -30,7 +30,7 @@ final class ReadOnlyHttpClientConfig {
     private final CharSequence connectAddress;
 
     ReadOnlyHttpClientConfig(final HttpClientConfig from) {
-        final HttpProtocolConfig configs = from.protocolConfigs();
+        final HttpConfig configs = from.protocolConfigs();
         tcpConfig = from.tcpConfig().asReadOnly(configs.supportedAlpnProtocols());
         h1Config = configs.h1Config();
         h2Config = configs.h2Config();

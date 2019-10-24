@@ -13,32 +13,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.http.netty;
+package io.servicetalk.grpc.netty;
 
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpHeadersFactory;
+import io.servicetalk.http.netty.H2ProtocolConfig;
+import io.servicetalk.http.netty.H2ProtocolConfigBuilder;
+import io.servicetalk.http.netty.HttpProtocolConfigs;
 
 import org.slf4j.event.Level;
 
 import java.util.function.BiPredicate;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.http.netty.H2HeadersFactory.DEFAULT_SENSITIVITY_DETECTOR;
-import static java.util.Objects.requireNonNull;
-
 /**
- * Builder for {@link H2ProtocolConfig}.
+ * Builder for {@link GrpcH2ProtocolConfig}.
  *
- * @see HttpProtocolConfigs#h2()
+ * @see GrpcProtocolConfigs#h2()
  */
-public final class H2ProtocolConfigBuilder {
+public final class GrpcH2ProtocolConfigBuilder {
 
-    private HttpHeadersFactory headersFactory = H2HeadersFactory.INSTANCE;
-    private BiPredicate<CharSequence, CharSequence> headersSensitivityDetector = DEFAULT_SENSITIVITY_DETECTOR;
-    @Nullable
-    private String frameLoggerName;
+    private H2ProtocolConfigBuilder h2Builder = HttpProtocolConfigs.h2();
 
-    H2ProtocolConfigBuilder() {
+    GrpcH2ProtocolConfigBuilder() {
     }
 
     /**
@@ -48,8 +45,8 @@ public final class H2ProtocolConfigBuilder {
      * messages
      * @return {@code this}
      */
-    public H2ProtocolConfigBuilder headersFactory(final HttpHeadersFactory headersFactory) {
-        this.headersFactory = requireNonNull(headersFactory);
+    public GrpcH2ProtocolConfigBuilder headersFactory(final HttpHeadersFactory headersFactory) {
+        h2Builder.headersFactory(headersFactory);
         return this;
     }
 
@@ -62,9 +59,9 @@ public final class H2ProtocolConfigBuilder {
      * <a href="https://tools.ietf.org/html/rfc7541#section-7.1.3">sensitive</a>, {@code false} otherwise
      * @return {@code this}
      */
-    public H2ProtocolConfigBuilder headersSensitivityDetector(
+    public GrpcH2ProtocolConfigBuilder headersSensitivityDetector(
             final BiPredicate<CharSequence, CharSequence> headersSensitivityDetector) {
-        this.headersSensitivityDetector = requireNonNull(headersSensitivityDetector);
+        h2Builder.headersSensitivityDetector(headersSensitivityDetector);
         return this;
     }
 
@@ -76,49 +73,42 @@ public final class H2ProtocolConfigBuilder {
      * @param loggerName the name of the logger to log HTTP/2 frames
      * @return {@code this}
      */
-    public H2ProtocolConfigBuilder enableFrameLogging(final String loggerName) {
-        this.frameLoggerName = requireNonNull(loggerName);
+    public GrpcH2ProtocolConfigBuilder enableFrameLogging(final String loggerName) {
+        h2Builder.enableFrameLogging(loggerName);
         return this;
     }
 
     /**
-     * Builds {@link H2ProtocolConfig}.
+     * Builds {@link GrpcH2ProtocolConfig}.
      *
-     * @return {@link H2ProtocolConfig}
+     * @return {@link GrpcH2ProtocolConfig}
      */
-    public H2ProtocolConfig build() {
-        return new DefaultH2ProtocolConfig(headersFactory, headersSensitivityDetector, frameLoggerName);
+    public GrpcH2ProtocolConfig build() {
+        return new DefaultGrpcH2ProtocolConfig(h2Builder.build());
     }
 
-    private static final class DefaultH2ProtocolConfig implements H2ProtocolConfig {
+    private static final class DefaultGrpcH2ProtocolConfig implements GrpcH2ProtocolConfig {
 
-        private final HttpHeadersFactory headersFactory;
-        private final BiPredicate<CharSequence, CharSequence> headersSensitivityDetector;
-        @Nullable
-        private final String frameLoggerName;
+        private final H2ProtocolConfig h2Config;
 
-        DefaultH2ProtocolConfig(final HttpHeadersFactory headersFactory,
-                                final BiPredicate<CharSequence, CharSequence> headersSensitivityDetector,
-                                @Nullable final String frameLogger) {
-            this.headersFactory = headersFactory;
-            this.headersSensitivityDetector = headersSensitivityDetector;
-            this.frameLoggerName = frameLogger;
+        DefaultGrpcH2ProtocolConfig(final H2ProtocolConfig h2Config) {
+            this.h2Config = h2Config;
         }
 
         @Override
         public HttpHeadersFactory headersFactory() {
-            return headersFactory;
+            return h2Config.headersFactory();
         }
 
         @Override
         public BiPredicate<CharSequence, CharSequence> headersSensitivityDetector() {
-            return headersSensitivityDetector;
+            return h2Config.headersSensitivityDetector();
         }
 
         @Nullable
         @Override
         public String frameLoggerName() {
-            return frameLoggerName;
+            return h2Config.frameLoggerName();
         }
     }
 }

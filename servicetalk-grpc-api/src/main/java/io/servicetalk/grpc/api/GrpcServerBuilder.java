@@ -28,7 +28,6 @@ import io.servicetalk.http.api.StreamingHttpServiceFilterFactory;
 import io.servicetalk.transport.api.ConnectionAcceptor;
 import io.servicetalk.transport.api.ConnectionAcceptorFactory;
 import io.servicetalk.transport.api.IoExecutor;
-import io.servicetalk.transport.api.ProtocolConfig;
 import io.servicetalk.transport.api.ServerContext;
 
 import java.net.SocketOption;
@@ -50,10 +49,10 @@ public abstract class GrpcServerBuilder {
      * <b>Note:</b> the order of specified protocols will reflect on priorities for ALPN in case the connections are
      * {@link #secure() secured}.
      *
-     * @param protocols {@link ProtocolConfig} for each protocol that should be supported.
+     * @param protocols {@link GrpcProtocolConfig} for each protocol that should be supported.
      * @return {@code this}.
      */
-    public abstract GrpcServerBuilder protocols(ProtocolConfig... protocols);
+    public abstract GrpcServerBuilder protocols(GrpcProtocolConfig... protocols);
 
     /**
      * The maximum queue length for incoming connection indications (a request to connect) is set to the backlog

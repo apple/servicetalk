@@ -17,7 +17,6 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.transport.api.IoExecutor;
-import io.servicetalk.transport.api.ProtocolConfig;
 
 import org.slf4j.event.Level;
 
@@ -84,10 +83,10 @@ abstract class BaseHttpBuilder<ResolvedAddress> {
      * <b>Note:</b> the order of specified protocols will reflect on priorities for ALPN in case the connections are
      * secured.
      *
-     * @param protocols {@link ProtocolConfig} for each protocol that should be supported.
+     * @param protocols {@link HttpProtocolConfig} for each protocol that should be supported.
      * @return {@code this}.
      */
-    public abstract BaseHttpBuilder<ResolvedAddress> protocols(ProtocolConfig... protocols);
+    public abstract BaseHttpBuilder<ResolvedAddress> protocols(HttpProtocolConfig... protocols);
 
     /**
      * Disables automatically setting {@code Host} headers by inferring from the address or {@link HttpMetaData}.

@@ -16,10 +16,12 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
+import io.servicetalk.http.api.DefaultHttpHeadersFactory;
+import io.servicetalk.http.api.HttpHeadersFactory;
+import io.servicetalk.http.api.HttpProtocolConfig;
 import io.servicetalk.http.api.HttpServerBuilder;
 import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.transport.api.HostAndPort;
-import io.servicetalk.transport.api.ProtocolConfig;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -35,6 +37,19 @@ import static org.hamcrest.Matchers.startsWith;
 import static org.junit.rules.ExpectedException.none;
 
 public class ProtocolConfigTest {
+
+    private static final HttpProtocolConfig UNKNOWN_CONFIG = new HttpProtocolConfig() {
+
+        @Override
+        public String alpnId() {
+            return "unknown";
+        }
+
+        @Override
+        public HttpHeadersFactory headersFactory() {
+            return DefaultHttpHeadersFactory.INSTANCE;
+        }
+    };
 
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
@@ -87,7 +102,7 @@ public class ProtocolConfigTest {
 
         expectedException.expect(IllegalArgumentException.class);
         expectedException.expectMessage("No protocols specified");
-        builder.protocols(new ProtocolConfig[0]);
+        builder.protocols(new HttpProtocolConfig[0]);
     }
 
     @Test
@@ -96,7 +111,7 @@ public class ProtocolConfigTest {
 
         expectedException.expect(IllegalArgumentException.class);
         expectedException.expectMessage("No protocols specified");
-        builder.protocols(new ProtocolConfig[0]);
+        builder.protocols(new HttpProtocolConfig[0]);
     }
 
     @Test
@@ -105,8 +120,8 @@ public class ProtocolConfigTest {
                 HttpClients.forSingleAddress("localhost", 8080);
 
         expectedException.expect(IllegalArgumentException.class);
-        expectedException.expectMessage(startsWith("Unsupported ProtocolConfig"));
-        builder.protocols(() -> "unknown");
+        expectedException.expectMessage(startsWith("Unsupported HttpProtocolConfig"));
+        builder.protocols(UNKNOWN_CONFIG);
     }
 
     @Test
@@ -114,8 +129,8 @@ public class ProtocolConfigTest {
         HttpServerBuilder builder = HttpServers.forAddress(localAddress(0));
 
         expectedException.expect(IllegalArgumentException.class);
-        expectedException.expectMessage(startsWith("Unsupported ProtocolConfig"));
-        builder.protocols(() -> "unknown");
+        expectedException.expectMessage(startsWith("Unsupported HttpProtocolConfig"));
+        builder.protocols(UNKNOWN_CONFIG);
     }
 
     @Test

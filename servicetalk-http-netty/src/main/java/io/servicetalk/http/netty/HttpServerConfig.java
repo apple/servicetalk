@@ -20,19 +20,19 @@ import io.servicetalk.tcp.netty.internal.TcpServerConfig;
 final class HttpServerConfig {
 
     private final TcpServerConfig tcpConfig;
-    private final HttpProtocolConfig protocolConfigs;
+    private final HttpConfig httpConfig;
 
     HttpServerConfig() {
         tcpConfig = new TcpServerConfig();
-        protocolConfigs = new HttpProtocolConfig();
+        httpConfig = new HttpConfig();
     }
 
     TcpServerConfig tcpConfig() {
         return tcpConfig;
     }
 
-    HttpProtocolConfig protocolConfigs() {
-        return protocolConfigs;
+    HttpConfig httpConfig() {
+        return httpConfig;
     }
 
     ReadOnlyHttpServerConfig asReadOnly() {

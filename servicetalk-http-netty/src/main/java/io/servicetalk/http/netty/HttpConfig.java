@@ -15,7 +15,7 @@
  */
 package io.servicetalk.http.netty;
 
-import io.servicetalk.transport.api.ProtocolConfig;
+import io.servicetalk.http.api.HttpProtocolConfig;
 
 import java.util.List;
 import javax.annotation.Nullable;
@@ -27,7 +27,7 @@ import static java.util.Collections.singletonList;
 import static java.util.Collections.unmodifiableList;
 import static java.util.Objects.requireNonNull;
 
-final class HttpProtocolConfig {
+final class HttpConfig {
     @Nullable
     private H1ProtocolConfig h1Config = h1Default();
     @Nullable
@@ -48,7 +48,7 @@ final class HttpProtocolConfig {
         return supportedAlpnProtocols;
     }
 
-    void protocols(final ProtocolConfig... protocols) {
+    void protocols(final HttpProtocolConfig... protocols) {
         requireNonNull(protocols);
         if (protocols.length < 1) {
             throw new IllegalArgumentException("No protocols specified");
@@ -56,13 +56,13 @@ final class HttpProtocolConfig {
 
         h1Config = null;
         h2Config = null;
-        for (ProtocolConfig protocol : protocols) {
+        for (HttpProtocolConfig protocol : protocols) {
             if (protocol instanceof H1ProtocolConfig) {
                 h1Config((H1ProtocolConfig) protocol);
             } else if (protocol instanceof H2ProtocolConfig) {
                 h2Config((H2ProtocolConfig) protocol);
             } else {
-                throw new IllegalArgumentException("Unsupported ProtocolConfig: " + protocol.getClass().getName() +
+                throw new IllegalArgumentException("Unsupported HttpProtocolConfig: " + protocol.getClass().getName() +
                         ", see " + HttpProtocolConfigs.class.getName());
             }
         }

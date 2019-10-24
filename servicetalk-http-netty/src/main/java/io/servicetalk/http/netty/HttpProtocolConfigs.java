@@ -15,10 +15,10 @@
  */
 package io.servicetalk.http.netty;
 
-import io.servicetalk.transport.api.ProtocolConfig;
+import io.servicetalk.http.api.HttpProtocolConfig;
 
 /**
- * Factory methods for {@link ProtocolConfig}s and builders for their customization.
+ * Factory methods for {@link HttpProtocolConfig}s and builders for their customization.
  */
 public final class HttpProtocolConfigs {
 
