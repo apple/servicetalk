@@ -36,7 +36,7 @@ import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.rules.ExpectedException.none;
 
-public class ProtocolConfigTest {
+public class HttpProtocolConfigTest {
 
     private static final HttpProtocolConfig UNKNOWN_CONFIG = new HttpProtocolConfig() {
 
