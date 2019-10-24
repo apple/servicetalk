@@ -16,13 +16,15 @@
 package io.servicetalk.http.netty;
 
 /**
- * Defines protocol names used in ALPN and NPN.
+ * Defines TLS Application-Layer Protocol Negotiation (ALPN) Protocol IDs for supported protocols.
  *
  * @see <a href="https://tools.ietf.org/html/rfc7540#section-11.1">RFC7540 (HTTP/2)</a>
  * @see <a href="https://tools.ietf.org/html/rfc7301#section-6">RFC7301 (TLS ALPN Extension)</a>
- * @see <a href="https://tools.ietf.org/html/draft-agl-tls-nextprotoneg-04#section-7">TLS NPN Extension Draft</a>
+ * @see <a href=
+ * "https://www.iana.org/assignments/tls-extensiontype-values/tls-extensiontype-values.xhtml#alpn-protocol-ids">
+ * TLS Application-Layer Protocol Negotiation (ALPN) Protocol IDs</a>
  */
-final class ApplicationProtocolNames {
+final class AlpnIds {
 
     /**
      * {@code "http/1.1"}: HTTP version 1.1
@@ -34,7 +36,7 @@ final class ApplicationProtocolNames {
      */
     static final String HTTP_2 = "h2";
 
-    private ApplicationProtocolNames() {
+    private AlpnIds() {
         // No instances
     }
 }

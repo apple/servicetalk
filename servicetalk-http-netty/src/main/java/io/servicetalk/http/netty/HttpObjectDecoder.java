@@ -92,8 +92,8 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
     private static final int MAX_HEX_CHARS_FOR_LONG = 16; // 0x7FFFFFFFFFFFFFFF == Long.MAX_INT
     private static final int CHUNK_DELIMETER_SIZE = 2; // CRLF
 
-    private final int maxInitialLineSize;
-    private final int maxHeaderSize;
+    private final int maxStartLineLength;
+    private final int maxHeaderFieldLength;
 
     private final HttpHeadersFactory headersFactory;
     private final CloseHandler closeHandler;
@@ -126,18 +126,18 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
     /**
      * Creates a new instance with the specified parameters.
      */
-    protected HttpObjectDecoder(HttpHeadersFactory headersFactory, int maxInitialLineLength, int maxHeaderSize,
+    protected HttpObjectDecoder(HttpHeadersFactory headersFactory, int maxStartLineLength, int maxHeaderFieldLength,
                                 final CloseHandler closeHandler) {
         this.closeHandler = closeHandler;
-        if (maxInitialLineLength <= 0) {
-            throw new IllegalArgumentException("maxInitialLineLength: " + maxInitialLineLength + " (expected >0)");
+        if (maxStartLineLength <= 0) {
+            throw new IllegalArgumentException("maxStartLineLength: " + maxStartLineLength + " (expected >0)");
         }
-        if (maxHeaderSize <= 0) {
-            throw new IllegalArgumentException("maxHeaderSize: " + maxHeaderSize + " (expected >0)");
+        if (maxHeaderFieldLength <= 0) {
+            throw new IllegalArgumentException("maxHeaderFieldLength: " + maxHeaderFieldLength + " (expected >0)");
         }
         this.headersFactory = requireNonNull(headersFactory);
-        this.maxHeaderSize = maxHeaderSize;
-        this.maxInitialLineSize = maxInitialLineLength;
+        this.maxStartLineLength = maxStartLineLength;
+        this.maxHeaderFieldLength = maxHeaderFieldLength;
     }
 
     final HttpHeadersFactory headersFactory() {
@@ -188,7 +188,7 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
                 currentState = State.READ_INITIAL;
             }
             case READ_INITIAL: {
-                final int lfIndex = findCRLF(buffer, maxInitialLineSize);
+                final int lfIndex = findCRLF(buffer, maxStartLineLength);
                 if (lfIndex < 0) {
                     handlePartialInitialLine(ctx, buffer);
                     return;
@@ -586,13 +586,13 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
 
     @Nullable
     private State readHeaders(ByteBuf buffer) {
-        int lfIndex = findCRLF(buffer, maxHeaderSize);
+        int lfIndex = findCRLF(buffer, maxHeaderFieldLength);
         if (lfIndex < 0) {
             return null;
         }
         final T message = this.message;
         assert message != null;
-        if (!parseAllHeaders(buffer, message.headers(), lfIndex, maxHeaderSize)) {
+        if (!parseAllHeaders(buffer, message.headers(), lfIndex, maxHeaderFieldLength)) {
             return null;
         }
 
@@ -618,7 +618,7 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
 
     @Nullable
     private HttpHeaders readTrailingHeaders(ByteBuf buffer) {
-        final int lfIndex = findCRLF(buffer, maxHeaderSize);
+        final int lfIndex = findCRLF(buffer, maxHeaderFieldLength);
         if (lfIndex < 0) {
             return null;
         }
@@ -628,7 +628,7 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
                 trailer = this.trailer = headersFactory.newTrailers();
             }
 
-            return parseAllHeaders(buffer, trailer, lfIndex, maxHeaderSize) ? trailer : null;
+            return parseAllHeaders(buffer, trailer, lfIndex, maxHeaderFieldLength) ? trailer : null;
         }
 
         consumeCRLF(buffer, lfIndex);
@@ -637,13 +637,13 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
         return trailer != null ? trailer : headersFactory.newEmptyTrailers();
     }
 
-    private boolean parseAllHeaders(ByteBuf buffer, HttpHeaders headers, int lfIndex, int maxHeaderSize) {
+    private boolean parseAllHeaders(ByteBuf buffer, HttpHeaders headers, int lfIndex, int maxHeaderFieldLength) {
         for (;;) {
             if (lfIndex - 1 == buffer.readerIndex()) {
                 consumeCRLF(buffer, lfIndex);
                 return true;
             }
-            final int nextLFIndex = findCRLF(buffer, lfIndex + 1, maxHeaderSize);
+            final int nextLFIndex = findCRLF(buffer, lfIndex + 1, maxHeaderFieldLength);
             parseHeaderLine(headers, buffer, lfIndex);
             if (nextLFIndex < 0) {
                 return false;

@@ -23,8 +23,9 @@ import io.servicetalk.transport.api.ConnectionAcceptorFactory;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.ServerContext;
 
+import org.slf4j.event.Level;
+
 import java.net.SocketOption;
-import java.util.function.BiPredicate;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
@@ -49,108 +50,27 @@ public abstract class HttpServerBuilder {
     private boolean drainRequestPayloadBody = true;
 
     /**
-     * Sets the {@link HttpHeadersFactory} to be used for creating {@link HttpHeaders} when decoding requests.
+     * Configurations of various HTTP protocol versions.
+     * <p>
+     * <b>Note:</b> the order of specified protocols will reflect on priorities for ALPN in case the connections are
+     * {@link #secure() secured}.
      *
-     * @param headersFactory the {@link HttpHeadersFactory} to use.
-     * @return this
-     */
-    public abstract HttpServerBuilder headersFactory(HttpHeadersFactory headersFactory);
-
-    /**
-     * Set the {@link HttpHeadersFactory} to use when HTTP/2 is used.
-     *
-     * @param headersFactory the {@link HttpHeadersFactory} to use when HTTP/2 is used.
-     * @return {@code this.}
-     */
-    public abstract HttpServerBuilder h2HeadersFactory(HttpHeadersFactory headersFactory);
-
-    /**
-     * Set the sensitivity detector to determine if a header {@code name}/{@code value} pair should be treated as
-     * <a href="https://tools.ietf.org/html/rfc7541#section-7.1.3">sensitive</a>.
-     *
-     * @param sensitivityDetector the {@link BiPredicate}&lt;{@link CharSequence}, {@link CharSequence}&gt; that returns
-     * {@code true} if a header &lt;{@code name}, {@code value}&gt; pair should be treated as
-     * <a href="https://tools.ietf.org/html/rfc7541#section-7.1.3">sensitive</a>, {@code false} otherwise.
-     * @return {@code this.}
-     */
-    public abstract HttpServerBuilder h2HeadersSensitivityDetector(
-            BiPredicate<CharSequence, CharSequence> sensitivityDetector);
-
-    /**
-     * Enable HTTP/2 via
-     * <a href="https://tools.ietf.org/html/rfc7540#section-3.4">Prior Knowledge</a>.
-     *
-     * @param h2PriorKnowledge {@code true} to enable HTTP/2 via
-     * <a href="https://tools.ietf.org/html/rfc7540#section-3.4">Prior Knowledge</a>.
+     * @param protocols {@link HttpProtocolConfig} for each protocol that should be supported.
      * @return {@code this}.
      */
-    public abstract HttpServerBuilder h2PriorKnowledge(boolean h2PriorKnowledge);
+    public abstract HttpServerBuilder protocols(HttpProtocolConfig... protocols);
 
     /**
-     * Set the name of the frame logger when HTTP/2 is used.
-     *
-     * @param h2FrameLogger the name of the frame logger, or {@code null} to disable.
-     * @return {@code this}.
-     */
-    public abstract HttpServerBuilder h2FrameLogger(@Nullable String h2FrameLogger);
-
-    /**
-     * Set how long to wait (in milliseconds) for a client to close the connection (if no keep-alive is set) before the
-     * server will close the connection.
-     *
-     * @param clientCloseTimeoutMs {@code 0} if the server should close the connection immediately, or
-     * {@code > 0} if a wait time should be used.
-     * @return this
-     */
-    public abstract HttpServerBuilder clientCloseTimeout(long clientCloseTimeoutMs);
-
-    /**
-     * The server will throw {@link Exception} if the initial HTTP line exceeds this length.
-     *
-     * @param maxInitialLineLength The server will throw {@link Exception} if the initial HTTP line exceeds this
-     * length.
-     * @return this.
-     */
-    public abstract HttpServerBuilder maxInitialLineLength(int maxInitialLineLength);
-
-    /**
-     * The server will throw {@link Exception} if the total size of all HTTP headers exceeds this length.
-     *
-     * @param maxHeaderSize The server will throw {@link Exception} if the total size of all HTTP headers exceeds
-     * this length.
-     * @return this.
-     */
-    public abstract HttpServerBuilder maxHeaderSize(int maxHeaderSize);
-
-    /**
-     * Used to calculate an exponential moving average of the encoded size of the initial line and the headers for a
-     * guess for future buffer allocations.
-     *
-     * @param headersEncodedSizeEstimate estimated initial value.
-     * @return this
-     */
-    public abstract HttpServerBuilder headersEncodedSizeEstimate(int headersEncodedSizeEstimate);
-
-    /**
-     * Used to calculate an exponential moving average of the encoded size of the trailers for a guess for future
-     * buffer allocations.
-     *
-     * @param trailersEncodedSizeEstimate estimated initial value.
-     * @return this;
-     */
-    public abstract HttpServerBuilder trailersEncodedSizeEstimate(int trailersEncodedSizeEstimate);
-
-    /**
-     * The maximum queue length for incoming connection indications (a request to connect) is set to the backlog
+     * Sets the maximum queue length for incoming connection indications (a request to connect) is set to the backlog
      * parameter. If a connection indication arrives when the queue is full, the connection may time out.
      *
      * @param backlog the backlog to use when accepting connections.
-     * @return this.
+     * @return {@code this}.
      */
     public abstract HttpServerBuilder backlog(int backlog);
 
     /**
-     * Initiate security configuration for this server. Calling any {@code commit} method on the returned
+     * Initiates security configuration for this server. Calling any {@code commit} method on the returned
      * {@link HttpServerSecurityConfigurator} will commit the configuration.
      * <p>
      * Additionally use {@link #secure(String...)} to define configurations for specific
@@ -164,7 +84,7 @@ public abstract class HttpServerBuilder {
     public abstract HttpServerSecurityConfigurator secure();
 
     /**
-     * Initiate security configuration for this server for the passed {@code sniHostnames}.
+     * Initiates security configuration for this server for the passed {@code sniHostnames}.
      * Calling any {@code commit} method on the returned {@link HttpServerSecurityConfigurator} will commit the
      * configuration.
      * <p>
@@ -179,7 +99,7 @@ public abstract class HttpServerBuilder {
     public abstract HttpServerSecurityConfigurator secure(String... sniHostnames);
 
     /**
-     * Add a {@link SocketOption} that is applied.
+     * Adds a {@link SocketOption} that is applied.
      *
      * @param <T> the type of the value.
      * @param option the option to apply.
@@ -189,7 +109,9 @@ public abstract class HttpServerBuilder {
     public abstract <T> HttpServerBuilder socketOption(SocketOption<T> option, T value);
 
     /**
-     * Enable wire-logging for this server. All wire events will be logged at trace level.
+     * Enables wire-logging for this server.
+     * <p>
+     * All wire events will be logged at {@link Level#TRACE TRACE} level.
      *
      * @param loggerName The name of the logger to log wire events.
      * @return {@code this}.
@@ -216,7 +138,7 @@ public abstract class HttpServerBuilder {
     }
 
     /**
-     * Append the filter to the chain of filters used to decorate the {@link ConnectionAcceptor} used by this builder.
+     * Appends the filter to the chain of filters used to decorate the {@link ConnectionAcceptor} used by this builder.
      * <p>
      * The order of execution of these filters are in order of append. If 3 filters are added as follows:
      * <pre>
@@ -243,7 +165,7 @@ public abstract class HttpServerBuilder {
     }
 
     /**
-     * Append the filter to the chain of filters used to decorate the {@link StreamingHttpService} used by this
+     * Appends the filter to the chain of filters used to decorate the {@link StreamingHttpService} used by this
      * builder.
      * <p>
      * Note this method will be used to decorate the {@link StreamingHttpService} passed to
@@ -274,8 +196,8 @@ public abstract class HttpServerBuilder {
     }
 
     /**
-     * Append the filter to the chain of filters used to decorate the {@link StreamingHttpService} used by this builder,
-     * for every request that passes the provided {@link Predicate}.
+     * Appends the filter to the chain of filters used to decorate the {@link StreamingHttpService} used by this
+     * builder, for every request that passes the provided {@link Predicate}.
      * <p>
      * Note this method will be used to decorate the {@link StreamingHttpService} passed to
      * {@link #listenStreaming(StreamingHttpService)} before it is used by the server.

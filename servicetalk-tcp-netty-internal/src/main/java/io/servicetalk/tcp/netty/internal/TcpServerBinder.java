@@ -69,6 +69,7 @@ public final class TcpServerBinder {
      *
      * @param listenAddress The address to bind to.
      * @param config The {@link ReadOnlyTcpServerConfig} to use for the bind socket and newly accepted sockets.
+     * @param autoRead if {@code true} auto read will be enabled for new {@link Channel}s.
      * @param executionContext The {@link ExecutionContext} to use for the bind socket.
      * @param connectionAcceptor The {@link ConnectionAcceptor} used to filter newly accepted sockets.
      * @param connectionFunction Used to create a new {@link NettyConnection} from a {@link Channel}.
@@ -79,7 +80,7 @@ public final class TcpServerBinder {
      * listening on the {@code listenAddress}.
      */
     public static <T extends ConnectionContext> Single<ServerContext> bind(SocketAddress listenAddress,
-            final ReadOnlyTcpServerConfig config, final ExecutionContext executionContext,
+            final ReadOnlyTcpServerConfig config, final boolean autoRead, final ExecutionContext executionContext,
             @Nullable final ConnectionAcceptor connectionAcceptor,
             final Function<Channel, Single<T>> connectionFunction, final Consumer<T> connectionConsumer) {
 
@@ -88,7 +89,7 @@ public final class TcpServerBinder {
         listenAddress = toNettyAddress(listenAddress);
         EventLoopAwareNettyIoExecutor nettyIoExecutor = toEventLoopAwareNettyIoExecutor(executionContext.ioExecutor());
         ServerBootstrap bs = new ServerBootstrap();
-        configure(config, executionContext.bufferAllocator(), bs, nettyIoExecutor.eventLoopGroup(),
+        configure(config, autoRead, executionContext.bufferAllocator(), bs, nettyIoExecutor.eventLoopGroup(),
                 listenAddress.getClass());
 
         ChannelSet channelSet = new ChannelSet(executionContext.executor());
@@ -144,7 +145,7 @@ public final class TcpServerBinder {
         };
     }
 
-    private static void configure(ReadOnlyTcpServerConfig config, BufferAllocator bufferAllocator,
+    private static void configure(ReadOnlyTcpServerConfig config, boolean autoRead, BufferAllocator bufferAllocator,
                                   ServerBootstrap bs, @Nullable EventLoopGroup eventLoopGroup,
                                   Class<? extends SocketAddress> bindAddressClass) {
         if (eventLoopGroup == null) {
@@ -159,8 +160,7 @@ public final class TcpServerBinder {
             bs.childOption(option, opt.getValue());
         }
 
-        // we disable auto read so we can handle stuff in the ConnectionFilter before we accept any content.
-        bs.childOption(ChannelOption.AUTO_READ, config.isAutoRead());
+        bs.childOption(ChannelOption.AUTO_READ, autoRead);
 
         bs.option(ChannelOption.SO_BACKLOG, config.backlog());
 

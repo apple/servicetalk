@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,71 +15,44 @@
  */
 package io.servicetalk.http.netty;
 
-import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.tcp.netty.internal.ReadOnlyTcpClientConfig;
 
 import javax.annotation.Nullable;
 
 final class ReadOnlyHttpClientConfig {
-    private final ReadOnlyTcpClientConfig tcpClientConfig;
-    private final ReadOnlyH2ClientConfig h2ClientConfig;
-    private final HttpHeadersFactory headersFactory;
-    private final int maxInitialLineLength;
-    private final int maxHeaderSize;
-    private final int maxPipelinedRequests;
-    private final int headersEncodedSizeEstimate;
-    private final int trailersEncodedSizeEstimate;
-    private final boolean h2PriorKnowledge;
+
+    private final ReadOnlyTcpClientConfig tcpConfig;
+    @Nullable
+    private final H1ProtocolConfig h1Config;
+    @Nullable
+    private final H2ProtocolConfig h2Config;
     @Nullable
     private final CharSequence connectAddress;
 
     ReadOnlyHttpClientConfig(final HttpClientConfig from) {
-        tcpClientConfig = from.tcpClientConfig().asReadOnly();
-        h2ClientConfig = from.h2ClientConfig().asReadOnly();
-        headersFactory = from.headersFactory();
-        h2PriorKnowledge = from.isH2PriorKnowledge();
-        maxInitialLineLength = from.maxInitialLineLength();
-        maxHeaderSize = from.maxHeaderSize();
-        maxPipelinedRequests = from.maxPipelinedRequests();
-        headersEncodedSizeEstimate = from.headersEncodedSizeEstimate();
-        trailersEncodedSizeEstimate = from.trailersEncodedSizeEstimate();
+        final HttpConfig configs = from.protocolConfigs();
+        tcpConfig = from.tcpConfig().asReadOnly(configs.supportedAlpnProtocols());
+        h1Config = configs.h1Config();
+        h2Config = configs.h2Config();
         connectAddress = from.connectAddress();
     }
 
-    ReadOnlyTcpClientConfig tcpClientConfig() {
-        return tcpClientConfig;
+    ReadOnlyTcpClientConfig tcpConfig() {
+        return tcpConfig;
     }
 
-    ReadOnlyH2ClientConfig h2ClientConfig() {
-        return h2ClientConfig;
+    @Nullable
+    H1ProtocolConfig h1Config() {
+        return h1Config;
     }
 
-    HttpHeadersFactory headersFactory() {
-        return headersFactory;
+    @Nullable
+    H2ProtocolConfig h2Config() {
+        return h2Config;
     }
 
     boolean isH2PriorKnowledge() {
-        return h2PriorKnowledge;
-    }
-
-    int maxInitialLineLength() {
-        return maxInitialLineLength;
-    }
-
-    int maxHeaderSize() {
-        return maxHeaderSize;
-    }
-
-    int maxPipelinedRequests() {
-        return maxPipelinedRequests;
-    }
-
-    int headersEncodedSizeEstimate() {
-        return headersEncodedSizeEstimate;
-    }
-
-    int trailersEncodedSizeEstimate() {
-        return trailersEncodedSizeEstimate;
+        return h2Config != null && h1Config == null;
     }
 
     @Nullable

@@ -16,7 +16,6 @@
 package io.servicetalk.transport.api;
 
 import java.io.InputStream;
-import java.util.Collection;
 import java.util.function.Supplier;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.TrustManagerFactory;
@@ -53,12 +52,6 @@ public interface ServerSecurityConfigurator extends SecurityConfigurator {
 
     @Override
     ServerSecurityConfigurator protocols(String... protocols);
-
-    @Override
-    ServerSecurityConfigurator applicationProtocolNegotiation(ApplicationProtocolNegotiation apn,
-                                                              SelectorFailureBehavior selectorBehavior,
-                                                              SelectedListenerFailureBehavior selectedBehavior,
-                                                              Collection<String> supportedProtocols);
 
     @Override
     ServerSecurityConfigurator ciphers(Iterable<String> ciphers);

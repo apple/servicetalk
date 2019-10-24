@@ -24,13 +24,10 @@ import io.grpc.examples.routeguide.RouteGuide.ClientFactory;
 
 import java.util.concurrent.CountDownLatch;
 
-import static io.servicetalk.concurrent.api.Publisher.from;
-
 public final class RouteGuideResponseStreamingClient {
 
     public static void main(String[] args) throws Exception {
         try (RouteGuide.RouteGuideClient client = GrpcClients.forAddress("localhost", 8080)
-                .h2PriorKnowledge(true)
                 .build(new ClientFactory())) {
             // This example is demonstrating asynchronous execution, but needs to prevent the main thread from exiting
             // before the response has been processed. This isn't typical usage for a streaming API but is useful for

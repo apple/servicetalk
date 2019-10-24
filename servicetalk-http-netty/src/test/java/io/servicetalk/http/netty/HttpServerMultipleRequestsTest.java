@@ -44,6 +44,7 @@ import static io.servicetalk.http.api.CharSequences.newAsciiString;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpResponseStatus.BAD_REQUEST;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
+import static io.servicetalk.http.netty.HttpProtocolConfigs.h1;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static io.servicetalk.transport.netty.internal.ExecutionContextRule.cached;
@@ -96,7 +97,7 @@ public class HttpServerMultipleRequestsTest {
                     try {
                         StreamingHttpClient client = compositeCloseable.append(
                                 HttpClients.forResolvedAddress(serverHostAndPort(ctx))
-                                        .maxPipelinedRequests(numRequests)
+                                        .protocols(h1().maxPipelinedRequests(numRequests).build())
                                         .ioExecutor(clientExecution.ioExecutor())
                                         .executionStrategy(defaultStrategy(clientExecution.executor()))
                                         .buildStreaming());

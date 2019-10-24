@@ -62,6 +62,7 @@ import static io.servicetalk.concurrent.api.Processors.newCompletableProcessor;
 import static io.servicetalk.concurrent.api.Processors.newSingleProcessor;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.concurrent.internal.ThrowableUtil.unknownStackTrace;
+import static io.servicetalk.http.netty.H2ToStH1Utils.DEFAULT_GRACEFUL_SHUTDOWN_TIMEOUT_MILLIS;
 import static io.servicetalk.transport.netty.internal.NettyIoExecutors.fromNettyEventLoop;
 import static io.servicetalk.transport.netty.internal.NettyPipelineSslUtils.extractSslSession;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -84,7 +85,6 @@ class H2ParentConnectionContext extends NettyChannelListenableAsyncCloseable imp
     private final HttpExecutionContext executionContext;
     private final SingleSource.Processor<Throwable, Throwable> transportError = newSingleProcessor();
     private final CompletableSource.Processor onClosing = newCompletableProcessor();
-    private final int gracefulShutdownTimeoutMs;
     @Nullable
     private SSLSession sslSession;
     @Nullable
@@ -93,12 +93,11 @@ class H2ParentConnectionContext extends NettyChannelListenableAsyncCloseable imp
 
     H2ParentConnectionContext(Channel channel, BufferAllocator allocator,
                               Executor executor, FlushStrategy flushStrategy,
-                              int gracefulShutdownTimeoutMs, HttpExecutionStrategy executionStrategy) {
+                              HttpExecutionStrategy executionStrategy) {
         super(channel, executor);
         this.executionContext = new DefaultHttpExecutionContext(allocator, fromNettyEventLoop(channel.eventLoop()),
                 executor, executionStrategy);
         this.flushStrategyHolder = new FlushStrategyHolder(flushStrategy);
-        this.gracefulShutdownTimeoutMs = gracefulShutdownTimeoutMs;
         // Just in case the channel abruptly closes, we should complete the onClosing Completable.
         onClose().subscribe(onClosing::onComplete);
     }
@@ -206,9 +205,9 @@ class H2ParentConnectionContext extends NettyChannelListenableAsyncCloseable imp
             } else if (future.isSuccess()) {
                 gracefulCloseTimeoutFuture = channel().eventLoop().schedule(() -> {
                     LOGGER.debug("channel={} timeout {}ms waiting for graceful close with {} active streams",
-                            channel(), gracefulShutdownTimeoutMs, activeChildChannels);
+                            channel(), DEFAULT_GRACEFUL_SHUTDOWN_TIMEOUT_MILLIS, activeChildChannels);
                     channel().close();
-                }, gracefulShutdownTimeoutMs, MILLISECONDS);
+                }, DEFAULT_GRACEFUL_SHUTDOWN_TIMEOUT_MILLIS, MILLISECONDS);
             }
         });
     }

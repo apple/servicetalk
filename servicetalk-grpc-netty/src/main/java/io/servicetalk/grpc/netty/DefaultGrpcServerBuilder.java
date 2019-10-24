@@ -24,7 +24,7 @@ import io.servicetalk.grpc.api.GrpcServiceFactory;
 import io.servicetalk.grpc.api.GrpcServiceFactory.ServerBinder;
 import io.servicetalk.http.api.BlockingHttpService;
 import io.servicetalk.http.api.BlockingStreamingHttpService;
-import io.servicetalk.http.api.HttpHeadersFactory;
+import io.servicetalk.http.api.HttpProtocolConfig;
 import io.servicetalk.http.api.HttpServerBuilder;
 import io.servicetalk.http.api.HttpServerSecurityConfigurator;
 import io.servicetalk.http.api.HttpService;
@@ -39,7 +39,8 @@ import io.servicetalk.transport.netty.internal.ExecutionContextBuilder;
 
 import java.net.SocketOption;
 import java.util.function.Predicate;
-import javax.annotation.Nullable;
+
+import static io.servicetalk.http.netty.HttpProtocolConfigs.h2Default;
 
 final class DefaultGrpcServerBuilder extends GrpcServerBuilder implements ServerBinder {
 
@@ -47,60 +48,12 @@ final class DefaultGrpcServerBuilder extends GrpcServerBuilder implements Server
     private final ExecutionContextBuilder contextBuilder = new ExecutionContextBuilder();
 
     DefaultGrpcServerBuilder(final HttpServerBuilder httpServerBuilder) {
-        this.httpServerBuilder = httpServerBuilder;
+        this.httpServerBuilder = httpServerBuilder.protocols(h2Default());
     }
 
     @Override
-    public GrpcServerBuilder headersFactory(final HttpHeadersFactory headersFactory) {
-        httpServerBuilder.headersFactory(headersFactory);
-        return this;
-    }
-
-    @Override
-    public GrpcServerBuilder h2HeadersFactory(final HttpHeadersFactory headersFactory) {
-        httpServerBuilder.h2HeadersFactory(headersFactory);
-        return this;
-    }
-
-    @Override
-    public GrpcServerBuilder h2PriorKnowledge(final boolean h2PriorKnowledge) {
-        httpServerBuilder.h2PriorKnowledge(h2PriorKnowledge);
-        return this;
-    }
-
-    @Override
-    public GrpcServerBuilder h2FrameLogger(@Nullable final String h2FrameLogger) {
-        httpServerBuilder.h2FrameLogger(h2FrameLogger);
-        return this;
-    }
-
-    @Override
-    public GrpcServerBuilder clientCloseTimeout(final long clientCloseTimeoutMs) {
-        httpServerBuilder.clientCloseTimeout(clientCloseTimeoutMs);
-        return this;
-    }
-
-    @Override
-    public GrpcServerBuilder maxInitialLineLength(final int maxInitialLineLength) {
-        httpServerBuilder.maxHeaderSize(maxInitialLineLength);
-        return this;
-    }
-
-    @Override
-    public GrpcServerBuilder maxHeaderSize(final int maxHeaderSize) {
-        httpServerBuilder.maxHeaderSize(maxHeaderSize);
-        return this;
-    }
-
-    @Override
-    public GrpcServerBuilder headersEncodedSizeEstimate(final int headersEncodedSizeEstimate) {
-        httpServerBuilder.headersEncodedSizeEstimate(headersEncodedSizeEstimate);
-        return this;
-    }
-
-    @Override
-    public GrpcServerBuilder trailersEncodedSizeEstimate(final int trailersEncodedSizeEstimate) {
-        httpServerBuilder.trailersEncodedSizeEstimate(trailersEncodedSizeEstimate);
+    public GrpcServerBuilder protocols(final HttpProtocolConfig... protocols) {
+        httpServerBuilder.protocols(protocols);
         return this;
     }
 

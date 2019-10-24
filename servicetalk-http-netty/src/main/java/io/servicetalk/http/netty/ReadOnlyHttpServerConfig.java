@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,65 +15,40 @@
  */
 package io.servicetalk.http.netty;
 
-import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.tcp.netty.internal.ReadOnlyTcpServerConfig;
 
+import javax.annotation.Nullable;
+
 final class ReadOnlyHttpServerConfig {
+
     private final ReadOnlyTcpServerConfig tcpConfig;
-    private final ReadOnlyH2ServerConfig h2ServerConfig;
-    private final HttpHeadersFactory headersFactory;
-    private final long clientCloseTimeoutMs;
-    private final int maxInitialLineLength;
-    private final int maxHeaderSize;
-    private final int headersEncodedSizeEstimate;
-    private final int trailersEncodedSizeEstimate;
-    private final boolean h2PriorKnowledge;
+    @Nullable
+    private final H1ProtocolConfig h1Config;
+    @Nullable
+    private final H2ProtocolConfig h2Config;
 
     ReadOnlyHttpServerConfig(final HttpServerConfig from) {
-        tcpConfig = from.tcpConfig().asReadOnly();
-        h2ServerConfig = from.h2ServerConfig().asReadOnly();
-        headersFactory = from.headersFactory();
-        h2PriorKnowledge = from.isH2PriorKnowledge();
-        clientCloseTimeoutMs = from.clientCloseTimeoutMs();
-        maxInitialLineLength = from.maxInitialLineLength();
-        maxHeaderSize = from.maxHeaderSize();
-        headersEncodedSizeEstimate = from.headersEncodedSizeEstimate();
-        trailersEncodedSizeEstimate = from.trailersEncodedSizeEstimate();
-    }
-
-    HttpHeadersFactory headersFactory() {
-        return headersFactory;
-    }
-
-    ReadOnlyH2ServerConfig h2ServerConfig() {
-        return h2ServerConfig;
-    }
-
-    boolean isH2PriorKnowledge() {
-        return h2PriorKnowledge;
-    }
-
-    long clientCloseTimeoutMs() {
-        return clientCloseTimeoutMs;
-    }
-
-    int maxInitialLineLength() {
-        return maxInitialLineLength;
-    }
-
-    int maxHeaderSize() {
-        return maxHeaderSize;
-    }
-
-    int headersEncodedSizeEstimate() {
-        return headersEncodedSizeEstimate;
-    }
-
-    int trailersEncodedSizeEstimate() {
-        return trailersEncodedSizeEstimate;
+        final HttpConfig configs = from.httpConfig();
+        tcpConfig = from.tcpConfig().asReadOnly(configs.supportedAlpnProtocols());
+        h1Config = configs.h1Config();
+        h2Config = configs.h2Config();
     }
 
     ReadOnlyTcpServerConfig tcpConfig() {
         return tcpConfig;
+    }
+
+    @Nullable
+    H1ProtocolConfig h1Config() {
+        return h1Config;
+    }
+
+    @Nullable
+    H2ProtocolConfig h2Config() {
+        return h2Config;
+    }
+
+    boolean isH2PriorKnowledge() {
+        return h2Config != null && h1Config == null;
     }
 }

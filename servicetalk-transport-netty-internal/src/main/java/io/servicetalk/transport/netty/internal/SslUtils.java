@@ -28,12 +28,16 @@ import io.netty.util.ReferenceCountUtil;
 
 import java.net.InetSocketAddress;
 import java.util.Collections;
+import java.util.List;
 import javax.annotation.Nullable;
 import javax.net.ssl.SNIHostName;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLParameters;
 
-import static io.netty.handler.ssl.OpenSsl.isAlpnSupported;
+import static io.netty.handler.ssl.ApplicationProtocolConfig.Protocol.ALPN;
+import static io.netty.handler.ssl.ApplicationProtocolConfig.SelectedListenerFailureBehavior.ACCEPT;
+import static io.netty.handler.ssl.ApplicationProtocolConfig.SelectorFailureBehavior.NO_ADVERTISE;
+import static io.netty.handler.ssl.SslProvider.isAlpnSupported;
 
 /**
  * Utility for SSL.
@@ -96,91 +100,51 @@ final class SslUtils {
     }
 
     /**
-     * Convert to netty type.
+     * Create netty's {@link ApplicationProtocolConfig}.
      *
-     * @param config the config to convert.
-     * @return the new config.
+     * @param supportedAlpnProtocols the list of supported ALPN protocols.
+     * @return the new {@link ApplicationProtocolConfig}.
      */
-    static ApplicationProtocolConfig toNettyApplicationProtocol(ReadOnlySecurityConfig config) {
-        SecurityConfigurator.ApplicationProtocolNegotiation apn = config.applicationProtocolNegotiation();
-        if (apn == null) {
+    static ApplicationProtocolConfig nettyApplicationProtocol(List<String> supportedAlpnProtocols) {
+        if (supportedAlpnProtocols.isEmpty()) {
             return ApplicationProtocolConfig.DISABLED;
         }
-
-        final ApplicationProtocolConfig.Protocol protocol;
-        switch (apn) {
-            case ALPN:
-                protocol = ApplicationProtocolConfig.Protocol.ALPN;
-                break;
-            case NONE:
-                protocol = ApplicationProtocolConfig.Protocol.NONE;
-                break;
-            case NPN:
-                protocol = ApplicationProtocolConfig.Protocol.NPN;
-                break;
-            case NPN_AND_ALPN:
-                protocol = ApplicationProtocolConfig.Protocol.NPN_AND_ALPN;
-                break;
-            default:
-                throw new Error();
-        }
-
-        final ApplicationProtocolConfig.SelectedListenerFailureBehavior selectedListenerFailureBehavior;
-        SecurityConfigurator.SelectedListenerFailureBehavior stSelectedBehavior = config.selectedBehavior();
-        assert stSelectedBehavior != null;
-        switch (stSelectedBehavior) {
-            case ACCEPT:
-                selectedListenerFailureBehavior = ApplicationProtocolConfig.SelectedListenerFailureBehavior.ACCEPT;
-                break;
-            case CHOOSE_MY_LAST_PROTOCOL:
-                selectedListenerFailureBehavior =
-                        ApplicationProtocolConfig.SelectedListenerFailureBehavior.CHOOSE_MY_LAST_PROTOCOL;
-                break;
-            case FATAL_ALERT:
-                selectedListenerFailureBehavior = ApplicationProtocolConfig.SelectedListenerFailureBehavior.FATAL_ALERT;
-                break;
-            default:
-                throw new Error();
-        }
-
-        final ApplicationProtocolConfig.SelectorFailureBehavior selectorFailureBehavior;
-        SecurityConfigurator.SelectorFailureBehavior stSelectorBehavior = config.selectorBehavior();
-        assert stSelectorBehavior != null;
-        switch (stSelectorBehavior) {
-            case CHOOSE_MY_LAST_PROTOCOL:
-                selectorFailureBehavior = ApplicationProtocolConfig.SelectorFailureBehavior.CHOOSE_MY_LAST_PROTOCOL;
-                break;
-            case FATAL_ALERT:
-                selectorFailureBehavior = ApplicationProtocolConfig.SelectorFailureBehavior.FATAL_ALERT;
-                break;
-            case NO_ADVERTISE:
-                selectorFailureBehavior = ApplicationProtocolConfig.SelectorFailureBehavior.NO_ADVERTISE;
-                break;
-            default:
-                throw new Error();
-        }
-        return new ApplicationProtocolConfig(protocol, selectorFailureBehavior, selectedListenerFailureBehavior,
-                config.supportedProtocols());
+        return new ApplicationProtocolConfig(ALPN, NO_ADVERTISE, ACCEPT, supportedAlpnProtocols);
     }
 
     /**
      * Convert to netty type.
      *
      * @param provider the provider to convert.
+     * @param alpn if {@code true} ALPN should be supported.
      * @return the netty provider.
      */
     @Nullable
-    static SslProvider toNettySslProvider(SecurityConfigurator.SslProvider provider,
-                                          @Nullable SecurityConfigurator.ApplicationProtocolNegotiation protocol) {
+    static SslProvider toNettySslProvider(SecurityConfigurator.SslProvider provider, boolean alpn) {
         switch (provider) {
             case AUTO:
-                return protocol == SecurityConfigurator.ApplicationProtocolNegotiation.ALPN ?
-                        (isAlpnSupported() ? SslProvider.OPENSSL : SslProvider.JDK) : null;
+                if (alpn) {
+                    if (isAlpnSupported(SslProvider.OPENSSL)) {
+                        return SslProvider.OPENSSL;
+                    } else if (isAlpnSupported(SslProvider.JDK)) {
+                        return SslProvider.JDK;
+                    } else {
+                        throw new IllegalStateException("ALPN configured but not supported by the current classpath: " +
+                            "add OPENSSL support (https://netty.io/wiki/forked-tomcat-native.html) or configure " +
+                            "ALPN for JDK (https://www.eclipse.org/jetty/documentation/current/alpn-chapter.html)");
+                    }
+                }
+                return null;
             case JDK:
+                if (alpn && !isAlpnSupported(SslProvider.JDK)) {
+                    throw new IllegalStateException(
+                            "ALPN configured but not supported by the current classpath. For more information, " +
+                                    "see https://www.eclipse.org/jetty/documentation/current/alpn-chapter.html");
+                }
                 return SslProvider.JDK;
             case OPENSSL:
                 OpenSsl.ensureAvailability();
-                if (protocol == SecurityConfigurator.ApplicationProtocolNegotiation.ALPN && !isAlpnSupported()) {
+                if (alpn && !isAlpnSupported(SslProvider.OPENSSL)) {
                     throw new IllegalStateException(
                             "ALPN configured but not supported by installed version of OpenSSL");
                 }

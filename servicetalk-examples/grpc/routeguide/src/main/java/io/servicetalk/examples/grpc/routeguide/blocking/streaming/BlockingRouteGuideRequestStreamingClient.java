@@ -28,7 +28,6 @@ public final class BlockingRouteGuideRequestStreamingClient {
 
     public static void main(String[] args) throws Exception {
         try (BlockingRouteGuideClient client = GrpcClients.forAddress("localhost", 8080)
-                .h2PriorKnowledge(true)
                 .buildBlocking(new ClientFactory())) {
             RouteSummary routeSummary = client.recordRoute(
                     asList(Point.newBuilder().setLatitude(123456).setLongitude(-123456).build(),

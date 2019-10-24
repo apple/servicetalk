@@ -18,7 +18,6 @@ package io.servicetalk.http.api;
 import io.servicetalk.transport.api.ClientSecurityConfigurator;
 
 import java.io.InputStream;
-import java.util.Collection;
 import java.util.function.Supplier;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.TrustManagerFactory;
@@ -44,11 +43,6 @@ public interface SingleAddressHttpClientSecurityConfigurator<U, R> extends Clien
 
     @Override
     SingleAddressHttpClientSecurityConfigurator<U, R> protocols(String... protocols);
-
-    @Override
-    SingleAddressHttpClientSecurityConfigurator<U, R> applicationProtocolNegotiation(
-            ApplicationProtocolNegotiation apn, SelectorFailureBehavior selectorBehavior,
-            SelectedListenerFailureBehavior selectedBehavior, Collection<String> supportedProtocols);
 
     @Override
     SingleAddressHttpClientSecurityConfigurator<U, R> ciphers(Iterable<String> ciphers);

@@ -20,7 +20,6 @@ import io.servicetalk.grpc.api.GrpcServerSecurityConfigurator;
 import io.servicetalk.http.api.HttpServerSecurityConfigurator;
 
 import java.io.InputStream;
-import java.util.Collection;
 import java.util.function.Supplier;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.TrustManagerFactory;
@@ -50,14 +49,6 @@ final class DefaultGrpcServerSecurityConfigurator implements GrpcServerSecurityC
     @Override
     public GrpcServerSecurityConfigurator protocols(final String... protocols) {
         delegate.protocols(protocols);
-        return this;
-    }
-
-    @Override
-    public GrpcServerSecurityConfigurator applicationProtocolNegotiation(
-            final ApplicationProtocolNegotiation apn, final SelectorFailureBehavior selectorBehavior,
-            final SelectedListenerFailureBehavior selectedBehavior, final Collection<String> supportedProtocols) {
-        delegate.applicationProtocolNegotiation(apn, selectorBehavior, selectedBehavior, supportedProtocols);
         return this;
     }
 

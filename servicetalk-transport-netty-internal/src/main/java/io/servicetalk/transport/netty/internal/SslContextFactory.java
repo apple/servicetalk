@@ -20,10 +20,13 @@ import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 
 import java.io.InputStream;
+import java.util.List;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLException;
 
 import static io.servicetalk.transport.netty.internal.BuilderUtils.closeAndRethrowUnchecked;
+import static io.servicetalk.transport.netty.internal.SslUtils.nettyApplicationProtocol;
+import static io.servicetalk.transport.netty.internal.SslUtils.toNettySslProvider;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -39,9 +42,10 @@ public final class SslContextFactory {
      * A new context for a client using the passed {@code config}.
      *
      * @param config SSL config.
+     * @param supportedAlpnProtocols the list of supported ALPN protocols.
      * @return A new {@link SslContext} for a client.
      */
-    public static SslContext forClient(ReadOnlyClientSecurityConfig config) {
+    public static SslContext forClient(ReadOnlyClientSecurityConfig config, List<String> supportedAlpnProtocols) {
         requireNonNull(config);
         SslContextBuilder builder = SslContextBuilder.forClient()
                 .sessionCacheSize(config.sessionCacheSize()).sessionTimeout(config.sessionTimeout());
@@ -64,10 +68,10 @@ public final class SslContextFactory {
                 }
             }
         }
-        builder.sslProvider(SslUtils.toNettySslProvider(config.provider(), config.applicationProtocolNegotiation()));
+        builder.sslProvider(toNettySslProvider(config.provider(), !supportedAlpnProtocols.isEmpty()));
 
         builder.ciphers(config.ciphers());
-        builder.applicationProtocolConfig(SslUtils.toNettyApplicationProtocol(config));
+        builder.applicationProtocolConfig(nettyApplicationProtocol(supportedAlpnProtocols));
         try {
             return new WrappingSslContext(builder.build(), config.protocols());
         } catch (SSLException e) {
@@ -79,9 +83,10 @@ public final class SslContextFactory {
      * A new context for a server using the passed {@code config}.
      *
      * @param config SSL config.
+     * @param supportedAlpnProtocols the list of supported ALPN protocols.
      * @return A new {@link SslContext} for a server.
      */
-    public static SslContext forServer(ReadOnlyServerSecurityConfig config) {
+    public static SslContext forServer(ReadOnlyServerSecurityConfig config, List<String> supportedAlpnProtocols) {
         requireNonNull(config);
         SslContextBuilder builder;
 
@@ -105,7 +110,7 @@ public final class SslContextFactory {
         }
 
         builder.sessionCacheSize(config.sessionCacheSize()).sessionTimeout(config.sessionTimeout())
-                .applicationProtocolConfig(SslUtils.toNettyApplicationProtocol(config));
+                .applicationProtocolConfig(nettyApplicationProtocol(supportedAlpnProtocols));
 
         switch (config.clientAuth()) {
             case NONE:
@@ -123,7 +128,7 @@ public final class SslContextFactory {
         configureTrustManager(config, builder);
         builder.ciphers(config.ciphers());
 
-        builder.sslProvider(SslUtils.toNettySslProvider(config.provider(), config.applicationProtocolNegotiation()));
+        builder.sslProvider(toNettySslProvider(config.provider(), !supportedAlpnProtocols.isEmpty()));
         try {
             return new WrappingSslContext(builder.build(), config.protocols());
         } catch (SSLException e) {

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,26 +29,26 @@ import static java.lang.Math.min;
 
 final class HttpClientChannelInitializer implements ChannelInitializer {
 
-    private final ReadOnlyHttpClientConfig roConfig;
+    private final H1ProtocolConfig config;
     private final CloseHandler closeHandler;
 
     /**
      * Creates a new instance.
-     * @param roConfig read-only {@link HttpClientConfig}
+     * @param config {@link H1ProtocolConfig}
      * @param closeHandler observes protocol state events
      */
-    HttpClientChannelInitializer(ReadOnlyHttpClientConfig roConfig, CloseHandler closeHandler) {
-        this.roConfig = roConfig;
+    HttpClientChannelInitializer(H1ProtocolConfig config, CloseHandler closeHandler) {
+        this.config = config;
         this.closeHandler = closeHandler;
     }
 
     @Override
     public void init(final Channel channel) {
-        Queue<HttpRequestMethod> methodQueue = new ArrayDeque<>(min(8, roConfig.maxPipelinedRequests()));
+        Queue<HttpRequestMethod> methodQueue = new ArrayDeque<>(min(8, config.maxPipelinedRequests()));
         final ChannelPipeline pipeline = channel.pipeline();
-        pipeline.addLast(new HttpResponseDecoder(methodQueue, roConfig.headersFactory(),
-                roConfig.maxInitialLineLength(), roConfig.maxHeaderSize(), closeHandler));
+        pipeline.addLast(new HttpResponseDecoder(methodQueue, config.headersFactory(),
+                config.maxStartLineLength(), config.maxHeaderFieldLength(), closeHandler));
         pipeline.addLast(new HttpRequestEncoder(methodQueue,
-                roConfig.headersEncodedSizeEstimate(), roConfig.trailersEncodedSizeEstimate(), closeHandler));
+                config.headersEncodedSizeEstimate(), config.trailersEncodedSizeEstimate(), closeHandler));
     }
 }

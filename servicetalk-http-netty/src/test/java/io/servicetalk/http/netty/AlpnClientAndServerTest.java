@@ -17,12 +17,14 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.BlockingHttpClient;
+import io.servicetalk.http.api.HttpProtocolConfig;
 import io.servicetalk.http.api.HttpProtocolVersion;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.test.resources.DefaultTestCerts;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
 
+import io.netty.handler.codec.DecoderException;
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
@@ -32,17 +34,18 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
+import java.nio.channels.ClosedChannelException;
 import java.util.Collection;
+import java.util.List;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.HttpSerializationProviders.textDeserializer;
 import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
-import static io.servicetalk.http.netty.ApplicationProtocolNames.HTTP_1_1;
-import static io.servicetalk.http.netty.ApplicationProtocolNames.HTTP_2;
-import static io.servicetalk.transport.api.SecurityConfigurator.ApplicationProtocolNegotiation.ALPN;
-import static io.servicetalk.transport.api.SecurityConfigurator.SelectedListenerFailureBehavior.ACCEPT;
-import static io.servicetalk.transport.api.SecurityConfigurator.SelectorFailureBehavior.NO_ADVERTISE;
+import static io.servicetalk.http.netty.AlpnIds.HTTP_1_1;
+import static io.servicetalk.http.netty.AlpnIds.HTTP_2;
+import static io.servicetalk.http.netty.HttpProtocolConfigs.h1Default;
+import static io.servicetalk.http.netty.HttpProtocolConfigs.h2Default;
 import static io.servicetalk.transport.api.SecurityConfigurator.SslProvider.OPENSSL;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
@@ -66,16 +69,17 @@ public class AlpnClientAndServerTest {
 
     private final ServerContext serverContext;
     private final BlockingHttpClient client;
+    @Nullable
     private final HttpProtocolVersion expectedProtocol;
     @Nullable
     private final Class<? extends Throwable> expectedExceptionType;
 
-    public AlpnClientAndServerTest(Collection<String> serverAlpnProtocols,
-                                   Collection<String> clientAlpnProtocols,
-                                   HttpProtocolVersion expectedProtocol,
+    public AlpnClientAndServerTest(List<String> serverSideProtocols,
+                                   List<String> clientSideProtocols,
+                                   @Nullable HttpProtocolVersion expectedProtocol,
                                    @Nullable Class<? extends Throwable> expectedExceptionType) throws Exception {
-        serverContext = startServer(serverAlpnProtocols, expectedProtocol);
-        client = startClient(serverHostAndPort(serverContext), clientAlpnProtocols);
+        serverContext = startServer(serverSideProtocols, expectedProtocol);
+        client = startClient(serverHostAndPort(serverContext), clientSideProtocols);
         this.expectedProtocol = expectedProtocol;
         this.expectedExceptionType = expectedExceptionType;
     }
@@ -84,46 +88,39 @@ public class AlpnClientAndServerTest {
             "serverAlpnProtocols={0}, clientAlpnProtocols={1}, expectedProtocol={2}, expectedExceptionType={3}")
     public static Collection<Object[]> clientExecutors() {
         return asList(new Object[][] {
-                {asList(HTTP_2, HTTP_1_1), asList(HTTP_2, HTTP_1_1), HttpProtocolVersion.of(2, 0), null},
-                {asList(HTTP_2, HTTP_1_1), asList(HTTP_1_1, HTTP_2), HttpProtocolVersion.of(2, 0), null},
-                {asList(HTTP_2, HTTP_1_1), singletonList(HTTP_2), HttpProtocolVersion.of(2, 0), null},
+                {asList(HTTP_2, HTTP_1_1), asList(HTTP_2, HTTP_1_1), H2ToStH1Utils.HTTP_2_0, null},
+                {asList(HTTP_2, HTTP_1_1), asList(HTTP_1_1, HTTP_2), H2ToStH1Utils.HTTP_2_0, null},
+                {asList(HTTP_2, HTTP_1_1), singletonList(HTTP_2), H2ToStH1Utils.HTTP_2_0, null},
                 {asList(HTTP_2, HTTP_1_1), singletonList(HTTP_1_1), HttpProtocolVersion.HTTP_1_1, null},
-                {asList(HTTP_2, HTTP_1_1), singletonList("unknown"), HttpProtocolVersion.HTTP_1_1, null},
 
                 {asList(HTTP_1_1, HTTP_2), asList(HTTP_2, HTTP_1_1), HttpProtocolVersion.HTTP_1_1, null},
                 {asList(HTTP_1_1, HTTP_2), asList(HTTP_1_1, HTTP_2), HttpProtocolVersion.HTTP_1_1, null},
-                {asList(HTTP_1_1, HTTP_2), singletonList(HTTP_2), HttpProtocolVersion.of(2, 0), null},
+                {asList(HTTP_1_1, HTTP_2), singletonList(HTTP_2), H2ToStH1Utils.HTTP_2_0, null},
                 {asList(HTTP_1_1, HTTP_2), singletonList(HTTP_1_1), HttpProtocolVersion.HTTP_1_1, null},
-                {asList(HTTP_1_1, HTTP_2), singletonList("unknown"), HttpProtocolVersion.HTTP_1_1, null},
 
-                {singletonList(HTTP_2), asList(HTTP_2, HTTP_1_1), HttpProtocolVersion.of(2, 0), null},
-                {singletonList(HTTP_2), asList(HTTP_1_1, HTTP_2), HttpProtocolVersion.of(2, 0), null},
-                {singletonList(HTTP_2), singletonList(HTTP_2), HttpProtocolVersion.of(2, 0), null},
-                {singletonList(HTTP_2), singletonList(HTTP_1_1), HttpProtocolVersion.HTTP_1_1, null},
-                {singletonList(HTTP_2), singletonList("unknown"), HttpProtocolVersion.HTTP_1_1, null},
+                {singletonList(HTTP_2), asList(HTTP_2, HTTP_1_1), H2ToStH1Utils.HTTP_2_0, null},
+                {singletonList(HTTP_2), asList(HTTP_1_1, HTTP_2), H2ToStH1Utils.HTTP_2_0, null},
+                {singletonList(HTTP_2), singletonList(HTTP_2), H2ToStH1Utils.HTTP_2_0, null},
+                {singletonList(HTTP_2), singletonList(HTTP_1_1), null, DecoderException.class},
 
                 {singletonList(HTTP_1_1), asList(HTTP_2, HTTP_1_1), HttpProtocolVersion.HTTP_1_1, null},
                 {singletonList(HTTP_1_1), asList(HTTP_1_1, HTTP_2), HttpProtocolVersion.HTTP_1_1, null},
-                {singletonList(HTTP_1_1), singletonList(HTTP_2), HttpProtocolVersion.HTTP_1_1, null},
+                {singletonList(HTTP_1_1), singletonList(HTTP_2), null, ClosedChannelException.class},
                 {singletonList(HTTP_1_1), singletonList(HTTP_1_1), HttpProtocolVersion.HTTP_1_1, null},
-                {singletonList(HTTP_1_1), singletonList("unknown"), HttpProtocolVersion.HTTP_1_1, null},
-
-                {singletonList("unknown"), asList(HTTP_2, HTTP_1_1), HttpProtocolVersion.HTTP_1_1, null},
-                {singletonList("unknown"), asList(HTTP_1_1, HTTP_2), HttpProtocolVersion.HTTP_1_1, null},
-                {singletonList("unknown"), singletonList(HTTP_2), HttpProtocolVersion.HTTP_1_1, null},
-                {singletonList("unknown"), singletonList(HTTP_1_1), HttpProtocolVersion.HTTP_1_1, null},
-                {singletonList("unknown"), singletonList("unknown"), null, IllegalStateException.class},
         });
     }
 
-    private static ServerContext startServer(Collection<String> supportedProtocols,
-                                             HttpProtocolVersion expectedProtocol) throws Exception {
+    private static ServerContext startServer(List<String> supportedProtocols,
+                                             @Nullable HttpProtocolVersion expectedProtocol) throws Exception {
         return HttpServers.forAddress(localAddress(0))
+                .protocols(toProtocolConfigs(supportedProtocols))
                 .secure()
                 .provider(OPENSSL)
-                .applicationProtocolNegotiation(ALPN, NO_ADVERTISE, ACCEPT, supportedProtocols)
                 .commit(DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey)
                 .listenBlocking((ctx, request, responseFactory) -> {
+                    if ("PRI".equals(request.method().name()) && expectedProtocol == null) {
+                        return responseFactory.badRequest();
+                    }
                     assertThat(request.version(), is(expectedProtocol));
                     assertThat(ctx.sslSession(), is(notNullValue()));
                     return responseFactory.ok().payloadBody(PAYLOAD_BODY, textSerializer());
@@ -131,16 +128,30 @@ public class AlpnClientAndServerTest {
                 .toFuture().get();
     }
 
-    private static BlockingHttpClient startClient(HostAndPort hostAndPort, Collection<String> supportedProtocols) {
+    private static BlockingHttpClient startClient(HostAndPort hostAndPort, List<String> supportedProtocols) {
         return HttpClients.forSingleAddress(hostAndPort)
+                .protocols(toProtocolConfigs(supportedProtocols))
                 .secure()
                 .disableHostnameVerification()
                 // required for generated test certificates
                 .trustManager(DefaultTestCerts::loadMutualAuthCaPem)
                 .provider(OPENSSL)
-                .applicationProtocolNegotiation(ALPN, NO_ADVERTISE, ACCEPT, supportedProtocols)
                 .commit()
                 .buildBlocking();
+    }
+
+    private static HttpProtocolConfig[] toProtocolConfigs(List<String> supportedProtocols) {
+        return supportedProtocols.stream()
+                .map(id -> {
+                    switch (id) {
+                        case HTTP_1_1:
+                            return h1Default();
+                        case HTTP_2:
+                            return h2Default();
+                        default:
+                            throw new IllegalArgumentException("Unsupported protocol: " + id);
+                    }
+                }).toArray(HttpProtocolConfig[]::new);
     }
 
     @After

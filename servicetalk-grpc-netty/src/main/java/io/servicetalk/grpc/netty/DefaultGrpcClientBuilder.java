@@ -26,7 +26,7 @@ import io.servicetalk.grpc.api.GrpcClientSecurityConfigurator;
 import io.servicetalk.grpc.api.GrpcExecutionStrategy;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.FilterableStreamingHttpLoadBalancedConnection;
-import io.servicetalk.http.api.HttpHeadersFactory;
+import io.servicetalk.http.api.HttpProtocolConfig;
 import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.http.api.SingleAddressHttpClientSecurityConfigurator;
 import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
@@ -37,14 +37,15 @@ import io.servicetalk.transport.api.IoExecutor;
 import java.net.SocketOption;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import javax.annotation.Nullable;
+
+import static io.servicetalk.http.netty.HttpProtocolConfigs.h2Default;
 
 final class DefaultGrpcClientBuilder<U, R> extends GrpcClientBuilder<U, R> {
 
     private final SingleAddressHttpClientBuilder<U, R> httpClientBuilder;
 
     DefaultGrpcClientBuilder(final SingleAddressHttpClientBuilder<U, R> httpClientBuilder) {
-        this.httpClientBuilder = httpClientBuilder;
+        this.httpClientBuilder = httpClientBuilder.protocols(h2Default());
     }
 
     @Override
@@ -78,50 +79,8 @@ final class DefaultGrpcClientBuilder<U, R> extends GrpcClientBuilder<U, R> {
     }
 
     @Override
-    public GrpcClientBuilder<U, R> headersFactory(final HttpHeadersFactory headersFactory) {
-        httpClientBuilder.headersFactory(headersFactory);
-        return this;
-    }
-
-    @Override
-    public GrpcClientBuilder<U, R> h2HeadersFactory(final HttpHeadersFactory headersFactory) {
-        httpClientBuilder.h2HeadersFactory(headersFactory);
-        return this;
-    }
-
-    @Override
-    public GrpcClientBuilder<U, R> h2PriorKnowledge(final boolean h2PriorKnowledge) {
-        httpClientBuilder.h2PriorKnowledge(h2PriorKnowledge);
-        return this;
-    }
-
-    @Override
-    public GrpcClientBuilder<U, R> h2FrameLogger(@Nullable final String h2FrameLogger) {
-        httpClientBuilder.h2FrameLogger(h2FrameLogger);
-        return this;
-    }
-
-    @Override
-    public GrpcClientBuilder<U, R> maxInitialLineLength(final int maxInitialLineLength) {
-        httpClientBuilder.maxInitialLineLength(maxInitialLineLength);
-        return this;
-    }
-
-    @Override
-    public GrpcClientBuilder<U, R> maxHeaderSize(final int maxHeaderSize) {
-        httpClientBuilder.maxHeaderSize(maxHeaderSize);
-        return this;
-    }
-
-    @Override
-    public GrpcClientBuilder<U, R> headersEncodedSizeEstimate(final int headersEncodedSizeEstimate) {
-        httpClientBuilder.headersEncodedSizeEstimate(headersEncodedSizeEstimate);
-        return this;
-    }
-
-    @Override
-    public GrpcClientBuilder<U, R> trailersEncodedSizeEstimate(final int trailersEncodedSizeEstimate) {
-        httpClientBuilder.trailersEncodedSizeEstimate(trailersEncodedSizeEstimate);
+    public GrpcClientBuilder<U, R> protocols(HttpProtocolConfig... protocols) {
+        httpClientBuilder.protocols(protocols);
         return this;
     }
 

@@ -15,163 +15,81 @@
  */
 package io.servicetalk.tcp.netty.internal;
 
-import io.servicetalk.transport.api.ServiceTalkSocketOptions;
-import io.servicetalk.transport.netty.internal.FlushStrategy;
-import io.servicetalk.transport.netty.internal.WireLoggingInitializer;
+import io.servicetalk.transport.netty.internal.ReadOnlyServerSecurityConfig;
 
-import io.netty.channel.ChannelOption;
 import io.netty.handler.ssl.SslContext;
 import io.netty.util.DomainNameMapping;
 import io.netty.util.DomainNameMappingBuilder;
-import io.netty.util.NetUtil;
 
-import java.util.HashMap;
-import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.transport.netty.internal.FlushStrategies.defaultFlushStrategy;
-import static java.util.Collections.unmodifiableMap;
+import static io.servicetalk.transport.netty.internal.SslContextFactory.forServer;
 
 /**
  * Read only view of {@link TcpServerConfig}.
  */
-public class ReadOnlyTcpServerConfig {
+public final class ReadOnlyTcpServerConfig
+        extends AbstractReadOnlyTcpConfig<ReadOnlyServerSecurityConfig, ReadOnlyTcpServerConfig> {
 
-    //TODO 3.x: Add back attributes
-    protected boolean autoRead;
-    @SuppressWarnings("rawtypes")
-    protected final Map<ChannelOption, Object> options;
-    protected int backlog = NetUtil.SOMAXCONN;
     @Nullable
-    protected SslContext sslContext;
-    protected long idleTimeoutMs;
+    private final SslContext sslContext;
     @Nullable
-    protected DomainNameMapping<SslContext> mappings;
-    @Nullable
-    protected WireLoggingInitializer wireLoggingInitializer;
-    protected FlushStrategy flushStrategy = defaultFlushStrategy();
-
-    /**
-     * New instance.
-     *
-     * @param autoRead If the channels accepted by the server will have auto-read enabled.
-     */
-    public ReadOnlyTcpServerConfig(boolean autoRead) {
-        this.autoRead = autoRead;
-        options = new LinkedHashMap<>();
-    }
+    private final DomainNameMapping<SslContext> mappings;
+    private final int backlog;
 
     /**
      * Copy constructor.
      *
      * @param from Source to copy from.
      */
-    ReadOnlyTcpServerConfig(TcpServerConfig from) {
-        autoRead = from.autoRead;
-        options = unmodifiableMap(new HashMap<>(from.options));
-        backlog = from.backlog;
-        sslContext = from.sslContext;
-        idleTimeoutMs = from.idleTimeoutMs;
-
-        // Deep copy DomainNameMapping<SslContext>
-        if (from.mappings != null) {
-            final Map<String, SslContext> sslContextMap = from.mappings.asMap();
-            final DomainNameMappingBuilder<SslContext> builder =
-                    new DomainNameMappingBuilder<>(sslContextMap.size(), from.mappings.map(null));
-            sslContextMap.forEach(builder::add);
-            this.mappings = builder.build();
+    ReadOnlyTcpServerConfig(final TcpServerConfig from, final List<String> supportedAlpnProtocols) {
+        super(from, !supportedAlpnProtocols.isEmpty());
+        final ReadOnlyServerSecurityConfig securityConfig = from.securityConfig();
+        if (from.sniConfigs() != null) {
+            if (securityConfig == null) {
+                throw new IllegalStateException("No default security config defined but found SNI config mappings");
+            }
+            sslContext = forServer(securityConfig, supportedAlpnProtocols);
+            final DomainNameMappingBuilder<SslContext> mappingBuilder = new DomainNameMappingBuilder<>(sslContext);
+            for (Map.Entry<String, ReadOnlyServerSecurityConfig> sniConfigEntries : from.sniConfigs().entrySet()) {
+                mappingBuilder.add(sniConfigEntries.getKey(),
+                        forServer(sniConfigEntries.getValue(), supportedAlpnProtocols));
+            }
+            mappings = mappingBuilder.build();
+        } else if (securityConfig != null) {
+            sslContext = forServer(securityConfig, supportedAlpnProtocols);
+            mappings = null;
+        } else {
+            sslContext = null;
+            mappings = null;
         }
-
-        wireLoggingInitializer = from.wireLoggingInitializer;
-        flushStrategy = from.flushStrategy;
+        backlog = from.backlog();
     }
 
-    /**
-     * Returns whether auto-read is enabled.
-     *
-     * @return {@code true} if auto-read enabled.
-     */
-    public boolean isAutoRead() {
-        return autoRead;
-    }
-
-    /**
-     * Returns the maximum queue length for incoming connection indications (a request to connect).
-     *
-     * @return Backlog.
-     */
-    public int backlog() {
-        return backlog;
-    }
-
-    /**
-     * Returns the idle timeout as expressed via option {@link ServiceTalkSocketOptions#IDLE_TIMEOUT}.
-     * @return idle timeout.
-     */
-    public long idleTimeoutMs() {
-        return idleTimeoutMs;
-    }
-
-    /**
-     * Returns the {@link ChannelOption}s for all channels accepted by the server.
-     * @return Unmodifiable map of options.
-     */
-    public Map<ChannelOption, Object> options() {
-        return options;
-    }
-
-    /**
-     * Returns {@code true} if any {@link #domainNameMapping()} is enabled.
-     *
-     * @return {@code true} if any {@link #domainNameMapping()} is enabled.
-     */
-    public boolean isSniEnabled() {
-        return mappings != null;
+    @Nullable
+    @Override
+    public SslContext sslContext() {
+        return sslContext;
     }
 
     /**
      * Gets {@link DomainNameMapping}, if any.
      *
-     * @return Configured mapping, {@code null} if none configured.
-     * @throws IllegalStateException If {@link #isSniEnabled()} returns {@code false}.
+     * @return Configured mapping, {@code null} if none configured
      */
+    @Nullable
     public DomainNameMapping<SslContext> domainNameMapping() {
-        if (mappings == null) {
-            throw new IllegalStateException("No SNI Mappings are defined.");
-        }
         return mappings;
     }
 
     /**
-     * Returns the {@link SslContext}.
+     * Returns the maximum queue length for incoming connection indications (a request to connect).
      *
-     * @return {@link SslContext}.
-     * @throws IllegalStateException If {@link #isSniEnabled()} returns {@code true}.
+     * @return backlog
      */
-    @Nullable
-    public SslContext sslContext() {
-        if (mappings != null) {
-            throw new IllegalStateException("SNI Mappings found.");
-        }
-        return sslContext;
-    }
-
-    /**
-     * Returns the {@link WireLoggingInitializer} if any for this server.
-     *
-     * @return {@link WireLoggingInitializer} if any.
-     */
-    @Nullable
-    public WireLoggingInitializer wireLoggingInitializer() {
-        return wireLoggingInitializer;
-    }
-
-    /**
-     * Returns the {@link FlushStrategy} for this client.
-     * @return {@link FlushStrategy} for this client.
-     */
-    public FlushStrategy flushStrategy() {
-        return flushStrategy;
+    public int backlog() {
+        return backlog;
     }
 }

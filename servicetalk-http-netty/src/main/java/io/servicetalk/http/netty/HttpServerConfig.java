@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,102 +15,31 @@
  */
 package io.servicetalk.http.netty;
 
-import io.servicetalk.http.api.DefaultHttpHeadersFactory;
-import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.tcp.netty.internal.TcpServerConfig;
 
-import static java.util.Objects.requireNonNull;
-
 final class HttpServerConfig {
+
     private final TcpServerConfig tcpConfig;
-    private final H2ServerConfig h2ServerConfig;
-    private HttpHeadersFactory headersFactory = DefaultHttpHeadersFactory.INSTANCE;
-    private long clientCloseTimeoutMs = 500;
-    private int maxInitialLineLength = 4096;
-    private int maxHeaderSize = 8192;
-    private int headersEncodedSizeEstimate = 256;
-    private int trailersEncodedSizeEstimate = 256;
-    private boolean h2PriorKnowledge;
+    private final HttpConfig httpConfig;
 
     HttpServerConfig() {
-        tcpConfig = new TcpServerConfig(false);
-        h2ServerConfig = new H2ServerConfig();
-    }
-
-    HttpHeadersFactory headersFactory() {
-        return headersFactory;
-    }
-
-    H2ServerConfig h2ServerConfig() {
-        return h2ServerConfig;
-    }
-
-    void headersFactory(final HttpHeadersFactory headersFactory) {
-        this.headersFactory = requireNonNull(headersFactory);
-    }
-
-    boolean isH2PriorKnowledge() {
-        return h2PriorKnowledge;
-    }
-
-    void h2PriorKnowledge(boolean h2PriorKnowledge) {
-        this.h2PriorKnowledge = h2PriorKnowledge;
-    }
-
-    long clientCloseTimeoutMs() {
-        return clientCloseTimeoutMs;
-    }
-
-    void clientCloseTimeout(final long clientCloseTimeoutMs) {
-        if (clientCloseTimeoutMs < 0) {
-            throw new IllegalArgumentException("clientCloseTimeoutMs must be >= 0");
-        }
-        this.clientCloseTimeoutMs = clientCloseTimeoutMs;
-    }
-
-    int maxInitialLineLength() {
-        return maxInitialLineLength;
-    }
-
-    void maxInitialLineLength(final int maxInitialLineLength) {
-        if (maxInitialLineLength <= 0) {
-            throw new IllegalArgumentException("maxInitialLineLength must be > 0");
-        }
-        this.maxInitialLineLength = maxInitialLineLength;
-    }
-
-    int headersEncodedSizeEstimate() {
-        return headersEncodedSizeEstimate;
-    }
-
-    void headersEncodedSizeEstimate(final int headersEncodedSizeEstimate) {
-        this.headersEncodedSizeEstimate = headersEncodedSizeEstimate;
-    }
-
-    int trailersEncodedSizeEstimate() {
-        return trailersEncodedSizeEstimate;
-    }
-
-    void trailersEncodedSizeEstimate(final int trailersEncodedSizeEstimate) {
-        this.trailersEncodedSizeEstimate = trailersEncodedSizeEstimate;
-    }
-
-    int maxHeaderSize() {
-        return maxHeaderSize;
-    }
-
-    void maxHeaderSize(final int maxHeaderSize) {
-        if (maxHeaderSize <= 0) {
-            throw new IllegalArgumentException("maxHeaderSize must be > 0");
-        }
-        this.maxHeaderSize = maxHeaderSize;
+        tcpConfig = new TcpServerConfig();
+        httpConfig = new HttpConfig();
     }
 
     TcpServerConfig tcpConfig() {
         return tcpConfig;
     }
 
+    HttpConfig httpConfig() {
+        return httpConfig;
+    }
+
     ReadOnlyHttpServerConfig asReadOnly() {
-        return new ReadOnlyHttpServerConfig(this);
+        final ReadOnlyHttpServerConfig roConfig = new ReadOnlyHttpServerConfig(this);
+        if (roConfig.tcpConfig().sslContext() == null && roConfig.h1Config() != null && roConfig.h2Config() != null) {
+            throw new IllegalStateException("Cleartext HTTP/1.1 -> HTTP/2 (h2c) upgrade is not supported");
+        }
+        return roConfig;
     }
 }

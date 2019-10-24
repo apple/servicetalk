@@ -61,24 +61,6 @@ public abstract class MultiAddressHttpClientBuilder<U, R>
     public abstract MultiAddressHttpClientBuilder<U, R> enableWireLogging(String loggerName);
 
     @Override
-    public abstract MultiAddressHttpClientBuilder<U, R> headersFactory(HttpHeadersFactory headersFactory);
-
-    @Override
-    public abstract MultiAddressHttpClientBuilder<U, R> maxInitialLineLength(int maxInitialLineLength);
-
-    @Override
-    public abstract MultiAddressHttpClientBuilder<U, R> maxHeaderSize(int maxHeaderSize);
-
-    @Override
-    public abstract MultiAddressHttpClientBuilder<U, R> headersEncodedSizeEstimate(int headersEncodedSizeEstimate);
-
-    @Override
-    public abstract MultiAddressHttpClientBuilder<U, R> trailersEncodedSizeEstimate(int trailersEncodedSizeEstimate);
-
-    @Override
-    public abstract MultiAddressHttpClientBuilder<U, R> maxPipelinedRequests(int maxPipelinedRequests);
-
-    @Override
     public abstract MultiAddressHttpClientBuilder<U, R> disableHostHeaderFallback();
 
     /**
@@ -132,7 +114,7 @@ public abstract class MultiAddressHttpClientBuilder<U, R>
     }
 
     /**
-     * Append the filter to the chain of filters used to decorate the {@link StreamingHttpClient} created by this
+     * Appends the filter to the chain of filters used to decorate the {@link StreamingHttpClient} created by this
      * builder for a given {@code UnresolvedAddress}.
      * <p>
      * Note this method will be used to decorate the result of {@link #buildStreaming()} before it is
@@ -155,7 +137,7 @@ public abstract class MultiAddressHttpClientBuilder<U, R>
             MultiAddressHttpClientFilterFactory<U> factory);
 
     /**
-     * Append the filter to the chain of filters used to decorate the {@link StreamingHttpClient} created by this
+     * Appends the filter to the chain of filters used to decorate the {@link StreamingHttpClient} created by this
      * builder for a given {@code UnresolvedAddress}, for every request that passes the provided {@link Predicate}.
      * <p>
      * Note this method will be used to decorate the result of {@link #buildStreaming()} before it is
@@ -184,7 +166,7 @@ public abstract class MultiAddressHttpClientBuilder<U, R>
     }
 
     /**
-     * Set a maximum number of redirects to follow.
+     * Sets a maximum number of redirects to follow.
      *
      * @param maxRedirects A maximum number of redirects to follow. {@code 0} disables redirects.
      * @return {@code this}.

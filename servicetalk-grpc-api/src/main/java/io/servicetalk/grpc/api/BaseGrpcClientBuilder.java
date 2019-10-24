@@ -16,8 +16,7 @@
 package io.servicetalk.grpc.api;
 
 import io.servicetalk.buffer.api.BufferAllocator;
-import io.servicetalk.http.api.HttpHeaders;
-import io.servicetalk.http.api.HttpHeadersFactory;
+import io.servicetalk.http.api.HttpProtocolConfig;
 import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequest;
@@ -25,7 +24,6 @@ import io.servicetalk.transport.api.IoExecutor;
 
 import java.net.SocketOption;
 import java.util.function.Predicate;
-import javax.annotation.Nullable;
 
 interface BaseGrpcClientBuilder<U, R> {
 
@@ -72,74 +70,15 @@ interface BaseGrpcClientBuilder<U, R> {
     BaseGrpcClientBuilder<U, R> enableWireLogging(String loggerName);
 
     /**
-     * Set the {@link HttpHeadersFactory} to be used for creating {@link HttpHeaders} when decoding responses.
+     * Configurations of various underlying protocol versions.
+     * <p>
+     * <b>Note:</b> the order of specified protocols will reflect on priorities for ALPN in case the connections are
+     * secured.
      *
-     * @param headersFactory the {@link HttpHeadersFactory} to use.
+     * @param protocols {@link HttpProtocolConfig} for each protocol that should be supported.
      * @return {@code this}.
      */
-    BaseGrpcClientBuilder<U, R> headersFactory(HttpHeadersFactory headersFactory);
-
-    /**
-     * Set the {@link HttpHeadersFactory} to use when HTTP/2 is used.
-     *
-     * @param headersFactory the {@link HttpHeadersFactory} to use when HTTP/2 is used.
-     * @return {@code this.}
-     */
-    BaseGrpcClientBuilder<U, R> h2HeadersFactory(HttpHeadersFactory headersFactory);
-
-    /**
-     * Enable HTTP/2 via
-     * <a href="https://tools.ietf.org/html/rfc7540#section-3.4">Prior Knowledge</a>.
-     * @param h2PriorKnowledge {@code true} to enable HTTP/2 via
-     * <a href="https://tools.ietf.org/html/rfc7540#section-3.4">Prior Knowledge</a>.
-     *
-     * @return {@code this}.
-     */
-    BaseGrpcClientBuilder<U, R> h2PriorKnowledge(boolean h2PriorKnowledge);
-
-    /**
-     * Set the name of the frame logger when HTTP/2 is used.
-     *
-     * @param h2FrameLogger the name of the frame logger, or {@code null} to disable.
-     * @return {@code this}.
-     */
-    BaseGrpcClientBuilder<U, R> h2FrameLogger(@Nullable String h2FrameLogger);
-
-    /**
-     * Set the maximum size of the initial HTTP line for created connections.
-     *
-     * @param maxInitialLineLength The {@link StreamingHttpConnection} will throw TooLongFrameException if the initial
-     * HTTP line exceeds this length.
-     * @return {@code this}.
-     */
-    BaseGrpcClientBuilder<U, R> maxInitialLineLength(int maxInitialLineLength);
-
-    /**
-     * Set the maximum total size of HTTP headers, which could be sent by created connections.
-     *
-     * @param maxHeaderSize The {@link StreamingHttpConnection} will throw TooLongFrameException if the total size of
-     * all HTTP headers exceeds this length.
-     * @return {@code this}.
-     */
-    BaseGrpcClientBuilder<U, R> maxHeaderSize(int maxHeaderSize);
-
-    /**
-     * Set the value used to calculate an exponential moving average of the encoded size of the initial line and the
-     * headers for a guess for future buffer allocations.
-     *
-     * @param headersEncodedSizeEstimate An estimated size of encoded initial line and headers.
-     * @return {@code this}.
-     */
-    BaseGrpcClientBuilder<U, R> headersEncodedSizeEstimate(int headersEncodedSizeEstimate);
-
-    /**
-     * Set the value used to calculate an exponential moving average of the encoded size of the trailers for a guess for
-     * future buffer allocations.
-     *
-     * @param trailersEncodedSizeEstimate An estimated size of encoded trailers.
-     * @return {@code this}.
-     */
-    BaseGrpcClientBuilder<U, R> trailersEncodedSizeEstimate(int trailersEncodedSizeEstimate);
+    BaseGrpcClientBuilder<U, R> protocols(HttpProtocolConfig... protocols);
 
     /**
      * Append the filter to the chain of filters used to decorate the {@link StreamingHttpConnection} created by this

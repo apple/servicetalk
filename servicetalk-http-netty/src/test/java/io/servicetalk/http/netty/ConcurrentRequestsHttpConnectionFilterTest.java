@@ -69,6 +69,7 @@ import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.http.api.HttpExecutionStrategies.customStrategyBuilder;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.netty.HttpClients.forResolvedAddress;
+import static io.servicetalk.http.netty.HttpProtocolConfigs.h1;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static org.hamcrest.Matchers.both;
@@ -168,7 +169,7 @@ public class ConcurrentRequestsHttpConnectionFilterTest {
                 });
 
              StreamingHttpClient client = forResolvedAddress(serverHostAndPort(serverContext))
-                     .maxPipelinedRequests(2)
+                     .protocols(h1().maxPipelinedRequests(2).build())
                      .buildStreaming();
 
              StreamingHttpConnection connection = client.reserveConnection(client.get("/")).toFuture().get()) {
@@ -201,7 +202,7 @@ public class ConcurrentRequestsHttpConnectionFilterTest {
                                 .setHeader(HttpHeaderNames.CONNECTION, "close"))));
 
              HttpClient client = forResolvedAddress(serverHostAndPort(serverContext))
-                     .maxPipelinedRequests(99)
+                     .protocols(h1().maxPipelinedRequests(99).build())
                      .executionStrategy(FULLY_NO_OFFLOAD_STRATEGY)
                      .build();
 
@@ -234,7 +235,7 @@ public class ConcurrentRequestsHttpConnectionFilterTest {
                                 .concat(ctx.closeAsync()) // trigger reset after client is done writing
                                 .concat(Single.never()));
              HttpClient client = forResolvedAddress(serverHostAndPort(serverContext))
-                     .maxPipelinedRequests(99)
+                     .protocols(h1().maxPipelinedRequests(99).build())
                      .executionStrategy(FULLY_NO_OFFLOAD_STRATEGY)
                      .build();
 

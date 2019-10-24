@@ -112,10 +112,11 @@ final class NettyHttpServer {
                                       @Nullable final ConnectionAcceptor connectionAcceptor,
                                       final StreamingHttpService service,
                                       final boolean drainRequestPayloadBody) {
-        assert !config.isH2PriorKnowledge();
+        assert config.h1Config() != null;
         // This state is read only, so safe to keep a copy across Subscribers
         final ReadOnlyTcpServerConfig tcpServerConfig = config.tcpConfig();
-        return TcpServerBinder.bind(address, tcpServerConfig, executionContext, connectionAcceptor,
+        // We disable auto read so we can handle stuff in the ConnectionFilter before we accept any content.
+        return TcpServerBinder.bind(address, tcpServerConfig, false, executionContext, connectionAcceptor,
                 channel -> initChannel(channel, executionContext, config,
                         new TcpServerChannelInitializer(tcpServerConfig), service, drainRequestPayloadBody),
                 serverConnection -> serverConnection.process(true))
@@ -143,22 +144,24 @@ final class NettyHttpServer {
                                                          final StreamingHttpService service,
                                                          final boolean drainRequestPayloadBody,
                                                          final CloseHandler closeHandler) {
+        final H1ProtocolConfig h1Config = config.h1Config();
+        assert h1Config != null;
         return showPipeline(DefaultNettyConnection.initChannel(channel,
                 httpExecutionContext.bufferAllocator(), httpExecutionContext.executor(),
                 new TerminalPredicate<>(LAST_CHUNK_PREDICATE), closeHandler, config.tcpConfig().flushStrategy(),
-                initializer.andThen(getChannelInitializer(config, closeHandler)),
+                initializer.andThen(getChannelInitializer(h1Config, closeHandler)),
                 httpExecutionContext.executionStrategy())
                 .map(conn -> new NettyHttpServerConnection(conn, service, httpExecutionContext.executionStrategy(),
-                        config.headersFactory(), drainRequestPayloadBody)), "HTTP/1.1", channel);
+                        h1Config.headersFactory(), drainRequestPayloadBody)), "HTTP/1.1", channel);
     }
 
-    private static ChannelInitializer getChannelInitializer(final ReadOnlyHttpServerConfig config,
+    private static ChannelInitializer getChannelInitializer(final H1ProtocolConfig config,
                                                             final CloseHandler closeHandler) {
         return channel -> {
             Queue<HttpRequestMethod> methodQueue = new ArrayDeque<>(2);
             final ChannelPipeline pipeline = channel.pipeline();
             pipeline.addLast(new HttpRequestDecoder(methodQueue, config.headersFactory(),
-                    config.maxInitialLineLength(), config.maxHeaderSize(), closeHandler));
+                    config.maxStartLineLength(), config.maxHeaderFieldLength(), closeHandler));
             pipeline.addLast(new HttpResponseEncoder(methodQueue, config.headersEncodedSizeEstimate(),
                     config.trailersEncodedSizeEstimate(), closeHandler));
         };

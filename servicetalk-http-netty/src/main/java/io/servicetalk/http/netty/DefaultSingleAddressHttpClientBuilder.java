@@ -35,7 +35,7 @@ import io.servicetalk.http.api.FilterableStreamingHttpLoadBalancedConnection;
 import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
-import io.servicetalk.http.api.HttpHeadersFactory;
+import io.servicetalk.http.api.HttpProtocolConfig;
 import io.servicetalk.http.api.MultiAddressHttpClientFilterFactory;
 import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.http.api.SingleAddressHttpClientSecurityConfigurator;
@@ -43,7 +43,6 @@ import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
 import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
-import io.servicetalk.tcp.netty.internal.TcpClientConfig;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.IoExecutor;
 
@@ -52,7 +51,6 @@ import io.netty.util.NetUtil;
 
 import java.net.InetSocketAddress;
 import java.net.SocketOption;
-import java.util.function.BiPredicate;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
@@ -62,7 +60,6 @@ import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseabl
 import static io.servicetalk.concurrent.api.Publisher.failed;
 import static io.servicetalk.concurrent.api.Publisher.never;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
-import static io.servicetalk.http.netty.AlpnChannelSingle.useAlpn;
 import static io.servicetalk.http.netty.GlobalDnsServiceDiscoverer.globalDnsServiceDiscoverer;
 import static io.servicetalk.http.netty.H2ToStH1Utils.HTTP_2_0;
 import static io.servicetalk.loadbalancer.RoundRobinLoadBalancer.newRoundRobinFactory;
@@ -112,7 +109,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
     DefaultSingleAddressHttpClientBuilder(
             final U address, final ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> serviceDiscoverer) {
         this.address = requireNonNull(address);
-        config = new HttpClientConfig(new TcpClientConfig(false));
+        config = new HttpClientConfig();
         executionContextBuilder = new HttpExecutionContextBuilder();
         influencerChainBuilder = new ClientStrategyInfluencerChainBuilder();
         this.loadBalancerFactory = new StrategyInfluencingLoadBalancerFactory<>(newRoundRobinFactory());
@@ -123,7 +120,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
     DefaultSingleAddressHttpClientBuilder(
             final ServiceDiscoverer<U, R, ? extends ServiceDiscovererEvent<R>> serviceDiscoverer) {
         address = null; // Unknown address - template builder pending override via: copy(address)
-        config = new HttpClientConfig(new TcpClientConfig(false));
+        config = new HttpClientConfig();
         executionContextBuilder = new HttpExecutionContextBuilder();
         influencerChainBuilder = new ClientStrategyInfluencerChainBuilder();
         this.loadBalancerFactory = new StrategyInfluencingLoadBalancerFactory<>(newRoundRobinFactory());
@@ -231,7 +228,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
     private StreamingHttpClient buildStreaming(HttpClientBuildContext<U, R> ctx) {
         final ReadOnlyHttpClientConfig roConfig = config.asReadOnly();
 
-        if (roConfig.isH2PriorKnowledge() && roConfig.hasProxy()) {
+        if (roConfig.h2Config() != null && roConfig.hasProxy()) {
             throw new IllegalStateException("Proxying is not yet supported with HTTP/2");
         }
 
@@ -245,7 +242,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
             ConnectionFactoryFilter<R, FilterableStreamingHttpConnection> connectionFactoryFilter =
                     this.connectionFactoryFilter;
 
-            final SslContext sslContext = roConfig.tcpClientConfig().sslContext();
+            final SslContext sslContext = roConfig.tcpConfig().sslContext();
             if (roConfig.hasProxy() && sslContext != null) {
                 assert roConfig.connectAddress() != null;
                 connectionFactoryFilter = new ProxyConnectConnectionFactoryFilter<R, FilterableStreamingHttpConnection>(
@@ -259,10 +256,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
                         connectionFilterFactory, reqRespFactory,
                         influencerChainBuilder.buildForConnectionFactory(ctx.executionContext.executionStrategy()),
                         connectionFactoryFilter, protocolBinder);
-            } else if (useAlpn(sslContext)) {
-                if (roConfig.hasProxy()) {
-                    throw new IllegalStateException("Proxying is not yet supported with ALPN");
-                }
+            } else if (roConfig.tcpConfig().isAlpnConfigured()) {
                 connectionFactory = new AlpnLBHttpConnectionFactory<>(roConfig, ctx.executionContext,
                         connectionFilterFactory, reqRespFactory,
                         influencerChainBuilder.buildForConnectionFactory(ctx.executionContext.executionStrategy()),
@@ -339,9 +333,9 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
         final HttpExecutionContext exec = clonedBuilder.executionContextBuilder.build();
         final StreamingHttpRequestResponseFactory reqRespFactory = clonedBuilder.config.isH2PriorKnowledge() ?
                 new DefaultStreamingHttpRequestResponseFactory(exec.bufferAllocator(),
-                        clonedBuilder.config.h2ClientConfig().h2HeadersFactory(), HTTP_2_0) :
+                        clonedBuilder.config.protocolConfigs().h2Config().headersFactory(), HTTP_2_0) :
                 new DefaultStreamingHttpRequestResponseFactory(exec.bufferAllocator(),
-                        clonedBuilder.config.headersFactory(), HTTP_1_1);
+                        clonedBuilder.config.protocolConfigs().h1Config().headersFactory(), HTTP_1_1);
 
         return new HttpClientBuildContext<>(clonedBuilder, exec, reqRespFactory, proxyAddress);
     }
@@ -371,88 +365,27 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
 
     @Override
     public <T> DefaultSingleAddressHttpClientBuilder<U, R> socketOption(SocketOption<T> option, T value) {
-        config.tcpClientConfig().socketOption(option, value);
+        config.tcpConfig().socketOption(option, value);
         return this;
     }
 
     @Override
     public DefaultSingleAddressHttpClientBuilder<U, R> enableWireLogging(final String loggerName) {
-        config.tcpClientConfig().enableWireLogging(loggerName);
+        config.tcpConfig().enableWireLogging(loggerName);
         return this;
     }
 
     @Override
-    public DefaultSingleAddressHttpClientBuilder<U, R> headersFactory(final HttpHeadersFactory headersFactory) {
-        config.headersFactory(headersFactory);
-        return this;
-    }
-
-    @Override
-    public SingleAddressHttpClientBuilder<U, R> h2HeadersFactory(final HttpHeadersFactory headersFactory) {
-        config.h2ClientConfig().h2HeadersFactory(headersFactory);
-        return this;
-    }
-
-    @Override
-    public SingleAddressHttpClientBuilder<U, R> h2HeadersSensitivityDetector(
-            final BiPredicate<CharSequence, CharSequence> h2HeadersSensitivityDetector) {
-        config.h2ClientConfig().h2HeadersSensitivityDetector(h2HeadersSensitivityDetector);
-        return this;
-    }
-
-    @Override
-    public SingleAddressHttpClientBuilder<U, R> h2PriorKnowledge(final boolean h2PriorKnowledge) {
-        config.tcpClientConfig().autoRead(h2PriorKnowledge);
-        config.h2PriorKnowledge(h2PriorKnowledge);
-        return this;
-    }
-
-    @Override
-    public SingleAddressHttpClientBuilder<U, R> h2FrameLogger(@Nullable final String h2FrameLogger) {
-        config.h2ClientConfig().h2FrameLogger(h2FrameLogger);
-        return this;
-    }
-
-    @Override
-    public DefaultSingleAddressHttpClientBuilder<U, R> maxInitialLineLength(final int maxInitialLineLength) {
-        config.maxInitialLineLength(maxInitialLineLength);
-        return this;
-    }
-
-    @Override
-    public DefaultSingleAddressHttpClientBuilder<U, R> maxHeaderSize(final int maxHeaderSize) {
-        config.maxHeaderSize(maxHeaderSize);
-        return this;
-    }
-
-    @Override
-    public DefaultSingleAddressHttpClientBuilder<U, R> headersEncodedSizeEstimate(
-            final int headersEncodedSizeEstimate) {
-        config.headersEncodedSizeEstimate(headersEncodedSizeEstimate);
-        return this;
-    }
-
-    @Override
-    public DefaultSingleAddressHttpClientBuilder<U, R> trailersEncodedSizeEstimate(
-            final int trailersEncodedSizeEstimate) {
-        config.trailersEncodedSizeEstimate(trailersEncodedSizeEstimate);
-        return this;
-    }
-
-    @Override
-    public DefaultSingleAddressHttpClientBuilder<U, R> maxPipelinedRequests(final int maxPipelinedRequests) {
-        config.maxPipelinedRequests(maxPipelinedRequests);
+    public DefaultSingleAddressHttpClientBuilder<U, R> protocols(final HttpProtocolConfig... protocols) {
+        config.protocolConfigs().protocols(protocols);
         return this;
     }
 
     @Override
     public DefaultSingleAddressHttpClientBuilder<U, R> appendConnectionFilter(
             final StreamingHttpConnectionFilterFactory factory) {
-        if (connectionFilterFactory == null) {
-            connectionFilterFactory = requireNonNull(factory);
-        } else {
-            connectionFilterFactory = connectionFilterFactory.append(requireNonNull(factory));
-        }
+        connectionFilterFactory = connectionFilterFactory == null ?
+                requireNonNull(factory) : connectionFilterFactory.append(factory);
         influencerChainBuilder.add(factory);
         return this;
     }
@@ -487,11 +420,8 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
     @Override
     public DefaultSingleAddressHttpClientBuilder<U, R> appendClientFilter(
             final StreamingHttpClientFilterFactory factory) {
-        if (clientFilterFactory == null) {
-            clientFilterFactory = requireNonNull(factory);
-        } else {
-            clientFilterFactory = clientFilterFactory.append(factory);
-        }
+        clientFilterFactory = clientFilterFactory == null ? requireNonNull(factory) :
+                clientFilterFactory.append(factory);
         influencerChainBuilder.add(factory);
         return this;
     }
@@ -520,7 +450,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
         return new DefaultSingleAddressHttpClientSecurityConfigurator<>(
                 unresolvedHostFunction(address).toString(), unresolvedPortFunction(address),
                 securityConfig -> {
-                    config.tcpClientConfig().secure(securityConfig);
+                    config.tcpConfig().secure(securityConfig);
                     return DefaultSingleAddressHttpClientBuilder.this;
                 });
     }

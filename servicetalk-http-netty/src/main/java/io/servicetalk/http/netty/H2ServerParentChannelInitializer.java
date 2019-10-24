@@ -28,10 +28,10 @@ import static io.netty.handler.codec.http2.Http2FrameCodecBuilder.forServer;
 import static io.netty.handler.logging.LogLevel.TRACE;
 
 final class H2ServerParentChannelInitializer implements ChannelInitializer {
-    private final ReadOnlyH2ServerConfig config;
+    private final H2ProtocolConfig config;
     private final io.netty.channel.ChannelInitializer<Channel> streamChannelInitializer;
 
-    H2ServerParentChannelInitializer(final ReadOnlyH2ServerConfig config,
+    H2ServerParentChannelInitializer(final H2ProtocolConfig config,
                                      final io.netty.channel.ChannelInitializer<Channel> streamChannelInitializer) {
         this.config = config;
         this.streamChannelInitializer = streamChannelInitializer;
@@ -44,13 +44,13 @@ final class H2ServerParentChannelInitializer implements ChannelInitializer {
                 // the user to apply their own timeout at the call site.
                 .gracefulShutdownTimeoutMillis(-1);
 
-        final BiPredicate<CharSequence, CharSequence> h2HeadersSensitivityDetector =
-                config.h2HeadersSensitivityDetector();
-        multiplexCodecBuilder.headerSensitivityDetector(h2HeadersSensitivityDetector::test);
+        final BiPredicate<CharSequence, CharSequence> headersSensitivityDetector =
+                config.headersSensitivityDetector();
+        multiplexCodecBuilder.headerSensitivityDetector(headersSensitivityDetector::test);
 
-        final String h2FrameLogger = config.h2FrameLogger();
-        if (h2FrameLogger != null) {
-            multiplexCodecBuilder.frameLogger(new Http2FrameLogger(TRACE, h2FrameLogger));
+        final String frameLoggerName = config.frameLoggerName();
+        if (frameLoggerName != null) {
+            multiplexCodecBuilder.frameLogger(new Http2FrameLogger(TRACE, frameLoggerName));
         }
 
         // TODO(scott): more configuration. header validation, settings stream, etc...

@@ -21,7 +21,6 @@ import io.servicetalk.transport.netty.internal.ReadOnlyServerSecurityConfig;
 import io.servicetalk.transport.netty.internal.ServerSecurityConfig;
 
 import java.io.InputStream;
-import java.util.Collection;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import javax.net.ssl.KeyManagerFactory;
@@ -51,14 +50,6 @@ final class DefaultHttpServerSecurityConfigurator implements HttpServerSecurityC
     @Override
     public HttpServerSecurityConfigurator protocols(final String... protocols) {
         securityConfig.protocols(protocols);
-        return this;
-    }
-
-    @Override
-    public HttpServerSecurityConfigurator applicationProtocolNegotiation(
-            final ApplicationProtocolNegotiation apn, final SelectorFailureBehavior selectorBehavior,
-            final SelectedListenerFailureBehavior selectedBehavior, final Collection<String> supportedProtocols) {
-        securityConfig.applicationProtocolNegotiation(apn, selectorBehavior, selectedBehavior, supportedProtocols);
         return this;
     }
 

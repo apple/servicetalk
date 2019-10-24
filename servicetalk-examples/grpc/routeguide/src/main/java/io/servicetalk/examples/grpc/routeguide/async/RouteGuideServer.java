@@ -66,7 +66,6 @@ public class RouteGuideServer {
                 fromJson(RouteGuideServer.class.getResource(args[0])) :
                 randomFeatures();
         GrpcServers.forPort(8080)
-                .h2PriorKnowledge(true)
                 .listenAndAwait(new ServiceFactory(new DefaultRouteGuideService(featuresFinder)))
                 .awaitShutdown();
     }

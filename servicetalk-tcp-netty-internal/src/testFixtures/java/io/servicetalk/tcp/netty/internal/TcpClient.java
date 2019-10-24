@@ -42,6 +42,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
+import static java.util.Collections.emptyList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assume.assumeTrue;
@@ -66,7 +67,7 @@ public final class TcpClient {
      * @param config for the client.
      */
     public TcpClient(TcpClientConfig config) {
-        this.config = config.asReadOnly();
+        this.config = config.asReadOnly(emptyList());
     }
 
     /**
@@ -80,7 +81,7 @@ public final class TcpClient {
      */
     public NettyConnection<Buffer, Buffer> connectBlocking(ExecutionContext executionContext, SocketAddress address)
             throws ExecutionException, InterruptedException {
-        return TcpConnector.connect(null, address, config, executionContext)
+        return TcpConnector.connect(null, address, config, false, executionContext)
                 .flatMap(channel -> DefaultNettyConnection.<Buffer, Buffer>initChannel(channel,
                         executionContext.bufferAllocator(), executionContext.executor(),
                         new TerminalPredicate<>(buffer -> false), UNSUPPORTED_PROTOCOL_CLOSE_HANDLER,
@@ -146,7 +147,7 @@ public final class TcpClient {
     }
 
     private static TcpClientConfig defaultConfig() {
-        TcpClientConfig config = new TcpClientConfig(false);
+        TcpClientConfig config = new TcpClientConfig();
         // To test coverage of options.
         config.socketOption(StandardSocketOptions.SO_KEEPALIVE, true);
         return config;

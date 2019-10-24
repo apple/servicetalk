@@ -18,7 +18,6 @@ package io.servicetalk.http.api;
 import io.servicetalk.transport.api.ServerSecurityConfigurator;
 
 import java.io.InputStream;
-import java.util.Collection;
 import java.util.function.Supplier;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.TrustManagerFactory;
@@ -35,11 +34,6 @@ public interface HttpServerSecurityConfigurator extends ServerSecurityConfigurat
 
     @Override
     HttpServerSecurityConfigurator protocols(String... protocols);
-
-    @Override
-    HttpServerSecurityConfigurator applicationProtocolNegotiation(
-            ApplicationProtocolNegotiation apn, SelectorFailureBehavior selectorBehavior,
-            SelectedListenerFailureBehavior selectedBehavior, Collection<String> supportedProtocols);
 
     @Override
     HttpServerSecurityConfigurator ciphers(Iterable<String> ciphers);

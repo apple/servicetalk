@@ -22,13 +22,10 @@ import io.grpc.examples.routeguide.Point;
 import io.grpc.examples.routeguide.RouteGuide;
 import io.grpc.examples.routeguide.RouteGuide.ClientFactory;
 
-import java.util.concurrent.CountDownLatch;
-
 public final class BlockingRouteGuideClient {
 
     public static void main(String[] args) throws Exception {
         try (RouteGuide.BlockingRouteGuideClient client = GrpcClients.forAddress("localhost", 8080)
-                .h2PriorKnowledge(true)
                 .buildBlocking(new ClientFactory())) {
             Feature feature = client.getFeature(Point.newBuilder()
                     .setLatitude(123456).setLongitude(-123456).build());

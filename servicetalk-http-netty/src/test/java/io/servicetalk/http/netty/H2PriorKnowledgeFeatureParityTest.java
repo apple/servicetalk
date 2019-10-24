@@ -117,6 +117,8 @@ import static io.servicetalk.http.api.HttpResponseStatus.EXPECTATION_FAILED;
 import static io.servicetalk.http.api.HttpSerializationProviders.textDeserializer;
 import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
 import static io.servicetalk.http.netty.HttpClients.forSingleAddress;
+import static io.servicetalk.http.netty.HttpProtocolConfigs.h1Default;
+import static io.servicetalk.http.netty.HttpProtocolConfigs.h2Default;
 import static io.servicetalk.http.netty.HttpTestExecutionStrategy.CACHED;
 import static io.servicetalk.http.netty.HttpTestExecutionStrategy.NO_OFFLOAD;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
@@ -202,7 +204,8 @@ public class H2PriorKnowledgeFeatureParityTest {
         InetSocketAddress serverAddress = bindHttpEchoServer();
         String responseBody = "hello world";
         try (BlockingHttpClient client = forSingleAddress(HostAndPort.of(serverAddress))
-                .h2PriorKnowledge(h2PriorKnowledge).executionStrategy(clientExecutionStrategy).buildBlocking()) {
+                .protocols(h2PriorKnowledge ? h2Default() : h1Default())
+                .executionStrategy(clientExecutionStrategy).buildBlocking()) {
             for (int i = 0; i < numberRequests; ++i) {
                 HttpResponse response = client.request((get ? client.get("/" + i) : client.post("/" + i))
                         .payloadBody(responseBody, textSerializer()));
@@ -215,7 +218,8 @@ public class H2PriorKnowledgeFeatureParityTest {
     public void cookiesRoundTrip() throws Exception {
         InetSocketAddress serverAddress = bindHttpEchoServer();
         try (BlockingHttpClient client = forSingleAddress(HostAndPort.of(serverAddress))
-                .h2PriorKnowledge(h2PriorKnowledge).executionStrategy(clientExecutionStrategy).buildBlocking()) {
+                .protocols(h2PriorKnowledge ? h2Default() : h1Default())
+                .executionStrategy(clientExecutionStrategy).buildBlocking()) {
             HttpRequest request = client.get("/");
             String requestCookie = "name1=value1; name2=value2; name3=value3";
             request.addHeader(COOKIE, requestCookie);
@@ -239,7 +243,8 @@ public class H2PriorKnowledgeFeatureParityTest {
         InetSocketAddress serverAddress = bindHttpSynchronousResponseServer(
                 request -> headerCookieRemovalAndIteration(request.headers()));
         try (BlockingHttpClient client = forSingleAddress(HostAndPort.of(serverAddress))
-                .h2PriorKnowledge(h2PriorKnowledge).executionStrategy(clientExecutionStrategy).buildBlocking()) {
+                .protocols(h2PriorKnowledge ? h2Default() : h1Default())
+                .executionStrategy(clientExecutionStrategy).buildBlocking()) {
             assertThat(client.request(client.get("/").payloadBody("", textSerializer()))
                     .payloadBody(textDeserializer()), isEmptyString());
         }
@@ -249,7 +254,8 @@ public class H2PriorKnowledgeFeatureParityTest {
     public void clientHeaderCookieRemovalAndIteration() throws Exception {
         InetSocketAddress serverAddress = bindHttpEchoServer();
         try (BlockingHttpClient client = forSingleAddress(HostAndPort.of(serverAddress))
-                .h2PriorKnowledge(h2PriorKnowledge).executionStrategy(clientExecutionStrategy).buildBlocking()) {
+                .protocols(h2PriorKnowledge ? h2Default() : h1Default())
+                .executionStrategy(clientExecutionStrategy).buildBlocking()) {
             HttpRequest request = client.get("/");
             headerCookieRemovalAndIteration(request.headers());
         }
@@ -373,7 +379,8 @@ public class H2PriorKnowledgeFeatureParityTest {
         InetSocketAddress serverAddress = bindHttpSynchronousResponseServer(
                 request -> headerSetCookieRemovalAndIteration(request.headers()));
         try (BlockingHttpClient client = forSingleAddress(HostAndPort.of(serverAddress))
-                .h2PriorKnowledge(h2PriorKnowledge).executionStrategy(clientExecutionStrategy).buildBlocking()) {
+                .protocols(h2PriorKnowledge ? h2Default() : h1Default())
+                .executionStrategy(clientExecutionStrategy).buildBlocking()) {
             assertThat(client.request(client.get("/").payloadBody("", textSerializer()))
                     .payloadBody(textDeserializer()), isEmptyString());
         }
@@ -383,7 +390,8 @@ public class H2PriorKnowledgeFeatureParityTest {
     public void clientHeaderSetCookieRemovalAndIteration() throws Exception {
         InetSocketAddress serverAddress = bindHttpEchoServer();
         try (BlockingHttpClient client = forSingleAddress(HostAndPort.of(serverAddress))
-                .h2PriorKnowledge(h2PriorKnowledge).executionStrategy(clientExecutionStrategy).buildBlocking()) {
+                .protocols(h2PriorKnowledge ? h2Default() : h1Default())
+                .executionStrategy(clientExecutionStrategy).buildBlocking()) {
             HttpRequest request = client.get("/");
             headerSetCookieRemovalAndIteration(request.headers());
         }
@@ -437,7 +445,8 @@ public class H2PriorKnowledgeFeatureParityTest {
         String responseBody2 = "2.hello world.2";
         InetSocketAddress serverAddress = bindHttpEchoServer();
         try (BlockingHttpClient client = forSingleAddress(HostAndPort.of(serverAddress))
-                .h2PriorKnowledge(h2PriorKnowledge).executionStrategy(clientExecutionStrategy).buildBlocking()) {
+                .protocols(h2PriorKnowledge ? h2Default() : h1Default())
+                .executionStrategy(clientExecutionStrategy).buildBlocking()) {
             HttpRequest request = client.get("/");
             ReservedBlockingHttpConnection reservedConnection = client.reserveConnection(request);
             try {
@@ -458,7 +467,7 @@ public class H2PriorKnowledgeFeatureParityTest {
         String payloadBody = "foo";
         String myTrailerName = "mytrailer";
         h1ServerContext = HttpServers.forAddress(localAddress(0))
-                .h2PriorKnowledge(h2PriorKnowledge).listenStreaming(
+                .protocols(h2PriorKnowledge ? h2Default() : h1Default()).listenStreaming(
                         (ctx, request, responseFactory) ->
                                 request.payloadBody()
                                 .map(Buffer::readableBytes)
@@ -474,7 +483,8 @@ public class H2PriorKnowledgeFeatureParityTest {
 
         InetSocketAddress serverAddress = (InetSocketAddress) h1ServerContext.listenAddress();
         try (BlockingHttpClient client = forSingleAddress(HostAndPort.of(serverAddress))
-                .h2PriorKnowledge(h2PriorKnowledge).executionStrategy(clientExecutionStrategy).buildBlocking()) {
+                .protocols(h2PriorKnowledge ? h2Default() : h1Default())
+                .executionStrategy(clientExecutionStrategy).buildBlocking()) {
             HttpRequest request = client.post("/").payloadBody(payloadBody, textSerializer());
             HttpResponse response = client.request(request);
             assertEquals(0, response.payloadBody().readableBytes());
@@ -488,7 +498,8 @@ public class H2PriorKnowledgeFeatureParityTest {
     public void clientWriteTrailers() throws Exception {
         InetSocketAddress serverAddress = bindHttpEchoServer();
         try (BlockingHttpClient client = forSingleAddress(HostAndPort.of(serverAddress))
-                .h2PriorKnowledge(h2PriorKnowledge).executionStrategy(clientExecutionStrategy).buildBlocking()) {
+                .protocols(h2PriorKnowledge ? h2Default() : h1Default())
+                .executionStrategy(clientExecutionStrategy).buildBlocking()) {
             String payloadBody = "foo";
             String myTrailerName = "mytrailer";
             String myTrailerValue = "myvalue";
@@ -514,7 +525,8 @@ public class H2PriorKnowledgeFeatureParityTest {
             }
         });
         try (BlockingHttpClient client = forSingleAddress(HostAndPort.of(serverAddress))
-                .h2PriorKnowledge(h2PriorKnowledge).executionStrategy(clientExecutionStrategy).buildBlocking()) {
+                .protocols(h2PriorKnowledge ? h2Default() : h1Default())
+                .executionStrategy(clientExecutionStrategy).buildBlocking()) {
             final String responseBody = "foo";
             HttpResponse response = client.request(client.post("/0")
                     .payloadBody(responseBody, textSerializer()));
@@ -528,7 +540,8 @@ public class H2PriorKnowledgeFeatureParityTest {
         InetSocketAddress serverAddress = bindHttpEchoServer();
         final Queue<Throwable> errorQueue = new ConcurrentLinkedQueue<>();
         try (BlockingHttpClient client = forSingleAddress(HostAndPort.of(serverAddress))
-                .h2PriorKnowledge(h2PriorKnowledge).executionStrategy(clientExecutionStrategy)
+                .protocols(h2PriorKnowledge ? h2Default() : h1Default())
+                .executionStrategy(clientExecutionStrategy)
                 .appendClientFilter(client2 -> new StreamingHttpClientFilter(client2) {
                     @Override
                     protected Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
@@ -552,7 +565,8 @@ public class H2PriorKnowledgeFeatureParityTest {
         InetSocketAddress serverAddress = bindHttpEchoServer();
         final Queue<Throwable> errorQueue = new ConcurrentLinkedQueue<>();
         try (BlockingHttpClient client = forSingleAddress(HostAndPort.of(serverAddress))
-                .h2PriorKnowledge(h2PriorKnowledge).executionStrategy(clientExecutionStrategy)
+                .protocols(h2PriorKnowledge ? h2Default() : h1Default())
+                .executionStrategy(clientExecutionStrategy)
                 .appendConnectionFilter(connection -> new StreamingHttpConnectionFilter(connection) {
                     @Override
                     public Single<StreamingHttpResponse> request(final HttpExecutionStrategy strategy,
@@ -584,7 +598,8 @@ public class H2PriorKnowledgeFeatureParityTest {
             }
         });
         StreamingHttpClient client = forSingleAddress(HostAndPort.of(serverAddress))
-                .h2PriorKnowledge(h2PriorKnowledge).executionStrategy(clientExecutionStrategy).buildStreaming();
+                .protocols(h2PriorKnowledge ? h2Default() : h1Default())
+                .executionStrategy(clientExecutionStrategy).buildStreaming();
         SpScPublisherProcessor<Buffer> requestBody = new SpScPublisherProcessor<>(16);
         // We want to make a request, and intentionally not complete it. While the request is in process we invoke
         // closeAsyncGracefully and verify that we wait until the request has completed before the underlying
@@ -602,7 +617,8 @@ public class H2PriorKnowledgeFeatureParityTest {
         h1ServerContext.closeAsyncGracefully().subscribe();
 
         try (BlockingHttpClient client2 = forSingleAddress(HostAndPort.of(serverAddress))
-                .h2PriorKnowledge(h2PriorKnowledge).executionStrategy(clientExecutionStrategy).buildBlocking()) {
+                .protocols(h2PriorKnowledge ? h2Default() : h1Default())
+                .executionStrategy(clientExecutionStrategy).buildBlocking()) {
             try {
                 client2.request(client2.get("/"));
                 fail("server has initiated graceful close, subsequent connections/requests are expected to fail.");
@@ -627,7 +643,8 @@ public class H2PriorKnowledgeFeatureParityTest {
 
         InetSocketAddress serverAddress = bindHttpEchoServer();
         StreamingHttpClient client = forSingleAddress(HostAndPort.of(serverAddress))
-                .h2PriorKnowledge(h2PriorKnowledge).executionStrategy(clientExecutionStrategy).buildStreaming();
+                .protocols(h2PriorKnowledge ? h2Default() : h1Default())
+                .executionStrategy(clientExecutionStrategy).buildStreaming();
         CountDownLatch onCloseLatch = new CountDownLatch(1);
         SpScPublisherProcessor<Buffer> requestBody = new SpScPublisherProcessor<>(16);
 
@@ -654,7 +671,8 @@ public class H2PriorKnowledgeFeatureParityTest {
 
         InetSocketAddress serverAddress = bindHttpEchoServer();
         try (StreamingHttpClient client = forSingleAddress(HostAndPort.of(serverAddress))
-                .h2PriorKnowledge(h2PriorKnowledge).executionStrategy(clientExecutionStrategy).buildStreaming()) {
+                .protocols(h2PriorKnowledge ? h2Default() : h1Default())
+                .executionStrategy(clientExecutionStrategy).buildStreaming()) {
             SpScPublisherProcessor<Buffer> requestBody1 = new SpScPublisherProcessor<>(16);
             StreamingHttpResponse response1 = client.request(client.post("/0").payloadBody(requestBody1))
                     .toFuture().get();
@@ -732,7 +750,7 @@ public class H2PriorKnowledgeFeatureParityTest {
             }
         }));
         try (StreamingHttpClient client = forSingleAddress(HostAndPort.of(serverAddress))
-                .h2PriorKnowledge(true)
+                .protocols(h2PriorKnowledge ? h2Default() : h1Default())
                 .executionStrategy(clientExecutionStrategy)
                 .appendConnectionFilter(conn -> new TestConnectionFilter(conn, connectionQueue, maxConcurrentPubQueue))
                 .buildStreaming()) {
@@ -788,7 +806,8 @@ public class H2PriorKnowledgeFeatureParityTest {
     private void continue100(boolean failExpectation) throws Exception {
         InetSocketAddress serverAddress = bindHttpEchoServer();
         try (StreamingHttpClient client = forSingleAddress(HostAndPort.of(serverAddress))
-                .h2PriorKnowledge(h2PriorKnowledge).executionStrategy(clientExecutionStrategy).buildStreaming()) {
+                .protocols(h2PriorKnowledge ? h2Default() : h1Default())
+                .executionStrategy(clientExecutionStrategy).buildStreaming()) {
             SpScPublisherProcessor<Buffer> requestBody1 = new SpScPublisherProcessor<>(16);
             StreamingHttpRequest request = client.post("/").payloadBody(requestBody1);
             request.addHeader(EXPECT, CONTINUE);
@@ -839,7 +858,7 @@ public class H2PriorKnowledgeFeatureParityTest {
     private InetSocketAddress bindHttpEchoServer(@Nullable StreamingHttpServiceFilterFactory filterFactory)
             throws Exception {
         HttpServerBuilder serverBuilder = HttpServers.forAddress(localAddress(0))
-                .h2PriorKnowledge(h2PriorKnowledge);
+                .protocols(h2PriorKnowledge ? h2Default() : h1Default());
         if (filterFactory != null) {
             serverBuilder.appendServiceFilter(filterFactory);
         }
@@ -869,7 +888,7 @@ public class H2PriorKnowledgeFeatureParityTest {
     private InetSocketAddress bindHttpSynchronousResponseServer(Consumer<StreamingHttpRequest> headerConsumer)
             throws Exception {
         h1ServerContext = HttpServers.forAddress(localAddress(0))
-                .h2PriorKnowledge(h2PriorKnowledge).listenStreaming(
+                .protocols(h2PriorKnowledge ? h2Default() : h1Default()).listenStreaming(
                         (ctx, request, responseFactory) -> {
                             try {
                                 headerConsumer.accept(request);

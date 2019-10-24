@@ -28,7 +28,6 @@ public final class BlockingRouteGuideResponseStreamingClient {
 
     public static void main(String[] args) throws Exception {
         try (BlockingRouteGuideClient client = GrpcClients.forAddress("localhost", 8080)
-                .h2PriorKnowledge(true)
                 .buildBlocking(new ClientFactory())) {
             BlockingIterable<Feature> features = client.listFeatures(
                     Rectangle.newBuilder()

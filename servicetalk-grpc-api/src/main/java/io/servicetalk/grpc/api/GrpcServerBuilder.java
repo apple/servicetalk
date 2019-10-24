@@ -18,8 +18,7 @@ package io.servicetalk.grpc.api;
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpExecutionStrategy;
-import io.servicetalk.http.api.HttpHeaders;
-import io.servicetalk.http.api.HttpHeadersFactory;
+import io.servicetalk.http.api.HttpProtocolConfig;
 import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpRequest;
@@ -34,7 +33,6 @@ import io.servicetalk.transport.api.ServerContext;
 
 import java.net.SocketOption;
 import java.util.function.Predicate;
-import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.internal.FutureUtils.awaitResult;
@@ -47,84 +45,15 @@ public abstract class GrpcServerBuilder {
     private boolean appendedCatchAllFilter;
 
     /**
-     * Sets the {@link HttpHeadersFactory} to be used for creating {@link HttpHeaders} when decoding requests.
+     * Configurations of various underlying protocol versions.
+     * <p>
+     * <b>Note:</b> the order of specified protocols will reflect on priorities for ALPN in case the connections are
+     * {@link #secure() secured}.
      *
-     * @param headersFactory the {@link HttpHeadersFactory} to use.
+     * @param protocols {@link HttpProtocolConfig} for each protocol that should be supported.
      * @return {@code this}.
      */
-    public abstract GrpcServerBuilder headersFactory(HttpHeadersFactory headersFactory);
-
-    /**
-     * Set the {@link HttpHeadersFactory} to use when HTTP/2 is used.
-     *
-     * @param headersFactory the {@link HttpHeadersFactory} to use when HTTP/2 is used.
-     * @return {@code this}.
-     */
-    public abstract GrpcServerBuilder h2HeadersFactory(HttpHeadersFactory headersFactory);
-
-    /**
-     * Enable HTTP/2 via
-     * <a href="https://tools.ietf.org/html/rfc7540#section-3.4">Prior Knowledge</a>.
-     * @param h2PriorKnowledge {@code true} to enable HTTP/2 via
-     * <a href="https://tools.ietf.org/html/rfc7540#section-3.4">Prior Knowledge</a>.
-     *
-     * @return {@code this}.
-     */
-    public abstract GrpcServerBuilder h2PriorKnowledge(boolean h2PriorKnowledge);
-
-    /**
-     * Set the name of the frame logger when HTTP/2 is used.
-     *
-     * @param h2FrameLogger the name of the frame logger, or {@code null} to disable.
-     * @return {@code this}.
-     */
-    public abstract GrpcServerBuilder h2FrameLogger(@Nullable String h2FrameLogger);
-
-    /**
-     * Set how long to wait (in milliseconds) for a client to close the connection (if no keep-alive is set) before the
-     * server will close the connection.
-     *
-     * @param clientCloseTimeoutMs {@code 0} if the server should close the connection immediately, or
-     * {@code > 0} if a wait time should be used.
-     * @return {@code this}.
-     */
-    public abstract GrpcServerBuilder clientCloseTimeout(long clientCloseTimeoutMs);
-
-    /**
-     * The server will throw {@link Exception} if the initial HTTP line exceeds this length.
-     *
-     * @param maxInitialLineLength The server will throw {@link Exception} if the initial HTTP line exceeds this
-     * length.
-     * @return {@code this}.
-     */
-    public abstract GrpcServerBuilder maxInitialLineLength(int maxInitialLineLength);
-
-    /**
-     * The server will throw {@link Exception} if the total size of all HTTP headers exceeds this length.
-     *
-     * @param maxHeaderSize The server will throw {@link Exception} if the total size of all HTTP headers exceeds
-     * this length.
-     * @return {@code this}.
-     */
-    public abstract GrpcServerBuilder maxHeaderSize(int maxHeaderSize);
-
-    /**
-     * Used to calculate an exponential moving average of the encoded size of the initial line and the headers for a
-     * guess for future buffer allocations.
-     *
-     * @param headersEncodedSizeEstimate estimated initial value.
-     * @return {@code this}.
-     */
-    public abstract GrpcServerBuilder headersEncodedSizeEstimate(int headersEncodedSizeEstimate);
-
-    /**
-     * Used to calculate an exponential moving average of the encoded size of the trailers for a guess for future
-     * buffer allocations.
-     *
-     * @param trailersEncodedSizeEstimate estimated initial value.
-     * @return {@code this}.
-     */
-    public abstract GrpcServerBuilder trailersEncodedSizeEstimate(int trailersEncodedSizeEstimate);
+    public abstract GrpcServerBuilder protocols(HttpProtocolConfig... protocols);
 
     /**
      * The maximum queue length for incoming connection indications (a request to connect) is set to the backlog

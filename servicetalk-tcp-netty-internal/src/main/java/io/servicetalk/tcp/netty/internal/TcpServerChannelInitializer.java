@@ -21,7 +21,6 @@ import io.servicetalk.transport.netty.internal.SslServerChannelInitializer;
 import io.servicetalk.transport.netty.internal.WireLoggingInitializer;
 
 import io.netty.channel.Channel;
-import io.netty.handler.ssl.SslContext;
 
 import static io.servicetalk.transport.netty.internal.PooledRecvByteBufAllocatorInitializers.COPY_HANDLER_INITIALIZER;
 import static io.servicetalk.transport.netty.internal.PooledRecvByteBufAllocatorInitializers.POOLED_RECV_ALLOCATOR_INITIALIZER;
@@ -46,13 +45,10 @@ public class TcpServerChannelInitializer implements ChannelInitializer {
             delegate = delegate.andThen(new IdleTimeoutInitializer(config.idleTimeoutMs()));
         }
 
-        if (config.isSniEnabled()) {
+        if (config.domainNameMapping() != null) {
             delegate = delegate.andThen(new SslServerChannelInitializer(config.domainNameMapping()));
-        } else {
-            final SslContext sslContext = config.sslContext();
-            if (sslContext != null) {
-                delegate = delegate.andThen(new SslServerChannelInitializer(sslContext));
-            }
+        } else if (config.sslContext() != null) {
+            delegate = delegate.andThen(new SslServerChannelInitializer(config.sslContext()));
         }
 
         delegate = delegate.andThen(COPY_HANDLER_INITIALIZER);
