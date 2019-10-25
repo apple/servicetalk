@@ -62,6 +62,7 @@ import io.servicetalk.transport.netty.internal.SplittingFlushStrategy;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelPipeline;
+import io.netty.handler.codec.DecoderException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -93,6 +94,7 @@ import static io.servicetalk.http.netty.HeaderUtils.addResponseTransferEncodingI
 import static io.servicetalk.http.netty.HeaderUtils.canAddResponseContentLength;
 import static io.servicetalk.http.netty.HeaderUtils.setResponseContentLength;
 import static io.servicetalk.http.netty.HttpDebugUtils.showPipeline;
+import static io.servicetalk.transport.netty.internal.CloseHandler.CloseEvent.CHANNEL_CLOSED_INBOUND;
 import static io.servicetalk.transport.netty.internal.CloseHandler.forPipelinedRequestResponse;
 import static io.servicetalk.transport.netty.internal.SplittingFlushStrategy.FlushBoundaryProvider.FlushBoundary.End;
 import static io.servicetalk.transport.netty.internal.SplittingFlushStrategy.FlushBoundaryProvider.FlushBoundary.InProgress;
@@ -520,12 +522,19 @@ final class NettyHttpServer {
 
         @Override
         public void onError(final Throwable t) {
-            if (t instanceof CloseEventObservedException && t.getCause() instanceof ClosedChannelException) {
-                LOGGER.trace("Expected error received while processing connection, {}",
-                        "no more requests will be received on this connection.", t);
-                return;
+            if (t instanceof CloseEventObservedException) {
+                final CloseEventObservedException ceoe = (CloseEventObservedException) t;
+                if (ceoe.event() == CHANNEL_CLOSED_INBOUND && t.getCause() instanceof ClosedChannelException) {
+                    LOGGER.trace("Client closed the connection without sending 'Connection: close' header", t);
+                    return;
+                }
+                if (t.getCause() instanceof DecoderException) {
+                    LOGGER.warn("Can not decode HTTP message, no more requests will be received on this connection.",
+                            t);
+                    return;
+                }
             }
-            LOGGER.warn("Unexpected error received while processing connection, {}",
+            LOGGER.debug("Unexpected error received while processing connection, {}",
                     "no more requests will be received on this connection.", t);
         }
     }
