@@ -6,7 +6,7 @@ ifndef::env-github[]
 ifndef::source-root[:source-root: https://github.com/apple/servicetalk/blob/{page-origin-refname}]
 endif::[]
 
-= ServiceTalk Performance
+= Performance
 
 This section will discuss the design, trade-offs, and performance tuning options and recommendations for your
 ServiceTalk applications.
@@ -43,7 +43,7 @@ safe out of the box. This section clarifies some aspects, considerations and cho
 === Blocking API on top of async
 In order to build a library that supports both blocking and asynchronous APIs, we use an asynchronous core and build
 blocking APIs on top. In case of our blocking APIs, it means there is some overhead involved to orchestrate the hand-off
-(aka xref:{page-version}@servicetalk::blocking.adoc[offloading]) between EventLoop threads and application worker
+(aka xref:{page-version}@servicetalk::blocking-safe-by-default.adoc[offloading]) between EventLoop threads and application worker
 threads.
 
 Network libraries that dedicate a single thread per connection to do IO and execute user code from that thread may have
@@ -57,7 +57,7 @@ architecture.
 
 A strategy to avoid the thread hopping is to opt-in to executing user code on the EventLoop thread. However this will
 have an adverse effect on latency and responsiveness if you execute
-xref:{page-version}@servicetalk::blocking.adoc[blocking] code. See
+xref:{page-version}@servicetalk::blocking-safe-by-default.adoc[blocking] code. See
 xref:{page-version}@servicetalk-http-api::evolve-to-async.adoc[Evolving to Asynchronous docs] for more details.
 
 [#reference-counting]
@@ -287,7 +287,7 @@ link:{source-root}/servicetalk-http-api/src/main/java/io/servicetalk/http/api/Ht
 ), or leveraging a service xref:{page-version}@servicetalk-http-api::index.adoc#routers[router's] per-route ability to
 support the different paradigms. The following table is a summary of how the programming paradigm affects flushing and
 offloading. Please consider reading the detailed documentation on
-xref:{page-version}@servicetalk-http-api::blocking.adoc#programming-models[HTTP Programming models].
+xref:{page-version}@servicetalk-http-api::blocking-safe-by-default.adoc#programming-models[HTTP Programming models].
 
 [%header,cols="1,3,3,3,3"]
 |===

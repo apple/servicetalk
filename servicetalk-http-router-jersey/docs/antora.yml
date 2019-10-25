@@ -15,7 +15,7 @@
 #
 
 name: servicetalk-http-router-jersey
-title: HTTP Router Jersey
+title: Jersey Router
 version: SNAPSHOT
 nav:
   - modules/ROOT/nav.adoc

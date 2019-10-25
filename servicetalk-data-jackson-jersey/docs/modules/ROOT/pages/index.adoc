@@ -1,4 +1,4 @@
-= ServiceTalk Data Jackson Jersey
+= Jackson serialization (Jersey router)
 
 This module provides Jackson-based JSON serialization and deserialization for ServiceTalk Jersey router.
 It is a replacement for `jersey-media-json-jackson` and allows avoiding the input stream adaptation that kicks in

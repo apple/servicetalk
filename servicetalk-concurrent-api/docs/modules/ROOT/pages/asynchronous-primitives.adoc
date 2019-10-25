@@ -1,0 +1,89 @@
+// Configure {source-root} values based on how this document is rendered: on GitHub or not
+ifdef::env-github[]
+:source-root:
+endif::[]
+ifndef::env-github[]
+ifndef::source-root[:source-root: https://github.com/apple/servicetalk/blob/{page-origin-refname}]
+endif::[]
+
+= Asynchronous Primitives
+
+ServiceTalk provides link:https://www.reactive-streams.org[ReactiveStreams] compatible asynchronous primitives for
+different result cardinalities, _viz._ no result (only termination), exactly one result and zero or many results.
+
+ServiceTalk sources follow the
+link:https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.3/README.md#specification[ReactiveStreams Specification]
+and are verified using the
+link:https://github.com/reactive-streams/reactive-streams-jvm/tree/v1.0.2/tck[ReactiveStreams TCK].
+
+== Lazy execution
+
+All asynchronous primitives provided by ServiceTalk are "lazy"/"cold" such that the work
+they represent does not start until someone is "listening" for the results. This is different from "eager"/"hot"
+link:https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/CompletableFuture.html[CompletableFuture] usages
+where the work being done to complete the
+link:https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/CompletableFuture.html[CompletableFuture] has
+already started regardless of anyone "listening" for the results.
+
+== Raw sources
+
+ServiceTalk has two distinct layers for each type of asynchronous source. First layer is the "raw" source that only
+defines the minimum API required to represent that asynchronous source. These source names are suffixed by the term
+`Source` and are similar to link:https://www.reactive-streams.org[ReactiveStreams].
+
+IMPORTANT: Raw sources are mentioned here for completeness, typical users are not expected to use them.
+
+These sources are intended to be used for inter-operability between ServiceTalk and different standards like
+link:https://www.reactive-streams.org[ReactiveStreams] and
+link:https://docs.oracle.com/javase/9/docs/api/java/util/concurrent/Flow.html[JDK FLow].
+
+=== Publisher source
+
+A link:{source-root}/servicetalk-concurrent/src/main/java/io/servicetalk/concurrent/PublisherSource.java[`PublisherSource`]
+is an asynchronous primitive that mimics link:https://www.reactive-streams.org[ReactiveStreams] interfaces and is
+designed to be used when the source may produce zero or potentially infinite number of results.
+
+=== Single source
+
+A link:{source-root}/servicetalk-concurrent/src/main/java/io/servicetalk/concurrent/SingleSource.java[`SingleSource`]
+is an asynchronous primitive that is designed to be used when the source will produce exactly one result or terminate
+with an error.
+
+=== Completable source
+
+A link:{source-root}/servicetalk-concurrent/src/main/java/io/servicetalk/concurrent/CompletableSource.java[`CompletableSource`]
+is an asynchronous primitive that is designed to be used when the source will produce exactly one result or terminate
+with an error.
+
+== Function composition (operators)
+
+Although <<Raw Sources>> express the asynchronous primitive completely but they are not much useful outside the premise
+of inter-operability. Primary reason for this limited usefulness is their inability to precisely model asynchronous
+control flow on top of these sources. Modelling asynchronous control flow on top of these raw sources typically lead to
+complex callback logic which is hard to understand and maintain. A typical solution to this problem is using function
+composition. These functions are also commonly referred to as **operators** for asynchronous sources.
+ServiceTalk tries to use commonly used operator names to increase familiarity for users but there is a general lack of
+standardization in these operator names which makes it hard for us to use names that appeal to all users. As a reference
+we have used link:http://reactivex.io/documentation/operators.html[ReactiveX Operators],
+link:https://doc.akka.io/docs/akka/current/stream/operators/index.html[Akka streams operators],
+link:https://github.com/eclipse/microprofile-reactive-streams-operators[Microprofile operators],
+link:https://docs.oracle.com/javase/8/docs/api/java/util/stream/Stream.html[JDK Streams] and
+link:https://projectreactor.io[Project reactor].
+
+== Rich sources
+
+Rich sources are an extension of <<Raw sources>> and they add function composition (operators) to the corresponding
+raw source. ServiceTalk always provides these rich sources from its APIs making it easier for users to use those APIs.
+
+=== Publisher
+
+A link:{source-root}/servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Publisher.java[`Publisher`]
+extends <<Publisher source>> and adds commonly used operators.
+
+=== Single
+A link:{source-root}/servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Single.java[`Single`]
+extends <<Single source>> and adds commonly used operators.
+
+=== Completable
+A link:{source-root}/servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Completable.java[`Completable`]
+extends <<Completable source>> and adds commonly used operators.

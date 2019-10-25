@@ -1,0 +1,201 @@
+// Configure {source-root} values based on how this document is rendered: on GitHub or not
+ifdef::env-github[]
+:source-root:
+endif::[]
+ifndef::env-github[]
+ifndef::source-root[:source-root: https://github.com/apple/servicetalk/blob/{page-origin-refname}]
+endif::[]
+
+= Programming paradigms
+
+As explained xref:{page-version}@servicetalk::programming-paradigms.adoc[here] ServiceTalk supports multiple
+programming paradigms for users to use. In this document we elaborate on how HTTP module provides support for these
+programming paradigms.
+
+[#service-programming-paradigms]
+== Server
+
+An xref:{page-version}@servicetalk-http-api::index.adoc#server[HTTP Server] in ServiceTalk uses a user provided
+`Service` that implements all the business logic for that server. ServiceTalk allows users to write these `Service`
+implementations in different programming paradigms.
+
+[#svc-blocking-and-aggregated]
+=== Blocking and Aggregated
+This programming paradigm exposes the request (including the payload body) as a single aggregated object, and the
+response (including the payload body) is also a single aggregated object. The `Service` directly returns the response
+object and there are no asynchronous primitives involved.
+
+See
+link:{source-root}/servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/blocking/BlockingHelloWorldServer.java[BlockingHelloWorldServer].
+[source, java]
+----
+HttpServers.forPort(8080)
+  .listenBlockingAndAwait((ctx, request, responseFactory) ->
+    responseFactory.ok().payloadBody("Hello World!", textSerializer()))
+  .awaitShutdown();
+----
+
+[#svc-blocking-and-streaming]
+=== Blocking and Streaming
+This programming paradigm exposes the request payload body as an
+link:https://docs.oracle.com/javase/8/docs/api/java/lang/Iterable.html[Iterable] of
+link:{source-root}/servicetalk-buffer-api/src/main/java/io/servicetalk/buffer/api/Buffer.java[Buffer]s and the response payload
+body is written via an
+link:{source-root}/servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpPayloadWriter.java[HttpPayloadWriter] or an
+link:{source-root}/servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpOutputStream.java[HttpOutputStream]. There are no asynchronous primitives
+involved.
+
+See
+link:{source-root}/servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/blocking/streaming/BlockingHelloWorldStreamingServer.java[BlockingHelloWorldStreamingServer].
+[source, java]
+----
+HttpServers.forPort(8080).listenBlockingStreamingAndAwait((ctx, request, response) -> {
+  try (HttpPayloadWriter<String> payloadWriter = response.sendMetaData(textSerializer())) {
+    payloadWriter.write("Hello");
+    payloadWriter.write(" World!");
+  }
+}).awaitShutdown();
+----
+
+[#svc-asynchronous-and-aggregated]
+=== Asynchronous and Aggregated
+This programming paradigm exposes the request payload body as a single aggregated object, and the response payload body
+is also a single aggregated object. The `Service` provides the response by completing a
+link:{source-root}/servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Single.java[Single] which is an
+asynchronous primitive.
+
+See
+link:{source-root}/servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/async/HelloWorldServer.java[HelloWorldServer].
+[source, java]
+----
+HttpServers.forPort(8080)
+  .listenAndAwait((ctx, request, responseFactory) ->
+    succeeded(responseFactory.ok().payloadBody("Hello World!", textSerializer())))
+  .awaitShutdown();
+----
+
+[#svc-asynchronous-and-streaming]
+=== Asynchronous and Streaming
+This programming paradigm exposes the request payload body as a
+link:{source-root}/servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Publisher.java[Publisher] typically of
+link:{source-root}/servicetalk-buffer-api/src/main/java/io/servicetalk/buffer/api/Buffer.java[Buffer]s (although other types like
+file regions may be added), the response meta-data is provided by completing a
+link:{source-root}/servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Single.java[Single], and the response
+payload body is written via a
+link:{source-root}/servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Publisher.java[Publisher].
+
+See
+link:{source-root}/servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/async/streaming/HelloWorldStreamingServer.java[HelloWorldStreamingServer].
+[source, java]
+----
+HttpServers.forPort(8080)
+  .listenStreamingAndAwait((ctx, request, responseFactory) ->
+    succeeded(responseFactory.ok()
+      .payloadBody(from("Hello", " World!"), textSerializer())))
+  .awaitShutdown();
+----
+
+
+[#client-programming-paradigms]
+=== Client
+
+An xref:{page-version}@servicetalk-http-api::index.adoc#server[HTTP client] in ServiceTalk is used by users to send
+requests to a server. ServiceTalk allows users to create a `Client` for different programming paradigms.
+
+[#client-blocking-and-aggregated]
+==== Blocking and Aggregated
+This programming paradigm expects the request (including the payload body) as a single aggregated object, and the
+response (including the payload body) is also a single aggregated object. The `Client` directly returns the response
+object and there are no asynchronous primitives involved.
+
+See
+link:{source-root}/servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/blocking/BlockingHelloWorldClient.java[BlockingHelloWorldClient]
+[source, java]
+----
+try (BlockingHttpClient client = HttpClients.forSingleAddress("localhost", 8080).buildBlocking()) {
+  HttpResponse response = client.request(client.get("/sayHello"));
+  // use the response
+}
+----
+
+[#client-blocking-and-streaming]
+==== Blocking and Streaming
+This programming paradigm expects the request payload body as an
+link:https://docs.oracle.com/javase/8/docs/api/java/lang/Iterable.html[Iterable] of
+link:{source-root}/servicetalk-buffer-api/src/main/java/io/servicetalk/buffer/api/Buffer.java[Buffer]s and the response payload
+body is consumed via an
+link:https://docs.oracle.com/javase/8/docs/api/java/lang/Iterable.html[Iterable] of
+link:{source-root}/servicetalk-buffer-api/src/main/java/io/servicetalk/buffer/api/Buffer.java[Buffer]s. There are no asynchronous
+primitives involved.
+
+See
+link:{source-root}/servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/blocking/streaming/BlockingHelloWorldStreamingClient.java[BlockingHelloWorldStreamingClient]
+[source, java]
+----
+try (BlockingStreamingHttpClient client = HttpClients.forSingleAddress("localhost", 8080)
+      .buildBlockingStreaming()) {
+  BlockingStreamingHttpResponse response = client.request(client.get("/sayHello"));
+  System.out.println(response.toString((name, value) -> value));
+  try (BlockingIterator<String> payload = response.payloadBody(textDeserializer()).iterator()) {
+    while (payload.hasNext()) {
+      System.out.println(payload.next());
+    }
+  }
+}
+----
+
+[#client-asynchronous-and-aggregated]
+==== Asynchronous and Aggregated
+This programming paradigm expects the request payload body as a single aggregated object, and the response payload body
+is also a single aggregated object. The `HttpClient` provides the response via a
+link:{source-root}/servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Single.java[Single] which is an
+asynchronous primitive.
+
+See
+link:{source-root}/servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/async/HelloWorldClient.java[HelloWorldClient]
+[source, java]
+----
+try (HttpClient client = HttpClients.forSingleAddress("localhost", 8080).build()) {
+// This example is demonstrating asynchronous execution, but needs to prevent the main
+// thread from exiting before the response has been processed. This isn't typical usage
+// for a streaming API but is useful for demonstration purposes.
+  CountDownLatch responseProcessedLatch = new CountDownLatch(1);
+  client.request(client.get("/sayHello"))
+        .doFinally(responseProcessedLatch::countDown)
+        .subscribe(resp -> {
+     System.out.println(resp.toString((name, value) -> value));
+     System.out.println(resp.payloadBody(textDeserializer()));
+  });
+
+  responseProcessedLatch.await();
+}
+----
+
+[#client-asynchronous-and-streaming]
+==== Asynchronous and Streaming
+This programming paradigm expects the request payload body as a
+link:{source-root}/servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Publisher.java[Publisher] typically of
+link:{source-root}/servicetalk-buffer-api/src/main/java/io/servicetalk/buffer/api/Buffer.java[Buffer]s (although other types like
+file regions may be added), the response meta-data is provided via a
+link:{source-root}/servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Single.java[Single], and the response
+payload body is written via a
+link:{source-root}/servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Publisher.java[Publisher].
+
+See
+link:{source-root}/servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/async/streaming/HelloWorldStreamingClient.java[HelloWorldStreamingClient]
+[source, java]
+----
+try (StreamingHttpClient client = HttpClients.forSingleAddress("localhost", 8080).buildStreaming()) {
+// This example is demonstrating asynchronous execution, but needs to prevent the main thread from
+// exiting before the response has been processed. This isn't typical usage for a streaming API but
+// is useful for demonstration purposes.
+  CountDownLatch responseProcessedLatch = new CountDownLatch(1);
+  client.request(client.get("/sayHello"))
+        .beforeOnSuccess(response -> System.out.println(response.toString((name, value) -> value)))
+        .flatMapPublisher(resp -> resp.payloadBody(textDeserializer()))
+        .doFinally(responseProcessedLatch::countDown)
+        .forEach(System.out::println);
+
+  responseProcessedLatch.await();
+}
+----
