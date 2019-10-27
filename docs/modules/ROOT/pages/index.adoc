@@ -1,3 +1,5 @@
+= ServiceTalk
+
 == Motivation
 ServiceTalk is intended to provide a common and extensible networking abstraction on top of a lower-level networking
 framework (e.g. link:https://netty.io[Netty]). Netty is a great low-level networking framework, but when used for
