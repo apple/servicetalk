@@ -51,7 +51,7 @@ desirable characteristics.
 functionality. To clarify this means if someone is calling an method in the imperative style and the state is shared
 then the same property should hold for adjacent operators. To demonstrate this check out the following code snippets:
 
-===== Function composition
+=== Function composition
 [source, java]
 ----
 Single<String> single = ...
@@ -67,7 +67,7 @@ return AsyncContext.get(AUTH) // ignore null
 }
 ----
 
-===== Imperative approach
+=== Imperative approach
 [source, java]
 ----
 void main() {
