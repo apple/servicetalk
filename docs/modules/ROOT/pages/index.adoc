@@ -49,7 +49,8 @@ In our experience we have observed that applications generally are multi-faceted
 vertical scalability (eg: large number of long-running connections for push based streaming APIs) for some areas and
 ease of development (low throughput endpoints) for other areas. ServiceTalk aims to make writing such applications
 easier by providing different xref:{page-version}@servicetalk::programming-paradigms.adoc[programming paradigms] and an
-ability to switch between these paradigms in the same application with no overhead. We also support writing
+ability to switch between these paradigms in the same application with no transport overhead
+(eg: same transport connection can be used for all programming models). We also support writing
 xref:{page-version}@servicetalk::blocking-safe-by-default.adoc[blocking code safe by default] even with asynchronous
 programming paradigms. This design philosophy takes the burden off our users such that they can start simple and use
 advanced features as when they feel comfortable. Thus, making **ServiceTalk a library that grows with the user needs**.
@@ -67,9 +68,7 @@ experience justifying the higher investment in ServiceTalk internals.
 === Modularization
 
 The project is divided into many modules to decouple the user-facing API from implementation details. This gives users
-freedom to choose only the functionality they need, and also allows us to evolve each module independently. Note that
-these modules may be divided out into independent repositories to decouple from the core and enable independent
-versioning.
+freedom to choose only the functionality they need, and also allows us to evolve each module independently.
 
 == Why ServiceTalk?
 

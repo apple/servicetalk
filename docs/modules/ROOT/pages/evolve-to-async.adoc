@@ -34,15 +34,15 @@ ServiceTalk follows the below principles for providing a path to no offloading:
 
 As described xref:{page-version}@servicetalk::blocking-safe-by-default.adoc[here], ServiceTalk assumes presence of
 blocking user code even when using ServiceTalk's asynchronous APIs. So, in order to eliminate offloading for a request
-there are__at least__ the following steps that are required:
+there are __at least__ the following steps that are required:
 
 1. Make sure that there is no blocking code for processing of a request.
 2. Only use asynchronous APIs for processing of a request.
 3. Turn off offloading for processing of a request.
 
-(1) is a manual user process and (2) is straightforward, (3) is dependent on different protocols and the methodology is
-elaborated in respective protocol documentation, eg:
-xref:{page-version}@servicetalk-http-api::evolve-to-async.adoc[HTTP].
+(1) is user's responsibility as ServiceTalk does not infer presence of blocking code
+and (2) is straightforward, (3) is dependent on different protocols and the methodology is elaborated in respective
+protocol documentation, eg: xref:{page-version}@servicetalk-http-api::evolve-to-async.adoc[HTTP].
 
 ServiceTalk assumes when a user is using any of the above methods, "they know what they are doing" and generally
 applies the strategy specified by the user "as is".

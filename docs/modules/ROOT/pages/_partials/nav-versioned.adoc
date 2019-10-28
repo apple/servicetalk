@@ -24,12 +24,12 @@ include::{page-version}@servicetalk-concurrent-api:ROOT:partial$nav-versioned.ad
 include::{page-version}@servicetalk-http-api:ROOT:partial$nav-versioned.adoc[]
 --
 +
-** xref:{page-version}@servicetalk-http-router-jersey::index.adoc[Jersey Router]
+** xref:{page-version}@servicetalk-http-router-jersey::index.adoc[JAX-RS Router (Jersey)]
 +
 --
 include::{page-version}@servicetalk-http-router-jersey:ROOT:partial$nav-versioned.adoc[]
 --
 +
 *** xref:{page-version}@servicetalk-http-security-jersey::index.adoc[Security]
-*** xref:{page-version}@servicetalk-data-jackson-jersey::index.adoc[Jackson serialization]
+*** xref:{page-version}@servicetalk-data-jackson-jersey::index.adoc[JSON (Jackson)]
 * xref:{page-version}@servicetalk::javadoc/index.adoc[Javadoc]

@@ -11,7 +11,7 @@ endif::[]
 CAUTION: This document elaborates how to disable offloading, which is considered an advanced feature.
 
 ServiceTalk provides ways for users start with a simpler blocking programming model and slowly evolve to a completely
-asynchronous programming model. Motivation and general principals can be found
+asynchronous programming model. Motivation and general principles can be found
 xref:{page-version}@servicetalk::evolve-to-async.adoc[here]. This document contains details how to disable offloading
 for an HTTP client/server.
 
