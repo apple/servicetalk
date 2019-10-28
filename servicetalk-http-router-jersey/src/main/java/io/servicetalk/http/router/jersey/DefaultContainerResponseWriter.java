@@ -248,8 +248,10 @@ final class DefaultContainerResponseWriter implements ContainerResponseWriter {
         }
 
         final HttpHeaders headers = response.headers();
+        // If we use HTTP/2 protocol all headers MUST be in lower case
+        final boolean isH2 = response.version().major() == 2;
         containerResponse.getHeaders().forEach((k, vs) -> vs.forEach(v -> {
-            headers.add(k, v == null ? emptyAsciiString() : asCharSequence(v));
+            headers.add(isH2 ? k.toLowerCase() : k, v == null ? emptyAsciiString() : asCharSequence(v));
         }));
 
         if (!headers.contains(CONTENT_LENGTH)) {
