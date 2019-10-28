@@ -57,22 +57,22 @@ with an error.
 
 == Function composition (operators)
 
-Although <<Raw Sources>> express the asynchronous primitive completely but they are not much useful outside the premise
-of inter-operability. Primary reason for this limited usefulness is their inability to precisely model asynchronous
-control flow on top of these sources. Modelling asynchronous control flow on top of these raw sources typically lead to
-complex callback logic which is hard to understand and maintain. A typical solution to this problem is using function
-composition. These functions are also commonly referred to as **operators** for asynchronous sources.
+Although <<Raw sources, raw sources>> express the asynchronous primitive completely but they are not much useful outside
+the premise of inter-operability. Primary reason for this limited usefulness is their inability to precisely model
+asynchronous control flow on top of these sources. Modelling asynchronous control flow on top of these raw sources
+typically lead to complex callback logic which is hard to understand and maintain. A typical solution to this problem
+is using function composition. These functions are also commonly referred to as **operators** for asynchronous sources.
 ServiceTalk tries to use commonly used operator names to increase familiarity for users but there is a general lack of
 standardization in these operator names which makes it hard for us to use names that appeal to all users. As a reference
-we have used link:http://reactivex.io/documentation/operators.html[ReactiveX Operators],
+we have used link:https://reactivex.io/documentation/operators.html[ReactiveX Operators],
 link:https://doc.akka.io/docs/akka/current/stream/operators/index.html[Akka streams operators],
 link:https://github.com/eclipse/microprofile-reactive-streams-operators[Microprofile operators],
 link:https://docs.oracle.com/javase/8/docs/api/java/util/stream/Stream.html[JDK Streams] and
-link:https://projectreactor.io[Project reactor].
+link:https://github.com/reactor/reactor-core[Project reactor].
 
 == Rich sources
 
-Rich sources are an extension of <<Raw sources>> and they add function composition (operators) to the corresponding
+Rich sources are an extension of <<Raw sources, raw sources>> and they add function composition (operators) to the corresponding
 raw source. ServiceTalk always provides these rich sources from its APIs making it easier for users to use those APIs.
 
 === Publisher

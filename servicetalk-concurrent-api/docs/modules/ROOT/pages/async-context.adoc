@@ -103,7 +103,7 @@ make sure the same static state is carried along through these different threads
 
 == ServiceTalk Approach
 
-In order to accommodate the <<Expectations of AsyncContext>> we need specific behavior from `AsyncContext`. As described
+In order to accommodate the <<Expectations, Expectations of AsyncContext>> we need specific behavior from `AsyncContext`. As described
 above we are after static state shared across synchronous boundaries, available across asynchronous boundaries, and is
 also sufficiently isolated in scope so that it can represent request/response control flow. To achieve these
 requirements the approach is to have `AsyncContext` backed by a modifiable (concurrent) map, and is associated with a

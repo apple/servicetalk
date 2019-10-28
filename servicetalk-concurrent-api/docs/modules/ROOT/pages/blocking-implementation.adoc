@@ -63,7 +63,7 @@ interactions with the `Subscriber`. Any operator in a chain has two options whil
 avoid the overhead of wrapping each and every `Subscriber` and `Subscription` in a chain. This mode is for operators
 that process signals from the original `Publisher` synchronously.
 
-Taking the same example from xref:blocking.adoc[blocking.adoc]
+Taking the same example from xref:{page-version}@servicetalk-concurrent-api::blocking-safe-by-default.adoc[here]
 
 [source, java]
 ----

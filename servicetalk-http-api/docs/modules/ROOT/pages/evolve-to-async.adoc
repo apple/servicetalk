@@ -112,7 +112,7 @@ specify such a strategy:
 
 A router may have the ability to infer an appropriate execution strategy for a route from the programming model the
 route uses, just like ServiceTalk
-xref:blocking.adoc#programming-models[infers execution strategy per programming model].
+xref:{page-version}@servicetalk::programming-paradigms.adoc[infers execution strategy per programming model].
 This auto-inference is only used if no strategy is explicitly specified for that route.
 
 ==== Explicit route strategy

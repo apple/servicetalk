@@ -100,8 +100,8 @@ asynchronous sources are typically referred to as link:https://reactivex.io/docu
 ServiceTalk. Operators help us transparently propagate demand across business logic thus enabling end-to-end flow
 control. This streamlined control flow and end-to-end back-pressure with operators comes with a trade-off which in
 practice typically involves additional object allocation and as a side effect may lead to deeper stack traces. In
-ServiceTalk we implement our own xref:{page-version}@servicetalk-concurrent-api::index.adoc[operators] in order to keep
-allocation and minimize synchronization while strictly enforcing back-pressure.
+ServiceTalk we implement our own xref:{page-version}@servicetalk-concurrent-api::asynchronous-primitives.adoc[operators]
+in order to keep allocation and minimize synchronization while strictly enforcing back-pressure.
 
 We believe that using function composition increases readability for complex asynchronous systems as compared to
 callbacks, thus following ServiceTalk's design philosophy of favoring ease of use. However, if your benchmarks indicate
@@ -112,10 +112,11 @@ the operators in question.
 [#safe-to-block]
 === Safe-to-block (aka Offloading)
 Because ServiceTalk is asynchronous and non-blocking at the core it needs to defend against user or third party code
-that potentially blocks IO EventLoop threads. Read the chapter on xref:blocking.adoc#safe-to-block[Blocking] for more
-details.
+that potentially blocks IO EventLoop threads. Read the chapter on
+xref:{page-version}@servicetalk::blocking-safe-by-default.adoc[blocking code safe by default] for more details.
 
-`ServiceTalk` has xref:{page-version}@servicetalk-concurrent-api::blocking#executor-affinity[Executor Affinity] which
+`ServiceTalk` has
+xref:{page-version}@servicetalk-concurrent-api::blocking-safe-by-default.adoc#executor-affinity[Executor Affinity] which
 ensures that the same `Executor` is used for each `Subscriber` chain on asynchronous operator boundaries. By default
 when using the streaming APIs this requires wrapping on the asynchronous operator boundaries and may result in
 additional thread hops between ``Executor``s (and even if ``Executor`` happens to be the same). Depending upon the use
