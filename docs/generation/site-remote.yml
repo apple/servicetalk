@@ -53,6 +53,10 @@ content:
       branches: master
       tags: [0.15.0, 0.16.0, 0.17.0, 0.18.0]
       start_path: servicetalk-data-jackson-jersey/docs
+    - url: https://github.com/apple/servicetalk.git
+      branches: master
+      tags: [0.18.0]
+      start_path: servicetalk-grpc-api/docs
 asciidoc:
   attributes:
     experimental: ''

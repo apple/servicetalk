@@ -14,7 +14,8 @@ xref:{page-version}@servicetalk::programming-paradigms.adoc[Programming Paradigm
 Here is a quick start example of the
 xref:{page-version}@servicetalk::programming-paradigms.adoc#blocking-and-aggregated[blocking and aggregated] paradigm:
 
-== Blocking Client
+**Blocking Client**
+
 See
 link:{source-root}/servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/blocking/BlockingHelloWorldClient.java[BlockingHelloWorldClient].
 [source, java]
@@ -25,7 +26,8 @@ try (BlockingHttpClient client = HttpClients.forSingleAddress("localhost", 8080)
 }
 ----
 
-== Blocking Server
+**Blocking Server**
+
 See
 link:{source-root}/servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/blocking/BlockingHelloWorldServer.java[BlockingHelloWorldServer].
 [source, java]
@@ -36,7 +38,7 @@ HttpServers.forPort(8080)
   .awaitShutdown();
 ----
 
-=== Extensibility and Filters
+== Extensibility and Filters
 The design of this protocol involves configuring builders for core protocol concerns, and then appending `Filters` for
 extensibility. `Filters` are described in more detail below (e.g. <<Service Filters>>, <<Client Filters>>) but in
 general they facilitate user code to filter/intercept/modify the request/response processing. `Filters` can be used for
