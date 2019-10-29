@@ -6,64 +6,67 @@ framework (e.g. link:https://netty.io[Netty]). Netty is a great low-level networ
 service to service communication it presents a few improvement opportunities:
 
 * **Threading Model**
-** fully asynchronous and requires knowledge of EventLoop threading model
-** executing CPU intensive or "blocking" code requires manual thread hops
+** Fully asynchronous and requires knowledge of EventLoop threading model
+** Executing CPU intensive or "blocking" code requires manual thread hops
 ** Subtle out of order execution of tasks when code executes both on and off the EventLoop thread
 * **Usability**
 ** APIs are not tailored towards common application use cases (e.g. request/response, RPC, etc..)
-** Asynchronous programming paradigm presents a barrier to entry in scenarios where it may not be required for
-scalability. It may be required as the user base grows, and only in subset of cases for the application.
+** Asynchronous programming paradigm presents a barrier to entry in scenarios where vertical scalability is not a
+primary concern.
 ** Error propagation follows multiple paths depending on the event and state of Channel
-** back-pressure requires manual association between source and sink of data
+** Back-pressure requires manual association between source and sink of data
 * **Lacking Feature Set**
-** Smart Client (e.g. client-side load balancing, service discovery, retry, circuit breaking, etc...) features missing
+** Smart Client (e.g. client-side load balancing, service discovery, retry, circuit breaking, etc...) features are
+missing.
 
-ServiceTalk addresses these challenges by providing a framework that supports multiple
-xref:{page-version}@servicetalk::programming-paradigms.adoc[Programming Paradigms].
-It accomplishes this by building on a fully asynchronous non-blocking I/O core and taking care of the threading
-model complexities internally.
+ServiceTalk addresses these challenges and includes support for multiple
+xref:{page-version}@servicetalk::programming-paradigms.adoc[Programming Paradigms]. It accomplishes this by building
+on a fully asynchronous non-blocking I/O core and taking care of the threading model complexities internally.
 
 == Design Philosophy
 
-ServiceTalk has many different goals driven from the improvement opportunities provided by netty. Even though we provide
-a lot of diverse features, we follow certain design philosophies across these features, which we elaborate in this section
-to provide context for users and developers of ServiceTalk.
+ServiceTalk has many different goals driven from the improvement opportunities provided by Netty. Despite ServiceTalk's
+broad feature set it follows some key design principles ensuring consistency and reduced complexity across module
+boundaries. These design philosophies are elaborated in this section to provide context for users and developers of
+ServiceTalk.
 
 === Extensible core
 
-ServiceTalk is designed to provide an extensible core and APIs tailored to networking protocols. ServiceTalk does not
-intend to provide abstractions for low-level networking primitives (e.g. Channels, EventLoop, TLS, etc...) but instead
-uses these primitives to provide a higher level API in multiple
+ServiceTalk is designed to provide an extensible core and APIs tailored to network protocols. It does not intend to
+provide abstractions for low-level networking primitives (e.g. Channels, EventLoop, TLS, etc...) but instead uses these
+primitives to provide a higher level API in multiple
 xref:{page-version}@servicetalk::programming-paradigms.adoc[Programming Paradigms].
 
 === Low barrier to entry
 
-One of the primary objective of ServiceTalk is to reduce the barrier to entry for users. Different frameworks in this
+One of the primary objectives of ServiceTalk is to reduce the barrier to entry for users. Different frameworks in this
 space typically make a choice; either they are highly opinionated in providing a single programming paradigm
-(typically asynchronous) or other programming paradigms are supported at higher layers where less features are available
-for users (eg: JAX-RS based routing). A consequence of making this choice is that users have to decide which layer best
-suits their need; low level fully asynchronous layer or a high level flexible layer with less features. Typically these
-decisions have to be made early in the development cycle for the users and changing this choice usually entails a large
-rework which comes with a high investment.
-In our experience we have observed that applications generally are multi-faceted; they have a mixed requirement of high
-vertical scalability (eg: large number of long-running connections for push based streaming APIs) for some areas and
-ease of development (low throughput endpoints) for other areas. ServiceTalk aims to make writing such applications
-easier by providing different xref:{page-version}@servicetalk::programming-paradigms.adoc[programming paradigms] and an
-ability to switch between these paradigms in the same application with no transport overhead
-(eg: same transport connection can be used for all programming models). We also support writing
+(either asynchronous or blocking) or other programming paradigms are supported at higher layers where less features are
+available for users (eg: JAX-RS provides multiple programming paradigms without fine grained control over the networking
+layer). A consequence of making this choice is that users have to decide which layer best suits their need; low level
+feature rich layer or a high level flexible layer with less features. Typically these decisions have to be made early in
+the development cycle and changing this choice usually requires a large engineering work to re-design the application,
+also impacting the parts that do not require this new model.
+
+Either by growing organically or at the onset, applications typically tend to be multi-faceted; they have a mixed
+requirement of high vertical scalability (eg: large number of long-running connections for push based streaming APIs)
+for some areas and ease of development (low throughput endpoints) for other areas. ServiceTalk aims to make writing such
+applications easier by providing different
+xref:{page-version}@servicetalk::programming-paradigms.adoc[programming paradigms] and an ability to switch between these
+paradigms in the same application. We also support writing
 xref:{page-version}@servicetalk::blocking-safe-by-default.adoc[blocking code safe by default] even with asynchronous
 programming paradigms. This design philosophy takes the burden off our users such that they can start simple and use
 advanced features as when they feel comfortable. Thus, making **ServiceTalk a library that grows with the user needs**.
 
 === Cross-protocol API symmetry
 
-ServiceTalk provides different application level protocols to users, eg: HTTP/1.1, HTTP/2.0, gRPC. In order to make it
-easy for users to adopt these different protocols when appropriate, our intention is to have API symmetry between these
-protocols such that the only new concept is the protocol itself. This reduces cognitive overhead for users to understand
-ServiceTalk concepts hence making it easier for them to adopt ServiceTalk. However, this ease of use does not come for
-free, it necessitates ServiceTalk to provide generic concepts (eg: generic load balancing module) across protocols which
-increases effort to develop ServiceTalk internals. We believe that this symmetry is necessary for a better user
-experience justifying the higher investment in ServiceTalk internals.
+ServiceTalk provides different application level protocols to users, eg: HTTP/1.1, HTTP/2.0, gRPC. A design goal is to
+provide consistent APIs and features across these different protocols when possible to maximize reuse and minimize
+cognitive overhead making it easier to adopt ServiceTalk across multiple protocols. However, this ease of use does not
+come for free, it necessitates that ServiceTalk provides generic concepts that abstract protocol specifics. This
+trade-off introduces some additional abstractions that complicate core ServiceTalk development (e.g. load balancer) for
+the benefit of reuse and consistency. This trade-off is consistent with the design principles of ServiceTalk to value
+simplicity and ease of use for end users.
 
 === Modularization
 
@@ -72,19 +75,19 @@ freedom to choose only the functionality they need, and also allows us to evolve
 
 == Why ServiceTalk?
 
-We have been investing in ServiceTalk for a few years and it is being used in production for a while. In the meanwhile,
-the improvement opportunities present in netty have been addressed by a few other libraries/frameworks. As a result,
-this space is more crowded now than it used to be when we started. Having said that, we believe ServiceTalk provides
-more value than other frameworks for the use cases that interests us.
+Over the past few years we have gained experience through Netty and ServiceTalk development. Deploying into production
+has also provided some invaluable user feedback and lessons which has influenced our roadmap along the way. In the
+meanwhile, the industry also identified similar opportunities adding new frameworks on top of Netty.
+Despite the space being more crowded now, than when we first started, we believe that ServiceTalk provides unique value
+in this space.
 
-We believe that an <<Extensible core, extensible core>> with a <<Low barrier to entry, low barrier to entry>> and an
-ability to grow with user needs places ServiceTalk in a unique spot that balances ease of use,
-xref:{page-version}@servicetalk::performance.adoc[peformance] and safety in a way that has resonated with our users over
-time as compared to other options available in this space.
+ServiceTalk provides an <<Extensible core, extensible core>>, is safe by default with a
+<<Low barrier to entry, low barrier to entry>>. It provides a consistent higher level feature set across multiple
+application level protocols and evolves with your application. This combination of design principals provides
+a value that is unique within the industry and has demonstrated successful real world deployments across different domains.
 
 Our design philosophies are somewhat unique but we acknowledge overlap with other libraries/frameworks in this space.
 While providing different features in ServiceTalk, we often face questions around "build vs use" as there are other
 options available that solve similar concerns. When possible we use an off-the-shelf solution (eg:
-xref:{page-version}@servicetalk-http-router-jersey::index.adoc[jersey]) but in some cases we have to build our own
-(eg: xref:{page-version}@servicetalk-concurrent-api::asynchronous-primitives.adoc[asynchronous primitives]) even though
-it means a high investment from our side in developing ServiceTalk.
+xref:{page-version}@servicetalk-http-router-jersey::index.adoc[jersey]) but in some cases the trade-offs justify
+building our own(eg: xref:{page-version}@servicetalk-concurrent-api::asynchronous-primitives.adoc[asynchronous primitives]).

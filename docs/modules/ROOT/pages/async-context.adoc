@@ -10,9 +10,9 @@ endif::[]
 
 ServiceTalk is a fully asynchronous framework and therefore multiple requests may be multiplexed on the same thread.
 Also depending on the application's threading model a single request may be processed on different threads. This means
-that `ThreadLocal` and derivatives such as http://www.slf4j.org/manual.html#mdc[`MDC`] would not work as expected. To
-overcome this limitation, we provide an abstraction called `AsyncContext` which hooks into the internal async machinery
-to make sure thread local context data is propagated along with the request.
+that libraries that rely upon ThreadLocal storage such as http://www.slf4j.org/manual.html#mdc[`MDC`] would not work as
+expected. To overcome this limitation, we provide an abstraction called `AsyncContext` which hooks into the internal
+async machinery to make sure thread local context data is propagated along with the request.
 
 Although `AsyncContext` may be convenient to use it shouldn't be over used when traditional argument passing is an
 option. The intended use case of `AsyncContext` is to propagate context across method boundaries which do not
@@ -49,16 +49,16 @@ However these benefits don't come for free. Some of the costs of the static API 
 ServiceTalk is on the hook for making sure the state is saved/restored across asynchronous boundaries. This means
 that ReactiveStreams operators, Executors, and the offloading strategy must accounted for when relying upon
 `AsyncContext`. In order to accomplish this ServiceTalk's asynchronous control flow needs to account for `AsyncContext`
-and provide tools for users to use if they have existing code outside of ServiceTalk control flow.
+and provide tools for users if they have existing code outside of ServiceTalk control flow.
 
 **Understandability**
 
-The control flow in ServiceTalk can be relatively complex. ServiceTalk uses ReactiveStreams and function composition
-as a core abstraction which can be difficult to reason about relative to traditional imperative programming. On top of
-this ServiceTalk provides isolation from the EventLoop threads by offloading to application level threads, which
-introduces asynchronous boundaries. For request/response protocols the goal is for the `AsyncContext` to be isolated for
-each request/response, but folks that need to directly interact with `AsyncContext` need to understand how modifications
-are visible (or not) relative to where they are set.
+Although asynchronous function composition is not required to use ServiceTalk but the internals of ServiceTalk uses
+asynchronous function composition as a core abstraction which can be difficult to reason about relative to
+traditional imperative programming. On top of this, ServiceTalk provides isolation from the EventLoop
+threads by offloading to application level threads, which introduces asynchronous boundaries. For request/response
+protocols the goal is for the `AsyncContext` to be isolated for each request/response, but folks that need to directly
+interact with `AsyncContext` need to understand how modifications are visible (or not) relative to where they are set.
 
 **Cost of retention**
 
@@ -71,6 +71,6 @@ context, and then restore original value.
 == Usage
 
 ServiceTalk provides out-of-the-box support for `AsyncContext`, details about which can be found
-xref:{page-version}@servicetalk-concurrent-api::async-context.adoc#disable-asynccontext[here]. Users can
+xref:{page-version}@servicetalk-concurrent-api::async-context.adoc[here]. Users can
 xref:{page-version}@servicetalk-concurrent-api::async-context.adoc#disable-asynccontext[disable `AsyncContext`] if they
 do not require this functionality.

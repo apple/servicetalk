@@ -8,10 +8,12 @@ endif::[]
 
 == gRPC Examples
 
-The link:{source-root}/servicetalk-examples/grpc[`grpc`]folder contains examples for link:https://grpc.io[gRPC].
-We provide implementations for the examples proto services provided by
+The link:{source-root}/servicetalk-examples/grpc[`grpc`] folder contains examples for
+link:https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md[the gRPC application protocol]. We provide
+implementations for the examples proto services provided by
 link:https://github.com/grpc/grpc/tree/master/examples/protos[gRPC].
 
+[#HelloWorld]
 === Hello World
 
 Implementation for the link:https://github.com/grpc/grpc/blob/master/examples/protos/helloworld.proto[gRPC hello world example].
@@ -30,6 +32,7 @@ link:{source-root}/servicetalk-examples/grpc/helloworld/src/main/java/io/service
 and a
 link:{source-root}/servicetalk-examples/grpc/helloworld/src/main/java/io/servicetalk/examples/grpc/helloworld/blocking/HelloWorldClient.java[HelloWorldClient]
 
+[#route-guide]
 === Route guide
 
 Implementation for the link:https://github.com/grpc/grpc/blob/master/examples/protos/route_guide.proto[gRPC route guide example].

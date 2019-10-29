@@ -8,22 +8,45 @@ endif::[]
 
 = Asynchronous Primitives
 
-ServiceTalk provides link:https://www.reactive-streams.org[ReactiveStreams] compatible asynchronous primitives for
-different result cardinalities, _viz._ no result (only termination), exactly one result and zero or many results.
+ServiceTalk provides different asynchronous primitives for different result cardinalities, _viz._
+no result (only termination), exactly one result, and zero or many results.
+
+== Interoperability
 
 ServiceTalk sources follow the
 link:https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.3/README.md#specification[ReactiveStreams Specification]
 and are verified using the
-link:https://github.com/reactive-streams/reactive-streams-jvm/tree/v1.0.2/tck[ReactiveStreams TCK].
+link:https://github.com/reactive-streams/reactive-streams-jvm/tree/v1.0.2/tck[ReactiveStreams TCK]. It is less
+opinionated about the contract it uses for the asynchronous primitives since they are intrusive in application code
+with users expressing <<async-control-flow, control flow>> using these sources. For this reasons,
+ServiceTalk **does not explicitly inherit from ReactiveStream interfaces** instead we follow these interfaces to define
+our own <<Raw sources, raw sources>>. This also helps us stay decoupled from the binary dependency on ReactiveStreams
+and makes it possible to inter-operate with any other similar standard like
+link:https://docs.oracle.com/javase/9/docs/api/java/util/concurrent/Flow.html[JDK FLow].
+
+We provide ReactiveStreams
+link:{source-root}/servicetalk-concurrent-reactivestreams/src/main/java/io/servicetalk/concurrent/reactivestreams/ReactiveStreamsAdapters.java[adapters]
+for easier interoperability.
 
 == Lazy execution
 
 All asynchronous primitives provided by ServiceTalk are "lazy"/"cold" such that the work
-they represent does not start until someone is "listening" for the results. This is different from "eager"/"hot"
+they represent does not start until someone is "listening"
+(a.k.a link:https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.3/README.md#api-components[subscribed])
+for the results. This is different from "eager"/"hot"
 link:https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/CompletableFuture.html[CompletableFuture] usages
 where the work being done to complete the
 link:https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/CompletableFuture.html[CompletableFuture] has
 already started regardless of anyone "listening" for the results.
+
+This approach, although different has a few benefits:
+
+* __Avoid internal queuing__: For streaming operations, starting an operation without an associated listener, requires
+queuing till a listener is available. Lazy execution avoids this queuing.
+* __Implicit work association__: Since the asynchronous source is expected to start work only when a listener is
+available, there is an implicit association between the source and the work it represents. This subtle change is
+powerful as it means that work can be re-done without invoking the method that created the source. Thus enabling us to
+generically implement retries on the sources as opposed to the methods that create the sources.
 
 == Raw sources
 
@@ -31,11 +54,14 @@ ServiceTalk has two distinct layers for each type of asynchronous source. First 
 defines the minimum API required to represent that asynchronous source. These source names are suffixed by the term
 `Source` and are similar to link:https://www.reactive-streams.org[ReactiveStreams].
 
-IMPORTANT: Raw sources are mentioned here for completeness, typical users are not expected to use them.
+IMPORTANT: Raw sources are mentioned here for completeness, typical users are not expected to use them. Instead they
+are expected to use <<Rich sources, rich sources>> with <<operators>> that hides the complexity of flow control and
+cancellation while enabling
+easier expression of application logic.
 
 These sources are intended to be used for inter-operability between ServiceTalk and different standards like
 link:https://www.reactive-streams.org[ReactiveStreams] and
-link:https://docs.oracle.com/javase/9/docs/api/java/util/concurrent/Flow.html[JDK FLow].
+.
 
 === Publisher source
 
@@ -52,19 +78,35 @@ with an error.
 === Completable source
 
 A link:{source-root}/servicetalk-concurrent/src/main/java/io/servicetalk/concurrent/CompletableSource.java[`CompletableSource`]
-is an asynchronous primitive that is designed to be used when the source will produce exactly one result or terminate
-with an error.
+is an asynchronous primitive that is designed to be used when the source will complete or terminate with an error.
 
-== Function composition (operators)
+[#async-control-flow]
+== Asynchronous control flow
 
-Although <<Raw sources, raw sources>> express the asynchronous primitive completely but they are not much useful outside
-the premise of inter-operability. Primary reason for this limited usefulness is their inability to precisely model
-asynchronous control flow on top of these sources. Modelling asynchronous control flow on top of these raw sources
-typically lead to complex callback logic which is hard to understand and maintain. A typical solution to this problem
-is using function composition. These functions are also commonly referred to as **operators** for asynchronous sources.
-ServiceTalk tries to use commonly used operator names to increase familiarity for users but there is a general lack of
-standardization in these operator names which makes it hard for us to use names that appeal to all users. As a reference
-we have used link:https://reactivex.io/documentation/operators.html[ReactiveX Operators],
+An important part of writing an application is to have the ability to express control flow like retries, error handling,
+combining multiple operations sequentially or in parallel, etc. Asynchronous programming is specially hard when expressing
+complex control flow and quickly leads to nested, complex callback logic colloquially known as the __Callback hell__.
+Error propagation, cancellation and backpressure is extremely complex to wire through this control flow and leads to
+subtle issues in applications.
+
+Although <<Raw sources, raw sources>> express the asynchronous primitives completely they do not address the common
+concern of expressing asynchronous control flow effectively, making them less useful for most applications. Neither
+ReactiveStreams, nor link:https://docs.oracle.com/javase/9/docs/api/java/util/concurrent/Flow.html[JDK FLow] provides
+any ability to solving this problem in particular, leading to all libraries like ServiceTalk developing their own
+solutions. Most similar solutions like link:https://reactivex.io[ReactiveX],
+link:https://github.com/reactor/reactor-core[Project reactor],
+link:https://doc.akka.io/docs/akka/current/stream/operators/index.html[Akka streams] uses function composition to
+express asynchronous control flow. Function composition is an approach to define common control-flow primitives as
+functions which are used together with the asynchronous primitives. These functions are commonly referred to as **operators**.
+
+[#operators]
+== Operators
+
+ServiceTalk limits <<Raw sources, raw sources>> to define the contract for all asynchronous sources and adds the
+operators as part of the <<Rich sources, rich sources>>. It tries to use commonly used operator names to increase
+familiarity for users but there is a general lack of standardization in these operator names which makes it hard for us
+to use names that appeal to all users. As a reference we have used
+link:https://reactivex.io/documentation/operators.html[ReactiveX Operators],
 link:https://doc.akka.io/docs/akka/current/stream/operators/index.html[Akka streams operators],
 link:https://github.com/eclipse/microprofile-reactive-streams-operators[Microprofile operators],
 link:https://docs.oracle.com/javase/8/docs/api/java/util/stream/Stream.html[JDK Streams] and
@@ -72,8 +114,8 @@ link:https://github.com/reactor/reactor-core[Project reactor].
 
 == Rich sources
 
-Rich sources are an extension of <<Raw sources, raw sources>> and they add function composition (operators) to the corresponding
-raw source. ServiceTalk always provides these rich sources from its APIs making it easier for users to use those APIs.
+Rich sources are an extension of <<Raw sources, raw sources>> and they add operators to the corresponding raw source.
+ServiceTalk always provides these rich sources from its APIs making it easier for users to use those APIs.
 
 === Publisher
 

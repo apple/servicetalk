@@ -99,7 +99,7 @@ HttpServers.forPort(8080)
 [#client-programming-paradigms]
 === Client
 
-An xref:{page-version}@servicetalk-http-api::index.adoc#server[HTTP client] in ServiceTalk is used by users to send
+An xref:{page-version}@servicetalk-http-api::index.adoc#client[HTTP Client] in ServiceTalk is used by users to send
 requests to a server. ServiceTalk allows users to create a `Client` for different programming paradigms.
 
 [#client-blocking-and-aggregated]

@@ -159,8 +159,8 @@ Exposing flush controls on the public API is non-trivial when you have asynchron
 be ordered with respect to the data, and care must be taken not to drop these signals during data transformations.
 ServiceTalk currently doesn't expose a way to control flush strategies in the public API but may be able to infer a more
 optimal strategy if you select the appropriate programming paradigm for the
-xref:{page-version}@servicetalk-http-api::index.adoc#client-programming-paradigms[client] and
-xref:{page-version}@servicetalk-http-api::index.adoc#service-programming-paradigms[service]. If you are willing to use an
+xref:{page-version}@servicetalk-http-api::programming-paradigms.adoc#client-programming-paradigms[client] and
+xref:{page-version}@servicetalk-http-api::programming-paradigms.adoc#service-programming-paradigms[service]. If you are willing to use an
 *_advanced, internal, experimental, subject to change at any time_* API there is also
 link:{source-root}/servicetalk-transport-netty-internal/src/main/java/io/servicetalk/transport/netty/internal/FlushStrategies.java[FlushStrategies]
 that provides control over flushing. Here is a quick summary of this internal API.
@@ -250,8 +250,8 @@ xref:{page-version}@servicetalk::performance.adoc#safe-to-block[Safe to Block] f
 threading models.
 
 It is possible to override the `ExecutionStrategy`, but first make sure you are using the appropriate programming
-paradigm for xref:{page-version}@servicetalk-http-api::index.adoc#client-programming-paradigms[client] and
-xref:{page-version}@servicetalk-http-api::index.adoc#service-programming-paradigms[service]. Depending upon your
+paradigm for xref:{page-version}@servicetalk-http-api::programming-paradigms.adoc#client-programming-paradigms[client] and
+xref:{page-version}@servicetalk-http-api::programming-paradigms.adoc#service-programming-paradigms[service]. Depending upon your
 protocol it is likely there are higher level constructs such as
 xref:{page-version}@servicetalk-http-api::index.adoc#routers[routers] that provide a per-route API customization (e.g.
 xref:{page-version}@servicetalk-http-router-jersey::evolve-to-async.adoc[JAX-RS via Jersey] and
@@ -278,8 +278,8 @@ can be considered non-blocking] that are applied will block.
 [#programming-models]
 ==== Choosing the optimal programming model
 Selecting the appropriate programming paradigm can help simplify your application logic (see
-xref:{page-version}@servicetalk-http-api::index.adoc#client-programming-paradigms[client programming paradigms] and
-xref:{page-version}@servicetalk-http-api::index.adoc#service-programming-paradigms[service programming paradigms]) and
+xref:{page-version}@servicetalk-http-api::programming-paradigms.adoc#client-programming-paradigms[client programming paradigms] and
+xref:{page-version}@servicetalk-http-api::programming-paradigms.adoc#service-programming-paradigms[service programming paradigms]) and
 also enable ServiceTalk to apply optimizations behind the scenes (e.g.
 xref:{page-version}@servicetalk::performance.adoc#flushstrategy[flushing] and
 xref:{page-version}@servicetalk::performance.adoc#ExecutionStrategy[offloading]). A paradigm is chosen when constructing

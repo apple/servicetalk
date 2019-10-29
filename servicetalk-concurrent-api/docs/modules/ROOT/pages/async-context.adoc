@@ -63,7 +63,7 @@ single.map(v -> {
 }) // do something else in the function composition chain
 
 boolean isValid(String in) {
-return AsyncContext.get(AUTH) // ignore null
+  return AsyncContext.get(AUTH) // ignore null
 }
 ----
 

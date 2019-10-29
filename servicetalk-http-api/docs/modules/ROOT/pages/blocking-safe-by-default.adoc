@@ -67,22 +67,22 @@ the event loop. The following matrix elaborates the paths which require offloadi
 |===
 ^|Programming model ^|response `Single` (data) ^| response `Publisher` (data) ^| request `Publisher` (control)
 
-|xref:index.adoc#client-asynchronous-and-streaming[asynchronous and streaming]
+|xref:programming-paradigms.adoc#client-asynchronous-and-streaming[asynchronous and streaming]
 ^|✓
 ^|✓
 ^|✓
 
-|xref:index.adoc#client-asynchronous-and-aggregated[asynchronous and aggregated]
+|xref:programming-paradigms.adoc#client-asynchronous-and-aggregated[asynchronous and aggregated]
 ^|✓
 ^|✗
 ^|✗
 
-|xref:index.adoc#client-blocking-and-streaming[blocking and streaming]
+|xref:programming-paradigms.adoc#client-blocking-and-streaming[blocking and streaming]
 ^|✗
 ^|✗
 ^|✓
 
-|xref:index.adoc#client-blocking-and-aggregated[blocking and aggregated]
+|xref:programming-paradigms.adoc#client-blocking-and-aggregated[blocking and aggregated]
 ^|✗
 ^|✗
 ^|✗
@@ -92,25 +92,25 @@ the event loop. The following matrix elaborates the paths which require offloadi
 |===
 ^|Programming model ^|`handle()` ^|response `Single` (control) ^| response `Publisher` (control) ^| request `Publisher` (data)
 
-|xref:index.adoc#asynchronous-and-streaming[asynchronous and streaming]
+|xref:programming-paradigms.adoc#asynchronous-and-streaming[asynchronous and streaming]
 ^|✓
 ^|✓
 ^|✓
 ^|✓
 
-|xref:index.adoc#asynchronous-and-aggregated[asynchronous and aggregated]
+|xref:programming-paradigms.adoc#asynchronous-and-aggregated[asynchronous and aggregated]
 ^|✓
 ^|✓
 ^|✗
 ^|✗
 
-|xref:index.adoc#blocking-and-streaming[blocking and streaming]
+|xref:programming-paradigms.adoc#blocking-and-streaming[blocking and streaming]
 ^|✓
 ^|✗
 ^|✗
 ^|✗
 
-|xref:index.adoc#blocking-and-aggregated[blocking and aggregated]
+|xref:programming-paradigms.adoc#blocking-and-aggregated[blocking and aggregated]
 ^|✓
 ^|✗
 ^|✗

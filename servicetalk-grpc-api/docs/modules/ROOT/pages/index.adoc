@@ -20,16 +20,17 @@ that link:https://github.com/grpc/grpc-java[grpc-java] implements the gRPC proto
 extensively. However, our
 xref:{page-version}@servicetalk::index.adoc#design-philosophy[design philosophies] are different than
 link:https://github.com/grpc/grpc-java[grpc-java] and we support the underlying
-link:https://http2.github.io[HTTP/2] protocol using link:https://netty.io[Netty] similar to
-link:https://github.com/grpc/grpc-java[grpc-java] which makes it a relatively lower investment for us to implement the
-link:https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md[gRPC wire protocol].
-
-gRPC support in ServiceTalk implements the
-link:https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md[gRPC wire protocol] and provides ServiceTalk APIs
-for that protocol.
+link:https://tools.ietf.org/html/rfc7540[HTTP/2] protocol using link:https://netty.io[Netty]. Also, as part of developing
+Netty, we collaborated with the link:https://github.com/grpc/grpc-java[grpc-java] team to implement
+link:https://tools.ietf.org/html/rfc7540[HTTP/2] in Netty enabling us both to share this common protocol implementation.
+Considering the above, implementing the
+link:https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md[gRPC wire protocol] is a relatively lower investment
+for us while giving us the benefits of following our design philosophies consistently across all protocols.
 
 == Overview
-ServiceTalk gRPC support provides all the different
+gRPC support in ServiceTalk implements the
+link:https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md[gRPC wire protocol] and provides ServiceTalk APIs
+for that protocol. It provides all the different
 xref:{page-version}@servicetalk::programming-paradigms.adoc[Programming Paradigms] for client and server.
 Here is a quick start example of the
 xref:{page-version}@servicetalk::programming-paradigms.adoc#blocking-and-aggregated[blocking and aggregated] paradigm:

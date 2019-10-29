@@ -8,12 +8,14 @@ endif::[]
 
 = Blocking safe by default
 
-IMPORTANT: By default, users are free to write blocking code when using ServiceTalk.
+IMPORTANT: By default, users are free to write
+xref:{page-version}@servicetalk::programming-paradigms.adoc#blocking-vs-synchronous[blocking code]
+when using ServiceTalk.
 
 == Background
 
 ServiceTalk uses link:https://netty.io[Netty] under the hood which uses the
-link:https://en.wikipedia.org/wiki/Event_loop[Event loop programming construct]. A drawback of this construct is that
+link:https://en.wikipedia.org/wiki/Event_loop[Event loop execution model]. A drawback of this construct is that
 any potentially long running work (blocking calls, intensive computations, etc) that is done on the event loop
 negatively impacts the processing of all subsequent tasks. This is the reason why writing blocking code is usually
 discouraged when using Netty.

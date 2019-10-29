@@ -27,14 +27,16 @@ ServiceTalk follows the below principles for providing a path to no offloading:
 
 1. Turning off offloading is always an opt-in.
 2. All user code (filters, service, etc) will individually opt-out of offloading when applicable.
-3. Explicit opt-in to no offloading to override auto-inference of execution strategy for that entity
-(aka an http path/route). ServiceTalk will never override that strategy.
+3. Explicit opt-in to no offloading to override
+xref:{page-version}@servicetalk::blocking-safe-by-default.adoc#influencing-offloading-decisions[auto-inference] of
+execution strategy for that entity(aka an http path/route). ServiceTalk will never override that strategy.
 
 == Asynchronous and offloading
 
-As described xref:{page-version}@servicetalk::blocking-safe-by-default.adoc[here], ServiceTalk assumes presence of
-blocking user code even when using ServiceTalk's asynchronous APIs. So, in order to eliminate offloading for a request
-there are __at least__ the following steps that are required:
+As described xref:{page-version}@servicetalk::blocking-safe-by-default.adoc[here], in order to achieve safety from
+inadvertent introduction of blocking code, ServiceTalk assumes presence of blocking user code even when using
+ServiceTalk's asynchronous APIs. So, in order to eliminate offloading for a request there are __at least__ the
+following steps that are required:
 
 1. Make sure that there is no blocking code for processing of a request.
 2. Only use asynchronous APIs for processing of a request.
