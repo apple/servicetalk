@@ -10,11 +10,12 @@ endif::[]
 
 This module defines the ServiceTalk client and server API for the link:https://tools.ietf.org/html/rfc7231[HTTP/1.x]
 protocol. This module supports all the different
-xref:{page-version}@servicetalk::introduction.adoc#programmingp-paradigms[Programming Paradigms] for client and server.
+xref:{page-version}@servicetalk::programming-paradigms.adoc[Programming Paradigms] for client and server.
 Here is a quick start example of the
-xref:{page-version}@servicetalk::introduction.adoc#blocking-and-aggregated[blocking and aggregated] paradigm:
+xref:{page-version}@servicetalk::programming-paradigms.adoc#blocking-and-aggregated[blocking and aggregated] paradigm:
 
-==== Blocking Client
+**Blocking Client**
+
 See
 link:{source-root}/servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/blocking/BlockingHelloWorldClient.java[BlockingHelloWorldClient].
 [source, java]
@@ -25,7 +26,8 @@ try (BlockingHttpClient client = HttpClients.forSingleAddress("localhost", 8080)
 }
 ----
 
-==== Blocking Server
+**Blocking Server**
+
 See
 link:{source-root}/servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/blocking/BlockingHelloWorldServer.java[BlockingHelloWorldServer].
 [source, java]
@@ -36,7 +38,7 @@ HttpServers.forPort(8080)
   .awaitShutdown();
 ----
 
-=== Extensibility and Filters
+== Extensibility and Filters
 The design of this protocol involves configuring builders for core protocol concerns, and then appending `Filters` for
 extensibility. `Filters` are described in more detail below (e.g. <<Service Filters>>, <<Client Filters>>) but in
 general they facilitate user code to filter/intercept/modify the request/response processing. `Filters` can be used for
@@ -57,10 +59,11 @@ the socket to the HTTP `Service` is visualized as follows:
 ----
 
 Each `Service` has access to a
-link:{source-root}/servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpServiceContext.java[HttpServiceContext] which provides additional context
-(via link:{source-root}/servicetalk-transport-api/src/main/java/io/servicetalk/transport/api/ConnectionContext.java[ConnectionContext]) into the
-`Connection`/transport details for each request/response. This means that the `HttpService` may be invoked for multiple
-connections, from different threads, and even concurrently.
+link:{source-root}/servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpServiceContext.java[HttpServiceContext]
+which provides additional context
+(via link:{source-root}/servicetalk-transport-api/src/main/java/io/servicetalk/transport/api/ConnectionContext.java[ConnectionContext])
+into the `Connection`/transport details for each request/response. This means that the `HttpService` may be invoked
+for multiple connections, from different threads, and even concurrently.
 
 === Service Filters
 Filters provide a means to filter/intercept and modify each request/response life cycle. `Service` Filters are used to
@@ -85,10 +88,11 @@ link:{source-root}/servicetalk-http-api/src/main/java/io/servicetalk/http/api/St
 on the `HttpServerBuilder` via
 link:{source-root}/servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpServerBuilder.java[HttpServerBuilder#appendServiceFilter(..)].
 
-NOTE: Currently we only support writing `Filters` for the <<asynchronous-and-streaming, Asynchronous and Streaming>>
-programming paradigm but plan to add support for the others soon. The
-<<asynchronous-and-streaming, Asynchronous and Streaming>> can be used with a `Service` in any other programming
-paradigm.
+NOTE: Currently we only support writing `Filters` for the
+xref:{page-version}@servicetalk-http-api::programming-paradigms.adoc#svc-asynchronous-and-streaming[Asynchronous and Streaming]
+programming paradigm. An
+xref:{page-version}@servicetalk-http-api::programming-paradigms.adoc#svc-asynchronous-and-streaming[Asynchronous and Streaming]
+filter can be used with a `Service` in any other programming paradigm.
 
 [#routers]
 === Routers
@@ -97,7 +101,8 @@ processing requirements. The control flow in ServiceTalk is represented by a "Ro
 owns the responsibility of multiplexing the control flow. ServiceTalk does not mandate a specific "Router"
 implementation but provides a couple reference implementations for common use cases (e.g.
 link:{source-root}/servicetalk-http-router-predicate[Predicate Router] and
-link:{source-root}/servicetalk-http-router-jersey[JAX-RS via Jersey]). The general component diagram of a "Router" is as follows:
+link:{source-root}/servicetalk-http-router-jersey[JAX-RS via Jersey]). The general component diagram of a "Router"
+is as follows:
 
 [ditaa]
 ----
@@ -114,96 +119,15 @@ link:{source-root}/servicetalk-http-router-jersey[JAX-RS via Jersey]). The gener
                                                                 +---------+
 ----
 
-[#service-programming-paradigms]
-=== Service Programming Paradigms
-HTTP `Service` supports all the variations described in
-xref:{page-version}@servicetalk::introduction.adoc#programming-paradigms[Programming Paradigms].
-
-[#blocking-and-aggregated]
-==== Blocking and Aggregated
-This programming paradigm exposes the request (including the payload body) as a single aggregated object, and the
-response (including the payload body) is also a single aggregated object. The `Service` directly returns the response
-object and there are no asynchronous primitives involved.
-
-See
-link:{source-root}/servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/blocking/BlockingHelloWorldServer.java[BlockingHelloWorldServer].
-[source, java]
-----
-HttpServers.forPort(8080)
-  .listenBlockingAndAwait((ctx, request, responseFactory) ->
-    responseFactory.ok().payloadBody("Hello World!", textSerializer()))
-  .awaitShutdown();
-----
-
-[#blocking-and-streaming]
-==== Blocking and Streaming
-This programming paradigm exposes the request payload body as an
-link:https://docs.oracle.com/javase/8/docs/api/java/lang/Iterable.html[Iterable] of
-link:{source-root}/servicetalk-buffer-api/src/main/java/io/servicetalk/buffer/api/Buffer.java[Buffer]s and the response payload
-body is written via an
-link:{source-root}/servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpPayloadWriter.java[HttpPayloadWriter] or an
-link:{source-root}/servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpOutputStream.java[HttpOutputStream]. There are no asynchronous primitives
-involved.
-
-See
-link:{source-root}/servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/blocking/streaming/BlockingHelloWorldStreamingServer.java[BlockingHelloWorldStreamingServer].
-[source, java]
-----
-HttpServers.forPort(8080).listenBlockingStreamingAndAwait((ctx, request, response) -> {
-  try (HttpPayloadWriter<String> payloadWriter = response.sendMetaData(textSerializer())) {
-    payloadWriter.write("Hello");
-    payloadWriter.write(" World!");
-  }
-}).awaitShutdown();
-----
-
-[#asynchronous-and-aggregated]
-==== Asynchronous and Aggregated
-This programming paradigm exposes the request payload body as a single aggregated object, and the response payload body
-is also a single aggregated object. The `Service` provides the response by completing a
-link:{source-root}/servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Single.java[Single] which is an
-asynchronous primitive.
-
-See
-link:{source-root}/servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/async/HelloWorldServer.java[HelloWorldServer].
-[source, java]
-----
-HttpServers.forPort(8080)
-  .listenAndAwait((ctx, request, responseFactory) ->
-    succeeded(responseFactory.ok().payloadBody("Hello World!", textSerializer())))
-  .awaitShutdown();
-----
-
-[#asynchronous-and-streaming]
-==== Asynchronous and Streaming
-This programming paradigm exposes the request payload body as a
-link:{source-root}/servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Publisher.java[Publisher] typically of
-link:{source-root}/servicetalk-buffer-api/src/main/java/io/servicetalk/buffer/api/Buffer.java[Buffer]s (although other types like
-file regions may be added), the response meta-data is provided by completing a
-link:{source-root}/servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Single.java[Single], and the response
-payload body is written via a
-link:{source-root}/servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Publisher.java[Publisher].
-
-See
-link:{source-root}/servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/async/streaming/HelloWorldStreamingServer.java[HelloWorldStreamingServer].
-[source, java]
-----
-HttpServers.forPort(8080)
-  .listenStreamingAndAwait((ctx, request, responseFactory) ->
-    succeeded(responseFactory.ok()
-      .payloadBody(from("Hello", " World!"), textSerializer())))
-  .awaitShutdown();
-----
-
 == Client
 A `Client` is generally responsible for managing multiple `Connections`. There are a few flavors of HTTP Clients:
 
-==== SingleAddress Client
+=== SingleAddress Client
 This `Client` will connect to a single unresolved address, that is provided while creating the client. The unresolved
 address is resolved via an asynchronous DNS resolver by default (see <<Service Discovery>>). This `Client` is for use
 cases where you want to issue requests to a single service (that may have multiple instances).
 
-==== MultiAddress Client
+=== MultiAddress Client
 This `Client` parses the link:https://tools.ietf.org/html/rfc7230#section-5.3[request-target] to determine the remote
 address for each request. This `Client` simulates a browser type of use case.
 
@@ -260,10 +184,11 @@ link:{source-root}/servicetalk-http-api/src/main/java/io/servicetalk/http/api/St
 the `HttpClientBuilder` via
 link:{source-root}/servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpClientBuilder.java[HttpClientBuilder#appendClientFilter(..)].
 
-NOTE: Currently we only support writing `Filters` for the <<client-asynchronous-and-streaming, Asynchronous and Streaming>>
-programming paradigm but plan to add support for the others soon. The
-<<client-asynchronous-and-streaming, Asynchronous and Streaming>> can be used with a `Client` in any other programming
-paradigm.
+NOTE: Currently we only support writing `Filters` for the
+xref:{page-version}@servicetalk-http-api::programming-paradigms.adoc#svc-asynchronous-and-streaming[Asynchronous and Streaming]
+programming paradigm. An
+xref:{page-version}@servicetalk-http-api::programming-paradigms.adoc#svc-asynchronous-and-streaming[Asynchronous and Streaming]
+filter can be used with a `Client` in any other programming paradigm.
 
 === Connection Filters
 The `Client` doesn't have visibility into `Connection` specific information. For example, the `Connection` layer knows
@@ -316,109 +241,6 @@ background.
                                         |    +--------------+
                                         \--->| Connection x |
                                              +--------------+
-----
-
-[#client-programming-paradigms]
-=== Client Programming Paradigms
-HTTP Client supports all the variations described in
-xref:{page-version}@servicetalk::introduction.adoc#programming-paradigms[Programming Paradigms].
-
-[#client-blocking-and-aggregated]
-==== Blocking and Aggregated
-This programming paradigm expects the request (including the payload body) as a single aggregated object, and the
-response (including the payload body) is also a single aggregated object. The `Client` directly returns the response
-object and there are no asynchronous primitives involved.
-
-See
-link:{source-root}/servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/blocking/BlockingHelloWorldClient.java[BlockingHelloWorldClient]
-[source, java]
-----
-try (BlockingHttpClient client = HttpClients.forSingleAddress("localhost", 8080).buildBlocking()) {
-  HttpResponse response = client.request(client.get("/sayHello"));
-  // use the response
-}
-----
-
-[#client-blocking-and-streaming]
-==== Blocking and Streaming
-This programming paradigm expects the request payload body as an
-link:https://docs.oracle.com/javase/8/docs/api/java/lang/Iterable.html[Iterable] of
-link:{source-root}/servicetalk-buffer-api/src/main/java/io/servicetalk/buffer/api/Buffer.java[Buffer]s and the response payload
-body is consumed via an
-link:https://docs.oracle.com/javase/8/docs/api/java/lang/Iterable.html[Iterable] of
-link:{source-root}/servicetalk-buffer-api/src/main/java/io/servicetalk/buffer/api/Buffer.java[Buffer]s. There are no asynchronous
-primitives involved.
-
-See
-link:{source-root}/servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/blocking/streaming/BlockingHelloWorldStreamingClient.java[BlockingHelloWorldStreamingClient]
-[source, java]
-----
-try (BlockingStreamingHttpClient client = HttpClients.forSingleAddress("localhost", 8080)
-      .buildBlockingStreaming()) {
-  BlockingStreamingHttpResponse response = client.request(client.get("/sayHello"));
-  System.out.println(response.toString((name, value) -> value));
-  try (BlockingIterator<String> payload = response.payloadBody(textDeserializer()).iterator()) {
-    while (payload.hasNext()) {
-      System.out.println(payload.next());
-    }
-  }
-}
-----
-
-[#client-asynchronous-and-aggregated]
-==== Asynchronous and Aggregated
-This programming paradigm expects the request payload body as a single aggregated object, and the response payload body
-is also a single aggregated object. The `HttpClient` provides the response via a
-link:{source-root}/servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Single.java[Single] which is an
-asynchronous primitive.
-
-See
-link:{source-root}/servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/async/HelloWorldClient.java[HelloWorldClient]
-[source, java]
-----
-try (HttpClient client = HttpClients.forSingleAddress("localhost", 8080).build()) {
-// This example is demonstrating asynchronous execution, but needs to prevent the main
-// thread from exiting before the response has been processed. This isn't typical usage
-// for a streaming API but is useful for demonstration purposes.
-  CountDownLatch responseProcessedLatch = new CountDownLatch(1);
-  client.request(client.get("/sayHello"))
-        .doFinally(responseProcessedLatch::countDown)
-        .subscribe(resp -> {
-     System.out.println(resp.toString((name, value) -> value));
-     System.out.println(resp.payloadBody(textDeserializer()));
-  });
-
-  responseProcessedLatch.await();
-}
-----
-
-[#client-asynchronous-and-streaming]
-==== Asynchronous and Streaming
-This programming paradigm expects the request payload body as a
-link:{source-root}/servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Publisher.java[Publisher] typically of
-link:{source-root}/servicetalk-buffer-api/src/main/java/io/servicetalk/buffer/api/Buffer.java[Buffer]s (although other types like
-file regions may be added), the response meta-data is provided via a
-link:{source-root}/servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Single.java[Single], and the response
-payload body is written via a
-link:{source-root}/servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Publisher.java[Publisher].
-
-See
-link:{source-root}/servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/async/streaming/HelloWorldStreamingClient.java[HelloWorldStreamingClient]
-[source, java]
-----
-try (StreamingHttpClient client = HttpClients.forSingleAddress("localhost", 8080).buildStreaming()) {
-// This example is demonstrating asynchronous execution, but needs to prevent the main thread from
-// exiting before the response has been processed. This isn't typical usage for a streaming API but
-// is useful for demonstration purposes.
-  CountDownLatch responseProcessedLatch = new CountDownLatch(1);
-  client.request(client.get("/sayHello"))
-        .beforeOnSuccess(response -> System.out.println(response.toString((name, value) -> value)))
-        .flatMapPublisher(resp -> resp.payloadBody(textDeserializer()))
-        .doFinally(responseProcessedLatch::countDown)
-        .forEach(System.out::println);
-
-  responseProcessedLatch.await();
-}
 ----
 
 == Serialization

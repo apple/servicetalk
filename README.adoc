@@ -56,6 +56,15 @@ different features of ServiceTalk.
 NOTE: Builds of the development version are available in
 link:https://oss.sonatype.org/content/repositories/snapshots/io/servicetalk/[Sonatype's snapshots Maven repository].
 
+== Supported JVM
+The minimum supported JDK version is 1.8.
+
+== Compatibility
+ServiceTalk follows link:https://semver.org/#semantic-versioning-200[SemVer 2.0.0]. API/ABI breaking changes will
+require package renaming for that module to avoid runtime classpath conflicts.
+
+NOTE: `0.x.y` releases are not stable and are permitted to break API/ABI.
+
 === Contributor Setup
 
 IMPORTANT: If you're intending to contribute to ServiceTalk,

@@ -6,7 +6,7 @@ ifndef::env-github[]
 ifndef::source-root[:source-root: https://github.com/apple/servicetalk/blob/{page-origin-refname}]
 endif::[]
 
-= Jersey HTTP Router
+= JAX-RS Router (Jersey)
 
 ServiceTalk offers JAX-RS support via its Jersey HTTP router module.
 This module gives access to all JAX-RS features and also to a set of

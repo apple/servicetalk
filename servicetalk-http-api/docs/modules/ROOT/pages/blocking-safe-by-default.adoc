@@ -6,14 +6,14 @@ ifndef::env-github[]
 ifndef::source-root[:source-root: https://github.com/apple/servicetalk/blob/{page-origin-refname}]
 endif::[]
 
-= Offloads in HTTP
+= Blocking safe by default
 
 This document elaborates how HTTP APIs provide ways to influence offloading. General philosophy of writing blocking code
-while using ServiceTalk is explained xref:{page-version}@servicetalk::blocking.adoc[here] and is a recommended read.
+while using ServiceTalk is explained xref:{page-version}@servicetalk::blocking-safe-by-default.adoc[here] and is a recommended read.
 
 == An optimal execution strategy
 
-As described in xref:{page-version}@servicetalk::blocking.adoc#influencing-offloading-decisions[Influencing offloading
+As described in xref:{page-version}@servicetalk::blocking-safe-by-default.adoc#influencing-offloading-decisions[Influencing offloading
 decisions], ServiceTalk tries to calculate an optimal execution strategy based on various inputs. This section describes
 how this calculation is done for those inputs.
 
@@ -22,7 +22,7 @@ how this calculation is done for those inputs.
 ServiceTalk core is based on the asynchronous streaming programming model and hence exposes different points where user
 code may interact with the event loop.
 
-(Refer to xref:{page-version}@servicetalk::blocking.adoc#user-code-and-eventloop[User code and Eventloop] to understand
+(Refer to xref:{page-version}@servicetalk-concurrent-api::blocking-safe-by-default.adoc#data-and-control-flow-in-an-execution-chain[this document] to understand
 data and control signals terminology).
 
 ==== Client
@@ -58,7 +58,7 @@ we have the following points that require offloads:
 [#programming-models]
 === Programming models
 
-xref:{page-version}@servicetalk::index.adoc#programming-paradigms[Programming model] plays an important role in
+xref:{page-version}@servicetalk::programming-paradigms.adoc[Programming Paradigms] plays an important role in
 determining an appropriate offloading strategy since they naturally omit some paths that user code can not interact with
 the event loop. The following matrix elaborates the paths which require offloading with a (✓) and which do not with a (✗).
 
@@ -67,22 +67,22 @@ the event loop. The following matrix elaborates the paths which require offloadi
 |===
 ^|Programming model ^|response `Single` (data) ^| response `Publisher` (data) ^| request `Publisher` (control)
 
-|xref:index.adoc#client-asynchronous-and-streaming[asynchronous and streaming]
+|xref:programming-paradigms.adoc#client-asynchronous-and-streaming[asynchronous and streaming]
 ^|✓
 ^|✓
 ^|✓
 
-|xref:index.adoc#client-asynchronous-and-aggregated[asynchronous and aggregated]
+|xref:programming-paradigms.adoc#client-asynchronous-and-aggregated[asynchronous and aggregated]
 ^|✓
 ^|✗
 ^|✗
 
-|xref:index.adoc#client-blocking-and-streaming[blocking and streaming]
+|xref:programming-paradigms.adoc#client-blocking-and-streaming[blocking and streaming]
 ^|✗
 ^|✗
 ^|✓
 
-|xref:index.adoc#client-blocking-and-aggregated[blocking and aggregated]
+|xref:programming-paradigms.adoc#client-blocking-and-aggregated[blocking and aggregated]
 ^|✗
 ^|✗
 ^|✗
@@ -92,25 +92,25 @@ the event loop. The following matrix elaborates the paths which require offloadi
 |===
 ^|Programming model ^|`handle()` ^|response `Single` (control) ^| response `Publisher` (control) ^| request `Publisher` (data)
 
-|xref:index.adoc#asynchronous-and-streaming[asynchronous and streaming]
+|xref:programming-paradigms.adoc#asynchronous-and-streaming[asynchronous and streaming]
 ^|✓
 ^|✓
 ^|✓
 ^|✓
 
-|xref:index.adoc#asynchronous-and-aggregated[asynchronous and aggregated]
+|xref:programming-paradigms.adoc#asynchronous-and-aggregated[asynchronous and aggregated]
 ^|✓
 ^|✓
 ^|✗
 ^|✗
 
-|xref:index.adoc#blocking-and-streaming[blocking and streaming]
+|xref:programming-paradigms.adoc#blocking-and-streaming[blocking and streaming]
 ^|✓
 ^|✗
 ^|✗
 ^|✗
 
-|xref:index.adoc#blocking-and-aggregated[blocking and aggregated]
+|xref:programming-paradigms.adoc#blocking-and-aggregated[blocking and aggregated]
 ^|✓
 ^|✗
 ^|✗
@@ -142,7 +142,7 @@ and link:{source-root}/servicetalk-http-utils/src/main/java/io/servicetalk/http/
 
 Blocking programming model is easy to start and understand but it may not be the correct tool for all scenarios.
 In fact, ServiceTalk assumes that applications typically have a mixed profile where different parts follow different
-xref:{page-version}@servicetalk::introduction.adoc#programming-paradigms[programming paradigms]. One of the goals of
+xref:{page-version}@servicetalk::programming-paradigms.adoc[Programming Paradigms]. One of the goals of
 ServiceTalk is to help users evolve from a blocking programming model to a completely asynchronous programming model
 without the need to completely rewrite the entire application. The process for this evolution is elaborated in
 xref:evolve-to-async.adoc[this document].

@@ -6,7 +6,7 @@ ifndef::env-github[]
 ifndef::source-root[:source-root: https://github.com/apple/servicetalk/blob/{page-origin-refname}]
 endif::[]
 
-= Security Utils for Jersey Router
+= Security (Jersey router)
 
 This module provides JAX-RS filters that set `javax.ws.rs.core.SecurityContext` for requests authenticated with
 various authentication schemes.

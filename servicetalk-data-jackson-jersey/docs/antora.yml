@@ -15,7 +15,7 @@
 #
 
 name: servicetalk-data-jackson-jersey
-title: Data Jackson Jersey
+title: JSON (Jackson)
 version: SNAPSHOT
 nav:
   - modules/ROOT/nav.adoc

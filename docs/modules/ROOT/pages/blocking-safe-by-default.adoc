@@ -6,14 +6,16 @@ ifndef::env-github[]
 ifndef::source-root[:source-root: https://github.com/apple/servicetalk/blob/{page-origin-refname}]
 endif::[]
 
-= May I block?
+= Blocking safe by default
 
-IMPORTANT: By default, users are free to write blocking code when using ServiceTalk.
+IMPORTANT: By default, users are free to write
+xref:{page-version}@servicetalk::programming-paradigms.adoc#blocking-vs-synchronous[blocking code]
+when using ServiceTalk.
 
 == Background
 
 ServiceTalk uses link:https://netty.io[Netty] under the hood which uses the
-link:https://en.wikipedia.org/wiki/Event_loop[Event loop programming construct]. A drawback of this construct is that
+link:https://en.wikipedia.org/wiki/Event_loop[Event loop execution model]. A drawback of this construct is that
 any potentially long running work (blocking calls, intensive computations, etc) that is done on the event loop
 negatively impacts the processing of all subsequent tasks. This is the reason why writing blocking code is usually
 discouraged when using Netty.
@@ -53,19 +55,7 @@ often either naive hence sub-optimal or fairly complex. ServiceTalk internally d
 it does not offload more than what is required. In other words, it reduces offloading when it can deduce that no user
 code can interact with the event loop on a certain path.
 
-ServiceTalk abstracts interactions with the event loop using its
-xref:introduction.adoc#asynchronous-primitives[asynchronous primitives] and hence those interactions can be expressed as
-the signals that are exchanged on those asynchronous primitives, as elaborated in the diagram below:
-
-image::blocking-scenarios.png[Data and control flow in an execution chain]
-
-
-ServiceTalk uses different `publishOn` and `subscribeOn` operators on these asynchronous primitives to implement
-offloading. Implementation details of those operators are out of scope of this document but the usage of these operators
-is encapsulated in an
-link:{source-root}/servicetalk-transport-api/src/main/java/io/servicetalk/transport/api/ExecutionStrategy.java[Execution Strategy]
-
-==== Execution Strategy
+=== Execution Strategy
 
 An link:{source-root}/servicetalk-transport-api/src/main/java/io/servicetalk/transport/api/ExecutionStrategy.java[Execution Strategy]
 has two primary purposes:
@@ -80,35 +70,36 @@ At a general transport layer (no application level protocol), only two offload p
 . Sending data to the transport.
 . Receiving data from the transport.
 
-However, different protocols, eg: xref:{page-version}@servicetalk-http-api::blocking.adoc[HTTP] may provide more
-sophisticated offloading paths that can be controlled by a strategy.
+However, different protocols, eg: xref:{page-version}@servicetalk-http-api::blocking-safe-by-default.adoc[HTTP] may
+provide more sophisticated offloading paths that can be controlled by a strategy.
 
 [#influencing-offloading-decisions]
-==== Influencing offloading decisions
+=== Influencing offloading decisions
 
-As explained above, ServiceTalk does the heavy lifting of determining the optimal offloading strategy. This optimal
+ServiceTalk does the heavy lifting of determining the optimal offloading strategy. This optimal
 strategy is determined based on different inputs as outlined below:
 
-. __xref:index.adoc#programming-paradigms[Programming model]__: A certain programming model may reduce the paths
-user code can interact with the event loop and hence make some offloading redundant.
+. __xref:{page-version}@servicetalk::programming-paradigms.adoc[Programming Paradigms].__: A certain programming model
+may reduce the paths user code can interact with the event loop and hence make some offloading redundant.
 . __Presence of user code__: ServiceTalk is flexible and allows users to add code at different places.
 Presence of any user code is deemed as unsafe and hence requires offloading. If users are sure the added code does not
 block, they can declare so through the constructs provided at the
-xref:{page-version}@servicetalk-http-api::blocking.adoc[protocol level].
+xref:{page-version}@servicetalk-http-api::blocking-safe-by-default.adoc[protocol level].
 . __Override execution strategy__: ServiceTalk provides a way for users to override the
 link:{source-root}/servicetalk-transport-api/src/main/java/io/servicetalk/transport/api/ExecutionStrategy.java[Execution Strategy]
-used for a client/server. This disables all intelligence around finding the optimized strategy and just use the provided
-strategy.
+used for a client/server. This disables all intelligence around finding the optimized strategy and just uses the
+provided strategy.
 
-==== Opt-in to run on event loop
+=== Opt-in to run on event loop
 
 ServiceTalk acknowledges that [.underline]#writing completely asynchronous code is hard and is __not__ an
 "all or nothing" decision#.
 Practically, applications will have a mixed profile such that some paths are completely asynchronous and some paths have
 blocking code. This is the reason it provides ways to selectively opt-in for disabling offloading for the same
 client/server. These selective opt-ins are specific to protocols, for example as elaborated under
-xref:{page-version}@servicetalk-http-api::blocking.adoc[HTTP]. In addition there is a way to override the strategy for a
-client/server but it comes with additional responsibility from the user assuming "you know what you are doing".
+xref:{page-version}@servicetalk-http-api::blocking-safe-by-default.adoc[HTTP]. In addition there is a way to override
+the strategy for a client/server but it comes with additional responsibility from the user assuming
+"you know what you are doing".
 
 === ServiceTalk developers
 

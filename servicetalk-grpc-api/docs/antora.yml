@@ -14,8 +14,8 @@
 # limitations under the License.
 #
 
-name: servicetalk-http-security-jersey
-title: Security
+name: servicetalk-grpc-api
+title: gRPC
 version: SNAPSHOT
 nav:
   - modules/ROOT/nav.adoc

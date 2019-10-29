@@ -1,134 +1,93 @@
 = ServiceTalk
 
-ServiceTalk is a JVM network application framework with APIs tailored to specific protocols (e.g. HTTP/1.x,
-HTTP/2.x, etc...) and supports multiple programming paradigms.
+== Motivation
+ServiceTalk is intended to provide a common and extensible networking abstraction on top of a lower-level networking
+framework (e.g. link:https://netty.io[Netty]). Netty is a great low-level networking framework, but when used for
+service to service communication it presents a few improvement opportunities:
 
-It is built on link:https://netty.io[Netty] and is designed to provide most of the performance/scalability benefits of
-Netty for common networking protocols used in service to service communication. ServiceTalk provides server support and
-"smart client" like features such as client-side load balancing and service discovery integration.
+* **Threading Model**
+** Fully asynchronous and requires knowledge of EventLoop threading model
+** Executing CPU intensive or "blocking" code requires manual thread hops
+** Subtle out of order execution of tasks when code executes both on and off the EventLoop thread
+* **Usability**
+** APIs are not tailored towards common application use cases (e.g. request/response, RPC, etc..)
+** Asynchronous programming paradigm presents a barrier to entry in scenarios where vertical scalability is not a
+primary concern.
+** Error propagation follows multiple paths depending on the event and state of Channel
+** Back-pressure requires manual association between source and sink of data
+* **Lacking Feature Set**
+** Smart Client (e.g. client-side load balancing, service discovery, retry, circuit breaking, etc...) features are
+missing.
 
-See the link:https://docs.servicetalk.io/[ServiceTalk docs] for more information.
+ServiceTalk addresses these challenges and includes support for multiple
+xref:{page-version}@servicetalk::programming-paradigms.adoc[Programming Paradigms]. It accomplishes this by building
+on a fully asynchronous non-blocking I/O core and taking care of the threading model complexities internally.
 
-== Getting Started
+== Design Philosophy
 
-All ServiceTalk released artifacts are available in
-link:https://repo1.maven.org/maven2/io/servicetalk/[the Maven central repository].
+ServiceTalk has many different goals driven from the improvement opportunities provided by Netty. Despite ServiceTalk's
+broad feature set it follows some key design principles ensuring consistency and reduced complexity across module
+boundaries. These design philosophies are elaborated in this section to provide context for users and developers of
+ServiceTalk.
 
-The easiest way to get started is to add ServiceTalk's bill-of-material (BOM) dependency to your project's build.
+=== Extensible core
 
-.Maven, pom/xml
-[source,xml]
-----
-<dependencyManagement>
-  <dependencies>
-    <dependency>
-      <groupId>io.servicetalk</groupId>
-      <artifactId>servicetalk-bom</artifactId>
-      <version>${servicetalk.version}</version>
-      <type>pom</type>
-      <scope>import</scope>
-    </dependency>
-  </dependencies>
-</dependencyManagement>
-----
+ServiceTalk is designed to provide an extensible core and APIs tailored to network protocols. It does not intend to
+provide abstractions for low-level networking primitives (e.g. Channels, EventLoop, TLS, etc...) but instead uses these
+primitives to provide a higher level API in multiple
+xref:{page-version}@servicetalk::programming-paradigms.adoc[Programming Paradigms].
 
-.Gradle 5, build.gradle
-[source,groovy]
-----
-implementation platform("io.servicetalk:servicetalk-bom:$serviceTalkVersion")
-----
+=== Low barrier to entry
 
-.Gradle 4
-[source,groovy]
-----
-implementation "io.servicetalk:servicetalk-bom:$serviceTalkVersion" // <1>
+One of the primary objectives of ServiceTalk is to reduce the barrier to entry for users. Different frameworks in this
+space typically make a choice; either they are highly opinionated in providing a single programming paradigm
+(either asynchronous or blocking) or other programming paradigms are supported at higher layers where less features are
+available for users (eg: JAX-RS provides multiple programming paradigms without fine grained control over the networking
+layer). A consequence of making this choice is that users have to decide which layer best suits their need; low level
+feature rich layer or a high level flexible layer with less features. Typically these decisions have to be made early in
+the development cycle and changing this choice usually requires a large engineering work to re-design the application,
+also impacting the parts that do not require this new model.
 
-enableFeaturePreview("IMPROVED_POM_SUPPORT") // <2>
-----
-<1> in _build.gradle_
-<2> in _settings.gradle_
+Either by growing organically or at the onset, applications typically tend to be multi-faceted; they have a mixed
+requirement of high vertical scalability (eg: large number of long-running connections for push based streaming APIs)
+for some areas and ease of development (low throughput endpoints) for other areas. ServiceTalk aims to make writing such
+applications easier by providing different
+xref:{page-version}@servicetalk::programming-paradigms.adoc[programming paradigms] and an ability to switch between these
+paradigms in the same application. We also support writing
+xref:{page-version}@servicetalk::blocking-safe-by-default.adoc[blocking code safe by default] even with asynchronous
+programming paradigms. This design philosophy takes the burden off our users such that they can start simple and use
+advanced features as when they feel comfortable. Thus, making **ServiceTalk a library that grows with the user needs**.
 
-With this in place, you can add the ServiceTalk module dependencies you need without specifying their versions.
+=== Cross-protocol API symmetry
 
-Refer to the link:https://docs.servicetalk.io/[ServiceTalk docs] for various examples that will get you started with the
-different features of ServiceTalk.
+ServiceTalk provides different application level protocols to users, eg: HTTP/1.1, HTTP/2.0, gRPC. A design goal is to
+provide consistent APIs and features across these different protocols when possible to maximize reuse and minimize
+cognitive overhead making it easier to adopt ServiceTalk across multiple protocols. However, this ease of use does not
+come for free, it necessitates that ServiceTalk provides generic concepts that abstract protocol specifics. This
+trade-off introduces some additional abstractions that complicate core ServiceTalk development (e.g. load balancer) for
+the benefit of reuse and consistency. This trade-off is consistent with the design principles of ServiceTalk to value
+simplicity and ease of use for end users.
 
-NOTE: Builds of the development version are available in
-link:https://oss.sonatype.org/content/repositories/snapshots/io/servicetalk/[Sonatype's snapshots Maven repository].
+=== Modularization
 
-=== Contributor Setup
+The project is divided into many modules to decouple the user-facing API from implementation details. This gives users
+freedom to choose only the functionality they need, and also allows us to evolve each module independently.
 
-IMPORTANT: If you're intending to contribute to ServiceTalk,
-           make sure to first read the xref:CONTRIBUTING.adoc[contribution guidelines].
+== Why ServiceTalk?
 
-ServiceTalk uses link:https://gradle.org[Gradle] as its build tool and only requires JDK 8 or higher to be
-pre-installed. ServiceTalk ships with the Gradle Wrapper, which means that there is no need to install Gradle on your
-machine beforehand.
+Over the past few years we have gained experience through Netty and ServiceTalk development. Deploying into production
+has also provided some invaluable user feedback and lessons which has influenced our roadmap along the way. In the
+meanwhile, the industry also identified similar opportunities adding new frameworks on top of Netty.
+Despite the space being more crowded now, than when we first started, we believe that ServiceTalk provides unique value
+in this space.
 
-==== File Encoding
+ServiceTalk provides an <<Extensible core, extensible core>>, is safe by default with a
+<<Low barrier to entry, low barrier to entry>>. It provides a consistent higher level feature set across multiple
+application level protocols and evolves with your application. This combination of design principals provides
+a value that is unique within the industry and has demonstrated successful real world deployments across different domains.
 
-ServiceTalk's source code is UTF-8 encoded: make sure your filesystem supports it before attempting to build
-the project. Setting the `JAVA_TOOL_OPTIONS` env var to `-Dfile.encoding=UTF-8` should help building the project in
-non-UTF-8 environments. Editors and IDEs must also support UTF-8 in order to successfully edit ServiceTalk's source
-code.
-
-==== Gradle Repositories
-
-ServiceTalk's build produces custom Gradle plugins and thus has regular (i.e. non-`buildscript`) dependencies
-on other plugins. This is the reason why the repositories that are provided if none are configured globally are the
-following:
-
-[source,groovy]
-----
-allprojects {
-  buildscript {
-    repositories {
-      jcenter()
-      maven { url "https://plugins.gradle.org/m2/" }
-    }
-  }
-  repositories {
-    jcenter()
-    maven { url "https://plugins.gradle.org/m2/" }
-  }
-}
-----
-
-If you have defined repositories or repository mirrors in your global Gradle config (`~/.gradle/init.gradle`),
-the build will detect them and attempt to inherit `buildscript` repositories into the main `repositories`
-of the sub-projects that produce custom Gradle plugins.
-
-NOTE: This inheritance mechanism can be disabled by setting a Gradle property: +
-      `-PdisableInheritBuildscriptRepositories`.
-
-==== Build Commands
-
-You should be able to run the following command to build ServiceTalk:
-
-[source,shell]
-----
-$ ./gradlew build
-----
-
-The supported IDE is link:https://www.jetbrains.com/idea[IntelliJ IDEA].
-In order to generate IntelliJ IDEA project files for ServiceTalk,
-you can run the following command:
-
-[source,shell]
-----
-$ ./gradlew idea
-----
-
-When done, running one of following commands would open ServiceTalk in IntelliJ:
-
-.Generic
-[source,shell]
-----
-$ idea .
-----
-
-.macOS
-[source,shell]
-----
-$ open servicetalk.ipr
-----
+Our design philosophies are somewhat unique but we acknowledge overlap with other libraries/frameworks in this space.
+While providing different features in ServiceTalk, we often face questions around "build vs use" as there are other
+options available that solve similar concerns. When possible we use an off-the-shelf solution (eg:
+xref:{page-version}@servicetalk-http-router-jersey::index.adoc[jersey]) but in some cases the trade-offs justify
+building our own(eg: xref:{page-version}@servicetalk-concurrent-api::asynchronous-primitives.adoc[asynchronous primitives]).

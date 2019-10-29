@@ -6,7 +6,7 @@ ifndef::env-github[]
 ifndef::source-root[:source-root: https://github.com/apple/servicetalk/blob/{page-origin-refname}]
 endif::[]
 
-= ServiceTalk Performance
+= Performance
 
 This section will discuss the design, trade-offs, and performance tuning options and recommendations for your
 ServiceTalk applications.
@@ -43,7 +43,7 @@ safe out of the box. This section clarifies some aspects, considerations and cho
 === Blocking API on top of async
 In order to build a library that supports both blocking and asynchronous APIs, we use an asynchronous core and build
 blocking APIs on top. In case of our blocking APIs, it means there is some overhead involved to orchestrate the hand-off
-(aka xref:{page-version}@servicetalk::blocking.adoc[offloading]) between EventLoop threads and application worker
+(aka xref:{page-version}@servicetalk::blocking-safe-by-default.adoc[offloading]) between EventLoop threads and application worker
 threads.
 
 Network libraries that dedicate a single thread per connection to do IO and execute user code from that thread may have
@@ -57,7 +57,7 @@ architecture.
 
 A strategy to avoid the thread hopping is to opt-in to executing user code on the EventLoop thread. However this will
 have an adverse effect on latency and responsiveness if you execute
-xref:{page-version}@servicetalk::blocking.adoc[blocking] code. See
+xref:{page-version}@servicetalk::blocking-safe-by-default.adoc[blocking] code. See
 xref:{page-version}@servicetalk-http-api::evolve-to-async.adoc[Evolving to Asynchronous docs] for more details.
 
 [#reference-counting]
@@ -81,7 +81,7 @@ of reference counting and buffer pooling is the culprit why you cannot meet your
 look into directly building on top of link:https://netty.io[Netty] instead.
 
 === Reactive core
-ServiceTalk's core design principals aim to enable large scale link:https://www.reactivemanifesto.org[reactive system].
+ServiceTalk's core design principles aim to enable large scale link:https://www.reactivemanifesto.org[reactive system].
 Responsiveness is an essential part of building a reactive system. ServiceTalk implements
 link:https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.2/README.md#specification[Reactive Streams APIs]
 to provide flow controlled, responsive networking abstractions. Such flow controlled systems express a well coordinated
@@ -100,8 +100,8 @@ asynchronous sources are typically referred to as link:https://reactivex.io/docu
 ServiceTalk. Operators help us transparently propagate demand across business logic thus enabling end-to-end flow
 control. This streamlined control flow and end-to-end back-pressure with operators comes with a trade-off which in
 practice typically involves additional object allocation and as a side effect may lead to deeper stack traces. In
-ServiceTalk we implement our own xref:{page-version}@servicetalk-concurrent-api::index.adoc[operators] in order to keep
-allocation and minimize synchronization while strictly enforcing back-pressure.
+ServiceTalk we implement our own xref:{page-version}@servicetalk-concurrent-api::asynchronous-primitives.adoc[operators]
+in order to keep allocation and minimize synchronization while strictly enforcing back-pressure.
 
 We believe that using function composition increases readability for complex asynchronous systems as compared to
 callbacks, thus following ServiceTalk's design philosophy of favoring ease of use. However, if your benchmarks indicate
@@ -112,10 +112,11 @@ the operators in question.
 [#safe-to-block]
 === Safe-to-block (aka Offloading)
 Because ServiceTalk is asynchronous and non-blocking at the core it needs to defend against user or third party code
-that potentially blocks IO EventLoop threads. Read the chapter on xref:blocking.adoc#safe-to-block[Blocking] for more
-details.
+that potentially blocks IO EventLoop threads. Read the chapter on
+xref:{page-version}@servicetalk::blocking-safe-by-default.adoc[blocking code safe by default] for more details.
 
-`ServiceTalk` has xref:{page-version}@servicetalk-concurrent-api::blocking#executor-affinity[Executor Affinity] which
+`ServiceTalk` has
+xref:{page-version}@servicetalk-concurrent-api::blocking-safe-by-default.adoc#executor-affinity[Executor Affinity] which
 ensures that the same `Executor` is used for each `Subscriber` chain on asynchronous operator boundaries. By default
 when using the streaming APIs this requires wrapping on the asynchronous operator boundaries and may result in
 additional thread hops between ``Executor``s (and even if ``Executor`` happens to be the same). Depending upon the use
@@ -158,8 +159,8 @@ Exposing flush controls on the public API is non-trivial when you have asynchron
 be ordered with respect to the data, and care must be taken not to drop these signals during data transformations.
 ServiceTalk currently doesn't expose a way to control flush strategies in the public API but may be able to infer a more
 optimal strategy if you select the appropriate programming paradigm for the
-xref:{page-version}@servicetalk-http-api::index.adoc#client-programming-paradigms[client] and
-xref:{page-version}@servicetalk-http-api::index.adoc#service-programming-paradigms[service]. If you are willing to use an
+xref:{page-version}@servicetalk-http-api::programming-paradigms.adoc#client-programming-paradigms[client] and
+xref:{page-version}@servicetalk-http-api::programming-paradigms.adoc#service-programming-paradigms[service]. If you are willing to use an
 *_advanced, internal, experimental, subject to change at any time_* API there is also
 link:{source-root}/servicetalk-transport-netty-internal/src/main/java/io/servicetalk/transport/netty/internal/FlushStrategies.java[FlushStrategies]
 that provides control over flushing. Here is a quick summary of this internal API.
@@ -249,8 +250,8 @@ xref:{page-version}@servicetalk::performance.adoc#safe-to-block[Safe to Block] f
 threading models.
 
 It is possible to override the `ExecutionStrategy`, but first make sure you are using the appropriate programming
-paradigm for xref:{page-version}@servicetalk-http-api::index.adoc#client-programming-paradigms[client] and
-xref:{page-version}@servicetalk-http-api::index.adoc#service-programming-paradigms[service]. Depending upon your
+paradigm for xref:{page-version}@servicetalk-http-api::programming-paradigms.adoc#client-programming-paradigms[client] and
+xref:{page-version}@servicetalk-http-api::programming-paradigms.adoc#service-programming-paradigms[service]. Depending upon your
 protocol it is likely there are higher level constructs such as
 xref:{page-version}@servicetalk-http-api::index.adoc#routers[routers] that provide a per-route API customization (e.g.
 xref:{page-version}@servicetalk-http-router-jersey::evolve-to-async.adoc[JAX-RS via Jersey] and
@@ -277,8 +278,8 @@ can be considered non-blocking] that are applied will block.
 [#programming-models]
 ==== Choosing the optimal programming model
 Selecting the appropriate programming paradigm can help simplify your application logic (see
-xref:{page-version}@servicetalk-http-api::index.adoc#client-programming-paradigms[client programming paradigms] and
-xref:{page-version}@servicetalk-http-api::index.adoc#service-programming-paradigms[service programming paradigms]) and
+xref:{page-version}@servicetalk-http-api::programming-paradigms.adoc#client-programming-paradigms[client programming paradigms] and
+xref:{page-version}@servicetalk-http-api::programming-paradigms.adoc#service-programming-paradigms[service programming paradigms]) and
 also enable ServiceTalk to apply optimizations behind the scenes (e.g.
 xref:{page-version}@servicetalk::performance.adoc#flushstrategy[flushing] and
 xref:{page-version}@servicetalk::performance.adoc#ExecutionStrategy[offloading]). A paradigm is chosen when constructing
@@ -287,7 +288,7 @@ link:{source-root}/servicetalk-http-api/src/main/java/io/servicetalk/http/api/Ht
 ), or leveraging a service xref:{page-version}@servicetalk-http-api::index.adoc#routers[router's] per-route ability to
 support the different paradigms. The following table is a summary of how the programming paradigm affects flushing and
 offloading. Please consider reading the detailed documentation on
-xref:{page-version}@servicetalk-http-api::blocking.adoc#programming-models[HTTP Programming models].
+xref:{page-version}@servicetalk-http-api::blocking-safe-by-default.adoc#programming-models[HTTP Programming models].
 
 [%header,cols="1,3,3,3,3"]
 |===

@@ -6,10 +6,10 @@ ifndef::env-github[]
 ifndef::source-root[:source-root: https://github.com/apple/servicetalk/blob/{page-origin-refname}]
 endif::[]
 
-= Offloads with asynchronous sources
+= Blocking safe by default
 
 This document elaborates how asynchronous sources provide ways to offload. General philosophy of writing blocking code
-while using ServiceTalk is explained xref:{page-version}@servicetalk::blocking.adoc[here] and is a recommended read.
+while using ServiceTalk is explained xref:{page-version}@servicetalk::blocking-safe-by-default.adoc[here] and is a recommended read.
 
 == Execution chain
 

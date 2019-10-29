@@ -1,0 +1,134 @@
+// Configure {source-root} values based on how this document is rendered: on GitHub or not
+ifdef::env-github[]
+:source-root:
+endif::[]
+ifndef::env-github[]
+ifndef::source-root[:source-root: https://github.com/apple/servicetalk/blob/{page-origin-refname}]
+endif::[]
+
+= Asynchronous Primitives
+
+ServiceTalk provides different java interfaces to represent asynchronous operations with different result cardinalities,
+namely:
+
+- No result, just termination (link:{source-root}/servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Completable.java[`Completable`]).
+- Exactly one result (link:{source-root}/servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Single.java[`Single`]).
+- Zero or many results (link:{source-root}/servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Publisher.java[`Publisher`]).
+
+These interfaces are also referred to as asynchronous **primitives** or asynchronous **sources** in this document.
+
+== Interoperability
+
+ServiceTalk **follows** the
+link:https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.3/README.md#specification[ReactiveStreams Specification]
+to define its own asynchronous primitives. Since there are more than one standards, namely:
+link:https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.3/README.md#specification[ReactiveStreams Specification]
+and link:https://docs.oracle.com/javase/9/docs/api/java/util/concurrent/Flow.html[JDK Flow], ServiceTalk decouples itself
+from a specific standard by defining its own <<Specifications, primitives>> instead of directly using a specific
+standard. In order to make sure we are following the specifications correctly, we verify our sources using the
+link:https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.3/tck[ReactiveStreams TCK]. For interoperability
+we provide ReactiveStreams
+link:{source-root}/servicetalk-concurrent-reactivestreams/src/main/java/io/servicetalk/concurrent/reactivestreams/ReactiveStreamsAdapters.java[adapters]
+and may provide similar Flow adapters in the link:https://github.com/apple/servicetalk/issues/824[future]
+
+== Lazy execution
+
+All asynchronous primitives provided by ServiceTalk are "lazy"/"cold" such that the work
+they represent does not start until someone is "listening"
+(a.k.a link:https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.3/README.md#api-components[subscribed])
+for the results. This is different from "eager"/"hot"
+link:https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/CompletableFuture.html[CompletableFuture] usages
+where the work being done to complete the
+link:https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/CompletableFuture.html[CompletableFuture] has
+already started regardless of anyone "listening" for the results.
+
+The lazy/cold approach has the following benefits:
+
+* __Avoid internal queuing__: For streaming operations, starting an operation without an associated listener, requires
+queuing till a listener is available. Lazy execution avoids this queuing.
+* __Implicit work association__: Since the asynchronous source is expected to start work only when a listener is
+available, there is an implicit association between the source and the work it represents. This subtle change is
+powerful as it means that work can be re-done without invoking the method that created the source. Thus enabling us to
+generically implement retries on the sources as opposed to the methods that create the sources.
+
+== Specifications
+
+As defined <<Interoperability, above>>, ServiceTalk defines its own interfaces (specifications) for the different
+asynchronous primitives. These interfaces define the minimum API required to represent that asynchronous primitive and
+their names are suffixed by the term `Source`. Primary motivation for defining these specifications is the ability to
+inter-operate between different standards.
+
+IMPORTANT: Specification interfaces are mentioned here for completeness, typical users are not expected to use them.
+Instead they are expected to use the richer <<primitve-with-operators, asynchronous primitives with operators>>
+that hides the complexity of flow control and cancellation while enabling easier expression of application logic.
+
+=== Publisher source
+
+A link:{source-root}/servicetalk-concurrent/src/main/java/io/servicetalk/concurrent/PublisherSource.java[`PublisherSource`]
+is an asynchronous primitive that mimics link:https://www.reactive-streams.org[ReactiveStreams] interfaces and is
+designed to be used when the source may produce zero or potentially infinite number of results.
+
+=== Single source
+
+A link:{source-root}/servicetalk-concurrent/src/main/java/io/servicetalk/concurrent/SingleSource.java[`SingleSource`]
+is an asynchronous primitive that is designed to be used when the source will produce exactly one result or terminate
+with an error.
+
+=== Completable source
+
+A link:{source-root}/servicetalk-concurrent/src/main/java/io/servicetalk/concurrent/CompletableSource.java[`CompletableSource`]
+is an asynchronous primitive that is designed to be used when the source will complete or terminate with an error.
+
+[#async-control-flow]
+== Asynchronous control flow
+
+An important part of writing an application is to have the ability to express control flow like retries, error handling,
+combining multiple operations sequentially or in parallel, etc. Asynchronous programming is especially challenging
+when expressing complex control flow and without higher level abstractions can quickly lead to nested, complex callback
+logic colloquially known as the __Callback hell__. Error propagation, cancellation and backpressure is extremely complex
+to wire through this control flow and leads to subtle issues in applications.
+
+Although <<Specifications, specification interfaces>> express the asynchronous primitives completely, they do not address
+the common concern of expressing asynchronous control flow effectively, making them less useful for direct consumption
+by most applications. Neither ReactiveStreams, nor JDK Flow provides higher level abstractions that address this problem.
+This creates an opportunities for libraries like ServiceTalk to provide these higher level abstraction.
+The industry has a rich history of using function composition based control flow from Common Lisp and Erlang to more
+targeted approach in the reactive domain such as link:https://reactivex.io[ReactiveX],
+link:https://github.com/reactor/reactor-core[Project reactor], and
+link:https://doc.akka.io/docs/akka/current/stream/operators/index.html[Akka streams]. Function composition is an approach
+to define common control-flow primitives as functions which are used together with the asynchronous primitives.
+These functions are commonly referred to as **operators**.
+
+[#operators]
+== Operators
+
+ServiceTalk limits <<Specifications, specification interfaces>> to define the contract for all asynchronous primitives
+and adds operators as part of the <<primitve-with-operators, asynchronous primitives with operators>>. Although
+ServiceTalk developers referenced the eco-system
+(link:https://reactivex.io/documentation/operators.html[ReactiveX Operators],
+link:https://doc.akka.io/docs/akka/current/stream/operators/index.html[Akka streams operators],
+link:https://github.com/eclipse/microprofile-reactive-streams-operators[Microprofile operators],
+link:https://docs.oracle.com/javase/8/docs/api/java/util/stream/Stream.html[JDK Streams] and
+link:https://github.com/reactor/reactor-core[Project reactor]) for existing conventions, there is currently no de-facto
+standard governing operator names. More details on ServiceTalk operators can be found in our
+xref:{page-version}@servicetalk::javadoc/index.adoc[Javadocs]
+
+[#primitve-with-operators]
+== Asynchronous primitives with operators
+
+These primitives are an extension of <<Specifications, specification interfaces>>  and they add operators to the
+corresponding specification interface. ServiceTalk always provides these rich sources from its APIs making it easier for
+users to use those APIs.
+
+=== Publisher
+
+A link:{source-root}/servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Publisher.java[`Publisher`]
+extends <<Publisher source>> and adds commonly used operators.
+
+=== Single
+A link:{source-root}/servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Single.java[`Single`]
+extends <<Single source>> and adds commonly used operators.
+
+=== Completable
+A link:{source-root}/servicetalk-concurrent-api/src/main/java/io/servicetalk/concurrent/api/Completable.java[`Completable`]
+extends <<Completable source>> and adds commonly used operators.
