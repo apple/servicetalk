@@ -56,8 +56,11 @@ else
 fi
 
 $git fetch -p
-$git branch -D master
-$git checkout --track origin/master
+if $git rev-parse --quiet --verify master > /dev/null; then
+    $git checkout master
+else
+    $git checkout --track origin/master
+fi
 $git pull
 $git log -n1
 
