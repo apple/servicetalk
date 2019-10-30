@@ -16,16 +16,18 @@ xref:{page-version}@servicetalk::performance.adoc[peformance tested].
 A design philosophy for ServiceTalk is
 xref:{page-version}@servicetalk::index.adoc#cross-protocol-api-symmetry[cross protocol API symmetry] which means that
 all protocols supported by ServiceTalk should have same constructs and follow the same design principles. We acknowledge
-that link:https://github.com/grpc/grpc-java[grpc-java] implements the gRPC protocol for the JVM and is used
-extensively. However, our
-xref:{page-version}@servicetalk::index.adoc#design-philosophy[design philosophies] are different than
-link:https://github.com/grpc/grpc-java[grpc-java] and we support the underlying
-link:https://tools.ietf.org/html/rfc7540[HTTP/2] protocol using link:https://netty.io[Netty]. Also, as part of developing
-Netty, we collaborated with the link:https://github.com/grpc/grpc-java[grpc-java] team to implement
-link:https://tools.ietf.org/html/rfc7540[HTTP/2] in Netty enabling us both to share this common protocol implementation.
-Considering the above, implementing the
-link:https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md[gRPC wire protocol] is a relatively lower investment
-for us while giving us the benefits of following our design philosophies consistently across all protocols.
+that link:https://github.com/grpc/grpc-java[grpc-java] implements the
+link:https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md[gRPC wire protocol] for the JVM and is used
+extensively. However, our xref:{page-version}@servicetalk::index.adoc#design-philosophy[design philosophies] are
+different than
+link:https://github.com/grpc/grpc-java[grpc-java] and ServiceTalk also provides
+link:https://tools.ietf.org/html/rfc7540[HTTP/2] directly for users. The
+link:https://github.com/grpc/grpc-java[grpc-java] team and the ServiceTalk team collaborated to bring
+link:https://tools.ietf.org/html/rfc7540[HTTP/2] support to Netty, and both share the same underlying protocol
+implementation. Once you have link:https://tools.ietf.org/html/rfc7540[HTTP/2] support the investment to support the
+link:https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md[gRPC wire protocol] is relatively small but it
+enables ServiceTalk users to benefit from our
+xref:{page-version}@servicetalk::index.adoc#DesignPhilosophy[design philosophy] consistently across all protocols.
 
 == Overview
 gRPC support in ServiceTalk implements the
