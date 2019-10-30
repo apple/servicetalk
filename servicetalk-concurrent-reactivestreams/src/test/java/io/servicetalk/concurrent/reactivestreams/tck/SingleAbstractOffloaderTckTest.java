@@ -18,21 +18,21 @@ package io.servicetalk.concurrent.reactivestreams.tck;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
 
-import org.testng.annotations.AfterTest;
-import org.testng.annotations.BeforeTest;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
 
 import static io.servicetalk.concurrent.api.Executors.newCachedThreadExecutor;
 
-abstract class SingleAbstractOffloaderTckTest extends AbstractSingleOperatorTckTest<Integer> {
+public abstract class SingleAbstractOffloaderTckTest extends AbstractSingleOperatorTckTest<Integer> {
     private static Executor executor;
 
-    @BeforeTest
-    public void setUpFirstTime() {
+    @BeforeClass
+    public static void beforeClass() {
         executor = newCachedThreadExecutor();
     }
 
-    @AfterTest
-    public void tearDownLastTime() throws Exception {
+    @AfterClass
+    public static void afterClass() throws Exception {
         executor.closeAsync().toFuture().get();
     }
 
