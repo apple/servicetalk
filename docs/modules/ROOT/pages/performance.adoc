@@ -195,17 +195,19 @@ client, for a single request one can do:
 [source, java]
 ----
 StreamingHttpClient client = HttpClients.forSingleAddress("localhost", 8080).buildStreaming();
-StreamingHttpRequest request = client.get("/foo");
+StreamingHttpRequest request = client.post("/foo")
+        .payloadBody(Publisher.from("first-chunk", "second-chunk"), textSerializer());
 
 // Reserve a connection from the load-balancer to update its strategy prior to requesting
 ReservedStreamingHttpConnection connection = client.reserveConnection(request)
         .toFuture().get(); // this blocks, for brevity in this example
 
-// Update the strategy to "flush on each"
+// Update the strategy to "flush on end"
 NettyConnectionContext nettyConnectionCtx = (NettyConnectionContext) connection.connectionContext();
-nettyConnectionCtx.updateFlushStrategy((current, isOrig) -> FlushStrategies.flushOnEach());
+nettyConnectionCtx.updateFlushStrategy((current, isOrig) -> FlushStrategies.flushOnEnd());
 
-connection.request(request);
+StreamingHttpResponse response = connection.request(request);
+// consume response.payloadBody()
 
 // Release the connection back to the load-balancer (possibly restore the strategy before returning)
 connection.releaseAsync().toFuture().get(); // this blocks, for brevity in this example
@@ -233,7 +235,7 @@ HttpServers.forPort(8080)
             ((NettyConnectionContext)ctx).updateFlushStrategy((current, isOrig) -> FlushStrategies.flushOnEnd());
 
             return Single.succeeded(responseFactory.ok()
-                    .payloadBody(somePayload));
+                    .payloadBody(Publisher.from("first-chunk", "second-chunk"), textSerializer()));
         });
 ----
 [CAUTION]
@@ -609,6 +611,40 @@ ServiceTalk and is subject to change at any time.
 ----
 -Dio.netty.leakDetection.level=DISABLED
 ----
+
+=== Skip zero initialization for allocated memory
+
+When Java allocates direct memory or an array it performs zero initialization for allocated region, according to the
+link:https://docs.oracle.com/javase/specs/jls/se8/html/jls-4.html#jls-4.12.5[JLS, Initial Values of Variables]. This is
+good for memory safety when users have access to the whole memory region. However, in ServiceTalk the allocated memory
+is wrapped with link:{source-root}/servicetalk-buffer-api/src/main/java/io/servicetalk/buffer/api/Buffer.java[Buffer]
+API that maintains read and write indexes to prevent access to unfilled regions. Therefore, zero initialization is not
+necessary but introduces CPU overhead and affects the total throughput.
+
+Zero initialization is disabled for default
+link:{source-root}/servicetalk-buffer-netty/src/main/java/io/servicetalk/buffer/netty/BufferAllocators.java[BufferAllocator]
+when JDK8 is used. Users of JDK9+ will need to provide additional system properties to get the advantage of this
+optimization.
+
+To disable zero initialization for direct buffers in JDK9+, use:
+
+[source]
+----
+-Dio.servicetalk.tryReflectionSetAccessible=true
+----
+
+To disable zero initialization for heap buffers in JDK9+, use:
+
+[source]
+----
+-Dio.netty.tryReflectionSetAccessible=true
+--add-exports java.base/jdk.internal.misc=ALL-UNNAMED
+----
+
+[NOTE]
+These flags do not disable zero initialization when the memory is allocated directly via `new byte[]`,
+`ByteBuffer.allocate(int)`, or `ByteBuffer.allocateDirect(int)`, they optimize only behavior of ServiceTalk
+link:{source-root}/servicetalk-buffer-netty/src/main/java/io/servicetalk/buffer/netty/BufferAllocators.java[BufferAllocators].
 
 == Internal performance evaluation
 While we are careful in not adding unnecessary performance overhead during the development of ServiceTalk, we can't
