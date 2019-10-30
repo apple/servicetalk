@@ -43,13 +43,13 @@ xref:{page-version}@servicetalk::programming-paradigms.adoc[Programming Paradigm
 One of the primary objectives of ServiceTalk is to reduce the barrier to entry relative to lower level networking
 frameworks (e.g. Netty). This must be achieved all while adding a richer feature set, or else the value proposition
 for ServiceTalk is less compelling. The combination of low bar to entry and enhanced feature set is the primary
-challenge for ServiceTalk developers and benefit for end users. The richer feature set can be observed everywhere from
+challenge for ServiceTalk developers and benefit for end users. The richer feature set can be observed in areas such as
 our more accessible APIs that are more tailored toward common request/response protocols (eg: HTTP/1.x, HTTP/2, gRPC),
 extensibility at the protocol level through client/server filters, our asynchronous sources that account for cross
-cutting concerns (eg: retry/cancellation/back-pressure), and "smart client" features which enable
+cutting concerns (eg: retry/cancellation/back-pressure), and "smart client" features that enables
 decentralized microservices deployments to name a few.
 
-A key component of low barrier to entry is meeting users at the programming paradigm that is right for their needs.
+A key component of low barrier to entry is providing users with the programming model that is right for their needs.
 Historically it is common for frameworks to support a single programming model (eg: asynchronous or  synchronous) and/or
 optionally have support for an alternative paradigm at a higher level with a reduced feature set (eg: JAX-RS provides
 multiple programming paradigms without fine grained control over the networking layer). However it is not uncommon for
@@ -63,9 +63,9 @@ application, also impacting the parts that do not require this new model.
 
 ServiceTalk embraces the fact that applications tend to be multi-faceted; they have a mixed requirement of high vertical
 scalability (eg: large number of long-running connections for push based streaming APIs) for some areas and ease of
-development (low concurrency endpoints) in other areas. ServiceTalk aims to make writing such applications easier by
-xref:{page-version}@servicetalk::programming-paradigms.adoc[programming paradigms] and an ability to switch between
-these paradigms in the same application. We also support writing
+development (low concurrency endpoints) in other areas. ServiceTalk makes writing such applications easier by natively
+supporting multiple xref:{page-version}@servicetalk::programming-paradigms.adoc[programming paradigms] and an ability
+to switch between these paradigms in the same application. We also support writing
 xref:{page-version}@servicetalk::blocking-safe-by-default.adoc[blocking code safe by default] even with asynchronous
 programming paradigms. This design philosophy takes the burden off our users such that they can start simple and use
 advanced features as when they feel comfortable. Thus, making **ServiceTalk a library that grows with the user needs**.
