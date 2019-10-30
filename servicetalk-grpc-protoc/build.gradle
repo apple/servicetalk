@@ -68,9 +68,7 @@ exit1
     outputFile.executable = true
   }
 }
-check.dependsOn buildExecutable
-assemble.dependsOn buildExecutable
-ideaModule.dependsOn buildExecutable
+classes.finalizedBy(buildExecutable)
 
 publishing {
   publications {
