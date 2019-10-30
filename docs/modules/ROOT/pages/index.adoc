@@ -23,6 +23,7 @@ ServiceTalk addresses these challenges and includes support for multiple
 xref:{page-version}@servicetalk::programming-paradigms.adoc[Programming Paradigms]. It accomplishes this by building
 on a fully asynchronous non-blocking I/O core and taking care of the threading model complexities internally.
 
+[#DesignPhilosophy]
 == Design Philosophy
 
 ServiceTalk has many different goals driven from the improvement opportunities provided by Netty. Despite ServiceTalk's
