@@ -1,2 +1,3 @@
-* xref:{page-version}@servicetalk-http-api::blocking.adoc[Blocking]
-** xref:{page-version}@servicetalk-http-api::evolve-to-async.adoc[Evolving to asynchronous]
+* xref:{page-version}@servicetalk-http-api::programming-paradigms.adoc[Programming paradigms]
+* xref:{page-version}@servicetalk-http-api::blocking-safe-by-default.adoc[Blocking safe by default]
+* xref:{page-version}@servicetalk-http-api::evolve-to-async.adoc[Evolving to asynchronous]

@@ -44,6 +44,9 @@ content:
     - url: ../../
       branches: HEAD
       start_path: servicetalk-data-jackson-jersey/docs
+    - url: ../../
+      branches: HEAD
+      start_path: servicetalk-grpc-api/docs
 asciidoc:
   attributes:
     experimental: ''

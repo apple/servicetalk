@@ -1,11 +1,5 @@
 = ServiceTalk Concurrent API
 
-This package provides the concurrent API for ServiceTalk based applications. Included are Reactive
-Streams extensions and operator implementations. Please see the
-https://github.com/reactive-streams/reactive-streams-jvm/blob/master/README.md[`Reactive Streams Specification`]
-for definitions and rules regarding concurrency.
-
-== Async Context
-
-See xref:async-context.adoc[AsyncContext document] to understand what `AsyncContext` is and what use cases
-it is intended for.
+A module containing
+xref:{page-version}@servicetalk-concurrent-api::asynchronous-primitives.adoc[asynchronous primitives]
+for ServiceTalk.
