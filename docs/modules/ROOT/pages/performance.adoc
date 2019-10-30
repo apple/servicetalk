@@ -621,10 +621,10 @@ is wrapped in a link:{source-root}/servicetalk-buffer-api/src/main/java/io/servi
 that maintains read and write indices to prevent reading uninitialized memory. Therefore zeroing of `Buffer`s is not
 necessary and adds considerable overhead while allocating which affects throughput.
 
-ServiceTalk bypasses this zeroing for the default
-link:{source-root}/servicetalk-buffer-netty/src/main/java/io/servicetalk/buffer/netty/BufferAllocators.java[BufferAllocators]
-on JDK8. On JDK9+ due to the additional protections put in place by the Java Platform Module System, one needs to
-provide additional system properties to take advantage of this optimization.
+ServiceTalk bypasses this zeroing for the default direct
+link:{source-root}/servicetalk-buffer-netty/src/main/java/io/servicetalk/buffer/netty/BufferAllocators.java[BufferAllocator]
+on JDK8. On JDK9+ due to the additional protections put in place, one needs to provide additional system properties to
+take advantage of this optimization.
 
 To bypass zeroing direct buffers on JDK9+, use:
 
@@ -633,7 +633,7 @@ To bypass zeroing direct buffers on JDK9+, use:
 -Dio.servicetalk.tryReflectionSetAccessible=true
 ----
 
-To bypass zeroing heap buffers in JDK9+, use:
+Bypassing zeroing for heap buffers works only in JDK9+, to enable it use:
 
 [source]
 ----
