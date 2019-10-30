@@ -29,7 +29,7 @@ standard. In order to make sure we are following the specifications correctly, w
 link:https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.3/tck[ReactiveStreams TCK]. For interoperability
 we provide ReactiveStreams
 link:{source-root}/servicetalk-concurrent-reactivestreams/src/main/java/io/servicetalk/concurrent/reactivestreams/ReactiveStreamsAdapters.java[adapters]
-and may provide similar Flow adapters in the link:https://github.com/apple/servicetalk/issues/824[future]
+and may provide similar Flow adapters in the link:https://github.com/apple/servicetalk/issues/824[future].
 
 == Lazy execution
 
@@ -53,10 +53,11 @@ generically implement retries on the sources as opposed to the methods that crea
 
 == Specifications
 
-As defined <<Interoperability, above>>, ServiceTalk defines its own interfaces (specifications) for the different
-asynchronous primitives. These interfaces define the minimum API required to represent that asynchronous primitive and
-their names are suffixed by the term `Source`. Primary motivation for defining these specifications is the ability to
-inter-operate between different standards.
+As defined <<Interoperability, above>>, ServiceTalk defines its own interfaces (specifications consistent with the
+link:https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.3/README.md#specification[ReactiveStreams Specification])
+for the different asynchronous primitives. These interfaces define the minimum API required to represent that
+asynchronous primitive and their names are suffixed by the term `Source`. Primary motivation for defining these
+specifications is the ability to inter-operate between different standards.
 
 IMPORTANT: Specification interfaces are mentioned here for completeness, typical users are not expected to use them.
 Instead they are expected to use the richer <<primitve-with-operators, asynchronous primitives with operators>>
@@ -83,7 +84,7 @@ is an asynchronous primitive that is designed to be used when the source will co
 == Asynchronous control flow
 
 An important part of writing an application is to have the ability to express control flow like retries, error handling,
-combining multiple operations sequentially or in parallel, etc. Asynchronous programming is especially challenging
+combining multiple operations sequentially or in parallel. Asynchronous programming is especially challenging
 when expressing complex control flow and without higher level abstractions can quickly lead to nested, complex callback
 logic colloquially known as the __Callback hell__. Error propagation, cancellation and backpressure is extremely complex
 to wire through this control flow and leads to subtle issues in applications.
@@ -111,12 +112,12 @@ link:https://github.com/eclipse/microprofile-reactive-streams-operators[Micropro
 link:https://docs.oracle.com/javase/8/docs/api/java/util/stream/Stream.html[JDK Streams] and
 link:https://github.com/reactor/reactor-core[Project reactor]) for existing conventions, there is currently no de-facto
 standard governing operator names. More details on ServiceTalk operators can be found in our
-xref:{page-version}@servicetalk::javadoc/index.adoc[Javadocs]
+xref:{page-version}@servicetalk::javadoc/index.adoc[Javadocs].
 
 [#primitve-with-operators]
 == Asynchronous primitives with operators
 
-These primitives are an extension of <<Specifications, specification interfaces>>  and they add operators to the
+These primitives are an extension of <<Specifications, specification interfaces>> and they add operators to the
 corresponding specification interface. ServiceTalk always provides these rich sources from its APIs making it easier for
 users to use those APIs.
 
