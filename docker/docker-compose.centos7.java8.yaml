@@ -23,7 +23,8 @@ services:
     build:
       args:
         centos_version : "7"
-        java_version : "adopt@1.8.192-12"
+        # `java_version` should be 1.x where x indicates the major JDK version, eg. 8, 11, etc.
+        java_version : "1.8"
 
   build:
     image: servicetalk:centos-7-1.8
