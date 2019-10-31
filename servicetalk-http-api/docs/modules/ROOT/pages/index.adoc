@@ -9,7 +9,7 @@ endif::[]
 = HTTP
 
 This module defines the ServiceTalk client and server API for the link:https://tools.ietf.org/html/rfc7231[HTTP/1.x]
-protocol. This module supports all the different
+and link:https://tools.ietf.org/html/rfc7540[HTTP/2] protocols. This module supports all the different
 xref:{page-version}@servicetalk::programming-paradigms.adoc[Programming Paradigms] for client and server.
 Here is a quick start example of the
 xref:{page-version}@servicetalk::programming-paradigms.adoc#blocking-and-aggregated[blocking and aggregated] paradigm:
@@ -242,6 +242,15 @@ background.
                                         \--->| Connection x |
                                              +--------------+
 ----
+
+== Switching Protocols
+
+ServiceTalk supports both link:https://tools.ietf.org/html/rfc7231[HTTP/1.x] and
+link:https://tools.ietf.org/html/rfc7540[HTTP/2] protocols with the same user-facing API. Users can switch from one
+protocol to another without rewriting their code. For secure TLS connections, a protocol version could be negotiated
+using link:https://tools.ietf.org/html/rfc7301[ALPN extension]. For the cleartext TCP connections, users have to
+configure the desired protocol version upfront, using builder methods. For more information about protocols
+configuration, see xref:{page-version}@servicetalk-examples::http/index.adoc#HTTP2[these] examples.
 
 == Serialization
 Serialization factories are made available in the

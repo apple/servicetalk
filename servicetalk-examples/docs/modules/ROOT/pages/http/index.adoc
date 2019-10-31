@@ -105,7 +105,8 @@ link:{source-root}/servicetalk-examples/http/jaxrs/src/main/java/io/servicetalk/
 [#MetaData]
 === MetaData
 
-This example demonstrates some of the basic functionality of the Http MetaData classes:
+This example demonstrates some of the basic functionality of the
+link:{source-root}/servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpMetaData.java[HttpMetaData] classes:
 
 - Setting and getting response status.
 - Setting and getting query parameters.
@@ -119,6 +120,44 @@ Using the following classes:
 
 This example uses the link:#blocking-aggregated[blocking + aggregated] API, as the metadata API is the same across
 all the HTTP APIs.
+
+[#HTTP2]
+=== HTTP/2
+
+These examples demonstrate how users can configure link:https://tools.ietf.org/html/rfc7540[HTTP/2] support in
+ServiceTalk.
+
+==== HTTP/2 with Prior-Knowledge
+
+If a use-case requires to support the only HTTP/2, server and client may start using
+link:https://tools.ietf.org/html/rfc7540#section-3.4[HTTP/2 with Prior-Knowledge]:
+
+- link:{source-root}/servicetalk-examples/http/http2/src/main/java/io/servicetalk/examples/http/http2/priorknowledge/async/Http2Server.java[Http2Server] -
+A server with an asynchronous and aggregated programming paradigm that uses HTTP/2 with Prior Knowledge.
+- link:{source-root}/servicetalk-examples/http/http2/src/main/java/io/servicetalk/examples/http/http2/priorknowledge/async/Http2Client.java[Http2Client] -
+A client with an asynchronous and aggregated programming paradigm that uses HTTP/2 with Prior Knowledge.
+- link:{source-root}/servicetalk-examples/http/http2/src/main/java/io/servicetalk/examples/http/http2/priorknowledge/blocking/BlockingHttp2Server.java[BlockingHttp2Server] -
+A server with a blocking and aggregated programming paradigm that uses HTTP/2 with Prior Knowledge.
+- link:{source-root}/servicetalk-examples/http/http2/src/main/java/io/servicetalk/examples/http/http2/priorknowledge/blocking/BlockingHttp2Client.java[BlockingHttp2Client] -
+A client with a blocking and aggregated programming paradigm that uses HTTP/2 with Prior Knowledge.
+
+==== HTTP/2 via ALPN for secure connections
+
+For secure TLS connections link:https://tools.ietf.org/html/rfc7301[ALPN extension] could be used to negotiate the
+communication protocol:
+
+- link:{source-root}/servicetalk-examples/http/http2/src/main/java/io/servicetalk/examples/http/http2/alpn/async/AlpnHttpServer.java[AlpnHttpServer] -
+A server with an asynchronous and aggregated programming paradigm that negotiates HTTP/2 or HTTP/1.1 using ALPN extension
+for TLS connections.
+- link:{source-root}/servicetalk-examples/http/http2/src/main/java/io/servicetalk/examples/http/http2/alpn/async/AlpnHttpClient.java[AlpnHttpClient] -
+A client with an asynchronous and aggregated programming paradigm that negotiates HTTP/2 or HTTP/1.1 using ALPN extension
+for TLS connections.
+- link:{source-root}/servicetalk-examples/http/http2/src/main/java/io/servicetalk/examples/http/http2/alpn/blocking/BlockingAlpnHttpServer.java[BlockingAlpnHttpServer] -
+A server with a blocking and aggregated programming paradigm that negotiates HTTP/2 or HTTP/1.1 using ALPN extension
+for TLS connections.
+- link:{source-root}/servicetalk-examples/http/http2/src/main/java/io/servicetalk/examples/http/http2/alpn/blocking/BlockingAlpnHttpClient.java[BlockingAlpnHttpClient] -
+A client with a blocking and aggregated programming paradigm that negotiates HTTP/2 or HTTP/1.1 using ALPN extension
+for TLS connections.
 
 === Service Composition
 
