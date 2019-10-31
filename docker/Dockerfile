@@ -36,10 +36,12 @@ RUN yum install -y \
 
 ENV LANG en_US.UTF-8
 
-ARG java_version=adopt@1.8.192-12
+# `java_version` should be 1.x where x indicates the major JDK version, eg. 8, 11, etc.
+ARG java_version=1.8
 ENV JAVA_VERSION $java_version
 # installing java with jabba
-RUN curl -sL https://github.com/shyiko/jabba/raw/master/install.sh | JABBA_COMMAND="install $JAVA_VERSION -o /jdk" bash
-
+RUN curl -sL https://github.com/shyiko/jabba/raw/master/install.sh | bash
+RUN echo ". /root/.bashrc ; jabba ls-remote adopt@ --latest=minor | grep @$JAVA_VERSION" | bash > /root/.jabba-jdk
+RUN echo ". /root/.bashrc ; jabba install $(cat /root/.jabba-jdk) -o /jdk" | bash
 RUN echo 'export JAVA_HOME="/jdk"' >> ~/.bashrc
 RUN echo 'PATH=/jdk/bin:$PATH' >> ~/.bashrc
