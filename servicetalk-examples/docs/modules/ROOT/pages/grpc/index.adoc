@@ -28,9 +28,9 @@ link:{source-root}/servicetalk-examples/grpc/helloworld/src/main/java/io/service
 ==== Blocking
 
 This example demonstrates blocking request processing for the hello world API using the
-link:{source-root}/servicetalk-examples/grpc/helloworld/src/main/java/io/servicetalk/examples/grpc/helloworld/blocking/HelloWorldServer.java[HelloWorldServer]
+link:{source-root}/servicetalk-examples/grpc/helloworld/src/main/java/io/servicetalk/examples/grpc/helloworld/blocking/BlockingHelloWorldServer.java[BlockingHelloWorldServer]
 and a
-link:{source-root}/servicetalk-examples/grpc/helloworld/src/main/java/io/servicetalk/examples/grpc/helloworld/blocking/HelloWorldClient.java[HelloWorldClient]
+link:{source-root}/servicetalk-examples/grpc/helloworld/src/main/java/io/servicetalk/examples/grpc/helloworld/blocking/BlockingHelloWorldClient.java[BlockingHelloWorldClient]
 
 [#route-guide]
 === Route guide
@@ -40,38 +40,38 @@ Implementation for the link:https://github.com/grpc/grpc/blob/master/examples/pr
 ==== Asynchronous
 
 Asynchronous processing for different APIs in the link:https://github.com/grpc/grpc/blob/master/examples/protos/route_guide.proto[route guide service]
-are demonstrated using the link:{source-root}/servicetalk-examples/grpc/helloworld/src/main/java/io/servicetalk/examples/grpc/routeguide/async/RouteGuideServer.java[RouteGuideServer]
+are demonstrated using the link:{source-root}/servicetalk-examples/grpc/routeguide/src/main/java/io/servicetalk/examples/grpc/routeguide/async/RouteGuideServer.java[RouteGuideServer]
 and the following clients:
 
-* link:{source-root}/servicetalk-examples/grpc/helloworld/src/main/java/io/servicetalk/examples/grpc/helloworld/async/RouteGuideClient.java[RouteGuideClient] -
+* link:{source-root}/servicetalk-examples/grpc/routeguide/src/main/java/io/servicetalk/examples/grpc/routeguide/async/RouteGuideClient.java[RouteGuideClient] -
 `getFeature` API that uses the
 xref:{page-version}@servicetalk::programming-paradigms.adoc#asynchronous-and-aggregated[aggregated programming paradigm].
-* link:{source-root}/servicetalk-examples/grpc/helloworld/src/main/java/io/servicetalk/examples/grpc/helloworld/async/RouteGuideRequestStreamingClient.java[RouteGuideRequestStreamingClient] -
+* link:{source-root}/servicetalk-examples/grpc/routeguide/src/main/java/io/servicetalk/examples/grpc/routeguide/async/streaming/RouteGuideRequestStreamingClient.java[RouteGuideRequestStreamingClient] -
 `recordRoute` API that uses the
 xref:{page-version}@servicetalk::programming-paradigms.adoc#asynchronous-and-streaming[request streaming programming paradigm].
-* link:{source-root}/servicetalk-examples/grpc/helloworld/src/main/java/io/servicetalk/examples/grpc/helloworld/async/RouteGuideResponseStreamingClient.java[RouteGuideResponseStreamingClient] -
+* link:{source-root}/servicetalk-examples/grpc/routeguide/src/main/java/io/servicetalk/examples/grpc/routeguide/async/streaming/RouteGuideResponseStreamingClient.java[RouteGuideResponseStreamingClient] -
 `recordRoute` API that uses the
 xref:{page-version}@servicetalk::programming-paradigms.adoc#asynchronous-and-streaming[response streaming programming paradigm].
-* link:{source-root}/servicetalk-examples/grpc/helloworld/src/main/java/io/servicetalk/examples/grpc/helloworld/async/RouteGuideStreamingClient.java[RouteGuideStreamingClient] -
+* link:{source-root}/servicetalk-examples/grpc/routeguide/src/main/java/io/servicetalk/examples/grpc/routeguide/async/streaming/RouteGuideStreamingClient.java[RouteGuideStreamingClient] -
 `recordRoute` API that uses the
 xref:{page-version}@servicetalk::programming-paradigms.adoc#asynchronous-and-streaming[bi-directional streaming programming paradigm].
 
 ==== Blocking
 
 Blocking processing for different APIs in the link:https://github.com/grpc/grpc/blob/master/examples/protos/route_guide.proto[route guide service]
-are demonstrated using the link:{source-root}/servicetalk-examples/grpc/helloworld/src/main/java/io/servicetalk/examples/grpc/routeguide/blocking/BlockingRouteGuideServer.java[BlockingRouteGuideServer]
+are demonstrated using the link:{source-root}/servicetalk-examples/grpc/routeguide/src/main/java/io/servicetalk/examples/grpc/routeguide/blocking/BlockingRouteGuideServer.java[BlockingRouteGuideServer]
 and the following clients:
 
-* link:{source-root}/servicetalk-examples/grpc/helloworld/src/main/java/io/servicetalk/examples/grpc/helloworld/blocking/BlockingRouteGuideClient.java[BlockingRouteGuideClient] -
+* link:{source-root}/servicetalk-examples/grpc/routeguide/src/main/java/io/servicetalk/examples/grpc/routeguide/blocking/BlockingRouteGuideClient.java[BlockingRouteGuideClient] -
 `getFeature` API that uses the
 xref:{page-version}@servicetalk::programming-paradigms.adoc#asynchronous-and-aggregated[aggregated programming paradigm].
-* link:{source-root}/servicetalk-examples/grpc/helloworld/src/main/java/io/servicetalk/examples/grpc/helloworld/blocking/RouteGuideRequestStreamingClient.java[BlockingRouteGuideRequestStreamingClient] -
+* link:{source-root}/servicetalk-examples/grpc/routeguide/src/main/java/io/servicetalk/examples/grpc/routeguide/blocking/streaming/BlockingRouteGuideRequestStreamingClient.java[BlockingRouteGuideRequestStreamingClient] -
 `recordRoute` API that uses the
 xref:{page-version}@servicetalk::programming-paradigms.adoc#asynchronous-and-streaming[request streaming programming paradigm].
-* link:{source-root}/servicetalk-examples/grpc/helloworld/src/main/java/io/servicetalk/examples/grpc/helloworld/blocking/RouteGuideResponseStreamingClient.java[BlockingRouteGuideResponseStreamingClient] -
+* link:{source-root}/servicetalk-examples/grpc/routeguide/src/main/java/io/servicetalk/examples/grpc/routeguide/blocking/streaming/BlockingRouteGuideResponseStreamingClient.java[BlockingRouteGuideResponseStreamingClient] -
 `recordRoute` API that uses the
 xref:{page-version}@servicetalk::programming-paradigms.adoc#asynchronous-and-streaming[response streaming programming paradigm].
-* link:{source-root}/servicetalk-examples/grpc/helloworld/src/main/java/io/servicetalk/examples/grpc/helloworld/blocking/RouteGuideStreamingClient.java[BlockingRouteGuideStreamingClient] -
+* link:{source-root}/servicetalk-examples/grpc/routeguide/src/main/java/io/servicetalk/examples/grpc/routeguide/blocking/streaming/BlockingRouteGuideStreamingClient.java[BlockingRouteGuideStreamingClient] -
 `recordRoute` API that uses the
 xref:{page-version}@servicetalk::programming-paradigms.adoc#asynchronous-and-streaming[bi-directional streaming programming paradigm].
 
