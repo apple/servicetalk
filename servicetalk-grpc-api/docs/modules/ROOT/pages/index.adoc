@@ -126,7 +126,9 @@ The control flow of a request/response can be visualized in the below diagram:
 ----
 
 The xref:{page-version}@servicetalk-loadbalancer::index.adoc[LoadBalancer] is consulted for each request to determine
-which connection should be used. The `LoadBalancer` interface is extensible and the reference implementation provides a
+which connection should be used. The
+link:{source-root}/servicetalk-client-api/src/main/java/io/servicetalk/client/api/LoadBalancer.java[LoadBalancer
+interface] is extensible and the reference implementation provides a
 xref:{page-version}@servicetalk-loadbalancer::index.adoc#round-robin[Round Robin algorithm].
 
 === HTTP Filters

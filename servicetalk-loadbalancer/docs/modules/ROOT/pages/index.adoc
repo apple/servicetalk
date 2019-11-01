@@ -43,9 +43,9 @@ the ServiceTalk _Connection_ abstraction which is the basis for all protocol-spe
 _LoadBalancer_ implementations to be reusable across all the protocols.
 
 By combining server availability information from _ServiceDiscovery_, _Connection_ _success rate_ and _latency_ observed
-by the _ConnectionFactory_ and metrics observed at the protocol layer exposed through `LoadBalancedConnection::score()`,
+by the _ConnectionFactory_ and metrics observed at the protocol layer exposed through `LoadBalancedConnection#score()`,
 the _LoadBalancer_ may apply various strategies to pick the most optimal _Connection_ for making its next request. The
-`LoadBalancedConnection::score()` function allows for a clean separation between the _LoadBalancer_ implementations
+`LoadBalancedConnection#score()` function allows for a clean separation between the _LoadBalancer_ implementations
 and the protocols and types of _Connections_.
 
 For example the HTTP protocol layer may enhance the `score` of its _Connection_ as a function of observing a sudden
