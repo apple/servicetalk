@@ -88,8 +88,6 @@ if [ -n "${DRYRUN:-}" ]; then
 fi
 
 $git commit -a -m "Release $version"
-$git push origin master
-
 $git tag "$version" -m "Release $version"
 $git push origin "$version"
 
