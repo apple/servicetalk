@@ -118,8 +118,8 @@ Using the following classes:
 - link:{source-root}/servicetalk-examples/http/metadata/src/main/java/io/servicetalk/examples/http/metadata/MetaDataDemoServer.java[MetaDataDemoServer] - A server that provides greetings in various languages.
 - link:{source-root}/servicetalk-examples/http/metadata/src/main/java/io/servicetalk/examples/http/metadata/MetaDataDemoClient.java[MetaDataDemoClient] - A client that requests greetings in various languages.
 
-This example uses the link:#blocking-aggregated[blocking + aggregated] API, as the metadata API is the same across
-all the HTTP APIs.
+NOTE: This example uses the link:#blocking-aggregated[blocking + aggregated] API, as the metadata API is the same
+across all the HTTP APIs.
 
 [#HTTP2]
 === HTTP/2
@@ -146,6 +146,9 @@ communication protocol:
 A server that negotiates HTTP/2 or HTTP/1.1 using ALPN extension for TLS connections.
 - link:{source-root}/servicetalk-examples/http/http2/src/main/java/io/servicetalk/examples/http/http2/alpn/HttpClientWithAlpn.java[HttpClientWithAlpn] -
 A client that negotiates HTTP/2 or HTTP/1.1 using ALPN extension for TLS connections.
+
+NOTE: These examples uses the link:#blocking-aggregated[blocking + aggregated] API, as the metadata API is the same
+across all the HTTP APIs.
 
 === Service Composition
 
