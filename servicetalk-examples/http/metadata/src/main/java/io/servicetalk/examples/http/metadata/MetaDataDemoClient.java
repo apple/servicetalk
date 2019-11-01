@@ -43,6 +43,8 @@ public final class MetaDataDemoClient {
         // "fr" returns "Bonjour monde!"
         // Try anything else to demonstrate incorrect response status error handling.
 
+        // Note: this example demonstrates only blocking-aggregated programming paradigm, for asynchronous and
+        // streaming API see helloworld examples.
         try (BlockingHttpClient client = HttpClients.forSingleAddress("localhost", 8080).buildBlocking()) {
             HttpRequest httpRequest = client.get("/sayHello")
                     .addQueryParameters(LANGUAGE_NAME, language);

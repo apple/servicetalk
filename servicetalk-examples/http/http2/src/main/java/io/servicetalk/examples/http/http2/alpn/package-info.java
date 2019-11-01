@@ -14,6 +14,6 @@
  * limitations under the License.
  */
 @ElementsAreNonnullByDefault
-package io.servicetalk.examples.http.http2.priorknowledge.blocking;
+package io.servicetalk.examples.http.http2.alpn;
 
 import io.servicetalk.annotations.ElementsAreNonnullByDefault;

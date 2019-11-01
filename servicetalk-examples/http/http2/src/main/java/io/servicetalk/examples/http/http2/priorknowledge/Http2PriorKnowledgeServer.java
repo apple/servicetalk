@@ -13,26 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.examples.http.http2.priorknowledge.async;
+package io.servicetalk.examples.http.http2.priorknowledge;
 
 import io.servicetalk.http.netty.HttpServers;
 
-import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h2Default;
 
 /**
- * Server with an asynchronous and aggregated programming paradigm that uses
- * <a href="https://tools.ietf.org/html/rfc7540#section-3.4">HTTP/2 with Prior Knowledge</a>.
+ * A server that uses <a href="https://tools.ietf.org/html/rfc7540#section-3.4">HTTP/2 with Prior Knowledge</a>.
  */
-public final class Http2Server {
+public final class Http2PriorKnowledgeServer {
 
     public static void main(String[] args) throws Exception {
         HttpServers.forPort(8080)
                 .protocols(h2Default()) // Configure HTTP/2 Prior-Knowledge
-                .listenAndAwait((ctx, request, responseFactory) ->
-                        succeeded(responseFactory.ok()
-                                .payloadBody("I speak HTTP/2!", textSerializer())))
+                // Note: this example demonstrates only blocking-aggregated programming paradigm, for asynchronous and
+                // streaming API see helloworld examples.
+                .listenBlockingAndAwait((ctx, request, responseFactory) ->
+                        responseFactory.ok().payloadBody("I speak HTTP/2!", textSerializer()))
                 .awaitShutdown();
     }
 }

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.examples.http.http2.alpn.blocking;
+package io.servicetalk.examples.http.http2.alpn;
 
 import io.servicetalk.http.netty.HttpServers;
 import io.servicetalk.test.resources.DefaultTestCerts;
@@ -23,18 +23,19 @@ import static io.servicetalk.http.netty.HttpProtocolConfigs.h1Default;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h2Default;
 
 /**
- * Server with a blocking and aggregated programming paradigm that negotiates
- * <a href="https://tools.ietf.org/html/rfc7540#section-3.3">HTTP/2</a> or
+ * A server that negotiates <a href="https://tools.ietf.org/html/rfc7540#section-3.3">HTTP/2</a> or
  * <a href="https://tools.ietf.org/html/rfc7231">HTTP/1.1</a> using
  * <a href="https://tools.ietf.org/html/rfc7301">ALPN extension</a> for TLS connections.
  */
-public final class BlockingAlpnHttpServer {
+public final class HttpServerWithAlpn {
 
     public static void main(String[] args) throws Exception {
         HttpServers.forPort(8080)
                 .protocols(h2Default(), h1Default()) // Configure support for HTTP/2 and HTTP/1.1 protocols
                 // Configure TLS certificates:
                 .secure().commit(DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey)
+                // Note: this example demonstrates only blocking-aggregated programming paradigm, for asynchronous and
+                // streaming API see helloworld examples.
                 .listenBlockingAndAwait((ctx, request, responseFactory) ->
                         responseFactory.ok().payloadBody("I negotiate HTTP/2 or HTTP/1.1 via ALPN!", textSerializer()))
                 .awaitShutdown();

@@ -14,6 +14,6 @@
  * limitations under the License.
  */
 @ElementsAreNonnullByDefault
-package io.servicetalk.examples.http.http2.alpn.async;
+package io.servicetalk.examples.http.http2.priorknowledge;
 
 import io.servicetalk.annotations.ElementsAreNonnullByDefault;

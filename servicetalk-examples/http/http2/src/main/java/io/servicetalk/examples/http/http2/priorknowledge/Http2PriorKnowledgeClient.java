@@ -13,33 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.examples.http.http2.alpn.blocking;
+package io.servicetalk.examples.http.http2.priorknowledge;
 
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.netty.HttpClients;
-import io.servicetalk.test.resources.DefaultTestCerts;
 
 import static io.servicetalk.http.api.HttpSerializationProviders.textDeserializer;
-import static io.servicetalk.http.netty.HttpProtocolConfigs.h1Default;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h2Default;
 
 /**
- * Client with a blocking and aggregated programming paradigm that negotiates
- * <a href="https://tools.ietf.org/html/rfc7540#section-3.3">HTTP/2</a> or
- * <a href="https://tools.ietf.org/html/rfc7231">HTTP/1.1</a> using
- * <a href="https://tools.ietf.org/html/rfc7301">ALPN extension</a> for TLS connections.
+ * A client that uses <a href="https://tools.ietf.org/html/rfc7540#section-3.4">HTTP/2 with Prior Knowledge</a>.
  */
-public final class BlockingAlpnHttpClient {
+public final class Http2PriorKnowledgeClient {
 
     public static void main(String[] args) throws Exception {
+        // Note: this example demonstrates only blocking-aggregated programming paradigm, for asynchronous and
+        // streaming API see helloworld examples.
         try (BlockingHttpClient client = HttpClients.forSingleAddress("localhost", 8080)
-                .protocols(h2Default(), h1Default()) // Configure support for HTTP/2 and HTTP/1.1 protocols
-                .secure()   // Start TLS configuration
-                .disableHostnameVerification()  // Our self-signed certificates does not support hostname verification,
-                // but this MUST NOT be disabled in production because it may leave you vulnerable to MITM attacks
-                .trustManager(DefaultTestCerts::loadMutualAuthCaPem)    // Custom trust manager for test certificates
-                .commit()   // Finish TLS configuration
+                .protocols(h2Default()) // Configure HTTP/2 Prior-Knowledge
                 .buildBlocking()) {
             HttpResponse response = client.request(client.get("/"));
             System.out.println(response.toString((name, value) -> value));
