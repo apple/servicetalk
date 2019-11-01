@@ -123,7 +123,7 @@ final class NettyHttpServer {
                         new TcpServerChannelInitializer(tcpServerConfig), service, drainRequestPayloadBody),
                 serverConnection -> serverConnection.process(true))
                 .map(delegate -> {
-                    LOGGER.debug("Started HTTP server for address {}.", delegate.listenAddress());
+                    LOGGER.debug("Started HTTP/1.1 server for address {}.", delegate.listenAddress());
                     // The ServerContext returned by TcpServerBinder takes care of closing the connectionAcceptor.
                     return new NettyHttpServerContext(delegate, service);
                 });

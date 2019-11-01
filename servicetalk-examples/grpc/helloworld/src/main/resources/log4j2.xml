@@ -30,7 +30,7 @@
     <Logger name="servicetalk-server-wire-logger" level="TRACE"/>
 
     <!-- Prints server start and shutdown -->
-    <Logger name="io.servicetalk.http.netty.NettyHttpServer" level="DEBUG"/>
+    <Logger name="io.servicetalk.http.netty.H2ServerParentConnectionContext" level="DEBUG"/>
 
     <!-- Prints default subscriber errors-->
     <Logger name="io.servicetalk.concurrent.api" level="DEBUG"/>

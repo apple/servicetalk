@@ -70,9 +70,12 @@ blocking iterable stream of buffers.
 [#Serialization]
 === Serialization
 
-A similar to "Hello World" examples, which demonstrate link:{source-root}/servicetalk-examples/http/serialization/src/main/java/io/servicetalk/examples/http/serialization/async[asynchronous-aggregated],
-link:{source-root}/servicetalk-examples/http/serialization/src/main/java/io/servicetalk/examples/http/serialization/async/streaming[asynchronous-streaming], link:{source-root}/servicetalk-examples/http/serialization/src/main/java/io/servicetalk/examples/http/serialization/blocking[blocking-aggregated], and
-link:{source-root}/servicetalk-examples/http/serialization/src/main/java/io/servicetalk/examples/http/serialization/blocking/streaming[blocking-streaming] client and server with JSON serialization of simple pojo classes.
+A similar to "Hello World" examples, which demonstrate
+link:{source-root}/servicetalk-examples/http/serialization/src/main/java/io/servicetalk/examples/http/serialization/async[asynchronous-aggregated],
+link:{source-root}/servicetalk-examples/http/serialization/src/main/java/io/servicetalk/examples/http/serialization/async/streaming[asynchronous-streaming],
+link:{source-root}/servicetalk-examples/http/serialization/src/main/java/io/servicetalk/examples/http/serialization/blocking[blocking-aggregated], and
+link:{source-root}/servicetalk-examples/http/serialization/src/main/java/io/servicetalk/examples/http/serialization/blocking/streaming[blocking-streaming]
+client and server with JSON serialization of simple pojo classes.
 
 Client sends a `POST` request with a JSON payload link:{source-root}/servicetalk-examples/http/serialization/src/main/java/io/servicetalk/examples/http/serialization/CreatePojoRequest.java[PojoRequest] and expects a response
 with `Content-Type: application/json` and link:{source-root}/servicetalk-examples/http/serialization/src/main/java/io/servicetalk/examples/http/serialization/PojoResponse.java[MyPojo] as a payload.
@@ -124,13 +127,13 @@ across all the HTTP APIs.
 [#HTTP2]
 === HTTP/2
 
-These examples demonstrate how users can configure link:https://tools.ietf.org/html/rfc7540[HTTP/2] support in
+These examples demonstrate how users can configure link:https://tools.ietf.org/html/rfc7540[HTTP/2] transport in
 ServiceTalk.
 
 ==== HTTP/2 with Prior-Knowledge
 
-If a use-case requires to support the only HTTP/2, server and client may start using
-link:https://tools.ietf.org/html/rfc7540#section-3.4[HTTP/2 with Prior-Knowledge]:
+This example demonstrates how to configure using
+link:https://tools.ietf.org/html/rfc7540#section-3.4[HTTP/2 transport with Prior-Knowledge] for HTTP clients and servers:
 
 - link:{source-root}/servicetalk-examples/http/http2/src/main/java/io/servicetalk/examples/http/http2/priorknowledge/Http2PriorKnowledgeServer.java[Http2PriorKnowledgeServer] -
 A server that uses HTTP/2 with Prior Knowledge.
@@ -147,8 +150,16 @@ A server that negotiates HTTP/2 or HTTP/1.1 using ALPN extension for TLS connect
 - link:{source-root}/servicetalk-examples/http/http2/src/main/java/io/servicetalk/examples/http/http2/alpn/HttpClientWithAlpn.java[HttpClientWithAlpn] -
 A client that negotiates HTTP/2 or HTTP/1.1 using ALPN extension for TLS connections.
 
-NOTE: These examples uses the link:#blocking-aggregated[blocking + aggregated] API, as the metadata API is the same
-across all the HTTP APIs.
+If HTTP/1.x protocol is configured ServiceTalk always fallbacks to it when the other side does not support ALPN
+extension.
+
+IMPORTANT: Your runtime must support ALPN extension for TLS. The recommended way is to use OpenSSL provider and add
+link:https://netty.io/wiki/forked-tomcat-native.html#artifacts[netty-tcnative] artifact to the classpath. If OpenSSL is
+not available, make sure your JVM version supports ALPN or use
+link:https://www.eclipse.org/jetty/documentation/current/alpn-chapter.html[another provider] that supports it.
+
+NOTE: These examples use the link:#blocking-aggregated[blocking + aggregated] API for demonstration purposes, as the
+builder API is the same across all the HTTP APIs.
 
 === Service Composition
 

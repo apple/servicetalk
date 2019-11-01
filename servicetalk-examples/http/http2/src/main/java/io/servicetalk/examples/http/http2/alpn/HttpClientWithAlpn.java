@@ -37,7 +37,7 @@ public final class HttpClientWithAlpn {
         try (BlockingHttpClient client = HttpClients.forSingleAddress("localhost", 8080)
                 .protocols(h2Default(), h1Default()) // Configure support for HTTP/2 and HTTP/1.1 protocols
                 .secure()   // Start TLS configuration
-                .disableHostnameVerification()  // Our self-signed certificates does not support hostname verification,
+                .disableHostnameVerification()  // Our self-signed certificates do not support hostname verification,
                 // but this MUST NOT be disabled in production because it may leave you vulnerable to MITM attacks
                 .trustManager(DefaultTestCerts::loadMutualAuthCaPem)    // Custom trust manager for test certificates
                 .commit()   // Finish TLS configuration
