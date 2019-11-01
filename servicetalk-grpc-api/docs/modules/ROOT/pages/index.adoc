@@ -107,8 +107,7 @@ for a particular service definition.
 == Client
 A `Client` is created via the
 link:{source-root}/servicetalk-grpc-netty/src/main/java/io/servicetalk/grpc/netty/GrpcClients.java[GrpcClients] static
-factory. It manages multiple `Connections` via a
-link:{source-root}/servicetalk-client-api/src/main/java/io/servicetalk/client/api/LoadBalancer.java[LoadBalancer].
+factory. It manages multiple `Connections` via a xref:{page-version}@servicetalk-loadbalancer::index.adoc[LoadBalancer].
 The control flow of a request/response can be visualized in the below diagram:
 
 [ditaa]
@@ -126,10 +125,9 @@ The control flow of a request/response can be visualized in the below diagram:
                                                                                    +--------------+     +----------------------+     +--------+
 ----
 
-The link:{source-root}/servicetalk-client-api/src/main/java/io/servicetalk/client/api/LoadBalancer.java[LoadBalancer] is
-consulted for each request to determine which connection should be used. The `LoadBalancer` interface is extensible and
-the reference implementation provides a
-link:{source-root}/servicetalk-loadbalancer/src/main/java/io/servicetalk/loadbalancer/RoundRobinLoadBalancer.java[Round Robin algorithm].
+The xref:{page-version}@servicetalk-loadbalancer::index.adoc[LoadBalancer] is consulted for each request to determine
+which connection should be used. The `LoadBalancer` interface is extensible and the reference implementation provides a
+xref:{page-version}@servicetalk-loadbalancer::index.adoc#round-robin[Round Robin algorithm].
 
 === HTTP Filters
 As gRPC module is built on top of xref:{page-version}@servicetalk-http-api::index.adoc[HTTP module], one can use the

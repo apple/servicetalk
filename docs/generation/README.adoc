@@ -26,7 +26,7 @@ This allows to preview local doc changes made to upstream projects.
 
 [source,shell]
 ----
-./gradlew clean validateLocalSite
+./gradlew clean validateLocalDocSite
 ----
 
 The `buildLocalSite` task can also be used to quickly build without validating links.

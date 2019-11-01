@@ -56,7 +56,11 @@ content:
     - url: https://github.com/apple/servicetalk.git
       branches: master
       tags: [0.19.0]
-      start_path: servicetalk-grpc-api/docs
+      start_path: servicetalk-loadbalancer/docs
+    - url: https://github.com/apple/servicetalk.git
+      branches: master
+      tags: [0.20.0]
+      start_path: servicetalk-loadbalancer/docs
 asciidoc:
   attributes:
     experimental: ''
