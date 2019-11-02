@@ -150,8 +150,7 @@ A server that negotiates HTTP/2 or HTTP/1.1 using ALPN extension for TLS connect
 - link:{source-root}/servicetalk-examples/http/http2/src/main/java/io/servicetalk/examples/http/http2/alpn/HttpClientWithAlpn.java[HttpClientWithAlpn] -
 A client that negotiates HTTP/2 or HTTP/1.1 using ALPN extension for TLS connections.
 
-If HTTP/1.x protocol is configured ServiceTalk always fallbacks to it when the other side does not support ALPN
-extension.
+If HTTP/1.x protocol is configured ServiceTalk always fallbacks to it if the peer does not support ALPN extension.
 
 IMPORTANT: Your runtime must support ALPN extension for TLS. The recommended way is to use OpenSSL provider and add
 link:https://netty.io/wiki/forked-tomcat-native.html#artifacts[netty-tcnative] artifact to the classpath. If OpenSSL is

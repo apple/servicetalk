@@ -253,7 +253,7 @@ adding new features (eg: server push, request prioritization). ServiceTalk inten
 users eventually, but for a majority of cases, performance benefits of HTTP/2 are more beneficial than the effort
 required to use the new features. As an interim measure, ServiceTalk provides an option for users to use HTTP/2 as the
 underlying transport for HTTP clients/servers while using the same API as HTTP/1.1. This makes it easy for users to
-leverage HTTP/2 performance benefits with the minimal code change. We intend to make HTTP/2 specific features available
+leverage HTTP/2 performance benefits with minimal code change. We intend to make HTTP/2 specific features available
 in ServiceTalk eventually.
 
 For the cleartext TCP connections, users have to configure the desired protocol version upfront, using builder methods.
