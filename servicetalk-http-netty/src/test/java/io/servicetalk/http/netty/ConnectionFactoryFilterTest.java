@@ -57,8 +57,7 @@ import javax.net.ssl.SSLSession;
 
 import static io.servicetalk.concurrent.api.Processors.newCompletableProcessor;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
-import static io.servicetalk.http.netty.HttpClients.forSingleAddress;
-import static io.servicetalk.http.netty.HttpServers.forPort;
+import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -72,8 +71,9 @@ public class ConnectionFactoryFilterTest {
     private BlockingHttpClient client;
 
     public ConnectionFactoryFilterTest() throws Exception {
-        serverContext = forPort(0).listenBlockingAndAwait((ctx, request, responseFactory) -> responseFactory.ok());
-        clientBuilder = forSingleAddress(serverHostAndPort(serverContext));
+        serverContext = HttpServers.forAddress(localAddress(0))
+                .listenBlockingAndAwait((ctx, request, responseFactory) -> responseFactory.ok());
+        clientBuilder = HttpClients.forSingleAddress(serverHostAndPort(serverContext));
     }
 
     @After

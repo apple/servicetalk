@@ -24,7 +24,6 @@ import io.servicetalk.http.api.StatelessTrailersTransformer;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.transport.api.ServerContext;
-import io.servicetalk.transport.netty.internal.AddressUtils;
 
 import io.netty.handler.codec.http.HttpResponseStatus;
 import org.junit.After;
@@ -41,6 +40,8 @@ import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.DefaultHttpHeadersFactory.INSTANCE;
 import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
+import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
+import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 
@@ -61,7 +62,7 @@ public class GracefulCloseTest {
 
     @SuppressWarnings("unchecked")
     public GracefulCloseTest(final TrailerAddType trailerAddType) throws Exception {
-        context = HttpServers.forPort(0).listenStreamingAndAwait((ctx, request, responseFactory) -> {
+        context = HttpServers.forAddress(localAddress(0)).listenStreamingAndAwait((ctx, request, responseFactory) -> {
             StreamingHttpResponse resp = responseFactory.ok().payloadBody(from("Hello"), textSerializer());
             switch (trailerAddType) {
                 case Regular:
@@ -76,7 +77,7 @@ public class GracefulCloseTest {
             }
             return succeeded(resp);
         });
-        client = HttpClients.forSingleAddress(AddressUtils.serverHostAndPort(context)).buildStreaming();
+        client = HttpClients.forSingleAddress(serverHostAndPort(context)).buildStreaming();
     }
 
     @Parameterized.Parameters(name = "{index} - trailer type: {0}")

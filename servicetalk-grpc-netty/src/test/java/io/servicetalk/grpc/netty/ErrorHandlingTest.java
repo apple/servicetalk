@@ -68,6 +68,7 @@ import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseabl
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.concurrent.internal.PlatformDependent.throwException;
+import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
@@ -219,7 +220,7 @@ public class ErrorHandlingTest {
             default:
                 throw new IllegalArgumentException("Unknown mode: " + testMode);
         }
-        serverContext = GrpcServers.forPort(0).appendHttpServiceFilter(serviceFilterFactory)
+        serverContext = GrpcServers.forAddress(localAddress(0)).appendHttpServiceFilter(serviceFilterFactory)
                 .listenAndAwait(serviceFactory);
         GrpcClientBuilder<HostAndPort, InetSocketAddress> clientBuilder =
                 GrpcClients.forAddress(serverHostAndPort(serverContext)).appendHttpClientFilter(clientFilterFactory);

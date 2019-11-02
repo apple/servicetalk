@@ -89,6 +89,7 @@ import static io.servicetalk.grpc.api.GrpcExecutionStrategies.noOffloadsStrategy
 import static io.servicetalk.test.resources.DefaultTestCerts.loadServerKey;
 import static io.servicetalk.test.resources.DefaultTestCerts.loadServerPem;
 import static io.servicetalk.transport.api.SecurityConfigurator.SslProvider.OPENSSL;
+import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static java.util.Collections.singleton;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
@@ -620,7 +621,7 @@ public class ProtocolCompatibilityTest {
     }
 
     private static GrpcServerBuilder serviceTalkServerBuilder(final ErrorMode errorMode, final boolean ssl) {
-        final GrpcServerBuilder serverBuilder = GrpcServers.forPort(0)
+        final GrpcServerBuilder serverBuilder = GrpcServers.forAddress(localAddress(0))
                 .appendHttpServiceFilter(service -> new StreamingHttpServiceFilter(service) {
                     @Override
                     public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
@@ -893,7 +894,7 @@ public class ProtocolCompatibilityTest {
     }
 
     private static TestServerContext grpcJavaServer(final ErrorMode errorMode, final boolean ssl) throws Exception {
-        final NettyServerBuilder builder = NettyServerBuilder.forPort(0);
+        final NettyServerBuilder builder = NettyServerBuilder.forAddress(localAddress(0));
         if (ssl) {
             builder.useTransportSecurity(loadServerPem(), loadServerKey());
         }

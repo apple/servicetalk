@@ -30,7 +30,6 @@ import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.http.api.StreamingHttpClient;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
-import io.servicetalk.transport.netty.internal.AddressUtils;
 
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
@@ -49,7 +48,8 @@ import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.HttpExecutionStrategies.customStrategyBuilder;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.netty.HttpClients.forSingleAddress;
-import static io.servicetalk.http.netty.HttpServers.forPort;
+import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
+import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 public class ExecutionStrategyInContextTest {
@@ -230,14 +230,14 @@ public class ExecutionStrategyInContextTest {
     private SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> initClientAndServer(
             Function<HttpServerBuilder, Single<ServerContext>> serverStarter, boolean customStrategy)
             throws Exception {
-        HttpServerBuilder serverBuilder = forPort(0);
+        HttpServerBuilder serverBuilder = HttpServers.forAddress(localAddress(0));
         if (customStrategy) {
             expectedServerStrategy = customStrategyBuilder().build();
             serverBuilder.executionStrategy(expectedServerStrategy);
         }
         context = serverStarter.apply(serverBuilder).toFuture().get();
         SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> clientBuilder =
-                forSingleAddress(AddressUtils.serverHostAndPort(context));
+                forSingleAddress(serverHostAndPort(context));
         if (customStrategy) {
             expectedClientStrategy = customStrategyBuilder().build();
             clientBuilder.executionStrategy(expectedClientStrategy);

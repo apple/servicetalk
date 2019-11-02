@@ -59,6 +59,7 @@ import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.http.api.HttpHeaderNames.AUTHORIZATION;
+import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static java.nio.charset.StandardCharsets.ISO_8859_1;
 import static java.util.Base64.getEncoder;
@@ -131,7 +132,7 @@ public class BasicAuthStrategyInfluencerTest {
 
     private BlockingHttpClient setup(boolean noOffloadsInfluence) throws Exception {
         ioExecutor = NettyIoExecutors.createIoExecutor(new DefaultThreadFactory(IO_EXECUTOR_NAME_PREFIX));
-        HttpServerBuilder serverBuilder = HttpServers.forPort(0);
+        HttpServerBuilder serverBuilder = HttpServers.forAddress(localAddress(0));
         when(credentialsVerifier.apply(anyString(), anyString())).thenReturn(succeeded("success"));
         when(credentialsVerifier.closeAsync()).thenReturn(completed());
         when(credentialsVerifier.closeAsyncGracefully()).thenReturn(completed());
