@@ -86,7 +86,7 @@ final class H2ServerParentConnectionContext extends H2ParentConnectionContext im
                         new TcpServerChannelInitializer(tcpServerConfig), service, drainRequestPayloadBody),
                 serverConnection -> { /* nothing to do as h2 uses auto read on the parent channel */ })
                 .map(delegate -> {
-                    LOGGER.debug("Started HTTP/2 prior-knowledge server for address {}.", delegate.listenAddress());
+                    LOGGER.debug("Started HTTP/2 server with prior-knowledge for address {}", delegate.listenAddress());
                     // The ServerContext returned by TcpServerBinder takes care of closing the connectionAcceptor.
                     return new NettyHttpServer.NettyHttpServerContext(delegate, service);
                 });

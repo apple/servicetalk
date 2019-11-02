@@ -69,7 +69,7 @@ final class AlpnServerContext {
                     // Nothing to do otherwise as h2 uses auto read on the parent channel
                 })
                 .map(delegate -> {
-                    LOGGER.debug("Started HTTP server for address {}.", delegate.listenAddress());
+                    LOGGER.debug("Started HTTP server with ALPN for address {}", delegate.listenAddress());
                     // The ServerContext returned by TcpServerBinder takes care of closing the connectionAcceptor.
                     return new NettyHttpServer.NettyHttpServerContext(delegate, service);
                 });

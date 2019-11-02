@@ -37,6 +37,7 @@ include "servicetalk-annotations",
         "servicetalk-examples:grpc:helloworld",
         "servicetalk-examples:grpc:routeguide",
         "servicetalk-examples:http:helloworld",
+        "servicetalk-examples:http:http2",
         "servicetalk-examples:http:jaxrs",
         "servicetalk-examples:http:metadata",
         "servicetalk-examples:http:serialization",
@@ -74,6 +75,7 @@ include "servicetalk-annotations",
 
 project(":servicetalk-examples:grpc:helloworld").name = "servicetalk-examples-grpc-helloworld"
 project(":servicetalk-examples:grpc:routeguide").name = "servicetalk-examples-grpc-routeguide"
+project(":servicetalk-examples:http:http2").name = "servicetalk-examples-http-http2"
 project(":servicetalk-examples:http:helloworld").name = "servicetalk-examples-http-helloworld"
 project(":servicetalk-examples:http:jaxrs").name = "servicetalk-examples-http-jaxrs"
 project(":servicetalk-examples:http:metadata").name = "servicetalk-examples-http-metadata"

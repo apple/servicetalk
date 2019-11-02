@@ -9,7 +9,7 @@ endif::[]
 = HTTP
 
 This module defines the ServiceTalk client and server API for the link:https://tools.ietf.org/html/rfc7231[HTTP/1.x]
-protocol. This module supports all the different
+and link:https://tools.ietf.org/html/rfc7540[HTTP/2] protocols. This module supports all the different
 xref:{page-version}@servicetalk::programming-paradigms.adoc[Programming Paradigms] for client and server.
 Here is a quick start example of the
 xref:{page-version}@servicetalk::programming-paradigms.adoc#blocking-and-aggregated[blocking and aggregated] paradigm:
@@ -243,6 +243,26 @@ background.
                                              +--------------+
 ----
 
+== Using HTTP/2 transport
+
+ServiceTalk supports both link:https://tools.ietf.org/html/rfc7231[HTTP/1.x] and
+link:https://tools.ietf.org/html/rfc7540[HTTP/2] protocols.
+
+HTTP/2 provides many benefits over HTTP/1.1 ranging from improving performance (eg: multiplexing, binary framing) to
+adding new features (eg: server push, request prioritization). ServiceTalk intends to provide all these features to
+users eventually, but for a majority of cases, performance benefits of HTTP/2 are more beneficial than the effort
+required to use the new features. As an interim measure, ServiceTalk provides an option for users to use HTTP/2 as the
+underlying transport for HTTP clients/servers while using the same API as HTTP/1.1. This makes it easy for users to
+leverage HTTP/2 performance benefits with minimal code change. We intend to make HTTP/2 specific features available
+in ServiceTalk eventually.
+
+For the cleartext TCP connections, users have to configure the desired protocol version upfront, using builder methods.
+For secure TLS connections, a protocol version must be negotiated using
+link:https://tools.ietf.org/html/rfc7301[ALPN extension].
+
+For more information about how to configure
+different HTTP protocol versions see xref:{page-version}@servicetalk-examples::http/index.adoc#HTTP2[these] examples.
+
 == Serialization
 Serialization factories are made available in the
 link:{source-root}/servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpSerializationProviders.java[HttpSerializationProviders] static factory
@@ -257,3 +277,6 @@ link:{source-root}/servicetalk-http-api/src/main/java/io/servicetalk/http/api/Ht
 link:{source-root}/servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpSerializer.java[HttpSerializer] are also designed to handle the HTTP
 headers data behind the scenes. This means either checking if `content-type` format is compatible with the
 deserialization format and also adding a `content-type` header identifying the resulting serialization format.
+
+For more information about how to use serializers and deserializers see
+xref:{page-version}@servicetalk-examples::http/index.adoc#Serialization[these] examples.

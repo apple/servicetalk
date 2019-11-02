@@ -39,6 +39,8 @@ public final class MetaDataDemoServer {
 
     public static void main(String[] args) throws Exception {
         HttpServers.forPort(8080)
+                // Note: this example demonstrates only blocking-aggregated programming paradigm, for asynchronous and
+                // streaming API see helloworld examples.
                 .listenBlockingAndAwait((ctx, request, responseFactory) -> {
                     String languageCode = request.queryParameter("language");
                     final String helloText;
