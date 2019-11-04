@@ -44,6 +44,7 @@ import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.HttpHeaderNames.HOST;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
+import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -137,7 +138,7 @@ public class HttpsProxyTest {
     }
 
     public void startServer() throws Exception {
-        final ServerContext serverContext = HttpServers.forPort(0)
+        final ServerContext serverContext = HttpServers.forAddress(localAddress(0))
                 .secure().commit(DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey)
                 .listenAndAwait((ctx, request, responseFactory) -> succeeded(responseFactory.ok()
                         .payloadBody("host: " + request.headers().get(HOST), textSerializer())));

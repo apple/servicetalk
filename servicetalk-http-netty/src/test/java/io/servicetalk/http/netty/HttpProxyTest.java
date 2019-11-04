@@ -30,6 +30,7 @@ import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.HttpHeaderNames.HOST;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
+import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static org.hamcrest.Matchers.is;
@@ -54,7 +55,7 @@ public class HttpProxyTest {
 
     public void startProxy() throws Exception {
         final HttpClient proxyClient = HttpClients.forMultiAddressUrl().build();
-        final ServerContext serverContext = HttpServers.forPort(0)
+        final ServerContext serverContext = HttpServers.forAddress(localAddress(0))
                 .listenAndAwait((ctx, request, responseFactory) -> {
                     proxyRequestCount.incrementAndGet();
                     return proxyClient.request(request);
@@ -63,7 +64,7 @@ public class HttpProxyTest {
     }
 
     public void startServer() throws Exception {
-        final ServerContext serverContext = HttpServers.forPort(0)
+        final ServerContext serverContext = HttpServers.forAddress(localAddress(0))
                 .listenAndAwait((ctx, request, responseFactory) -> succeeded(responseFactory.ok()
                         .payloadBody("host: " + request.headers().get(HOST), textSerializer())));
         serverPort = serverHostAndPort(serverContext).port();
