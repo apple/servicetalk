@@ -7,8 +7,14 @@ Gradle plugin for configuring gRPC client and server code generation.
 [source,groovy]
 ----
 buildscript {
+  repositories {
+    mavenCentral()
+    maven {
+        url  "https://dl.bintray.com/servicetalk/servicetalk/"
+    }
+  }
   dependencies {
-    classpath "io.servicetalk:servicetalk-grpc-gradle-plugin:$serviceTalk.version"
+    classpath "io.servicetalk:servicetalk-grpc-gradle-plugin:$servicetalkVersion"
   }
 }
 
@@ -16,7 +22,7 @@ apply plugin: "java"
 apply plugin: "servicetalk-grpc"
 
 serviceTalkGrpc {
-  protobufVersion = "3.9.0"
+  protobufVersion = "3.10.0"
 }
 ----
 
@@ -30,7 +36,7 @@ This can be changed thanks to the `generatedCodeDir` option:
 [source,groovy]
 ----
 serviceTalkGrpc {
-  protobufVersion = "3.9.0"
+  protobufVersion = "3.10.0"
   generatedCodeDir = "$projectDir/generated"
 }
 ----
@@ -61,7 +67,7 @@ If necessary, this can be disabled by setting `generateIdeConfiguration` to `fal
 [source,groovy]
 ----
 serviceTalkGrpc {
-  protobufVersion = "3.9.0"
+  protobufVersion = "3.10.0"
   generateIdeConfiguration = false
 }
 ----
