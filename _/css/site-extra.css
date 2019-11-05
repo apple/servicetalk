@@ -1,0 +1,15 @@
+header .navbar, footer.footer {
+    background-color: #364550;
+}
+
+code {
+    hyphens: none;
+    -webkit-hyphens: none;
+    -ms-hyphens: none;
+}
+
+.small { font-size: 0.75em; }
+
+.navigation-container {
+    width: 13rem;
+}
