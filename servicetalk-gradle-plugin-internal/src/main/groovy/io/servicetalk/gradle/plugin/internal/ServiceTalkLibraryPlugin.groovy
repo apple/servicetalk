@@ -49,6 +49,13 @@ final class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
       sourceCompatibility = TARGET_VERSION
       targetCompatibility = TARGET_VERSION
 
+      if (project.name == "servicetalk-gradle-plugin-internal" ||
+          project.name == "servicetalk-grpc-gradle-plugin") {
+          return; // Don't publish gradle-plugin projects, they are not supported on maven repos
+      }
+
+      pluginManager.apply("signing")
+
       jar {
         addManifestAttributes(project, manifest)
       }
@@ -74,8 +81,56 @@ final class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
             from components.java
             artifact(javadocJar)
             artifact(sourcesJar)
+            versionMapping {
+              usage('java-api') {
+                fromResolutionOf('runtimeClasspath')
+              }
+              usage('java-runtime') {
+                fromResolutionResult()
+              }
+            }
+            pom {
+              name = project.name
+              description = 'A networking framework that evolves with your application'
+              url = 'https://servicetalk.io'
+              licenses {
+                license {
+                  name = 'The Apache License, Version 2.0'
+                  url = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                }
+              }
+              developers {
+                developer {
+                  id = 'servicetalk-project-authors'
+                  name = 'ServiceTalk project authors'
+                  email = 'servicetalk-oss@group.apple.com'
+                }
+              }
+              scm {
+                connection = 'scm:git:git://github.com/apple/servicetalk.git'
+                developerConnection = 'scm:git:ssh://github.com:apple/servicetalk.git'
+                url = 'https://github.com/apple/servicetalk'
+              }
+            }
           }
         }
+        repositories {
+          maven {
+            def releasesRepoUrl = "https://oss.sonatype.org/service/local/staging/deploy/maven2"
+            def snapshotsRepoUrl = "https://oss.sonatype.org/content/repositories/snapshots"
+            url = version.endsWith('SNAPSHOT') ? snapshotsRepoUrl : releasesRepoUrl
+            credentials {
+              username = System.getenv("SONATYPE_USER")
+              password = System.getenv("SONATYPE_TOKEN")
+            }
+          }
+        }
+      }
+      signing {
+        def signingKey = findProperty("signingKey")
+        def signingPassword = findProperty("signingPassword")
+        useInMemoryPgpKeys(signingKey, signingPassword)
+        sign publishing.publications.mavenJava
       }
     }
   }

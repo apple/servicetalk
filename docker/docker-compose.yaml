@@ -71,9 +71,17 @@ services:
       - CI
       - BINTRAY_USER
       - BINTRAY_KEY
+      - ORG_GRADLE_PROJECT_signingKey
+      - ORG_GRADLE_PROJECT_signingPassword
+      - SONATYPE_USER
+      - SONATYPE_TOKEN
     command: >
       bash -cl "./gradlew --no-daemon --parallel --max-workers=4 clean check &&
       ./gradlew --no-daemon bintrayUpload"
+
+# Don't run `publish` task on `publish-snapshot` for now ^^ replace with below command later.
+#      bash -cl "./gradlew --no-daemon --parallel --max-workers=4 clean check &&
+#      ./gradlew --no-daemon publish bintrayUpload"
 
   publish-release:
     << : *common
@@ -82,9 +90,13 @@ services:
       - CI
       - BINTRAY_USER
       - BINTRAY_KEY
+      - ORG_GRADLE_PROJECT_signingKey
+      - ORG_GRADLE_PROJECT_signingPassword
+      - SONATYPE_USER
+      - SONATYPE_TOKEN
     command: >
       bash -cl "./gradlew --no-daemon --parallel --max-workers=4 -PreleaseBuild=true clean check &&
-      ./gradlew --no-daemon -PreleaseBuild=true bintrayUpload"
+      ./gradlew --no-daemon -PreleaseBuild=true publish bintrayUpload"
 
   shell:
     << : *common
