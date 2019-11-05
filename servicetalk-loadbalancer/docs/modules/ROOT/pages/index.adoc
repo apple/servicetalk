@@ -6,13 +6,21 @@ ifndef::env-github[]
 ifndef::source-root[:source-root: https://github.com/apple/servicetalk/blob/{page-origin-refname}]
 endif::[]
 
-= Client-Side LoadBalancer
+= Load Balancing
 
-One of the core abstractions in ServiceTalk is its _Client-Side LoadBalancer_ underpinning the various protocol
-_Clients_ (eg. HTTP/1.1, HTTP/2, gRPC, etc.). Not to be confused with a _Server-Side LoadBalancer_ or _Reverse Proxy_
-often found in the data-center, this component lets higher layers of the _Client_ stack transparently communicate with
-multiple servers and optionally enable an opportunity to be smart about which server to communicate with. The end goal
-is usually to spread the load across all the servers, minimize latency and reduce error rates.
+IMPORTANT: Client side Load Balancing is an active work-in-progress, it's used in production, but expect improvements
+and more feature-full load balancer implementations.
+
+One of the core abstractions in ServiceTalk is its _Client side_
+link:{source-root}/servicetalk-client-api/src/main/java/io/servicetalk/client/api/LoadBalancer.java[LoadBalancer]
+underpinning the various protocol _Clients_ (eg. HTTP/1.1, HTTP/2, gRPC, etc.).
+
+For scenarios where a client communicates with multiple homogeneous footnote:[belonging to the same service, providing
+same capabilities] server instances, managing multiple clients for each service instance is complex. _Client side load
+balancing_ makes this easy for the users by transparently communicating with multiple servers. It also provides
+opportunities to spread the load across all the servers, minimize latency and reduce error rates thus providing a
+resilient and performant system.
+
 
 == Architecture
 
@@ -37,31 +45,17 @@ ServiceTalk's protocol-specific _Clients_ and _LoadBalancer_ are layered as foll
                   +-------------------+
 ----
 
-This model should look familiar to folks experienced with software that implements _connection-pooling_, such as HTTP
-clients, DataBase drivers, Message Queues, etc. In essence ServiceTalk _LoadBalancers_ provide a connection-pool over
-the ServiceTalk _Connection_ abstraction which is the basis for all protocol-specific _Connections_ allowing the
-_LoadBalancer_ implementations to be reusable across all the protocols.
+This model should look familiar to folks experienced with software implementing _connection-pooling_, such as HTTP
+clients, DB, MQ, etc. A ServiceTalk _LoadBalancer_ also maintains a pool of the ServiceTalk _Connections_, but it
+enables building a rich set of features on top such as: intelligent capacity management, smart connection and host
+selection, circuit breaking, etc. The _Connection_ abstraction which is the basis for all protocol-specific
+_Connections_ allows the
+link:{source-root}/servicetalk-client-api/src/main/java/io/servicetalk/client/api/LoadBalancer.java[LoadBalancer]
+implementations to be reusable across all the protocols.
 
 By combining server availability information from _ServiceDiscovery_, _Connection_ _success rate_ and _latency_ observed
-by the _ConnectionFactory_ and metrics observed at the protocol layer exposed through `LoadBalancedConnection#score()`,
-the _LoadBalancer_ may apply various strategies to pick the most optimal _Connection_ for making its next request. The
-`LoadBalancedConnection#score()` function allows for a clean separation between the _LoadBalancer_ implementations
-and the protocols and types of _Connections_.
-
-For example the HTTP protocol layer may enhance the `score` of its _Connection_ as a function of observing a sudden
-spike in HTTP status `5xx` responses. This may be caused by new code with a bug that got deployed, the system running
-out of resources (eg. GC pause), an outage of a dependent system, etc. Similarly when observing the _latency_ of
-responses, we may be able to infer that one set of servers that happen to be located geographically further away (eg.
-in another data-center across the country) always respond slower than other servers in the same data-center and hence
-may get a lower `score`.
-
-Irrespective of the reason for the lower `score`, from the _LoadBalancer's_ perspective it may be better to
-(temporarily) avoid those _Connections_ or _servers_. Having a _LoadBalancing_ algorithm that can leverage this sort of
-information (exposed via the `score()` function) may result in better overall response times and fewer failed requests.
-
-NOTE: _latency_ and _error rates_ are commonly used in the industry, but ServiceTalk doesn't dictate its use, more so it
-offers hooks into the `score()` function to consider alternative metrics you may have at the _Connection_, protocol or
-_ServiceDiscovery_ layers.
+by the _ConnectionFactory_ and metrics observed at the protocol layer,
+the _LoadBalancer_ may apply various strategies to pick the most optimal _Connection_ for making its next request.
 
 == Implementations
 
@@ -71,9 +65,10 @@ highlighting their characteristics.
 
 === Round Robin
 
-`RoundRobinLoadBalancer` is a very common and simple _LoadBalancer_ implementation that is currently the default when
-creating _Clients_. Its main goal is to spread the load evenly between all known resolved addresses as provided by the
-_ServiceDiscovery_ mechanism.
+link:{source-root}/servicetalk-loadbalancer/src/main/java/io/servicetalk/loadbalancer/RoundRobinLoadBalancer.java[RoundRobinLoadBalancer]
+is a very common and simple _LoadBalancer_ implementation that is currently the default when creating _Clients_. Its
+main goal is to spread the load evenly between all known resolved addresses as provided by the _ServiceDiscovery_
+mechanism.
 
 The implementation in ServiceTalk consists of a set of available addresses (typically the servers to connect to) and for
 each address it has a set of open `Connections`. Whenever a new request is made the _LoadBalancer_ will pick the next
@@ -83,10 +78,4 @@ tandem with _ServiceDiscovery_, when new addresses are added or addresses are re
 set for future _Connection_ selection. This approach ensures that every address will receive an equal amount of requests
 on average across all _Clients_.
 
-As you can tell, this type of _LoadBalancer_ isn't very sophisticated, ie. it doesn't consider any protocol or
-_ConnectionFactory_ feedback, but that makes it a `LoadBalancer` that has minimal _Connection_ selection overhead while
-still providing on average a good distribution of the load across all addresses.
-
-=== Dynamic Aperture Predictive
-
-This `LoadBalancer` is currently in active development, stay tuned.
+NOTE: This approach favors lower selection time over lowering latency and error rates.

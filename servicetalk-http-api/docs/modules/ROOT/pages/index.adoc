@@ -154,10 +154,7 @@ visualized in the below diagram:
 ----
 
 The xref:{page-version}@servicetalk-loadbalancer::index.adoc[LoadBalancer] is consulted for each request to determine
-which connection should be used. The
-link:{source-root}/servicetalk-client-api/src/main/java/io/servicetalk/client/api/LoadBalancer.java[LoadBalancer
-interface] is extensible and the reference implementation provides a
-xref:{page-version}@servicetalk-loadbalancer::index.adoc#round-robin[Round Robin algorithm].
+which connection should be used.
 
 === Client Filters
 Filters provide a means to filter/intercept and modify each request/response life cycle. `Client` Filters are used to
