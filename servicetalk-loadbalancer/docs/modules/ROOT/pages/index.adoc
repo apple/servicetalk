@@ -9,7 +9,7 @@ endif::[]
 = Load Balancing
 
 IMPORTANT: Client side Load Balancing is an active work-in-progress, it's used in production, but expect improvements
-and more feature-full load balancer implementations.
+in the future.
 
 One of the core abstractions in ServiceTalk is its _Client side_
 link:{source-root}/servicetalk-client-api/src/main/java/io/servicetalk/client/api/LoadBalancer.java[LoadBalancer]
@@ -20,7 +20,6 @@ same capabilities] server instances, managing multiple clients for each service 
 balancing_ makes this easy for the users by transparently communicating with multiple servers. It also provides
 opportunities to spread the load across all the servers, minimize latency and reduce error rates thus providing a
 resilient and performant system.
-
 
 == Architecture
 
