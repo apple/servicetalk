@@ -18,6 +18,8 @@ runtime:
   cache_dir: .out/cache
 site:
   title: ServiceTalk Docs
+  keys:
+    google_analytics: 'UA-151504011-1'
   start_page: servicetalk::index.adoc
 content:
   # ordered alphabetically by component name (as specified in components' antora.yml)
