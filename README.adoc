@@ -15,7 +15,7 @@ Currently, all ServiceTalk released artifacts are available in a Bintray repo:
 https://dl.bintray.com/servicetalk/servicetalk/, but will be published to Maven Central
 link:https://github.com/apple/servicetalk/issues/845[soon].
 
-This repository must be configured in the build tool.
+This repository must be configured in which ever build tool your project uses (e.g. Maven, Gradle, etc...).
 
 .Maven, pom.xml
 [source,xml]
