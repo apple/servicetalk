@@ -135,8 +135,8 @@ Each of the above ``Client``s can be created via the
 link:{source-root}/servicetalk-http-netty/src/main/java/io/servicetalk/http/netty/HttpClients.java[HttpClients] static factory.
 
 The `Client` manages multiple `Connections` via a
-link:{source-root}/servicetalk-client-api/src/main/java/io/servicetalk/client/api/LoadBalancer.java[LoadBalancer]. The control flow
-of a request/response can be visualized in the below diagram:
+xref:{page-version}@servicetalk-loadbalancer::index.adoc[LoadBalancer]. The control flow of a request/response can be
+visualized in the below diagram:
 
 [ditaa]
 ----
@@ -153,10 +153,8 @@ of a request/response can be visualized in the below diagram:
                                              +--------------+     +----------------------+     +--------+
 ----
 
-The link:{source-root}/servicetalk-client-api/src/main/java/io/servicetalk/client/api/LoadBalancer.java[LoadBalancer] is consulted
-for each request to determine which connection should be used. The `LoadBalancer` interface is extensible and
-the reference implementation provides a
-link:{source-root}/servicetalk-loadbalancer/src/main/java/io/servicetalk/loadbalancer/RoundRobinLoadBalancer.java[Round Robin algorithm].
+The xref:{page-version}@servicetalk-loadbalancer::index.adoc[LoadBalancer] is consulted for each request to determine
+which connection should be used.
 
 === Client Filters
 Filters provide a means to filter/intercept and modify each request/response life cycle. `Client` Filters are used to

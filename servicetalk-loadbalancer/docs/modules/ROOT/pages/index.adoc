@@ -1,0 +1,78 @@
+// Configure {source-root} values based on how this document is rendered: on GitHub or not
+ifdef::env-github[]
+:source-root:
+endif::[]
+ifndef::env-github[]
+ifndef::source-root[:source-root: https://github.com/apple/servicetalk/blob/{page-origin-refname}]
+endif::[]
+
+= Load Balancing
+
+IMPORTANT: Client side Load Balancing is an active work-in-progress, it's used in production, but expect improvements
+in the future.
+
+One of the core abstractions in ServiceTalk is its _Client side_
+link:{source-root}/servicetalk-client-api/src/main/java/io/servicetalk/client/api/LoadBalancer.java[LoadBalancer]
+underpinning the various protocol _Clients_ (eg. HTTP/1.1, HTTP/2, gRPC, etc.).
+
+For scenarios where a client communicates with multiple homogeneous footnote:[belonging to the same service, providing
+same capabilities] server instances, managing multiple clients for each service instance is complex. _Client side load
+balancing_ makes this easy for the users by transparently communicating with multiple servers. It also provides
+opportunities to spread the load across all the servers, minimize latency and reduce error rates thus providing a
+resilient and performant system.
+
+== Architecture
+
+ServiceTalk's protocol-specific _Clients_ and _LoadBalancer_ are layered as follows:
+
+[ditaa]
+----
+                  +-------------------+
+                  | ConnectionFactory |
+                  +-------------------+      +--------------+     +----------------------+     +--------+
+                            |           /--->| Connection 1 |<--->| HTTP Decoder/Encoder |<--->| Socket |
+                            V           |    +--------------+     +----------------------+     +--------+
++--------+ request  +--------------+    |
+|  HTTP  |--------->| Client-Side  |    |    +--------------+     +----------------------+     +--------+
+| Client |          | LoadBalancer |<---+--->| Connection 2 |<--->| HTTP Decoder/Encoder |<--->| Socket |
+|        |<---------|              |    |    +--------------+     +----------------------+     +--------+
++--------+ response +--------------+    |
+                            ^           |    +--------------+     +----------------------+     +--------+
+                            |           \--->| Connection x |<--->| HTTP Decoder/Encoder |<--->| Socket |
+                  +-------------------+      +--------------+     +----------------------+     +--------+
+                  | Service Discovery |
+                  +-------------------+
+----
+
+The load balancer provides similar functionality to a traditional connection pool, but it is consulted on each request
+and can be influenced by protocol feedback. This enables building a rich set of features on top such as: intelligent
+capacity management, smart connection and host selection, circuit breaking, etc. The _Connection_ abstraction which is
+the basis for all protocol-specific _Connections_ allows the
+link:{source-root}/servicetalk-client-api/src/main/java/io/servicetalk/client/api/LoadBalancer.java[LoadBalancer]
+implementations to be reusable across all the protocols.
+
+The _LoadBalancer_ is able to combine availability information from _Service Discovery_ and protocol metrics from the
+_ConnectionFactory_ (e.g. latency, ...) in order to pick a more optimal _Connection_ for each request
+
+== Implementations
+
+As mentioned earlier the _Client-Side LoadBalancer_ abstraction allows for various protocol-independent _LoadBalancing_
+algorithms to be implemented. This section will discuss the various implementations offered in ServiceTalk by
+highlighting their characteristics.
+
+=== Round Robin
+
+link:{source-root}/servicetalk-loadbalancer/src/main/java/io/servicetalk/loadbalancer/RoundRobinLoadBalancer.java[RoundRobinLoadBalancer]
+is a common and simple _LoadBalancer_ implementation that is currently the default when creating _Clients_. Its
+main goal is to spread the load evenly between all known resolved addresses as provided by the _ServiceDiscovery_
+mechanism.
+
+The implementation in ServiceTalk consists of a set of available addresses (typically the servers to connect to) and for
+each address it has a set of open `Connections`. Whenever a new request is made the _LoadBalancer_ will pick the next
+address from its list of addresses and picks one of its open _Connections_ until it finds an available _Connection_.
+When all _Connections_ are in use, it'll try to open a new _Connection_ to that same address. It works in tandem with
+_ServiceDiscovery_, when new addresses are added or addresses are removed it'll update its active addresses set for
+future _Connection_ selection. This approach ensures that every address will receive an equal amount of requests on
+average across all _Clients_.
+
+NOTE: This approach favors lower selection time over lowering latency and error rates.
