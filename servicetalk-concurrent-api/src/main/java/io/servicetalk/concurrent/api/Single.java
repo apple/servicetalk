@@ -27,6 +27,7 @@ import org.slf4j.LoggerFactory;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -1085,6 +1086,32 @@ public abstract class Single<T> {
      */
     public static <T> Single<T> succeeded(@Nullable T value) {
         return new SucceededSingle<>(value);
+    }
+
+    /**
+     * Creates a realized {@link Single} which always completes successfully with the result of the provided
+     * {@code callable}.
+     *
+     * @param callable {@link Callable} which supplies the result of the {@link Single}.
+     * @param <T>      Type of the {@link Single}.
+     *
+     * @return A new {@link Single}.
+     */
+    public static <T> Single<T> fromCallable(final Callable<T> callable) {
+        return new CallableSingle<>(callable);
+    }
+
+    /**
+     * Creates a realized {@link Single} which always completes successfully with the result of the provided
+     * {@code supplier}.
+     *
+     * @param supplier {@link Supplier} which supplies the result of the {@link Single}.
+     * @param <T>      Type of the {@link Single}.
+     *
+     * @return A new {@link Single}.
+     */
+    public static <T> Single<T> fromSupplier(final Supplier<T> supplier) {
+        return new SupplierSingle<>(supplier);
     }
 
     /**

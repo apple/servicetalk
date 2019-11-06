@@ -1188,6 +1188,15 @@ public abstract class Completable {
     }
 
     /**
+     * Creates a realized completed {@code Completable} which first runs the supplied {@code Runnable}.
+     *
+     * @return A new {@code Completable}.
+     */
+    public static Completable fromRunnable(final Runnable runnable) {
+        return new RunnableCompletable(runnable);
+    }
+
+    /**
      * Creates a realized failed {@code Completable}.
      *
      * @param cause error that the returned {@code Completable} completes with.
