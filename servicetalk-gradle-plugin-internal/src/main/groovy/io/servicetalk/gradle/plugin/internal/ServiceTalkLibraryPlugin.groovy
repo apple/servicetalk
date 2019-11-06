@@ -49,11 +49,6 @@ final class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
       sourceCompatibility = TARGET_VERSION
       targetCompatibility = TARGET_VERSION
 
-      if (project.name == "servicetalk-gradle-plugin-internal" ||
-          project.name == "servicetalk-grpc-gradle-plugin") {
-          return; // Don't publish gradle-plugin projects, they are not supported on maven repos
-      }
-
       pluginManager.apply("signing")
 
       jar {
@@ -127,6 +122,7 @@ final class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
         }
       }
       signing {
+        required findProperty("signingKey") != null
         def signingKey = findProperty("signingKey")
         def signingPassword = findProperty("signingPassword")
         useInMemoryPgpKeys(signingKey, signingPassword)
