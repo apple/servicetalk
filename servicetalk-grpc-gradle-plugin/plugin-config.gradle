@@ -27,7 +27,7 @@ dependencies {
 gradlePlugin {
   plugins {
     serviceTalkGrpcPlugin {
-      id = "io.servicetalk.servicetalk-gradle-plugin-grpc"
+      id = "io.servicetalk.servicetalk-grpc-gradle-plugin"
       implementationClass = "io.servicetalk.grpc.gradle.plugin.ServiceTalkGrpcPlugin"
     }
   }
