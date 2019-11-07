@@ -19,6 +19,7 @@ import com.github.spotbugs.SpotBugsTask
 import org.gradle.api.Project
 import org.gradle.api.plugins.quality.Pmd
 import org.gradle.api.publish.maven.MavenPublication
+import org.gradle.api.publish.maven.tasks.AbstractPublishToMaven
 
 import static io.servicetalk.gradle.plugin.internal.ProjectUtils.addManifestAttributes
 import static io.servicetalk.gradle.plugin.internal.ProjectUtils.addQualityTask
@@ -76,14 +77,6 @@ final class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
             from components.java
             artifact(javadocJar)
             artifact(sourcesJar)
-            versionMapping {
-              usage('java-api') {
-                fromResolutionOf('runtimeClasspath')
-              }
-              usage('java-runtime') {
-                fromResolutionResult()
-              }
-            }
             pom {
               name = project.name
               description = 'A networking framework that evolves with your application'
@@ -113,7 +106,7 @@ final class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
           maven {
             def releasesRepoUrl = "https://oss.sonatype.org/service/local/staging/deploy/maven2"
             def snapshotsRepoUrl = "https://oss.sonatype.org/content/repositories/snapshots"
-            url = version.endsWith('SNAPSHOT') ? snapshotsRepoUrl : releasesRepoUrl
+            url = project.isReleaseBuild ? releasesRepoUrl : snapshotsRepoUrl
             credentials {
               username = System.getenv("SONATYPE_USER")
               password = System.getenv("SONATYPE_TOKEN")
@@ -121,12 +114,24 @@ final class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
           }
         }
       }
-      signing {
-        required findProperty("signingKey") != null
-        def signingKey = findProperty("signingKey")
-        def signingPassword = findProperty("signingPassword")
-        useInMemoryPgpKeys(signingKey, signingPassword)
-        sign publishing.publications.mavenJava
+
+      if (project.isReleaseBuild || (!!findProperty("signingKey") && !!findProperty("signingPassword"))) {
+        signing {
+          required project.isReleaseBuild
+          def signingKey = findProperty("signingKey")
+          def signingPassword = findProperty("signingPassword")
+          useInMemoryPgpKeys(signingKey, signingPassword)
+          sign publishing.publications.mavenJava
+        }
+      }
+
+      tasks.withType(AbstractPublishToMaven) {
+        onlyIf {
+          // Disable all tasks that try to publish something else, expect defined "mavenJava" publication.
+          // That could be automatically configured "pluginMaven" publication for gradle plugins that are required
+          // only for Gradle Plugin Portal and should not be published to Maven Central
+          publication == publishing.publications.mavenJava
+        }
       }
     }
   }
