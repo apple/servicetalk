@@ -44,13 +44,18 @@ final class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
   }
 
   private static void applyJavaLibraryPlugin(Project project) {
+
+
     project.configure(project) {
       pluginManager.apply("java-library")
 
       sourceCompatibility = TARGET_VERSION
       targetCompatibility = TARGET_VERSION
 
-      pluginManager.apply("signing")
+      def signingDesired = project.isReleaseBuild || (!!findProperty("signingKey") && !!findProperty("signingPassword"))
+      if (signingDesired) {
+        pluginManager.apply("signing")
+      }
 
       jar {
         addManifestAttributes(project, manifest)
@@ -115,7 +120,7 @@ final class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
         }
       }
 
-      if (project.isReleaseBuild || (!!findProperty("signingKey") && !!findProperty("signingPassword"))) {
+      if (signingDesired) {
         signing {
           required project.isReleaseBuild
           def signingKey = findProperty("signingKey")
