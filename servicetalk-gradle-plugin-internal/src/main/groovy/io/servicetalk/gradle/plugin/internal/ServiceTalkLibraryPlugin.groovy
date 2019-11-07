@@ -52,11 +52,6 @@ final class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
       sourceCompatibility = TARGET_VERSION
       targetCompatibility = TARGET_VERSION
 
-      def signingDesired = project.isReleaseBuild || (!!findProperty("signingKey") && !!findProperty("signingPassword"))
-      if (signingDesired) {
-        pluginManager.apply("signing")
-      }
-
       jar {
         addManifestAttributes(project, manifest)
       }
@@ -120,9 +115,9 @@ final class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
         }
       }
 
-      if (signingDesired) {
+      if (!!findProperty("signingKey") && !!findProperty("signingPassword")) {
+        pluginManager.apply("signing")
         signing {
-          required project.isReleaseBuild
           def signingKey = findProperty("signingKey")
           def signingPassword = findProperty("signingPassword")
           useInMemoryPgpKeys(signingKey, signingPassword)
