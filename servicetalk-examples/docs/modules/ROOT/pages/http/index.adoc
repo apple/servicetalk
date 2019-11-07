@@ -6,17 +6,17 @@ ifndef::env-github[]
 ifndef::source-root[:source-root: https://github.com/apple/servicetalk/blob/{page-origin-refname}]
 endif::[]
 
-== HTTP Examples
+= HTTP Examples
 
 The link:{source-root}/servicetalk-examples/http[`http`]
 folder contains examples for the https://tools.ietf.org/html/rfc7231[HTTP] protocol.
 
 [#HelloWorld]
-=== Hello World
+== Hello World
 
 An obligatory "Hello World" example for HTTP.
 
-==== Asynchronous + Aggregated
+=== Asynchronous + Aggregated
 
 This example demonstrates asynchronous request processing where the payload body is aggregated into a single object
 instead of a stream.
@@ -28,7 +28,7 @@ link:{source-root}/servicetalk-examples/http/helloworld/src/main/java/io/service
 * link:{source-root}/servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/async/HelloWorldUrlClient.java[HelloWorldUrlClient] - a client that sends a `GET` request to the
 specified URL in absolute-form and receives the response as a single content.
 
-==== Asynchronous + Streaming
+=== Asynchronous + Streaming
 
 This example demonstrates asynchronous request processing where the payload body is a stream.
 
@@ -41,7 +41,7 @@ body as a stream of buffers.
 `GET` request to the specified URL in absolute-form and receives the response payload body as a stream of buffers.
 
 [#blocking-aggregated]
-==== Blocking + Aggregated
+=== Blocking + Aggregated
 
 This example demonstrates blocking request processing where the payload body is aggregated into a single object. The
 APIs will block if content is requested but there is no content available.
@@ -54,7 +54,7 @@ object.
 * link:{source-root}/servicetalk-examples/http/helloworld/src/main/java/io/servicetalk/examples/http/helloworld/blocking/BlockingHelloWorldUrlClient.java[BlockingHelloWorldUrlClient] - a client that sends a `GET`
 request to the specified URL in absolute-form and receives the response payload body as one aggregated object.
 
-==== Blocking + Streaming
+=== Blocking + Streaming
 
 This example demonstrates blocking request processing where the payload body is a blocking iterable stream.
 
@@ -68,7 +68,7 @@ client that sends a `GET` request to the specified URL in absolute-form and rece
 blocking iterable stream of buffers.
 
 [#Serialization]
-=== Serialization
+== Serialization
 
 A similar to "Hello World" examples, which demonstrate
 link:{source-root}/servicetalk-examples/http/serialization/src/main/java/io/servicetalk/examples/http/serialization/async[asynchronous-aggregated],
@@ -81,13 +81,13 @@ Client sends a `POST` request with a JSON payload link:{source-root}/servicetalk
 with `Content-Type: application/json` and link:{source-root}/servicetalk-examples/http/serialization/src/main/java/io/servicetalk/examples/http/serialization/PojoResponse.java[MyPojo] as a payload.
 
 [#JAXRS]
-=== JAX-RS
+== JAX-RS
 
 ServiceTalk provides a JAX-RS implementation that can plugin to ServiceTalk APIs.
 This example demonstrates how to use these APIs, and how different API variations (e.g. asynchronous/blocking and
 aggregated/streaming) are exposed.
 
-==== Hello world
+=== Hello world
 
 A simple "Hello World" example built using JAX-RS.
 
@@ -106,7 +106,7 @@ More examples of how to use the resource can be found in the
 link:{source-root}/servicetalk-examples/http/jaxrs/src/main/java/io/servicetalk/examples/http/jaxrs/HelloWorldJaxRsResource.java[HelloWorldJaxRsResource] javadocs.
 
 [#MetaData]
-=== MetaData
+== MetaData
 
 This example demonstrates some of the basic functionality of the
 link:{source-root}/servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpMetaData.java[HttpMetaData] classes:
@@ -125,12 +125,12 @@ NOTE: This example uses the link:#blocking-aggregated[blocking + aggregated] API
 across all the HTTP APIs.
 
 [#HTTP2]
-=== HTTP/2
+== HTTP/2
 
 These examples demonstrate how users can configure link:https://tools.ietf.org/html/rfc7540[HTTP/2] transport in
 ServiceTalk.
 
-==== HTTP/2 with Prior-Knowledge
+=== HTTP/2 with Prior-Knowledge
 
 This example demonstrates how to configure using
 link:https://tools.ietf.org/html/rfc7540#section-3.4[HTTP/2 transport with Prior-Knowledge] for HTTP clients and servers:
@@ -140,7 +140,7 @@ A server that uses HTTP/2 with Prior Knowledge.
 - link:{source-root}/servicetalk-examples/http/http2/src/main/java/io/servicetalk/examples/http/http2/priorknowledge/Http2PriorKnowledgeClient.java[Http2PriorKnowledgeClient] -
 A client that uses HTTP/2 with Prior Knowledge.
 
-==== HTTP/2 via ALPN for secure connections
+=== HTTP/2 via ALPN for secure connections
 
 For secure TLS connections link:https://tools.ietf.org/html/rfc7301[ALPN extension] could be used to negotiate the
 communication protocol:
@@ -160,7 +160,7 @@ link:https://www.eclipse.org/jetty/documentation/current/alpn-chapter.html[anoth
 NOTE: These examples use the link:#blocking-aggregated[blocking + aggregated] API for demonstration purposes, as the
 builder API is the same across all the HTTP APIs.
 
-=== Service Composition
+== Service Composition
 
 An advanced example which demonstrates a composition of various ServiceTalks services in one application.
 For more information see xref:http/service-composition.adoc[Service Composition].
