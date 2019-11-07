@@ -19,7 +19,7 @@ buildscript {
 }
 
 apply plugin: "java"
-apply plugin: "servicetalk-grpc"
+apply plugin: "io.servicetalk.servicetalk-grpc-gradle-plugin"
 
 serviceTalkGrpc {
   protobufVersion = "3.10.0"

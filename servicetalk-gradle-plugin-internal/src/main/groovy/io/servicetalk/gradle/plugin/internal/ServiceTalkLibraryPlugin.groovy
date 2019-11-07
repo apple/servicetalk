@@ -19,6 +19,7 @@ import com.github.spotbugs.SpotBugsTask
 import org.gradle.api.Project
 import org.gradle.api.plugins.quality.Pmd
 import org.gradle.api.publish.maven.MavenPublication
+import org.gradle.api.publish.maven.tasks.AbstractPublishToMaven
 
 import static io.servicetalk.gradle.plugin.internal.ProjectUtils.addManifestAttributes
 import static io.servicetalk.gradle.plugin.internal.ProjectUtils.addQualityTask
@@ -43,6 +44,8 @@ final class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
   }
 
   private static void applyJavaLibraryPlugin(Project project) {
+
+
     project.configure(project) {
       pluginManager.apply("java-library")
 
@@ -74,7 +77,60 @@ final class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
             from components.java
             artifact(javadocJar)
             artifact(sourcesJar)
+            pom {
+              name = project.name
+              description = 'A networking framework that evolves with your application'
+              url = 'https://servicetalk.io'
+              licenses {
+                license {
+                  name = 'The Apache License, Version 2.0'
+                  url = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                }
+              }
+              developers {
+                developer {
+                  id = 'servicetalk-project-authors'
+                  name = 'ServiceTalk project authors'
+                  email = 'servicetalk-oss@group.apple.com'
+                }
+              }
+              scm {
+                connection = 'scm:git:git://github.com/apple/servicetalk.git'
+                developerConnection = 'scm:git:ssh://github.com:apple/servicetalk.git'
+                url = 'https://github.com/apple/servicetalk'
+              }
+            }
           }
+        }
+        repositories {
+          maven {
+            def releasesRepoUrl = "https://oss.sonatype.org/service/local/staging/deploy/maven2"
+            def snapshotsRepoUrl = "https://oss.sonatype.org/content/repositories/snapshots"
+            url = project.isReleaseBuild ? releasesRepoUrl : snapshotsRepoUrl
+            credentials {
+              username = System.getenv("SONATYPE_USER")
+              password = System.getenv("SONATYPE_TOKEN")
+            }
+          }
+        }
+      }
+
+      if (!!findProperty("signingKey") && !!findProperty("signingPassword")) {
+        pluginManager.apply("signing")
+        signing {
+          def signingKey = findProperty("signingKey")
+          def signingPassword = findProperty("signingPassword")
+          useInMemoryPgpKeys(signingKey, signingPassword)
+          sign publishing.publications.mavenJava
+        }
+      }
+
+      tasks.withType(AbstractPublishToMaven) {
+        onlyIf {
+          // Disable all tasks that try to publish something else, expect defined "mavenJava" publication.
+          // That could be automatically configured "pluginMaven" publication for gradle plugins that are required
+          // only for Gradle Plugin Portal and should not be published to Maven Central
+          publication == publishing.publications.mavenJava
         }
       }
     }

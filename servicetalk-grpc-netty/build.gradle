@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-apply plugin: "servicetalk-library"
-apply plugin: "servicetalk-grpc"
+apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
+apply plugin: "io.servicetalk.servicetalk-grpc-gradle-plugin"
 
 dependencies {
   api project(":servicetalk-grpc-api")

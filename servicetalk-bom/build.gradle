@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-apply plugin: "servicetalk-core"
+apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-core"
 apply plugin: "java-platform"
 
 rootProject.subprojects.findAll { !it.name.contains("bom") && !it.name.contains("examples") }.each {

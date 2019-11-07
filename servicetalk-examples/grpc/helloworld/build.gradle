@@ -15,7 +15,7 @@
  */
 
 apply plugin: "java"
-apply plugin: "servicetalk-grpc"
+apply plugin: "io.servicetalk.servicetalk-grpc-gradle-plugin"
 apply from: "../../gradle/idea.gradle"
 
 dependencies {

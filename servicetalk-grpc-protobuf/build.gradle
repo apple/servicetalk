@@ -20,7 +20,7 @@ buildscript {
   }
 }
 
-apply plugin: "servicetalk-library"
+apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
 apply plugin: "com.google.protobuf"
 
 ideaModule.dependsOn "generateTestProto"

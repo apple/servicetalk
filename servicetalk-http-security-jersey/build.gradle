@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-apply plugin: "servicetalk-library"
+apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
 
 dependencies {
   api "jakarta.ws.rs:jakarta.ws.rs-api:$jaxRsVersion"
