@@ -40,4 +40,5 @@
   <!-- docs -->
   <suppress checks="LineLength" files="docs[\\/]generation[\\/]package-lock.json"/>
   <suppress checks="LineLength" files="docs[\\/]modules[\\/]ROOT[\\/]pages[\\/].*\.adoc"/>
+  <suppress checks="LineLength" files="docs[\\/]generation[\\/]supplemental-ui[\\/]partials[\\/].*\.hbs"/>
 </suppressions>

@@ -47,6 +47,9 @@ content:
     - url: ../../
       branches: HEAD
       start_path: servicetalk-grpc-api/docs
+    - url: ../../
+      branches: HEAD
+      start_path: servicetalk-loadbalancer/docs
 asciidoc:
   attributes:
     experimental: ''

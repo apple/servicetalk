@@ -11,44 +11,40 @@ See the link:https://docs.servicetalk.io/[ServiceTalk docs] for more information
 
 == Getting Started
 
-All ServiceTalk released artifacts are available in
-link:https://repo1.maven.org/maven2/io/servicetalk/[the Maven central repository].
+Currently, all ServiceTalk released artifacts are available in a Bintray repo:
+https://dl.bintray.com/servicetalk/servicetalk/, but will be published to Maven Central
+link:https://github.com/apple/servicetalk/issues/845[soon].
 
-The easiest way to get started is to add ServiceTalk's bill-of-material (BOM) dependency to your project's build.
+This repository must be configured in which ever build tool your project uses (e.g. Maven, Gradle, etc...).
 
-.Maven, pom/xml
+.Maven, pom.xml
 [source,xml]
 ----
-<dependencyManagement>
-  <dependencies>
-    <dependency>
-      <groupId>io.servicetalk</groupId>
-      <artifactId>servicetalk-bom</artifactId>
-      <version>${servicetalk.version}</version>
-      <type>pom</type>
-      <scope>import</scope>
-    </dependency>
-  </dependencies>
-</dependencyManagement>
+<project>
+...
+  <repositories>
+    <repository>
+      <id>bintray-servicetalk</id>
+      <url>https://dl.bintray.com/servicetalk/servicetalk/</url>
+    </repository>
+  </repositories>
+...
+</project>
 ----
 
-.Gradle 5, build.gradle
+.Gradle, build.gradle
 [source,groovy]
 ----
-implementation platform("io.servicetalk:servicetalk-bom:$serviceTalkVersion")
+repositories {
+  mavenCentral()
+  maven {
+    url  "https://dl.bintray.com/servicetalk/servicetalk/"
+  }
+}
 ----
 
-.Gradle 4
-[source,groovy]
-----
-implementation "io.servicetalk:servicetalk-bom:$serviceTalkVersion" // <1>
-
-enableFeaturePreview("IMPROVED_POM_SUPPORT") // <2>
-----
-<1> in _build.gradle_
-<2> in _settings.gradle_
-
-With this in place, you can add the ServiceTalk module dependencies you need without specifying their versions.
+For more information, see Bintray
+link:https://www.jfrog.com/confluence/display/BT/Maven+Repositories[Maven Repositories] docs.
 
 Refer to the link:https://docs.servicetalk.io/[ServiceTalk docs] for various examples that will get you started with the
 different features of ServiceTalk.
