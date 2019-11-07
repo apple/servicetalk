@@ -20,16 +20,18 @@ import io.servicetalk.concurrent.SingleSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Objects;
 import java.util.function.Supplier;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
 
 final class SupplierSingle<T> extends AbstractSynchronousSingle<T> {
-    private static final Logger LOGGER = LoggerFactory.getLogger(SucceededSingle.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(SupplierSingle.class);
     private final Supplier<T> supplier;
 
     SupplierSingle(final Supplier<T> supplier) {
+        Objects.requireNonNull(supplier);
         this.supplier = supplier;
     }
 

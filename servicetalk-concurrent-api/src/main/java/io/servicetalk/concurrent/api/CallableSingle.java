@@ -18,16 +18,18 @@ package io.servicetalk.concurrent.api;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Objects;
 import java.util.concurrent.Callable;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
 
 final class CallableSingle<T> extends AbstractSynchronousSingle<T> {
-    private static final Logger LOGGER = LoggerFactory.getLogger(SucceededSingle.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(CallableSingle.class);
     private final Callable<T> callable;
 
     CallableSingle(final Callable<T> callable) {
+        Objects.requireNonNull(callable);
         this.callable = callable;
     }
 

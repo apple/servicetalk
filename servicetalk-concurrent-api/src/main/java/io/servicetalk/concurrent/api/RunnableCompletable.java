@@ -18,14 +18,17 @@ package io.servicetalk.concurrent.api;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Objects;
+
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
 
 public class RunnableCompletable extends AbstractSynchronousCompletable {
-    private static final Logger LOGGER = LoggerFactory.getLogger(SucceededSingle.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(RunnableCompletable.class);
     private final Runnable runnable;
 
     RunnableCompletable(final Runnable runnable) {
+        Objects.requireNonNull(runnable);
         this.runnable = runnable;
     }
 
