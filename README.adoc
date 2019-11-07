@@ -11,10 +11,40 @@ See the link:https://docs.servicetalk.io/[ServiceTalk docs] for more information
 
 == Getting Started
 
-All ServiceTalk released artifacts are available in link:https://repo1.maven.org/maven2/io/servicetalk/[the Maven
-central repository].
+Currently, all ServiceTalk released artifacts are available in a Bintray repo:
+https://dl.bintray.com/servicetalk/servicetalk/, but will be published to Maven Central
+link:https://github.com/apple/servicetalk/issues/845[soon].
 
 This repository must be configured in which ever build tool your project uses (e.g. Maven, Gradle, etc...).
+
+.Maven, pom.xml
+[source,xml]
+----
+<project>
+...
+  <repositories>
+    <repository>
+      <id>bintray-servicetalk</id>
+      <url>https://dl.bintray.com/servicetalk/servicetalk/</url>
+    </repository>
+  </repositories>
+...
+</project>
+----
+
+.Gradle, build.gradle
+[source,groovy]
+----
+repositories {
+  mavenCentral()
+  maven {
+    url  "https://dl.bintray.com/servicetalk/servicetalk/"
+  }
+}
+----
+
+For more information, see Bintray
+link:https://www.jfrog.com/confluence/display/BT/Maven+Repositories[Maven Repositories] docs.
 
 Refer to the link:https://docs.servicetalk.io/[ServiceTalk docs] for various examples that will get you started with the
 different features of ServiceTalk.
