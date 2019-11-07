@@ -28,8 +28,7 @@ public class RunnableCompletable extends AbstractSynchronousCompletable {
     private final Runnable runnable;
 
     RunnableCompletable(final Runnable runnable) {
-        Objects.requireNonNull(runnable);
-        this.runnable = runnable;
+        this.runnable = Objects.requireNonNull(runnable);
     }
 
     @Override

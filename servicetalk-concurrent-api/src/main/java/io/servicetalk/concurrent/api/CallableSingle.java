@@ -29,8 +29,7 @@ final class CallableSingle<T> extends AbstractSynchronousSingle<T> {
     private final Callable<T> callable;
 
     CallableSingle(final Callable<T> callable) {
-        Objects.requireNonNull(callable);
-        this.callable = callable;
+        this.callable = Objects.requireNonNull(callable);
     }
 
     @Override

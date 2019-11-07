@@ -31,8 +31,7 @@ final class SupplierSingle<T> extends AbstractSynchronousSingle<T> {
     private final Supplier<T> supplier;
 
     SupplierSingle(final Supplier<T> supplier) {
-        Objects.requireNonNull(supplier);
-        this.supplier = supplier;
+        this.supplier = Objects.requireNonNull(supplier);
     }
 
     @Override
