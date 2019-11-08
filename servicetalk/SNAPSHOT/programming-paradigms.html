@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>Untitled :: ServiceTalk Docs</title>
+    <title>Programming Paradigms :: ServiceTalk Docs</title>
     <meta name="generator" content="Antora 2.0.0">
     <link rel="stylesheet" href="../../_/css/site.css">
 <meta name="description" content="ServiceTalk is a JVM network application framework with APIs tailored to specific protocols (e.g. HTTP/1.x, HTTP/2.x, etc…​) and supports multiple programming paradigms.">
@@ -179,6 +179,9 @@
           <a href="../../servicetalk-concurrent-api/SNAPSHOT/index.html">SNAPSHOT</a>
         </li>
         <li class="version">
+          <a href="../../servicetalk-concurrent-api/0.20/index.html">0.20</a>
+        </li>
+        <li class="version">
           <a href="../../servicetalk-concurrent-api/0.19/index.html">0.19</a>
         </li>
       </ul>
@@ -188,6 +191,9 @@
       <ul class="versions">
         <li class="version is-latest">
           <a href="../../servicetalk-examples/SNAPSHOT/index.html">SNAPSHOT</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-examples/0.20/index.html">0.20</a>
         </li>
         <li class="version">
           <a href="../../servicetalk-examples/0.19/index.html">0.19</a>
@@ -201,6 +207,9 @@
           <a href="../../servicetalk-grpc-api/SNAPSHOT/index.html">SNAPSHOT</a>
         </li>
         <li class="version">
+          <a href="../../servicetalk-grpc-api/0.20/index.html">0.20</a>
+        </li>
+        <li class="version">
           <a href="../../servicetalk-grpc-api/0.19/index.html">0.19</a>
         </li>
       </ul>
@@ -210,6 +219,9 @@
       <ul class="versions">
         <li class="version is-latest">
           <a href="../../servicetalk-http-api/SNAPSHOT/index.html">SNAPSHOT</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-api/0.20/index.html">0.20</a>
         </li>
         <li class="version">
           <a href="../../servicetalk-http-api/0.19/index.html">0.19</a>
@@ -223,6 +235,9 @@
           <a href="../../servicetalk-http-router-jersey/SNAPSHOT/index.html">SNAPSHOT</a>
         </li>
         <li class="version">
+          <a href="../../servicetalk-http-router-jersey/0.20/index.html">0.20</a>
+        </li>
+        <li class="version">
           <a href="../../servicetalk-http-router-jersey/0.19/index.html">0.19</a>
         </li>
       </ul>
@@ -232,6 +247,9 @@
       <ul class="versions">
         <li class="version is-latest">
           <a href="../../servicetalk-data-jackson-jersey/SNAPSHOT/index.html">SNAPSHOT</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-data-jackson-jersey/0.20/index.html">0.20</a>
         </li>
         <li class="version">
           <a href="../../servicetalk-data-jackson-jersey/0.19/index.html">0.19</a>
@@ -244,6 +262,9 @@
         <li class="version is-latest">
           <a href="../../servicetalk-loadbalancer/SNAPSHOT/index.html">SNAPSHOT</a>
         </li>
+        <li class="version">
+          <a href="../../servicetalk-loadbalancer/0.20/index.html">0.20</a>
+        </li>
       </ul>
     </li>
     <li class="component">
@@ -251,6 +272,9 @@
       <ul class="versions">
         <li class="version is-latest">
           <a href="../../servicetalk-http-security-jersey/SNAPSHOT/index.html">SNAPSHOT</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-security-jersey/0.20/index.html">0.20</a>
         </li>
         <li class="version">
           <a href="../../servicetalk-http-security-jersey/0.19/index.html">0.19</a>
@@ -262,6 +286,9 @@
       <ul class="versions">
         <li class="version is-current is-latest">
           <a href="index.html">SNAPSHOT</a>
+        </li>
+        <li class="version">
+          <a href="../0.20/index.html">0.20</a>
         </li>
         <li class="version">
           <a href="../0.19/index.html">0.19</a>
@@ -288,13 +315,15 @@
   <button class="versions-menu-toggle" title="Show other versions of page">SNAPSHOT</button>
   <div class="versions-menu">
     <a class="version is-current" href="programming-paradigms.html">SNAPSHOT</a>
+    <a class="version" href="../0.20/programming-paradigms.html">0.20</a>
     <a class="version" href="../0.19/programming-paradigms.html">0.19</a>
   </div>
 </div>
+  <div class="edit-this-page"><a href="https://github.com/apple/servicetalk/edit/master/docs/modules/ROOT/pages/programming-paradigms.adoc">Edit this Page</a></div>
 </div>
         <article class="doc">
-<div class="sect1">
-<h2 id="programming-paradigms"><a class="anchor" href="#programming-paradigms"></a><a class="link" href="#programming-paradigms">Programming Paradigms</a></h2>
+<h1>Programming Paradigms</h1>
+<div id="preamble">
 <div class="sectionbody">
 <div class="paragraph">
 <p>When developing a new application it may not be clear if the complexity of asynchronous control flow is justified.
@@ -305,8 +334,11 @@ complexity of asynchronous control flow in these cases. This can dramatically lo
 compared with most non-blocking I/O frameworks and avoid "application re-write" if scaling/data size characteristics
 change over time.</p>
 </div>
-<div class="sect2">
-<h3 id="blocking-vs-synchronous"><a class="anchor" href="#blocking-vs-synchronous"></a><a class="link" href="#blocking-vs-synchronous">Blocking vs Synchronous</a></h3>
+</div>
+</div>
+<div class="sect1">
+<h2 id="blocking-vs-synchronous"><a class="anchor" href="#blocking-vs-synchronous"></a><a class="link" href="#blocking-vs-synchronous">Blocking vs Synchronous</a></h2>
+<div class="sectionbody">
 <div class="paragraph">
 <p>ServiceTalk APIs may use the term "blocking" in areas where the APIs may be identified as "synchronous". "blocking" in
 this context is meant to declare that the API "may block" the calling thread. This is done because there is no general
@@ -314,8 +346,10 @@ way to determine if a method will return synchronously or block the calling thre
 denominator.</p>
 </div>
 </div>
-<div class="sect2">
-<h3 id="blocking-and-aggregated"><a class="anchor" href="#blocking-and-aggregated"></a><a class="link" href="#blocking-and-aggregated">Blocking and Aggregated</a></h3>
+</div>
+<div class="sect1">
+<h2 id="blocking-and-aggregated"><a class="anchor" href="#blocking-and-aggregated"></a><a class="link" href="#blocking-and-aggregated">Blocking and Aggregated</a></h2>
+<div class="sectionbody">
 <div class="paragraph">
 <p>This API paradigm is similar to concepts from <code>java.io</code> and generally blocks the calling thread until all I/O is
 completed. The result is aggregated into a single object (e.g.
@@ -323,8 +357,10 @@ completed. The result is aggregated into a single object (e.g.
 ).</p>
 </div>
 </div>
-<div class="sect2">
-<h3 id="blocking-and-streaming"><a class="anchor" href="#blocking-and-streaming"></a><a class="link" href="#blocking-and-streaming">Blocking and Streaming</a></h3>
+</div>
+<div class="sect1">
+<h2 id="blocking-and-streaming"><a class="anchor" href="#blocking-and-streaming"></a><a class="link" href="#blocking-and-streaming">Blocking and Streaming</a></h2>
+<div class="sectionbody">
 <div class="paragraph">
 <p>This API paradigm is similar to concepts from <code>java.io</code> and generally blocks the calling thread until I/O is
 flushed/received. The result can be provided/processed in a streaming fashion (e.g.
@@ -333,8 +369,10 @@ flushed/received. The result can be provided/processed in a streaming fashion (e
 the stream may also block the calling thread.</p>
 </div>
 </div>
-<div class="sect2">
-<h3 id="asynchronous-and-aggregated"><a class="anchor" href="#asynchronous-and-aggregated"></a><a class="link" href="#asynchronous-and-aggregated">Asynchronous and Aggregated</a></h3>
+</div>
+<div class="sect1">
+<h2 id="asynchronous-and-aggregated"><a class="anchor" href="#asynchronous-and-aggregated"></a><a class="link" href="#asynchronous-and-aggregated">Asynchronous and Aggregated</a></h2>
+<div class="sectionbody">
 <div class="paragraph">
 <p>This API paradigm performs I/O asynchronously (e.g. the calling thread is not blocked) and the user is notified when all
 the I/O is complete. ServiceTalk provides a <a href="https://www.reactive-streams.org">ReactiveStreams</a> compatible
@@ -347,8 +385,10 @@ similar experience to the <code>Future</code>/<code>Promise</code> pattern such 
 function composition.</p>
 </div>
 </div>
-<div class="sect2">
-<h3 id="asynchronous-and-streaming"><a class="anchor" href="#asynchronous-and-streaming"></a><a class="link" href="#asynchronous-and-streaming">Asynchronous and Streaming</a></h3>
+</div>
+<div class="sect1">
+<h2 id="asynchronous-and-streaming"><a class="anchor" href="#asynchronous-and-streaming"></a><a class="link" href="#asynchronous-and-streaming">Asynchronous and Streaming</a></h2>
+<div class="sectionbody">
 <div class="paragraph">
 <p>This API paradigm performs I/O asynchronously (e.g. the calling thread is not blocked) and the user can provide/process
 the I/O in chunks (as opposed to in a single <code>Object</code>). ServiceTalk provides
@@ -356,7 +396,6 @@ the I/O in chunks (as opposed to in a single <code>Object</code>). ServiceTalk p
 <a href="../../servicetalk-concurrent-api/SNAPSHOT/asynchronous-primitives.html" class="page">Asynchronous primitives</a> such as
 <a href="../../servicetalk-concurrent-api/SNAPSHOT/asynchronous-primitives.html#publisher" class="page">Publisher</a> to enable
 this API paradigm.</p>
-</div>
 </div>
 </div>
 </div>

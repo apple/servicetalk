@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>Untitled :: ServiceTalk Docs</title>
+    <title>HTTP Examples :: ServiceTalk Docs</title>
     <meta name="generator" content="Antora 2.0.0">
     <link rel="stylesheet" href="../../../_/css/site.css">
 <meta name="description" content="ServiceTalk is a JVM network application framework with APIs tailored to specific protocols (e.g. HTTP/1.x, HTTP/2.x, etc…​) and supports multiple programming paradigms.">
@@ -179,6 +179,9 @@
           <a href="../../../servicetalk-concurrent-api/SNAPSHOT/index.html">SNAPSHOT</a>
         </li>
         <li class="version">
+          <a href="../../../servicetalk-concurrent-api/0.20/index.html">0.20</a>
+        </li>
+        <li class="version">
           <a href="../../../servicetalk-concurrent-api/0.19/index.html">0.19</a>
         </li>
       </ul>
@@ -188,6 +191,9 @@
       <ul class="versions">
         <li class="version is-current is-latest">
           <a href="../index.html">SNAPSHOT</a>
+        </li>
+        <li class="version">
+          <a href="../../0.20/index.html">0.20</a>
         </li>
         <li class="version">
           <a href="../../0.19/index.html">0.19</a>
@@ -201,6 +207,9 @@
           <a href="../../../servicetalk-grpc-api/SNAPSHOT/index.html">SNAPSHOT</a>
         </li>
         <li class="version">
+          <a href="../../../servicetalk-grpc-api/0.20/index.html">0.20</a>
+        </li>
+        <li class="version">
           <a href="../../../servicetalk-grpc-api/0.19/index.html">0.19</a>
         </li>
       </ul>
@@ -210,6 +219,9 @@
       <ul class="versions">
         <li class="version is-latest">
           <a href="../../../servicetalk-http-api/SNAPSHOT/index.html">SNAPSHOT</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-http-api/0.20/index.html">0.20</a>
         </li>
         <li class="version">
           <a href="../../../servicetalk-http-api/0.19/index.html">0.19</a>
@@ -223,6 +235,9 @@
           <a href="../../../servicetalk-http-router-jersey/SNAPSHOT/index.html">SNAPSHOT</a>
         </li>
         <li class="version">
+          <a href="../../../servicetalk-http-router-jersey/0.20/index.html">0.20</a>
+        </li>
+        <li class="version">
           <a href="../../../servicetalk-http-router-jersey/0.19/index.html">0.19</a>
         </li>
       </ul>
@@ -232,6 +247,9 @@
       <ul class="versions">
         <li class="version is-latest">
           <a href="../../../servicetalk-data-jackson-jersey/SNAPSHOT/index.html">SNAPSHOT</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-data-jackson-jersey/0.20/index.html">0.20</a>
         </li>
         <li class="version">
           <a href="../../../servicetalk-data-jackson-jersey/0.19/index.html">0.19</a>
@@ -244,6 +262,9 @@
         <li class="version is-latest">
           <a href="../../../servicetalk-loadbalancer/SNAPSHOT/index.html">SNAPSHOT</a>
         </li>
+        <li class="version">
+          <a href="../../../servicetalk-loadbalancer/0.20/index.html">0.20</a>
+        </li>
       </ul>
     </li>
     <li class="component">
@@ -251,6 +272,9 @@
       <ul class="versions">
         <li class="version is-latest">
           <a href="../../../servicetalk-http-security-jersey/SNAPSHOT/index.html">SNAPSHOT</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk-http-security-jersey/0.20/index.html">0.20</a>
         </li>
         <li class="version">
           <a href="../../../servicetalk-http-security-jersey/0.19/index.html">0.19</a>
@@ -262,6 +286,9 @@
       <ul class="versions">
         <li class="version is-latest">
           <a href="../../../servicetalk/SNAPSHOT/index.html">SNAPSHOT</a>
+        </li>
+        <li class="version">
+          <a href="../../../servicetalk/0.20/index.html">0.20</a>
         </li>
         <li class="version">
           <a href="../../../servicetalk/0.19/index.html">0.19</a>
@@ -287,25 +314,30 @@
   <button class="versions-menu-toggle" title="Show other versions of page">SNAPSHOT</button>
   <div class="versions-menu">
     <a class="version is-current" href="index.html">SNAPSHOT</a>
+    <a class="version" href="../../0.20/http/index.html">0.20</a>
     <a class="version" href="../../0.19/http/index.html">0.19</a>
   </div>
 </div>
+  <div class="edit-this-page"><a href="https://github.com/apple/servicetalk/edit/master/servicetalk-examples/docs/modules/ROOT/pages/http/index.adoc">Edit this Page</a></div>
 </div>
         <article class="doc">
-<div class="sect1">
-<h2 id="http-examples"><a class="anchor" href="#http-examples"></a><a class="link" href="#http-examples">HTTP Examples</a></h2>
+<h1>HTTP Examples</h1>
+<div id="preamble">
 <div class="sectionbody">
 <div class="paragraph">
 <p>The <a href="https://github.com/apple/servicetalk/blob/master/servicetalk-examples/http"><code>http</code></a>
 folder contains examples for the <a href="https://tools.ietf.org/html/rfc7231">HTTP</a> protocol.</p>
 </div>
-<div class="sect2">
-<h3 id="HelloWorld"><a class="anchor" href="#HelloWorld"></a><a class="link" href="#HelloWorld">Hello World</a></h3>
+</div>
+</div>
+<div class="sect1">
+<h2 id="HelloWorld"><a class="anchor" href="#HelloWorld"></a><a class="link" href="#HelloWorld">Hello World</a></h2>
+<div class="sectionbody">
 <div class="paragraph">
 <p>An obligatory "Hello World" example for HTTP.</p>
 </div>
-<div class="sect3">
-<h4 id="asynchronous-aggregated"><a class="anchor" href="#asynchronous-aggregated"></a><a class="link" href="#asynchronous-aggregated">Asynchronous + Aggregated</a></h4>
+<div class="sect2">
+<h3 id="asynchronous-aggregated"><a class="anchor" href="#asynchronous-aggregated"></a><a class="link" href="#asynchronous-aggregated">Asynchronous + Aggregated</a></h3>
 <div class="paragraph">
 <p>This example demonstrates asynchronous request processing where the payload body is aggregated into a single object
 instead of a stream.</p>
@@ -327,8 +359,8 @@ specified URL in absolute-form and receives the response as a single content.</p
 </ul>
 </div>
 </div>
-<div class="sect3">
-<h4 id="asynchronous-streaming"><a class="anchor" href="#asynchronous-streaming"></a><a class="link" href="#asynchronous-streaming">Asynchronous + Streaming</a></h4>
+<div class="sect2">
+<h3 id="asynchronous-streaming"><a class="anchor" href="#asynchronous-streaming"></a><a class="link" href="#asynchronous-streaming">Asynchronous + Streaming</a></h3>
 <div class="paragraph">
 <p>This example demonstrates asynchronous request processing where the payload body is a stream.</p>
 </div>
@@ -350,8 +382,8 @@ body as a stream of buffers.</p>
 </ul>
 </div>
 </div>
-<div class="sect3">
-<h4 id="blocking-aggregated"><a class="anchor" href="#blocking-aggregated"></a><a class="link" href="#blocking-aggregated">Blocking + Aggregated</a></h4>
+<div class="sect2">
+<h3 id="blocking-aggregated"><a class="anchor" href="#blocking-aggregated"></a><a class="link" href="#blocking-aggregated">Blocking + Aggregated</a></h3>
 <div class="paragraph">
 <p>This example demonstrates blocking request processing where the payload body is aggregated into a single object. The
 APIs will block if content is requested but there is no content available.</p>
@@ -374,8 +406,8 @@ request to the specified URL in absolute-form and receives the response payload 
 </ul>
 </div>
 </div>
-<div class="sect3">
-<h4 id="blocking-streaming"><a class="anchor" href="#blocking-streaming"></a><a class="link" href="#blocking-streaming">Blocking + Streaming</a></h4>
+<div class="sect2">
+<h3 id="blocking-streaming"><a class="anchor" href="#blocking-streaming"></a><a class="link" href="#blocking-streaming">Blocking + Streaming</a></h3>
 <div class="paragraph">
 <p>This example demonstrates blocking request processing where the payload body is a blocking iterable stream.</p>
 </div>
@@ -399,8 +431,10 @@ blocking iterable stream of buffers.</p>
 </div>
 </div>
 </div>
-<div class="sect2">
-<h3 id="Serialization"><a class="anchor" href="#Serialization"></a><a class="link" href="#Serialization">Serialization</a></h3>
+</div>
+<div class="sect1">
+<h2 id="Serialization"><a class="anchor" href="#Serialization"></a><a class="link" href="#Serialization">Serialization</a></h2>
+<div class="sectionbody">
 <div class="paragraph">
 <p>A similar to "Hello World" examples, which demonstrate
 <a href="https://github.com/apple/servicetalk/blob/master/servicetalk-examples/http/serialization/src/main/java/io/servicetalk/examples/http/serialization/async">asynchronous-aggregated</a>,
@@ -414,15 +448,17 @@ client and server with JSON serialization of simple pojo classes.</p>
 with <code>Content-Type: application/json</code> and <a href="https://github.com/apple/servicetalk/blob/master/servicetalk-examples/http/serialization/src/main/java/io/servicetalk/examples/http/serialization/PojoResponse.java">MyPojo</a> as a payload.</p>
 </div>
 </div>
-<div class="sect2">
-<h3 id="JAXRS"><a class="anchor" href="#JAXRS"></a><a class="link" href="#JAXRS">JAX-RS</a></h3>
+</div>
+<div class="sect1">
+<h2 id="JAXRS"><a class="anchor" href="#JAXRS"></a><a class="link" href="#JAXRS">JAX-RS</a></h2>
+<div class="sectionbody">
 <div class="paragraph">
 <p>ServiceTalk provides a JAX-RS implementation that can plugin to ServiceTalk APIs.
 This example demonstrates how to use these APIs, and how different API variations (e.g. asynchronous/blocking and
 aggregated/streaming) are exposed.</p>
 </div>
-<div class="sect3">
-<h4 id="hello-world"><a class="anchor" href="#hello-world"></a><a class="link" href="#hello-world">Hello world</a></h4>
+<div class="sect2">
+<h3 id="hello-world"><a class="anchor" href="#hello-world"></a><a class="link" href="#hello-world">Hello world</a></h3>
 <div class="paragraph">
 <p>A simple "Hello World" example built using JAX-RS.</p>
 </div>
@@ -452,8 +488,10 @@ blocking and asynchronous interactions.</p>
 </div>
 </div>
 </div>
-<div class="sect2">
-<h3 id="MetaData"><a class="anchor" href="#MetaData"></a><a class="link" href="#MetaData">MetaData</a></h3>
+</div>
+<div class="sect1">
+<h2 id="MetaData"><a class="anchor" href="#MetaData"></a><a class="link" href="#MetaData">MetaData</a></h2>
+<div class="sectionbody">
 <div class="paragraph">
 <p>This example demonstrates some of the basic functionality of the
 <a href="https://github.com/apple/servicetalk/blob/master/servicetalk-http-api/src/main/java/io/servicetalk/http/api/HttpMetaData.java">HttpMetaData</a> classes:</p>
@@ -501,14 +539,16 @@ across all the HTTP APIs.
 </table>
 </div>
 </div>
-<div class="sect2">
-<h3 id="HTTP2"><a class="anchor" href="#HTTP2"></a><a class="link" href="#HTTP2">HTTP/2</a></h3>
+</div>
+<div class="sect1">
+<h2 id="HTTP2"><a class="anchor" href="#HTTP2"></a><a class="link" href="#HTTP2">HTTP/2</a></h2>
+<div class="sectionbody">
 <div class="paragraph">
 <p>These examples demonstrate how users can configure <a href="https://tools.ietf.org/html/rfc7540">HTTP/2</a> transport in
 ServiceTalk.</p>
 </div>
-<div class="sect3">
-<h4 id="http2-with-prior-knowledge"><a class="anchor" href="#http2-with-prior-knowledge"></a><a class="link" href="#http2-with-prior-knowledge">HTTP/2 with Prior-Knowledge</a></h4>
+<div class="sect2">
+<h3 id="http2-with-prior-knowledge"><a class="anchor" href="#http2-with-prior-knowledge"></a><a class="link" href="#http2-with-prior-knowledge">HTTP/2 with Prior-Knowledge</a></h3>
 <div class="paragraph">
 <p>This example demonstrates how to configure using
 <a href="https://tools.ietf.org/html/rfc7540#section-3.4">HTTP/2 transport with Prior-Knowledge</a> for HTTP clients and servers:</p>
@@ -526,8 +566,8 @@ A client that uses HTTP/2 with Prior Knowledge.</p>
 </ul>
 </div>
 </div>
-<div class="sect3">
-<h4 id="http2-via-alpn-for-secure-connections"><a class="anchor" href="#http2-via-alpn-for-secure-connections"></a><a class="link" href="#http2-via-alpn-for-secure-connections">HTTP/2 via ALPN for secure connections</a></h4>
+<div class="sect2">
+<h3 id="http2-via-alpn-for-secure-connections"><a class="anchor" href="#http2-via-alpn-for-secure-connections"></a><a class="link" href="#http2-via-alpn-for-secure-connections">HTTP/2 via ALPN for secure connections</a></h3>
 <div class="paragraph">
 <p>For secure TLS connections <a href="https://tools.ietf.org/html/rfc7301">ALPN extension</a> could be used to negotiate the
 communication protocol:</p>
@@ -577,12 +617,13 @@ builder API is the same across all the HTTP APIs.
 </div>
 </div>
 </div>
-<div class="sect2">
-<h3 id="service-composition"><a class="anchor" href="#service-composition"></a><a class="link" href="#service-composition">Service Composition</a></h3>
+</div>
+<div class="sect1">
+<h2 id="service-composition"><a class="anchor" href="#service-composition"></a><a class="link" href="#service-composition">Service Composition</a></h2>
+<div class="sectionbody">
 <div class="paragraph">
 <p>An advanced example which demonstrates a composition of various ServiceTalks services in one application.
 For more information see <a href="service-composition.html" class="page">Service Composition</a>.</p>
-</div>
 </div>
 </div>
 </div>
