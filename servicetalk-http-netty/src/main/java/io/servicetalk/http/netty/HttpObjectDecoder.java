@@ -544,22 +544,21 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
         //                     ; obsolete line folding
         //                     ; see Section 3.2.4
         final int nonControlIndex = lfIndex - 2;
-        final int headerStart = buffer.forEachByte(buffer.readerIndex(), nonControlIndex - buffer.readerIndex(),
+        int headerStart = buffer.forEachByte(buffer.readerIndex(), nonControlIndex - buffer.readerIndex(),
                 FIND_NON_LINEAR_WHITESPACE);
         if (headerStart < 0) {
             throw new IllegalArgumentException("unable to find start of header name");
         }
 
-        final int headerEnd = buffer.forEachByte(headerStart + 1, nonControlIndex - headerStart,
+        int headerEnd = buffer.forEachByte(headerStart + 1, nonControlIndex - headerStart,
                 FIND_COLON_OR_WHITE_SPACE);
         if (headerEnd < 0) {
             throw new IllegalArgumentException("unable to find end of header name");
         }
-        // We assume the allocator will not leak memory, and so we retain + slice to avoid copying data.
-        final CharSequence name = newAsciiString(newBufferFrom(
-                buffer.retainedSlice(headerStart, headerEnd - headerStart)));
 
         int valueStart = headerEnd + 1;
+        // We assume the allocator will not leak memory, and so we retain + slice to avoid copying data.
+        CharSequence name = newAsciiString(newBufferFrom(buffer.retainedSlice(headerStart, headerEnd - headerStart)));
         if (buffer.getByte(headerEnd) != COLON_BYTE) {
             valueStart = buffer.forEachByte(headerEnd + 1, nonControlIndex - headerEnd, FIND_COLON) + 1;
             if (valueStart < 0) {
@@ -571,15 +570,14 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
         } else {
             valueStart = buffer.forEachByte(valueStart, nonControlIndex - valueStart + 1, FIND_NON_LINEAR_WHITESPACE);
             // Find End Of String
-            final int valueEnd;
+            int valueEnd;
             if (valueStart < 0 || (valueEnd = buffer.forEachByteDesc(valueStart, lfIndex - valueStart - 1,
                     FIND_NON_LINEAR_WHITESPACE)) < 0) {
                 headers.add(name, emptyAsciiString());
             } else {
                 // We assume the allocator will not leak memory, and so we retain + slice to avoid copying data.
-                final CharSequence value = newAsciiString(newBufferFrom(
-                        buffer.retainedSlice(valueStart, valueEnd - valueStart + 1)));
-                headers.add(name, value);
+                headers.add(name, newAsciiString(newBufferFrom(
+                        buffer.retainedSlice(valueStart, valueEnd - valueStart + 1))));
             }
         }
         // Consume the header line bytes from the buffer.

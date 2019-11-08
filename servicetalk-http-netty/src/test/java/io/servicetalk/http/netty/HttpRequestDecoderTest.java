@@ -137,6 +137,7 @@ public class HttpRequestDecoderTest {
                 "   User-Agent   :unit-test" + "\r\n" +
                 "Empty:" + "\r\n" +
                 "EmptyWhitespace:   " + "\r\n" +
+                "SingleCharacterNoWhiteSpace: a" + "\r\n" +
                 "Content-Length:   " + content.length + "   " + "\r\n" + "\r\n").getBytes(US_ASCII);
         assertTrue(channel.writeInbound(wrappedBuffer(beforeContentBytes)));
         assertTrue(channel.writeInbound(wrappedBuffer(content)));
@@ -462,6 +463,7 @@ public class HttpRequestDecoderTest {
         if (headers.contains("Empty")) {
             assertSingleHeaderValue(headers, "Empty", "");
             assertSingleHeaderValue(headers, "EmptyWhitespace", "");
+            assertSingleHeaderValue(headers, "SingleCharacterNoWhiteSpace", "a");
         }
     }
 
