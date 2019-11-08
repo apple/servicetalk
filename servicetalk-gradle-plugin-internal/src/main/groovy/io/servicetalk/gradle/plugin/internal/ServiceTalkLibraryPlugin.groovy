@@ -102,14 +102,18 @@ final class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
             }
           }
         }
-        repositories {
-          maven {
-            def releasesRepoUrl = "https://oss.sonatype.org/service/local/staging/deploy/maven2"
-            def snapshotsRepoUrl = "https://oss.sonatype.org/content/repositories/snapshots"
-            url = project.isReleaseBuild ? releasesRepoUrl : snapshotsRepoUrl
-            credentials {
-              username = System.getenv("SONATYPE_USER")
-              password = System.getenv("SONATYPE_TOKEN")
+
+        if (!repositories) {
+          repositories {
+            maven {
+              name = "sonatype"
+              def releasesRepoUrl = "https://oss.sonatype.org/service/local/staging/deploy/maven2"
+              def snapshotsRepoUrl = "https://oss.sonatype.org/content/repositories/snapshots"
+              url = project.isReleaseBuild ? releasesRepoUrl : snapshotsRepoUrl
+              credentials {
+                username = System.getenv("SONATYPE_USER")
+                password = System.getenv("SONATYPE_TOKEN")
+              }
             }
           }
         }
