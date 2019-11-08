@@ -126,6 +126,7 @@ public class HttpResponseDecoderTest {
         byte[] beforeContentBytes = ("HTTP/1.1 200 OK" + "\r\n" +
                 "Connection:keep-alive" + "\r\n" +
                 "Server:unit-test" + "\r\n" +
+                "SingleCharacterNoWhiteSpace:a" + "\r\n" +
                 "Content-Length:" + content.length + "\r\n" + "\r\n").getBytes(US_ASCII);
         assertTrue(channel.writeInbound(wrappedBuffer(beforeContentBytes)));
         assertTrue(channel.writeInbound(wrappedBuffer(content)));
@@ -465,6 +466,8 @@ public class HttpResponseDecoderTest {
         if (headers.contains("Empty")) {
             assertSingleHeaderValue(headers, "Empty", "");
             assertSingleHeaderValue(headers, "EmptyWhitespace", "");
+        }
+        if (headers.contains("SingleCharacterNoWhiteSpace")) {
             assertSingleHeaderValue(headers, "SingleCharacterNoWhiteSpace", "a");
         }
     }

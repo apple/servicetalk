@@ -565,7 +565,7 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
                 throw new IllegalArgumentException("unable to find colon");
             }
         }
-        if (nonControlIndex <= valueStart) {
+        if (nonControlIndex < valueStart) {
             headers.add(name, emptyAsciiString());
         } else {
             valueStart = buffer.forEachByte(valueStart, nonControlIndex - valueStart + 1, FIND_NON_LINEAR_WHITESPACE);
