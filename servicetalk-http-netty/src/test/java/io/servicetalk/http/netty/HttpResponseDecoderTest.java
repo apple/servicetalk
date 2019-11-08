@@ -119,6 +119,40 @@ public class HttpResponseDecoderTest {
     }
 
     @Test
+    public void contentLengthNoTrailersHeaderNoWhiteSpace() {
+        EmbeddedChannel channel = newEmbeddedChannel();
+        byte[] content = new byte[128];
+        ThreadLocalRandom.current().nextBytes(content);
+        byte[] beforeContentBytes = ("HTTP/1.1 200 OK" + "\r\n" +
+                "Connection:keep-alive" + "\r\n" +
+                "Server:unit-test" + "\r\n" +
+                "Content-Length:" + content.length + "\r\n" + "\r\n").getBytes(US_ASCII);
+        assertTrue(channel.writeInbound(wrappedBuffer(beforeContentBytes)));
+        assertTrue(channel.writeInbound(wrappedBuffer(content)));
+
+        validateHttpResponse(channel, content.length);
+        assertFalse(channel.finishAndReleaseAll());
+    }
+
+    @Test
+    public void contentLengthNoTrailersHeaderMixedWhiteSpace() {
+        EmbeddedChannel channel = newEmbeddedChannel();
+        byte[] content = new byte[128];
+        ThreadLocalRandom.current().nextBytes(content);
+        byte[] beforeContentBytes = ("HTTP/1.1 200 OK" + "\r\n" +
+                "Connection   :keep-alive" + "\r\n" +
+                "   Server   :unit-test" + "\r\n" +
+                "Empty:" + "\r\n" +
+                "EmptyWhitespace:   " + "\r\n" +
+                "Content-Length:   " + content.length + "   " + "\r\n" + "\r\n").getBytes(US_ASCII);
+        assertTrue(channel.writeInbound(wrappedBuffer(beforeContentBytes)));
+        assertTrue(channel.writeInbound(wrappedBuffer(content)));
+
+        validateHttpResponse(channel, content.length);
+        assertFalse(channel.finishAndReleaseAll());
+    }
+
+    @Test
     public void chunkedNoTrailers() {
         EmbeddedChannel channel = newEmbeddedChannel();
         byte[] content = new byte[128];
@@ -427,6 +461,10 @@ public class HttpResponseDecoderTest {
     private static void assertStandardHeaders(HttpHeaders headers) {
         assertSingleHeaderValue(headers, CONNECTION, KEEP_ALIVE);
         assertSingleHeaderValue(headers, "seRver", "unit-test");
+        if (headers.contains("Empty")) {
+            assertSingleHeaderValue(headers, "Empty", "");
+            assertSingleHeaderValue(headers, "EmptyWhitespace", "");
+        }
     }
 
     private static EmbeddedChannel newEmbeddedChannel() {

@@ -112,6 +112,40 @@ public class HttpRequestDecoderTest {
     }
 
     @Test
+    public void contentLengthNoTrailersHeaderNoWhiteSpace() {
+        EmbeddedChannel channel = newEmbeddedChannel();
+        byte[] content = new byte[128];
+        ThreadLocalRandom.current().nextBytes(content);
+        byte[] beforeContentBytes = ("GET /some/path?foo=bar&baz=yyy HTTP/1.1" + "\r\n" +
+                "Connection:keep-alive" + "\r\n" +
+                "User-Agent:unit-test" + "\r\n" +
+                "Content-Length:" + content.length + "\r\n" + "\r\n").getBytes(US_ASCII);
+        assertTrue(channel.writeInbound(wrappedBuffer(beforeContentBytes)));
+        assertTrue(channel.writeInbound(wrappedBuffer(content)));
+
+        validateHttpRequest(channel, content.length);
+        assertFalse(channel.finishAndReleaseAll());
+    }
+
+    @Test
+    public void contentLengthNoTrailersHeaderMixedWhiteSpace() {
+        EmbeddedChannel channel = newEmbeddedChannel();
+        byte[] content = new byte[128];
+        ThreadLocalRandom.current().nextBytes(content);
+        byte[] beforeContentBytes = ("GET /some/path?foo=bar&baz=yyy HTTP/1.1" + "\r\n" +
+                "Connection   :keep-alive" + "\r\n" +
+                "   User-Agent   :unit-test" + "\r\n" +
+                "Empty:" + "\r\n" +
+                "EmptyWhitespace:   " + "\r\n" +
+                "Content-Length:   " + content.length + "   " + "\r\n" + "\r\n").getBytes(US_ASCII);
+        assertTrue(channel.writeInbound(wrappedBuffer(beforeContentBytes)));
+        assertTrue(channel.writeInbound(wrappedBuffer(content)));
+
+        validateHttpRequest(channel, content.length);
+        assertFalse(channel.finishAndReleaseAll());
+    }
+
+    @Test
     public void chunkedNoTrailers() {
         EmbeddedChannel channel = newEmbeddedChannel();
         byte[] content = new byte[128];
@@ -425,6 +459,10 @@ public class HttpRequestDecoderTest {
     private static void assertStandardHeaders(HttpHeaders headers) {
         assertSingleHeaderValue(headers, "connecTion", KEEP_ALIVE);
         assertSingleHeaderValue(headers, USER_AGENT, "unit-test");
+        if (headers.contains("Empty")) {
+            assertSingleHeaderValue(headers, "Empty", "");
+            assertSingleHeaderValue(headers, "EmptyWhitespace", "");
+        }
     }
 
     static void assertSingleHeaderValue(HttpHeaders headers, CharSequence name, CharSequence expectedValue) {
