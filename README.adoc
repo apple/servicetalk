@@ -13,10 +13,10 @@ See the link:https://docs.servicetalk.io/[ServiceTalk docs] for more information
 
 == Getting Started
 
-ServiceTalk releases are available on link:http://repo1.maven.org/maven2/io/servicetalk/[Maven Central]
+ServiceTalk releases are available on link:http://repo1.maven.org/maven2/io/servicetalk/[Maven Central].
 
-For Gradle as well as other build tools that don't use Maven Central as default repository, additional configuration is
-required.
+For Gradle as well as other build tools that don't use Maven Central as a default repository, additional configuration
+is required.
 
 .Gradle, build.gradle
 [source,groovy]
