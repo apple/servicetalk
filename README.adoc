@@ -1,4 +1,4 @@
-= ServiceTalk
+= ServiceTalk image:https://img.shields.io/maven-central/v/io.servicetalk/servicetalk-annotations?color=blue[Maven Central] image:https://img.shields.io/jenkins/tests/https/ci.servicetalk.io/servicetalk-java8-prb?compact_message[Jenkins tests]
 
 ServiceTalk is a JVM network application framework with APIs tailored to specific protocols (e.g. HTTP/1.x,
 HTTP/2.x, etc...) and supports multiple programming paradigms.
@@ -11,40 +11,9 @@ See the link:https://docs.servicetalk.io/[ServiceTalk docs] for more information
 
 == Getting Started
 
-Currently, all ServiceTalk released artifacts are available in a Bintray repo:
-https://dl.bintray.com/servicetalk/servicetalk/, but will be published to Maven Central
-link:https://github.com/apple/servicetalk/issues/845[soon].
+ServiceTalk releases are available on Maven Central:
 
-This repository must be configured in which ever build tool your project uses (e.g. Maven, Gradle, etc...).
-
-.Maven, pom.xml
-[source,xml]
-----
-<project>
-...
-  <repositories>
-    <repository>
-      <id>bintray-servicetalk</id>
-      <url>https://dl.bintray.com/servicetalk/servicetalk/</url>
-    </repository>
-  </repositories>
-...
-</project>
-----
-
-.Gradle, build.gradle
-[source,groovy]
-----
-repositories {
-  mavenCentral()
-  maven {
-    url  "https://dl.bintray.com/servicetalk/servicetalk/"
-  }
-}
-----
-
-For more information, see Bintray
-link:https://www.jfrog.com/confluence/display/BT/Maven+Repositories[Maven Repositories] docs.
+* http://repo1.maven.org/maven2/io/servicetalk/
 
 Refer to the link:https://docs.servicetalk.io/[ServiceTalk docs] for various examples that will get you started with the
 different features of ServiceTalk.
