@@ -21,11 +21,11 @@ rootProject.subprojects.findAll { !it.name.contains("bom") && !it.name.contains(
   dependencies.constraints.add("api", it)
 }
 
-// Keep this metadata in sync with servicetalk-gradle-plugin-internal/src/main/groovy/io/servicetalk/gradle/plugin/internal/ServiceTalkLibraryPlugin.groovy
+// Keep publishing and signing configuration in sync with servicetalk-gradle-plugin-internal/src/main/groovy/io/servicetalk/gradle/plugin/internal/ServiceTalkLibraryPlugin.groovy
 publishing {
   publications {
     mavenJava(MavenPublication) {
-      // publish jars
+      // publish POM
       from components.javaPlatform
       pom {
         name = project.name
