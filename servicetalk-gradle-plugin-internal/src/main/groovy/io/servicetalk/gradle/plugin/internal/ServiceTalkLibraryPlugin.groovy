@@ -70,6 +70,7 @@ final class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
         archives javadocJar
       }
 
+      // Keep publishing and signing configuration in sync with servicetalk-bom/build.gradle
       publishing {
         publications {
           mavenJava(MavenPublication) {
