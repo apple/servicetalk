@@ -21,10 +21,60 @@ rootProject.subprojects.findAll { !it.name.contains("bom") && !it.name.contains(
   dependencies.constraints.add("api", it)
 }
 
+// Keep this metadata in sync with servicetalk-gradle-plugin-internal/src/main/groovy/io/servicetalk/gradle/plugin/internal/ServiceTalkLibraryPlugin.groovy
 publishing {
   publications {
     mavenJava(MavenPublication) {
+      // publish jars
       from components.javaPlatform
+      pom {
+        name = project.name
+        description = 'A networking framework that evolves with your application'
+        url = 'https://servicetalk.io'
+        licenses {
+          license {
+            name = 'The Apache License, Version 2.0'
+            url = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+          }
+        }
+        developers {
+          developer {
+            id = 'servicetalk-project-authors'
+            name = 'ServiceTalk project authors'
+            email = 'servicetalk-oss@group.apple.com'
+          }
+        }
+        scm {
+          connection = 'scm:git:git://github.com/apple/servicetalk.git'
+          developerConnection = 'scm:git:ssh://github.com:apple/servicetalk.git'
+          url = 'https://github.com/apple/servicetalk'
+        }
+      }
     }
+  }
+
+  if (!repositories) {
+    repositories {
+      maven {
+        name = "sonatype"
+        def releasesRepoUrl = "https://oss.sonatype.org/service/local/staging/deploy/maven2"
+        def snapshotsRepoUrl = "https://oss.sonatype.org/content/repositories/snapshots"
+        url = project.isReleaseBuild ? releasesRepoUrl : snapshotsRepoUrl
+        credentials {
+          username = System.getenv("SONATYPE_USER")
+          password = System.getenv("SONATYPE_TOKEN")
+        }
+      }
+    }
+  }
+}
+
+if (!!findProperty("signingKey") && !!findProperty("signingPassword")) {
+  pluginManager.apply("signing")
+  signing {
+    def signingKey = findProperty("signingKey")
+    def signingPassword = findProperty("signingPassword")
+    useInMemoryPgpKeys(signingKey, signingPassword)
+    sign publishing.publications.mavenJava
   }
 }
