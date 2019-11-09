@@ -15,26 +15,28 @@
  */
 package io.servicetalk.concurrent.api;
 
+import io.servicetalk.concurrent.internal.ThreadInterruptingCancellable;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Objects;
-
-import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
+import static java.lang.Thread.currentThread;
+import static java.util.Objects.requireNonNull;
 
 public class RunnableCompletable extends AbstractSynchronousCompletable {
     private static final Logger LOGGER = LoggerFactory.getLogger(RunnableCompletable.class);
     private final Runnable runnable;
 
     RunnableCompletable(final Runnable runnable) {
-        this.runnable = Objects.requireNonNull(runnable);
+        this.runnable = requireNonNull(runnable);
     }
 
     @Override
     void doSubscribe(final Subscriber subscriber) {
+        final ThreadInterruptingCancellable cancellable = new ThreadInterruptingCancellable(currentThread());
         try {
-            subscriber.onSubscribe(IGNORE_CANCEL);
+            subscriber.onSubscribe(cancellable);
         } catch (Throwable t) {
             handleExceptionFromOnSubscribe(subscriber, t);
             return;
@@ -44,11 +46,13 @@ public class RunnableCompletable extends AbstractSynchronousCompletable {
             runnable.run();
 
             try {
+                cancellable.setDone();
                 subscriber.onComplete();
             } catch (Throwable t) {
                 LOGGER.info("Ignoring exception from onComplete of Subscriber {}.", subscriber, t);
             }
         } catch (Throwable t) {
+            cancellable.setDone(t);
             subscriber.onError(t);
         }
     }

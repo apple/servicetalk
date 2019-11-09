@@ -15,14 +15,18 @@
  */
 package io.servicetalk.concurrent.api.completable;
 
+import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.api.Completable;
 
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.concurrent.CountDownLatch;
+
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -30,6 +34,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 public class RunnableCompletableTest {
+    private static final RuntimeException DELIBERATE_EXCEPTION = new IllegalArgumentException();
 
     private Runnable factory;
 
@@ -67,6 +72,54 @@ public class RunnableCompletableTest {
         toSource(source).subscribe(subscriber);
         verify(subscriber).onSubscribe(any());
         verify(subscriber).onError(any(IllegalArgumentException.class));
+        verifyNoMoreInteractions(subscriber);
+    }
+
+    @Test
+    public void cancelInterrupts() throws Exception {
+        final Completable source = Completable.fromRunnable(factory);
+        final CountDownLatch latch = new CountDownLatch(1);
+
+        doAnswer(invocation -> {
+            try {
+                // await till interrupted.
+                latch.await();
+            } catch (InterruptedException e) {
+                latch.countDown();
+            }
+            return 1;
+        }).when(factory).run();
+
+        toSource(source).subscribe(new CompletableSource.Subscriber() {
+            @Override
+            public void onSubscribe(final Cancellable cancellable) {
+                cancellable.cancel();
+            }
+
+            @Override
+            public void onComplete() {
+                // noop
+            }
+
+            @Override
+            public void onError(final Throwable t) {
+                // noop
+            }
+        });
+
+        latch.await();
+    }
+
+    @Test
+    public void onSubscribeThrows() {
+        final Completable source = Completable.fromRunnable(factory);
+
+        final CompletableSource.Subscriber subscriber = mock(CompletableSource.Subscriber.class);
+        doThrow(DELIBERATE_EXCEPTION).when(subscriber).onSubscribe(any());
+
+        toSource(source).subscribe(subscriber);
+        verify(subscriber).onSubscribe(any());
+        verify(subscriber).onError(DELIBERATE_EXCEPTION);
         verifyNoMoreInteractions(subscriber);
     }
 }

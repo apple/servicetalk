@@ -15,16 +15,21 @@
  */
 package io.servicetalk.concurrent.api.single;
 
+import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.api.Single;
 
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.concurrent.CountDownLatch;
 import java.util.function.Supplier;
+
+import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -32,6 +37,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 public class SupplierSingleTest {
+    private static final RuntimeException DELIBERATE_EXCEPTION = new IllegalArgumentException();
 
     private Supplier<Integer> factory;
 
@@ -74,6 +80,55 @@ public class SupplierSingleTest {
         toSource(source).subscribe(subscriber);
         verify(subscriber).onSubscribe(any());
         verify(subscriber).onError(any(IllegalArgumentException.class));
+        verifyNoMoreInteractions(subscriber);
+    }
+
+    @Test
+    public void cancelInterrupts() throws Exception {
+        final Single<Integer> source = Single.fromSupplier(factory);
+        final CountDownLatch latch = new CountDownLatch(1);
+
+        when(factory.get()).then(invocation -> {
+            try {
+                // await till interrupted.
+                latch.await();
+            } catch (InterruptedException e) {
+                latch.countDown();
+            }
+            return 1;
+        });
+
+        toSource(source).subscribe(new SingleSource.Subscriber<Integer>() {
+            @Override
+            public void onSubscribe(final Cancellable cancellable) {
+                cancellable.cancel();
+            }
+
+            @Override
+            public void onSuccess(@Nullable final Integer result) {
+                // noop
+            }
+
+            @Override
+            public void onError(final Throwable t) {
+                // noop
+            }
+        });
+
+        latch.await();
+    }
+
+    @Test
+    public void onSubscribeThrows() {
+        final Single<Integer> source = Single.fromSupplier(factory);
+
+        @SuppressWarnings("unchecked")
+        final SingleSource.Subscriber<Integer> subscriber = mock(SingleSource.Subscriber.class);
+        doThrow(DELIBERATE_EXCEPTION).when(subscriber).onSubscribe(any());
+
+        toSource(source).subscribe(subscriber);
+        verify(subscriber).onSubscribe(any());
+        verify(subscriber).onError(DELIBERATE_EXCEPTION);
         verifyNoMoreInteractions(subscriber);
     }
 }

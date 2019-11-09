@@ -15,40 +15,46 @@
  */
 package io.servicetalk.concurrent.api;
 
+import io.servicetalk.concurrent.internal.ThreadInterruptingCancellable;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Objects;
 import java.util.concurrent.Callable;
 
-import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
+import static java.lang.Thread.currentThread;
+import static java.util.Objects.requireNonNull;
 
 final class CallableSingle<T> extends AbstractSynchronousSingle<T> {
     private static final Logger LOGGER = LoggerFactory.getLogger(CallableSingle.class);
     private final Callable<T> callable;
 
     CallableSingle(final Callable<T> callable) {
-        this.callable = Objects.requireNonNull(callable);
+        this.callable = requireNonNull(callable);
     }
 
     @Override
     void doSubscribe(final Subscriber<? super T> subscriber) {
+        final ThreadInterruptingCancellable cancellable = new ThreadInterruptingCancellable(currentThread());
         try {
-            subscriber.onSubscribe(IGNORE_CANCEL);
+            subscriber.onSubscribe(cancellable);
         } catch (Throwable t) {
             handleExceptionFromOnSubscribe(subscriber, t);
             return;
         }
+
         try {
             final T value = callable.call();
 
             try {
+                cancellable.setDone();
                 subscriber.onSuccess(value);
             } catch (Throwable t) {
                 LOGGER.info("Ignoring exception from onSuccess of Subscriber {}.", subscriber, t);
             }
         } catch (Throwable t) {
+            cancellable.setDone(t);
             subscriber.onError(t);
         }
     }
