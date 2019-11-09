@@ -1,4 +1,6 @@
-= ServiceTalk image:https://img.shields.io/maven-central/v/io.servicetalk/servicetalk-annotations?color=blue[Maven Central]
+= ServiceTalk
+
+image:https://img.shields.io/maven-central/v/io.servicetalk/servicetalk-annotations?color=blue[Maven Central]
 
 ServiceTalk is a JVM network application framework with APIs tailored to specific protocols (e.g. HTTP/1.x,
 HTTP/2.x, etc...) and supports multiple programming paradigms.
@@ -11,19 +13,16 @@ See the link:https://docs.servicetalk.io/[ServiceTalk docs] for more information
 
 == Getting Started
 
-ServiceTalk releases are available on Maven Central:
+ServiceTalk releases are available on link:http://repo1.maven.org/maven2/io/servicetalk/[Maven Central]
 
-* http://repo1.maven.org/maven2/io/servicetalk/
-
-For Gradle as well as other build tools that don't download from Maven Central by default, add it to your remote
-repositories. link:https://bintray.com/beta/#/bintray/jcenter/[bintray/jcenter] is an aggregate repository that
-combines Maven Central and other popular repositories.
+For Gradle as well as other build tools that don't use Maven Central as default repository, additional configuration is
+required.
 
 .Gradle, build.gradle
 [source,groovy]
 ----
 repositories {
-  jcenter()
+  jcenter() // combines Maven Central and other popular repositories
 }
 ----
 
