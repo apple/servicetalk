@@ -7,6 +7,9 @@ Gradle plugin for configuring gRPC client and server code generation.
 [source,groovy]
 ----
 buildscript {
+  repositories {
+    jcenter()
+  }
   dependencies {
     classpath "io.servicetalk:servicetalk-grpc-gradle-plugin:$servicetalkVersion"
   }
