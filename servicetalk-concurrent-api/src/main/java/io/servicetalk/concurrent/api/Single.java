@@ -1089,15 +1089,13 @@ public abstract class Single<T> {
     }
 
     /**
-     * <p>
      * Creates a {@link Single} which when subscribed will invoke {@link Callable#call()} on the passed
      * {@link Callable} and emit the value returned by that invocation from the returned {@link Single}. Any error
      * emitted by the {@link Callable} will terminate the returned {@link Single} with the same error.
-     * </p><p>
+     * <p />
      * Blocking inside {@link Callable#call()} will in turn block the subscribe call to the returned {@link Single}. If
      * this behavior is undesirable then the returned {@link Single} should be offloaded using one of the operators that
      * offloads the subscribe call (eg: {@link #subscribeOn(Executor)}, {@link #publishAndSubscribeOn(Executor)}).
-     * </p>
      *
      * @param callable {@link Callable} which supplies the result of the {@link Single}.
      * @param <T>      Type of the {@link Single}.
@@ -1109,15 +1107,13 @@ public abstract class Single<T> {
     }
 
     /**
-     * <p>
      * Creates a {@link Single} which when subscribed will invoke {@link Supplier#get()} on the passed
      * {@link Supplier} and emit the value returned by that invocation from the returned {@link Single}. Any error
      * emitted by the {@link Supplier} will terminate the returned {@link Single} with the same error.
-     * </p><p>
+     * <p />
      * Blocking inside {@link Supplier#get()} will in turn block the subscribe call to the returned {@link Single}. If
      * this behavior is undesirable then the returned {@link Single} should be offloaded using one of the operators that
      * offloads the subscribe call (eg: {@link #subscribeOn(Executor)}, {@link #publishAndSubscribeOn(Executor)}).
-     * </p>
      *
      * @param supplier {@link Supplier} which supplies the result of the {@link Single}.
      * @param <T>      Type of the {@link Single}.
