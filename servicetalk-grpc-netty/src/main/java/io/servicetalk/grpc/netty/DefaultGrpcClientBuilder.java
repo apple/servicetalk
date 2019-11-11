@@ -16,6 +16,7 @@
 package io.servicetalk.grpc.netty;
 
 import io.servicetalk.buffer.api.BufferAllocator;
+import io.servicetalk.client.api.AutomaticRetryStrategyProvider;
 import io.servicetalk.client.api.ConnectionFactoryFilter;
 import io.servicetalk.client.api.LoadBalancerFactory;
 import io.servicetalk.client.api.ServiceDiscoverer;
@@ -109,6 +110,13 @@ final class DefaultGrpcClientBuilder<U, R> extends GrpcClientBuilder<U, R> {
     public GrpcClientSecurityConfigurator<U, R> secure() {
         SingleAddressHttpClientSecurityConfigurator<U, R> httpConfigurator = httpClientBuilder.secure();
         return new DefaultGrpcClientSecurityConfigurator<>(httpConfigurator, this);
+    }
+
+    @Override
+    public GrpcClientBuilder<U, R> automaticRetryStrategy(
+            final AutomaticRetryStrategyProvider automaticRetryStrategyProvider) {
+        httpClientBuilder.automaticRetryStrategy(automaticRetryStrategyProvider);
+        return this;
     }
 
     @Override

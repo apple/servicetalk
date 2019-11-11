@@ -16,6 +16,7 @@
 package io.servicetalk.grpc.api;
 
 import io.servicetalk.buffer.api.BufferAllocator;
+import io.servicetalk.client.api.AutomaticRetryStrategyProvider;
 import io.servicetalk.client.api.ConnectionFactoryFilter;
 import io.servicetalk.client.api.LoadBalancerFactory;
 import io.servicetalk.client.api.ServiceDiscoverer;
@@ -82,6 +83,10 @@ public abstract class GrpcClientBuilder<U, R>
 
     @Override
     public abstract GrpcClientSecurityConfigurator<U, R> secure();
+
+    @Override
+    public abstract GrpcClientBuilder<U, R> automaticRetryStrategy(
+            AutomaticRetryStrategyProvider automaticRetryStrategyProvider);
 
     @Override
     public abstract GrpcClientBuilder<U, R> serviceDiscoverer(

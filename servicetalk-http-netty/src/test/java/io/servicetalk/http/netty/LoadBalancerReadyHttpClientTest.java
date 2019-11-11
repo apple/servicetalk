@@ -16,6 +16,9 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.buffer.api.BufferAllocator;
+import io.servicetalk.client.api.DefaultAutomaticRetryStrategyProvider.Builder;
+import io.servicetalk.client.api.LoadBalancedConnection;
+import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.NoAvailableHostException;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TestPublisher;
@@ -49,7 +52,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
-import static io.servicetalk.client.api.internal.LoadBalancerReadyEvent.LOAD_BALANCER_READY_EVENT;
+import static io.servicetalk.client.api.LoadBalancerReadyEvent.LOAD_BALANCER_READY_EVENT;
 import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.Single.succeeded;
@@ -62,6 +65,8 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.initMocks;
 
 public class LoadBalancerReadyHttpClientTest {
@@ -129,11 +134,8 @@ public class LoadBalancerReadyHttpClientTest {
             Function<StreamingHttpClient, Single<?>> action) throws InterruptedException {
         TestPublisher<Object> loadBalancerPublisher = new TestPublisher<>();
 
-        StreamingHttpClientFilterFactory filterFactory = next ->
-                new LoadBalancerReadyStreamingHttpClientFilter(1, loadBalancerPublisher, next);
-
         StreamingHttpClient client = TestStreamingHttpClient.from(reqRespFactory, mockExecutionCtx,
-                filterFactory.append(testHandler));
+                newAutomaticRetryFilterFactory(loadBalancerPublisher).append(testHandler));
 
         CountDownLatch latch = new CountDownLatch(1);
         AtomicReference<Throwable> causeRef = new AtomicReference<>();
@@ -153,14 +155,19 @@ public class LoadBalancerReadyHttpClientTest {
         assertThat(causeRef.get(), is(DELIBERATE_EXCEPTION));
     }
 
+    private StreamingHttpClientFilterFactory newAutomaticRetryFilterFactory(
+            final TestPublisher<Object> loadBalancerPublisher) {
+        @SuppressWarnings("unchecked")
+        LoadBalancer<LoadBalancedConnection> lb = mock(LoadBalancer.class);
+        when(lb.eventStream()).thenReturn(loadBalancerPublisher);
+        return next -> new AutomaticRetryFilter(next, new Builder().maxRetries(1).build().forLoadbalancer(lb));
+    }
+
     private void verifyActionIsDelayedUntilAfterInitialized(Function<StreamingHttpClient, Single<?>> action)
             throws InterruptedException {
 
-        StreamingHttpClientFilterFactory filterFactory = next -> new LoadBalancerReadyStreamingHttpClientFilter(
-                1, loadBalancerPublisher, next);
-
         StreamingHttpClient client = TestStreamingHttpClient.from(reqRespFactory, mockExecutionCtx,
-                filterFactory.append(testHandler));
+                newAutomaticRetryFilterFactory(loadBalancerPublisher).append(testHandler));
 
         CountDownLatch latch = new CountDownLatch(1);
         action.apply(client).subscribe(resp -> latch.countDown());

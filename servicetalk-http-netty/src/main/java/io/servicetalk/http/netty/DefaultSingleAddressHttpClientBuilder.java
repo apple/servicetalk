@@ -16,8 +16,10 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.buffer.api.BufferAllocator;
+import io.servicetalk.client.api.AutomaticRetryStrategyProvider;
 import io.servicetalk.client.api.ConnectionFactory;
 import io.servicetalk.client.api.ConnectionFactoryFilter;
+import io.servicetalk.client.api.DefaultAutomaticRetryStrategyProvider.Builder;
 import io.servicetalk.client.api.DefaultServiceDiscovererEvent;
 import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.LoadBalancerFactory;
@@ -55,6 +57,7 @@ import java.util.function.Function;
 import javax.annotation.Nullable;
 
 import static io.netty.util.NetUtil.toSocketAddressString;
+import static io.servicetalk.client.api.AutomaticRetryStrategyProvider.DISABLE_AUTO_RETRIES;
 import static io.servicetalk.concurrent.api.AsyncCloseables.emptyAsyncCloseable;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.Publisher.failed;
@@ -93,7 +96,8 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
     private StreamingHttpConnectionFilterFactory connectionFilterFactory;
     @Nullable
     private StreamingHttpClientFilterFactory clientFilterFactory;
-    private boolean lbReadyFilterEnabled = true;
+    @Nullable
+    private AutomaticRetryStrategyProvider autoRetry = new Builder().build();
     private ConnectionFactoryFilter<R, FilterableStreamingHttpConnection> connectionFactoryFilter =
             ConnectionFactoryFilter.identity();
 
@@ -142,7 +146,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
         connectionFilterFactory = from.connectionFilterFactory;
         hostToCharSequenceFunction = from.hostToCharSequenceFunction;
         hostHeaderFilterFactoryFunction = from.hostHeaderFilterFactoryFunction;
-        lbReadyFilterEnabled = from.lbReadyFilterEnabled;
+        autoRetry = from.autoRetry;
         connectionFactoryFilter = from.connectionFactoryFilter;
     }
 
@@ -289,8 +293,8 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
 
             FilterableStreamingHttpClient lbClient = closeOnException.prepend(
                     new LoadBalancedStreamingHttpClient(ctx.executionContext, lb, reqRespFactory));
-            if (lbReadyFilterEnabled) {
-                lbClient = new LoadBalancerReadyStreamingHttpClientFilter(4, lb.eventStream(), lbClient);
+            if (autoRetry != null) {
+                lbClient = new AutomaticRetryFilter(lbClient, autoRetry.forLoadbalancer(lb));
             }
             return new FilterableClientToClient(currClientFilterFactory != null ?
                     currClientFilterFactory.create(lbClient) : lbClient,
@@ -405,8 +409,9 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
     }
 
     @Override
-    public DefaultSingleAddressHttpClientBuilder<U, R> disableWaitForLoadBalancer() {
-        lbReadyFilterEnabled = false;
+    public SingleAddressHttpClientBuilder<U, R> automaticRetryStrategy(
+            final AutomaticRetryStrategyProvider automaticRetryStrategyProvider) {
+        autoRetry = automaticRetryStrategyProvider == DISABLE_AUTO_RETRIES ? null : autoRetry;
         return this;
     }
 
