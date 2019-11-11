@@ -1188,6 +1188,23 @@ public abstract class Completable {
     }
 
     /**
+     * Creates a {@link Completable} which when subscribed will invoke {@link Runnable#run()} on the passed
+     * {@link Runnable} and emit the value returned by that invocation from the returned {@link Completable}. Any error
+     * emitted by the {@link Runnable} will terminate the returned {@link Completable} with the same error.
+     * <p>
+     * Blocking inside {@link Runnable#run()} will in turn block the subscribe call to the returned {@link Completable}.
+     * If this behavior is undesirable then the returned {@link Completable} should be offloaded using one of the
+     * operators that offloads the subscribe call (eg: {@link #subscribeOn(Executor)},
+     * {@link #publishAndSubscribeOn(Executor)}).
+     *
+     * @param runnable {@link Runnable} which is invoked before completion.
+     * @return A new {@code Completable}.
+     */
+    public static Completable fromRunnable(final Runnable runnable) {
+        return new RunnableCompletable(runnable);
+    }
+
+    /**
      * Creates a realized failed {@code Completable}.
      *
      * @param cause error that the returned {@code Completable} completes with.
