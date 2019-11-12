@@ -15,8 +15,8 @@
  */
 package io.servicetalk.client.api;
 
-import io.servicetalk.client.api.AutomaticRetryStrategyProvider.AutomaticRetryStrategy;
-import io.servicetalk.client.api.DefaultAutomaticRetryStrategyProvider.Builder;
+import io.servicetalk.client.api.AutoRetryStrategyProvider.AutomaticRetryStrategy;
+import io.servicetalk.client.api.DefaultAutoRetryStrategyProvider.Builder;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.TestCompletableSubscriber;
 import io.servicetalk.concurrent.api.TestPublisher;
@@ -38,7 +38,7 @@ import static org.hamcrest.Matchers.sameInstance;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class DefaultAutomaticRetryStrategyProviderTest {
+public class DefaultAutoRetryStrategyProviderTest {
     private static final RetryableConnectException RETRYABLE_EXCEPTION =
             new RetryableConnectException("deliberate exception");
     private static final NoAvailableHostException NO_AVAILABLE_HOST =
@@ -48,7 +48,7 @@ public class DefaultAutomaticRetryStrategyProviderTest {
     private final TestPublisher<Object> lbEvents;
     private final TestCompletableSubscriber retrySubscriber;
 
-    public DefaultAutomaticRetryStrategyProviderTest() {
+    public DefaultAutoRetryStrategyProviderTest() {
         @SuppressWarnings("unchecked")
         LoadBalancer<LoadBalancedConnection> lb = mock(LoadBalancer.class);
         this.lb = lb;
@@ -140,7 +140,7 @@ public class DefaultAutomaticRetryStrategyProviderTest {
     }
 
     private AutomaticRetryStrategy newStrategy(UnaryOperator<Builder> updater) {
-        AutomaticRetryStrategyProvider provider = updater.apply(new Builder()).build();
+        AutoRetryStrategyProvider provider = updater.apply(new Builder()).build();
         return provider.forLoadbalancer(lb);
     }
 }

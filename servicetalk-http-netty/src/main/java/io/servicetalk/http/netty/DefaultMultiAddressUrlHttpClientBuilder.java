@@ -16,7 +16,7 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.buffer.api.BufferAllocator;
-import io.servicetalk.client.api.AutomaticRetryStrategyProvider;
+import io.servicetalk.client.api.AutoRetryStrategyProvider;
 import io.servicetalk.client.api.ClientGroup;
 import io.servicetalk.client.api.ConnectionFactoryFilter;
 import io.servicetalk.client.api.LoadBalancerFactory;
@@ -408,9 +408,9 @@ final class DefaultMultiAddressUrlHttpClientBuilder
     }
 
     @Override
-    public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> automaticRetryStrategy(
-            final AutomaticRetryStrategyProvider automaticRetryStrategyProvider) {
-        builderTemplate.automaticRetryStrategy(automaticRetryStrategyProvider);
+    public MultiAddressHttpClientBuilder<HostAndPort, InetSocketAddress> autoRetryStrategy(
+            final AutoRetryStrategyProvider autoRetryStrategyProvider) {
+        builderTemplate.autoRetryStrategy(autoRetryStrategyProvider);
         return this;
     }
 

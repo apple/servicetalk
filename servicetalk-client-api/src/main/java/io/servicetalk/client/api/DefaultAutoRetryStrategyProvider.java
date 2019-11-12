@@ -28,15 +28,15 @@ import static io.servicetalk.concurrent.api.Completable.failed;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 
 /**
- * Default implementation for {@link AutomaticRetryStrategyProvider}.
+ * Default implementation for {@link AutoRetryStrategyProvider}.
  */
-public final class DefaultAutomaticRetryStrategyProvider implements AutomaticRetryStrategyProvider {
+public final class DefaultAutoRetryStrategyProvider implements AutoRetryStrategyProvider {
     private final int maxRetryCount;
     private final boolean waitForLb;
     private final boolean retryAllRetryableErrors;
 
-    private DefaultAutomaticRetryStrategyProvider(final int maxRetryCount, final boolean waitForLb,
-                                                  final boolean retryAllRetryableErrors) {
+    private DefaultAutoRetryStrategyProvider(final int maxRetryCount, final boolean waitForLb,
+                                             final boolean retryAllRetryableErrors) {
         this.maxRetryCount = maxRetryCount;
         this.waitForLb = waitForLb;
         this.retryAllRetryableErrors = retryAllRetryableErrors;
@@ -51,7 +51,7 @@ public final class DefaultAutomaticRetryStrategyProvider implements AutomaticRet
     }
 
     /**
-     * A builder for {@link DefaultAutomaticRetryStrategyProvider}.
+     * A builder for {@link DefaultAutoRetryStrategyProvider}.
      */
     public static final class Builder {
         private boolean waitForLb = true;
@@ -99,12 +99,12 @@ public final class DefaultAutomaticRetryStrategyProvider implements AutomaticRet
         }
 
         /**
-         * Builds a new {@link AutomaticRetryStrategyProvider}.
+         * Builds a new {@link AutoRetryStrategyProvider}.
          *
-         * @return A new {@link AutomaticRetryStrategyProvider}.
+         * @return A new {@link AutoRetryStrategyProvider}.
          */
-        public AutomaticRetryStrategyProvider build() {
-            return new DefaultAutomaticRetryStrategyProvider(maxRetries, waitForLb, retryAllRetryableExceptions);
+        public AutoRetryStrategyProvider build() {
+            return new DefaultAutoRetryStrategyProvider(maxRetries, waitForLb, retryAllRetryableExceptions);
         }
     }
 

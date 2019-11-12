@@ -25,12 +25,12 @@ import static io.servicetalk.concurrent.api.Completable.failed;
 /**
  * A provider for {@link AutomaticRetryStrategy}.
  */
-public interface AutomaticRetryStrategyProvider {
+public interface AutoRetryStrategyProvider {
 
     /**
-     * An {@link AutomaticRetryStrategyProvider} that disables automatic retries;
+     * An {@link AutoRetryStrategyProvider} that disables automatic retries;
      */
-    AutomaticRetryStrategyProvider DISABLE_AUTO_RETRIES = __ -> (___, cause) -> failed(cause);
+    AutoRetryStrategyProvider DISABLE_AUTO_RETRIES = __ -> (___, cause) -> failed(cause);
 
     /**
      * Create a new {@link AutomaticRetryStrategy} instance using the passed {@link LoadBalancer}.

@@ -16,7 +16,7 @@
 package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.BufferAllocator;
-import io.servicetalk.client.api.AutomaticRetryStrategyProvider;
+import io.servicetalk.client.api.AutoRetryStrategyProvider;
 import io.servicetalk.client.api.ConnectionFactoryFilter;
 import io.servicetalk.client.api.LoadBalancerFactory;
 import io.servicetalk.client.api.ServiceDiscoverer;
@@ -64,8 +64,8 @@ abstract class BaseSingleAddressHttpClientBuilder<U, R, SDE extends ServiceDisco
     public abstract BaseSingleAddressHttpClientBuilder<U, R, SDE> disableHostHeaderFallback();
 
     @Override
-    public abstract BaseSingleAddressHttpClientBuilder<U, R, SDE> automaticRetryStrategy(
-            AutomaticRetryStrategyProvider automaticRetryStrategyProvider);
+    public abstract BaseSingleAddressHttpClientBuilder<U, R, SDE> autoRetryStrategy(
+            AutoRetryStrategyProvider autoRetryStrategyProvider);
 
     @Override
     public abstract BaseSingleAddressHttpClientBuilder<U, R, SDE> serviceDiscoverer(

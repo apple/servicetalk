@@ -16,10 +16,10 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.buffer.api.BufferAllocator;
-import io.servicetalk.client.api.AutomaticRetryStrategyProvider;
+import io.servicetalk.client.api.AutoRetryStrategyProvider;
 import io.servicetalk.client.api.ConnectionFactory;
 import io.servicetalk.client.api.ConnectionFactoryFilter;
-import io.servicetalk.client.api.DefaultAutomaticRetryStrategyProvider.Builder;
+import io.servicetalk.client.api.DefaultAutoRetryStrategyProvider.Builder;
 import io.servicetalk.client.api.DefaultServiceDiscovererEvent;
 import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.client.api.LoadBalancerFactory;
@@ -57,7 +57,7 @@ import java.util.function.Function;
 import javax.annotation.Nullable;
 
 import static io.netty.util.NetUtil.toSocketAddressString;
-import static io.servicetalk.client.api.AutomaticRetryStrategyProvider.DISABLE_AUTO_RETRIES;
+import static io.servicetalk.client.api.AutoRetryStrategyProvider.DISABLE_AUTO_RETRIES;
 import static io.servicetalk.concurrent.api.AsyncCloseables.emptyAsyncCloseable;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.Publisher.failed;
@@ -97,7 +97,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
     @Nullable
     private StreamingHttpClientFilterFactory clientFilterFactory;
     @Nullable
-    private AutomaticRetryStrategyProvider autoRetry = new Builder().build();
+    private AutoRetryStrategyProvider autoRetry = new Builder().build();
     private ConnectionFactoryFilter<R, FilterableStreamingHttpConnection> connectionFactoryFilter =
             ConnectionFactoryFilter.identity();
 
@@ -409,9 +409,9 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
     }
 
     @Override
-    public SingleAddressHttpClientBuilder<U, R> automaticRetryStrategy(
-            final AutomaticRetryStrategyProvider automaticRetryStrategyProvider) {
-        autoRetry = automaticRetryStrategyProvider == DISABLE_AUTO_RETRIES ? null : autoRetry;
+    public SingleAddressHttpClientBuilder<U, R> autoRetryStrategy(
+            final AutoRetryStrategyProvider autoRetryStrategyProvider) {
+        autoRetry = autoRetryStrategyProvider == DISABLE_AUTO_RETRIES ? null : autoRetryStrategyProvider;
         return this;
     }
 

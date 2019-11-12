@@ -15,7 +15,7 @@
  */
 package io.servicetalk.http.netty;
 
-import io.servicetalk.client.api.AutomaticRetryStrategyProvider.AutomaticRetryStrategy;
+import io.servicetalk.client.api.AutoRetryStrategyProvider.AutomaticRetryStrategy;
 import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.FilterableReservedStreamingHttpConnection;
