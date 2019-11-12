@@ -43,11 +43,11 @@ public final class DefaultAutoRetryStrategyProvider implements AutoRetryStrategy
     }
 
     @Override
-    public AutomaticRetryStrategy forLoadbalancer(LoadBalancer<?> loadBalancer) {
+    public AutoRetryStrategy forLoadbalancer(LoadBalancer<?> loadBalancer) {
         if (!waitForLb && !retryAllRetryableExceptions) {
             return (count, cause) -> failed(cause);
         }
-        return new DefaultAutomaticRetryStrategy(maxRetryCount, waitForLb, retryAllRetryableExceptions, loadBalancer);
+        return new DefaultAutoRetryStrategy(maxRetryCount, waitForLb, retryAllRetryableExceptions, loadBalancer);
     }
 
     /**
@@ -108,15 +108,15 @@ public final class DefaultAutoRetryStrategyProvider implements AutoRetryStrategy
         }
     }
 
-    private static final class DefaultAutomaticRetryStrategy implements AutomaticRetryStrategy {
+    private static final class DefaultAutoRetryStrategy implements AutoRetryStrategy {
         @Nullable
         private final LoadBalancerReadySubscriber loadBalancerReadySubscriber;
         private final AsyncCloseable closeAsync;
         private final int maxRetryCount;
         private final boolean retryAllRetryableExceptions;
 
-        DefaultAutomaticRetryStrategy(final int maxRetryCount, final boolean waitForLb,
-                                      final boolean retryAllRetryableExceptions, final LoadBalancer<?> loadBalancer) {
+        DefaultAutoRetryStrategy(final int maxRetryCount, final boolean waitForLb,
+                                 final boolean retryAllRetryableExceptions, final LoadBalancer<?> loadBalancer) {
             this.maxRetryCount = maxRetryCount;
             this.retryAllRetryableExceptions = retryAllRetryableExceptions;
             if (waitForLb) {

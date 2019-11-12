@@ -294,7 +294,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
             FilterableStreamingHttpClient lbClient = closeOnException.prepend(
                     new LoadBalancedStreamingHttpClient(ctx.executionContext, lb, reqRespFactory));
             if (autoRetry != null) {
-                lbClient = new AutomaticRetryFilter(lbClient, autoRetry.forLoadbalancer(lb));
+                lbClient = new AutoRetryFilter(lbClient, autoRetry.forLoadbalancer(lb));
             }
             return new FilterableClientToClient(currClientFilterFactory != null ?
                     currClientFilterFactory.create(lbClient) : lbClient,
@@ -411,7 +411,8 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
     @Override
     public SingleAddressHttpClientBuilder<U, R> autoRetryStrategy(
             final AutoRetryStrategyProvider autoRetryStrategyProvider) {
-        autoRetry = autoRetryStrategyProvider == DISABLE_AUTO_RETRIES ? null : autoRetryStrategyProvider;
+        autoRetry = autoRetryStrategyProvider == DISABLE_AUTO_RETRIES ? null :
+                requireNonNull(autoRetryStrategyProvider);
         return this;
     }
 

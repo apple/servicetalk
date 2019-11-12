@@ -160,7 +160,7 @@ public class LoadBalancerReadyHttpClientTest {
         @SuppressWarnings("unchecked")
         LoadBalancer<LoadBalancedConnection> lb = mock(LoadBalancer.class);
         when(lb.eventStream()).thenReturn(loadBalancerPublisher);
-        return next -> new AutomaticRetryFilter(next, new Builder().maxRetries(1).build().forLoadbalancer(lb));
+        return next -> new AutoRetryFilter(next, new Builder().maxRetries(1).build().forLoadbalancer(lb));
     }
 
     private void verifyActionIsDelayedUntilAfterInitialized(Function<StreamingHttpClient, Single<?>> action)

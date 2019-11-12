@@ -15,7 +15,7 @@
  */
 package io.servicetalk.http.netty;
 
-import io.servicetalk.client.api.AutoRetryStrategyProvider.AutomaticRetryStrategy;
+import io.servicetalk.client.api.AutoRetryStrategyProvider.AutoRetryStrategy;
 import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.FilterableReservedStreamingHttpConnection;
@@ -33,10 +33,10 @@ import io.servicetalk.http.api.StreamingHttpResponse;
  * not being ready for {@link #request(HttpExecutionStrategy, StreamingHttpRequest)} and retry/delay requests until the
  * {@link LoadBalancer} is ready.
  */
-final class AutomaticRetryFilter extends StreamingHttpClientFilter {
-    private final AutomaticRetryStrategy retryStrategy;
+final class AutoRetryFilter extends StreamingHttpClientFilter {
+    private final AutoRetryStrategy retryStrategy;
 
-    AutomaticRetryFilter(final FilterableStreamingHttpClient next, final AutomaticRetryStrategy retryStrategy) {
+    AutoRetryFilter(final FilterableStreamingHttpClient next, final AutoRetryStrategy retryStrategy) {
         super(next);
         this.retryStrategy = retryStrategy;
     }

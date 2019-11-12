@@ -17,13 +17,15 @@ package io.servicetalk.client.api;
 
 import io.servicetalk.concurrent.api.AsyncCloseable;
 import io.servicetalk.concurrent.api.BiIntFunction;
+import io.servicetalk.concurrent.api.BiIntPredicate;
 import io.servicetalk.concurrent.api.Completable;
+import io.servicetalk.concurrent.api.Single;
 
 import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.Completable.failed;
 
 /**
- * A provider for {@link AutomaticRetryStrategy}.
+ * A provider for {@link AutoRetryStrategy}.
  */
 public interface AutoRetryStrategyProvider {
 
@@ -33,18 +35,22 @@ public interface AutoRetryStrategyProvider {
     AutoRetryStrategyProvider DISABLE_AUTO_RETRIES = __ -> (___, cause) -> failed(cause);
 
     /**
-     * Create a new {@link AutomaticRetryStrategy} instance using the passed {@link LoadBalancer}.
+     * Create a new {@link AutoRetryStrategy} instance using the passed {@link LoadBalancer}.
      *
      * @param loadBalancer {@link LoadBalancer} to use.
-     * @return New {@link AutomaticRetryStrategy} instance.
+     * @return New {@link AutoRetryStrategy} instance.
      */
-    AutomaticRetryStrategy forLoadbalancer(LoadBalancer<?> loadBalancer);
+    AutoRetryStrategy forLoadbalancer(LoadBalancer<?> loadBalancer);
 
     /**
-     * A strategy to use for automatic retries.
+     * A strategy to use for automatic retries.  Automatic retries are done by
+     * the clients automatically when allowed by the passed {@link AutoRetryStrategyProvider}. These retries are not a
+     * substitute for user level retries which are designed to infer retry decisions based on request/error information.
+     * Typically such user level retries are done using protocol level filter but can also be done differently per
+     * request (eg: by using {@link Single#retry(BiIntPredicate)}).
      */
     @FunctionalInterface
-    interface AutomaticRetryStrategy extends AsyncCloseable, BiIntFunction<Throwable, Completable> {
+    interface AutoRetryStrategy extends AsyncCloseable, BiIntFunction<Throwable, Completable> {
 
         @Override
         default Completable closeAsync() {

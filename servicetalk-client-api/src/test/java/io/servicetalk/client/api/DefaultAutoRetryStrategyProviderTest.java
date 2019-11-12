@@ -15,7 +15,7 @@
  */
 package io.servicetalk.client.api;
 
-import io.servicetalk.client.api.AutoRetryStrategyProvider.AutomaticRetryStrategy;
+import io.servicetalk.client.api.AutoRetryStrategyProvider.AutoRetryStrategy;
 import io.servicetalk.client.api.DefaultAutoRetryStrategyProvider.Builder;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.TestCompletableSubscriber;
@@ -59,7 +59,7 @@ public class DefaultAutoRetryStrategyProviderTest {
 
     @Test
     public void disableWaitForLb() {
-        AutomaticRetryStrategy strategy = newStrategy(Builder::disableWaitForLoadBalancer);
+        AutoRetryStrategy strategy = newStrategy(Builder::disableWaitForLoadBalancer);
         Completable retry = strategy.apply(1, RETRYABLE_EXCEPTION);
         toSource(retry).subscribe(retrySubscriber);
         verifyRetryResultCompleted();
@@ -67,7 +67,7 @@ public class DefaultAutoRetryStrategyProviderTest {
 
     @Test
     public void disableRetryAllRetryableExWithRetryable() {
-        AutomaticRetryStrategy strategy = newStrategy(Builder::disableRetryAllRetryableExceptions);
+        AutoRetryStrategy strategy = newStrategy(Builder::disableRetryAllRetryableExceptions);
         Completable retry = strategy.apply(1, RETRYABLE_EXCEPTION);
         toSource(retry).subscribe(retrySubscriber);
         verifyRetryResultError(RETRYABLE_EXCEPTION);
@@ -75,7 +75,7 @@ public class DefaultAutoRetryStrategyProviderTest {
 
     @Test
     public void disableRetryAllRetryableExWithNoAvailableHosts() {
-        AutomaticRetryStrategy strategy = newStrategy(Builder::disableRetryAllRetryableExceptions);
+        AutoRetryStrategy strategy = newStrategy(Builder::disableRetryAllRetryableExceptions);
         Completable retry = strategy.apply(1, NO_AVAILABLE_HOST);
         toSource(retry).subscribe(retrySubscriber);
         assertThat("Unexpected terminal.", retrySubscriber.takeTerminal(), is(nullValue()));
@@ -85,7 +85,7 @@ public class DefaultAutoRetryStrategyProviderTest {
 
     @Test
     public void disableAll() {
-        AutomaticRetryStrategy strategy = newStrategy(builder ->
+        AutoRetryStrategy strategy = newStrategy(builder ->
                 builder.disableWaitForLoadBalancer()
                         .disableRetryAllRetryableExceptions());
         Completable retry = strategy.apply(1, RETRYABLE_EXCEPTION);
@@ -95,7 +95,7 @@ public class DefaultAutoRetryStrategyProviderTest {
 
     @Test
     public void defaultForNonRetryableEx() {
-        AutomaticRetryStrategy strategy = newStrategy(identity());
+        AutoRetryStrategy strategy = newStrategy(identity());
         Completable retry = strategy.apply(1, DELIBERATE_EXCEPTION);
         toSource(retry).subscribe(retrySubscriber);
         verifyRetryResultError(DELIBERATE_EXCEPTION);
@@ -103,7 +103,7 @@ public class DefaultAutoRetryStrategyProviderTest {
 
     @Test
     public void defaultForRetryableEx() {
-        AutomaticRetryStrategy strategy = newStrategy(identity());
+        AutoRetryStrategy strategy = newStrategy(identity());
         Completable retry = strategy.apply(1, RETRYABLE_EXCEPTION);
         toSource(retry).subscribe(retrySubscriber);
         verifyRetryResultCompleted();
@@ -111,7 +111,7 @@ public class DefaultAutoRetryStrategyProviderTest {
 
     @Test
     public void defaultForNoAvailableHost() {
-        AutomaticRetryStrategy strategy = newStrategy(identity());
+        AutoRetryStrategy strategy = newStrategy(identity());
         Completable retry = strategy.apply(1, NO_AVAILABLE_HOST);
         toSource(retry).subscribe(retrySubscriber);
         assertThat("Unexpected terminal.", retrySubscriber.takeTerminal(), is(nullValue()));
@@ -121,7 +121,7 @@ public class DefaultAutoRetryStrategyProviderTest {
 
     @Test
     public void maxRetriesAreHonored() {
-        AutomaticRetryStrategy strategy = newStrategy(builder -> builder.maxRetries(1));
+        AutoRetryStrategy strategy = newStrategy(builder -> builder.maxRetries(1));
         Completable retry = strategy.apply(2, RETRYABLE_EXCEPTION);
         toSource(retry).subscribe(retrySubscriber);
         verifyRetryResultError(RETRYABLE_EXCEPTION);
@@ -139,7 +139,7 @@ public class DefaultAutoRetryStrategyProviderTest {
         assertThat("Unexpected terminal.", terminal.cause(), is(sameInstance(expected)));
     }
 
-    private AutomaticRetryStrategy newStrategy(UnaryOperator<Builder> updater) {
+    private AutoRetryStrategy newStrategy(UnaryOperator<Builder> updater) {
         AutoRetryStrategyProvider provider = updater.apply(new Builder()).build();
         return provider.forLoadbalancer(lb);
     }
