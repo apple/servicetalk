@@ -33,21 +33,21 @@ import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 public final class DefaultAutoRetryStrategyProvider implements AutoRetryStrategyProvider {
     private final int maxRetryCount;
     private final boolean waitForLb;
-    private final boolean retryAllRetryableErrors;
+    private final boolean retryAllRetryableExceptions;
 
     private DefaultAutoRetryStrategyProvider(final int maxRetryCount, final boolean waitForLb,
-                                             final boolean retryAllRetryableErrors) {
+                                             final boolean retryAllRetryableExceptions) {
         this.maxRetryCount = maxRetryCount;
         this.waitForLb = waitForLb;
-        this.retryAllRetryableErrors = retryAllRetryableErrors;
+        this.retryAllRetryableExceptions = retryAllRetryableExceptions;
     }
 
     @Override
     public AutomaticRetryStrategy forLoadbalancer(LoadBalancer<?> loadBalancer) {
-        if (!waitForLb && !retryAllRetryableErrors) {
+        if (!waitForLb && !retryAllRetryableExceptions) {
             return (count, cause) -> failed(cause);
         }
-        return new DefaultAutomaticRetryStrategy(maxRetryCount, waitForLb, retryAllRetryableErrors, loadBalancer);
+        return new DefaultAutomaticRetryStrategy(maxRetryCount, waitForLb, retryAllRetryableExceptions, loadBalancer);
     }
 
     /**
@@ -113,12 +113,12 @@ public final class DefaultAutoRetryStrategyProvider implements AutoRetryStrategy
         private final LoadBalancerReadySubscriber loadBalancerReadySubscriber;
         private final AsyncCloseable closeAsync;
         private final int maxRetryCount;
-        private final boolean retryAllRetryableErrors;
+        private final boolean retryAllRetryableExceptions;
 
         DefaultAutomaticRetryStrategy(final int maxRetryCount, final boolean waitForLb,
-                                      final boolean retryAllRetryableErrors, final LoadBalancer<?> loadBalancer) {
+                                      final boolean retryAllRetryableExceptions, final LoadBalancer<?> loadBalancer) {
             this.maxRetryCount = maxRetryCount;
-            this.retryAllRetryableErrors = retryAllRetryableErrors;
+            this.retryAllRetryableExceptions = retryAllRetryableExceptions;
             if (waitForLb) {
                 loadBalancerReadySubscriber = new LoadBalancerReadySubscriber();
                 closeAsync = toAsyncCloseable(__ -> {
@@ -140,7 +140,7 @@ public final class DefaultAutoRetryStrategyProvider implements AutoRetryStrategy
             if (loadBalancerReadySubscriber != null && cause instanceof NoAvailableHostException) {
                 return loadBalancerReadySubscriber.onHostsAvailable();
             }
-            if (retryAllRetryableErrors && cause instanceof RetryableException) {
+            if (retryAllRetryableExceptions && cause instanceof RetryableException) {
                 return completed();
             }
             return failed(cause);
