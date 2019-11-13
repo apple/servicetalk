@@ -27,7 +27,7 @@ import java.util.function.BiPredicate;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.http.api.HeaderUtils.HASH_CODE_SEED;
-import static io.servicetalk.http.api.MathUtil.findNextPositivePowerOfTwo;
+import static io.servicetalk.utils.internal.MathUtil.findNextPositivePowerOfTwo;
 import static java.lang.Math.max;
 import static java.lang.Math.min;
 import static java.util.Collections.emptyIterator;
