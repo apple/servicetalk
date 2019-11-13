@@ -13,13 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.http.netty;
+package io.servicetalk.client.api;
 
-import io.servicetalk.client.api.internal.LoadBalancerReadyEvent;
 import io.servicetalk.concurrent.CompletableSource.Processor;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.api.Completable;
+import io.servicetalk.concurrent.internal.DelayedCancellable;
 
 import javax.annotation.Nullable;
 
@@ -31,7 +31,7 @@ import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
  * Designed to listen for {@link LoadBalancerReadyEvent}s and provide notification when a {@link LoadBalancerReadyEvent}
  * returns {@code true} from {@link LoadBalancerReadyEvent#isReady()}.
  */
-final class LoadBalancerReadySubscriber implements Subscriber<Object> {
+final class LoadBalancerReadySubscriber extends DelayedCancellable implements Subscriber<Object> {
     @Nullable
     private volatile Processor onHostsAvailable = newCompletableProcessor();
 

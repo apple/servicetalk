@@ -16,6 +16,7 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.buffer.api.BufferAllocator;
+import io.servicetalk.client.api.AutoRetryStrategyProvider;
 import io.servicetalk.client.api.ClientGroup;
 import io.servicetalk.client.api.ConnectionFactoryFilter;
 import io.servicetalk.client.api.LoadBalancerFactory;
@@ -279,8 +280,9 @@ class DefaultPartitionedHttpClientBuilder<U, R> extends PartitionedHttpClientBui
     }
 
     @Override
-    public PartitionedHttpClientBuilder<U, R> disableWaitForLoadBalancer() {
-        builderTemplate.disableWaitForLoadBalancer();
+    public PartitionedHttpClientBuilder<U, R> autoRetryStrategy(
+            final AutoRetryStrategyProvider autoRetryStrategyProvider) {
+        builderTemplate.autoRetryStrategy(autoRetryStrategyProvider);
         return this;
     }
 
