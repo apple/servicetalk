@@ -71,7 +71,8 @@ include "servicetalk-annotations",
         "servicetalk-test-resources",
         "servicetalk-transport-api",
         "servicetalk-transport-netty",
-        "servicetalk-transport-netty-internal"
+        "servicetalk-transport-netty-internal",
+        "servicetalk-utils-internal"
 
 project(":servicetalk-examples:grpc:helloworld").name = "servicetalk-examples-grpc-helloworld"
 project(":servicetalk-examples:grpc:routeguide").name = "servicetalk-examples-grpc-routeguide"

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,15 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+@ElementsAreNonnullByDefault
+package io.servicetalk.utils.internal;
 
-apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
-
-dependencies {
-  api project(":servicetalk-opentracing-inmemory-api")
-
-  implementation project(":servicetalk-annotations")
-  implementation project(":servicetalk-opentracing-internal")
-  implementation project(":servicetalk-utils-internal")
-  implementation "com.google.code.findbugs:jsr305:$jsr305Version"
-  implementation "org.slf4j:slf4j-api:$slf4jVersion"
-}
+import io.servicetalk.annotations.ElementsAreNonnullByDefault;
