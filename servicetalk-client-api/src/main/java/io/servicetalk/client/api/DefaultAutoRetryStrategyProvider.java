@@ -73,7 +73,7 @@ public final class DefaultAutoRetryStrategyProvider implements AutoRetryStrategy
         /**
          * Connection closures (by the peer or locally) and new requests may happen concurrently. This means that it is
          * possible for a {@link LoadBalancer} to select a connection which is already closed (concurrently) but the
-         * close signal has not yet been seen the {@link LoadBalancer}. In such cases, requests fail with a
+         * close signal has not yet been seen by the {@link LoadBalancer}. In such cases, requests fail with a
          * {@link RetryableException}. By default, automatic retries always retries these {@link RetryableException}s.
          * This method disables the default behavior.
          *
