@@ -30,4 +30,14 @@ public interface BlockingGrpcClient<Client extends GrpcClient> extends GracefulA
      * @return This {@link BlockingGrpcClient} as a {@link Client}.
      */
     Client asClient();
+
+    /**
+     * Get the {@link GrpcExecutionContext} used during construction of this object.
+     * <p>
+     * Note that the {@link GrpcExecutionContext#ioExecutor()} will not necessarily be associated with a specific thread
+     * unless that was how this object was built.
+     *
+     * @return the {@link GrpcExecutionContext} used during construction of this object.
+     */
+    GrpcExecutionContext executionContext();
 }

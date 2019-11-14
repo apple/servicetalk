@@ -22,6 +22,7 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.internal.SpScPublisherProcessor;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.grpc.api.GrpcClientBuilder;
+import io.servicetalk.grpc.api.GrpcExecutionContext;
 import io.servicetalk.grpc.api.GrpcExecutionStrategy;
 import io.servicetalk.grpc.api.GrpcServerBuilder;
 import io.servicetalk.grpc.api.GrpcServiceContext;
@@ -769,6 +770,11 @@ public class ProtocolCompatibilityTest {
                 CompatGrpc.newStub(channel) : CompatGrpc.newStub(channel).withCompression(compression);
 
         return new CompatClient() {
+            @Override
+            public GrpcExecutionContext executionContext() {
+                throw new UnsupportedOperationException();
+            }
+
             @Override
             public Publisher<CompatResponse> bidirectionalStreamingCall(final Publisher<CompatRequest> request) {
                 final SpScPublisherProcessor<CompatResponse> processor = new SpScPublisherProcessor<>(3);

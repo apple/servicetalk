@@ -40,9 +40,11 @@ import static java.util.Objects.requireNonNull;
 
 final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
     private final StreamingHttpClient streamingHttpClient;
+    private final GrpcExecutionContext executionContext;
 
     DefaultGrpcClientCallFactory(final StreamingHttpClient streamingHttpClient) {
         this.streamingHttpClient = requireNonNull(streamingHttpClient);
+        executionContext = new DefaultGrpcExecutionContext(streamingHttpClient.executionContext());
     }
 
     @Override
@@ -169,6 +171,11 @@ final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
         BlockingStreamingClientCall<Req, Resp> streamingClientCall =
                 newBlockingStreamingCall(serializationProvider, requestClass, responseClass);
         return (metadata, request) -> streamingClientCall.request(metadata, singletonBlockingIterable(request));
+    }
+
+    @Override
+    public GrpcExecutionContext executionContext() {
+        return executionContext;
     }
 
     @Override

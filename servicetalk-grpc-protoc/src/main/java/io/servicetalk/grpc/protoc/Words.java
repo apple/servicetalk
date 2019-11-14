@@ -25,6 +25,7 @@ final class Words {
     static final String closeAsync = close + "Async";
     static final String closeAsyncGracefully = closeAsync + "Gracefully";
     static final String closeGracefully = close + "Gracefully";
+    static final String executionContext = "executionContext";
     static final String ctx = "ctx";
     static final String delegate = "delegate";
     static final String existing = "existing";

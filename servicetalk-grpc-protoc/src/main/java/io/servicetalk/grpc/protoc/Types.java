@@ -43,6 +43,8 @@ final class Types {
     static final ClassName GrpcClientCallFactory = bestGuess(grpcApiPkg + ".GrpcClientCallFactory");
     static final ClassName GrpcClientFactory = bestGuess(grpcApiPkg + ".GrpcClientFactory");
     static final ClassName GrpcClientFilterFactory = bestGuess(grpcApiPkg + ".GrpcClientFilterFactory");
+    static final ClassName FilterableGrpcClient = bestGuess(grpcApiPkg + ".FilterableGrpcClient");
+    static final ClassName GrpcExecutionContext = bestGuess(grpcApiPkg + ".GrpcExecutionContext");
     static final ClassName GrpcExecutionStrategy = bestGuess(grpcApiPkg + ".GrpcExecutionStrategy");
     static final ClassName GrpcPayloadWriter = bestGuess(grpcApiPkg + ".GrpcPayloadWriter");
     static final ClassName GrpcRoutes = bestGuess(grpcApiPkg + ".GrpcRoutes");
