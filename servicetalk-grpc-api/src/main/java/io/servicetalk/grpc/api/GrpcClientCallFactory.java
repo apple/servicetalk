@@ -139,6 +139,16 @@ public interface GrpcClientCallFactory extends ListenableAsyncCloseable {
                                      Class<Resp> responseClass);
 
     /**
+     * Get the {@link GrpcExecutionContext} used during construction of this object.
+     * <p>
+     * Note that the {@link GrpcExecutionContext#ioExecutor()} will not necessarily be associated with a specific thread
+     * unless that was how this object was built.
+     *
+     * @return the {@link GrpcExecutionContext} used during construction of this object.
+     */
+    GrpcExecutionContext executionContext();
+
+    /**
      * Creates a new {@link GrpcClientCallFactory} using the passed {@link StreamingHttpClient}.
      *
      * @param httpClient {@link StreamingHttpClient} to use. The returned {@link GrpcClientCallFactory} will own the

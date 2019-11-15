@@ -21,7 +21,6 @@ import io.servicetalk.client.api.ConnectionFactoryFilter;
 import io.servicetalk.client.api.LoadBalancerFactory;
 import io.servicetalk.client.api.ServiceDiscoverer;
 import io.servicetalk.client.api.ServiceDiscovererEvent;
-import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
 import io.servicetalk.http.api.FilterableStreamingHttpLoadBalancedConnection;
@@ -155,7 +154,7 @@ public abstract class GrpcClientBuilder<U, R>
      * @return A <a href="https://www.grpc.io">gRPC</a> client.
      */
     public final <Client extends GrpcClient<?>,
-            Filter extends FilterableClient, FilterableClient extends ListenableAsyncCloseable & AutoCloseable,
+            Filter extends FilterableClient, FilterableClient extends FilterableGrpcClient,
             FilterFactory extends GrpcClientFilterFactory<Filter, FilterableClient>> Client
     build(GrpcClientFactory<Client, ?, Filter, FilterableClient, FilterFactory> clientFactory) {
         return clientFactory.newClientForCallFactory(newGrpcClientCallFactory());
@@ -174,7 +173,7 @@ public abstract class GrpcClientBuilder<U, R>
      * @return A blocking <a href="https://www.grpc.io">gRPC</a> client.
      */
     public final <BlockingClient extends BlockingGrpcClient<?>,
-            Filter extends FilterableClient, FilterableClient extends ListenableAsyncCloseable & AutoCloseable,
+            Filter extends FilterableClient, FilterableClient extends FilterableGrpcClient,
             FilterFactory extends GrpcClientFilterFactory<Filter, FilterableClient>> BlockingClient
     buildBlocking(GrpcClientFactory<?, BlockingClient, Filter, FilterableClient, FilterFactory> clientFactory) {
         return clientFactory.newBlockingClientForCallFactory(newGrpcClientCallFactory());
@@ -191,7 +190,7 @@ public abstract class GrpcClientBuilder<U, R>
         return new MultiClientBuilder() {
             @Override
             public <Client extends GrpcClient<?>,
-                    Filter extends FilterableClient, FilterableClient extends ListenableAsyncCloseable & AutoCloseable,
+                    Filter extends FilterableClient, FilterableClient extends FilterableGrpcClient,
                     FilterFactory extends GrpcClientFilterFactory<Filter, FilterableClient>> Client
             build(final GrpcClientFactory<Client, ?, Filter, FilterableClient, FilterFactory> clientFactory) {
                 return clientFactory.newClient(callFactory);
@@ -199,7 +198,7 @@ public abstract class GrpcClientBuilder<U, R>
 
             @Override
             public <BlockingClient extends BlockingGrpcClient<?>,
-                    Filter extends FilterableClient, FilterableClient extends ListenableAsyncCloseable & AutoCloseable,
+                    Filter extends FilterableClient, FilterableClient extends FilterableGrpcClient,
                     FilterFactory extends GrpcClientFilterFactory<Filter, FilterableClient>> BlockingClient
             buildBlocking(
                     final GrpcClientFactory<?, BlockingClient, Filter, FilterableClient, FilterFactory> clientFactory) {
@@ -293,7 +292,7 @@ public abstract class GrpcClientBuilder<U, R>
          * @return A <a href="https://www.grpc.io">gRPC</a> client.
          */
         <Client extends GrpcClient<?>,
-                Filter extends FilterableClient, FilterableClient extends ListenableAsyncCloseable & AutoCloseable,
+                Filter extends FilterableClient, FilterableClient extends FilterableGrpcClient,
                 FilterFactory extends GrpcClientFilterFactory<Filter, FilterableClient>> Client
         build(GrpcClientFactory<Client, ?, Filter, FilterableClient, FilterFactory> clientFactory);
 
@@ -310,7 +309,7 @@ public abstract class GrpcClientBuilder<U, R>
          * @return A blocking <a href="https://www.grpc.io">gRPC</a> client.
          */
         <BlockingClient extends BlockingGrpcClient<?>,
-                Filter extends FilterableClient, FilterableClient extends ListenableAsyncCloseable & AutoCloseable,
+                Filter extends FilterableClient, FilterableClient extends FilterableGrpcClient,
                 FilterFactory extends GrpcClientFilterFactory<Filter, FilterableClient>> BlockingClient
         buildBlocking(GrpcClientFactory<?, BlockingClient, Filter, FilterableClient, FilterFactory> clientFactory);
     }

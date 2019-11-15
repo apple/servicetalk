@@ -15,13 +15,20 @@
  */
 package io.servicetalk.grpc.api;
 
-import io.servicetalk.transport.api.ConnectionContext;
+import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 
 /**
- * A <a href="https://www.grpc.io">gRPC</a> service context.
+ * A client to a <a href="https://www.grpc.io">gRPC</a> service that supports filtering.
  */
-public interface GrpcServiceContext extends ConnectionContext, GrpcMetadata {
+public interface FilterableGrpcClient extends ListenableAsyncCloseable {
 
-    @Override
+    /**
+     * Get the {@link GrpcExecutionContext} used during construction of this object.
+     * <p>
+     * Note that the {@link GrpcExecutionContext#ioExecutor()} will not necessarily be associated with a specific thread
+     * unless that was how this object was built.
+     *
+     * @return the {@link GrpcExecutionContext} used during construction of this object.
+     */
     GrpcExecutionContext executionContext();
 }
