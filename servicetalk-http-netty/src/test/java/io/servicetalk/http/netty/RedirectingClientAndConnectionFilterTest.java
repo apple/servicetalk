@@ -47,8 +47,8 @@ import static io.servicetalk.http.api.HttpHeaderNames.LOCATION;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_0;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.HttpResponseStatus.PERMANENT_REDIRECT;
-import static io.servicetalk.http.api.TestStrategyInfluencerAwareConversions.toConditionalClientFilterFactory;
-import static io.servicetalk.http.api.TestStrategyInfluencerAwareConversions.toConditionalConnectionFilterFactory;
+import static io.servicetalk.http.api.TestStrategyInfluencerAwareConversions.conditionalClientFilterFactory;
+import static io.servicetalk.http.api.TestStrategyInfluencerAwareConversions.conditionalConnectionFilterFactory;
 import static io.servicetalk.transport.netty.internal.AddressUtils.hostHeader;
 import static java.lang.String.format;
 import static org.hamcrest.Matchers.equalTo;
@@ -177,13 +177,13 @@ public final class RedirectingClientAndConnectionFilterTest extends AbstractHttp
 
         @Override
         public StreamingHttpClientFilter create(final FilterableStreamingHttpClient original) {
-            return hostRedirect.create(toConditionalClientFilterFactory(predicate, redirectingFilter).create(original));
+            return hostRedirect.create(conditionalClientFilterFactory(predicate, redirectingFilter).create(original));
         }
 
         @Override
         public StreamingHttpConnectionFilter create(final FilterableStreamingHttpConnection original) {
             return hostRedirect.create(
-                    toConditionalConnectionFilterFactory(predicate, redirectingFilter).create(original));
+                    conditionalConnectionFilterFactory(predicate, redirectingFilter).create(original));
         }
     }
 }

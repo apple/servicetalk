@@ -17,18 +17,21 @@ package io.servicetalk.http.api;
 
 import java.util.function.Predicate;
 
+import static io.servicetalk.http.api.StrategyInfluencerAwareConversions.toConditionalClientFilterFactory;
+import static io.servicetalk.http.api.StrategyInfluencerAwareConversions.toConditionalConnectionFilterFactory;
+
 public final class TestStrategyInfluencerAwareConversions {
 
     private TestStrategyInfluencerAwareConversions() {
     }
 
-    public static StreamingHttpClientFilterFactory toConditionalClientFilterFactory(
+    public static StreamingHttpClientFilterFactory conditionalClientFilterFactory(
             final Predicate<StreamingHttpRequest> predicate, final StreamingHttpClientFilterFactory original) {
-        return StrategyInfluencerAwareConversions.toConditionalClientFilterFactory(predicate, original);
+        return toConditionalClientFilterFactory(predicate, original);
     }
 
-    public static StreamingHttpConnectionFilterFactory toConditionalConnectionFilterFactory(
+    public static StreamingHttpConnectionFilterFactory conditionalConnectionFilterFactory(
             final Predicate<StreamingHttpRequest> predicate, final StreamingHttpConnectionFilterFactory original) {
-        return StrategyInfluencerAwareConversions.toConditionalConnectionFilterFactory(predicate, original);
+        return toConditionalConnectionFilterFactory(predicate, original);
     }
 }
