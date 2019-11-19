@@ -15,7 +15,6 @@
  */
 package io.servicetalk.http.netty;
 
-import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.AbstractHttpRequesterFilterTest;
 import io.servicetalk.http.api.BlockingHttpRequester;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
@@ -39,9 +38,9 @@ import org.junit.runners.Parameterized;
 
 import java.net.InetSocketAddress;
 import java.util.function.Predicate;
-
 import javax.net.ssl.SSLSession;
 
+import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.http.api.HttpHeaderNames.HOST;
 import static io.servicetalk.http.api.HttpHeaderNames.LOCATION;
@@ -83,9 +82,9 @@ public final class RedirectingClientAndConnectionFilterTest extends AbstractHttp
     public void redirectFilterNoHostHeaderRelativeLocation() throws Exception {
         BlockingHttpRequester client = asBlockingRequester(createFilter((responseFactory, request) -> {
             if (request.requestTarget().equals("/")) {
-                return Single.succeeded(responseFactory.permanentRedirect().addHeader(LOCATION, "/next"));
+                return succeeded(responseFactory.permanentRedirect().addHeader(LOCATION, "/next"));
             }
-            return Single.succeeded(responseFactory.ok());
+            return succeeded(responseFactory.ok());
 
         }, new RedirectingHttpRequesterFilterFactory(new RedirectingHttpRequesterFilter(), remoteAddress())));
 
@@ -108,10 +107,10 @@ public final class RedirectingClientAndConnectionFilterTest extends AbstractHttp
     public void redirectFilterNoHostHeaderAbsoluteLocation() throws Exception {
         BlockingHttpRequester client = asBlockingRequester(createFilter((responseFactory, request) -> {
             if (request.requestTarget().equals("/")) {
-                return Single.succeeded(responseFactory.permanentRedirect().addHeader(LOCATION,
+                return succeeded(responseFactory.permanentRedirect().addHeader(LOCATION,
                         format("http://%s/next", hostHeader(HostAndPort.of(remoteAddress())))));
             }
-            return Single.succeeded(responseFactory.ok());
+            return succeeded(responseFactory.ok());
         }, new RedirectingHttpRequesterFilterFactory(new RedirectingHttpRequesterFilter(), remoteAddress())));
         HttpRequest request = client.get("/");
         HttpResponse response = client.request(noOffloadsStrategy(), request);
@@ -133,10 +132,10 @@ public final class RedirectingClientAndConnectionFilterTest extends AbstractHttp
 
         BlockingHttpRequester client = asBlockingRequester(createFilter((responseFactory, request) -> {
             if (request.requestTarget().equals("/")) {
-                return Single.succeeded(responseFactory.permanentRedirect()
+                return succeeded(responseFactory.permanentRedirect()
                         .addHeader(LOCATION, "/next"));
             }
-            return Single.succeeded(responseFactory.ok());
+            return succeeded(responseFactory.ok());
         }, new RedirectingHttpRequesterFilterFactory(new RedirectingHttpRequesterFilter(), remoteAddress())));
         HttpRequest request = client.get("/").addHeader(HOST, "servicetalk.io");
         HttpResponse response = client.request(noOffloadsStrategy(), request);
@@ -151,10 +150,10 @@ public final class RedirectingClientAndConnectionFilterTest extends AbstractHttp
 
         BlockingHttpRequester client = asBlockingRequester(createFilter((responseFactory, request) -> {
             if (request.requestTarget().equals("/")) {
-                return Single.succeeded(responseFactory.permanentRedirect()
+                return succeeded(responseFactory.permanentRedirect()
                         .addHeader(LOCATION, "http://servicetalk.io/next"));
             }
-            return Single.succeeded(responseFactory.ok());
+            return succeeded(responseFactory.ok());
         }, new RedirectingHttpRequesterFilterFactory(new RedirectingHttpRequesterFilter(), remoteAddress())));
         HttpRequest request = client.get("/").addHeader(HOST, "servicetalk.io");
         HttpResponse response = client.request(noOffloadsStrategy(), request);
@@ -164,10 +163,10 @@ public final class RedirectingClientAndConnectionFilterTest extends AbstractHttp
         assertThat(response.status(), equalTo(OK));
     }
 
-    private static class RedirectingHttpRequesterFilterFactory
+    private static final class RedirectingHttpRequesterFilterFactory
             implements StreamingHttpClientFilterFactory, StreamingHttpConnectionFilterFactory {
-        final Predicate<StreamingHttpRequest> predicate = request -> request.headers().contains("X-REDIRECT");
-        final HostHeaderHttpRequesterFilter hostRedirect;
+        private final Predicate<StreamingHttpRequest> predicate = request -> request.headers().contains("X-REDIRECT");
+        private final HostHeaderHttpRequesterFilter hostRedirect;
         private final RedirectingHttpRequesterFilter redirectingFilter;
 
         RedirectingHttpRequesterFilterFactory(final RedirectingHttpRequesterFilter redirectingFilter,
