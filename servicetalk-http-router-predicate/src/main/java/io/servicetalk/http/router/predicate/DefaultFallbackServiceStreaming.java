@@ -24,7 +24,7 @@ import io.servicetalk.http.api.StreamingHttpService;
 
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
-import static io.servicetalk.http.api.HttpHeaderValues.TEXT_PLAIN;
+import static io.servicetalk.http.api.HttpHeaderValues.TEXT_PLAIN_UTF_8;
 import static io.servicetalk.http.api.HttpHeaderValues.ZERO;
 import static io.servicetalk.http.api.HttpResponseStatus.NOT_FOUND;
 
@@ -42,7 +42,7 @@ final class DefaultFallbackServiceStreaming implements StreamingHttpService {
                                                 final StreamingHttpResponseFactory factory) {
         final StreamingHttpResponse response = factory.newResponse(NOT_FOUND).version(request.version());
         response.headers().set(CONTENT_LENGTH, ZERO)
-                .set(CONTENT_TYPE, TEXT_PLAIN);
+                .set(CONTENT_TYPE, TEXT_PLAIN_UTF_8);
         // TODO(derek): Set keepalive once we have an isKeepAlive helper method.
         return Single.succeeded(response);
     }
