@@ -32,6 +32,7 @@ import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
 import static io.servicetalk.http.api.HttpHeaderValues.TEXT_PLAIN;
 import static io.servicetalk.http.api.HttpHeaderValues.TEXT_PLAIN_UTF_8;
 import static java.nio.charset.StandardCharsets.US_ASCII;
+import static java.nio.charset.StandardCharsets.UTF_16;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -61,6 +62,10 @@ public class HeaderUtilsTest {
         assertTrue(HeaderUtils.hasContentType(
                 headersWithContentType(APPLICATION_X_WWW_FORM_URLENCODED_UTF_8),
                 APPLICATION_X_WWW_FORM_URLENCODED, UTF_8));
+
+        assertFalse(HeaderUtils.hasContentType(
+                headersWithContentType(APPLICATION_X_WWW_FORM_URLENCODED_UTF_8),
+                APPLICATION_X_WWW_FORM_URLENCODED, UTF_16));
 
         assertTrue(HeaderUtils.hasContentType(
                 headersWithContentType(of("text/plain")), TEXT_PLAIN, null));
