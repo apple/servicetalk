@@ -17,17 +17,12 @@ package io.servicetalk.http.netty;
 
 import io.servicetalk.http.api.AbstractHttpRequesterFilterTest;
 import io.servicetalk.http.api.BlockingHttpRequester;
-import io.servicetalk.http.api.FilterableStreamingHttpClient;
-import io.servicetalk.http.api.FilterableStreamingHttpConnection;
+import io.servicetalk.http.api.ConditionalFilterFactory;
+import io.servicetalk.http.api.ConditionalFilterFactory.FilterFactory;
 import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.HttpConnection;
 import io.servicetalk.http.api.HttpRequest;
 import io.servicetalk.http.api.HttpResponse;
-import io.servicetalk.http.api.StreamingHttpClientFilter;
-import io.servicetalk.http.api.StreamingHttpClientFilterFactory;
-import io.servicetalk.http.api.StreamingHttpConnectionFilter;
-import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
-import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.utils.RedirectingHttpRequesterFilter;
 import io.servicetalk.transport.api.HostAndPort;
 
@@ -36,8 +31,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import java.net.InetSocketAddress;
-import java.util.function.Predicate;
 import javax.net.ssl.SSLSession;
 
 import static io.servicetalk.concurrent.api.Single.succeeded;
@@ -47,8 +40,6 @@ import static io.servicetalk.http.api.HttpHeaderNames.LOCATION;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_0;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.HttpResponseStatus.PERMANENT_REDIRECT;
-import static io.servicetalk.http.api.TestStrategyInfluencerAwareConversions.conditionalClientFilterFactory;
-import static io.servicetalk.http.api.TestStrategyInfluencerAwareConversions.conditionalConnectionFilterFactory;
 import static io.servicetalk.transport.netty.internal.AddressUtils.hostHeader;
 import static java.lang.String.format;
 import static org.hamcrest.Matchers.equalTo;
@@ -86,7 +77,7 @@ public final class RedirectingClientAndConnectionFilterTest extends AbstractHttp
             }
             return succeeded(responseFactory.ok());
 
-        }, new RedirectingHttpRequesterFilterFactory(new RedirectingHttpRequesterFilter(), remoteAddress())));
+        }, newFilterFactory()));
 
         HttpRequest request = client.get("/");
         HttpResponse response = client.request(noOffloadsStrategy(), request);
@@ -111,7 +102,7 @@ public final class RedirectingClientAndConnectionFilterTest extends AbstractHttp
                         format("http://%s/next", hostHeader(HostAndPort.of(remoteAddress())))));
             }
             return succeeded(responseFactory.ok());
-        }, new RedirectingHttpRequesterFilterFactory(new RedirectingHttpRequesterFilter(), remoteAddress())));
+        }, newFilterFactory()));
         HttpRequest request = client.get("/");
         HttpResponse response = client.request(noOffloadsStrategy(), request);
         assertThat(response.status(), equalTo(PERMANENT_REDIRECT));
@@ -136,7 +127,7 @@ public final class RedirectingClientAndConnectionFilterTest extends AbstractHttp
                         .addHeader(LOCATION, "/next"));
             }
             return succeeded(responseFactory.ok());
-        }, new RedirectingHttpRequesterFilterFactory(new RedirectingHttpRequesterFilter(), remoteAddress())));
+        }, newFilterFactory()));
         HttpRequest request = client.get("/").addHeader(HOST, "servicetalk.io");
         HttpResponse response = client.request(noOffloadsStrategy(), request);
         assertThat(response.status(), equalTo(PERMANENT_REDIRECT));
@@ -154,7 +145,7 @@ public final class RedirectingClientAndConnectionFilterTest extends AbstractHttp
                         .addHeader(LOCATION, "http://servicetalk.io/next"));
             }
             return succeeded(responseFactory.ok());
-        }, new RedirectingHttpRequesterFilterFactory(new RedirectingHttpRequesterFilter(), remoteAddress())));
+        }, newFilterFactory()));
         HttpRequest request = client.get("/").addHeader(HOST, "servicetalk.io");
         HttpResponse response = client.request(noOffloadsStrategy(), request);
         assertThat(response.status(), equalTo(PERMANENT_REDIRECT));
@@ -163,27 +154,10 @@ public final class RedirectingClientAndConnectionFilterTest extends AbstractHttp
         assertThat(response.status(), equalTo(OK));
     }
 
-    private static final class RedirectingHttpRequesterFilterFactory
-            implements StreamingHttpClientFilterFactory, StreamingHttpConnectionFilterFactory {
-        private final Predicate<StreamingHttpRequest> predicate = request -> request.headers().contains("X-REDIRECT");
-        private final HostHeaderHttpRequesterFilter hostRedirect;
-        private final RedirectingHttpRequesterFilter redirectingFilter;
-
-        RedirectingHttpRequesterFilterFactory(final RedirectingHttpRequesterFilter redirectingFilter,
-                                              final InetSocketAddress fallbackHost) {
-            this.redirectingFilter = redirectingFilter;
-            this.hostRedirect = new HostHeaderHttpRequesterFilter(HostAndPort.of(fallbackHost).toString());
-        }
-
-        @Override
-        public StreamingHttpClientFilter create(final FilterableStreamingHttpClient original) {
-            return hostRedirect.create(conditionalClientFilterFactory(predicate, redirectingFilter).create(original));
-        }
-
-        @Override
-        public StreamingHttpConnectionFilter create(final FilterableStreamingHttpConnection original) {
-            return hostRedirect.create(
-                    conditionalConnectionFilterFactory(predicate, redirectingFilter).create(original));
-        }
+    private FilterFactory newFilterFactory() {
+        return new ConditionalFilterFactory(request -> request.headers().contains("X-REDIRECT"),
+                FilterFactory.from(new RedirectingHttpRequesterFilter()))
+                .append(FilterFactory.from(
+                        new HostHeaderHttpRequesterFilter(HostAndPort.of(remoteAddress()).toString())));
     }
 }
