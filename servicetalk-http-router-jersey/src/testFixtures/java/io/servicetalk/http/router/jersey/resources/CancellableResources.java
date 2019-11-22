@@ -21,8 +21,8 @@ import io.servicetalk.buffer.api.CompositeBuffer;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.http.router.jersey.NoOffloadsRouteExecutionStrategy;
-import io.servicetalk.http.router.jersey.RouteExecutionStrategy;
+import io.servicetalk.router.api.NoOffloadsRouteExecutionStrategy;
+import io.servicetalk.router.api.RouteExecutionStrategy;
 import io.servicetalk.transport.api.ConnectionContext;
 
 import java.io.InputStream;

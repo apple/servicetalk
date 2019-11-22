@@ -19,6 +19,8 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpExecutionStrategy;
+import io.servicetalk.router.api.NoOffloadsRouteExecutionStrategy;
+import io.servicetalk.router.api.RouteExecutionStrategy;
 
 import org.glassfish.jersey.server.ApplicationHandler;
 import org.glassfish.jersey.server.ExtendedResourceContext;

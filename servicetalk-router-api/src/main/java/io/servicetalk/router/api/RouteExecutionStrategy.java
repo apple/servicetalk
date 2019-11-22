@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.http.router.jersey;
+package io.servicetalk.router.api;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.Inherited;
@@ -26,8 +26,8 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 /**
  * Indicates that a resource class or method needs a specific execution strategy.
- *
- * @see NoOffloadsRouteExecutionStrategy
+ * <p>
+ * To disable offloading of the user code to another worker thread pool use {@link NoOffloadsRouteExecutionStrategy}.
  */
 @Target({TYPE, METHOD})
 @Retention(RUNTIME)
