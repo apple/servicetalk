@@ -64,9 +64,7 @@ final class BlockingStreamingToStreamingService extends AbstractServiceAdapterHo
     }
 
     private static HttpExecutionStrategy serviceInvocationStrategy(final HttpExecutionStrategyInfluencer influencer) {
-        HttpExecutionStrategy httpExecutionStrategy = influencer.influenceStrategy(DEFAULT_STRATEGY);
-        assert httpExecutionStrategy.isMetadataReceiveOffloaded() : "This will deadlock!";
-        return httpExecutionStrategy;
+        return influencer.influenceStrategy(DEFAULT_STRATEGY);
     }
 
     @Override

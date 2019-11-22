@@ -22,6 +22,7 @@ import com.squareup.javapoet.CodeBlock;
 import com.squareup.javapoet.FieldSpec;
 import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.ParameterizedTypeName;
+import com.squareup.javapoet.TypeName;
 import com.squareup.javapoet.TypeSpec;
 
 import java.util.ArrayList;
@@ -77,6 +78,7 @@ import static io.servicetalk.grpc.protoc.Types.RequestStreamingRoute;
 import static io.servicetalk.grpc.protoc.Types.ResponseStreamingClientCall;
 import static io.servicetalk.grpc.protoc.Types.ResponseStreamingRoute;
 import static io.servicetalk.grpc.protoc.Types.Route;
+import static io.servicetalk.grpc.protoc.Types.RouteExecutionStrategyFactory;
 import static io.servicetalk.grpc.protoc.Types.Single;
 import static io.servicetalk.grpc.protoc.Types.StreamingClientCall;
 import static io.servicetalk.grpc.protoc.Types.StreamingRoute;
@@ -309,6 +311,9 @@ final class Generator {
         final ClassName builderClass = serviceFactoryClass.nestedClass(Builder);
         final ClassName serviceFromRoutesClass = builderClass.nestedClass(state.serviceClass.simpleName() +
                 "FromRoutes");
+        final TypeName strategyFactoryType = ParameterizedTypeName.get(RouteExecutionStrategyFactory,
+                GrpcExecutionStrategy);
+        final String strategyFactoryName = "strategyFactory";
 
         // TODO: Warn for path override and Validate all paths are defined.
         final TypeSpec.Builder serviceBuilderSpecBuilder = classBuilder(Builder)
@@ -316,6 +321,15 @@ final class Generator {
                 .superclass(ParameterizedTypeName.get(GrpcRoutes, state.serviceClass))
                 .addType(newServiceFromRoutesClassSpec(serviceFromRoutesClass, state.serviceRpcInterfaces,
                         state.serviceClass))
+                .addMethod(constructorBuilder()
+                        .addModifiers(PUBLIC)
+                        .addStatement("super(__ -> null)")
+                        .build())
+                .addMethod(constructorBuilder()
+                        .addModifiers(PUBLIC)
+                        .addParameter(strategyFactoryType, strategyFactoryName, FINAL)
+                        .addStatement("super($L)", strategyFactoryName)
+                        .build())
                 .addMethod(methodBuilder("build")
                         .addModifiers(PUBLIC)
                         .returns(serviceFactoryClass)
@@ -342,9 +356,9 @@ final class Generator {
                             .addModifiers(PUBLIC)
                             .addParameter(rpcInterface.className, rpc, FINAL)
                             .returns(builderClass)
-                            .addStatement("$L($T.$L, $L.wrap($L::$L, $L), $T.class, $T.class, $L)",
-                                    addRouteMethodName, rpcInterface.className, RPC_PATH, routeInterfaceClass,
-                                    rpc, routeName, rpc, inClass, outClass, serializationProvider)
+                            .addStatement("$L($T.$L, $L.getClass(), $S, $L.wrap($L::$L, $L), $T.class, $T.class, $L)",
+                                    addRouteMethodName, rpcInterface.className, RPC_PATH, rpc, routeName,
+                                    routeInterfaceClass, rpc, routeName, rpc, inClass, outClass, serializationProvider)
                             .addStatement("return this")
                             .build())
                     .addMethod(methodBuilder(methodName)
@@ -384,8 +398,22 @@ final class Generator {
                         .build())
                 .addMethod(constructorBuilder()
                         .addModifiers(PUBLIC)
+                        .addParameter(state.serviceClass, service, FINAL)
+                        .addParameter(strategyFactoryType, strategyFactoryName, FINAL)
+                        .addStatement("super(new $T($L).$L)", builderClass, strategyFactoryName,
+                                serviceFactoryBuilderInitChain(state.serviceProto, false))
+                        .build())
+                .addMethod(constructorBuilder()
+                        .addModifiers(PUBLIC)
                         .addParameter(state.blockingServiceClass, service, FINAL)
                         .addStatement("super(new $T().$L)", builderClass,
+                                serviceFactoryBuilderInitChain(state.serviceProto, true))
+                        .build())
+                .addMethod(constructorBuilder()
+                        .addModifiers(PUBLIC)
+                        .addParameter(state.blockingServiceClass, service, FINAL)
+                        .addParameter(strategyFactoryType, strategyFactoryName, FINAL)
+                        .addStatement("super(new $T($L).$L)", builderClass, strategyFactoryName,
                                 serviceFactoryBuilderInitChain(state.serviceProto, true))
                         .build())
                 .addMethod(constructorBuilder()

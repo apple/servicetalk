@@ -30,6 +30,7 @@ import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.api.internal.OffloaderAwareExecutor.ensureThreadAffinity;
 import static io.servicetalk.http.api.HttpExecutionStrategies.Builder.MergeStrategy.Merge;
 import static io.servicetalk.http.api.HttpExecutionStrategies.Builder.MergeStrategy.ReturnOther;
+import static io.servicetalk.http.api.HttpExecutionStrategies.difference;
 import static java.util.Objects.requireNonNull;
 import static java.util.function.Function.identity;
 
@@ -76,7 +77,7 @@ class DefaultHttpExecutionStrategy implements HttpExecutionStrategy {
 
     @Override
     public <FS> Single<StreamingHttpResponse> invokeClient(
-            final Executor fallback, Publisher<Object> flattenedRequest, final FS flushStrategy,
+            final Executor fallback, Publisher<Object> flattenedRequest, @Nullable final FS flushStrategy,
             final ClientInvoker<FS> client) {
         final Executor e = executor(fallback);
         if (offloaded(OFFLOAD_SEND)) {
@@ -126,25 +127,31 @@ class DefaultHttpExecutionStrategy implements HttpExecutionStrategy {
             public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
                                                         StreamingHttpRequest request,
                                                         final StreamingHttpResponseFactory responseFactory) {
-                HttpServiceContext wrappedCtx =
+                final HttpExecutionStrategy diff = difference(fallback, ctx.executionContext().executionStrategy(),
+                        DefaultHttpExecutionStrategy.this);
+                final HttpServiceContext wrappedCtx =
                         new ExecutionContextOverridingServiceContext(ctx, DefaultHttpExecutionStrategy.this, e);
-                if (offloaded(OFFLOAD_RECEIVE_DATA)) {
-                    request = request.transformRawPayloadBody(p -> p.publishOn(e));
-                }
-                final Single<StreamingHttpResponse> resp;
-                if (offloaded(OFFLOAD_RECEIVE_META)) {
-                    final StreamingHttpRequest r = request;
-                    resp = e.submit(() -> service.handle(wrappedCtx, r, responseFactory).subscribeShareContext())
-                            // exec.submit() returns a Single<Single<response>>, so flatten the nested Single.
-                            .flatMap(identity());
+                if (diff == null) {
+                    return service.handle(wrappedCtx, request, responseFactory);
                 } else {
-                    resp = service.handle(wrappedCtx, request, responseFactory);
+                    if (diff.isDataReceiveOffloaded()) {
+                        request = request.transformRawPayloadBody(p -> p.publishOn(e));
+                    }
+                    final Single<StreamingHttpResponse> resp;
+                    if (diff.isMetadataReceiveOffloaded()) {
+                        final StreamingHttpRequest r = request;
+                        resp = e.submit(() -> service.handle(wrappedCtx, r, responseFactory).subscribeShareContext())
+                                // exec.submit() returns a Single<Single<response>>, so flatten the nested Single.
+                                .flatMap(identity());
+                    } else {
+                        resp = service.handle(wrappedCtx, request, responseFactory);
+                    }
+                    return diff.isSendOffloaded() ?
+                            // This is different as compared to invokeService() where we just offload once on the
+                            // flattened (meta + data) stream. In this case, we need to preserve the service contract
+                            // and hence have to offload both meta and data separately.
+                            resp.map(r -> r.transformRawPayloadBody(p -> p.subscribeOn(e))).subscribeOn(e) : resp;
                 }
-                return offloaded(OFFLOAD_SEND) ?
-                        // This is different as compared to invokeService() where we just offload once on the
-                        // flattened (meta + data) stream. In this case, we need to preserve the service contract and
-                        // hence have to offload both meta and data separately.
-                        resp.map(r -> r.transformRawPayloadBody(p -> p.subscribeOn(e))).subscribeOn(e) : resp;
             }
 
             @Override
@@ -237,12 +244,12 @@ class DefaultHttpExecutionStrategy implements HttpExecutionStrategy {
                         threadAffinity || otherThreadAffinity, otherMergeStrategy);
     }
 
-    private boolean extractThreadAffinity(@Nullable final Executor otherExecutor) {
+    private static boolean extractThreadAffinity(@Nullable final Executor otherExecutor) {
         return otherExecutor instanceof SignalOffloaderFactory &&
                 ((SignalOffloaderFactory) otherExecutor).hasThreadAffinity();
     }
 
-    private byte generateOffloadsFlag(final HttpExecutionStrategy strategy) {
+    private static byte generateOffloadsFlag(final HttpExecutionStrategy strategy) {
         return (byte) ((strategy.isDataReceiveOffloaded() ? OFFLOAD_RECEIVE_DATA : 0) |
                 (strategy.isMetadataReceiveOffloaded() ? OFFLOAD_RECEIVE_META : 0) |
                 (strategy.isSendOffloaded() ? OFFLOAD_SEND : 0));
@@ -320,7 +327,7 @@ class DefaultHttpExecutionStrategy implements HttpExecutionStrategy {
     @Override
     public int hashCode() {
         int result = executor != null ? executor.hashCode() : 0;
-        result = 31 * result + (int) offloads;
+        result = 31 * result + offloads;
         result = 31 * result + mergeStrategy.hashCode();
         result = 31 * result + (threadAffinity ? 1 : 0);
         return result;
@@ -334,9 +341,5 @@ class DefaultHttpExecutionStrategy implements HttpExecutionStrategy {
                 ", mergeStrategy=" + mergeStrategy +
                 ", threadAffinity=" + threadAffinity +
                 '}';
-    }
-
-    static Publisher<Object> flatten(HttpMetaData metaData, Publisher<Object> payload) {
-        return (Publisher.<Object>from(metaData)).concat(payload);
     }
 }

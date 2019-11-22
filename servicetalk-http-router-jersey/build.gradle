@@ -27,6 +27,7 @@ dependencies {
   implementation project(":servicetalk-data-jackson")
   implementation project(":servicetalk-http-router-jersey-internal")
   implementation project(":servicetalk-http-utils")
+  implementation project(":servicetalk-router-utils-internal")
   implementation "com.google.code.findbugs:jsr305:$jsr305Version"
   implementation "com.sun.activation:jakarta.activation:$javaxActivationVersion"
   implementation "com.sun.xml.bind:jaxb-core:$javaxJaxbCoreVersion"

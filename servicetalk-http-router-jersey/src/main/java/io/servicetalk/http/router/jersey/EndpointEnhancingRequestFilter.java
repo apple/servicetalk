@@ -58,7 +58,7 @@ import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.HttpExecutionStrategies.customStrategyBuilder;
 import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
-import static io.servicetalk.http.router.jersey.RouteExecutionStrategyUtils.getRouteExecutionStrategy;
+import static io.servicetalk.http.router.jersey.JerseyRouteExecutionStrategyUtils.getRouteExecutionStrategy;
 import static io.servicetalk.http.router.jersey.internal.RequestProperties.getRequestBufferPublisherInputStream;
 import static io.servicetalk.http.router.jersey.internal.RequestProperties.setRequestCancellable;
 import static io.servicetalk.http.router.jersey.internal.RequestProperties.setResponseExecutionStrategy;
@@ -134,8 +134,9 @@ final class EndpointEnhancingRequestFilter implements ContainerRequestFilter {
                                                        final Provider<RouteStrategiesConfig> routeStratConfigProvider,
                                                        final Class<?> resourceClass,
                                                        final Method resourceMethod) {
-            final HttpExecutionStrategy routeExecutionStrategy =
-                    getRouteExecutionStrategy(resourceClass, resourceMethod, routeStratConfigProvider.get());
+
+            final HttpExecutionStrategy routeExecutionStrategy = getRouteExecutionStrategy(
+                    resourceMethod, resourceClass, routeStratConfigProvider.get());
 
             final Class<?> returnType = resourceMethod.getReturnType();
             if (Single.class.isAssignableFrom(returnType)) {
@@ -269,7 +270,7 @@ final class EndpointEnhancingRequestFilter implements ContainerRequestFilter {
                                                                  @Nullable final Executor executor) {
             assert routeExecutionStrategy != null;
             if (executor != null && executionStrategy instanceof HttpExecutionStrategy) {
-                return difference(executor, ((HttpExecutionStrategy) executionStrategy), routeExecutionStrategy);
+                return difference(executor, (HttpExecutionStrategy) executionStrategy, routeExecutionStrategy);
             }
             return null;
         }
@@ -487,8 +488,8 @@ final class EndpointEnhancingRequestFilter implements ContainerRequestFilter {
     // Variant of HttpExecutionStrategies#difference which is geared towards router logic
     @Nullable
     private static HttpExecutionStrategy difference(final Executor fallback,
-                                                   final HttpExecutionStrategy left,
-                                                   final HttpExecutionStrategy right) {
+                                                    final HttpExecutionStrategy left,
+                                                    final HttpExecutionStrategy right) {
         if (left.equals(right) || right == noOffloadsStrategy()) {
             return null;
         }

@@ -85,7 +85,7 @@ public final class HttpJerseyRouterBuilder {
      * creating {@link HttpExecutionStrategy} instances that can be used for offloading the handling of request to
      * resource methods, as specified via {@link RouteExecutionStrategy} annotations.
      *
-     * @param routeStrategyFactory a {@link Function Function&lt;String, Executor&gt;}
+     * @param routeStrategyFactory a {@link Function Function&lt;String, HttpExecutionStrategy&gt;}
      * @return this
      * @see RouteExecutionStrategy
      */

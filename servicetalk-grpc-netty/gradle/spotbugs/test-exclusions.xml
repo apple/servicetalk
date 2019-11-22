@@ -19,8 +19,10 @@
   <Match>
     <Or>
       <Source name="~CompatGrpc\.java"/>
+      <Source name="~EsTesterGrpc\.java"/>
       <Source name="~TesterGrpc\.java"/>
       <Source name="~CompatProto\.java"/>
+      <Source name="~EsProto\.java"/>
       <Source name="~TesterProto\.java"/>
     </Or>
   </Match>

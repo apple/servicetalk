@@ -27,12 +27,12 @@ final class Types {
     private static final String grpcApiPkg = grpcBasePkg + ".api";
     private static final String grpcRoutesFqcn = grpcApiPkg + ".GrpcRoutes";
     private static final String grpcProtobufPkg = grpcBasePkg + ".protobuf";
+    private static final String routerApiPkg = basePkg + ".router.api";
 
     static final ClassName BlockingIterable = bestGuess(concurrentPkg + ".BlockingIterable");
 
     static final ClassName AsyncCloseable = bestGuess(concurrentApiPkg + ".AsyncCloseable");
     static final ClassName Completable = bestGuess(concurrentApiPkg + ".Completable");
-    static final ClassName ListenableAsyncCloseable = bestGuess(concurrentApiPkg + ".ListenableAsyncCloseable");
     static final ClassName Publisher = bestGuess(concurrentApiPkg + ".Publisher");
     static final ClassName Single = bestGuess(concurrentApiPkg + ".Single");
 
@@ -81,6 +81,8 @@ final class Types {
 
     static final ClassName ProtoBufSerializationProviderBuilder =
             bestGuess(grpcProtobufPkg + ".ProtoBufSerializationProviderBuilder");
+
+    static final ClassName RouteExecutionStrategyFactory = bestGuess(routerApiPkg + ".RouteExecutionStrategyFactory");
 
     private Types() {
         // no instances

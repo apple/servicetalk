@@ -19,6 +19,7 @@ apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
 dependencies {
   api project(":servicetalk-concurrent-api")
   api project(":servicetalk-http-api")
+  api project(":servicetalk-router-api")
   api ("com.google.api.grpc:proto-google-common-protos:$protoGoogleCommonProtosVersion") {
     exclude group: "com.google.protobuf"
   }
@@ -26,6 +27,7 @@ dependencies {
   implementation project(":servicetalk-annotations")
   implementation project(":servicetalk-concurrent-api-internal")
   implementation project(":servicetalk-concurrent-internal")
+  implementation project(":servicetalk-router-utils-internal")
   implementation project(":servicetalk-utils-internal")
   implementation "org.slf4j:slf4j-api:$slf4jVersion"
   implementation "com.google.code.findbugs:jsr305:$jsr305Version"

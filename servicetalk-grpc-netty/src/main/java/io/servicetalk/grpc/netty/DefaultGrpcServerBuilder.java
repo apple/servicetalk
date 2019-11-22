@@ -32,7 +32,6 @@ import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.api.StreamingHttpServiceFilterFactory;
 import io.servicetalk.transport.api.ConnectionAcceptorFactory;
-import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.netty.internal.ExecutionContextBuilder;
@@ -40,12 +39,16 @@ import io.servicetalk.transport.netty.internal.ExecutionContextBuilder;
 import java.net.SocketOption;
 import java.util.function.Predicate;
 
+import static io.servicetalk.grpc.api.GrpcExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h2Default;
 
 final class DefaultGrpcServerBuilder extends GrpcServerBuilder implements ServerBinder {
 
     private final HttpServerBuilder httpServerBuilder;
-    private final ExecutionContextBuilder contextBuilder = new ExecutionContextBuilder();
+    private final ExecutionContextBuilder contextBuilder = new ExecutionContextBuilder()
+            // Make sure we always set a strategy so that ExecutionContextBuilder does not create a strategy which is
+            // not compatible with gRPC.
+            .executionStrategy(defaultStrategy());
 
     DefaultGrpcServerBuilder(final HttpServerBuilder httpServerBuilder) {
         this.httpServerBuilder = httpServerBuilder.protocols(h2Default());
@@ -122,8 +125,7 @@ final class DefaultGrpcServerBuilder extends GrpcServerBuilder implements Server
 
     @Override
     protected Single<ServerContext> doListen(final GrpcServiceFactory<?, ?, ?> serviceFactory) {
-        ExecutionContext executionContext = contextBuilder.build();
-        return serviceFactory.bind(this, executionContext);
+        return serviceFactory.bind(this, contextBuilder.build());
     }
 
     @Override

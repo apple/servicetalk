@@ -48,6 +48,7 @@ import static io.servicetalk.concurrent.api.Single.never;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.DefaultHttpHeadersFactory.INSTANCE;
 import static io.servicetalk.http.api.HttpExecutionStrategies.customStrategyBuilder;
+import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpRequestMethod.GET;
 import static io.servicetalk.http.api.NoOffloadsHttpExecutionStrategy.NO_OFFLOADS_NO_EXECUTOR;
@@ -179,7 +180,9 @@ public class DefaultHttpExecutionStrategyTest {
         DefaultStreamingHttpRequestResponseFactory respFactory =
                 new DefaultStreamingHttpRequestResponseFactory(DEFAULT_ALLOCATOR, INSTANCE, HTTP_1_1);
         TestHttpServiceContext ctx = new TestHttpServiceContext(INSTANCE, respFactory,
-                new ExecutionContextToHttpExecutionContext(contextRule, strategy));
+                // Use noOffloadsStrategy() for the ctx to indicate that there was no offloading before.
+                // So, the difference function inside #offloadService will return the tested strategy
+                new ExecutionContextToHttpExecutionContext(contextRule, noOffloadsStrategy()));
         analyzer.instrumentedResponseForServer(svc.handle(ctx, req, ctx.streamingResponseFactory()))
                 .flatMapPublisher(StreamingHttpResponse::payloadBody)
                 .toFuture().get();

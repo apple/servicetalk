@@ -48,7 +48,7 @@ import static java.lang.Boolean.parseBoolean;
  *
  * This class is forked from the netty project and modified to suit our needs.
  */
-final class ReflectionUtils {
+public final class ReflectionUtils {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ReflectionUtils.class);
 
@@ -57,6 +57,26 @@ final class ReflectionUtils {
 
     private ReflectionUtils() {
         // no instances
+    }
+
+    /**
+     * Retrieves the specific {@link Method} from the {@link Class} without checked exception.
+     * <p>
+     * Throws {@link IllegalArgumentException} if {@link NoSuchMethodException} is thrown.
+     *
+     * @param clazz {@link Class} to retrieve a {@link Method} from
+     * @param name the name of the method
+     * @param parameterTypes the list of method parameters
+     * @return the {@link Method} object
+     */
+    public static Method retrieveMethod(final Class<?> clazz, final String name, final Class<?>... parameterTypes) {
+        final Method method;
+        try {
+            method = clazz.getMethod(name, parameterTypes);
+            return method;
+        } catch (NoSuchMethodException e) {
+            throw new IllegalArgumentException("Can not retrieve method " + name, e);
+        }
     }
 
     /**

@@ -72,7 +72,7 @@ import static io.servicetalk.grpc.api.GrpcUtils.newResponse;
 import static io.servicetalk.grpc.api.GrpcUtils.readGrpcMessageEncoding;
 import static io.servicetalk.grpc.api.GrpcUtils.setStatus;
 import static io.servicetalk.http.api.HttpApiConversions.toStreamingHttpService;
-import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
+import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpRequestMethod.POST;
 import static java.util.Collections.unmodifiableMap;
 import static java.util.Objects.requireNonNull;
@@ -107,7 +107,7 @@ final class GrpcRouter {
     }
 
     Single<ServerContext> bind(final ServerBinder binder, final ExecutionContext executionContext) {
-        CompositeCloseable closeable = AsyncCloseables.newCompositeCloseable();
+        final CompositeCloseable closeable = AsyncCloseables.newCompositeCloseable();
         final Map<String, StreamingHttpService> allRoutes = new HashMap<>();
         populateRoutes(executionContext, allRoutes, routes, closeable);
         populateRoutes(executionContext, allRoutes, streamingRoutes, closeable);
@@ -255,7 +255,7 @@ final class GrpcRouter {
                 final StreamingRoute<Req, Resp> route, final Class<Req> requestClass,
                 final Class<Resp> responseClass, final GrpcSerializationProvider serializationProvider) {
             streamingRoutes.put(path, new RouteProvider(executionContext -> {
-                StreamingHttpService service = new StreamingHttpService() {
+                final StreamingHttpService service = new StreamingHttpService() {
                     @Override
                     public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
                                                                 final StreamingHttpRequest request,
@@ -295,7 +295,7 @@ final class GrpcRouter {
 
                     @Override
                     public HttpExecutionStrategy serviceInvocationStrategy() {
-                        return executionStrategy == null ? noOffloadsStrategy() : executionStrategy;
+                        return executionStrategy == null ? defaultStrategy() : executionStrategy;
                     }
                 };
             }, () -> route, () -> toRequestStreamingRoute(route), () -> toResponseStreamingRoute(route),
@@ -323,8 +323,7 @@ final class GrpcRouter {
                         public Completable closeAsyncGracefully() {
                             return route.closeAsyncGracefully();
                         }
-                    }, requestClass, responseClass,
-                    serializationProvider);
+                    }, requestClass, responseClass, serializationProvider);
         }
 
         /**
@@ -463,9 +462,9 @@ final class GrpcRouter {
                         public void closeGracefully() throws Exception {
                             route.closeGracefully();
                         }
-                    }, strategy -> executionStrategy == null ? strategy : executionStrategy), () -> toStreaming(route),
-                    () -> toRequestStreamingRoute(route), () -> toResponseStreamingRoute(route),
-                    () -> toRoute(route), route));
+                    }, strategy -> executionStrategy == null ? strategy : executionStrategy),
+                    () -> toStreaming(route), () -> toRequestStreamingRoute(route),
+                    () -> toResponseStreamingRoute(route), () -> toRoute(route), route));
             return this;
         }
 

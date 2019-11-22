@@ -52,7 +52,7 @@ import static io.servicetalk.concurrent.api.Completable.failed;
 import static io.servicetalk.http.router.jersey.CharSequenceUtils.ensureNoLeadingSlash;
 import static io.servicetalk.http.router.jersey.Context.CONNECTION_CONTEXT_REF_TYPE;
 import static io.servicetalk.http.router.jersey.Context.HTTP_REQUEST_REF_TYPE;
-import static io.servicetalk.http.router.jersey.RouteExecutionStrategyUtils.validateRouteStrategies;
+import static io.servicetalk.http.router.jersey.JerseyRouteExecutionStrategyUtils.validateRouteStrategies;
 import static io.servicetalk.http.router.jersey.internal.RequestProperties.initRequestProperties;
 import static java.util.Objects.requireNonNull;
 import static org.glassfish.jersey.server.internal.ContainerUtils.encodeUnsafeCharacters;

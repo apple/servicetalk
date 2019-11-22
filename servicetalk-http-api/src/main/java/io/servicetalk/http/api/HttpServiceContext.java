@@ -51,8 +51,9 @@ public abstract class HttpServiceContext implements ConnectionContext {
      *
      * @param other {@link HttpServiceContext} to copy from.
      */
-    protected HttpServiceContext(HttpServiceContext other) {
-        this(other.headersFactory, other.factory, other.streamingFactory, other.blockingFactory);
+    protected HttpServiceContext(final HttpServiceContext other) {
+        this(other.headersFactory(), other.responseFactory(), other.streamingResponseFactory(),
+                other.streamingBlockingResponseFactory());
     }
 
     @Override
@@ -63,7 +64,7 @@ public abstract class HttpServiceContext implements ConnectionContext {
      *
      * @return {@link HttpHeadersFactory} associated with this {@link HttpServiceContext}.
      */
-    protected final HttpHeadersFactory headersFactory() {
+    protected HttpHeadersFactory headersFactory() {
         return headersFactory;
     }
 
@@ -72,7 +73,7 @@ public abstract class HttpServiceContext implements ConnectionContext {
      *
      * @return {@link HttpResponseFactory} associated with this {@link HttpServiceContext}.
      */
-    protected final HttpResponseFactory responseFactory() {
+    protected HttpResponseFactory responseFactory() {
         return factory;
     }
 
@@ -81,7 +82,7 @@ public abstract class HttpServiceContext implements ConnectionContext {
      *
      * @return {@link StreamingHttpResponseFactory} associated with this {@link HttpServiceContext}.
      */
-    protected final StreamingHttpResponseFactory streamingResponseFactory() {
+    protected StreamingHttpResponseFactory streamingResponseFactory() {
         return streamingFactory;
     }
 
@@ -90,7 +91,7 @@ public abstract class HttpServiceContext implements ConnectionContext {
      *
      * @return {@link BlockingStreamingHttpResponseFactory} associated with this {@link HttpServiceContext}.
      */
-    protected final BlockingStreamingHttpResponseFactory streamingBlockingResponseFactory() {
+    protected BlockingStreamingHttpResponseFactory streamingBlockingResponseFactory() {
         return blockingFactory;
     }
 }
