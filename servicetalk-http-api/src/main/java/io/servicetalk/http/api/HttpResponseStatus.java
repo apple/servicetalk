@@ -45,6 +45,11 @@ public final class HttpResponseStatus {
     public static final HttpResponseStatus PROCESSING = new HttpResponseStatus(102, "Processing");
 
     /**
+     * 103 Early Hints (RFC 8297)
+     */
+    public static final HttpResponseStatus EARLY_HINTS = new HttpResponseStatus(103, "Early Hints");
+
+    /**
      * 200 OK
      */
     public static final HttpResponseStatus OK = new HttpResponseStatus(200, "OK");
@@ -84,6 +89,16 @@ public final class HttpResponseStatus {
      * 207 Multi-Status (WebDAV, RFC2518)
      */
     public static final HttpResponseStatus MULTI_STATUS = new HttpResponseStatus(207, "Multi-Status");
+
+    /**
+     * 208 Already Reported (WebDAV, RFC 5842)
+     */
+    public static final HttpResponseStatus ALREADY_REPORTED = new HttpResponseStatus(208, "Already Reported");
+
+    /**
+     * 226 IM Used (RFC 3229)
+     */
+    public static final HttpResponseStatus IM_USED = new HttpResponseStatus(226, "IM Used");
 
     /**
      * 300 Multiple Choices
@@ -269,6 +284,12 @@ public final class HttpResponseStatus {
             "Request Header Fields Too Large");
 
     /**
+     * 451 Unavailable For Legal Reasons (RFC 7725)
+     */
+    public static final HttpResponseStatus UNAVAILABLE_FOR_LEGAL_REASONS = new HttpResponseStatus(451,
+            "Unavailable For Legal Reasons");
+
+    /**
      * 500 Internal Server Error
      */
     public static final HttpResponseStatus INTERNAL_SERVER_ERROR = new HttpResponseStatus(500,
@@ -310,6 +331,11 @@ public final class HttpResponseStatus {
      * 507 Insufficient Storage (WebDAV, RFC4918)
      */
     public static final HttpResponseStatus INSUFFICIENT_STORAGE = new HttpResponseStatus(507, "Insufficient Storage");
+
+    /**
+     * 508 Loop Detected (WebDAV; RFC 5842)
+     */
+    public static final HttpResponseStatus LOOP_DETECTED = new HttpResponseStatus(508, "Loop Detected");
 
     /**
      * 510 Not Extended (RFC2774)
@@ -376,6 +402,8 @@ public final class HttpResponseStatus {
                 return SWITCHING_PROTOCOLS;
             case 102:
                 return PROCESSING;
+            case 103:
+                return EARLY_HINTS;
             case 200:
                 return OK;
             case 201:
@@ -392,6 +420,10 @@ public final class HttpResponseStatus {
                 return PARTIAL_CONTENT;
             case 207:
                 return MULTI_STATUS;
+            case 208:
+                return ALREADY_REPORTED;
+            case 226:
+                return IM_USED;
             case 300:
                 return MULTIPLE_CHOICES;
             case 301:
@@ -462,6 +494,8 @@ public final class HttpResponseStatus {
                 return TOO_MANY_REQUESTS;
             case 431:
                 return REQUEST_HEADER_FIELDS_TOO_LARGE;
+            case 451:
+                return UNAVAILABLE_FOR_LEGAL_REASONS;
             case 500:
                 return INTERNAL_SERVER_ERROR;
             case 501:
@@ -478,6 +512,8 @@ public final class HttpResponseStatus {
                 return VARIANT_ALSO_NEGOTIATES;
             case 507:
                 return INSUFFICIENT_STORAGE;
+            case 508:
+                return LOOP_DETECTED;
             case 510:
                 return NOT_EXTENDED;
             case 511:
