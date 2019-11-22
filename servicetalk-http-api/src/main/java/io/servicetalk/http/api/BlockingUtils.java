@@ -22,7 +22,6 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.internal.SubscribableCompletable;
 import io.servicetalk.concurrent.api.internal.SubscribableSingle;
 import io.servicetalk.concurrent.internal.ThreadInterruptingCancellable;
-import io.servicetalk.concurrent.internal.ThrowableUtil;
 
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -98,7 +97,7 @@ final class BlockingUtils {
             future.cancel(false);
             throw e;
         } catch (ExecutionException e) {
-            return throwException(ThrowableUtil.getCause(e));
+            return throwException(executionExceptionCause(e));
         }
     }
 
@@ -151,7 +150,7 @@ final class BlockingUtils {
         try {
             return source.toFuture().get();
         } catch (final ExecutionException e) {
-            return throwException(ThrowableUtil.getCause(e));
+            return throwException(executionExceptionCause(e));
         }
     }
 
@@ -161,7 +160,11 @@ final class BlockingUtils {
         try {
             source.toFuture().get();
         } catch (final ExecutionException e) {
-            throwException(ThrowableUtil.getCause(e));
+            throwException(executionExceptionCause(e));
         }
+    }
+
+    private static Throwable executionExceptionCause(ExecutionException original) {
+        return (original.getCause() != null) ? original.getCause() : original;
     }
 }
