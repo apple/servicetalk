@@ -18,9 +18,9 @@ package io.servicetalk.concurrent.internal;
 /**
  * Utility for creating static {@link Throwable}s.
  */
-public final class ThrowableUtil {
+public final class ThrowableUtils {
 
-    private ThrowableUtil() {
+    private ThrowableUtils() {
         // no instances
     }
 

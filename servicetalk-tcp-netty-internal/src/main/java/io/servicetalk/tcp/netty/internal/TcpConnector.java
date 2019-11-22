@@ -16,7 +16,7 @@
 package io.servicetalk.tcp.netty.internal;
 
 import io.servicetalk.buffer.api.BufferAllocator;
-import io.servicetalk.buffer.netty.BufferUtil;
+import io.servicetalk.buffer.netty.BufferUtils;
 import io.servicetalk.client.api.RetryableConnectException;
 import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.api.Single;
@@ -149,7 +149,7 @@ public final class TcpConnector {
         bs.option(ChannelOption.AUTO_READ, autoRead);
 
         // Set the correct ByteBufAllocator based on our BufferAllocator to minimize memory copies.
-        bs.option(ChannelOption.ALLOCATOR, BufferUtil.getByteBufAllocator(bufferAllocator));
+        bs.option(ChannelOption.ALLOCATOR, BufferUtils.getByteBufAllocator(bufferAllocator));
 
         // If the connect operation fails we must take care to fail the promise.
         return bs.connect(nettyresolvedRemoteAddress, localAddress);
@@ -165,7 +165,7 @@ public final class TcpConnector {
         channel.config().setOption(ChannelOption.AUTO_READ, autoRead);
 
         // Set the correct ByteBufAllocator based on our BufferAllocator to minimize memory copies.
-        channel.config().setAllocator(BufferUtil.getByteBufAllocator(bufferAllocator));
+        channel.config().setAllocator(BufferUtils.getByteBufAllocator(bufferAllocator));
         channel.pipeline().addLast(handler);
         return loop.register(channel);
     }

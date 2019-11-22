@@ -20,7 +20,7 @@ import io.servicetalk.buffer.api.Buffer;
 import org.junit.Test;
 
 import static io.servicetalk.buffer.api.EmptyBuffer.EMPTY_BUFFER;
-import static io.servicetalk.buffer.netty.BufferUtil.toByteBufNoThrow;
+import static io.servicetalk.buffer.netty.BufferUtils.toByteBufNoThrow;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.mockito.Mockito.mock;

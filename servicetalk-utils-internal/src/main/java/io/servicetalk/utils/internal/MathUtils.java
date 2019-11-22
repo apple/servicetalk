@@ -18,8 +18,8 @@ package io.servicetalk.utils.internal;
 /**
  * Internal math utilities.
  */
-public final class MathUtil {
-    private MathUtil() {
+public final class MathUtils {
+    private MathUtils() {
     }
 
     /**

@@ -130,7 +130,7 @@ public class BufferAllocatorsTest {
     }
 
     private static void assertByteBufIsUnreleasable(Buffer buffer) {
-        ByteBuf byteBuf = BufferUtil.toByteBuf(buffer);
+        ByteBuf byteBuf = BufferUtils.toByteBuf(buffer);
         assertByteBufIsUnreleasable(byteBuf);
         assertByteBufIsUnreleasable(byteBuf.slice());
         assertByteBufIsUnreleasable(byteBuf.slice(0, 0));

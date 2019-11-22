@@ -61,7 +61,7 @@ import static io.netty.util.ReferenceCountUtil.release;
 import static io.servicetalk.concurrent.api.Processors.newCompletableProcessor;
 import static io.servicetalk.concurrent.api.Processors.newSingleProcessor;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
-import static io.servicetalk.concurrent.internal.ThrowableUtil.unknownStackTrace;
+import static io.servicetalk.concurrent.internal.ThrowableUtils.unknownStackTrace;
 import static io.servicetalk.http.netty.H2ToStH1Utils.DEFAULT_GRACEFUL_SHUTDOWN_TIMEOUT_MILLIS;
 import static io.servicetalk.transport.netty.internal.NettyIoExecutors.fromNettyEventLoop;
 import static io.servicetalk.transport.netty.internal.NettyPipelineSslUtils.extractSslSession;

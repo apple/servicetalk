@@ -32,9 +32,9 @@ package io.servicetalk.http.api;
 
 import javax.annotation.Nullable;
 
-final class StringUtil {
+final class StringUtils {
 
-    private StringUtil() {
+    private StringUtils() {
         // No instances
     }
 

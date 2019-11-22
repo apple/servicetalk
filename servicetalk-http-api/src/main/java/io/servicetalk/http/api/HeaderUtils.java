@@ -38,8 +38,8 @@ import static io.servicetalk.http.api.HttpHeaderValues.APPLICATION_X_WWW_FORM_UR
 import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
 import static io.servicetalk.http.api.HttpHeaderValues.TEXT_PLAIN;
 import static io.servicetalk.http.api.HttpHeaderValues.TEXT_PLAIN_UTF_8;
-import static io.servicetalk.http.api.NetUtil.isValidIpV4Address;
-import static io.servicetalk.http.api.NetUtil.isValidIpV6Address;
+import static io.servicetalk.http.api.NetUtils.isValidIpV4Address;
+import static io.servicetalk.http.api.NetUtils.isValidIpV6Address;
 import static java.lang.Math.min;
 import static java.lang.System.lineSeparator;
 import static java.nio.charset.Charset.availableCharsets;

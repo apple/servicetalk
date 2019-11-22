@@ -57,7 +57,7 @@ import static io.netty.handler.codec.http.HttpConstants.CR;
 import static io.netty.util.ByteProcessor.FIND_LF;
 import static io.netty.util.ByteProcessor.FIND_LINEAR_WHITESPACE;
 import static io.netty.util.ByteProcessor.FIND_NON_LINEAR_WHITESPACE;
-import static io.servicetalk.buffer.netty.BufferUtil.newBufferFrom;
+import static io.servicetalk.buffer.netty.BufferUtils.newBufferFrom;
 import static io.servicetalk.http.api.CharSequences.emptyAsciiString;
 import static io.servicetalk.http.api.CharSequences.newAsciiString;
 import static io.servicetalk.http.api.HeaderUtils.isTransferEncodingChunked;

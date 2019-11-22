@@ -168,7 +168,7 @@ final class TaskBasedSignalOffloader implements SignalOffloader {
             if ((!isRequestNValid(n) &&
                     requestedUpdater.getAndSet(this, n < TERMINATED ? n : Long.MIN_VALUE) >= 0) ||
                     requestedUpdater.accumulateAndGet(this, n,
-                            FlowControlUtil::addWithOverflowProtectionIfNotNegative) > 0) {
+                            FlowControlUtils::addWithOverflowProtectionIfNotNegative) > 0) {
                 enqueueTaskIfRequired(true);
             }
         }

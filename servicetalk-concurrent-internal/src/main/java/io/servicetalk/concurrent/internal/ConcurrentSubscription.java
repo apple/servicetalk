@@ -80,7 +80,7 @@ public class ConcurrentSubscription implements Subscription {
         final Thread currentThread = Thread.currentThread();
         if (currentThread == subscriptionLockOwner) {
             subscriptionRequestQueueUpdater.accumulateAndGet(this, n,
-                    FlowControlUtil::addWithOverflowProtectionIfNotNegative);
+                    FlowControlUtils::addWithOverflowProtectionIfNotNegative);
             return;
         }
         do {
@@ -92,7 +92,7 @@ public class ConcurrentSubscription implements Subscription {
                     subscriptionRequestQueueUpdater.set(this, Long.MIN_VALUE);
                 } else {
                     subscriptionRequestQueueUpdater.accumulateAndGet(this, n,
-                            FlowControlUtil::addWithOverflowProtectionIfNotNegative);
+                            FlowControlUtils::addWithOverflowProtectionIfNotNegative);
                 }
                 if (!subscriptionLockOwnerUpdater.compareAndSet(this, null, currentThread)) {
                     return;

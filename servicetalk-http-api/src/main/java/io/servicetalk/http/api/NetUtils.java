@@ -30,9 +30,9 @@
  */
 package io.servicetalk.http.api;
 
-final class NetUtil {
+final class NetUtils {
 
-    private NetUtil() {
+    private NetUtils() {
         // no instances
     }
 
@@ -50,7 +50,7 @@ final class NetUtil {
         return ip instanceof String ? isValidIpV4Address((String) ip, from, toExclusive, String::indexOf) :
                ip instanceof AsciiBuffer ?
                         isValidIpV4Address((AsciiBuffer) ip, from, toExclusive, AsciiBuffer::indexOf) :
-                        isValidIpV4Address(ip, from, toExclusive, NetUtil::indexOf0);
+                        isValidIpV4Address(ip, from, toExclusive, NetUtils::indexOf0);
     }
 
     @FunctionalInterface

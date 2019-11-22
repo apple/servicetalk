@@ -17,7 +17,7 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.SingleSource;
-import io.servicetalk.concurrent.internal.FlowControlUtil;
+import io.servicetalk.concurrent.internal.FlowControlUtils;
 
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
@@ -145,7 +145,7 @@ final class PublisherConcatWithSingle<T> extends AbstractAsynchronousPublisherOp
             final long requestNPostUpdate;
             if (isRequestNValid(n)) {
                 requestNPostUpdate = requestNUpdater.accumulateAndGet(this, n,
-                        FlowControlUtil::addWithOverflowProtectionIfGtEqNegativeOne);
+                        FlowControlUtils::addWithOverflowProtectionIfGtEqNegativeOne);
             } else {
                 requestNPostUpdate = sanitizeInvalidRequestN(n);
                 requestN = requestNPostUpdate;

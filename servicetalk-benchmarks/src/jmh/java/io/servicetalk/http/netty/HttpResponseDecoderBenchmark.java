@@ -39,7 +39,7 @@ import java.util.ArrayDeque;
 
 import static io.netty.handler.codec.http.HttpConstants.SP;
 import static io.servicetalk.buffer.netty.BufferAllocators.PREFER_DIRECT_ALLOCATOR;
-import static io.servicetalk.buffer.netty.BufferUtil.toByteBuf;
+import static io.servicetalk.buffer.netty.BufferUtils.toByteBuf;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.netty.HttpObjectEncoder.CRLF_SHORT;
 import static io.servicetalk.http.netty.HttpUtils.status;

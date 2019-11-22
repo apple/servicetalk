@@ -80,25 +80,25 @@ class ContextPreservingExecutorService<X extends ExecutorService> implements Exe
 
     @Override
     public final <T> List<Future<T>> invokeAll(Collection<? extends Callable<T>> tasks) throws InterruptedException {
-        return delegate.invokeAll(ContextAwareExecutorUtil.wrap(tasks));
+        return delegate.invokeAll(ContextAwareExecutorUtils.wrap(tasks));
     }
 
     @Override
     public final <T> List<Future<T>> invokeAll(Collection<? extends Callable<T>> tasks, long timeout, TimeUnit unit)
             throws InterruptedException {
-        return delegate.invokeAll(ContextAwareExecutorUtil.wrap(tasks), timeout, unit);
+        return delegate.invokeAll(ContextAwareExecutorUtils.wrap(tasks), timeout, unit);
     }
 
     @Override
     public final <T> T invokeAny(Collection<? extends Callable<T>> tasks)
             throws InterruptedException, ExecutionException {
-        return delegate.invokeAny(ContextAwareExecutorUtil.wrap(tasks));
+        return delegate.invokeAny(ContextAwareExecutorUtils.wrap(tasks));
     }
 
     @Override
     public final <T> T invokeAny(Collection<? extends Callable<T>> tasks, long timeout, TimeUnit unit)
             throws InterruptedException, ExecutionException, TimeoutException {
-        return delegate.invokeAny(ContextAwareExecutorUtil.wrap(tasks), timeout, unit);
+        return delegate.invokeAny(ContextAwareExecutorUtils.wrap(tasks), timeout, unit);
     }
 
     static ExecutorService of(ExecutorService executor) {

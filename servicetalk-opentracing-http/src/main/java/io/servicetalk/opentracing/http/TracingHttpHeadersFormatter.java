@@ -28,7 +28,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.http.api.CharSequences.contentEqualsIgnoreCase;
 import static io.servicetalk.http.api.CharSequences.newAsciiString;
-import static io.servicetalk.opentracing.internal.HexUtil.validateHexBytes;
+import static io.servicetalk.opentracing.internal.HexUtils.validateHexBytes;
 import static java.lang.String.valueOf;
 
 final class TracingHttpHeadersFormatter implements InMemoryTraceStateFormat<HttpHeaders> {

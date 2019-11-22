@@ -18,7 +18,7 @@ package io.servicetalk.concurrent.api;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static io.servicetalk.concurrent.internal.FlowControlUtil.addWithOverflowProtection;
+import static io.servicetalk.concurrent.internal.FlowControlUtils.addWithOverflowProtection;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverTerminalFromSource;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid;

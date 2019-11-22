@@ -22,7 +22,7 @@ import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.internal.ConcurrentSubscription;
 import io.servicetalk.concurrent.internal.EmptySubscription;
-import io.servicetalk.concurrent.internal.FlowControlUtil;
+import io.servicetalk.concurrent.internal.FlowControlUtils;
 import io.servicetalk.transport.netty.internal.NettyConnection.RequestNSupplier;
 
 import io.netty.channel.Channel;
@@ -245,7 +245,7 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
 
         long n = requestNSupplier.requestNFor(channel.bytesBeforeUnwritable());
         if (n > 0) {
-            requestedUpdater.accumulateAndGet(this, n, FlowControlUtil::addWithOverflowProtection);
+            requestedUpdater.accumulateAndGet(this, n, FlowControlUtils::addWithOverflowProtection);
             subscription.request(n);
         }
     }

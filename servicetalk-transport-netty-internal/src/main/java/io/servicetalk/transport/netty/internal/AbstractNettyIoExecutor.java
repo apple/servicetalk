@@ -55,12 +55,12 @@ abstract class AbstractNettyIoExecutor<T extends EventLoopGroup> implements Nett
 
     @Override
     public final boolean isUnixDomainSocketSupported() {
-        return NativeTransportUtil.isUnixDomainSocketSupported(eventLoop);
+        return NativeTransportUtils.isUnixDomainSocketSupported(eventLoop);
     }
 
     @Override
     public boolean isFileDescriptorSocketAddressSupported() {
-        return NativeTransportUtil.isFileDescriptorSocketAddressSupported(eventLoop);
+        return NativeTransportUtils.isFileDescriptorSocketAddressSupported(eventLoop);
     }
 
     @Override

@@ -17,7 +17,7 @@ package io.servicetalk.concurrent.internal;
 
 import org.junit.Test;
 
-import static io.servicetalk.concurrent.internal.ThrowableUtil.matches;
+import static io.servicetalk.concurrent.internal.ThrowableUtils.matches;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
 

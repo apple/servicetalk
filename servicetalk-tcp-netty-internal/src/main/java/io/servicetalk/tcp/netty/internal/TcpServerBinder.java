@@ -16,7 +16,7 @@
 package io.servicetalk.tcp.netty.internal;
 
 import io.servicetalk.buffer.api.BufferAllocator;
-import io.servicetalk.buffer.netty.BufferUtil;
+import io.servicetalk.buffer.netty.BufferUtils;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.internal.SubscribableSingle;
 import io.servicetalk.transport.api.ConnectionAcceptor;
@@ -165,7 +165,7 @@ public final class TcpServerBinder {
         bs.option(ChannelOption.SO_BACKLOG, config.backlog());
 
         // Set the correct ByteBufAllocator based on our BufferAllocator to minimize memory copies.
-        ByteBufAllocator byteBufAllocator = BufferUtil.getByteBufAllocator(bufferAllocator);
+        ByteBufAllocator byteBufAllocator = BufferUtils.getByteBufAllocator(bufferAllocator);
         bs.option(ChannelOption.ALLOCATOR, byteBufAllocator);
         bs.childOption(ChannelOption.ALLOCATOR, byteBufAllocator);
     }

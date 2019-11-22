@@ -18,11 +18,11 @@ package io.servicetalk.opentracing.internal;
 /**
  * Utilities for hex strings.
  */
-public final class HexUtil {
+public final class HexUtils {
     private static final char[] HEX_CHARS = new char[]{'0', '1', '2', '3', '4', '5', '6', '7',
         '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
 
-    private HexUtil() {
+    private HexUtils() {
         // no instantiation
     }
 
@@ -63,22 +63,22 @@ public final class HexUtil {
         if (offset > str.length() - 16) {
             throw new StringIndexOutOfBoundsException(offset + 16);
         }
-        return ((long) HexUtil.fromHexChar(str.charAt(offset)) << 60) |
-            ((long) HexUtil.fromHexChar(str.charAt(offset + 1)) << 56) |
-            ((long) HexUtil.fromHexChar(str.charAt(offset + 2)) << 52) |
-            ((long) HexUtil.fromHexChar(str.charAt(offset + 3)) << 48) |
-            ((long) HexUtil.fromHexChar(str.charAt(offset + 4)) << 44) |
-            ((long) HexUtil.fromHexChar(str.charAt(offset + 5)) << 40) |
-            ((long) HexUtil.fromHexChar(str.charAt(offset + 6)) << 36) |
-            ((long) HexUtil.fromHexChar(str.charAt(offset + 7)) << 32) |
-            ((long) HexUtil.fromHexChar(str.charAt(offset + 8)) << 28) |
-            ((long) HexUtil.fromHexChar(str.charAt(offset + 9)) << 24) |
-            ((long) HexUtil.fromHexChar(str.charAt(offset + 10)) << 20) |
-            ((long) HexUtil.fromHexChar(str.charAt(offset + 11)) << 16) |
-            ((long) HexUtil.fromHexChar(str.charAt(offset + 12)) << 12) |
-            ((long) HexUtil.fromHexChar(str.charAt(offset + 13)) << 8) |
-            ((long) HexUtil.fromHexChar(str.charAt(offset + 14)) << 4) |
-            ((long) HexUtil.fromHexChar(str.charAt(offset + 15)));
+        return ((long) HexUtils.fromHexChar(str.charAt(offset)) << 60) |
+            ((long) HexUtils.fromHexChar(str.charAt(offset + 1)) << 56) |
+            ((long) HexUtils.fromHexChar(str.charAt(offset + 2)) << 52) |
+            ((long) HexUtils.fromHexChar(str.charAt(offset + 3)) << 48) |
+            ((long) HexUtils.fromHexChar(str.charAt(offset + 4)) << 44) |
+            ((long) HexUtils.fromHexChar(str.charAt(offset + 5)) << 40) |
+            ((long) HexUtils.fromHexChar(str.charAt(offset + 6)) << 36) |
+            ((long) HexUtils.fromHexChar(str.charAt(offset + 7)) << 32) |
+            ((long) HexUtils.fromHexChar(str.charAt(offset + 8)) << 28) |
+            ((long) HexUtils.fromHexChar(str.charAt(offset + 9)) << 24) |
+            ((long) HexUtils.fromHexChar(str.charAt(offset + 10)) << 20) |
+            ((long) HexUtils.fromHexChar(str.charAt(offset + 11)) << 16) |
+            ((long) HexUtils.fromHexChar(str.charAt(offset + 12)) << 12) |
+            ((long) HexUtils.fromHexChar(str.charAt(offset + 13)) << 8) |
+            ((long) HexUtils.fromHexChar(str.charAt(offset + 14)) << 4) |
+            ((long) HexUtils.fromHexChar(str.charAt(offset + 15)));
     }
 
     /**

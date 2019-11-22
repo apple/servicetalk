@@ -19,7 +19,7 @@ import io.servicetalk.transport.netty.internal.NettyConnection.RequestNSupplier;
 
 import io.netty.channel.FileRegion;
 
-import static io.servicetalk.concurrent.internal.FlowControlUtil.addWithOverflowProtection;
+import static io.servicetalk.concurrent.internal.FlowControlUtils.addWithOverflowProtection;
 import static io.servicetalk.transport.netty.internal.OverlappingCapacityAwareSupplier.SizeEstimator.defaultEstimator;
 import static java.util.Objects.requireNonNull;
 

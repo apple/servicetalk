@@ -26,7 +26,7 @@ import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 
-import static io.servicetalk.buffer.netty.BufferUtil.toByteBufNoThrow;
+import static io.servicetalk.buffer.netty.BufferUtils.toByteBufNoThrow;
 
 class NettyBuffer<T extends ByteBuf> implements Buffer {
 

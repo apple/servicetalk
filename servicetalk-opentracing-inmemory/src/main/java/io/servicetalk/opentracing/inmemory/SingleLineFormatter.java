@@ -21,7 +21,7 @@ import io.servicetalk.opentracing.inmemory.api.InMemoryTraceStateFormat;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.opentracing.inmemory.SingleLineValue.format;
-import static io.servicetalk.opentracing.internal.HexUtil.validateHexBytes;
+import static io.servicetalk.opentracing.internal.HexUtils.validateHexBytes;
 import static io.servicetalk.opentracing.internal.TracingConstants.NO_PARENT_ID;
 
 /**
