@@ -23,7 +23,7 @@ import org.junit.Test;
 
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
-import static io.servicetalk.http.api.HttpHeaderValues.TEXT_PLAIN;
+import static io.servicetalk.http.api.HttpHeaderValues.TEXT_PLAIN_UTF_8;
 import static io.servicetalk.http.api.HttpHeaderValues.ZERO;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpResponseStatus.NOT_FOUND;
@@ -42,6 +42,6 @@ public class DefaultFallbackServiceTest extends BaseHttpPredicateRouterBuilderTe
         assertEquals(HTTP_1_1, response.version());
         assertEquals(NOT_FOUND, response.status());
         assertEquals(ZERO, response.headers().get(CONTENT_LENGTH));
-        assertEquals(TEXT_PLAIN, response.headers().get(CONTENT_TYPE));
+        assertEquals(TEXT_PLAIN_UTF_8, response.headers().get(CONTENT_TYPE));
     }
 }
