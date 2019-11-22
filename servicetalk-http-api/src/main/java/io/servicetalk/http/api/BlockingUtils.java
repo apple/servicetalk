@@ -97,7 +97,7 @@ final class BlockingUtils {
             future.cancel(false);
             throw e;
         } catch (ExecutionException e) {
-            return throwException(e.getCause());
+            return throwException(executionExceptionCause(e));
         }
     }
 
@@ -150,7 +150,7 @@ final class BlockingUtils {
         try {
             return source.toFuture().get();
         } catch (final ExecutionException e) {
-            return throwException(e.getCause());
+            return throwException(executionExceptionCause(e));
         }
     }
 
@@ -160,7 +160,11 @@ final class BlockingUtils {
         try {
             source.toFuture().get();
         } catch (final ExecutionException e) {
-            throwException(e.getCause());
+            throwException(executionExceptionCause(e));
         }
+    }
+
+    private static Throwable executionExceptionCause(ExecutionException original) {
+        return (original.getCause() != null) ? original.getCause() : original;
     }
 }
