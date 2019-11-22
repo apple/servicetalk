@@ -58,4 +58,13 @@ public final class ThrowableUtil {
         }
         return false;
     }
+
+    /**
+     * Gets not null cause of original exception or the original exception.
+     * @param original {@link Throwable} original exception.
+     * @return {@link Throwable#getCause()} if it is not null, or original
+     */
+    public static Throwable getCause(Throwable original) {
+       return (original.getCause() != null) ? original.getCause() : original;
+    }
 }
