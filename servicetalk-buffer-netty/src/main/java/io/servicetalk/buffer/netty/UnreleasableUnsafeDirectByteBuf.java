@@ -25,10 +25,22 @@ import java.nio.ByteBuffer;
 class UnreleasableUnsafeDirectByteBuf extends UnpooledUnsafeDirectByteBuf {
     UnreleasableUnsafeDirectByteBuf(ByteBufAllocator alloc, int initialCapacity, int maxCapacity) {
         super(alloc, initialCapacity, maxCapacity);
+        // ServiceTalk buffers are unreleasable. There are some optimizations in Netty which use `refCnt() > 1` to
+        // judge if a ByteBuf maybe shared, and if not shared Netty may assume is is safe to make changes to the
+        // underlying storage (e.g. write reallocation, compact data in place) of the ByteBuf which may lead to
+        // visibility issues across threads and data corruption. We retain() here to imply the ByteBuf maybe shared and
+        // these optimizations are not safe.
+        super.retain();
     }
 
     UnreleasableUnsafeDirectByteBuf(ByteBufAllocator alloc, ByteBuffer initialBuffer, int maxCapacity) {
         super(alloc, initialBuffer, maxCapacity);
+        // ServiceTalk buffers are unreleasable. There are some optimizations in Netty which use `refCnt() > 1` to
+        // judge if a ByteBuf maybe shared, and if not shared Netty may assume is is safe to make changes to the
+        // underlying storage (e.g. write reallocation, compact data in place) of the ByteBuf which may lead to
+        // visibility issues across threads and data corruption. We retain() here to imply the ByteBuf maybe shared and
+        // these optimizations are not safe.
+        super.retain();
     }
 
     @Override

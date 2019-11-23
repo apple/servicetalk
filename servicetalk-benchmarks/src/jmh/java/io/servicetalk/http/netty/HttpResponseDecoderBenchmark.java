@@ -83,10 +83,8 @@ public class HttpResponseDecoderBenchmark {
         responseBuffer.writeShort(CRLF_SHORT);
         responseByteBuf = toByteBuf(responseBuffer.slice());
 
-        final HttpResponseDecoder decoder = new HttpResponseDecoder(new ArrayDeque<>(),
-                DefaultHttpHeadersFactory.INSTANCE, 8192, 8192);
-        decoder.setDiscardAfterReads(1);
-        channel = new EmbeddedChannel(decoder);
+        channel = new EmbeddedChannel(new HttpResponseDecoder(new ArrayDeque<>(),
+                DefaultHttpHeadersFactory.INSTANCE, 8192, 8192));
     }
 
     @Benchmark

@@ -410,10 +410,8 @@ public class HttpRequestDecoderTest {
     }
 
     private static EmbeddedChannel newEmbeddedChannel() {
-        HttpRequestDecoder decoder = new HttpRequestDecoder(new ArrayDeque<>(),
-                DefaultHttpHeadersFactory.INSTANCE, 8192, 8192);
-        decoder.setDiscardAfterReads(1);
-        return new EmbeddedChannel(decoder);
+        return new EmbeddedChannel(new HttpRequestDecoder(new ArrayDeque<>(),
+                DefaultHttpHeadersFactory.INSTANCE, 8192, 8192));
     }
 
     private static void validateHttpRequest(EmbeddedChannel channel, int expectedContentLength) {

@@ -409,9 +409,11 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
     }
 
     @Override
-    protected final ByteBuf swapCumulation(ByteBuf cumulation, ByteBufAllocator allocator) {
+    protected final ByteBuf swapAndCopyCumulation(final ByteBufAllocator alloc,
+                                                  final ByteBuf cumulation,
+                                                  final ByteBuf in) {
         final int readerIndex = cumulation.readerIndex();
-        ByteBuf newCumulation = super.swapCumulation(cumulation, allocator);
+        ByteBuf newCumulation = super.swapAndCopyCumulation(alloc, cumulation, in);
         cumulationIndex -= readerIndex - newCumulation.readerIndex();
         return newCumulation;
     }
@@ -525,8 +527,8 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
             cumulationIndex = buffer.writerIndex();
             return false;
         } else {
-            cumulationIndex = i;
             buffer.readerIndex(i);
+            cumulationIndex = i;
             return true;
         }
     }

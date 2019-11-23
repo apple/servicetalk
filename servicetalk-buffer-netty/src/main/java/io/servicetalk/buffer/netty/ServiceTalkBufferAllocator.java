@@ -45,7 +45,6 @@ final class ServiceTalkBufferAllocator extends AbstractByteBufAllocator implemen
     private final boolean noZeroing;
 
     ServiceTalkBufferAllocator(boolean preferDirect, boolean tryNoZeroing) {
-
         super(preferDirect);
         this.noZeroing = tryNoZeroing && useDirectBufferWithoutZeroing();
     }
