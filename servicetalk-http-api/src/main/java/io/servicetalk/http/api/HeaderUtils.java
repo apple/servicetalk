@@ -60,6 +60,17 @@ public final class HeaderUtils {
     static final int HASH_CODE_SEED = 0xc2b2ae35;
     public static final BiFunction<? super CharSequence, ? super CharSequence, CharSequence> DEFAULT_HEADER_FILTER =
             (k, v) -> "<filtered>";
+    public static final BiFunction<? super CharSequence, ? super CharSequence, CharSequence>
+            DEFAULT_DEBUG_HEADER_FILTER = (key, value) -> {
+                switch (key.toString()) {
+                    case "content-type":
+                    case "content-length":
+                    case "transfer-encoding":
+                        return value;
+                    default:
+                        return "<filtered>";
+                }
+            };
     private static final ByteProcessor HEADER_NAME_VALIDATOR = value -> {
         validateHeaderNameToken(value);
         return true;

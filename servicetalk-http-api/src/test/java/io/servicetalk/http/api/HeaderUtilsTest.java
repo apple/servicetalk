@@ -23,12 +23,15 @@ import java.nio.charset.CharsetEncoder;
 
 import static io.netty.util.AsciiString.of;
 import static io.servicetalk.http.api.HeaderUtils.isTransferEncodingChunked;
+import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
+import static io.servicetalk.http.api.HttpHeaderNames.ORIGIN;
 import static io.servicetalk.http.api.HttpHeaderNames.TRANSFER_ENCODING;
 import static io.servicetalk.http.api.HttpHeaderValues.APPLICATION_JSON;
 import static io.servicetalk.http.api.HttpHeaderValues.APPLICATION_X_WWW_FORM_URLENCODED;
 import static io.servicetalk.http.api.HttpHeaderValues.APPLICATION_X_WWW_FORM_URLENCODED_UTF_8;
 import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
+import static io.servicetalk.http.api.HttpHeaderValues.GZIP;
 import static io.servicetalk.http.api.HttpHeaderValues.TEXT_PLAIN;
 import static io.servicetalk.http.api.HttpHeaderValues.TEXT_PLAIN_UTF_8;
 import static java.nio.charset.StandardCharsets.US_ASCII;
@@ -39,6 +42,17 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class HeaderUtilsTest {
+    @Test
+    public void DEFAULT_DEBUG_HEADER_FILTER() {
+        assertEquals(APPLICATION_JSON, HeaderUtils.DEFAULT_DEBUG_HEADER_FILTER.apply(CONTENT_TYPE, APPLICATION_JSON));
+
+        assertEquals("3495", HeaderUtils.DEFAULT_DEBUG_HEADER_FILTER.apply(CONTENT_LENGTH, "3495"));
+
+        assertEquals(GZIP, HeaderUtils.DEFAULT_DEBUG_HEADER_FILTER.apply(TRANSFER_ENCODING, GZIP));
+
+        assertEquals("<filtered>", HeaderUtils.DEFAULT_DEBUG_HEADER_FILTER.apply(ORIGIN, "some/origin"));
+    }
+
     @Test
     public void hasContentType() {
         assertFalse(HeaderUtils.hasContentType(
