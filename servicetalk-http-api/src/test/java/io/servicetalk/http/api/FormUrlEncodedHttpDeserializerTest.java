@@ -33,7 +33,9 @@ import static io.servicetalk.buffer.api.EmptyBuffer.EMPTY_BUFFER;
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
 import static java.util.Collections.singletonList;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.rules.ExpectedException.none;
@@ -82,13 +84,11 @@ public class FormUrlEncodedHttpDeserializerTest {
         final FormUrlEncodedHttpDeserializer deserializer = FormUrlEncodedHttpDeserializer.UTF8;
 
         final HttpHeaders headers = DefaultHttpHeadersFactory.INSTANCE.newHeaders();
-        headers.set(CONTENT_TYPE, "invalid/content/type");
-
-        final String expectedMessage = "Unexpected headers, can not deserialize. Headers: DefaultHttpHeaders" +
-                "[content-type: " + headers.get(CONTENT_TYPE) + "]";
+        final String invalidContentType = "invalid/content/type";
+        headers.set(CONTENT_TYPE, invalidContentType);
 
         expectedException.expect(instanceOf(SerializationException.class));
-        expectedException.expectMessage(expectedMessage);
+        expectedException.expectMessage(containsString(invalidContentType));
 
         deserializer.deserialize(headers, EMPTY_BUFFER);
     }
@@ -98,14 +98,15 @@ public class FormUrlEncodedHttpDeserializerTest {
         final FormUrlEncodedHttpDeserializer deserializer = FormUrlEncodedHttpDeserializer.UTF8;
 
         final HttpHeaders headers = DefaultHttpHeadersFactory.INSTANCE.newHeaders();
-        headers.set(CONTENT_TYPE, "invalid/content/type");
-        headers.set(HttpHeaderNames.HOST, "some/host");
-
-        final String expectedMessage = "Unexpected headers, can not deserialize. Headers: DefaultHttpHeaders[host: " +
-                "<filtered>\ncontent-type: " + headers.get(CONTENT_TYPE) + "]";
+        final String invalidContentType = "invalid/content/type";
+        final String someHost = "some/host";
+        headers.set(CONTENT_TYPE, invalidContentType);
+        headers.set(HttpHeaderNames.HOST, someHost);
 
         expectedException.expect(instanceOf(SerializationException.class));
-        expectedException.expectMessage(expectedMessage);
+        expectedException.expectMessage(containsString(invalidContentType));
+        expectedException.expectMessage(containsString("<filtered>"));
+        expectedException.expectMessage(not(containsString(someHost)));
 
         deserializer.deserialize(headers, EMPTY_BUFFER);
     }
@@ -116,10 +117,7 @@ public class FormUrlEncodedHttpDeserializerTest {
 
         final HttpHeaders headers = DefaultHttpHeadersFactory.INSTANCE.newHeaders();
 
-        final String expectedMessage = "Unexpected headers, can not deserialize. Headers: DefaultHttpHeaders[]";
-
         expectedException.expect(instanceOf(SerializationException.class));
-        expectedException.expectMessage(expectedMessage);
 
         deserializer.deserialize(headers, EMPTY_BUFFER);
     }
