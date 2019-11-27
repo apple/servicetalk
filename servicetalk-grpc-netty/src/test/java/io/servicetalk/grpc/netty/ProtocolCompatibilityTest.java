@@ -95,7 +95,6 @@ import static java.util.Collections.singleton;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
 
 @RunWith(Theories.class)
@@ -542,11 +541,11 @@ public class ProtocolCompatibilityTest {
         final GrpcStatus grpcStatus = statusException.status();
         assertEquals(CUSTOM_ERROR_MESSAGE, grpcStatus.description());
         final com.google.rpc.Status status = statusException.applicationStatus();
+        assertNotNull(status);
         if (withStatus) {
-            assertNotNull(status);
             assertStatus(status, grpcStatus.code().value(), grpcStatus.description());
         } else {
-            assertNull(status);
+            assertFallbackStatus(status, grpcStatus.code().value(), grpcStatus.description());
         }
     }
 
