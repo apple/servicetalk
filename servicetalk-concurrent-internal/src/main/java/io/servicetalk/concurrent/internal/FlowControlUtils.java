@@ -21,9 +21,9 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 /**
  * A set of utility methods for safe math operations to prevent overflow.
  */
-public final class FlowControlUtil {
+public final class FlowControlUtils {
 
-    private FlowControlUtil() {
+    private FlowControlUtils() {
         // no instances
     }
 
@@ -132,7 +132,7 @@ public final class FlowControlUtil {
      * @return Value of {@code int} referred by {@link AtomicIntegerFieldUpdater} after the increment.
      */
     public static <T> int addWithOverflowProtection(AtomicIntegerFieldUpdater<T> updater, T owner, int amount) {
-        return updater.accumulateAndGet(owner, amount, FlowControlUtil::addWithOverflowProtection);
+        return updater.accumulateAndGet(owner, amount, FlowControlUtils::addWithOverflowProtection);
     }
 
     /**
@@ -147,6 +147,6 @@ public final class FlowControlUtil {
      * @return Value of {@code long} referred by {@link AtomicLongFieldUpdater} after the increment.
      */
     public static <T> long addWithOverflowProtection(AtomicLongFieldUpdater<T> updater, T owner, long amount) {
-        return updater.accumulateAndGet(owner, amount, FlowControlUtil::addWithOverflowProtection);
+        return updater.accumulateAndGet(owner, amount, FlowControlUtils::addWithOverflowProtection);
     }
 }

@@ -18,7 +18,7 @@ package io.servicetalk.opentracing.inmemory;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
 
-import static io.servicetalk.utils.internal.MathUtil.safeFindNextPositivePowerOfTwo;
+import static io.servicetalk.utils.internal.MathUtils.safeFindNextPositivePowerOfTwo;
 
 /**
  * Utility methods for sampling strategies.

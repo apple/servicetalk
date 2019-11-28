@@ -300,7 +300,7 @@ class DefaultHttpRequestMetaData extends AbstractHttpMetaData implements HttpReq
         final CharSequence hostHeader = headers().get(HOST);
 
         if (effectiveRequestPort == PORT_NOT_ASSIGNED || !Objects.equals(hostHeader, effectiveRequestHostHeader)) {
-            final HttpUri effectiveRequestUri = new HttpUri(requestTarget(), () -> StringUtil.toString(hostHeader));
+            final HttpUri effectiveRequestUri = new HttpUri(requestTarget(), () -> StringUtils.toString(hostHeader));
             effectiveRequestHost = effectiveRequestUri.host();
             effectiveRequestPort = effectiveRequestUri.explicitPort();
             effectiveRequestHostHeader = hostHeader;

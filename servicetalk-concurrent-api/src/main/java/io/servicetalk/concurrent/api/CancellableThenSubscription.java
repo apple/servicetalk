@@ -21,7 +21,7 @@ import io.servicetalk.concurrent.PublisherSource.Subscription;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.internal.FlowControlUtil.addWithOverflowProtection;
+import static io.servicetalk.concurrent.internal.FlowControlUtils.addWithOverflowProtection;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid;
 import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater;
 

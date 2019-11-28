@@ -15,7 +15,7 @@
  */
 package io.servicetalk.concurrent.api;
 
-import io.servicetalk.concurrent.internal.FlowControlUtil;
+import io.servicetalk.concurrent.internal.FlowControlUtils;
 import io.servicetalk.concurrent.internal.TerminalNotification;
 
 import org.slf4j.Logger;
@@ -130,7 +130,7 @@ final class PublisherConcatMapIterable<T, U> extends AbstractSynchronousPublishe
             } else {
                 tryDrainIterator(currentIterator, sourceSubscription, terminalNotification,
                         requestNUpdater.accumulateAndGet(this, n,
-                                FlowControlUtil::addWithOverflowProtectionIfNotNegative),
+                                FlowControlUtils::addWithOverflowProtectionIfNotNegative),
                         ErrorHandlingStrategyInDrain.PropagateAndCancel);
             }
         }
@@ -205,7 +205,7 @@ final class PublisherConcatMapIterable<T, U> extends AbstractSynchronousPublishe
                     }
                 } finally {
                     requestN = requestNUpdater.accumulateAndGet(this, requestN - initialRequestN,
-                            FlowControlUtil::addWithOverflowProtectionIfNotNegative);
+                            FlowControlUtils::addWithOverflowProtectionIfNotNegative);
                     if (requestN < 0) {
                         terminated = true;
                         // We clear out the current iterator to allow for GC, and we don't want to deliver any more data

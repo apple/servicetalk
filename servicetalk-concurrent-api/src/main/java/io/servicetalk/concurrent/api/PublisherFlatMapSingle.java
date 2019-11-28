@@ -18,7 +18,7 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.internal.ConcurrentSubscription;
-import io.servicetalk.concurrent.internal.FlowControlUtil;
+import io.servicetalk.concurrent.internal.FlowControlUtils;
 import io.servicetalk.concurrent.internal.QueueFullException;
 import io.servicetalk.concurrent.internal.TerminalNotification;
 
@@ -146,7 +146,7 @@ final class PublisherFlatMapSingle<T, R> extends AbstractAsynchronousPublisherOp
                 return;
             }
 
-            requestedUpdater.accumulateAndGet(this, n, FlowControlUtil::addWithOverflowProtection);
+            requestedUpdater.accumulateAndGet(this, n, FlowControlUtils::addWithOverflowProtection);
             int actualSourceRequestN = calculateSourceRequested(requestedUpdater, sourceRequestedUpdater,
                     sourceEmittedUpdater, source.maxConcurrency, this);
             if (actualSourceRequestN != 0) {

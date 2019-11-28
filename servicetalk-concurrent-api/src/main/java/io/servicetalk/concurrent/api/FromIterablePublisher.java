@@ -22,7 +22,7 @@ import java.util.Iterator;
 import java.util.concurrent.TimeoutException;
 
 import static io.servicetalk.concurrent.internal.AutoClosableUtils.closeAndReThrowUnchecked;
-import static io.servicetalk.concurrent.internal.FlowControlUtil.addWithOverflowProtection;
+import static io.servicetalk.concurrent.internal.FlowControlUtils.addWithOverflowProtection;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.handleExceptionFromOnSubscribe;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.newExceptionForInvalidRequestN;

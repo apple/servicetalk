@@ -26,8 +26,8 @@ import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 
-import static io.servicetalk.buffer.netty.BufferUtil.extractByteBufOrCreate;
-import static io.servicetalk.buffer.netty.BufferUtil.newBufferFrom;
+import static io.servicetalk.buffer.netty.BufferUtils.extractByteBufOrCreate;
+import static io.servicetalk.buffer.netty.BufferUtils.newBufferFrom;
 
 /**
  * A {@link ChannelHandler} that converts does the following conversions:

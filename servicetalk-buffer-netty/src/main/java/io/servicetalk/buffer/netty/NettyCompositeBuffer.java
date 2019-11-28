@@ -30,7 +30,7 @@ final class NettyCompositeBuffer extends NettyBuffer<CompositeByteBuf> implement
 
     @Override
     public CompositeBuffer addBuffer(Buffer buf, boolean incrementWriterIndex) {
-        buffer.addComponent(incrementWriterIndex, BufferUtil.toByteBuf(buf));
+        buffer.addComponent(incrementWriterIndex, BufferUtils.toByteBuf(buf));
         return this;
     }
 

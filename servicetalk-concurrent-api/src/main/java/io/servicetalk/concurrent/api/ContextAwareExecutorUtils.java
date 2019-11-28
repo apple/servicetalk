@@ -22,9 +22,9 @@ import java.util.concurrent.Callable;
 
 import static io.servicetalk.concurrent.api.DefaultAsyncContextProvider.INSTANCE;
 
-final class ContextAwareExecutorUtil {
+final class ContextAwareExecutorUtils {
 
-    private ContextAwareExecutorUtil() {
+    private ContextAwareExecutorUtils() {
         // no instances
     }
 

@@ -57,7 +57,7 @@ import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
-import static io.servicetalk.concurrent.internal.ThrowableUtil.unknownStackTrace;
+import static io.servicetalk.concurrent.internal.ThrowableUtils.unknownStackTrace;
 import static java.util.Collections.binarySearch;
 import static java.util.Collections.emptyList;
 import static java.util.Comparator.comparing;

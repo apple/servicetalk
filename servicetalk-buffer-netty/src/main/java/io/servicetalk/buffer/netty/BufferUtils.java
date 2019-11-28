@@ -32,13 +32,13 @@ import static io.netty.util.internal.PlatformDependent.directBufferPreferred;
 /**
  * Internal utilities for {@link Buffer}s.
  */
-public final class BufferUtil {
+public final class BufferUtils {
 
     static final BufferAllocator PREFER_HEAP_ALLOCATOR = new ServiceTalkBufferAllocator(false, false);
     static final BufferAllocator PREFER_DIRECT_ALLOCATOR = new ServiceTalkBufferAllocator(true, false);
     static final BufferAllocator PREFER_DIRECT_ALLOCATOR_WITHOUT_ZEROING = new ServiceTalkBufferAllocator(true, true);
 
-    private BufferUtil() {
+    private BufferUtils() {
         // no instances
     }
 

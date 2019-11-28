@@ -18,7 +18,7 @@ package io.servicetalk.concurrent.api.internal;
 import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.internal.DuplicateSubscribeException;
-import io.servicetalk.concurrent.internal.FlowControlUtil;
+import io.servicetalk.concurrent.internal.FlowControlUtils;
 import io.servicetalk.concurrent.internal.QueueFullException;
 import io.servicetalk.concurrent.internal.TerminalNotification;
 
@@ -107,7 +107,7 @@ public final class SpScPublisherProcessor<T> extends SubscribablePublisher<T> {
                     public void request(final long n) {
                         if (isRequestNValid(n)) {
                             if (requestedUpdater.getAndAccumulate(SpScPublisherProcessor.this, n,
-                                    FlowControlUtil::addWithOverflowProtectionIfNotNegative) == 0) {
+                                    FlowControlUtils::addWithOverflowProtectionIfNotNegative) == 0) {
                                 drainQueue();
                             }
                         } else {
@@ -210,11 +210,11 @@ public final class SpScPublisherProcessor<T> extends SubscribablePublisher<T> {
                     long previousRequested;
                     // getAndAccumulate because we want to know if before the decrement, the value was positive.
                     while ((previousRequested = requestedUpdater.getAndAccumulate(this, 1,
-                            FlowControlUtil::subtractIfPositive)) > 0) {
+                            FlowControlUtils::subtractIfPositive)) > 0) {
                         signal = signalQueue.poll();
                         if (signal == null) {
                             previousRequested = requestedUpdater.accumulateAndGet(this, 1,
-                                    FlowControlUtil::addWithOverflowProtectionIfNotNegative);
+                                    FlowControlUtils::addWithOverflowProtectionIfNotNegative);
                             break;
                         } else if (signal instanceof TerminalNotification) {
                             clearQueueAndTerminate();

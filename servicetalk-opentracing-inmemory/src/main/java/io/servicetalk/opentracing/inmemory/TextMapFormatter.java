@@ -25,7 +25,7 @@ import org.slf4j.LoggerFactory;
 import java.util.Map;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.opentracing.internal.HexUtil.validateHexBytes;
+import static io.servicetalk.opentracing.internal.HexUtils.validateHexBytes;
 import static io.servicetalk.opentracing.internal.ZipkinHeaderNames.PARENT_SPAN_ID;
 import static io.servicetalk.opentracing.internal.ZipkinHeaderNames.SAMPLED;
 import static io.servicetalk.opentracing.internal.ZipkinHeaderNames.SPAN_ID;

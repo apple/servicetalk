@@ -795,7 +795,7 @@ final class ThreadBasedSignalOffloader implements SignalOffloader, Runnable {
                     boolean notify;
                     if (isRequestNValid(n)) {
                         notify = requestedUpdater.getAndAccumulate(OffloadedSubscription.this, n,
-                                FlowControlUtil::addWithOverflowProtectionIfNotNegative) >= 0;
+                                FlowControlUtils::addWithOverflowProtectionIfNotNegative) >= 0;
                     } else {
                         // We can not call the original subscription here as that would mean we call it from the caller
                         // thread and hence break the assumption that it is always called in an Executor thread.

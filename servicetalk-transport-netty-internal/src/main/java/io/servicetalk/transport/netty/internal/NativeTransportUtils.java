@@ -19,9 +19,9 @@ import io.netty.channel.epoll.EpollEventLoopGroup;
 import io.netty.channel.kqueue.KQueueEventLoopGroup;
 import io.netty.util.concurrent.EventExecutorGroup;
 
-final class NativeTransportUtil {
+final class NativeTransportUtils {
 
-    private NativeTransportUtil() {
+    private NativeTransportUtils() {
         // No instances
     }
 

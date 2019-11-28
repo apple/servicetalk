@@ -69,7 +69,7 @@ public final class DelayedSubscription implements Subscription {
             current.request(n);
         } else {
             if (isRequestNValid(n)) {
-                requestedUpdater.accumulateAndGet(this, n, FlowControlUtil::addWithOverflowProtectionIfNotNegative);
+                requestedUpdater.accumulateAndGet(this, n, FlowControlUtils::addWithOverflowProtectionIfNotNegative);
             } else {
                 // Although 0 is invalid we use it to signify that we have drained the pending request count,
                 // so in this case we use MIN_VALUE so we can still pass through an invalid number only once.

@@ -19,7 +19,7 @@ import io.servicetalk.concurrent.PublisherSource.Subscription;
 
 import java.util.concurrent.atomic.AtomicLong;
 
-import static io.servicetalk.concurrent.internal.FlowControlUtil.addWithOverflowProtection;
+import static io.servicetalk.concurrent.internal.FlowControlUtils.addWithOverflowProtection;
 
 /**
  * A {@link Subscription} that tracks requests and cancellation.

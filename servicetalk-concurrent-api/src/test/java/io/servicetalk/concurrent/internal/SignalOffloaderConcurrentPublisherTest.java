@@ -45,7 +45,7 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.api.Completable.completed;
-import static io.servicetalk.concurrent.internal.FlowControlUtil.addWithOverflowProtectionIfNotNegative;
+import static io.servicetalk.concurrent.internal.FlowControlUtils.addWithOverflowProtectionIfNotNegative;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.newExceptionForInvalidRequestN;
 import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
@@ -309,7 +309,7 @@ public class SignalOffloaderConcurrentPublisherTest {
                 subscriber.onError(newExceptionForInvalidRequestN(n));
             } else {
                 requested = addWithOverflowProtectionIfNotNegative(requested, n);
-                demand.accumulateAndGet((int) n, FlowControlUtil::addWithOverflowProtectionIfNotNegative);
+                demand.accumulateAndGet((int) n, FlowControlUtils::addWithOverflowProtectionIfNotNegative);
             }
         }
 

@@ -33,8 +33,8 @@ import io.netty.handler.codec.http2.Http2ResetFrame;
 
 import static io.netty.buffer.Unpooled.EMPTY_BUFFER;
 import static io.netty.handler.codec.http2.Http2Error.REFUSED_STREAM;
-import static io.servicetalk.buffer.netty.BufferUtil.newBufferFrom;
-import static io.servicetalk.buffer.netty.BufferUtil.toByteBufNoThrow;
+import static io.servicetalk.buffer.netty.BufferUtils.newBufferFrom;
+import static io.servicetalk.buffer.netty.BufferUtils.toByteBufNoThrow;
 import static io.servicetalk.http.netty.H2ToStH1Utils.h1HeadersToH2Headers;
 
 abstract class AbstractH2DuplexHandler extends ChannelDuplexHandler {

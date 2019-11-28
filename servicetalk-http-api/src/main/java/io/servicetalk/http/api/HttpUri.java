@@ -26,7 +26,7 @@ import java.util.Objects;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.http.api.StringUtil.decodeHexByte;
+import static io.servicetalk.http.api.StringUtils.decodeHexByte;
 import static java.nio.charset.CodingErrorAction.REPLACE;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
