@@ -32,6 +32,7 @@ dependencies {
   testImplementation project(":servicetalk-concurrent-api-internal")
   testImplementation project(":servicetalk-grpc-protobuf")
   testImplementation project(":servicetalk-test-resources")
+  testImplementation project(":servicetalk-utils-internal")
   testImplementation "io.grpc:grpc-core:$grpcVersion"
   testImplementation("io.grpc:grpc-netty:$grpcVersion") {
     exclude group: "io.netty"

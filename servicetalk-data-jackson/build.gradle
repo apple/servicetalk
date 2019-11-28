@@ -23,7 +23,7 @@ dependencies {
 
   implementation project(":servicetalk-annotations")
   implementation project(":servicetalk-concurrent-api-internal")
-  implementation project(":servicetalk-concurrent-internal")
+  implementation project(":servicetalk-utils-internal")
   implementation project(":servicetalk-serialization-api")
   implementation "com.google.code.findbugs:jsr305:$jsr305Version"
 

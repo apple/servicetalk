@@ -15,7 +15,7 @@
  */
 package io.servicetalk.concurrent.api;
 
-import io.servicetalk.concurrent.internal.PlatformDependent;
+import io.servicetalk.utils.internal.PlatformDependent;
 
 import java.util.ArrayList;
 import java.util.Collection;

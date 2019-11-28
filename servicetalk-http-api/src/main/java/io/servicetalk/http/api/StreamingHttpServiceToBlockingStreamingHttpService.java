@@ -32,8 +32,8 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
-import static io.servicetalk.concurrent.internal.PlatformDependent.throwException;
 import static io.servicetalk.http.api.BlockingUtils.futureGetCancelOnInterrupt;
+import static io.servicetalk.utils.internal.PlatformDependent.throwException;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 

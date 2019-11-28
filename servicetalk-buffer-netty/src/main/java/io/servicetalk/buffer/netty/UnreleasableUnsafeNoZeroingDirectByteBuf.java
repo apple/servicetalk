@@ -34,12 +34,12 @@ import io.netty.buffer.ByteBufAllocator;
 
 import java.nio.ByteBuffer;
 
-import static io.servicetalk.concurrent.internal.PlatformDependent.allocateMemory;
-import static io.servicetalk.concurrent.internal.PlatformDependent.freeMemory;
-import static io.servicetalk.concurrent.internal.PlatformDependent.newDirectBuffer;
-import static io.servicetalk.concurrent.internal.PlatformDependent.reserveMemory;
-import static io.servicetalk.concurrent.internal.PlatformDependent.throwException;
-import static io.servicetalk.concurrent.internal.PlatformDependent.unreserveMemory;
+import static io.servicetalk.utils.internal.PlatformDependent.allocateMemory;
+import static io.servicetalk.utils.internal.PlatformDependent.freeMemory;
+import static io.servicetalk.utils.internal.PlatformDependent.newDirectBuffer;
+import static io.servicetalk.utils.internal.PlatformDependent.reserveMemory;
+import static io.servicetalk.utils.internal.PlatformDependent.throwException;
+import static io.servicetalk.utils.internal.PlatformDependent.unreserveMemory;
 
 final class UnreleasableUnsafeNoZeroingDirectByteBuf extends UnreleasableUnsafeDirectByteBuf {
 

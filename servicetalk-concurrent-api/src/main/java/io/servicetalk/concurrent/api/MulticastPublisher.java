@@ -37,7 +37,7 @@ import javax.annotation.Nullable;
 import static io.servicetalk.concurrent.api.PublishAndSubscribeOnPublishers.deliverOnSubscribeAndOnError;
 import static io.servicetalk.concurrent.api.SubscriberApiUtils.NULL_TOKEN;
 import static io.servicetalk.concurrent.internal.ConcurrentSubscription.wrap;
-import static io.servicetalk.concurrent.internal.PlatformDependent.throwException;
+import static io.servicetalk.utils.internal.PlatformDependent.throwException;
 import static java.lang.Math.min;
 
 final class MulticastPublisher<T> extends AbstractNoHandleSubscribePublisher<T> implements Subscriber<T> {

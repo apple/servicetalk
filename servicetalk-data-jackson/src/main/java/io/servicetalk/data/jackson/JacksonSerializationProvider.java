@@ -33,7 +33,7 @@ import com.fasterxml.jackson.databind.ObjectWriter;
 import java.io.IOException;
 
 import static io.servicetalk.buffer.api.Buffer.asOutputStream;
-import static io.servicetalk.concurrent.internal.PlatformDependent.throwException;
+import static io.servicetalk.utils.internal.PlatformDependent.throwException;
 import static java.util.Objects.requireNonNull;
 
 /**

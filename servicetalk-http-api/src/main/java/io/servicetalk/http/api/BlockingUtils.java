@@ -26,7 +26,7 @@ import io.servicetalk.concurrent.internal.ThreadInterruptingCancellable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
-import static io.servicetalk.concurrent.internal.PlatformDependent.throwException;
+import static io.servicetalk.utils.internal.PlatformDependent.throwException;
 import static java.lang.Thread.currentThread;
 
 final class BlockingUtils {

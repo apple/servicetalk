@@ -28,10 +28,10 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.internal.PlatformDependent.newUnboundedSpscQueue;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverTerminalFromSource;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.newExceptionForInvalidRequestN;
+import static io.servicetalk.utils.internal.PlatformDependent.newUnboundedSpscQueue;
 
 /**
  * A {@link Publisher} that allows for signals to be directly injected via {@link #sendOnNext(Object)},

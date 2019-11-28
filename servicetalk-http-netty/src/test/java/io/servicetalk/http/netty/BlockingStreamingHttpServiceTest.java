@@ -42,7 +42,6 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static io.servicetalk.buffer.api.EmptyBuffer.EMPTY_BUFFER;
-import static io.servicetalk.concurrent.internal.PlatformDependent.throwException;
 import static io.servicetalk.http.api.HttpHeaderNames.TRAILER;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpResponseStatus.ACCEPTED;
@@ -51,6 +50,7 @@ import static io.servicetalk.http.api.HttpSerializationProviders.textDeserialize
 import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
+import static io.servicetalk.utils.internal.PlatformDependent.throwException;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.SECONDS;
