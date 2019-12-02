@@ -18,6 +18,7 @@ apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
 
 dependencies {
   api project(":servicetalk-http-api")
+  api project(":servicetalk-router-api")
   api "jakarta.ws.rs:jakarta.ws.rs-api:$jaxRsVersion"
 
   implementation project(":servicetalk-annotations")

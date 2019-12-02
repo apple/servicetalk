@@ -23,6 +23,7 @@ import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpService;
 import io.servicetalk.http.api.StreamingHttpService;
+import io.servicetalk.router.api.RouteExecutionStrategy;
 import io.servicetalk.transport.api.ConnectionContext;
 
 import java.io.InputStream;
