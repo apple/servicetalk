@@ -28,7 +28,7 @@
  * License for the specific language governing permissions and limitations
  * under the License.
  */
-package io.servicetalk.concurrent.internal;
+package io.servicetalk.utils.internal;
 
 import org.jctools.queues.MpscChunkedArrayQueue;
 import org.jctools.queues.MpscLinkedQueue;

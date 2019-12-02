@@ -18,7 +18,6 @@ package io.servicetalk.http.netty;
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.concurrent.internal.PlatformDependent;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.DefaultHttpHeadersFactory;
@@ -32,6 +31,7 @@ import io.servicetalk.http.api.StreamingHttpServiceFilter;
 import io.servicetalk.http.api.TrailersTransformer;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.netty.internal.AddressUtils;
+import io.servicetalk.utils.internal.PlatformDependent;
 
 import org.junit.Rule;
 import org.junit.Test;

@@ -19,7 +19,7 @@ import java.util.Queue;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 import static io.servicetalk.concurrent.internal.ConcurrentUtils.drainSingleConsumerQueueDelayThrow;
-import static io.servicetalk.concurrent.internal.PlatformDependent.newUnboundedMpscQueue;
+import static io.servicetalk.utils.internal.PlatformDependent.newUnboundedMpscQueue;
 
 /**
  * A {@link RuntimeException} that allows to add {@link Throwable} instances at a lower cost than

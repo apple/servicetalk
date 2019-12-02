@@ -29,8 +29,8 @@ import javax.annotation.Nullable;
 import static io.servicetalk.concurrent.internal.ConcurrentUtils.CONCURRENT_EMITTING;
 import static io.servicetalk.concurrent.internal.ConcurrentUtils.CONCURRENT_IDLE;
 import static io.servicetalk.concurrent.internal.ConcurrentUtils.drainSingleConsumerQueueDelayThrow;
-import static io.servicetalk.concurrent.internal.PlatformDependent.newUnboundedLinkedMpscQueue;
 import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
+import static io.servicetalk.utils.internal.PlatformDependent.newUnboundedLinkedMpscQueue;
 
 /**
  * A {@link Completable} which is also a {@link Subscriber}. State of this {@link Completable} can be modified by using

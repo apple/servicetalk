@@ -28,7 +28,7 @@
  * License for the specific language governing permissions and limitations
  * under the License.
  */
-package io.servicetalk.concurrent.internal;
+package io.servicetalk.utils.internal;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,8 +44,8 @@ import java.security.AccessController;
 import java.security.PrivilegedAction;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.internal.ReflectionUtils.extractNioBitsMethod;
-import static io.servicetalk.concurrent.internal.ReflectionUtils.lookupAccessibleObject;
+import static io.servicetalk.utils.internal.ReflectionUtils.extractNioBitsMethod;
+import static io.servicetalk.utils.internal.ReflectionUtils.lookupAccessibleObject;
 import static java.lang.Boolean.getBoolean;
 import static java.util.Objects.requireNonNull;
 

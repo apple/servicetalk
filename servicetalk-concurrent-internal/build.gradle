@@ -20,8 +20,8 @@ dependencies {
   api project(":servicetalk-concurrent")
 
   implementation project(":servicetalk-annotations")
+  implementation project(":servicetalk-utils-internal")
   implementation "com.google.code.findbugs:jsr305:$jsr305Version"
-  implementation "org.jctools:jctools-core:$jcToolsVersion"
   implementation "org.slf4j:slf4j-api:$slf4jVersion"
 
   testImplementation project(":servicetalk-test-resources")

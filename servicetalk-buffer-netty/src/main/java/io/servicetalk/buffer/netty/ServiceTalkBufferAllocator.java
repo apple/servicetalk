@@ -30,7 +30,7 @@ import java.nio.CharBuffer;
 import java.nio.charset.Charset;
 
 import static io.servicetalk.buffer.api.EmptyBuffer.EMPTY_BUFFER;
-import static io.servicetalk.concurrent.internal.PlatformDependent.useDirectBufferWithoutZeroing;
+import static io.servicetalk.utils.internal.PlatformDependent.useDirectBufferWithoutZeroing;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -45,6 +45,7 @@ final class ServiceTalkBufferAllocator extends AbstractByteBufAllocator implemen
     private final boolean noZeroing;
 
     ServiceTalkBufferAllocator(boolean preferDirect, boolean tryNoZeroing) {
+
         super(preferDirect);
         this.noZeroing = tryNoZeroing && useDirectBufferWithoutZeroing();
     }
