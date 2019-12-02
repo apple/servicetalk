@@ -18,13 +18,10 @@ package io.servicetalk.http.api;
 import io.servicetalk.buffer.api.ByteProcessor;
 
 import java.nio.charset.Charset;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
-import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.regex.Pattern;
 import javax.annotation.Nullable;
@@ -48,6 +45,7 @@ import static java.lang.Math.min;
 import static java.lang.System.lineSeparator;
 import static java.nio.charset.Charset.availableCharsets;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.Arrays.asList;
 import static java.util.Collections.unmodifiableMap;
 import static java.util.regex.Pattern.CASE_INSENSITIVE;
 import static java.util.regex.Pattern.compile;
@@ -64,12 +62,12 @@ public final class HeaderUtils {
     static final int HASH_CODE_SEED = 0xc2b2ae35;
     public static final BiFunction<? super CharSequence, ? super CharSequence, CharSequence> DEFAULT_HEADER_FILTER =
             (k, v) -> "<filtered>";
-    private static final Set<CharSequence> DEFAULT_DEBUG_HEADER_NAMES = Collections.unmodifiableSet(
-            new HashSet<>(Arrays.asList(CONTENT_TYPE, CONTENT_LENGTH, TRANSFER_ENCODING)));
-    static final BiFunction<? super CharSequence, ? super CharSequence, CharSequence>
-            DEFAULT_DEBUG_HEADER_FILTER = (key, value) -> {
+    private static final List<CharSequence> DEFAULT_DEBUG_HEADER_NAMES = asList(CONTENT_TYPE, CONTENT_LENGTH,
+            TRANSFER_ENCODING);
+    static final BiFunction<? super CharSequence, ? super CharSequence, CharSequence> DEFAULT_DEBUG_HEADER_FILTER =
+            (key, value) -> {
                 for (CharSequence headerName : DEFAULT_DEBUG_HEADER_NAMES) {
-                    if (CharSequences.contentEqualsIgnoreCase(key, headerName)) {
+                    if (contentEqualsIgnoreCase(key, headerName)) {
                         return value;
                     }
                 }
