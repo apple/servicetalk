@@ -24,6 +24,8 @@ import io.servicetalk.serialization.api.TypeHolder;
 
 import java.util.function.Predicate;
 
+import static io.servicetalk.http.api.HeaderUtils.DEFAULT_DEBUG_HEADER_FILTER;
+
 /**
  * A {@link HttpDeserializer} that can deserialize a {@link TypeHolder} of type {@link T}.
  *
@@ -65,7 +67,7 @@ final class DefaultTypeHttpDeserializer<T> implements HttpDeserializer<T> {
     private void checkContentType(final HttpHeaders headers) {
         if (!checkContentType.test(headers)) {
             throw new SerializationException("Unexpected headers, can not deserialize. Headers: "
-                    + headers.toString());
+                    + headers.toString(DEFAULT_DEBUG_HEADER_FILTER));
         }
     }
 }

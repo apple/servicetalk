@@ -29,6 +29,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.http.api.HeaderUtils.DEFAULT_DEBUG_HEADER_FILTER;
 import static io.servicetalk.http.api.HeaderUtils.hasContentType;
 import static io.servicetalk.http.api.HttpHeaderValues.APPLICATION_X_WWW_FORM_URLENCODED;
 import static io.servicetalk.http.api.QueryStringDecoder.decodeParams;
@@ -101,7 +102,7 @@ final class FormUrlEncodedHttpDeserializer implements HttpDeserializer<Map<Strin
     private void checkContentType(final HttpHeaders headers) {
         if (!checkContentType.test(headers)) {
             throw new SerializationException("Unexpected headers, can not deserialize. Headers: "
-                    + headers.toString());
+                    + headers.toString(DEFAULT_DEBUG_HEADER_FILTER));
         }
     }
 
