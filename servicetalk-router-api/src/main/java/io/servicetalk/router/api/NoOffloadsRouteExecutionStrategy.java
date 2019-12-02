@@ -26,7 +26,7 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 /**
  * A special {@link RouteExecutionStrategy} that indicates that a resource class or method needs to use a strategy that
- * does not offload user code to a worker thread pool.
+ * does not offload user code using a different thread pool.
  *
  * @see RouteExecutionStrategy
  */
