@@ -15,13 +15,19 @@
  */
 package io.servicetalk.http.api;
 
+import io.servicetalk.serialization.api.SerializationException;
+
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CharsetEncoder;
+import java.util.function.Predicate;
 
 import static io.netty.util.AsciiString.of;
+import static io.servicetalk.http.api.HeaderUtils.checkContentType;
 import static io.servicetalk.http.api.HeaderUtils.isTransferEncodingChunked;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
@@ -36,11 +42,19 @@ import static io.servicetalk.http.api.HttpHeaderValues.TEXT_PLAIN_UTF_8;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.nio.charset.StandardCharsets.UTF_16;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.rules.ExpectedException.none;
 
 public class HeaderUtilsTest {
+
+    @Rule
+    public final ExpectedException expectedException = none();
+
     @Test
     public void defaultDebugHeaderFilter() {
         assertEquals(APPLICATION_JSON, HeaderUtils.DEFAULT_DEBUG_HEADER_FILTER.apply(CONTENT_TYPE, APPLICATION_JSON));
@@ -134,6 +148,22 @@ public class HeaderUtilsTest {
                         throw new UnsupportedOperationException();
                     }
                 }));
+    }
+
+    @Test
+    public void checkContentTypeCases() {
+        final String invalidContentType = "invalid";
+        final Predicate<HttpHeaders> jsonContentTypeValidator =
+                headers -> headers.contains(CONTENT_TYPE, APPLICATION_JSON);
+
+        expectedException.expect(instanceOf(SerializationException.class));
+        expectedException.expectMessage(containsString(invalidContentType));
+
+        checkContentType(headersWithContentType(of(invalidContentType)), jsonContentTypeValidator);
+
+        expectedException.expect(nullValue());
+
+        checkContentType(headersWithContentType(APPLICATION_JSON), jsonContentTypeValidator);
     }
 
     @Test
