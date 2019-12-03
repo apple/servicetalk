@@ -95,7 +95,6 @@ import static java.util.Collections.singleton;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
 
 @RunWith(Theories.class)
@@ -542,11 +541,11 @@ public class ProtocolCompatibilityTest {
         final GrpcStatus grpcStatus = statusException.status();
         assertEquals(CUSTOM_ERROR_MESSAGE, grpcStatus.description());
         final com.google.rpc.Status status = statusException.applicationStatus();
+        assertNotNull(status);
         if (withStatus) {
-            assertNotNull(status);
             assertStatus(status, grpcStatus.code().value(), grpcStatus.description());
         } else {
-            assertNull(status);
+            assertFallbackStatus(status, grpcStatus.code().value(), grpcStatus.description());
         }
     }
 
@@ -556,11 +555,11 @@ public class ProtocolCompatibilityTest {
         final Status grpcStatus = statusException.getStatus();
         assertEquals(CUSTOM_ERROR_MESSAGE, grpcStatus.getDescription());
         final com.google.rpc.Status status = StatusProto.fromThrowable(statusException);
+        assertNotNull(status);
         if (withStatus) {
-            assertNotNull(status);
             assertStatus(status, grpcStatus.getCode().value(), grpcStatus.getDescription());
         } else {
-            assertNull(status);
+            assertFallbackStatus(status, grpcStatus.getCode().value(), grpcStatus.getDescription());
         }
     }
 
@@ -573,6 +572,14 @@ public class ProtocolCompatibilityTest {
         assertEquals(1, anyList.size());
         final CompatResponse detail = anyList.get(0).unpack(CompatResponse.class);
         assertEquals(999, detail.getId());
+    }
+
+    private static void assertFallbackStatus(final com.google.rpc.Status status, final int expectedCode,
+                                             @Nullable final String expectedMessage) {
+        assertEquals(expectedCode, status.getCode());
+        assertEquals(expectedMessage, status.getMessage());
+        final List<Any> anyList = status.getDetailsList();
+        assertEquals(0, anyList.size());
     }
 
     private static com.google.rpc.Status newStatus() {

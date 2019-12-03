@@ -201,8 +201,9 @@ final class GrpcUtils {
         if (statusCode != null) {
             final GrpcStatusCode grpcStatusCode = GrpcStatusCode.fromCodeValue(statusCode);
             if (grpcStatusCode.value() != GrpcStatusCode.OK.value()) {
-                return new GrpcStatus(grpcStatusCode, null, headers.get(GRPC_STATUS_MESSAGE_TRAILER))
-                        .asException(new StatusSupplier(headers));
+                final GrpcStatus grpcStatus =
+                        new GrpcStatus(grpcStatusCode, null, headers.get(GRPC_STATUS_MESSAGE_TRAILER));
+                return grpcStatus.asException(new StatusSupplier(headers, grpcStatus));
             }
         }
         return null;
@@ -234,11 +235,13 @@ final class GrpcUtils {
     private static final class StatusSupplier implements Supplier<Status> {
 
         private final HttpHeaders headers;
+        private final GrpcStatus fallbackStatus;
         @Nullable
         private volatile StatusHolder statusHolder;
 
-        StatusSupplier(HttpHeaders headers) {
+        StatusSupplier(HttpHeaders headers, final GrpcStatus fallbackStatus) {
             this.headers = headers;
+            this.fallbackStatus = fallbackStatus;
         }
 
         @Nullable
@@ -248,7 +251,16 @@ final class GrpcUtils {
             if (statusHolder == null) {
                 // Cache the status (we don't bother caching any errors tho). Also its fine to only use a volatile here
                 // as at worse this will just update to the "same" status again.
-                this.statusHolder = statusHolder = new StatusHolder(getStatusDetails(headers));
+                final Status statusFromHeaders = getStatusDetails(headers);
+                if (statusFromHeaders == null) {
+                    final Status.Builder builder = Status.newBuilder().setCode(fallbackStatus.code().value());
+                    if (fallbackStatus.description() != null) {
+                        builder.setMessage(fallbackStatus.description());
+                    }
+                    this.statusHolder = statusHolder = new StatusHolder(builder.build());
+                } else {
+                    this.statusHolder = statusHolder = new StatusHolder(statusFromHeaders);
+                }
             }
             return statusHolder.status;
         }
