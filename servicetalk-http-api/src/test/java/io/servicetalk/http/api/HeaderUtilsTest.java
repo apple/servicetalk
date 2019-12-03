@@ -44,7 +44,6 @@ import static java.nio.charset.StandardCharsets.UTF_16;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -156,14 +155,12 @@ public class HeaderUtilsTest {
         final Predicate<HttpHeaders> jsonContentTypeValidator =
                 headers -> headers.contains(CONTENT_TYPE, APPLICATION_JSON);
 
+        checkContentType(headersWithContentType(APPLICATION_JSON), jsonContentTypeValidator);
+
         expectedException.expect(instanceOf(SerializationException.class));
         expectedException.expectMessage(containsString(invalidContentType));
 
         checkContentType(headersWithContentType(of(invalidContentType)), jsonContentTypeValidator);
-
-        expectedException.expect(nullValue());
-
-        checkContentType(headersWithContentType(APPLICATION_JSON), jsonContentTypeValidator);
     }
 
     @Test
