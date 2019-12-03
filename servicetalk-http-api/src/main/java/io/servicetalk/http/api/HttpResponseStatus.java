@@ -31,319 +31,439 @@ public final class HttpResponseStatus {
 
     /**
      * 100 Continue
+     *
+     * @see <a href="https://tools.ietf.org/html/rfc7231#section-6.2.1">RFC7231, section 6.2.1</a>
      */
     public static final HttpResponseStatus CONTINUE = new HttpResponseStatus(100, "Continue");
 
     /**
      * 101 Switching Protocols
+     *
+     * @see <a href="https://tools.ietf.org/html/rfc7231#section-6.2.2">RFC7231, section 6.2.2</a>
      */
     public static final HttpResponseStatus SWITCHING_PROTOCOLS = new HttpResponseStatus(101, "Switching Protocols");
 
     /**
      * 102 Processing (WebDAV, RFC2518)
+     *
+     * @see <a href="https://tools.ietf.org/html/rfc2518#section-10.1">RFC2518, section 10.1</a>
      */
     public static final HttpResponseStatus PROCESSING = new HttpResponseStatus(102, "Processing");
 
     /**
      * 103 Early Hints (RFC 8297)
+     *
+     * @see <a href="https://tools.ietf.org/html/rfc8297#section-2">RFC8297, section 2</a>
      */
     public static final HttpResponseStatus EARLY_HINTS = new HttpResponseStatus(103, "Early Hints");
 
     /**
      * 200 OK
+     *
+     * @see <a href="https://tools.ietf.org/html/rfc7231#section-6.3.1">RFC7231, section 6.3.1</a>
      */
     public static final HttpResponseStatus OK = new HttpResponseStatus(200, "OK");
 
     /**
      * 201 Created
+     *
+     * @see <a href="https://tools.ietf.org/html/rfc7231#section-6.3.2">RFC7231, section 6.3.2</a>
      */
     public static final HttpResponseStatus CREATED = new HttpResponseStatus(201, "Created");
 
     /**
      * 202 Accepted
+     *
+     * @see <a href="https://tools.ietf.org/html/rfc7231#section-6.3.3">RFC7231, section 6.3.3</a>
      */
     public static final HttpResponseStatus ACCEPTED = new HttpResponseStatus(202, "Accepted");
 
     /**
      * 203 Non-Authoritative Information (since HTTP/1.1)
+     *
+     * @see <a href="https://tools.ietf.org/html/rfc7231#section-6.3.4">RFC7231, section 6.3.4</a>
      */
     public static final HttpResponseStatus NON_AUTHORITATIVE_INFORMATION = new HttpResponseStatus(203,
             "Non-Authoritative Information");
 
     /**
      * 204 No Content
+     *
+     * @see <a href="https://tools.ietf.org/html/rfc7231#section-6.3.5">RFC7231, section 6.3.5</a>
      */
     public static final HttpResponseStatus NO_CONTENT = new HttpResponseStatus(204, "No Content");
 
     /**
      * 205 Reset Content
+     *
+     * @see <a href="https://tools.ietf.org/html/rfc7231#section-6.3.6">RFC7231, section 6.3.6</a>
      */
     public static final HttpResponseStatus RESET_CONTENT = new HttpResponseStatus(205, "Reset Content");
 
     /**
      * 206 Partial Content
+     *
+     * @see <a href="https://tools.ietf.org/html/rfc7233#section-4.1">RFC7233, section 4.1</a>
      */
     public static final HttpResponseStatus PARTIAL_CONTENT = new HttpResponseStatus(206, "Partial Content");
 
     /**
-     * 207 Multi-Status (WebDAV, RFC2518)
+     * 207 Multi-Status (WebDAV, RFC4918)
+     *
+     * @see <a href="https://tools.ietf.org/html/rfc4918#section-11.1">RFC4918, section 11.1</a>
      */
     public static final HttpResponseStatus MULTI_STATUS = new HttpResponseStatus(207, "Multi-Status");
 
     /**
      * 208 Already Reported (WebDAV, RFC 5842)
+     *
+     * @see <a href="https://tools.ietf.org/html/rfc5842#section-7.1">RFC5842, section 7.1</a>
      */
     public static final HttpResponseStatus ALREADY_REPORTED = new HttpResponseStatus(208, "Already Reported");
 
     /**
      * 226 IM Used (RFC 3229)
+     *
+     * @see <a href="https://tools.ietf.org/html/rfc3229#section-10.4.1">RFC3229, section 10.4.1</a>
      */
     public static final HttpResponseStatus IM_USED = new HttpResponseStatus(226, "IM Used");
 
     /**
      * 300 Multiple Choices
+     *
+     * @see <a href="https://tools.ietf.org/html/rfc7231#section-6.4.1">RFC7231, section 6.4.1</a>
      */
     public static final HttpResponseStatus MULTIPLE_CHOICES = new HttpResponseStatus(300, "Multiple Choices");
 
     /**
      * 301 Moved Permanently
+     *
+     * @see <a href="https://tools.ietf.org/html/rfc7231#section-6.4.2">RFC7231, section 6.4.2</a>
      */
     public static final HttpResponseStatus MOVED_PERMANENTLY = new HttpResponseStatus(301, "Moved Permanently");
 
     /**
      * 302 Found
+     *
+     * @see <a href="https://tools.ietf.org/html/rfc7231#section-6.4.3">RFC7231, section 6.4.3</a>
      */
     public static final HttpResponseStatus FOUND = new HttpResponseStatus(302, "Found");
 
     /**
      * 303 See Other (since HTTP/1.1)
+     *
+     * @see <a href="https://tools.ietf.org/html/rfc7231#section-6.4.4">RFC7231, section 6.4.4</a>
      */
     public static final HttpResponseStatus SEE_OTHER = new HttpResponseStatus(303, "See Other");
 
     /**
-     * 304 Not Modified
+     * 304 Not Modified (RFC7232)
+     *
+     * @see <a href="https://tools.ietf.org/html/rfc7232#section-4.1">RFC7232, section 4.1</a>
      */
     public static final HttpResponseStatus NOT_MODIFIED = new HttpResponseStatus(304, "Not Modified");
 
     /**
      * 305 Use Proxy (since HTTP/1.1)
+     *
+     * @see <a href="https://tools.ietf.org/html/rfc7231#section-6.4.5">RFC7231, section 6.4.5</a>
      */
     public static final HttpResponseStatus USE_PROXY = new HttpResponseStatus(305, "Use Proxy");
 
     /**
      * 307 Temporary Redirect (since HTTP/1.1)
+     *
+     * @see <a href="https://tools.ietf.org/html/rfc7231#section-6.4.7">RFC7231, section 6.4.7</a>
      */
     public static final HttpResponseStatus TEMPORARY_REDIRECT = new HttpResponseStatus(307, "Temporary Redirect");
 
     /**
      * 308 Permanent Redirect (RFC7538)
+     *
+     * @see <a href="https://tools.ietf.org/html/rfc7538#section-3">RFC7538, section 3</a>
      */
     public static final HttpResponseStatus PERMANENT_REDIRECT = new HttpResponseStatus(308, "Permanent Redirect");
 
     /**
      * 400 Bad Request
+     *
+     * @see <a href="https://tools.ietf.org/html/rfc7231#section-6.5.1">RFC7231, section 6.5.1</a>
      */
     public static final HttpResponseStatus BAD_REQUEST = new HttpResponseStatus(400, "Bad Request");
 
     /**
-     * 401 Unauthorized
+     * 401 Unauthorized (RFC7235)
+     *
+     * @see <a href="https://tools.ietf.org/html/rfc7235#section-3.1">RFC7235, section 3.1</a>
      */
     public static final HttpResponseStatus UNAUTHORIZED = new HttpResponseStatus(401, "Unauthorized");
 
     /**
      * 402 Payment Required
+     *
+     * @see <a href="https://tools.ietf.org/html/rfc7231#section-6.5.2">RFC7231, section 6.5.2</a>
      */
     public static final HttpResponseStatus PAYMENT_REQUIRED = new HttpResponseStatus(402, "Payment Required");
 
     /**
      * 403 Forbidden
+     *
+     * @see <a href="https://tools.ietf.org/html/rfc7231#section-6.5.3">RFC7231, section 6.5.3</a>
      */
     public static final HttpResponseStatus FORBIDDEN = new HttpResponseStatus(403, "Forbidden");
 
     /**
      * 404 Not Found
+     *
+     * @see <a href="https://tools.ietf.org/html/rfc7231#section-6.5.4">RFC7231, section 6.5.4</a>
      */
     public static final HttpResponseStatus NOT_FOUND = new HttpResponseStatus(404, "Not Found");
 
     /**
      * 405 Method Not Allowed
+     *
+     * @see <a href="https://tools.ietf.org/html/rfc7231#section-6.5.5">RFC7231, section 6.5.5</a>
      */
     public static final HttpResponseStatus METHOD_NOT_ALLOWED = new HttpResponseStatus(405, "Method Not Allowed");
 
     /**
      * 406 Not Acceptable
+     *
+     * @see <a href="https://tools.ietf.org/html/rfc7231#section-6.5.6">RFC7231, section 6.5.6</a>
      */
     public static final HttpResponseStatus NOT_ACCEPTABLE = new HttpResponseStatus(406, "Not Acceptable");
 
     /**
-     * 407 Proxy Authentication Required
+     * 407 Proxy Authentication Required (RFC7235)
+     *
+     * @see <a href="https://tools.ietf.org/html/rfc7235#section-3.2">RFC7235, section 3.2</a>
      */
     public static final HttpResponseStatus PROXY_AUTHENTICATION_REQUIRED = new HttpResponseStatus(407,
             "Proxy Authentication Required");
 
     /**
      * 408 Request Timeout
+     *
+     * @see <a href="https://tools.ietf.org/html/rfc7231#section-6.5.7">RFC7231, section 6.5.7</a>
      */
     public static final HttpResponseStatus REQUEST_TIMEOUT = new HttpResponseStatus(408, "Request Timeout");
 
     /**
      * 409 Conflict
+     *
+     * @see <a href="https://tools.ietf.org/html/rfc7231#section-6.5.8">RFC7231, section 6.5.8</a>
      */
     public static final HttpResponseStatus CONFLICT = new HttpResponseStatus(409, "Conflict");
 
     /**
      * 410 Gone
+     *
+     * @see <a href="https://tools.ietf.org/html/rfc7231#section-6.5.9">RFC7231, section 6.5.9</a>
      */
     public static final HttpResponseStatus GONE = new HttpResponseStatus(410, "Gone");
 
     /**
      * 411 Length Required
+     *
+     * @see <a href="https://tools.ietf.org/html/rfc7231#section-6.5.10">RFC7231, section 6.5.10</a>
      */
     public static final HttpResponseStatus LENGTH_REQUIRED = new HttpResponseStatus(411, "Length Required");
 
     /**
-     * 412 Precondition Failed
+     * 412 Precondition Failed (RFC7232)
+     *
+     * @see <a href="https://tools.ietf.org/html/rfc7232#section-4.2">RFC7232, section 4.2</a>
      */
     public static final HttpResponseStatus PRECONDITION_FAILED = new HttpResponseStatus(412, "Precondition Failed");
 
     /**
-     * 413 Request Entity Too Large
+     * 413 REQUEST_ENTITY_TOO_LARGE
+     *
+     * @see <a href="https://tools.ietf.org/html/rfc7231#section-6.5.11">RFC7231, section 6.5.11</a>
      */
     public static final HttpResponseStatus REQUEST_ENTITY_TOO_LARGE = new HttpResponseStatus(413,
             "Request Entity Too Large");
 
     /**
      * 414 Request-URI Too Long
+     *
+     * @see <a href="https://tools.ietf.org/html/rfc7231#section-6.5.12">RFC7231, section 6.5.12</a>
      */
     public static final HttpResponseStatus REQUEST_URI_TOO_LONG = new HttpResponseStatus(414, "Request-URI Too Long");
 
     /**
      * 415 Unsupported Media Type
+     *
+     * @see <a href="https://tools.ietf.org/html/rfc7231#section-6.5.13">RFC7231, section 6.5.13</a>
      */
     public static final HttpResponseStatus UNSUPPORTED_MEDIA_TYPE = new HttpResponseStatus(415,
             "Unsupported Media Type");
 
     /**
-     * 416 Requested Range Not Satisfiable
+     * 416 Requested Range Not Satisfiable (RFC7233)
+     *
+     * @see <a href="https://tools.ietf.org/html/rfc7233#section-4.4">RFC7233, section 4.4</a>
      */
     public static final HttpResponseStatus REQUESTED_RANGE_NOT_SATISFIABLE = new HttpResponseStatus(416,
             "Requested Range Not Satisfiable");
 
     /**
      * 417 Expectation Failed
+     *
+     * @see <a href="https://tools.ietf.org/html/rfc7231#section-6.5.14">RFC7231, section 6.5.14</a>
      */
     public static final HttpResponseStatus EXPECTATION_FAILED = new HttpResponseStatus(417, "Expectation Failed");
 
     /**
      * 421 Misdirected Request
-     * <p>
-     * <a href="https://tools.ietf.org/html/draft-ietf-httpbis-http2-15#section-9.1.2">421 Status Code</a>
+     *
+     * @see <a href="https://tools.ietf.org/html/rfc7540#section-9.1.2">RFC7540, section 9.1.2</a>
      */
     public static final HttpResponseStatus MISDIRECTED_REQUEST = new HttpResponseStatus(421, "Misdirected Request");
 
     /**
      * 422 Unprocessable Entity (WebDAV, RFC4918)
+     *
+     * @see <a href="https://tools.ietf.org/html/rfc4918#section-11.2">RFC4918, section 11.2</a>
      */
     public static final HttpResponseStatus UNPROCESSABLE_ENTITY = new HttpResponseStatus(422, "Unprocessable Entity");
 
     /**
      * 423 Locked (WebDAV, RFC4918)
+     *
+     * @see <a href="https://tools.ietf.org/html/rfc4918#section-11.3">RFC4918, section 11.3</a>
      */
     public static final HttpResponseStatus LOCKED = new HttpResponseStatus(423, "Locked");
 
     /**
      * 424 Failed Dependency (WebDAV, RFC4918)
+     *
+     * @see <a href="https://tools.ietf.org/html/rfc4918#section-11.4">RFC4918, section 11.4</a>
      */
     public static final HttpResponseStatus FAILED_DEPENDENCY = new HttpResponseStatus(424, "Failed Dependency");
 
     /**
-     * 425 Unordered Collection (WebDAV, RFC3648)
+     * 425 Unordered Collection (WebDAV, RFC8470)
+     *
+     * @see <a href="https://tools.ietf.org/html/rfc8470#section-5.2">RFC8470, section 5.2</a>
      */
     public static final HttpResponseStatus UNORDERED_COLLECTION = new HttpResponseStatus(425, "Unordered Collection");
 
     /**
-     * 426 Upgrade Required (RFC2817)
+     * 426 Upgrade Required (RFC7231)
+     *
+     * @see <a href="https://tools.ietf.org/html/rfc7231#section-6.5.15">RFC7231, section 6.5.15</a>
      */
     public static final HttpResponseStatus UPGRADE_REQUIRED = new HttpResponseStatus(426, "Upgrade Required");
 
     /**
      * 428 Precondition Required (RFC6585)
+     *
+     * @see <a href="https://tools.ietf.org/html/rfc6585#section-3">RFC6585, section 3</a>
      */
     public static final HttpResponseStatus PRECONDITION_REQUIRED = new HttpResponseStatus(428,
             "Precondition Required");
 
     /**
      * 429 Too Many Requests (RFC6585)
+     *
+     * @see <a href="https://tools.ietf.org/html/rfc6585#section-4">RFC6585, section 4</a>
      */
     public static final HttpResponseStatus TOO_MANY_REQUESTS = new HttpResponseStatus(429, "Too Many Requests");
 
     /**
      * 431 Request Header Fields Too Large (RFC6585)
+     *
+     * @see <a href="https://tools.ietf.org/html/rfc6585#section-5">RFC6585, section 5</a>
      */
     public static final HttpResponseStatus REQUEST_HEADER_FIELDS_TOO_LARGE = new HttpResponseStatus(431,
             "Request Header Fields Too Large");
 
     /**
      * 451 Unavailable For Legal Reasons (RFC 7725)
+     *
+     * @see <a href="https://tools.ietf.org/html/rfc7725#section-3">RFC7725, section 3</a>
      */
     public static final HttpResponseStatus UNAVAILABLE_FOR_LEGAL_REASONS = new HttpResponseStatus(451,
             "Unavailable For Legal Reasons");
 
     /**
      * 500 Internal Server Error
+     *
+     * @see <a href="https://tools.ietf.org/html/rfc7231#section-6.6.1">RFC7231, section 6.6.1</a>
      */
     public static final HttpResponseStatus INTERNAL_SERVER_ERROR = new HttpResponseStatus(500,
             "Internal Server Error");
 
     /**
      * 501 Not Implemented
+     *
+     * @see <a href="https://tools.ietf.org/html/rfc7231#section-6.6.2">RFC7231, section 6.6.2</a>
      */
     public static final HttpResponseStatus NOT_IMPLEMENTED = new HttpResponseStatus(501, "Not Implemented");
 
     /**
      * 502 Bad Gateway
+     *
+     * @see <a href="https://tools.ietf.org/html/rfc7231#section-6.6.3">RFC7231, section 6.6.3</a>
      */
     public static final HttpResponseStatus BAD_GATEWAY = new HttpResponseStatus(502, "Bad Gateway");
 
     /**
      * 503 Service Unavailable
+     *
+     * @see <a href="https://tools.ietf.org/html/rfc7231#section-6.6.4">RFC7231, section 6.6.4</a>
      */
     public static final HttpResponseStatus SERVICE_UNAVAILABLE = new HttpResponseStatus(503, "Service Unavailable");
 
     /**
      * 504 Gateway Timeout
+     *
+     * @see <a href="https://tools.ietf.org/html/rfc7231#section-6.6.5">RFC7231, section 6.6.5</a>
      */
     public static final HttpResponseStatus GATEWAY_TIMEOUT = new HttpResponseStatus(504, "Gateway Timeout");
 
     /**
      * 505 HTTP Version Not Supported
+     *
+     * @see <a href="https://tools.ietf.org/html/rfc7231#section-6.6.6">RFC7231, section 6.6.6</a>
      */
     public static final HttpResponseStatus HTTP_VERSION_NOT_SUPPORTED = new HttpResponseStatus(505,
             "HTTP Version Not Supported");
 
     /**
      * 506 Variant Also Negotiates (RFC2295)
+     *
+     * @see <a href="https://tools.ietf.org/html/rfc2295#section-8.1">RFC2295, section 8.1</a>
      */
     public static final HttpResponseStatus VARIANT_ALSO_NEGOTIATES = new HttpResponseStatus(506,
             "Variant Also Negotiates");
 
     /**
      * 507 Insufficient Storage (WebDAV, RFC4918)
+     *
+     * @see <a href="https://tools.ietf.org/html/rfc4918#section-11.5">RFC4918, section 11.5</a>
      */
     public static final HttpResponseStatus INSUFFICIENT_STORAGE = new HttpResponseStatus(507, "Insufficient Storage");
 
     /**
      * 508 Loop Detected (WebDAV; RFC 5842)
+     *
+     * @see <a href="https://tools.ietf.org/html/rfc5842#section-7.2">RFC5842, section 7.2</a>
      */
     public static final HttpResponseStatus LOOP_DETECTED = new HttpResponseStatus(508, "Loop Detected");
 
     /**
      * 510 Not Extended (RFC2774)
+     *
+     * @see <a href="https://tools.ietf.org/html/rfc2774#section-7">RFC2774, section 7</a>
      */
     public static final HttpResponseStatus NOT_EXTENDED = new HttpResponseStatus(510, "Not Extended");
 
     /**
      * 511 Network Authentication Required (RFC6585)
+     *
+     * @see <a href="https://tools.ietf.org/html/rfc6585#section-6">RFC6585, section 6</a>
      */
     public static final HttpResponseStatus NETWORK_AUTHENTICATION_REQUIRED = new HttpResponseStatus(511,
             "Network Authentication Required");
