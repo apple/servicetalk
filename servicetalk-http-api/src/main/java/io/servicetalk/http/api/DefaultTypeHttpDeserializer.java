@@ -18,13 +18,12 @@ package io.servicetalk.http.api;
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.BlockingIterable;
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.serialization.api.SerializationException;
 import io.servicetalk.serialization.api.Serializer;
 import io.servicetalk.serialization.api.TypeHolder;
 
 import java.util.function.Predicate;
 
-import static io.servicetalk.http.api.HeaderUtils.DEFAULT_DEBUG_HEADER_FILTER;
+import static io.servicetalk.http.api.HeaderUtils.checkContentType;
 
 /**
  * A {@link HttpDeserializer} that can deserialize a {@link TypeHolder} of type {@link T}.
@@ -47,27 +46,20 @@ final class DefaultTypeHttpDeserializer<T> implements HttpDeserializer<T> {
 
     @Override
     public T deserialize(final HttpHeaders headers, final Buffer payload) {
-        checkContentType(headers);
+        checkContentType(headers, checkContentType);
         return serializer.deserializeAggregatedSingle(payload, type);
     }
 
     @Override
     public BlockingIterable<T> deserialize(final HttpHeaders headers,
                                            final BlockingIterable<Buffer> payload) {
-        checkContentType(headers);
+        checkContentType(headers, checkContentType);
         return serializer.deserialize(payload, type);
     }
 
     @Override
     public Publisher<T> deserialize(final HttpHeaders headers, final Publisher<Buffer> payload) {
-        checkContentType(headers);
+        checkContentType(headers, checkContentType);
         return serializer.deserialize(payload, type);
-    }
-
-    private void checkContentType(final HttpHeaders headers) {
-        if (!checkContentType.test(headers)) {
-            throw new SerializationException("Unexpected headers, can not deserialize. Headers: "
-                    + headers.toString(DEFAULT_DEBUG_HEADER_FILTER));
-        }
     }
 }

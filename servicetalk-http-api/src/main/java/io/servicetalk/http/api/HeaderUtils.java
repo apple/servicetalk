@@ -16,6 +16,7 @@
 package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.ByteProcessor;
+import io.servicetalk.serialization.api.SerializationException;
 
 import java.nio.charset.Charset;
 import java.util.Iterator;
@@ -23,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.function.BiFunction;
+import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import javax.annotation.Nullable;
 
@@ -680,6 +682,19 @@ public final class HeaderUtils {
         }
         return pattern.matcher(contentTypeHeader.subSequence(expectedContentType.length(), contentTypeHeader.length()))
                 .matches();
+    }
+
+    /**
+     * Checks if the provider headers contain a {@code Content-Type} header that satisfies the supplied predicate.
+     *
+     * @param headers the {@link HttpHeaders} instance
+     * @param contentTypePredicate the content type predicate
+     */
+    static void checkContentType(final HttpHeaders headers, Predicate<HttpHeaders> contentTypePredicate) {
+        if (!contentTypePredicate.test(headers)) {
+            throw new SerializationException("Unexpected headers, can not deserialize. Headers: "
+                    + headers.toString(DEFAULT_DEBUG_HEADER_FILTER));
+        }
     }
 
     private static Pattern compileCharsetRegex(String charsetName) {
