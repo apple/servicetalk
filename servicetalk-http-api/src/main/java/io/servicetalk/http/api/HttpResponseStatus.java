@@ -44,14 +44,14 @@ public final class HttpResponseStatus {
     public static final HttpResponseStatus SWITCHING_PROTOCOLS = new HttpResponseStatus(101, "Switching Protocols");
 
     /**
-     * 102 Processing (WebDAV, RFC2518)
+     * 102 Processing
      *
      * @see <a href="https://tools.ietf.org/html/rfc2518#section-10.1">RFC2518, section 10.1</a>
      */
     public static final HttpResponseStatus PROCESSING = new HttpResponseStatus(102, "Processing");
 
     /**
-     * 103 Early Hints (RFC 8297)
+     * 103 Early Hints
      *
      * @see <a href="https://tools.ietf.org/html/rfc8297#section-2">RFC8297, section 2</a>
      */
@@ -108,21 +108,21 @@ public final class HttpResponseStatus {
     public static final HttpResponseStatus PARTIAL_CONTENT = new HttpResponseStatus(206, "Partial Content");
 
     /**
-     * 207 Multi-Status (WebDAV, RFC4918)
+     * 207 Multi-Status
      *
      * @see <a href="https://tools.ietf.org/html/rfc4918#section-11.1">RFC4918, section 11.1</a>
      */
     public static final HttpResponseStatus MULTI_STATUS = new HttpResponseStatus(207, "Multi-Status");
 
     /**
-     * 208 Already Reported (WebDAV, RFC 5842)
+     * 208 Already Reported
      *
      * @see <a href="https://tools.ietf.org/html/rfc5842#section-7.1">RFC5842, section 7.1</a>
      */
     public static final HttpResponseStatus ALREADY_REPORTED = new HttpResponseStatus(208, "Already Reported");
 
     /**
-     * 226 IM Used (RFC 3229)
+     * 226 IM Used
      *
      * @see <a href="https://tools.ietf.org/html/rfc3229#section-10.4.1">RFC3229, section 10.4.1</a>
      */
@@ -157,7 +157,7 @@ public final class HttpResponseStatus {
     public static final HttpResponseStatus SEE_OTHER = new HttpResponseStatus(303, "See Other");
 
     /**
-     * 304 Not Modified (RFC7232)
+     * 304 Not Modified
      *
      * @see <a href="https://tools.ietf.org/html/rfc7232#section-4.1">RFC7232, section 4.1</a>
      */
@@ -178,7 +178,7 @@ public final class HttpResponseStatus {
     public static final HttpResponseStatus TEMPORARY_REDIRECT = new HttpResponseStatus(307, "Temporary Redirect");
 
     /**
-     * 308 Permanent Redirect (RFC7538)
+     * 308 Permanent Redirect
      *
      * @see <a href="https://tools.ietf.org/html/rfc7538#section-3">RFC7538, section 3</a>
      */
@@ -192,7 +192,7 @@ public final class HttpResponseStatus {
     public static final HttpResponseStatus BAD_REQUEST = new HttpResponseStatus(400, "Bad Request");
 
     /**
-     * 401 Unauthorized (RFC7235)
+     * 401 Unauthorized
      *
      * @see <a href="https://tools.ietf.org/html/rfc7235#section-3.1">RFC7235, section 3.1</a>
      */
@@ -234,7 +234,7 @@ public final class HttpResponseStatus {
     public static final HttpResponseStatus NOT_ACCEPTABLE = new HttpResponseStatus(406, "Not Acceptable");
 
     /**
-     * 407 Proxy Authentication Required (RFC7235)
+     * 407 Proxy Authentication Required
      *
      * @see <a href="https://tools.ietf.org/html/rfc7235#section-3.2">RFC7235, section 3.2</a>
      */
@@ -270,7 +270,7 @@ public final class HttpResponseStatus {
     public static final HttpResponseStatus LENGTH_REQUIRED = new HttpResponseStatus(411, "Length Required");
 
     /**
-     * 412 Precondition Failed (RFC7232)
+     * 412 Precondition Failed
      *
      * @see <a href="https://tools.ietf.org/html/rfc7232#section-4.2">RFC7232, section 4.2</a>
      */
@@ -300,7 +300,7 @@ public final class HttpResponseStatus {
             "Unsupported Media Type");
 
     /**
-     * 416 Requested Range Not Satisfiable (RFC7233)
+     * 416 Requested Range Not Satisfiable
      *
      * @see <a href="https://tools.ietf.org/html/rfc7233#section-4.4">RFC7233, section 4.4</a>
      */
@@ -322,42 +322,42 @@ public final class HttpResponseStatus {
     public static final HttpResponseStatus MISDIRECTED_REQUEST = new HttpResponseStatus(421, "Misdirected Request");
 
     /**
-     * 422 Unprocessable Entity (WebDAV, RFC4918)
+     * 422 Unprocessable Entity
      *
      * @see <a href="https://tools.ietf.org/html/rfc4918#section-11.2">RFC4918, section 11.2</a>
      */
     public static final HttpResponseStatus UNPROCESSABLE_ENTITY = new HttpResponseStatus(422, "Unprocessable Entity");
 
     /**
-     * 423 Locked (WebDAV, RFC4918)
+     * 423 Locked
      *
      * @see <a href="https://tools.ietf.org/html/rfc4918#section-11.3">RFC4918, section 11.3</a>
      */
     public static final HttpResponseStatus LOCKED = new HttpResponseStatus(423, "Locked");
 
     /**
-     * 424 Failed Dependency (WebDAV, RFC4918)
+     * 424 Failed Dependency
      *
      * @see <a href="https://tools.ietf.org/html/rfc4918#section-11.4">RFC4918, section 11.4</a>
      */
     public static final HttpResponseStatus FAILED_DEPENDENCY = new HttpResponseStatus(424, "Failed Dependency");
 
     /**
-     * 425 Unordered Collection (WebDAV, RFC8470)
+     * 425 Unordered Collection
      *
      * @see <a href="https://tools.ietf.org/html/rfc8470#section-5.2">RFC8470, section 5.2</a>
      */
     public static final HttpResponseStatus UNORDERED_COLLECTION = new HttpResponseStatus(425, "Unordered Collection");
 
     /**
-     * 426 Upgrade Required (RFC7231)
+     * 426 Upgrade Required
      *
      * @see <a href="https://tools.ietf.org/html/rfc7231#section-6.5.15">RFC7231, section 6.5.15</a>
      */
     public static final HttpResponseStatus UPGRADE_REQUIRED = new HttpResponseStatus(426, "Upgrade Required");
 
     /**
-     * 428 Precondition Required (RFC6585)
+     * 428 Precondition Required
      *
      * @see <a href="https://tools.ietf.org/html/rfc6585#section-3">RFC6585, section 3</a>
      */
@@ -365,14 +365,14 @@ public final class HttpResponseStatus {
             "Precondition Required");
 
     /**
-     * 429 Too Many Requests (RFC6585)
+     * 429 Too Many Requests
      *
      * @see <a href="https://tools.ietf.org/html/rfc6585#section-4">RFC6585, section 4</a>
      */
     public static final HttpResponseStatus TOO_MANY_REQUESTS = new HttpResponseStatus(429, "Too Many Requests");
 
     /**
-     * 431 Request Header Fields Too Large (RFC6585)
+     * 431 Request Header Fields Too Large
      *
      * @see <a href="https://tools.ietf.org/html/rfc6585#section-5">RFC6585, section 5</a>
      */
@@ -380,7 +380,7 @@ public final class HttpResponseStatus {
             "Request Header Fields Too Large");
 
     /**
-     * 451 Unavailable For Legal Reasons (RFC 7725)
+     * 451 Unavailable For Legal Reasons
      *
      * @see <a href="https://tools.ietf.org/html/rfc7725#section-3">RFC7725, section 3</a>
      */
@@ -432,7 +432,7 @@ public final class HttpResponseStatus {
             "HTTP Version Not Supported");
 
     /**
-     * 506 Variant Also Negotiates (RFC2295)
+     * 506 Variant Also Negotiates
      *
      * @see <a href="https://tools.ietf.org/html/rfc2295#section-8.1">RFC2295, section 8.1</a>
      */
@@ -440,28 +440,28 @@ public final class HttpResponseStatus {
             "Variant Also Negotiates");
 
     /**
-     * 507 Insufficient Storage (WebDAV, RFC4918)
+     * 507 Insufficient Storage
      *
      * @see <a href="https://tools.ietf.org/html/rfc4918#section-11.5">RFC4918, section 11.5</a>
      */
     public static final HttpResponseStatus INSUFFICIENT_STORAGE = new HttpResponseStatus(507, "Insufficient Storage");
 
     /**
-     * 508 Loop Detected (WebDAV; RFC 5842)
+     * 508 Loop Detected
      *
      * @see <a href="https://tools.ietf.org/html/rfc5842#section-7.2">RFC5842, section 7.2</a>
      */
     public static final HttpResponseStatus LOOP_DETECTED = new HttpResponseStatus(508, "Loop Detected");
 
     /**
-     * 510 Not Extended (RFC2774)
+     * 510 Not Extended
      *
      * @see <a href="https://tools.ietf.org/html/rfc2774#section-7">RFC2774, section 7</a>
      */
     public static final HttpResponseStatus NOT_EXTENDED = new HttpResponseStatus(510, "Not Extended");
 
     /**
-     * 511 Network Authentication Required (RFC6585)
+     * 511 Network Authentication Required
      *
      * @see <a href="https://tools.ietf.org/html/rfc6585#section-6">RFC6585, section 6</a>
      */
