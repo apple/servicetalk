@@ -277,7 +277,7 @@ public final class HttpResponseStatus {
     public static final HttpResponseStatus PRECONDITION_FAILED = new HttpResponseStatus(412, "Precondition Failed");
 
     /**
-     * 413 REQUEST_ENTITY_TOO_LARGE
+     * 413 Request Entity Too Large
      *
      * @see <a href="https://tools.ietf.org/html/rfc7231#section-6.5.11">RFC7231, section 6.5.11</a>
      */
@@ -345,7 +345,7 @@ public final class HttpResponseStatus {
     /**
      * 425 Unordered Collection
      *
-     * @see <a href="https://tools.ietf.org/html/rfc8470#section-5.2">RFC8470, section 5.2</a>
+     * @see <a href="https://tools.ietf.org/html/draft-ietf-webdav-ordering-protocol-00#section-11.1">RFC3648 draft version 00, section 11.1</a>
      */
     public static final HttpResponseStatus UNORDERED_COLLECTION = new HttpResponseStatus(425, "Unordered Collection");
 
