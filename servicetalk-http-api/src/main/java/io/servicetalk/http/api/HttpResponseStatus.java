@@ -277,19 +277,19 @@ public final class HttpResponseStatus {
     public static final HttpResponseStatus PRECONDITION_FAILED = new HttpResponseStatus(412, "Precondition Failed");
 
     /**
-     * 413 Request Entity Too Large
+     * 413 Payload Too Large
      *
      * @see <a href="https://tools.ietf.org/html/rfc7231#section-6.5.11">RFC7231, section 6.5.11</a>
      */
-    public static final HttpResponseStatus REQUEST_ENTITY_TOO_LARGE = new HttpResponseStatus(413,
-            "Request Entity Too Large");
+    public static final HttpResponseStatus PAYLOAD_TOO_LARGE = new HttpResponseStatus(413,
+            "Payload Too Large");
 
     /**
-     * 414 Request-URI Too Long
+     * 414 URI Too Long
      *
      * @see <a href="https://tools.ietf.org/html/rfc7231#section-6.5.12">RFC7231, section 6.5.12</a>
      */
-    public static final HttpResponseStatus REQUEST_URI_TOO_LONG = new HttpResponseStatus(414, "Request-URI Too Long");
+    public static final HttpResponseStatus URI_TOO_LONG = new HttpResponseStatus(414, "URI Too Long");
 
     /**
      * 415 Unsupported Media Type
@@ -300,12 +300,12 @@ public final class HttpResponseStatus {
             "Unsupported Media Type");
 
     /**
-     * 416 Requested Range Not Satisfiable
+     * 416 Range Not Satisfiable
      *
      * @see <a href="https://tools.ietf.org/html/rfc7233#section-4.4">RFC7233, section 4.4</a>
      */
-    public static final HttpResponseStatus REQUESTED_RANGE_NOT_SATISFIABLE = new HttpResponseStatus(416,
-            "Requested Range Not Satisfiable");
+    public static final HttpResponseStatus RANGE_NOT_SATISFIABLE = new HttpResponseStatus(416,
+            "Range Not Satisfiable");
 
     /**
      * 417 Expectation Failed
@@ -343,12 +343,11 @@ public final class HttpResponseStatus {
     public static final HttpResponseStatus FAILED_DEPENDENCY = new HttpResponseStatus(424, "Failed Dependency");
 
     /**
-     * 425 Unordered Collection
+     * 425 Too Early
      *
-     * @see <a href="https://tools.ietf.org/html/draft-ietf-webdav-ordering-protocol-00#section-11.1">
-     *     RFC3648 draft version 00, section 11.1</a>
+     * @see <a href="https://tools.ietf.org/html/rfc8470#section-5.2">RFC8470, section 5.2</a>
      */
-    public static final HttpResponseStatus UNORDERED_COLLECTION = new HttpResponseStatus(425, "Unordered Collection");
+    public static final HttpResponseStatus TOO_EARLY = new HttpResponseStatus(425, "Too Early");
 
     /**
      * 426 Upgrade Required
@@ -588,13 +587,13 @@ public final class HttpResponseStatus {
             case 412:
                 return PRECONDITION_FAILED;
             case 413:
-                return REQUEST_ENTITY_TOO_LARGE;
+                return PAYLOAD_TOO_LARGE;
             case 414:
-                return REQUEST_URI_TOO_LONG;
+                return URI_TOO_LONG;
             case 415:
                 return UNSUPPORTED_MEDIA_TYPE;
             case 416:
-                return REQUESTED_RANGE_NOT_SATISFIABLE;
+                return RANGE_NOT_SATISFIABLE;
             case 417:
                 return EXPECTATION_FAILED;
             case 421:
@@ -606,7 +605,7 @@ public final class HttpResponseStatus {
             case 424:
                 return FAILED_DEPENDENCY;
             case 425:
-                return UNORDERED_COLLECTION;
+                return TOO_EARLY;
             case 426:
                 return UPGRADE_REQUIRED;
             case 428:
