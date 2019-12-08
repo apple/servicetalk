@@ -345,7 +345,8 @@ public final class HttpResponseStatus {
     /**
      * 425 Unordered Collection
      *
-     * @see <a href="https://tools.ietf.org/html/draft-ietf-webdav-ordering-protocol-00#section-11.1">RFC3648 draft version 00, section 11.1</a>
+     * @see <a href="https://tools.ietf.org/html/draft-ietf-webdav-ordering-protocol-00#section-11.1">
+     *     RFC3648 draft version 00, section 11.1</a>
      */
     public static final HttpResponseStatus UNORDERED_COLLECTION = new HttpResponseStatus(425, "Unordered Collection");
 
