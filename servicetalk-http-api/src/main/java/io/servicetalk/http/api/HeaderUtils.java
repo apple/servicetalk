@@ -667,12 +667,17 @@ public final class HeaderUtils {
             return false;
         }
 
-        if (UTF_8.equals(expectedCharset) &&
-                ((contentEqualsIgnoreCase(expectedContentType, TEXT_PLAIN) &&
-                        contentEqualsIgnoreCase(contentTypeHeader, TEXT_PLAIN_UTF_8)) ||
-                (contentEqualsIgnoreCase(expectedContentType, APPLICATION_X_WWW_FORM_URLENCODED) &&
-                        contentEqualsIgnoreCase(contentTypeHeader, APPLICATION_X_WWW_FORM_URLENCODED_UTF_8)))) {
-            return true;
+        if (UTF_8.equals(expectedCharset)) {
+            if (contentEqualsIgnoreCase(expectedContentType, TEXT_PLAIN) &&
+                    (contentEqualsIgnoreCase(contentTypeHeader, TEXT_PLAIN_UTF_8) ||
+                            !hasCharset(contentTypeHeader))) {
+                return true;
+            }
+            if (contentEqualsIgnoreCase(expectedContentType, APPLICATION_X_WWW_FORM_URLENCODED) &&
+                    (contentEqualsIgnoreCase(contentTypeHeader, APPLICATION_X_WWW_FORM_URLENCODED_UTF_8) ||
+                            !hasCharset(contentTypeHeader))) {
+                return true;
+            }
         }
 
         // None of the fastlane shortcuts have bitten -> use a regex to try to match the charset param wherever it is
@@ -699,6 +704,10 @@ public final class HeaderUtils {
 
     private static Pattern compileCharsetRegex(String charsetName) {
         return compile(".*;\\s*charset=\"?" + quote(charsetName) + "\"?\\s*(;.*|$)", CASE_INSENSITIVE);
+    }
+
+    private static boolean hasCharset(final CharSequence contentTypeHeader) {
+        return contentTypeHeader.toString().contains("charset=");
     }
 
     private static void validateCookieTokenAndHeaderName0(final CharSequence key) {

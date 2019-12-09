@@ -78,14 +78,25 @@ public class HeaderUtilsTest {
         assertFalse(HeaderUtils.hasContentType(
                 headersWithContentType(TEXT_PLAIN), APPLICATION_JSON, null));
 
-        assertFalse(HeaderUtils.hasContentType(
+        assertTrue(HeaderUtils.hasContentType(
                 headersWithContentType(TEXT_PLAIN), TEXT_PLAIN, UTF_8));
+
+        assertFalse(HeaderUtils.hasContentType(
+                headersWithContentType(TEXT_PLAIN), TEXT_PLAIN, UTF_16));
 
         assertTrue(HeaderUtils.hasContentType(
                 headersWithContentType(TEXT_PLAIN_UTF_8), TEXT_PLAIN, UTF_8));
 
         assertFalse(HeaderUtils.hasContentType(
                 headersWithContentType(TEXT_PLAIN_UTF_8), TEXT_PLAIN, US_ASCII));
+
+        assertTrue(HeaderUtils.hasContentType(
+                headersWithContentType(APPLICATION_X_WWW_FORM_URLENCODED),
+                APPLICATION_X_WWW_FORM_URLENCODED, UTF_8));
+
+        assertFalse(HeaderUtils.hasContentType(
+                headersWithContentType(APPLICATION_X_WWW_FORM_URLENCODED),
+                APPLICATION_X_WWW_FORM_URLENCODED, UTF_16));
 
         assertTrue(HeaderUtils.hasContentType(
                 headersWithContentType(APPLICATION_X_WWW_FORM_URLENCODED_UTF_8),
@@ -109,6 +120,14 @@ public class HeaderUtilsTest {
         assertTrue(HeaderUtils.hasContentType(
                 headersWithContentType(of("text/plain;id=\"ABC@host.com\";charset=\"UTF-8\";total=2")),
                 TEXT_PLAIN, UTF_8));
+
+        assertTrue(HeaderUtils.hasContentType(
+                headersWithContentType(of("text/plain;id=\"ABC@host.com\";total=2")),
+                TEXT_PLAIN, UTF_8));
+
+        assertFalse(HeaderUtils.hasContentType(
+                headersWithContentType(of("text/plain;id=\"ABC@host.com\";total=2")),
+                TEXT_PLAIN, UTF_16));
 
         assertTrue(HeaderUtils.hasContentType(
                 headersWithContentType(of("text/plain; charset=\"us-ascii\"")), TEXT_PLAIN, null));
