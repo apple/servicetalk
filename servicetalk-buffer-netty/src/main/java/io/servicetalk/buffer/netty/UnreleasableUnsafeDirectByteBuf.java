@@ -32,77 +32,87 @@ class UnreleasableUnsafeDirectByteBuf extends UnpooledUnsafeDirectByteBuf {
     }
 
     @Override
-    public ByteBuf asReadOnly() {
+    protected final void freeDirect(ByteBuffer buffer) {
+        // Do nothing!
+        // In the event a Buffer's capacity needs to be adjusted (e.g. attempting to writeBytes may cause a resize)
+        // Netty may attempt to reclaim the old memory. Since ServiceTalk doesn't expose reference counting to reclaim
+        // memory it maybe the case that the application has a reference to the old memory on a different thread. If
+        // the application dereferences the memory that is force-freed by Netty this will lead to undefined behavior.
+        // In summary we don't want Netty to deallocate any memory and instead we want to rely upon the GC.
+    }
+
+    @Override
+    public final ByteBuf asReadOnly() {
         return Unpooled.unreleasableBuffer(super.asReadOnly());
     }
 
     @Override
-    public ByteBuf readSlice(int length) {
+    public final ByteBuf readSlice(int length) {
         return Unpooled.unreleasableBuffer(super.readSlice(length));
     }
 
     @Override
-    public ByteBuf readRetainedSlice(int length) {
+    public final ByteBuf readRetainedSlice(int length) {
         return readSlice(length);
     }
 
     @Override
-    public ByteBuf slice() {
+    public final ByteBuf slice() {
         return Unpooled.unreleasableBuffer(super.slice());
     }
 
     @Override
-    public ByteBuf slice(int index, int length) {
+    public final ByteBuf slice(int index, int length) {
         return Unpooled.unreleasableBuffer(super.slice(index, length));
     }
 
     @Override
-    public ByteBuf retainedSlice() {
+    public final ByteBuf retainedSlice() {
         return slice();
     }
 
     @Override
-    public ByteBuf retainedSlice(int index, int length) {
+    public final ByteBuf retainedSlice(int index, int length) {
         return slice(index, length);
     }
 
     @Override
-    public ByteBuf duplicate() {
+    public final ByteBuf duplicate() {
         return Unpooled.unreleasableBuffer(super.duplicate());
     }
 
     @Override
-    public ByteBuf retainedDuplicate() {
+    public final ByteBuf retainedDuplicate() {
         return duplicate();
     }
 
     @Override
-    public ByteBuf retain(int increment) {
+    public final ByteBuf retain(int increment) {
         return this;
     }
 
     @Override
-    public ByteBuf retain() {
+    public final ByteBuf retain() {
         return this;
     }
 
     @Override
-    public ByteBuf touch() {
+    public final ByteBuf touch() {
         return this;
     }
 
     @Override
-    public ByteBuf touch(Object hint) {
+    public final ByteBuf touch(Object hint) {
         return this;
     }
 
     @Override
-    public boolean release() {
+    public final boolean release() {
         return false;
     }
 
     @Override
-    public boolean release(int decrement) {
+    public final boolean release(int decrement) {
         return false;
     }
 }

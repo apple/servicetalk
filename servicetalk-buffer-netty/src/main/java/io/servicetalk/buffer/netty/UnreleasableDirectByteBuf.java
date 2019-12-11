@@ -33,6 +33,16 @@ final class UnreleasableDirectByteBuf extends UnpooledDirectByteBuf {
     }
 
     @Override
+    protected void freeDirect(ByteBuffer buffer) {
+        // Do nothing!
+        // In the event a Buffer's capacity needs to be adjusted (e.g. attempting to writeBytes may cause a resize)
+        // Netty may attempt to reclaim the old memory. Since ServiceTalk doesn't expose reference counting to reclaim
+        // memory it maybe the case that the application has a reference to the old memory on a different thread. If
+        // the application dereferences the memory that is force-freed by Netty this will lead to undefined behavior.
+        // In summary we don't want Netty to deallocate any memory and instead we want to rely upon the GC.
+    }
+
+    @Override
     public ByteBuf asReadOnly() {
         return Unpooled.unreleasableBuffer(super.asReadOnly());
     }
