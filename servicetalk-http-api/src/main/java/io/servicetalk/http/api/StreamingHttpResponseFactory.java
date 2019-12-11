@@ -47,28 +47,28 @@ import static io.servicetalk.http.api.HttpResponseStatus.NOT_MODIFIED;
 import static io.servicetalk.http.api.HttpResponseStatus.NO_CONTENT;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.HttpResponseStatus.PARTIAL_CONTENT;
+import static io.servicetalk.http.api.HttpResponseStatus.PAYLOAD_TOO_LARGE;
 import static io.servicetalk.http.api.HttpResponseStatus.PAYMENT_REQUIRED;
 import static io.servicetalk.http.api.HttpResponseStatus.PERMANENT_REDIRECT;
 import static io.servicetalk.http.api.HttpResponseStatus.PRECONDITION_FAILED;
 import static io.servicetalk.http.api.HttpResponseStatus.PRECONDITION_REQUIRED;
 import static io.servicetalk.http.api.HttpResponseStatus.PROCESSING;
 import static io.servicetalk.http.api.HttpResponseStatus.PROXY_AUTHENTICATION_REQUIRED;
-import static io.servicetalk.http.api.HttpResponseStatus.REQUESTED_RANGE_NOT_SATISFIABLE;
-import static io.servicetalk.http.api.HttpResponseStatus.REQUEST_ENTITY_TOO_LARGE;
+import static io.servicetalk.http.api.HttpResponseStatus.RANGE_NOT_SATISFIABLE;
 import static io.servicetalk.http.api.HttpResponseStatus.REQUEST_HEADER_FIELDS_TOO_LARGE;
 import static io.servicetalk.http.api.HttpResponseStatus.REQUEST_TIMEOUT;
-import static io.servicetalk.http.api.HttpResponseStatus.REQUEST_URI_TOO_LONG;
 import static io.servicetalk.http.api.HttpResponseStatus.RESET_CONTENT;
 import static io.servicetalk.http.api.HttpResponseStatus.SEE_OTHER;
 import static io.servicetalk.http.api.HttpResponseStatus.SERVICE_UNAVAILABLE;
 import static io.servicetalk.http.api.HttpResponseStatus.SWITCHING_PROTOCOLS;
 import static io.servicetalk.http.api.HttpResponseStatus.TEMPORARY_REDIRECT;
+import static io.servicetalk.http.api.HttpResponseStatus.TOO_EARLY;
 import static io.servicetalk.http.api.HttpResponseStatus.TOO_MANY_REQUESTS;
 import static io.servicetalk.http.api.HttpResponseStatus.UNAUTHORIZED;
-import static io.servicetalk.http.api.HttpResponseStatus.UNORDERED_COLLECTION;
 import static io.servicetalk.http.api.HttpResponseStatus.UNPROCESSABLE_ENTITY;
 import static io.servicetalk.http.api.HttpResponseStatus.UNSUPPORTED_MEDIA_TYPE;
 import static io.servicetalk.http.api.HttpResponseStatus.UPGRADE_REQUIRED;
+import static io.servicetalk.http.api.HttpResponseStatus.URI_TOO_LONG;
 import static io.servicetalk.http.api.HttpResponseStatus.USE_PROXY;
 import static io.servicetalk.http.api.HttpResponseStatus.VARIANT_ALSO_NEGOTIATES;
 
@@ -340,19 +340,19 @@ public interface StreamingHttpResponseFactory {
     }
 
     /**
-     * Create a new {@link HttpResponseStatus#REQUEST_ENTITY_TOO_LARGE} response.
-     * @return a new {@link HttpResponseStatus#REQUEST_ENTITY_TOO_LARGE} response.
+     * Create a new {@link HttpResponseStatus#PAYLOAD_TOO_LARGE} response.
+     * @return a new {@link HttpResponseStatus#PAYLOAD_TOO_LARGE} response.
      */
-    default StreamingHttpResponse requestEntityTooLarge() {
-        return newResponse(REQUEST_ENTITY_TOO_LARGE);
+    default StreamingHttpResponse payloadTooLarge() {
+        return newResponse(PAYLOAD_TOO_LARGE);
     }
 
     /**
-     * Create a new {@link HttpResponseStatus#REQUEST_URI_TOO_LONG} response.
-     * @return a new {@link HttpResponseStatus#REQUEST_URI_TOO_LONG} response.
+     * Create a new {@link HttpResponseStatus#URI_TOO_LONG} response.
+     * @return a new {@link HttpResponseStatus#URI_TOO_LONG} response.
      */
-    default StreamingHttpResponse requestUriTooLong() {
-        return newResponse(REQUEST_URI_TOO_LONG);
+    default StreamingHttpResponse uriTooLong() {
+        return newResponse(URI_TOO_LONG);
     }
 
     /**
@@ -364,11 +364,11 @@ public interface StreamingHttpResponseFactory {
     }
 
     /**
-     * Create a new {@link HttpResponseStatus#REQUESTED_RANGE_NOT_SATISFIABLE} response.
-     * @return a new {@link HttpResponseStatus#REQUESTED_RANGE_NOT_SATISFIABLE} response.
+     * Create a new {@link HttpResponseStatus#RANGE_NOT_SATISFIABLE} response.
+     * @return a new {@link HttpResponseStatus#RANGE_NOT_SATISFIABLE} response.
      */
-    default StreamingHttpResponse requestedRangeNotSatisfiable() {
-        return newResponse(REQUESTED_RANGE_NOT_SATISFIABLE);
+    default StreamingHttpResponse rangeNotSatisfiable() {
+        return newResponse(RANGE_NOT_SATISFIABLE);
     }
 
     /**
@@ -412,11 +412,11 @@ public interface StreamingHttpResponseFactory {
     }
 
     /**
-     * Create a new {@link HttpResponseStatus#UNORDERED_COLLECTION} response.
-     * @return a new {@link HttpResponseStatus#UNORDERED_COLLECTION} response.
+     * Create a new {@link HttpResponseStatus#TOO_EARLY} response.
+     * @return a new {@link HttpResponseStatus#TOO_EARLY} response.
      */
-    default StreamingHttpResponse unorderedCollection() {
-        return newResponse(UNORDERED_COLLECTION);
+    default StreamingHttpResponse tooEarly() {
+        return newResponse(TOO_EARLY);
     }
 
     /**
