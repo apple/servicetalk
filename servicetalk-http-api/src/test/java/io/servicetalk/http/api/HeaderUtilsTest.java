@@ -142,8 +142,14 @@ public class HeaderUtilsTest {
         assertTrue(HeaderUtils.hasContentType(
                 headersWithContentType(of("image/png")), of("image/png"), null));
 
+        assertTrue(HeaderUtils.hasContentType(
+                headersWithContentType(of("image/png")), of("image/png"), UTF_8));
+
         assertFalse(HeaderUtils.hasContentType(
                 headersWithContentType(of("image/png")), APPLICATION_X_WWW_FORM_URLENCODED, null));
+
+        assertFalse(HeaderUtils.hasContentType(
+                headersWithContentType(of("image/png")), APPLICATION_X_WWW_FORM_URLENCODED, UTF_8));
 
         assertTrue(HeaderUtils.hasContentType(
                 headersWithContentType(of("image/png;charset=unknown-charset")), of("image/png"), null));

@@ -668,14 +668,15 @@ public final class HeaderUtils {
         }
 
         if (UTF_8.equals(expectedCharset)) {
+            if (!hasCharset(contentTypeHeader)) {
+                return true;
+            }
             if (contentEqualsIgnoreCase(expectedContentType, TEXT_PLAIN) &&
-                    (contentEqualsIgnoreCase(contentTypeHeader, TEXT_PLAIN_UTF_8) ||
-                            !hasCharset(contentTypeHeader))) {
+                    contentEqualsIgnoreCase(contentTypeHeader, TEXT_PLAIN_UTF_8)) {
                 return true;
             }
             if (contentEqualsIgnoreCase(expectedContentType, APPLICATION_X_WWW_FORM_URLENCODED) &&
-                    (contentEqualsIgnoreCase(contentTypeHeader, APPLICATION_X_WWW_FORM_URLENCODED_UTF_8) ||
-                            !hasCharset(contentTypeHeader))) {
+                    contentEqualsIgnoreCase(contentTypeHeader, APPLICATION_X_WWW_FORM_URLENCODED_UTF_8)) {
                 return true;
             }
         }
