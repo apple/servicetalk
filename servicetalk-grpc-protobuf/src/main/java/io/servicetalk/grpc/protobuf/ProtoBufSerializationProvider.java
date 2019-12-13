@@ -44,7 +44,7 @@ final class ProtoBufSerializationProvider<T extends MessageLite> implements Seri
     private final Class<T> targetClass;
     private final GrpcMessageEncoding messageEncoding;
     private final ProtoSerializer serializer;
-    private final Parser parser;
+    private final Parser<T> parser;
 
     ProtoBufSerializationProvider(final Class<T> targetClass, final GrpcMessageEncoding messageEncoding,
                                   final Parser<T> parser) {
@@ -91,22 +91,20 @@ final class ProtoBufSerializationProvider<T extends MessageLite> implements Seri
         } else if (compressionFlag == 1) {
             return true;
         }
-        throw new SerializationException("compression flag must be 0 or 1 but was:  " + compressionFlag);
+        throw new SerializationException("compression flag must be 0 or 1 but was: " + compressionFlag);
     }
 
     private static final class ProtoDeserializer<T> implements StreamingDeserializer<T> {
         private final Parser<T> parser;
         private final CompositeBuffer accumulate;
-
-        private boolean compressed;
-        private int lengthOfData = -1;
         /**
          * <ul>
-         *     <li>{@code true} - read Length-Prefixed-Message header</li>
-         *     <li>{@code false} - read Length-Prefixed-Message Message</li>
+         *     <li>{@code < 0} - read Length-Prefixed-Message header</li>
+         *     <li>{@code >= 0} - read Length-Prefixed-Message Message</li>
          * </ul>
          */
-        private boolean stateReadHeader = true;
+        private int lengthOfData = -1;
+        private boolean compressed;
 
         ProtoDeserializer(final Parser<T> parser,
                           @SuppressWarnings("unused") final GrpcMessageEncoding grpcMessageEncoding) {
@@ -119,12 +117,11 @@ final class ProtoBufSerializationProvider<T extends MessageLite> implements Seri
             if (toDeserialize.readableBytes() <= 0) {
                 return emptyList(); // We don't have any additional data to process, so bail for now.
             }
-            @Nullable
             List<T> parsedData = null;
 
             for (;;) {
-                if (stateReadHeader) {
-                    toDeserialize = addToAccumulateIfAccumulating(toDeserialize);
+                toDeserialize = addToAccumulateIfAccumulating(toDeserialize);
+                if (lengthOfData < 0) {
                     // If we don't have more than a full header, just bail and try again later when more data arrives.
                     if (toDeserialize.readableBytes() < LENGTH_PREFIXED_MESSAGE_HEADER_BYTES) {
                         return addToAccumulateIfRequiredAndReturn(toDeserialize, parsedData);
@@ -142,11 +139,7 @@ final class ProtoBufSerializationProvider<T extends MessageLite> implements Seri
                     if (lengthOfData < 0) {
                         throw new SerializationException("Message-Length invalid: " + lengthOfData);
                     }
-
-                    stateReadHeader = false;
                 } else {
-                    assert lengthOfData >= 0;
-                    toDeserialize = addToAccumulateIfAccumulating(toDeserialize);
                     if (toDeserialize.readableBytes() < lengthOfData) {
                         return addToAccumulateIfRequiredAndReturn(toDeserialize, parsedData);
                     }
@@ -168,7 +161,6 @@ final class ProtoBufSerializationProvider<T extends MessageLite> implements Seri
                     // We parsed the expected data, update the state to prepare for parsing the next frame.
                     final int oldLengthOfData = lengthOfData;
                     lengthOfData = -1;
-                    stateReadHeader = true;
                     compressed = false;
 
                     // If we don't have more than a full header, just bail and try again later when more data arrives.
