@@ -16,11 +16,13 @@
 package io.servicetalk.http.api;
 
 import static io.servicetalk.http.api.HttpResponseStatus.ACCEPTED;
+import static io.servicetalk.http.api.HttpResponseStatus.ALREADY_REPORTED;
 import static io.servicetalk.http.api.HttpResponseStatus.BAD_GATEWAY;
 import static io.servicetalk.http.api.HttpResponseStatus.BAD_REQUEST;
 import static io.servicetalk.http.api.HttpResponseStatus.CONFLICT;
 import static io.servicetalk.http.api.HttpResponseStatus.CONTINUE;
 import static io.servicetalk.http.api.HttpResponseStatus.CREATED;
+import static io.servicetalk.http.api.HttpResponseStatus.EARLY_HINTS;
 import static io.servicetalk.http.api.HttpResponseStatus.EXPECTATION_FAILED;
 import static io.servicetalk.http.api.HttpResponseStatus.FAILED_DEPENDENCY;
 import static io.servicetalk.http.api.HttpResponseStatus.FORBIDDEN;
@@ -28,10 +30,12 @@ import static io.servicetalk.http.api.HttpResponseStatus.FOUND;
 import static io.servicetalk.http.api.HttpResponseStatus.GATEWAY_TIMEOUT;
 import static io.servicetalk.http.api.HttpResponseStatus.GONE;
 import static io.servicetalk.http.api.HttpResponseStatus.HTTP_VERSION_NOT_SUPPORTED;
+import static io.servicetalk.http.api.HttpResponseStatus.IM_USED;
 import static io.servicetalk.http.api.HttpResponseStatus.INSUFFICIENT_STORAGE;
 import static io.servicetalk.http.api.HttpResponseStatus.INTERNAL_SERVER_ERROR;
 import static io.servicetalk.http.api.HttpResponseStatus.LENGTH_REQUIRED;
 import static io.servicetalk.http.api.HttpResponseStatus.LOCKED;
+import static io.servicetalk.http.api.HttpResponseStatus.LOOP_DETECTED;
 import static io.servicetalk.http.api.HttpResponseStatus.METHOD_NOT_ALLOWED;
 import static io.servicetalk.http.api.HttpResponseStatus.MISDIRECTED_REQUEST;
 import static io.servicetalk.http.api.HttpResponseStatus.MOVED_PERMANENTLY;
@@ -65,6 +69,7 @@ import static io.servicetalk.http.api.HttpResponseStatus.TEMPORARY_REDIRECT;
 import static io.servicetalk.http.api.HttpResponseStatus.TOO_EARLY;
 import static io.servicetalk.http.api.HttpResponseStatus.TOO_MANY_REQUESTS;
 import static io.servicetalk.http.api.HttpResponseStatus.UNAUTHORIZED;
+import static io.servicetalk.http.api.HttpResponseStatus.UNAVAILABLE_FOR_LEGAL_REASONS;
 import static io.servicetalk.http.api.HttpResponseStatus.UNPROCESSABLE_ENTITY;
 import static io.servicetalk.http.api.HttpResponseStatus.UNSUPPORTED_MEDIA_TYPE;
 import static io.servicetalk.http.api.HttpResponseStatus.UPGRADE_REQUIRED;
@@ -105,6 +110,14 @@ public interface StreamingHttpResponseFactory {
      */
     default StreamingHttpResponse processing() {
         return newResponse(PROCESSING);
+    }
+
+    /**
+     * Create a new {@link HttpResponseStatus#EARLY_HINTS} response.
+     * @return a new {@link HttpResponseStatus#EARLY_HINTS} response.
+     */
+    default StreamingHttpResponse earlyHints() {
+        return newResponse(EARLY_HINTS);
     }
 
     /**
@@ -169,6 +182,22 @@ public interface StreamingHttpResponseFactory {
      */
     default StreamingHttpResponse multiStatus() {
         return newResponse(MULTI_STATUS);
+    }
+
+    /**
+     * Create a new {@link HttpResponseStatus#ALREADY_REPORTED} response.
+     * @return a new {@link HttpResponseStatus#ALREADY_REPORTED} response.
+     */
+    default StreamingHttpResponse alreadyReported() {
+        return newResponse(ALREADY_REPORTED);
+    }
+
+    /**
+     * Create a new {@link HttpResponseStatus#IM_USED} response.
+     * @return a new {@link HttpResponseStatus#IM_USED} response.
+     */
+    default StreamingHttpResponse imUsed() {
+        return newResponse(IM_USED);
     }
 
     /**
@@ -452,6 +481,14 @@ public interface StreamingHttpResponseFactory {
     }
 
     /**
+     * Create a new {@link HttpResponseStatus#UNAVAILABLE_FOR_LEGAL_REASONS} response.
+     * @return a new {@link HttpResponseStatus#UNAVAILABLE_FOR_LEGAL_REASONS} response.
+     */
+    default StreamingHttpResponse unavailableForLegalReasons() {
+        return newResponse(UNAVAILABLE_FOR_LEGAL_REASONS);
+    }
+
+    /**
      * Create a new {@link HttpResponseStatus#INTERNAL_SERVER_ERROR} response.
      * @return a new {@link HttpResponseStatus#INTERNAL_SERVER_ERROR} response.
      */
@@ -513,6 +550,14 @@ public interface StreamingHttpResponseFactory {
      */
     default StreamingHttpResponse insufficientStorage() {
         return newResponse(INSUFFICIENT_STORAGE);
+    }
+
+    /**
+     * Create a new {@link HttpResponseStatus#LOOP_DETECTED} response.
+     * @return a new {@link HttpResponseStatus#LOOP_DETECTED} response.
+     */
+    default StreamingHttpResponse loopDetected() {
+        return newResponse(LOOP_DETECTED);
     }
 
     /**
