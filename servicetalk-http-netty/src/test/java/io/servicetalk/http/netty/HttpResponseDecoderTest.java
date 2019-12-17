@@ -473,9 +473,7 @@ public class HttpResponseDecoderTest {
     }
 
     private static EmbeddedChannel newEmbeddedChannel() {
-        HttpResponseDecoder decoder = new HttpResponseDecoder(new ArrayDeque<>(), DefaultHttpHeadersFactory.INSTANCE,
-                8192, 8192);
-        decoder.setDiscardAfterReads(1);
-        return new EmbeddedChannel(decoder);
+        return new EmbeddedChannel(new HttpResponseDecoder(new ArrayDeque<>(), DefaultHttpHeadersFactory.INSTANCE,
+                8192, 8192));
     }
 }

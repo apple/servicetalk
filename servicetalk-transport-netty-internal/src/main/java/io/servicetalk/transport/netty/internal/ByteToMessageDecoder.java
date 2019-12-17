@@ -28,7 +28,6 @@ import io.netty.channel.ChannelProgressivePromise;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.EventLoop;
 import io.netty.channel.socket.ChannelInputShutdownEvent;
-import io.netty.handler.codec.ByteToMessageDecoder.Cumulator;
 import io.netty.handler.codec.DecoderException;
 import io.netty.handler.codec.DelimiterBasedFrameDecoder;
 import io.netty.handler.codec.FixedLengthFrameDecoder;
@@ -44,8 +43,7 @@ import java.util.List;
 import javax.annotation.Nullable;
 
 import static io.netty.buffer.Unpooled.EMPTY_BUFFER;
-import static io.netty.handler.codec.ByteToMessageDecoder.MERGE_CUMULATOR;
-import static java.lang.Math.min;
+import static java.lang.Integer.MAX_VALUE;
 
 /**
  * {@link ChannelInboundHandlerAdapter} which decodes bytes in a stream-like fashion from one {@link ByteBuf} to an
@@ -92,11 +90,9 @@ public abstract class ByteToMessageDecoder extends ChannelInboundHandlerAdapter 
     private static final byte STATE_INIT = 0;
     private static final byte STATE_CALLING_CHILD_DECODE = 1;
     private static final byte STATE_HANDLER_REMOVED_PENDING = 2;
-    private static final int INTEGER_MAX_DOUBLEABLE_VALUE = Integer.MAX_VALUE >>> 1;
 
     @Nullable
     private ByteBuf cumulation;
-    private Cumulator cumulator = MERGE_CUMULATOR;
     private final CtxWrapper ctxWrapper = new CtxWrapper();
     private boolean decodeWasNull;
     /**
@@ -108,30 +104,12 @@ public abstract class ByteToMessageDecoder extends ChannelInboundHandlerAdapter 
      * </ul>
      */
     private byte decodeState = STATE_INIT;
-    private int discardAfterReads = 16;
-    private int numReads;
 
     /**
      * Create a new instance.
      */
     protected ByteToMessageDecoder() {
         ensureNotSharable();
-    }
-
-    /**
-     * Set the number of reads after which {@link ByteBuf#discardSomeReadBytes()} are called and so free up memory.
-     * The default is {@code 16}.
-     * <p>
-     * It is assumed this method is only called in the associated {@link Channel}'s {@link EventLoop} thread, otherwise
-     * external synchronization must be provided.
-     * @param discardAfterReads The number of calls to {@link ChannelHandlerContext#fireChannelRead(Object)} before
-     * attempting to discard bytes from the buffer cumulator.
-     */
-    public final void setDiscardAfterReads(int discardAfterReads) {
-        if (discardAfterReads <= 0) {
-            throw new IllegalArgumentException("discardAfterReads must be > 0");
-        }
-        this.discardAfterReads = discardAfterReads;
     }
 
     @Override
@@ -151,12 +129,10 @@ public abstract class ByteToMessageDecoder extends ChannelInboundHandlerAdapter 
                 ByteBuf bytes = buf.readBytes(readable);
                 buf.release();
                 ctx.fireChannelRead(bytes);
+                ctx.fireChannelReadComplete();
             } else {
                 buf.release();
             }
-
-            numReads = 0;
-            ctx.fireChannelReadComplete();
         }
         handlerRemoved0(ctx);
     }
@@ -179,7 +155,17 @@ public abstract class ByteToMessageDecoder extends ChannelInboundHandlerAdapter 
                 if (cumulation == null) {
                     cumulation = data;
                 } else {
-                    cumulation = cumulator.cumulate(ctx.alloc(), cumulation, data);
+                    final int required = data.readableBytes();
+                    if (required > cumulation.maxWritableBytes() ||
+                            (required > cumulation.maxFastWritableBytes() && cumulation.refCnt() > 1)) {
+                        // Expand cumulation (by replacing it) under the following conditions:
+                        // - cumulation cannot be resized to accommodate the additional data
+                        // - cumulation can be expanded with a reallocation operation to accommodate but the buffer is
+                        //   assumed to be shared (e.g. refCnt() > 1) and the reallocation may not be safe.
+                        cumulation = swapAndCopyCumulation(ctx.alloc(), cumulation, data);
+                    } else {
+                        cumulation.writeBytes(data);
+                    }
                 }
                 callDecode(ctxWrapper, cumulation);
             } catch (DecoderException e) {
@@ -188,13 +174,7 @@ public abstract class ByteToMessageDecoder extends ChannelInboundHandlerAdapter 
                 throw new DecoderException(e);
             } finally {
                 if (cumulation != null && !cumulation.isReadable()) {
-                    numReads = 0;
                     releaseCumulation();
-                } else if (++numReads >= discardAfterReads) {
-                    // We did enough reads already try to discard some bytes so we not risk to see a OOME.
-                    // See https://github.com/netty/netty/issues/4275
-                    numReads = 0;
-                    tryDiscardSomeReadBytes(ctx.alloc());
                 }
                 decodeWasNull = firedChannelReadCount == ctxWrapper.getFireChannelReadCount();
                 ctxWrapper.resetFireChannelReadCount();
@@ -206,8 +186,6 @@ public abstract class ByteToMessageDecoder extends ChannelInboundHandlerAdapter 
 
     @Override
     public void channelReadComplete(ChannelHandlerContext ctx) {
-        numReads = 0;
-        tryDiscardSomeReadBytes(ctx.alloc());
         if (decodeWasNull) {
             decodeWasNull = false;
             if (!ctx.channel().config().isAutoRead()) {
@@ -217,39 +195,30 @@ public abstract class ByteToMessageDecoder extends ChannelInboundHandlerAdapter 
         ctx.fireChannelReadComplete();
     }
 
-    private void tryDiscardSomeReadBytes(ByteBufAllocator allocator) {
-        // Avoid using discardSomeReadBytes because this will modify the underlying storage of the ByteBuf.
-        // Modifying the underlying storage of the ByteBuf means that any slices or views on this data will become
-        // corrupted. This is particularly a problem when offloading user code to a non-EventLoop thread to avoid
-        // blocking the EventLoop. In this case the users code will be executed asynchronously, which maybe a slice
-        // of this cumulation, and if we use discardSomeReadBytes the user code will see corrupted data.
-        if (cumulation != null && cumulation.readerIndex() >= cumulation.capacity() >>> 1) {
-            cumulation = swapCumulation(cumulation, allocator);
-        }
-    }
-
     /**
-     * Swap the existing {@code cumulation} {@link ByteBuf} for a new {@link ByteBuf}. This method is called when a
-     * heuristic determines the amount of unused bytes is sufficiently high that a resize / defragmentation of the
-     * bytes from {@code cumulation} is beneficial.
+     * Swap the existing {@code cumulation} {@link ByteBuf} for a new {@link ByteBuf} and copy {@code in}. This method
+     * is called when a heuristic determines the amount of unused bytes is sufficiently high that a
+     * resize / defragmentation of the bytes from {@code cumulation} is beneficial.
      * <p>
      * {@link ByteBuf#discardReadBytes()} is generally avoided in this method because it changes the underlying data
      * structure. If others have slices of this {@link ByteBuf} their view on the data will become corrupted. This is
-     * commonly a problem when processing data asynchronously to avoid blocking the EventLoop thread.
-     *
+     * commonly a problem when processing data asynchronously to avoid blocking the {@link EventLoop} thread.
+     * @param alloc Used to allocate a new {@link ByteBuf} if necessary.
      * @param cumulation The {@link ByteBuf} that accumulates across socket read operations.
-     * @param allocator Used to allocate a new {@link ByteBuf} if necessary.
-     * @return the {@link ByteBuf} that is responsible for accumulated socket reads.
+     * @param in The bytes to copy.
+     * @return the result of the swap and copy operation.
      */
-    protected ByteBuf swapCumulation(ByteBuf cumulation, ByteBufAllocator allocator) {
+    protected ByteBuf swapAndCopyCumulation(final ByteBufAllocator alloc, final ByteBuf cumulation, final ByteBuf in) {
+        ByteBuf newCumulation = alloc.buffer(alloc.calculateNewCapacity(
+                cumulation.readableBytes() + in.readableBytes(), MAX_VALUE));
+        ByteBuf toRelease = newCumulation;
         try {
-            ByteBuf newCumulation = allocator.buffer(allocator.calculateNewCapacity(cumulation.capacity(),
-                    min(INTEGER_MAX_DOUBLEABLE_VALUE, cumulation.capacity()) << 1));
             newCumulation.writeBytes(cumulation);
+            newCumulation.writeBytes(in);
+            toRelease = cumulation;
             return newCumulation;
         } finally {
-            cumulation.release();
-            // no need to call cumulationReset, folks can override this method instead.
+            toRelease.release();
         }
     }
 
