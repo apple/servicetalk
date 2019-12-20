@@ -108,9 +108,9 @@ public class HttpResponseDecoderTest {
         byte[] content = new byte[128];
         ThreadLocalRandom.current().nextBytes(content);
         byte[] beforeContentBytes = ("HTTP/1.1 200 OK" + "\r\n" +
-                " Connection :  keep-alive " + "\r\n" +
-                "  Server  :        unit-test        " + "\r\n" +
-                "   Content-Length  : " + content.length + "\r\n" + "\r\n").getBytes(US_ASCII);
+                " Connection:  keep-alive " + "\r\n" +
+                "  Server:        unit-test        " + "\r\n" +
+                "   Content-Length: " + content.length + "\r\n" + "\r\n").getBytes(US_ASCII);
         assertTrue(channel.writeInbound(wrappedBuffer(beforeContentBytes)));
         assertTrue(channel.writeInbound(wrappedBuffer(content)));
 
@@ -141,8 +141,8 @@ public class HttpResponseDecoderTest {
         byte[] content = new byte[128];
         ThreadLocalRandom.current().nextBytes(content);
         byte[] beforeContentBytes = ("HTTP/1.1 200 OK" + "\r\n" +
-                "Connection   :keep-alive" + "\r\n" +
-                "   Server   :unit-test" + "\r\n" +
+                "Connection:keep-alive" + "\r\n" +
+                "   Server:unit-test" + "\r\n" +
                 "Empty:" + "\r\n" +
                 "EmptyWhitespace:   " + "\r\n" +
                 "SingleCharacterNoWhiteSpace: a" + "\r\n" +
@@ -351,6 +351,21 @@ public class HttpResponseDecoderTest {
         HttpHeaders lastChunk = channel.readInbound();
         assertTrue(lastChunk.isEmpty());
         assertFalse(channel.finishAndReleaseAll());
+    }
+
+    @Test(expected = DecoderException.class)
+    public void testWhitespaceNotAllowedBetweenHeaderFieldNameAndColon() {
+        EmbeddedChannel channel = newEmbeddedChannel();
+        try {
+            byte[] beforeContentBytes = ("HTTP/1.1 200 OK\r\n" +
+                    "Transfer-Encoding : chunked\r\n" +
+                    "Host: servicetalk.io\r\n\r\n").getBytes(US_ASCII);
+
+            assertTrue(channel.writeInbound(wrappedBuffer(beforeContentBytes)));
+            channel.readInbound();
+        } finally {
+            channel.finishAndReleaseAll();
+        }
     }
 
     @Test

@@ -101,9 +101,9 @@ public class HttpRequestDecoderTest {
         byte[] content = new byte[128];
         ThreadLocalRandom.current().nextBytes(content);
         byte[] beforeContentBytes = ("GET /some/path?foo=bar&baz=yyy HTTP/1.1" + "\r\n" +
-                " Connection :  keep-alive " + "\r\n" +
-                "  User-Agent  :        unit-test        " + "\r\n" +
-                "   Content-Length  : " + content.length + "\r\n" + "\r\n").getBytes(US_ASCII);
+                " Connection:  keep-alive " + "\r\n" +
+                "  User-Agent:        unit-test        " + "\r\n" +
+                "   Content-Length: " + content.length + "\r\n" + "\r\n").getBytes(US_ASCII);
         assertTrue(channel.writeInbound(wrappedBuffer(beforeContentBytes)));
         assertTrue(channel.writeInbound(wrappedBuffer(content)));
 
@@ -134,8 +134,8 @@ public class HttpRequestDecoderTest {
         byte[] content = new byte[128];
         ThreadLocalRandom.current().nextBytes(content);
         byte[] beforeContentBytes = ("GET /some/path?foo=bar&baz=yyy HTTP/1.1" + "\r\n" +
-                "Connection   :keep-alive" + "\r\n" +
-                "   User-Agent   :unit-test" + "\r\n" +
+                "Connection:keep-alive" + "\r\n" +
+                "   User-Agent:unit-test" + "\r\n" +
                 "Empty:" + "\r\n" +
                 "EmptyWhitespace:   " + "\r\n" +
                 "SingleCharacterNoWhiteSpace: a" + "\r\n" +
@@ -327,6 +327,21 @@ public class HttpRequestDecoderTest {
         expectedException.expect(instanceOf(DecoderException.class));
         expectedException.expectCause(instanceOf(IllegalArgumentException.class));
         channel.writeInbound(wrappedBuffer(content));
+    }
+
+    @Test(expected = DecoderException.class)
+    public void testWhitespaceNotAllowedBetweenHeaderFieldNameAndColon() {
+        EmbeddedChannel channel = newEmbeddedChannel();
+        try {
+            byte[] beforeContentBytes = ("GET /some/path HTTP/1.1\r\n" +
+                    "Transfer-Encoding : chunked\r\n" +
+                    "Host: servicetalk.io\r\n\r\n").getBytes(US_ASCII);
+
+            assertTrue(channel.writeInbound(wrappedBuffer(beforeContentBytes)));
+            channel.readInbound();
+        } finally {
+            channel.finishAndReleaseAll();
+        }
     }
 
     @Test(expected = DecoderException.class)
