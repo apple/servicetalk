@@ -39,9 +39,11 @@ io.servicetalk.opentracing.inmemory.api
 io.servicetalk.opentracing.internal
 io.servicetalk.opentracing.log4j2
 io.servicetalk.opentracing.zipkin.publisher
+io.servicetalk.router.api
 io.servicetalk.serialization.api
 io.servicetalk.tcp.netty.internal
 io.servicetalk.test.resources
 io.servicetalk.transport.api
 io.servicetalk.transport.netty
 io.servicetalk.transport.netty.internal
+io.servicetalk.utils.internal
