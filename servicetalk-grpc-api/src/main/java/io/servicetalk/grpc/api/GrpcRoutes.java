@@ -208,7 +208,7 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
             final String path, final GrpcExecutionStrategy executionStrategy,
             final StreamingRoute<Req, Resp> route, final Class<Req> requestClass,
             final Class<Resp> responseClass, final GrpcSerializationProvider serializationProvider) {
-        routeBuilder.addStreamingRoute(path, null, route, requestClass, responseClass,
+        routeBuilder.addStreamingRoute(path, executionStrategy, route, requestClass, responseClass,
                 serializationProvider);
     }
 
@@ -446,6 +446,7 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
      * @param <Req> Type of request.
      * @param <Resp> Type of response.
      */
+    @FunctionalInterface
     protected interface Route<Req, Resp> extends AsyncCloseable {
 
         /**
@@ -461,6 +462,35 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
         default Completable closeAsync() {
             return completed();
         }
+
+        /**
+         * Convenience method to wrap a raw {@link Route} instance with a passed detached close implementation
+         * of {@link AsyncCloseable}.
+         *
+         * @param rawRoute {@link Route} instance that has a detached close implementation.
+         * @param closeable {@link AsyncCloseable} implementation for the passed {@code rawRoute}.
+         * @param <Req> Type of request.
+         * @param <Resp> Type of response.
+         * @return A new {@link Route} that attaches the passed {@code closeable} to the passed {@code rawRoute}.
+         */
+        static <Req, Resp> Route<Req, Resp> wrap(final Route<Req, Resp> rawRoute, final AsyncCloseable closeable) {
+            return new Route<Req, Resp>() {
+                @Override
+                public Single<Resp> handle(final GrpcServiceContext ctx, final Req request) {
+                    return rawRoute.handle(ctx, request);
+                }
+
+                @Override
+                public Completable closeAsync() {
+                    return closeable.closeAsync();
+                }
+
+                @Override
+                public Completable closeAsyncGracefully() {
+                    return closeable.closeAsyncGracefully();
+                }
+            };
+        }
     }
 
     /**
@@ -469,6 +499,7 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
      * @param <Req> Type of request.
      * @param <Resp> Type of response.
      */
+    @FunctionalInterface
     protected interface StreamingRoute<Req, Resp> extends AsyncCloseable {
 
         /**
@@ -484,6 +515,37 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
         default Completable closeAsync() {
             return completed();
         }
+
+        /**
+         * Convenience method to wrap a raw {@link StreamingRoute} instance with a passed detached close implementation
+         * of {@link AsyncCloseable}.
+         *
+         * @param rawRoute {@link StreamingRoute} instance that has a detached close implementation.
+         * @param closeable {@link AsyncCloseable} implementation for the passed {@code rawRoute}.
+         * @param <Req> Type of request.
+         * @param <Resp> Type of response.
+         * @return A new {@link StreamingRoute} that attaches the passed {@code closeable} to the passed
+         * {@code rawRoute}.
+         */
+        static <Req, Resp> StreamingRoute<Req, Resp> wrap(final StreamingRoute<Req, Resp> rawRoute,
+                                                          final AsyncCloseable closeable) {
+            return new StreamingRoute<Req, Resp>() {
+                @Override
+                public Publisher<Resp> handle(final GrpcServiceContext ctx, final Publisher<Req> request) {
+                    return rawRoute.handle(ctx, request);
+                }
+
+                @Override
+                public Completable closeAsync() {
+                    return closeable.closeAsync();
+                }
+
+                @Override
+                public Completable closeAsyncGracefully() {
+                    return closeable.closeAsyncGracefully();
+                }
+            };
+        }
     }
 
     /**
@@ -492,6 +554,7 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
      * @param <Req> Type of request.
      * @param <Resp> Type of response.
      */
+    @FunctionalInterface
     protected interface RequestStreamingRoute<Req, Resp>
             extends AsyncCloseable {
 
@@ -508,6 +571,37 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
         default Completable closeAsync() {
             return completed();
         }
+
+        /**
+         * Convenience method to wrap a raw {@link RequestStreamingRoute} instance with a passed detached close
+         * implementation of {@link AsyncCloseable}.
+         *
+         * @param rawRoute {@link RequestStreamingRoute} instance that has a detached close implementation.
+         * @param closeable {@link AsyncCloseable} implementation for the passed {@code rawRoute}.
+         * @param <Req> Type of request.
+         * @param <Resp> Type of response.
+         * @return A new {@link RequestStreamingRoute} that attaches the passed {@code closeable} to the passed
+         * {@code rawRoute}.
+         */
+        static <Req, Resp> RequestStreamingRoute<Req, Resp> wrap(final RequestStreamingRoute<Req, Resp> rawRoute,
+                                                                 final AsyncCloseable closeable) {
+            return new RequestStreamingRoute<Req, Resp>() {
+                @Override
+                public Single<Resp> handle(final GrpcServiceContext ctx, final Publisher<Req> request) {
+                    return rawRoute.handle(ctx, request);
+                }
+
+                @Override
+                public Completable closeAsync() {
+                    return closeable.closeAsync();
+                }
+
+                @Override
+                public Completable closeAsyncGracefully() {
+                    return closeable.closeAsyncGracefully();
+                }
+            };
+        }
     }
 
     /**
@@ -516,6 +610,7 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
      * @param <Req> Type of request.
      * @param <Resp> Type of response.
      */
+    @FunctionalInterface
     protected interface ResponseStreamingRoute<Req, Resp>
             extends AsyncCloseable {
 
@@ -532,6 +627,37 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
         default Completable closeAsync() {
             return completed();
         }
+
+        /**
+         * Convenience method to wrap a raw {@link ResponseStreamingRoute} instance with a passed detached close
+         * implementation of {@link AsyncCloseable}.
+         *
+         * @param rawRoute {@link ResponseStreamingRoute} instance that has a detached close implementation.
+         * @param closeable {@link AsyncCloseable} implementation for the passed {@code rawRoute}.
+         * @param <Req> Type of request.
+         * @param <Resp> Type of response.
+         * @return A new {@link ResponseStreamingRoute} that attaches the passed {@code closeable} to the passed
+         * {@code rawRoute}.
+         */
+        static <Req, Resp> ResponseStreamingRoute<Req, Resp> wrap(final ResponseStreamingRoute<Req, Resp> rawRoute,
+                                                                  final AsyncCloseable closeable) {
+            return new ResponseStreamingRoute<Req, Resp>() {
+                @Override
+                public Publisher<Resp> handle(final GrpcServiceContext ctx, final Req request) {
+                    return rawRoute.handle(ctx, request);
+                }
+
+                @Override
+                public Completable closeAsync() {
+                    return closeable.closeAsync();
+                }
+
+                @Override
+                public Completable closeAsyncGracefully() {
+                    return closeable.closeAsyncGracefully();
+                }
+            };
+        }
     }
 
     /**
@@ -540,6 +666,7 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
      * @param <Req> Type of request.
      * @param <Resp> Type of response.
      */
+    @FunctionalInterface
     protected interface BlockingRoute<Req, Resp>
             extends GracefulAutoCloseable {
         /**
@@ -553,8 +680,39 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
         Resp handle(GrpcServiceContext ctx, Req request) throws Exception;
 
         @Override
-        default void close() {
+        default void close() throws Exception {
             // No op
+        }
+
+        /**
+         * Convenience method to wrap a raw {@link BlockingRoute} instance with a passed detached close
+         * implementation of {@link GracefulAutoCloseable}.
+         *
+         * @param rawRoute {@link BlockingRoute} instance that has a detached close implementation.
+         * @param closeable {@link GracefulAutoCloseable} implementation for the passed {@code rawRoute}.
+         * @param <Req> Type of request.
+         * @param <Resp> Type of response.
+         * @return A new {@link BlockingRoute} that attaches the passed {@code closeable} to the passed
+         * {@code rawRoute}.
+         */
+        static <Req, Resp> BlockingRoute<Req, Resp> wrap(final BlockingRoute<Req, Resp> rawRoute,
+                                                         final GracefulAutoCloseable closeable) {
+            return new BlockingRoute<Req, Resp>() {
+                @Override
+                public Resp handle(final GrpcServiceContext ctx, final Req request) throws Exception {
+                    return rawRoute.handle(ctx, request);
+                }
+
+                @Override
+                public void close() throws Exception {
+                    closeable.close();
+                }
+
+                @Override
+                public void closeGracefully() throws Exception {
+                    closeable.closeGracefully();
+                }
+            };
         }
     }
 
@@ -564,6 +722,7 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
      * @param <Req> Type of request.
      * @param <Resp> Type of response.
      */
+    @FunctionalInterface
     protected interface BlockingStreamingRoute<Req, Resp>
             extends GracefulAutoCloseable {
 
@@ -579,8 +738,40 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
                     GrpcPayloadWriter<Resp> responseWriter) throws Exception;
 
         @Override
-        default void close() {
+        default void close() throws Exception {
             // No op
+        }
+
+        /**
+         * Convenience method to wrap a raw {@link BlockingStreamingRoute} instance with a passed detached close
+         * implementation of {@link GracefulAutoCloseable}.
+         *
+         * @param rawRoute {@link BlockingStreamingRoute} instance that has a detached close implementation.
+         * @param closeable {@link GracefulAutoCloseable} implementation for the passed {@code rawRoute}.
+         * @param <Req> Type of request.
+         * @param <Resp> Type of response.
+         * @return A new {@link BlockingStreamingRoute} that attaches the passed {@code closeable} to the passed
+         * {@code rawRoute}.
+         */
+        static <Req, Resp> BlockingStreamingRoute<Req, Resp> wrap(final BlockingStreamingRoute<Req, Resp> rawRoute,
+                                                                  final GracefulAutoCloseable closeable) {
+            return new BlockingStreamingRoute<Req, Resp>() {
+                @Override
+                public void handle(final GrpcServiceContext ctx, final BlockingIterable<Req> request,
+                                   final GrpcPayloadWriter<Resp> responseWriter) throws Exception {
+                    rawRoute.handle(ctx, request, responseWriter);
+                }
+
+                @Override
+                public void close() throws Exception {
+                    closeable.close();
+                }
+
+                @Override
+                public void closeGracefully() throws Exception {
+                    closeable.closeGracefully();
+                }
+            };
         }
     }
 
@@ -590,6 +781,7 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
      * @param <Req> Type of request.
      * @param <Resp> Type of response.
      */
+    @FunctionalInterface
     protected interface BlockingRequestStreamingRoute<Req, Resp>
             extends GracefulAutoCloseable {
 
@@ -604,8 +796,39 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
         Resp handle(GrpcServiceContext ctx, BlockingIterable<Req> request) throws Exception;
 
         @Override
-        default void close() {
+        default void close() throws Exception {
             // No op
+        }
+
+        /**
+         * Convenience method to wrap a raw {@link BlockingRequestStreamingRoute} instance with a passed detached close
+         * implementation of {@link GracefulAutoCloseable}.
+         *
+         * @param rawRoute {@link BlockingRequestStreamingRoute} instance that has a detached close implementation.
+         * @param closeable {@link GracefulAutoCloseable} implementation for the passed {@code rawRoute}.
+         * @param <Req> Type of request.
+         * @param <Resp> Type of response.
+         * @return A new {@link BlockingRequestStreamingRoute} that attaches the passed {@code closeable} to the passed
+         * {@code rawRoute}.
+         */
+        static <Req, Resp> BlockingRequestStreamingRoute<Req, Resp> wrap(
+                final BlockingRequestStreamingRoute<Req, Resp> rawRoute, final GracefulAutoCloseable closeable) {
+            return new BlockingRequestStreamingRoute<Req, Resp>() {
+                @Override
+                public Resp handle(final GrpcServiceContext ctx, final BlockingIterable<Req> request) throws Exception {
+                    return rawRoute.handle(ctx, request);
+                }
+
+                @Override
+                public void close() throws Exception {
+                    closeable.close();
+                }
+
+                @Override
+                public void closeGracefully() throws Exception {
+                    closeable.closeGracefully();
+                }
+            };
         }
     }
 
@@ -615,6 +838,7 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
      * @param <Req> Type of request.
      * @param <Resp> Type of response.
      */
+    @FunctionalInterface
     protected interface BlockingResponseStreamingRoute<Req, Resp>
             extends GracefulAutoCloseable {
 
@@ -629,8 +853,40 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
         void handle(GrpcServiceContext ctx, Req request, GrpcPayloadWriter<Resp> responseWriter) throws Exception;
 
         @Override
-        default void close() {
+        default void close() throws Exception {
             // No op
+        }
+
+        /**
+         * Convenience method to wrap a raw {@link BlockingResponseStreamingRoute} instance with a passed detached close
+         * implementation of {@link GracefulAutoCloseable}.
+         *
+         * @param rawRoute {@link BlockingResponseStreamingRoute} instance that has a detached close implementation.
+         * @param closeable {@link GracefulAutoCloseable} implementation for the passed {@code rawRoute}.
+         * @param <Req> Type of request.
+         * @param <Resp> Type of response.
+         * @return A new {@link BlockingResponseStreamingRoute} that attaches the passed {@code closeable} to the passed
+         * {@code rawRoute}.
+         */
+        static <Req, Resp> BlockingResponseStreamingRoute<Req, Resp> wrap(
+                final BlockingResponseStreamingRoute<Req, Resp> rawRoute, final GracefulAutoCloseable closeable) {
+            return new BlockingResponseStreamingRoute<Req, Resp>() {
+                @Override
+                public void handle(final GrpcServiceContext ctx, final Req request,
+                                   final GrpcPayloadWriter<Resp> responseWriter) throws Exception {
+                    rawRoute.handle(ctx, request, responseWriter);
+                }
+
+                @Override
+                public void close() throws Exception {
+                    closeable.close();
+                }
+
+                @Override
+                public void closeGracefully() throws Exception {
+                    closeable.closeGracefully();
+                }
+            };
         }
     }
 

@@ -21,9 +21,9 @@ import io.servicetalk.concurrent.api.Completable;
 import static io.servicetalk.concurrent.api.Completable.completed;
 
 /**
- * A <a href="https://www.grpc.io">gRPC</a> service.
+ * A contract for generated RPC method interface.
  */
-public interface GrpcService extends AsyncCloseable {
+public interface Rpc extends AsyncCloseable {
     @Override
     default Completable closeAsync() {
         return completed();

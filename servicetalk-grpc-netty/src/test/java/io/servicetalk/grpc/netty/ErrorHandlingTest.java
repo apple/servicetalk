@@ -65,6 +65,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
+import static io.servicetalk.concurrent.api.Completable.completed;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.concurrent.internal.PlatformDependent.throwException;
@@ -135,7 +136,7 @@ public class ErrorHandlingTest {
         this.testMode = testMode;
         cannedResponse = TestResponse.newBuilder().setMessage("foo").build();
         ServiceFactory serviceFactory;
-        TesterService filter = mock(TesterService.class);
+        TesterService filter = mockTesterService();
         StreamingHttpServiceFilterFactory serviceFilterFactory = IDENTITY_FILTER;
         StreamingHttpClientFilterFactory clientFilterFactory = IDENTITY_CLIENT_FILTER;
         switch (testMode) {
@@ -230,7 +231,7 @@ public class ErrorHandlingTest {
 
     private ServiceFactory configureFilter(final TesterService filter) {
         final ServiceFactory serviceFactory;
-        final TesterService service = mock(TesterService.class);
+        final TesterService service = mockTesterService();
         serviceFactory = new ServiceFactory(service);
         serviceFactory.appendServiceFilter(original ->
                 new ErrorSimulatingTesterServiceFilter(original, filter));
@@ -265,7 +266,7 @@ public class ErrorHandlingTest {
     }
 
     private ServiceFactory setupForServiceThrows(final Throwable toThrow) {
-        final TesterService service = mock(TesterService.class);
+        final TesterService service = mockTesterService();
         setupForServiceThrows(service, toThrow);
         return new ServiceFactory(service);
     }
@@ -278,7 +279,7 @@ public class ErrorHandlingTest {
     }
 
     private ServiceFactory setupForServiceEmitsError(final Throwable toThrow) {
-        final TesterService service = mock(TesterService.class);
+        final TesterService service = mockTesterService();
         setupForServiceEmitsError(service, toThrow);
         return new ServiceFactory(service);
     }
@@ -291,7 +292,7 @@ public class ErrorHandlingTest {
     }
 
     private ServiceFactory setupForServiceEmitsDataThenError(final Throwable toThrow) {
-        final TesterService service = mock(TesterService.class);
+        final TesterService service = mockTesterService();
         setupForServiceEmitsDataThenError(service, toThrow);
         return new ServiceFactory(service);
     }
@@ -418,6 +419,13 @@ public class ErrorHandlingTest {
         } catch (GrpcStatusException e) {
             assertThat("Unexpected grpc status.", e.status().code(), equalTo(expectedStatus()));
         }
+    }
+
+    private TesterService mockTesterService() {
+        TesterService filter = mock(TesterService.class);
+        when(filter.closeAsync()).thenReturn(completed());
+        when(filter.closeAsyncGracefully()).thenReturn(completed());
+        return filter;
     }
 
     private void verifyStreamingResponse(final BlockingIterator<TestResponse> resp) {

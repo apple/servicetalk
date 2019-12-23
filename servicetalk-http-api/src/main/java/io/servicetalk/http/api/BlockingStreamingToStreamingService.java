@@ -164,6 +164,11 @@ final class BlockingStreamingToStreamingService extends AbstractServiceAdapterHo
         return blockingToCompletable(original::close);
     }
 
+    @Override
+    public Completable closeAsyncGracefully() {
+        return blockingToCompletable(original::closeGracefully);
+    }
+
     private static final class BufferHttpPayloadWriter implements HttpPayloadWriter<Buffer> {
 
         private static final AtomicIntegerFieldUpdater<BufferHttpPayloadWriter> subscriberCompleteUpdater =

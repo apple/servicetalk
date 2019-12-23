@@ -15,17 +15,14 @@
  */
 package io.servicetalk.grpc.api;
 
-import io.servicetalk.concurrent.api.AsyncCloseable;
-import io.servicetalk.concurrent.api.Completable;
-
-import static io.servicetalk.concurrent.api.Completable.completed;
+import io.servicetalk.concurrent.GracefulAutoCloseable;
 
 /**
- * A <a href="https://www.grpc.io">gRPC</a> service.
+ * A contract for generated blocking RPC method interface.
  */
-public interface GrpcService extends AsyncCloseable {
+public interface BlockingRpc extends GracefulAutoCloseable {
     @Override
-    default Completable closeAsync() {
-        return completed();
+    default void close() throws Exception {
+        // noop
     }
 }
