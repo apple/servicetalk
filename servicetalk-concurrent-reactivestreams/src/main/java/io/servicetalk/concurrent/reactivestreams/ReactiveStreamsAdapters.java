@@ -44,7 +44,7 @@ public final class ReactiveStreamsAdapters {
      * @return A {@link Publisher} representation of the passed {@link org.reactivestreams.Publisher}.
      */
     public static <T> Publisher<T> fromReactiveStreamsPublisher(org.reactivestreams.Publisher<T> source) {
-        return new RSPublisherToPublisher<>(source);
+        return new RsToStPublisher<>(source);
     }
 
     /**
@@ -54,10 +54,10 @@ public final class ReactiveStreamsAdapters {
      *
      * @param publisher {@link Publisher} to convert to a {@link Publisher}.
      * @param <T> Type of items emitted from the {@code source} and the returned {@link Publisher}.
-     * @return A {@link Publisher} representation of the passed {@link PublisherSource}.
+     * @return A {@link org.reactivestreams.Publisher} representation of the passed {@link Publisher}.
      */
     public static <T> org.reactivestreams.Publisher<T> toReactiveStreamsPublisher(Publisher<T> publisher) {
-        return new PublisherToRSPublisher<>(publisher);
+        return new StToRsPublisher<>(toSource(publisher));
     }
 
     /**
@@ -70,39 +70,26 @@ public final class ReactiveStreamsAdapters {
      * @return A {@link org.reactivestreams.Publisher} representation of the passed {@link PublisherSource}.
      */
     public static <T> org.reactivestreams.Publisher<T> toReactiveStreamsPublisher(PublisherSource<T> source) {
-        return new PublisherSourceToRSPublisher<>(source);
+        return new StToRsPublisher<>(source);
     }
 
-    private static final class PublisherToRSPublisher<T> implements org.reactivestreams.Publisher<T> {
+    private static final class StToRsPublisher<T> implements org.reactivestreams.Publisher<T> {
         private final PublisherSource<T> source;
 
-        PublisherToRSPublisher(final Publisher<T> source) {
-            this.source = toSource(requireNonNull(source));
-        }
-
-        @Override
-        public void subscribe(final Subscriber<? super T> subscriber) {
-            source.subscribe(new ReactiveStreamsSubscriber<>(subscriber));
-        }
-    }
-
-    private static final class PublisherSourceToRSPublisher<T> implements org.reactivestreams.Publisher<T> {
-        private final PublisherSource<T> source;
-
-        PublisherSourceToRSPublisher(final PublisherSource<T> source) {
+        StToRsPublisher(final PublisherSource<T> source) {
             this.source = requireNonNull(source);
         }
 
         @Override
         public void subscribe(final Subscriber<? super T> subscriber) {
-            source.subscribe(new ReactiveStreamsSubscriber<>(subscriber));
+            source.subscribe(new RsToStSubscriber<>(subscriber));
         }
     }
 
-    private static final class ReactiveStreamsSubscriber<T> implements PublisherSource.Subscriber<T> {
+    private static final class RsToStSubscriber<T> implements PublisherSource.Subscriber<T> {
         private final Subscriber<? super T> subscriber;
 
-        ReactiveStreamsSubscriber(final Subscriber<? super T> subscriber) {
+        RsToStSubscriber(final Subscriber<? super T> subscriber) {
             this.subscriber = requireNonNull(subscriber);
         }
 
@@ -137,23 +124,23 @@ public final class ReactiveStreamsAdapters {
         }
     }
 
-    private static final class RSPublisherToPublisher<T> extends Publisher<T> {
+    private static final class RsToStPublisher<T> extends Publisher<T> {
         private final org.reactivestreams.Publisher<T> source;
 
-        RSPublisherToPublisher(final org.reactivestreams.Publisher<T> source) {
+        RsToStPublisher(final org.reactivestreams.Publisher<T> source) {
             this.source = requireNonNull(source);
         }
 
         @Override
         protected void handleSubscribe(final PublisherSource.Subscriber<? super T> subscriber) {
-            source.subscribe(new RsToSTSubscriber<>(subscriber));
+            source.subscribe(new StToRsSubscriber<>(subscriber));
         }
     }
 
-    private static final class RSToSTSubscription implements PublisherSource.Subscription {
+    private static final class RsToStSubscription implements PublisherSource.Subscription {
         private final Subscription s;
 
-        RSToSTSubscription(final Subscription s) {
+        RsToStSubscription(final Subscription s) {
             this.s = s;
         }
 
@@ -168,16 +155,16 @@ public final class ReactiveStreamsAdapters {
         }
     }
 
-    private static final class RsToSTSubscriber<T> implements Subscriber<T> {
+    private static final class StToRsSubscriber<T> implements Subscriber<T> {
         private final PublisherSource.Subscriber<? super T> subscriber;
 
-        RsToSTSubscriber(final PublisherSource.Subscriber<? super T> subscriber) {
+        StToRsSubscriber(final PublisherSource.Subscriber<? super T> subscriber) {
             this.subscriber = subscriber;
         }
 
         @Override
         public void onSubscribe(final Subscription s) {
-            subscriber.onSubscribe(new RSToSTSubscription(s));
+            subscriber.onSubscribe(new RsToStSubscription(s));
         }
 
         @Override

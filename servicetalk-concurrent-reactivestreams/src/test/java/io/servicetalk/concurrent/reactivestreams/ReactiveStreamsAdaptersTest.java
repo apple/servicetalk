@@ -95,8 +95,7 @@ public class ReactiveStreamsAdaptersTest {
     @Test
     public void toRSFromSourceSuccess() {
         PublisherSource<Integer> source = s -> s.onSubscribe(new ScalarValueSubscription<>(1, s));
-        Subscriber<Integer> subscriber = toRSPublisherFromSourceAndSubscribe(source);
-        verifyRSSuccess(subscriber);
+        verifyRSSuccess(toRSPublisherFromSourceAndSubscribe(source));
     }
 
     private void verifyRSSuccess(final Subscriber<Integer> subscriber) {
