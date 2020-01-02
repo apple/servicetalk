@@ -68,7 +68,7 @@ exit1
     outputFile.executable = true
   }
 }
-classes.finalizedBy(buildExecutable)
+tasks.compileJava.finalizedBy(buildExecutable)
 
 publishing {
   publications {
