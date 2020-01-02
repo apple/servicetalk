@@ -45,7 +45,7 @@ public final class JdkFlowAdapters {
      * @return A {@link Publisher} representation of the passed {@link java.util.concurrent.Flow.Publisher}.
      */
     public static <T> Publisher<T> fromFlowPublisher(java.util.concurrent.Flow.Publisher<T> source) {
-        return new FlowPublisherToPublisher<>(source);
+        return new FlowToStPublisher<>(source);
     }
 
     /**
@@ -55,10 +55,10 @@ public final class JdkFlowAdapters {
      *
      * @param publisher {@link Publisher} to convert to a {@link Publisher}.
      * @param <T> Type of items emitted from the {@code source} and the returned {@link Publisher}.
-     * @return A {@link Publisher} representation of the passed {@link PublisherSource}.
+     * @return A {@link java.util.concurrent.Flow.Publisher} representation of the passed {@link Publisher}.
      */
     public static <T> java.util.concurrent.Flow.Publisher<T> toFlowPublisher(Publisher<T> publisher) {
-        return new PublisherToFlowPublisher<>(publisher);
+        return new StToFlowPublisher<>(toSource(publisher));
     }
 
     /**
@@ -72,39 +72,26 @@ public final class JdkFlowAdapters {
      * @return A {@link java.util.concurrent.Flow.Publisher} representation of the passed {@link PublisherSource}.
      */
     public static <T> java.util.concurrent.Flow.Publisher<T> toFlowPublisher(PublisherSource<T> source) {
-        return new PublisherSourceToFlowPublisher<>(source);
+        return new StToFlowPublisher<>(source);
     }
 
-    private static final class PublisherToFlowPublisher<T> implements java.util.concurrent.Flow.Publisher<T> {
+    private static final class StToFlowPublisher<T> implements java.util.concurrent.Flow.Publisher<T> {
         private final PublisherSource<T> source;
 
-        PublisherToFlowPublisher(final Publisher<T> source) {
-            this.source = toSource(requireNonNull(source));
-        }
-
-        @Override
-        public void subscribe(final Subscriber<? super T> subscriber) {
-            source.subscribe(new FlowSubscriber<>(subscriber));
-        }
-    }
-
-    private static final class PublisherSourceToFlowPublisher<T> implements java.util.concurrent.Flow.Publisher<T> {
-        private final PublisherSource<T> source;
-
-        PublisherSourceToFlowPublisher(final PublisherSource<T> source) {
+        StToFlowPublisher(final PublisherSource<T> source) {
             this.source = requireNonNull(source);
         }
 
         @Override
         public void subscribe(final Subscriber<? super T> subscriber) {
-            source.subscribe(new FlowSubscriber<>(subscriber));
+            source.subscribe(new FlowToStSubscriber<>(subscriber));
         }
     }
 
-    private static final class FlowSubscriber<T> implements PublisherSource.Subscriber<T> {
+    private static final class FlowToStSubscriber<T> implements PublisherSource.Subscriber<T> {
         private final Subscriber<? super T> subscriber;
 
-        FlowSubscriber(final Subscriber<? super T> subscriber) {
+        FlowToStSubscriber(final Subscriber<? super T> subscriber) {
             this.subscriber = requireNonNull(subscriber);
         }
 
@@ -139,16 +126,16 @@ public final class JdkFlowAdapters {
         }
     }
 
-    private static final class FlowPublisherToPublisher<T> extends Publisher<T> {
+    private static final class FlowToStPublisher<T> extends Publisher<T> {
         private final java.util.concurrent.Flow.Publisher<T> source;
 
-        FlowPublisherToPublisher(final java.util.concurrent.Flow.Publisher<T> source) {
+        FlowToStPublisher(final java.util.concurrent.Flow.Publisher<T> source) {
             this.source = requireNonNull(source);
         }
 
         @Override
         protected void handleSubscribe(final PublisherSource.Subscriber<? super T> subscriber) {
-            source.subscribe(new FlowToSTSubscriber<>(subscriber));
+            source.subscribe(new StToFlowSubscriber<>(subscriber));
         }
     }
 
@@ -170,10 +157,10 @@ public final class JdkFlowAdapters {
         }
     }
 
-    private static final class FlowToSTSubscriber<T> implements Subscriber<T> {
+    private static final class StToFlowSubscriber<T> implements Subscriber<T> {
         private final PublisherSource.Subscriber<? super T> subscriber;
 
-        FlowToSTSubscriber(final PublisherSource.Subscriber<? super T> subscriber) {
+        StToFlowSubscriber(final PublisherSource.Subscriber<? super T> subscriber) {
             this.subscriber = subscriber;
         }
 

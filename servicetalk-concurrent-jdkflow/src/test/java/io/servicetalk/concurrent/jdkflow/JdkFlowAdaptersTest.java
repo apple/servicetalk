@@ -95,8 +95,7 @@ public class JdkFlowAdaptersTest {
     @Test
     public void toFlowFromSourceSuccess() {
         PublisherSource<Integer> source = s -> s.onSubscribe(new ScalarValueSubscription<>(1, s));
-        Subscriber<Integer> subscriber = toFlowPublisherFromSourceAndSubscribe(source);
-        verifyFlowSuccess(subscriber);
+        verifyFlowSuccess(toFlowPublisherFromSourceAndSubscribe(source));
     }
 
     private void verifyFlowSuccess(final Subscriber<Integer> subscriber) {
@@ -152,7 +151,7 @@ public class JdkFlowAdaptersTest {
 
     private Subscriber<Integer> toFlowPublisherAndSubscribe(
             final io.servicetalk.concurrent.api.Publisher<Integer> stPublisher) {
-        Publisher<Integer> flowPublisher = JdkFlowAdapters.toFlowPublisher(stPublisher);
+        Publisher<Integer> flowPublisher = toFlowPublisher(stPublisher);
         return subscribeToFlowPublisher(flowPublisher);
     }
 

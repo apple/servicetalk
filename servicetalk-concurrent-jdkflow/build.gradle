@@ -39,13 +39,4 @@ dependencies {
     testImplementation "junit:junit:$junitVersion"
     testImplementation "org.mockito:mockito-core:$mockitoCoreVersion"
     testImplementation "org.hamcrest:hamcrest-library:$hamcrestVersion"
-    testImplementation "org.reactivestreams:reactive-streams-tck-flow:$reactiveStreamsVersion"
-    testImplementation "org.testng:testng:$testngVersion"
 }
-
-// We need testng for the reactive-streams-tck
-task tck(type: Test) {
-    useTestNG()
-}
-
-test.dependsOn tck
