@@ -16,12 +16,15 @@
 package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.ByteProcessor;
+import io.servicetalk.serialization.api.SerializationException;
 
 import java.nio.charset.Charset;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.function.BiFunction;
+import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import javax.annotation.Nullable;
 
@@ -38,12 +41,13 @@ import static io.servicetalk.http.api.HttpHeaderValues.APPLICATION_X_WWW_FORM_UR
 import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
 import static io.servicetalk.http.api.HttpHeaderValues.TEXT_PLAIN;
 import static io.servicetalk.http.api.HttpHeaderValues.TEXT_PLAIN_UTF_8;
-import static io.servicetalk.http.api.NetUtil.isValidIpV4Address;
-import static io.servicetalk.http.api.NetUtil.isValidIpV6Address;
+import static io.servicetalk.http.api.NetUtils.isValidIpV4Address;
+import static io.servicetalk.http.api.NetUtils.isValidIpV6Address;
 import static java.lang.Math.min;
 import static java.lang.System.lineSeparator;
 import static java.nio.charset.Charset.availableCharsets;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.Arrays.asList;
 import static java.util.Collections.unmodifiableMap;
 import static java.util.regex.Pattern.CASE_INSENSITIVE;
 import static java.util.regex.Pattern.compile;
@@ -60,6 +64,17 @@ public final class HeaderUtils {
     static final int HASH_CODE_SEED = 0xc2b2ae35;
     public static final BiFunction<? super CharSequence, ? super CharSequence, CharSequence> DEFAULT_HEADER_FILTER =
             (k, v) -> "<filtered>";
+    private static final List<CharSequence> DEFAULT_DEBUG_HEADER_NAMES = asList(CONTENT_TYPE, CONTENT_LENGTH,
+            TRANSFER_ENCODING);
+    static final BiFunction<? super CharSequence, ? super CharSequence, CharSequence> DEFAULT_DEBUG_HEADER_FILTER =
+            (key, value) -> {
+                for (CharSequence headerName : DEFAULT_DEBUG_HEADER_NAMES) {
+                    if (contentEqualsIgnoreCase(key, headerName)) {
+                        return value;
+                    }
+                }
+                return "<filtered>";
+            };
     private static final ByteProcessor HEADER_NAME_VALIDATOR = value -> {
         validateHeaderNameToken(value);
         return true;
@@ -653,10 +668,10 @@ public final class HeaderUtils {
         }
 
         if (UTF_8.equals(expectedCharset) &&
-                (contentEqualsIgnoreCase(expectedContentType, TEXT_PLAIN) &&
+                ((contentEqualsIgnoreCase(expectedContentType, TEXT_PLAIN) &&
                         contentEqualsIgnoreCase(contentTypeHeader, TEXT_PLAIN_UTF_8)) ||
                 (contentEqualsIgnoreCase(expectedContentType, APPLICATION_X_WWW_FORM_URLENCODED) &&
-                        contentEqualsIgnoreCase(contentTypeHeader, APPLICATION_X_WWW_FORM_URLENCODED_UTF_8))) {
+                        contentEqualsIgnoreCase(contentTypeHeader, APPLICATION_X_WWW_FORM_URLENCODED_UTF_8)))) {
             return true;
         }
 
@@ -667,6 +682,19 @@ public final class HeaderUtils {
         }
         return pattern.matcher(contentTypeHeader.subSequence(expectedContentType.length(), contentTypeHeader.length()))
                 .matches();
+    }
+
+    /**
+     * Checks if the provider headers contain a {@code Content-Type} header that satisfies the supplied predicate.
+     *
+     * @param headers the {@link HttpHeaders} instance
+     * @param contentTypePredicate the content type predicate
+     */
+    static void checkContentType(final HttpHeaders headers, Predicate<HttpHeaders> contentTypePredicate) {
+        if (!contentTypePredicate.test(headers)) {
+            throw new SerializationException("Unexpected headers, can not deserialize. Headers: "
+                    + headers.toString(DEFAULT_DEBUG_HEADER_FILTER));
+        }
     }
 
     private static Pattern compileCharsetRegex(String charsetName) {

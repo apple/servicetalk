@@ -39,7 +39,7 @@ import java.util.ArrayDeque;
 
 import static io.netty.handler.codec.http.HttpConstants.SP;
 import static io.servicetalk.buffer.netty.BufferAllocators.PREFER_DIRECT_ALLOCATOR;
-import static io.servicetalk.buffer.netty.BufferUtil.toByteBuf;
+import static io.servicetalk.buffer.netty.BufferUtils.toByteBuf;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.netty.HttpObjectEncoder.CRLF_SHORT;
 import static io.servicetalk.http.netty.HttpUtils.status;
@@ -83,10 +83,8 @@ public class HttpResponseDecoderBenchmark {
         responseBuffer.writeShort(CRLF_SHORT);
         responseByteBuf = toByteBuf(responseBuffer.slice());
 
-        final HttpResponseDecoder decoder = new HttpResponseDecoder(new ArrayDeque<>(),
-                DefaultHttpHeadersFactory.INSTANCE, 8192, 8192);
-        decoder.setDiscardAfterReads(1);
-        channel = new EmbeddedChannel(decoder);
+        channel = new EmbeddedChannel(new HttpResponseDecoder(new ArrayDeque<>(),
+                DefaultHttpHeadersFactory.INSTANCE, 8192, 8192));
     }
 
     @Benchmark

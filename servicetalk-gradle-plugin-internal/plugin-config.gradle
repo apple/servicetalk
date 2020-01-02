@@ -28,15 +28,15 @@ dependencies {
 gradlePlugin {
   plugins {
     serviceTalkCorePlugin {
-      id = "servicetalk-core"
+      id = "io.servicetalk.servicetalk-gradle-plugin-internal-core"
       implementationClass = "io.servicetalk.gradle.plugin.internal.ServiceTalkCorePlugin"
     }
     serviceTalkRootPlugin {
-      id = "servicetalk-root"
+      id = "io.servicetalk.servicetalk-gradle-plugin-internal-root"
       implementationClass = "io.servicetalk.gradle.plugin.internal.ServiceTalkRootPlugin"
     }
     serviceTalkLibraryPlugin {
-      id = "servicetalk-library"
+      id = "io.servicetalk.servicetalk-gradle-plugin-internal-library"
       implementationClass = "io.servicetalk.gradle.plugin.internal.ServiceTalkLibraryPlugin"
     }
   }

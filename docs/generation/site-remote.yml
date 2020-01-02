@@ -29,39 +29,39 @@ content:
   sources:
     - url: https://github.com/apple/servicetalk.git
       branches: master
-      tags: [0.19.0]
+      tags: [0.19.0, 0.20.0, 0.21.0]
       start_path: docs
     - url: https://github.com/apple/servicetalk.git
       branches: master
-      tags: [0.19.0]
+      tags: [0.19.0, 0.20.0, 0.21.0]
       start_path: servicetalk-examples/docs
     - url: https://github.com/apple/servicetalk.git
       branches: master
-      tags: [0.19.0]
+      tags: [0.19.0, 0.20.0, 0.21.0]
       start_path: servicetalk-http-api/docs
     - url: https://github.com/apple/servicetalk.git
       branches: master
-      tags: [0.19.0]
+      tags: [0.19.0, 0.20.0, 0.21.0]
       start_path: servicetalk-http-router-jersey/docs
     - url: https://github.com/apple/servicetalk.git
       branches: master
-      tags: [0.19.0]
+      tags: [0.19.0, 0.20.0, 0.21.0]
       start_path: servicetalk-http-security-jersey/docs
     - url: https://github.com/apple/servicetalk.git
       branches: master
-      tags: [0.19.0]
+      tags: [0.19.0, 0.20.0, 0.21.0]
       start_path: servicetalk-concurrent-api/docs
     - url: https://github.com/apple/servicetalk.git
       branches: master
-      tags: [0.19.0]
+      tags: [0.19.0, 0.20.0, 0.21.0]
       start_path: servicetalk-data-jackson-jersey/docs
     - url: https://github.com/apple/servicetalk.git
       branches: master
-      tags: [0.19.0]
+      tags: [0.19.0, 0.20.0, 0.21.0]
       start_path: servicetalk-grpc-api/docs
     - url: https://github.com/apple/servicetalk.git
       branches: master
-      tags: []
+      tags: [0.20.0, 0.21.0]
       start_path: servicetalk-loadbalancer/docs
 asciidoc:
   attributes:

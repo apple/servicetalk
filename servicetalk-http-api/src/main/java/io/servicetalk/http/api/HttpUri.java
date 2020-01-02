@@ -26,7 +26,6 @@ import java.util.Objects;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.http.api.StringUtil.decodeHexByte;
 import static java.nio.charset.CodingErrorAction.REPLACE;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -449,6 +448,42 @@ final class HttpUri {
             strBuf.append(charBuf.flip());
         }
         return strBuf.toString();
+    }
+
+    /**
+     * Helper to decode half of a hexadecimal number from a string.
+     *
+     * @param c The ASCII character of the hexadecimal number to decode.
+     * Must be in the range {@code [0-9a-fA-F]}.
+     * @return The hexadecimal value represented in the ASCII character
+     * given, or {@code -1} if the character is invalid.
+     */
+    private static int decodeHexNibble(final char c) {
+        // Character.digit() is not used here, as it addresses a larger
+        // set of characters (both ASCII and full-width latin letters).
+        if (c >= '0' && c <= '9') {
+            return c - '0';
+        }
+        if (c >= 'A' && c <= 'F') {
+            return c - ('A' - 0xA);
+        }
+        if (c >= 'a' && c <= 'f') {
+            return c - ('a' - 0xA);
+        }
+        return -1;
+    }
+
+    /**
+     * Decode a 2-digit hex byte from within a string.
+     */
+    private static byte decodeHexByte(final CharSequence s, final int pos) {
+        final int hi = decodeHexNibble(s.charAt(pos));
+        final int lo = decodeHexNibble(s.charAt(pos + 1));
+        if (hi == -1 || lo == -1) {
+            throw new IllegalArgumentException(String.format(
+                    "invalid hex byte '%s' at index %d of '%s'", s.subSequence(pos, pos + 2), pos, s));
+        }
+        return (byte) ((hi << 4) + lo);
     }
 
     private static int parsePort(final String uri, final int begin, final int end) {

@@ -27,6 +27,7 @@ import org.slf4j.LoggerFactory;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -1085,6 +1086,42 @@ public abstract class Single<T> {
      */
     public static <T> Single<T> succeeded(@Nullable T value) {
         return new SucceededSingle<>(value);
+    }
+
+    /**
+     * Creates a {@link Single} which when subscribed will invoke {@link Callable#call()} on the passed
+     * {@link Callable} and emit the value returned by that invocation from the returned {@link Single}. Any error
+     * emitted by the {@link Callable} will terminate the returned {@link Single} with the same error.
+     * <p>
+     * Blocking inside {@link Callable#call()} will in turn block the subscribe call to the returned {@link Single}. If
+     * this behavior is undesirable then the returned {@link Single} should be offloaded using one of the operators that
+     * offloads the subscribe call (eg: {@link #subscribeOn(Executor)}, {@link #publishAndSubscribeOn(Executor)}).
+     *
+     * @param callable {@link Callable} which supplies the result of the {@link Single}.
+     * @param <T>      Type of the {@link Single}.
+     *
+     * @return A new {@link Single}.
+     */
+    public static <T> Single<T> fromCallable(final Callable<T> callable) {
+        return new CallableSingle<>(callable);
+    }
+
+    /**
+     * Creates a {@link Single} which when subscribed will invoke {@link Supplier#get()} on the passed
+     * {@link Supplier} and emit the value returned by that invocation from the returned {@link Single}. Any error
+     * emitted by the {@link Supplier} will terminate the returned {@link Single} with the same error.
+     * <p>
+     * Blocking inside {@link Supplier#get()} will in turn block the subscribe call to the returned {@link Single}. If
+     * this behavior is undesirable then the returned {@link Single} should be offloaded using one of the operators that
+     * offloads the subscribe call (eg: {@link #subscribeOn(Executor)}, {@link #publishAndSubscribeOn(Executor)}).
+     *
+     * @param supplier {@link Supplier} which supplies the result of the {@link Single}.
+     * @param <T>      Type of the {@link Single}.
+     *
+     * @return A new {@link Single}.
+     */
+    public static <T> Single<T> fromSupplier(final Supplier<T> supplier) {
+        return fromCallable(supplier::get);
     }
 
     /**

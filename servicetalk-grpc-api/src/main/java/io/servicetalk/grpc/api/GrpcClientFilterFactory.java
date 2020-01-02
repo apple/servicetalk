@@ -21,7 +21,8 @@ package io.servicetalk.grpc.api;
  * @param <Filter> Type for client filter
  * @param <FilterableClient> Type of filterable client.
  */
-public interface GrpcClientFilterFactory<Filter extends FilterableClient, FilterableClient> {
+public interface GrpcClientFilterFactory<Filter extends FilterableClient,
+        FilterableClient extends FilterableGrpcClient> {
 
     /**
      * Create a {@link Filter} using the provided {@link Filter}.

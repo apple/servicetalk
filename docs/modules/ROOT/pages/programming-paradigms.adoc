@@ -6,7 +6,8 @@ ifndef::env-github[]
 ifndef::source-root[:source-root: https://github.com/apple/servicetalk/blob/{page-origin-refname}]
 endif::[]
 
-== Programming Paradigms
+= Programming Paradigms
+
 When developing a new application it may not be clear if the complexity of asynchronous control flow is justified.
 Initially the scale may be relatively small, but over time the scale may grow. The scaling or response size
 characteristics may not be uniform for all APIs offered by the application (e.g. health check vs file serving).
@@ -15,27 +16,27 @@ complexity of asynchronous control flow in these cases. This can dramatically lo
 compared with most non-blocking I/O frameworks and avoid "application re-write" if scaling/data size characteristics
 change over time.
 
-=== Blocking vs Synchronous
+== Blocking vs Synchronous
 ServiceTalk APIs may use the term "blocking" in areas where the APIs may be identified as "synchronous". "blocking" in
 this context is meant to declare that the API "may block" the calling thread. This is done because there is no general
 way to determine if a method will return synchronously or block the calling thread, and "blocking" is the least common
 denominator.
 
 [#blocking-and-aggregated]
-=== Blocking and Aggregated
+== Blocking and Aggregated
 This API paradigm is similar to concepts from `java.io` and generally blocks the calling thread until all I/O is
 completed. The result is aggregated into a single object (e.g.
 link:https://docs.oracle.com/javase/8/docs/api/java/nio/file/Files.html#readAllLines-java.nio.file.Path-[Files.readAllLines]
 ).
 
-=== Blocking and Streaming
+== Blocking and Streaming
 This API paradigm is similar to concepts from `java.io` and generally blocks the calling thread until I/O is
 flushed/received. The result can be provided/processed in a streaming fashion (e.g.
 link:https://docs.oracle.com/javase/8/docs/api/java/io/InputStream.html[InputStream] or
 link:https://docs.oracle.com/javase/8/docs/api/java/io/OutputStream.html[OutputStream]) however processing each chunk of
 the stream may also block the calling thread.
 
-=== Asynchronous and Aggregated
+== Asynchronous and Aggregated
 This API paradigm performs I/O asynchronously (e.g. the calling thread is not blocked) and the user is notified when all
 the I/O is complete. ServiceTalk provides a link:https://www.reactive-streams.org[ReactiveStreams] compatible
 xref:{page-version}@servicetalk-concurrent-api::asynchronous-primitives.adoc[Asynchronous primitives] such as
@@ -46,7 +47,7 @@ link:https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/CompletionSt
 link:https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/CompletableFuture.html[CompletableFuture] with
 function composition.
 
-=== Asynchronous and Streaming
+== Asynchronous and Streaming
 This API paradigm performs I/O asynchronously (e.g. the calling thread is not blocked) and the user can provide/process
 the I/O in chunks (as opposed to in a single `Object`). ServiceTalk provides
 link:https://www.reactive-streams.org[ReactiveStreams] compatible

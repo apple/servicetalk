@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-apply plugin: "servicetalk-library"
+apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
 
 dependencies {
   api project(":servicetalk-concurrent-api")
@@ -41,6 +41,7 @@ dependencies {
   testImplementation testFixtures(project(":servicetalk-transport-netty-internal"))
   testImplementation project(":servicetalk-data-jackson")
   testImplementation project(":servicetalk-test-resources")
+  testImplementation project(":servicetalk-utils-internal")
   testImplementation "io.netty:netty-transport-native-unix-common:$nettyVersion"
   testImplementation "io.netty:netty-tcnative-boringssl-static:$tcnativeVersion"
   testImplementation "junit:junit:$junitVersion"

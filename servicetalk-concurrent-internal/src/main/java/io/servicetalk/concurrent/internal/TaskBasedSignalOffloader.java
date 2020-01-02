@@ -33,8 +33,8 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.internal.EmptySubscription.EMPTY_SUBSCRIPTION;
-import static io.servicetalk.concurrent.internal.PlatformDependent.newUnboundedSpscQueue;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid;
+import static io.servicetalk.utils.internal.PlatformDependent.newUnboundedSpscQueue;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 
@@ -168,7 +168,7 @@ final class TaskBasedSignalOffloader implements SignalOffloader {
             if ((!isRequestNValid(n) &&
                     requestedUpdater.getAndSet(this, n < TERMINATED ? n : Long.MIN_VALUE) >= 0) ||
                     requestedUpdater.accumulateAndGet(this, n,
-                            FlowControlUtil::addWithOverflowProtectionIfNotNegative) > 0) {
+                            FlowControlUtils::addWithOverflowProtectionIfNotNegative) > 0) {
                 enqueueTaskIfRequired(true);
             }
         }

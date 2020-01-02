@@ -17,7 +17,7 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
-import io.servicetalk.concurrent.internal.FlowControlUtil;
+import io.servicetalk.concurrent.internal.FlowControlUtils;
 import io.servicetalk.concurrent.internal.QueueFullException;
 import io.servicetalk.concurrent.internal.TerminalNotification;
 
@@ -35,9 +35,9 @@ import javax.annotation.Nullable;
 import static io.servicetalk.concurrent.api.SubscriberApiUtils.NULL_TOKEN;
 import static io.servicetalk.concurrent.api.SubscriberApiUtils.SUBSCRIBER_STATE_IDLE;
 import static io.servicetalk.concurrent.api.SubscriberApiUtils.SUBSCRIBER_STATE_ON_NEXT;
-import static io.servicetalk.concurrent.internal.PlatformDependent.newUnboundedSpscQueue;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.calculateSourceRequested;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid;
+import static io.servicetalk.utils.internal.PlatformDependent.newUnboundedSpscQueue;
 import static java.util.Objects.requireNonNull;
 
 final class MulticastUtils {
@@ -318,7 +318,7 @@ final class MulticastUtils {
                 handleInvalidRequestN(n);
                 return;
             }
-            requestedUpdater.accumulateAndGet(this, n, FlowControlUtil::addWithOverflowProtection);
+            requestedUpdater.accumulateAndGet(this, n, FlowControlUtils::addWithOverflowProtection);
 
             // We have to load the queue variable after we increment the request count in case the queue becomes
             // non-null after we increment the request count and we need to drain the queue.

@@ -28,7 +28,7 @@ public class FlowControlUtilsTests {
 
     @Test
     public void addWithOverflowIfPositiveRespectsZero() {
-        countUpdater.accumulateAndGet(this, -1, FlowControlUtil::addWithOverflowProtectionIfPositive);
+        countUpdater.accumulateAndGet(this, -1, FlowControlUtils::addWithOverflowProtectionIfPositive);
         assertEquals(0, count);
     }
 }

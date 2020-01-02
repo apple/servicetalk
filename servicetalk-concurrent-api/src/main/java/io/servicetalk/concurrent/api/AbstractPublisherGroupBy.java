@@ -21,7 +21,7 @@ import io.servicetalk.concurrent.api.MulticastUtils.IndividualMulticastSubscribe
 import io.servicetalk.concurrent.api.MulticastUtils.SpscQueue;
 import io.servicetalk.concurrent.internal.ConcurrentSubscription;
 import io.servicetalk.concurrent.internal.DuplicateSubscribeException;
-import io.servicetalk.concurrent.internal.FlowControlUtil;
+import io.servicetalk.concurrent.internal.FlowControlUtils;
 import io.servicetalk.concurrent.internal.QueueFullException;
 import io.servicetalk.concurrent.internal.TerminalNotification;
 
@@ -284,7 +284,7 @@ abstract class AbstractPublisherGroupBy<Key, T>
                 return;
             }
 
-            groupRequestedUpdater.accumulateAndGet(this, n, FlowControlUtil::addWithOverflowProtection);
+            groupRequestedUpdater.accumulateAndGet(this, n, FlowControlUtils::addWithOverflowProtection);
             SpscQueue<GroupedPublisher<Key, T>> q = groupQueue;
             if (q == null) {
                 s.request(n);

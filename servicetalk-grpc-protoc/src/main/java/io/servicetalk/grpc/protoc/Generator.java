@@ -60,10 +60,12 @@ import static io.servicetalk.grpc.protoc.Types.BlockingStreamingRoute;
 import static io.servicetalk.grpc.protoc.Types.ClientCall;
 import static io.servicetalk.grpc.protoc.Types.Completable;
 import static io.servicetalk.grpc.protoc.Types.DefaultGrpcClientMetadata;
+import static io.servicetalk.grpc.protoc.Types.FilterableGrpcClient;
 import static io.servicetalk.grpc.protoc.Types.GrpcClient;
 import static io.servicetalk.grpc.protoc.Types.GrpcClientCallFactory;
 import static io.servicetalk.grpc.protoc.Types.GrpcClientFactory;
 import static io.servicetalk.grpc.protoc.Types.GrpcClientFilterFactory;
+import static io.servicetalk.grpc.protoc.Types.GrpcExecutionContext;
 import static io.servicetalk.grpc.protoc.Types.GrpcExecutionStrategy;
 import static io.servicetalk.grpc.protoc.Types.GrpcPayloadWriter;
 import static io.servicetalk.grpc.protoc.Types.GrpcRoutes;
@@ -72,7 +74,6 @@ import static io.servicetalk.grpc.protoc.Types.GrpcService;
 import static io.servicetalk.grpc.protoc.Types.GrpcServiceContext;
 import static io.servicetalk.grpc.protoc.Types.GrpcServiceFactory;
 import static io.servicetalk.grpc.protoc.Types.GrpcServiceFilterFactory;
-import static io.servicetalk.grpc.protoc.Types.ListenableAsyncCloseable;
 import static io.servicetalk.grpc.protoc.Types.ProtoBufSerializationProviderBuilder;
 import static io.servicetalk.grpc.protoc.Types.Publisher;
 import static io.servicetalk.grpc.protoc.Types.RequestStreamingClientCall;
@@ -104,6 +105,7 @@ import static io.servicetalk.grpc.protoc.Words.closeGracefully;
 import static io.servicetalk.grpc.protoc.Words.closeable;
 import static io.servicetalk.grpc.protoc.Words.ctx;
 import static io.servicetalk.grpc.protoc.Words.delegate;
+import static io.servicetalk.grpc.protoc.Words.executionContext;
 import static io.servicetalk.grpc.protoc.Words.existing;
 import static io.servicetalk.grpc.protoc.Words.factory;
 import static io.servicetalk.grpc.protoc.Words.metadata;
@@ -461,8 +463,7 @@ final class Generator {
 
         final TypeSpec.Builder filterableClientSpecBuilder = interfaceBuilder(state.filterableClientClass)
                 .addModifiers(PUBLIC)
-                .addSuperinterface(ListenableAsyncCloseable)
-                .addSuperinterface(AutoCloseable.class);
+                .addSuperinterface(FilterableGrpcClient);
 
         final TypeSpec.Builder blockingClientSpecBuilder = interfaceBuilder(state.blockingClientClass)
                 .addModifiers(PUBLIC)
@@ -497,7 +498,7 @@ final class Generator {
         final TypeSpec.Builder classSpecBuilder = newFilterDelegateCommonMethods(state.clientFilterClass,
                 state.filterableClientClass)
                 .addMethod(newDelegatingCompletableMethodSpec(onClose, delegate))
-                .addMethod(newDelegatingCompletableToBlockingMethodSpec(close, closeAsync, delegate));
+                .addMethod(newDelegatingMethodSpec(executionContext, delegate, GrpcExecutionContext, null));
 
         state.clientMetaDatas.forEach(clientMetaData ->
                 classSpecBuilder.addMethod(newRpcMethodSpec(clientMetaData.methodProto, EnumSet.of(INTERFACE, CLIENT),
@@ -692,6 +693,7 @@ final class Generator {
                         // TODO: Cache client
                         .addStatement("return new $T($L)", defaultClientClass, factory)
                         .build())
+                .addMethod(newDelegatingMethodSpec(executionContext, factory, GrpcExecutionContext, null))
                 .addMethod(newDelegatingCompletableToBlockingMethodSpec(close, closeAsync, factory))
                 .addMethod(newDelegatingCompletableToBlockingMethodSpec(closeGracefully, closeAsyncGracefully,
                         factory));
@@ -720,6 +722,7 @@ final class Generator {
                         // TODO: Cache client
                         .addStatement("return new $T($L)", defaultBlockingClientClass, factory)
                         .build())
+                .addMethod(newDelegatingMethodSpec(executionContext, factory, GrpcExecutionContext, null))
                 .addMethod(newDelegatingCompletableMethodSpec(onClose, factory))
                 .addMethod(newDelegatingCompletableMethodSpec(closeAsync, factory))
                 .addMethod(newDelegatingCompletableMethodSpec(closeAsyncGracefully, factory))
@@ -789,10 +792,10 @@ final class Generator {
                         // TODO: Cache client
                         .addStatement("return new $T(this)", clientToBlockingClientClass)
                         .build())
+                .addMethod(newDelegatingMethodSpec(executionContext, client, GrpcExecutionContext, null))
                 .addMethod(newDelegatingCompletableMethodSpec(onClose, client))
                 .addMethod(newDelegatingCompletableMethodSpec(closeAsync, client))
-                .addMethod(newDelegatingCompletableMethodSpec(closeAsyncGracefully, client))
-                .addMethod(newDelegatingMethodSpec(close, client, null, ClassName.get(Exception.class)));
+                .addMethod(newDelegatingCompletableMethodSpec(closeAsyncGracefully, client));
 
         state.clientMetaDatas.forEach(clientMetaData -> typeSpecBuilder
                 .addMethod(newRpcMethodSpec(clientMetaData.methodProto, EnumSet.of(CLIENT),
@@ -824,6 +827,7 @@ final class Generator {
                         // TODO: Cache client
                         .addStatement("return $L", client)
                         .build())
+                .addMethod(newDelegatingMethodSpec(executionContext, client, GrpcExecutionContext, null))
                 .addMethod(newDelegatingMethodSpec(close, client, null, ClassName.get(Exception.class)));
 
         state.clientMetaDatas.forEach(clientMetaData -> {

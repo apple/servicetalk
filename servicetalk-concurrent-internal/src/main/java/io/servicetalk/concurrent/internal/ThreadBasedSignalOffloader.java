@@ -35,10 +35,10 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.concurrent.internal.EmptySubscription.EMPTY_SUBSCRIPTION;
-import static io.servicetalk.concurrent.internal.PlatformDependent.newUnboundedSpscQueue;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid;
 import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
 import static io.servicetalk.concurrent.internal.TerminalNotification.error;
+import static io.servicetalk.utils.internal.PlatformDependent.newUnboundedSpscQueue;
 import static java.lang.System.arraycopy;
 import static java.lang.Thread.currentThread;
 import static java.util.Objects.requireNonNull;
@@ -795,7 +795,7 @@ final class ThreadBasedSignalOffloader implements SignalOffloader, Runnable {
                     boolean notify;
                     if (isRequestNValid(n)) {
                         notify = requestedUpdater.getAndAccumulate(OffloadedSubscription.this, n,
-                                FlowControlUtil::addWithOverflowProtectionIfNotNegative) >= 0;
+                                FlowControlUtils::addWithOverflowProtectionIfNotNegative) >= 0;
                     } else {
                         // We can not call the original subscription here as that would mean we call it from the caller
                         // thread and hence break the assumption that it is always called in an Executor thread.

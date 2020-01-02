@@ -14,13 +14,14 @@
  * limitations under the License.
  */
 
-apply plugin: "servicetalk-library"
+apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
 
 dependencies {
   api project(":servicetalk-concurrent")
 
   implementation project(":servicetalk-annotations")
   implementation project(":servicetalk-concurrent-internal")
+  implementation project(":servicetalk-utils-internal")
   implementation "com.google.code.findbugs:jsr305:$jsr305Version"
   implementation "org.slf4j:slf4j-api:$slf4jVersion"
 
@@ -31,6 +32,7 @@ dependencies {
   testImplementation "org.mockito:mockito-core:$mockitoCoreVersion"
 
   testFixturesImplementation testFixtures(project(":servicetalk-concurrent-internal"))
+  testFixturesImplementation project(":servicetalk-utils-internal")
   testFixturesImplementation "com.google.code.findbugs:jsr305:$jsr305Version"
   testFixturesImplementation "junit:junit:$junitVersion"
   testFixturesImplementation "org.hamcrest:hamcrest-library:$hamcrestVersion"

@@ -26,7 +26,7 @@ import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.internal.SubscribableCompletable;
 import io.servicetalk.concurrent.api.internal.SubscribablePublisher;
 import io.servicetalk.concurrent.internal.DuplicateSubscribeException;
-import io.servicetalk.concurrent.internal.FlowControlUtil;
+import io.servicetalk.concurrent.internal.FlowControlUtils;
 import io.servicetalk.concurrent.internal.RejectedSubscribeError;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutor;
@@ -345,7 +345,7 @@ final class DefaultDnsServiceDiscoverer
                         return;
                     }
 
-                    pendingRequests = FlowControlUtil.addWithOverflowProtectionIfNotNegative(pendingRequests, n);
+                    pendingRequests = FlowControlUtils.addWithOverflowProtectionIfNotNegative(pendingRequests, n);
                     if (cancellableForQuery == null) {
                         if (ttlNanos < 0) {
                             doQuery0();

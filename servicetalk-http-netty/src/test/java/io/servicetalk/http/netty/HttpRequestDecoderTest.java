@@ -101,9 +101,45 @@ public class HttpRequestDecoderTest {
         byte[] content = new byte[128];
         ThreadLocalRandom.current().nextBytes(content);
         byte[] beforeContentBytes = ("GET /some/path?foo=bar&baz=yyy HTTP/1.1" + "\r\n" +
-                " Connection :  keep-alive " + "\r\n" +
-                "  User-Agent  :        unit-test        " + "\r\n" +
-                "   Content-Length  : " + content.length + "\r\n" + "\r\n").getBytes(US_ASCII);
+                " Connection:  keep-alive " + "\r\n" +
+                "  User-Agent:        unit-test        " + "\r\n" +
+                "   Content-Length: " + content.length + "\r\n" + "\r\n").getBytes(US_ASCII);
+        assertTrue(channel.writeInbound(wrappedBuffer(beforeContentBytes)));
+        assertTrue(channel.writeInbound(wrappedBuffer(content)));
+
+        validateHttpRequest(channel, content.length);
+        assertFalse(channel.finishAndReleaseAll());
+    }
+
+    @Test
+    public void contentLengthNoTrailersHeaderNoWhiteSpace() {
+        EmbeddedChannel channel = newEmbeddedChannel();
+        byte[] content = new byte[128];
+        ThreadLocalRandom.current().nextBytes(content);
+        byte[] beforeContentBytes = ("GET /some/path?foo=bar&baz=yyy HTTP/1.1" + "\r\n" +
+                "Connection:keep-alive" + "\r\n" +
+                "User-Agent:unit-test" + "\r\n" +
+                "SingleCharacterNoWhiteSpace:a" + "\r\n" +
+                "Content-Length:" + content.length + "\r\n" + "\r\n").getBytes(US_ASCII);
+        assertTrue(channel.writeInbound(wrappedBuffer(beforeContentBytes)));
+        assertTrue(channel.writeInbound(wrappedBuffer(content)));
+
+        validateHttpRequest(channel, content.length);
+        assertFalse(channel.finishAndReleaseAll());
+    }
+
+    @Test
+    public void contentLengthNoTrailersHeaderMixedWhiteSpace() {
+        EmbeddedChannel channel = newEmbeddedChannel();
+        byte[] content = new byte[128];
+        ThreadLocalRandom.current().nextBytes(content);
+        byte[] beforeContentBytes = ("GET /some/path?foo=bar&baz=yyy HTTP/1.1" + "\r\n" +
+                "Connection:keep-alive" + "\r\n" +
+                "   User-Agent:unit-test" + "\r\n" +
+                "Empty:" + "\r\n" +
+                "EmptyWhitespace:   " + "\r\n" +
+                "SingleCharacterNoWhiteSpace: a" + "\r\n" +
+                "Content-Length:   " + content.length + "   " + "\r\n" + "\r\n").getBytes(US_ASCII);
         assertTrue(channel.writeInbound(wrappedBuffer(beforeContentBytes)));
         assertTrue(channel.writeInbound(wrappedBuffer(content)));
 
@@ -294,6 +330,21 @@ public class HttpRequestDecoderTest {
     }
 
     @Test(expected = DecoderException.class)
+    public void testWhitespaceNotAllowedBetweenHeaderFieldNameAndColon() {
+        EmbeddedChannel channel = newEmbeddedChannel();
+        try {
+            byte[] beforeContentBytes = ("GET /some/path HTTP/1.1\r\n" +
+                    "Transfer-Encoding : chunked\r\n" +
+                    "Host: servicetalk.io\r\n\r\n").getBytes(US_ASCII);
+
+            assertTrue(channel.writeInbound(wrappedBuffer(beforeContentBytes)));
+            channel.readInbound();
+        } finally {
+            channel.finishAndReleaseAll();
+        }
+    }
+
+    @Test(expected = DecoderException.class)
     public void variableWithTrailers() {
         EmbeddedChannel channel = newEmbeddedChannel();
         byte[] content = new byte[128];
@@ -374,10 +425,8 @@ public class HttpRequestDecoderTest {
     }
 
     private static EmbeddedChannel newEmbeddedChannel() {
-        HttpRequestDecoder decoder = new HttpRequestDecoder(new ArrayDeque<>(),
-                DefaultHttpHeadersFactory.INSTANCE, 8192, 8192);
-        decoder.setDiscardAfterReads(1);
-        return new EmbeddedChannel(decoder);
+        return new EmbeddedChannel(new HttpRequestDecoder(new ArrayDeque<>(),
+                DefaultHttpHeadersFactory.INSTANCE, 8192, 8192));
     }
 
     private static void validateHttpRequest(EmbeddedChannel channel, int expectedContentLength) {
@@ -425,6 +474,13 @@ public class HttpRequestDecoderTest {
     private static void assertStandardHeaders(HttpHeaders headers) {
         assertSingleHeaderValue(headers, "connecTion", KEEP_ALIVE);
         assertSingleHeaderValue(headers, USER_AGENT, "unit-test");
+        if (headers.contains("Empty")) {
+            assertSingleHeaderValue(headers, "Empty", "");
+            assertSingleHeaderValue(headers, "EmptyWhitespace", "");
+        }
+        if (headers.contains("SingleCharacterNoWhiteSpace")) {
+            assertSingleHeaderValue(headers, "SingleCharacterNoWhiteSpace", "a");
+        }
     }
 
     static void assertSingleHeaderValue(HttpHeaders headers, CharSequence name, CharSequence expectedValue) {

@@ -16,8 +16,8 @@
 package io.servicetalk.grpc.api;
 
 import io.servicetalk.concurrent.api.Completable;
+import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.transport.api.ConnectionContext;
-import io.servicetalk.transport.api.ExecutionContext;
 
 import java.net.SocketAddress;
 import javax.annotation.Nullable;
@@ -28,10 +28,12 @@ import static java.util.Objects.requireNonNull;
 final class DefaultGrpcServiceContext extends DefaultGrpcMetadata implements GrpcServiceContext {
 
     private final ConnectionContext connectionContext;
+    private final GrpcExecutionContext executionContext;
 
-    DefaultGrpcServiceContext(final String path, final ConnectionContext connectionContext) {
+    DefaultGrpcServiceContext(final String path, final HttpServiceContext httpServiceContext) {
         super(path);
-        this.connectionContext = requireNonNull(connectionContext);
+        connectionContext = requireNonNull(httpServiceContext);
+        executionContext = new DefaultGrpcExecutionContext(httpServiceContext.executionContext());
     }
 
     @Override
@@ -51,8 +53,8 @@ final class DefaultGrpcServiceContext extends DefaultGrpcMetadata implements Grp
     }
 
     @Override
-    public ExecutionContext executionContext() {
-        return connectionContext.executionContext();
+    public GrpcExecutionContext executionContext() {
+        return executionContext;
     }
 
     @Override

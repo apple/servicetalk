@@ -19,7 +19,6 @@ import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.BlockingIterable;
 import io.servicetalk.concurrent.BlockingIterator;
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.serialization.api.SerializationException;
 
 import java.nio.charset.Charset;
 import java.util.concurrent.TimeUnit;
@@ -27,6 +26,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.http.api.HeaderUtils.checkContentType;
 import static io.servicetalk.http.api.HeaderUtils.hasContentType;
 import static io.servicetalk.http.api.HttpHeaderValues.TEXT_PLAIN;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -48,13 +48,13 @@ final class HttpStringDeserializer implements HttpDeserializer<String> {
 
     @Override
     public String deserialize(final HttpHeaders headers, final Buffer payload) {
-        checkContentType(headers);
+        checkContentType(headers, checkContentType);
         return payload.toString(charset);
     }
 
     @Override
     public BlockingIterable<String> deserialize(final HttpHeaders headers, final BlockingIterable<Buffer> payload) {
-        checkContentType(headers);
+        checkContentType(headers, checkContentType);
         return () -> {
             final BlockingIterator<Buffer> iterator = payload.iterator();
             return new BlockingIterator<String>() {
@@ -88,19 +88,12 @@ final class HttpStringDeserializer implements HttpDeserializer<String> {
 
     @Override
     public Publisher<String> deserialize(final HttpHeaders headers, final Publisher<Buffer> payload) {
-        checkContentType(headers);
+        checkContentType(headers, checkContentType);
         return payload.map(this::toString);
     }
 
     @Nullable
     private String toString(@Nullable Buffer buffer) {
         return buffer == null ? null : buffer.toString(charset);
-    }
-
-    private void checkContentType(final HttpHeaders headers) {
-        if (!checkContentType.test(headers)) {
-            throw new SerializationException("Unexpected headers, can not deserialize. Headers: "
-                    + headers.toString());
-        }
     }
 }

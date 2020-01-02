@@ -18,7 +18,7 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.internal.ConcurrentSubscription;
-import io.servicetalk.concurrent.internal.FlowControlUtil;
+import io.servicetalk.concurrent.internal.FlowControlUtils;
 import io.servicetalk.concurrent.internal.QueueFullException;
 import io.servicetalk.concurrent.internal.TerminalNotification;
 
@@ -34,12 +34,12 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.SubscriberApiUtils.NULL_TOKEN;
 import static io.servicetalk.concurrent.internal.ConcurrentUtils.drainSingleConsumerQueue;
-import static io.servicetalk.concurrent.internal.PlatformDependent.newUnboundedMpscQueue;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.calculateSourceRequested;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.checkDuplicateSubscription;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.trySetTerminal;
 import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
+import static io.servicetalk.utils.internal.PlatformDependent.newUnboundedMpscQueue;
 import static java.lang.Math.min;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater;
@@ -146,7 +146,7 @@ final class PublisherFlatMapSingle<T, R> extends AbstractAsynchronousPublisherOp
                 return;
             }
 
-            requestedUpdater.accumulateAndGet(this, n, FlowControlUtil::addWithOverflowProtection);
+            requestedUpdater.accumulateAndGet(this, n, FlowControlUtils::addWithOverflowProtection);
             int actualSourceRequestN = calculateSourceRequested(requestedUpdater, sourceRequestedUpdater,
                     sourceEmittedUpdater, source.maxConcurrency, this);
             if (actualSourceRequestN != 0) {

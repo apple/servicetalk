@@ -17,7 +17,7 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
-import io.servicetalk.concurrent.internal.FlowControlUtil;
+import io.servicetalk.concurrent.internal.FlowControlUtils;
 
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -52,7 +52,7 @@ public final class DemandCheckingSubscriber<T> implements Subscriber<T> {
                     // NO_ON_SUBSCRIBE is special value and not eligible to use because it signals a condition.
                     pending.set(NO_ON_SUBSCRIBE + 1);
                 } else {
-                    pending.accumulateAndGet(n, FlowControlUtil::addWithOverflowProtectionIfNotNegative);
+                    pending.accumulateAndGet(n, FlowControlUtils::addWithOverflowProtectionIfNotNegative);
                 }
                 s.request(n);
             }
@@ -66,7 +66,7 @@ public final class DemandCheckingSubscriber<T> implements Subscriber<T> {
 
     @Override
     public void onNext(final T t) {
-        long pending = this.pending.getAndAccumulate(-1, FlowControlUtil::addWithOverflowProtectionIfPositive);
+        long pending = this.pending.getAndAccumulate(-1, FlowControlUtils::addWithOverflowProtectionIfPositive);
         if (pending > 0) {
             delegate.onNext(t);
         } else if (pending == NO_ON_SUBSCRIBE) {

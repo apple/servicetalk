@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-apply plugin: "servicetalk-library"
+apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
 
 dependencies {
   api "com.fasterxml.jackson.core:jackson-databind:$jacksonVersion"
@@ -23,7 +23,7 @@ dependencies {
 
   implementation project(":servicetalk-annotations")
   implementation project(":servicetalk-concurrent-api-internal")
-  implementation project(":servicetalk-concurrent-internal")
+  implementation project(":servicetalk-utils-internal")
   implementation project(":servicetalk-serialization-api")
   implementation "com.google.code.findbugs:jsr305:$jsr305Version"
 

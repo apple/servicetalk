@@ -108,9 +108,45 @@ public class HttpResponseDecoderTest {
         byte[] content = new byte[128];
         ThreadLocalRandom.current().nextBytes(content);
         byte[] beforeContentBytes = ("HTTP/1.1 200 OK" + "\r\n" +
-                " Connection :  keep-alive " + "\r\n" +
-                "  Server  :        unit-test        " + "\r\n" +
-                "   Content-Length  : " + content.length + "\r\n" + "\r\n").getBytes(US_ASCII);
+                " Connection:  keep-alive " + "\r\n" +
+                "  Server:        unit-test        " + "\r\n" +
+                "   Content-Length: " + content.length + "\r\n" + "\r\n").getBytes(US_ASCII);
+        assertTrue(channel.writeInbound(wrappedBuffer(beforeContentBytes)));
+        assertTrue(channel.writeInbound(wrappedBuffer(content)));
+
+        validateHttpResponse(channel, content.length);
+        assertFalse(channel.finishAndReleaseAll());
+    }
+
+    @Test
+    public void contentLengthNoTrailersHeaderNoWhiteSpace() {
+        EmbeddedChannel channel = newEmbeddedChannel();
+        byte[] content = new byte[128];
+        ThreadLocalRandom.current().nextBytes(content);
+        byte[] beforeContentBytes = ("HTTP/1.1 200 OK" + "\r\n" +
+                "Connection:keep-alive" + "\r\n" +
+                "Server:unit-test" + "\r\n" +
+                "SingleCharacterNoWhiteSpace:a" + "\r\n" +
+                "Content-Length:" + content.length + "\r\n" + "\r\n").getBytes(US_ASCII);
+        assertTrue(channel.writeInbound(wrappedBuffer(beforeContentBytes)));
+        assertTrue(channel.writeInbound(wrappedBuffer(content)));
+
+        validateHttpResponse(channel, content.length);
+        assertFalse(channel.finishAndReleaseAll());
+    }
+
+    @Test
+    public void contentLengthNoTrailersHeaderMixedWhiteSpace() {
+        EmbeddedChannel channel = newEmbeddedChannel();
+        byte[] content = new byte[128];
+        ThreadLocalRandom.current().nextBytes(content);
+        byte[] beforeContentBytes = ("HTTP/1.1 200 OK" + "\r\n" +
+                "Connection:keep-alive" + "\r\n" +
+                "   Server:unit-test" + "\r\n" +
+                "Empty:" + "\r\n" +
+                "EmptyWhitespace:   " + "\r\n" +
+                "SingleCharacterNoWhiteSpace: a" + "\r\n" +
+                "Content-Length:   " + content.length + "   " + "\r\n" + "\r\n").getBytes(US_ASCII);
         assertTrue(channel.writeInbound(wrappedBuffer(beforeContentBytes)));
         assertTrue(channel.writeInbound(wrappedBuffer(content)));
 
@@ -317,6 +353,21 @@ public class HttpResponseDecoderTest {
         assertFalse(channel.finishAndReleaseAll());
     }
 
+    @Test(expected = DecoderException.class)
+    public void testWhitespaceNotAllowedBetweenHeaderFieldNameAndColon() {
+        EmbeddedChannel channel = newEmbeddedChannel();
+        try {
+            byte[] beforeContentBytes = ("HTTP/1.1 200 OK\r\n" +
+                    "Transfer-Encoding : chunked\r\n" +
+                    "Host: servicetalk.io\r\n\r\n").getBytes(US_ASCII);
+
+            assertTrue(channel.writeInbound(wrappedBuffer(beforeContentBytes)));
+            channel.readInbound();
+        } finally {
+            channel.finishAndReleaseAll();
+        }
+    }
+
     @Test
     public void variableWithTrailers() {
         EmbeddedChannel channel = newEmbeddedChannel();
@@ -427,12 +478,17 @@ public class HttpResponseDecoderTest {
     private static void assertStandardHeaders(HttpHeaders headers) {
         assertSingleHeaderValue(headers, CONNECTION, KEEP_ALIVE);
         assertSingleHeaderValue(headers, "seRver", "unit-test");
+        if (headers.contains("Empty")) {
+            assertSingleHeaderValue(headers, "Empty", "");
+            assertSingleHeaderValue(headers, "EmptyWhitespace", "");
+        }
+        if (headers.contains("SingleCharacterNoWhiteSpace")) {
+            assertSingleHeaderValue(headers, "SingleCharacterNoWhiteSpace", "a");
+        }
     }
 
     private static EmbeddedChannel newEmbeddedChannel() {
-        HttpResponseDecoder decoder = new HttpResponseDecoder(new ArrayDeque<>(), DefaultHttpHeadersFactory.INSTANCE,
-                8192, 8192);
-        decoder.setDiscardAfterReads(1);
-        return new EmbeddedChannel(decoder);
+        return new EmbeddedChannel(new HttpResponseDecoder(new ArrayDeque<>(), DefaultHttpHeadersFactory.INSTANCE,
+                8192, 8192));
     }
 }

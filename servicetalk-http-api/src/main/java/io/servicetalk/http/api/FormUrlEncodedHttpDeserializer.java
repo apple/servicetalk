@@ -19,7 +19,6 @@ import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.concurrent.BlockingIterable;
 import io.servicetalk.concurrent.BlockingIterator;
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.serialization.api.SerializationException;
 
 import java.nio.charset.Charset;
 import java.util.List;
@@ -29,6 +28,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.http.api.HeaderUtils.checkContentType;
 import static io.servicetalk.http.api.HeaderUtils.hasContentType;
 import static io.servicetalk.http.api.HttpHeaderValues.APPLICATION_X_WWW_FORM_URLENCODED;
 import static io.servicetalk.http.api.QueryStringDecoder.decodeParams;
@@ -52,14 +52,14 @@ final class FormUrlEncodedHttpDeserializer implements HttpDeserializer<Map<Strin
 
     @Override
     public Map<String, List<String>> deserialize(final HttpHeaders headers, final Buffer payload) {
-        checkContentType(headers);
+        checkContentType(headers, checkContentType);
         return deserialize(payload);
     }
 
     @Override
     public BlockingIterable<Map<String, List<String>>> deserialize(final HttpHeaders headers,
                                                                    final BlockingIterable<Buffer> payload) {
-        checkContentType(headers);
+        checkContentType(headers, checkContentType);
         return () -> {
             final BlockingIterator<Buffer> iterator = payload.iterator();
             return new BlockingIterator<Map<String, List<String>>>() {
@@ -94,15 +94,8 @@ final class FormUrlEncodedHttpDeserializer implements HttpDeserializer<Map<Strin
     @Override
     public Publisher<Map<String, List<String>>> deserialize(final HttpHeaders headers,
                                                             final Publisher<Buffer> payload) {
-        checkContentType(headers);
+        checkContentType(headers, checkContentType);
         return payload.map(this::deserialize);
-    }
-
-    private void checkContentType(final HttpHeaders headers) {
-        if (!checkContentType.test(headers)) {
-            throw new SerializationException("Unexpected headers, can not deserialize. Headers: "
-                    + headers.toString());
-        }
     }
 
     private Map<String, List<String>> deserialize(@Nullable final Buffer buffer) {

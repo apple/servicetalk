@@ -17,7 +17,7 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.internal.DeliberateException;
-import io.servicetalk.concurrent.internal.FlowControlUtil;
+import io.servicetalk.concurrent.internal.FlowControlUtils;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 
 import org.hamcrest.BaseMatcher;
@@ -330,7 +330,7 @@ public final class SequentialSubscriptionTest {
                 requestedReceived.set(MAX_VALUE);
                 throw newExceptionForInvalidRequestN(n);
             } else {
-                requestedReceived.accumulateAndGet(n, FlowControlUtil::addWithOverflowProtection);
+                requestedReceived.accumulateAndGet(n, FlowControlUtils::addWithOverflowProtection);
             }
         }
 

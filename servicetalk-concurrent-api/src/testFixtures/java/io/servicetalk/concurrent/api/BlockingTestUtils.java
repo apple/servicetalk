@@ -15,7 +15,7 @@
  */
 package io.servicetalk.concurrent.api;
 
-import io.servicetalk.concurrent.internal.PlatformDependent;
+import io.servicetalk.utils.internal.PlatformDependent;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -25,7 +25,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.internal.ThrowableUtil.unknownStackTrace;
+import static io.servicetalk.concurrent.internal.ThrowableUtils.unknownStackTrace;
 
 /**
  * Utilities to await results of an asynchronous computation either by blocking the calling thread.

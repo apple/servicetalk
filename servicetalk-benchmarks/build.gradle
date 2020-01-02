@@ -19,7 +19,7 @@ plugins {
   id "me.champeau.gradle.jmh" version "0.5.0-rc-2"
 }
 
-apply plugin: "servicetalk-library"
+apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
 
 dependencies {
   implementation project(":servicetalk-annotations")

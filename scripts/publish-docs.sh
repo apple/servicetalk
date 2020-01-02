@@ -78,6 +78,12 @@ if [ ! -z "$version" ]; then
 fi
 
 pushd gh-pages
+# Do not override older javadoc with anotra's placeholder:
+for file in $(git diff --name-only | grep -v "servicetalk/SNAPSHOT/javadoc/index.html" | \
+  grep -v "servicetalk/$version/javadoc/index.html"); do
+    git checkout -- $file
+done
+
 git add * .nojekyll
 if [ -z "$version" ]; then
     git commit --author="$GIT_AUTHOR" -m "Update SNAPSHOT doc website"

@@ -16,7 +16,7 @@
 package io.servicetalk.http.router.jersey.resources;
 
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.http.router.jersey.NoOffloadsRouteExecutionStrategy;
+import io.servicetalk.router.api.NoOffloadsRouteExecutionStrategy;
 import io.servicetalk.transport.api.ConnectionContext;
 
 import java.util.concurrent.CompletableFuture;

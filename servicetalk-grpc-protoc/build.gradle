@@ -20,7 +20,7 @@ buildscript {
   }
 }
 
-apply plugin: "servicetalk-library"
+apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
 apply plugin: "com.github.johnrengelman.shadow"
 apply plugin: "com.google.protobuf"
 
@@ -68,7 +68,7 @@ exit1
     outputFile.executable = true
   }
 }
-classes.finalizedBy(buildExecutable)
+tasks.compileJava.finalizedBy(buildExecutable)
 
 publishing {
   publications {

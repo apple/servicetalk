@@ -16,6 +16,7 @@
 package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.BufferAllocator;
+import io.servicetalk.client.api.AutoRetryStrategyProvider;
 import io.servicetalk.client.api.ConnectionFactoryFilter;
 import io.servicetalk.client.api.LoadBalancerFactory;
 import io.servicetalk.client.api.ServiceDiscoverer;
@@ -87,7 +88,8 @@ public abstract class MultiAddressHttpClientBuilder<U, R>
             ConnectionFactoryFilter<R, FilterableStreamingHttpConnection> factory);
 
     @Override
-    public abstract MultiAddressHttpClientBuilder<U, R> disableWaitForLoadBalancer();
+    public abstract MultiAddressHttpClientBuilder<U, R> autoRetryStrategy(
+            AutoRetryStrategyProvider autoRetryStrategyProvider);
 
     @Override
     public abstract MultiAddressHttpClientBuilder<U, R> serviceDiscoverer(

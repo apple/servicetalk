@@ -18,8 +18,8 @@ package io.servicetalk.transport.netty.internal;
 import java.util.Queue;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
-import static io.servicetalk.concurrent.internal.PlatformDependent.newMpscQueue;
-import static io.servicetalk.concurrent.internal.PlatformDependent.newUnboundedMpscQueue;
+import static io.servicetalk.utils.internal.PlatformDependent.newMpscQueue;
+import static io.servicetalk.utils.internal.PlatformDependent.newUnboundedMpscQueue;
 
 /**
  * A task queue that executes <em>asynchronous</em> tasks sequentially. Since the tasks executed by this queue are

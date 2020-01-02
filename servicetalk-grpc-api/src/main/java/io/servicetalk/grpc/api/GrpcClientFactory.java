@@ -15,8 +15,6 @@
  */
 package io.servicetalk.grpc.api;
 
-import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
-
 import javax.annotation.Nullable;
 
 import static java.util.Objects.requireNonNull;
@@ -35,7 +33,7 @@ import static java.util.Objects.requireNonNull;
  */
 public abstract class GrpcClientFactory<Client extends GrpcClient<BlockingClient>,
         BlockingClient extends BlockingGrpcClient<Client>,
-        Filter extends FilterableClient, FilterableClient extends ListenableAsyncCloseable & AutoCloseable,
+        Filter extends FilterableClient, FilterableClient extends FilterableGrpcClient,
         FilterFactory extends GrpcClientFilterFactory<Filter, FilterableClient>> {
 
     @Nullable

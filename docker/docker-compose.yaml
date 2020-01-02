@@ -71,9 +71,13 @@ services:
       - CI
       - BINTRAY_USER
       - BINTRAY_KEY
+      - ORG_GRADLE_PROJECT_signingKey
+      - ORG_GRADLE_PROJECT_signingPassword
+      - SONATYPE_USER
+      - SONATYPE_TOKEN
     command: >
       bash -cl "./gradlew --no-daemon --parallel --max-workers=4 clean check &&
-      ./gradlew --no-daemon bintrayUpload"
+      ./gradlew --no-daemon publish"
 
   publish-release:
     << : *common
@@ -82,9 +86,13 @@ services:
       - CI
       - BINTRAY_USER
       - BINTRAY_KEY
+      - ORG_GRADLE_PROJECT_signingKey
+      - ORG_GRADLE_PROJECT_signingPassword
+      - SONATYPE_USER
+      - SONATYPE_TOKEN
     command: >
       bash -cl "./gradlew --no-daemon --parallel --max-workers=4 -PreleaseBuild=true clean check &&
-      ./gradlew --no-daemon -PreleaseBuild=true bintrayUpload"
+      ./gradlew --no-daemon -PreleaseBuild=true publish"
 
   shell:
     << : *common

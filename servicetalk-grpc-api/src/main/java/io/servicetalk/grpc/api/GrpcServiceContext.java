@@ -21,4 +21,7 @@ import io.servicetalk.transport.api.ConnectionContext;
  * A <a href="https://www.grpc.io">gRPC</a> service context.
  */
 public interface GrpcServiceContext extends ConnectionContext, GrpcMetadata {
+
+    @Override
+    GrpcExecutionContext executionContext();
 }

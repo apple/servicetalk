@@ -18,6 +18,8 @@ package io.servicetalk.grpc.api;
 import io.servicetalk.concurrent.GracefulAutoCloseable;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 
+import static io.servicetalk.concurrent.internal.FutureUtils.awaitTermination;
+
 /**
  * A client to a <a href="https://www.grpc.io">gRPC</a> service.
  *
@@ -32,4 +34,19 @@ public interface GrpcClient<BlockingClient extends BlockingGrpcClient>
      * @return This {@link GrpcClient} as a {@link BlockingClient}.
      */
     BlockingClient asBlockingClient();
+
+    /**
+     * Get the {@link GrpcExecutionContext} used during construction of this object.
+     * <p>
+     * Note that the {@link GrpcExecutionContext#ioExecutor()} will not necessarily be associated with a specific thread
+     * unless that was how this object was built.
+     *
+     * @return the {@link GrpcExecutionContext} used during construction of this object.
+     */
+    GrpcExecutionContext executionContext();
+
+    @Override
+    default void close() throws Exception {
+        awaitTermination(closeAsync().toFuture());
+    }
 }

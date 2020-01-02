@@ -18,7 +18,7 @@ package io.servicetalk.concurrent.api;
 import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
-import io.servicetalk.concurrent.internal.FlowControlUtil;
+import io.servicetalk.concurrent.internal.FlowControlUtils;
 
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 
@@ -76,7 +76,7 @@ final class SequentialSubscription implements Subscription, Cancellable {
         final long currRequested;
         if (isRequestNValid(n)) {
             currRequested = requestedUpdater.accumulateAndGet(this, n,
-                    FlowControlUtil::addWithOverflowProtectionIfNotNegative);
+                    FlowControlUtils::addWithOverflowProtectionIfNotNegative);
         } else {
             currRequested = sanitizeInvalidRequestN(n);
             requested = currRequested;

@@ -16,11 +16,13 @@
 package io.servicetalk.http.api;
 
 import static io.servicetalk.http.api.HttpResponseStatus.ACCEPTED;
+import static io.servicetalk.http.api.HttpResponseStatus.ALREADY_REPORTED;
 import static io.servicetalk.http.api.HttpResponseStatus.BAD_GATEWAY;
 import static io.servicetalk.http.api.HttpResponseStatus.BAD_REQUEST;
 import static io.servicetalk.http.api.HttpResponseStatus.CONFLICT;
 import static io.servicetalk.http.api.HttpResponseStatus.CONTINUE;
 import static io.servicetalk.http.api.HttpResponseStatus.CREATED;
+import static io.servicetalk.http.api.HttpResponseStatus.EARLY_HINTS;
 import static io.servicetalk.http.api.HttpResponseStatus.EXPECTATION_FAILED;
 import static io.servicetalk.http.api.HttpResponseStatus.FAILED_DEPENDENCY;
 import static io.servicetalk.http.api.HttpResponseStatus.FORBIDDEN;
@@ -28,10 +30,12 @@ import static io.servicetalk.http.api.HttpResponseStatus.FOUND;
 import static io.servicetalk.http.api.HttpResponseStatus.GATEWAY_TIMEOUT;
 import static io.servicetalk.http.api.HttpResponseStatus.GONE;
 import static io.servicetalk.http.api.HttpResponseStatus.HTTP_VERSION_NOT_SUPPORTED;
+import static io.servicetalk.http.api.HttpResponseStatus.IM_USED;
 import static io.servicetalk.http.api.HttpResponseStatus.INSUFFICIENT_STORAGE;
 import static io.servicetalk.http.api.HttpResponseStatus.INTERNAL_SERVER_ERROR;
 import static io.servicetalk.http.api.HttpResponseStatus.LENGTH_REQUIRED;
 import static io.servicetalk.http.api.HttpResponseStatus.LOCKED;
+import static io.servicetalk.http.api.HttpResponseStatus.LOOP_DETECTED;
 import static io.servicetalk.http.api.HttpResponseStatus.METHOD_NOT_ALLOWED;
 import static io.servicetalk.http.api.HttpResponseStatus.MISDIRECTED_REQUEST;
 import static io.servicetalk.http.api.HttpResponseStatus.MOVED_PERMANENTLY;
@@ -47,28 +51,29 @@ import static io.servicetalk.http.api.HttpResponseStatus.NOT_MODIFIED;
 import static io.servicetalk.http.api.HttpResponseStatus.NO_CONTENT;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.HttpResponseStatus.PARTIAL_CONTENT;
+import static io.servicetalk.http.api.HttpResponseStatus.PAYLOAD_TOO_LARGE;
 import static io.servicetalk.http.api.HttpResponseStatus.PAYMENT_REQUIRED;
 import static io.servicetalk.http.api.HttpResponseStatus.PERMANENT_REDIRECT;
 import static io.servicetalk.http.api.HttpResponseStatus.PRECONDITION_FAILED;
 import static io.servicetalk.http.api.HttpResponseStatus.PRECONDITION_REQUIRED;
 import static io.servicetalk.http.api.HttpResponseStatus.PROCESSING;
 import static io.servicetalk.http.api.HttpResponseStatus.PROXY_AUTHENTICATION_REQUIRED;
-import static io.servicetalk.http.api.HttpResponseStatus.REQUESTED_RANGE_NOT_SATISFIABLE;
-import static io.servicetalk.http.api.HttpResponseStatus.REQUEST_ENTITY_TOO_LARGE;
+import static io.servicetalk.http.api.HttpResponseStatus.RANGE_NOT_SATISFIABLE;
 import static io.servicetalk.http.api.HttpResponseStatus.REQUEST_HEADER_FIELDS_TOO_LARGE;
 import static io.servicetalk.http.api.HttpResponseStatus.REQUEST_TIMEOUT;
-import static io.servicetalk.http.api.HttpResponseStatus.REQUEST_URI_TOO_LONG;
 import static io.servicetalk.http.api.HttpResponseStatus.RESET_CONTENT;
 import static io.servicetalk.http.api.HttpResponseStatus.SEE_OTHER;
 import static io.servicetalk.http.api.HttpResponseStatus.SERVICE_UNAVAILABLE;
 import static io.servicetalk.http.api.HttpResponseStatus.SWITCHING_PROTOCOLS;
 import static io.servicetalk.http.api.HttpResponseStatus.TEMPORARY_REDIRECT;
+import static io.servicetalk.http.api.HttpResponseStatus.TOO_EARLY;
 import static io.servicetalk.http.api.HttpResponseStatus.TOO_MANY_REQUESTS;
 import static io.servicetalk.http.api.HttpResponseStatus.UNAUTHORIZED;
-import static io.servicetalk.http.api.HttpResponseStatus.UNORDERED_COLLECTION;
+import static io.servicetalk.http.api.HttpResponseStatus.UNAVAILABLE_FOR_LEGAL_REASONS;
 import static io.servicetalk.http.api.HttpResponseStatus.UNPROCESSABLE_ENTITY;
 import static io.servicetalk.http.api.HttpResponseStatus.UNSUPPORTED_MEDIA_TYPE;
 import static io.servicetalk.http.api.HttpResponseStatus.UPGRADE_REQUIRED;
+import static io.servicetalk.http.api.HttpResponseStatus.URI_TOO_LONG;
 import static io.servicetalk.http.api.HttpResponseStatus.USE_PROXY;
 import static io.servicetalk.http.api.HttpResponseStatus.VARIANT_ALSO_NEGOTIATES;
 
@@ -105,6 +110,14 @@ public interface StreamingHttpResponseFactory {
      */
     default StreamingHttpResponse processing() {
         return newResponse(PROCESSING);
+    }
+
+    /**
+     * Create a new {@link HttpResponseStatus#EARLY_HINTS} response.
+     * @return a new {@link HttpResponseStatus#EARLY_HINTS} response.
+     */
+    default StreamingHttpResponse earlyHints() {
+        return newResponse(EARLY_HINTS);
     }
 
     /**
@@ -169,6 +182,22 @@ public interface StreamingHttpResponseFactory {
      */
     default StreamingHttpResponse multiStatus() {
         return newResponse(MULTI_STATUS);
+    }
+
+    /**
+     * Create a new {@link HttpResponseStatus#ALREADY_REPORTED} response.
+     * @return a new {@link HttpResponseStatus#ALREADY_REPORTED} response.
+     */
+    default StreamingHttpResponse alreadyReported() {
+        return newResponse(ALREADY_REPORTED);
+    }
+
+    /**
+     * Create a new {@link HttpResponseStatus#IM_USED} response.
+     * @return a new {@link HttpResponseStatus#IM_USED} response.
+     */
+    default StreamingHttpResponse imUsed() {
+        return newResponse(IM_USED);
     }
 
     /**
@@ -340,19 +369,19 @@ public interface StreamingHttpResponseFactory {
     }
 
     /**
-     * Create a new {@link HttpResponseStatus#REQUEST_ENTITY_TOO_LARGE} response.
-     * @return a new {@link HttpResponseStatus#REQUEST_ENTITY_TOO_LARGE} response.
+     * Create a new {@link HttpResponseStatus#PAYLOAD_TOO_LARGE} response.
+     * @return a new {@link HttpResponseStatus#PAYLOAD_TOO_LARGE} response.
      */
-    default StreamingHttpResponse requestEntityTooLarge() {
-        return newResponse(REQUEST_ENTITY_TOO_LARGE);
+    default StreamingHttpResponse payloadTooLarge() {
+        return newResponse(PAYLOAD_TOO_LARGE);
     }
 
     /**
-     * Create a new {@link HttpResponseStatus#REQUEST_URI_TOO_LONG} response.
-     * @return a new {@link HttpResponseStatus#REQUEST_URI_TOO_LONG} response.
+     * Create a new {@link HttpResponseStatus#URI_TOO_LONG} response.
+     * @return a new {@link HttpResponseStatus#URI_TOO_LONG} response.
      */
-    default StreamingHttpResponse requestUriTooLong() {
-        return newResponse(REQUEST_URI_TOO_LONG);
+    default StreamingHttpResponse uriTooLong() {
+        return newResponse(URI_TOO_LONG);
     }
 
     /**
@@ -364,11 +393,11 @@ public interface StreamingHttpResponseFactory {
     }
 
     /**
-     * Create a new {@link HttpResponseStatus#REQUESTED_RANGE_NOT_SATISFIABLE} response.
-     * @return a new {@link HttpResponseStatus#REQUESTED_RANGE_NOT_SATISFIABLE} response.
+     * Create a new {@link HttpResponseStatus#RANGE_NOT_SATISFIABLE} response.
+     * @return a new {@link HttpResponseStatus#RANGE_NOT_SATISFIABLE} response.
      */
-    default StreamingHttpResponse requestedRangeNotSatisfiable() {
-        return newResponse(REQUESTED_RANGE_NOT_SATISFIABLE);
+    default StreamingHttpResponse rangeNotSatisfiable() {
+        return newResponse(RANGE_NOT_SATISFIABLE);
     }
 
     /**
@@ -412,11 +441,11 @@ public interface StreamingHttpResponseFactory {
     }
 
     /**
-     * Create a new {@link HttpResponseStatus#UNORDERED_COLLECTION} response.
-     * @return a new {@link HttpResponseStatus#UNORDERED_COLLECTION} response.
+     * Create a new {@link HttpResponseStatus#TOO_EARLY} response.
+     * @return a new {@link HttpResponseStatus#TOO_EARLY} response.
      */
-    default StreamingHttpResponse unorderedCollection() {
-        return newResponse(UNORDERED_COLLECTION);
+    default StreamingHttpResponse tooEarly() {
+        return newResponse(TOO_EARLY);
     }
 
     /**
@@ -449,6 +478,14 @@ public interface StreamingHttpResponseFactory {
      */
     default StreamingHttpResponse requestHeaderFieldsTooLarge() {
         return newResponse(REQUEST_HEADER_FIELDS_TOO_LARGE);
+    }
+
+    /**
+     * Create a new {@link HttpResponseStatus#UNAVAILABLE_FOR_LEGAL_REASONS} response.
+     * @return a new {@link HttpResponseStatus#UNAVAILABLE_FOR_LEGAL_REASONS} response.
+     */
+    default StreamingHttpResponse unavailableForLegalReasons() {
+        return newResponse(UNAVAILABLE_FOR_LEGAL_REASONS);
     }
 
     /**
@@ -513,6 +550,14 @@ public interface StreamingHttpResponseFactory {
      */
     default StreamingHttpResponse insufficientStorage() {
         return newResponse(INSUFFICIENT_STORAGE);
+    }
+
+    /**
+     * Create a new {@link HttpResponseStatus#LOOP_DETECTED} response.
+     * @return a new {@link HttpResponseStatus#LOOP_DETECTED} response.
+     */
+    default StreamingHttpResponse loopDetected() {
+        return newResponse(LOOP_DETECTED);
     }
 
     /**

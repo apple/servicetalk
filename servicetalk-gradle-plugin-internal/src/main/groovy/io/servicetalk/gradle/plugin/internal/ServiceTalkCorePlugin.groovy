@@ -43,8 +43,8 @@ class ServiceTalkCorePlugin implements Plugin<Project> {
     applyIdeaPlugin project
 
     if (publishesArtifacts) {
-      applyMavenPublishPlugin project
-      applyBintrayPlugin project
+      applyMavenPublishPlugin project // Sign & Publish to Maven Central
+      //      applyBintrayPlugin project // Publish to Bintray, depends on applyMavenPublishPlugin
     }
   }
 

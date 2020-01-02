@@ -57,7 +57,7 @@ import static io.netty.handler.codec.http.HttpConstants.CR;
 import static io.netty.util.ByteProcessor.FIND_LF;
 import static io.netty.util.ByteProcessor.FIND_LINEAR_WHITESPACE;
 import static io.netty.util.ByteProcessor.FIND_NON_LINEAR_WHITESPACE;
-import static io.servicetalk.buffer.netty.BufferUtil.newBufferFrom;
+import static io.servicetalk.buffer.netty.BufferUtils.newBufferFrom;
 import static io.servicetalk.http.api.CharSequences.emptyAsciiString;
 import static io.servicetalk.http.api.CharSequences.newAsciiString;
 import static io.servicetalk.http.api.HeaderUtils.isTransferEncodingChunked;
@@ -409,9 +409,11 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
     }
 
     @Override
-    protected final ByteBuf swapCumulation(ByteBuf cumulation, ByteBufAllocator allocator) {
+    protected final ByteBuf swapAndCopyCumulation(final ByteBufAllocator alloc,
+                                                  final ByteBuf cumulation,
+                                                  final ByteBuf in) {
         final int readerIndex = cumulation.readerIndex();
-        ByteBuf newCumulation = super.swapCumulation(cumulation, allocator);
+        ByteBuf newCumulation = super.swapAndCopyCumulation(alloc, cumulation, in);
         cumulationIndex -= readerIndex - newCumulation.readerIndex();
         return newCumulation;
     }
@@ -525,8 +527,8 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
             cumulationIndex = buffer.writerIndex();
             return false;
         } else {
-            cumulationIndex = i;
             buffer.readerIndex(i);
+            cumulationIndex = i;
             return true;
         }
     }
@@ -543,6 +545,12 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
         //      obs-fold       = CRLF 1*( SP / HTAB )
         //                     ; obsolete line folding
         //                     ; see Section 3.2.4
+        //      OWS            = *( SP / HTAB )
+        //                     ; optional whitespace
+        // https://tools.ietf.org/html/rfc7230#section-3.2.4
+        // No whitespace is allowed between the header field-name and colon.  In
+        //    the past, differences in the handling of such whitespace have led to
+        //    security vulnerabilities in request routing and response handling.
         final int nonControlIndex = lfIndex - 2;
         int headerStart = buffer.forEachByte(buffer.readerIndex(), nonControlIndex - buffer.readerIndex(),
                 FIND_NON_LINEAR_WHITESPACE);
@@ -556,19 +564,17 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
             throw new IllegalArgumentException("unable to find end of header name");
         }
 
+        if (buffer.getByte(headerEnd) != COLON_BYTE) {
+            throw new IllegalArgumentException("No whitespace is allowed between the header field-name and colon.");
+        }
+
         int valueStart = headerEnd + 1;
         // We assume the allocator will not leak memory, and so we retain + slice to avoid copying data.
         CharSequence name = newAsciiString(newBufferFrom(buffer.retainedSlice(headerStart, headerEnd - headerStart)));
-        if (buffer.getByte(headerEnd) != COLON_BYTE) {
-            valueStart = buffer.forEachByte(headerEnd + 1, nonControlIndex - headerEnd, FIND_COLON);
-            if (valueStart < 0) {
-                throw new IllegalArgumentException("unable to find colon");
-            }
-        }
-        if (nonControlIndex <= valueStart) {
+        if (nonControlIndex < valueStart) {
             headers.add(name, emptyAsciiString());
         } else {
-            valueStart = buffer.forEachByte(valueStart + 1, nonControlIndex - valueStart, FIND_NON_LINEAR_WHITESPACE);
+            valueStart = buffer.forEachByte(valueStart, nonControlIndex - valueStart + 1, FIND_NON_LINEAR_WHITESPACE);
             // Find End Of String
             int valueEnd;
             if (valueStart < 0 || (valueEnd = buffer.forEachByteDesc(valueStart, lfIndex - valueStart - 1,

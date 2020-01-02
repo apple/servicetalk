@@ -29,7 +29,7 @@ if (!repositories) {
   }
 }
 
-apply plugin: "servicetalk-root"
+apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-root"
 
 task validateLocalDocSite(type: Exec) {
   workingDir 'docs/generation'
