@@ -72,7 +72,6 @@ import static io.servicetalk.grpc.api.GrpcUtils.newErrorResponse;
 import static io.servicetalk.grpc.api.GrpcUtils.newResponse;
 import static io.servicetalk.grpc.api.GrpcUtils.readGrpcMessageEncoding;
 import static io.servicetalk.grpc.api.GrpcUtils.setStatus;
-import static io.servicetalk.grpc.api.GrpcUtils.uncheckedCast;
 import static io.servicetalk.http.api.HttpApiConversions.toStreamingHttpService;
 import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static java.util.Collections.unmodifiableMap;
@@ -121,7 +120,7 @@ final class GrpcRouter {
             public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
                                                         final StreamingHttpRequest request,
                                                         final StreamingHttpResponseFactory responseFactory) {
-                StreamingHttpService service;
+                final StreamingHttpService service;
                 if (request.method() != HttpRequestMethod.POST || (service = allRoutes.get(request.path())) == null) {
                     return notFound.handle(ctx, request, responseFactory);
                 } else {
@@ -225,7 +224,7 @@ final class GrpcRouter {
                                 return route.handle(serviceContext, request.payloadBody(deserializer))
                                         .map(rawResp -> newResponse(responseFactory,
                                                 ctx.executionContext().bufferAllocator())
-                                                .payloadBody(uncheckedCast(rawResp),
+                                                .payloadBody(rawResp,
                                                         serializationProvider.serializerFor(serviceContext,
                                                                 responseClass)))
                                         .recoverWith(cause -> succeeded(newErrorResponse(responseFactory, cause,
@@ -268,8 +267,7 @@ final class GrpcRouter {
                                     serializationProvider.deserializerFor(readGrpcMessageEncoding(request),
                                             requestClass);
                             final Publisher<Resp> response = route.handle(serviceContext,
-                                    request.payloadBody(deserializer))
-                                    .map(GrpcUtils::uncheckedCast);
+                                    request.payloadBody(deserializer));
                             return succeeded(newResponse(responseFactory, response,
                                     serializationProvider.serializerFor(serviceContext, responseClass),
                                     ctx.executionContext().bufferAllocator()));
@@ -349,7 +347,7 @@ final class GrpcRouter {
                         @Override
                         public Publisher<Resp> handle(final GrpcServiceContext ctx, final Publisher<Req> request) {
                             return request.firstOrError()
-                                    .flatMapPublisher(rawReq -> route.handle(ctx, uncheckedCast(rawReq)));
+                                    .flatMapPublisher(rawReq -> route.handle(ctx, rawReq));
                         }
 
                         @Override
@@ -385,7 +383,7 @@ final class GrpcRouter {
                     toStreamingHttpService(new BlockingHttpService() {
                         @Override
                         public HttpResponse handle(final HttpServiceContext ctx, final HttpRequest request,
-                                                   final HttpResponseFactory responseFactory) throws Exception {
+                                                   final HttpResponseFactory responseFactory) {
                             try {
                                 final GrpcServiceContext serviceContext =
                                         new DefaultGrpcServiceContext(request.path(), ctx);
