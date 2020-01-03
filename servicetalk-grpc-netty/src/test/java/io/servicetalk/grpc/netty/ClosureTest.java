@@ -75,7 +75,7 @@ public class ClosureTest {
 
     @Test
     public void serviceImplIsClosed() throws Exception {
-        CloseSignal signal = new CloseSignal(1);
+        CloseSignal signal = new CloseSignal(4);
         TesterService svc = setupCloseMock(mock(TesterService.class), signal);
         startServerAndClose(new ServiceFactory(svc), signal);
         verifyClosure(svc, 4 /* 4 rpc methods */);
