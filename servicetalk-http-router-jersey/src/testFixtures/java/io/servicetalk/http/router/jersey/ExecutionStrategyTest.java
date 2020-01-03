@@ -22,6 +22,7 @@ import io.servicetalk.http.api.HttpServerBuilder;
 import io.servicetalk.http.router.jersey.resources.ExecutionStrategyResources.ResourceDefaultStrategy;
 import io.servicetalk.http.router.jersey.resources.ExecutionStrategyResources.ResourceRouteExecIdStrategy;
 import io.servicetalk.http.router.jersey.resources.ExecutionStrategyResources.ResourceRouteNoOffloadsStrategy;
+import io.servicetalk.router.api.RouteExecutionStrategyFactory;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.hamcrest.Matcher;
@@ -39,7 +40,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Function;
 import javax.ws.rs.core.Application;
 
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
@@ -215,7 +215,7 @@ public final class ExecutionStrategyTest extends AbstractNonParameterizedJerseyS
         return parameters;
     }
 
-    static Function<String, HttpExecutionStrategy> asFactory(
+    static RouteExecutionStrategyFactory<HttpExecutionStrategy> asFactory(
             final Map<String, HttpExecutionStrategy> executionStrategies) {
         return executionStrategies::get;
     }

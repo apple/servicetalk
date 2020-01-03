@@ -21,6 +21,7 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.router.api.NoOffloadsRouteExecutionStrategy;
 import io.servicetalk.router.api.RouteExecutionStrategy;
+import io.servicetalk.router.api.RouteExecutionStrategyFactory;
 import io.servicetalk.router.utils.internal.RouteExecutionStrategyUtils;
 
 import org.glassfish.jersey.server.ApplicationHandler;
@@ -46,7 +47,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.CompletionStage;
-import java.util.function.Function;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.http.api.HttpExecutionStrategies.customStrategyBuilder;
@@ -57,14 +57,14 @@ import static org.glassfish.jersey.model.Parameter.Source.ENTITY;
 
 final class JerseyRouteExecutionStrategyUtils {
     private static final class RouteExecutionStrategyValidator implements ResourceModelVisitor {
-        private final Function<String, HttpExecutionStrategy> routeStrategyFactory;
+        private final RouteExecutionStrategyFactory<HttpExecutionStrategy> strategyFactory;
         private final Map<String, HttpExecutionStrategy> routeStrategies;
         private final Map<Method, HttpExecutionStrategy> methodDefaultStrategies;
         private final Set<String> errors;
         private final Deque<ResourceMethod> resourceMethodDeque;
 
-        RouteExecutionStrategyValidator(final Function<String, HttpExecutionStrategy> routeStrategyFactory) {
-            this.routeStrategyFactory = routeStrategyFactory;
+        RouteExecutionStrategyValidator(final RouteExecutionStrategyFactory<HttpExecutionStrategy> strategyFactory) {
+            this.strategyFactory = strategyFactory;
 
             routeStrategies = new HashMap<>();
             methodDefaultStrategies = new HashMap<>();
@@ -98,7 +98,7 @@ final class JerseyRouteExecutionStrategyUtils {
 
             validateRouteExecutionStrategyAnnotationIfPresent(
                     invocable.getHandlingMethod(), invocable.getHandler().getHandlerClass(),
-                    id -> routeStrategies.computeIfAbsent(id, routeStrategyFactory), resourceMethodDeque.peek(),
+                    id -> routeStrategies.computeIfAbsent(id, strategyFactory::get), resourceMethodDeque.peek(),
                     errors);
         }
 
@@ -143,7 +143,7 @@ final class JerseyRouteExecutionStrategyUtils {
 
     static RouteStrategiesConfig validateRouteStrategies(
             final ApplicationHandler applicationHandler,
-            final Function<String, HttpExecutionStrategy> routeStrategyFactory) {
+            final RouteExecutionStrategyFactory<HttpExecutionStrategy> strategyFactory) {
 
         final ExtendedResourceContext resourceContext =
                 applicationHandler.getInjectionManager().getInstance(ExtendedResourceContext.class);
@@ -151,7 +151,7 @@ final class JerseyRouteExecutionStrategyUtils {
             return new RouteStrategiesConfig(emptyMap(), emptyMap());
         }
 
-        final RouteExecutionStrategyValidator validator = new RouteExecutionStrategyValidator(routeStrategyFactory);
+        final RouteExecutionStrategyValidator validator = new RouteExecutionStrategyValidator(strategyFactory);
         resourceContext.getResourceModel().accept(validator);
         if (!validator.errors.isEmpty()) {
             throw new IllegalArgumentException("Invalid execution strategy configuration found:\n" + validator.errors);
@@ -211,12 +211,12 @@ final class JerseyRouteExecutionStrategyUtils {
     private static void validateRouteExecutionStrategyAnnotationIfPresent(
             final Method method,
             final Class<?> clazz,
-            final Function<String, HttpExecutionStrategy> routeStrategyFactory,
+            final RouteExecutionStrategyFactory<HttpExecutionStrategy> strategyFactory,
             @Nullable final ResourceMethod resourceMethod,
             final Set<String> errors) {
 
         final Annotation annotation = RouteExecutionStrategyUtils
-                .validateRouteExecutionStrategyAnnotationIfPresent(method, clazz, routeStrategyFactory::apply, errors);
+                .validateRouteExecutionStrategyAnnotationIfPresent(method, clazz, strategyFactory, errors);
 
         if (annotation == null) {
             return;

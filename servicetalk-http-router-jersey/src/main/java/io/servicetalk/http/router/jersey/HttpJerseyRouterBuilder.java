@@ -24,11 +24,11 @@ import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpService;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.router.api.RouteExecutionStrategy;
+import io.servicetalk.router.api.RouteExecutionStrategyFactory;
 import io.servicetalk.transport.api.ConnectionContext;
 
 import java.io.InputStream;
 import java.util.function.BiFunction;
-import java.util.function.Function;
 import javax.ws.rs.core.Application;
 
 import static io.servicetalk.http.utils.HttpRequestUriUtils.getBaseRequestUri;
@@ -46,7 +46,7 @@ public final class HttpJerseyRouterBuilder {
     private int publisherInputStreamQueueCapacity = 16;
     private BiFunction<ConnectionContext, HttpRequestMetaData, String> baseUriFunction =
             (ctx, req) -> getBaseRequestUri(ctx, req, false);
-    private Function<String, HttpExecutionStrategy> routeStrategyFactory = __ -> null;
+    private RouteExecutionStrategyFactory<HttpExecutionStrategy> strategyFactory = __ -> null;
 
     /**
      * Set the hint for the capacity of the intermediary queue that stores items when adapting {@link Publisher}s
@@ -81,17 +81,18 @@ public final class HttpJerseyRouterBuilder {
     }
 
     /**
-     * Set a {@link Function Function&lt;String, HttpExecutionStrategy&gt;} used as a factory for
+     * Set a {@link RouteExecutionStrategyFactory RouteExecutionStrategyFactory&lt;HttpExecutionStrategy&gt;} for
      * creating {@link HttpExecutionStrategy} instances that can be used for offloading the handling of request to
      * resource methods, as specified via {@link RouteExecutionStrategy} annotations.
      *
-     * @param routeStrategyFactory a {@link Function Function&lt;String, HttpExecutionStrategy&gt;}
+     * @param strategyFactory a
+     * {@link RouteExecutionStrategyFactory RouteExecutionStrategyFactory&lt;HttpExecutionStrategy&gt;}
      * @return this
      * @see RouteExecutionStrategy
      */
     public HttpJerseyRouterBuilder routeExecutionStrategyFactory(
-            final Function<String, HttpExecutionStrategy> routeStrategyFactory) {
-        this.routeStrategyFactory = requireNonNull(routeStrategyFactory);
+            final RouteExecutionStrategyFactory<HttpExecutionStrategy> strategyFactory) {
+        this.strategyFactory = requireNonNull(strategyFactory);
         return this;
     }
 
@@ -182,12 +183,12 @@ public final class HttpJerseyRouterBuilder {
 
     DefaultJerseyStreamingHttpRouter from(final Class<? extends Application> applicationClass) {
         return new DefaultJerseyStreamingHttpRouter(applicationClass, publisherInputStreamQueueCapacity,
-                baseUriFunction, routeStrategyFactory);
+                baseUriFunction, strategyFactory);
     }
 
     DefaultJerseyStreamingHttpRouter from(final Application application) {
         return new DefaultJerseyStreamingHttpRouter(application, publisherInputStreamQueueCapacity, baseUriFunction,
-                routeStrategyFactory);
+                strategyFactory);
     }
 
     static HttpService toAggregated(DefaultJerseyStreamingHttpRouter router) {
