@@ -42,7 +42,6 @@ import io.servicetalk.http.api.HttpDeserializer;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpPayloadWriter;
 import io.servicetalk.http.api.HttpRequest;
-import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.HttpResponseFactory;
 import io.servicetalk.http.api.HttpSerializer;
@@ -74,6 +73,7 @@ import static io.servicetalk.grpc.api.GrpcUtils.readGrpcMessageEncoding;
 import static io.servicetalk.grpc.api.GrpcUtils.setStatus;
 import static io.servicetalk.http.api.HttpApiConversions.toStreamingHttpService;
 import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
+import static io.servicetalk.http.api.HttpRequestMethod.POST;
 import static java.util.Collections.unmodifiableMap;
 import static java.util.Objects.requireNonNull;
 
@@ -121,7 +121,7 @@ final class GrpcRouter {
                                                         final StreamingHttpRequest request,
                                                         final StreamingHttpResponseFactory responseFactory) {
                 final StreamingHttpService service;
-                if (request.method() != HttpRequestMethod.POST || (service = allRoutes.get(request.path())) == null) {
+                if (!POST.equals(request.method()) || (service = allRoutes.get(request.path())) == null) {
                     return notFound.handle(ctx, request, responseFactory);
                 } else {
                     return service.handle(ctx, request, responseFactory);
@@ -140,10 +140,10 @@ final class GrpcRouter {
         });
     }
 
-    private void populateRoutes(final ExecutionContext executionContext,
-                                final Map<String, StreamingHttpService> allRoutes,
-                                final Map<String, RouteProvider> routes,
-                                final CompositeCloseable closeable) {
+    private static void populateRoutes(final ExecutionContext executionContext,
+                                       final Map<String, StreamingHttpService> allRoutes,
+                                       final Map<String, RouteProvider> routes,
+                                       final CompositeCloseable closeable) {
         for (Map.Entry<String, RouteProvider> entry : routes.entrySet()) {
             final ServiceAdapterHolder adapterHolder = entry.getValue().buildRoute(executionContext);
             StreamingHttpService route = closeable.append(adapterHolder.adaptor());

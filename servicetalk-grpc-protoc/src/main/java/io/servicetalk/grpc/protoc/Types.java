@@ -38,7 +38,6 @@ final class Types {
 
     static final ClassName BlockingGrpcClient = bestGuess(grpcApiPkg + ".BlockingGrpcClient");
     static final ClassName BlockingGrpcService = bestGuess(grpcApiPkg + ".BlockingGrpcService");
-    static final ClassName BlockingRpc = bestGuess(grpcApiPkg + ".BlockingRpc");
     static final ClassName DefaultGrpcClientMetadata = bestGuess(grpcApiPkg + ".DefaultGrpcClientMetadata");
     static final ClassName GrpcClient = bestGuess(grpcApiPkg + ".GrpcClient");
     static final ClassName GrpcClientCallFactory = bestGuess(grpcApiPkg + ".GrpcClientCallFactory");
@@ -54,7 +53,6 @@ final class Types {
     static final ClassName GrpcServiceContext = bestGuess(grpcApiPkg + ".GrpcServiceContext");
     static final ClassName GrpcServiceFactory = bestGuess(grpcApiPkg + ".GrpcServiceFactory");
     static final ClassName GrpcServiceFilterFactory = bestGuess(grpcApiPkg + ".GrpcServiceFilterFactory");
-    static final ClassName Rpc = bestGuess(grpcApiPkg + ".Rpc");
 
     static final ClassName BlockingClientCall = bestGuess(GrpcClientCallFactory + ".BlockingClientCall");
     static final ClassName BlockingRequestStreamingClientCall =

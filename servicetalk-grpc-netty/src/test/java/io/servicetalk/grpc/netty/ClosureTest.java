@@ -75,20 +75,20 @@ public class ClosureTest {
 
     @Test
     public void serviceImplIsClosed() throws Exception {
-        CloseSignal signal = new CloseSignal();
+        CloseSignal signal = new CloseSignal(1);
         TesterService svc = setupCloseMock(mock(TesterService.class), signal);
         startServerAndClose(new ServiceFactory(svc), signal);
         verifyClosure(svc, 4 /* 4 rpc methods */);
-        signal.verifyCloseAtleastCount(closeGracefully);
+        signal.verifyCloseAtLeastCount(closeGracefully);
     }
 
     @Test
     public void blockingServiceImplIsClosed() throws Exception {
-        CloseSignal signal = new CloseSignal();
+        CloseSignal signal = new CloseSignal(1);
         BlockingTesterService svc = setupBlockingCloseMock(mock(BlockingTesterService.class), signal);
         startServerAndClose(new ServiceFactory(svc), signal);
         verifyClosure(svc, 4 /* 4 rpc methods */);
-        signal.verifyCloseAtleastCount(closeGracefully);
+        signal.verifyCloseAtLeastCount(closeGracefully);
     }
 
     @Test
@@ -215,10 +215,6 @@ public class ClosureTest {
         private final Completable close;
         private final Completable closeGraceful;
 
-        CloseSignal() {
-            this(1);
-        }
-
         CloseSignal(final int count) {
             latch = new CountDownLatch(count);
             this.count = count;
@@ -246,7 +242,7 @@ public class ClosureTest {
             assertThat("Unexpected closures.", closeCount.get(), equalTo(graceful ? 0 : count));
         }
 
-        void verifyCloseAtleastCount(boolean graceful) {
+        void verifyCloseAtLeastCount(boolean graceful) {
             if (graceful) {
                 assertThat("Unexpected graceful closures.", gracefulCloseCount.get(),
                         greaterThanOrEqualTo(count));

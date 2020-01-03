@@ -54,7 +54,6 @@ import static io.servicetalk.grpc.protoc.Types.BlockingRequestStreamingRoute;
 import static io.servicetalk.grpc.protoc.Types.BlockingResponseStreamingClientCall;
 import static io.servicetalk.grpc.protoc.Types.BlockingResponseStreamingRoute;
 import static io.servicetalk.grpc.protoc.Types.BlockingRoute;
-import static io.servicetalk.grpc.protoc.Types.BlockingRpc;
 import static io.servicetalk.grpc.protoc.Types.BlockingStreamingClientCall;
 import static io.servicetalk.grpc.protoc.Types.BlockingStreamingRoute;
 import static io.servicetalk.grpc.protoc.Types.ClientCall;
@@ -121,7 +120,6 @@ import static java.util.EnumSet.noneOf;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Stream.concat;
 import static javax.lang.model.element.Modifier.ABSTRACT;
-import static javax.lang.model.element.Modifier.DEFAULT;
 import static javax.lang.model.element.Modifier.FINAL;
 import static javax.lang.model.element.Modifier.PRIVATE;
 import static javax.lang.model.element.Modifier.PROTECTED;
@@ -262,7 +260,7 @@ final class Generator {
                     .addMethod(newRpcMethodSpec(methodProto,
                             blocking ? EnumSet.of(BLOCKING, INTERFACE) : EnumSet.of(INTERFACE),
                             (__, b) -> b.addModifiers(ABSTRACT).addParameter(GrpcServiceContext, ctx)))
-                    .addSuperinterface(blocking ? BlockingRpc : Types.Rpc);
+                    .addSuperinterface(blocking ? BlockingGrpcService : GrpcService);
 
             if (methodProto.hasOptions() && methodProto.getOptions().getDeprecated()) {
                 interfaceSpecBuilder.addAnnotation(Deprecated.class);
@@ -863,23 +861,6 @@ final class Generator {
                 .filter(e -> e.blocking == blocking)
                 .map(e -> e.className)
                 .forEach(interfaceSpecBuilder::addSuperinterface);
-
-        if (blocking) {
-            interfaceSpecBuilder
-                    .addMethod(methodBuilder(close)
-                            .addModifiers(DEFAULT, PUBLIC)
-                            .addAnnotation(Override.class)
-                            .addComment("noop")
-                            .build());
-        } else {
-            interfaceSpecBuilder
-                    .addMethod(methodBuilder(closeAsync)
-                            .addModifiers(DEFAULT, PUBLIC)
-                            .addAnnotation(Override.class)
-                            .returns(Completable)
-                            .addStatement("return $T.completed()", Completable)
-                            .build());
-        }
 
         return interfaceSpecBuilder.build();
     }
