@@ -44,4 +44,9 @@ final class BlockingToStreamingService extends AbstractServiceAdapterHolder {
     public Completable closeAsync() {
         return blockingToCompletable(original::close);
     }
+
+    @Override
+    public Completable closeAsyncGracefully() {
+        return blockingToCompletable(original::closeGracefully);
+    }
 }

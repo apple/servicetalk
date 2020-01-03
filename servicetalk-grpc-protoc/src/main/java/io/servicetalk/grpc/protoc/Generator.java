@@ -50,8 +50,12 @@ import static io.servicetalk.grpc.protoc.Types.BlockingGrpcClient;
 import static io.servicetalk.grpc.protoc.Types.BlockingGrpcService;
 import static io.servicetalk.grpc.protoc.Types.BlockingIterable;
 import static io.servicetalk.grpc.protoc.Types.BlockingRequestStreamingClientCall;
+import static io.servicetalk.grpc.protoc.Types.BlockingRequestStreamingRoute;
 import static io.servicetalk.grpc.protoc.Types.BlockingResponseStreamingClientCall;
+import static io.servicetalk.grpc.protoc.Types.BlockingResponseStreamingRoute;
+import static io.servicetalk.grpc.protoc.Types.BlockingRoute;
 import static io.servicetalk.grpc.protoc.Types.BlockingStreamingClientCall;
+import static io.servicetalk.grpc.protoc.Types.BlockingStreamingRoute;
 import static io.servicetalk.grpc.protoc.Types.ClientCall;
 import static io.servicetalk.grpc.protoc.Types.Completable;
 import static io.servicetalk.grpc.protoc.Types.DefaultGrpcClientMetadata;
@@ -116,7 +120,6 @@ import static java.util.EnumSet.noneOf;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Stream.concat;
 import static javax.lang.model.element.Modifier.ABSTRACT;
-import static javax.lang.model.element.Modifier.DEFAULT;
 import static javax.lang.model.element.Modifier.FINAL;
 import static javax.lang.model.element.Modifier.PRIVATE;
 import static javax.lang.model.element.Modifier.PROTECTED;
@@ -256,7 +259,8 @@ final class Generator {
                     .addModifiers(PUBLIC)
                     .addMethod(newRpcMethodSpec(methodProto,
                             blocking ? EnumSet.of(BLOCKING, INTERFACE) : EnumSet.of(INTERFACE),
-                            (__, b) -> b.addModifiers(ABSTRACT).addParameter(GrpcServiceContext, ctx)));
+                            (__, b) -> b.addModifiers(ABSTRACT).addParameter(GrpcServiceContext, ctx)))
+                    .addSuperinterface(blocking ? BlockingGrpcService : GrpcService);
 
             if (methodProto.hasOptions() && methodProto.getOptions().getDeprecated()) {
                 interfaceSpecBuilder.addAnnotation(Deprecated.class);
@@ -335,15 +339,16 @@ final class Generator {
             final String routeName = routeName(rpcInterface.methodProto);
             final String methodName = routeName + (rpcInterface.blocking ? Blocking : "");
             final String addRouteMethodName = addRouteMethodName(rpcInterface.methodProto, rpcInterface.blocking);
+            final ClassName routeInterfaceClass = routeInterfaceClass(rpcInterface.methodProto, rpcInterface.blocking);
 
             serviceBuilderSpecBuilder
                     .addMethod(methodBuilder(methodName)
                             .addModifiers(PUBLIC)
                             .addParameter(rpcInterface.className, rpc, FINAL)
                             .returns(builderClass)
-                            .addStatement("$L($T.$L.path(), $L::$L, $T.class, $T.class, $L)", addRouteMethodName,
-                                    state.rpcPathsEnumClass, routeName, rpc, routeName, inClass, outClass,
-                                    serializationProvider)
+                            .addStatement("$L($T.$L.path(), $L.wrap($L::$L, $L), $T.class, $T.class, $L)",
+                                    addRouteMethodName, state.rpcPathsEnumClass, routeName, routeInterfaceClass,
+                                    rpc, routeName, rpc, inClass, outClass, serializationProvider)
                             .addStatement("return this")
                             .build())
                     .addMethod(methodBuilder(methodName)
@@ -351,9 +356,9 @@ final class Generator {
                             .addParameter(GrpcExecutionStrategy, strategy, FINAL)
                             .addParameter(rpcInterface.className, rpc, FINAL)
                             .returns(builderClass)
-                            .addStatement("$L($T.$L.path(), $L, $L::$L, $T.class, $T.class, $L)", addRouteMethodName,
-                                    state.rpcPathsEnumClass, routeName, strategy, rpc, routeName, inClass,
-                                    outClass, serializationProvider)
+                            .addStatement("$L($T.$L.path(), $L, $L.wrap($L::$L, $L), $T.class, $T.class, $L)",
+                                    addRouteMethodName, state.rpcPathsEnumClass, routeName, strategy,
+                                    routeInterfaceClass, rpc, routeName, rpc, inClass, outClass, serializationProvider)
                             .addStatement("return this")
                             .build());
         });
@@ -857,23 +862,6 @@ final class Generator {
                 .map(e -> e.className)
                 .forEach(interfaceSpecBuilder::addSuperinterface);
 
-        if (blocking) {
-            interfaceSpecBuilder
-                    .addMethod(methodBuilder(close)
-                            .addModifiers(DEFAULT, PUBLIC)
-                            .addAnnotation(Override.class)
-                            .addComment("noop")
-                            .build());
-        } else {
-            interfaceSpecBuilder
-                    .addMethod(methodBuilder(closeAsync)
-                            .addModifiers(DEFAULT, PUBLIC)
-                            .addAnnotation(Override.class)
-                            .returns(Completable)
-                            .addStatement("return $T.completed()", Completable)
-                            .build());
-        }
-
         return interfaceSpecBuilder.build();
     }
 
@@ -905,6 +893,14 @@ final class Generator {
         return methodProto.getClientStreaming() ?
                 (methodProto.getServerStreaming() ? StreamingRoute : RequestStreamingRoute) :
                 (methodProto.getServerStreaming() ? ResponseStreamingRoute : Route);
+    }
+
+    private static ClassName routeInterfaceClass(final MethodDescriptorProto methodProto, final boolean blocking) {
+        return methodProto.getClientStreaming() ?
+                (methodProto.getServerStreaming() ? blocking ? BlockingStreamingRoute : StreamingRoute :
+                        blocking ? BlockingRequestStreamingRoute : RequestStreamingRoute) :
+                (methodProto.getServerStreaming() ? blocking ? BlockingResponseStreamingRoute : ResponseStreamingRoute
+                        : blocking ? BlockingRoute : Route);
     }
 
     private static String routeFactoryMethodName(final MethodDescriptorProto methodProto) {

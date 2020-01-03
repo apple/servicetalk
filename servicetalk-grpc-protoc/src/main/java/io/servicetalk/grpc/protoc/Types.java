@@ -73,6 +73,11 @@ final class Types {
     static final ClassName ResponseStreamingRoute = bestGuess(grpcRoutesFqcn + ".ResponseStreamingRoute");
     static final ClassName Route = bestGuess(grpcRoutesFqcn + ".Route");
     static final ClassName StreamingRoute = bestGuess(grpcRoutesFqcn + ".StreamingRoute");
+    static final ClassName BlockingRequestStreamingRoute = bestGuess(grpcRoutesFqcn + ".BlockingRequestStreamingRoute");
+    static final ClassName BlockingResponseStreamingRoute = bestGuess(grpcRoutesFqcn +
+            ".BlockingResponseStreamingRoute");
+    static final ClassName BlockingRoute = bestGuess(grpcRoutesFqcn + ".BlockingRoute");
+    static final ClassName BlockingStreamingRoute = bestGuess(grpcRoutesFqcn + ".BlockingStreamingRoute");
 
     static final ClassName ProtoBufSerializationProviderBuilder =
             bestGuess(grpcProtobufPkg + ".ProtoBufSerializationProviderBuilder");

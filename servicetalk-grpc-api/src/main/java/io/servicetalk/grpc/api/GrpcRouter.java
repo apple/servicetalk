@@ -15,6 +15,7 @@
  */
 package io.servicetalk.grpc.api;
 
+import io.servicetalk.concurrent.BlockingIterable;
 import io.servicetalk.concurrent.GracefulAutoCloseable;
 import io.servicetalk.concurrent.api.AsyncCloseable;
 import io.servicetalk.concurrent.api.AsyncCloseables;
@@ -33,14 +34,22 @@ import io.servicetalk.grpc.api.GrpcRoutes.StreamingRoute;
 import io.servicetalk.grpc.api.GrpcServiceFactory.ServerBinder;
 import io.servicetalk.grpc.api.GrpcUtils.GrpcStatusUpdater;
 import io.servicetalk.http.api.BlockingHttpService;
+import io.servicetalk.http.api.BlockingStreamingHttpRequest;
+import io.servicetalk.http.api.BlockingStreamingHttpServerResponse;
+import io.servicetalk.http.api.BlockingStreamingHttpService;
 import io.servicetalk.http.api.HttpApiConversions.ServiceAdapterHolder;
 import io.servicetalk.http.api.HttpDeserializer;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpPayloadWriter;
-import io.servicetalk.http.api.HttpRequestMethod;
+import io.servicetalk.http.api.HttpRequest;
+import io.servicetalk.http.api.HttpResponse;
+import io.servicetalk.http.api.HttpResponseFactory;
 import io.servicetalk.http.api.HttpSerializer;
 import io.servicetalk.http.api.HttpService;
+import io.servicetalk.http.api.HttpServiceContext;
+import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
+import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.ServerContext;
@@ -62,9 +71,9 @@ import static io.servicetalk.grpc.api.GrpcUtils.newErrorResponse;
 import static io.servicetalk.grpc.api.GrpcUtils.newResponse;
 import static io.servicetalk.grpc.api.GrpcUtils.readGrpcMessageEncoding;
 import static io.servicetalk.grpc.api.GrpcUtils.setStatus;
-import static io.servicetalk.grpc.api.GrpcUtils.uncheckedCast;
 import static io.servicetalk.http.api.HttpApiConversions.toStreamingHttpService;
 import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
+import static io.servicetalk.http.api.HttpRequestMethod.POST;
 import static java.util.Collections.unmodifiableMap;
 import static java.util.Objects.requireNonNull;
 
@@ -98,30 +107,48 @@ final class GrpcRouter {
     }
 
     Single<ServerContext> bind(final ServerBinder binder, final ExecutionContext executionContext) {
+        CompositeCloseable closeable = AsyncCloseables.newCompositeCloseable();
         final Map<String, StreamingHttpService> allRoutes = new HashMap<>();
-        populateRoutes(executionContext, allRoutes, routes);
-        populateRoutes(executionContext, allRoutes, streamingRoutes);
-        populateRoutes(executionContext, allRoutes, blockingRoutes);
-        populateRoutes(executionContext, allRoutes, blockingStreamingRoutes);
+        populateRoutes(executionContext, allRoutes, routes, closeable);
+        populateRoutes(executionContext, allRoutes, streamingRoutes, closeable);
+        populateRoutes(executionContext, allRoutes, blockingRoutes, closeable);
+        populateRoutes(executionContext, allRoutes, blockingStreamingRoutes, closeable);
 
         // TODO: Optimize to bind a specific programming model service based on routes
-        return binder.bindStreaming((ctx, request, responseFactory) -> {
-            StreamingHttpService service;
-            if (request.method() != HttpRequestMethod.POST || (service = allRoutes.get(request.path())) == null) {
-                return notFound.handle(ctx, request, responseFactory);
-            } else {
-                return service.handle(ctx, request, responseFactory);
+        return binder.bindStreaming(new StreamingHttpService() {
+            @Override
+            public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
+                                                        final StreamingHttpRequest request,
+                                                        final StreamingHttpResponseFactory responseFactory) {
+                final StreamingHttpService service;
+                if (!POST.equals(request.method()) || (service = allRoutes.get(request.path())) == null) {
+                    return notFound.handle(ctx, request, responseFactory);
+                } else {
+                    return service.handle(ctx, request, responseFactory);
+                }
+            }
+
+            @Override
+            public Completable closeAsync() {
+                return closeable.closeAsync();
+            }
+
+            @Override
+            public Completable closeAsyncGracefully() {
+                return closeable.closeAsyncGracefully();
             }
         });
     }
 
-    private void populateRoutes(final ExecutionContext executionContext,
-                                final Map<String, StreamingHttpService> allRoutes,
-                                final Map<String, RouteProvider> routes) {
+    private static void populateRoutes(final ExecutionContext executionContext,
+                                       final Map<String, StreamingHttpService> allRoutes,
+                                       final Map<String, RouteProvider> routes,
+                                       final CompositeCloseable closeable) {
         for (Map.Entry<String, RouteProvider> entry : routes.entrySet()) {
             final ServiceAdapterHolder adapterHolder = entry.getValue().buildRoute(executionContext);
+            StreamingHttpService route = closeable.append(adapterHolder.adaptor());
             allRoutes.put(entry.getKey(), adapterHolder.serviceInvocationStrategy()
-                    .offloadService(executionContext.executor(), adapterHolder.adaptor()));
+                    .offloadService(executionContext.executor(), route));
         }
     }
 
@@ -184,24 +211,38 @@ final class GrpcRouter {
                 final Route<Req, Resp> route, final Class<Req> requestClass,
                 final Class<Resp> responseClass, final GrpcSerializationProvider serializationProvider) {
             routes.put(path, new RouteProvider(executionContext -> toStreamingHttpService(
-                    (HttpService) (ctx, request, responseFactory) -> {
-                        try {
-                            final GrpcServiceContext serviceContext =
-                                    new DefaultGrpcServiceContext(request.path(), ctx);
-                            final HttpDeserializer<Req> deserializer =
-                                    serializationProvider.deserializerFor(readGrpcMessageEncoding(request),
-                                            requestClass);
-                            return route.handle(serviceContext, request.payloadBody(deserializer))
-                                    .map(rawResp -> newResponse(responseFactory,
-                                            ctx.executionContext().bufferAllocator())
-                                            .payloadBody(uncheckedCast(rawResp),
-                                                    serializationProvider.serializerFor(serviceContext,
-                                                            responseClass)))
-                                    .recoverWith(cause -> succeeded(newErrorResponse(responseFactory, cause,
-                                            ctx.executionContext().bufferAllocator())));
-                        } catch (Throwable t) {
-                            return succeeded(newErrorResponse(responseFactory, t,
-                                    ctx.executionContext().bufferAllocator()));
+                    new HttpService() {
+                        @Override
+                        public Single<HttpResponse> handle(final HttpServiceContext ctx, final HttpRequest request,
+                                                           final HttpResponseFactory responseFactory) {
+                            try {
+                                final GrpcServiceContext serviceContext =
+                                        new DefaultGrpcServiceContext(request.path(), ctx);
+                                final HttpDeserializer<Req> deserializer =
+                                        serializationProvider.deserializerFor(readGrpcMessageEncoding(request),
+                                                requestClass);
+                                return route.handle(serviceContext, request.payloadBody(deserializer))
+                                        .map(rawResp -> newResponse(responseFactory,
+                                                ctx.executionContext().bufferAllocator())
+                                                .payloadBody(rawResp,
+                                                        serializationProvider.serializerFor(serviceContext,
+                                                                responseClass)))
+                                        .recoverWith(cause -> succeeded(newErrorResponse(responseFactory, cause,
+                                                ctx.executionContext().bufferAllocator())));
+                            } catch (Throwable t) {
+                                return succeeded(newErrorResponse(responseFactory, t,
+                                        ctx.executionContext().bufferAllocator()));
+                            }
+                        }
+
+                        @Override
+                        public Completable closeAsync() {
+                            return route.closeAsync();
+                        }
+
+                        @Override
+                        public Completable closeAsyncGracefully() {
+                            return route.closeAsyncGracefully();
                         }
                     }, strategy -> executionStrategy == null ? strategy : executionStrategy),
                     () -> toStreaming(route), () -> toRequestStreamingRoute(route),
@@ -214,19 +255,36 @@ final class GrpcRouter {
                 final StreamingRoute<Req, Resp> route, final Class<Req> requestClass,
                 final Class<Resp> responseClass, final GrpcSerializationProvider serializationProvider) {
             streamingRoutes.put(path, new RouteProvider(executionContext -> {
-                StreamingHttpService service = (ctx, request, responseFactory) -> {
-                    try {
-                        final GrpcServiceContext serviceContext = new DefaultGrpcServiceContext(request.path(), ctx);
-                        final HttpDeserializer<Req> deserializer =
-                                serializationProvider.deserializerFor(readGrpcMessageEncoding(request), requestClass);
-                        final Publisher<Resp> response = route.handle(serviceContext, request.payloadBody(deserializer))
-                                .map(GrpcUtils::uncheckedCast);
-                        return succeeded(newResponse(responseFactory, response,
-                                serializationProvider.serializerFor(serviceContext, responseClass),
-                                ctx.executionContext().bufferAllocator()));
-                    } catch (Throwable t) {
-                        return succeeded(newErrorResponse(responseFactory, t,
-                                ctx.executionContext().bufferAllocator()));
+                StreamingHttpService service = new StreamingHttpService() {
+                    @Override
+                    public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
+                                                                final StreamingHttpRequest request,
+                                                                final StreamingHttpResponseFactory responseFactory) {
+                        try {
+                            final GrpcServiceContext serviceContext =
+                                    new DefaultGrpcServiceContext(request.path(), ctx);
+                            final HttpDeserializer<Req> deserializer =
+                                    serializationProvider.deserializerFor(readGrpcMessageEncoding(request),
+                                            requestClass);
+                            final Publisher<Resp> response = route.handle(serviceContext,
+                                    request.payloadBody(deserializer));
+                            return succeeded(newResponse(responseFactory, response,
+                                    serializationProvider.serializerFor(serviceContext, responseClass),
+                                    ctx.executionContext().bufferAllocator()));
+                        } catch (Throwable t) {
+                            return succeeded(newErrorResponse(responseFactory, t,
+                                    ctx.executionContext().bufferAllocator()));
+                        }
+                    }
+
+                    @Override
+                    public Completable closeAsync() {
+                        return route.closeAsync();
+                    }
+
+                    @Override
+                    public Completable closeAsyncGracefully() {
+                        return route.closeAsyncGracefully();
                     }
                 };
                 return new ServiceAdapterHolder() {
@@ -250,7 +308,22 @@ final class GrpcRouter {
                 final RequestStreamingRoute<Req, Resp> route, final Class<Req> requestClass,
                 final Class<Resp> responseClass, final GrpcSerializationProvider serializationProvider) {
             return addStreamingRoute(path, executionStrategy,
-                    (ctx, request) -> route.handle(ctx, request).toPublisher(), requestClass, responseClass,
+                    new StreamingRoute<Req, Resp>() {
+                        @Override
+                        public Publisher<Resp> handle(final GrpcServiceContext ctx, final Publisher<Req> request) {
+                            return route.handle(ctx, request).toPublisher();
+                        }
+
+                        @Override
+                        public Completable closeAsync() {
+                            return route.closeAsync();
+                        }
+
+                        @Override
+                        public Completable closeAsyncGracefully() {
+                            return route.closeAsyncGracefully();
+                        }
+                    }, requestClass, responseClass,
                     serializationProvider);
         }
 
@@ -270,8 +343,23 @@ final class GrpcRouter {
                 final String path, @Nullable final GrpcExecutionStrategy executionStrategy,
                 final ResponseStreamingRoute<Req, Resp> route, final Class<Req> requestClass,
                 final Class<Resp> responseClass, final GrpcSerializationProvider serializationProvider) {
-            return addStreamingRoute(path, executionStrategy, (ctx, request) -> request.firstOrError()
-                    .flatMapPublisher(rawReq -> route.handle(ctx, uncheckedCast(rawReq))),
+            return addStreamingRoute(path, executionStrategy, new StreamingRoute<Req, Resp>() {
+                        @Override
+                        public Publisher<Resp> handle(final GrpcServiceContext ctx, final Publisher<Req> request) {
+                            return request.firstOrError()
+                                    .flatMapPublisher(rawReq -> route.handle(ctx, rawReq));
+                        }
+
+                        @Override
+                        public Completable closeAsync() {
+                            return route.closeAsync();
+                        }
+
+                        @Override
+                        public Completable closeAsyncGracefully() {
+                            return route.closeAsyncGracefully();
+                        }
+                    },
                     requestClass, responseClass, serializationProvider);
         }
 
@@ -292,19 +380,33 @@ final class GrpcRouter {
                 final BlockingRoute<Req, Resp> route, final Class<Req> requestClass,
                 final Class<Resp> responseClass, final GrpcSerializationProvider serializationProvider) {
             blockingRoutes.put(path, new RouteProvider(executionContext ->
-                    toStreamingHttpService((BlockingHttpService) (ctx, request, responseFactory) -> {
-                        try {
-                            final GrpcServiceContext serviceContext =
-                                    new DefaultGrpcServiceContext(request.path(), ctx);
-                            final HttpDeserializer<Req> deserializer =
-                                    serializationProvider.deserializerFor(readGrpcMessageEncoding(request),
-                                            requestClass);
-                            final Resp response = route.handle(serviceContext, request.payloadBody(deserializer));
-                            return newResponse(responseFactory, ctx.executionContext().bufferAllocator())
-                                    .payloadBody(response,
-                                            serializationProvider.serializerFor(serviceContext, responseClass));
-                        } catch (Throwable t) {
-                            return newErrorResponse(responseFactory, t, ctx.executionContext().bufferAllocator());
+                    toStreamingHttpService(new BlockingHttpService() {
+                        @Override
+                        public HttpResponse handle(final HttpServiceContext ctx, final HttpRequest request,
+                                                   final HttpResponseFactory responseFactory) {
+                            try {
+                                final GrpcServiceContext serviceContext =
+                                        new DefaultGrpcServiceContext(request.path(), ctx);
+                                final HttpDeserializer<Req> deserializer =
+                                        serializationProvider.deserializerFor(readGrpcMessageEncoding(request),
+                                                requestClass);
+                                final Resp response = route.handle(serviceContext, request.payloadBody(deserializer));
+                                return newResponse(responseFactory, ctx.executionContext().bufferAllocator())
+                                        .payloadBody(response,
+                                                serializationProvider.serializerFor(serviceContext, responseClass));
+                            } catch (Throwable t) {
+                                return newErrorResponse(responseFactory, t, ctx.executionContext().bufferAllocator());
+                            }
+                        }
+
+                        @Override
+                        public void close() throws Exception {
+                            route.close();
+                        }
+
+                        @Override
+                        public void closeGracefully() throws Exception {
+                            route.closeGracefully();
                         }
                     }, strategy -> executionStrategy == null ? strategy : executionStrategy),
                     () -> toStreaming(route), () -> toRequestStreamingRoute(route),
@@ -329,21 +431,37 @@ final class GrpcRouter {
                 final BlockingStreamingRoute<Req, Resp> route, final Class<Req> requestClass,
                 final Class<Resp> responseClass, final GrpcSerializationProvider serializationProvider) {
             blockingRoutes.put(path, new RouteProvider(executionContext ->
-                    toStreamingHttpService((ctx, request, response) -> {
-                        final GrpcServiceContext serviceContext = new DefaultGrpcServiceContext(request.path(), ctx);
-                        final HttpDeserializer<Req> deserializer =
-                                serializationProvider.deserializerFor(readGrpcMessageEncoding(request), requestClass);
-                        final HttpSerializer<Resp> serializer =
-                                serializationProvider.serializerFor(serviceContext, responseClass);
-                        final DefaultGrpcPayloadWriter<Resp> grpcPayloadWriter =
-                                new DefaultGrpcPayloadWriter<>(response.sendMetaData(serializer));
-                        try {
-                            route.handle(serviceContext, request.payloadBody(deserializer), grpcPayloadWriter);
-                        } catch (Throwable t) {
-                            final HttpPayloadWriter<Resp> payloadWriter = grpcPayloadWriter.payloadWriter();
-                            setStatus(payloadWriter.trailers(), t, ctx.executionContext().bufferAllocator());
-                        } finally {
-                            grpcPayloadWriter.close();
+                    toStreamingHttpService(new BlockingStreamingHttpService() {
+                        @Override
+                        public void handle(final HttpServiceContext ctx, final BlockingStreamingHttpRequest request,
+                                           final BlockingStreamingHttpServerResponse response) throws Exception {
+                            final GrpcServiceContext serviceContext =
+                                    new DefaultGrpcServiceContext(request.path(), ctx);
+                            final HttpDeserializer<Req> deserializer =
+                                    serializationProvider.deserializerFor(readGrpcMessageEncoding(request),
+                                            requestClass);
+                            final HttpSerializer<Resp> serializer =
+                                    serializationProvider.serializerFor(serviceContext, responseClass);
+                            final DefaultGrpcPayloadWriter<Resp> grpcPayloadWriter =
+                                    new DefaultGrpcPayloadWriter<>(response.sendMetaData(serializer));
+                            try {
+                                route.handle(serviceContext, request.payloadBody(deserializer), grpcPayloadWriter);
+                            } catch (Throwable t) {
+                                final HttpPayloadWriter<Resp> payloadWriter = grpcPayloadWriter.payloadWriter();
+                                setStatus(payloadWriter.trailers(), t, ctx.executionContext().bufferAllocator());
+                            } finally {
+                                grpcPayloadWriter.close();
+                            }
+                        }
+
+                        @Override
+                        public void close() throws Exception {
+                            route.close();
+                        }
+
+                        @Override
+                        public void closeGracefully() throws Exception {
+                            route.closeGracefully();
                         }
                     }, strategy -> executionStrategy == null ? strategy : executionStrategy), () -> toStreaming(route),
                     () -> toRequestStreamingRoute(route), () -> toResponseStreamingRoute(route),
@@ -368,9 +486,23 @@ final class GrpcRouter {
                 final BlockingRequestStreamingRoute<Req, Resp> route,
                 final Class<Req> requestClass, final Class<Resp> responseClass,
                 final GrpcSerializationProvider serializationProvider) {
-            return addBlockingStreamingRoute(path, executionStrategy, (ctx, request, responseWriter) -> {
-                        final Resp resp = route.handle(ctx, request);
-                        responseWriter.write(resp);
+            return addBlockingStreamingRoute(path, executionStrategy, new BlockingStreamingRoute<Req, Resp>() {
+                        @Override
+                        public void handle(final GrpcServiceContext ctx, final BlockingIterable<Req> request,
+                                           final GrpcPayloadWriter<Resp> responseWriter) throws Exception {
+                            final Resp resp = route.handle(ctx, request);
+                            responseWriter.write(resp);
+                        }
+
+                        @Override
+                        public void close() throws Exception {
+                            route.close();
+                        }
+
+                        @Override
+                        public void closeGracefully() throws Exception {
+                            route.closeGracefully();
+                        }
                     },
                     requestClass, responseClass, serializationProvider);
         }
@@ -391,8 +523,23 @@ final class GrpcRouter {
                 final String path, @Nullable final GrpcExecutionStrategy executionStrategy,
                 final BlockingResponseStreamingRoute<Req, Resp> route, final Class<Req> requestClass,
                 final Class<Resp> responseClass, final GrpcSerializationProvider serializationProvider) {
-            return addBlockingStreamingRoute(path, executionStrategy, (ctx, request, responseWriter) ->
-                            route.handle(ctx, requireNonNull(request.iterator().next()), responseWriter),
+            return addBlockingStreamingRoute(path, executionStrategy, new BlockingStreamingRoute<Req, Resp>() {
+                        @Override
+                        public void handle(final GrpcServiceContext ctx, final BlockingIterable<Req> request,
+                                           final GrpcPayloadWriter<Resp> responseWriter) throws Exception {
+                            route.handle(ctx, requireNonNull(request.iterator().next()), responseWriter);
+                        }
+
+                        @Override
+                        public void close() throws Exception {
+                            route.close();
+                        }
+
+                        @Override
+                        public void closeGracefully() throws Exception {
+                            route.closeGracefully();
+                        }
+                    },
                     requestClass, responseClass, serializationProvider);
         }
 

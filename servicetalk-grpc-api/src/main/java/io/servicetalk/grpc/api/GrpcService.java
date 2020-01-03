@@ -16,9 +16,16 @@
 package io.servicetalk.grpc.api;
 
 import io.servicetalk.concurrent.api.AsyncCloseable;
+import io.servicetalk.concurrent.api.Completable;
+
+import static io.servicetalk.concurrent.api.Completable.completed;
 
 /**
  * A <a href="https://www.grpc.io">gRPC</a> service.
  */
 public interface GrpcService extends AsyncCloseable {
+    @Override
+    default Completable closeAsync() {
+        return completed();
+    }
 }
