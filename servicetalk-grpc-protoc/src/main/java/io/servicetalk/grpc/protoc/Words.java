@@ -50,6 +50,7 @@ final class Words {
     static final String Rpc = "Rpc";
     static final String To = "To";
     static final String INSTANCE = "INSTANCE";
+    static final String RPC_PATH = "PATH";
 
     private Words() {
         // no instance
