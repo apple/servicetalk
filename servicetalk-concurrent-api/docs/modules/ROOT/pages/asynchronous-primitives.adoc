@@ -29,7 +29,7 @@ standard. In order to make sure we are following the specifications correctly, w
 link:https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.3/tck[ReactiveStreams TCK]. For interoperability
 we provide ReactiveStreams
 link:{source-root}/servicetalk-concurrent-reactivestreams/src/main/java/io/servicetalk/concurrent/reactivestreams/ReactiveStreamsAdapters.java[adapters]
-and may provide similar Flow adapters in the link:https://github.com/apple/servicetalk/issues/824[future].
+and JDK Flow link:{source-root}/servicetalk-concurrent-jdkflow/src/main/java/io/servicetalk/concurrent/jdkflow/JdkFlowAdapters.java[adapters].
 
 == Lazy execution
 
