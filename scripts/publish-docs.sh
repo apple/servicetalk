@@ -76,12 +76,13 @@ rm -rf gh-pages/servicetalk/SNAPSHOT/javadoc
 \cp -r $JAVADOC_FOLDER gh-pages/servicetalk/SNAPSHOT
 if [ ! -z "$version" ]; then
     echo "Copy javadoc to gh-pages/servicetalk/$version"
+    rm -rf gh-pages/servicetalk/$version/javadoc
     \cp -r $JAVADOC_FOLDER gh-pages/servicetalk/$version
 fi
 
 pushd gh-pages
 # Do not override older javadoc with anotra's placeholder:
-git diff --name-only | grep 'javadoc/index.html' | xargs git checkout --
+git diff --name-only | grep 'javadoc/index.html' | grep -v $version | grep -v SNAPSHOT | xargs git checkout --
 
 git add * .nojekyll
 if [ -z "$version" ]; then
