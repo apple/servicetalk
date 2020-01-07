@@ -81,7 +81,7 @@ if [ ! -z "$version" ]; then
 fi
 
 pushd gh-pages
-# Do not override older javadoc with anotra's placeholder:
+# Do not override older javadoc with Antora's placeholder:
 git diff --name-only | grep 'javadoc/index.html' | grep -v $version | grep -v SNAPSHOT | xargs git checkout --
 
 git add * .nojekyll
