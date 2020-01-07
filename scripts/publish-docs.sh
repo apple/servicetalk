@@ -71,18 +71,18 @@ git worktree add gh-pages gh-pages
 touch gh-pages/.nojekyll
 \cp -r $DOCS_FOLDER/* gh-pages
 echo "Copy javadoc to gh-pages/servicetalk/SNAPSHOT"
+# Avoid accumulating old javadocs for classes that have been moved, renamed or deleted.
+rm -rf gh-pages/servicetalk/SNAPSHOT/javadoc
 \cp -r $JAVADOC_FOLDER gh-pages/servicetalk/SNAPSHOT
 if [ ! -z "$version" ]; then
     echo "Copy javadoc to gh-pages/servicetalk/$version"
+    rm -rf gh-pages/servicetalk/$version/javadoc
     \cp -r $JAVADOC_FOLDER gh-pages/servicetalk/$version
 fi
 
 pushd gh-pages
-# Do not override older javadoc with anotra's placeholder:
-for file in $(git diff --name-only | grep -v "servicetalk/SNAPSHOT/javadoc/index.html" | \
-  grep -v "servicetalk/$version/javadoc/index.html"); do
-    git checkout -- $file
-done
+# Do not override older javadoc with Antora's placeholder:
+git diff --name-only | grep 'javadoc/index.html' | grep -v $version | grep -v SNAPSHOT | xargs git checkout --
 
 git add * .nojekyll
 if [ -z "$version" ]; then
@@ -94,8 +94,10 @@ fi
 git push docs gh-pages
 popd
 
-rm -rf gh-pages
-git worktree prune
+# Cleanup gh-pages state for future runs based on remote
+git worktree remove gh-pages
+# above takes care of removal: rm -rf gh-pages
+git branch -D gh-pages
 
 if [ -z "$version" ]; then
     echo "Docs website for the SNAPSHOT version successfully updated"
