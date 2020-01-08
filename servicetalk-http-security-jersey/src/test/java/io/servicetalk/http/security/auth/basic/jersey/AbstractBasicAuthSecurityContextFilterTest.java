@@ -198,6 +198,6 @@ public abstract class AbstractBasicAuthSecurityContextFilterTest {
         final HttpResponse res = httpClient.request(req);
         assertThat(res.status(), is(expectedStatus));
 
-        return res.status() == OK ? res.payloadBody().toString(UTF_8) : null;
+        return OK.equals(res.status()) ? res.payloadBody().toString(UTF_8) : null;
     }
 }

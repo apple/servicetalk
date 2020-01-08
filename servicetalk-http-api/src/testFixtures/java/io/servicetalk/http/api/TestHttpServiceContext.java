@@ -55,8 +55,8 @@ public class TestHttpServiceContext extends HttpServiceContext {
     }
 
     @Override
-    public BlockingStreamingHttpResponseFactory streamingBlockingResponseFactory() {
-        return super.streamingBlockingResponseFactory();
+    public BlockingStreamingHttpResponseFactory blockingStreamingResponseFactory() {
+        return super.blockingStreamingResponseFactory();
     }
 
     @Override

@@ -44,6 +44,7 @@ import static io.servicetalk.http.api.HttpExecutionStrategies.OFFLOAD_RECEIVE_ME
 import static io.servicetalk.http.api.HttpHeaderNames.TRANSFER_ENCODING;
 import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_0;
+import static io.servicetalk.http.api.HttpRequestMethod.HEAD;
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.StreamingHttpResponses.newTransportResponse;
 import static java.lang.Thread.currentThread;
@@ -104,7 +105,7 @@ final class BlockingStreamingToStreamingService extends AbstractServiceAdapterHo
                                     // breaks our HttpResponseDecoder
                                     // TODO(jayv) we can provide an optimized PayloadWriter for HEAD response that
                                     // immediately completes on sendMeta() and disallows further writes or trailers
-                                    request.method() != HttpRequestMethod.HEAD) {
+                                    !HEAD.equals(request.method())) {
                                 // this is likely not supported in http/1.0 and it is possible that a response has
                                 // neither header and the connection close indicates the end of the response.
                                 // https://tools.ietf.org/html/rfc7230#section-3.3.3

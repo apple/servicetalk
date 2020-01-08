@@ -53,7 +53,7 @@ public abstract class HttpServiceContext implements ConnectionContext {
      */
     protected HttpServiceContext(final HttpServiceContext other) {
         this(other.headersFactory(), other.responseFactory(), other.streamingResponseFactory(),
-                other.streamingBlockingResponseFactory());
+                other.blockingStreamingResponseFactory());
     }
 
     @Override
@@ -91,7 +91,7 @@ public abstract class HttpServiceContext implements ConnectionContext {
      *
      * @return {@link BlockingStreamingHttpResponseFactory} associated with this {@link HttpServiceContext}.
      */
-    protected BlockingStreamingHttpResponseFactory streamingBlockingResponseFactory() {
+    protected BlockingStreamingHttpResponseFactory blockingStreamingResponseFactory() {
         return blockingFactory;
     }
 }

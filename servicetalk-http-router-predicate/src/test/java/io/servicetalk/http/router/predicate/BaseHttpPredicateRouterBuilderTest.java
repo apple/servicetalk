@@ -87,7 +87,7 @@ public abstract class BaseHttpPredicateRouterBuilderTest {
         when(ctx.headersFactory()).thenReturn(DefaultHttpHeadersFactory.INSTANCE);
         when(ctx.streamingResponseFactory()).thenReturn(reqRespFactory);
         when(ctx.responseFactory()).thenReturn(mock(HttpResponseFactory.class));
-        when(ctx.streamingBlockingResponseFactory()).thenReturn(mock(BlockingStreamingHttpResponseFactory.class));
+        when(ctx.blockingStreamingResponseFactory()).thenReturn(mock(BlockingStreamingHttpResponseFactory.class));
 
         when(request.version()).thenReturn(HTTP_1_1);
         when(request.headers()).thenReturn(headers);
