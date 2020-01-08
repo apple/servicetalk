@@ -36,11 +36,7 @@ import static io.servicetalk.http.api.CharSequences.regionMatches;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
 import static io.servicetalk.http.api.HttpHeaderNames.TRANSFER_ENCODING;
-import static io.servicetalk.http.api.HttpHeaderValues.APPLICATION_X_WWW_FORM_URLENCODED;
-import static io.servicetalk.http.api.HttpHeaderValues.APPLICATION_X_WWW_FORM_URLENCODED_UTF_8;
 import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
-import static io.servicetalk.http.api.HttpHeaderValues.TEXT_PLAIN;
-import static io.servicetalk.http.api.HttpHeaderValues.TEXT_PLAIN_UTF_8;
 import static io.servicetalk.http.api.NetUtils.isValidIpV4Address;
 import static io.servicetalk.http.api.NetUtils.isValidIpV6Address;
 import static java.lang.Math.min;
@@ -669,15 +665,13 @@ public final class HeaderUtils {
         }
 
         if (UTF_8.equals(expectedCharset)) {
+            if (contentTypeHeader.length() == expectedContentType.length()) {
+                return true;
+            }
+            if (regionMatches(contentTypeHeader, true, expectedContentType.length(), "; charset=UTF-8", 0, 15)) {
+                return true;
+            }
             if (!hasCharset(contentTypeHeader)) {
-                return true;
-            }
-            if (contentEqualsIgnoreCase(expectedContentType, TEXT_PLAIN) &&
-                    contentEqualsIgnoreCase(contentTypeHeader, TEXT_PLAIN_UTF_8)) {
-                return true;
-            }
-            if (contentEqualsIgnoreCase(expectedContentType, APPLICATION_X_WWW_FORM_URLENCODED) &&
-                    contentEqualsIgnoreCase(contentTypeHeader, APPLICATION_X_WWW_FORM_URLENCODED_UTF_8)) {
                 return true;
             }
         }

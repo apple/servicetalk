@@ -110,6 +110,12 @@ public class HeaderUtilsTest {
                 headersWithContentType(of("text/plain")), TEXT_PLAIN, null));
 
         assertTrue(HeaderUtils.hasContentType(
+                headersWithContentType(of("Text/Plain")), TEXT_PLAIN, null));
+
+        assertTrue(HeaderUtils.hasContentType(
+                headersWithContentType(of("Text/Plain")), TEXT_PLAIN, UTF_8));
+
+        assertTrue(HeaderUtils.hasContentType(
                 headersWithContentType(of("text/plain;id=\"ABC@host.com\";charset=\"us-ascii\";total=2")),
                 TEXT_PLAIN, null));
 
