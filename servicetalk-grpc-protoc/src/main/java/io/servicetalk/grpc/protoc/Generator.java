@@ -29,15 +29,12 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
-import java.util.stream.Stream;
 import javax.annotation.Nullable;
 import javax.lang.model.element.Modifier;
 
 import static com.squareup.javapoet.MethodSpec.constructorBuilder;
 import static com.squareup.javapoet.MethodSpec.methodBuilder;
-import static com.squareup.javapoet.TypeSpec.anonymousClassBuilder;
 import static com.squareup.javapoet.TypeSpec.classBuilder;
-import static com.squareup.javapoet.TypeSpec.enumBuilder;
 import static com.squareup.javapoet.TypeSpec.interfaceBuilder;
 import static io.servicetalk.grpc.protoc.Generator.NewRpcMethodFlag.BLOCKING;
 import static io.servicetalk.grpc.protoc.Generator.NewRpcMethodFlag.CLIENT;
@@ -91,6 +88,7 @@ import static io.servicetalk.grpc.protoc.Words.Factory;
 import static io.servicetalk.grpc.protoc.Words.Filter;
 import static io.servicetalk.grpc.protoc.Words.INSTANCE;
 import static io.servicetalk.grpc.protoc.Words.Metadata;
+import static io.servicetalk.grpc.protoc.Words.RPC_PATH;
 import static io.servicetalk.grpc.protoc.Words.Rpc;
 import static io.servicetalk.grpc.protoc.Words.To;
 import static io.servicetalk.grpc.protoc.Words.append;
@@ -109,7 +107,6 @@ import static io.servicetalk.grpc.protoc.Words.existing;
 import static io.servicetalk.grpc.protoc.Words.factory;
 import static io.servicetalk.grpc.protoc.Words.metadata;
 import static io.servicetalk.grpc.protoc.Words.onClose;
-import static io.servicetalk.grpc.protoc.Words.path;
 import static io.servicetalk.grpc.protoc.Words.request;
 import static io.servicetalk.grpc.protoc.Words.routes;
 import static io.servicetalk.grpc.protoc.Words.rpc;
@@ -152,7 +149,6 @@ final class Generator {
 
     private static final class State {
         final ServiceDescriptorProto serviceProto;
-        ClassName rpcPathsEnumClass;
 
         List<RpcInterface> serviceRpcInterfaces;
         ClassName serviceClass;
@@ -184,7 +180,6 @@ final class Generator {
         final State state = new State(serviceProto);
         final TypeSpec.Builder serviceClassBuilder = context.newServiceClassBuilder(serviceProto);
 
-        addRpcPathsEnum(state, serviceClassBuilder);
         addSerializationProviderInit(state, serviceClassBuilder);
 
         addServiceRpcInterfaces(state, serviceClassBuilder);
@@ -198,29 +193,6 @@ final class Generator {
         addClientFilter(state, serviceClassBuilder);
         addClientFilterFactory(state, serviceClassBuilder);
         addClientFactory(state, serviceClassBuilder);
-    }
-
-    private void addRpcPathsEnum(final State state, final TypeSpec.Builder serviceClassBuilder) {
-        final TypeSpec.Builder rpcPathsEnumBuilder = enumBuilder(context.deconflictJavaTypeName("RpcPaths"))
-                .addModifiers(PUBLIC)
-                .addField(String.class, path, PRIVATE, FINAL)
-                .addMethod(constructorBuilder()
-                        .addParameter(String.class, path)
-                        .addStatement("this.$L = $L", path, path)
-                        .build())
-                .addMethod(methodBuilder(path)
-                        .addModifiers(PUBLIC)
-                        .returns(String.class)
-                        .addStatement("return $L", path)
-                        .build());
-
-        state.serviceProto.getMethodList().forEach(methodProto ->
-                rpcPathsEnumBuilder.addEnumConstant(routeName(methodProto),
-                        anonymousClassBuilder("$S", context.methodPath(state.serviceProto, methodProto)).build()));
-
-        final TypeSpec enumSpec = rpcPathsEnumBuilder.build();
-        state.rpcPathsEnumClass = ClassName.bestGuess(enumSpec.name);
-        serviceClassBuilder.addType(enumSpec);
     }
 
     private void addSerializationProviderInit(final State state, final TypeSpec.Builder serviceClassBuilder) {
@@ -250,26 +222,50 @@ final class Generator {
 
     private void addServiceRpcInterfaces(final State state, final TypeSpec.Builder serviceClassBuilder) {
         state.serviceRpcInterfaces = new ArrayList<>(2 * state.serviceProto.getMethodCount());
-
-        state.serviceProto.getMethodList().forEach(methodProto -> Stream.of(false, true).forEach(blocking -> {
-            final String name = context.deconflictJavaTypeName((blocking ? Blocking : "") +
+        state.serviceProto.getMethodList().forEach(methodProto -> {
+            final String name = context.deconflictJavaTypeName(
                     sanitizeIdentifier(methodProto.getName(), false) + Rpc);
 
+            final FieldSpec.Builder pathSpecBuilder = FieldSpec.builder(String.class, RPC_PATH, PUBLIC, STATIC, FINAL)
+                    .initializer("$S", context.methodPath(state.serviceProto, methodProto));
             final TypeSpec.Builder interfaceSpecBuilder = interfaceBuilder(name)
                     .addModifiers(PUBLIC)
-                    .addMethod(newRpcMethodSpec(methodProto,
-                            blocking ? EnumSet.of(BLOCKING, INTERFACE) : EnumSet.of(INTERFACE),
+                    .addField(pathSpecBuilder.build())
+                    .addMethod(newRpcMethodSpec(methodProto, EnumSet.of(INTERFACE),
                             (__, b) -> b.addModifiers(ABSTRACT).addParameter(GrpcServiceContext, ctx)))
-                    .addSuperinterface(blocking ? BlockingGrpcService : GrpcService);
+                    .addSuperinterface(GrpcService);
 
             if (methodProto.hasOptions() && methodProto.getOptions().getDeprecated()) {
                 interfaceSpecBuilder.addAnnotation(Deprecated.class);
             }
 
             final TypeSpec interfaceSpec = interfaceSpecBuilder.build();
-            state.serviceRpcInterfaces.add(new RpcInterface(methodProto, blocking, ClassName.bestGuess(name)));
+            state.serviceRpcInterfaces.add(new RpcInterface(methodProto, false, ClassName.bestGuess(name)));
             serviceClassBuilder.addType(interfaceSpec);
-        }));
+        });
+
+        List<RpcInterface> asyncRpcInterfaces = new ArrayList<>(state.serviceRpcInterfaces);
+        asyncRpcInterfaces.forEach(rpcInterface -> {
+            MethodDescriptorProto methodProto = rpcInterface.methodProto;
+            final String name = context.deconflictJavaTypeName(Blocking + rpcInterface.className.simpleName());
+
+            final FieldSpec.Builder pathSpecBuilder = FieldSpec.builder(String.class, RPC_PATH, PUBLIC, STATIC, FINAL);
+            pathSpecBuilder.initializer("$T.$L", rpcInterface.className, RPC_PATH);
+            final TypeSpec.Builder interfaceSpecBuilder = interfaceBuilder(name)
+                    .addModifiers(PUBLIC)
+                    .addField(pathSpecBuilder.build())
+                    .addMethod(newRpcMethodSpec(methodProto, EnumSet.of(BLOCKING, INTERFACE),
+                            (__, b) -> b.addModifiers(ABSTRACT).addParameter(GrpcServiceContext, ctx)))
+                    .addSuperinterface(BlockingGrpcService);
+
+            if (methodProto.hasOptions() && methodProto.getOptions().getDeprecated()) {
+                interfaceSpecBuilder.addAnnotation(Deprecated.class);
+            }
+
+            final TypeSpec interfaceSpec = interfaceSpecBuilder.build();
+            state.serviceRpcInterfaces.add(new RpcInterface(methodProto, true, ClassName.bestGuess(name)));
+            serviceClassBuilder.addType(interfaceSpec);
+        });
     }
 
     private void addServiceInterfaces(final State state, final TypeSpec.Builder serviceClassBuilder) {
@@ -318,8 +314,8 @@ final class Generator {
         final TypeSpec.Builder serviceBuilderSpecBuilder = classBuilder(Builder)
                 .addModifiers(PUBLIC, STATIC, FINAL)
                 .superclass(ParameterizedTypeName.get(GrpcRoutes, state.serviceClass))
-                .addType(newServiceFromRoutesClassSpec(serviceFromRoutesClass, state.rpcPathsEnumClass,
-                        state.serviceClass, state.serviceProto))
+                .addType(newServiceFromRoutesClassSpec(serviceFromRoutesClass, state.serviceRpcInterfaces,
+                        state.serviceClass))
                 .addMethod(methodBuilder("build")
                         .addModifiers(PUBLIC)
                         .returns(serviceFactoryClass)
@@ -346,8 +342,8 @@ final class Generator {
                             .addModifiers(PUBLIC)
                             .addParameter(rpcInterface.className, rpc, FINAL)
                             .returns(builderClass)
-                            .addStatement("$L($T.$L.path(), $L.wrap($L::$L, $L), $T.class, $T.class, $L)",
-                                    addRouteMethodName, state.rpcPathsEnumClass, routeName, routeInterfaceClass,
+                            .addStatement("$L($T.$L, $L.wrap($L::$L, $L), $T.class, $T.class, $L)",
+                                    addRouteMethodName, rpcInterface.className, RPC_PATH, routeInterfaceClass,
                                     rpc, routeName, rpc, inClass, outClass, serializationProvider)
                             .addStatement("return this")
                             .build())
@@ -356,8 +352,8 @@ final class Generator {
                             .addParameter(GrpcExecutionStrategy, strategy, FINAL)
                             .addParameter(rpcInterface.className, rpc, FINAL)
                             .returns(builderClass)
-                            .addStatement("$L($T.$L.path(), $L, $L.wrap($L::$L, $L), $T.class, $T.class, $L)",
-                                    addRouteMethodName, state.rpcPathsEnumClass, routeName, strategy,
+                            .addStatement("$L($T.$L, $L, $L.wrap($L::$L, $L), $T.class, $T.class, $L)",
+                                    addRouteMethodName, rpcInterface.className, RPC_PATH, strategy,
                                     routeInterfaceClass, rpc, routeName, rpc, inClass, outClass, serializationProvider)
                             .addStatement("return this")
                             .build());
@@ -421,7 +417,8 @@ final class Generator {
     private void addClientMetadata(final State state, final TypeSpec.Builder serviceClassBuilder) {
         state.clientMetaDatas = new ArrayList<>(state.serviceProto.getMethodCount());
 
-        state.serviceProto.getMethodList().forEach(methodProto -> {
+        state.serviceRpcInterfaces.stream().filter(rpcInterface -> !rpcInterface.blocking).forEach(rpcInterface -> {
+            MethodDescriptorProto methodProto = rpcInterface.methodProto;
             final String name = context.deconflictJavaTypeName(sanitizeIdentifier(methodProto.getName(), false) +
                     Metadata);
 
@@ -434,13 +431,12 @@ final class Generator {
                             .build())
                     .addMethod(constructorBuilder()
                             .addModifiers(PRIVATE)
-                            .addStatement("super($T.$L.$L())", state.rpcPathsEnumClass, routeName(methodProto), path)
+                            .addStatement("super($T.$L)", rpcInterface.className, RPC_PATH)
                             .build())
                     .addMethod(constructorBuilder()
                             .addModifiers(PUBLIC)
                             .addParameter(GrpcExecutionStrategy, strategy, FINAL)
-                            .addStatement("super($T.$L.$L(), $L)", state.rpcPathsEnumClass, routeName(methodProto),
-                                    path, strategy)
+                            .addStatement("super($T.$L, $L)", rpcInterface.className, RPC_PATH, strategy)
                             .build())
                     .build();
 
@@ -579,9 +575,8 @@ final class Generator {
     }
 
     private TypeSpec newServiceFromRoutesClassSpec(final ClassName serviceFromRoutesClass,
-                                                   final ClassName routesEnumClass,
-                                                   final ClassName serviceClass,
-                                                   final ServiceDescriptorProto serviceProto) {
+                                                   final List<RpcInterface> rpcInterfaces,
+                                                   final ClassName serviceClass) {
         final TypeSpec.Builder serviceFromRoutesSpecBuilder = classBuilder(serviceFromRoutesClass)
                 .addModifiers(PRIVATE, STATIC, FINAL)
                 .addSuperinterface(serviceClass)
@@ -592,7 +587,8 @@ final class Generator {
                 .addParameter(AllGrpcRoutes, routes, FINAL)
                 .addStatement("$L = $L", closeable, routes);
 
-        serviceProto.getMethodList().forEach(methodProto -> {
+        rpcInterfaces.stream().filter(rpcInterface -> !rpcInterface.blocking).forEach(rpc -> {
+            MethodDescriptorProto methodProto = rpc.methodProto;
             final ClassName inClass = messageTypesMap.get(methodProto.getInputType());
             final ClassName outClass = messageTypesMap.get(methodProto.getOutputType());
             final String routeName = routeName(methodProto);
@@ -600,8 +596,8 @@ final class Generator {
             serviceFromRoutesSpecBuilder.addField(ParameterizedTypeName.get(routeInterfaceClass(methodProto),
                     inClass, outClass), routeName, PRIVATE, FINAL);
 
-            serviceFromRoutesConstructorBuilder.addStatement("$L = $L.$L($T.$L.path())", routeName, routes,
-                    routeFactoryMethodName(methodProto), routesEnumClass, routeName);
+            serviceFromRoutesConstructorBuilder.addStatement("$L = $L.$L($T.$L)", routeName, routes,
+                    routeFactoryMethodName(methodProto), rpc.className, RPC_PATH);
 
             serviceFromRoutesSpecBuilder.addMethod(newRpcMethodSpec(methodProto, noneOf(NewRpcMethodFlag.class),
                     (name, builder) ->
