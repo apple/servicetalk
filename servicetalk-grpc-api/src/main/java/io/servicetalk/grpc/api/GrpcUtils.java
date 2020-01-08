@@ -65,7 +65,7 @@ final class GrpcUtils {
     }
 
     static void initRequest(final HttpRequestMetaData request) {
-        assert request.method() == POST;
+        assert POST.equals(request.method());
         final HttpHeaders headers = request.headers();
         headers.set(USER_AGENT, GRPC_USER_AGENT);
         headers.set(TE, TRAILERS);
