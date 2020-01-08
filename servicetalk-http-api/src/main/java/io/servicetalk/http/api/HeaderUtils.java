@@ -36,11 +36,7 @@ import static io.servicetalk.http.api.CharSequences.regionMatches;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
 import static io.servicetalk.http.api.HttpHeaderNames.TRANSFER_ENCODING;
-import static io.servicetalk.http.api.HttpHeaderValues.APPLICATION_X_WWW_FORM_URLENCODED;
-import static io.servicetalk.http.api.HttpHeaderValues.APPLICATION_X_WWW_FORM_URLENCODED_UTF_8;
 import static io.servicetalk.http.api.HttpHeaderValues.CHUNKED;
-import static io.servicetalk.http.api.HttpHeaderValues.TEXT_PLAIN;
-import static io.servicetalk.http.api.HttpHeaderValues.TEXT_PLAIN_UTF_8;
 import static io.servicetalk.http.api.NetUtils.isValidIpV4Address;
 import static io.servicetalk.http.api.NetUtils.isValidIpV6Address;
 import static java.lang.Math.min;
@@ -80,6 +76,7 @@ public final class HeaderUtils {
         return true;
     };
 
+    private static final Pattern HAS_CHARSET_PATTERN = compile(".+;\\s*charset=.+", CASE_INSENSITIVE);
     private static final Map<Charset, Pattern> CHARSET_PATTERNS;
 
     static {
@@ -667,12 +664,16 @@ public final class HeaderUtils {
             return false;
         }
 
-        if (UTF_8.equals(expectedCharset) &&
-                ((contentEqualsIgnoreCase(expectedContentType, TEXT_PLAIN) &&
-                        contentEqualsIgnoreCase(contentTypeHeader, TEXT_PLAIN_UTF_8)) ||
-                (contentEqualsIgnoreCase(expectedContentType, APPLICATION_X_WWW_FORM_URLENCODED) &&
-                        contentEqualsIgnoreCase(contentTypeHeader, APPLICATION_X_WWW_FORM_URLENCODED_UTF_8)))) {
-            return true;
+        if (UTF_8.equals(expectedCharset)) {
+            if (contentTypeHeader.length() == expectedContentType.length()) {
+                return true;
+            }
+            if (regionMatches(contentTypeHeader, true, expectedContentType.length(), "; charset=UTF-8", 0, 15)) {
+                return true;
+            }
+            if (!hasCharset(contentTypeHeader)) {
+                return true;
+            }
         }
 
         // None of the fastlane shortcuts have bitten -> use a regex to try to match the charset param wherever it is
@@ -699,6 +700,10 @@ public final class HeaderUtils {
 
     private static Pattern compileCharsetRegex(String charsetName) {
         return compile(".*;\\s*charset=\"?" + quote(charsetName) + "\"?\\s*(;.*|$)", CASE_INSENSITIVE);
+    }
+
+    private static boolean hasCharset(final CharSequence contentTypeHeader) {
+        return HAS_CHARSET_PATTERN.matcher(contentTypeHeader).matches();
     }
 
     private static void validateCookieTokenAndHeaderName0(final CharSequence key) {
