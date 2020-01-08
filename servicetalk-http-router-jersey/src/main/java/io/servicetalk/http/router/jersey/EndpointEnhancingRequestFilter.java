@@ -57,7 +57,6 @@ import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.http.api.HttpExecutionStrategies.customStrategyBuilder;
-import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.http.router.jersey.JerseyRouteExecutionStrategyUtils.getRouteExecutionStrategy;
 import static io.servicetalk.http.router.jersey.internal.RequestProperties.getRequestBufferPublisherInputStream;
 import static io.servicetalk.http.router.jersey.internal.RequestProperties.setRequestCancellable;
@@ -490,10 +489,10 @@ final class EndpointEnhancingRequestFilter implements ContainerRequestFilter {
     private static HttpExecutionStrategy difference(final Executor fallback,
                                                     final HttpExecutionStrategy left,
                                                     final HttpExecutionStrategy right) {
-        if (left.equals(right) || right == noOffloadsStrategy()) {
+        if (left.equals(right) || noOffloads(right)) {
             return null;
         }
-        if (left == noOffloadsStrategy()) {
+        if (noOffloads(left)) {
             return right;
         }
 
@@ -506,5 +505,9 @@ final class EndpointEnhancingRequestFilter implements ContainerRequestFilter {
 
         // There is no need to offload differently than what the left side has deemed safe enough
         return null;
+    }
+
+    private static boolean noOffloads(final HttpExecutionStrategy es) {
+        return !es.isMetadataReceiveOffloaded() && !es.isDataReceiveOffloaded() && !es.isSendOffloaded();
     }
 }
