@@ -80,6 +80,7 @@ public final class HeaderUtils {
         return true;
     };
 
+    private static final Pattern HAS_CHARSET_PATTERN = compile(".+;\\s*charset=.+", CASE_INSENSITIVE);
     private static final Map<Charset, Pattern> CHARSET_PATTERNS;
 
     static {
@@ -708,7 +709,7 @@ public final class HeaderUtils {
     }
 
     private static boolean hasCharset(final CharSequence contentTypeHeader) {
-        return contentTypeHeader.toString().contains("charset=");
+        return HAS_CHARSET_PATTERN.matcher(contentTypeHeader).matches();
     }
 
     private static void validateCookieTokenAndHeaderName0(final CharSequence key) {
