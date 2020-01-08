@@ -90,7 +90,7 @@ public abstract class HttpServiceContext implements ConnectionContext {
      *
      * @return {@link BlockingStreamingHttpResponseFactory} associated with this {@link HttpServiceContext}.
      */
-    protected final BlockingStreamingHttpResponseFactory streamingBlockingResponseFactory() {
+    protected final BlockingStreamingHttpResponseFactory blockingStreamingResponseFactory() {
         return blockingFactory;
     }
 }
