@@ -22,6 +22,7 @@ import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.HttpResponseMetaData;
 import io.servicetalk.http.api.StreamingHttpRequest;
+import io.servicetalk.transport.netty.internal.CloseHandler;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
@@ -52,14 +53,16 @@ final class H2ToStH1ServerDuplexHandler extends AbstractH2DuplexHandler {
     private boolean readHeaders;
     private final BufferAllocator allocator;
 
-    H2ToStH1ServerDuplexHandler(BufferAllocator allocator, HttpHeadersFactory headersFactory) {
-        super(headersFactory);
+    H2ToStH1ServerDuplexHandler(BufferAllocator allocator, HttpHeadersFactory headersFactory,
+                                CloseHandler closeHandler) {
+        super(headersFactory, closeHandler);
         this.allocator = allocator;
     }
 
     @Override
     public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) {
         if (msg instanceof HttpResponseMetaData) {
+            closeHandler.protocolPayloadBeginOutbound(ctx);
             HttpResponseMetaData metaData = (HttpResponseMetaData) msg;
             HttpHeaders h1Headers = metaData.headers();
             Http2Headers h2Headers = h1HeadersToH2Headers(h1Headers);
@@ -82,6 +85,7 @@ final class H2ToStH1ServerDuplexHandler extends AbstractH2DuplexHandler {
             final HttpRequestMethod httpMethod;
             final String path;
             if (!readHeaders) {
+                closeHandler.protocolPayloadBeginInbound(ctx);
                 CharSequence method = h2Headers.getAndRemove(METHOD.value());
                 CharSequence pathSequence = h2Headers.getAndRemove(PATH.value());
                 if (pathSequence == null || method == null) {
@@ -102,6 +106,7 @@ final class H2ToStH1ServerDuplexHandler extends AbstractH2DuplexHandler {
                 } else {
                     ctx.fireChannelRead(h2TrailersToH1TrailersServer(h2Headers));
                 }
+                closeHandler.protocolPayloadEndInbound(ctx);
             } else if (httpMethod == null) {
                 throw new IllegalArgumentException("a request must have " + METHOD + " and " +
                         PATH + " headers");

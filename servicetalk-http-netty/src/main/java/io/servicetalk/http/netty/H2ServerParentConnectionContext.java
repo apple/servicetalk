@@ -31,6 +31,7 @@ import io.servicetalk.tcp.netty.internal.TcpServerChannelInitializer;
 import io.servicetalk.transport.api.ConnectionAcceptor;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
+import io.servicetalk.transport.netty.internal.CloseHandler;
 import io.servicetalk.transport.netty.internal.DefaultNettyConnection;
 import io.servicetalk.transport.netty.internal.FlushStrategy;
 import io.servicetalk.transport.netty.internal.NettyConnection.TerminalPredicate;
@@ -134,7 +135,8 @@ final class H2ServerParentConnectionContext extends H2ParentConnectionContext im
                                 // Netty To ServiceTalk type conversion
                                 streamChannel.pipeline().addLast(new H2ToStH1ServerDuplexHandler(
                                         connection.executionContext().bufferAllocator(),
-                                        h2ServerConfig.headersFactory()));
+                                        h2ServerConfig.headersFactory(),
+                                        CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER));
 
                                 // ServiceTalk <-> Netty netty utilities
                                 DefaultNettyConnection<Object, Object> streamConnection =

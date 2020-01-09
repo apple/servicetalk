@@ -28,8 +28,11 @@ import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.netty.NettyHttpServer.NettyHttpServerConnection;
 import io.servicetalk.tcp.netty.internal.TcpServerChannelInitializer;
 import io.servicetalk.transport.api.IoExecutor;
+import io.servicetalk.transport.netty.internal.CloseHandler;
 
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelOutboundHandlerAdapter;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.embedded.EmbeddedChannel;
@@ -43,6 +46,7 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
@@ -66,7 +70,6 @@ import static io.servicetalk.http.api.StreamingHttpRequests.newTransportRequest;
 import static io.servicetalk.http.netty.NettyHttpServer.initChannel;
 import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
 import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
-import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 
@@ -87,7 +90,17 @@ public class FlushStrategyOnServerTest {
     public final Timeout timeout = new ServiceTalkTestTimeout();
     private final HttpHeadersFactory headersFactory;
 
-    public FlushStrategyOnServerTest(final HttpExecutionStrategy executionStrategy) throws Exception {
+    private enum Param {
+        NO_OFFLOAD(noOffloadsStrategy()),
+        DEFAULT(defaultStrategy()),
+        OFFLOAD_ALL(customStrategyBuilder().offloadAll().build());
+        private final HttpExecutionStrategy executionStrategy;
+        Param(HttpExecutionStrategy executionStrategy) {
+            this.executionStrategy = executionStrategy;
+        }
+    }
+
+    public FlushStrategyOnServerTest(final Param param) throws Exception {
         writeEvents = new LinkedBlockingQueue<>();
         channel = new EmbeddedChannel(new ChannelOutboundHandlerAdapter() {
             @Override
@@ -112,10 +125,27 @@ public class FlushStrategyOnServerTest {
             return succeeded(resp);
         };
         DefaultHttpExecutionContext httpExecutionContext =
-                new DefaultHttpExecutionContext(DEFAULT_ALLOCATOR, ioExecutor, executor, executionStrategy);
-        ReadOnlyHttpServerConfig config = new HttpServerConfig().asReadOnly();
+                new DefaultHttpExecutionContext(DEFAULT_ALLOCATOR, ioExecutor, executor, param.executionStrategy);
+
+        final ReadOnlyHttpServerConfig config = new HttpServerConfig().asReadOnly();
         serverConnection = initChannel(channel, httpExecutionContext, config,
-                new TcpServerChannelInitializer(config.tcpConfig()), service, true,
+                new TcpServerChannelInitializer(config.tcpConfig()) {
+                    @Override
+                    public void init(final Channel channel) {
+                        super.init(channel);
+                        channel.pipeline().addLast(new ChannelInboundHandlerAdapter() {
+                            @Override
+                            public void userEventTriggered(final ChannelHandlerContext ctx,
+                                                           final Object evt) throws Exception {
+                                if (evt == CloseHandler.ProtocolPayloadEndEvent.OUTBOUND) {
+                                    // Mute payload boundary events for this test with repeated read
+                                    return;
+                                }
+                                super.userEventTriggered(ctx, evt);
+                            }
+                        });
+                    }
+                }, service, true,
                 UNSUPPORTED_PROTOCOL_CLOSE_HANDLER)
                 .toFuture().get();
         serverConnection.process(true);
@@ -123,8 +153,8 @@ public class FlushStrategyOnServerTest {
     }
 
     @Parameters(name = "{index}: strategy = {0}")
-    public static Collection<HttpExecutionStrategy> data() {
-        return asList(noOffloadsStrategy(), defaultStrategy(), customStrategyBuilder().offloadAll().build());
+    public static Param[][] data() {
+        return Arrays.stream(Param.values()).map(s -> new Param[]{s}).toArray(Param[][]::new);
     }
 
     @AfterClass

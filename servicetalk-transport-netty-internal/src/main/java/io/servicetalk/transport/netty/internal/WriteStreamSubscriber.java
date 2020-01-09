@@ -139,7 +139,7 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
              * Write1 (Thread1) -> Write2 (Eventloop)
              *
              * If Thread1 != this channels Eventloop then Write2 may happen before Write1 as a write from the eventloop
-              * will skip the task queue and directly send the write on the pipeline.
+             * will skip the task queue and directly send the write on the pipeline.
              */
             enqueueWrites = true;
         }
@@ -187,6 +187,11 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
     public void channelWritable() {
         assert eventLoop.inEventLoop();
         requestMoreIfRequired(subscription);
+    }
+
+    @Override
+    public void protocolPayloadComplete() {
+        onComplete();
     }
 
     @Override
@@ -281,7 +286,7 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
 
         void sourceTerminated(@Nullable Throwable cause) {
             assert eventLoop.inEventLoop();
-            if (hasFlag(SUBSCRIBER_TERMINATED)) {
+            if (hasFlag(SUBSCRIBER_TERMINATED) || hasFlag(SOURCE_TERMINATED)) {
                 // We have terminated prematurely perhaps due to write failure.
                 return;
             }

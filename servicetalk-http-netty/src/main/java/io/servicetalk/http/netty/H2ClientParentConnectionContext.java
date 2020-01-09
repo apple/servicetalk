@@ -240,7 +240,8 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext im
                     Http2StreamChannel streamChannel = future.getNow();
                     parentContext.trackActiveStream(streamChannel);
                     streamChannel.pipeline().addLast(new H2ToStH1ClientDuplexHandler(waitForSslHandshake,
-                            parentContext.executionContext().bufferAllocator(), headersFactory));
+                            parentContext.executionContext().bufferAllocator(), headersFactory,
+                            UNSUPPORTED_PROTOCOL_CLOSE_HANDLER));
                     DefaultNettyConnection<Object, Object> nettyConnection =
                             DefaultNettyConnection.initChildChannel(streamChannel,
                                     parentContext.executionContext().bufferAllocator(),

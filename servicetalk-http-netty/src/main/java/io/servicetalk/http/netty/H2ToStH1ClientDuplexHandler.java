@@ -23,6 +23,7 @@ import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.http.api.StreamingHttpResponse;
+import io.servicetalk.transport.netty.internal.CloseHandler;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
@@ -56,8 +57,9 @@ final class H2ToStH1ClientDuplexHandler extends AbstractH2DuplexHandler {
     @Nullable
     private HttpRequestMethod method;
 
-    H2ToStH1ClientDuplexHandler(boolean sslEnabled, BufferAllocator allocator, HttpHeadersFactory headersFactory) {
-        super(headersFactory);
+    H2ToStH1ClientDuplexHandler(boolean sslEnabled, BufferAllocator allocator, HttpHeadersFactory headersFactory,
+                                CloseHandler closeHandler) {
+        super(headersFactory, closeHandler);
         this.scheme = sslEnabled ? HttpScheme.HTTPS : HttpScheme.HTTP;
         this.allocator = allocator;
     }
@@ -65,6 +67,7 @@ final class H2ToStH1ClientDuplexHandler extends AbstractH2DuplexHandler {
     @Override
     public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) {
         if (msg instanceof HttpRequestMetaData) {
+            closeHandler.protocolPayloadBeginOutbound(ctx);
             HttpRequestMetaData metaData = (HttpRequestMetaData) msg;
             HttpHeaders h1Headers = metaData.headers();
             CharSequence host = h1Headers.getAndRemove(HOST);
@@ -102,6 +105,7 @@ final class H2ToStH1ClientDuplexHandler extends AbstractH2DuplexHandler {
             Http2Headers h2Headers = headersFrame.headers();
             final HttpResponseStatus httpStatus;
             if (!readHeaders) {
+                closeHandler.protocolPayloadBeginInbound(ctx);
                 CharSequence status = h2Headers.getAndRemove(STATUS.value());
                 if (status == null) {
                     throw new IllegalArgumentException("a response must have " + STATUS + " header");
@@ -135,6 +139,7 @@ final class H2ToStH1ClientDuplexHandler extends AbstractH2DuplexHandler {
                 } else {
                     ctx.fireChannelRead(h2HeadersToH1HeadersClient(h2Headers, null));
                 }
+                closeHandler.protocolPayloadEndInbound(ctx);
             } else if (httpStatus == null) {
                 throw new IllegalArgumentException("a response must have " + STATUS + " header");
             } else {

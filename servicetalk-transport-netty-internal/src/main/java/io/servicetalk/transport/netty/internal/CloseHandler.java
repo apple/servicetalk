@@ -78,6 +78,13 @@ public abstract class CloseHandler {
     public abstract void protocolPayloadEndOutbound(ChannelHandlerContext ctx);
 
     /**
+     * Signal end of outbound payload, once successfully written to the {@link Channel}.
+     *
+     * @param ctx {@link ChannelHandlerContext}
+     */
+    public abstract void protocolPayloadEndOutboundSuccess(ChannelHandlerContext ctx);
+
+    /**
      * Signal inbound close command observed, to be emitted from the {@link EventLoop} for the {@link Channel}.
      *
      * @param ctx {@link ChannelHandlerContext}
@@ -260,6 +267,11 @@ public abstract class CloseHandler {
 
         @Override
         public void protocolPayloadEndOutbound(final ChannelHandlerContext ctx) {
+            ctx.pipeline().fireUserEventTriggered(ProtocolPayloadEndEvent.OUTBOUND);
+        }
+
+        @Override
+        public void protocolPayloadEndOutboundSuccess(final ChannelHandlerContext ctx) {
         }
 
         @Override
@@ -268,6 +280,20 @@ public abstract class CloseHandler {
 
         @Override
         public void protocolClosingOutbound(final ChannelHandlerContext ctx) {
+        }
+    }
+
+    /**
+     * Netty UserEvent to indicate the end of a payload was observed at the transport.
+     */
+    public static final class ProtocolPayloadEndEvent {
+        /**
+         * Netty UserEvent instance to indicate an outbound end of payload.
+         */
+        public static final ProtocolPayloadEndEvent OUTBOUND = new ProtocolPayloadEndEvent();
+
+        private ProtocolPayloadEndEvent() {
+            // No instances.
         }
     }
 }
