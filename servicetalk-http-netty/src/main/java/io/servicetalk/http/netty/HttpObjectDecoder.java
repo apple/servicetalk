@@ -85,8 +85,6 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
     private static final byte HTAB_BYTE = (byte) '\t';
     private static final ByteProcessor FIND_COLON_OR_WHITE_SPACE =
             value -> value != COLON_BYTE && value != SPACE_BYTE && value != HTAB_BYTE;
-    private static final ByteProcessor FIND_COLON =
-            value -> value != COLON_BYTE;
     private static final ByteProcessor SKIP_CONTROL_CHARS_PROCESSOR = value ->
         value == SPACE_BYTE || value == HTAB_BYTE || isISOControl((char) (value & 0xff));
     private static final int MAX_HEX_CHARS_FOR_LONG = 16; // 0x7FFFFFFFFFFFFFFF == Long.MAX_INT
