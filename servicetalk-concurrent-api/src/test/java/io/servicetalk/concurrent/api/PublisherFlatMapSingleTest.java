@@ -45,6 +45,7 @@ import static io.servicetalk.concurrent.api.VerificationTestUtils.verifyOriginal
 import static io.servicetalk.concurrent.api.VerificationTestUtils.verifySuppressed;
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.IntStream.range;
@@ -58,6 +59,7 @@ import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
@@ -515,10 +517,12 @@ public class PublisherFlatMapSingleTest {
 
     @Test
     public void testEmitFromQueue() throws Exception {
-        List<LegacyTestSingle<Integer>> emittedSingles = new ArrayList<>();
-        LegacyBlockingSubscriber<Integer> subscriber = new LegacyBlockingSubscriber<>();
+        List<TestSingle<Integer>> emittedSingles = new ArrayList<>();
+        TestCollectingPublisherSubscriber<Integer> blockingSubscriber = new TestCollectingPublisherSubscriber<>();
+        TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber.Builder<Integer>()
+                .lastSubscriber(blockingSubscriber).build();
         toSource(source.flatMapMergeSingle(integer -> {
-            LegacyTestSingle<Integer> s = new LegacyTestSingle<>();
+            TestSingle<Integer> s = new TestSingle<>();
             emittedSingles.add(s);
             return s;
         }, 2)).subscribe(subscriber);
@@ -526,20 +530,24 @@ public class PublisherFlatMapSingleTest {
         source.onNext(1, 1);
         assertThat("Unexpected number of Singles emitted.", emittedSingles, hasSize(2));
 
-        LegacyTestSingle<Integer> single1 = emittedSingles.remove(0);
-        LegacyTestSingle<Integer> single2 = emittedSingles.remove(0);
+        TestSingle<Integer> single1 = emittedSingles.remove(0);
+        TestSingle<Integer> single2 = emittedSingles.remove(0);
+
         executorService.execute(() -> {
             single1.onSuccess(2);
             single2.onSuccess(3);
         });
 
-        subscriber.awaitAndVerifyAwaitingItem(2); // Second item would only be sent once the first thread is free.
-        subscriber.unblock(2);
-        subscriber.verifyReceived(2);
+        Integer nextItem = blockingSubscriber.takeOnNext();
+        assertNotNull(nextItem);
+        assertEquals(2, nextItem.intValue());
+        nextItem = blockingSubscriber.takeOnNext();
+        assertNotNull(nextItem);
+        assertEquals(3, nextItem.intValue());
+        assertFalse(blockingSubscriber.pollTerminal(200, MILLISECONDS));
 
-        subscriber.awaitAndVerifyAwaitingItem(3);
-        subscriber.unblock(3);
-        subscriber.verifyReceived(2, 3);
+        source.onComplete();
+        blockingSubscriber.awaitOnComplete();
     }
 
     @Test
