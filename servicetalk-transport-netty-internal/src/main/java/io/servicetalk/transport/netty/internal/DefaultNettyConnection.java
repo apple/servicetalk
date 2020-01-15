@@ -34,7 +34,6 @@ import io.servicetalk.transport.netty.internal.CloseHandler.CloseEvent;
 import io.servicetalk.transport.netty.internal.CloseHandler.CloseEventObservedException;
 import io.servicetalk.transport.netty.internal.WriteStreamSubscriber.AbortedFirstWrite;
 
-import io.netty.channel.AbstractChannel;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandler;
@@ -426,7 +425,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
             // never notify the write writeSubscriber of the inactive event. So if the channel is inactive we notify
             // the writeSubscriber.
             if (!channel().isActive()) {
-                newWritableListener.channelClosed(CLOSED_FAIL_ACTIVE);
+                newWritableListener.close(CLOSED_FAIL_ACTIVE);
                 return false;
             }
             return true;
@@ -472,7 +471,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
          * <p>
          * This is event is expected be called from the eventloop.
          */
-        void protocolPayloadComplete();
+        void closeGracefully();
 
         /**
          * Notification that the channel has been closed.
@@ -482,17 +481,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
          *
          * @param closedException the exception which describes the close rational.
          */
-        void channelClosed(Throwable closedException);
-
-        /**
-         * Notification that the channel outbound path has been closed.
-         * <p>
-         * This may indicate a write failed and was implicitly closed by the {@link AbstractChannel} or a {@link
-         * CloseHandler} performing a graceful or forced close. This methods will always be called from the event loop.
-         */
-        default void channelClosedOutbound() {
-            // Do nothing
-        }
+        void close(Throwable closedException);
     }
 
     private static final class NoopWritableListener implements WritableListener {
@@ -501,11 +490,11 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
         }
 
         @Override
-        public void protocolPayloadComplete() {
+        public void closeGracefully() {
         }
 
         @Override
-        public void channelClosed(Throwable closedException) {
+        public void close(Throwable closedException) {
         }
     }
 
@@ -574,10 +563,10 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
         @Override
         public void userEventTriggered(ChannelHandlerContext ctx, Object evt) {
             if (evt == CloseHandler.ProtocolPayloadEndEvent.OUTBOUND) {
-                connection.writableListener.protocolPayloadComplete();
+                connection.writableListener.closeGracefully();
             } else if (evt == ChannelOutputShutdownEvent.INSTANCE) {
                 connection.closeHandler.channelClosedOutbound(ctx);
-                connection.writableListener.channelClosedOutbound();
+                connection.writableListener.close(CLOSED_CHANNEL_INACTIVE);
             } else if (evt == ChannelInputShutdownReadComplete.INSTANCE) {
                 // Notify close handler first to enhance error reporting
                 connection.closeHandler.channelClosedInbound(ctx);
@@ -612,7 +601,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
         @Override
         public void channelInactive(ChannelHandlerContext ctx) {
             tryFailSubscriber(CLOSED_CHANNEL_INACTIVE);
-            connection.writableListener.channelClosed(CLOSED_CHANNEL_INACTIVE);
+            connection.writableListener.close(CLOSED_CHANNEL_INACTIVE);
             connection.nettyChannelPublisher.channelInboundClosed();
         }
 

@@ -28,11 +28,8 @@ import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.netty.NettyHttpServer.NettyHttpServerConnection;
 import io.servicetalk.tcp.netty.internal.TcpServerChannelInitializer;
 import io.servicetalk.transport.api.IoExecutor;
-import io.servicetalk.transport.netty.internal.CloseHandler;
 
-import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelOutboundHandlerAdapter;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.embedded.EmbeddedChannel;
@@ -129,23 +126,7 @@ public class FlushStrategyOnServerTest {
 
         final ReadOnlyHttpServerConfig config = new HttpServerConfig().asReadOnly();
         serverConnection = initChannel(channel, httpExecutionContext, config,
-                new TcpServerChannelInitializer(config.tcpConfig()) {
-                    @Override
-                    public void init(final Channel channel) {
-                        super.init(channel);
-                        channel.pipeline().addLast(new ChannelInboundHandlerAdapter() {
-                            @Override
-                            public void userEventTriggered(final ChannelHandlerContext ctx,
-                                                           final Object evt) throws Exception {
-                                if (evt == CloseHandler.ProtocolPayloadEndEvent.OUTBOUND) {
-                                    // Mute payload boundary events for this test with repeated read
-                                    return;
-                                }
-                                super.userEventTriggered(ctx, evt);
-                            }
-                        });
-                    }
-                }, service, true,
+                new TcpServerChannelInitializer(config.tcpConfig()), service, true,
                 UNSUPPORTED_PROTOCOL_CLOSE_HANDLER)
                 .toFuture().get();
         serverConnection.process(true);

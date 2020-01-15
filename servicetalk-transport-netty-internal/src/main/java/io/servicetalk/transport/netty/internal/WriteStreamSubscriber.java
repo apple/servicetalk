@@ -70,8 +70,7 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
     private static final Logger LOGGER = LoggerFactory.getLogger(WriteStreamSubscriber.class);
     private static final byte SOURCE_TERMINATED = 1;
     private static final byte CHANNEL_CLOSED = 1 << 1;
-    private static final byte CLOSE_OUTBOUND_ON_SUBSCRIBER_TERMINATION = 1 << 2;
-    private static final byte SUBSCRIBER_TERMINATED = 1 << 3;
+    private static final byte SUBSCRIBER_TERMINATED = 1 << 2;
     private static final Subscription CANCELLED = new EmptySubscription();
     private static final AtomicLongFieldUpdater<WriteStreamSubscriber> requestedUpdater =
             AtomicLongFieldUpdater.newUpdater(WriteStreamSubscriber.class, "requested");
@@ -190,18 +189,13 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
     }
 
     @Override
-    public void protocolPayloadComplete() {
-        onComplete();
-    }
-
-    @Override
-    public void channelClosedOutbound() {
+    public void closeGracefully() {
         assert eventLoop.inEventLoop();
-        promise.channelClosedOutbound();
+        promise.sourceTerminated(null);
     }
 
     @Override
-    public void channelClosed(Throwable closedException) {
+    public void close(Throwable closedException) {
         Subscription oldVal = subscriptionUpdater.getAndSet(this, CANCELLED);
         if (eventLoop.inEventLoop()) {
             channelClosed0(oldVal, closedException);
@@ -272,7 +266,7 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
 
         boolean isWritable() {
             assert channel.eventLoop().inEventLoop();
-            return !hasFlag(CHANNEL_CLOSED) && !hasFlag(SUBSCRIBER_TERMINATED);
+            return !hasAnyFlags(CHANNEL_CLOSED, SUBSCRIBER_TERMINATED, SOURCE_TERMINATED);
         }
 
         void writeNext(Object msg) {
@@ -286,7 +280,7 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
 
         void sourceTerminated(@Nullable Throwable cause) {
             assert eventLoop.inEventLoop();
-            if (hasFlag(SUBSCRIBER_TERMINATED) || hasFlag(SOURCE_TERMINATED)) {
+            if (hasAnyFlags(SUBSCRIBER_TERMINATED, SOURCE_TERMINATED)) {
                 // We have terminated prematurely perhaps due to write failure.
                 return;
             }
@@ -312,26 +306,11 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
 
         void channelClosed(Throwable cause) {
             assert eventLoop.inEventLoop();
-            if (hasFlag(CHANNEL_CLOSED) || hasFlag(SUBSCRIBER_TERMINATED)) {
+            if (hasAnyFlags(CHANNEL_CLOSED, SUBSCRIBER_TERMINATED)) {
                 setFlag(CHANNEL_CLOSED);
                 return;
             }
             tryFailure(!written ? new AbortedFirstWrite(cause) : cause);
-        }
-
-        void channelClosedOutbound() {
-            assert eventLoop.inEventLoop();
-            if (hasFlag(CHANNEL_CLOSED)) {
-                return;
-            }
-            if (hasFlag(SUBSCRIBER_TERMINATED)) {
-                // We have already terminated the subscriber (all writes have finished (one has failed)) then we
-                // just close the channel now.
-                closeHandler.closeChannelOutbound(channel);
-                return;
-            }
-            // Writes are pending, we will close the channel once writes are done.
-            setFlag(CLOSE_OUTBOUND_ON_SUBSCRIBER_TERMINATION);
         }
 
         @Override
@@ -396,7 +375,7 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
         }
 
         private void terminateSubscriber(@Nullable Throwable cause) {
-            if (hasFlag(CLOSE_OUTBOUND_ON_SUBSCRIBER_TERMINATION) || cause != null) {
+            if (cause != null) {
                 try {
                     closeHandler.closeChannelOutbound(channel);
                 } catch (Throwable t) {
@@ -430,6 +409,14 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
 
         private boolean hasFlag(final byte flag) {
             return (state & flag) == flag;
+        }
+
+        private boolean hasAnyFlags(final byte flag1, final byte flag2) {
+            return hasAnyFlags(flag1, flag2, (byte) 0);
+        }
+
+        private boolean hasAnyFlags(final byte flag1, final byte flag2, final byte flag3) {
+            return (state & (flag1 | flag2 | flag3)) > 0;
         }
 
         private void setFlag(final byte flag) {

@@ -41,6 +41,7 @@ import org.junit.rules.Timeout;
 import org.mockito.ArgumentCaptor;
 
 import java.nio.channels.ClosedChannelException;
+import java.util.Arrays;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -432,7 +433,8 @@ public class DefaultNettyConnectionTest {
         for (Buffer item : items) {
             verify(requestNSupplier).onItemWrite(eq(item), anyLong(), anyLong());
         }
-        verify(requestNSupplier, times(1 + items.length + channelWritabilityChangedCount))
+        final boolean hasTrailers = Arrays.stream(items).anyMatch(p -> p == TRAILER);
+        verify(requestNSupplier, times((hasTrailers ? 0 : 1) + items.length + channelWritabilityChangedCount))
                 .requestNFor(anyLong());
     }
 
@@ -551,6 +553,7 @@ public class DefaultNettyConnectionTest {
         channel.pipeline().fireChannelInactive();
         publisher.onComplete();
 
+        channel.close();
         writeListener.verifyCompletion();
     }
 }

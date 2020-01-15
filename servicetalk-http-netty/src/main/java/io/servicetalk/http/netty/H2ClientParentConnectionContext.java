@@ -73,7 +73,7 @@ import static io.servicetalk.http.api.HttpEventKey.MAX_CONCURRENCY;
 import static io.servicetalk.http.netty.HeaderUtils.LAST_CHUNK_PREDICATE;
 import static io.servicetalk.http.netty.HttpDebugUtils.showPipeline;
 import static io.servicetalk.transport.netty.internal.ChannelSet.CHANNEL_CLOSEABLE_KEY;
-import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
+import static io.servicetalk.transport.netty.internal.CloseHandler.H2_PROTOCOL_CLOSE_HANDLER;
 import static java.util.Objects.requireNonNull;
 
 final class H2ClientParentConnectionContext extends H2ParentConnectionContext implements NettyConnectionContext {
@@ -241,7 +241,7 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext im
                     parentContext.trackActiveStream(streamChannel);
                     streamChannel.pipeline().addLast(new H2ToStH1ClientDuplexHandler(waitForSslHandshake,
                             parentContext.executionContext().bufferAllocator(), headersFactory,
-                            UNSUPPORTED_PROTOCOL_CLOSE_HANDLER));
+                            H2_PROTOCOL_CLOSE_HANDLER));
                     DefaultNettyConnection<Object, Object> nettyConnection =
                             DefaultNettyConnection.initChildChannel(streamChannel,
                                     parentContext.executionContext().bufferAllocator(),
@@ -249,7 +249,7 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext im
                                     new TerminalPredicate<>(LAST_CHUNK_PREDICATE),
                                     // Http2StreamChannel is not of type SocketChannel. Also Netty will manage the half
                                     // closure based upon stream state.
-                                    UNSUPPORTED_PROTOCOL_CLOSE_HANDLER,
+                                    H2_PROTOCOL_CLOSE_HANDLER,
                                     parentContext.flushStrategyHolder.currentStrategy(),
                                     parentContext.executionContext().executionStrategy(),
                                     parentContext.sslSession());
