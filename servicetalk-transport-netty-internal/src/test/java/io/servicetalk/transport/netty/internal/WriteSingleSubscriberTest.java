@@ -16,9 +16,11 @@
 package io.servicetalk.transport.netty.internal;
 
 import org.junit.Test;
+import org.mockito.ArgumentCaptor;
 
 import static io.servicetalk.concurrent.internal.DeliberateException.DELIBERATE_EXCEPTION;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -76,9 +78,12 @@ public class WriteSingleSubscriberTest extends AbstractWriteTest {
         assertThat("Message not written.", channel.readOutbound(), is("Hello"));
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test
     public void testCloseGracefullyBeforeWrite() {
         WriteSingleSubscriber listener = new WriteSingleSubscriber(channel, completableSubscriber, closeHandler);
+        final ArgumentCaptor<Throwable> captor = ArgumentCaptor.forClass(Throwable.class);
         listener.closeGracefully();
+        verify(completableSubscriber).onError(captor.capture());
+        assertThat(captor.getValue(), instanceOf(IllegalStateException.class));
     }
 }

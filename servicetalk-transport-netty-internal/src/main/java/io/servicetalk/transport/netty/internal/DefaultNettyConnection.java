@@ -459,15 +459,10 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
         void channelWritable();
 
         /**
-         * Notifies the end of payload was observed at the transport (not necessarily flushed).
+         * Close the channel after the pending writes complete.
          *
          * <p>
-         * This helps coordinate state between the writer and the codec/transport. Even if the writing source may not
-         * have completed from a Reactive Streams perspective, it means that as far as the codec and transport is
-         * concerned it considers the write is complete and no further writes can happen. Closing of the transport after
-         * receiving this event should not be considered a write error since the final buffer was written and
-         * potentially flushed. A failed write promise after observing this event however indicates the end of payload
-         * marker may not have been written correctly and should result in an error.
+         * Calling {@link #close(Throwable)} after {@link #closeGracefully()} will be ignored.
          * <p>
          * This is event is expected be called from the eventloop.
          */

@@ -70,7 +70,8 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
     private static final Logger LOGGER = LoggerFactory.getLogger(WriteStreamSubscriber.class);
     private static final byte SOURCE_TERMINATED = 1;
     private static final byte CHANNEL_CLOSED = 1 << 1;
-    private static final byte SUBSCRIBER_TERMINATED = 1 << 2;
+    private static final byte CLOSE_OUTBOUND_ON_SUBSCRIBER_TERMINATION = 1 << 2;
+    private static final byte SUBSCRIBER_TERMINATED = 1 << 3;
     private static final Subscription CANCELLED = new EmptySubscription();
     private static final AtomicLongFieldUpdater<WriteStreamSubscriber> requestedUpdater =
             AtomicLongFieldUpdater.newUpdater(WriteStreamSubscriber.class, "requested");
@@ -198,13 +199,13 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
     public void close(Throwable closedException) {
         Subscription oldVal = subscriptionUpdater.getAndSet(this, CANCELLED);
         if (eventLoop.inEventLoop()) {
-            channelClosed0(oldVal, closedException);
+            close0(oldVal, closedException);
         } else {
-            eventLoop.execute(() -> channelClosed0(oldVal, closedException));
+            eventLoop.execute(() -> close0(oldVal, closedException));
         }
     }
 
-    private void channelClosed0(@Nullable Subscription oldVal, Throwable closedException) {
+    private void close0(@Nullable Subscription oldVal, Throwable closedException) {
         assert eventLoop.inEventLoop();
         if (oldVal == null) {
             // If there was no subscriber when the channel closed, we need to call onSubscribe before we terminate.
@@ -212,7 +213,7 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
         } else {
             oldVal.cancel();
         }
-        promise.channelClosed(closedException);
+        promise.close(closedException);
     }
 
     @Override
@@ -304,13 +305,25 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
             }
         }
 
-        void channelClosed(Throwable cause) {
+        void close(Throwable cause) {
             assert eventLoop.inEventLoop();
-            if (hasAnyFlags(CHANNEL_CLOSED, SUBSCRIBER_TERMINATED)) {
-                setFlag(CHANNEL_CLOSED);
+            if (hasFlag(CHANNEL_CLOSED)) {
                 return;
             }
-            tryFailure(!written ? new AbortedFirstWrite(cause) : cause);
+            if (hasFlag(SUBSCRIBER_TERMINATED)) {
+                setFlag(CHANNEL_CLOSED);
+                // We have already terminated the subscriber (all writes have finished (one has failed)) then we
+                // just close the channel now.
+                closeHandler.closeChannelOutbound(channel);
+            } else if (activeWrites > 0) {
+                // Writes are pending, we will close the channel once writes are done.
+                setFlag(CLOSE_OUTBOUND_ON_SUBSCRIBER_TERMINATION);
+            } else {
+                setFlag(CHANNEL_CLOSED);
+                // subscriber has not terminated, no writes are pending and channel has closed so terminate the
+                // subscriber with a failure.
+                tryFailure(!written ? new AbortedFirstWrite(cause) : cause);
+            }
         }
 
         @Override
@@ -375,7 +388,7 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
         }
 
         private void terminateSubscriber(@Nullable Throwable cause) {
-            if (cause != null) {
+            if (hasFlag(CLOSE_OUTBOUND_ON_SUBSCRIBER_TERMINATION) || cause != null) {
                 try {
                     closeHandler.closeChannelOutbound(channel);
                 } catch (Throwable t) {
