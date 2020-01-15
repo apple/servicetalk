@@ -20,6 +20,7 @@ import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.netty.H2ToStH1Utils.H2StreamRefusedException;
 import io.servicetalk.http.netty.H2ToStH1Utils.H2StreamResetException;
+import io.servicetalk.transport.netty.internal.CloseHandler;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelDuplexHandler;
@@ -39,9 +40,11 @@ import static io.servicetalk.http.netty.H2ToStH1Utils.h1HeadersToH2Headers;
 
 abstract class AbstractH2DuplexHandler extends ChannelDuplexHandler {
     final HttpHeadersFactory headersFactory;
+    final CloseHandler closeHandler;
 
-    AbstractH2DuplexHandler(HttpHeadersFactory headersFactory) {
+    AbstractH2DuplexHandler(HttpHeadersFactory headersFactory, final CloseHandler closeHandler) {
         this.headersFactory = headersFactory;
+        this.closeHandler = closeHandler;
     }
 
     @Override
@@ -70,6 +73,8 @@ abstract class AbstractH2DuplexHandler extends ChannelDuplexHandler {
     }
 
     final void writeTrailers(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) {
+        // For H2 we don't need to notify protocolPayloadEndOutboundSuccess(ctx); the codecs takes care of half-closure
+        closeHandler.protocolPayloadEndOutbound(ctx);
         HttpHeaders h1Headers = (HttpHeaders) msg;
         Http2Headers h2Headers = h1HeadersToH2Headers(h1Headers);
         if (h2Headers.isEmpty()) {

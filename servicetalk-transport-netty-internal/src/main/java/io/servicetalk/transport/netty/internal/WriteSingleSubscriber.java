@@ -21,11 +21,14 @@ import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.internal.SequentialCancellable;
 
 import io.netty.channel.Channel;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import javax.annotation.Nullable;
 
 final class WriteSingleSubscriber implements SingleSource.Subscriber<Object>, DefaultNettyConnection.WritableListener {
+    private static final Logger LOGGER = LoggerFactory.getLogger(WriteSingleSubscriber.class);
     private static final AtomicIntegerFieldUpdater<WriteSingleSubscriber> terminatedUpdater =
             AtomicIntegerFieldUpdater.newUpdater(WriteSingleSubscriber.class, "terminated");
     private final Channel channel;
@@ -34,6 +37,10 @@ final class WriteSingleSubscriber implements SingleSource.Subscriber<Object>, De
     private final SequentialCancellable sequentialCancellable;
     @SuppressWarnings("unused")
     private volatile int terminated;
+
+    private static final int
+            AWAITING_RESULT = 0,
+            TERMINATED = 1;
 
     WriteSingleSubscriber(Channel channel, CompletableSource.Subscriber subscriber,
                           CloseHandler closeHandler) {
@@ -51,21 +58,29 @@ final class WriteSingleSubscriber implements SingleSource.Subscriber<Object>, De
 
     @Override
     public void onSuccess(@Nullable Object result) {
-        // If we are not on the EventLoop then both the write and the flush will be enqueued on the EventLoop so
-        // ordering should be correct.
-        channel.writeAndFlush(result).addListener(future -> {
-            Throwable cause = future.cause();
-            if (cause == null) {
-                notifyComplete();
-            } else {
-                notifyError(cause);
-            }
-        });
+        if (terminatedUpdater.compareAndSet(this, AWAITING_RESULT, TERMINATED)) {
+            // If we are not on the EventLoop then both the write and the flush will be enqueued on the EventLoop so
+            // ordering should be correct.
+            channel.writeAndFlush(result).addListener(future -> {
+                Throwable cause = future.cause();
+                if (cause == null) {
+                    notifyComplete();
+                } else {
+                    notifyError(cause);
+                }
+            });
+        } else {
+            LOGGER.error("Ignoring write {} as the listener is already closed.", result);
+        }
     }
 
     @Override
     public void onError(Throwable t) {
-        notifyError(t);
+        if (terminatedUpdater.compareAndSet(this, AWAITING_RESULT, TERMINATED)) {
+            notifyError(t);
+        } else {
+            LOGGER.error("Ignoring emitted error as the listener is already closed.", t);
+        }
     }
 
     @Override
@@ -74,23 +89,28 @@ final class WriteSingleSubscriber implements SingleSource.Subscriber<Object>, De
     }
 
     @Override
-    public void channelClosed(Throwable closedException) {
+    public void closeGracefully() {
+        if (terminatedUpdater.compareAndSet(this, AWAITING_RESULT, TERMINATED)) {
+            notifyError(new IllegalStateException("Unexpected, closeGracefully() without onSuccess()"));
+        }
+    }
+
+    @Override
+    public void close(Throwable closedException) {
         // Because the subscriber is terminated "out of band" make sure we cancel any work which may (at some later
         // time) invoke a write associated with this subscriber.
         sequentialCancellable.cancel();
-        notifyError(closedException);
+        if (terminatedUpdater.compareAndSet(this, AWAITING_RESULT, TERMINATED)) {
+            notifyError(closedException);
+        }
     }
 
     private void notifyComplete() {
-        if (terminatedUpdater.compareAndSet(this, 0, 1)) {
-            subscriber.onComplete();
-        }
+        subscriber.onComplete();
     }
 
     private void notifyError(Throwable t) {
-        if (terminatedUpdater.compareAndSet(this, 0, 1)) {
-            closeHandler.closeChannelOutbound(channel);
-            subscriber.onError(t);
-        }
+        closeHandler.closeChannelOutbound(channel);
+        subscriber.onError(t);
     }
 }
