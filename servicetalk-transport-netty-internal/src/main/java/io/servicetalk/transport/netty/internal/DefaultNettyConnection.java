@@ -464,7 +464,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
          * <p>
          * Calling {@link #close(Throwable)} after {@link #closeGracefully()} will be ignored.
          * <p>
-         * This is event is expected be called from the eventloop.
+         * This event is expected be called from the eventloop.
          */
         void closeGracefully();
 
