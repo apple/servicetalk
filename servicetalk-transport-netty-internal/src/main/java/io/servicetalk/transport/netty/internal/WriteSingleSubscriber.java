@@ -70,7 +70,7 @@ final class WriteSingleSubscriber implements SingleSource.Subscriber<Object>, De
                 }
             });
         } else {
-            LOGGER.error("Failed to write data after permature close of the WriteListener.");
+            LOGGER.error("Ignoring write {} as the listener is already closed.", result);
         }
     }
 
