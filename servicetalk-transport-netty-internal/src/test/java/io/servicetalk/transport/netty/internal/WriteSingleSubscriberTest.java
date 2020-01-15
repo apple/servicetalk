@@ -48,10 +48,37 @@ public class WriteSingleSubscriberTest extends AbstractWriteTest {
 
     @Test
     public void testError() {
-
         WriteSingleSubscriber listener = new WriteSingleSubscriber(channel, completableSubscriber, closeHandler);
         listener.onError(DELIBERATE_EXCEPTION);
         verify(completableSubscriber).onError(DELIBERATE_EXCEPTION);
         verify(closeHandler).closeChannelOutbound(any());
+    }
+
+    @Test
+    public void testCloseGracefully() {
+        WriteSingleSubscriber listener = new WriteSingleSubscriber(channel, completableSubscriber, closeHandler);
+        listener.onSuccess("Hello");
+        listener.closeGracefully();
+        channel.flushOutbound();
+        verify(completableSubscriber).onComplete();
+        verifyZeroInteractions(closeHandler);
+        assertThat("Message not written.", channel.readOutbound(), is("Hello"));
+    }
+
+    @Test
+    public void testCloseGracefullyAfterFlush() {
+        WriteSingleSubscriber listener = new WriteSingleSubscriber(channel, completableSubscriber, closeHandler);
+        listener.onSuccess("Hello");
+        channel.flushOutbound();
+        listener.closeGracefully();
+        verify(completableSubscriber).onComplete();
+        verifyZeroInteractions(closeHandler);
+        assertThat("Message not written.", channel.readOutbound(), is("Hello"));
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void testCloseGracefullyBeforeWrite() {
+        WriteSingleSubscriber listener = new WriteSingleSubscriber(channel, completableSubscriber, closeHandler);
+        listener.closeGracefully();
     }
 }

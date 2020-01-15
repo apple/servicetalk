@@ -35,6 +35,10 @@ final class WriteSingleSubscriber implements SingleSource.Subscriber<Object>, De
     @SuppressWarnings("unused")
     private volatile int terminated;
 
+    private static final int UNSET = 0;
+    private static final int PENDING = 1;
+    private static final int DONE = 2;
+
     WriteSingleSubscriber(Channel channel, CompletableSource.Subscriber subscriber,
                           CloseHandler closeHandler) {
         this.channel = channel;
@@ -51,21 +55,25 @@ final class WriteSingleSubscriber implements SingleSource.Subscriber<Object>, De
 
     @Override
     public void onSuccess(@Nullable Object result) {
-        // If we are not on the EventLoop then both the write and the flush will be enqueued on the EventLoop so
-        // ordering should be correct.
-        channel.writeAndFlush(result).addListener(future -> {
-            Throwable cause = future.cause();
-            if (cause == null) {
-                notifyComplete();
-            } else {
-                notifyError(cause);
-            }
-        });
+        if (terminatedUpdater.compareAndSet(this, UNSET, PENDING)) {
+            // If we are not on the EventLoop then both the write and the flush will be enqueued on the EventLoop so
+            // ordering should be correct.
+            channel.writeAndFlush(result).addListener(future -> {
+                Throwable cause = future.cause();
+                if (cause == null) {
+                    notifyComplete();
+                } else {
+                    notifyError(cause);
+                }
+            });
+        }
     }
 
     @Override
     public void onError(Throwable t) {
-        notifyError(t);
+        if (terminatedUpdater.compareAndSet(this, UNSET, PENDING)) {
+            notifyError(t);
+        }
     }
 
     @Override
@@ -75,7 +83,9 @@ final class WriteSingleSubscriber implements SingleSource.Subscriber<Object>, De
 
     @Override
     public void closeGracefully() {
-        // No op.
+        if (terminated == UNSET) {
+            throw new IllegalStateException("Unexpected, closeGracefully() without onSuccess()");
+        }
     }
 
     @Override
@@ -87,13 +97,13 @@ final class WriteSingleSubscriber implements SingleSource.Subscriber<Object>, De
     }
 
     private void notifyComplete() {
-        if (terminatedUpdater.compareAndSet(this, 0, 1)) {
+        if (terminatedUpdater.compareAndSet(this, PENDING, DONE)) {
             subscriber.onComplete();
         }
     }
 
     private void notifyError(Throwable t) {
-        if (terminatedUpdater.compareAndSet(this, 0, 1)) {
+        if (terminatedUpdater.compareAndSet(this, PENDING, DONE)) {
             closeHandler.closeChannelOutbound(channel);
             subscriber.onError(t);
         }
