@@ -79,7 +79,7 @@ final class WriteSingleSubscriber implements SingleSource.Subscriber<Object>, De
         if (terminatedUpdater.compareAndSet(this, AWAITING_RESULT, TERMINATED)) {
             notifyError(t);
         } else {
-            LOGGER.error("Failed to fail subscriber after permature close of the WriteListener.");
+            LOGGER.error("Ignoring emitted error as the listener is already closed.", t);
         }
     }
 
