@@ -16,6 +16,8 @@
 package io.servicetalk.grpc.protoc;
 
 import com.squareup.javapoet.ClassName;
+import com.squareup.javapoet.ParameterizedTypeName;
+import com.squareup.javapoet.TypeName;
 
 import static com.squareup.javapoet.ClassName.bestGuess;
 
@@ -28,6 +30,9 @@ final class Types {
     private static final String grpcRoutesFqcn = grpcApiPkg + ".GrpcRoutes";
     private static final String grpcProtobufPkg = grpcBasePkg + ".protobuf";
     private static final String routerApiPkg = basePkg + ".router.api";
+
+    private static final ClassName RouteExecutionStrategyFactory =
+            bestGuess(routerApiPkg + ".RouteExecutionStrategyFactory");
 
     static final ClassName BlockingIterable = bestGuess(concurrentPkg + ".BlockingIterable");
 
@@ -82,7 +87,8 @@ final class Types {
     static final ClassName ProtoBufSerializationProviderBuilder =
             bestGuess(grpcProtobufPkg + ".ProtoBufSerializationProviderBuilder");
 
-    static final ClassName RouteExecutionStrategyFactory = bestGuess(routerApiPkg + ".RouteExecutionStrategyFactory");
+    static final TypeName GrpcRouteExecutionStrategyFactory = ParameterizedTypeName.get(RouteExecutionStrategyFactory,
+            GrpcExecutionStrategy);
 
     private Types() {
         // no instances

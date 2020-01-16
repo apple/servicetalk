@@ -123,7 +123,8 @@ public final class HttpExecutionStrategies {
         if (noOffloads(left)) {
             return right;
         }
-        if (right.executor() != null && right.executor() != left.executor() && right.executor() != fallback) {
+        final Executor rightExecutor = right.executor();
+        if (rightExecutor != null && rightExecutor != left.executor() && rightExecutor != fallback) {
             // Since the original offloads were done on a different executor, we need to offload again.
             return right;
         }

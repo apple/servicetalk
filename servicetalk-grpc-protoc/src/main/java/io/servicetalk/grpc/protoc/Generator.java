@@ -22,7 +22,6 @@ import com.squareup.javapoet.CodeBlock;
 import com.squareup.javapoet.FieldSpec;
 import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.ParameterizedTypeName;
-import com.squareup.javapoet.TypeName;
 import com.squareup.javapoet.TypeSpec;
 
 import java.util.ArrayList;
@@ -65,6 +64,7 @@ import static io.servicetalk.grpc.protoc.Types.GrpcClientFilterFactory;
 import static io.servicetalk.grpc.protoc.Types.GrpcExecutionContext;
 import static io.servicetalk.grpc.protoc.Types.GrpcExecutionStrategy;
 import static io.servicetalk.grpc.protoc.Types.GrpcPayloadWriter;
+import static io.servicetalk.grpc.protoc.Types.GrpcRouteExecutionStrategyFactory;
 import static io.servicetalk.grpc.protoc.Types.GrpcRoutes;
 import static io.servicetalk.grpc.protoc.Types.GrpcSerializationProvider;
 import static io.servicetalk.grpc.protoc.Types.GrpcService;
@@ -78,7 +78,6 @@ import static io.servicetalk.grpc.protoc.Types.RequestStreamingRoute;
 import static io.servicetalk.grpc.protoc.Types.ResponseStreamingClientCall;
 import static io.servicetalk.grpc.protoc.Types.ResponseStreamingRoute;
 import static io.servicetalk.grpc.protoc.Types.Route;
-import static io.servicetalk.grpc.protoc.Types.RouteExecutionStrategyFactory;
 import static io.servicetalk.grpc.protoc.Types.Single;
 import static io.servicetalk.grpc.protoc.Types.StreamingClientCall;
 import static io.servicetalk.grpc.protoc.Types.StreamingRoute;
@@ -115,6 +114,7 @@ import static io.servicetalk.grpc.protoc.Words.rpc;
 import static io.servicetalk.grpc.protoc.Words.serializationProvider;
 import static io.servicetalk.grpc.protoc.Words.service;
 import static io.servicetalk.grpc.protoc.Words.strategy;
+import static io.servicetalk.grpc.protoc.Words.strategyFactory;
 import static java.util.EnumSet.noneOf;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Stream.concat;
@@ -313,9 +313,6 @@ final class Generator {
         final ClassName builderClass = serviceFactoryClass.nestedClass(Builder);
         final ClassName serviceFromRoutesClass = builderClass.nestedClass(state.serviceClass.simpleName() +
                 "FromRoutes");
-        final TypeName strategyFactoryType = ParameterizedTypeName.get(RouteExecutionStrategyFactory,
-                GrpcExecutionStrategy);
-        final String strategyFactoryName = "strategyFactory";
 
         // TODO: Warn for path override and Validate all paths are defined.
         final TypeSpec.Builder serviceBuilderSpecBuilder = classBuilder(Builder)
@@ -329,8 +326,8 @@ final class Generator {
                         .build())
                 .addMethod(constructorBuilder()
                         .addModifiers(PUBLIC)
-                        .addParameter(strategyFactoryType, strategyFactoryName, FINAL)
-                        .addStatement("super($L)", strategyFactoryName)
+                        .addParameter(GrpcRouteExecutionStrategyFactory, strategyFactory, FINAL)
+                        .addStatement("super($L)", strategyFactory)
                         .build())
                 .addMethod(methodBuilder("build")
                         .addModifiers(PUBLIC)
@@ -401,8 +398,8 @@ final class Generator {
                 .addMethod(constructorBuilder()
                         .addModifiers(PUBLIC)
                         .addParameter(state.serviceClass, service, FINAL)
-                        .addParameter(strategyFactoryType, strategyFactoryName, FINAL)
-                        .addStatement("super(new $T($L).$L)", builderClass, strategyFactoryName,
+                        .addParameter(GrpcRouteExecutionStrategyFactory, strategyFactory, FINAL)
+                        .addStatement("super(new $T($L).$L)", builderClass, strategyFactory,
                                 serviceFactoryBuilderInitChain(state.serviceProto, false))
                         .build())
                 .addMethod(constructorBuilder()
@@ -414,8 +411,8 @@ final class Generator {
                 .addMethod(constructorBuilder()
                         .addModifiers(PUBLIC)
                         .addParameter(state.blockingServiceClass, service, FINAL)
-                        .addParameter(strategyFactoryType, strategyFactoryName, FINAL)
-                        .addStatement("super(new $T($L).$L)", builderClass, strategyFactoryName,
+                        .addParameter(GrpcRouteExecutionStrategyFactory, strategyFactory, FINAL)
+                        .addStatement("super(new $T($L).$L)", builderClass, strategyFactory,
                                 serviceFactoryBuilderInitChain(state.serviceProto, true))
                         .build())
                 .addMethod(constructorBuilder()

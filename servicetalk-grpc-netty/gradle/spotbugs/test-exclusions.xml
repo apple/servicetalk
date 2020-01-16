@@ -26,4 +26,9 @@
       <Source name="~TesterProto\.java"/>
     </Or>
   </Match>
+  <Match>
+    <Class name="io.servicetalk.grpc.netty.ExecutionStrategyTest$RouteApi"/>
+    <Method name="extractResponse"/>
+    <Bug pattern="RCN_REDUNDANT_NULLCHECK_WOULD_HAVE_BEEN_A_NPE"/>
+  </Match>
 </FindBugsFilter>

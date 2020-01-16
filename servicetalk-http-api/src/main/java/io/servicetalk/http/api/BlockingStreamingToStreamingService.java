@@ -60,12 +60,8 @@ final class BlockingStreamingToStreamingService extends AbstractServiceAdapterHo
 
     BlockingStreamingToStreamingService(final BlockingStreamingHttpService original,
                                         final HttpExecutionStrategyInfluencer influencer) {
-        super(serviceInvocationStrategy(influencer));
+        super(influencer.influenceStrategy(DEFAULT_STRATEGY));
         this.original = requireNonNull(original);
-    }
-
-    private static HttpExecutionStrategy serviceInvocationStrategy(final HttpExecutionStrategyInfluencer influencer) {
-        return influencer.influenceStrategy(DEFAULT_STRATEGY);
     }
 
     @Override

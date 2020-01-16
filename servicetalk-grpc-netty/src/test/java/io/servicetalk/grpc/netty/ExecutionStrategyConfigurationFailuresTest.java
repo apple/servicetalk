@@ -27,7 +27,6 @@ import io.servicetalk.grpc.netty.TesterProto.Tester.TesterService;
 import io.servicetalk.router.api.NoOffloadsRouteExecutionStrategy;
 import io.servicetalk.router.api.RouteExecutionStrategy;
 import io.servicetalk.router.api.RouteExecutionStrategyFactory;
-import io.servicetalk.transport.api.ServerContext;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -190,9 +189,6 @@ public class ExecutionStrategyConfigurationFailuresTest {
 
     private static void usingServiceFactoryBuilderWithStrategyFactory(final ServiceFactory serviceFactory)
             throws Exception {
-        try (ServerContext server = GrpcServers.forAddress(localAddress(0))
-                .listenAndAwait(serviceFactory)) {
-            // noop
-        }
+        GrpcServers.forAddress(localAddress(0)).listenAndAwait(serviceFactory).close();
     }
 }

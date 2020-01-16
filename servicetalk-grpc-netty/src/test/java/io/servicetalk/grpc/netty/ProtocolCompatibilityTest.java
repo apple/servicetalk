@@ -725,7 +725,7 @@ public class ProtocolCompatibilityTest {
                         .serverStreamingCall(strategy, compatService)
                         .build();
 
-        // FIXME(idel): remove condition around appendServiceFilter when WSS or filters execution strategy will be fixed
+        // FIXME(idel): remove condition around appendServiceFilter when filters execution strategy will be fixed
         if (errorMode == ErrorMode.SIMPLE_IN_SERVICE_FILTER || errorMode == ErrorMode.STATUS_IN_SERVICE_FILTER) {
             serviceFactory.appendServiceFilter(delegate -> new Compat.CompatServiceFilter(delegate) {
                 @Override

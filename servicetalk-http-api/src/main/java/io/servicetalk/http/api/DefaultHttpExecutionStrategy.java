@@ -127,8 +127,11 @@ class DefaultHttpExecutionStrategy implements HttpExecutionStrategy {
             public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
                                                         StreamingHttpRequest request,
                                                         final StreamingHttpResponseFactory responseFactory) {
+                // We compute the difference between the ExecutionStrategy from the current ExecutionContext and this
+                // ExecutionStrategy to understand if we need to offload more then we already offloaded:
                 final HttpExecutionStrategy diff = difference(fallback, ctx.executionContext().executionStrategy(),
                         DefaultHttpExecutionStrategy.this);
+                // The service should see this ExecutionStrategy inside the ExecutionContext:
                 final HttpServiceContext wrappedCtx =
                         new ExecutionContextOverridingServiceContext(ctx, DefaultHttpExecutionStrategy.this, e);
                 if (diff == null) {

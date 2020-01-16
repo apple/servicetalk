@@ -39,6 +39,7 @@ final class Words {
     static final String serializationProvider = "serializationProvider";
     static final String service = "service";
     static final String strategy = "strategy";
+    static final String strategyFactory = strategy + "Factory";
 
     static final String Blocking = "Blocking";
     static final String Builder = "Builder";
