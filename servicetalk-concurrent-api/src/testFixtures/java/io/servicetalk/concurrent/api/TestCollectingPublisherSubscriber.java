@@ -17,6 +17,7 @@ package io.servicetalk.concurrent.api;
 
 import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
+import io.servicetalk.concurrent.internal.TerminalNotification;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -26,7 +27,10 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.concurrent.internal.ThrowableUtils.unknownStackTrace;
+import static io.servicetalk.concurrent.internal.TerminalNotification.complete;
+import static io.servicetalk.concurrent.internal.TerminalNotification.error;
+import static java.util.Objects.requireNonNull;
+import static java.util.stream.Collectors.toList;
 
 /**
  * A {@link Subscriber} that enqueues {@link #onNext(Object)} and terminal signals while providing blocking methods
@@ -48,37 +52,67 @@ import static io.servicetalk.concurrent.internal.ThrowableUtils.unknownStackTrac
  */
 public final class TestCollectingPublisherSubscriber<T> implements Subscriber<T> {
     private static final Object NULL_ON_NEXT = new Object();
-    private static final Throwable ON_COMPLETE = unknownStackTrace(new RuntimeException("onComplete"),
-            TestCollectingPublisherSubscriber.class, "onComplete");
     private final BlockingQueue<Object> items = new LinkedBlockingQueue<>();
     private final CountDownLatch onTerminalLatch = new CountDownLatch(1);
     private final CountDownLatch onSubscribeLatch = new CountDownLatch(1);
     @Nullable
-    private Throwable onTerminal;
+    private TerminalNotification onTerminal;
     @Nullable
     private Subscription subscription;
 
     @Override
     public void onSubscribe(final Subscription subscription) {
+        requireNonNull(subscription,
+                "Null Subscription is not permitted " +
+                        "https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.3/README.md#2.13");
+        verifyNoTerminal("onSubscribe", null, false);
+        if (this.subscription != null) {
+            throw new IllegalStateException("The Subscription has already been set to " + this.subscription +
+                    ". New Subscription " + subscription + " is not supported.");
+        }
         this.subscription = subscription;
         onSubscribeLatch.countDown();
     }
 
     @Override
     public void onNext(@Nullable final T t) {
+        verifyNoTerminal("onNext", t, true);
+        verifyOnSubscribed();
         items.add(t == null ? NULL_ON_NEXT : t);
     }
 
     @Override
     public void onError(final Throwable t) {
-        onTerminal = t;
+        verifyTerminalConditions("onError", t, true);
+        onTerminal = error(t);
         onTerminalLatch.countDown();
     }
 
     @Override
     public void onComplete() {
-        onTerminal = ON_COMPLETE;
+        verifyTerminalConditions("onComplete", null, false);
+        onTerminal = complete();
         onTerminalLatch.countDown();
+    }
+
+    private void verifyNoTerminal(String method, @Nullable Object param, boolean useParam) {
+        if (onTerminal != null) {
+            throw new IllegalStateException("Subscriber has already terminated [" + onTerminal +
+                    "] " + method + (useParam ? " [ " + param + "]" : "") + " is not valid. " +
+                    "See https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.3/README.md#1.7");
+        }
+    }
+
+    private void verifyTerminalConditions(String method, @Nullable Object param, boolean useParam) {
+        verifyNoTerminal(method, param, useParam);
+        verifyOnSubscribed();
+    }
+
+    private void verifyOnSubscribed() {
+        if (subscription == null) {
+            throw new IllegalStateException("onSubscribe must be called before any other signals. " +
+                    "https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.3/README.md#1.9");
+        }
     }
 
     /**
@@ -90,9 +124,7 @@ public final class TestCollectingPublisherSubscriber<T> implements Subscriber<T>
      */
     public Subscription awaitSubscription() throws InterruptedException {
         onSubscribeLatch.await();
-        if (subscription == null) {
-            throw new IllegalStateException("subscription is null");
-        }
+        assert subscription != null;
         return subscription;
     }
 
@@ -116,12 +148,9 @@ public final class TestCollectingPublisherSubscriber<T> implements Subscriber<T>
      */
     @SuppressWarnings("unchecked")
     public List<T> pollAllOnNext() {
-        List<T> consumedItems = new ArrayList<>();
-        Object item;
-        while ((item = items.poll()) != null) {
-            consumedItems.add(item == NULL_ON_NEXT ? null : (T) item);
-        }
-        return consumedItems;
+        List<Object> consumedItems = new ArrayList<>();
+        items.drainTo(consumedItems);
+        return consumedItems.stream().map(item -> item == NULL_ON_NEXT ? null : (T) item).collect(toList());
     }
 
     /**
@@ -148,13 +177,14 @@ public final class TestCollectingPublisherSubscriber<T> implements Subscriber<T>
     public Throwable awaitOnError(boolean verifyOnNextConsumed) throws InterruptedException {
         onTerminalLatch.await();
         assert onTerminal != null;
-        if (onTerminal == ON_COMPLETE) {
+        if (onTerminal == complete()) {
             throw new IllegalStateException("wanted onError but Subscriber terminated with onComplete");
         }
+        assert onTerminal.cause() != null;
         if (verifyOnNextConsumed) {
             verifyAllOnNextProcessed();
         }
-        return onTerminal;
+        return onTerminal.cause();
     }
 
     /**
@@ -178,8 +208,9 @@ public final class TestCollectingPublisherSubscriber<T> implements Subscriber<T>
     public void awaitOnComplete(boolean verifyOnNextConsumed) throws InterruptedException {
         onTerminalLatch.await();
         assert onTerminal != null;
-        if (onTerminal != ON_COMPLETE) {
-            throw new IllegalStateException("wanted onComplete but Subscriber terminated with onError", onTerminal);
+        if (onTerminal != complete()) {
+            throw new IllegalStateException("wanted onComplete but Subscriber terminated with onError",
+                    onTerminal.cause());
         }
         if (verifyOnNextConsumed) {
             verifyAllOnNextProcessed();
