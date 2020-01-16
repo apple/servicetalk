@@ -56,6 +56,7 @@ import static io.servicetalk.http.router.jersey.ExecutionStrategyTest.TestMode.P
 import static io.servicetalk.http.router.jersey.resources.ExecutionStrategyResources.EXEC_NAME;
 import static io.servicetalk.http.router.jersey.resources.ExecutionStrategyResources.RS_THREAD_NAME;
 import static io.servicetalk.http.router.jersey.resources.ExecutionStrategyResources.THREAD_NAME;
+import static io.servicetalk.router.utils.internal.DefaultRouteExecutionStrategyFactory.getUsingDefaultStrategyFactory;
 import static io.servicetalk.transport.netty.internal.GlobalExecutionContext.globalExecutionContext;
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
@@ -217,7 +218,10 @@ public final class ExecutionStrategyTest extends AbstractNonParameterizedJerseyS
 
     static RouteExecutionStrategyFactory<HttpExecutionStrategy> asFactory(
             final Map<String, HttpExecutionStrategy> executionStrategies) {
-        return executionStrategies::get;
+        return id -> {
+            final HttpExecutionStrategy stored = executionStrategies.get(id);
+            return stored != null ? stored : getUsingDefaultStrategyFactory(id);
+        };
     }
 
     @Override

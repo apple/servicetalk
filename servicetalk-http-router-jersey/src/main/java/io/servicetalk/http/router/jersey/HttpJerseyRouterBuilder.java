@@ -32,6 +32,7 @@ import java.util.function.BiFunction;
 import javax.ws.rs.core.Application;
 
 import static io.servicetalk.http.utils.HttpRequestUriUtils.getBaseRequestUri;
+import static io.servicetalk.router.utils.internal.DefaultRouteExecutionStrategyFactory.defaultStrategyFactory;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -46,7 +47,7 @@ public final class HttpJerseyRouterBuilder {
     private int publisherInputStreamQueueCapacity = 16;
     private BiFunction<ConnectionContext, HttpRequestMetaData, String> baseUriFunction =
             (ctx, req) -> getBaseRequestUri(ctx, req, false);
-    private RouteExecutionStrategyFactory<HttpExecutionStrategy> strategyFactory = __ -> null;
+    private RouteExecutionStrategyFactory<HttpExecutionStrategy> strategyFactory = defaultStrategyFactory();
 
     /**
      * Set the hint for the capacity of the intermediary queue that stores items when adapting {@link Publisher}s
