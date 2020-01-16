@@ -40,26 +40,22 @@ final class NoOffloadsHttpExecutionStrategy implements HttpExecutionStrategy {
         this.executor = null;
     }
 
-    NoOffloadsHttpExecutionStrategy(Executor executor) {
+    NoOffloadsHttpExecutionStrategy(final Executor executor) {
         this.executor = requireNonNull(executor);
     }
 
     @Override
-    public <FS> Single<StreamingHttpResponse> invokeClient(
-            final Executor fallback, final Publisher<Object> flattenedRequest, final FS flushStrategy,
-            final ClientInvoker<FS> client) {
-        Publisher<Object> flatReq = flattenedRequest.subscribeOnOverride(immediate());
-        return client.invokeClient(flatReq, flushStrategy)
-                .map(response -> response.transformRawPayloadBody(p -> p.publishOnOverride(immediate())))
-                .publishOnOverride(immediate());
+    public <FS> Single<StreamingHttpResponse> invokeClient(final Executor fallback,
+                                                           final Publisher<Object> flattenedRequest,
+                                                           final FS flushStrategy, final ClientInvoker<FS> client) {
+        return client.invokeClient(flattenedRequest, flushStrategy);
     }
 
     @Override
     public Publisher<Object> invokeService(final Executor fallback, final StreamingHttpRequest request,
                                            final Function<StreamingHttpRequest, Publisher<Object>> service,
                                            final BiFunction<Throwable, Executor, Publisher<Object>> errorHandler) {
-        return service.apply(request.transformRawPayloadBody(payload -> payload.publishOnOverride(immediate())))
-                .subscribeOnOverride(immediate());
+        return service.apply(request);
     }
 
     @Override
@@ -68,10 +64,7 @@ final class NoOffloadsHttpExecutionStrategy implements HttpExecutionStrategy {
             // Always use fallback as the Executor as this strategy does not specify an Executor.
             HttpServiceContext wrappedCtx =
                     new ExecutionContextOverridingServiceContext(ctx, NoOffloadsHttpExecutionStrategy.this, fallback);
-            request = request.transformRawPayloadBody(p -> p.publishOn(immediate()));
-            return handler.handle(wrappedCtx, request, responseFactory)
-                    .map(r -> r.transformRawPayloadBody(p -> p.subscribeOn(immediate())))
-                    .subscribeOn(immediate());
+            return handler.handle(wrappedCtx, request, responseFactory);
         };
     }
 
@@ -96,28 +89,28 @@ final class NoOffloadsHttpExecutionStrategy implements HttpExecutionStrategy {
     }
 
     @Override
-    public <T> Single<T> invokeService(Executor fallback, final Function<Executor, T> service) {
+    public <T> Single<T> invokeService(final Executor fallback, final Function<Executor, T> service) {
         return new FunctionToSingle<>(service, immediate());
     }
 
     @Override
     public <T> Single<T> offloadSend(final Executor fallback, final Single<T> original) {
-        return original.subscribeOnOverride(immediate());
+        return original;
     }
 
     @Override
     public <T> Single<T> offloadReceive(final Executor fallback, final Single<T> original) {
-        return original.publishOnOverride(immediate());
+        return original;
     }
 
     @Override
     public <T> Publisher<T> offloadSend(final Executor fallback, final Publisher<T> original) {
-        return original.subscribeOnOverride(immediate());
+        return original;
     }
 
     @Override
     public <T> Publisher<T> offloadReceive(final Executor fallback, final Publisher<T> original) {
-        return original.publishOnOverride(immediate());
+        return original;
     }
 
     @Override
