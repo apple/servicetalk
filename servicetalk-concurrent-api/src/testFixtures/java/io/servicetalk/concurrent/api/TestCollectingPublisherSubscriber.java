@@ -76,21 +76,20 @@ public final class TestCollectingPublisherSubscriber<T> implements Subscriber<T>
 
     @Override
     public void onNext(@Nullable final T t) {
-        verifyNoTerminal("onNext", t, true);
-        verifyOnSubscribed();
+        verifyOnSubscribedAndNoTerminal("onNext", t, true);
         items.add(t == null ? NULL_ON_NEXT : t);
     }
 
     @Override
     public void onError(final Throwable t) {
-        verifyTerminalConditions("onError", t, true);
+        verifyOnSubscribedAndNoTerminal("onError", t, true);
         onTerminal = error(t);
         onTerminalLatch.countDown();
     }
 
     @Override
     public void onComplete() {
-        verifyTerminalConditions("onComplete", null, false);
+        verifyOnSubscribedAndNoTerminal("onComplete", null, false);
         onTerminal = complete();
         onTerminalLatch.countDown();
     }
@@ -103,12 +102,8 @@ public final class TestCollectingPublisherSubscriber<T> implements Subscriber<T>
         }
     }
 
-    private void verifyTerminalConditions(String method, @Nullable Object param, boolean useParam) {
+    private void verifyOnSubscribedAndNoTerminal(String method, @Nullable Object param, boolean useParam) {
         verifyNoTerminal(method, param, useParam);
-        verifyOnSubscribed();
-    }
-
-    private void verifyOnSubscribed() {
         if (subscription == null) {
             throw new IllegalStateException("onSubscribe must be called before any other signals. " +
                     "https://github.com/reactive-streams/reactive-streams-jvm/blob/v1.0.3/README.md#1.9");
