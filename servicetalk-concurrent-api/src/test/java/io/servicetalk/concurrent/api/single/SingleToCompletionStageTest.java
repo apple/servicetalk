@@ -68,15 +68,15 @@ public class SingleToCompletionStageTest {
     private LegacyTestSingle<String> source;
     private static ExecutorService jdkExecutor;
     private static final AtomicInteger threadCount = new AtomicInteger();
-    private static final String ST_THREAD_PREFIX_NAME = "st-exec-thread-";
-    private static final String JDK_THREAD_NAME_PREFIX = "jdk-thread-";
+    private static final String ST_THREAD_PREFIX_NAME = "st-exec-thread";
+    private static final String JDK_THREAD_NAME_PREFIX = "jdk-thread";
     private static final String JDK_FORK_JOIN_THREAD_NAME_PREFIX = "ForkJoinPool";
     private static final String COMPLETABLE_FUTURE_THREAD_PER_TASK_NAME_PREFIX = "Thread-";
 
     @BeforeClass
     public static void beforeClass() {
         jdkExecutor = java.util.concurrent.Executors.newCachedThreadPool(
-                r -> new Thread(r, JDK_THREAD_NAME_PREFIX + threadCount.incrementAndGet()));
+                r -> new Thread(r, JDK_THREAD_NAME_PREFIX + '-' + threadCount.incrementAndGet()));
     }
 
     @AfterClass

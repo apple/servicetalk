@@ -54,7 +54,7 @@ import static org.hamcrest.Matchers.hasSize;
 
 @RunWith(Parameterized.class)
 public class HttpStreamingClientOverrideOffloadingTest {
-    private static final String IO_EXECUTOR_THREAD_NAME_PREFIX = "http-client-io-executor-";
+    private static final String IO_EXECUTOR_THREAD_NAME_PREFIX = "http-client-io-executor";
 
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();

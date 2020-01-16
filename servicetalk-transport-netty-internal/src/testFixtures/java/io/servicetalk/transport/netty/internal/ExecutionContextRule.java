@@ -42,7 +42,7 @@ import static io.servicetalk.transport.netty.internal.OffloadAllExecutionStrateg
  * Can be used with a @{@link Rule} field and a {@code static} field with @{@link ClassRule}.
  */
 public final class ExecutionContextRule extends ExternalResource implements ExecutionContext {
-    private static final String IO_THREAD_PREFIX = "exec-ctx-rule-io-";
+    private static final String IO_THREAD_PREFIX = "exec-ctx-rule-io";
     private final Supplier<Executor> executorSupplier;
     private final Supplier<IoExecutor> ioExecutorSupplier;
     private final Supplier<BufferAllocator> allocatorSupplier;

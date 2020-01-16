@@ -289,8 +289,8 @@ public class ServerEffectiveStrategyTest {
     }
 
     private static final class Params {
-        private static final String USER_STRATEGY_EXECUTOR_NAME_PREFIX = "user-strategy-executor-";
-        private static final String SERVICE_EXECUTOR_NAME_PREFIX = "service-executor-";
+        private static final String USER_STRATEGY_EXECUTOR_NAME_PREFIX = "user-strategy-executor";
+        private static final String SERVICE_EXECUTOR_NAME_PREFIX = "service-executor";
 
 
         private final Map<ServiceType, List<ServerOffloadPoint>> offloadPoints;

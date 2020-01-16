@@ -26,7 +26,7 @@ import static org.junit.Assert.assertSame;
 
 public class SingleExecutorPreservationTest {
     @ClassRule
-    public static final ExecutorRule EXEC = ExecutorRule.withNamePrefix("test-");
+    public static final ExecutorRule EXEC = ExecutorRule.withNamePrefix("test");
 
     private Single<String> single;
 

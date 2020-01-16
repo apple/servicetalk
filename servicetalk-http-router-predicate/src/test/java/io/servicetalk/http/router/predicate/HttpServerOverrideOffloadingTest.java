@@ -59,7 +59,7 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 
 public class HttpServerOverrideOffloadingTest {
-    private static final String IO_EXECUTOR_THREAD_NAME_PREFIX = "http-server-io-executor-";
+    private static final String IO_EXECUTOR_THREAD_NAME_PREFIX = "http-server-io-executor";
 
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();

@@ -28,13 +28,13 @@ import static java.util.Objects.requireNonNull;
 public final class DefaultThreadFactory implements ThreadFactory {
 
     private static final AtomicInteger factoryCount = new AtomicInteger();
-    public static final String DEFAULT_NAME_PREFIX = "servicetalk-executor-";
+    public static final String DEFAULT_NAME_PREFIX = "servicetalk-executor";
+
+    private final String namePrefix;
     private final boolean daemon;
     private final int priority;
-
     @SuppressWarnings("unused")
     private final AtomicInteger threadCount = new AtomicInteger();
-    private final String namePrefix;
 
     /**
      * New instance that creates daemon threads with {@link Thread#NORM_PRIORITY} priority.
@@ -67,7 +67,7 @@ public final class DefaultThreadFactory implements ThreadFactory {
      * @param namePrefix for all created threads.
      */
     public DefaultThreadFactory(String namePrefix) {
-        this(calculateName(namePrefix), true, NORM_PRIORITY);
+        this(namePrefix, true, NORM_PRIORITY);
     }
 
     /**
@@ -77,7 +77,7 @@ public final class DefaultThreadFactory implements ThreadFactory {
      * @param priority for the created threads.
      */
     public DefaultThreadFactory(boolean daemon, int priority) {
-        this(calculateName(DEFAULT_NAME_PREFIX), daemon, priority);
+        this(DEFAULT_NAME_PREFIX, daemon, priority);
     }
 
     /**
@@ -88,13 +88,9 @@ public final class DefaultThreadFactory implements ThreadFactory {
      * @param priority for the created threads.
      */
     public DefaultThreadFactory(String namePrefix, boolean daemon, int priority) {
+        this.namePrefix = requireNonNull(namePrefix) + '-' + factoryCount.incrementAndGet() + '-';
         this.daemon = daemon;
         this.priority = priority;
-        this.namePrefix = requireNonNull(namePrefix);
-    }
-
-    private static String calculateName(String prefix) {
-        return prefix + factoryCount.incrementAndGet() + '-';
     }
 
     @Override
