@@ -32,6 +32,7 @@ import javax.annotation.Nullable;
 public abstract class CloseHandler {
 
     public static final CloseHandler UNSUPPORTED_PROTOCOL_CLOSE_HANDLER = new UnsupportedProtocolHandler();
+    public static final CloseHandler H2_PROTOCOL_CLOSE_HANDLER = new H2ProtocolHandler();
 
     /**
      * New {@link CloseHandler} instance.
@@ -76,6 +77,13 @@ public abstract class CloseHandler {
      * @param ctx {@link ChannelHandlerContext}
      */
     public abstract void protocolPayloadEndOutbound(ChannelHandlerContext ctx);
+
+    /**
+     * Signal end of outbound payload, once successfully written to the {@link Channel}.
+     *
+     * @param ctx {@link ChannelHandlerContext}
+     */
+    public abstract void protocolPayloadEndOutboundSuccess(ChannelHandlerContext ctx);
 
     /**
      * Signal inbound close command observed, to be emitted from the {@link EventLoop} for the {@link Channel}.
@@ -263,11 +271,88 @@ public abstract class CloseHandler {
         }
 
         @Override
+        public void protocolPayloadEndOutboundSuccess(final ChannelHandlerContext ctx) {
+        }
+
+        @Override
         public void protocolClosingInbound(final ChannelHandlerContext ctx) {
         }
 
         @Override
         public void protocolClosingOutbound(final ChannelHandlerContext ctx) {
+        }
+    }
+
+    private static final class H2ProtocolHandler extends CloseHandler {
+
+        @Override
+        void registerEventHandler(final Channel channel, final Consumer<CloseEvent> eventHandler) {
+        }
+
+        @Override
+        void channelClosedInbound(final ChannelHandlerContext ctx) {
+        }
+
+        @Override
+        void channelClosedOutbound(final ChannelHandlerContext ctx) {
+        }
+
+        @Override
+        void closeChannelInbound(final Channel channel) {
+            channel.close();
+        }
+
+        @Override
+        void closeChannelOutbound(final Channel channel) {
+            channel.close();
+        }
+
+        @Override
+        void userClosing(final Channel channel) {
+            channel.close();
+        }
+
+        @Override
+        public void protocolPayloadBeginInbound(final ChannelHandlerContext ctx) {
+        }
+
+        @Override
+        public void protocolPayloadEndInbound(final ChannelHandlerContext ctx) {
+        }
+
+        @Override
+        public void protocolPayloadBeginOutbound(final ChannelHandlerContext ctx) {
+        }
+
+        @Override
+        public void protocolPayloadEndOutbound(final ChannelHandlerContext ctx) {
+            ctx.pipeline().fireUserEventTriggered(ProtocolPayloadEndEvent.OUTBOUND);
+        }
+
+        @Override
+        public void protocolPayloadEndOutboundSuccess(final ChannelHandlerContext ctx) {
+        }
+
+        @Override
+        public void protocolClosingInbound(final ChannelHandlerContext ctx) {
+        }
+
+        @Override
+        public void protocolClosingOutbound(final ChannelHandlerContext ctx) {
+        }
+    }
+
+    /**
+     * Netty UserEvent to indicate the end of a payload was observed at the transport.
+     */
+    static final class ProtocolPayloadEndEvent {
+        /**
+         * Netty UserEvent instance to indicate an outbound end of payload.
+         */
+        static final ProtocolPayloadEndEvent OUTBOUND = new ProtocolPayloadEndEvent();
+
+        private ProtocolPayloadEndEvent() {
+            // No instances.
         }
     }
 }

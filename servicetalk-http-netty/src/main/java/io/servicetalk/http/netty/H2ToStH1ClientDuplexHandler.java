@@ -23,6 +23,7 @@ import io.servicetalk.http.api.HttpRequestMetaData;
 import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.http.api.StreamingHttpResponse;
+import io.servicetalk.transport.netty.internal.CloseHandler;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
@@ -56,8 +57,9 @@ final class H2ToStH1ClientDuplexHandler extends AbstractH2DuplexHandler {
     @Nullable
     private HttpRequestMethod method;
 
-    H2ToStH1ClientDuplexHandler(boolean sslEnabled, BufferAllocator allocator, HttpHeadersFactory headersFactory) {
-        super(headersFactory);
+    H2ToStH1ClientDuplexHandler(boolean sslEnabled, BufferAllocator allocator, HttpHeadersFactory headersFactory,
+                                CloseHandler closeHandler) {
+        super(headersFactory, closeHandler);
         this.scheme = sslEnabled ? HttpScheme.HTTPS : HttpScheme.HTTP;
         this.allocator = allocator;
     }

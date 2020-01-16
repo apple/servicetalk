@@ -29,6 +29,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.EventLoop;
+import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.channel.epoll.EpollSocketChannel;
 import io.netty.channel.socket.ChannelInputShutdownEvent;
 import io.netty.channel.socket.ChannelInputShutdownReadComplete;
@@ -379,8 +380,8 @@ public class RequestResponseCloseHandlerTest {
                         break;
                     case OE:
                         assertCanWrite();
-                        h.protocolPayloadEndOutbound(ctx);
-                        order.verify(h).protocolPayloadEndOutbound(ctx);
+                        h.protocolPayloadEndOutboundSuccess(ctx);
+                        order.verify(h).protocolPayloadEndOutboundSuccess(ctx);
                         break;
                     case OC:
                         h.protocolClosingOutbound(ctx);
@@ -433,7 +434,7 @@ public class RequestResponseCloseHandlerTest {
                             verify(h, never()).protocolPayloadBeginOutbound(ctx);
                             break;
                         case OE:
-                            verify(h, never()).protocolPayloadEndOutbound(ctx);
+                            verify(h, never()).protocolPayloadEndOutboundSuccess(ctx);
                             break;
                         case OC:
                             verify(h, never()).protocolClosingOutbound(ctx);
@@ -466,6 +467,67 @@ public class RequestResponseCloseHandlerTest {
 
         private static List<Events> e(Events... args) {
             return asList(args);
+        }
+    }
+
+    public static class RequestResponseProtocolEventTest {
+
+        @Rule
+        public final Timeout timeout = new ServiceTalkTestTimeout();
+
+        @Test
+        public void clientProtocolEndEventEmitsUserEventAlways() {
+            AtomicBoolean ab = new AtomicBoolean(false);
+            final EmbeddedChannel channel = new EmbeddedChannel(new ChannelInboundHandlerAdapter() {
+                @Override
+                public void userEventTriggered(final ChannelHandlerContext ctx, final Object evt) {
+                    if (evt == CloseHandler.ProtocolPayloadEndEvent.OUTBOUND) {
+                        ab.set(true);
+                    }
+                    ctx.fireUserEventTriggered(evt);
+                }
+            });
+            final RequestResponseCloseHandler ch = new RequestResponseCloseHandler(true);
+            channel.eventLoop().execute(() -> ch.protocolPayloadEndOutbound(channel.pipeline().firstContext()));
+            channel.close().syncUninterruptibly();
+            assertThat("ProtocolPayloadEndEvent.OUTBOUND not fired", ab.get(), is(true));
+        }
+
+        @Test
+        public void serverProtocolEndEventDoesntEmitUntilClosing() {
+            AtomicBoolean ab = new AtomicBoolean(false);
+            final EmbeddedChannel channel = new EmbeddedChannel(new ChannelInboundHandlerAdapter() {
+                @Override
+                public void userEventTriggered(final ChannelHandlerContext ctx, final Object evt) {
+                    if (evt == CloseHandler.ProtocolPayloadEndEvent.OUTBOUND) {
+                        ab.set(true);
+                    }
+                    ctx.fireUserEventTriggered(evt);
+                }
+            });
+            final RequestResponseCloseHandler ch = new RequestResponseCloseHandler(false);
+            channel.eventLoop().execute(() -> ch.protocolPayloadEndOutbound(channel.pipeline().firstContext()));
+            channel.close().syncUninterruptibly();
+            assertThat("ProtocolPayloadEndEvent.OUTBOUND should not fire", ab.get(), is(false));
+        }
+
+        @Test
+        public void serverProtocolEndEventEmitsUserEventWhenClosing() {
+            AtomicBoolean ab = new AtomicBoolean(false);
+            final EmbeddedChannel channel = new EmbeddedChannel(new ChannelInboundHandlerAdapter() {
+                @Override
+                public void userEventTriggered(final ChannelHandlerContext ctx, final Object evt) {
+                    if (evt == CloseHandler.ProtocolPayloadEndEvent.OUTBOUND) {
+                        ab.set(true);
+                    }
+                    ctx.fireUserEventTriggered(evt);
+                }
+            });
+            final RequestResponseCloseHandler ch = new RequestResponseCloseHandler(false);
+            channel.eventLoop().execute(() -> ch.userClosing(channel));
+            channel.eventLoop().execute(() -> ch.protocolPayloadEndOutbound(channel.pipeline().firstContext()));
+            channel.close().syncUninterruptibly();
+            assertThat("ProtocolPayloadEndEvent.OUTBOUND not fired", ab.get(), is(true));
         }
     }
 

@@ -163,6 +163,13 @@ class RequestResponseCloseHandler extends CloseHandler {
 
     @Override
     public void protocolPayloadEndOutbound(final ChannelHandlerContext ctx) {
+        if (isClient || has(state, CLOSING)) {
+            ctx.pipeline().fireUserEventTriggered(ProtocolPayloadEndEvent.OUTBOUND);
+        }
+    }
+
+    @Override
+    public void protocolPayloadEndOutboundSuccess(final ChannelHandlerContext ctx) {
         assert ctx.executor().inEventLoop();
         state = unset(state, WRITE);
         if (has(state, CLOSING)) {

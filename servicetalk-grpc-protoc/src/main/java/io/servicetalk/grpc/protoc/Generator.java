@@ -231,6 +231,7 @@ final class Generator {
             final FieldSpec.Builder pathSpecBuilder = FieldSpec.builder(String.class, RPC_PATH, PUBLIC, STATIC, FINAL)
                     .initializer("$S", context.methodPath(state.serviceProto, methodProto));
             final TypeSpec.Builder interfaceSpecBuilder = interfaceBuilder(name)
+                    .addAnnotation(FunctionalInterface.class)
                     .addModifiers(PUBLIC)
                     .addField(pathSpecBuilder.build())
                     .addMethod(newRpcMethodSpec(methodProto, EnumSet.of(INTERFACE),
@@ -254,6 +255,7 @@ final class Generator {
             final FieldSpec.Builder pathSpecBuilder = FieldSpec.builder(String.class, RPC_PATH, PUBLIC, STATIC, FINAL);
             pathSpecBuilder.initializer("$T.$L", rpcInterface.className, RPC_PATH);
             final TypeSpec.Builder interfaceSpecBuilder = interfaceBuilder(name)
+                    .addAnnotation(FunctionalInterface.class)
                     .addModifiers(PUBLIC)
                     .addField(pathSpecBuilder.build())
                     .addMethod(newRpcMethodSpec(methodProto, EnumSet.of(BLOCKING, INTERFACE),

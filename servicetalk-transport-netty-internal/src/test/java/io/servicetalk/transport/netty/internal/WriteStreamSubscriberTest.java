@@ -146,7 +146,7 @@ public class WriteStreamSubscriberTest extends AbstractWriteTest {
 
     @Test
     public void onNextAfterChannelClose() {
-        subscriber.channelClosed(new ClosedChannelException());
+        subscriber.close(new ClosedChannelException());
         subscriber.onNext("Hello");
         channel.runPendingTasks();
         assertThat("Unexpected message(s) written.", channel.outboundMessages(), is(empty()));
