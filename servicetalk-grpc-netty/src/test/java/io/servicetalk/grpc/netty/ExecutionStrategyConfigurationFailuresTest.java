@@ -33,6 +33,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import static io.servicetalk.grpc.api.GrpcExecutionStrategies.noOffloadsStrategy;
+import static io.servicetalk.router.utils.internal.DefaultRouteExecutionStrategyFactory.getUsingDefaultStrategyFactory;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.containsString;
@@ -108,7 +109,7 @@ public class ExecutionStrategyConfigurationFailuresTest {
     private static final TesterService MISCONFIGURED_SERVICE = new MisconfiguredService();
     private static final BlockingTesterService MISCONFIGURED_BLOCKING_SERVICE = new MisconfiguredBlockingService();
     private static final RouteExecutionStrategyFactory<GrpcExecutionStrategy> STRATEGY_FACTORY =
-            id -> "test".equals(id) ? noOffloadsStrategy() : null;
+            id -> "test".equals(id) ? noOffloadsStrategy() : getUsingDefaultStrategyFactory(id);
 
     @Rule
     public final ExpectedException expected = ExpectedException.none();
@@ -169,7 +170,7 @@ public class ExecutionStrategyConfigurationFailuresTest {
     private void usingServiceFactoryBuilder(final ServiceFactory serviceFactory) throws Exception {
         expected.expect(IllegalStateException.class);
         expected.expectMessage(allOf(
-                containsString("Failed to create execution strategy ID"),
+                containsString("Failed to create an execution strategy for ID"),
                 containsString("testRequestStream(")));
 
         GrpcServers.forAddress(localAddress(0)).listenAndAwait(serviceFactory);

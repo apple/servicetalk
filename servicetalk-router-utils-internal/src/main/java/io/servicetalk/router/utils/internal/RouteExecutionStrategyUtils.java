@@ -26,6 +26,7 @@ import java.util.Set;
 import javax.annotation.Nullable;
 
 import static java.util.Arrays.stream;
+import static java.util.Objects.requireNonNull;
 
 /**
  * Utilities to handle {@link RouteExecutionStrategy} annotation.
@@ -124,11 +125,14 @@ public final class RouteExecutionStrategyUtils {
             errors.add("Route execution strategy with empty ID specified on: " + method);
             return null;
         }
-        final T routeExecutionStrategy = strategyFactory.get(id);
-        if (routeExecutionStrategy == null) {
-            errors.add("Failed to create execution strategy ID \"" + id + "\" specified on: " + method);
+        try {
+            return requireNonNull(strategyFactory.get(id));
+        } catch (Exception e) {
+            errors.add("Failed to create an execution strategy for ID \"" + id + "\" specified on: " + method + ".\n" +
+                    e.getClass() + ": " + e.getMessage() + (e.getCause() != null ?
+                    "\nCaused by: " + e.getCause().getClass() + ": " + e.getCause().getMessage() : ""));
+            return null;
         }
-        return routeExecutionStrategy;
     }
 
     /**

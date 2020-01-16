@@ -322,7 +322,6 @@ final class Generator {
                         state.serviceClass))
                 .addMethod(constructorBuilder()
                         .addModifiers(PUBLIC)
-                        .addStatement("super(__ -> null)")
                         .build())
                 .addMethod(constructorBuilder()
                         .addModifiers(PUBLIC)

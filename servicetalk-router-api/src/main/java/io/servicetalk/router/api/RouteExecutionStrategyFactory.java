@@ -15,10 +15,8 @@
  */
 package io.servicetalk.router.api;
 
-import javax.annotation.Nullable;
-
 /**
- * A factory that creates execution strategy for different {@link RouteExecutionStrategy#id() id}s of
+ * A factory that creates an execution strategy for different {@link RouteExecutionStrategy#id() id}s of
  * {@link RouteExecutionStrategy} annotation.
  *
  * @param <ES> protocol-specific execution strategy implementation
@@ -31,8 +29,8 @@ public interface RouteExecutionStrategyFactory<ES> {
      * {@link RouteExecutionStrategy} annotation.
      *
      * @param id of {@link RouteExecutionStrategy}
-     * @return {@link ES} implementation or {@code null}
+     * @return {@link ES} implementation
+     * @throws IllegalArgumentException if {@code id} is unknown and no fallback {@link ES} could be used
      */
-    @Nullable
     ES get(String id);
 }
