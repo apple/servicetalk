@@ -168,7 +168,29 @@ public class DefaultHttpExecutionStrategyTest {
     }
 
     @Test
-    public void wrapService() throws Exception {
+    public void wrapServiceThatWasAlreadyOffloaded() throws Exception {
+        ThreadAnalyzer analyzer = new ThreadAnalyzer();
+        StreamingHttpService svc = strategy.offloadService(executor, (ctx, request, responseFactory) -> {
+            analyzer.checkContext(ctx);
+            analyzer.checkServiceInvocationNotOffloaded();
+            return succeeded(analyzer.createNewResponse()
+                    .payloadBody(analyzer.instrumentedRequestPayloadForServerNotOffloaded(request.payloadBody())));
+        });
+        StreamingHttpRequest req = analyzer.createNewRequest();
+        DefaultStreamingHttpRequestResponseFactory respFactory =
+                new DefaultStreamingHttpRequestResponseFactory(DEFAULT_ALLOCATOR, INSTANCE, HTTP_1_1);
+        TestHttpServiceContext ctx = new TestHttpServiceContext(INSTANCE, respFactory,
+                // Use the same strategy for the ctx to indicate that server already did all required offloads.
+                // So, the difference function inside #offloadService will return null.
+                new ExecutionContextToHttpExecutionContext(contextRule, strategy));
+        analyzer.instrumentedResponseForServerNotOffloaded(svc.handle(ctx, req, ctx.streamingResponseFactory()))
+                .flatMapPublisher(StreamingHttpResponse::payloadBody)
+                .toFuture().get();
+        analyzer.verify();
+    }
+
+    @Test
+    public void wrapServiceThatWasNotOffloaded() throws Exception {
         ThreadAnalyzer analyzer = new ThreadAnalyzer();
         StreamingHttpService svc = strategy.offloadService(executor, (ctx, request, responseFactory) -> {
             analyzer.checkContext(ctx);
@@ -181,12 +203,12 @@ public class DefaultHttpExecutionStrategyTest {
                 new DefaultStreamingHttpRequestResponseFactory(DEFAULT_ALLOCATOR, INSTANCE, HTTP_1_1);
         TestHttpServiceContext ctx = new TestHttpServiceContext(INSTANCE, respFactory,
                 // Use noOffloadsStrategy() for the ctx to indicate that there was no offloading before.
-                // So, the difference function inside #offloadService will return the tested strategy
+                // So, the difference function inside #offloadService will return the tested strategy.
                 new ExecutionContextToHttpExecutionContext(contextRule, noOffloadsStrategy()));
         analyzer.instrumentedResponseForServer(svc.handle(ctx, req, ctx.streamingResponseFactory()))
                 .flatMapPublisher(StreamingHttpResponse::payloadBody)
                 .toFuture().get();
-        analyzer.verifyNoErrors();
+        analyzer.verify();
     }
 
     @Test
@@ -256,6 +278,15 @@ public class DefaultHttpExecutionStrategyTest {
             })));
         }
 
+        Single<StreamingHttpResponse> instrumentedResponseForServerNotOffloaded(Single<StreamingHttpResponse> resp) {
+            return resp.map(response -> response.transformPayloadBody(p -> p.beforeRequest(__ -> {
+                analyzed.set(SEND_ANALYZED_INDEX, true);
+                if (testThread != currentThread()) {
+                    addError("Unexpected offloading for thread requested from request.");
+                }
+            })));
+        }
+
         Publisher<Object> instrumentedFlatRequestForClient(Publisher<Object> req) {
             return req.beforeRequest(__ -> {
                 analyzed.set(SEND_ANALYZED_INDEX, true);
@@ -314,10 +345,26 @@ public class DefaultHttpExecutionStrategyTest {
             verifyThread(offloadReceiveMeta, "Unexpected thread invoked service.");
         }
 
+        void checkServiceInvocationNotOffloaded() {
+            analyzed.set(RECEIVE_META_ANALYZED_INDEX, true);
+            if (testThread != currentThread()) {
+                addError("Unexpected offloading for the invoked service.");
+            }
+        }
+
         Publisher<Buffer> instrumentedRequestPayloadForServer(Publisher<Buffer> req) {
             return req.beforeOnNext(__ -> {
                 analyzed.set(RECEIVE_DATA_ANALYZED_INDEX, true);
                 verifyThread(offloadReceiveData, "Unexpected thread for request payload onNext.");
+            });
+        }
+
+        Publisher<Buffer> instrumentedRequestPayloadForServerNotOffloaded(Publisher<Buffer> req) {
+            return req.beforeOnNext(__ -> {
+                analyzed.set(RECEIVE_DATA_ANALYZED_INDEX, true);
+                if (testThread != currentThread()) {
+                    addError("Unexpected offloading for request payload onNext.");
+                }
             });
         }
 
