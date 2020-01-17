@@ -24,7 +24,6 @@ import org.junit.Test;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.function.Supplier;
-
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;

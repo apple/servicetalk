@@ -222,8 +222,6 @@
     <module name="AtclauseOrder"/>
     <module name="JavadocMethod">
       <property name="scope" value="protected"/>
-      <property name="allowUndeclaredRTE" value="true"/>
-      <property name="validateThrows" value="true"/>
     </module>
     <module name="NonEmptyAtclauseDescription"/>
     <module name="JavadocStyle">
@@ -243,6 +241,7 @@
     </module>
     <module name="InvalidJavadocPosition"/>
     <module name="JavadocBlockTagLocation"/>
+    <module name="JavadocContentLocationCheck"/>
 
     <!-- Miscellaneous -->
     <module name="ArrayTypeStyle"/>

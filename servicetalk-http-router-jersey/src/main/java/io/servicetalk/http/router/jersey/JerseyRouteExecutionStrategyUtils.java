@@ -21,6 +21,8 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.router.api.NoOffloadsRouteExecutionStrategy;
 import io.servicetalk.router.api.RouteExecutionStrategy;
+import io.servicetalk.router.api.RouteExecutionStrategyFactory;
+import io.servicetalk.router.utils.internal.RouteExecutionStrategyUtils;
 
 import org.glassfish.jersey.server.ApplicationHandler;
 import org.glassfish.jersey.server.ExtendedResourceContext;
@@ -45,25 +47,24 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.CompletionStage;
-import java.util.function.Function;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.http.api.HttpExecutionStrategies.customStrategyBuilder;
 import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
-import static java.util.Arrays.stream;
+import static io.servicetalk.router.utils.internal.RouteExecutionStrategyUtils.getRouteExecutionStrategyAnnotation;
 import static java.util.Collections.emptyMap;
 import static org.glassfish.jersey.model.Parameter.Source.ENTITY;
 
-final class RouteExecutionStrategyUtils {
+final class JerseyRouteExecutionStrategyUtils {
     private static final class RouteExecutionStrategyValidator implements ResourceModelVisitor {
-        private final Function<String, HttpExecutionStrategy> routeStrategyFactory;
+        private final RouteExecutionStrategyFactory<HttpExecutionStrategy> strategyFactory;
         private final Map<String, HttpExecutionStrategy> routeStrategies;
         private final Map<Method, HttpExecutionStrategy> methodDefaultStrategies;
         private final Set<String> errors;
         private final Deque<ResourceMethod> resourceMethodDeque;
 
-        RouteExecutionStrategyValidator(final Function<String, HttpExecutionStrategy> routeStrategyFactory) {
-            this.routeStrategyFactory = routeStrategyFactory;
+        RouteExecutionStrategyValidator(final RouteExecutionStrategyFactory<HttpExecutionStrategy> strategyFactory) {
+            this.strategyFactory = strategyFactory;
 
             routeStrategies = new HashMap<>();
             methodDefaultStrategies = new HashMap<>();
@@ -96,8 +97,9 @@ final class RouteExecutionStrategyUtils {
             methodDefaultStrategies.put(invocable.getHandlingMethod(), computeDefaultExecutionStrategy(invocable));
 
             validateRouteExecutionStrategyAnnotationIfPresent(
-                    id -> routeStrategies.computeIfAbsent(id, routeStrategyFactory), resourceMethodDeque.peek(),
-                    invocable.getHandler().getHandlerClass(), invocable.getHandlingMethod(), errors);
+                    invocable.getHandlingMethod(), invocable.getHandler().getHandlerClass(),
+                    id -> routeStrategies.computeIfAbsent(id, strategyFactory::get), resourceMethodDeque.peek(),
+                    errors);
         }
 
         @Override
@@ -135,20 +137,21 @@ final class RouteExecutionStrategyUtils {
             .offloadReceiveMetadata().offloadSend().build();
     private static final HttpExecutionStrategy OFFLOAD_ALL = customStrategyBuilder().offloadAll().build();
 
-    private RouteExecutionStrategyUtils() {
+    private JerseyRouteExecutionStrategyUtils() {
         // no instances
     }
 
-    static RouteStrategiesConfig validateRouteStrategies(final ApplicationHandler applicationHandler,
-                                                         final Function<String,
-                                                                 HttpExecutionStrategy> routeStrategyFactory) {
+    static RouteStrategiesConfig validateRouteStrategies(
+            final ApplicationHandler applicationHandler,
+            final RouteExecutionStrategyFactory<HttpExecutionStrategy> strategyFactory) {
+
         final ExtendedResourceContext resourceContext =
                 applicationHandler.getInjectionManager().getInstance(ExtendedResourceContext.class);
         if (resourceContext == null) {
             return new RouteStrategiesConfig(emptyMap(), emptyMap());
         }
 
-        final RouteExecutionStrategyValidator validator = new RouteExecutionStrategyValidator(routeStrategyFactory);
+        final RouteExecutionStrategyValidator validator = new RouteExecutionStrategyValidator(strategyFactory);
         resourceContext.getResourceModel().accept(validator);
         if (!validator.errors.isEmpty()) {
             throw new IllegalArgumentException("Invalid execution strategy configuration found:\n" + validator.errors);
@@ -157,11 +160,11 @@ final class RouteExecutionStrategyUtils {
         return new RouteStrategiesConfig(validator.routeStrategies, validator.methodDefaultStrategies);
     }
 
-    static HttpExecutionStrategy getRouteExecutionStrategy(final Class<?> clazz,
-                                                           final Method method,
+    static HttpExecutionStrategy getRouteExecutionStrategy(final Method method,
+                                                           final Class<?> clazz,
                                                            final RouteStrategiesConfig routeStrategiesConfig) {
 
-        final Annotation annotation = getRouteExecutionStrategyAnnotation(clazz, method);
+        final Annotation annotation = getRouteExecutionStrategyAnnotation(method, clazz);
         if (annotation == null) {
             // This can never be null because all methods known to Jersey have been introspected
             return routeStrategiesConfig.methodDefaultStrategies.get(method);
@@ -173,24 +176,6 @@ final class RouteExecutionStrategyUtils {
 
         // This can never be null because we have pre-validated that all route strategy IDs exist at startup
         return routeStrategiesConfig.routeStrategies.get(((RouteExecutionStrategy) annotation).id());
-    }
-
-    @Nullable
-    private static Annotation getRouteExecutionStrategyAnnotation(final Class<?> clazz,
-                                                                  final Method method) {
-        Annotation annotation = method.getAnnotation(NoOffloadsRouteExecutionStrategy.class);
-        if (annotation != null) {
-            return annotation;
-        }
-        annotation = method.getAnnotation(RouteExecutionStrategy.class);
-        if (annotation != null) {
-            return annotation;
-        }
-        annotation = clazz.getAnnotation(NoOffloadsRouteExecutionStrategy.class);
-        if (annotation != null) {
-            return annotation;
-        }
-        return clazz.getAnnotation(RouteExecutionStrategy.class);
     }
 
     private static HttpExecutionStrategy computeDefaultExecutionStrategy(final Invocable invocable) {
@@ -224,25 +209,14 @@ final class RouteExecutionStrategyUtils {
     }
 
     private static void validateRouteExecutionStrategyAnnotationIfPresent(
-            final Function<String, HttpExecutionStrategy> routeStrategyFactory,
-            @Nullable final ResourceMethod resourceMethod,
-            final Class<?> clazz,
             final Method method,
+            final Class<?> clazz,
+            final RouteExecutionStrategyFactory<HttpExecutionStrategy> strategyFactory,
+            @Nullable final ResourceMethod resourceMethod,
             final Set<String> errors) {
 
-        final Annotation annotation;
-
-        if (stream(method.getAnnotations())
-                .filter(RouteExecutionStrategyUtils::isRouteExecutionStrategyAnnotation).count() > 1) {
-            errors.add("More than one execution strategy annotation found on: " + clazz);
-            annotation = null;
-        } else if (stream(clazz.getAnnotations())
-                .filter(RouteExecutionStrategyUtils::isRouteExecutionStrategyAnnotation).count() > 1) {
-            errors.add("More than one execution strategy annotation found on: " + clazz);
-            annotation = null;
-        } else {
-            annotation = getRouteExecutionStrategyAnnotation(clazz, method);
-        }
+        final Annotation annotation = RouteExecutionStrategyUtils
+                .validateRouteExecutionStrategyAnnotationIfPresent(method, clazz, strategyFactory, errors);
 
         if (annotation == null) {
             return;
@@ -272,21 +246,5 @@ final class RouteExecutionStrategyUtils {
             errors.add("Execution strategy annotations are not supported on CompletionStage returning method: " +
                     method + " Consider returning " + Single.class.getSimpleName() + " instead.");
         }
-
-        if (annotation instanceof NoOffloadsRouteExecutionStrategy) {
-            return;
-        }
-
-        RouteExecutionStrategy routeExecutionStrategy = (RouteExecutionStrategy) annotation;
-        final String id = routeExecutionStrategy.id();
-        if (id.isEmpty()) {
-            errors.add("Route execution strategy with empty ID specified on: " + method);
-        } else if (routeStrategyFactory.apply(id) == null) {
-            errors.add("Failed to create execution strategy ID: " + id + " specified on: " + method);
-        }
-    }
-
-    private static boolean isRouteExecutionStrategyAnnotation(final Annotation annotation) {
-        return annotation instanceof NoOffloadsRouteExecutionStrategy || annotation instanceof RouteExecutionStrategy;
     }
 }

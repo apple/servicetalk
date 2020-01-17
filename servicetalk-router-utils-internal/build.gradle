@@ -13,15 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.gradle.plugin.internal
 
-import org.gradle.api.JavaVersion
+apply plugin: "io.servicetalk.servicetalk-gradle-plugin-internal-library"
 
-import static org.gradle.api.JavaVersion.VERSION_1_8
+dependencies {
+  implementation project(":servicetalk-annotations")
+  implementation project(":servicetalk-concurrent-api")
+  implementation project(":servicetalk-router-api")
+  implementation project(":servicetalk-transport-api")
 
-final class Versions {
-  static final String CHECKSTYLE_VERSION = "8.28"
-  static final String PMD_VERSION = "6.20.0"
-  static final String SPOTBUGS_VERSION = "3.1.12"
-  static final JavaVersion TARGET_VERSION = VERSION_1_8
+  implementation "com.google.code.findbugs:jsr305:$jsr305Version"
 }

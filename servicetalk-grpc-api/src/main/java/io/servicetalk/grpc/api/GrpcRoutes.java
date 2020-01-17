@@ -23,10 +23,21 @@ import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.grpc.api.GrpcRouter.RouteProviders;
 import io.servicetalk.grpc.api.GrpcServiceFactory.ServerBinder;
+import io.servicetalk.router.api.RouteExecutionStrategy;
+import io.servicetalk.router.api.RouteExecutionStrategyFactory;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.ServerContext;
 
+import java.lang.reflect.Method;
+import java.util.Set;
+import java.util.TreeSet;
+import javax.annotation.Nullable;
+
 import static io.servicetalk.concurrent.api.Completable.completed;
+import static io.servicetalk.grpc.api.GrpcExecutionStrategies.noOffloadsStrategy;
+import static io.servicetalk.router.utils.internal.DefaultRouteExecutionStrategyFactory.defaultStrategyFactory;
+import static io.servicetalk.router.utils.internal.RouteExecutionStrategyUtils.getAndValidateRouteExecutionStrategyAnnotationIfPresent;
+import static io.servicetalk.utils.internal.ReflectionUtils.retrieveMethod;
 
 /**
  * A holder of <a href="https://www.grpc.io">gRPC</a> routes that constitutes a service.
@@ -36,16 +47,34 @@ import static io.servicetalk.concurrent.api.Completable.completed;
 public abstract class GrpcRoutes<Service extends GrpcService> {
 
     private final GrpcRouter.Builder routeBuilder;
+    private final Set<String> errors;
+    private final RouteExecutionStrategyFactory<GrpcExecutionStrategy> strategyFactory;
+
+    /**
+     * Create a new instance.
+     */
+    protected GrpcRoutes() {
+        this(defaultStrategyFactory());
+    }
 
     /**
      * Create new instance.
+     *
+     * @param strategyFactory a
+     * {@link RouteExecutionStrategyFactory RouteExecutionStrategyFactory&lt;GrpcExecutionStrategy&gt;} for creating
+     * {@link GrpcExecutionStrategy} instances that can be used for offloading the handling of request to resource
+     * methods, as specified via {@link RouteExecutionStrategy} annotation
      */
-    protected GrpcRoutes() {
+    protected GrpcRoutes(final RouteExecutionStrategyFactory<GrpcExecutionStrategy> strategyFactory) {
         routeBuilder = new GrpcRouter.Builder();
+        errors = new TreeSet<>();
+        this.strategyFactory = strategyFactory;
     }
 
-    private GrpcRoutes(final GrpcRouter.Builder routeBuilder) {
+    private GrpcRoutes(final GrpcRouter.Builder routeBuilder, final Set<String> errors) {
         this.routeBuilder = routeBuilder;
+        this.errors = errors;
+        strategyFactory = defaultStrategyFactory();
     }
 
     /**
@@ -58,6 +87,9 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
      * the server could not be started.
      */
     final Single<ServerContext> bind(final ServerBinder binder, final ExecutionContext executionContext) {
+        if (!errors.isEmpty()) {
+            throw new IllegalStateException("Invalid execution strategy configuration found:\n" + errors);
+        }
         return routeBuilder.build().bind(binder, executionContext);
     }
 
@@ -121,11 +153,13 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
     }
 
     static GrpcRoutes<?> merge(GrpcRoutes<?>... allRoutes) {
-        GrpcRouter.Builder[] builders = new GrpcRouter.Builder[allRoutes.length];
+        final GrpcRouter.Builder[] builders = new GrpcRouter.Builder[allRoutes.length];
+        final Set<String> errors = new TreeSet<>();
         for (int i = 0; i < allRoutes.length; i++) {
             builders[i] = allRoutes[i].routeBuilder;
+            errors.addAll(allRoutes[i].errors);
         }
-        return new GrpcRoutes<GrpcService>(GrpcRouter.Builder.merge(builders)) {
+        return new GrpcRoutes<GrpcService>(GrpcRouter.Builder.merge(builders), errors) {
             @Override
             protected void registerRoutes(final GrpcService service) {
                 throw new UnsupportedOperationException("Merged service factory can not register routes.");
@@ -138,10 +172,18 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
         };
     }
 
+    @Nullable
+    private GrpcExecutionStrategy executionStrategy(final Method method, final Class<?> clazz) {
+        return getAndValidateRouteExecutionStrategyAnnotationIfPresent(method, clazz, strategyFactory, errors,
+                noOffloadsStrategy());
+    }
+
     /**
      * Adds a {@link Route} to this factory.
      *
      * @param path for this route.
+     * @param serviceClass {@link Class} of the gRPC service.
+     * @param methodName the name of gRPC method.
      * @param route {@link Route} to add.
      * @param requestClass {@link Class} for the request object.
      * @param responseClass {@link Class} for the response object.
@@ -150,9 +192,12 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
      * @param <Resp> Type of response.
      */
     protected final <Req, Resp> void addRoute(
-            final String path, final Route<Req, Resp> route, final Class<Req> requestClass,
-            final Class<Resp> responseClass, final GrpcSerializationProvider serializationProvider) {
-        routeBuilder.addRoute(path, null, route, requestClass, responseClass, serializationProvider);
+            final String path, final Class<?> serviceClass, final String methodName, final Route<Req, Resp> route,
+            final Class<Req> requestClass, final Class<Resp> responseClass,
+            final GrpcSerializationProvider serializationProvider) {
+        final Method method = retrieveMethod(serviceClass, methodName, GrpcServiceContext.class, requestClass);
+        routeBuilder.addRoute(path, executionStrategy(method, serviceClass), route, requestClass, responseClass,
+                serializationProvider);
     }
 
     /**
@@ -178,6 +223,8 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
      * Adds a {@link StreamingRoute} to this factory.
      *
      * @param path for this route.
+     * @param serviceClass {@link Class} of the gRPC service.
+     * @param methodName the name of gRPC method.
      * @param route {@link StreamingRoute} to add.
      * @param requestClass {@link Class} for the request object.
      * @param responseClass {@link Class} for the response object.
@@ -186,10 +233,12 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
      * @param <Resp> Type of response.
      */
     protected final <Req, Resp> void addStreamingRoute(
-            final String path, final StreamingRoute<Req, Resp> route, final Class<Req> requestClass,
-            final Class<Resp> responseClass, final GrpcSerializationProvider serializationProvider) {
-        routeBuilder.addStreamingRoute(path, null, route, requestClass, responseClass,
-                serializationProvider);
+            final String path, final Class<?> serviceClass, final String methodName,
+            final StreamingRoute<Req, Resp> route, final Class<Req> requestClass, final Class<Resp> responseClass,
+            final GrpcSerializationProvider serializationProvider) {
+        final Method method = retrieveMethod(serviceClass, methodName, GrpcServiceContext.class, Publisher.class);
+        routeBuilder.addStreamingRoute(path, executionStrategy(method, serviceClass), route, requestClass,
+                responseClass, serializationProvider);
     }
 
     /**
@@ -216,6 +265,8 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
      * Adds a {@link RequestStreamingRoute} to this factory.
      *
      * @param path for this route.
+     * @param serviceClass {@link Class} of the gRPC service.
+     * @param methodName the name of gRPC method.
      * @param route {@link RequestStreamingRoute} to add.
      * @param requestClass {@link Class} for the request object.
      * @param responseClass {@link Class} for the response object.
@@ -224,10 +275,12 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
      * @param <Resp> Type of response.
      */
     protected final <Req, Resp> void addRequestStreamingRoute(
-            final String path, final RequestStreamingRoute<Req, Resp> route, final Class<Req> requestClass,
+            final String path, final Class<?> serviceClass, final String methodName,
+            final RequestStreamingRoute<Req, Resp> route, final Class<Req> requestClass,
             final Class<Resp> responseClass, final GrpcSerializationProvider serializationProvider) {
-        routeBuilder.addRequestStreamingRoute(path, null, route, requestClass, responseClass,
-                serializationProvider);
+        final Method method = retrieveMethod(serviceClass, methodName, GrpcServiceContext.class, Publisher.class);
+        routeBuilder.addRequestStreamingRoute(path, executionStrategy(method, serviceClass), route, requestClass,
+                responseClass, serializationProvider);
     }
 
     /**
@@ -254,6 +307,8 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
      * Adds a {@link ResponseStreamingRoute} to this factory.
      *
      * @param path for this route.
+     * @param serviceClass {@link Class} of the gRPC service.
+     * @param methodName the name of gRPC method.
      * @param route {@link ResponseStreamingRoute} to add.
      * @param requestClass {@link Class} for the request object.
      * @param responseClass {@link Class} for the response object.
@@ -262,10 +317,12 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
      * @param <Resp> Type of response.
      */
     protected final <Req, Resp> void addResponseStreamingRoute(
-            final String path, final ResponseStreamingRoute<Req, Resp> route, final Class<Req> requestClass,
+            final String path, final Class<?> serviceClass, final String methodName,
+            final ResponseStreamingRoute<Req, Resp> route, final Class<Req> requestClass,
             final Class<Resp> responseClass, final GrpcSerializationProvider serializationProvider) {
-        routeBuilder.addResponseStreamingRoute(path, null, route, requestClass, responseClass,
-                serializationProvider);
+        final Method method = retrieveMethod(serviceClass, methodName, GrpcServiceContext.class, requestClass);
+        routeBuilder.addResponseStreamingRoute(path, executionStrategy(method, serviceClass), route, requestClass,
+                responseClass, serializationProvider);
     }
 
     /**
@@ -292,6 +349,8 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
      * Adds a {@link BlockingRoute} to this factory.
      *
      * @param path for this route.
+     * @param serviceClass {@link Class} of the gRPC service.
+     * @param methodName the name of gRPC method.
      * @param route {@link BlockingRoute} to add.
      * @param requestClass {@link Class} for the request object.
      * @param responseClass {@link Class} for the response object.
@@ -300,9 +359,11 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
      * @param <Resp> Type of response.
      */
     protected final <Req, Resp> void addBlockingRoute(
-            final String path, final BlockingRoute<Req, Resp> route, final Class<Req> requestClass,
-            final Class<Resp> responseClass, final GrpcSerializationProvider serializationProvider) {
-        routeBuilder.addBlockingRoute(path, null, route, requestClass, responseClass,
+            final String path, final Class<?> serviceClass, final String methodName,
+            final BlockingRoute<Req, Resp> route, final Class<Req> requestClass, final Class<Resp> responseClass,
+            final GrpcSerializationProvider serializationProvider) {
+        final Method method = retrieveMethod(serviceClass, methodName, GrpcServiceContext.class, requestClass);
+        routeBuilder.addBlockingRoute(path, executionStrategy(method, serviceClass), route, requestClass, responseClass,
                 serializationProvider);
     }
 
@@ -330,6 +391,8 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
      * Adds a {@link BlockingStreamingRoute} to this factory.
      *
      * @param path for this route.
+     * @param serviceClass {@link Class} of the gRPC service.
+     * @param methodName the name of gRPC method.
      * @param route {@link BlockingStreamingRoute} to add.
      * @param requestClass {@link Class} for the request object.
      * @param responseClass {@link Class} for the response object.
@@ -338,10 +401,13 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
      * @param <Resp> Type of response.
      */
     protected final <Req, Resp> void addBlockingStreamingRoute(
-            final String path, final BlockingStreamingRoute<Req, Resp> route, final Class<Req> requestClass,
+            final String path, final Class<?> serviceClass, final String methodName,
+            final BlockingStreamingRoute<Req, Resp> route, final Class<Req> requestClass,
             final Class<Resp> responseClass, final GrpcSerializationProvider serializationProvider) {
-        routeBuilder.addBlockingStreamingRoute(path, null, route, requestClass, responseClass,
-                serializationProvider);
+        final Method method = retrieveMethod(serviceClass, methodName, GrpcServiceContext.class, BlockingIterable.class,
+                GrpcPayloadWriter.class);
+        routeBuilder.addBlockingStreamingRoute(path, executionStrategy(method, serviceClass), route, requestClass,
+                responseClass, serializationProvider);
     }
 
     /**
@@ -360,14 +426,16 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
             final String path, final GrpcExecutionStrategy executionStrategy,
             final BlockingStreamingRoute<Req, Resp> route, final Class<Req> requestClass,
             final Class<Resp> responseClass, final GrpcSerializationProvider serializationProvider) {
-        routeBuilder.addBlockingStreamingRoute(path, executionStrategy,
-                route, requestClass, responseClass, serializationProvider);
+        routeBuilder.addBlockingStreamingRoute(path, executionStrategy, route, requestClass, responseClass,
+                serializationProvider);
     }
 
     /**
      * Adds a {@link BlockingRequestStreamingRoute} to this factory.
      *
      * @param path for this route.
+     * @param serviceClass {@link Class} of the gRPC service.
+     * @param methodName the name of gRPC method.
      * @param route {@link BlockingRequestStreamingRoute} to add.
      * @param requestClass {@link Class} for the request object.
      * @param responseClass {@link Class} for the response object.
@@ -376,10 +444,13 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
      * @param <Resp> Type of response.
      */
     protected final <Req, Resp> void addBlockingRequestStreamingRoute(
-            final String path, final BlockingRequestStreamingRoute<Req, Resp> route, final Class<Req> requestClass,
+            final String path, final Class<?> serviceClass, final String methodName,
+            final BlockingRequestStreamingRoute<Req, Resp> route, final Class<Req> requestClass,
             final Class<Resp> responseClass, final GrpcSerializationProvider serializationProvider) {
-        routeBuilder.addBlockingRequestStreamingRoute(path, null, route, requestClass, responseClass,
-                serializationProvider);
+        final Method method = retrieveMethod(serviceClass, methodName, GrpcServiceContext.class,
+                BlockingIterable.class);
+        routeBuilder.addBlockingRequestStreamingRoute(path, executionStrategy(method, serviceClass), route,
+                requestClass, responseClass, serializationProvider);
     }
 
     /**
@@ -406,6 +477,8 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
      * Adds a {@link BlockingResponseStreamingRoute} to this factory.
      *
      * @param path for this route.
+     * @param serviceClass {@link Class} of the gRPC service.
+     * @param methodName the name of gRPC method.
      * @param route {@link BlockingResponseStreamingRoute} to add.
      * @param requestClass {@link Class} for the request object.
      * @param responseClass {@link Class} for the response object.
@@ -414,10 +487,13 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
      * @param <Resp> Type of response.
      */
     protected final <Req, Resp> void addBlockingResponseStreamingRoute(
-            final String path, final BlockingResponseStreamingRoute<Req, Resp> route, final Class<Req> requestClass,
+            final String path, final Class<?> serviceClass, final String methodName,
+            final BlockingResponseStreamingRoute<Req, Resp> route, final Class<Req> requestClass,
             final Class<Resp> responseClass, final GrpcSerializationProvider serializationProvider) {
-        routeBuilder.addBlockingResponseStreamingRoute(path, null, route, requestClass, responseClass,
-                serializationProvider);
+        final Method method = retrieveMethod(serviceClass, methodName, GrpcServiceContext.class, requestClass,
+                GrpcPayloadWriter.class);
+        routeBuilder.addBlockingResponseStreamingRoute(path, executionStrategy(method, serviceClass), route,
+                requestClass, responseClass, serializationProvider);
     }
 
     /**

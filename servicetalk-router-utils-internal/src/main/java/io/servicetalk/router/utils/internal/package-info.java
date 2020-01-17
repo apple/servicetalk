@@ -13,15 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.gradle.plugin.internal
+@ElementsAreNonnullByDefault
+package io.servicetalk.router.utils.internal;
 
-import org.gradle.api.JavaVersion
-
-import static org.gradle.api.JavaVersion.VERSION_1_8
-
-final class Versions {
-  static final String CHECKSTYLE_VERSION = "8.28"
-  static final String PMD_VERSION = "6.20.0"
-  static final String SPOTBUGS_VERSION = "3.1.12"
-  static final JavaVersion TARGET_VERSION = VERSION_1_8
-}
+import io.servicetalk.annotations.ElementsAreNonnullByDefault;

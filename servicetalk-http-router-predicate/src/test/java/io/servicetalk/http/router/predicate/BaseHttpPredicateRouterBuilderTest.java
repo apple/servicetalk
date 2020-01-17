@@ -19,21 +19,22 @@ import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.buffer.api.ReadOnlyBufferAllocators;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
+import io.servicetalk.http.api.BlockingStreamingHttpResponseFactory;
 import io.servicetalk.http.api.DefaultHttpHeadersFactory;
 import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpHeaders;
-import io.servicetalk.http.api.HttpResponseStatus;
-import io.servicetalk.http.api.HttpServiceContext;
+import io.servicetalk.http.api.HttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.StreamingHttpResponse;
-import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpService;
+import io.servicetalk.http.api.TestHttpServiceContext;
 
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.rules.ExpectedException;
+import org.junit.rules.Timeout;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnit;
 import org.mockito.junit.MockitoRule;
@@ -49,6 +50,7 @@ import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static java.util.Arrays.asList;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 public abstract class BaseHttpPredicateRouterBuilderTest {
@@ -61,18 +63,16 @@ public abstract class BaseHttpPredicateRouterBuilderTest {
     @Rule
     public final ExpectedException expected = ExpectedException.none();
     @Rule
-    public final ServiceTalkTestTimeout timeout = new ServiceTalkTestTimeout();
+    public final Timeout timeout = new ServiceTalkTestTimeout();
 
     @Mock
     StreamingHttpService serviceA, serviceB, serviceC, serviceD, serviceE, fallbackService;
     @Mock
-    HttpServiceContext ctx;
-    @Mock
     HttpExecutionContext executionCtx;
     @Mock
-    StreamingHttpRequest request;
+    TestHttpServiceContext ctx;
     @Mock
-    StreamingHttpResponseFactory factory;
+    StreamingHttpRequest request;
     @Mock
     HttpHeaders headers;
     @Mock
@@ -80,23 +80,24 @@ public abstract class BaseHttpPredicateRouterBuilderTest {
 
     @Before
     public void setUp() {
-        when(ctx.executionContext()).thenReturn(executionCtx);
         when(executionCtx.executor()).thenReturn(immediate());
         when(executionCtx.executionStrategy()).thenReturn(defaultStrategy());
+
+        when(ctx.executionContext()).thenReturn(executionCtx);
+        when(ctx.headersFactory()).thenReturn(DefaultHttpHeadersFactory.INSTANCE);
+        when(ctx.streamingResponseFactory()).thenReturn(reqRespFactory);
+        when(ctx.responseFactory()).thenReturn(mock(HttpResponseFactory.class));
+        when(ctx.blockingStreamingResponseFactory()).thenReturn(mock(BlockingStreamingHttpResponseFactory.class));
+
         when(request.version()).thenReturn(HTTP_1_1);
         when(request.headers()).thenReturn(headers);
-        when(factory.newResponse(any(HttpResponseStatus.class))).thenAnswer(
-                (Answer<StreamingHttpResponse>) invocation -> {
-                    HttpResponseStatus status = invocation.getArgument(0);
-                    return reqRespFactory.newResponse(status);
-                });
 
-        when(serviceA.handle(eq(ctx), eq(request), any())).thenReturn(responseA);
-        when(serviceB.handle(eq(ctx), eq(request), any())).thenReturn(responseB);
-        when(serviceC.handle(eq(ctx), eq(request), any())).thenReturn(responseC);
-        when(serviceD.handle(eq(ctx), eq(request), any())).thenReturn(responseD);
-        when(serviceE.handle(eq(ctx), eq(request), any())).thenReturn(responseE);
-        when(fallbackService.handle(eq(ctx), eq(request), any())).thenReturn(fallbackResponse);
+        when(serviceA.handle(any(), eq(request), any())).thenReturn(responseA);
+        when(serviceB.handle(any(), eq(request), any())).thenReturn(responseB);
+        when(serviceC.handle(any(), eq(request), any())).thenReturn(responseC);
+        when(serviceD.handle(any(), eq(request), any())).thenReturn(responseD);
+        when(serviceE.handle(any(), eq(request), any())).thenReturn(responseE);
+        when(fallbackService.handle(any(), eq(request), any())).thenReturn(fallbackResponse);
 
         when(serviceA.closeAsync()).thenReturn(completed());
         when(serviceB.closeAsync()).thenReturn(completed());

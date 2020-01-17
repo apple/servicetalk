@@ -19,9 +19,16 @@
   <Match>
     <Or>
       <Source name="~CompatGrpc\.java"/>
+      <Source name="~EsTesterGrpc\.java"/>
       <Source name="~TesterGrpc\.java"/>
       <Source name="~CompatProto\.java"/>
+      <Source name="~EsProto\.java"/>
       <Source name="~TesterProto\.java"/>
     </Or>
+  </Match>
+  <Match>
+    <Class name="io.servicetalk.grpc.netty.ExecutionStrategyTest$RouteApi"/>
+    <Method name="extractResponse"/>
+    <Bug pattern="RCN_REDUNDANT_NULLCHECK_WOULD_HAVE_BEEN_A_NPE"/>
   </Match>
 </FindBugsFilter>

@@ -22,6 +22,7 @@ import io.servicetalk.http.api.HttpServerBuilder;
 import io.servicetalk.http.router.jersey.resources.ExecutionStrategyResources.ResourceDefaultStrategy;
 import io.servicetalk.http.router.jersey.resources.ExecutionStrategyResources.ResourceRouteExecIdStrategy;
 import io.servicetalk.http.router.jersey.resources.ExecutionStrategyResources.ResourceRouteNoOffloadsStrategy;
+import io.servicetalk.router.api.RouteExecutionStrategyFactory;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.hamcrest.Matcher;
@@ -39,10 +40,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Function;
 import javax.ws.rs.core.Application;
 
-import static io.servicetalk.concurrent.api.Executors.immediate;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpExecutionStrategies.noOffloadsStrategy;
 import static io.servicetalk.http.api.HttpHeaderValues.APPLICATION_JSON;
@@ -57,6 +56,7 @@ import static io.servicetalk.http.router.jersey.ExecutionStrategyTest.TestMode.P
 import static io.servicetalk.http.router.jersey.resources.ExecutionStrategyResources.EXEC_NAME;
 import static io.servicetalk.http.router.jersey.resources.ExecutionStrategyResources.RS_THREAD_NAME;
 import static io.servicetalk.http.router.jersey.resources.ExecutionStrategyResources.THREAD_NAME;
+import static io.servicetalk.router.utils.internal.DefaultRouteExecutionStrategyFactory.getUsingDefaultStrategyFactory;
 import static io.servicetalk.transport.netty.internal.GlobalExecutionContext.globalExecutionContext;
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
@@ -72,10 +72,10 @@ public final class ExecutionStrategyTest extends AbstractNonParameterizedJerseyS
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     @ClassRule
-    public static final ExecutorRule ROUTER_EXEC = ExecutorRule.withNamePrefix("router");
+    public static final ExecutorRule<Executor> ROUTER_EXEC = ExecutorRule.withNamePrefix("router");
 
     @ClassRule
-    public static final ExecutorRule ROUTE_EXEC = ExecutorRule.withNamePrefix("route");
+    public static final ExecutorRule<Executor> ROUTE_EXEC = ExecutorRule.withNamePrefix("route");
 
     public static class TestApplication extends Application {
         @Override
@@ -216,9 +216,12 @@ public final class ExecutionStrategyTest extends AbstractNonParameterizedJerseyS
         return parameters;
     }
 
-    static Function<String, HttpExecutionStrategy> asFactory(
+    static RouteExecutionStrategyFactory<HttpExecutionStrategy> asFactory(
             final Map<String, HttpExecutionStrategy> executionStrategies) {
-        return executionStrategies::get;
+        return id -> {
+            final HttpExecutionStrategy stored = executionStrategies.get(id);
+            return stored != null ? stored : getUsingDefaultStrategyFactory(id);
+        };
     }
 
     @Override
@@ -356,8 +359,8 @@ public final class ExecutionStrategyTest extends AbstractNonParameterizedJerseyS
         }
     }
 
-    private void assertRouteExecutor(final TestMode testMode, final String context,
-                                     final Map<String, String> threadingInfo) {
+    private static void assertRouteExecutor(final TestMode testMode, final String context,
+                                            final Map<String, String> threadingInfo) {
         assertThat(context, threadingInfo.get(EXEC_NAME), isRouteExecutor());
         assertThat(context, threadingInfo.get(THREAD_NAME), isRouteExecutorThread());
         if (testMode.rs) {
@@ -378,17 +381,13 @@ public final class ExecutionStrategyTest extends AbstractNonParameterizedJerseyS
         }
     }
 
-    private void assertDefaultNoOffloadsExecutor(final TestMode testMode, final String context,
-                                                 final Map<String, String> threadingInfo) {
+    private static void assertDefaultNoOffloadsExecutor(final TestMode testMode, final String context,
+                                                        final Map<String, String> threadingInfo) {
         assertThat(context, threadingInfo.get(EXEC_NAME), isGlobalExecutor());
         assertThat(context, threadingInfo.get(THREAD_NAME), isIoExecutorThread());
         if (testMode.rs) {
             assertThat(context, threadingInfo.get(RS_THREAD_NAME), isIoExecutorThread());
         }
-    }
-
-    private static Matcher<String> isImmediateExecutor() {
-        return is(immediate().toString());
     }
 
     private static Matcher<String> isGlobalExecutor() {

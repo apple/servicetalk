@@ -16,6 +16,7 @@
 package io.servicetalk.http.api;
 
 import io.servicetalk.concurrent.api.Completable;
+import io.servicetalk.transport.netty.internal.AddressUtils;
 
 import java.net.SocketAddress;
 import javax.annotation.Nullable;
@@ -35,7 +36,27 @@ public class TestHttpServiceContext extends HttpServiceContext {
                                   final HttpExecutionContext executionContext) {
         super(headersFactory, toAggregated(reqRespFactory), reqRespFactory, toBlockingStreaming(reqRespFactory));
         this.executionContext = executionContext;
-        remoteAddress = localAddress = localAddress();
+        remoteAddress = localAddress = AddressUtils.localAddress(0);
+    }
+
+    @Override
+    public HttpHeadersFactory headersFactory() {
+        return super.headersFactory();
+    }
+
+    @Override
+    public HttpResponseFactory responseFactory() {
+        return super.responseFactory();
+    }
+
+    @Override
+    public StreamingHttpResponseFactory streamingResponseFactory() {
+        return super.streamingResponseFactory();
+    }
+
+    @Override
+    public BlockingStreamingHttpResponseFactory blockingStreamingResponseFactory() {
+        return super.blockingStreamingResponseFactory();
     }
 
     @Override

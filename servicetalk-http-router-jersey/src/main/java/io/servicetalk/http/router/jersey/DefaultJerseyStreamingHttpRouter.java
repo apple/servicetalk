@@ -28,6 +28,7 @@ import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.router.jersey.internal.BufferPublisherInputStream;
+import io.servicetalk.router.api.RouteExecutionStrategyFactory;
 import io.servicetalk.transport.api.ConnectionContext;
 
 import org.glassfish.jersey.internal.MapPropertiesDelegate;
@@ -40,7 +41,6 @@ import org.glassfish.jersey.server.spi.Container;
 import java.net.URI;
 import java.security.Principal;
 import java.util.function.BiFunction;
-import java.util.function.Function;
 import javax.annotation.Nullable;
 import javax.ws.rs.core.Application;
 import javax.ws.rs.core.Configuration;
@@ -52,7 +52,7 @@ import static io.servicetalk.concurrent.api.Completable.failed;
 import static io.servicetalk.http.router.jersey.CharSequenceUtils.ensureNoLeadingSlash;
 import static io.servicetalk.http.router.jersey.Context.CONNECTION_CONTEXT_REF_TYPE;
 import static io.servicetalk.http.router.jersey.Context.HTTP_REQUEST_REF_TYPE;
-import static io.servicetalk.http.router.jersey.RouteExecutionStrategyUtils.validateRouteStrategies;
+import static io.servicetalk.http.router.jersey.JerseyRouteExecutionStrategyUtils.validateRouteStrategies;
 import static io.servicetalk.http.router.jersey.internal.RequestProperties.initRequestProperties;
 import static java.util.Objects.requireNonNull;
 import static org.glassfish.jersey.server.internal.ContainerUtils.encodeUnsafeCharacters;
@@ -90,24 +90,25 @@ final class DefaultJerseyStreamingHttpRouter implements StreamingHttpService {
     DefaultJerseyStreamingHttpRouter(final Application application,
                                      final int publisherInputStreamQueueCapacity,
                                      final BiFunction<ConnectionContext, HttpRequestMetaData, String> baseUriFunction,
-                                     final Function<String, HttpExecutionStrategy> routeStrategyFactory) {
+                                     final RouteExecutionStrategyFactory<HttpExecutionStrategy> strategyFactory) {
         this(new ApplicationHandler(application), publisherInputStreamQueueCapacity, baseUriFunction,
-                routeStrategyFactory);
+                strategyFactory);
     }
 
     DefaultJerseyStreamingHttpRouter(final Class<? extends Application> applicationClass,
                                      final int publisherInputStreamQueueCapacity,
                                      final BiFunction<ConnectionContext, HttpRequestMetaData, String> baseUriFunction,
-                                     final Function<String, HttpExecutionStrategy> routeStrategyFactory) {
+                                     final RouteExecutionStrategyFactory<HttpExecutionStrategy> strategyFactory) {
         this(new ApplicationHandler(applicationClass), publisherInputStreamQueueCapacity, baseUriFunction,
-                routeStrategyFactory);
+                strategyFactory);
     }
 
     private DefaultJerseyStreamingHttpRouter(final ApplicationHandler applicationHandler,
                                              final int publisherInputStreamQueueCapacity,
                                              final BiFunction<ConnectionContext, HttpRequestMetaData,
                                                      String> baseUriFunction,
-                                             final Function<String, HttpExecutionStrategy> routeStrategyFactory) {
+                                             final RouteExecutionStrategyFactory<HttpExecutionStrategy>
+                                                     strategyFactory) {
 
         if (!applicationHandler.getConfiguration().isEnabled(ServiceTalkFeature.class)) {
             throw new IllegalStateException("The " + ServiceTalkFeature.class.getSimpleName()
@@ -115,7 +116,7 @@ final class DefaultJerseyStreamingHttpRouter implements StreamingHttpService {
         }
 
         final RouteStrategiesConfig routeStrategiesConfig =
-                validateRouteStrategies(applicationHandler, routeStrategyFactory);
+                validateRouteStrategies(applicationHandler, strategyFactory);
 
         this.applicationHandler = applicationHandler;
         this.publisherInputStreamQueueCapacity = publisherInputStreamQueueCapacity;
