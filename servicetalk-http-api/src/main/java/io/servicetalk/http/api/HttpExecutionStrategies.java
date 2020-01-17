@@ -117,13 +117,14 @@ public final class HttpExecutionStrategies {
     public static HttpExecutionStrategy difference(final Executor fallback,
                                                    final HttpExecutionStrategy left,
                                                    final HttpExecutionStrategy right) {
-        if (left.equals(right) || right == noOffloadsStrategy()) {
+        if (left.equals(right) || noOffloads(right)) {
             return null;
         }
-        if (left == noOffloadsStrategy()) {
+        if (noOffloads(left)) {
             return right;
         }
-        if (right.executor() != null && right.executor() != left.executor() && right.executor() != fallback) {
+        final Executor rightExecutor = right.executor();
+        if (rightExecutor != null && rightExecutor != left.executor() && rightExecutor != fallback) {
             // Since the original offloads were done on a different executor, we need to offload again.
             return right;
         }
@@ -143,6 +144,10 @@ public final class HttpExecutionStrategies {
         }
         // No extra offloads required
         return null;
+    }
+
+    private static boolean noOffloads(final HttpExecutionStrategy es) {
+        return !es.isMetadataReceiveOffloaded() && !es.isDataReceiveOffloaded() && !es.isSendOffloaded();
     }
 
     /**
