@@ -79,7 +79,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultNettyConnection.class);
 
-    private static final TerminalPredicate PIPELINE_UNSUPPORTED_PREDICATE = new TerminalPredicate();
+    private static final TerminalPredicate PIPELINE_UNSUPPORTED_PREDICATE = new TerminalPredicate<>();
 
     private static final ChannelOutboundListener PLACE_HOLDER_OUTBOUND_LISTENER = new NoopChannelOutboundListener();
     private static final ChannelOutboundListener SINGLE_ITEM_OUTBOUND_LISTENER = new NoopChannelOutboundListener();
@@ -90,8 +90,9 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
             unknownStackTrace(new ClosedChannelException(), DefaultNettyConnection.class, "failIfWriteActive(..)");
     private static final ClosedChannelException CLOSED_HANDLER_REMOVED =
             unknownStackTrace(new ClosedChannelException(), NettyToStChannelInboundHandler.class, "handlerRemoved(..)");
-    private static final AtomicReferenceFieldUpdater<DefaultNettyConnection, ChannelOutboundListener> writableListenerUpdater =
-            newUpdater(DefaultNettyConnection.class, ChannelOutboundListener.class, "channelOutboundListener");
+    private static final AtomicReferenceFieldUpdater<DefaultNettyConnection, ChannelOutboundListener>
+            writableListenerUpdater = newUpdater(DefaultNettyConnection.class, ChannelOutboundListener.class,
+                                                 "channelOutboundListener");
 
     private final TerminalPredicate<Read> terminalMsgPredicate;
     private final CloseHandler closeHandler;
