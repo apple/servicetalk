@@ -131,7 +131,7 @@ public class DefaultNettyConnectionTest {
                     public void write(final ChannelHandlerContext ctx,
                                       final Object msg,
                                       final ChannelPromise promise) {
-                        if (msg == TRAILER) {
+                        if (msg.equals(TRAILER)) {
                             ctx.pipeline().fireUserEventTriggered(CloseHandler.ProtocolPayloadEndEvent.OUTBOUND);
                         }
                         ctx.write(msg, promise);
@@ -141,7 +141,7 @@ public class DefaultNettyConnectionTest {
 
     @Test
     public void testWritePublisher() {
-        writeListener.listen(conn.write(from(newBuffer("Hello1"), newBuffer("Hello2"), TRAILER)))
+        writeListener.listen(conn.write(from(newBuffer("Hello1"), newBuffer("Hello2"), TRAILER.duplicate())))
                 .verifyCompletion();
         pollChannelAndVerifyWrites("Hello1", "Hello2", TRAILER_MSG);
     }
@@ -297,7 +297,7 @@ public class DefaultNettyConnectionTest {
         writeListener.listen(conn.write(publisher));
         assertThat("Unexpected write active state.", conn.isWriteActive(), is(true));
         publisher.onNext(newBuffer("Hello"));
-        publisher.onNext(TRAILER);
+        publisher.onNext(TRAILER.duplicate());
         publisher.onComplete();
         writeListener.verifyCompletion();
         pollChannelAndVerifyWrites("Hello", TRAILER_MSG);
@@ -329,7 +329,7 @@ public class DefaultNettyConnectionTest {
         requestNext = 1;
         changeWritability(true);
         publisher.onNext(hello2);
-        publisher.onNext(TRAILER);
+        publisher.onNext(TRAILER.duplicate());
         publisher.onComplete();
         pollChannelAndVerifyWrites("Hello2", TRAILER_MSG);
         verifyPredictorCalled(1, hello1, hello2, TRAILER);
@@ -338,7 +338,7 @@ public class DefaultNettyConnectionTest {
 
     @Test
     public void testUpdateFlushStrategy() {
-        writeListener.listen(conn.write(from(newBuffer("Hello"), TRAILER)));
+        writeListener.listen(conn.write(from(newBuffer("Hello"), TRAILER.duplicate())));
         writeListener.verifyCompletion();
         pollChannelAndVerifyWrites("Hello", TRAILER_MSG); // Flush on each (default)
 
@@ -348,7 +348,7 @@ public class DefaultNettyConnectionTest {
         publisher.onNext(newBuffer("Hello1"));
         pollChannelAndVerifyWrites(); // No flush
         publisher.onNext(newBuffer("Hello2"));
-        publisher.onNext(TRAILER);
+        publisher.onNext(TRAILER.duplicate());
         pollChannelAndVerifyWrites("Hello1", "Hello2", TRAILER_MSG); // Batch flush of 2
         publisher.onComplete();
         writeListener.verifyCompletion();
@@ -356,7 +356,7 @@ public class DefaultNettyConnectionTest {
         c.cancel();
 
         writeListener.reset();
-        writeListener.listen(conn.write(from(newBuffer("Hello3"), TRAILER)));
+        writeListener.listen(conn.write(from(newBuffer("Hello3"), TRAILER.duplicate())));
         writeListener.verifyCompletion();
         pollChannelAndVerifyWrites("Hello3", TRAILER_MSG); // Reverted to flush on each
     }
@@ -381,7 +381,7 @@ public class DefaultNettyConnectionTest {
         Buffer hello2 = newBuffer("Hello2");
         publisher.onNext(hello1);
         publisher.onNext(hello2);
-        publisher.onNext(TRAILER);
+        publisher.onNext(TRAILER.duplicate());
         closeListener.listen(conn.closeAsync());
         assertThat(channel.isOpen(), is(false));
         writeListener.verifyFailure(ClosedChannelException.class);
@@ -433,7 +433,7 @@ public class DefaultNettyConnectionTest {
         for (Buffer item : items) {
             verify(requestNSupplier).onItemWrite(eq(item), anyLong(), anyLong());
         }
-        final boolean hasTrailers = Arrays.stream(items).anyMatch(p -> p == TRAILER);
+        final boolean hasTrailers = Arrays.asList(items).contains(TRAILER);
         verify(requestNSupplier, times((hasTrailers ? 0 : 1) + items.length + channelWritabilityChangedCount))
                 .requestNFor(anyLong());
     }
@@ -531,7 +531,7 @@ public class DefaultNettyConnectionTest {
         writeListener.listen(conn.write(publisher));
         Buffer hello1 = newBuffer("Hello1");
         publisher.onNext(hello1);
-        publisher.onNext(TRAILER);
+        publisher.onNext(TRAILER.duplicate());
         pollChannelAndVerifyWrites("Hello1", TRAILER_MSG);
 
         channel.pipeline().fireChannelInactive();
@@ -546,7 +546,7 @@ public class DefaultNettyConnectionTest {
         writeListener.listen(conn.write(publisher));
         Buffer hello1 = newBuffer("Hello1");
         publisher.onNext(hello1);
-        publisher.onNext(TRAILER);
+        publisher.onNext(TRAILER.duplicate());
 
         pollChannelAndVerifyWrites("Hello1", TRAILER_MSG);
 
