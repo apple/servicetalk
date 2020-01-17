@@ -322,7 +322,7 @@ public final class PlatformDependent {
         }
 
         static <T> Queue<T> newUnboundedLinkedMpscQueue() {
-            return USE_UNSAFE_QUEUES ? MpscLinkedQueue.newMpscLinkedQueue()
+            return USE_UNSAFE_QUEUES ? new MpscLinkedQueue<>()
                                      : new MpscLinkedAtomicQueue<>();
         }
 

@@ -21,7 +21,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 import java.util.function.LongSupplier;
-
 import javax.annotation.Nullable;
 
 import static java.lang.System.nanoTime;
