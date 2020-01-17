@@ -23,7 +23,7 @@ import static org.junit.Assert.assertSame;
 
 public class PublisherExecutorPreservationTest {
     @ClassRule
-    public static final ExecutorRule EXEC = ExecutorRule.withNamePrefix("test-");
+    public static final ExecutorRule EXEC = ExecutorRule.withNamePrefix("test");
 
     private Publisher<String> publisher;
 

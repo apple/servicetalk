@@ -72,7 +72,7 @@ import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
 public class BasicAuthStrategyInfluencerTest {
-    public static final String IO_EXECUTOR_NAME_PREFIX = "io-executor-";
+    public static final String IO_EXECUTOR_NAME_PREFIX = "io-executor";
 
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();

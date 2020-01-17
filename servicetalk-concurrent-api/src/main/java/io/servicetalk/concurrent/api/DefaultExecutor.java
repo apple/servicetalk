@@ -52,7 +52,7 @@ final class DefaultExecutor extends AbstractOffloaderAwareExecutor implements Co
      * scheduler.
      */
     private static final ScheduledExecutorService GLOBAL_SINGLE_THREADED_SCHEDULED_EXECUTOR =
-            newSingleThreadScheduledExecutor(new DefaultThreadFactory("servicetalk-global-scheduler-",
+            newSingleThreadScheduledExecutor(new DefaultThreadFactory("servicetalk-global-scheduler",
                     true, NORM_PRIORITY));
     private static final RejectedExecutionHandler DEFAULT_REJECTION_HANDLER = new AbortPolicy();
 

@@ -45,8 +45,8 @@ public class CompletionStageAsyncContextTest {
     private static final Key<Integer> K1 = newKey("k1");
     @Rule
     public final ExecutorRule executorRule = ExecutorRule.withNamePrefix(ST_THREAD_PREFIX_NAME);
-    private static final String ST_THREAD_PREFIX_NAME = "st-exec-thread-";
-    private static final String JDK_THREAD_NAME_PREFIX = "jdk-thread-";
+    private static final String ST_THREAD_PREFIX_NAME = "st-exec-thread";
+    private static final String JDK_THREAD_NAME_PREFIX = "jdk-thread";
     private static final AtomicInteger threadCount = new AtomicInteger();
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
@@ -58,7 +58,7 @@ public class CompletionStageAsyncContextTest {
     @BeforeClass
     public static void beforeClass() {
         jdkExecutor = java.util.concurrent.Executors.newCachedThreadPool(
-                r -> new Thread(r, JDK_THREAD_NAME_PREFIX + threadCount.incrementAndGet()));
+                r -> new Thread(r, JDK_THREAD_NAME_PREFIX + '-' + threadCount.incrementAndGet()));
     }
 
     @AfterClass

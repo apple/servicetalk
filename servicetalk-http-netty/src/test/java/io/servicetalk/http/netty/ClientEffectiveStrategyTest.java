@@ -399,7 +399,7 @@ public class ClientEffectiveStrategyTest {
     }
 
     private static final class Params {
-        private static final String USER_STRATEGY_EXECUTOR_NAME_PREFIX = "user-strategy-executor-";
+        private static final String USER_STRATEGY_EXECUTOR_NAME_PREFIX = "user-strategy-executor";
 
 
         private final Map<ClientType, List<ClientOffloadPoint>> offloadPoints;

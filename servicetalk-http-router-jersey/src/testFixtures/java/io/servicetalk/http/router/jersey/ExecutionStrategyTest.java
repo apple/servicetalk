@@ -72,10 +72,10 @@ public final class ExecutionStrategyTest extends AbstractNonParameterizedJerseyS
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     @ClassRule
-    public static final ExecutorRule<Executor> ROUTER_EXEC = ExecutorRule.withNamePrefix("router-");
+    public static final ExecutorRule<Executor> ROUTER_EXEC = ExecutorRule.withNamePrefix("router");
 
     @ClassRule
-    public static final ExecutorRule<Executor> ROUTE_EXEC = ExecutorRule.withNamePrefix("route-");
+    public static final ExecutorRule<Executor> ROUTE_EXEC = ExecutorRule.withNamePrefix("route");
 
     public static class TestApplication extends Application {
         @Override

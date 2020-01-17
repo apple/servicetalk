@@ -41,7 +41,7 @@ public class ExecutionStrategyConfigurationFailuresTest {
     public final ExpectedException expected = ExpectedException.none();
 
     @ClassRule
-    public static final ExecutorRule TEST_EXEC = ExecutorRule.withNamePrefix("test-");
+    public static final ExecutorRule TEST_EXEC = ExecutorRule.withNamePrefix("test");
 
     @Test
     public void invalidStrategies() {

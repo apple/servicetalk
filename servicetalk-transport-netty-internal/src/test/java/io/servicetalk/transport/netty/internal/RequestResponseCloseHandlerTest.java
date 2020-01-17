@@ -540,11 +540,11 @@ public class RequestResponseCloseHandlerTest {
         @ClassRule
         public static final ExecutionContextRule C_CTX = new ExecutionContextRule(() -> DEFAULT_ALLOCATOR,
                 () -> createIoExecutor(
-                        new DefaultThreadFactory("client-thread-", true, NORM_PRIORITY)), Executors::immediate);
+                        new DefaultThreadFactory("client-thread", true, NORM_PRIORITY)), Executors::immediate);
         @ClassRule
         public static final ExecutionContextRule S_CTX = new ExecutionContextRule(() -> DEFAULT_ALLOCATOR,
                 () -> createIoExecutor(
-                        new DefaultThreadFactory("server-thread-", true, NORM_PRIORITY)), Executors::immediate);
+                        new DefaultThreadFactory("server-thread", true, NORM_PRIORITY)), Executors::immediate);
 
         private SocketChannel cChannel;
         private volatile SocketChannel sChannel;
