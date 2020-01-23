@@ -15,6 +15,7 @@
  */
 package io.servicetalk.gradle.plugin.internal
 
+import org.gradle.api.JavaVersion
 import org.gradle.api.Project
 import org.gradle.api.tasks.javadoc.Javadoc
 
@@ -44,7 +45,8 @@ final class ServiceTalkRootPlugin extends ServiceTalkCorePlugin {
         destinationDir = file("$buildDir/javadoc")
 
         gradle.projectsEvaluated {
-          subprojects.findAll {!it.name.contains("examples")}.each { prj ->
+          subprojects.findAll {!it.name.contains("examples") &&
+              !(it.name.contains("jdkflow") && !JavaVersion.current().isJava9Compatible())}.each { prj ->
             prj.tasks.withType(Javadoc).each { javadocTask ->
               source += javadocTask.source
               classpath += javadocTask.classpath
