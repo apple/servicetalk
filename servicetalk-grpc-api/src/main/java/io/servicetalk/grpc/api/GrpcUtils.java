@@ -88,7 +88,7 @@ final class GrpcUtils {
     static HttpResponse newResponse(final HttpResponseFactory responseFactory, final BufferAllocator allocator) {
         final HttpResponse response = responseFactory.ok();
         initResponse(response);
-        setStatus(response.trailers(), STATUS_OK, null, allocator);
+        setStatusOk(response.trailers(), allocator);
         return response;
     }
 
@@ -104,6 +104,10 @@ final class GrpcUtils {
         StreamingHttpResponse response = newResponse(responseFactory, null, null, allocator);
         response.transformRaw(new ErrorUpdater(cause, allocator));
         return response;
+    }
+
+    static void setStatusOk(final HttpHeaders trailers, final BufferAllocator allocator) {
+        setStatus(trailers, STATUS_OK, null, allocator);
     }
 
     static void setStatus(final HttpHeaders trailers, final GrpcStatus status, final @Nullable Status details,

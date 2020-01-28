@@ -15,6 +15,7 @@
  */
 package io.servicetalk.grpc.netty;
 
+import io.servicetalk.concurrent.BlockingIterable;
 import io.servicetalk.concurrent.SingleSource.Processor;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
@@ -24,6 +25,7 @@ import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.grpc.api.GrpcClientBuilder;
 import io.servicetalk.grpc.api.GrpcExecutionContext;
 import io.servicetalk.grpc.api.GrpcExecutionStrategy;
+import io.servicetalk.grpc.api.GrpcPayloadWriter;
 import io.servicetalk.grpc.api.GrpcServerBuilder;
 import io.servicetalk.grpc.api.GrpcServiceContext;
 import io.servicetalk.grpc.api.GrpcStatus;
@@ -32,6 +34,7 @@ import io.servicetalk.grpc.api.GrpcStatusException;
 import io.servicetalk.grpc.netty.CompatProto.Compat;
 import io.servicetalk.grpc.netty.CompatProto.Compat.BidirectionalStreamingCallMetadata;
 import io.servicetalk.grpc.netty.CompatProto.Compat.BlockingCompatClient;
+import io.servicetalk.grpc.netty.CompatProto.Compat.BlockingCompatService;
 import io.servicetalk.grpc.netty.CompatProto.Compat.ClientStreamingCallMetadata;
 import io.servicetalk.grpc.netty.CompatProto.Compat.CompatClient;
 import io.servicetalk.grpc.netty.CompatProto.Compat.ScalarCallMetadata;
@@ -74,7 +77,6 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -92,7 +94,7 @@ import static io.servicetalk.test.resources.DefaultTestCerts.loadServerKey;
 import static io.servicetalk.test.resources.DefaultTestCerts.loadServerPem;
 import static io.servicetalk.transport.api.SecurityConfigurator.SslProvider.OPENSSL;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
-import static java.util.Collections.singleton;
+import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -140,7 +142,6 @@ public class ProtocolCompatibilityTest {
     }
 
     private static final String CUSTOM_ERROR_MESSAGE = "custom error message";
-    private static final Collection<String> ALPN_SUPPORTED_PROTOCOLS = singleton("h2");
 
     private enum ErrorMode {
         NONE,
@@ -155,10 +156,10 @@ public class ProtocolCompatibilityTest {
     }
 
     @DataPoints("ssl")
-    public static boolean[] ssl = new boolean[]{false, true};
+    public static boolean[] ssl = {false, true};
 
     @DataPoints("streaming")
-    public static boolean[] streaming = new boolean[]{false, true};
+    public static boolean[] streaming = {false, true};
 
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
@@ -168,7 +169,7 @@ public class ProtocolCompatibilityTest {
                                    @FromDataPoints("streaming") final boolean streaming) throws Exception {
         final TestServerContext server = grpcJavaServer(ErrorMode.NONE, ssl);
         final CompatClient client = grpcJavaClient(server.listenAddress(), null, ssl);
-        testBlockingRequestResponse(client, server, streaming);
+        testRequestResponse(client, server, streaming);
     }
 
     @Theory
@@ -176,7 +177,7 @@ public class ProtocolCompatibilityTest {
                                       @FromDataPoints("streaming") final boolean streaming) throws Exception {
         final TestServerContext server = grpcJavaServer(ErrorMode.NONE, ssl);
         final CompatClient client = serviceTalkClient(server.listenAddress(), ssl);
-        testBlockingRequestResponse(client, server, streaming);
+        testRequestResponse(client, server, streaming);
     }
 
     @Theory
@@ -184,7 +185,7 @@ public class ProtocolCompatibilityTest {
                                       @FromDataPoints("streaming") final boolean streaming) throws Exception {
         final TestServerContext server = serviceTalkServer(ErrorMode.NONE, ssl);
         final CompatClient client = grpcJavaClient(server.listenAddress(), null, ssl);
-        testBlockingRequestResponse(client, server, streaming);
+        testRequestResponse(client, server, streaming);
     }
 
     @Ignore("gRPC compression not supported by ServiceTalk yet")
@@ -195,7 +196,7 @@ public class ProtocolCompatibilityTest {
         final TestServerContext server = serviceTalkServer(ErrorMode.NONE, ssl);
         // Only gzip is supported by GRPC out of the box atm.
         final CompatClient client = grpcJavaClient(server.listenAddress(), "gzip", ssl);
-        testBlockingRequestResponse(client, server, streaming);
+        testRequestResponse(client, server, streaming);
     }
 
     @Theory
@@ -203,15 +204,16 @@ public class ProtocolCompatibilityTest {
                                          @FromDataPoints("streaming") final boolean streaming) throws Exception {
         final TestServerContext server = serviceTalkServer(ErrorMode.NONE, ssl);
         final CompatClient client = serviceTalkClient(server.listenAddress(), ssl);
-        testBlockingRequestResponse(client, server, streaming);
+        testRequestResponse(client, server, streaming);
     }
 
     @Theory
-    public void serviceTalkToServiceTalkBlocking(@FromDataPoints("ssl") final boolean ssl)
+    public void serviceTalkBlockingToServiceTalkBlocking(@FromDataPoints("ssl") final boolean ssl,
+                                                         @FromDataPoints("streaming") final boolean streaming)
             throws Exception {
-        final TestServerContext server = serviceTalkServerBlocking(ssl);
+        final TestServerContext server = serviceTalkServerBlocking(ErrorMode.NONE, ssl);
         final BlockingCompatClient client = serviceTalkClient(server.listenAddress(), ssl).asBlockingClient();
-        testBlockingRequestResponse(client, server);
+        testBlockingRequestResponse(client, server, streaming);
     }
 
     @Theory
@@ -352,6 +354,32 @@ public class ProtocolCompatibilityTest {
     }
 
     @Theory
+    public void grpcJavaToServiceTalkBlocking(@FromDataPoints("ssl") final boolean ssl,
+                                              @FromDataPoints("streaming") final boolean streaming) throws Exception {
+        final TestServerContext server = serviceTalkServerBlocking(ErrorMode.NONE, ssl);
+        final CompatClient client = grpcJavaClient(server.listenAddress(), null, ssl);
+        testRequestResponse(client, server, streaming);
+    }
+
+    @Theory
+    public void grpcJavaToServiceTalkBlockingError(@FromDataPoints("ssl") final boolean ssl,
+                                                   @FromDataPoints("streaming") final boolean streaming)
+            throws Exception {
+        final TestServerContext server = serviceTalkServerBlocking(ErrorMode.SIMPLE, ssl);
+        final CompatClient client = grpcJavaClient(server.listenAddress(), null, ssl);
+        testGrpcError(client, server, false, streaming);
+    }
+
+    @Theory
+    public void grpcJavaToServiceTalkBlockingErrorWithStatus(@FromDataPoints("ssl") final boolean ssl,
+                                                             @FromDataPoints("streaming") final boolean streaming)
+            throws Exception {
+        final TestServerContext server = serviceTalkServerBlocking(ErrorMode.STATUS, ssl);
+        final CompatClient client = grpcJavaClient(server.listenAddress(), null, ssl);
+        testGrpcError(client, server, true, streaming);
+    }
+
+    @Theory
     public void serviceTalkToServiceTalkError(@FromDataPoints("ssl") final boolean ssl,
                                               @FromDataPoints("streaming") final boolean streaming) throws Exception {
         final TestServerContext server = serviceTalkServer(ErrorMode.SIMPLE, ssl);
@@ -404,59 +432,94 @@ public class ProtocolCompatibilityTest {
         testGrpcError(client, server, true, streaming);
     }
 
-    private static void testBlockingRequestResponse(final BlockingCompatClient client, final TestServerContext server)
-            throws Exception {
+    private static void testBlockingRequestResponse(final BlockingCompatClient client, final TestServerContext server,
+                                                    final boolean streaming) throws Exception {
         try {
-            final CompatResponse response1 = client.scalarCall(CompatRequest.newBuilder().setId(1).build());
-            assertEquals(response1.getSize(), 1000001);
+            if (!streaming) {
+                final CompatResponse response1 = client.scalarCall(CompatRequest.newBuilder().setId(1).build());
+                assertEquals(1000001, response1.getSize());
+            } else {
+                // clientStreamingCall returns the "sum"
+                final CompatResponse response2 = client.clientStreamingCall(asList(
+                        CompatRequest.newBuilder().setId(1).build(),
+                        CompatRequest.newBuilder().setId(2).build(),
+                        CompatRequest.newBuilder().setId(3).build()
+                ));
+                assertEquals(1000006, response2.getSize());
+
+                // serverStreamingCall returns a stream from 0 to N-1
+                final BlockingIterable<CompatResponse> response3 =
+                        client.serverStreamingCall(CompatRequest.newBuilder().setId(3).build());
+                final List<CompatResponse> response3List = new ArrayList<>();
+                response3.forEach(response3List::add);
+                assertEquals(3, response3List.size());
+                assertEquals(1000000, response3List.get(0).getSize());
+                assertEquals(1000001, response3List.get(1).getSize());
+                assertEquals(1000002, response3List.get(2).getSize());
+
+                // bidirectionalStreamingCall basically echos also
+                final BlockingIterable<CompatResponse> response4 = client.bidirectionalStreamingCall(asList(
+                        CompatRequest.newBuilder().setId(3).build(),
+                        CompatRequest.newBuilder().setId(4).build(),
+                        CompatRequest.newBuilder().setId(5).build()
+                ));
+                final List<CompatResponse> response4List = new ArrayList<>();
+                response4.forEach(response4List::add);
+                assertEquals(3, response4List.size());
+                assertEquals(1000003, response4List.get(0).getSize());
+                assertEquals(1000004, response4List.get(1).getSize());
+                assertEquals(1000005, response4List.get(2).getSize());
+            }
         } finally {
             closeAll(client, server);
         }
     }
 
-    private static void testBlockingRequestResponse(final CompatClient client, final TestServerContext server,
-                                                    final boolean streaming)
-            throws Exception {
+    private static void testRequestResponse(final CompatClient client, final TestServerContext server,
+                                            final boolean streaming) throws Exception {
         try {
-            // scalarCall basically echos
-            final Single<CompatResponse> response1 = client.scalarCall(CompatRequest.newBuilder().setId(1).build());
-            assertEquals(response1.toFuture().get().getSize(), 1000001);
+            if (!streaming) {
+                // scalarCall basically echos
+                final Single<CompatResponse> response1 = client.scalarCall(CompatRequest.newBuilder().setId(1).build());
+                assertEquals(1000001, response1.toFuture().get().getSize());
+            } else {
+                // clientStreamingCall returns the "sum"
+                final Single<CompatResponse> response2 = client.clientStreamingCall(Publisher.from(
+                        CompatRequest.newBuilder().setId(1).build(),
+                        CompatRequest.newBuilder().setId(2).build(),
+                        CompatRequest.newBuilder().setId(3).build()
+                ));
+                assertEquals(1000006, response2.toFuture().get().getSize());
 
-            // clientStreamingCall returns the "sum"
-            final Single<CompatResponse> response2 = client.clientStreamingCall(Publisher.from(
-                    CompatRequest.newBuilder().setId(1).build(),
-                    CompatRequest.newBuilder().setId(2).build(),
-                    CompatRequest.newBuilder().setId(3).build()
-            ));
-            assertEquals(response2.toFuture().get().getSize(), 1000006);
+                // serverStreamingCall returns a stream from 0 to N-1
+                final Publisher<CompatResponse> response3 =
+                        client.serverStreamingCall(CompatRequest.newBuilder().setId(3).build());
+                final List<CompatResponse> response3List = new ArrayList<>(response3.toFuture().get());
+                assertEquals(3, response3List.size());
+                assertEquals(1000000, response3List.get(0).getSize());
+                assertEquals(1000001, response3List.get(1).getSize());
+                assertEquals(1000002, response3List.get(2).getSize());
 
-            // serverStreamingCall returns a stream from 0 to N-1
-            final Publisher<CompatResponse> response3 =
-                    client.serverStreamingCall(CompatRequest.newBuilder().setId(3).build());
-            final List<CompatResponse> response3List = new ArrayList<>(response3.toFuture().get());
-            assertEquals(3, response3List.size());
-            assertEquals(response3List.get(0).getSize(), 1000000);
-            assertEquals(response3List.get(1).getSize(), 1000001);
-            assertEquals(response3List.get(2).getSize(), 1000002);
-
-            // bidirectionalStreamingCall basically echos also
-            final Publisher<CompatResponse> response4 = client.bidirectionalStreamingCall(Publisher.from(
-                    CompatRequest.newBuilder().setId(3).build(),
-                    CompatRequest.newBuilder().setId(4).build(),
-                    CompatRequest.newBuilder().setId(5).build()
-            ));
-            final List<CompatResponse> response4List = new ArrayList<>(response4.toFuture().get());
-            assertEquals(3, response4List.size());
-            assertEquals(response4List.get(0).getSize(), 1000003);
-            assertEquals(response4List.get(1).getSize(), 1000004);
-            assertEquals(response4List.get(2).getSize(), 1000005);
+                // bidirectionalStreamingCall basically echos also
+                final Publisher<CompatResponse> response4 = client.bidirectionalStreamingCall(Publisher.from(
+                        CompatRequest.newBuilder().setId(3).build(),
+                        CompatRequest.newBuilder().setId(4).build(),
+                        CompatRequest.newBuilder().setId(5).build()
+                ));
+                final List<CompatResponse> response4List = new ArrayList<>(response4.toFuture().get());
+                assertEquals(3, response4List.size());
+                assertEquals(1000003, response4List.get(0).getSize());
+                assertEquals(1000004, response4List.get(1).getSize());
+                assertEquals(1000005, response4List.get(2).getSize());
+            }
         } finally {
             closeAll(client, server);
         }
     }
 
-    private void testStreamResetOnUnexpectedErrorOnServiceTalkServer(final CompatClient client,
-                                                                     final TestServerContext server) throws Exception {
+    private static void testStreamResetOnUnexpectedErrorOnServiceTalkServer(final CompatClient client,
+                                                                            final TestServerContext server)
+            throws Exception {
         try {
             final Publisher<CompatResponse> streamingResponse = client.bidirectionalStreamingCall(Publisher.from(
                     CompatRequest.newBuilder().setId(3).build(),
@@ -469,7 +532,7 @@ public class ProtocolCompatibilityTest {
             if (cause instanceof StatusRuntimeException) {
                 final StatusRuntimeException sre = (StatusRuntimeException) cause;
                 final Code code = sre.getStatus().getCode();
-                assertEquals("Unexpected grpc error code: " + code, code, CANCELLED);
+                assertEquals("Unexpected grpc error code: " + code, CANCELLED, code);
             } else {
                 cause.printStackTrace();
                 fail("Unexpected exception type: " + cause);
@@ -650,13 +713,57 @@ public class ProtocolCompatibilityTest {
                 serverBuilder;
     }
 
-    private static TestServerContext serviceTalkServerBlocking(final boolean ssl) throws Exception {
+    private static TestServerContext serviceTalkServerBlocking(final ErrorMode errorMode, final boolean ssl)
+            throws Exception {
         final ServerContext serverContext = serviceTalkServerBuilder(ErrorMode.NONE, ssl)
-                .listenAndAwait(new ServiceFactory.Builder()
-                        .scalarCallBlocking((ctx, request) -> computeResponse(request.getId()))
-                        .build());
+                .listenAndAwait(new ServiceFactory(new BlockingCompatService() {
+                    @Override
+                    public void bidirectionalStreamingCall(final GrpcServiceContext ctx,
+                                                           final BlockingIterable<CompatRequest> request,
+                                                           final GrpcPayloadWriter<CompatResponse> responseWriter)
+                            throws Exception {
+                        maybeThrowFromRpc(errorMode);
+                        for (CompatRequest requestItem : request) {
+                            responseWriter.write(computeResponse(requestItem.getId()));
+                        }
+                    }
 
+                    @Override
+                    public CompatResponse clientStreamingCall(final GrpcServiceContext ctx,
+                                                              final BlockingIterable<CompatRequest> request) {
+                        maybeThrowFromRpc(errorMode);
+                        int sum = 0;
+                        for (CompatRequest requestItem : request) {
+                            sum += requestItem.getId();
+                        }
+                        return computeResponse(sum);
+                    }
+
+                    @Override
+                    public CompatResponse scalarCall(final GrpcServiceContext ctx, final CompatRequest request) {
+                        maybeThrowFromRpc(errorMode);
+                        return computeResponse(request.getId());
+                    }
+
+                    @Override
+                    public void serverStreamingCall(final GrpcServiceContext ctx, final CompatRequest request,
+                                                    final GrpcPayloadWriter<CompatResponse> responseWriter)
+                            throws Exception {
+                        maybeThrowFromRpc(errorMode);
+                        for (int i = 0; i < request.getId(); i++) {
+                            responseWriter.write(computeResponse(i));
+                        }
+                    }
+                }));
         return TestServerContext.fromServiceTalkServerContext(serverContext);
+    }
+
+    private static void maybeThrowFromRpc(final ErrorMode errorMode) {
+        if (errorMode == ErrorMode.SIMPLE) {
+            throwGrpcStatusException();
+        } else if (errorMode == ErrorMode.STATUS) {
+            throwGrpcStatusExceptionWithStatus();
+        }
     }
 
     private static void throwGrpcStatusException() {
@@ -677,36 +784,28 @@ public class ProtocolCompatibilityTest {
             @Override
             public Publisher<CompatResponse> bidirectionalStreamingCall(final GrpcServiceContext ctx,
                                                                         final Publisher<CompatRequest> pub) {
-                maybeThrowFromRpc();
+                maybeThrowFromRpc(errorMode);
                 return pub.map(req -> response(req.getId()));
             }
 
             @Override
             public Single<CompatResponse> clientStreamingCall(final GrpcServiceContext ctx,
                                                               final Publisher<CompatRequest> pub) {
-                maybeThrowFromRpc();
+                maybeThrowFromRpc(errorMode);
                 return pub.collect(() -> 0, (sum, req) -> sum + req.getId()).map(this::response);
             }
 
             @Override
             public Single<CompatResponse> scalarCall(final GrpcServiceContext ctx, final CompatRequest req) {
-                maybeThrowFromRpc();
+                maybeThrowFromRpc(errorMode);
                 return succeeded(response(req.getId()));
             }
 
             @Override
             public Publisher<CompatResponse> serverStreamingCall(final GrpcServiceContext ctx,
                                                                  final CompatRequest req) {
-                maybeThrowFromRpc();
+                maybeThrowFromRpc(errorMode);
                 return Publisher.fromIterable(() -> IntStream.range(0, req.getId()).iterator()).map(this::response);
-            }
-
-            private void maybeThrowFromRpc() {
-                if (errorMode == ErrorMode.SIMPLE) {
-                    throwGrpcStatusException();
-                } else if (errorMode == ErrorMode.STATUS) {
-                    throwGrpcStatusExceptionWithStatus();
-                }
             }
 
             private CompatResponse response(final int value) {
@@ -1015,7 +1114,8 @@ public class ProtocolCompatibilityTest {
                     private CompatResponse response(final int value) throws Exception {
                         if (errorMode == ErrorMode.SIMPLE) {
                             throw Status.INVALID_ARGUMENT.augmentDescription(CUSTOM_ERROR_MESSAGE).asException();
-                        } else if (errorMode == ErrorMode.STATUS) {
+                        }
+                        if (errorMode == ErrorMode.STATUS) {
                             throw StatusProto.toStatusException(newStatus());
                         }
                         return computeResponse(value);

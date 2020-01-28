@@ -71,6 +71,7 @@ import static io.servicetalk.grpc.api.GrpcUtils.newErrorResponse;
 import static io.servicetalk.grpc.api.GrpcUtils.newResponse;
 import static io.servicetalk.grpc.api.GrpcUtils.readGrpcMessageEncoding;
 import static io.servicetalk.grpc.api.GrpcUtils.setStatus;
+import static io.servicetalk.grpc.api.GrpcUtils.setStatusOk;
 import static io.servicetalk.http.api.HttpApiConversions.toStreamingHttpService;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpRequestMethod.POST;
@@ -444,8 +445,12 @@ final class GrpcRouter {
                             final DefaultGrpcPayloadWriter<Resp> grpcPayloadWriter =
                                     new DefaultGrpcPayloadWriter<>(response.sendMetaData(serializer));
                             try {
+                                // Set status OK before invoking handle methods because users can close PayloadWriter
+                                final HttpPayloadWriter<Resp> payloadWriter = grpcPayloadWriter.payloadWriter();
+                                setStatusOk(payloadWriter.trailers(), ctx.executionContext().bufferAllocator());
                                 route.handle(serviceContext, request.payloadBody(deserializer), grpcPayloadWriter);
                             } catch (Throwable t) {
+                                // Override OK status with error details in case of failure
                                 final HttpPayloadWriter<Resp> payloadWriter = grpcPayloadWriter.payloadWriter();
                                 setStatus(payloadWriter.trailers(), t, ctx.executionContext().bufferAllocator());
                             } finally {
