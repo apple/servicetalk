@@ -35,6 +35,19 @@ publish-docs.sh {release_version} - to publish docs for a new release version an
 EOF
 }
 
+function clean_up_gh_pages() {
+  if git worktree list | grep -q gh-pages; then
+    echo "Cleanup 'gh-pages' worktree"
+    git worktree remove -f gh-pages
+  fi
+  if git branch --list | grep -q "^\s*gh-pages$"; then
+    echo "Remove 'gh-pages' branch"
+    git branch -Df gh-pages
+  fi
+  # Just in case of the undefined initial state make sure there is no gh-pages folder
+  rm -rf gh-pages
+}
+
 if [ "$#" -eq "0" ]; then
     echo "Publishing docs website for the SNAPSHOT version only"
 elif [ "$#" -eq "1" ]; then
@@ -50,6 +63,9 @@ else
 fi
 
 echo ""
+
+# Clean up the state at the beggining in case the previous run did not finish successfuly
+clean_up_gh_pages
 
 echo "Generate docs website"
 pushd docs/generation
@@ -94,10 +110,8 @@ fi
 git push docs gh-pages
 popd
 
-# Cleanup gh-pages state for future runs based on remote
-git worktree remove gh-pages
-# above takes care of removal: rm -rf gh-pages
-git branch -D gh-pages
+# Clean up the state (worktree and temporary branch) after publication of the docs
+clean_up_gh_pages
 
 if [ -z "$version" ]; then
     echo "Docs website for the SNAPSHOT version successfully updated"
