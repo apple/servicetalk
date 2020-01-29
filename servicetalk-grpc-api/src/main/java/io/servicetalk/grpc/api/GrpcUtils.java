@@ -110,7 +110,7 @@ final class GrpcUtils {
         setStatus(trailers, STATUS_OK, null, allocator);
     }
 
-    static void setStatus(final HttpHeaders trailers, final GrpcStatus status, final @Nullable Status details,
+    static void setStatus(final HttpHeaders trailers, final GrpcStatus status, @Nullable final Status details,
                           final BufferAllocator allocator) {
         trailers.set(GRPC_STATUS_CODE_TRAILER, valueOf(status.code().value()));
         if (status.description() != null) {
@@ -125,11 +125,9 @@ final class GrpcUtils {
     static void setStatus(final HttpHeaders trailers, final Throwable cause, final BufferAllocator allocator) {
         if (cause instanceof GrpcStatusException) {
             GrpcStatusException grpcStatusException = (GrpcStatusException) cause;
-            GrpcUtils.setStatus(trailers, grpcStatusException.status(), grpcStatusException.applicationStatus(),
-                    allocator);
+            setStatus(trailers, grpcStatusException.status(), grpcStatusException.applicationStatus(), allocator);
         } else {
-            GrpcUtils.setStatus(trailers, GrpcStatus.fromCodeValue(GrpcStatusCode.UNKNOWN.value()), null,
-                    allocator);
+            setStatus(trailers, GrpcStatus.fromCodeValue(GrpcStatusCode.UNKNOWN.value()), null, allocator);
         }
     }
 
