@@ -114,7 +114,7 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
      * @return {@link AllGrpcRoutes} representing this {@link GrpcRoutes}.
      */
     AllGrpcRoutes drainToStreamingRoutes() {
-        RouteProviders routeProviders = routeBuilder.drainRoutes();
+        final RouteProviders routeProviders = routeBuilder.drainRoutes();
         return new AllGrpcRoutes() {
             @Override
             public <Req, Resp> StreamingRoute<Req, Resp> streamingRouteFor(
