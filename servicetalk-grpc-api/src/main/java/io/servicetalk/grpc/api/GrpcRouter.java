@@ -67,6 +67,8 @@ import static io.servicetalk.grpc.api.GrpcRouteConversions.toRequestStreamingRou
 import static io.servicetalk.grpc.api.GrpcRouteConversions.toResponseStreamingRoute;
 import static io.servicetalk.grpc.api.GrpcRouteConversions.toRoute;
 import static io.servicetalk.grpc.api.GrpcRouteConversions.toStreaming;
+import static io.servicetalk.grpc.api.GrpcStatus.fromCodeValue;
+import static io.servicetalk.grpc.api.GrpcStatusCode.UNIMPLEMENTED;
 import static io.servicetalk.grpc.api.GrpcUtils.newErrorResponse;
 import static io.servicetalk.grpc.api.GrpcUtils.newResponse;
 import static io.servicetalk.grpc.api.GrpcUtils.readGrpcMessageEncoding;
@@ -90,8 +92,8 @@ final class GrpcRouter {
     private final Map<String, RouteProvider> blockingRoutes;
     private final Map<String, RouteProvider> blockingStreamingRoutes;
 
-    private static final GrpcStatus STATUS_UNIMPLEMENTED = GrpcStatus.fromCodeValue(GrpcStatusCode.OK.value());
-    private static final StreamingHttpService notFound = (ctx, request, responseFactory) -> {
+    private static final GrpcStatus STATUS_UNIMPLEMENTED = fromCodeValue(UNIMPLEMENTED.value());
+    private static final StreamingHttpService NOT_FOUND_SERVICE = (ctx, request, responseFactory) -> {
         final StreamingHttpResponse response = responseFactory.ok();
         response.version(request.version());
         response.transformRaw(new GrpcStatusUpdater(ctx.executionContext().bufferAllocator(), STATUS_UNIMPLEMENTED));
@@ -124,7 +126,7 @@ final class GrpcRouter {
                                                         final StreamingHttpResponseFactory responseFactory) {
                 final StreamingHttpService service;
                 if (!POST.equals(request.method()) || (service = allRoutes.get(request.path())) == null) {
-                    return notFound.handle(ctx, request, responseFactory);
+                    return NOT_FOUND_SERVICE.handle(ctx, request, responseFactory);
                 } else {
                     return service.handle(ctx, request, responseFactory);
                 }
