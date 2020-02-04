@@ -205,14 +205,12 @@ public final class ExecutionStrategyTestServices {
                                    final GrpcPayloadWriter<TestResponse> responseWriter) throws Exception {
             request.forEach(__ -> { /* ignore */ });
             responseWriter.write(new ThreadInfo(ctx).encode());
-            responseWriter.close();
         }
 
         @Override
         public void testResponseStream(final GrpcServiceContext ctx, final TestRequest request,
                                        final GrpcPayloadWriter<TestResponse> responseWriter) throws Exception {
             responseWriter.write(new ThreadInfo(ctx).encode());
-            responseWriter.close();
         }
 
         @Override

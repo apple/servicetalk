@@ -230,25 +230,34 @@ public class ExecutionStrategyTest {
 
     public ExecutionStrategyTest(BuilderExecutionStrategy builderStrategy,
                                  RouteExecutionStrategy routeStrategy,
-                                 RouteApi routeApi) throws Exception {
+                                 RouteApi routeApi,
+                                 boolean appendServiceFilter) throws Exception {
         this.builderStrategy = builderStrategy;
         this.routeStrategy = routeStrategy;
         this.routeApi = routeApi;
         GrpcServerBuilder builder = GrpcServers.forAddress(localAddress(0));
         builderStrategy.configureBuilderExecutionStrategy(builder);
-        serverContext = builder.listenAndAwait(routeStrategy.getServiceFactory());
+        ServiceFactory serviceFactory = routeStrategy.getServiceFactory();
+        if (appendServiceFilter) {
+            // This filter doesn't do anything, it just delegates, but we want to verify that presence of the filter
+            // does not break execution strategy configuration
+            serviceFactory.appendServiceFilter(TesterProto.Tester.TesterServiceFilter::new);
+        }
+        serverContext = builder.listenAndAwait(serviceFactory);
         client = GrpcClients.forAddress(serverHostAndPort(serverContext))
                 .executionStrategy(noOffloadsStrategy())
                 .buildBlocking(new ClientFactory());
     }
 
-    @Parameterized.Parameters(name = "builder={0} route={1}, api={2}")
+    @Parameterized.Parameters(name = "builder={0} route={1}, api={2}, appendServiceFilter={3}")
     public static Collection<Object[]> data() {
         List<Object[]> parameters = new ArrayList<>();
         for (BuilderExecutionStrategy builderEs : BuilderExecutionStrategy.values()) {
             for (RouteExecutionStrategy routeEs : RouteExecutionStrategy.values()) {
                 for (RouteApi routeApi : RouteApi.values()) {
-                    parameters.add(new Object[] {builderEs, routeEs, routeApi});
+                    for (boolean appendServiceFilter : new boolean[] {false, true}) {
+                        parameters.add(new Object[] {builderEs, routeEs, routeApi, appendServiceFilter});
+                    }
                 }
             }
         }

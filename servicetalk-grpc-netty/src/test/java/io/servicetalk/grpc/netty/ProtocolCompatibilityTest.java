@@ -818,51 +818,49 @@ public class ProtocolCompatibilityTest {
             }
         };
         final ServiceFactory serviceFactory = strategy == defaultStrategy() ? new ServiceFactory(compatService) :
-                new ServiceFactory.Builder().bidirectionalStreamingCall(strategy, compatService)
+                new ServiceFactory.Builder()
+                        .bidirectionalStreamingCall(strategy, compatService)
                         .clientStreamingCall(strategy, compatService)
                         .scalarCall(strategy, compatService)
                         .serverStreamingCall(strategy, compatService)
                         .build();
 
-        // FIXME(idel): remove condition around appendServiceFilter when filters execution strategy will be fixed
-        if (errorMode == ErrorMode.SIMPLE_IN_SERVICE_FILTER || errorMode == ErrorMode.STATUS_IN_SERVICE_FILTER) {
-            serviceFactory.appendServiceFilter(delegate -> new Compat.CompatServiceFilter(delegate) {
-                @Override
-                public Publisher<CompatResponse> bidirectionalStreamingCall(final GrpcServiceContext ctx,
-                                                                            final Publisher<CompatRequest> req) {
-                    maybeThrowFromFilter();
-                    return delegate().bidirectionalStreamingCall(ctx, req);
-                }
+        serviceFactory.appendServiceFilter(delegate -> new Compat.CompatServiceFilter(delegate) {
+            @Override
+            public Publisher<CompatResponse> bidirectionalStreamingCall(final GrpcServiceContext ctx,
+                                                                        final Publisher<CompatRequest> req) {
+                maybeThrowFromFilter();
+                return delegate().bidirectionalStreamingCall(ctx, req);
+            }
 
-                @Override
-                public Single<CompatResponse> clientStreamingCall(final GrpcServiceContext ctx,
-                                                                  final Publisher<CompatRequest> req) {
-                    maybeThrowFromFilter();
-                    return delegate().clientStreamingCall(ctx, req);
-                }
+            @Override
+            public Single<CompatResponse> clientStreamingCall(final GrpcServiceContext ctx,
+                                                              final Publisher<CompatRequest> req) {
+                maybeThrowFromFilter();
+                return delegate().clientStreamingCall(ctx, req);
+            }
 
-                @Override
-                public Publisher<CompatResponse> serverStreamingCall(final GrpcServiceContext ctx,
-                                                                     final CompatRequest req) {
-                    maybeThrowFromFilter();
-                    return delegate().serverStreamingCall(ctx, req);
-                }
+            @Override
+            public Publisher<CompatResponse> serverStreamingCall(final GrpcServiceContext ctx,
+                                                                 final CompatRequest req) {
+                maybeThrowFromFilter();
+                return delegate().serverStreamingCall(ctx, req);
+            }
 
-                @Override
-                public Single<CompatResponse> scalarCall(final GrpcServiceContext ctx, final CompatRequest req) {
-                    maybeThrowFromFilter();
-                    return delegate().scalarCall(ctx, req);
-                }
+            @Override
+            public Single<CompatResponse> scalarCall(final GrpcServiceContext ctx, final CompatRequest req) {
+                maybeThrowFromFilter();
+                return delegate().scalarCall(ctx, req);
+            }
 
-                private void maybeThrowFromFilter() {
-                    if (errorMode == ErrorMode.SIMPLE_IN_SERVICE_FILTER) {
-                        throwGrpcStatusException();
-                    } else if (errorMode == ErrorMode.STATUS_IN_SERVICE_FILTER) {
-                        throwGrpcStatusExceptionWithStatus();
-                    }
+            private void maybeThrowFromFilter() {
+                if (errorMode == ErrorMode.SIMPLE_IN_SERVICE_FILTER) {
+                    throwGrpcStatusException();
+                } else if (errorMode == ErrorMode.STATUS_IN_SERVICE_FILTER) {
+                    throwGrpcStatusExceptionWithStatus();
                 }
-            });
-        }
+            }
+        });
 
         final ServerContext serverContext = serviceTalkServerBuilder(errorMode, ssl)
                 .executionStrategy(strategy)
