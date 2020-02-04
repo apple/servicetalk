@@ -153,7 +153,7 @@ public final class ExecutionStrategyTestServices {
         // Nothing to override
     }
 
-    @RouteExecutionStrategy(id = "test")
+    @RouteExecutionStrategy(id = "route")
     private static class ClassExecIdStrategyAsyncService extends EsAsyncService {
         // Nothing to override
     }
@@ -225,7 +225,7 @@ public final class ExecutionStrategyTestServices {
         // Nothing to override
     }
 
-    @RouteExecutionStrategy(id = "test")
+    @RouteExecutionStrategy(id = "route")
     private static class ClassExecIdStrategyBlockingService extends EsBlockingService {
         // Nothing to override
     }
