@@ -10,12 +10,12 @@
     * [Expected outcomes](#expected-outcomes-1)
     * [Required skills](#required-skills-1)
     * [Complexity](#complexity-1)
-    * [References:](#references-1)
+    * [References](#references-1)
     * [Mentor](#mentor-1)    
 3. [Add new asynchronous operators to ServiceTalk](#add-new-asynchronous-operators-to-servicetalk)
     * [Expected outcomes](#expected-outcomes-2)
     * [Required skills](#required-skills-2)
-    * [Complexity:](#complexity-2)
+    * [Complexity](#complexity-2)
     * [References](#references-2)
     * [Mentor](#mentor-2)    
     
@@ -93,7 +93,7 @@ These unique characteristics will require the implementors of UDP in ServiceTalk
 
 Hard.
 
-### References:
+### References
 - [1] https://docs.servicetalk.io/#CrossProtocolApiSymmetry
 - [2] https://servicetalk.io/tree/master/servicetalk-transport-netty
 - [3] http://netty.io/
