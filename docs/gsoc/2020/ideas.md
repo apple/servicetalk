@@ -34,12 +34,12 @@ ServiceTalk would like to provide compression/decompression as an optional featu
 Medium.
 
 ### References
-- [1] https://docs.servicetalk.io/#CrossProtocolApiSymmetry
-- [2] https://servicetalk.io/tree/master/servicetalk-transport-netty
-- [3] http://netty.io/
-- [4] https://servicetalk.io/tree/master/servicetalk-buffer-api
-- [5] https://en.wikipedia.org/wiki/HTTP_compression#Compression_scheme_negotiation
-- [6] https://github.com/grpc/grpc/blob/master/doc/compression.md
+1. https://docs.servicetalk.io/#CrossProtocolApiSymmetry
+2. https://servicetalk.io/tree/master/servicetalk-transport-netty
+3. http://netty.io/
+4. https://servicetalk.io/tree/master/servicetalk-buffer-api
+5. https://en.wikipedia.org/wiki/HTTP_compression#Compression_scheme_negotiation
+6. https://github.com/grpc/grpc/blob/master/doc/compression.md
 
 
 ## Add UDP support to ServiceTalk
@@ -72,14 +72,14 @@ These unique characteristics will require the implementors of UDP in ServiceTalk
 Hard.
 
 ### References:
-- [1] https://docs.servicetalk.io/#CrossProtocolApiSymmetry
-- [2] https://servicetalk.io/tree/master/servicetalk-transport-netty
-- [3] http://netty.io/
-- [4] https://apple.github.io/servicetalk/servicetalk-http-api/SNAPSHOT/index.html
-- [5] https://apple.github.io/servicetalk/servicetalk-grpc-api/SNAPSHOT/index.html
-- [6] https://tools.ietf.org/html/rfc768
-- [7] https://en.wikipedia.org/wiki/Transport_layer
-- [8] https://docs.servicetalk.io/programming-paradigms.html
+1. https://docs.servicetalk.io/#CrossProtocolApiSymmetry
+2. https://servicetalk.io/tree/master/servicetalk-transport-netty
+3. http://netty.io/
+4. https://apple.github.io/servicetalk/servicetalk-http-api/SNAPSHOT/index.html
+5. https://apple.github.io/servicetalk/servicetalk-grpc-api/SNAPSHOT/index.html
+6. https://tools.ietf.org/html/rfc768
+7. https://en.wikipedia.org/wiki/Transport_layer
+8. https://docs.servicetalk.io/programming-paradigms.html
 
 
 ## Add new asynchronous operators to ServiceTalk
@@ -110,7 +110,7 @@ We would like to add new operators to ServiceTalk specifically focussing on stre
 Hard.
 
 ### References
-- [1] https://apple.github.io/servicetalk/servicetalk/SNAPSHOT/programming-paradigms.html
-- [2] https://apple.github.io/servicetalk/servicetalk-concurrent-api/SNAPSHOT/asynchronous-primitives.html
-- [3] https://apple.github.io/servicetalk/servicetalk-concurrent-api/SNAPSHOT/asynchronous-primitives.html#operators
-- [4] https://github.com/reactive-streams/reactive-streams-jvm#specification
+1. https://apple.github.io/servicetalk/servicetalk/SNAPSHOT/programming-paradigms.html
+2. https://apple.github.io/servicetalk/servicetalk-concurrent-api/SNAPSHOT/asynchronous-primitives.html
+3. https://apple.github.io/servicetalk/servicetalk-concurrent-api/SNAPSHOT/asynchronous-primitives.html#operators
+4. https://github.com/reactive-streams/reactive-streams-jvm#specification
