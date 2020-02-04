@@ -201,15 +201,16 @@ final class GrpcRouter {
             final Map<String, RouteProvider> blockingRoutes = new HashMap<>();
             final Map<String, RouteProvider> blockingStreamingRoutes = new HashMap<>();
             for (Builder builder : builders) {
-                mergeMaps(routes, builder.routes);
-                mergeMaps(streamingRoutes, builder.streamingRoutes);
-                mergeMaps(blockingRoutes, builder.blockingRoutes);
-                mergeMaps(blockingStreamingRoutes, builder.blockingStreamingRoutes);
+                mergeRoutes(routes, builder.routes);
+                mergeRoutes(streamingRoutes, builder.streamingRoutes);
+                mergeRoutes(blockingRoutes, builder.blockingRoutes);
+                mergeRoutes(blockingStreamingRoutes, builder.blockingStreamingRoutes);
             }
             return new Builder(routes, streamingRoutes, blockingRoutes, blockingStreamingRoutes);
         }
 
-        private static void mergeMaps(final Map<String, RouteProvider> first, final Map<String, RouteProvider> second) {
+        private static void mergeRoutes(final Map<String, RouteProvider> first,
+                                        final Map<String, RouteProvider> second) {
             for (Map.Entry<String, RouteProvider> entry : second.entrySet()) {
                 final String path = entry.getKey();
                 verifyNoOverrides(first.put(path, entry.getValue()), path, emptyMap());
@@ -256,7 +257,11 @@ final class GrpcRouter {
                         }
                     }, strategy -> executionStrategy == null ? strategy : executionStrategy),
                     () -> toStreaming(route), () -> toRequestStreamingRoute(route),
-                    () -> toResponseStreamingRoute(route), () -> route, route)), path, blockingRoutes);
+                    () -> toResponseStreamingRoute(route), () -> route, route)),
+                    // We only assume duplication across blocking and async variant of the same API and not between
+                    // aggregated and streaming. Therefore, verify that there is no blocking-aggregated route registered
+                    // for the same path:
+                    path, blockingRoutes);
             return this;
         }
 
@@ -309,7 +314,11 @@ final class GrpcRouter {
                     }
                 };
             }, () -> route, () -> toRequestStreamingRoute(route), () -> toResponseStreamingRoute(route),
-                    () -> toRoute(route), route)), path, blockingStreamingRoutes);
+                    () -> toRoute(route), route)),
+                    // We only assume duplication across blocking and async variant of the same API and not between
+                    // aggregated and streaming. Therefore, verify that there is no blocking-streaming route registered
+                    // for the same path:
+                    path, blockingStreamingRoutes);
             return this;
         }
 
@@ -419,7 +428,11 @@ final class GrpcRouter {
                         }
                     }, strategy -> executionStrategy == null ? strategy : executionStrategy),
                     () -> toStreaming(route), () -> toRequestStreamingRoute(route),
-                    () -> toResponseStreamingRoute(route), () -> toRoute(route), route)), path, routes);
+                    () -> toResponseStreamingRoute(route), () -> toRoute(route), route)),
+                    // We only assume duplication across blocking and async variant of the same API and not between
+                    // aggregated and streaming. Therefore, verify that there is no async-aggregated route registered
+                    // for the same path:
+                    path, routes);
             return this;
         }
 
@@ -478,7 +491,11 @@ final class GrpcRouter {
                         }
                     }, strategy -> executionStrategy == null ? strategy : executionStrategy),
                     () -> toStreaming(route), () -> toRequestStreamingRoute(route),
-                    () -> toResponseStreamingRoute(route), () -> toRoute(route), route)), path, streamingRoutes);
+                    () -> toResponseStreamingRoute(route), () -> toRoute(route), route)),
+                    // We only assume duplication across blocking and async variant of the same API and not between
+                    // aggregated and streaming. Therefore, verify that there is no async-streaming route registered
+                    // for the same path:
+                    path, streamingRoutes);
             return this;
         }
 
