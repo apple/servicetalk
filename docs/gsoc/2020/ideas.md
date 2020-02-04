@@ -1,5 +1,24 @@
 # Google Summer of Code 2020 Ideas
 
+1. [Add compression and decompression support to ServiceTalk](#add-compression-and-decompression-support-to-servicetalk)
+    * [Expected outcomes](#expected-outcomes)
+    * [Required skills](#required-skills)
+    * [Complexity](#complexity)
+    * [References](#references)
+    * [Mentor](#mentor)
+2. [Add UDP support to ServiceTalk](#add-udp-support-to-servicetalk)
+    * [Expected outcomes](#expected-outcomes-1)
+    * [Required skills](#required-skills-1)
+    * [Complexity](#complexity-1)
+    * [References:](#references-1)
+    * [Mentor](#mentor-1)    
+3. [Add new asynchronous operators to ServiceTalk](#add-new-asynchronous-operators-to-servicetalk)
+    * [Expected outcomes](#expected-outcomes-2)
+    * [Required skills](#required-skills-2)
+    * [Complexity:](#complexity-2)
+    * [References](#references-2)
+    * [Mentor](#mentor-2)    
+    
 ## Add compression and decompression support to ServiceTalk
 
 A core design philosophy of ServiceTalk is to provide symmetric APIs [1] across multiple different application protocols. This API symmetry enables users of ServiceTalk to extend their understanding of one protocol to another in quick time. This also enables ServiceTalk to reuse common constructs [2] across these protocols hence accelerating the process of writing new protocol implementations. Additionally ServiceTalk uses netty [3], to implement the transport layer, delegating the protocol processing to netty and adding ServiceTalk specific concepts (like ReactiveStreams based flowcontrol, asynchronous primitives, etc) on top.
@@ -34,13 +53,16 @@ ServiceTalk would like to provide compression/decompression as an optional featu
 Medium.
 
 ### References
-1. https://docs.servicetalk.io/#CrossProtocolApiSymmetry
-2. https://servicetalk.io/tree/master/servicetalk-transport-netty
-3. http://netty.io/
-4. https://servicetalk.io/tree/master/servicetalk-buffer-api
-5. https://en.wikipedia.org/wiki/HTTP_compression#Compression_scheme_negotiation
-6. https://github.com/grpc/grpc/blob/master/doc/compression.md
+- [1] https://docs.servicetalk.io/#CrossProtocolApiSymmetry
+- [2] https://servicetalk.io/tree/master/servicetalk-transport-netty
+- [3] http://netty.io/
+- [4] https://servicetalk.io/tree/master/servicetalk-buffer-api
+- [5] https://en.wikipedia.org/wiki/HTTP_compression#Compression_scheme_negotiation
+- [6] https://github.com/grpc/grpc/blob/master/doc/compression.md
 
+### Mentor
+
+https://github.com/NiteshKant
 
 ## Add UDP support to ServiceTalk
 
@@ -72,15 +94,18 @@ These unique characteristics will require the implementors of UDP in ServiceTalk
 Hard.
 
 ### References:
-1. https://docs.servicetalk.io/#CrossProtocolApiSymmetry
-2. https://servicetalk.io/tree/master/servicetalk-transport-netty
-3. http://netty.io/
-4. https://apple.github.io/servicetalk/servicetalk-http-api/SNAPSHOT/index.html
-5. https://apple.github.io/servicetalk/servicetalk-grpc-api/SNAPSHOT/index.html
-6. https://tools.ietf.org/html/rfc768
-7. https://en.wikipedia.org/wiki/Transport_layer
-8. https://docs.servicetalk.io/programming-paradigms.html
+- [1] https://docs.servicetalk.io/#CrossProtocolApiSymmetry
+- [2] https://servicetalk.io/tree/master/servicetalk-transport-netty
+- [3] http://netty.io/
+- [4] https://apple.github.io/servicetalk/servicetalk-http-api/SNAPSHOT/index.html
+- [5] https://apple.github.io/servicetalk/servicetalk-grpc-api/SNAPSHOT/index.html
+- [6] https://tools.ietf.org/html/rfc768
+- [7] https://en.wikipedia.org/wiki/Transport_layer
+- [8] https://docs.servicetalk.io/programming-paradigms.html
 
+### Mentor
+
+https://github.com/NiteshKant
 
 ## Add new asynchronous operators to ServiceTalk
 
@@ -105,12 +130,16 @@ We would like to add new operators to ServiceTalk specifically focussing on stre
 * Understanding of ReactiveStreams specification [4].
 * Familiarity with test frameworks.
 
-### Complexity:
+### Complexity
  
 Hard.
 
 ### References
-1. https://apple.github.io/servicetalk/servicetalk/SNAPSHOT/programming-paradigms.html
-2. https://apple.github.io/servicetalk/servicetalk-concurrent-api/SNAPSHOT/asynchronous-primitives.html
-3. https://apple.github.io/servicetalk/servicetalk-concurrent-api/SNAPSHOT/asynchronous-primitives.html#operators
-4. https://github.com/reactive-streams/reactive-streams-jvm#specification
+- [1] https://apple.github.io/servicetalk/servicetalk/SNAPSHOT/programming-paradigms.html
+- [2] https://apple.github.io/servicetalk/servicetalk-concurrent-api/SNAPSHOT/asynchronous-primitives.html
+- [3] https://apple.github.io/servicetalk/servicetalk-concurrent-api/SNAPSHOT/asynchronous-primitives.html#operators
+- [4] https://github.com/reactive-streams/reactive-streams-jvm#specification
+
+### Mentor
+
+https://github.com/NiteshKant
