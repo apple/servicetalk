@@ -69,8 +69,8 @@ import static org.junit.Assume.assumeFalse;
 @RunWith(Parameterized.class)
 public class ExecutionStrategyTest {
 
-    private static final String BUILDER_EXEC_NAME_PREFIX = "builder-executor-";
-    private static final String ROUTE_EXEC_NAME_PREFIX = "route-executor-";
+    private static final String BUILDER_EXEC_NAME_PREFIX = "builder-executor";
+    private static final String ROUTE_EXEC_NAME_PREFIX = "route-executor";
 
     @ClassRule
     public static final ExecutorRule<Executor> BUILDER_EXEC = ExecutorRule.withNamePrefix(BUILDER_EXEC_NAME_PREFIX);

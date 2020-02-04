@@ -75,6 +75,7 @@ import static io.servicetalk.grpc.api.GrpcUtils.setStatusOk;
 import static io.servicetalk.http.api.HttpApiConversions.toStreamingHttpService;
 import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpRequestMethod.POST;
+import static java.util.Collections.emptyMap;
 import static java.util.Collections.unmodifiableMap;
 import static java.util.Objects.requireNonNull;
 
@@ -146,10 +147,11 @@ final class GrpcRouter {
                                        final Map<String, RouteProvider> routes,
                                        final CompositeCloseable closeable) {
         for (Map.Entry<String, RouteProvider> entry : routes.entrySet()) {
+            final String path = entry.getKey();
             final ServiceAdapterHolder adapterHolder = entry.getValue().buildRoute(executionContext);
-            StreamingHttpService route = closeable.append(adapterHolder.adaptor());
-            allRoutes.put(entry.getKey(), adapterHolder.serviceInvocationStrategy()
-                    .offloadService(executionContext.executor(), route));
+            final StreamingHttpService route = closeable.append(adapterHolder.adaptor());
+            verifyNoOverrides(allRoutes.put(path, adapterHolder.serviceInvocationStrategy()
+                    .offloadService(executionContext.executor(), route)), path, emptyMap());
         }
     }
 
@@ -199,19 +201,27 @@ final class GrpcRouter {
             final Map<String, RouteProvider> blockingRoutes = new HashMap<>();
             final Map<String, RouteProvider> blockingStreamingRoutes = new HashMap<>();
             for (Builder builder : builders) {
-                routes.putAll(builder.routes);
-                streamingRoutes.putAll(builder.streamingRoutes);
-                blockingRoutes.putAll(builder.blockingRoutes);
-                blockingStreamingRoutes.putAll(builder.blockingStreamingRoutes);
+                mergeRoutes(routes, builder.routes);
+                mergeRoutes(streamingRoutes, builder.streamingRoutes);
+                mergeRoutes(blockingRoutes, builder.blockingRoutes);
+                mergeRoutes(blockingStreamingRoutes, builder.blockingStreamingRoutes);
             }
             return new Builder(routes, streamingRoutes, blockingRoutes, blockingStreamingRoutes);
+        }
+
+        private static void mergeRoutes(final Map<String, RouteProvider> first,
+                                        final Map<String, RouteProvider> second) {
+            for (Map.Entry<String, RouteProvider> entry : second.entrySet()) {
+                final String path = entry.getKey();
+                verifyNoOverrides(first.put(path, entry.getValue()), path, emptyMap());
+            }
         }
 
         <Req, Resp> Builder addRoute(
                 final String path, @Nullable final GrpcExecutionStrategy executionStrategy,
                 final Route<Req, Resp> route, final Class<Req> requestClass,
                 final Class<Resp> responseClass, final GrpcSerializationProvider serializationProvider) {
-            routes.put(path, new RouteProvider(executionContext -> toStreamingHttpService(
+            verifyNoOverrides(routes.put(path, new RouteProvider(executionContext -> toStreamingHttpService(
                     new HttpService() {
                         @Override
                         public Single<HttpResponse> handle(final HttpServiceContext ctx, final HttpRequest request,
@@ -247,7 +257,11 @@ final class GrpcRouter {
                         }
                     }, strategy -> executionStrategy == null ? strategy : executionStrategy),
                     () -> toStreaming(route), () -> toRequestStreamingRoute(route),
-                    () -> toResponseStreamingRoute(route), () -> route, route));
+                    () -> toResponseStreamingRoute(route), () -> route, route)),
+                    // We only assume duplication across blocking and async variant of the same API and not between
+                    // aggregated and streaming. Therefore, verify that there is no blocking-aggregated route registered
+                    // for the same path:
+                    path, blockingRoutes);
             return this;
         }
 
@@ -255,7 +269,7 @@ final class GrpcRouter {
                 final String path, @Nullable final GrpcExecutionStrategy executionStrategy,
                 final StreamingRoute<Req, Resp> route, final Class<Req> requestClass,
                 final Class<Resp> responseClass, final GrpcSerializationProvider serializationProvider) {
-            streamingRoutes.put(path, new RouteProvider(executionContext -> {
+            verifyNoOverrides(streamingRoutes.put(path, new RouteProvider(executionContext -> {
                 final StreamingHttpService service = new StreamingHttpService() {
                     @Override
                     public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
@@ -300,7 +314,11 @@ final class GrpcRouter {
                     }
                 };
             }, () -> route, () -> toRequestStreamingRoute(route), () -> toResponseStreamingRoute(route),
-                    () -> toRoute(route), route));
+                    () -> toRoute(route), route)),
+                    // We only assume duplication across blocking and async variant of the same API and not between
+                    // aggregated and streaming. Therefore, verify that there is no blocking-streaming route registered
+                    // for the same path:
+                    path, blockingStreamingRoutes);
             return this;
         }
 
@@ -379,7 +397,7 @@ final class GrpcRouter {
                 final String path, @Nullable final GrpcExecutionStrategy executionStrategy,
                 final BlockingRoute<Req, Resp> route, final Class<Req> requestClass,
                 final Class<Resp> responseClass, final GrpcSerializationProvider serializationProvider) {
-            blockingRoutes.put(path, new RouteProvider(executionContext ->
+            verifyNoOverrides(blockingRoutes.put(path, new RouteProvider(executionContext ->
                     toStreamingHttpService(new BlockingHttpService() {
                         @Override
                         public HttpResponse handle(final HttpServiceContext ctx, final HttpRequest request,
@@ -410,7 +428,11 @@ final class GrpcRouter {
                         }
                     }, strategy -> executionStrategy == null ? strategy : executionStrategy),
                     () -> toStreaming(route), () -> toRequestStreamingRoute(route),
-                    () -> toResponseStreamingRoute(route), () -> toRoute(route), route));
+                    () -> toResponseStreamingRoute(route), () -> toRoute(route), route)),
+                    // We only assume duplication across blocking and async variant of the same API and not between
+                    // aggregated and streaming. Therefore, verify that there is no async-aggregated route registered
+                    // for the same path:
+                    path, routes);
             return this;
         }
 
@@ -430,7 +452,7 @@ final class GrpcRouter {
                 final String path, @Nullable final GrpcExecutionStrategy executionStrategy,
                 final BlockingStreamingRoute<Req, Resp> route, final Class<Req> requestClass,
                 final Class<Resp> responseClass, final GrpcSerializationProvider serializationProvider) {
-            blockingRoutes.put(path, new RouteProvider(executionContext ->
+            verifyNoOverrides(blockingStreamingRoutes.put(path, new RouteProvider(executionContext ->
                     toStreamingHttpService(new BlockingStreamingHttpService() {
                         @Override
                         public void handle(final HttpServiceContext ctx, final BlockingStreamingHttpRequest request,
@@ -469,7 +491,11 @@ final class GrpcRouter {
                         }
                     }, strategy -> executionStrategy == null ? strategy : executionStrategy),
                     () -> toStreaming(route), () -> toRequestStreamingRoute(route),
-                    () -> toResponseStreamingRoute(route), () -> toRoute(route), route));
+                    () -> toResponseStreamingRoute(route), () -> toRoute(route), route)),
+                    // We only assume duplication across blocking and async variant of the same API and not between
+                    // aggregated and streaming. Therefore, verify that there is no async-streaming route registered
+                    // for the same path:
+                    path, streamingRoutes);
             return this;
         }
 
@@ -554,6 +580,13 @@ final class GrpcRouter {
          */
         public GrpcRouter build() {
             return new GrpcRouter(routes, streamingRoutes, blockingRoutes, blockingStreamingRoutes);
+        }
+    }
+
+    private static void verifyNoOverrides(@Nullable final Object oldValue, final String path,
+                                          final Map<String, ?> alternativeMap) {
+        if (oldValue != null || alternativeMap.containsKey(path)) {
+            throw new IllegalStateException("Can not override already registered route for path: " + path);
         }
     }
 

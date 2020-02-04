@@ -53,7 +53,10 @@ public abstract class GrpcServiceFactory<Filter extends Service, Service extends
 
     @SuppressWarnings("unchecked")
     static GrpcServiceFactory<?, ?, ?> merge(final GrpcServiceFactory<?, ?, ?>... factories) {
-        GrpcRoutes[] routes = new GrpcRoutes[factories.length];
+        if (factories.length == 1) {
+            return factories[0];
+        }
+        final GrpcRoutes<?>[] routes = new GrpcRoutes[factories.length];
         for (int i = 0; i < factories.length; i++) {
             final GrpcServiceFactory factory = factories[i];
             if (factory.filterFactory != null) {
@@ -118,9 +121,9 @@ public abstract class GrpcServiceFactory<Filter extends Service, Service extends
     private void applyFilterToRoutes(final FilterFactory filterFactory) {
         // We will call the routes again to register the new filtered routes, so clear the existing routes and return
         // them in AllGrpcRoutes.
-        AllGrpcRoutes streamingRoutes = routes.drainToStreamingRoutes();
-        Service fromRoutes = routes.newServiceFromRoutes(streamingRoutes);
-        Filter filter = filterFactory.create(fromRoutes);
+        final AllGrpcRoutes streamingRoutes = routes.drainToStreamingRoutes();
+        final Service fromRoutes = routes.newServiceFromRoutes(streamingRoutes);
+        final Filter filter = filterFactory.create(fromRoutes);
         routes.registerRoutes(filter);
     }
 
