@@ -21,7 +21,7 @@
     
 ## Add compression and decompression support to ServiceTalk
 
-A core design philosophy of ServiceTalk is to provide symmetric APIs [1] across multiple different application protocols. This API symmetry enables users of ServiceTalk to extend their understanding of one protocol to another in quick time. This also enables ServiceTalk to reuse common constructs [2] across these protocols hence accelerating the process of writing new protocol implementations. Additionally ServiceTalk uses netty [3], to implement the transport layer, delegating the protocol processing to netty and adding ServiceTalk specific concepts (like ReactiveStreams based flowcontrol, asynchronous primitives, etc) on top.
+A core design philosophy of ServiceTalk is to provide symmetric APIs[1] across multiple different application protocols. This API symmetry enables users of ServiceTalk to extend their understanding of one protocol to another in quick time. This also enables ServiceTalk to reuse common constructs [2] across these protocols hence accelerating the process of writing new protocol implementations. Additionally ServiceTalk uses netty [3], to implement the transport layer, delegating the protocol processing to netty and adding ServiceTalk specific concepts (like ReactiveStreams based flowcontrol, asynchronous primitives, etc) on top.
 
 One of the common feature across different protocols is the ability to compress and decompress application level messages (eg: HTTP payloads). Compression optimizes for reducing data transfer over the network but requires more complex computations making it a CPU vs network bandwidth trade off. For some use cases like data transfers over WAN, reducing network bandwidth usage may be useful. Further, using different compression algorithms give users flexibility to balance between compression ratio and CPU usage.
 
@@ -52,13 +52,12 @@ ServiceTalk would like to provide compression/decompression as an optional featu
  
 Medium.
 
-### References
-- [1] https://docs.servicetalk.io/#CrossProtocolApiSymmetry
-- [2] https://servicetalk.io/tree/master/servicetalk-transport-netty
-- [3] http://netty.io/
-- [4] https://servicetalk.io/tree/master/servicetalk-buffer-api
-- [5] https://en.wikipedia.org/wiki/HTTP_compression#Compression_scheme_negotiation
-- [6] https://github.com/grpc/grpc/blob/master/doc/compression.md
+[1]: https://docs.servicetalk.io/#CrossProtocolApiSymmetry
+[2]: https://servicetalk.io/tree/master/servicetalk-transport-netty
+[3]: http://netty.io/
+[4]: https://servicetalk.io/tree/master/servicetalk-buffer-api
+[5]: https://en.wikipedia.org/wiki/HTTP_compression#Compression_scheme_negotiation
+[6]: https://github.com/grpc/grpc/blob/master/doc/compression.md
 
 ### Mentor
 
