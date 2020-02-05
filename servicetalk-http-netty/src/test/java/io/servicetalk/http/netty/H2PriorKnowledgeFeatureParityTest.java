@@ -34,6 +34,7 @@ import io.servicetalk.http.api.HttpEventKey;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpRequest;
+import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.http.api.HttpServerBuilder;
@@ -113,7 +114,10 @@ import static io.servicetalk.http.api.HttpHeaderNames.COOKIE;
 import static io.servicetalk.http.api.HttpHeaderNames.EXPECT;
 import static io.servicetalk.http.api.HttpHeaderNames.SET_COOKIE;
 import static io.servicetalk.http.api.HttpHeaderValues.CONTINUE;
+import static io.servicetalk.http.api.HttpRequestMethod.GET;
+import static io.servicetalk.http.api.HttpRequestMethod.POST;
 import static io.servicetalk.http.api.HttpResponseStatus.EXPECTATION_FAILED;
+import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.HttpSerializationProviders.textDeserializer;
 import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
 import static io.servicetalk.http.netty.HttpClients.forSingleAddress;
@@ -128,7 +132,9 @@ import static java.lang.Thread.NORM_PRIORITY;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.emptyIterable;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasItems;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isEmptyString;
@@ -138,7 +144,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
@@ -197,6 +202,39 @@ public class H2PriorKnowledgeFeatureParityTest {
     @Test
     public void multipleGetRequests() throws Exception {
         multipleRequests(true, 10);
+    }
+
+    @Test
+    public void queryParamsArePreservedForGet() throws Exception {
+        queryParams(GET);
+    }
+
+    @Test
+    public void queryParamsArePreservedForPost() throws Exception {
+        queryParams(POST);
+    }
+
+    private void queryParams(final HttpRequestMethod method) throws Exception {
+        final String qpName = "foo";
+        InetSocketAddress serverAddress = bindHttpEchoServer(service -> new StreamingHttpServiceFilter(service) {
+            @Override
+            public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx,
+                                                        final StreamingHttpRequest request,
+                                                        final StreamingHttpResponseFactory responseFactory) {
+                return request.queryParameter(qpName) == null ?
+                        succeeded(responseFactory.badRequest()) :
+                        super.handle(ctx, request, responseFactory);
+            }
+        });
+        String responseBody = "hello world";
+        try (BlockingHttpClient client = forSingleAddress(HostAndPort.of(serverAddress))
+                .protocols(h2PriorKnowledge ? h2Default() : h1Default())
+                .executionStrategy(clientExecutionStrategy).buildBlocking()) {
+            HttpResponse response = client.request(client.newRequest(method, "/p")
+                    .addQueryParameters(qpName, "bar"))
+                    .payloadBody(responseBody, textSerializer());
+            assertThat("Unexpexcted response status.", response.status(), equalTo(OK));
+        }
     }
 
     private void multipleRequests(boolean get, int numberRequests) throws Exception {
