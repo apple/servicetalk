@@ -18,12 +18,15 @@ package io.servicetalk.grpc.netty;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.grpc.api.GrpcServiceContext;
+import io.servicetalk.grpc.api.GrpcStatusException;
 import io.servicetalk.grpc.netty.TesterProto.TestRequest;
 import io.servicetalk.grpc.netty.TesterProto.Tester.BlockingTestBiDiStreamRpc;
 import io.servicetalk.grpc.netty.TesterProto.Tester.BlockingTestRequestStreamRpc;
 import io.servicetalk.grpc.netty.TesterProto.Tester.BlockingTestResponseStreamRpc;
 import io.servicetalk.grpc.netty.TesterProto.Tester.BlockingTestRpc;
+import io.servicetalk.grpc.netty.TesterProto.Tester.BlockingTesterClient;
 import io.servicetalk.grpc.netty.TesterProto.Tester.BlockingTesterService;
+import io.servicetalk.grpc.netty.TesterProto.Tester.ClientFactory;
 import io.servicetalk.grpc.netty.TesterProto.Tester.ServiceFactory;
 import io.servicetalk.grpc.netty.TesterProto.Tester.TestBiDiStreamRpc;
 import io.servicetalk.grpc.netty.TesterProto.Tester.TestRequestStreamRpc;
@@ -41,34 +44,67 @@ import java.util.function.UnaryOperator;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.grpc.api.GrpcExecutionStrategies.noOffloadsStrategy;
+import static io.servicetalk.grpc.api.GrpcStatusCode.UNIMPLEMENTED;
 import static io.servicetalk.grpc.netty.ExecutionStrategyTestServices.CLASS_NO_OFFLOADS_STRATEGY_ASYNC_SERVICE;
 import static io.servicetalk.grpc.netty.ExecutionStrategyTestServices.CLASS_NO_OFFLOADS_STRATEGY_BLOCKING_SERVICE;
 import static io.servicetalk.grpc.netty.ExecutionStrategyTestServices.DEFAULT_STRATEGY_ASYNC_SERVICE;
 import static io.servicetalk.grpc.netty.ExecutionStrategyTestServices.DEFAULT_STRATEGY_BLOCKING_SERVICE;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
+import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
+import static java.util.Collections.singletonList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertThrows;
 
 public class GrpcRouterConfigurationTest {
+
+    private static final TestRequest REQUEST = TestRequest.newBuilder().setName("test").build();
 
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
 
     @Nullable
     private ServerContext serverContext;
+    @Nullable
+    private BlockingTesterClient client;
 
     @After
     public void tearDown() throws Exception {
-        if (serverContext != null) {
-            serverContext.close();
+        try {
+            if (client != null) {
+                client.close();
+            }
+        } finally {
+            if (serverContext != null) {
+                serverContext.close();
+            }
         }
     }
 
     private ServerContext startGrpcServer(ServiceFactory... serviceFactories) throws Exception {
         return serverContext = GrpcServers.forAddress(localAddress(0))
                 .listenAndAwait(serviceFactories);
+    }
+
+    private BlockingTesterClient createGrpcClient(ServerContext serverContext) {
+        return client = GrpcClients.forAddress(serverHostAndPort(serverContext))
+                .buildBlocking(new ClientFactory());
+    }
+
+    @Test
+    public void testMissedRouteThrowsUnimplementedException() throws Exception {
+        BlockingTesterClient client = createGrpcClient(startGrpcServer(new ServiceFactory.Builder()
+                .test(DEFAULT_STRATEGY_ASYNC_SERVICE)
+                .build()));
+        TesterProto.TestResponse response = client.test(REQUEST);
+        assertThat(response, is(notNullValue()));
+        assertThat(response.getMessage(), is(notNullValue()));
+
+        Throwable t = assertThrows(GrpcStatusException.class, () -> client.testRequestStream(singletonList(REQUEST)));
+        assertThat(t.getMessage(), equalTo(UNIMPLEMENTED.name()));
     }
 
     @Test
