@@ -165,22 +165,26 @@ final class GrpcRouter {
         private final Map<String, RouteProvider> streamingRoutes;
         private final Map<String, RouteProvider> blockingRoutes;
         private final Map<String, RouteProvider> blockingStreamingRoutes;
+        private final Map<String, GrpcExecutionStrategy> executionStrategies;
 
         Builder() {
             routes = new HashMap<>();
             streamingRoutes = new HashMap<>();
             blockingRoutes = new HashMap<>();
             blockingStreamingRoutes = new HashMap<>();
+            executionStrategies = new HashMap<>();
         }
 
         Builder(final Map<String, RouteProvider> routes,
                 final Map<String, RouteProvider> streamingRoutes,
                 final Map<String, RouteProvider> blockingRoutes,
-                final Map<String, RouteProvider> blockingStreamingRoutes) {
+                final Map<String, RouteProvider> blockingStreamingRoutes,
+                final Map<String, GrpcExecutionStrategy> executionStrategies) {
             this.routes = routes;
             this.streamingRoutes = streamingRoutes;
             this.blockingRoutes = blockingRoutes;
             this.blockingStreamingRoutes = blockingStreamingRoutes;
+            this.executionStrategies = executionStrategies;
         }
 
         RouteProviders drainRoutes() {
@@ -196,18 +200,25 @@ final class GrpcRouter {
             return new RouteProviders(allRoutes);
         }
 
+        GrpcExecutionStrategy alreadyRegisteredExecutionStrategy(final String path,
+                                                                 final GrpcExecutionStrategy defaultValue) {
+            return executionStrategies.getOrDefault(path, defaultValue);
+        }
+
         static GrpcRouter.Builder merge(final GrpcRouter.Builder... builders) {
             final Map<String, RouteProvider> routes = new HashMap<>();
             final Map<String, RouteProvider> streamingRoutes = new HashMap<>();
             final Map<String, RouteProvider> blockingRoutes = new HashMap<>();
             final Map<String, RouteProvider> blockingStreamingRoutes = new HashMap<>();
+            final Map<String, GrpcExecutionStrategy> executionStrategies = new HashMap<>();
             for (Builder builder : builders) {
                 mergeRoutes(routes, builder.routes);
                 mergeRoutes(streamingRoutes, builder.streamingRoutes);
                 mergeRoutes(blockingRoutes, builder.blockingRoutes);
                 mergeRoutes(blockingStreamingRoutes, builder.blockingStreamingRoutes);
+                executionStrategies.putAll(executionStrategies);
             }
-            return new Builder(routes, streamingRoutes, blockingRoutes, blockingStreamingRoutes);
+            return new Builder(routes, streamingRoutes, blockingRoutes, blockingStreamingRoutes, executionStrategies);
         }
 
         private static void mergeRoutes(final Map<String, RouteProvider> first,
@@ -263,6 +274,7 @@ final class GrpcRouter {
                     // aggregated and streaming. Therefore, verify that there is no blocking-aggregated route registered
                     // for the same path:
                     path, blockingRoutes);
+            executionStrategies.put(path, executionStrategy);
             return this;
         }
 
@@ -320,6 +332,7 @@ final class GrpcRouter {
                     // aggregated and streaming. Therefore, verify that there is no blocking-streaming route registered
                     // for the same path:
                     path, blockingStreamingRoutes);
+            executionStrategies.put(path, executionStrategy);
             return this;
         }
 
@@ -434,6 +447,7 @@ final class GrpcRouter {
                     // aggregated and streaming. Therefore, verify that there is no async-aggregated route registered
                     // for the same path:
                     path, routes);
+            executionStrategies.put(path, executionStrategy);
             return this;
         }
 
@@ -497,6 +511,7 @@ final class GrpcRouter {
                     // aggregated and streaming. Therefore, verify that there is no async-streaming route registered
                     // for the same path:
                     path, streamingRoutes);
+            executionStrategies.put(path, executionStrategy);
             return this;
         }
 

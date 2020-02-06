@@ -53,7 +53,6 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
             HttpExecutionStrategies.noOffloadsStrategy());
 
     private final GrpcRouter.Builder routeBuilder;
-    private final Map<String, GrpcExecutionStrategy> executionStrategies;
     private final Set<String> errors;
     private final RouteExecutionStrategyFactory<GrpcExecutionStrategy> strategyFactory;
 
@@ -74,16 +73,12 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
      */
     protected GrpcRoutes(final RouteExecutionStrategyFactory<GrpcExecutionStrategy> strategyFactory) {
         routeBuilder = new GrpcRouter.Builder();
-        executionStrategies = new HashMap<>();
         errors = new TreeSet<>();
         this.strategyFactory = strategyFactory;
     }
 
-    private GrpcRoutes(final GrpcRouter.Builder routeBuilder,
-                       final Map<String, GrpcExecutionStrategy> executionStrategies,
-                       final Set<String> errors) {
+    private GrpcRoutes(final GrpcRouter.Builder routeBuilder, final Set<String> errors) {
         this.routeBuilder = routeBuilder;
-        this.executionStrategies = executionStrategies;
         this.errors = errors;
         strategyFactory = defaultStrategyFactory();
     }
@@ -170,10 +165,9 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
         for (int i = 0; i < allRoutes.length; i++) {
             final GrpcRoutes<?> route = allRoutes[i];
             builders[i] = route.routeBuilder;
-            executionStrategies.putAll(route.executionStrategies);
             errors.addAll(route.errors);
         }
-        return new GrpcRoutes<GrpcService>(GrpcRouter.Builder.merge(builders), executionStrategies, errors) {
+        return new GrpcRoutes<GrpcService>(GrpcRouter.Builder.merge(builders), errors) {
             @Override
             protected void registerRoutes(final GrpcService service) {
                 throw new UnsupportedOperationException("Merged service factory can not register routes.");
@@ -190,8 +184,9 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
     private GrpcExecutionStrategy executionStrategy(final String path, final Method method, final Class<?> clazz) {
         // Check if we already have a computed GrpcExecutionStrategy for this path. This happens when we re-register
         // filtered routes and have to use the original execution strategy for the route instead of analysing
-        // annotations on a service-filter class.
-        final GrpcExecutionStrategy saved = executionStrategies.getOrDefault(path, NULL);
+        // annotations on a service-filter class. Because previously registered strategy could be null, we use NULL
+        // object as a marker to understand there was no strategy for this path.
+        final GrpcExecutionStrategy saved = routeBuilder.alreadyRegisteredExecutionStrategy(path, NULL);
         if (saved != NULL) {
             return saved;
         }
@@ -219,7 +214,6 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
         final Method method = retrieveMethod(serviceClass, methodName, GrpcServiceContext.class, requestClass);
         final GrpcExecutionStrategy executionStrategy = executionStrategy(path, method, serviceClass);
         routeBuilder.addRoute(path, executionStrategy, route, requestClass, responseClass, serializationProvider);
-        executionStrategies.put(path, executionStrategy);
     }
 
     /**
@@ -239,7 +233,6 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
             final Class<Req> requestClass, final Class<Resp> responseClass,
             final GrpcSerializationProvider serializationProvider) {
         routeBuilder.addRoute(path, executionStrategy, route, requestClass, responseClass, serializationProvider);
-        executionStrategies.put(path, executionStrategy);
     }
 
     /**
@@ -263,7 +256,6 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
         final GrpcExecutionStrategy executionStrategy = executionStrategy(path, method, serviceClass);
         routeBuilder.addStreamingRoute(path, executionStrategy, route, requestClass, responseClass,
                 serializationProvider);
-        executionStrategies.put(path, executionStrategy);
     }
 
     /**
@@ -284,7 +276,6 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
             final Class<Resp> responseClass, final GrpcSerializationProvider serializationProvider) {
         routeBuilder.addStreamingRoute(path, executionStrategy, route, requestClass, responseClass,
                 serializationProvider);
-        executionStrategies.put(path, executionStrategy);
     }
 
     /**
@@ -308,7 +299,6 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
         final GrpcExecutionStrategy executionStrategy = executionStrategy(path, method, serviceClass);
         routeBuilder.addRequestStreamingRoute(path, executionStrategy, route, requestClass, responseClass,
                 serializationProvider);
-        executionStrategies.put(path, executionStrategy);
     }
 
     /**
@@ -329,7 +319,6 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
             final Class<Resp> responseClass, final GrpcSerializationProvider serializationProvider) {
         routeBuilder.addRequestStreamingRoute(path, executionStrategy, route, requestClass, responseClass,
                 serializationProvider);
-        executionStrategies.put(path, executionStrategy);
     }
 
     /**
@@ -353,7 +342,6 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
         final GrpcExecutionStrategy executionStrategy = executionStrategy(path, method, serviceClass);
         routeBuilder.addResponseStreamingRoute(path, executionStrategy, route, requestClass, responseClass,
                 serializationProvider);
-        executionStrategies.put(path, executionStrategy);
     }
 
     /**
@@ -374,7 +362,6 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
             final Class<Resp> responseClass, final GrpcSerializationProvider serializationProvider) {
         routeBuilder.addResponseStreamingRoute(path, executionStrategy, route, requestClass, responseClass,
                 serializationProvider);
-        executionStrategies.put(path, executionStrategy);
     }
 
     /**
@@ -398,7 +385,6 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
         final GrpcExecutionStrategy executionStrategy = executionStrategy(path, method, serviceClass);
         routeBuilder.addBlockingRoute(path, executionStrategy, route, requestClass, responseClass,
                 serializationProvider);
-        executionStrategies.put(path, executionStrategy);
     }
 
     /**
@@ -419,7 +405,6 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
             final GrpcSerializationProvider serializationProvider) {
         routeBuilder.addBlockingRoute(path, executionStrategy, route, requestClass, responseClass,
                 serializationProvider);
-        executionStrategies.put(path, executionStrategy);
     }
 
     /**
@@ -444,7 +429,6 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
         final GrpcExecutionStrategy executionStrategy = executionStrategy(path, method, serviceClass);
         routeBuilder.addBlockingStreamingRoute(path, executionStrategy, route, requestClass, responseClass,
                 serializationProvider);
-        executionStrategies.put(path, executionStrategy);
     }
 
     /**
@@ -465,7 +449,6 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
             final Class<Resp> responseClass, final GrpcSerializationProvider serializationProvider) {
         routeBuilder.addBlockingStreamingRoute(path, executionStrategy, route, requestClass, responseClass,
                 serializationProvider);
-        executionStrategies.put(path, executionStrategy);
     }
 
     /**
@@ -490,7 +473,6 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
         final GrpcExecutionStrategy executionStrategy = executionStrategy(path, method, serviceClass);
         routeBuilder.addBlockingRequestStreamingRoute(path, executionStrategy, route, requestClass, responseClass,
                 serializationProvider);
-        executionStrategies.put(path, executionStrategy);
     }
 
     /**
@@ -511,7 +493,6 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
             final Class<Resp> responseClass, final GrpcSerializationProvider serializationProvider) {
         routeBuilder.addBlockingRequestStreamingRoute(path, executionStrategy, route, requestClass, responseClass,
                 serializationProvider);
-        executionStrategies.put(path, executionStrategy);
     }
 
     /**
@@ -536,7 +517,6 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
         final GrpcExecutionStrategy executionStrategy = executionStrategy(path, method, serviceClass);
         routeBuilder.addBlockingResponseStreamingRoute(path, executionStrategy, route, requestClass, responseClass,
                 serializationProvider);
-        executionStrategies.put(path, executionStrategy);
     }
 
     /**
@@ -557,7 +537,6 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
             final Class<Resp> responseClass, final GrpcSerializationProvider serializationProvider) {
         routeBuilder.addBlockingResponseStreamingRoute(path, executionStrategy, route, requestClass, responseClass,
                 serializationProvider);
-        executionStrategies.put(path, executionStrategy);
     }
 
     /**
