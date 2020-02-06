@@ -17,7 +17,6 @@ package io.servicetalk.grpc.api;
 
 import java.util.HashMap;
 import java.util.Map;
-import javax.annotation.Nullable;
 
 import static java.lang.Integer.parseInt;
 import static java.util.Collections.unmodifiableMap;
@@ -89,10 +88,7 @@ public enum GrpcStatusCode {
      * @param codeValue code value.
      * @return status code associated with the code value, or {@link #UNKNOWN}.
      */
-    public static GrpcStatusCode fromCodeValue(@Nullable CharSequence codeValue) {
-        if (codeValue == null) {
-            return UNKNOWN;
-        }
+    public static GrpcStatusCode fromCodeValue(CharSequence codeValue) {
         try {
             return fromCodeValue(parseInt(codeValue.toString()));
         } catch (NumberFormatException e) {
