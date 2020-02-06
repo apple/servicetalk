@@ -41,7 +41,6 @@ import static io.servicetalk.grpc.api.GrpcExecutionStrategies.noOffloadsStrategy
 import static io.servicetalk.router.utils.internal.DefaultRouteExecutionStrategyFactory.defaultStrategyFactory;
 import static io.servicetalk.router.utils.internal.RouteExecutionStrategyUtils.getAndValidateRouteExecutionStrategyAnnotationIfPresent;
 import static io.servicetalk.utils.internal.ReflectionUtils.retrieveMethod;
-import static java.util.Collections.emptyMap;
 
 /**
  * A holder of <a href="https://www.grpc.io">gRPC</a> routes that constitutes a service.
@@ -166,14 +165,15 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
 
     static GrpcRoutes<?> merge(GrpcRoutes<?>... allRoutes) {
         final GrpcRouter.Builder[] builders = new GrpcRouter.Builder[allRoutes.length];
+        final Map<String, GrpcExecutionStrategy> executionStrategies = new HashMap<>();
         final Set<String> errors = new TreeSet<>();
         for (int i = 0; i < allRoutes.length; i++) {
-            builders[i] = allRoutes[i].routeBuilder;
-            errors.addAll(allRoutes[i].errors);
+            final GrpcRoutes<?> route = allRoutes[i];
+            builders[i] = route.routeBuilder;
+            executionStrategies.putAll(route.executionStrategies);
+            errors.addAll(route.errors);
         }
-        // At the time of merging all GrpcRoutes together we don't need an executionStrategies map and can pass an empty
-        // map instead:
-        return new GrpcRoutes<GrpcService>(GrpcRouter.Builder.merge(builders), emptyMap(), errors) {
+        return new GrpcRoutes<GrpcService>(GrpcRouter.Builder.merge(builders), executionStrategies, errors) {
             @Override
             protected void registerRoutes(final GrpcService service) {
                 throw new UnsupportedOperationException("Merged service factory can not register routes.");

@@ -32,6 +32,9 @@ import io.servicetalk.grpc.api.GrpcRoutes.ResponseStreamingRoute;
 import io.servicetalk.grpc.api.GrpcRoutes.Route;
 import io.servicetalk.grpc.api.GrpcRoutes.StreamingRoute;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
@@ -41,6 +44,9 @@ import static io.servicetalk.utils.internal.PlatformDependent.throwException;
 import static java.util.Objects.requireNonNull;
 
 final class GrpcRouteConversions {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(GrpcRouteConversions.class);
+
     private GrpcRouteConversions() {
         // No instance
     }
@@ -110,7 +116,7 @@ final class GrpcRouteConversions {
                         final ConnectablePayloadWriter<Resp> connectablePayloadWriter =
                                 new ConnectablePayloadWriter<>();
                         final Publisher<Resp> pub = connectablePayloadWriter.connect();
-                        final Subscriber<? super Resp> concurrentTerminalSubscriber =
+                        final ConcurrentTerminalSubscriber<? super Resp> concurrentTerminalSubscriber =
                                 new ConcurrentTerminalSubscriber<>(subscriber, false);
                         toSource(pub).subscribe(concurrentTerminalSubscriber);
                         final GrpcPayloadWriter<Resp> grpcPayloadWriter = new GrpcPayloadWriter<Resp>() {
@@ -137,7 +143,9 @@ final class GrpcRouteConversions {
                             try {
                                 grpcPayloadWriter.close();
                             } catch (IOException e) {
-                                concurrentTerminalSubscriber.onError(e);
+                                if (!concurrentTerminalSubscriber.processOnError(e)) {
+                                    LOGGER.error("Cannot close GrpcPayloadWriter", e);
+                                }
                             }
                         }
                     }
