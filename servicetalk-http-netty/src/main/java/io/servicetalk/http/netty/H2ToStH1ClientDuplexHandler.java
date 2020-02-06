@@ -82,10 +82,10 @@ final class H2ToStH1ClientDuplexHandler extends AbstractH2DuplexHandler {
             method = metaData.method();
             h2Headers.method(method.name());
             if (!CONNECT.equals(method)) {
-                // The ":scheme" and ":path" pseudo-header fields MUST be omitted.
+                // The ":scheme" and ":path" pseudo-header fields MUST be omitted for CONNECT.
                 // https://tools.ietf.org/html/rfc7540#section-8.3
                 h2Headers.scheme(scheme.name());
-                h2Headers.path(metaData.path());
+                h2Headers.path(metaData.requestTarget());
             }
             ctx.write(new DefaultHttp2HeadersFrame(h2Headers, false), promise);
         } else if (msg instanceof Buffer) {

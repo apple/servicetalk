@@ -73,16 +73,17 @@ final class GrpcUtils {
     }
 
     static <T> StreamingHttpResponse newResponse(final StreamingHttpResponseFactory responseFactory,
-                                                 @Nullable final Publisher<T> payload,
-                                                 @Nullable final HttpSerializer<T> serializer,
+                                                 final Publisher<T> payload,
+                                                 final HttpSerializer<T> serializer,
                                                  final BufferAllocator allocator) {
-        final StreamingHttpResponse response = responseFactory.ok();
-        initResponse(response);
-        if (payload != null) {
-            assert serializer != null;
-            response.payloadBody(payload, serializer);
-        }
-        return response.transformRaw(new GrpcStatusUpdater(allocator, STATUS_OK));
+        return newStreamingResponse(responseFactory).payloadBody(payload, serializer)
+                .transformRaw(new GrpcStatusUpdater(allocator, STATUS_OK));
+    }
+
+    static StreamingHttpResponse newResponse(final StreamingHttpResponseFactory responseFactory,
+                                             final GrpcStatus status,
+                                             final BufferAllocator allocator) {
+        return newStreamingResponse(responseFactory).transformRaw(new GrpcStatusUpdater(allocator, status));
     }
 
     static HttpResponse newResponse(final HttpResponseFactory responseFactory, final BufferAllocator allocator) {
@@ -101,8 +102,12 @@ final class GrpcUtils {
 
     static StreamingHttpResponse newErrorResponse(final StreamingHttpResponseFactory responseFactory,
                                                   final Throwable cause, final BufferAllocator allocator) {
-        StreamingHttpResponse response = newResponse(responseFactory, null, null, allocator);
-        response.transformRaw(new ErrorUpdater(cause, allocator));
+        return newStreamingResponse(responseFactory).transformRaw(new ErrorUpdater(cause, allocator));
+    }
+
+    private static StreamingHttpResponse newStreamingResponse(final StreamingHttpResponseFactory responseFactory) {
+        final StreamingHttpResponse response = responseFactory.ok();
+        initResponse(response);
         return response;
     }
 
@@ -292,7 +297,7 @@ final class GrpcUtils {
 
         @Override
         protected HttpHeaders payloadComplete(final HttpHeaders trailers) {
-            GrpcUtils.setStatus(trailers, successStatus, null, allocator);
+            setStatus(trailers, successStatus, null, allocator);
             return trailers;
         }
 
