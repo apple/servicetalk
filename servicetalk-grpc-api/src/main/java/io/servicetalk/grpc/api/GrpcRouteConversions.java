@@ -144,7 +144,7 @@ final class GrpcRouteConversions {
                                 grpcPayloadWriter.close();
                             } catch (IOException e) {
                                 if (!concurrentTerminalSubscriber.processOnError(e)) {
-                                    LOGGER.error("Cannot close GrpcPayloadWriter", e);
+                                    LOGGER.error("Failed to close GrpcPayloadWriter", e);
                                 }
                             }
                         }

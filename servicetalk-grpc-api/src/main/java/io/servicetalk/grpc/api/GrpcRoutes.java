@@ -180,9 +180,10 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
     private GrpcExecutionStrategy executionStrategy(final String path, final Method method, final Class<?> clazz) {
         // Check if we already have a computed GrpcExecutionStrategy for this path. This happens when we re-register
         // filtered routes and have to use the original execution strategy for the route instead of analysing
-        // annotations on a service-filter class. Because previously registered strategy could be null, we use NULL
+        // annotations on a service-filter class. Because previously registered strategy could be null (if user did not
+        // configure it using ServiceFactory.Builder methods or via @RouteExecutionStrategy annotation), we use NULL
         // object as a marker to understand there was no strategy for this path.
-        final GrpcExecutionStrategy saved = routeBuilder.alreadyRegisteredExecutionStrategy(path, NULL);
+        final GrpcExecutionStrategy saved = routeBuilder.executionStrategyFor(path, NULL);
         if (saved != NULL) {
             return saved;
         }

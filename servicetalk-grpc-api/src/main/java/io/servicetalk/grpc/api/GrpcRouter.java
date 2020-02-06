@@ -200,8 +200,7 @@ final class GrpcRouter {
             return new RouteProviders(allRoutes);
         }
 
-        GrpcExecutionStrategy alreadyRegisteredExecutionStrategy(final String path,
-                                                                 final GrpcExecutionStrategy defaultValue) {
+        GrpcExecutionStrategy executionStrategyFor(final String path, final GrpcExecutionStrategy defaultValue) {
             return executionStrategies.getOrDefault(path, defaultValue);
         }
 
@@ -216,7 +215,7 @@ final class GrpcRouter {
                 mergeRoutes(streamingRoutes, builder.streamingRoutes);
                 mergeRoutes(blockingRoutes, builder.blockingRoutes);
                 mergeRoutes(blockingStreamingRoutes, builder.blockingStreamingRoutes);
-                executionStrategies.putAll(executionStrategies);
+                executionStrategies.putAll(builder.executionStrategies);
             }
             return new Builder(routes, streamingRoutes, blockingRoutes, blockingStreamingRoutes, executionStrategies);
         }
