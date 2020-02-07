@@ -23,6 +23,7 @@ import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.grpc.api.GrpcRouter.RouteProviders;
 import io.servicetalk.grpc.api.GrpcServiceFactory.ServerBinder;
+import io.servicetalk.http.api.HttpExecutionStrategies;
 import io.servicetalk.router.api.RouteExecutionStrategy;
 import io.servicetalk.router.api.RouteExecutionStrategyFactory;
 import io.servicetalk.transport.api.ExecutionContext;
@@ -46,10 +47,12 @@ import static io.servicetalk.utils.internal.ReflectionUtils.retrieveMethod;
  */
 public abstract class GrpcRoutes<Service extends GrpcService> {
 
+    private static final GrpcExecutionStrategy NULL = new DefaultGrpcExecutionStrategy(
+            HttpExecutionStrategies.noOffloadsStrategy());
+
     private final GrpcRouter.Builder routeBuilder;
     private final Set<String> errors;
     private final RouteExecutionStrategyFactory<GrpcExecutionStrategy> strategyFactory;
-    private boolean registerFilters;
 
     /**
      * Create a new instance.
@@ -115,7 +118,6 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
      * @return {@link AllGrpcRoutes} representing this {@link GrpcRoutes}.
      */
     AllGrpcRoutes drainToStreamingRoutes() {
-        registerFilters = true;
         final RouteProviders routeProviders = routeBuilder.drainRoutes();
         return new AllGrpcRoutes() {
             @Override
@@ -176,11 +178,14 @@ public abstract class GrpcRoutes<Service extends GrpcService> {
 
     @Nullable
     private GrpcExecutionStrategy executionStrategy(final String path, final Method method, final Class<?> clazz) {
-        // If we are in the state of re-registering filtered service, we don't need to analyze annotations on the filter
-        // class. Instead, we should return the original execution strategy for this path that was computed/provided
-        // at the time of the first registration of this GrpcService.
-        if (registerFilters) {
-            return routeBuilder.executionStrategyFor(path);
+        // Check if we already have a computed GrpcExecutionStrategy for this path. This happens when we re-register
+        // filtered routes and have to use the original execution strategy for the route instead of analysing
+        // annotations on a service-filter class. Because previously registered strategy could be null (if user did not
+        // configure it using ServiceFactory.Builder methods or via @RouteExecutionStrategy annotation), we use NULL
+        // object as a marker to understand there was no strategy for this path.
+        final GrpcExecutionStrategy saved = routeBuilder.executionStrategyFor(path, NULL);
+        if (saved != NULL) {
+            return saved;
         }
         return getAndValidateRouteExecutionStrategyAnnotationIfPresent(method, clazz, strategyFactory, errors,
                 noOffloadsStrategy());

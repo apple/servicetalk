@@ -200,9 +200,8 @@ final class GrpcRouter {
             return new RouteProviders(allRoutes);
         }
 
-        @Nullable
-        GrpcExecutionStrategy executionStrategyFor(final String path) {
-            return executionStrategies.get(path);
+        GrpcExecutionStrategy executionStrategyFor(final String path, final GrpcExecutionStrategy defaultValue) {
+            return executionStrategies.getOrDefault(path, defaultValue);
         }
 
         static GrpcRouter.Builder merge(final GrpcRouter.Builder... builders) {
