@@ -32,6 +32,9 @@ import io.servicetalk.grpc.api.GrpcRoutes.ResponseStreamingRoute;
 import io.servicetalk.grpc.api.GrpcRoutes.Route;
 import io.servicetalk.grpc.api.GrpcRoutes.StreamingRoute;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
@@ -41,6 +44,9 @@ import static io.servicetalk.utils.internal.PlatformDependent.throwException;
 import static java.util.Objects.requireNonNull;
 
 final class GrpcRouteConversions {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(GrpcRouteConversions.class);
+
     private GrpcRouteConversions() {
         // No instance
     }
@@ -107,30 +113,40 @@ final class GrpcRouteConversions {
                 return new Publisher<Resp>() {
                     @Override
                     protected void handleSubscribe(final Subscriber<? super Resp> subscriber) {
-                        ConnectablePayloadWriter<Resp> connectablePayloadWriter = new ConnectablePayloadWriter<>();
-                        Publisher<Resp> pub = connectablePayloadWriter.connect();
-                        Subscriber<? super Resp> concurrentTerminalSubscriber =
+                        final ConnectablePayloadWriter<Resp> connectablePayloadWriter =
+                                new ConnectablePayloadWriter<>();
+                        final Publisher<Resp> pub = connectablePayloadWriter.connect();
+                        final ConcurrentTerminalSubscriber<? super Resp> concurrentTerminalSubscriber =
                                 new ConcurrentTerminalSubscriber<>(subscriber, false);
                         toSource(pub).subscribe(concurrentTerminalSubscriber);
+                        final GrpcPayloadWriter<Resp> grpcPayloadWriter = new GrpcPayloadWriter<Resp>() {
+                            @Override
+                            public void write(final Resp resp) throws IOException {
+                                connectablePayloadWriter.write(resp);
+                            }
+
+                            @Override
+                            public void close() throws IOException {
+                                connectablePayloadWriter.close();
+                            }
+
+                            @Override
+                            public void flush() throws IOException {
+                                connectablePayloadWriter.flush();
+                            }
+                        };
                         try {
-                            original.handle(ctx, request.toIterable(), new GrpcPayloadWriter<Resp>() {
-                                @Override
-                                public void write(final Resp resp) throws IOException {
-                                    connectablePayloadWriter.write(resp);
-                                }
-
-                                @Override
-                                public void close() throws IOException {
-                                    connectablePayloadWriter.close();
-                                }
-
-                                @Override
-                                public void flush() throws IOException {
-                                    connectablePayloadWriter.flush();
-                                }
-                            });
+                            original.handle(ctx, request.toIterable(), grpcPayloadWriter);
                         } catch (Throwable t) {
                             concurrentTerminalSubscriber.onError(t);
+                        } finally {
+                            try {
+                                grpcPayloadWriter.close();
+                            } catch (IOException e) {
+                                if (!concurrentTerminalSubscriber.processOnError(e)) {
+                                    LOGGER.error("Failed to close GrpcPayloadWriter", e);
+                                }
+                            }
                         }
                     }
                 };

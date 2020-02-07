@@ -20,6 +20,7 @@ import io.servicetalk.concurrent.BlockingIterator;
 import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.ExecutorRule;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
+import io.servicetalk.grpc.api.GrpcExecutionStrategy;
 import io.servicetalk.grpc.api.GrpcServerBuilder;
 import io.servicetalk.grpc.netty.ExecutionStrategyTestServices.ThreadInfo;
 import io.servicetalk.grpc.netty.TesterProto.TestRequest;
@@ -27,6 +28,9 @@ import io.servicetalk.grpc.netty.TesterProto.TestResponse;
 import io.servicetalk.grpc.netty.TesterProto.Tester.BlockingTesterClient;
 import io.servicetalk.grpc.netty.TesterProto.Tester.ClientFactory;
 import io.servicetalk.grpc.netty.TesterProto.Tester.ServiceFactory;
+import io.servicetalk.grpc.netty.TesterProto.Tester.TesterService;
+import io.servicetalk.grpc.netty.TesterProto.Tester.TesterServiceFilter;
+import io.servicetalk.router.api.RouteExecutionStrategyFactory;
 import io.servicetalk.transport.api.ServerContext;
 
 import org.junit.After;
@@ -71,6 +75,7 @@ public class ExecutionStrategyTest {
 
     private static final String BUILDER_EXEC_NAME_PREFIX = "builder-executor";
     private static final String ROUTE_EXEC_NAME_PREFIX = "route-executor";
+    private static final String FILTER_EXEC_NAME_PREFIX = "filter-executor";
 
     @ClassRule
     public static final ExecutorRule<Executor> BUILDER_EXEC = ExecutorRule.withNamePrefix(BUILDER_EXEC_NAME_PREFIX);
@@ -78,7 +83,29 @@ public class ExecutionStrategyTest {
     @ClassRule
     public static final ExecutorRule<Executor> ROUTE_EXEC = ExecutorRule.withNamePrefix(ROUTE_EXEC_NAME_PREFIX);
 
+    @ClassRule
+    public static final ExecutorRule<Executor> FILTER_EXEC = ExecutorRule.withNamePrefix(FILTER_EXEC_NAME_PREFIX);
+
     private static final TestRequest REQUEST = TestRequest.newBuilder().setName("name").build();
+
+    private static final RouteExecutionStrategyFactory<GrpcExecutionStrategy> STRATEGY_FACTORY =
+            new TestExecutionStrategyFactory();
+
+    private static final class TestExecutionStrategyFactory
+            implements RouteExecutionStrategyFactory<GrpcExecutionStrategy> {
+
+        @Override
+        public GrpcExecutionStrategy get(final String id) {
+            switch (id) {
+                case "route":
+                    return defaultStrategy(ROUTE_EXEC.executor());
+                case "filter":
+                    return defaultStrategy(FILTER_EXEC.executor());
+                default:
+                    throw new IllegalArgumentException("Unknown id: " + id);
+            }
+        }
+    }
 
     private enum BuilderExecutionStrategy {
         DEFAULT {
@@ -107,32 +134,31 @@ public class ExecutionStrategyTest {
         ASYNC_DEFAULT {
             @Override
             ServiceFactory getServiceFactory() {
-                return new ServiceFactory(DEFAULT_STRATEGY_ASYNC_SERVICE);
+                return new ServiceFactory(DEFAULT_STRATEGY_ASYNC_SERVICE, STRATEGY_FACTORY);
             }
         },
         ASYNC_CLASS_EXEC_ID {
             @Override
             ServiceFactory getServiceFactory() {
-                return new ServiceFactory(CLASS_EXEC_ID_STRATEGY_ASYNC_SERVICE,
-                        __ -> defaultStrategy(ROUTE_EXEC.executor()));
+                return new ServiceFactory(CLASS_EXEC_ID_STRATEGY_ASYNC_SERVICE, STRATEGY_FACTORY);
             }
         },
         ASYNC_CLASS_NO_OFFLOADS {
             @Override
             ServiceFactory getServiceFactory() {
-                return new ServiceFactory(CLASS_NO_OFFLOADS_STRATEGY_ASYNC_SERVICE);
+                return new ServiceFactory(CLASS_NO_OFFLOADS_STRATEGY_ASYNC_SERVICE, STRATEGY_FACTORY);
             }
         },
         ASYNC_METHOD_NO_OFFLOADS {
             @Override
             ServiceFactory getServiceFactory() {
-                return new ServiceFactory(METHOD_NO_OFFLOADS_STRATEGY_ASYNC_SERVICE);
+                return new ServiceFactory(METHOD_NO_OFFLOADS_STRATEGY_ASYNC_SERVICE, STRATEGY_FACTORY);
             }
         },
         ASYNC_SERVICE_FACTORY_NO_OFFLOADS {
             @Override
             ServiceFactory getServiceFactory() {
-                return new ServiceFactory.Builder()
+                return new ServiceFactory.Builder(STRATEGY_FACTORY)
                         .test(noOffloadsStrategy(), DEFAULT_STRATEGY_ASYNC_SERVICE)
                         .testBiDiStream(noOffloadsStrategy(), DEFAULT_STRATEGY_ASYNC_SERVICE)
                         .testResponseStream(noOffloadsStrategy(), DEFAULT_STRATEGY_ASYNC_SERVICE)
@@ -143,32 +169,31 @@ public class ExecutionStrategyTest {
         BLOCKING_DEFAULT {
             @Override
             ServiceFactory getServiceFactory() {
-                return new ServiceFactory(DEFAULT_STRATEGY_BLOCKING_SERVICE);
+                return new ServiceFactory(DEFAULT_STRATEGY_BLOCKING_SERVICE, STRATEGY_FACTORY);
             }
         },
         BLOCKING_CLASS_EXEC_ID {
             @Override
             ServiceFactory getServiceFactory() {
-                return new ServiceFactory(CLASS_EXEC_ID_STRATEGY_BLOCKING_SERVICE,
-                        __ -> defaultStrategy(ROUTE_EXEC.executor()));
+                return new ServiceFactory(CLASS_EXEC_ID_STRATEGY_BLOCKING_SERVICE, STRATEGY_FACTORY);
             }
         },
         BLOCKING_CLASS_NO_OFFLOADS {
             @Override
             ServiceFactory getServiceFactory() {
-                return new ServiceFactory(CLASS_NO_OFFLOADS_STRATEGY_BLOCKING_SERVICE);
+                return new ServiceFactory(CLASS_NO_OFFLOADS_STRATEGY_BLOCKING_SERVICE, STRATEGY_FACTORY);
             }
         },
         BLOCKING_METHOD_NO_OFFLOADS {
             @Override
             ServiceFactory getServiceFactory() {
-                return new ServiceFactory(METHOD_NO_OFFLOADS_STRATEGY_BLOCKING_SERVICE);
+                return new ServiceFactory(METHOD_NO_OFFLOADS_STRATEGY_BLOCKING_SERVICE, STRATEGY_FACTORY);
             }
         },
         BLOCKING_SERVICE_FACTORY_NO_OFFLOADS {
             @Override
             ServiceFactory getServiceFactory() {
-                return new ServiceFactory.Builder()
+                return new ServiceFactory.Builder(STRATEGY_FACTORY)
                         .testBlocking(noOffloadsStrategy(), DEFAULT_STRATEGY_BLOCKING_SERVICE)
                         .testBiDiStreamBlocking(noOffloadsStrategy(), DEFAULT_STRATEGY_BLOCKING_SERVICE)
                         .testResponseStreamBlocking(noOffloadsStrategy(), DEFAULT_STRATEGY_BLOCKING_SERVICE)
@@ -219,6 +244,41 @@ public class ExecutionStrategyTest {
         }
     }
 
+    private enum FilterConfiguration {
+        NO_FILTER {
+            @Override
+            void appendServiceFilter(final ServiceFactory serviceFactory) {
+                // noop
+            }
+        },
+        DEFAULT_FILTER {
+            @Override
+            void appendServiceFilter(final ServiceFactory serviceFactory) {
+                // This filter doesn't do anything, it just delegates, but we want to verify that presence of the filter
+                // does not break execution strategy configuration
+                serviceFactory.appendServiceFilter(TesterServiceFilter::new);
+            }
+        },
+        ANNOTATED_FILTER {
+            @Override
+            void appendServiceFilter(final ServiceFactory serviceFactory) {
+                // This filter wraps the service with annotated class as an attempt to modify route's execution strategy
+                // for the original service. We want to make sure that this annotation will be ignored
+                serviceFactory.appendServiceFilter(ServiceFilterWithExecutionStrategy::new);
+            }
+        };
+
+        abstract void appendServiceFilter(ServiceFactory serviceFactory);
+
+        @io.servicetalk.router.api.RouteExecutionStrategy(id = "filter")
+        private static final class ServiceFilterWithExecutionStrategy extends TesterServiceFilter {
+
+            ServiceFilterWithExecutionStrategy(final TesterService delegate) {
+                super(delegate);
+            }
+        }
+    }
+
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
 
@@ -230,25 +290,30 @@ public class ExecutionStrategyTest {
 
     public ExecutionStrategyTest(BuilderExecutionStrategy builderStrategy,
                                  RouteExecutionStrategy routeStrategy,
-                                 RouteApi routeApi) throws Exception {
+                                 RouteApi routeApi,
+                                 FilterConfiguration filterConfiguration) throws Exception {
         this.builderStrategy = builderStrategy;
         this.routeStrategy = routeStrategy;
         this.routeApi = routeApi;
         GrpcServerBuilder builder = GrpcServers.forAddress(localAddress(0));
         builderStrategy.configureBuilderExecutionStrategy(builder);
-        serverContext = builder.listenAndAwait(routeStrategy.getServiceFactory());
+        ServiceFactory serviceFactory = routeStrategy.getServiceFactory();
+        filterConfiguration.appendServiceFilter(serviceFactory);
+        serverContext = builder.listenAndAwait(serviceFactory);
         client = GrpcClients.forAddress(serverHostAndPort(serverContext))
                 .executionStrategy(noOffloadsStrategy())
                 .buildBlocking(new ClientFactory());
     }
 
-    @Parameterized.Parameters(name = "builder={0} route={1}, api={2}")
+    @Parameterized.Parameters(name = "builder={0} route={1}, api={2}, filterConfiguration={3}")
     public static Collection<Object[]> data() {
         List<Object[]> parameters = new ArrayList<>();
         for (BuilderExecutionStrategy builderEs : BuilderExecutionStrategy.values()) {
             for (RouteExecutionStrategy routeEs : RouteExecutionStrategy.values()) {
                 for (RouteApi routeApi : RouteApi.values()) {
-                    parameters.add(new Object[] {builderEs, routeEs, routeApi});
+                    for (FilterConfiguration filterConfiguration : FilterConfiguration.values()) {
+                        parameters.add(new Object[] {builderEs, routeEs, routeApi, filterConfiguration});
+                    }
                 }
             }
         }
