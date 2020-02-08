@@ -789,6 +789,21 @@ public abstract class Completable {
         return afterSubscriber(doOnSubscribeSupplier(onSubscribe));
     }
 
+
+    /**
+     * Invokes the {@code onSubscribe} {@link Consumer} argument <strong>when</strong>
+     * {@link Subscriber#onSubscribe(Cancellable)} is called for {@link Subscriber}s of the returned
+     * {@link Completable}.
+     *
+     * @param onSubscribe Invoked <strong>when</strong> {@link Subscriber#onSubscribe(Cancellable)} is called for
+     * {@link Subscriber}s of the returned {@link Completable}. <strong>MUST NOT</strong> throw.
+     * @return The new {@link Completable}.
+     */
+    public final Completable whenOnSubscribe(Consumer<Cancellable> onSubscribe) {
+        return afterOnSubscribe(onSubscribe);
+    }
+
+
     /**
      * Invokes the {@code onComplete} {@link Runnable} argument <strong>after</strong> {@link Subscriber#onComplete()}
      * is called for {@link Subscriber}s of the returned {@link Completable}.
