@@ -125,7 +125,7 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelOutbound
             // We prefer a direct allocation here because it is expected the resulted encoded Buffer will be written
             // to a socket. In order to do the write to the socket the memory typically needs to be allocated in direct
             // memory and will be copied to direct memory if not. Using a direct buffer will avoid the copy.
-            ByteBuf byteBuf = POOLED_ALLOCATOR.buffer((int) headersEncodedSizeAccumulator);
+            ByteBuf byteBuf = POOLED_ALLOCATOR.directBuffer((int) headersEncodedSizeAccumulator);
             Buffer stBuf = newBufferFrom(byteBuf);
 
             // Encode the message.
@@ -256,7 +256,7 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelOutbound
                                              PromiseCombiner promiseCombiner) {
         if (contentLength > 0) {
             String lengthHex = toHexString(contentLength);
-            ByteBuf buf = POOLED_ALLOCATOR.buffer(lengthHex.length() + 2);
+            ByteBuf buf = POOLED_ALLOCATOR.directBuffer(lengthHex.length() + 2);
             buf.writeCharSequence(lengthHex, US_ASCII);
             writeShortBE(buf, CRLF_SHORT);
             promiseCombiner.add(ctx.write(buf));
@@ -274,7 +274,7 @@ abstract class HttpObjectEncoder<T extends HttpMetaData> extends ChannelOutbound
         if (headers.isEmpty()) {
             ctx.write(ZERO_CRLF_CRLF_BUF.duplicate(), promise);
         } else {
-            ByteBuf buf = POOLED_ALLOCATOR.buffer((int) trailersEncodedSizeAccumulator);
+            ByteBuf buf = POOLED_ALLOCATOR.directBuffer((int) trailersEncodedSizeAccumulator);
             writeMediumBE(buf, ZERO_CRLF_MEDIUM);
             encodeHeaders(headers, buf);
             writeShortBE(buf, CRLF_SHORT);
