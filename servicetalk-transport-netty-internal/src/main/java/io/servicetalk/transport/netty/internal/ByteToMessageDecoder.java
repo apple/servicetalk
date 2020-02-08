@@ -155,16 +155,21 @@ public abstract class ByteToMessageDecoder extends ChannelInboundHandlerAdapter 
                 if (cumulation == null) {
                     cumulation = data;
                 } else {
-                    final int required = data.readableBytes();
-                    if (required > cumulation.maxWritableBytes() ||
-                            (required > cumulation.maxFastWritableBytes() && cumulation.refCnt() > 1)) {
-                        // Expand cumulation (by replacing it) under the following conditions:
-                        // - cumulation cannot be resized to accommodate the additional data
-                        // - cumulation can be expanded with a reallocation operation to accommodate but the buffer is
-                        //   assumed to be shared (e.g. refCnt() > 1) and the reallocation may not be safe.
-                        cumulation = swapAndCopyCumulation(ctx.alloc(), cumulation, data);
-                    } else {
-                        cumulation.writeBytes(data);
+                    try {
+                        final int required = data.readableBytes();
+                        if (required > cumulation.maxWritableBytes() ||
+                                (required > cumulation.maxFastWritableBytes() && cumulation.refCnt() > 1)) {
+                            // Expand cumulation (by replacing it) under the following conditions:
+                            // - cumulation cannot be resized to accommodate the additional data
+                            // - cumulation can be expanded with a reallocation operation to accommodate but the buffer is
+                            //   assumed to be shared (e.g. refCnt() > 1) and the reallocation may not be safe.
+                            cumulation = swapAndCopyCumulation(ctx.alloc(), cumulation, data);
+                        } else {
+                            cumulation.writeBytes(data);
+                        }
+                    } finally {
+                        // Release data after it was copied to the cumulation buffer:
+                        data.release();
                     }
                 }
                 callDecode(ctxWrapper, cumulation);
