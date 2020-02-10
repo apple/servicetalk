@@ -699,6 +699,20 @@ public abstract class Single<T> {
         return afterSubscriber(doOnSubscribeSupplier(onSubscribe));
     }
 
+
+    /**
+     * Invokes the {@code onSubscribe} {@link Consumer} argument <strong>when</strong>
+     * {@link Subscriber#onSubscribe(Cancellable)} is called for {@link Subscriber}s of the returned {@link Single}.
+     *
+     * @param onSubscribe Invoked <strong>when</strong> {@link Subscriber#onSubscribe(Cancellable)} is called for
+     * {@link Subscriber}s of the returned {@link Single}. <strong>MUST NOT</strong> throw.
+     * @return The new {@link Single}.
+     */
+    public final Single<T> whenOnSubscribe(Consumer<Cancellable> onSubscribe) {
+        return afterOnSubscribe(onSubscribe);
+    }
+
+
     /**
      * Invokes the {@code onSuccess} {@link Consumer} argument <strong>after</strong>
      * {@link Subscriber#onSuccess(Object)} is called for {@link Subscriber}s of the returned {@link Single}.
