@@ -1713,6 +1713,25 @@ public abstract class Publisher<T> {
         return new WhenSubscriptionPublisher<>(this, subscriptionSupplier, false, executor);
     }
 
+
+    /**
+     * Creates a new {@link Subscription} (via the {@code subscriptionSupplier} argument) for each new subscribe and
+     * invokes all the {@link Subscription} methods <strong>when</strong> the {@link Subscription}s of the returned
+     * {@link Publisher}.
+     *
+     * @param subscriptionSupplier Creates a new {@link Subscription} for each new subscribe and invokes all the
+     * {@link Subscription} methods <strong>when</strong> the {@link Subscription}s of the returned {@link Publisher}.
+     * {@link Subscription} methods <strong>MUST NOT</strong> throw.
+     * @return The new {@link Publisher}.
+     *
+     * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
+     */
+    public final Publisher<T> whenSubscription(Supplier<? extends Subscription> subscriptionSupplier) {
+        return afterSubscription(subscriptionSupplier);
+    }
+
+
+
     /**
      * Subscribes to this {@link Publisher} and invokes {@code forEach} {@link Consumer} for each item emitted by this
      * {@link Publisher}.
