@@ -904,6 +904,22 @@ public abstract class Completable {
         return new AfterSubscriberCompletable(this, subscriberSupplier, executor);
     }
 
+
+    /**
+     * Creates a new {@link Subscriber} (via the {@code subscriberSupplier} argument) on each call to
+     * subscribe and invokes all the {@link Subscriber} methods <strong>when</strong> the {@link Subscriber}s of the
+     * returned {@link Completable}.
+     *
+     * @param subscriberSupplier Creates a new {@link Subscriber} on each call to subscribe and invokes all the
+     * {@link Subscriber} methods <strong>when</strong> the {@link Subscriber}s of the returned {@link Completable}.
+     * {@link Subscriber} methods <strong>MUST NOT</strong> throw.
+     * @return The new {@link Completable}.
+     */
+    public final Completable whenSubscriber(Supplier<? extends Subscriber> subscriberSupplier) {
+        return afterSubscriber(subscriberSupplier);
+    }
+
+
     /**
      * <strong>This method requires advanced knowledge of building operators. Before using this method please attempt
      * to compose existing operator(s) to satisfy your use case.</strong>
