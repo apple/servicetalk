@@ -123,6 +123,8 @@ public final class HttpHeaderNames {
     public static final CharSequence CONTENT_LANGUAGE = newAsciiString("content-language");
     /**
      * {@code "content-length"}
+     *
+     * @see <a href="https://tools.ietf.org/html/rfc7230#section-3.3.2">RFC7230, section 3.3.2</a>
      */
     public static final CharSequence CONTENT_LENGTH = newAsciiString("content-length");
     /**
