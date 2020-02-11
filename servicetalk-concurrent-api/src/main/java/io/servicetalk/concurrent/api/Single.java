@@ -699,7 +699,6 @@ public abstract class Single<T> {
         return afterSubscriber(doOnSubscribeSupplier(onSubscribe));
     }
 
-
     /**
      * Invokes the {@code onSubscribe} {@link Consumer} argument <strong>when</strong>
      * {@link Subscriber#onSubscribe(Cancellable)} is called for {@link Subscriber}s of the returned {@link Single}.
@@ -711,7 +710,6 @@ public abstract class Single<T> {
     public final Single<T> whenOnSubscribe(Consumer<Cancellable> onSubscribe) {
         return afterOnSubscribe(onSubscribe);
     }
-
 
     /**
      * Invokes the {@code onSuccess} {@link Consumer} argument <strong>after</strong>
@@ -810,7 +808,6 @@ public abstract class Single<T> {
         return new AfterSubscriberSingle<>(this, subscriberSupplier, executor);
     }
 
-
     /**
      * Creates a new {@link Subscriber} (via the {@code subscriberSupplier} argument) on each call to subscribe and
      * invokes all the {@link Subscriber} methods <strong>when</strong> the {@link Subscriber}s of the returned
@@ -824,7 +821,6 @@ public abstract class Single<T> {
     public final Single<T> whenSubscriber(Supplier<? extends Subscriber<? super T>> subscriberSupplier) {
         return afterSubscriber(subscriberSupplier);
     }
-
 
     /**
      * Creates a new {@link Single} that will use the passed {@link Executor} to invoke all {@link Subscriber} methods.

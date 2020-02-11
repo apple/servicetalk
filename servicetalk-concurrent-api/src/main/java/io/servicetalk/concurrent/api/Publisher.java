@@ -1697,7 +1697,6 @@ public abstract class Publisher<T> {
         return new AfterSubscriberPublisher<>(this, subscriberSupplier, executor);
     }
 
-
     /**
      * Creates a new {@link Subscriber} (via the {@code subscriberSupplier} argument) for each new subscribe and
      * invokes all the {@link Subscriber} methods <strong>when</strong> the {@link Subscriber}s of the returned
@@ -1730,7 +1729,6 @@ public abstract class Publisher<T> {
         return new WhenSubscriptionPublisher<>(this, subscriptionSupplier, false, executor);
     }
 
-
     /**
      * Creates a new {@link Subscription} (via the {@code subscriptionSupplier} argument) for each new subscribe and
      * invokes all the {@link Subscription} methods <strong>when</strong> the {@link Subscription}s of the returned
@@ -1746,8 +1744,6 @@ public abstract class Publisher<T> {
     public final Publisher<T> whenSubscription(Supplier<? extends Subscription> subscriptionSupplier) {
         return afterSubscription(subscriptionSupplier);
     }
-
-
 
     /**
      * Subscribes to this {@link Publisher} and invokes {@code forEach} {@link Consumer} for each item emitted by this

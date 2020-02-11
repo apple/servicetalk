@@ -789,7 +789,6 @@ public abstract class Completable {
         return afterSubscriber(doOnSubscribeSupplier(onSubscribe));
     }
 
-
     /**
      * Invokes the {@code onSubscribe} {@link Consumer} argument <strong>when</strong>
      * {@link Subscriber#onSubscribe(Cancellable)} is called for {@link Subscriber}s of the returned
@@ -802,7 +801,6 @@ public abstract class Completable {
     public final Completable whenOnSubscribe(Consumer<Cancellable> onSubscribe) {
         return afterOnSubscribe(onSubscribe);
     }
-
 
     /**
      * Invokes the {@code onComplete} {@link Runnable} argument <strong>after</strong> {@link Subscriber#onComplete()}
@@ -904,7 +902,6 @@ public abstract class Completable {
         return new AfterSubscriberCompletable(this, subscriberSupplier, executor);
     }
 
-
     /**
      * Creates a new {@link Subscriber} (via the {@code subscriberSupplier} argument) on each call to
      * subscribe and invokes all the {@link Subscriber} methods <strong>when</strong> the {@link Subscriber}s of the
@@ -918,7 +915,6 @@ public abstract class Completable {
     public final Completable whenSubscriber(Supplier<? extends Subscriber> subscriberSupplier) {
         return afterSubscriber(subscriberSupplier);
     }
-
 
     /**
      * <strong>This method requires advanced knowledge of building operators. Before using this method please attempt
