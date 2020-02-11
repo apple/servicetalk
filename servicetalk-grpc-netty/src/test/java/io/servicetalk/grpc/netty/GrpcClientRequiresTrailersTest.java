@@ -172,6 +172,7 @@ public class GrpcClientRequiresTrailersTest {
 
     private static void assertGrpcStatusException(GrpcStatusException grpcStatusException) {
         assertThat(grpcStatusException.status().code(), is(GrpcStatusCode.INTERNAL));
-        assertThat(grpcStatusException.status().description(), equalTo("Response does not contain grpc-status code"));
+        assertThat(grpcStatusException.status().description(),
+                equalTo("Response does not contain grpc-status header or trailer"));
     }
 }

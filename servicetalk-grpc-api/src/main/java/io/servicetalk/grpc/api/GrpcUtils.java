@@ -193,8 +193,8 @@ final class GrpcUtils {
         final GrpcStatusCode statusCode = extractGrpcStatusCodeFromHeaders(headers);
         if (statusCode == null) {
             // This is a protocol violation as we expect to receive grpc-status.
-            throw new GrpcStatus(INTERNAL, null, "Response does not contain " + GRPC_STATUS_CODE_TRAILER + " header or trailer.")
-                    .asException();
+            throw new GrpcStatus(INTERNAL, null, "Response does not contain " + GRPC_STATUS_CODE_TRAILER +
+                    " header or trailer").asException();
         }
         final GrpcStatusException grpcStatusException = convertToGrpcStatusException(statusCode, headers);
         if (grpcStatusException != null) {
