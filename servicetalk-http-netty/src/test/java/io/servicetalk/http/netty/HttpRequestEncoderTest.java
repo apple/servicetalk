@@ -63,6 +63,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static io.servicetalk.buffer.api.EmptyBuffer.EMPTY_BUFFER;
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
+import static io.servicetalk.buffer.netty.BufferUtils.getByteBufAllocator;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.Processors.newCompletableProcessor;
 import static io.servicetalk.concurrent.api.Publisher.from;
@@ -413,8 +414,8 @@ public class HttpRequestEncoderTest {
                             channel -> DefaultNettyConnection.initChannel(channel, SEC.bufferAllocator(),
                                     SEC.executor(), new TerminalPredicate<>(o -> o instanceof HttpHeaders),
                                     UNSUPPORTED_PROTOCOL_CLOSE_HANDLER, defaultFlushStrategy(),
-                                    new TcpServerChannelInitializer(sConfig).andThen(
-                                            channel2 -> {
+                                    new TcpServerChannelInitializer(sConfig, SEC.bufferAllocator())
+                                            .andThen(channel2 -> {
                                                 serverChannelRef.compareAndSet(null, channel2);
                                                 serverChannelLatch.countDown();
                                             }), defaultStrategy()),
@@ -429,8 +430,9 @@ public class HttpRequestEncoderTest {
                 closeHandlerRef.compareAndSet(null, closeHandler);
                 return DefaultNettyConnection.initChannel(channel, CEC.bufferAllocator(), CEC.executor(),
                         new TerminalPredicate<>(o -> o instanceof HttpHeaders), closeHandler, defaultFlushStrategy(),
-                        new TcpClientChannelInitializer(cConfig.tcpConfig())
-                            .andThen(new HttpClientChannelInitializer(cConfig.h1Config(), closeHandler))
+                        new TcpClientChannelInitializer(cConfig.tcpConfig(), CEC.bufferAllocator())
+                            .andThen(new HttpClientChannelInitializer(getByteBufAllocator(CEC.bufferAllocator()),
+                                    cConfig.h1Config(), closeHandler))
                             .andThen(channel2 -> channel2.pipeline().addLast(new ChannelInboundHandlerAdapter() {
                                 @Override
                                 public void userEventTriggered(ChannelHandlerContext ctx, Object evt) {

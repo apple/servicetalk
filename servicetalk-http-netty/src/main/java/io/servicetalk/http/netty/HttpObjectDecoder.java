@@ -124,8 +124,10 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
     /**
      * Creates a new instance with the specified parameters.
      */
-    protected HttpObjectDecoder(HttpHeadersFactory headersFactory, int maxStartLineLength, int maxHeaderFieldLength,
+    protected HttpObjectDecoder(final ByteBufAllocator alloc, final HttpHeadersFactory headersFactory,
+                                final int maxStartLineLength, final int maxHeaderFieldLength,
                                 final CloseHandler closeHandler) {
+        super(alloc);
         this.closeHandler = closeHandler;
         if (maxStartLineLength <= 0) {
             throw new IllegalArgumentException("maxStartLineLength: " + maxStartLineLength + " (expected >0)");
@@ -407,11 +409,10 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
     }
 
     @Override
-    protected final ByteBuf swapAndCopyCumulation(final ByteBufAllocator alloc,
-                                                  final ByteBuf cumulation,
+    protected final ByteBuf swapAndCopyCumulation(final ByteBuf cumulation,
                                                   final ByteBuf in) {
         final int readerIndex = cumulation.readerIndex();
-        ByteBuf newCumulation = super.swapAndCopyCumulation(alloc, cumulation, in);
+        final ByteBuf newCumulation = super.swapAndCopyCumulation(cumulation, in);
         cumulationIndex -= readerIndex - newCumulation.readerIndex();
         return newCumulation;
     }

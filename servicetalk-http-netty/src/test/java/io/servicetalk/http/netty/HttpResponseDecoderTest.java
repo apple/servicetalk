@@ -49,6 +49,7 @@ import java.util.concurrent.ThreadLocalRandom;
 
 import static io.netty.buffer.Unpooled.wrappedBuffer;
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
+import static io.servicetalk.buffer.netty.BufferUtils.getByteBufAllocator;
 import static io.servicetalk.http.api.HttpHeaderNames.CONNECTION;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderNames.TRAILER;
@@ -488,7 +489,7 @@ public class HttpResponseDecoderTest {
     }
 
     private static EmbeddedChannel newEmbeddedChannel() {
-        return new EmbeddedChannel(new HttpResponseDecoder(new ArrayDeque<>(), DefaultHttpHeadersFactory.INSTANCE,
-                8192, 8192));
+        return new EmbeddedChannel(new HttpResponseDecoder(new ArrayDeque<>(), getByteBufAllocator(DEFAULT_ALLOCATOR),
+                DefaultHttpHeadersFactory.INSTANCE, 8192, 8192));
     }
 }

@@ -15,10 +15,12 @@
  */
 package io.servicetalk.transport.netty.internal;
 
+import io.servicetalk.buffer.api.BufferAllocator;
+
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.PooledByteBufAllocator;
-import io.netty.channel.ChannelHandler;
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandler;
@@ -32,6 +34,9 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.ReferenceCountUtil;
 import io.netty.util.UncheckedBooleanSupplier;
 
+import java.util.function.Function;
+
+import static io.servicetalk.buffer.netty.BufferUtils.getByteBufAllocator;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -55,8 +60,8 @@ public final class PooledRecvByteBufAllocatorInitializers {
      * Initializer to configure {@link ChannelInboundHandler} that will ensure no pooled {@link ByteBuf}s are passed to
      * the user and so no leaks are produced if the user does not call {@link ReferenceCountUtil#release(Object)}.
      */
-    public static final ChannelInitializer COPY_HANDLER_INITIALIZER = channel ->
-            channel.pipeline().addLast(CopyByteBufHandler.INSTANCE);
+    public static final Function<BufferAllocator, ChannelInitializer> COPY_HANDLER_INITIALIZER =
+            CopyByteBufHandlerChannelInitializer::new;
 
     private PooledRecvByteBufAllocatorInitializers() {
         // No instances
@@ -128,6 +133,20 @@ public final class PooledRecvByteBufAllocatorInitializers {
         }
     }
 
+    private static final class CopyByteBufHandlerChannelInitializer implements ChannelInitializer {
+
+        private final CopyByteBufHandler handler;
+
+        private CopyByteBufHandlerChannelInitializer(final BufferAllocator alloc) {
+            handler = new CopyByteBufHandler(getByteBufAllocator(alloc));
+        }
+
+        @Override
+        public void init(final Channel channel) {
+            channel.pipeline().addLast(handler);
+        }
+    }
+
     /**
      * This handler has to be added to the {@link ChannelPipeline} when {@link PooledRecvByteBufAllocator} is used for
      * reading data from the socket. The allocated {@link ByteBuf}s must be copied and released before handed over to
@@ -136,17 +155,19 @@ public final class PooledRecvByteBufAllocatorInitializers {
     @Sharable
     private static final class CopyByteBufHandler extends SimpleChannelInboundHandler<ByteBuf> {
 
-        static final ChannelHandler INSTANCE = new CopyByteBufHandler();
+        private final ByteBufAllocator alloc;
 
-        private CopyByteBufHandler() {
-            // Singleton
+        private CopyByteBufHandler(final ByteBufAllocator alloc) {
+            if (alloc.isDirectBufferPooled()) {
+                throw new IllegalArgumentException("ByteBufAllocator must be unpooled");
+            }
+            this.alloc = alloc;
         }
 
         @Override
         protected void channelRead0(final ChannelHandlerContext ctx, final ByteBuf buf) {
-            final ByteBuf buffer = ctx.alloc().heapBuffer(buf.readableBytes());
             // We must not release the incoming buf here because it will be released by SimpleChannelInboundHandler
-            ctx.fireChannelRead(buffer.writeBytes(buf));
+            ctx.fireChannelRead(alloc.heapBuffer(buf.readableBytes()).writeBytes(buf));
         }
     }
 }

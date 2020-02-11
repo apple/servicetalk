@@ -19,6 +19,7 @@ import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
 import io.servicetalk.transport.netty.internal.CloseHandler;
 
+import io.netty.buffer.ByteBufAllocator;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelPipeline;
 
@@ -29,6 +30,7 @@ import static java.lang.Math.min;
 
 final class HttpClientChannelInitializer implements ChannelInitializer {
 
+    private final ByteBufAllocator alloc;
     private final H1ProtocolConfig config;
     private final CloseHandler closeHandler;
 
@@ -37,16 +39,18 @@ final class HttpClientChannelInitializer implements ChannelInitializer {
      * @param config {@link H1ProtocolConfig}
      * @param closeHandler observes protocol state events
      */
-    HttpClientChannelInitializer(H1ProtocolConfig config, CloseHandler closeHandler) {
+    HttpClientChannelInitializer(final ByteBufAllocator alloc, final H1ProtocolConfig config,
+                                 final CloseHandler closeHandler) {
+        this.alloc = alloc;
         this.config = config;
         this.closeHandler = closeHandler;
     }
 
     @Override
     public void init(final Channel channel) {
-        Queue<HttpRequestMethod> methodQueue = new ArrayDeque<>(min(8, config.maxPipelinedRequests()));
+        final Queue<HttpRequestMethod> methodQueue = new ArrayDeque<>(min(8, config.maxPipelinedRequests()));
         final ChannelPipeline pipeline = channel.pipeline();
-        pipeline.addLast(new HttpResponseDecoder(methodQueue, config.headersFactory(),
+        pipeline.addLast(new HttpResponseDecoder(methodQueue, alloc, config.headersFactory(),
                 config.maxStartLineLength(), config.maxHeaderFieldLength(), closeHandler));
         pipeline.addLast(new HttpRequestEncoder(methodQueue,
                 config.headersEncodedSizeEstimate(), config.trailersEncodedSizeEstimate(), closeHandler));

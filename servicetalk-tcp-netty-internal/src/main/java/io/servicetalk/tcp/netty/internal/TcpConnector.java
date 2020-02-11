@@ -16,7 +16,6 @@
 package io.servicetalk.tcp.netty.internal;
 
 import io.servicetalk.buffer.api.BufferAllocator;
-import io.servicetalk.buffer.netty.BufferUtils;
 import io.servicetalk.client.api.RetryableConnectException;
 import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.api.Single;
@@ -50,6 +49,7 @@ import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.transport.netty.internal.BuilderUtils.socketChannel;
 import static io.servicetalk.transport.netty.internal.BuilderUtils.toNettyAddress;
 import static io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutors.toEventLoopAwareNettyIoExecutor;
+import static io.servicetalk.transport.netty.internal.PooledRecvByteBufAllocatorInitializers.POOLED_ALLOCATOR;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -149,7 +149,7 @@ public final class TcpConnector {
         bs.option(ChannelOption.AUTO_READ, autoRead);
 
         // Set the correct ByteBufAllocator based on our BufferAllocator to minimize memory copies.
-        bs.option(ChannelOption.ALLOCATOR, BufferUtils.getByteBufAllocator(bufferAllocator));
+        bs.option(ChannelOption.ALLOCATOR, POOLED_ALLOCATOR);
 
         // If the connect operation fails we must take care to fail the promise.
         return bs.connect(nettyresolvedRemoteAddress, localAddress);
@@ -165,7 +165,7 @@ public final class TcpConnector {
         channel.config().setOption(ChannelOption.AUTO_READ, autoRead);
 
         // Set the correct ByteBufAllocator based on our BufferAllocator to minimize memory copies.
-        channel.config().setAllocator(BufferUtils.getByteBufAllocator(bufferAllocator));
+        channel.config().setAllocator(POOLED_ALLOCATOR);
         channel.pipeline().addLast(handler);
         return loop.register(channel);
     }

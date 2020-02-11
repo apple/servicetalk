@@ -16,7 +16,6 @@
 package io.servicetalk.tcp.netty.internal;
 
 import io.servicetalk.buffer.api.BufferAllocator;
-import io.servicetalk.buffer.netty.BufferUtils;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.internal.SubscribableSingle;
 import io.servicetalk.transport.api.ConnectionAcceptor;
@@ -50,6 +49,7 @@ import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.transport.netty.internal.BuilderUtils.toNettyAddress;
 import static io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutors.toEventLoopAwareNettyIoExecutor;
+import static io.servicetalk.transport.netty.internal.PooledRecvByteBufAllocatorInitializers.POOLED_ALLOCATOR;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -165,7 +165,7 @@ public final class TcpServerBinder {
         bs.option(ChannelOption.SO_BACKLOG, config.backlog());
 
         // Set the correct ByteBufAllocator based on our BufferAllocator to minimize memory copies.
-        ByteBufAllocator byteBufAllocator = BufferUtils.getByteBufAllocator(bufferAllocator);
+        ByteBufAllocator byteBufAllocator = POOLED_ALLOCATOR;
         bs.option(ChannelOption.ALLOCATOR, byteBufAllocator);
         bs.childOption(ChannelOption.ALLOCATOR, byteBufAllocator);
     }

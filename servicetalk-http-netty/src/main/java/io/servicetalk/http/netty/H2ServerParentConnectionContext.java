@@ -83,7 +83,8 @@ final class H2ServerParentConnectionContext extends H2ParentConnectionContext im
         return TcpServerBinder.bind(listenAddress, tcpServerConfig, true, executionContext, connectionAcceptor,
                 channel -> H2ServerParentConnectionContext.initChannel(listenAddress, channel,
                         executionContext, config,
-                        new TcpServerChannelInitializer(tcpServerConfig), service, drainRequestPayloadBody),
+                        new TcpServerChannelInitializer(tcpServerConfig, executionContext.bufferAllocator()),
+                        service, drainRequestPayloadBody),
                 serverConnection -> { /* nothing to do as h2 uses auto read on the parent channel */ })
                 .map(delegate -> {
                     LOGGER.debug("Started HTTP/2 server with prior-knowledge for address {}", delegate.listenAddress());

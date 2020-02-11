@@ -60,6 +60,7 @@ import io.servicetalk.transport.netty.internal.NettyConnection.TerminalPredicate
 import io.servicetalk.transport.netty.internal.NettyConnectionContext;
 import io.servicetalk.transport.netty.internal.SplittingFlushStrategy;
 
+import io.netty.buffer.ByteBufAllocator;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelPipeline;
 import io.netty.handler.codec.DecoderException;
@@ -77,6 +78,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.net.ssl.SSLSession;
 
+import static io.servicetalk.buffer.netty.BufferUtils.getByteBufAllocator;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.AsyncCloseables.toListenableAsyncCloseable;
 import static io.servicetalk.concurrent.api.Completable.completed;
@@ -120,7 +122,8 @@ final class NettyHttpServer {
         // We disable auto read so we can handle stuff in the ConnectionFilter before we accept any content.
         return TcpServerBinder.bind(address, tcpServerConfig, false, executionContext, connectionAcceptor,
                 channel -> initChannel(channel, executionContext, config,
-                        new TcpServerChannelInitializer(tcpServerConfig), service, drainRequestPayloadBody),
+                        new TcpServerChannelInitializer(tcpServerConfig, executionContext.bufferAllocator()),
+                        service, drainRequestPayloadBody),
                 serverConnection -> serverConnection.process(true))
                 .map(delegate -> {
                     LOGGER.debug("Started HTTP/1.1 server for address {}.", delegate.listenAddress());
@@ -151,18 +154,19 @@ final class NettyHttpServer {
         return showPipeline(DefaultNettyConnection.initChannel(channel,
                 httpExecutionContext.bufferAllocator(), httpExecutionContext.executor(),
                 new TerminalPredicate<>(LAST_CHUNK_PREDICATE), closeHandler, config.tcpConfig().flushStrategy(),
-                initializer.andThen(getChannelInitializer(h1Config, closeHandler)),
+                initializer.andThen(getChannelInitializer(getByteBufAllocator(httpExecutionContext.bufferAllocator()),
+                        h1Config, closeHandler)),
                 httpExecutionContext.executionStrategy())
                 .map(conn -> new NettyHttpServerConnection(conn, service, httpExecutionContext.executionStrategy(),
                         h1Config.headersFactory(), drainRequestPayloadBody)), "HTTP/1.1", channel);
     }
 
-    private static ChannelInitializer getChannelInitializer(final H1ProtocolConfig config,
+    private static ChannelInitializer getChannelInitializer(final ByteBufAllocator alloc, final H1ProtocolConfig config,
                                                             final CloseHandler closeHandler) {
         return channel -> {
             Queue<HttpRequestMethod> methodQueue = new ArrayDeque<>(2);
             final ChannelPipeline pipeline = channel.pipeline();
-            pipeline.addLast(new HttpRequestDecoder(methodQueue, config.headersFactory(),
+            pipeline.addLast(new HttpRequestDecoder(methodQueue, alloc, config.headersFactory(),
                     config.maxStartLineLength(), config.maxHeaderFieldLength(), closeHandler));
             pipeline.addLast(new HttpResponseEncoder(methodQueue, config.headersEncodedSizeEstimate(),
                     config.trailersEncodedSizeEstimate(), closeHandler));

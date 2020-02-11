@@ -22,6 +22,7 @@ import io.servicetalk.http.api.HttpResponseStatus;
 import io.servicetalk.transport.netty.internal.CloseHandler;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
 import io.netty.channel.ChannelHandlerContext;
 
 import java.util.Queue;
@@ -47,14 +48,16 @@ final class HttpResponseDecoder extends HttpObjectDecoder<HttpResponseMetaData> 
 
     private final Queue<HttpRequestMethod> methodQueue;
 
-    HttpResponseDecoder(Queue<HttpRequestMethod> methodQueue, HttpHeadersFactory headersFactory,
-                        int maxStartLineLength, int maxHeaderFieldLength) {
-        this(methodQueue, headersFactory, maxStartLineLength, maxHeaderFieldLength, UNSUPPORTED_PROTOCOL_CLOSE_HANDLER);
+    HttpResponseDecoder(final Queue<HttpRequestMethod> methodQueue, final ByteBufAllocator alloc,
+                        final HttpHeadersFactory headersFactory, int maxStartLineLength, int maxHeaderFieldLength) {
+        this(methodQueue, alloc, headersFactory, maxStartLineLength, maxHeaderFieldLength,
+                UNSUPPORTED_PROTOCOL_CLOSE_HANDLER);
     }
 
-    HttpResponseDecoder(Queue<HttpRequestMethod> methodQueue, HttpHeadersFactory headersFactory,
-                        int maxStartLineLength, int maxHeaderFieldLength, final CloseHandler closeHandler) {
-        super(headersFactory, maxStartLineLength, maxHeaderFieldLength, closeHandler);
+    HttpResponseDecoder(final Queue<HttpRequestMethod> methodQueue, final ByteBufAllocator alloc,
+                        final HttpHeadersFactory headersFactory, final int maxStartLineLength, int maxHeaderFieldLength,
+                        final CloseHandler closeHandler) {
+        super(alloc, headersFactory, maxStartLineLength, maxHeaderFieldLength, closeHandler);
         this.methodQueue = requireNonNull(methodQueue);
     }
 
