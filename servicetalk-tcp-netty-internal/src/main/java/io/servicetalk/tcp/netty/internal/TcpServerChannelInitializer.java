@@ -17,14 +17,12 @@ package io.servicetalk.tcp.netty.internal;
 
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
+import io.servicetalk.transport.netty.internal.CopyByteBufHandlerChannelInitializer;
 import io.servicetalk.transport.netty.internal.IdleTimeoutInitializer;
 import io.servicetalk.transport.netty.internal.SslServerChannelInitializer;
 import io.servicetalk.transport.netty.internal.WireLoggingInitializer;
 
 import io.netty.channel.Channel;
-
-import static io.servicetalk.transport.netty.internal.PooledRecvByteBufAllocatorInitializers.COPY_HANDLER_INITIALIZER;
-import static io.servicetalk.transport.netty.internal.PooledRecvByteBufAllocatorInitializers.POOLED_RECV_ALLOCATOR_INITIALIZER;
 
 /**
  * {@link ChannelInitializer} for TCP.
@@ -40,8 +38,7 @@ public class TcpServerChannelInitializer implements ChannelInitializer {
      * @param alloc {@link BufferAllocator} to use.
      */
     public TcpServerChannelInitializer(final ReadOnlyTcpServerConfig config, final BufferAllocator alloc) {
-        ChannelInitializer delegate = ChannelInitializer.defaultInitializer()
-                .andThen(POOLED_RECV_ALLOCATOR_INITIALIZER);
+        ChannelInitializer delegate = ChannelInitializer.defaultInitializer();
 
         if (config.idleTimeoutMs() > 0) {
             delegate = delegate.andThen(new IdleTimeoutInitializer(config.idleTimeoutMs()));
@@ -53,7 +50,7 @@ public class TcpServerChannelInitializer implements ChannelInitializer {
             delegate = delegate.andThen(new SslServerChannelInitializer(config.sslContext()));
         }
 
-        delegate = delegate.andThen(COPY_HANDLER_INITIALIZER.apply(alloc));
+        delegate = delegate.andThen(new CopyByteBufHandlerChannelInitializer(alloc));
 
         final WireLoggingInitializer wireLoggingInitializer = config.wireLoggingInitializer();
         if (wireLoggingInitializer != null) {
