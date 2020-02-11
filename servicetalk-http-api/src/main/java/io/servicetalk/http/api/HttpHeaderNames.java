@@ -103,6 +103,8 @@ public final class HttpHeaderNames {
     public static final CharSequence CACHE_CONTROL = newAsciiString("cache-control");
     /**
      * {@code "connection"}
+     *
+     * @see <a href="https://tools.ietf.org/html/rfc7230#section-6.1">RFC7230, section 6.1</a>
      */
     public static final CharSequence CONNECTION = newAsciiString("connection");
     /**
