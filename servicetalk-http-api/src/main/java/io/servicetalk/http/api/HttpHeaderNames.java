@@ -113,6 +113,8 @@ public final class HttpHeaderNames {
     public static final CharSequence CONTENT_BASE = newAsciiString("content-base");
     /**
      * {@code "content-encoding"}
+     *
+     * @see <a href="https://tools.ietf.org/html/rfc7231#section-3.1.2.2">RFC7231, section 3.1.2.2</a>
      */
     public static final CharSequence CONTENT_ENCODING = newAsciiString("content-encoding");
     /**
