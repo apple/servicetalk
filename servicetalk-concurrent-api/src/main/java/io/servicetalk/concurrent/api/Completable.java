@@ -793,10 +793,17 @@ public abstract class Completable {
      * Invokes the {@code onSubscribe} {@link Consumer} argument when
      * {@link Subscriber#onSubscribe(Cancellable)} is called for {@link Subscriber}s of the returned
      * {@link Completable}.
+     * <p>
+     * The order in which {@code onSubscribe} will be invoked relative to
+     * {@link Subscriber#onSubscribe(Cancellable)} is undefined. If you need strict ordering see
+     * {@link #beforeOnSubscribe(Consumer)} and {@link #afterOnSubscribe(Consumer)}.
      *
      * @param onSubscribe Invoked when {@link Subscriber#onSubscribe(Cancellable)} is called for
      * {@link Subscriber}s of the returned {@link Completable}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Completable}.
+     *
+     * @see #beforeOnNext(Consumer)
+     * @see #afterOnNext(Consumer)
      */
     public final Completable whenOnSubscribe(Consumer<Cancellable> onSubscribe) {
         return afterOnSubscribe(onSubscribe);
