@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019-2020 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -54,7 +54,7 @@ final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
         requireNonNull(serializationProvider);
         requireNonNull(requestClass);
         requireNonNull(responseClass);
-        HttpClient client = streamingHttpClient.asClient();
+        final HttpClient client = streamingHttpClient.asClient();
         return (metadata, request) -> {
             final HttpRequest httpRequest = newAggregatedRequest(metadata, request, client,
                     serializationProvider, requestClass);
@@ -91,7 +91,7 @@ final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
     public <Req, Resp> RequestStreamingClientCall<Req, Resp>
     newRequestStreamingCall(final GrpcSerializationProvider serializationProvider,
                             final Class<Req> requestClass, final Class<Resp> responseClass) {
-        StreamingClientCall<Req, Resp> streamingClientCall =
+        final StreamingClientCall<Req, Resp> streamingClientCall =
                 newStreamingCall(serializationProvider, requestClass, responseClass);
         return (metadata, request) -> streamingClientCall.request(metadata, request).firstOrError();
     }
@@ -100,7 +100,7 @@ final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
     public <Req, Resp> ResponseStreamingClientCall<Req, Resp>
     newResponseStreamingCall(final GrpcSerializationProvider serializationProvider,
                              final Class<Req> requestClass, final Class<Resp> responseClass) {
-        StreamingClientCall<Req, Resp> streamingClientCall =
+        final StreamingClientCall<Req, Resp> streamingClientCall =
                 newStreamingCall(serializationProvider, requestClass, responseClass);
         return (metadata, request) -> streamingClientCall.request(metadata, Publisher.from(request));
     }
@@ -112,7 +112,7 @@ final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
         requireNonNull(serializationProvider);
         requireNonNull(requestClass);
         requireNonNull(responseClass);
-        BlockingHttpClient client = streamingHttpClient.asBlockingClient();
+        final BlockingHttpClient client = streamingHttpClient.asBlockingClient();
         return (metadata, request) -> {
             final HttpRequest httpRequest = newAggregatedRequest(metadata, request, client,
                     serializationProvider, requestClass);
@@ -132,7 +132,7 @@ final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
         requireNonNull(serializationProvider);
         requireNonNull(requestClass);
         requireNonNull(responseClass);
-        BlockingStreamingHttpClient client = streamingHttpClient.asBlockingStreamingClient();
+        final BlockingStreamingHttpClient client = streamingHttpClient.asBlockingStreamingClient();
         return (metadata, request) -> {
             final BlockingStreamingHttpRequest httpRequest = client.post(metadata.path());
             initRequest(httpRequest);
@@ -151,7 +151,7 @@ final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
     public <Req, Resp> BlockingRequestStreamingClientCall<Req, Resp>
     newBlockingRequestStreamingCall(final GrpcSerializationProvider serializationProvider,
                                     final Class<Req> requestClass, final Class<Resp> responseClass) {
-        BlockingStreamingClientCall<Req, Resp> streamingClientCall =
+        final BlockingStreamingClientCall<Req, Resp> streamingClientCall =
                 newBlockingStreamingCall(serializationProvider, requestClass, responseClass);
         return (metadata, request) -> {
             final BlockingIterator<Resp> iterator = streamingClientCall.request(metadata, request).iterator();
@@ -168,7 +168,7 @@ final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
     public <Req, Resp> BlockingResponseStreamingClientCall<Req, Resp>
     newBlockingResponseStreamingCall(final GrpcSerializationProvider serializationProvider,
                                      final Class<Req> requestClass, final Class<Resp> responseClass) {
-        BlockingStreamingClientCall<Req, Resp> streamingClientCall =
+        final BlockingStreamingClientCall<Req, Resp> streamingClientCall =
                 newBlockingStreamingCall(serializationProvider, requestClass, responseClass);
         return (metadata, request) -> streamingClientCall.request(metadata, singletonBlockingIterable(request));
     }
@@ -198,10 +198,10 @@ final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
         return None;
     }
 
-    private <Req> HttpRequest newAggregatedRequest(final GrpcClientMetadata metadata, final Req rawReq,
-                                                   final HttpRequestFactory requestFactory,
-                                                   final GrpcSerializationProvider serializationProvider,
-                                                   final Class<Req> requestClass) {
+    private static <Req> HttpRequest newAggregatedRequest(final GrpcClientMetadata metadata, final Req rawReq,
+                                                          final HttpRequestFactory requestFactory,
+                                                          final GrpcSerializationProvider serializationProvider,
+                                                          final Class<Req> requestClass) {
         final HttpRequest httpRequest = requestFactory.post(metadata.path());
         initRequest(httpRequest);
         return httpRequest.payloadBody(uncheckedCast(rawReq),
