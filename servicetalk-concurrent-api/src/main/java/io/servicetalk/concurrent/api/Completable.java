@@ -790,11 +790,11 @@ public abstract class Completable {
     }
 
     /**
-     * Invokes the {@code onSubscribe} {@link Consumer} argument <strong>when</strong>
+     * Invokes the {@code onSubscribe} {@link Consumer} argument when
      * {@link Subscriber#onSubscribe(Cancellable)} is called for {@link Subscriber}s of the returned
      * {@link Completable}.
      *
-     * @param onSubscribe Invoked <strong>when</strong> {@link Subscriber#onSubscribe(Cancellable)} is called for
+     * @param onSubscribe Invoked when {@link Subscriber#onSubscribe(Cancellable)} is called for
      * {@link Subscriber}s of the returned {@link Completable}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Completable}.
      */
@@ -904,11 +904,11 @@ public abstract class Completable {
 
     /**
      * Creates a new {@link Subscriber} (via the {@code subscriberSupplier} argument) on each call to
-     * subscribe and invokes all the {@link Subscriber} methods <strong>when</strong> the {@link Subscriber}s of the
+     * subscribe and invokes all the {@link Subscriber} methods when the {@link Subscriber}s of the
      * returned {@link Completable}.
      *
      * @param subscriberSupplier Creates a new {@link Subscriber} on each call to subscribe and invokes all the
-     * {@link Subscriber} methods <strong>when</strong> the {@link Subscriber}s of the returned {@link Completable}.
+     * {@link Subscriber} methods when the {@link Subscriber}s of the returned {@link Completable}.
      * {@link Subscriber} methods <strong>MUST NOT</strong> throw.
      * @return The new {@link Completable}.
      */

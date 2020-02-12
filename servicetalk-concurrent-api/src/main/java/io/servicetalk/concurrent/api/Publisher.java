@@ -1699,11 +1699,11 @@ public abstract class Publisher<T> {
 
     /**
      * Creates a new {@link Subscriber} (via the {@code subscriberSupplier} argument) for each new subscribe and
-     * invokes all the {@link Subscriber} methods <strong>when</strong> the {@link Subscriber}s of the returned
+     * invokes all the {@link Subscriber} methods when the {@link Subscriber}s of the returned
      * {@link Publisher}.
      *
      * @param subscriberSupplier Creates a new {@link Subscriber} for each new subscribe and invokes all the
-     * {@link Subscriber} methods <strong>when</strong> the {@link Subscriber}s of the returned {@link Publisher}.
+     * {@link Subscriber} methods when the {@link Subscriber}s of the returned {@link Publisher}.
      * {@link Subscriber} methods <strong>MUST NOT</strong> throw.
      * @return The new {@link Publisher}.
      *
@@ -1731,11 +1731,11 @@ public abstract class Publisher<T> {
 
     /**
      * Creates a new {@link Subscription} (via the {@code subscriptionSupplier} argument) for each new subscribe and
-     * invokes all the {@link Subscription} methods <strong>when</strong> the {@link Subscription}s of the returned
+     * invokes all the {@link Subscription} methods when the {@link Subscription}s of the returned
      * {@link Publisher}.
      *
      * @param subscriptionSupplier Creates a new {@link Subscription} for each new subscribe and invokes all the
-     * {@link Subscription} methods <strong>when</strong> the {@link Subscription}s of the returned {@link Publisher}.
+     * {@link Subscription} methods when the {@link Subscription}s of the returned {@link Publisher}.
      * {@link Subscription} methods <strong>MUST NOT</strong> throw.
      * @return The new {@link Publisher}.
      *

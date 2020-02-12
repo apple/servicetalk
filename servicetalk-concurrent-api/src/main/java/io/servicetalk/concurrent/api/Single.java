@@ -700,10 +700,10 @@ public abstract class Single<T> {
     }
 
     /**
-     * Invokes the {@code onSubscribe} {@link Consumer} argument <strong>when</strong>
+     * Invokes the {@code onSubscribe} {@link Consumer} argument when
      * {@link Subscriber#onSubscribe(Cancellable)} is called for {@link Subscriber}s of the returned {@link Single}.
      *
-     * @param onSubscribe Invoked <strong>when</strong> {@link Subscriber#onSubscribe(Cancellable)} is called for
+     * @param onSubscribe Invoked when {@link Subscriber#onSubscribe(Cancellable)} is called for
      * {@link Subscriber}s of the returned {@link Single}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Single}.
      */
@@ -810,11 +810,11 @@ public abstract class Single<T> {
 
     /**
      * Creates a new {@link Subscriber} (via the {@code subscriberSupplier} argument) on each call to subscribe and
-     * invokes all the {@link Subscriber} methods <strong>when</strong> the {@link Subscriber}s of the returned
+     * invokes all the {@link Subscriber} methods when the {@link Subscriber}s of the returned
      * {@link Single}.
      *
      * @param subscriberSupplier Creates a new {@link Subscriber} on each call to subscribe and invokes all the
-     * {@link Subscriber} methods <strong>when</strong> the {@link Subscriber}s of the returned {@link Single}.
+     * {@link Subscriber} methods when the {@link Subscriber}s of the returned {@link Single}.
      * {@link Subscriber} methods <strong>MUST NOT</strong> throw.
      * @return The new {@link Single}.
      */
