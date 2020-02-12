@@ -34,9 +34,8 @@ import static io.netty.util.internal.PlatformDependent.directBufferPreferred;
  */
 public final class BufferUtils {
 
-    static final BufferAllocator PREFER_HEAP_ALLOCATOR = new ServiceTalkBufferAllocator(false, false);
-    static final BufferAllocator PREFER_DIRECT_ALLOCATOR = new ServiceTalkBufferAllocator(true, false);
-    static final BufferAllocator PREFER_DIRECT_ALLOCATOR_WITHOUT_ZEROING = new ServiceTalkBufferAllocator(true, true);
+    static final BufferAllocator PREFER_HEAP_ALLOCATOR = new ServiceTalkBufferAllocator(false);
+    static final BufferAllocator PREFER_DIRECT_ALLOCATOR = new ServiceTalkBufferAllocator(true);
 
     private BufferUtils() {
         // no instances

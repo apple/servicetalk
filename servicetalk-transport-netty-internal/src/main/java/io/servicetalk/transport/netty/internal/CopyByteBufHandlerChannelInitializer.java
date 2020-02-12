@@ -73,7 +73,7 @@ public final class CopyByteBufHandlerChannelInitializer implements ChannelInitia
         @Override
         protected void channelRead0(final ChannelHandlerContext ctx, final ByteBuf buf) {
             // We must not release the incoming buf here because it will be released by SimpleChannelInboundHandler
-            ctx.fireChannelRead(alloc.heapBuffer(buf.readableBytes()).writeBytes(buf));
+            ctx.fireChannelRead(alloc.buffer(buf.readableBytes()).writeBytes(buf));
         }
     }
 }

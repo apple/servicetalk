@@ -25,7 +25,7 @@ public final class BufferAllocators {
     /**
      * Default {@link BufferAllocator} whose {@link Buffer}s are typically backed by Netty buffers.
      */
-    public static final BufferAllocator DEFAULT_ALLOCATOR = BufferUtils.PREFER_DIRECT_ALLOCATOR_WITHOUT_ZEROING;
+    public static final BufferAllocator DEFAULT_ALLOCATOR = BufferUtils.PREFER_HEAP_ALLOCATOR;
 
     /**
      * Default {@link BufferAllocator} whose {@link Buffer}s are typically backed by Netty buffers and prefers direct
