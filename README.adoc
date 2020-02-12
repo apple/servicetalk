@@ -119,6 +119,14 @@ $ idea .
 $ open servicetalk.ipr
 ----
 
+To run the test case:
+
+[source,shell]
+----
+./gradlew --no-daemon --parallel --max-workers=4 clean test
+----
+
+
 == Project Communication
 We encourage your participation asking questions and helping improve the ServiceTalk project.
 link:https://github.com/apple/servicetalk/issues[Github issues] and
