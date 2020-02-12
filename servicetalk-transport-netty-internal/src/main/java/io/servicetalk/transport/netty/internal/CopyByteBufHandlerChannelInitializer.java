@@ -15,8 +15,6 @@
  */
 package io.servicetalk.transport.netty.internal;
 
-import io.servicetalk.buffer.api.BufferAllocator;
-
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.PooledByteBufAllocator;
@@ -27,8 +25,6 @@ import io.netty.channel.ChannelInboundHandler;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.ReferenceCountUtil;
-
-import static io.servicetalk.buffer.netty.BufferUtils.getByteBufAllocator;
 
 /**
  * Initializer to configure {@link ChannelInboundHandler} that will ensure no pooled {@link ByteBuf}s are passed to
@@ -46,10 +42,10 @@ public final class CopyByteBufHandlerChannelInitializer implements ChannelInitia
     /**
      * Creates a new instance.
      *
-     * @param alloc {@link BufferAllocator} to allocate unpooled memory.
+     * @param alloc {@link ByteBufAllocator} to allocate unpooled memory.
      */
-    public CopyByteBufHandlerChannelInitializer(final BufferAllocator alloc) {
-        copyHandler = new CopyByteBufHandler(getByteBufAllocator(alloc));
+    public CopyByteBufHandlerChannelInitializer(final ByteBufAllocator alloc) {
+        copyHandler = new CopyByteBufHandler(alloc);
     }
 
     @Override

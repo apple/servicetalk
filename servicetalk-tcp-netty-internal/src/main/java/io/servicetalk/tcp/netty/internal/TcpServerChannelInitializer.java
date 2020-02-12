@@ -15,9 +15,7 @@
  */
 package io.servicetalk.tcp.netty.internal;
 
-import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
-import io.servicetalk.transport.netty.internal.CopyByteBufHandlerChannelInitializer;
 import io.servicetalk.transport.netty.internal.IdleTimeoutInitializer;
 import io.servicetalk.transport.netty.internal.SslServerChannelInitializer;
 import io.servicetalk.transport.netty.internal.WireLoggingInitializer;
@@ -35,9 +33,8 @@ public class TcpServerChannelInitializer implements ChannelInitializer {
      * Creates a {@link ChannelInitializer} for the {@code config}.
      *
      * @param config to use for initialization.
-     * @param alloc {@link BufferAllocator} to use.
      */
-    public TcpServerChannelInitializer(final ReadOnlyTcpServerConfig config, final BufferAllocator alloc) {
+    public TcpServerChannelInitializer(final ReadOnlyTcpServerConfig config) {
         ChannelInitializer delegate = ChannelInitializer.defaultInitializer();
 
         if (config.idleTimeoutMs() > 0) {
@@ -49,8 +46,6 @@ public class TcpServerChannelInitializer implements ChannelInitializer {
         } else if (config.sslContext() != null) {
             delegate = delegate.andThen(new SslServerChannelInitializer(config.sslContext()));
         }
-
-        delegate = delegate.andThen(new CopyByteBufHandlerChannelInitializer(alloc));
 
         final WireLoggingInitializer wireLoggingInitializer = config.wireLoggingInitializer();
         if (wireLoggingInitializer != null) {

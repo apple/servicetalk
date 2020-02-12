@@ -15,9 +15,7 @@
  */
 package io.servicetalk.tcp.netty.internal;
 
-import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
-import io.servicetalk.transport.netty.internal.CopyByteBufHandlerChannelInitializer;
 import io.servicetalk.transport.netty.internal.DeferSslHandler;
 import io.servicetalk.transport.netty.internal.IdleTimeoutInitializer;
 import io.servicetalk.transport.netty.internal.SslClientChannelInitializer;
@@ -39,19 +37,17 @@ public class TcpClientChannelInitializer implements ChannelInitializer {
      *
      * @param config to use for initialization.
      */
-    public TcpClientChannelInitializer(final ReadOnlyTcpClientConfig config, final BufferAllocator alloc) {
-        this(config, alloc, false);
+    public TcpClientChannelInitializer(final ReadOnlyTcpClientConfig config) {
+        this(config, false);
     }
 
     /**
      * Creates a {@link ChannelInitializer} for the {@code config}.
      *
      * @param config to use for initialization.
-     * @param alloc {@link BufferAllocator} to use.
      * @param deferSslHandler {@code true} to wrap the {@link SslHandler} in a {@link DeferSslHandler}.
      */
-    public TcpClientChannelInitializer(final ReadOnlyTcpClientConfig config, final BufferAllocator alloc,
-                                       final boolean deferSslHandler) {
+    public TcpClientChannelInitializer(final ReadOnlyTcpClientConfig config, final boolean deferSslHandler) {
         ChannelInitializer delegate = ChannelInitializer.defaultInitializer();
 
         if (config.idleTimeoutMs() > 0) {
@@ -64,8 +60,6 @@ public class TcpClientChannelInitializer implements ChannelInitializer {
                     config.sslHostnameVerificationAlgorithm(), config.sslHostnameVerificationHost(),
                     config.sslHostnameVerificationPort(), deferSslHandler));
         }
-
-        delegate = delegate.andThen(new CopyByteBufHandlerChannelInitializer(alloc));
 
         final WireLoggingInitializer wireLoggingInitializer = config.wireLoggingInitializer();
         if (wireLoggingInitializer != null) {

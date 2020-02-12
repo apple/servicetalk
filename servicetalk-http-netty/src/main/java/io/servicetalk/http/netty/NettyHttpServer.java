@@ -53,6 +53,7 @@ import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
 import io.servicetalk.transport.netty.internal.CloseHandler;
 import io.servicetalk.transport.netty.internal.CloseHandler.CloseEventObservedException;
+import io.servicetalk.transport.netty.internal.CopyByteBufHandlerChannelInitializer;
 import io.servicetalk.transport.netty.internal.DefaultNettyConnection;
 import io.servicetalk.transport.netty.internal.FlushStrategy;
 import io.servicetalk.transport.netty.internal.NettyConnection;
@@ -122,8 +123,7 @@ final class NettyHttpServer {
         // We disable auto read so we can handle stuff in the ConnectionFilter before we accept any content.
         return TcpServerBinder.bind(address, tcpServerConfig, false, executionContext, connectionAcceptor,
                 channel -> initChannel(channel, executionContext, config,
-                        new TcpServerChannelInitializer(tcpServerConfig, executionContext.bufferAllocator()),
-                        service, drainRequestPayloadBody),
+                        new TcpServerChannelInitializer(tcpServerConfig), service, drainRequestPayloadBody),
                 serverConnection -> serverConnection.process(true))
                 .map(delegate -> {
                     LOGGER.debug("Started HTTP/1.1 server for address {}.", delegate.listenAddress());
@@ -163,14 +163,14 @@ final class NettyHttpServer {
 
     private static ChannelInitializer getChannelInitializer(final ByteBufAllocator alloc, final H1ProtocolConfig config,
                                                             final CloseHandler closeHandler) {
-        return channel -> {
+        return new CopyByteBufHandlerChannelInitializer(alloc).andThen(channel -> {
             Queue<HttpRequestMethod> methodQueue = new ArrayDeque<>(2);
             final ChannelPipeline pipeline = channel.pipeline();
             pipeline.addLast(new HttpRequestDecoder(methodQueue, alloc, config.headersFactory(),
                     config.maxStartLineLength(), config.maxHeaderFieldLength(), closeHandler));
             pipeline.addLast(new HttpResponseEncoder(methodQueue, config.headersEncodedSizeEstimate(),
                     config.trailersEncodedSizeEstimate(), closeHandler));
-        };
+        });
     }
 
     static final class NettyHttpServerContext implements ServerContext {

@@ -67,8 +67,8 @@ final class AlpnLBHttpConnectionFactory<ResolvedAddress> extends AbstractLBHttpC
     }
 
     private Single<FilterableStreamingHttpConnection> createConnection(final Channel channel) {
-        return new AlpnChannelSingle(channel, new TcpClientChannelInitializer(config.tcpConfig(),
-                executionContext.bufferAllocator()), false).flatMap(protocol -> {
+        return new AlpnChannelSingle(channel,
+                new TcpClientChannelInitializer(config.tcpConfig()), false).flatMap(protocol -> {
             switch (protocol) {
                 case HTTP_1_1:
                     final H1ProtocolConfig h1Config = config.h1Config();

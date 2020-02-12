@@ -34,6 +34,7 @@ import io.netty.handler.codec.http2.DefaultHttp2HeadersFrame;
 import io.netty.handler.codec.http2.Http2DataFrame;
 import io.netty.handler.codec.http2.Http2Headers;
 import io.netty.handler.codec.http2.Http2HeadersFrame;
+import io.netty.util.ReferenceCounted;
 
 import javax.annotation.Nullable;
 
@@ -53,15 +54,13 @@ import static io.servicetalk.http.netty.HeaderUtils.shouldAddZeroContentLength;
 final class H2ToStH1ClientDuplexHandler extends AbstractH2DuplexHandler {
     private boolean readHeaders;
     private final HttpScheme scheme;
-    private final BufferAllocator allocator;
     @Nullable
     private HttpRequestMethod method;
 
     H2ToStH1ClientDuplexHandler(boolean sslEnabled, BufferAllocator allocator, HttpHeadersFactory headersFactory,
                                 CloseHandler closeHandler) {
-        super(headersFactory, closeHandler);
+        super(allocator, headersFactory, closeHandler);
         this.scheme = sslEnabled ? HttpScheme.HTTPS : HttpScheme.HTTP;
-        this.allocator = allocator;
     }
 
     @Override
@@ -146,6 +145,8 @@ final class H2ToStH1ClientDuplexHandler extends AbstractH2DuplexHandler {
             }
         } else if (msg instanceof Http2DataFrame) {
             readDataFrame(ctx, msg);
+        } else if (msg instanceof ReferenceCounted) {
+            releaseUnknown(ctx, (ReferenceCounted) msg);
         } else {
             ctx.fireChannelRead(msg);
         }

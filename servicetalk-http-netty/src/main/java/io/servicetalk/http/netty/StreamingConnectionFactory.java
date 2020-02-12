@@ -43,8 +43,7 @@ final class StreamingConnectionFactory {
         // We disable auto read so we can handle stuff in the ConnectionFilter before we accept any content.
         return TcpConnector.connect(null, resolvedAddress, roConfig.tcpConfig(), false, executionContext)
                 .flatMap(channel -> createConnection(channel, executionContext, roConfig,
-                        new TcpClientChannelInitializer(roConfig.tcpConfig(),
-                                executionContext.bufferAllocator(), roConfig.hasProxy())));
+                        new TcpClientChannelInitializer(roConfig.tcpConfig(), roConfig.hasProxy())));
     }
 
     static Single<? extends DefaultNettyConnection<Object, Object>> createConnection(final Channel channel,

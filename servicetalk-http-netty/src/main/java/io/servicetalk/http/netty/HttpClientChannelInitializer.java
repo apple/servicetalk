@@ -18,6 +18,7 @@ package io.servicetalk.http.netty;
 import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
 import io.servicetalk.transport.netty.internal.CloseHandler;
+import io.servicetalk.transport.netty.internal.CopyByteBufHandlerChannelInitializer;
 
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.channel.Channel;
@@ -30,9 +31,7 @@ import static java.lang.Math.min;
 
 final class HttpClientChannelInitializer implements ChannelInitializer {
 
-    private final ByteBufAllocator alloc;
-    private final H1ProtocolConfig config;
-    private final CloseHandler closeHandler;
+    private final ChannelInitializer delegate;
 
     /**
      * Creates a new instance.
@@ -41,18 +40,18 @@ final class HttpClientChannelInitializer implements ChannelInitializer {
      */
     HttpClientChannelInitializer(final ByteBufAllocator alloc, final H1ProtocolConfig config,
                                  final CloseHandler closeHandler) {
-        this.alloc = alloc;
-        this.config = config;
-        this.closeHandler = closeHandler;
+        this.delegate = new CopyByteBufHandlerChannelInitializer(alloc).andThen(channel -> {
+            final Queue<HttpRequestMethod> methodQueue = new ArrayDeque<>(min(8, config.maxPipelinedRequests()));
+            final ChannelPipeline pipeline = channel.pipeline();
+            pipeline.addLast(new HttpResponseDecoder(methodQueue, alloc, config.headersFactory(),
+                    config.maxStartLineLength(), config.maxHeaderFieldLength(), closeHandler));
+            pipeline.addLast(new HttpRequestEncoder(methodQueue,
+                    config.headersEncodedSizeEstimate(), config.trailersEncodedSizeEstimate(), closeHandler));
+        });
     }
 
     @Override
     public void init(final Channel channel) {
-        final Queue<HttpRequestMethod> methodQueue = new ArrayDeque<>(min(8, config.maxPipelinedRequests()));
-        final ChannelPipeline pipeline = channel.pipeline();
-        pipeline.addLast(new HttpResponseDecoder(methodQueue, alloc, config.headersFactory(),
-                config.maxStartLineLength(), config.maxHeaderFieldLength(), closeHandler));
-        pipeline.addLast(new HttpRequestEncoder(methodQueue,
-                config.headersEncodedSizeEstimate(), config.trailersEncodedSizeEstimate(), closeHandler));
+        delegate.init(channel);
     }
 }
