@@ -161,8 +161,8 @@ public abstract class ByteToMessageDecoder extends ChannelInboundHandlerAdapter 
                                 (required > cumulation.maxFastWritableBytes() && cumulation.refCnt() > 1)) {
                             // Expand cumulation (by replacing it) under the following conditions:
                             // - cumulation cannot be resized to accommodate the additional data
-                            // - cumulation can be expanded with a reallocation operation to accommodate but the buffer is
-                            //   assumed to be shared (e.g. refCnt() > 1) and the reallocation may not be safe.
+                            // - cumulation can be expanded with a reallocation operation to accommodate but the buffer
+                            //   is assumed to be shared (e.g. refCnt() > 1) and the reallocation may not be safe.
                             cumulation = swapAndCopyCumulation(ctx.alloc(), cumulation, data);
                         } else {
                             cumulation.writeBytes(data);
