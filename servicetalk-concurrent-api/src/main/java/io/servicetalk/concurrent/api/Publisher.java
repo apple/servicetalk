@@ -1699,15 +1699,13 @@ public abstract class Publisher<T> {
 
     /**
      * Creates a new {@link Subscriber} (via the {@code subscriberSupplier} argument) for each new subscribe and
-     * invokes all the {@link Subscriber} methods when the {@link Subscriber}s of the returned
-     * {@link Publisher}.
+     * invokes methods on that {@link Subscriber} when the corresponding methods are called for {@link Subscriber}s of
+     * the returned {@link Publisher}.
      *
-     * @param subscriberSupplier Creates a new {@link Subscriber} for each new subscribe and invokes all the
-     * {@link Subscriber} methods when the {@link Subscriber}s of the returned {@link Publisher}.
-     * {@link Subscriber} methods <strong>MUST NOT</strong> throw.
-     * @return The new {@link Publisher}.
-     *
-     * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
+     * @param subscriberSupplier Creates a new {@link Subscriber} for each new subscribe and invokes methods on that
+     * {@link Subscriber} when the corresponding methods are called for {@link Subscriber}s of the returned
+     * {@link Publisher}. {@link Subscriber} methods <strong>MUST NOT</strong> throw.
+     *  @return The new {@link Publisher}.
      */
     public final Publisher<T> whenSubscriber(Supplier<? extends Subscriber<? super T>> subscriberSupplier) {
         return afterSubscriber(subscriberSupplier);
