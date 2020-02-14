@@ -223,12 +223,14 @@ public final class HttpHeaderNames {
      */
     public static final CharSequence EXPIRES = newAsciiString("expires");
     /**
-     * <a href="https://tools.ietf.org/html/rfc7239#section-4">forwarded</a> is a header field that contains a list of
+     * {@code "forwarded"} is a header field that contains a list of
      * parameter-identifier pairs that disclose information that is altered or lost when a proxy is involved in the path
      * of the request.
      * <p>
      * The alternative and de-facto standard versions of this header are the {@link #X_FORWARDED_FOR "x-forwarded-for"},
      * {@link #X_FORWARDED_HOST "x-forwarded-host"} and {@link #X_FORWARDED_PROTO "x-forwarded-proto"} headers.
+     *
+     * @see <a href="https://tools.ietf.org/html/rfc7239#section-4">RFC7231, section 4</a>
      */
     public static final CharSequence FORWARDED = newAsciiString("forwarded");
     /**
@@ -442,7 +444,7 @@ public final class HttpHeaderNames {
     /**
      * {@code "warning"}
      *
-     * @see <a href="https://tools.ietf.org/html/rfc7234#section-5.5">RFC7234, section 5.5 </a>
+     * @see <a href="https://tools.ietf.org/html/rfc7234#section-5.5">RFC7234, section 5.5</a>
      */
     public static final CharSequence WARNING = newAsciiString("warning");
     /**
@@ -464,27 +466,34 @@ public final class HttpHeaderNames {
      */
     public static final CharSequence WWW_AUTHENTICATE = newAsciiString("www-authenticate");
     /**
-     * <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-Forwarded-For">x-forwarded-for</a> (XFF)
+     * {@code "x-forwarded-for"} (XFF)
      * header is a de-facto standard header for identifying the originating IP address of a client connecting to a web
      * server through an HTTP proxy or a load balancer.
      * <p>
      * A standardized version of this header is the HTTP {@link #FORWARDED "forwarded"} header.
+     *
+     * @see <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-Forwarded-For">X-Forwarded-For</a>
+     *
      */
     public static final CharSequence X_FORWARDED_FOR = newAsciiString("x-forwarded-for");
     /**
-     * <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-Forwarded-Host">x-forwarded-host</a> (XFH)
+     *  {@code "x-forwarded-host"} (XFH)
      * header is a de-facto standard header for identifying the original host requested by the client in the
      * {@link #HOST host} HTTP request header.
      * <p>
      * A standardized version of this header is the HTTP {@link #FORWARDED "forwarded"} header.
+     *
+     * @see <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-Forwarded-Host">x-forwarded-host</a>
      */
     public static final CharSequence X_FORWARDED_HOST = newAsciiString("x-forwarded-host");
     /**
-     * <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-Forwarded-Proto">x-forwarded-proto</a> (XFP)
+     * {@code "x-forwarded-proto"} (XFP)
      * header is a de-facto standard header for identifying the protocol (HTTP or HTTPS) that a client used to connect
      * to your proxy or load balancer.
      * <p>
      * A standardized version of this header is the HTTP {@link #FORWARDED "forwarded"} header.
+     *
+     * @see <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-Forwarded-Proto">x-forwarded-proto</a>
      */
     public static final CharSequence X_FORWARDED_PROTO = newAsciiString("x-forwarded-proto");
     /**
