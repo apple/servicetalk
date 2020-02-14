@@ -910,13 +910,13 @@ public abstract class Completable {
     }
 
     /**
-     * Creates a new {@link Subscriber} (via the {@code subscriberSupplier} argument) on each call to
-     * subscribe and invokes all the {@link Subscriber} methods when the {@link Subscriber}s of the
-     * returned {@link Completable}.
+     * Creates a new {@link Subscriber} (via the {@code subscriberSupplier} argument) for each new subscribe and
+     * invokes methods on that {@link Subscriber} when the corresponding methods are called for {@link Subscriber}s of
+     * the returned {@link Publisher}.
      *
-     * @param subscriberSupplier Creates a new {@link Subscriber} on each call to subscribe and invokes all the
-     * {@link Subscriber} methods when the {@link Subscriber}s of the returned {@link Completable}.
-     * {@link Subscriber} methods <strong>MUST NOT</strong> throw.
+     * @param subscriberSupplier Creates a new {@link Subscriber} for each new subscribe and invokes methods on that
+     * {@link Subscriber} when the corresponding methods are called for {@link Subscriber}s of the returned
+     * {@link Publisher}. {@link Subscriber} methods <strong>MUST NOT</strong> throw.
      * @return The new {@link Completable}.
      */
     public final Completable whenSubscriber(Supplier<? extends Subscriber> subscriberSupplier) {
