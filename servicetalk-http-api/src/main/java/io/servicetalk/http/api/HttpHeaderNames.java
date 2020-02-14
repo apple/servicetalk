@@ -61,6 +61,8 @@ public final class HttpHeaderNames {
     /**
      * {@code "access-control-allow-credentials"}
      *
+     * @see <a href="https://www.w3.org/TR/cors/#access-control-allow-credentials-response-header">
+     *     W3C Cross-Origin Resource Sharing, section 5.2</a>
      */
     public static final CharSequence ACCESS_CONTROL_ALLOW_CREDENTIALS =
             newAsciiString("access-control-allow-credentials");
@@ -167,7 +169,7 @@ public final class HttpHeaderNames {
     /**
      * {@code "content-disposition"}
      *
-     * @see <a href="https://tools.ietf.org/html/rfc6266">RFC6266 </a>
+     * @see <a href="https://tools.ietf.org/html/rfc6266">RFC6266</a>
      */
     public static final CharSequence CONTENT_DISPOSITION = newAsciiString("content-disposition");
     /**
@@ -185,7 +187,7 @@ public final class HttpHeaderNames {
     /**
      * {@code "content-security-policy"}
      *
-     * @see <a href="https://www.w3.org/TR/CSP3/#csp-header">csp-header</a>
+     * @see <a href="https://www.w3.org/TR/CSP3/#csp-header"> W3C Cross-Origin Resource Sharing, section 3.1</a>
      */
     public static final CharSequence CONTENT_SECURITY_POLICY = newAsciiString("content-security-policy");
     /**
