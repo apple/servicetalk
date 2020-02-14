@@ -1729,7 +1729,7 @@ public abstract class Publisher<T> {
 
     /**
      * Creates a new {@link Subscription} (via the {@code subscriptionSupplier} argument) for each new subscribe and
-     * invokes all the {@link Subscription} methods when the {@link Subscription}s of the returned
+     * invokes all the {@link Subscription} methods when the corresponding methods are called for {@link Subscription}s of the returned
      * {@link Publisher}.
      *
      * @param subscriptionSupplier Creates a new {@link Subscription} for each new subscribe and invokes all the
