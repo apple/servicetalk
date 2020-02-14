@@ -129,7 +129,7 @@ $ open servicetalk.ipr
 .To check the code quality (any lint error):
 [source,shell]
 ----
-./gradlew clean quality
+./gradlew quality
 ----
 
 
