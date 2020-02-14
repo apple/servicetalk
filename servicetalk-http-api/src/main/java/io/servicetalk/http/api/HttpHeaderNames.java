@@ -184,6 +184,8 @@ public final class HttpHeaderNames {
     public static final CharSequence CONTENT_RANGE = newAsciiString("content-range");
     /**
      * {@code "content-security-policy"}
+     *
+     * @see <a href="https://www.w3.org/TR/CSP3/#csp-header">csp-header</a>
      */
     public static final CharSequence CONTENT_SECURITY_POLICY = newAsciiString("content-security-policy");
     /**
