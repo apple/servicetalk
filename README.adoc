@@ -122,7 +122,7 @@ $ open servicetalk.ipr
 .To run the test case:
 [source,shell]
 ----
-./gradlew clean test
+./gradlew test
 ----
 
 
