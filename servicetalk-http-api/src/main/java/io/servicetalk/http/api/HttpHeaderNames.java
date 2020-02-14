@@ -460,7 +460,7 @@ public final class HttpHeaderNames {
     /**
      * {@code "www-authenticate"}
      *
-     * @see <a href="https://tools.ietf.org/html/rfc#section-">RFC, section </a>
+     * @see <a href="https://tools.ietf.org/html/rfc7235#section-4.1">RFC7235, section 4.1</a>
      */
     public static final CharSequence WWW_AUTHENTICATE = newAsciiString("www-authenticate");
     /**
