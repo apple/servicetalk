@@ -802,8 +802,8 @@ public abstract class Completable {
      * {@link Subscriber}s of the returned {@link Completable}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Completable}.
      *
-     * @see #beforeOnNext(Consumer)
-     * @see #afterOnNext(Consumer)
+     * @see #beforeOnSubscribe(Consumer)
+     * @see #afterOnSubscribe(Consumer)
      */
     public final Completable whenOnSubscribe(Consumer<Cancellable> onSubscribe) {
         return afterOnSubscribe(onSubscribe);

@@ -712,8 +712,8 @@ public abstract class Single<T> {
      * {@link Subscriber}s of the returned {@link Single}. <strong>MUST NOT</strong> throw.
      * @return The new {@link Single}.
      *
-     * @see #beforeOnNext(Consumer)
-     * @see #afterOnNext(Consumer)
+     * @see #beforeOnSubscribe(Consumer)
+     * @see #afterOnSubscribe(Consumer)
      */
     public final Single<T> whenOnSubscribe(Consumer<Cancellable> onSubscribe) {
         return afterOnSubscribe(onSubscribe);
