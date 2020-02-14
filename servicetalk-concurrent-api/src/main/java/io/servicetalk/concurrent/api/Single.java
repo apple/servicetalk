@@ -817,13 +817,13 @@ public abstract class Single<T> {
     }
 
     /**
-     * Creates a new {@link Subscriber} (via the {@code subscriberSupplier} argument) on each call to subscribe and
-     * invokes all the {@link Subscriber} methods when the {@link Subscriber}s of the returned
-     * {@link Single}.
+     * Creates a new {@link Subscriber} (via the {@code subscriberSupplier} argument) for each new subscribe and
+     * invokes methods on that {@link Subscriber} when the corresponding methods are called for {@link Subscriber}s of
+     * the returned {@link Single}.
      *
-     * @param subscriberSupplier Creates a new {@link Subscriber} on each call to subscribe and invokes all the
-     * {@link Subscriber} methods when the {@link Subscriber}s of the returned {@link Single}.
-     * {@link Subscriber} methods <strong>MUST NOT</strong> throw.
+     * @param subscriberSupplier Creates a new {@link Subscriber} for each new subscribe and invokes methods on that
+     * {@link Subscriber} when the corresponding methods are called for {@link Subscriber}s of the returned
+     * {@link Single}. {@link Subscriber} methods <strong>MUST NOT</strong> throw.
      * @return The new {@link Single}.
      */
     public final Single<T> whenSubscriber(Supplier<? extends Subscriber<? super T>> subscriberSupplier) {
