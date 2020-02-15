@@ -21,12 +21,15 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.handler.codec.http2.DefaultHttp2GoAwayFrame;
 import io.netty.handler.codec.http2.Http2FrameCodecBuilder;
 import io.netty.handler.codec.http2.Http2FrameLogger;
 import io.netty.handler.codec.http2.Http2MultiplexHandler;
+import io.netty.handler.codec.http2.Http2Settings;
 
 import java.util.function.BiPredicate;
 
+import static io.netty.handler.codec.http2.Http2Error.PROTOCOL_ERROR;
 import static io.netty.handler.codec.http2.Http2FrameCodecBuilder.forClient;
 import static io.netty.handler.logging.LogLevel.TRACE;
 
@@ -43,6 +46,8 @@ final class H2ClientParentChannelInitializer implements ChannelInitializer {
                 // The max concurrent streams is made available via a publisher and may be consumed asynchronously
                 // (e.g. when offloading is enabled), so we manually control the SETTINGS ACK frames.
                 .autoAckSettingsFrame(false)
+                // Notify server that this client does not support server push and request it to be disabled.
+                .initialSettings(Http2Settings.defaultSettings().pushEnabled(false))
                 // We don't want to rely upon Netty to manage the graceful close timeout, because we expect
                 // the user to apply their own timeout at the call site.
                 .gracefulShutdownTimeoutMillis(-1);
@@ -72,6 +77,8 @@ final class H2ClientParentChannelInitializer implements ChannelInitializer {
 
         @Override
         public void channelRegistered(final ChannelHandlerContext ctx) {
+            // See SETTINGS_ENABLE_PUSH in https://tools.ietf.org/html/rfc7540#section-6.5.2
+            ctx.writeAndFlush(new DefaultHttp2GoAwayFrame(PROTOCOL_ERROR));
             ctx.close(); // push streams are not supported
         }
     }
