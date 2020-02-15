@@ -85,7 +85,7 @@ public class StreamingHttpServiceAsyncContextTest extends AbstractHttpServiceAsy
 
     private static StreamingHttpService newEmptyAsyncContextService() {
         return (ctx, request, factory) -> {
-            request.payloadBody().ignoreElements().subscribe();
+            request.payloadBodyAndTrailers().ignoreElements().subscribe();
 
             if (!AsyncContext.isEmpty()) {
                 return succeeded(factory.internalServerError());
@@ -126,7 +126,7 @@ public class StreamingHttpServiceAsyncContextTest extends AbstractHttpServiceAsy
                 // The test doesn't wait until the request body is consumed and only cares when the request is received
                 // from the client. So we force the server to consume the entire request here which will make sure the
                 // AsyncContext is as expected while processing the request data in the filter.
-                return request.payloadBody().ignoreElements()
+                return request.payloadBodyAndTrailers().ignoreElements()
                         .concat(defer(() -> {
                             if (useImmediate && !currentThread().getName().startsWith(IO_THREAD_PREFIX)) {
                                 // verify that if we expect to be offloaded, that we actually are

@@ -102,7 +102,7 @@ final class ProxyConnectConnectionFactoryFilter<ResolvedAddress, C
 
                     DeferSslHandler deferSslHandler = channel.pipeline().get(DeferSslHandler.class);
                     if (deferSslHandler == null) {
-                        return response.payloadBody().ignoreElements().concat(failed(
+                        return response.payloadBodyAndTrailers().ignoreElements().concat(failed(
                                 new IllegalStateException("Failed to find a handler of type " +
                                         DeferSslHandler.class + " in channel pipeline.")));
                     }
@@ -112,9 +112,9 @@ final class ProxyConnectConnectionFactoryFilter<ResolvedAddress, C
                     // There is no need to apply offloading explicitly (despite completing `processor` on the
                     // EventLoop) because `payloadBody()` will be offloaded according to the strategy for the
                     // request.
-                    return response.payloadBody().ignoreElements().concat(fromSource(processor));
+                    return response.payloadBodyAndTrailers().ignoreElements().concat(fromSource(processor));
                 } else {
-                    return response.payloadBody().ignoreElements().concat(
+                    return response.payloadBodyAndTrailers().ignoreElements().concat(
                             failed(new ProxyResponseException("Bad response from proxy CONNECT " + connectAddress,
                                     response.status())));
                 }
