@@ -89,7 +89,8 @@ NOTE: This inheritance mechanism can be disabled by setting a Gradle property: +
 
 ==== Build Commands
 
-You should be able to run the following command to build ServiceTalk:
+You should be able to run the following command to build ServiceTalk and verify that all 
+tests and code quality checks pass:
 
 [source,shell]
 ----
