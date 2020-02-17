@@ -18,6 +18,7 @@ package io.servicetalk.http.netty;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
 
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
@@ -26,6 +27,8 @@ import io.netty.handler.codec.http2.Http2FrameCodecBuilder;
 import io.netty.handler.codec.http2.Http2FrameLogger;
 import io.netty.handler.codec.http2.Http2MultiplexHandler;
 import io.netty.handler.codec.http2.Http2Settings;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.function.BiPredicate;
 
@@ -34,6 +37,9 @@ import static io.netty.handler.codec.http2.Http2FrameCodecBuilder.forClient;
 import static io.netty.handler.logging.LogLevel.TRACE;
 
 final class H2ClientParentChannelInitializer implements ChannelInitializer {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(H2ClientParentChannelInitializer.class);
+
     private final H2ProtocolConfig config;
 
     H2ClientParentChannelInitializer(final H2ProtocolConfig config) {
@@ -78,8 +84,13 @@ final class H2ClientParentChannelInitializer implements ChannelInitializer {
         @Override
         public void channelRegistered(final ChannelHandlerContext ctx) {
             // See SETTINGS_ENABLE_PUSH in https://tools.ietf.org/html/rfc7540#section-6.5.2
-            ctx.writeAndFlush(new DefaultHttp2GoAwayFrame(PROTOCOL_ERROR));
-            ctx.close(); // push streams are not supported
+            ctx.writeAndFlush(new DefaultHttp2GoAwayFrame(PROTOCOL_ERROR))
+                    .addListener((ChannelFutureListener) future -> {
+                if (!future.isSuccess()) {
+                    LOGGER.debug("Failed to send a GO_AWAY frame for received PUSH_PROMISE frame", future.cause());
+                }
+                ctx.close(); // push streams are not supported
+            });
         }
     }
 }
