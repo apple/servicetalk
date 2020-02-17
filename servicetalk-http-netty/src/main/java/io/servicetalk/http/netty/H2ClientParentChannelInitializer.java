@@ -38,8 +38,6 @@ import static io.netty.handler.logging.LogLevel.TRACE;
 
 final class H2ClientParentChannelInitializer implements ChannelInitializer {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(H2ClientParentChannelInitializer.class);
-
     private final H2ProtocolConfig config;
 
     H2ClientParentChannelInitializer(final H2ProtocolConfig config) {
@@ -75,6 +73,9 @@ final class H2ClientParentChannelInitializer implements ChannelInitializer {
 
     @ChannelHandler.Sharable
     private static final class H2PushStreamHandler extends ChannelInboundHandlerAdapter {
+
+        private static final Logger LOGGER = LoggerFactory.getLogger(H2PushStreamHandler.class);
+
         static final ChannelInboundHandlerAdapter INSTANCE = new H2PushStreamHandler();
 
         private H2PushStreamHandler() {
