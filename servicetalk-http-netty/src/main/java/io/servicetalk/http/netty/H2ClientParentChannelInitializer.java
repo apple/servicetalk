@@ -26,8 +26,6 @@ import io.netty.handler.codec.http2.Http2FrameCodecBuilder;
 import io.netty.handler.codec.http2.Http2FrameLogger;
 import io.netty.handler.codec.http2.Http2MultiplexHandler;
 import io.netty.handler.codec.http2.Http2Settings;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.function.BiPredicate;
 
@@ -72,8 +70,6 @@ final class H2ClientParentChannelInitializer implements ChannelInitializer {
 
     @ChannelHandler.Sharable
     private static final class H2PushStreamHandler extends ChannelInboundHandlerAdapter {
-
-        private static final Logger LOGGER = LoggerFactory.getLogger(H2PushStreamHandler.class);
 
         static final ChannelInboundHandlerAdapter INSTANCE = new H2PushStreamHandler();
 
