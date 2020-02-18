@@ -25,7 +25,6 @@ import io.netty.handler.codec.http2.DefaultHttp2GoAwayFrame;
 import io.netty.handler.codec.http2.Http2FrameCodecBuilder;
 import io.netty.handler.codec.http2.Http2FrameLogger;
 import io.netty.handler.codec.http2.Http2MultiplexHandler;
-import io.netty.handler.codec.http2.Http2Settings;
 
 import java.util.function.BiPredicate;
 
@@ -47,11 +46,12 @@ final class H2ClientParentChannelInitializer implements ChannelInitializer {
                 // The max concurrent streams is made available via a publisher and may be consumed asynchronously
                 // (e.g. when offloading is enabled), so we manually control the SETTINGS ACK frames.
                 .autoAckSettingsFrame(false)
-                // Notify server that this client does not support server push and request it to be disabled.
-                .initialSettings(Http2Settings.defaultSettings().pushEnabled(false).maxConcurrentStreams(0L))
                 // We don't want to rely upon Netty to manage the graceful close timeout, because we expect
                 // the user to apply their own timeout at the call site.
                 .gracefulShutdownTimeoutMillis(-1);
+
+        // Notify server that this client does not support server push and request it to be disabled.
+        multiplexCodecBuilder.initialSettings().pushEnabled(false).maxConcurrentStreams(0L);
 
         final BiPredicate<CharSequence, CharSequence> headersSensitivityDetector =
                 config.headersSensitivityDetector();
