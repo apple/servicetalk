@@ -164,7 +164,7 @@ public class ConcurrentRequestsHttpConnectionFilterTest {
         try (ServerContext serverContext = HttpServers.forAddress(localAddress(0))
                 .listenStreamingAndAwait((ctx, request, responseFactory) -> {
                     Publisher<Buffer> deferredPayload = fromSource(lastRequestFinished).concat(empty());
-                    return request.payloadBody().ignoreElements()
+                    return request.payloadBodyAndTrailers().ignoreElements()
                             .concat(Single.succeeded(responseFactory.ok().payloadBody(deferredPayload)));
                 });
 
@@ -197,7 +197,7 @@ public class ConcurrentRequestsHttpConnectionFilterTest {
 
         try (ServerContext serverContext = HttpServers.forAddress(localAddress(0))
                 .listenStreamingAndAwait((ctx, request, responseFactory) ->
-                        request.payloadBody().ignoreElements().concat(
+                        request.payloadBodyAndTrailers().ignoreElements().concat(
                         Single.succeeded(responseFactory.ok()
                                 .setHeader(HttpHeaderNames.CONNECTION, "close"))));
 
@@ -231,7 +231,7 @@ public class ConcurrentRequestsHttpConnectionFilterTest {
         try (ServerContext serverContext = HttpServers.forAddress(localAddress(0))
                 .socketOption(StandardSocketOptions.SO_LINGER, 0) // Force connection reset on close
                 .listenStreamingAndAwait((ctx, request, responseFactory) ->
-                        request.payloadBody().ignoreElements()
+                        request.payloadBodyAndTrailers().ignoreElements()
                                 .concat(ctx.closeAsync()) // trigger reset after client is done writing
                                 .concat(Single.never()));
              HttpClient client = forResolvedAddress(serverHostAndPort(serverContext))
