@@ -344,7 +344,7 @@ final class NettyHttpServer {
 
                 if (drainRequestPayloadBody) {
                     responsePublisher = responsePublisher.concat(defer(() -> payloadSubscribed.get() ?
-                                    completed() : request.payloadBody().ignoreElements()
+                                    completed() : request.payloadBodyAndTrailers().ignoreElements()
                             // Discarding the request payload body is an operation which should not impact the state of
                             // request/response processing. It's appropriate to recover from any error here.
                             // ST may introduce RejectedSubscribeError if user already consumed the request payload body

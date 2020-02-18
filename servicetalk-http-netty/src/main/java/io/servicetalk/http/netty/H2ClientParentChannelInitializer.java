@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019-2020 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,16 +21,19 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.handler.codec.http2.DefaultHttp2GoAwayFrame;
 import io.netty.handler.codec.http2.Http2FrameCodecBuilder;
 import io.netty.handler.codec.http2.Http2FrameLogger;
 import io.netty.handler.codec.http2.Http2MultiplexHandler;
 
 import java.util.function.BiPredicate;
 
+import static io.netty.handler.codec.http2.Http2Error.PROTOCOL_ERROR;
 import static io.netty.handler.codec.http2.Http2FrameCodecBuilder.forClient;
 import static io.netty.handler.logging.LogLevel.TRACE;
 
 final class H2ClientParentChannelInitializer implements ChannelInitializer {
+
     private final H2ProtocolConfig config;
 
     H2ClientParentChannelInitializer(final H2ProtocolConfig config) {
@@ -46,6 +49,9 @@ final class H2ClientParentChannelInitializer implements ChannelInitializer {
                 // We don't want to rely upon Netty to manage the graceful close timeout, because we expect
                 // the user to apply their own timeout at the call site.
                 .gracefulShutdownTimeoutMillis(-1);
+
+        // Notify server that this client does not support server push and request it to be disabled.
+        multiplexCodecBuilder.initialSettings().pushEnabled(false).maxConcurrentStreams(0L);
 
         final BiPredicate<CharSequence, CharSequence> headersSensitivityDetector =
                 config.headersSensitivityDetector();
@@ -64,6 +70,7 @@ final class H2ClientParentChannelInitializer implements ChannelInitializer {
 
     @ChannelHandler.Sharable
     private static final class H2PushStreamHandler extends ChannelInboundHandlerAdapter {
+
         static final ChannelInboundHandlerAdapter INSTANCE = new H2PushStreamHandler();
 
         private H2PushStreamHandler() {
@@ -72,7 +79,9 @@ final class H2ClientParentChannelInitializer implements ChannelInitializer {
 
         @Override
         public void channelRegistered(final ChannelHandlerContext ctx) {
-            ctx.close(); // push streams are not supported
+            // See SETTINGS_ENABLE_PUSH in https://tools.ietf.org/html/rfc7540#section-6.5.2
+            ctx.writeAndFlush(new DefaultHttp2GoAwayFrame(PROTOCOL_ERROR));
+            // Http2ConnectionHandler.processGoAwayWriteResult will close the connection after GO_AWAY is flushed
         }
     }
 }

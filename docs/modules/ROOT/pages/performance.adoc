@@ -474,8 +474,8 @@ control
 To avoid these issues, ServiceTalk HTTP servers will automatically drain the request payload content after the response
 is sent. However this adds some additional complexity to the HTTP service control flow in ServiceTalk and adds some
 overhead. If you know for sure that the payload is always consumed footnote:[typically compose the response with
-`request.payloadBody().ignoreElements()`], or you are not using the streaming APIs, this mechanism can be disabled to
-save some CPU and memory as follows:
+`request.payloadBodyAndTrailers().ignoreElements()`], or you are not using the streaming APIs, this mechanism can be
+disabled to save some CPU and memory as follows:
 
 [source, java]
 ----

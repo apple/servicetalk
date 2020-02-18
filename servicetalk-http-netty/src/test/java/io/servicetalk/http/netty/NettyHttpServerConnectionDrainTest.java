@@ -81,7 +81,7 @@ public class NettyHttpServerConnectionDrainTest {
     @Test
     public void requestIsDrainedByUserWithDrainingDisabled() throws Exception {
         try (ServerContext serverContext = server(false, (ctx, request, responseFactory) ->
-                request.payloadBody().ignoreElements() // User consumes payload (ignoring)
+                request.payloadBodyAndTrailers().ignoreElements() // User consumes payload (ignoring)
                         .concat(succeeded(responseFactory.ok().payloadBody(from("OK"), textSerializer()))));
              BlockingHttpClient client = HttpClients.forSingleAddress(serverHostAndPort(serverContext))
                      .buildBlocking()) {

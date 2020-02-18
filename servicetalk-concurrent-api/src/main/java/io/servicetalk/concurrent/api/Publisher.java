@@ -1698,6 +1698,20 @@ public abstract class Publisher<T> {
     }
 
     /**
+     * Creates a new {@link Subscriber} (via the {@code subscriberSupplier} argument) for each new subscribe and
+     * invokes methods on that {@link Subscriber} when the corresponding methods are called for {@link Subscriber}s of
+     * the returned {@link Publisher}.
+     *
+     * @param subscriberSupplier Creates a new {@link Subscriber} for each new subscribe and invokes methods on that
+     * {@link Subscriber} when the corresponding methods are called for {@link Subscriber}s of the returned
+     * {@link Publisher}. {@link Subscriber} methods <strong>MUST NOT</strong> throw.
+     *  @return The new {@link Publisher}.
+     */
+    public final Publisher<T> whenSubscriber(Supplier<? extends Subscriber<? super T>> subscriberSupplier) {
+        return afterSubscriber(subscriberSupplier);
+    }
+
+    /**
      * Creates a new {@link Subscription} (via the {@code subscriptionSupplier} argument) for each new subscribe and
      * invokes all the {@link Subscription} methods <strong>after</strong> the {@link Subscription}s of the returned
      * {@link Publisher}.
@@ -1711,6 +1725,22 @@ public abstract class Publisher<T> {
      */
     public final Publisher<T> afterSubscription(Supplier<? extends Subscription> subscriptionSupplier) {
         return new WhenSubscriptionPublisher<>(this, subscriptionSupplier, false, executor);
+    }
+
+    /**
+     * Creates a new {@link Subscription} (via the {@code subscriptionSupplier} argument) for each new subscribe and
+     * invokes all the {@link Subscription} methods when the corresponding methods are called for {@link Subscription}s
+     * of the returned {@link Publisher}.
+     *
+     * @param subscriptionSupplier Creates a new {@link Subscription} for each new subscribe and invokes all the
+     * {@link Subscription} methods when the {@link Subscription}s of the returned {@link Publisher}.
+     * {@link Subscription} methods <strong>MUST NOT</strong> throw.
+     * @return The new {@link Publisher}.
+     *
+     * @see <a href="http://reactivex.io/documentation/operators/do.html">ReactiveX do operator.</a>
+     */
+    public final Publisher<T> whenSubscription(Supplier<? extends Subscription> subscriptionSupplier) {
+        return afterSubscription(subscriptionSupplier);
     }
 
     /**
