@@ -33,8 +33,6 @@ import io.netty.handler.codec.http2.Http2DataFrame;
 import io.netty.handler.codec.http2.Http2Headers;
 import io.netty.handler.codec.http2.Http2ResetFrame;
 import io.netty.util.ReferenceCountUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 
@@ -45,8 +43,6 @@ import static io.servicetalk.buffer.netty.BufferUtils.toByteBufNoThrow;
 import static io.servicetalk.http.netty.H2ToStH1Utils.h1HeadersToH2Headers;
 
 abstract class AbstractH2DuplexHandler extends ChannelDuplexHandler {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(AbstractH2DuplexHandler.class);
 
     final BufferAllocator allocator;
     final HttpHeadersFactory headersFactory;
@@ -100,8 +96,8 @@ abstract class AbstractH2DuplexHandler extends ChannelDuplexHandler {
         try {
             Http2DataFrame dataFrame = (Http2DataFrame) msg;
             if (dataFrame.content().isReadable()) {
-                // Copy to unpooled heap memory before passing to the user
-                Buffer data = allocator.newBuffer(dataFrame.content().readableBytes(), false);
+                // Copy to unpooled memory before passing to the user
+                Buffer data = allocator.newBuffer(dataFrame.content().readableBytes());
                 ByteBuf nettyData = toByteBuf(data);
                 nettyData.writeBytes(dataFrame.content());
                 toRelease = release(dataFrame);
