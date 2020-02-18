@@ -700,6 +700,26 @@ public abstract class Single<T> {
     }
 
     /**
+     * Invokes the {@code onSubscribe} {@link Consumer} argument when
+     * {@link Subscriber#onSubscribe(Cancellable)} is called for {@link Subscriber}s of the returned {@link Single}.
+     *
+     * <p>
+     * The order in which {@code onSubscribe} will be invoked relative to
+     * {@link Subscriber#onSubscribe(Cancellable)} is undefined. If you need strict ordering see
+     * {@link #beforeOnSubscribe(Consumer)} and {@link #afterOnSubscribe(Consumer)}.
+     *
+     * @param onSubscribe Invoked when {@link Subscriber#onSubscribe(Cancellable)} is called for
+     * {@link Subscriber}s of the returned {@link Single}. <strong>MUST NOT</strong> throw.
+     * @return The new {@link Single}.
+     *
+     * @see #beforeOnSubscribe(Consumer)
+     * @see #afterOnSubscribe(Consumer)
+     */
+    public final Single<T> whenOnSubscribe(Consumer<Cancellable> onSubscribe) {
+        return afterOnSubscribe(onSubscribe);
+    }
+
+    /**
      * Invokes the {@code onSuccess} {@link Consumer} argument <strong>after</strong>
      * {@link Subscriber#onSuccess(Object)} is called for {@link Subscriber}s of the returned {@link Single}.
      * <p>
@@ -794,6 +814,20 @@ public abstract class Single<T> {
      */
     public final Single<T> afterSubscriber(Supplier<? extends Subscriber<? super T>> subscriberSupplier) {
         return new AfterSubscriberSingle<>(this, subscriberSupplier, executor);
+    }
+
+    /**
+     * Creates a new {@link Subscriber} (via the {@code subscriberSupplier} argument) for each new subscribe and
+     * invokes methods on that {@link Subscriber} when the corresponding methods are called for {@link Subscriber}s of
+     * the returned {@link Single}.
+     *
+     * @param subscriberSupplier Creates a new {@link Subscriber} for each new subscribe and invokes methods on that
+     * {@link Subscriber} when the corresponding methods are called for {@link Subscriber}s of the returned
+     * {@link Single}. {@link Subscriber} methods <strong>MUST NOT</strong> throw.
+     * @return The new {@link Single}.
+     */
+    public final Single<T> whenSubscriber(Supplier<? extends Subscriber<? super T>> subscriberSupplier) {
+        return afterSubscriber(subscriberSupplier);
     }
 
     /**

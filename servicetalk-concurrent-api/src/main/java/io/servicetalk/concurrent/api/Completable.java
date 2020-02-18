@@ -790,6 +790,26 @@ public abstract class Completable {
     }
 
     /**
+     * Invokes the {@code onSubscribe} {@link Consumer} argument when
+     * {@link Subscriber#onSubscribe(Cancellable)} is called for {@link Subscriber}s of the returned
+     * {@link Completable}.
+     * <p>
+     * The order in which {@code onSubscribe} will be invoked relative to
+     * {@link Subscriber#onSubscribe(Cancellable)} is undefined. If you need strict ordering see
+     * {@link #beforeOnSubscribe(Consumer)} and {@link #afterOnSubscribe(Consumer)}.
+     *
+     * @param onSubscribe Invoked when {@link Subscriber#onSubscribe(Cancellable)} is called for
+     * {@link Subscriber}s of the returned {@link Completable}. <strong>MUST NOT</strong> throw.
+     * @return The new {@link Completable}.
+     *
+     * @see #beforeOnSubscribe(Consumer)
+     * @see #afterOnSubscribe(Consumer)
+     */
+    public final Completable whenOnSubscribe(Consumer<Cancellable> onSubscribe) {
+        return afterOnSubscribe(onSubscribe);
+    }
+
+    /**
      * Invokes the {@code onComplete} {@link Runnable} argument <strong>after</strong> {@link Subscriber#onComplete()}
      * is called for {@link Subscriber}s of the returned {@link Completable}.
      * <p>
@@ -887,6 +907,20 @@ public abstract class Completable {
      */
     public final Completable afterSubscriber(Supplier<? extends Subscriber> subscriberSupplier) {
         return new AfterSubscriberCompletable(this, subscriberSupplier, executor);
+    }
+
+    /**
+     * Creates a new {@link Subscriber} (via the {@code subscriberSupplier} argument) for each new subscribe and
+     * invokes methods on that {@link Subscriber} when the corresponding methods are called for {@link Subscriber}s of
+     * the returned {@link Publisher}.
+     *
+     * @param subscriberSupplier Creates a new {@link Subscriber} for each new subscribe and invokes methods on that
+     * {@link Subscriber} when the corresponding methods are called for {@link Subscriber}s of the returned
+     * {@link Publisher}. {@link Subscriber} methods <strong>MUST NOT</strong> throw.
+     * @return The new {@link Completable}.
+     */
+    public final Completable whenSubscriber(Supplier<? extends Subscriber> subscriberSupplier) {
+        return afterSubscriber(subscriberSupplier);
     }
 
     /**
