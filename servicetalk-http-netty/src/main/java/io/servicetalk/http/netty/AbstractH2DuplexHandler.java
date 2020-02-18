@@ -33,7 +33,6 @@ import io.netty.handler.codec.http2.Http2DataFrame;
 import io.netty.handler.codec.http2.Http2Headers;
 import io.netty.handler.codec.http2.Http2ResetFrame;
 import io.netty.util.ReferenceCountUtil;
-import io.netty.util.ReferenceCounted;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -124,10 +123,5 @@ abstract class AbstractH2DuplexHandler extends ChannelDuplexHandler {
     private static Http2DataFrame release(Http2DataFrame dataFrame) {
         dataFrame.release();
         return null;
-    }
-
-    static void releaseUnknown(ChannelHandlerContext ctx, ReferenceCounted msg) {
-        ReferenceCountUtil.safeRelease(msg, msg.refCnt());
-        LOGGER.warn("{} Unsupported reference counted frame was emitted and released", ctx.channel());
     }
 }

@@ -34,7 +34,6 @@ import io.netty.handler.codec.http2.DefaultHttp2HeadersFrame;
 import io.netty.handler.codec.http2.Http2DataFrame;
 import io.netty.handler.codec.http2.Http2Headers;
 import io.netty.handler.codec.http2.Http2HeadersFrame;
-import io.netty.util.ReferenceCounted;
 
 import javax.annotation.Nullable;
 
@@ -145,8 +144,6 @@ final class H2ToStH1ClientDuplexHandler extends AbstractH2DuplexHandler {
             }
         } else if (msg instanceof Http2DataFrame) {
             readDataFrame(ctx, msg);
-        } else if (msg instanceof ReferenceCounted) {
-            releaseUnknown(ctx, (ReferenceCounted) msg);
         } else {
             ctx.fireChannelRead(msg);
         }
