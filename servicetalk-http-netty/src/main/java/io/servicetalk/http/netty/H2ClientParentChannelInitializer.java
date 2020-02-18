@@ -18,7 +18,6 @@ package io.servicetalk.http.netty;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
 
 import io.netty.channel.Channel;
-import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
@@ -85,13 +84,8 @@ final class H2ClientParentChannelInitializer implements ChannelInitializer {
         @Override
         public void channelRegistered(final ChannelHandlerContext ctx) {
             // See SETTINGS_ENABLE_PUSH in https://tools.ietf.org/html/rfc7540#section-6.5.2
-            ctx.writeAndFlush(new DefaultHttp2GoAwayFrame(PROTOCOL_ERROR))
-                    .addListener((ChannelFutureListener) future -> {
-                if (!future.isSuccess()) {
-                    LOGGER.debug("Failed to send a GO_AWAY frame for received PUSH_PROMISE frame", future.cause());
-                }
-                ctx.close(); // push streams are not supported
-            });
+            ctx.writeAndFlush(new DefaultHttp2GoAwayFrame(PROTOCOL_ERROR));
+            // Http2ConnectionHandler.processGoAwayWriteResult will close the connection after GO_AWAY is flushed
         }
     }
 }
