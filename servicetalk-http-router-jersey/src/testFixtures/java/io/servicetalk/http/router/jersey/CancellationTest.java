@@ -239,7 +239,8 @@ public class CancellationTest {
                         errorRef.compareAndSet(null, new NullPointerException("result == null not expected."));
                         cancelledLatch.countDown();
                     } else {
-                        result.payloadBodyAndTrailers().ignoreElements().afterFinally(cancelledLatch::countDown).subscribe();
+                        result.payloadBodyAndTrailers().ignoreElements().afterFinally(cancelledLatch::countDown)
+                                .subscribe();
                     }
                 }
 
