@@ -32,7 +32,7 @@ import io.servicetalk.http.api.StreamingHttpResponse;
 import static io.netty.util.NetUtil.isValidIpV6Address;
 import static io.servicetalk.http.api.CharSequences.newAsciiString;
 import static io.servicetalk.http.api.HttpHeaderNames.HOST;
-import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
+import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_0;
 
 /**
  * A filter which will apply a fallback value for the {@link HttpHeaderNames#HOST} header if one is not present.
@@ -84,8 +84,8 @@ final class HostHeaderHttpRequesterFilter implements StreamingHttpClientFilterFa
     private Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                   final HttpExecutionStrategy strategy,
                                                   final StreamingHttpRequest request) {
-        if (HTTP_1_1.equals(request.version()) && !request.headers().contains(HOST)) {
-            request.headers().set(HOST, fallbackHost);
+        if (!HTTP_1_0.equals(request.version()) && !request.headers().contains(HOST)) {
+            request.setHeader(HOST, fallbackHost);
         }
         return delegate.request(strategy, request);
     }
