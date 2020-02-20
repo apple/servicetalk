@@ -105,19 +105,20 @@ public abstract class ByteToMessageDecoder extends ChannelInboundHandlerAdapter 
      */
     private byte decodeState = STATE_INIT;
 
-    private final ByteBufAllocator alloc;
+    private final ByteBufAllocator cumulationAllocator;
 
     /**
      * Create a new instance.
      *
-     * @param alloc Unpooled {@link ByteBufAllocator} used to allocate a new {@link ByteBuf} if necessary for
+     * @param cumulationAllocator Unpooled {@link ByteBufAllocator} used to allocate more memory, if necessary for
      * cumulation.
+     * @throws IllegalArgumentException if the provided {@code cumulationAllocator} is not unpooled.
      */
-    protected ByteToMessageDecoder(final ByteBufAllocator alloc) {
-        if (alloc.isDirectBufferPooled()) {
+    protected ByteToMessageDecoder(final ByteBufAllocator cumulationAllocator) {
+        if (cumulationAllocator.isDirectBufferPooled()) {
             throw new IllegalArgumentException("ByteBufAllocator must be unpooled");
         }
-        this.alloc = alloc;
+        this.cumulationAllocator = cumulationAllocator;
         ensureNotSharable();
     }
 
@@ -222,7 +223,7 @@ public abstract class ByteToMessageDecoder extends ChannelInboundHandlerAdapter 
      * @return the result of the swap and copy operation.
      */
     protected ByteBuf swapAndCopyCumulation(final ByteBuf cumulation, final ByteBuf in) {
-        ByteBuf newCumulation = alloc.buffer(alloc.calculateNewCapacity(
+        ByteBuf newCumulation = cumulationAllocator.buffer(cumulationAllocator.calculateNewCapacity(
                 cumulation.readableBytes() + in.readableBytes(), MAX_VALUE));
         ByteBuf toRelease = newCumulation;
         try {

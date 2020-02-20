@@ -40,6 +40,8 @@ final class HttpClientChannelInitializer implements ChannelInitializer {
      */
     HttpClientChannelInitializer(final ByteBufAllocator alloc, final H1ProtocolConfig config,
                                  final CloseHandler closeHandler) {
+        // H1 slices passed memory chunks into headers and payload body without copying and will emit them to the
+        // user-code. Therefore, ByteBufs must be copied to unpooled memory before HttpObjectDecoder.
         this.delegate = new CopyByteBufHandlerChannelInitializer(alloc).andThen(channel -> {
             final Queue<HttpRequestMethod> methodQueue = new ArrayDeque<>(min(8, config.maxPipelinedRequests()));
             final ChannelPipeline pipeline = channel.pipeline();

@@ -163,6 +163,8 @@ final class NettyHttpServer {
 
     private static ChannelInitializer getChannelInitializer(final ByteBufAllocator alloc, final H1ProtocolConfig config,
                                                             final CloseHandler closeHandler) {
+        // H1 slices passed memory chunks into headers and payload body without copying and will emit them to the
+        // user-code. Therefore, ByteBufs must be copied to unpooled memory before HttpObjectDecoder.
         return new CopyByteBufHandlerChannelInitializer(alloc).andThen(channel -> {
             Queue<HttpRequestMethod> methodQueue = new ArrayDeque<>(2);
             final ChannelPipeline pipeline = channel.pipeline();

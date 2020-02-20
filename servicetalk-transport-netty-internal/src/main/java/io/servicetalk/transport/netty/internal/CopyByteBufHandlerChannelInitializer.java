@@ -43,6 +43,7 @@ public final class CopyByteBufHandlerChannelInitializer implements ChannelInitia
      * Creates a new instance.
      *
      * @param alloc {@link ByteBufAllocator} to allocate unpooled memory.
+     * @throws IllegalArgumentException if the provided {@code alloc} is not unpooled.
      */
     public CopyByteBufHandlerChannelInitializer(final ByteBufAllocator alloc) {
         copyHandler = new CopyByteBufHandler(alloc);
