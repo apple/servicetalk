@@ -84,6 +84,7 @@ final class HostHeaderHttpRequesterFilter implements StreamingHttpClientFilterFa
     private Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
                                                   final HttpExecutionStrategy strategy,
                                                   final StreamingHttpRequest request) {
+        // "Host" header is not required for HTTP/1.0
         if (!HTTP_1_0.equals(request.version()) && !request.headers().contains(HOST)) {
             request.setHeader(HOST, fallbackHost);
         }
