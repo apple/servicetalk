@@ -141,7 +141,7 @@ public final class ProtoBufSerializationProviderBuilder {
     }
 
     private static final class ProtoHttpSerializer<T extends MessageLite> implements HttpSerializer<T> {
-        private static final int METADATA_SIZE = 5;
+        private static final int METADATA_SIZE = 5; // 1 byte for compression flag and 4 bytes for length of data
 
         private final Serializer serializer;
         private final GrpcMessageEncoding grpcMessageEncoding;
