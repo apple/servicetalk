@@ -140,7 +140,9 @@ public final class ProtoBufSerializationProviderBuilder {
         }
     }
 
-    private static final class ProtoHttpSerializer<T> implements HttpSerializer<T> {
+    private static final class ProtoHttpSerializer<T extends MessageLite> implements HttpSerializer<T> {
+        private static final int METADATA_SIZE = 5;
+
         private final Serializer serializer;
         private final GrpcMessageEncoding grpcMessageEncoding;
         private final Class<T> type;
@@ -155,7 +157,7 @@ public final class ProtoBufSerializationProviderBuilder {
         @Override
         public Buffer serialize(final HttpHeaders headers, final T value, final BufferAllocator allocator) {
             addContentHeaders(headers);
-            return serializer.serialize(value, allocator);
+            return serializer.serialize(value, allocator, METADATA_SIZE + value.getSerializedSize());
         }
 
         @Override
