@@ -257,7 +257,7 @@ final class NettyChannelPublisher<T> extends SubscribablePublisher<T> {
 
     private void addPending(Object p) {
         if (pending == null) {
-            pending = new ArrayDeque<>();
+            pending = new ArrayDeque<>(4);  // queue should be able to fit: headers + payloadBody + trailers
         }
         pending.add(p);
     }
