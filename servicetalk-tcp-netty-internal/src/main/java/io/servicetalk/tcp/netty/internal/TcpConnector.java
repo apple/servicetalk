@@ -15,7 +15,6 @@
  */
 package io.servicetalk.tcp.netty.internal;
 
-import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.client.api.RetryableConnectException;
 import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.api.Single;
@@ -119,8 +118,8 @@ public final class TcpConnector {
                 return loop.newFailedFuture(new IllegalArgumentException(
                         FileDescriptorSocketAddress.class.getSimpleName() + " not supported"));
             }
-            return attachCancelSubscriber(initFileDescriptorBasedChannel(config, autoRead, loop, channel,
-                    executionContext.bufferAllocator(), handler), cancellable);
+            return attachCancelSubscriber(initFileDescriptorBasedChannel(config, autoRead, loop, channel, handler),
+                    cancellable);
         } catch (Throwable cause) {
             cancellable.delayedCancellable(IGNORE_CANCEL);
             return ImmediateEventExecutor.INSTANCE.newFailedFuture(cause);
@@ -156,8 +155,7 @@ public final class TcpConnector {
     }
 
     private static ChannelFuture initFileDescriptorBasedChannel(
-            ReadOnlyTcpClientConfig config, boolean autoRead, EventLoop loop, Channel channel,
-            BufferAllocator bufferAllocator, ChannelHandler handler) {
+            ReadOnlyTcpClientConfig config, boolean autoRead, EventLoop loop, Channel channel, ChannelHandler handler) {
         for (@SuppressWarnings("rawtypes") Map.Entry<ChannelOption, Object> opt : config.options().entrySet()) {
             //noinspection unchecked
             channel.config().setOption(opt.getKey(), opt.getValue());
@@ -192,8 +190,7 @@ public final class TcpConnector {
      * A {@link AddressResolverGroup} that is used internally so Netty won't try to
      * resolve addresses, because ServiceTalk is responsible for resolution.
      */
-    private static final class NoopNettyAddressResolverGroup extends
-                                                     AddressResolverGroup<SocketAddress> {
+    private static final class NoopNettyAddressResolverGroup extends AddressResolverGroup<SocketAddress> {
         static final AddressResolverGroup<SocketAddress> INSTANCE = new NoopNettyAddressResolverGroup();
         private static final AbstractAddressResolver<SocketAddress> NOOP_ADDRESS_RESOLVER =
                 new NoopAddressResolver(ImmediateEventExecutor.INSTANCE);
