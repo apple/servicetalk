@@ -25,6 +25,7 @@ import io.netty.channel.ChannelInboundHandler;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelPipeline;
 import io.netty.util.ReferenceCountUtil;
+import io.netty.util.ReferenceCounted;
 
 /**
  * Initializer to configure {@link ChannelInboundHandler} that will ensure no pooled {@link ByteBuf}s are passed to
@@ -83,9 +84,12 @@ public final class CopyByteBufHandlerChannelInitializer implements ChannelInitia
                     original.release();
                     release = false;
                     ctx.fireChannelRead(unpooled);
-                } else {
-                    throw new IllegalArgumentException("Unexpected message type: " + msg.getClass() +
+                } else if (msg instanceof ReferenceCounted) {
+                    throw new IllegalArgumentException("Unexpected ReferenceCounted msg: " + msg.getClass() +
                             ", expected: io.netty.buffer.ByteBuf");
+                } else {
+                    release = false;
+                    ctx.fireChannelRead(msg);
                 }
             } finally {
                 if (release) {

@@ -67,7 +67,7 @@ public class CopyByteBufHandlerTest {
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
                 // Use DatagramPacket as a ByteBufHolder implementation:
                 () -> handler.channelRead(ctx, new DatagramPacket(buf, mock(InetSocketAddress.class))));
-        assertThat(ex.getMessage(), startsWith("Unexpected message type"));
+        assertThat(ex.getMessage(), startsWith("Unexpected ReferenceCounted msg"));
 
         verify(ctx, never()).fireChannelRead(any());
         verify(buf).release();
@@ -101,5 +101,16 @@ public class CopyByteBufHandlerTest {
                 pooledBuf.release();
             }
         }
+    }
+
+    @Test
+    public void forwardsOtherTypes() {
+        CopyByteBufHandler handler = new CopyByteBufHandler(UnpooledByteBufAllocator.DEFAULT);
+        ChannelHandlerContext ctx = mock(ChannelHandlerContext.class);
+        ArgumentCaptor<String> valueCapture = ArgumentCaptor.forClass(String.class);
+        doReturn(ctx).when(ctx).fireChannelRead(valueCapture.capture());
+
+        handler.channelRead(ctx, "test");
+        assertThat(valueCapture.getValue(), equalTo("test"));
     }
 }
