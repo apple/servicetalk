@@ -15,7 +15,6 @@
  */
 package io.servicetalk.tcp.netty.internal;
 
-import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.internal.SubscribableSingle;
 import io.servicetalk.transport.api.ConnectionAcceptor;
@@ -90,8 +89,7 @@ public final class TcpServerBinder {
         listenAddress = toNettyAddress(listenAddress);
         EventLoopAwareNettyIoExecutor nettyIoExecutor = toEventLoopAwareNettyIoExecutor(executionContext.ioExecutor());
         ServerBootstrap bs = new ServerBootstrap();
-        configure(config, autoRead, executionContext.bufferAllocator(), bs, nettyIoExecutor.eventLoopGroup(),
-                listenAddress.getClass());
+        configure(config, autoRead, bs, nettyIoExecutor.eventLoopGroup(), listenAddress.getClass());
 
         ChannelSet channelSet = new ChannelSet(executionContext.executor());
         bs.handler(new ChannelInboundHandlerAdapter() {
@@ -155,8 +153,8 @@ public final class TcpServerBinder {
         };
     }
 
-    private static void configure(ReadOnlyTcpServerConfig config, boolean autoRead, BufferAllocator bufferAllocator,
-                                  ServerBootstrap bs, @Nullable EventLoopGroup eventLoopGroup,
+    private static void configure(ReadOnlyTcpServerConfig config, boolean autoRead, ServerBootstrap bs,
+                                  @Nullable EventLoopGroup eventLoopGroup,
                                   Class<? extends SocketAddress> bindAddressClass) {
         if (eventLoopGroup == null) {
             throw new IllegalStateException("IoExecutor must be specified before building");

@@ -108,7 +108,7 @@ public final class TcpConnector {
             EventLoop loop = toEventLoopAwareNettyIoExecutor(executionContext.ioExecutor()).eventLoopGroup().next();
             if (!(resolvedRemoteAddress instanceof FileDescriptorSocketAddress)) {
                 return attachCancelSubscriber(connectWithBootstrap(localAddress, resolvedRemoteAddress, config,
-                        autoRead, loop, executionContext.bufferAllocator(), handler), cancellable);
+                        autoRead, loop, handler), cancellable);
             }
             if (localAddress != null) {
                 return loop.newFailedFuture(new IllegalArgumentException("local address cannot be specified when " +
@@ -134,7 +134,7 @@ public final class TcpConnector {
 
     private static ChannelFuture connectWithBootstrap(
             @Nullable SocketAddress localAddress, Object resolvedRemoteAddress, ReadOnlyTcpClientConfig config,
-            boolean autoRead, EventLoop loop, BufferAllocator bufferAllocator, ChannelHandler handler) {
+            boolean autoRead, EventLoop loop, ChannelHandler handler) {
         final SocketAddress nettyresolvedRemoteAddress = toNettyAddress(resolvedRemoteAddress);
         Bootstrap bs = new Bootstrap();
         bs.resolver(NoopNettyAddressResolverGroup.INSTANCE);
