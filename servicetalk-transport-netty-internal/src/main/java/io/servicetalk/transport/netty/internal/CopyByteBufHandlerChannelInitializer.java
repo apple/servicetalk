@@ -22,8 +22,8 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandler;
+import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelPipeline;
-import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.ReferenceCountUtil;
 
 /**
@@ -42,11 +42,11 @@ public final class CopyByteBufHandlerChannelInitializer implements ChannelInitia
     /**
      * Creates a new instance.
      *
-     * @param alloc {@link ByteBufAllocator} to allocate unpooled memory.
-     * @throws IllegalArgumentException if the provided {@code alloc} is not unpooled.
+     * @param unpooledAllocator {@link ByteBufAllocator} to allocate unpooled memory.
+     * @throws IllegalArgumentException if the provided {@code unpooledAllocator} is not unpooled.
      */
-    public CopyByteBufHandlerChannelInitializer(final ByteBufAllocator alloc) {
-        copyHandler = new CopyByteBufHandler(alloc);
+    public CopyByteBufHandlerChannelInitializer(final ByteBufAllocator unpooledAllocator) {
+        copyHandler = new CopyByteBufHandler(unpooledAllocator);
     }
 
     @Override
@@ -60,21 +60,38 @@ public final class CopyByteBufHandlerChannelInitializer implements ChannelInitia
      * the user.
      */
     @Sharable
-    private static final class CopyByteBufHandler extends SimpleChannelInboundHandler<ByteBuf> {
+    static final class CopyByteBufHandler extends ChannelInboundHandlerAdapter {
 
-        private final ByteBufAllocator alloc;
+        private final ByteBufAllocator unpooledAllocator;
 
-        private CopyByteBufHandler(final ByteBufAllocator alloc) {
-            if (alloc.isDirectBufferPooled()) {
+        CopyByteBufHandler(final ByteBufAllocator unpooledAllocator) {
+            if (unpooledAllocator.isDirectBufferPooled()) {
                 throw new IllegalArgumentException("ByteBufAllocator must be unpooled");
             }
-            this.alloc = alloc;
+            this.unpooledAllocator = unpooledAllocator;
         }
 
         @Override
-        protected void channelRead0(final ChannelHandlerContext ctx, final ByteBuf buf) {
-            // We must not release the incoming buf here because it will be released by SimpleChannelInboundHandler
-            ctx.fireChannelRead(alloc.buffer(buf.readableBytes()).writeBytes(buf));
+        public void channelRead(final ChannelHandlerContext ctx, final Object msg) {
+            boolean release = true;
+            try {
+                if (msg instanceof ByteBuf) {
+                    final ByteBuf original = (ByteBuf) msg;
+                    assert original.alloc().isDirectBufferPooled();
+
+                    final ByteBuf unpooled = unpooledAllocator.buffer(original.readableBytes()).writeBytes(original);
+                    original.release();
+                    release = false;
+                    ctx.fireChannelRead(unpooled);
+                } else {
+                    throw new IllegalArgumentException("Unexpected message type: " + msg.getClass() +
+                            ", expected: io.netty.buffer.ByteBuf");
+                }
+            } finally {
+                if (release) {
+                    ReferenceCountUtil.release(msg);
+                }
+            }
         }
     }
 }
