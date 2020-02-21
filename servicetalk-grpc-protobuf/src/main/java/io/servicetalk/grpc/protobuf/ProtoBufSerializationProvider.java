@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019-2020 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,16 +24,20 @@ import io.servicetalk.serialization.api.StreamingDeserializer;
 import io.servicetalk.serialization.api.StreamingSerializer;
 import io.servicetalk.serialization.api.TypeHolder;
 
+import com.google.protobuf.CodedInputStream;
+import com.google.protobuf.CodedOutputStream;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.MessageLite;
 import com.google.protobuf.Parser;
 
 import java.io.IOException;
-import java.io.OutputStream;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import javax.annotation.Nullable;
 
+import static com.google.protobuf.CodedOutputStream.newInstance;
+import static com.google.protobuf.UnsafeByteOperations.unsafeWrap;
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static java.lang.Math.max;
 import static java.util.Collections.emptyList;
@@ -146,7 +150,22 @@ final class ProtoBufSerializationProvider<T extends MessageLite> implements Seri
 
                     final T t;
                     try {
-                        t = parser.parseFrom(toDeserialize.toNioBuffer(toDeserialize.readerIndex(), lengthOfData));
+                        final CodedInputStream in;
+                        if (toDeserialize.nioBufferCount() == 1) {
+                            in = CodedInputStream.newInstance(toDeserialize.toNioBuffer(toDeserialize.readerIndex(),
+                                    lengthOfData));
+                        } else {
+                            // Aggregated payload body may consist of multiple Buffers. In this case,
+                            // CompositeBuffer.toNioBuffer(idx, length) may return a single ByteBuffer (when requested
+                            // length < components[0].length) or create a new ByteBuffer and copy multiple components
+                            // into it. Later, proto parser will copy data from this temporary ByteBuffer again.
+                            // To avoid unnecessary copying, we use newCodedInputStream(buffers, lengthOfData).
+                            final ByteBuffer[] buffers = toDeserialize.toNioBuffers(toDeserialize.readerIndex(),
+                                    lengthOfData);
+                            in = buffers.length == 1 ? CodedInputStream.newInstance(buffers[0]) :
+                                    newCodedInputStream(buffers, lengthOfData);
+                        }
+                        t = parser.parseFrom(in);
                     } catch (InvalidProtocolBufferException e) {
                         throw new SerializationException(e);
                     }
@@ -184,6 +203,23 @@ final class ProtoBufSerializationProvider<T extends MessageLite> implements Seri
                     }
                 }
             }
+        }
+
+        private static CodedInputStream newCodedInputStream(final ByteBuffer[] buffers, final int lengthOfData) {
+            // Because we allocated a new internal ByteBuffer that will never be mutated we may just wrap it and
+            // enable aliasing to avoid an extra copying inside parser for a deserialized message.
+            final CodedInputStream in = unsafeWrap(mergeByteBuffers(buffers, lengthOfData)).newCodedInput();
+            in.enableAliasing(true);
+            return in;
+        }
+
+        private static ByteBuffer mergeByteBuffers(final ByteBuffer[] buffers, final int lengthOfData) {
+            final ByteBuffer merged = ByteBuffer.allocate(lengthOfData);
+            for (ByteBuffer buf : buffers) {
+                merged.put(buf);
+            }
+            merged.flip();
+            return merged;
         }
 
         @Override
@@ -226,16 +262,24 @@ final class ProtoBufSerializationProvider<T extends MessageLite> implements Seri
                 throw new SerializationException("Unknown type to serialize (expected MessageLite): " +
                         toSerialize.getClass().getName());
             }
-            MessageLite msg = (MessageLite) toSerialize;
-            int size = msg.getSerializedSize();
+            final MessageLite msg = (MessageLite) toSerialize;
+            final int size = msg.getSerializedSize();
             // TODO (nkant) : handle compression
             destination.writeByte(0);
             destination.writeInt(size);
-            try (OutputStream out = Buffer.asOutputStream(destination)) {
+            destination.ensureWritable(size);
+
+            final int writerIdx = destination.writerIndex();
+            final int writableBytes = destination.writableBytes();
+            final CodedOutputStream out = destination.hasArray() ?
+                    newInstance(destination.array(), destination.arrayOffset() + writerIdx, writableBytes) :
+                    newInstance(destination.toNioBuffer(writerIdx, writableBytes));
+            try {
                 msg.writeTo(out);
             } catch (IOException e) {
                 throw new SerializationException(e);
             }
+            destination.writerIndex(writerIdx + size);
         }
     }
 }
