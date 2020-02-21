@@ -36,6 +36,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
+import io.netty.util.ReferenceCounted;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -96,6 +97,15 @@ public final class TcpServerBinder {
         bs.handler(new ChannelInboundHandlerAdapter() {
             @Override
             public void channelRead(final ChannelHandlerContext ctx, final Object msg) {
+                // Verify that we do not leak pooled memory in the "accept" pipeline
+                if (msg instanceof ReferenceCounted) {
+                    try {
+                        throw new IllegalArgumentException("Unexpected ReferenceCounted msg in 'accept' pipeline: " +
+                                msg);
+                    } finally {
+                        ((ReferenceCounted) msg).release();
+                    }
+                }
                 if (msg instanceof Channel && !channelSet.addIfAbsent((Channel) msg)) {
                     LOGGER.warn("Channel ({}) not added to ChannelSet", msg);
                 }
