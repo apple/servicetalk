@@ -26,7 +26,7 @@ import io.netty.util.DomainNameMapping;
 import javax.annotation.Nullable;
 import javax.net.ssl.SSLEngine;
 
-import static io.servicetalk.transport.netty.internal.PooledRecvByteBufAllocatorInitializers.POOLED_ALLOCATOR;
+import static io.servicetalk.transport.netty.internal.CopyByteBufHandlerChannelInitializer.POOLED_ALLOCATOR;
 import static io.servicetalk.transport.netty.internal.SslUtils.newHandler;
 import static java.util.Objects.requireNonNull;
 

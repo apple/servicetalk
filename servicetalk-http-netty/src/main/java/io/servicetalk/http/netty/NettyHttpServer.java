@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2020 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -53,6 +53,7 @@ import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
 import io.servicetalk.transport.netty.internal.CloseHandler;
 import io.servicetalk.transport.netty.internal.CloseHandler.CloseEventObservedException;
+import io.servicetalk.transport.netty.internal.CopyByteBufHandlerChannelInitializer;
 import io.servicetalk.transport.netty.internal.DefaultNettyConnection;
 import io.servicetalk.transport.netty.internal.FlushStrategy;
 import io.servicetalk.transport.netty.internal.NettyConnection;
@@ -60,6 +61,7 @@ import io.servicetalk.transport.netty.internal.NettyConnection.TerminalPredicate
 import io.servicetalk.transport.netty.internal.NettyConnectionContext;
 import io.servicetalk.transport.netty.internal.SplittingFlushStrategy;
 
+import io.netty.buffer.ByteBufAllocator;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelPipeline;
 import io.netty.handler.codec.DecoderException;
@@ -77,6 +79,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.net.ssl.SSLSession;
 
+import static io.servicetalk.buffer.netty.BufferUtils.getByteBufAllocator;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
 import static io.servicetalk.concurrent.api.AsyncCloseables.toListenableAsyncCloseable;
 import static io.servicetalk.concurrent.api.Completable.completed;
@@ -151,22 +154,25 @@ final class NettyHttpServer {
         return showPipeline(DefaultNettyConnection.initChannel(channel,
                 httpExecutionContext.bufferAllocator(), httpExecutionContext.executor(),
                 new TerminalPredicate<>(LAST_CHUNK_PREDICATE), closeHandler, config.tcpConfig().flushStrategy(),
-                initializer.andThen(getChannelInitializer(h1Config, closeHandler)),
+                initializer.andThen(getChannelInitializer(getByteBufAllocator(httpExecutionContext.bufferAllocator()),
+                        h1Config, closeHandler)),
                 httpExecutionContext.executionStrategy())
                 .map(conn -> new NettyHttpServerConnection(conn, service, httpExecutionContext.executionStrategy(),
                         h1Config.headersFactory(), drainRequestPayloadBody)), "HTTP/1.1", channel);
     }
 
-    private static ChannelInitializer getChannelInitializer(final H1ProtocolConfig config,
+    private static ChannelInitializer getChannelInitializer(final ByteBufAllocator alloc, final H1ProtocolConfig config,
                                                             final CloseHandler closeHandler) {
-        return channel -> {
+        // H1 slices passed memory chunks into headers and payload body without copying and will emit them to the
+        // user-code. Therefore, ByteBufs must be copied to unpooled memory before HttpObjectDecoder.
+        return new CopyByteBufHandlerChannelInitializer(alloc).andThen(channel -> {
             Queue<HttpRequestMethod> methodQueue = new ArrayDeque<>(2);
             final ChannelPipeline pipeline = channel.pipeline();
-            pipeline.addLast(new HttpRequestDecoder(methodQueue, config.headersFactory(),
+            pipeline.addLast(new HttpRequestDecoder(methodQueue, alloc, config.headersFactory(),
                     config.maxStartLineLength(), config.maxHeaderFieldLength(), closeHandler));
             pipeline.addLast(new HttpResponseEncoder(methodQueue, config.headersEncodedSizeEstimate(),
                     config.trailersEncodedSizeEstimate(), closeHandler));
-        };
+        });
     }
 
     static final class NettyHttpServerContext implements ServerContext {

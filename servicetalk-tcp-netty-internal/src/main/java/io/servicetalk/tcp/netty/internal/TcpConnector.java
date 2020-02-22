@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2020 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,8 +15,6 @@
  */
 package io.servicetalk.tcp.netty.internal;
 
-import io.servicetalk.buffer.api.BufferAllocator;
-import io.servicetalk.buffer.netty.BufferUtils;
 import io.servicetalk.client.api.RetryableConnectException;
 import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.api.Single;
@@ -49,6 +47,7 @@ import javax.annotation.Nullable;
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
 import static io.servicetalk.transport.netty.internal.BuilderUtils.socketChannel;
 import static io.servicetalk.transport.netty.internal.BuilderUtils.toNettyAddress;
+import static io.servicetalk.transport.netty.internal.CopyByteBufHandlerChannelInitializer.POOLED_ALLOCATOR;
 import static io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutors.toEventLoopAwareNettyIoExecutor;
 import static java.util.Objects.requireNonNull;
 
@@ -108,7 +107,7 @@ public final class TcpConnector {
             EventLoop loop = toEventLoopAwareNettyIoExecutor(executionContext.ioExecutor()).eventLoopGroup().next();
             if (!(resolvedRemoteAddress instanceof FileDescriptorSocketAddress)) {
                 return attachCancelSubscriber(connectWithBootstrap(localAddress, resolvedRemoteAddress, config,
-                        autoRead, loop, executionContext.bufferAllocator(), handler), cancellable);
+                        autoRead, loop, handler), cancellable);
             }
             if (localAddress != null) {
                 return loop.newFailedFuture(new IllegalArgumentException("local address cannot be specified when " +
@@ -119,8 +118,8 @@ public final class TcpConnector {
                 return loop.newFailedFuture(new IllegalArgumentException(
                         FileDescriptorSocketAddress.class.getSimpleName() + " not supported"));
             }
-            return attachCancelSubscriber(initFileDescriptorBasedChannel(config, autoRead, loop, channel,
-                    executionContext.bufferAllocator(), handler), cancellable);
+            return attachCancelSubscriber(initFileDescriptorBasedChannel(config, autoRead, loop, channel, handler),
+                    cancellable);
         } catch (Throwable cause) {
             cancellable.delayedCancellable(IGNORE_CANCEL);
             return ImmediateEventExecutor.INSTANCE.newFailedFuture(cause);
@@ -134,7 +133,7 @@ public final class TcpConnector {
 
     private static ChannelFuture connectWithBootstrap(
             @Nullable SocketAddress localAddress, Object resolvedRemoteAddress, ReadOnlyTcpClientConfig config,
-            boolean autoRead, EventLoop loop, BufferAllocator bufferAllocator, ChannelHandler handler) {
+            boolean autoRead, EventLoop loop, ChannelHandler handler) {
         final SocketAddress nettyresolvedRemoteAddress = toNettyAddress(resolvedRemoteAddress);
         Bootstrap bs = new Bootstrap();
         bs.resolver(NoopNettyAddressResolverGroup.INSTANCE);
@@ -149,15 +148,14 @@ public final class TcpConnector {
         bs.option(ChannelOption.AUTO_READ, autoRead);
 
         // Set the correct ByteBufAllocator based on our BufferAllocator to minimize memory copies.
-        bs.option(ChannelOption.ALLOCATOR, BufferUtils.getByteBufAllocator(bufferAllocator));
+        bs.option(ChannelOption.ALLOCATOR, POOLED_ALLOCATOR);
 
         // If the connect operation fails we must take care to fail the promise.
         return bs.connect(nettyresolvedRemoteAddress, localAddress);
     }
 
     private static ChannelFuture initFileDescriptorBasedChannel(
-            ReadOnlyTcpClientConfig config, boolean autoRead, EventLoop loop, Channel channel,
-            BufferAllocator bufferAllocator, ChannelHandler handler) {
+            ReadOnlyTcpClientConfig config, boolean autoRead, EventLoop loop, Channel channel, ChannelHandler handler) {
         for (@SuppressWarnings("rawtypes") Map.Entry<ChannelOption, Object> opt : config.options().entrySet()) {
             //noinspection unchecked
             channel.config().setOption(opt.getKey(), opt.getValue());
@@ -165,7 +163,7 @@ public final class TcpConnector {
         channel.config().setOption(ChannelOption.AUTO_READ, autoRead);
 
         // Set the correct ByteBufAllocator based on our BufferAllocator to minimize memory copies.
-        channel.config().setAllocator(BufferUtils.getByteBufAllocator(bufferAllocator));
+        channel.config().setAllocator(POOLED_ALLOCATOR);
         channel.pipeline().addLast(handler);
         return loop.register(channel);
     }
@@ -192,8 +190,7 @@ public final class TcpConnector {
      * A {@link AddressResolverGroup} that is used internally so Netty won't try to
      * resolve addresses, because ServiceTalk is responsible for resolution.
      */
-    private static final class NoopNettyAddressResolverGroup extends
-                                                     AddressResolverGroup<SocketAddress> {
+    private static final class NoopNettyAddressResolverGroup extends AddressResolverGroup<SocketAddress> {
         static final AddressResolverGroup<SocketAddress> INSTANCE = new NoopNettyAddressResolverGroup();
         private static final AbstractAddressResolver<SocketAddress> NOOP_ADDRESS_RESOLVER =
                 new NoopAddressResolver(ImmediateEventExecutor.INSTANCE);

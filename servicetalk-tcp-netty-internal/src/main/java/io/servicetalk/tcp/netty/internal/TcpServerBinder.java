@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019-2020 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,8 +15,6 @@
  */
 package io.servicetalk.tcp.netty.internal;
 
-import io.servicetalk.buffer.api.BufferAllocator;
-import io.servicetalk.buffer.netty.BufferUtils;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.internal.SubscribableSingle;
 import io.servicetalk.transport.api.ConnectionAcceptor;
@@ -37,6 +35,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
+import io.netty.util.ReferenceCounted;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,6 +48,7 @@ import javax.annotation.Nullable;
 import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.transport.netty.internal.BuilderUtils.toNettyAddress;
+import static io.servicetalk.transport.netty.internal.CopyByteBufHandlerChannelInitializer.POOLED_ALLOCATOR;
 import static io.servicetalk.transport.netty.internal.EventLoopAwareNettyIoExecutors.toEventLoopAwareNettyIoExecutor;
 import static java.util.Objects.requireNonNull;
 
@@ -89,13 +89,21 @@ public final class TcpServerBinder {
         listenAddress = toNettyAddress(listenAddress);
         EventLoopAwareNettyIoExecutor nettyIoExecutor = toEventLoopAwareNettyIoExecutor(executionContext.ioExecutor());
         ServerBootstrap bs = new ServerBootstrap();
-        configure(config, autoRead, executionContext.bufferAllocator(), bs, nettyIoExecutor.eventLoopGroup(),
-                listenAddress.getClass());
+        configure(config, autoRead, bs, nettyIoExecutor.eventLoopGroup(), listenAddress.getClass());
 
         ChannelSet channelSet = new ChannelSet(executionContext.executor());
         bs.handler(new ChannelInboundHandlerAdapter() {
             @Override
             public void channelRead(final ChannelHandlerContext ctx, final Object msg) {
+                // Verify that we do not leak pooled memory in the "accept" pipeline
+                if (msg instanceof ReferenceCounted) {
+                    try {
+                        throw new IllegalArgumentException("Unexpected ReferenceCounted msg in 'accept' pipeline: " +
+                                msg);
+                    } finally {
+                        ((ReferenceCounted) msg).release();
+                    }
+                }
                 if (msg instanceof Channel && !channelSet.addIfAbsent((Channel) msg)) {
                     LOGGER.warn("Channel ({}) not added to ChannelSet", msg);
                 }
@@ -145,8 +153,8 @@ public final class TcpServerBinder {
         };
     }
 
-    private static void configure(ReadOnlyTcpServerConfig config, boolean autoRead, BufferAllocator bufferAllocator,
-                                  ServerBootstrap bs, @Nullable EventLoopGroup eventLoopGroup,
+    private static void configure(ReadOnlyTcpServerConfig config, boolean autoRead, ServerBootstrap bs,
+                                  @Nullable EventLoopGroup eventLoopGroup,
                                   Class<? extends SocketAddress> bindAddressClass) {
         if (eventLoopGroup == null) {
             throw new IllegalStateException("IoExecutor must be specified before building");
@@ -165,7 +173,7 @@ public final class TcpServerBinder {
         bs.option(ChannelOption.SO_BACKLOG, config.backlog());
 
         // Set the correct ByteBufAllocator based on our BufferAllocator to minimize memory copies.
-        ByteBufAllocator byteBufAllocator = BufferUtils.getByteBufAllocator(bufferAllocator);
+        ByteBufAllocator byteBufAllocator = POOLED_ALLOCATOR;
         bs.option(ChannelOption.ALLOCATOR, byteBufAllocator);
         bs.childOption(ChannelOption.ALLOCATOR, byteBufAllocator);
     }

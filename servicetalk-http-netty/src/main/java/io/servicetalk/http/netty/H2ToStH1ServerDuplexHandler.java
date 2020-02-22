@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019-2020 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -51,12 +51,10 @@ import static io.servicetalk.http.netty.HeaderUtils.shouldAddZeroContentLength;
 
 final class H2ToStH1ServerDuplexHandler extends AbstractH2DuplexHandler {
     private boolean readHeaders;
-    private final BufferAllocator allocator;
 
     H2ToStH1ServerDuplexHandler(BufferAllocator allocator, HttpHeadersFactory headersFactory,
                                 CloseHandler closeHandler) {
-        super(headersFactory, closeHandler);
-        this.allocator = allocator;
+        super(allocator, headersFactory, closeHandler);
     }
 
     @Override

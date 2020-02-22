@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019-2020 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.buffer.api.Buffer;
+import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.http.api.HttpHeaders;
 import io.servicetalk.http.api.HttpHeadersFactory;
 import io.servicetalk.http.netty.H2ToStH1Utils.H2StreamRefusedException;
@@ -31,18 +32,24 @@ import io.netty.handler.codec.http2.DefaultHttp2HeadersFrame;
 import io.netty.handler.codec.http2.Http2DataFrame;
 import io.netty.handler.codec.http2.Http2Headers;
 import io.netty.handler.codec.http2.Http2ResetFrame;
+import io.netty.util.ReferenceCountUtil;
+
+import javax.annotation.Nullable;
 
 import static io.netty.buffer.Unpooled.EMPTY_BUFFER;
 import static io.netty.handler.codec.http2.Http2Error.REFUSED_STREAM;
-import static io.servicetalk.buffer.netty.BufferUtils.newBufferFrom;
+import static io.servicetalk.buffer.netty.BufferUtils.toByteBuf;
 import static io.servicetalk.buffer.netty.BufferUtils.toByteBufNoThrow;
 import static io.servicetalk.http.netty.H2ToStH1Utils.h1HeadersToH2Headers;
 
 abstract class AbstractH2DuplexHandler extends ChannelDuplexHandler {
+
+    final BufferAllocator allocator;
     final HttpHeadersFactory headersFactory;
     final CloseHandler closeHandler;
 
-    AbstractH2DuplexHandler(HttpHeadersFactory headersFactory, final CloseHandler closeHandler) {
+    AbstractH2DuplexHandler(BufferAllocator allocator, HttpHeadersFactory headersFactory, CloseHandler closeHandler) {
+        this.allocator = allocator;
         this.headersFactory = headersFactory;
         this.closeHandler = closeHandler;
     }
@@ -85,14 +92,32 @@ abstract class AbstractH2DuplexHandler extends ChannelDuplexHandler {
     }
 
     final void readDataFrame(ChannelHandlerContext ctx, Object msg) {
-        Http2DataFrame dataFrame = (Http2DataFrame) msg;
-        if (dataFrame.content().isReadable()) {
-            ctx.fireChannelRead(newBufferFrom(dataFrame.content()));
-        } else {
-            dataFrame.release();
+        Object toRelease = msg;
+        try {
+            Http2DataFrame dataFrame = (Http2DataFrame) msg;
+            if (dataFrame.content().isReadable()) {
+                // Copy to unpooled memory before passing to the user
+                Buffer data = allocator.newBuffer(dataFrame.content().readableBytes());
+                ByteBuf nettyData = toByteBuf(data);
+                nettyData.writeBytes(dataFrame.content());
+                toRelease = release(dataFrame);
+                ctx.fireChannelRead(data);
+            } else {
+                toRelease = release(dataFrame);
+            }
+            if (dataFrame.isEndStream()) {
+                ctx.fireChannelRead(headersFactory.newEmptyTrailers());
+            }
+        } finally {
+            if (toRelease != null) {
+                ReferenceCountUtil.release(toRelease);
+            }
         }
-        if (dataFrame.isEndStream()) {
-            ctx.fireChannelRead(headersFactory.newEmptyTrailers());
-        }
+    }
+
+    @Nullable
+    private static Http2DataFrame release(Http2DataFrame dataFrame) {
+        dataFrame.release();
+        return null;
     }
 }

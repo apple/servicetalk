@@ -21,7 +21,7 @@ import io.netty.handler.ssl.SslHandler;
 
 import javax.annotation.Nullable;
 
-import static io.servicetalk.transport.netty.internal.PooledRecvByteBufAllocatorInitializers.POOLED_ALLOCATOR;
+import static io.servicetalk.transport.netty.internal.CopyByteBufHandlerChannelInitializer.POOLED_ALLOCATOR;
 import static io.servicetalk.transport.netty.internal.SslUtils.newHandler;
 import static java.util.Objects.requireNonNull;
 

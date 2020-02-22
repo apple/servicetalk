@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2020 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@ import io.servicetalk.transport.netty.internal.NettyConnection.TerminalPredicate
 
 import io.netty.channel.Channel;
 
+import static io.servicetalk.buffer.netty.BufferUtils.getByteBufAllocator;
 import static io.servicetalk.http.netty.HeaderUtils.LAST_CHUNK_PREDICATE;
 import static io.servicetalk.http.netty.HttpDebugUtils.showPipeline;
 import static io.servicetalk.transport.netty.internal.CloseHandler.forPipelinedRequestResponse;
@@ -49,10 +50,12 @@ final class StreamingConnectionFactory {
             final HttpExecutionContext executionContext, final ReadOnlyHttpClientConfig config,
             final ChannelInitializer initializer) {
         final CloseHandler closeHandler = forPipelinedRequestResponse(true, channel.config());
+        assert config.h1Config() != null;
         return showPipeline(DefaultNettyConnection.initChannel(channel, executionContext.bufferAllocator(),
                 executionContext.executor(), new TerminalPredicate<>(LAST_CHUNK_PREDICATE), closeHandler,
                 config.tcpConfig().flushStrategy(),
-                initializer.andThen(new HttpClientChannelInitializer(config.h1Config(), closeHandler)),
+                initializer.andThen(new HttpClientChannelInitializer(
+                        getByteBufAllocator(executionContext.bufferAllocator()), config.h1Config(), closeHandler)),
                 executionContext.executionStrategy()), "HTTP/1.1", channel);
     }
 }

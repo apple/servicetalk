@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2020 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -105,10 +105,20 @@ public abstract class ByteToMessageDecoder extends ChannelInboundHandlerAdapter 
      */
     private byte decodeState = STATE_INIT;
 
+    private final ByteBufAllocator cumulationAllocator;
+
     /**
      * Create a new instance.
+     *
+     * @param cumulationAllocator Unpooled {@link ByteBufAllocator} used to allocate more memory, if necessary for
+     * cumulation.
+     * @throws IllegalArgumentException if the provided {@code cumulationAllocator} is not unpooled.
      */
-    protected ByteToMessageDecoder() {
+    protected ByteToMessageDecoder(final ByteBufAllocator cumulationAllocator) {
+        if (cumulationAllocator.isDirectBufferPooled()) {
+            throw new IllegalArgumentException("ByteBufAllocator must be unpooled");
+        }
+        this.cumulationAllocator = cumulationAllocator;
         ensureNotSharable();
     }
 
@@ -163,7 +173,7 @@ public abstract class ByteToMessageDecoder extends ChannelInboundHandlerAdapter 
                             // - cumulation cannot be resized to accommodate the additional data
                             // - cumulation can be expanded with a reallocation operation to accommodate but the buffer
                             //   is assumed to be shared (e.g. refCnt() > 1) and the reallocation may not be safe.
-                            cumulation = swapAndCopyCumulation(ctx.alloc(), cumulation, data);
+                            cumulation = swapAndCopyCumulation(cumulation, data);
                         } else {
                             cumulation.writeBytes(data);
                         }
@@ -208,13 +218,12 @@ public abstract class ByteToMessageDecoder extends ChannelInboundHandlerAdapter 
      * {@link ByteBuf#discardReadBytes()} is generally avoided in this method because it changes the underlying data
      * structure. If others have slices of this {@link ByteBuf} their view on the data will become corrupted. This is
      * commonly a problem when processing data asynchronously to avoid blocking the {@link EventLoop} thread.
-     * @param alloc Used to allocate a new {@link ByteBuf} if necessary.
      * @param cumulation The {@link ByteBuf} that accumulates across socket read operations.
      * @param in The bytes to copy.
      * @return the result of the swap and copy operation.
      */
-    protected ByteBuf swapAndCopyCumulation(final ByteBufAllocator alloc, final ByteBuf cumulation, final ByteBuf in) {
-        ByteBuf newCumulation = alloc.buffer(alloc.calculateNewCapacity(
+    protected ByteBuf swapAndCopyCumulation(final ByteBuf cumulation, final ByteBuf in) {
+        ByteBuf newCumulation = cumulationAllocator.buffer(cumulationAllocator.calculateNewCapacity(
                 cumulation.readableBytes() + in.readableBytes(), MAX_VALUE));
         ByteBuf toRelease = newCumulation;
         try {

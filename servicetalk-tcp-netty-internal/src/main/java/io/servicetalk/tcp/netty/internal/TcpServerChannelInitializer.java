@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2020 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,9 +22,6 @@ import io.servicetalk.transport.netty.internal.WireLoggingInitializer;
 
 import io.netty.channel.Channel;
 
-import static io.servicetalk.transport.netty.internal.PooledRecvByteBufAllocatorInitializers.COPY_HANDLER_INITIALIZER;
-import static io.servicetalk.transport.netty.internal.PooledRecvByteBufAllocatorInitializers.POOLED_RECV_ALLOCATOR_INITIALIZER;
-
 /**
  * {@link ChannelInitializer} for TCP.
  */
@@ -38,8 +35,7 @@ public class TcpServerChannelInitializer implements ChannelInitializer {
      * @param config to use for initialization.
      */
     public TcpServerChannelInitializer(final ReadOnlyTcpServerConfig config) {
-        ChannelInitializer delegate = ChannelInitializer.defaultInitializer()
-                .andThen(POOLED_RECV_ALLOCATOR_INITIALIZER);
+        ChannelInitializer delegate = ChannelInitializer.defaultInitializer();
 
         if (config.idleTimeoutMs() > 0) {
             delegate = delegate.andThen(new IdleTimeoutInitializer(config.idleTimeoutMs()));
@@ -50,8 +46,6 @@ public class TcpServerChannelInitializer implements ChannelInitializer {
         } else if (config.sslContext() != null) {
             delegate = delegate.andThen(new SslServerChannelInitializer(config.sslContext()));
         }
-
-        delegate = delegate.andThen(COPY_HANDLER_INITIALIZER);
 
         final WireLoggingInitializer wireLoggingInitializer = config.wireLoggingInitializer();
         if (wireLoggingInitializer != null) {

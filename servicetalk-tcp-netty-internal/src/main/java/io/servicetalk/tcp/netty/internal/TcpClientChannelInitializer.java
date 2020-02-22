@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2020 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,9 +25,6 @@ import io.netty.channel.Channel;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslHandler;
 
-import static io.servicetalk.transport.netty.internal.PooledRecvByteBufAllocatorInitializers.COPY_HANDLER_INITIALIZER;
-import static io.servicetalk.transport.netty.internal.PooledRecvByteBufAllocatorInitializers.POOLED_RECV_ALLOCATOR_INITIALIZER;
-
 /**
  * {@link ChannelInitializer} for TCP client.
  */
@@ -51,8 +48,7 @@ public class TcpClientChannelInitializer implements ChannelInitializer {
      * @param deferSslHandler {@code true} to wrap the {@link SslHandler} in a {@link DeferSslHandler}.
      */
     public TcpClientChannelInitializer(final ReadOnlyTcpClientConfig config, final boolean deferSslHandler) {
-        ChannelInitializer delegate = ChannelInitializer.defaultInitializer()
-                .andThen(POOLED_RECV_ALLOCATOR_INITIALIZER);
+        ChannelInitializer delegate = ChannelInitializer.defaultInitializer();
 
         if (config.idleTimeoutMs() > 0) {
             delegate = delegate.andThen(new IdleTimeoutInitializer(config.idleTimeoutMs()));
@@ -64,8 +60,6 @@ public class TcpClientChannelInitializer implements ChannelInitializer {
                     config.sslHostnameVerificationAlgorithm(), config.sslHostnameVerificationHost(),
                     config.sslHostnameVerificationPort(), deferSslHandler));
         }
-
-        delegate = delegate.andThen(COPY_HANDLER_INITIALIZER);
 
         final WireLoggingInitializer wireLoggingInitializer = config.wireLoggingInitializer();
         if (wireLoggingInitializer != null) {
