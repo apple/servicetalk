@@ -86,7 +86,7 @@ public final class CopyByteBufHandlerChannelInitializer implements ChannelInitia
                     ctx.fireChannelRead(unpooled);
                 } else if (msg instanceof ReferenceCounted) {
                     throw new IllegalArgumentException("Unexpected ReferenceCounted msg: " + msg.getClass() +
-                            ", expected: io.netty.buffer.ByteBuf");
+                            ", expected: " + ByteBuf.class);
                 } else {
                     release = false;
                     ctx.fireChannelRead(msg);
