@@ -15,7 +15,6 @@
  */
 package io.servicetalk.grpc.netty;
 
-import io.servicetalk.concurrent.api.AsyncCloseables;
 import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
@@ -35,11 +34,9 @@ import org.junit.Test;
 import org.junit.rules.Timeout;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameter;
 
 import java.util.Collection;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.closeAsyncGracefully;
 import static io.servicetalk.concurrent.api.AsyncCloseables.newCompositeCloseable;
