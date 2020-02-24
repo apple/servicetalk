@@ -154,13 +154,13 @@ final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
         final BlockingStreamingClientCall<Req, Resp> streamingClientCall =
                 newBlockingStreamingCall(serializationProvider, requestClass, responseClass);
         return (metadata, request) -> {
-            final BlockingIterator<Resp> iterator = streamingClientCall.request(metadata, request).iterator();
-            final Resp firstItem = iterator.next();
-            if (iterator.hasNext()) {
-                throw new IllegalArgumentException("Only a single item expected, but saw the second value: " +
-                        iterator.next());
+            try (BlockingIterator<Resp> iterator = streamingClientCall.request(metadata, request).iterator()) {
+                final Resp firstItem = requireNonNull(iterator.next(), "Response item is null");
+                if (iterator.hasNext()) {
+                    throw new IllegalStateException("Only a single response item is expected, but saw the second one");
+                }
+                return firstItem;
             }
-            return firstItem;
         };
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019-2020 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 package io.servicetalk.grpc.api;
 
 import io.servicetalk.concurrent.BlockingIterable;
+import io.servicetalk.concurrent.BlockingIterator;
 import io.servicetalk.concurrent.GracefulAutoCloseable;
 import io.servicetalk.concurrent.api.AsyncCloseable;
 import io.servicetalk.concurrent.api.AsyncCloseables;
@@ -67,6 +68,7 @@ import static io.servicetalk.grpc.api.GrpcRouteConversions.toResponseStreamingRo
 import static io.servicetalk.grpc.api.GrpcRouteConversions.toRoute;
 import static io.servicetalk.grpc.api.GrpcRouteConversions.toStreaming;
 import static io.servicetalk.grpc.api.GrpcStatus.fromCodeValue;
+import static io.servicetalk.grpc.api.GrpcStatusCode.INVALID_ARGUMENT;
 import static io.servicetalk.grpc.api.GrpcStatusCode.UNIMPLEMENTED;
 import static io.servicetalk.grpc.api.GrpcUtils.newErrorResponse;
 import static io.servicetalk.grpc.api.GrpcUtils.newResponse;
@@ -572,7 +574,16 @@ final class GrpcRouter {
                         @Override
                         public void handle(final GrpcServiceContext ctx, final BlockingIterable<Req> request,
                                            final GrpcPayloadWriter<Resp> responseWriter) throws Exception {
-                            route.handle(ctx, requireNonNull(request.iterator().next()), responseWriter);
+                            final Req firstItem;
+                            try (BlockingIterator<Req> requestIterator = request.iterator()) {
+                                firstItem = requireNonNull(requestIterator.next(), "Request item is null");
+                                if (requestIterator.hasNext()) {
+                                    throw new GrpcStatus(INVALID_ARGUMENT, null,
+                                            "Only a single request item is expected, but saw the second one")
+                                            .asException();
+                                }
+                            }
+                            route.handle(ctx, firstItem, responseWriter);
                         }
 
                         @Override
