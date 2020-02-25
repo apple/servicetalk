@@ -581,8 +581,7 @@ final class GrpcRouter {
                                     // Consume the next item to make sure it's not a TerminalNotification with an error
                                     requestIterator.next();
                                     throw new GrpcStatus(INVALID_ARGUMENT, null,
-                                            "Only a single request item is expected, but saw the second one")
-                                            .asException();
+                                            "More than one request message received").asException();
                                 }
                             }
                             route.handle(ctx, firstItem, responseWriter);

@@ -24,17 +24,16 @@ import io.servicetalk.grpc.api.GrpcStatusException;
 import io.servicetalk.grpc.netty.TesterProto.TestRequest;
 import io.servicetalk.grpc.netty.TesterProto.TestResponse;
 import io.servicetalk.grpc.netty.TesterProto.Tester.BlockingTestBiDiStreamRpc;
-import io.servicetalk.grpc.netty.TesterProto.Tester.BlockingTestRequestStreamRpc;
 import io.servicetalk.grpc.netty.TesterProto.Tester.BlockingTestResponseStreamRpc;
 import io.servicetalk.grpc.netty.TesterProto.Tester.BlockingTesterClient;
 import io.servicetalk.grpc.netty.TesterProto.Tester.BlockingTesterService;
 import io.servicetalk.grpc.netty.TesterProto.Tester.ClientFactory;
 import io.servicetalk.grpc.netty.TesterProto.Tester.ServiceFactory;
-import io.servicetalk.http.api.HttpServiceContext;
+import io.servicetalk.http.api.HttpExecutionStrategy;
+import io.servicetalk.http.api.StreamingHttpClientFilter;
 import io.servicetalk.http.api.StreamingHttpRequest;
+import io.servicetalk.http.api.StreamingHttpRequester;
 import io.servicetalk.http.api.StreamingHttpResponse;
-import io.servicetalk.http.api.StreamingHttpResponseFactory;
-import io.servicetalk.http.api.StreamingHttpServiceFilter;
 import io.servicetalk.transport.api.ServerContext;
 
 import org.junit.After;
@@ -47,8 +46,8 @@ import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertThrows;
 
 public class BlockingApiCorrectnessTest {
@@ -60,23 +59,6 @@ public class BlockingApiCorrectnessTest {
 
     public BlockingApiCorrectnessTest() throws Exception {
         serverContext = GrpcServers.forAddress(localAddress(0))
-                // HTTP filter to modify paths to workaround API restrictions:
-                .appendHttpServiceFilter(service -> new StreamingHttpServiceFilter(service) {
-
-                    @Override
-                    public Single<StreamingHttpResponse> handle(HttpServiceContext ctx, StreamingHttpRequest request,
-                                                                StreamingHttpResponseFactory responseFactory) {
-                        if (BlockingTestBiDiStreamRpc.PATH.equals(request.requestTarget())) {
-                            // Forward multiple items to the API that expects only a single request item:
-                            request.requestTarget(BlockingTestResponseStreamRpc.PATH);
-                        } else if (BlockingTestRequestStreamRpc.PATH.equals(request.requestTarget())) {
-                            // Forward request that expects a single response item to the API that generates multiple
-                            // response items:
-                            request.requestTarget(BlockingTestBiDiStreamRpc.PATH);
-                        }
-                        return delegate().handle(ctx, request, responseFactory);
-                    }
-                })
                 .listenAndAwait(new ServiceFactory(new BlockingTesterService() {
                     @Override
                     public void testBiDiStream(GrpcServiceContext ctx, BlockingIterable<TestRequest> request,
@@ -112,23 +94,41 @@ public class BlockingApiCorrectnessTest {
     @Test
     public void serverBlockingResponseStreamingRouteFailsOnSecondResponseItem() throws Exception {
         try (BlockingTesterClient client = GrpcClients.forAddress(serverHostAndPort(serverContext))
-                .buildBlocking(new ClientFactory())) {
+                // HTTP filter that modifies path to workaround gRPC API constraints:
+                .appendHttpClientFilter(origin -> new StreamingHttpClientFilter(origin) {
+                    @Override
+                    protected Single<StreamingHttpResponse> request(StreamingHttpRequester delegate,
+                                                                    HttpExecutionStrategy strategy,
+                                                                    StreamingHttpRequest request) {
+                        // Change path to send multiple items to the route API that expects only a single request item:
+                        request.requestTarget(BlockingTestResponseStreamRpc.PATH);
+                        return super.request(delegate, strategy, request);
+                    }
+                }).buildBlocking(new ClientFactory())) {
             GrpcStatusException e = assertThrows(GrpcStatusException.class, () ->
-                    // Send multiple items that will be forwarded to BlockingTestResponseStreamRpc.PATH on the server:
                     client.testBiDiStream(asList(newRequest(), newRequest())).forEach(response -> { /* noop */ }));
             assertThat(e.status().code(), is(INVALID_ARGUMENT));
-            assertThat(e.status().description(), startsWith("Only a single request item is expected"));
+            assertThat(e.status().description(), equalTo("More than one request message received"));
         }
     }
 
     @Test
     public void clientBlockingRequestStreamingCallFailsOnSecondResponseItem() throws Exception {
         try (BlockingTesterClient client = GrpcClients.forAddress(serverHostAndPort(serverContext))
-                .buildBlocking(new ClientFactory())) {
+                // HTTP filter that modifies path to workaround gRPC API constraints:
+                .appendHttpClientFilter(origin -> new StreamingHttpClientFilter(origin) {
+                    @Override
+                    protected Single<StreamingHttpResponse> request(StreamingHttpRequester delegate,
+                                                                    HttpExecutionStrategy strategy,
+                                                                    StreamingHttpRequest request) {
+                        // Change path to send the request to the route API that generates multiple response items:
+                        request.requestTarget(BlockingTestBiDiStreamRpc.PATH);
+                        return super.request(delegate, strategy, request);
+                    }
+                }).buildBlocking(new ClientFactory())) {
             IllegalStateException e = assertThrows(IllegalStateException.class,
-                    // This request will be forwarded to BlockingTestBiDiStreamRpc.PATH on the server:
                     () -> client.testRequestStream(asList(newRequest(), newRequest())));
-            assertThat(e.getMessage(), startsWith("Only a single response item is expected"));
+            assertThat(e.getMessage(), equalTo("More than one response message received"));
         }
     }
 
