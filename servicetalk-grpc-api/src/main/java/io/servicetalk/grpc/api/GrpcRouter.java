@@ -578,6 +578,8 @@ final class GrpcRouter {
                             try (BlockingIterator<Req> requestIterator = request.iterator()) {
                                 firstItem = requireNonNull(requestIterator.next(), "Request item is null");
                                 if (requestIterator.hasNext()) {
+                                    // Consume the next item to make sure it's not a TerminalNotification with an error
+                                    requestIterator.next();
                                     throw new GrpcStatus(INVALID_ARGUMENT, null,
                                             "Only a single request item is expected, but saw the second one")
                                             .asException();

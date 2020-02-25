@@ -157,6 +157,7 @@ final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
             try (BlockingIterator<Resp> iterator = streamingClientCall.request(metadata, request).iterator()) {
                 final Resp firstItem = requireNonNull(iterator.next(), "Response item is null");
                 if (iterator.hasNext()) {
+                    iterator.next(); // Consume the next item to make sure it's not a TerminalNotification with an error
                     throw new IllegalStateException("Only a single response item is expected, but saw the second one");
                 }
                 return firstItem;
