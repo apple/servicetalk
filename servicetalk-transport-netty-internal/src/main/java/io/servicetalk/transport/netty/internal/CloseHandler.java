@@ -32,7 +32,7 @@ import javax.annotation.Nullable;
 public abstract class CloseHandler {
 
     public static final CloseHandler UNSUPPORTED_PROTOCOL_CLOSE_HANDLER = new UnsupportedProtocolHandler();
-    public static final CloseHandler H2_PROTOCOL_CLOSE_HANDLER = new H2ProtocolHandler();
+    public static final CloseHandler PROTOCOL_OUTBOUND_CLOSE_HANDLER = new ProtocolOutboundCloseEventHandler();
 
     /**
      * New {@link CloseHandler} instance.
@@ -283,7 +283,7 @@ public abstract class CloseHandler {
         }
     }
 
-    private static final class H2ProtocolHandler extends CloseHandler {
+    private static final class ProtocolOutboundCloseEventHandler extends CloseHandler {
 
         @Override
         void registerEventHandler(final Channel channel, final Consumer<CloseEvent> eventHandler) {

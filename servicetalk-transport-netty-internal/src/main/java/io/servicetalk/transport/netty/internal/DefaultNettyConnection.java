@@ -79,10 +79,10 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultNettyConnection.class);
 
-    private static final TerminalPredicate PIPELINE_UNSUPPORTED_PREDICATE = new TerminalPredicate();
+    private static final TerminalPredicate PIPELINE_UNSUPPORTED_PREDICATE = new TerminalPredicate<>();
 
-    private static final WritableListener PLACE_HOLDER_WRITABLE_LISTENER = new NoopWritableListener();
-    private static final WritableListener SINGLE_ITEM_WRITABLE_LISTENER = new NoopWritableListener();
+    private static final ChannelOutboundListener PLACE_HOLDER_OUTBOUND_LISTENER = new NoopChannelOutboundListener();
+    private static final ChannelOutboundListener SINGLE_ITEM_OUTBOUND_LISTENER = new NoopChannelOutboundListener();
 
     private static final ClosedChannelException CLOSED_CHANNEL_INACTIVE = unknownStackTrace(
             new ClosedChannelException(), NettyToStChannelInboundHandler.class, "channelInactive(..)");
@@ -90,8 +90,9 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
             unknownStackTrace(new ClosedChannelException(), DefaultNettyConnection.class, "failIfWriteActive(..)");
     private static final ClosedChannelException CLOSED_HANDLER_REMOVED =
             unknownStackTrace(new ClosedChannelException(), NettyToStChannelInboundHandler.class, "handlerRemoved(..)");
-    private static final AtomicReferenceFieldUpdater<DefaultNettyConnection, WritableListener> writableListenerUpdater =
-            newUpdater(DefaultNettyConnection.class, WritableListener.class, "writableListener");
+    private static final AtomicReferenceFieldUpdater<DefaultNettyConnection, ChannelOutboundListener>
+            writableListenerUpdater = newUpdater(DefaultNettyConnection.class, ChannelOutboundListener.class,
+                                                 "channelOutboundListener");
 
     private final TerminalPredicate<Read> terminalMsgPredicate;
     private final CloseHandler closeHandler;
@@ -102,7 +103,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
     private final CompletableSource.Processor onClosing;
     private final SingleSource.Processor<Throwable, Throwable> transportError = newSingleProcessor();
     private final FlushStrategyHolder flushStrategyHolder;
-    private volatile WritableListener writableListener = PLACE_HOLDER_WRITABLE_LISTENER;
+    private volatile ChannelOutboundListener channelOutboundListener = PLACE_HOLDER_OUTBOUND_LISTENER;
     /**
      * Potentially contains more information when a protocol or channel level close event was observed.
      * <p>
@@ -295,7 +296,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
     }
 
     private void cleanupOnWriteTerminated() {
-        writableListener = PLACE_HOLDER_WRITABLE_LISTENER;
+        channelOutboundListener = PLACE_HOLDER_OUTBOUND_LISTENER;
     }
 
     @Override
@@ -347,8 +348,8 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
     public Completable writeAndFlush(Write write) {
         requireNonNull(write);
         return cleanupStateWhenDone(new NettyFutureCompletable(() -> {
-            if (writableListenerUpdater.compareAndSet(DefaultNettyConnection.this, PLACE_HOLDER_WRITABLE_LISTENER,
-                    SINGLE_ITEM_WRITABLE_LISTENER)) {
+            if (writableListenerUpdater.compareAndSet(DefaultNettyConnection.this, PLACE_HOLDER_OUTBOUND_LISTENER,
+                    SINGLE_ITEM_OUTBOUND_LISTENER)) {
                 return channel().writeAndFlush(write);
             }
             return channel().newFailedFuture(
@@ -362,7 +363,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
      * @return {@code true} if a write is already active.
      */
     boolean isWriteActive() {
-        return writableListener != PLACE_HOLDER_WRITABLE_LISTENER;
+        return channelOutboundListener != PLACE_HOLDER_OUTBOUND_LISTENER;
     }
 
     @Override
@@ -419,13 +420,13 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
         return completable.beforeFinally(this::cleanupOnWriteTerminated);
     }
 
-    private boolean failIfWriteActive(WritableListener newWritableListener, Subscriber subscriber) {
-        if (writableListenerUpdater.compareAndSet(this, PLACE_HOLDER_WRITABLE_LISTENER, newWritableListener)) {
+    private boolean failIfWriteActive(ChannelOutboundListener newChannelOutboundListener, Subscriber subscriber) {
+        if (writableListenerUpdater.compareAndSet(this, PLACE_HOLDER_OUTBOUND_LISTENER, newChannelOutboundListener)) {
             // It is possible that we have set the writeSubscriber, then the channel becomes inactive, and we will
             // never notify the write writeSubscriber of the inactive event. So if the channel is inactive we notify
             // the writeSubscriber.
             if (!channel().isActive()) {
-                newWritableListener.close(CLOSED_FAIL_ACTIVE);
+                newChannelOutboundListener.channelClosed(CLOSED_FAIL_ACTIVE);
                 return false;
             }
             return true;
@@ -450,7 +451,11 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
         return fromSource(transportError).publishOn(executionContext().executor());
     }
 
-    interface WritableListener {
+    /**
+     * An interface which provides methods that are invoked when outbound channel events occur. The implementors of
+     * this interface are effectively "listening" to these events via method calls.
+     */
+    interface ChannelOutboundListener {
         /**
          * Notification that the writability of the channel has changed.
          * <p>
@@ -459,37 +464,34 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
         void channelWritable();
 
         /**
-         * Close the channel after the pending writes complete.
-         *
+         * Notification that the channel's outbound side has been closed and will no longer accept writes.s
          * <p>
-         * Calling {@link #close(Throwable)} after {@link #closeGracefully()} will be ignored.
-         * <p>
-         * This event is expected be called from the eventloop.
+         * Always called from the event loop thread.
          */
-        void closeGracefully();
+        void channelOutboundClosed();
 
         /**
          * Notification that the channel has been closed.
          * <p>
-         * This may not always be called from the event loop. For example if the channel is closed when a new write
-         * happens then this method will be called from the writer thread.
+         * This may not always be called from the event loop thread. For example if the channel is closed when a new
+         * write happens then this method will be called from the writer thread.
          *
          * @param closedException the exception which describes the close rational.
          */
-        void close(Throwable closedException);
+        void channelClosed(Throwable closedException);
     }
 
-    private static final class NoopWritableListener implements WritableListener {
+    private static final class NoopChannelOutboundListener implements ChannelOutboundListener {
         @Override
         public void channelWritable() {
         }
 
         @Override
-        public void closeGracefully() {
+        public void channelOutboundClosed() {
         }
 
         @Override
-        public void close(Throwable closedException) {
+        public void channelClosed(Throwable closedException) {
         }
     }
 
@@ -516,7 +518,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
         @Override
         public void channelWritabilityChanged(ChannelHandlerContext ctx) {
             if (ctx.channel().isWritable()) {
-                connection.writableListener.channelWritable();
+                connection.channelOutboundListener.channelWritable();
             } else if (connection.flushStrategyHolder.currentStrategy().shouldFlushOnUnwritable()) {
                 ctx.flush();
             }
@@ -558,10 +560,10 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
         @Override
         public void userEventTriggered(ChannelHandlerContext ctx, Object evt) {
             if (evt == CloseHandler.ProtocolPayloadEndEvent.OUTBOUND) {
-                connection.writableListener.closeGracefully();
+                connection.channelOutboundListener.channelOutboundClosed();
             } else if (evt == ChannelOutputShutdownEvent.INSTANCE) {
                 connection.closeHandler.channelClosedOutbound(ctx);
-                connection.writableListener.close(CLOSED_CHANNEL_INACTIVE);
+                connection.channelOutboundListener.channelClosed(CLOSED_CHANNEL_INACTIVE);
             } else if (evt == ChannelInputShutdownReadComplete.INSTANCE) {
                 // Notify close handler first to enhance error reporting
                 connection.closeHandler.channelClosedInbound(ctx);
@@ -596,7 +598,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
         @Override
         public void channelInactive(ChannelHandlerContext ctx) {
             tryFailSubscriber(CLOSED_CHANNEL_INACTIVE);
-            connection.writableListener.close(CLOSED_CHANNEL_INACTIVE);
+            connection.channelOutboundListener.channelClosed(CLOSED_CHANNEL_INACTIVE);
             connection.nettyChannelPublisher.channelInboundClosed();
         }
 
