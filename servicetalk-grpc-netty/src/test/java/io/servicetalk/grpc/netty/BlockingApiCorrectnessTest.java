@@ -54,7 +54,7 @@ import static org.junit.Assert.assertThrows;
 public class BlockingApiCorrectnessTest {
 
     @Rule
-    public Timeout timeout = new ServiceTalkTestTimeout();
+    public final Timeout timeout = new ServiceTalkTestTimeout();
 
     private final ServerContext serverContext;
 
