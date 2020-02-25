@@ -57,10 +57,12 @@ import io.servicetalk.transport.api.ServerContext;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.grpc.api.GrpcRouteConversions.toAsyncCloseable;
 import static io.servicetalk.grpc.api.GrpcRouteConversions.toRequestStreamingRoute;
@@ -162,6 +164,10 @@ final class GrpcRouter {
      * A builder for building a {@link GrpcRouter}.
      */
     static final class Builder {
+
+        private static final String SINGLE_MESSAGE_EXPECTED_NONE_RECEIVED_MSG =
+                "Single request message was expected, but none was received";
+        private static final String MORE_THAN_ONE_MESSAGE_RECEIVED_MSG = "More than one request message received";
 
         private final Map<String, RouteProvider> routes;
         private final Map<String, RouteProvider> streamingRoutes;
@@ -380,6 +386,18 @@ final class GrpcRouter {
                         @Override
                         public Publisher<Resp> handle(final GrpcServiceContext ctx, final Publisher<Req> request) {
                             return request.firstOrError()
+                                    .recoverWith(t -> {
+                                        if (t instanceof NoSuchElementException) {
+                                            return failed(new GrpcStatus(INVALID_ARGUMENT, null,
+                                                    SINGLE_MESSAGE_EXPECTED_NONE_RECEIVED_MSG)
+                                                    .asException());
+                                        } else if (t instanceof IllegalArgumentException) {
+                                            return failed(new GrpcStatus(INVALID_ARGUMENT, null,
+                                                    MORE_THAN_ONE_MESSAGE_RECEIVED_MSG).asException());
+                                        } else {
+                                            return failed(t);
+                                        }
+                                    })
                                     .flatMapPublisher(rawReq -> route.handle(ctx, rawReq));
                         }
 
@@ -576,12 +594,16 @@ final class GrpcRouter {
                                            final GrpcPayloadWriter<Resp> responseWriter) throws Exception {
                             final Req firstItem;
                             try (BlockingIterator<Req> requestIterator = request.iterator()) {
+                                if (!requestIterator.hasNext()) {
+                                    throw new GrpcStatus(INVALID_ARGUMENT, null,
+                                            SINGLE_MESSAGE_EXPECTED_NONE_RECEIVED_MSG).asException();
+                                }
                                 firstItem = requireNonNull(requestIterator.next(), "Request item is null");
                                 if (requestIterator.hasNext()) {
                                     // Consume the next item to make sure it's not a TerminalNotification with an error
                                     requestIterator.next();
                                     throw new GrpcStatus(INVALID_ARGUMENT, null,
-                                            "More than one request message received").asException();
+                                            MORE_THAN_ONE_MESSAGE_RECEIVED_MSG).asException();
                                 }
                             }
                             route.handle(ctx, firstItem, responseWriter);

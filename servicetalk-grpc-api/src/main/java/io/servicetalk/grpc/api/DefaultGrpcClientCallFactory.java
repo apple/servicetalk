@@ -158,7 +158,7 @@ final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
                 final Resp firstItem = requireNonNull(iterator.next(), "Response item is null");
                 if (iterator.hasNext()) {
                     iterator.next(); // Consume the next item to make sure it's not a TerminalNotification with an error
-                    throw new IllegalStateException("More than one response message received");
+                    throw new IllegalArgumentException("More than one response message received");
                 }
                 return firstItem;
             }
