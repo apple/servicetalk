@@ -53,7 +53,7 @@ final class StreamingConnectionFactory {
         assert config.h1Config() != null;
         return showPipeline(DefaultNettyConnection.initChannel(channel, executionContext.bufferAllocator(),
                 executionContext.executor(), new TerminalPredicate<>(LAST_CHUNK_PREDICATE), closeHandler,
-                config.tcpConfig().flushStrategy(),
+                config.tcpConfig().flushStrategy(), config.tcpConfig().idleTimeoutMs(),
                 initializer.andThen(new HttpClientChannelInitializer(
                         getByteBufAllocator(executionContext.bufferAllocator()), config.h1Config(), closeHandler)),
                 executionContext.executionStrategy()), "HTTP/1.1", channel);

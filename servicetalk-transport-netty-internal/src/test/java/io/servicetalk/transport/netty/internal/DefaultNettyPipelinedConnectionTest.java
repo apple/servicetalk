@@ -78,7 +78,7 @@ public class DefaultNettyPipelinedConnectionTest {
         when(requestNSupplier.requestNFor(anyLong())).then(invocation1 -> requestNext);
         connection = DefaultNettyConnection.<Integer, Integer>initChannel(channel, DEFAULT_ALLOCATOR,
                 immediate(), new TerminalPredicate<>(integer -> true),
-                UNSUPPORTED_PROTOCOL_CLOSE_HANDLER, defaultFlushStrategy(),
+                UNSUPPORTED_PROTOCOL_CLOSE_HANDLER, defaultFlushStrategy(), null,
                 channel2 -> { }, OFFLOAD_ALL_STRATEGY).toFuture().get();
         requester = new DefaultNettyPipelinedConnection<>(connection, MAX_PENDING_REQUESTS);
     }

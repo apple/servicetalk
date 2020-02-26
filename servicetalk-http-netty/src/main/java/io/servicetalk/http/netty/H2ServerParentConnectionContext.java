@@ -58,9 +58,10 @@ final class H2ServerParentConnectionContext extends H2ParentConnectionContext im
     private final SocketAddress listenAddress;
     private H2ServerParentConnectionContext(final Channel channel, final BufferAllocator allocator,
                                             final Executor executor, final FlushStrategy flushStrategy,
+                                            @Nullable final Long idleTimeoutMs,
                                             final HttpExecutionStrategy executionStrategy,
                                             final SocketAddress listenAddress) {
-        super(channel, allocator, executor, flushStrategy, executionStrategy);
+        super(channel, allocator, executor, flushStrategy, idleTimeoutMs, executionStrategy);
         this.listenAddress = requireNonNull(listenAddress);
     }
 
@@ -112,7 +113,8 @@ final class H2ServerParentConnectionContext extends H2ParentConnectionContext im
                     final Executor executor = httpExecutionContext.executor();
                     final HttpExecutionStrategy executionStrategy = httpExecutionContext.executionStrategy();
                     H2ServerParentConnectionContext connection = new H2ServerParentConnectionContext(channel,
-                            allocator, executor, parentFlushStrategy, executionStrategy, listenAddress);
+                            allocator, executor, parentFlushStrategy, config.tcpConfig().idleTimeoutMs(),
+                            executionStrategy, listenAddress);
                     channel.attr(CHANNEL_CLOSEABLE_KEY).set(connection);
                     // We need the NettyToStChannelInboundHandler to be last in the pipeline. We accomplish that by
                     // calling the ChannelInitializer before we do addLast for the NettyToStChannelInboundHandler.
@@ -150,6 +152,7 @@ final class H2ServerParentConnectionContext extends H2ParentConnectionContext im
                                                 // level we can use DefaultNettyConnection.initChannel instead of this
                                                 // custom method.
                                                 connection.flushStrategyHolder.currentStrategy(),
+                                                connection.idleTimeoutMs,
                                                 connection.executionContext().executionStrategy(),
                                                 connection.sslSession());
 

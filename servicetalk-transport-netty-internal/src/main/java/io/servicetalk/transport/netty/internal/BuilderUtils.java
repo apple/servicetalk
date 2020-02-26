@@ -231,7 +231,7 @@ public final class BuilderUtils {
 
     @Nullable
     @SuppressWarnings("unchecked")
-    public static <T> T getOption(SocketOption<T> option, ChannelConfig config, long idleTimeoutMs) {
+    public static <T> T getOption(SocketOption<T> option, ChannelConfig config, @Nullable Long idleTimeoutMs) {
         if (option == StandardSocketOptions.IP_MULTICAST_IF) {
             return (T) config.getOption(ChannelOption.IP_MULTICAST_IF);
         }
@@ -274,7 +274,7 @@ public final class BuilderUtils {
             return result == null ? null : (T) Integer.valueOf(result.high());
         }
         if (option == ServiceTalkSocketOptions.IDLE_TIMEOUT) {
-            return idleTimeoutMs == 0L ? null : (T) Long.valueOf(idleTimeoutMs);
+            return idleTimeoutMs == null ? null : (T) idleTimeoutMs;    // TODO: return (T) idleTimeoutMs;
         }
         // Try to look for a ChannelOption with the same name and type:
         try {

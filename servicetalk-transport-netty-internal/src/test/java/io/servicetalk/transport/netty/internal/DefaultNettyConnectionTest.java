@@ -119,7 +119,7 @@ public class DefaultNettyConnectionTest {
             return true;
         });
         conn = DefaultNettyConnection.<Buffer, Buffer>initChannel(channel, allocator, executor, terminalPredicate,
-                closeHandler, defaultFlushStrategy(), trailerProtocolEndEventEmitter(), OFFLOAD_ALL_STRATEGY)
+                closeHandler, defaultFlushStrategy(), null, trailerProtocolEndEventEmitter(), OFFLOAD_ALL_STRATEGY)
                 .toFuture().get();
         publisher = new TestPublisher<>();
     }

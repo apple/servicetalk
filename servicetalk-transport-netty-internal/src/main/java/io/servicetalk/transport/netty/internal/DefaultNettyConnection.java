@@ -30,6 +30,7 @@ import io.servicetalk.concurrent.internal.DelayedCancellable;
 import io.servicetalk.transport.api.DefaultExecutionContext;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.ExecutionStrategy;
+import io.servicetalk.transport.api.ServiceTalkSocketOptions;
 import io.servicetalk.transport.netty.internal.CloseHandler.CloseEvent;
 import io.servicetalk.transport.netty.internal.CloseHandler.CloseEventObservedException;
 import io.servicetalk.transport.netty.internal.WriteStreamSubscriber.AbortedFirstWrite;
@@ -105,6 +106,8 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
     private final CompletableSource.Processor onClosing;
     private final SingleSource.Processor<Throwable, Throwable> transportError = newSingleProcessor();
     private final FlushStrategyHolder flushStrategyHolder;
+    @Nullable
+    private final Long idleTimeoutMs;
     private volatile ChannelOutboundListener channelOutboundListener = PLACE_HOLDER_OUTBOUND_LISTENER;
     /**
      * Potentially contains more information when a protocol or channel level close event was observed.
@@ -127,14 +130,16 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
 
     private DefaultNettyConnection(Channel channel, BufferAllocator allocator, Executor executor,
                                    TerminalPredicate<Read> terminalMsgPredicate, CloseHandler closeHandler,
-                                   FlushStrategy flushStrategy, ExecutionStrategy executionStrategy) {
-        this(channel, allocator, executor, terminalMsgPredicate, closeHandler, flushStrategy, executionStrategy, null);
+                                   FlushStrategy flushStrategy, @Nullable Long idleTimeoutMs,
+                                   ExecutionStrategy executionStrategy) {
+        this(channel, allocator, executor, terminalMsgPredicate, closeHandler, flushStrategy, idleTimeoutMs,
+                executionStrategy, null);
     }
 
     private DefaultNettyConnection(Channel channel, BufferAllocator allocator, Executor executor,
                                    TerminalPredicate<Read> terminalMsgPredicate, CloseHandler closeHandler,
-                                   FlushStrategy flushStrategy, ExecutionStrategy executionStrategy,
-                                   @Nullable SSLSession sslSession) {
+                                   FlushStrategy flushStrategy, @Nullable Long idleTimeoutMs,
+                                   ExecutionStrategy executionStrategy, @Nullable SSLSession sslSession) {
         super(channel, executor);
         nettyChannelPublisher = new NettyChannelPublisher<>(channel, terminalMsgPredicate, closeHandler);
         this.readPublisher = nettyChannelPublisher.recoverWith(this::enrichErrorPublisher);
@@ -142,7 +147,8 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
         this.executionContext = new DefaultExecutionContext(allocator, fromNettyEventLoop(channel.eventLoop()),
                 executor, executionStrategy);
         this.closeHandler = requireNonNull(closeHandler);
-        flushStrategyHolder = new FlushStrategyHolder(flushStrategy);
+        this.flushStrategyHolder = new FlushStrategyHolder(flushStrategy);
+        this.idleTimeoutMs = idleTimeoutMs;
         if (closeHandler != UNSUPPORTED_PROTOCOL_CLOSE_HANDLER) {
             onClosing = newCompletableProcessor();
             closeHandler.registerEventHandler(channel, evt -> { // Called from EventLoop only!
@@ -175,9 +181,9 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
     @SuppressWarnings("unchecked")
     static <Read, Write> Single<DefaultNettyConnection<Read, Write>> initChannel(
             Channel channel, BufferAllocator allocator, Executor executor, FlushStrategy flushStrategy,
-            ChannelInitializer initializer, ExecutionStrategy executionStrategy) {
+            @Nullable Long idleTimeoutMs, ChannelInitializer initializer, ExecutionStrategy executionStrategy) {
         return initChannel(channel, allocator, executor, PIPELINE_UNSUPPORTED_PREDICATE,
-                UNSUPPORTED_PROTOCOL_CLOSE_HANDLER, flushStrategy, initializer, executionStrategy);
+                UNSUPPORTED_PROTOCOL_CLOSE_HANDLER, flushStrategy, idleTimeoutMs, initializer, executionStrategy);
     }
 
     /**
@@ -190,6 +196,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
      * current message framing and will allow a resubscribe to consume the next framing.
      * @param closeHandler Manages the half closure of the {@link DefaultNettyConnection}.
      * @param flushStrategy Manages flushing of data for the {@link DefaultNettyConnection}.
+     * @param idleTimeoutMs Value for {@link ServiceTalkSocketOptions#IDLE_TIMEOUT IDLE_TIMEOUT} socket option.
      * @param executionStrategy Used to derive the {@link #executionContext()}.
      * @param sslSession Provides access to the {@link SSLSession} associated with this connection.
      * @param <Read> Type of objects read from the {@link NettyConnection}.
@@ -199,10 +206,10 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
      */
     public static <Read, Write> DefaultNettyConnection<Read, Write> initChildChannel(
             Channel channel, BufferAllocator allocator, Executor executor, TerminalPredicate<Read> terminalMsgPredicate,
-            CloseHandler closeHandler, FlushStrategy flushStrategy, ExecutionStrategy executionStrategy,
-            @Nullable SSLSession sslSession) {
-        DefaultNettyConnection<Read, Write> connection = new DefaultNettyConnection<>(channel, allocator,
-                executor, terminalMsgPredicate, closeHandler, flushStrategy, executionStrategy, sslSession);
+            CloseHandler closeHandler, FlushStrategy flushStrategy, @Nullable Long idleTimeoutMs,
+            ExecutionStrategy executionStrategy, @Nullable SSLSession sslSession) {
+        DefaultNettyConnection<Read, Write> connection = new DefaultNettyConnection<>(channel, allocator, executor,
+                terminalMsgPredicate, closeHandler, flushStrategy, idleTimeoutMs, executionStrategy, sslSession);
         channel.pipeline().addLast(new NettyToStChannelInboundHandler<>(connection, null,
                 null, false));
         return connection;
@@ -219,6 +226,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
      * current message framing and will allow a resubscribe to consume the next framing.
      * @param closeHandler Manages the half closure of the {@link DefaultNettyConnection}.
      * @param flushStrategy Manages flushing of data for the {@link DefaultNettyConnection}.
+     * @param idleTimeoutMs Value for {@link ServiceTalkSocketOptions#IDLE_TIMEOUT IDLE_TIMEOUT} socket option.
      * @param initializer Synchronously initializes the pipeline upon subscribe.
      * @param executionStrategy {@link ExecutionStrategy} to use for this connection.
      * @param <Read> Type of objects read from the {@link NettyConnection}.
@@ -228,8 +236,8 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
      */
     public static <Read, Write> Single<DefaultNettyConnection<Read, Write>> initChannel(
             Channel channel, BufferAllocator allocator, Executor executor, TerminalPredicate<Read> terminalMsgPredicate,
-            CloseHandler closeHandler, FlushStrategy flushStrategy, ChannelInitializer initializer,
-            ExecutionStrategy executionStrategy) {
+            CloseHandler closeHandler, FlushStrategy flushStrategy, @Nullable Long idleTimeoutMs,
+            ChannelInitializer initializer, ExecutionStrategy executionStrategy) {
         return new SubscribableSingle<DefaultNettyConnection<Read, Write>>() {
             @Override
             protected void handleSubscribe(
@@ -239,7 +247,8 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
                 try {
                     delayedCancellable = new DelayedCancellable();
                     DefaultNettyConnection<Read, Write> connection = new DefaultNettyConnection<>(channel, allocator,
-                            executor, terminalMsgPredicate, closeHandler, flushStrategy, executionStrategy);
+                            executor, terminalMsgPredicate, closeHandler, flushStrategy, idleTimeoutMs,
+                            executionStrategy);
                     channel.attr(CHANNEL_CLOSEABLE_KEY).set(connection);
                     // We need the NettyToStChannelInboundHandler to be last in the pipeline. We accomplish that by
                     // calling the ChannelInitializer before we do addLast for the NettyToStChannelInboundHandler.
@@ -401,8 +410,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
     @Nullable
     @Override
     public <T> T socketOption(final SocketOption<T> option) {
-        // TODO: pass AbstractReadOnlyTcpConfig.idleTimeoutMs()
-        return getOption(option, channel().config(), 0L);
+        return getOption(option, channel().config(), idleTimeoutMs);
     }
 
     private void invokeUserCloseHandler() {

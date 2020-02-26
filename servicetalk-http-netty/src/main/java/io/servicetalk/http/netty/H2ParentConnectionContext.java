@@ -88,18 +88,21 @@ class H2ParentConnectionContext extends NettyChannelListenableAsyncCloseable imp
     private final SingleSource.Processor<Throwable, Throwable> transportError = newSingleProcessor();
     private final CompletableSource.Processor onClosing = newCompletableProcessor();
     @Nullable
+    final Long idleTimeoutMs;
+    @Nullable
     private SSLSession sslSession;
     @Nullable
     private ScheduledFuture<?> gracefulCloseTimeoutFuture;
     private volatile int activeChildChannels;
 
-    H2ParentConnectionContext(Channel channel, BufferAllocator allocator,
-                              Executor executor, FlushStrategy flushStrategy,
+    H2ParentConnectionContext(Channel channel, BufferAllocator allocator, Executor executor,
+                              FlushStrategy flushStrategy, @Nullable Long idleTimeoutMs,
                               HttpExecutionStrategy executionStrategy) {
         super(channel, executor);
         this.executionContext = new DefaultHttpExecutionContext(allocator, fromNettyEventLoop(channel.eventLoop()),
                 executor, executionStrategy);
         this.flushStrategyHolder = new FlushStrategyHolder(flushStrategy);
+        this.idleTimeoutMs = idleTimeoutMs;
         // Just in case the channel abruptly closes, we should complete the onClosing Completable.
         onClose().subscribe(onClosing::onComplete);
     }
@@ -148,8 +151,7 @@ class H2ParentConnectionContext extends NettyChannelListenableAsyncCloseable imp
     @Nullable
     @Override
     public <T> T socketOption(final SocketOption<T> option) {
-        // TODO: pass AbstractReadOnlyTcpConfig.idleTimeoutMs()
-        return getOption(option, channel().config(), 0L);
+        return getOption(option, channel().config(), idleTimeoutMs);
     }
 
     @Override
