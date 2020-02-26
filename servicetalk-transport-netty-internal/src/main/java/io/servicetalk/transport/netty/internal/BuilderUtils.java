@@ -276,7 +276,12 @@ public final class BuilderUtils {
         if (option == ServiceTalkSocketOptions.IDLE_TIMEOUT) {
             return idleTimeoutMs == 0 ? null : (T) Long.valueOf(idleTimeoutMs);
         }
-        return null;
+        // Try to look for a ChannelOption with the same name and type:
+        try {
+            return config.getOption(ChannelOption.valueOf(option.name()));
+        } catch (ClassCastException e) {
+            return null;
+        }
     }
 
     /**
