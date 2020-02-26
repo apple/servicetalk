@@ -274,7 +274,7 @@ public final class BuilderUtils {
             return result == null ? null : (T) Integer.valueOf(result.high());
         }
         if (option == ServiceTalkSocketOptions.IDLE_TIMEOUT) {
-            return idleTimeoutMs == 0 ? null : (T) Long.valueOf(idleTimeoutMs);
+            return idleTimeoutMs == 0L ? null : (T) Long.valueOf(idleTimeoutMs);
         }
         // Try to look for a ChannelOption with the same name and type:
         try {
