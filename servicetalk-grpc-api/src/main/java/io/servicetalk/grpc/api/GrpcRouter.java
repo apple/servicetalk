@@ -82,7 +82,6 @@ import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpRequestMethod.POST;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.unmodifiableMap;
-import static java.util.Objects.requireNonNull;
 
 /**
  * A router that can route <a href="https://www.grpc.io">gRPC</a> requests to a user provided
@@ -598,7 +597,7 @@ final class GrpcRouter {
                                     throw new GrpcStatus(INVALID_ARGUMENT, null,
                                             SINGLE_MESSAGE_EXPECTED_NONE_RECEIVED_MSG).asException();
                                 }
-                                firstItem = requireNonNull(requestIterator.next(), "Request item is null");
+                                firstItem = requestIterator.next();
                                 if (requestIterator.hasNext()) {
                                     // Consume the next item to make sure it's not a TerminalNotification with an error
                                     requestIterator.next();

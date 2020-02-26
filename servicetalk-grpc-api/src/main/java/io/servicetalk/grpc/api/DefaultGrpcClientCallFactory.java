@@ -155,7 +155,7 @@ final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
                 newBlockingStreamingCall(serializationProvider, requestClass, responseClass);
         return (metadata, request) -> {
             try (BlockingIterator<Resp> iterator = streamingClientCall.request(metadata, request).iterator()) {
-                final Resp firstItem = requireNonNull(iterator.next(), "Response item is null");
+                final Resp firstItem = iterator.next();
                 if (iterator.hasNext()) {
                     iterator.next(); // Consume the next item to make sure it's not a TerminalNotification with an error
                     throw new IllegalArgumentException("More than one response message received");
