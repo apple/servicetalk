@@ -43,7 +43,8 @@ abstract class AbstractTcpConfig<SecurityConfig, ReadOnlyView> {
     @Nullable
     @SuppressWarnings("rawtypes")
     private Map<ChannelOption, Object> options;
-    private long idleTimeoutMs;
+    @Nullable
+    private Long idleTimeoutMs;
     private FlushStrategy flushStrategy = defaultFlushStrategy();
     @Nullable
     private String wireLoggerName;
@@ -67,7 +68,8 @@ abstract class AbstractTcpConfig<SecurityConfig, ReadOnlyView> {
         return options;
     }
 
-    final long idleTimeoutMs() {
+    @Nullable
+    final Long idleTimeoutMs() {
         return idleTimeoutMs;
     }
 

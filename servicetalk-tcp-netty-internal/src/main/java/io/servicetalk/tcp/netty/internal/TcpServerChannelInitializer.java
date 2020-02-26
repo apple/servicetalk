@@ -37,7 +37,7 @@ public class TcpServerChannelInitializer implements ChannelInitializer {
     public TcpServerChannelInitializer(final ReadOnlyTcpServerConfig config) {
         ChannelInitializer delegate = ChannelInitializer.defaultInitializer();
 
-        if (config.idleTimeoutMs() > 0) {
+        if (config.idleTimeoutMs() != null) {
             delegate = delegate.andThen(new IdleTimeoutInitializer(config.idleTimeoutMs()));
         }
 
