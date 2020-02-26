@@ -60,6 +60,7 @@ import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.Promise;
 
 import java.net.SocketAddress;
+import java.net.SocketOption;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import javax.annotation.Nullable;
 import javax.net.ssl.SSLSession;
@@ -303,6 +304,12 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext im
         @Override
         public HttpExecutionContext executionContext() {
             return parentContext.executionContext();
+        }
+
+        @Nullable
+        @Override
+        public <T> T socketOption(final SocketOption<T> option) {
+            return parentContext.socketOption(option);
         }
 
         @Override

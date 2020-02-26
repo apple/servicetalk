@@ -69,6 +69,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.SocketAddress;
+import java.net.SocketOption;
 import java.nio.channels.ClosedChannelException;
 import java.util.ArrayDeque;
 import java.util.Queue;
@@ -414,6 +415,12 @@ final class NettyHttpServer {
         @Override
         public HttpExecutionContext executionContext() {
             return executionContext;
+        }
+
+        @Nullable
+        @Override
+        public <T> T socketOption(final SocketOption<T> option) {
+            return connection.socketOption(option);
         }
 
         @Override

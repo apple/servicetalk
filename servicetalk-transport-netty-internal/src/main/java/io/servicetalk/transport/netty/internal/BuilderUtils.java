@@ -20,6 +20,7 @@ import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServiceTalkSocketOptions;
 
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelConfig;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoop;
 import io.netty.channel.EventLoopGroup;
@@ -226,6 +227,56 @@ public final class BuilderUtils {
         } else {
             throw new IllegalArgumentException("SocketOption " + option + " not supported");
         }
+    }
+
+    @Nullable
+    @SuppressWarnings("unchecked")
+    public static <T> T getOption(SocketOption<T> option, ChannelConfig config, long idleTimeoutMs) {
+        if (option == StandardSocketOptions.IP_MULTICAST_IF) {
+            return (T) config.getOption(ChannelOption.IP_MULTICAST_IF);
+        }
+        if (option == StandardSocketOptions.IP_MULTICAST_LOOP) {
+            final Boolean result = config.getOption(ChannelOption.IP_MULTICAST_LOOP_DISABLED);
+            return result == null ? null : (T) Boolean.valueOf(!result);
+        }
+        if (option == StandardSocketOptions.IP_MULTICAST_TTL) {
+            return (T) config.getOption(ChannelOption.IP_MULTICAST_TTL);
+        }
+        if (option == StandardSocketOptions.IP_TOS) {
+            return (T) config.getOption(ChannelOption.IP_TOS);
+        }
+        if (option == StandardSocketOptions.SO_BROADCAST) {
+            return (T) config.getOption(ChannelOption.SO_BROADCAST);
+        }
+        if (option == StandardSocketOptions.SO_KEEPALIVE) {
+            return (T) config.getOption(ChannelOption.SO_KEEPALIVE);
+        }
+        if (option == StandardSocketOptions.SO_LINGER) {
+            return (T) config.getOption(ChannelOption.SO_LINGER);
+        }
+        if (option == StandardSocketOptions.SO_RCVBUF) {
+            return (T) config.getOption(ChannelOption.SO_RCVBUF);
+        }
+        if (option == StandardSocketOptions.SO_REUSEADDR) {
+            return (T) config.getOption(ChannelOption.SO_REUSEADDR);
+        }
+        if (option == StandardSocketOptions.SO_SNDBUF) {
+            return (T) config.getOption(ChannelOption.SO_SNDBUF);
+        }
+        if (option == StandardSocketOptions.TCP_NODELAY) {
+            return (T) config.getOption(ChannelOption.TCP_NODELAY);
+        }
+        if (option == ServiceTalkSocketOptions.CONNECT_TIMEOUT) {
+            return (T) config.getOption(ChannelOption.CONNECT_TIMEOUT_MILLIS);
+        }
+        if (option == ServiceTalkSocketOptions.WRITE_BUFFER_THRESHOLD) {
+            final WriteBufferWaterMark result = config.getOption(ChannelOption.WRITE_BUFFER_WATER_MARK);
+            return result == null ? null : (T) Integer.valueOf(result.high());
+        }
+        if (option == ServiceTalkSocketOptions.IDLE_TIMEOUT) {
+            return idleTimeoutMs == 0 ? null : (T) Long.valueOf(idleTimeoutMs);
+        }
+        return null;
     }
 
     /**

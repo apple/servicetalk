@@ -30,8 +30,10 @@ import io.servicetalk.transport.api.ConnectionAcceptor;
 import io.servicetalk.transport.api.ConnectionAcceptorFactory;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.ServerContext;
+import io.servicetalk.transport.api.ServiceTalkSocketOptions;
 
 import java.net.SocketOption;
+import java.net.StandardSocketOptions;
 import java.util.function.Predicate;
 
 import static io.servicetalk.concurrent.api.Single.succeeded;
@@ -100,6 +102,8 @@ public abstract class GrpcServerBuilder {
      * @param option the option to apply.
      * @param value the value.
      * @return {@code this}.
+     * @see StandardSocketOptions
+     * @see ServiceTalkSocketOptions
      */
     public abstract <T> GrpcServerBuilder socketOption(SocketOption<T> option, T value);
 

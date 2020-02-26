@@ -17,10 +17,12 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.BufferAllocator;
 import io.servicetalk.transport.api.IoExecutor;
+import io.servicetalk.transport.api.ServiceTalkSocketOptions;
 
 import org.slf4j.event.Level;
 
 import java.net.SocketOption;
+import java.net.StandardSocketOptions;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -64,6 +66,8 @@ abstract class BaseHttpBuilder<ResolvedAddress> {
      * @param value the value.
      * @param <T> the type of the value.
      * @return {@code this}.
+     * @see StandardSocketOptions
+     * @see ServiceTalkSocketOptions
      */
     public abstract <T> BaseHttpBuilder<ResolvedAddress> socketOption(SocketOption<T> option, T value);
 

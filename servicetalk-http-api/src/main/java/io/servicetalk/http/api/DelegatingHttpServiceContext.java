@@ -18,6 +18,7 @@ package io.servicetalk.http.api;
 import io.servicetalk.concurrent.api.Completable;
 
 import java.net.SocketAddress;
+import java.net.SocketOption;
 import javax.annotation.Nullable;
 import javax.net.ssl.SSLSession;
 
@@ -58,6 +59,12 @@ public class DelegatingHttpServiceContext extends HttpServiceContext {
     @Override
     public HttpExecutionContext executionContext() {
         return delegate.executionContext();
+    }
+
+    @Nullable
+    @Override
+    public <T> T socketOption(final SocketOption<T> option) {
+        return delegate.socketOption(option);
     }
 
     @Override

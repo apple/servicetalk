@@ -21,8 +21,10 @@ import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpConnectionFilterFactory;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.transport.api.IoExecutor;
+import io.servicetalk.transport.api.ServiceTalkSocketOptions;
 
 import java.net.SocketOption;
+import java.net.StandardSocketOptions;
 import java.util.function.Predicate;
 
 interface BaseGrpcClientBuilder<U, R> {
@@ -58,6 +60,8 @@ interface BaseGrpcClientBuilder<U, R> {
      * @param value the value.
      * @param <T> the type of the value.
      * @return {@code this}.
+     * @see StandardSocketOptions
+     * @see ServiceTalkSocketOptions
      */
     <T> BaseGrpcClientBuilder<U, R> socketOption(SocketOption<T> option, T value);
 

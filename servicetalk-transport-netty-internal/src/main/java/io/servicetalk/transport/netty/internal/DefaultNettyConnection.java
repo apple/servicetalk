@@ -46,6 +46,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.SocketAddress;
+import java.net.SocketOption;
 import java.nio.channels.ClosedChannelException;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Supplier;
@@ -60,6 +61,7 @@ import static io.servicetalk.concurrent.api.Publisher.failed;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.ThrowableUtils.unknownStackTrace;
+import static io.servicetalk.transport.netty.internal.BuilderUtils.getOption;
 import static io.servicetalk.transport.netty.internal.ChannelSet.CHANNEL_CLOSEABLE_KEY;
 import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
 import static io.servicetalk.transport.netty.internal.Flush.composeFlushes;
@@ -394,6 +396,13 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
     @Override
     public ExecutionContext executionContext() {
         return executionContext;
+    }
+
+    @Nullable
+    @Override
+    public <T> T socketOption(final SocketOption<T> option) {
+        // TODO: pass AbstractReadOnlyTcpConfig.idleTimeoutMs()
+        return getOption(option, channel().config(), 0L);
     }
 
     private void invokeUserCloseHandler() {

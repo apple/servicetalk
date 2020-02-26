@@ -22,6 +22,7 @@ import io.servicetalk.transport.netty.internal.ReadOnlyServerSecurityConfig;
 import io.netty.channel.ChannelOption;
 
 import java.net.SocketOption;
+import java.net.StandardSocketOptions;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -91,6 +92,8 @@ abstract class AbstractTcpConfig<SecurityConfig, ReadOnlyView> {
      * @param option the option to apply
      * @param value the value
      * @throws IllegalArgumentException if the {@link SocketOption} is not supported
+     * @see StandardSocketOptions
+     * @see ServiceTalkSocketOptions
      */
     public final <T> void socketOption(final SocketOption<T> option, T value) {
         requireNonNull(option);

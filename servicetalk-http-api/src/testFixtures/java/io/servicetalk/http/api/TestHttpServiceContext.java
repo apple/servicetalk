@@ -19,6 +19,7 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.transport.netty.internal.AddressUtils;
 
 import java.net.SocketAddress;
+import java.net.SocketOption;
 import javax.annotation.Nullable;
 import javax.net.ssl.SSLSession;
 
@@ -78,6 +79,12 @@ public class TestHttpServiceContext extends HttpServiceContext {
     @Override
     public HttpExecutionContext executionContext() {
         return executionContext;
+    }
+
+    @Nullable
+    @Override
+    public <T> T socketOption(final SocketOption<T> option) {
+        return null;
     }
 
     @Override

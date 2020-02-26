@@ -32,6 +32,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.SocketAddress;
+import java.net.SocketOption;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -177,6 +178,12 @@ public final class DefaultNettyPipelinedConnection<Req, Resp> implements NettyPi
     @Override
     public ExecutionContext executionContext() {
         return connection.executionContext();
+    }
+
+    @Nullable
+    @Override
+    public <T> T socketOption(final SocketOption<T> option) {
+        return connection.socketOption(option);
     }
 
     @Override
