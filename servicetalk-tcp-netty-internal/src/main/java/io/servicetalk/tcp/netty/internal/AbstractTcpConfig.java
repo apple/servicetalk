@@ -28,8 +28,8 @@ import java.util.List;
 import java.util.Map;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.transport.netty.internal.BuilderUtils.addOption;
 import static io.servicetalk.transport.netty.internal.FlushStrategies.defaultFlushStrategy;
+import static io.servicetalk.transport.netty.internal.SocketOptionUtils.addOption;
 import static java.util.Objects.requireNonNull;
 
 /**

@@ -64,9 +64,9 @@ import static io.servicetalk.concurrent.api.Processors.newSingleProcessor;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.concurrent.internal.ThrowableUtils.unknownStackTrace;
 import static io.servicetalk.http.netty.H2ToStH1Utils.DEFAULT_GRACEFUL_SHUTDOWN_TIMEOUT_MILLIS;
-import static io.servicetalk.transport.netty.internal.BuilderUtils.getOption;
 import static io.servicetalk.transport.netty.internal.NettyIoExecutors.fromNettyEventLoop;
 import static io.servicetalk.transport.netty.internal.NettyPipelineSslUtils.extractSslSession;
+import static io.servicetalk.transport.netty.internal.SocketOptionUtils.getOption;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 class H2ParentConnectionContext extends NettyChannelListenableAsyncCloseable implements
