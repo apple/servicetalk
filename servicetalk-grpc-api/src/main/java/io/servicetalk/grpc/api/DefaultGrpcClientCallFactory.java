@@ -154,13 +154,14 @@ final class DefaultGrpcClientCallFactory implements GrpcClientCallFactory {
         final BlockingStreamingClientCall<Req, Resp> streamingClientCall =
                 newBlockingStreamingCall(serializationProvider, requestClass, responseClass);
         return (metadata, request) -> {
-            final BlockingIterator<Resp> iterator = streamingClientCall.request(metadata, request).iterator();
-            final Resp firstItem = iterator.next();
-            if (iterator.hasNext()) {
-                throw new IllegalArgumentException("Only a single item expected, but saw the second value: " +
-                        iterator.next());
+            try (BlockingIterator<Resp> iterator = streamingClientCall.request(metadata, request).iterator()) {
+                final Resp firstItem = iterator.next();
+                if (iterator.hasNext()) {
+                    iterator.next(); // Consume the next item to make sure it's not a TerminalNotification with an error
+                    throw new IllegalArgumentException("More than one response message received");
+                }
+                return firstItem;
             }
-            return firstItem;
         };
     }
 

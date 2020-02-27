@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019-2020 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 package io.servicetalk.grpc.api;
 
 import io.servicetalk.concurrent.BlockingIterable;
+import io.servicetalk.concurrent.BlockingIterator;
 import io.servicetalk.concurrent.GracefulAutoCloseable;
 import io.servicetalk.concurrent.api.AsyncCloseable;
 import io.servicetalk.concurrent.api.AsyncCloseables;
@@ -56,10 +57,12 @@ import io.servicetalk.transport.api.ServerContext;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.grpc.api.GrpcRouteConversions.toAsyncCloseable;
 import static io.servicetalk.grpc.api.GrpcRouteConversions.toRequestStreamingRoute;
@@ -67,6 +70,7 @@ import static io.servicetalk.grpc.api.GrpcRouteConversions.toResponseStreamingRo
 import static io.servicetalk.grpc.api.GrpcRouteConversions.toRoute;
 import static io.servicetalk.grpc.api.GrpcRouteConversions.toStreaming;
 import static io.servicetalk.grpc.api.GrpcStatus.fromCodeValue;
+import static io.servicetalk.grpc.api.GrpcStatusCode.INVALID_ARGUMENT;
 import static io.servicetalk.grpc.api.GrpcStatusCode.UNIMPLEMENTED;
 import static io.servicetalk.grpc.api.GrpcUtils.newErrorResponse;
 import static io.servicetalk.grpc.api.GrpcUtils.newResponse;
@@ -78,7 +82,6 @@ import static io.servicetalk.http.api.HttpExecutionStrategies.defaultStrategy;
 import static io.servicetalk.http.api.HttpRequestMethod.POST;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.unmodifiableMap;
-import static java.util.Objects.requireNonNull;
 
 /**
  * A router that can route <a href="https://www.grpc.io">gRPC</a> requests to a user provided
@@ -160,6 +163,10 @@ final class GrpcRouter {
      * A builder for building a {@link GrpcRouter}.
      */
     static final class Builder {
+
+        private static final String SINGLE_MESSAGE_EXPECTED_NONE_RECEIVED_MSG =
+                "Single request message was expected, but none was received";
+        private static final String MORE_THAN_ONE_MESSAGE_RECEIVED_MSG = "More than one request message received";
 
         private final Map<String, RouteProvider> routes;
         private final Map<String, RouteProvider> streamingRoutes;
@@ -378,6 +385,18 @@ final class GrpcRouter {
                         @Override
                         public Publisher<Resp> handle(final GrpcServiceContext ctx, final Publisher<Req> request) {
                             return request.firstOrError()
+                                    .recoverWith(t -> {
+                                        if (t instanceof NoSuchElementException) {
+                                            return failed(new GrpcStatus(INVALID_ARGUMENT, null,
+                                                    SINGLE_MESSAGE_EXPECTED_NONE_RECEIVED_MSG)
+                                                    .asException());
+                                        } else if (t instanceof IllegalArgumentException) {
+                                            return failed(new GrpcStatus(INVALID_ARGUMENT, null,
+                                                    MORE_THAN_ONE_MESSAGE_RECEIVED_MSG).asException());
+                                        } else {
+                                            return failed(t);
+                                        }
+                                    })
                                     .flatMapPublisher(rawReq -> route.handle(ctx, rawReq));
                         }
 
@@ -572,7 +591,21 @@ final class GrpcRouter {
                         @Override
                         public void handle(final GrpcServiceContext ctx, final BlockingIterable<Req> request,
                                            final GrpcPayloadWriter<Resp> responseWriter) throws Exception {
-                            route.handle(ctx, requireNonNull(request.iterator().next()), responseWriter);
+                            final Req firstItem;
+                            try (BlockingIterator<Req> requestIterator = request.iterator()) {
+                                if (!requestIterator.hasNext()) {
+                                    throw new GrpcStatus(INVALID_ARGUMENT, null,
+                                            SINGLE_MESSAGE_EXPECTED_NONE_RECEIVED_MSG).asException();
+                                }
+                                firstItem = requestIterator.next();
+                                if (requestIterator.hasNext()) {
+                                    // Consume the next item to make sure it's not a TerminalNotification with an error
+                                    requestIterator.next();
+                                    throw new GrpcStatus(INVALID_ARGUMENT, null,
+                                            MORE_THAN_ONE_MESSAGE_RECEIVED_MSG).asException();
+                                }
+                            }
+                            route.handle(ctx, firstItem, responseWriter);
                         }
 
                         @Override
