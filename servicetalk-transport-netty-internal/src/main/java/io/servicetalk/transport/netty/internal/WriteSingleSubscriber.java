@@ -19,16 +19,14 @@ import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.internal.SequentialCancellable;
+import io.servicetalk.transport.netty.internal.DefaultNettyConnection.ChannelOutboundListener;
 
 import io.netty.channel.Channel;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import javax.annotation.Nullable;
 
-final class WriteSingleSubscriber implements SingleSource.Subscriber<Object>, DefaultNettyConnection.WritableListener {
-    private static final Logger LOGGER = LoggerFactory.getLogger(WriteSingleSubscriber.class);
+final class WriteSingleSubscriber implements SingleSource.Subscriber<Object>, ChannelOutboundListener {
     private static final AtomicIntegerFieldUpdater<WriteSingleSubscriber> terminatedUpdater =
             AtomicIntegerFieldUpdater.newUpdater(WriteSingleSubscriber.class, "terminated");
     private final Channel channel;
@@ -69,8 +67,6 @@ final class WriteSingleSubscriber implements SingleSource.Subscriber<Object>, De
                     notifyError(cause);
                 }
             });
-        } else {
-            LOGGER.error("Ignoring write {} as the listener is already closed.", result);
         }
     }
 
@@ -78,8 +74,6 @@ final class WriteSingleSubscriber implements SingleSource.Subscriber<Object>, De
     public void onError(Throwable t) {
         if (terminatedUpdater.compareAndSet(this, AWAITING_RESULT, TERMINATED)) {
             notifyError(t);
-        } else {
-            LOGGER.error("Ignoring emitted error as the listener is already closed.", t);
         }
     }
 
@@ -89,14 +83,14 @@ final class WriteSingleSubscriber implements SingleSource.Subscriber<Object>, De
     }
 
     @Override
-    public void closeGracefully() {
+    public void channelOutboundClosed() {
         if (terminatedUpdater.compareAndSet(this, AWAITING_RESULT, TERMINATED)) {
             notifyError(new IllegalStateException("Unexpected, closeGracefully() without onSuccess()"));
         }
     }
 
     @Override
-    public void close(Throwable closedException) {
+    public void channelClosed(Throwable closedException) {
         // Because the subscriber is terminated "out of band" make sure we cancel any work which may (at some later
         // time) invoke a write associated with this subscriber.
         sequentialCancellable.cancel();

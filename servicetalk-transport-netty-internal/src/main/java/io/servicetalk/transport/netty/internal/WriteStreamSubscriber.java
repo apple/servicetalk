@@ -23,6 +23,7 @@ import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.internal.ConcurrentSubscription;
 import io.servicetalk.concurrent.internal.EmptySubscription;
 import io.servicetalk.concurrent.internal.FlowControlUtils;
+import io.servicetalk.transport.netty.internal.DefaultNettyConnection.ChannelOutboundListener;
 import io.servicetalk.transport.netty.internal.NettyConnection.RequestNSupplier;
 
 import io.netty.channel.Channel;
@@ -65,8 +66,7 @@ import static java.util.Objects.requireNonNull;
  * If the capacity determined above is positive then invoke {@link RequestNSupplier} to determine number of items
  * required to fill that capacity.
  */
-final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
-                                             DefaultNettyConnection.WritableListener, Cancellable {
+final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>, ChannelOutboundListener, Cancellable {
     private static final Logger LOGGER = LoggerFactory.getLogger(WriteStreamSubscriber.class);
     private static final byte SOURCE_TERMINATED = 1;
     private static final byte CHANNEL_CLOSED = 1 << 1;
@@ -190,13 +190,13 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
     }
 
     @Override
-    public void closeGracefully() {
+    public void channelOutboundClosed() {
         assert eventLoop.inEventLoop();
         promise.sourceTerminated(null);
     }
 
     @Override
-    public void close(Throwable closedException) {
+    public void channelClosed(Throwable closedException) {
         Subscription oldVal = subscriptionUpdater.getAndSet(this, CANCELLED);
         if (eventLoop.inEventLoop()) {
             close0(oldVal, closedException);
@@ -425,7 +425,7 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
         }
 
         private boolean hasAnyFlags(final byte flag1, final byte flag2) {
-            return hasAnyFlags(flag1, flag2, (byte) 0);
+            return (state & (flag1 | flag2)) > 0;
         }
 
         private boolean hasAnyFlags(final byte flag1, final byte flag2, final byte flag3) {

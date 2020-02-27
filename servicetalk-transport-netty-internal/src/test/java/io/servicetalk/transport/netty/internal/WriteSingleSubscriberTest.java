@@ -60,7 +60,7 @@ public class WriteSingleSubscriberTest extends AbstractWriteTest {
     public void testCloseGracefully() {
         WriteSingleSubscriber listener = new WriteSingleSubscriber(channel, completableSubscriber, closeHandler);
         listener.onSuccess("Hello");
-        listener.closeGracefully();
+        listener.channelOutboundClosed();
         channel.flushOutbound();
         verify(completableSubscriber).onComplete();
         verifyZeroInteractions(closeHandler);
@@ -72,7 +72,7 @@ public class WriteSingleSubscriberTest extends AbstractWriteTest {
         WriteSingleSubscriber listener = new WriteSingleSubscriber(channel, completableSubscriber, closeHandler);
         listener.onSuccess("Hello");
         channel.flushOutbound();
-        listener.closeGracefully();
+        listener.channelOutboundClosed();
         verify(completableSubscriber).onComplete();
         verifyZeroInteractions(closeHandler);
         assertThat("Message not written.", channel.readOutbound(), is("Hello"));
@@ -82,7 +82,7 @@ public class WriteSingleSubscriberTest extends AbstractWriteTest {
     public void testCloseGracefullyBeforeWrite() {
         WriteSingleSubscriber listener = new WriteSingleSubscriber(channel, completableSubscriber, closeHandler);
         final ArgumentCaptor<Throwable> captor = ArgumentCaptor.forClass(Throwable.class);
-        listener.closeGracefully();
+        listener.channelOutboundClosed();
         verify(completableSubscriber).onError(captor.capture());
         assertThat(captor.getValue(), instanceOf(IllegalStateException.class));
     }
