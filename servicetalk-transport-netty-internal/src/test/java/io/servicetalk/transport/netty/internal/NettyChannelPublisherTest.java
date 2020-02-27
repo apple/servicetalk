@@ -98,7 +98,7 @@ public class NettyChannelPublisherTest {
                             super.read(ctx);
                         }
                     });
-                }, OFFLOAD_ALL_STRATEGY).toFuture().get();
+                }, OFFLOAD_ALL_STRATEGY, "test").toFuture().get();
         publisher = connection.read();
         channel.config().setAutoRead(false);
     }

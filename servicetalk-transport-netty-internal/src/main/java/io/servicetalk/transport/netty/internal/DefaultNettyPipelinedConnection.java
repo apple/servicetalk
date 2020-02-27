@@ -187,6 +187,11 @@ public final class DefaultNettyPipelinedConnection<Req, Resp> implements NettyPi
     }
 
     @Override
+    public String protocol() {
+        return connection.protocol();
+    }
+
+    @Override
     public Single<Throwable> transportError() {
         return connection.transportError();
     }

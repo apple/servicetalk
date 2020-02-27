@@ -47,6 +47,7 @@ import java.net.SocketAddress;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.Cancellable.IGNORE_CANCEL;
+import static io.servicetalk.http.netty.H2ToStH1Utils.HTTP_2_0;
 import static io.servicetalk.http.netty.HeaderUtils.LAST_CHUNK_PREDICATE;
 import static io.servicetalk.http.netty.HttpDebugUtils.showPipeline;
 import static io.servicetalk.transport.netty.internal.ChannelSet.CHANNEL_CLOSEABLE_KEY;
@@ -154,6 +155,7 @@ final class H2ServerParentConnectionContext extends H2ParentConnectionContext im
                                                 connection.flushStrategyHolder.currentStrategy(),
                                                 connection.idleTimeoutMs,
                                                 connection.executionContext().executionStrategy(),
+                                                HTTP_2_0.toString(),
                                                 connection.sslSession(),
                                                 channel.config());
 
@@ -174,7 +176,7 @@ final class H2ServerParentConnectionContext extends H2ParentConnectionContext im
                 // callbacks that interact with the subscriber.
                 pipeline.addLast(parentChannelInitializer);
             }
-        }, "HTTP/2.0", channel);
+        }, HTTP_2_0.toString(), channel);
     }
 
     private static final class DefaultH2ServerParentConnection extends AbstractH2ParentConnection {

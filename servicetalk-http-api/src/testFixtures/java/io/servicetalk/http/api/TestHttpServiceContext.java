@@ -88,6 +88,11 @@ public class TestHttpServiceContext extends HttpServiceContext {
     }
 
     @Override
+    public String protocol() {
+        return "test";
+    }
+
+    @Override
     public Completable onClose() {
         return completed();
     }

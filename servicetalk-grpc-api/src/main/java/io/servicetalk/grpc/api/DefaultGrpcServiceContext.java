@@ -65,6 +65,11 @@ final class DefaultGrpcServiceContext extends DefaultGrpcMetadata implements Grp
     }
 
     @Override
+    public String protocol() {
+        return connectionContext.protocol();
+    }
+
+    @Override
     public Completable onClose() {
         return connectionContext.onClose();
     }

@@ -107,7 +107,7 @@ public final class TcpConnectorTest extends AbstractTcpServerTest {
                                     ctx.fireChannelActive();
                                 }
                             });
-                        }, CLIENT_CTX.executionStrategy())
+                        }, CLIENT_CTX.executionStrategy(), "test")
                 ).toFuture().get();
         connection.closeAsync().toFuture().get();
 

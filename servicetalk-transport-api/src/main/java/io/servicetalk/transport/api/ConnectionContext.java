@@ -72,4 +72,11 @@ public interface ConnectionContext extends ListenableAsyncCloseable {
      */
     @Nullable
     <T> T socketOption(SocketOption<T> option);
+
+    /**
+     * Get the protocol name for this {@link ConnectionContext}.
+     *
+     * @return the protocol name for this {@link ConnectionContext}.
+     */
+    String protocol();
 }

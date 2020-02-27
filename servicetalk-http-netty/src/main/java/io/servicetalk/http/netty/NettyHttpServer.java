@@ -91,6 +91,7 @@ import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.http.api.HttpApiConversions.mayHaveTrailers;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
 import static io.servicetalk.http.api.HttpHeaderValues.ZERO;
+import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.StreamingHttpRequests.newTransportRequest;
 import static io.servicetalk.http.netty.AbstractStreamingHttpConnection.determineFlushStrategyForApi;
 import static io.servicetalk.http.netty.HeaderUtils.LAST_CHUNK_PREDICATE;
@@ -158,9 +159,9 @@ final class NettyHttpServer {
                 config.tcpConfig().idleTimeoutMs(),
                 initializer.andThen(getChannelInitializer(getByteBufAllocator(httpExecutionContext.bufferAllocator()),
                         h1Config, closeHandler)),
-                httpExecutionContext.executionStrategy())
+                httpExecutionContext.executionStrategy(), HTTP_1_1.toString())
                 .map(conn -> new NettyHttpServerConnection(conn, service, httpExecutionContext.executionStrategy(),
-                        h1Config.headersFactory(), drainRequestPayloadBody)), "HTTP/1.1", channel);
+                        h1Config.headersFactory(), drainRequestPayloadBody)), HTTP_1_1.toString(), channel);
     }
 
     private static ChannelInitializer getChannelInitializer(final ByteBufAllocator alloc, final H1ProtocolConfig config,
@@ -422,6 +423,11 @@ final class NettyHttpServer {
         @Override
         public <T> T socketOption(final SocketOption<T> option) {
             return connection.socketOption(option);
+        }
+
+        @Override
+        public String protocol() {
+            return connection.protocol();
         }
 
         @Override

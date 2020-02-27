@@ -418,7 +418,7 @@ public class HttpRequestEncoderTest {
                                             channel2 -> {
                                                 serverChannelRef.compareAndSet(null, channel2);
                                                 serverChannelLatch.countDown();
-                                            }), defaultStrategy()),
+                                            }), defaultStrategy(), "test"),
                             connection -> { }).toFuture().get());
             ReadOnlyHttpClientConfig cConfig = new HttpClientConfig().asReadOnly();
             assert cConfig.h1Config() != null;
@@ -443,7 +443,7 @@ public class HttpRequestEncoderTest {
                                         serverCloseTrigger.onComplete();
                                     }
                                 }
-                            })), defaultStrategy());
+                            })), defaultStrategy(), HTTP_1_1.toString());
                     }
             ).toFuture().get());
 

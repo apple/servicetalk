@@ -119,12 +119,12 @@ public class DefaultNettyConnectionTest {
             return true;
         });
         conn = DefaultNettyConnection.<Buffer, Buffer>initChannel(channel, allocator, executor, terminalPredicate,
-                closeHandler, defaultFlushStrategy(), null, trailerProtocolEndEventEmitter(), OFFLOAD_ALL_STRATEGY)
-                .toFuture().get();
+                closeHandler, defaultFlushStrategy(), null, trailerProtocolEndEventEmitter(), OFFLOAD_ALL_STRATEGY,
+                "test").toFuture().get();
         publisher = new TestPublisher<>();
     }
 
-    private ChannelInitializer trailerProtocolEndEventEmitter() {
+    private static ChannelInitializer trailerProtocolEndEventEmitter() {
         return ch -> ch.pipeline()
                 .addLast(new ChannelOutboundHandlerAdapter() {
                     @Override

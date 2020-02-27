@@ -71,6 +71,7 @@ import static io.servicetalk.concurrent.api.Publisher.failed;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverTerminalFromSource;
 import static io.servicetalk.http.api.HttpEventKey.MAX_CONCURRENCY;
+import static io.servicetalk.http.netty.H2ToStH1Utils.HTTP_2_0;
 import static io.servicetalk.http.netty.HeaderUtils.LAST_CHUNK_PREDICATE;
 import static io.servicetalk.http.netty.HttpDebugUtils.showPipeline;
 import static io.servicetalk.transport.netty.internal.ChannelSet.CHANNEL_CLOSEABLE_KEY;
@@ -127,7 +128,7 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext im
                 // callbacks that interact with the subscriber.
                 pipeline.addLast(parentChannelInitializer);
             }
-        }, "HTTP/2.0", channel);
+        }, HTTP_2_0.toString(), channel);
     }
 
     private static final class DefaultH2ClientParentConnection extends AbstractH2ParentConnection implements
@@ -255,6 +256,7 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext im
                                     parentContext.flushStrategyHolder.currentStrategy(),
                                     parentContext.idleTimeoutMs,
                                     parentContext.executionContext().executionStrategy(),
+                                    HTTP_2_0.toString(),
                                     parentContext.sslSession(),
                                     parentContext.nettyChannel().config());
 
@@ -313,6 +315,11 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext im
         @Override
         public <T> T socketOption(final SocketOption<T> option) {
             return parentContext.socketOption(option);
+        }
+
+        @Override
+        public String protocol() {
+            return parentContext.protocol();
         }
 
         @Override
