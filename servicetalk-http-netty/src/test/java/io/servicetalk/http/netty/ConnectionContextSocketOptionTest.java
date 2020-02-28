@@ -129,6 +129,12 @@ public class ConnectionContextSocketOptionTest {
     }
 
     @Test
+    public void supportedSocketOptionWithIncorrectTypeIsNull() throws Exception {
+        // Intentionally use Integer.class for AUTO_CLOSE that requires Boolean.class type
+        testSocketOption("AUTO_CLOSE", Integer.class, is(nullValue()), equalTo("null"));
+    }
+
+    @Test
     public void unsupportedSocketOptionIsNull() throws Exception {
         testSocketOption("UNSUPPORTED", Boolean.class, is(nullValue()), equalTo("null"));
     }
@@ -220,6 +226,18 @@ public class ConnectionContextSocketOptionTest {
                     }
                 };
                 break;
+            case "AUTO_CLOSE":
+                return new SocketOption<T>() {
+                    @Override
+                    public String name() {
+                        return "AUTO_CLOSE";
+                    }
+
+                    @Override
+                    public Class<T> type() {
+                        return type;
+                    }
+                };
             case "UNSUPPORTED":
                 return new SocketOption<T>() {
                     @Override

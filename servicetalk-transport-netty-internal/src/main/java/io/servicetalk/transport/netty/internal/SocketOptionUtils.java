@@ -20,6 +20,8 @@ import io.servicetalk.transport.api.ServiceTalkSocketOptions;
 import io.netty.channel.ChannelConfig;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.WriteBufferWaterMark;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.SocketOption;
 import java.net.StandardSocketOptions;
@@ -30,6 +32,8 @@ import javax.annotation.Nullable;
  * Utilities to convert {@link SocketOption}s.
  */
 public final class SocketOptionUtils {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(SocketOptionUtils.class);
 
     private SocketOptionUtils() {
         // No instances
@@ -136,11 +140,13 @@ public final class SocketOptionUtils {
         if (option == ServiceTalkSocketOptions.IDLE_TIMEOUT) {
             return (T) idleTimeoutMs;
         }
-        // Try to look for a ChannelOption with the same name and type:
-        try {
-            return config.getOption(ChannelOption.valueOf(option.name()));
-        } catch (ClassCastException e) {
-            return null;
+        // Try to look for a ChannelOption with the same name and type. Use the wildcard type for ChannelOption to avoid
+        // ClassCastException, handle type check manually:
+        final ChannelOption<?> channelOption = ChannelOption.valueOf(option.name());
+        final Object value = config.getOption(channelOption);
+        if (option.type().isInstance(value)) {
+            return (T) value;
         }
+        return null;
     }
 }
