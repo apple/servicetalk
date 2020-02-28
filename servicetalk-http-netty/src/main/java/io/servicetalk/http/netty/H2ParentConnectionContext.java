@@ -157,7 +157,7 @@ class H2ParentConnectionContext extends NettyChannelListenableAsyncCloseable imp
             try {
                 eventLoop.execute(this::doCloseAsyncGracefully0);
             } catch (Throwable cause) {
-                channel().close();
+                close0(channel());
                 LOGGER.warn("channel={} EventLoop rejected a task for graceful shutdown, force closing connection",
                         channel(), cause);
             }
@@ -201,31 +201,36 @@ class H2ParentConnectionContext extends NettyChannelListenableAsyncCloseable imp
     final void gracefulCloseWriteSecondGoAway(ChannelOutboundInvoker ctx) {
         ctx.writeAndFlush(new DefaultHttp2GoAwayFrame(NO_ERROR)).addListener(future -> {
             if (activeChildChannels == 0) {
-                channel().close();
+                close0(channel());
             } else if (future.isSuccess()) {
                 gracefulCloseTimeoutFuture = channel().eventLoop().schedule(() -> {
                     LOGGER.debug("channel={} timeout {}ms waiting for graceful close with {} active streams",
                             channel(), DEFAULT_GRACEFUL_SHUTDOWN_TIMEOUT_MILLIS, activeChildChannels);
-                    channel().close();
+                    close0(channel());
                 }, DEFAULT_GRACEFUL_SHUTDOWN_TIMEOUT_MILLIS, MILLISECONDS);
             }
         });
-    }
-
-    final void tryFinishGracefulClose() {
-        if (activeChildChannels == 0 && gracefulCloseTimeoutFuture != null &&
-                gracefulCloseTimeoutFuture != GRACEFUL_CLOSE_PING_PENDING) {
-            // gracefulCloseTimeoutFuture will be cancelled during connection closure elsewhere.
-            channel().close();
-        }
     }
 
     final void trackActiveStream(Channel streamChannel) {
         activeChildChannelsUpdater.incrementAndGet(this);
         streamChannel.closeFuture().addListener(future1 -> {
             activeChildChannelsUpdater.decrementAndGet(this);
-            tryFinishGracefulClose();
+            if (activeChildChannels == 0 && gracefulCloseTimeoutFuture != null &&
+                    gracefulCloseTimeoutFuture != GRACEFUL_CLOSE_PING_PENDING) {
+                // gracefulCloseTimeoutFuture will be cancelled during connection closure elsewhere.
+                close0(channel());
+            }
         });
+    }
+
+    private static void close0(Channel channel) {
+        assert channel.eventLoop().inEventLoop();
+        // The way netty H2 stream state machine works, we may trigger stream closures during writes with flushes
+        // pending behind the writes. In such cases, we may close too early ignoring the writes. Hence we flush before
+        // closure, if there is no write pending then flush is a noop.
+        channel.flush();
+        channel.close();
     }
 
     abstract static class AbstractH2ParentConnection extends ChannelInboundHandlerAdapter {
