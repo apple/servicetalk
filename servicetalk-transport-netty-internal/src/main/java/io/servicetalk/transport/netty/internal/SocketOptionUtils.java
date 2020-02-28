@@ -70,7 +70,7 @@ public final class SocketOptionUtils {
         } else if (option == ServiceTalkSocketOptions.CONNECT_TIMEOUT) {
             channelOpts.put(ChannelOption.CONNECT_TIMEOUT_MILLIS, value);
         } else if (option == ServiceTalkSocketOptions.WRITE_BUFFER_THRESHOLD) {
-            Integer writeBufferThreshold = (Integer) value;
+            final int writeBufferThreshold = (Integer) value;
             channelOpts.put(ChannelOption.WRITE_BUFFER_WATER_MARK, new WriteBufferWaterMark(writeBufferThreshold >>> 1,
                     writeBufferThreshold));
         } else {
@@ -134,7 +134,7 @@ public final class SocketOptionUtils {
             return result == null ? null : (T) Integer.valueOf(result.high());
         }
         if (option == ServiceTalkSocketOptions.IDLE_TIMEOUT) {
-            return idleTimeoutMs == null ? null : (T) idleTimeoutMs;    // TODO: return (T) idleTimeoutMs;
+            return (T) idleTimeoutMs;
         }
         // Try to look for a ChannelOption with the same name and type:
         try {
