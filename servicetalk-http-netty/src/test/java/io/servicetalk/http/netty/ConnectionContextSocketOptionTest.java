@@ -133,18 +133,18 @@ public class ConnectionContextSocketOptionTest {
         testSocketOption("UNSUPPORTED", Boolean.class, is(nullValue()), equalTo("null"));
     }
 
-    private void testSocketOption(String name, Class<?> type, Matcher<Object> clientMatcher,
-                                  Matcher<Object> serverMatcher) throws Exception {
+    private <T> void testSocketOption(String name, Class<T> type, Matcher<Object> clientMatcher,
+                                      Matcher<Object> serverMatcher) throws Exception {
         testSocketOption(name, type, clientMatcher, serverMatcher, null);
     }
 
-    private void testSocketOption(String name, Class<?> type, Matcher<Object> clientMatcher,
-                                  Matcher<Object> serverMatcher, @Nullable Long idleTimeoutMs) throws Exception {
+    private <T> void testSocketOption(String name, Class<T> type, Matcher<Object> clientMatcher,
+                                      Matcher<Object> serverMatcher, @Nullable Long idleTimeoutMs) throws Exception {
         try (ServerContext serverContext = startServer(idleTimeoutMs);
              BlockingHttpClient client = newClient(serverContext, idleTimeoutMs);
              BlockingHttpConnection connection = client.reserveConnection(client.get("/"))) {
 
-            SocketOption<Boolean> socketOption = socketOption(name, type);
+            SocketOption<T> socketOption = socketOption(name, type);
             assertThat(connection.connectionContext().socketOption(socketOption), clientMatcher);
             HttpResponse response = connection.request(connection.get("/")
                     .setHeader(SOCKET_OPTION_NAME, socketOption.name())
