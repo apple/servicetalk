@@ -189,7 +189,7 @@ public class ConnectionContextSocketOptionTest {
     }
 
     @SuppressWarnings("unchecked")
-    private static <T> SocketOption<T> socketOption(String name, Class<?> type) {
+    private static <T> SocketOption<T> socketOption(String name, Class<T> type) {
         SocketOption<?> socketOption;
         switch (name) {
             case "TCP_NODELAY":
@@ -229,15 +229,15 @@ public class ConnectionContextSocketOptionTest {
 
                     @Override
                     public Class<T> type() {
-                        return (Class<T>) type;
+                        return type;
                     }
                 };
             default:
                 throw new IllegalArgumentException("Unknown SocketOption name: " + name);
         }
         if (!socketOption.type().equals(type)) {
-            throw new IllegalArgumentException("Incorrect type for SocketOption(" + name + "): " + type.getName() +
-                    ", expected: " + socketOption.type().getName());
+            throw new IllegalArgumentException("Requested incorrect type for SocketOption(" + name + ", " +
+                    socketOption.type().getName() + "): " + type.getName());
         }
         return (SocketOption<T>) socketOption;
     }
