@@ -20,8 +20,6 @@ import io.servicetalk.transport.api.ServiceTalkSocketOptions;
 import io.netty.channel.ChannelConfig;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.WriteBufferWaterMark;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.net.SocketOption;
 import java.net.StandardSocketOptions;
@@ -32,8 +30,6 @@ import javax.annotation.Nullable;
  * Utilities to convert {@link SocketOption}s.
  */
 public final class SocketOptionUtils {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(SocketOptionUtils.class);
 
     private SocketOptionUtils() {
         // No instances
