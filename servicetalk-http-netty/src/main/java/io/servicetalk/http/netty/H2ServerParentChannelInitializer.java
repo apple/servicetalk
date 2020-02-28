@@ -40,6 +40,9 @@ final class H2ServerParentChannelInitializer implements ChannelInitializer {
     @Override
     public void init(final Channel channel) {
         final Http2FrameCodecBuilder multiplexCodecBuilder = forServer()
+                // We do not want close to trigger graceful closure (go away), instead when user triggers a graceful
+                // close, we do the appropriate go away handling.
+                .decoupleCloseAndGoAway(true)
                 // We don't want to rely upon Netty to manage the graceful close timeout, because we expect
                 // the user to apply their own timeout at the call site.
                 .gracefulShutdownTimeoutMillis(-1);
