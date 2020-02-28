@@ -18,6 +18,7 @@ package io.servicetalk.http.netty;
 import io.servicetalk.client.api.LoadBalancer;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.concurrent.api.TerminalSignalConsumer;
 import io.servicetalk.http.api.FilterableStreamingHttpClient;
 import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpExecutionStrategy;
@@ -65,7 +66,34 @@ final class LoadBalancedStreamingHttpClient implements FilterableStreamingHttpCl
         // correct.
         return loadBalancer.selectConnection(SELECTOR_FOR_REQUEST)
                 .flatMap(c -> c.request(strategy, request)
-                        .liftSync(new BeforeFinallyOnHttpResponseOperator(c::requestFinished))
+                        .liftSync(new BeforeFinallyOnHttpResponseOperator(new TerminalSignalConsumer() {
+                            @Override
+                            public void onComplete() {
+                                c.requestFinished();
+                            }
+
+                            @Override
+                            public void onError(final Throwable throwable) {
+                                c.requestFinished();
+                            }
+
+                            @Override
+                            public void onCancel() {
+                                // If the request gets cancelled, we pessimistically assume that the transport will
+                                // close the connection since the Subscriber did not read the entire response and
+                                // cancelled. This reduces the time window during which a connection is eligible for
+                                // selection by the load balancer post cancel and the connection being closed by the
+                                // transport.
+                                // Transport MAY not close the connection if cancel raced with completion and completion
+                                // was seen by the transport before cancel. We have no way of knowing at this layer
+                                // if this indeed happen.
+                                // For H2, closing connection (stream) is cheaper but for H1 this may create more churn
+                                // if we are always hitting the above mentioned race and the connection otherwise is
+                                // good to be reused. As the debugging of why a closed connection was selected is much
+                                // more difficult for users, we decide to be pessimistic here.
+                                c.closeAsync().subscribe();
+                            }
+                        }))
                         // subscribeShareContext is used because otherwise the AsyncContext modified during response
                         // meta data processing will not be visible during processing of the response payload for
                         // ConnectionFilters (it already is visible on ClientFilters).
