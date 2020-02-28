@@ -45,6 +45,7 @@ public final class SocketOptionUtils {
      * @param channelOpts the {@link Map} into which add the converted {@link SocketOption}
      * @param option the {@link SocketOption} to convert and add
      * @param value the value to add
+     * @throws IllegalArgumentException if the specified {@link SocketOption} is not supported
      */
     @SuppressWarnings("rawtypes")
     public static void addOption(final Map<ChannelOption, Object> channelOpts, final SocketOption option,

@@ -33,8 +33,6 @@ import org.junit.rules.Timeout;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.net.SocketOption;
@@ -42,6 +40,8 @@ import java.net.StandardSocketOptions;
 import javax.annotation.Nullable;
 
 import static io.servicetalk.http.api.HttpResponseStatus.OK;
+import static io.servicetalk.http.api.HttpSerializationProviders.textDeserializer;
+import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h1Default;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h2Default;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
@@ -56,12 +56,6 @@ import static org.hamcrest.Matchers.nullValue;
 
 @RunWith(Parameterized.class)
 public class ConnectionContextSocketOptionTest {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(ConnectionContextSocketOptionTest.class);
-
-    private static final String SOCKET_OPTION_NAME = "socket-option-name";
-    private static final String SOCKET_OPTION_TYPE = "socket-option-type";
-    private static final String SOCKET_OPTION_VALUE = "socket-option-value";
 
     private enum Protocol {
 
@@ -93,94 +87,81 @@ public class ConnectionContextSocketOptionTest {
 
     @Test
     public void tcpStandardSocketOptionIsNotNull() throws Exception {
-        testSocketOption("TCP_NODELAY", Boolean.class, is(notNullValue()),
+        testSocketOption(StandardSocketOptions.TCP_NODELAY, is(notNullValue()),
                 // HTTP_2 stream channel does not have TCP_NODELAY option
                 protocol == Protocol.HTTP_2 ? equalTo("null") : not(equalTo("null")));
     }
 
     @Test
     public void udpStandardSocketOptionIsNull() throws Exception {
-        testSocketOption("IP_MULTICAST_LOOP", Boolean.class, is(nullValue()), equalTo("null"));
+        testSocketOption(StandardSocketOptions.IP_MULTICAST_LOOP, is(nullValue()), equalTo("null"));
     }
 
     @Test
     public void stConnectionTimeoutSocketOption() throws Exception {
-        testSocketOption("CONNECT_TIMEOUT", Integer.class, is(notNullValue()), not(equalTo("null")));
+        testSocketOption(ServiceTalkSocketOptions.CONNECT_TIMEOUT, is(notNullValue()), not(equalTo("null")));
     }
 
     @Test
     public void stWriteBufferThresholdSocketOption() throws Exception {
-        testSocketOption("WRITE_BUFFER_THRESHOLD", Integer.class, is(notNullValue()), not(equalTo("null")));
+        testSocketOption(ServiceTalkSocketOptions.WRITE_BUFFER_THRESHOLD, is(notNullValue()), not(equalTo("null")));
     }
 
     @Test
     public void stIdleTimeoutSocketOption() throws Exception {
-        testSocketOption("IDLE_TIMEOUT", Long.class, is(30000L), equalTo("30000"), 30000L);
+        testSocketOption(ServiceTalkSocketOptions.IDLE_TIMEOUT, is(30000L), equalTo("30000"), 30000L);
     }
 
     @Test
     public void stIdleTimeoutSocketOptionIsNull() throws Exception {
-        testSocketOption("IDLE_TIMEOUT", Long.class, is(nullValue()), equalTo("null"));
+        testSocketOption(ServiceTalkSocketOptions.IDLE_TIMEOUT, is(nullValue()), equalTo("null"), null);
     }
 
     @Test
     public void customSupportedSocketOption() throws Exception {
-        testSocketOption("AUTO_READ", Boolean.class, is(protocol.autoRead), equalTo(valueOf(protocol.autoRead)));
+        testSocketOption(new CustomSocketOption<>("AUTO_READ", Boolean.class),
+                is(protocol.autoRead), equalTo(valueOf(protocol.autoRead)));
     }
 
     @Test
     public void supportedSocketOptionWithIncorrectTypeIsNull() throws Exception {
-        // Intentionally use Integer.class for AUTO_CLOSE that requires Boolean.class type
-        testSocketOption("AUTO_CLOSE", Integer.class, is(nullValue()), equalTo("null"));
+        // Intentionally use Integer.class for AUTO_CLOSE option that requires Boolean.class type
+        testSocketOption(new CustomSocketOption<>("AUTO_CLOSE", Integer.class), is(nullValue()), equalTo("null"));
     }
 
     @Test
     public void unsupportedSocketOptionIsNull() throws Exception {
-        testSocketOption("UNSUPPORTED", Boolean.class, is(nullValue()), equalTo("null"));
+        testSocketOption(new CustomSocketOption<>("UNSUPPORTED", Boolean.class), is(nullValue()), equalTo("null"));
     }
 
-    private <T> void testSocketOption(String name, Class<T> type, Matcher<Object> clientMatcher,
+    private <T> void testSocketOption(SocketOption<T> socketOption, Matcher<Object> clientMatcher,
                                       Matcher<Object> serverMatcher) throws Exception {
-        testSocketOption(name, type, clientMatcher, serverMatcher, null);
+        testSocketOption(socketOption, clientMatcher, serverMatcher, null);
     }
 
-    private <T> void testSocketOption(String name, Class<T> type, Matcher<Object> clientMatcher,
+    private <T> void testSocketOption(SocketOption<T> socketOption, Matcher<Object> clientMatcher,
                                       Matcher<Object> serverMatcher, @Nullable Long idleTimeoutMs) throws Exception {
-        try (ServerContext serverContext = startServer(idleTimeoutMs);
+        try (ServerContext serverContext = startServer(idleTimeoutMs, socketOption);
              BlockingHttpClient client = newClient(serverContext, idleTimeoutMs);
              BlockingHttpConnection connection = client.reserveConnection(client.get("/"))) {
 
-            SocketOption<T> socketOption = socketOption(name, type);
             assertThat(connection.connectionContext().socketOption(socketOption), clientMatcher);
-            HttpResponse response = connection.request(connection.get("/")
-                    .setHeader(SOCKET_OPTION_NAME, socketOption.name())
-                    .setHeader(SOCKET_OPTION_TYPE, socketOption.type().getName()));
+            HttpResponse response = connection.request(connection.get("/"));
             assertThat(response.status(), is(OK));
-            CharSequence value = response.headers().get(SOCKET_OPTION_VALUE);
+            CharSequence value = response.payloadBody(textDeserializer());
             assertThat(value, is(notNullValue()));
             assertThat(value.toString(), serverMatcher);
         }
     }
 
-    private ServerContext startServer(@Nullable Long idleTimeoutMs) throws Exception {
+    private <T> ServerContext startServer(@Nullable Long idleTimeoutMs, SocketOption<T> socketOption) throws Exception {
         final HttpServerBuilder builder = HttpServers.forAddress(localAddress(0))
                 .protocols(protocol.config);
         if (idleTimeoutMs != null) {
             builder.socketOption(ServiceTalkSocketOptions.IDLE_TIMEOUT, idleTimeoutMs);
         }
-        return builder
-                .listenBlockingAndAwait((ctx, request, responseFactory) -> {
-                    try {
-                        String name = request.headers().get(SOCKET_OPTION_NAME).toString();
-                        Class<?> type = Class.forName(request.headers().get(SOCKET_OPTION_TYPE).toString());
-                        SocketOption<?> socketOption = socketOption(name, type);
-                        return responseFactory.ok()
-                                .setHeader(SOCKET_OPTION_VALUE, valueOf(ctx.socketOption(socketOption)));
-                    } catch (Exception e) {
-                        LOGGER.error("Unexpected exception during request processing", e);
-                        return responseFactory.badRequest();
-                    }
-                });
+        return builder.listenBlockingAndAwait((ctx, request, responseFactory) -> responseFactory.ok()
+                .payloadBody(valueOf(ctx.socketOption(socketOption)), textSerializer()));
     }
 
     private BlockingHttpClient newClient(ServerContext serverContext, @Nullable Long idleTimeoutMs) {
@@ -194,69 +175,23 @@ public class ConnectionContextSocketOptionTest {
                 .buildBlocking();
     }
 
-    @SuppressWarnings("unchecked")
-    private static <T> SocketOption<T> socketOption(String name, Class<T> type) {
-        SocketOption<?> socketOption;
-        switch (name) {
-            case "TCP_NODELAY":
-                socketOption = StandardSocketOptions.TCP_NODELAY;
-                break;
-            case "IP_MULTICAST_LOOP":
-                socketOption = StandardSocketOptions.IP_MULTICAST_LOOP;
-                break;
-            case "CONNECT_TIMEOUT":
-                socketOption = ServiceTalkSocketOptions.CONNECT_TIMEOUT;
-                break;
-            case "WRITE_BUFFER_THRESHOLD":
-                socketOption = ServiceTalkSocketOptions.WRITE_BUFFER_THRESHOLD;
-                break;
-            case "IDLE_TIMEOUT":
-                socketOption = ServiceTalkSocketOptions.IDLE_TIMEOUT;
-                break;
-            case "AUTO_READ":
-                socketOption = new SocketOption<T>() {
-                    @Override
-                    public String name() {
-                        return "AUTO_READ";
-                    }
+    private static final class CustomSocketOption<T> implements SocketOption<T> {
+        private final String name;
+        private final Class<T> type;
 
-                    @Override
-                    public Class<T> type() {
-                        return (Class<T>) Boolean.class;
-                    }
-                };
-                break;
-            case "AUTO_CLOSE":
-                return new SocketOption<T>() {
-                    @Override
-                    public String name() {
-                        return "AUTO_CLOSE";
-                    }
-
-                    @Override
-                    public Class<T> type() {
-                        return type;
-                    }
-                };
-            case "UNSUPPORTED":
-                return new SocketOption<T>() {
-                    @Override
-                    public String name() {
-                        return "UNSUPPORTED";
-                    }
-
-                    @Override
-                    public Class<T> type() {
-                        return type;
-                    }
-                };
-            default:
-                throw new IllegalArgumentException("Unknown SocketOption name: " + name);
+        CustomSocketOption(String name, Class<T> type) {
+            this.name = name;
+            this.type = type;
         }
-        if (!socketOption.type().equals(type)) {
-            throw new IllegalArgumentException("Requested incorrect type for SocketOption(" + name + ", " +
-                    socketOption.type().getName() + "): " + type.getName());
+
+        @Override
+        public String name() {
+            return name;
         }
-        return (SocketOption<T>) socketOption;
+
+        @Override
+        public Class<T> type() {
+            return type;
+        }
     }
 }
