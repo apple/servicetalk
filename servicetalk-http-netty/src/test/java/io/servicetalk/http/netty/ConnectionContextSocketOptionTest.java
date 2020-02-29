@@ -19,7 +19,6 @@ import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.BlockingHttpConnection;
 import io.servicetalk.http.api.HttpProtocolConfig;
-import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.HttpServerBuilder;
 import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.transport.api.HostAndPort;
@@ -39,7 +38,6 @@ import java.net.SocketOption;
 import java.net.StandardSocketOptions;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.http.api.HttpResponseStatus.OK;
 import static io.servicetalk.http.api.HttpSerializationProviders.textDeserializer;
 import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h1Default;
@@ -145,12 +143,10 @@ public class ConnectionContextSocketOptionTest {
              BlockingHttpClient client = newClient(serverContext, idleTimeoutMs);
              BlockingHttpConnection connection = client.reserveConnection(client.get("/"))) {
 
-            assertThat(connection.connectionContext().socketOption(socketOption), clientMatcher);
-            HttpResponse response = connection.request(connection.get("/"));
-            assertThat(response.status(), is(OK));
-            CharSequence value = response.payloadBody(textDeserializer());
-            assertThat(value, is(notNullValue()));
-            assertThat(value.toString(), serverMatcher);
+            assertThat("Client SocketOption does not match expected value",
+                    connection.connectionContext().socketOption(socketOption), clientMatcher);
+            assertThat("Server SocketOption does not match expected value",
+                    connection.request(connection.get("/")).payloadBody(textDeserializer()), serverMatcher);
         }
     }
 
