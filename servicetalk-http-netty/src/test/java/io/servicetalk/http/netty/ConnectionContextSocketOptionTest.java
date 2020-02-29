@@ -85,9 +85,7 @@ public class ConnectionContextSocketOptionTest {
 
     @Test
     public void tcpStandardSocketOptionIsNotNull() throws Exception {
-        testSocketOption(StandardSocketOptions.TCP_NODELAY, is(notNullValue()),
-                // HTTP_2 stream channel does not have TCP_NODELAY option
-                protocol == Protocol.HTTP_2 ? equalTo("null") : not(equalTo("null")));
+        testSocketOption(StandardSocketOptions.TCP_NODELAY, is(notNullValue()), not(equalTo("null")));
     }
 
     @Test

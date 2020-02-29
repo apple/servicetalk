@@ -154,7 +154,8 @@ final class H2ServerParentConnectionContext extends H2ParentConnectionContext im
                                                 connection.flushStrategyHolder.currentStrategy(),
                                                 connection.idleTimeoutMs,
                                                 connection.executionContext().executionStrategy(),
-                                                connection.sslSession());
+                                                connection.sslSession(),
+                                                channel.config());
 
                                 // ServiceTalk HTTP service handler
                                 new NettyHttpServerConnection(streamConnection, service,

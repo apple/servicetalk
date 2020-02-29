@@ -36,6 +36,7 @@ import io.servicetalk.transport.netty.internal.CloseHandler.CloseEventObservedEx
 import io.servicetalk.transport.netty.internal.WriteStreamSubscriber.AbortedFirstWrite;
 
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelConfig;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandler;
 import io.netty.channel.ChannelPipeline;
@@ -127,19 +128,22 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
      */
     @Nullable
     private SSLSession sslSession;
+    @Nullable
+    private ChannelConfig parentChannelConfig;
 
     private DefaultNettyConnection(Channel channel, BufferAllocator allocator, Executor executor,
                                    TerminalPredicate<Read> terminalMsgPredicate, CloseHandler closeHandler,
                                    FlushStrategy flushStrategy, @Nullable Long idleTimeoutMs,
                                    ExecutionStrategy executionStrategy) {
         this(channel, allocator, executor, terminalMsgPredicate, closeHandler, flushStrategy, idleTimeoutMs,
-                executionStrategy, null);
+                executionStrategy, null, null);
     }
 
     private DefaultNettyConnection(Channel channel, BufferAllocator allocator, Executor executor,
                                    TerminalPredicate<Read> terminalMsgPredicate, CloseHandler closeHandler,
                                    FlushStrategy flushStrategy, @Nullable Long idleTimeoutMs,
-                                   ExecutionStrategy executionStrategy, @Nullable SSLSession sslSession) {
+                                   ExecutionStrategy executionStrategy, @Nullable SSLSession sslSession,
+                                   @Nullable ChannelConfig parentChannelConfig) {
         super(channel, executor);
         nettyChannelPublisher = new NettyChannelPublisher<>(channel, terminalMsgPredicate, closeHandler);
         this.readPublisher = nettyChannelPublisher.recoverWith(this::enrichErrorPublisher);
@@ -176,6 +180,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
             onClosing = null;
         }
         this.sslSession = sslSession;
+        this.parentChannelConfig = parentChannelConfig;
     }
 
     @SuppressWarnings("unchecked")
@@ -199,6 +204,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
      * @param idleTimeoutMs Value for {@link ServiceTalkSocketOptions#IDLE_TIMEOUT IDLE_TIMEOUT} socket option.
      * @param executionStrategy Used to derive the {@link #executionContext()}.
      * @param sslSession Provides access to the {@link SSLSession} associated with this connection.
+     * @param parentChannelConfig {@link ChannelConfig} of the parent {@link Channel} to query {@link SocketOption}s
      * @param <Read> Type of objects read from the {@link NettyConnection}.
      * @param <Write> Type of objects written to the {@link NettyConnection}.
      * @return A {@link Single} that completes with a {@link DefaultNettyConnection} after the channel is activated and
@@ -207,9 +213,11 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
     public static <Read, Write> DefaultNettyConnection<Read, Write> initChildChannel(
             Channel channel, BufferAllocator allocator, Executor executor, TerminalPredicate<Read> terminalMsgPredicate,
             CloseHandler closeHandler, FlushStrategy flushStrategy, @Nullable Long idleTimeoutMs,
-            ExecutionStrategy executionStrategy, @Nullable SSLSession sslSession) {
+            ExecutionStrategy executionStrategy, @Nullable SSLSession sslSession,
+            @Nullable ChannelConfig parentChannelConfig) {
         DefaultNettyConnection<Read, Write> connection = new DefaultNettyConnection<>(channel, allocator, executor,
-                terminalMsgPredicate, closeHandler, flushStrategy, idleTimeoutMs, executionStrategy, sslSession);
+                terminalMsgPredicate, closeHandler, flushStrategy, idleTimeoutMs, executionStrategy, sslSession,
+                parentChannelConfig);
         channel.pipeline().addLast(new NettyToStChannelInboundHandler<>(connection, null,
                 null, false));
         return connection;
@@ -410,7 +418,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
     @Nullable
     @Override
     public <T> T socketOption(final SocketOption<T> option) {
-        return getOption(option, channel().config(), idleTimeoutMs);
+        return getOption(option, parentChannelConfig != null ? parentChannelConfig : channel().config(), idleTimeoutMs);
     }
 
     private void invokeUserCloseHandler() {
