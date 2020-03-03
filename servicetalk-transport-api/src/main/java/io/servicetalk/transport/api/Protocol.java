@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2020 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,15 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.servicetalk.grpc.api;
-
-import io.servicetalk.http.api.HttpConnectionContext;
+package io.servicetalk.transport.api;
 
 /**
- * A <a href="https://www.grpc.io">gRPC</a> service context.
+ * Provides information about the network protocol.
  */
-public interface GrpcServiceContext extends HttpConnectionContext, GrpcMetadata {
+public interface Protocol {
 
-    @Override
-    GrpcExecutionContext executionContext();
+    /**
+     * Returns name of the protocol.
+     *
+     * @return name of the protocol
+     */
+    String name();
 }

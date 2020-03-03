@@ -18,6 +18,7 @@ package io.servicetalk.transport.netty.internal;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.TestPublisherSubscriber;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
+import io.servicetalk.transport.api.Protocol;
 import io.servicetalk.transport.netty.internal.NettyConnection.TerminalPredicate;
 
 import io.netty.buffer.ByteBuf;
@@ -40,6 +41,7 @@ import static io.servicetalk.transport.netty.internal.OffloadAllExecutionStrateg
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
+import static org.mockito.Mockito.mock;
 
 public class NettyChannelPublisherRefCountTest {
     @Rule
@@ -54,7 +56,7 @@ public class NettyChannelPublisherRefCountTest {
         channel = new EmbeddedChannel();
         publisher = DefaultNettyConnection.initChannel(channel, DEFAULT_ALLOCATOR, immediate(),
                 new TerminalPredicate<>(), UNSUPPORTED_PROTOCOL_CLOSE_HANDLER, defaultFlushStrategy(),
-                null, channel2 -> { }, OFFLOAD_ALL_STRATEGY, "test").toFuture().get().read();
+                null, channel2 -> { }, OFFLOAD_ALL_STRATEGY, mock(Protocol.class)).toFuture().get().read();
     }
 
     @After

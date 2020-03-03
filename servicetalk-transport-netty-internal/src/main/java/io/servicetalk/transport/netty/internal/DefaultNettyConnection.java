@@ -30,6 +30,7 @@ import io.servicetalk.concurrent.internal.DelayedCancellable;
 import io.servicetalk.transport.api.DefaultExecutionContext;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.ExecutionStrategy;
+import io.servicetalk.transport.api.Protocol;
 import io.servicetalk.transport.api.ServiceTalkSocketOptions;
 import io.servicetalk.transport.netty.internal.CloseHandler.CloseEvent;
 import io.servicetalk.transport.netty.internal.CloseHandler.CloseEventObservedException;
@@ -107,7 +108,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
     private final FlushStrategyHolder flushStrategyHolder;
     @Nullable
     private final Long idleTimeoutMs;
-    private final String protocol;
+    private final Protocol protocol;
     private volatile ChannelOutboundListener channelOutboundListener = PLACE_HOLDER_OUTBOUND_LISTENER;
     /**
      * Potentially contains more information when a protocol or channel level close event was observed.
@@ -133,7 +134,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
     private DefaultNettyConnection(Channel channel, BufferAllocator allocator, Executor executor,
                                    TerminalPredicate<Read> terminalMsgPredicate, CloseHandler closeHandler,
                                    FlushStrategy flushStrategy, @Nullable Long idleTimeoutMs,
-                                   ExecutionStrategy executionStrategy, String protocol) {
+                                   ExecutionStrategy executionStrategy, Protocol protocol) {
         this(channel, allocator, executor, terminalMsgPredicate, closeHandler, flushStrategy, idleTimeoutMs,
                 executionStrategy, protocol, null, null);
     }
@@ -141,7 +142,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
     private DefaultNettyConnection(Channel channel, BufferAllocator allocator, Executor executor,
                                    TerminalPredicate<Read> terminalMsgPredicate, CloseHandler closeHandler,
                                    FlushStrategy flushStrategy, @Nullable Long idleTimeoutMs,
-                                   ExecutionStrategy executionStrategy, String protocol,
+                                   ExecutionStrategy executionStrategy, Protocol protocol,
                                    @Nullable SSLSession sslSession, @Nullable ChannelConfig parentChannelConfig) {
         super(channel, executor);
         nettyChannelPublisher = new NettyChannelPublisher<>(channel, terminalMsgPredicate, closeHandler);
@@ -195,7 +196,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
      * @param flushStrategy Manages flushing of data for the {@link DefaultNettyConnection}.
      * @param idleTimeoutMs Value for {@link ServiceTalkSocketOptions#IDLE_TIMEOUT IDLE_TIMEOUT} socket option.
      * @param executionStrategy Used to derive the {@link #executionContext()}.
-     * @param protocol The name of the protocol this {@link DefaultNettyConnection} implements.
+     * @param protocol The {@link Protocol} this {@link DefaultNettyConnection} implements.
      * @param sslSession Provides access to the {@link SSLSession} associated with this connection.
      * @param parentChannelConfig {@link ChannelConfig} of the parent {@link Channel} to query {@link SocketOption}s
      * @param <Read> Type of objects read from the {@link NettyConnection}.
@@ -206,7 +207,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
     public static <Read, Write> DefaultNettyConnection<Read, Write> initChildChannel(
             Channel channel, BufferAllocator allocator, Executor executor, TerminalPredicate<Read> terminalMsgPredicate,
             CloseHandler closeHandler, FlushStrategy flushStrategy, @Nullable Long idleTimeoutMs,
-            ExecutionStrategy executionStrategy, String protocol, @Nullable SSLSession sslSession,
+            ExecutionStrategy executionStrategy, Protocol protocol, @Nullable SSLSession sslSession,
             @Nullable ChannelConfig parentChannelConfig) {
         DefaultNettyConnection<Read, Write> connection = new DefaultNettyConnection<>(channel, allocator, executor,
                 terminalMsgPredicate, closeHandler, flushStrategy, idleTimeoutMs, executionStrategy, protocol,
@@ -230,7 +231,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
      * @param idleTimeoutMs Value for {@link ServiceTalkSocketOptions#IDLE_TIMEOUT IDLE_TIMEOUT} socket option.
      * @param initializer Synchronously initializes the pipeline upon subscribe.
      * @param executionStrategy {@link ExecutionStrategy} to use for this connection.
-     * @param protocol The name of the protocol this {@link DefaultNettyConnection} implements.
+     * @param protocol The {@link Protocol} this {@link DefaultNettyConnection} implements.
      * @param <Read> Type of objects read from the {@link NettyConnection}.
      * @param <Write> Type of objects written to the {@link NettyConnection}.
      * @return A {@link Single} that completes with a {@link DefaultNettyConnection} after the channel is activated and
@@ -239,7 +240,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
     public static <Read, Write> Single<DefaultNettyConnection<Read, Write>> initChannel(
             Channel channel, BufferAllocator allocator, Executor executor, TerminalPredicate<Read> terminalMsgPredicate,
             CloseHandler closeHandler, FlushStrategy flushStrategy, @Nullable Long idleTimeoutMs,
-            ChannelInitializer initializer, ExecutionStrategy executionStrategy, String protocol) {
+            ChannelInitializer initializer, ExecutionStrategy executionStrategy, Protocol protocol) {
         return new SubscribableSingle<DefaultNettyConnection<Read, Write>>() {
             @Override
             protected void handleSubscribe(
@@ -416,7 +417,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
     }
 
     @Override
-    public String protocol() {
+    public Protocol protocol() {
         return protocol;
     }
 

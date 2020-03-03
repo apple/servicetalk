@@ -159,7 +159,7 @@ final class NettyHttpServer {
                 config.tcpConfig().idleTimeoutMs(),
                 initializer.andThen(getChannelInitializer(getByteBufAllocator(httpExecutionContext.bufferAllocator()),
                         h1Config, closeHandler)),
-                httpExecutionContext.executionStrategy(), HTTP_1_1.toString())
+                httpExecutionContext.executionStrategy(), HTTP_1_1)
                 .map(conn -> new NettyHttpServerConnection(conn, service, httpExecutionContext.executionStrategy(),
                         h1Config.headersFactory(), drainRequestPayloadBody)), HTTP_1_1.toString(), channel);
     }
@@ -426,8 +426,8 @@ final class NettyHttpServer {
         }
 
         @Override
-        public String protocol() {
-            return connection.protocol();
+        public HttpProtocolVersion protocol() {
+            return (HttpProtocolVersion) connection.protocol();
         }
 
         @Override

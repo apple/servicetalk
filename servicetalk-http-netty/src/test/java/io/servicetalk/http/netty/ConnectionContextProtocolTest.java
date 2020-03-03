@@ -49,20 +49,20 @@ public class ConnectionContextProtocolTest {
 
     private enum Config {
 
-        HTTP_1_1(new HttpProtocolConfig[]{h1Default()}, false, HttpProtocolVersion.HTTP_1_1.toString()),
-        HTTP_2_0(new HttpProtocolConfig[]{h2Default()}, false, H2ToStH1Utils.HTTP_2_0.toString()),
-        SECURE_HTTP_1_1(new HttpProtocolConfig[]{h1Default()}, true, HttpProtocolVersion.HTTP_1_1.toString()),
-        SECURE_HTTP_2_0(new HttpProtocolConfig[]{h2Default()}, true, H2ToStH1Utils.HTTP_2_0.toString()),
+        HTTP_1_1(new HttpProtocolConfig[]{h1Default()}, false, HttpProtocolVersion.HTTP_1_1),
+        HTTP_2_0(new HttpProtocolConfig[]{h2Default()}, false, H2ToStH1Utils.HTTP_2_0),
+        SECURE_HTTP_1_1(new HttpProtocolConfig[]{h1Default()}, true, HttpProtocolVersion.HTTP_1_1),
+        SECURE_HTTP_2_0(new HttpProtocolConfig[]{h2Default()}, true, H2ToStH1Utils.HTTP_2_0),
         ALPN_PREFER_HTTP_1_1(new HttpProtocolConfig[]{h1Default(), h2Default()}, true,
-                HttpProtocolVersion.HTTP_1_1.toString()),
+                HttpProtocolVersion.HTTP_1_1),
         ALPN_PREFER_HTTP_2_0(new HttpProtocolConfig[]{h2Default(), h1Default()}, true,
-                H2ToStH1Utils.HTTP_2_0.toString());
+                H2ToStH1Utils.HTTP_2_0);
 
         final HttpProtocolConfig[] protocols;
         final boolean secure;
-        final String expectedProtocol;
+        final HttpProtocolVersion expectedProtocol;
 
-        Config(HttpProtocolConfig[] protocols, boolean secure, String expectedProtocol) {
+        Config(HttpProtocolConfig[] protocols, boolean secure, HttpProtocolVersion expectedProtocol) {
             this.protocols = protocols;
             this.secure = secure;
             this.expectedProtocol = expectedProtocol;
@@ -93,7 +93,7 @@ public class ConnectionContextProtocolTest {
                     connection.connectionContext().protocol(), equalTo(config.expectedProtocol));
             assertThat("Server-side connection protocol does not match expected value",
                     connection.request(connection.get("/")).payloadBody(textDeserializer()),
-                    equalTo(config.expectedProtocol));
+                    equalTo(config.expectedProtocol.name()));
         }
     }
 
@@ -104,7 +104,7 @@ public class ConnectionContextProtocolTest {
             builder.secure().commit(DefaultTestCerts::loadServerPem, DefaultTestCerts::loadServerKey);
         }
         return builder.listenBlockingAndAwait((ctx, request, responseFactory) -> responseFactory.ok()
-                .payloadBody(ctx.protocol(), textSerializer()));
+                .payloadBody(ctx.protocol().name(), textSerializer()));
     }
 
     private static BlockingHttpClient newClient(ServerContext serverContext, Config config) {

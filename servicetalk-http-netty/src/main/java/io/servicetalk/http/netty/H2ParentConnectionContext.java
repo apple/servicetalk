@@ -24,8 +24,10 @@ import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.DelayedCancellable;
 import io.servicetalk.http.api.DefaultHttpExecutionContext;
+import io.servicetalk.http.api.HttpConnectionContext;
 import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpExecutionStrategy;
+import io.servicetalk.http.api.HttpProtocolVersion;
 import io.servicetalk.transport.netty.internal.FlushStrategy;
 import io.servicetalk.transport.netty.internal.FlushStrategyHolder;
 import io.servicetalk.transport.netty.internal.NettyChannelListenableAsyncCloseable;
@@ -70,8 +72,8 @@ import static io.servicetalk.transport.netty.internal.NettyPipelineSslUtils.extr
 import static io.servicetalk.transport.netty.internal.SocketOptionUtils.getOption;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
-class H2ParentConnectionContext extends NettyChannelListenableAsyncCloseable implements
-                                                                             NettyConnectionContext {
+class H2ParentConnectionContext extends NettyChannelListenableAsyncCloseable implements NettyConnectionContext,
+                                                                                        HttpConnectionContext {
     private static final ClosedChannelException CLOSED_CHANNEL_INACTIVE = unknownStackTrace(
             new ClosedChannelException(), H2ClientParentConnectionContext.class, "channelInactive(..)");
     private static final ClosedChannelException CLOSED_HANDLER_REMOVED =
@@ -156,8 +158,8 @@ class H2ParentConnectionContext extends NettyChannelListenableAsyncCloseable imp
     }
 
     @Override
-    public String protocol() {
-        return HTTP_2_0.toString();
+    public HttpProtocolVersion protocol() {
+        return HTTP_2_0;
     }
 
     @Override

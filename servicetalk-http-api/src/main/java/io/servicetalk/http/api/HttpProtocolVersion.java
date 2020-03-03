@@ -16,6 +16,7 @@
 package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.Buffer;
+import io.servicetalk.transport.api.Protocol;
 
 import static io.servicetalk.buffer.api.ReadOnlyBufferAllocators.PREFER_HEAP_RO_ALLOCATOR;
 import static io.servicetalk.http.api.BufferUtils.writeReadOnlyBuffer;
@@ -23,7 +24,7 @@ import static io.servicetalk.http.api.BufferUtils.writeReadOnlyBuffer;
 /**
  * HTTP <a href="https://tools.ietf.org/html/rfc7230.html#section-2.6">protocol versioning</a>.
  */
-public final class HttpProtocolVersion {
+public final class HttpProtocolVersion implements Protocol {
     /**
      * HTTP/1.1 version described in <a href="https://tools.ietf.org/html/rfc7230">RFC 7230</a>.
      */
@@ -33,6 +34,11 @@ public final class HttpProtocolVersion {
      * HTTP/1.0 version described in <a href="https://tools.ietf.org/html/rfc1945">RFC 1945</a>.
      */
     public static final HttpProtocolVersion HTTP_1_0 = new HttpProtocolVersion(1, 0);
+
+    /**
+     * HTTP/2.0 version described in <a href="https://tools.ietf.org/html/rfc7540">RFC 7540</a>.
+     */
+    public static final HttpProtocolVersion HTTP_2_0 = new HttpProtocolVersion(2, 0);
 
     private final int major;
     private final int minor;
@@ -73,6 +79,8 @@ public final class HttpProtocolVersion {
             if (minor == 0) {
                 return HTTP_1_0;
             }
+        } else if (major == 2 && minor == 0) {
+            return HTTP_2_0;
         }
         return new HttpProtocolVersion(major, minor);
     }
@@ -132,6 +140,11 @@ public final class HttpProtocolVersion {
 
     @Override
     public String toString() {
+        return httpVersion;
+    }
+
+    @Override
+    public String name() {
         return httpVersion;
     }
 }

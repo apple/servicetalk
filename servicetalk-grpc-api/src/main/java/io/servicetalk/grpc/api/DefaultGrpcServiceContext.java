@@ -16,8 +16,9 @@
 package io.servicetalk.grpc.api;
 
 import io.servicetalk.concurrent.api.Completable;
+import io.servicetalk.http.api.HttpConnectionContext;
+import io.servicetalk.http.api.HttpProtocolVersion;
 import io.servicetalk.http.api.HttpServiceContext;
-import io.servicetalk.transport.api.ConnectionContext;
 
 import java.net.SocketAddress;
 import java.net.SocketOption;
@@ -28,7 +29,7 @@ import static java.util.Objects.requireNonNull;
 
 final class DefaultGrpcServiceContext extends DefaultGrpcMetadata implements GrpcServiceContext {
 
-    private final ConnectionContext connectionContext;
+    private final HttpConnectionContext connectionContext;
     private final GrpcExecutionContext executionContext;
 
     DefaultGrpcServiceContext(final String path, final HttpServiceContext httpServiceContext) {
@@ -65,7 +66,7 @@ final class DefaultGrpcServiceContext extends DefaultGrpcMetadata implements Grp
     }
 
     @Override
-    public String protocol() {
+    public HttpProtocolVersion protocol() {
         return connectionContext.protocol();
     }
 

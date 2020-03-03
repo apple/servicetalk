@@ -77,7 +77,7 @@ public class DelegatingConnectionContext implements ConnectionContext {
     }
 
     @Override
-    public String protocol() {
+    public Protocol protocol() {
         return delegate.protocol();
     }
 

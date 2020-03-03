@@ -155,7 +155,7 @@ final class H2ServerParentConnectionContext extends H2ParentConnectionContext im
                                                 connection.flushStrategyHolder.currentStrategy(),
                                                 connection.idleTimeoutMs,
                                                 connection.executionContext().executionStrategy(),
-                                                HTTP_2_0.toString(),
+                                                HTTP_2_0,
                                                 connection.sslSession(),
                                                 channel.config());
 

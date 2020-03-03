@@ -34,6 +34,7 @@ import io.servicetalk.http.api.HttpEventKey;
 import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpHeadersFactory;
+import io.servicetalk.http.api.HttpProtocolVersion;
 import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
@@ -78,7 +79,7 @@ import static io.servicetalk.transport.netty.internal.ChannelSet.CHANNEL_CLOSEAB
 import static io.servicetalk.transport.netty.internal.CloseHandler.PROTOCOL_OUTBOUND_CLOSE_HANDLER;
 import static java.util.Objects.requireNonNull;
 
-final class H2ClientParentConnectionContext extends H2ParentConnectionContext implements NettyConnectionContext {
+final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
     private H2ClientParentConnectionContext(Channel channel, BufferAllocator allocator, Executor executor,
                                             FlushStrategy flushStrategy, @Nullable Long idleTimeoutMs,
                                             HttpExecutionStrategy executionStrategy) {
@@ -256,7 +257,7 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext im
                                     parentContext.flushStrategyHolder.currentStrategy(),
                                     parentContext.idleTimeoutMs,
                                     parentContext.executionContext().executionStrategy(),
-                                    HTTP_2_0.toString(),
+                                    HTTP_2_0,
                                     parentContext.sslSession(),
                                     parentContext.nettyChannel().config());
 
@@ -318,7 +319,7 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext im
         }
 
         @Override
-        public String protocol() {
+        public HttpProtocolVersion protocol() {
             return parentContext.protocol();
         }
 

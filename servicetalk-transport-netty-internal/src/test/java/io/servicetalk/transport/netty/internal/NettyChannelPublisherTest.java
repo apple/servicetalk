@@ -23,6 +23,7 @@ import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.TestPublisherSubscriber;
 import io.servicetalk.concurrent.internal.DuplicateSubscribeException;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
+import io.servicetalk.transport.api.Protocol;
 import io.servicetalk.transport.netty.internal.NettyConnection.TerminalPredicate;
 
 import io.netty.channel.ChannelHandlerContext;
@@ -98,7 +99,7 @@ public class NettyChannelPublisherTest {
                             super.read(ctx);
                         }
                     });
-                }, OFFLOAD_ALL_STRATEGY, "test").toFuture().get();
+                }, OFFLOAD_ALL_STRATEGY, mock(Protocol.class)).toFuture().get();
         publisher = connection.read();
         channel.config().setAutoRead(false);
     }

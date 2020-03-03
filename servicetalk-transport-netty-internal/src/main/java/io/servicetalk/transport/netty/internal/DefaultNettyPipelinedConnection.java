@@ -25,6 +25,7 @@ import io.servicetalk.concurrent.internal.QueueFullAndRejectedSubscribeException
 import io.servicetalk.concurrent.internal.QueueFullException;
 import io.servicetalk.concurrent.internal.SequentialCancellable;
 import io.servicetalk.transport.api.ExecutionContext;
+import io.servicetalk.transport.api.Protocol;
 import io.servicetalk.transport.netty.internal.NettyConnection.RequestNSupplier;
 
 import io.netty.channel.Channel;
@@ -187,7 +188,7 @@ public final class DefaultNettyPipelinedConnection<Req, Resp> implements NettyPi
     }
 
     @Override
-    public String protocol() {
+    public Protocol protocol() {
         return connection.protocol();
     }
 

@@ -36,6 +36,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 
+import static io.servicetalk.tcp.netty.internal.TcpProtocol.TCP;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
 import static java.util.Collections.emptyList;
@@ -89,7 +90,7 @@ public class TcpServer {
                         executionContext.bufferAllocator(), executionContext.executor(),
                         new TerminalPredicate<>(buffer -> false), UNSUPPORTED_PROTOCOL_CLOSE_HANDLER,
                         config.flushStrategy(), config.idleTimeoutMs(), new TcpServerChannelInitializer(config)
-                                .andThen(getChannelInitializer(service, executionContext)), executionStrategy, "tcp"),
+                                .andThen(getChannelInitializer(service, executionContext)), executionStrategy, TCP),
                 serverConnection -> service.apply(serverConnection)
                         .beforeOnError(throwable -> LOGGER.error("Error handling a connection.", throwable))
                         .beforeFinally(() -> serverConnection.closeAsync().subscribe())

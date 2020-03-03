@@ -22,7 +22,7 @@ import static java.util.Objects.requireNonNull;
 /**
  * A {@link ConnectionContext} for use in the {@link HttpService} context.
  */
-public abstract class HttpServiceContext implements ConnectionContext {
+public abstract class HttpServiceContext implements HttpConnectionContext {
     private final HttpHeadersFactory headersFactory;
     private final HttpResponseFactory factory;
     private final StreamingHttpResponseFactory streamingFactory;
@@ -55,9 +55,6 @@ public abstract class HttpServiceContext implements ConnectionContext {
         this(other.headersFactory(), other.responseFactory(), other.streamingResponseFactory(),
                 other.blockingStreamingResponseFactory());
     }
-
-    @Override
-    public abstract HttpExecutionContext executionContext();
 
     /**
      * Returns the {@link HttpHeadersFactory} associated with this {@link HttpServiceContext}.

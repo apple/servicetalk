@@ -36,6 +36,7 @@ import io.servicetalk.tcp.netty.internal.TcpConnector;
 import io.servicetalk.tcp.netty.internal.TcpServerBinder;
 import io.servicetalk.tcp.netty.internal.TcpServerChannelInitializer;
 import io.servicetalk.tcp.netty.internal.TcpServerConfig;
+import io.servicetalk.transport.api.Protocol;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.netty.internal.CloseHandler;
 import io.servicetalk.transport.netty.internal.DefaultNettyConnection;
@@ -96,6 +97,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
@@ -418,7 +420,7 @@ public class HttpRequestEncoderTest {
                                             channel2 -> {
                                                 serverChannelRef.compareAndSet(null, channel2);
                                                 serverChannelLatch.countDown();
-                                            }), defaultStrategy(), "test"),
+                                            }), defaultStrategy(), mock(Protocol.class)),
                             connection -> { }).toFuture().get());
             ReadOnlyHttpClientConfig cConfig = new HttpClientConfig().asReadOnly();
             assert cConfig.h1Config() != null;
@@ -443,7 +445,7 @@ public class HttpRequestEncoderTest {
                                         serverCloseTrigger.onComplete();
                                     }
                                 }
-                            })), defaultStrategy(), HTTP_1_1.toString());
+                            })), defaultStrategy(), HTTP_1_1);
                     }
             ).toFuture().get());
 

@@ -20,6 +20,7 @@ import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.api.TestPublisherSubscriber;
 import io.servicetalk.concurrent.api.TestSubscription;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
+import io.servicetalk.transport.api.Protocol;
 import io.servicetalk.transport.netty.internal.NettyConnection.TerminalPredicate;
 
 import io.netty.channel.embedded.EmbeddedChannel;
@@ -79,7 +80,7 @@ public class DefaultNettyPipelinedConnectionTest {
         connection = DefaultNettyConnection.<Integer, Integer>initChannel(channel, DEFAULT_ALLOCATOR,
                 immediate(), new TerminalPredicate<>(integer -> true),
                 UNSUPPORTED_PROTOCOL_CLOSE_HANDLER, defaultFlushStrategy(), null,
-                channel2 -> { }, OFFLOAD_ALL_STRATEGY, "test").toFuture().get();
+                channel2 -> { }, OFFLOAD_ALL_STRATEGY, mock(Protocol.class)).toFuture().get();
         requester = new DefaultNettyPipelinedConnection<>(connection, MAX_PENDING_REQUESTS);
     }
 
