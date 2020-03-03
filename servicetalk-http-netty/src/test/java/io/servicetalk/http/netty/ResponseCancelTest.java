@@ -116,7 +116,14 @@ public class ResponseCancelTest {
     @Test
     public void cancel() throws Throwable {
         CountDownLatch latch1 = new CountDownLatch(1);
-        sendRequestAndCancel(latch1).onSuccess(client.httpResponseFactory().ok());
+        Cancellable cancellable = sendRequest(latch1);
+        // wait for server to receive request.
+        serverResponses.take();
+        assertThat("Unexpected connections count.", connectionCount.get(), is(1));
+        cancellable.cancel();
+        // wait for cancel to be observed but don't send cancel to the transport so that transport does not close the
+        // connection which will then be ambiguous.
+        delayedClientCancels.take();
         // We do not let cancel propagate to the transport so the concurrency controller should close the connection
         // and hence fail the response.
         ClientTerminationSignal.resumeExpectFailure(delayedClientTermination, latch1,
@@ -132,32 +139,25 @@ public class ResponseCancelTest {
     @Test
     public void cancelAfterSuccessOnTransport() throws Throwable {
         CountDownLatch latch1 = new CountDownLatch(1);
-        Processor<HttpResponse, HttpResponse> serverResp = sendRequestAndCancel(latch1);
+        Cancellable cancellable = sendRequest(latch1);
+        // wait for server to receive request.
+        Processor<HttpResponse, HttpResponse> serverResp = serverResponses.take();
+        assertThat("Unexpected connections count.", connectionCount.get(), is(1));
+
         serverResp.onSuccess(client.httpResponseFactory().ok());
-        // We do not let cancel propagate to the transport so the concurrency controller should close the connection
-        // and hence fail the response.
-        ClientTerminationSignal.resumeExpectFailure(delayedClientTermination, latch1,
-                instanceOf(ClosedChannelException.class));
+        cancellable.cancel();
+        // wait for cancel to be observed but don't send cancel to the transport so that transport does not close the
+        // connection which will then be ambiguous.
+        delayedClientCancels.take();
+        // As there is a race between completion and cancellation, we may get a success or failure, so just wait for
+        // any termination.
+        delayedClientTermination.take().resume();
 
         CountDownLatch latch2 = new CountDownLatch(1);
         sendRequest(latch2);
         serverResponses.take().onSuccess(client.httpResponseFactory().ok());
         ClientTerminationSignal.resume(delayedClientTermination, latch2);
         assertThat("Unexpected connections count.", connectionCount.get(), is(2));
-    }
-
-    private Processor<HttpResponse, HttpResponse> sendRequestAndCancel(CountDownLatch latch)
-            throws InterruptedException {
-        Cancellable cancellable = sendRequest(latch);
-        // wait for server to receive request.
-        Processor<HttpResponse, HttpResponse> serverResp = serverResponses.take();
-
-        assertThat("Unexpected connections count.", connectionCount.get(), is(1));
-        cancellable.cancel();
-        // wait for cancel to be observed but don't send cancel to the transport so that transport does not close the
-        // connection which will then be ambiguous.
-        delayedClientCancels.take();
-        return serverResp;
     }
 
     private Cancellable sendRequest(final CountDownLatch latch) {
@@ -206,6 +206,15 @@ public class ResponseCancelTest {
             this.subscriber = subscriber;
             err = null;
             this.response = response;
+        }
+
+        @SuppressWarnings("unchecked")
+        void resume() {
+            if (err != null) {
+                subscriber.onError(err);
+            } else {
+                subscriber.onSuccess(response);
+            }
         }
 
         @SuppressWarnings("unchecked")
