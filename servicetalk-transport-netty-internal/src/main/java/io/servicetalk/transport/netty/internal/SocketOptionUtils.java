@@ -41,11 +41,12 @@ public final class SocketOptionUtils {
      * @param channelOpts the {@link Map} into which add the converted {@link SocketOption}
      * @param option the {@link SocketOption} to convert and add
      * @param value the value to add
+     * @param <T> the type of the {@link SocketOption} value
      * @throws IllegalArgumentException if the specified {@link SocketOption} is not supported
      */
     @SuppressWarnings("rawtypes")
-    public static void addOption(final Map<ChannelOption, Object> channelOpts, final SocketOption option,
-                                 final Object value) {
+    public static <T> void addOption(final Map<ChannelOption, Object> channelOpts, final SocketOption<T> option,
+                                     final Object value) {
         if (option == StandardSocketOptions.IP_MULTICAST_IF) {
             channelOpts.put(ChannelOption.IP_MULTICAST_IF, value);
         } else if (option == StandardSocketOptions.IP_MULTICAST_LOOP) {
