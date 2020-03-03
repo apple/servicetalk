@@ -37,6 +37,7 @@ import io.netty.resolver.ResolvedAddressTypes;
 import io.netty.resolver.dns.DefaultDnsCache;
 import io.netty.resolver.dns.DnsNameResolver;
 import io.netty.resolver.dns.DnsNameResolverBuilder;
+import io.netty.resolver.dns.macos.MacOSDnsServerAddressStreamProvider;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
 import org.slf4j.Logger;
@@ -123,6 +124,9 @@ final class DefaultDnsServiceDiscoverer
         }
         if (dnsServerAddressStreamProvider != null) {
             builder.nameServerProvider(toNettyType(dnsServerAddressStreamProvider));
+        } else if (MacOSDnsServerAddressStreamProvider.isAvailable()) {
+            // We need to explicit enable the provider for MacOS to ensure we return the correct nameservers.
+            builder.nameServerProvider(new MacOSDnsServerAddressStreamProvider());
         }
         if (dnsResolverAddressTypes != null) {
             builder.resolvedAddressTypes(toNettyType(dnsResolverAddressTypes));
