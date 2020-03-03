@@ -141,9 +141,9 @@ public class ConnectionContextSocketOptionTest {
              BlockingHttpClient client = newClient(serverContext, idleTimeoutMs);
              BlockingHttpConnection connection = client.reserveConnection(client.get("/"))) {
 
-            assertThat("Client SocketOption does not match expected value",
+            assertThat("Client-side connection SocketOption does not match expected value",
                     connection.connectionContext().socketOption(socketOption), clientMatcher);
-            assertThat("Server SocketOption does not match expected value",
+            assertThat("Server-side connection SocketOption does not match expected value",
                     connection.request(connection.get("/")).payloadBody(textDeserializer()), serverMatcher);
         }
     }
@@ -165,8 +165,7 @@ public class ConnectionContextSocketOptionTest {
         if (idleTimeoutMs != null) {
             builder.socketOption(ServiceTalkSocketOptions.IDLE_TIMEOUT, idleTimeoutMs);
         }
-        return builder
-                .buildBlocking();
+        return builder.buildBlocking();
     }
 
     private static final class CustomSocketOption<T> implements SocketOption<T> {
