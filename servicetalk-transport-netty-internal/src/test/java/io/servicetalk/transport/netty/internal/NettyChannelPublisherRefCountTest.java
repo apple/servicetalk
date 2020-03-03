@@ -51,7 +51,7 @@ public class NettyChannelPublisherRefCountTest {
     public void setUp() throws Exception {
         channel = new EmbeddedChannel();
         publisher = DefaultNettyConnection.initChannel(channel, DEFAULT_ALLOCATOR, immediate(), defaultFlushStrategy(),
-                channel2 -> { }, OFFLOAD_ALL_STRATEGY).toFuture().get().read();
+                null, channel2 -> { }, OFFLOAD_ALL_STRATEGY).toFuture().get().read();
     }
 
     @After

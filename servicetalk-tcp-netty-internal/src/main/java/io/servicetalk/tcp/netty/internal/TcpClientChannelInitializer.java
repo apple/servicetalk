@@ -50,7 +50,7 @@ public class TcpClientChannelInitializer implements ChannelInitializer {
     public TcpClientChannelInitializer(final ReadOnlyTcpClientConfig config, final boolean deferSslHandler) {
         ChannelInitializer delegate = ChannelInitializer.defaultInitializer();
 
-        if (config.idleTimeoutMs() > 0) {
+        if (config.idleTimeoutMs() != null) {
             delegate = delegate.andThen(new IdleTimeoutInitializer(config.idleTimeoutMs()));
         }
 

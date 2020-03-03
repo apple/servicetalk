@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2020 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,14 +17,11 @@ package io.servicetalk.transport.netty.internal;
 
 import io.servicetalk.transport.api.FileDescriptorSocketAddress;
 import io.servicetalk.transport.api.HostAndPort;
-import io.servicetalk.transport.api.ServiceTalkSocketOptions;
 
 import io.netty.channel.Channel;
-import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoop;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.ServerChannel;
-import io.netty.channel.WriteBufferWaterMark;
 import io.netty.channel.epoll.EpollDatagramChannel;
 import io.netty.channel.epoll.EpollDomainSocketChannel;
 import io.netty.channel.epoll.EpollEventLoopGroup;
@@ -50,9 +47,6 @@ import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
-import java.net.SocketOption;
-import java.net.StandardSocketOptions;
-import java.util.Map;
 import javax.annotation.Nullable;
 
 /**
@@ -183,48 +177,6 @@ public final class BuilderUtils {
             return KQueueDatagramChannel.class;
         } else {
             return NioDatagramChannel.class;
-        }
-    }
-
-    /**
-     * Convert and add the given {@link SocketOption} and value to the channelOpts {@link Map}.
-     *
-     * @param channelOpts the {@link Map} into which add the converted {@link SocketOption}.
-     * @param option      the {@link SocketOption} to convert and add.
-     * @param value       the value to add.
-     */
-    @SuppressWarnings("rawtypes")
-    public static void addOption(Map<ChannelOption, Object> channelOpts, SocketOption option, Object value) {
-        if (option == StandardSocketOptions.IP_MULTICAST_IF) {
-            channelOpts.put(ChannelOption.IP_MULTICAST_IF, value);
-        } else if (option == StandardSocketOptions.IP_MULTICAST_LOOP) {
-            channelOpts.put(ChannelOption.IP_MULTICAST_LOOP_DISABLED, !(Boolean) value);
-        } else if (option == StandardSocketOptions.IP_MULTICAST_TTL) {
-            channelOpts.put(ChannelOption.IP_MULTICAST_TTL, value);
-        } else if (option == StandardSocketOptions.IP_TOS) {
-            channelOpts.put(ChannelOption.IP_TOS, value);
-        } else if (option == StandardSocketOptions.SO_BROADCAST) {
-            channelOpts.put(ChannelOption.SO_BROADCAST, value);
-        } else if (option == StandardSocketOptions.SO_KEEPALIVE) {
-            channelOpts.put(ChannelOption.SO_KEEPALIVE, value);
-        } else if (option == StandardSocketOptions.SO_LINGER) {
-            channelOpts.put(ChannelOption.SO_LINGER, value);
-        } else if (option == StandardSocketOptions.SO_RCVBUF) {
-            channelOpts.put(ChannelOption.SO_RCVBUF, value);
-        } else if (option == StandardSocketOptions.SO_REUSEADDR) {
-            channelOpts.put(ChannelOption.SO_REUSEADDR, value);
-        } else if (option == StandardSocketOptions.SO_SNDBUF) {
-            channelOpts.put(ChannelOption.SO_SNDBUF, value);
-        } else if (option == StandardSocketOptions.TCP_NODELAY) {
-            channelOpts.put(ChannelOption.TCP_NODELAY, value);
-        } else if (option == ServiceTalkSocketOptions.CONNECT_TIMEOUT) {
-            channelOpts.put(ChannelOption.CONNECT_TIMEOUT_MILLIS, value);
-        } else if (option == ServiceTalkSocketOptions.WRITE_BUFFER_THRESHOLD) {
-            Integer writeBufferThreshold = (Integer) value;
-            channelOpts.put(ChannelOption.WRITE_BUFFER_WATER_MARK, new WriteBufferWaterMark(writeBufferThreshold >>> 1,
-                    writeBufferThreshold));
-        } else {
-            throw new IllegalArgumentException("SocketOption " + option + " not supported");
         }
     }
 

@@ -108,7 +108,7 @@ public class TcpServer {
                 channel -> DefaultNettyConnection.<Buffer, Buffer>initChannel(channel,
                         executionContext.bufferAllocator(), executionContext.executor(),
                         new TerminalPredicate<>(buffer -> false), UNSUPPORTED_PROTOCOL_CLOSE_HANDLER,
-                        config.flushStrategy(), new TcpServerChannelInitializer(config)
+                        config.flushStrategy(), config.idleTimeoutMs(), new TcpServerChannelInitializer(config)
                                 .andThen(getChannelInitializer(service, executionContext)), executionStrategy),
                 serverConnection -> service.apply(serverConnection)
                         .beforeOnError(throwable -> LOGGER.error("Error handling a connection.", throwable))

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018, 2020 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package io.servicetalk.transport.api;
 import io.servicetalk.concurrent.api.Completable;
 
 import java.net.SocketAddress;
+import java.net.SocketOption;
 import javax.annotation.Nullable;
 import javax.net.ssl.SSLSession;
 
@@ -68,6 +69,11 @@ public class DelegatingConnectionContext implements ConnectionContext {
     @Override
     public ExecutionContext executionContext() {
         return delegate.executionContext();
+    }
+
+    @Override
+    public <T> T socketOption(final SocketOption<T> option) {
+        return delegate.socketOption(option);
     }
 
     @Override

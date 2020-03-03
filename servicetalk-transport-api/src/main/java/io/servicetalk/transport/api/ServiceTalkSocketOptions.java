@@ -28,7 +28,7 @@ public final class ServiceTalkSocketOptions {
      * The connect timeout in milliseconds.
      */
     public static final SocketOption<Integer> CONNECT_TIMEOUT =
-            new ServiceTalkSocketOption<>("CONNECTION_TIMEOUT", Integer.class);
+            new ServiceTalkSocketOption<>("CONNECT_TIMEOUT", Integer.class);
 
     /**
      * The threshold after which the the Endpoint is not writable anymore.

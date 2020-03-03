@@ -22,10 +22,12 @@ import io.servicetalk.transport.api.ConnectionAcceptor;
 import io.servicetalk.transport.api.ConnectionAcceptorFactory;
 import io.servicetalk.transport.api.IoExecutor;
 import io.servicetalk.transport.api.ServerContext;
+import io.servicetalk.transport.api.ServiceTalkSocketOptions;
 
 import org.slf4j.event.Level;
 
 import java.net.SocketOption;
+import java.net.StandardSocketOptions;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
 
@@ -105,6 +107,8 @@ public abstract class HttpServerBuilder {
      * @param option the option to apply.
      * @param value the value.
      * @return this.
+     * @see StandardSocketOptions
+     * @see ServiceTalkSocketOptions
      */
     public abstract <T> HttpServerBuilder socketOption(SocketOption<T> option, T value);
 

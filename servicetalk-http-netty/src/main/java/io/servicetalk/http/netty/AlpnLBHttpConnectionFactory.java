@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019-2020 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -67,22 +67,23 @@ final class AlpnLBHttpConnectionFactory<ResolvedAddress> extends AbstractLBHttpC
     }
 
     private Single<FilterableStreamingHttpConnection> createConnection(final Channel channel) {
+        final ReadOnlyTcpClientConfig tcpConfig = this.config.tcpConfig();
         return new AlpnChannelSingle(channel,
-                new TcpClientChannelInitializer(config.tcpConfig()), false).flatMap(protocol -> {
+                new TcpClientChannelInitializer(tcpConfig), false).flatMap(protocol -> {
             switch (protocol) {
                 case HTTP_1_1:
-                    final H1ProtocolConfig h1Config = config.h1Config();
+                    final H1ProtocolConfig h1Config = this.config.h1Config();
                     assert h1Config != null;
-                    return StreamingConnectionFactory.createConnection(channel, executionContext, config,
+                    return StreamingConnectionFactory.createConnection(channel, executionContext, this.config,
                             NoopChannelInitializer.INSTANCE)
                             .map(conn -> new PipelinedStreamingHttpConnection(conn, h1Config, executionContext,
                                     reqRespFactory));
                 case HTTP_2:
-                    final H2ProtocolConfig h2Config = config.h2Config();
+                    final H2ProtocolConfig h2Config = this.config.h2Config();
                     assert h2Config != null;
                     return H2ClientParentConnectionContext.initChannel(channel,
                             executionContext.bufferAllocator(), executionContext.executor(),
-                            h2Config, reqRespFactory, config.tcpConfig().flushStrategy(),
+                            h2Config, reqRespFactory, tcpConfig.flushStrategy(), tcpConfig.idleTimeoutMs(),
                             executionContext.executionStrategy(),
                             new H2ClientParentChannelInitializer(h2Config));
                 default:

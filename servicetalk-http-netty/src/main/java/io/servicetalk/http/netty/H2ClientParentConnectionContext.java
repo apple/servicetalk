@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019-2020 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -60,6 +60,7 @@ import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.Promise;
 
 import java.net.SocketAddress;
+import java.net.SocketOption;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import javax.annotation.Nullable;
 import javax.net.ssl.SSLSession;
@@ -77,10 +78,10 @@ import static io.servicetalk.transport.netty.internal.CloseHandler.PROTOCOL_OUTB
 import static java.util.Objects.requireNonNull;
 
 final class H2ClientParentConnectionContext extends H2ParentConnectionContext implements NettyConnectionContext {
-    private H2ClientParentConnectionContext(Channel channel, BufferAllocator allocator,
-                                            Executor executor, FlushStrategy flushStrategy,
+    private H2ClientParentConnectionContext(Channel channel, BufferAllocator allocator, Executor executor,
+                                            FlushStrategy flushStrategy, @Nullable Long idleTimeoutMs,
                                             HttpExecutionStrategy executionStrategy) {
-        super(channel, allocator, executor, flushStrategy, executionStrategy);
+        super(channel, allocator, executor, flushStrategy, idleTimeoutMs, executionStrategy);
     }
 
     interface H2ClientParentConnection extends FilterableStreamingHttpConnection, NettyConnectionContext {
@@ -90,6 +91,7 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext im
                                                         Executor executor, H2ProtocolConfig config,
                                                         StreamingHttpRequestResponseFactory reqRespFactory,
                                                         FlushStrategy parentFlushStrategy,
+                                                        @Nullable Long idleTimeoutMs,
                                                         HttpExecutionStrategy executionStrategy,
                                                         ChannelInitializer initializer) {
         return showPipeline(new SubscribableSingle<H2ClientParentConnection>() {
@@ -101,7 +103,7 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext im
                 try {
                     delayedCancellable = new DelayedCancellable();
                     H2ClientParentConnectionContext connection = new H2ClientParentConnectionContext(channel,
-                            allocator, executor, parentFlushStrategy, executionStrategy);
+                            allocator, executor, parentFlushStrategy, idleTimeoutMs, executionStrategy);
                     channel.attr(CHANNEL_CLOSEABLE_KEY).set(connection);
                     // We need the NettyToStChannelInboundHandler to be last in the pipeline. We accomplish that by
                     // calling the ChannelInitializer before we do addLast for the NettyToStChannelInboundHandler.
@@ -251,8 +253,10 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext im
                                     // closure based upon stream state.
                                     PROTOCOL_OUTBOUND_CLOSE_HANDLER,
                                     parentContext.flushStrategyHolder.currentStrategy(),
+                                    parentContext.idleTimeoutMs,
                                     parentContext.executionContext().executionStrategy(),
-                                    parentContext.sslSession());
+                                    parentContext.sslSession(),
+                                    parentContext.nettyChannel().config());
 
                     // In h2 a stream is 1 to 1 with a request/response life cycle. This means there is no concept of
                     // pipelining on a stream so we can use the non-pipelined connection which is more light weight.
@@ -303,6 +307,12 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext im
         @Override
         public HttpExecutionContext executionContext() {
             return parentContext.executionContext();
+        }
+
+        @Nullable
+        @Override
+        public <T> T socketOption(final SocketOption<T> option) {
+            return parentContext.socketOption(option);
         }
 
         @Override

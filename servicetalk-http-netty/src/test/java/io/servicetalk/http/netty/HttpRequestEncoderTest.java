@@ -413,7 +413,7 @@ public class HttpRequestEncoderTest {
                             SEC, null,
                             channel -> DefaultNettyConnection.initChannel(channel, SEC.bufferAllocator(),
                                     SEC.executor(), new TerminalPredicate<>(o -> o instanceof HttpHeaders),
-                                    UNSUPPORTED_PROTOCOL_CLOSE_HANDLER, defaultFlushStrategy(),
+                                    UNSUPPORTED_PROTOCOL_CLOSE_HANDLER, defaultFlushStrategy(), null,
                                     new TcpServerChannelInitializer(sConfig).andThen(
                                             channel2 -> {
                                                 serverChannelRef.compareAndSet(null, channel2);
@@ -430,7 +430,7 @@ public class HttpRequestEncoderTest {
                 closeHandlerRef.compareAndSet(null, closeHandler);
                 return DefaultNettyConnection.initChannel(channel, CEC.bufferAllocator(), CEC.executor(),
                         new TerminalPredicate<>(o -> o instanceof HttpHeaders), closeHandler, defaultFlushStrategy(),
-                        new TcpClientChannelInitializer(cConfig.tcpConfig())
+                        null, new TcpClientChannelInitializer(cConfig.tcpConfig())
                             .andThen(new HttpClientChannelInitializer(getByteBufAllocator(CEC.bufferAllocator()),
                                     cConfig.h1Config(), closeHandler))
                             .andThen(channel2 -> channel2.pipeline().addLast(new ChannelInboundHandlerAdapter() {

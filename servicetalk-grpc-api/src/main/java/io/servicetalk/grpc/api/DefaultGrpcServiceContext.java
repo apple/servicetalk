@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019-2020 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.transport.api.ConnectionContext;
 
 import java.net.SocketAddress;
+import java.net.SocketOption;
 import javax.annotation.Nullable;
 import javax.net.ssl.SSLSession;
 
@@ -55,6 +56,12 @@ final class DefaultGrpcServiceContext extends DefaultGrpcMetadata implements Grp
     @Override
     public GrpcExecutionContext executionContext() {
         return executionContext;
+    }
+
+    @Nullable
+    @Override
+    public <T> T socketOption(final SocketOption<T> option) {
+        return connectionContext.socketOption(option);
     }
 
     @Override

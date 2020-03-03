@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019-2020 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,13 +22,14 @@ import io.servicetalk.transport.netty.internal.ReadOnlyServerSecurityConfig;
 import io.netty.channel.ChannelOption;
 
 import java.net.SocketOption;
+import java.net.StandardSocketOptions;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import javax.annotation.Nullable;
 
-import static io.servicetalk.transport.netty.internal.BuilderUtils.addOption;
 import static io.servicetalk.transport.netty.internal.FlushStrategies.defaultFlushStrategy;
+import static io.servicetalk.transport.netty.internal.SocketOptionUtils.addOption;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -42,7 +43,8 @@ abstract class AbstractTcpConfig<SecurityConfig, ReadOnlyView> {
     @Nullable
     @SuppressWarnings("rawtypes")
     private Map<ChannelOption, Object> options;
-    private long idleTimeoutMs;
+    @Nullable
+    private Long idleTimeoutMs;
     private FlushStrategy flushStrategy = defaultFlushStrategy();
     @Nullable
     private String wireLoggerName;
@@ -66,7 +68,8 @@ abstract class AbstractTcpConfig<SecurityConfig, ReadOnlyView> {
         return options;
     }
 
-    final long idleTimeoutMs() {
+    @Nullable
+    final Long idleTimeoutMs() {
         return idleTimeoutMs;
     }
 
@@ -91,6 +94,8 @@ abstract class AbstractTcpConfig<SecurityConfig, ReadOnlyView> {
      * @param option the option to apply
      * @param value the value
      * @throws IllegalArgumentException if the {@link SocketOption} is not supported
+     * @see StandardSocketOptions
+     * @see ServiceTalkSocketOptions
      */
     public final <T> void socketOption(final SocketOption<T> option, T value) {
         requireNonNull(option);

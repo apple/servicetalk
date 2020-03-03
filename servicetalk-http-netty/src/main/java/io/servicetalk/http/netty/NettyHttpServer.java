@@ -69,6 +69,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.SocketAddress;
+import java.net.SocketOption;
 import java.nio.channels.ClosedChannelException;
 import java.util.ArrayDeque;
 import java.util.Queue;
@@ -154,6 +155,7 @@ final class NettyHttpServer {
         return showPipeline(DefaultNettyConnection.initChannel(channel,
                 httpExecutionContext.bufferAllocator(), httpExecutionContext.executor(),
                 new TerminalPredicate<>(LAST_CHUNK_PREDICATE), closeHandler, config.tcpConfig().flushStrategy(),
+                config.tcpConfig().idleTimeoutMs(),
                 initializer.andThen(getChannelInitializer(getByteBufAllocator(httpExecutionContext.bufferAllocator()),
                         h1Config, closeHandler)),
                 httpExecutionContext.executionStrategy())
@@ -414,6 +416,12 @@ final class NettyHttpServer {
         @Override
         public HttpExecutionContext executionContext() {
             return executionContext;
+        }
+
+        @Nullable
+        @Override
+        public <T> T socketOption(final SocketOption<T> option) {
+            return connection.socketOption(option);
         }
 
         @Override

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019-2020 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,6 +47,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.SocketAddress;
+import java.net.SocketOption;
 import java.nio.channels.ClosedChannelException;
 import java.util.concurrent.Delayed;
 import java.util.concurrent.ScheduledFuture;
@@ -65,6 +66,7 @@ import static io.servicetalk.concurrent.internal.ThrowableUtils.unknownStackTrac
 import static io.servicetalk.http.netty.H2ToStH1Utils.DEFAULT_GRACEFUL_SHUTDOWN_TIMEOUT_MILLIS;
 import static io.servicetalk.transport.netty.internal.NettyIoExecutors.fromNettyEventLoop;
 import static io.servicetalk.transport.netty.internal.NettyPipelineSslUtils.extractSslSession;
+import static io.servicetalk.transport.netty.internal.SocketOptionUtils.getOption;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 class H2ParentConnectionContext extends NettyChannelListenableAsyncCloseable implements
@@ -86,18 +88,21 @@ class H2ParentConnectionContext extends NettyChannelListenableAsyncCloseable imp
     private final SingleSource.Processor<Throwable, Throwable> transportError = newSingleProcessor();
     private final CompletableSource.Processor onClosing = newCompletableProcessor();
     @Nullable
+    final Long idleTimeoutMs;
+    @Nullable
     private SSLSession sslSession;
     @Nullable
     private ScheduledFuture<?> gracefulCloseTimeoutFuture;
     private volatile int activeChildChannels;
 
-    H2ParentConnectionContext(Channel channel, BufferAllocator allocator,
-                              Executor executor, FlushStrategy flushStrategy,
+    H2ParentConnectionContext(Channel channel, BufferAllocator allocator, Executor executor,
+                              FlushStrategy flushStrategy, @Nullable Long idleTimeoutMs,
                               HttpExecutionStrategy executionStrategy) {
         super(channel, executor);
         this.executionContext = new DefaultHttpExecutionContext(allocator, fromNettyEventLoop(channel.eventLoop()),
                 executor, executionStrategy);
         this.flushStrategyHolder = new FlushStrategyHolder(flushStrategy);
+        this.idleTimeoutMs = idleTimeoutMs;
         // Just in case the channel abruptly closes, we should complete the onClosing Completable.
         onClose().subscribe(onClosing::onComplete);
     }
@@ -141,6 +146,12 @@ class H2ParentConnectionContext extends NettyChannelListenableAsyncCloseable imp
     @Override
     public final HttpExecutionContext executionContext() {
         return executionContext;
+    }
+
+    @Nullable
+    @Override
+    public <T> T socketOption(final SocketOption<T> option) {
+        return getOption(option, channel().config(), idleTimeoutMs);
     }
 
     @Override

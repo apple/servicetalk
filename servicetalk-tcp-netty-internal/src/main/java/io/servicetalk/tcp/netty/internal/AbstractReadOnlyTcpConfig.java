@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019-2020 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,7 +39,8 @@ abstract class AbstractReadOnlyTcpConfig<SecurityConfig, ReadOnlyView> {
 
     @SuppressWarnings("rawtypes")
     private final Map<ChannelOption, Object> options;
-    private final long idleTimeoutMs;
+    @Nullable
+    private final Long idleTimeoutMs;
     private final FlushStrategy flushStrategy;
     @Nullable
     private final WireLoggingInitializer wireLoggingInitializer;
@@ -70,7 +71,8 @@ abstract class AbstractReadOnlyTcpConfig<SecurityConfig, ReadOnlyView> {
      *
      * @return idle timeout in milliseconds
      */
-    public final long idleTimeoutMs() {
+    @Nullable
+    public final Long idleTimeoutMs() {
         return idleTimeoutMs;
     }
 

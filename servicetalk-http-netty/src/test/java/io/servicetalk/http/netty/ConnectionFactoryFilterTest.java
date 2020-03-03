@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019-2020 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,7 +36,7 @@ import io.servicetalk.http.api.StreamingHttpConnectionFilter;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.transport.api.ConnectionContext;
-import io.servicetalk.transport.api.ExecutionContext;
+import io.servicetalk.transport.api.DelegatingConnectionContext;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.netty.internal.FlushStrategy;
@@ -47,13 +47,11 @@ import org.junit.After;
 import org.junit.Test;
 
 import java.net.InetSocketAddress;
-import java.net.SocketAddress;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.UnaryOperator;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import javax.net.ssl.SSLSession;
 
 import static io.servicetalk.concurrent.api.Processors.newCompletableProcessor;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
@@ -204,51 +202,17 @@ public class ConnectionFactoryFilterTest {
         }
    }
 
-    private static final class DelegatingNettyConnectionContext implements NettyConnectionContext {
+    private static final class DelegatingNettyConnectionContext extends DelegatingConnectionContext
+            implements NettyConnectionContext {
 
         private final NettyConnectionContext delegate;
         private final CompletableSource.Processor onClosing;
 
         DelegatingNettyConnectionContext(final NettyConnectionContext delegate,
                                          final CompletableSource.Processor onClosing) {
+            super(delegate);
             this.delegate = delegate;
             this.onClosing = onClosing;
-        }
-
-        @Override
-        public SocketAddress localAddress() {
-            return delegate.localAddress();
-        }
-
-        @Override
-        public SocketAddress remoteAddress() {
-            return delegate.remoteAddress();
-        }
-
-        @Override
-        @Nullable
-        public SSLSession sslSession() {
-            return delegate.sslSession();
-        }
-
-        @Override
-        public ExecutionContext executionContext() {
-            return delegate.executionContext();
-        }
-
-        @Override
-        public Completable onClose() {
-            return delegate.onClose();
-        }
-
-        @Override
-        public Completable closeAsync() {
-            return delegate.closeAsync();
-        }
-
-        @Override
-        public Completable closeAsyncGracefully() {
-            return delegate.closeAsyncGracefully();
         }
 
         @Override
