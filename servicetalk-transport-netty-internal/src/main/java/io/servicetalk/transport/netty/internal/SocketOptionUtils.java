@@ -76,7 +76,7 @@ public final class SocketOptionUtils {
             channelOpts.put(ChannelOption.WRITE_BUFFER_WATER_MARK, new WriteBufferWaterMark(writeBufferThreshold >>> 1,
                     writeBufferThreshold));
         } else {
-            throw new IllegalArgumentException("SocketOption " + option + " not supported");
+            throw unsupported(option);
         }
     }
 
@@ -89,6 +89,7 @@ public final class SocketOptionUtils {
      * @param <T> the type of the {@link SocketOption} value
      * @return a value of the {@link SocketOption} of type {@code T} or {@code null} if the {@link ChannelConfig} does
      * not have a value for requested {@link SocketOption}
+     * @throws IllegalArgumentException if the specified {@link SocketOption} is not supported
      */
     @Nullable
     @SuppressWarnings("unchecked")
@@ -138,13 +139,11 @@ public final class SocketOptionUtils {
         if (option == ServiceTalkSocketOptions.IDLE_TIMEOUT) {
             return (T) idleTimeoutMs;
         }
-        // Try to look for a ChannelOption with the same name and type. Use the wildcard type for ChannelOption to avoid
-        // ClassCastException, handle type check manually:
-        final ChannelOption<?> channelOption = ChannelOption.valueOf(option.name());
-        final Object value = config.getOption(channelOption);
-        if (option.type().isInstance(value)) {
-            return (T) value;
-        }
-        return null;
+        throw unsupported(option);
+    }
+
+    private static <T> IllegalArgumentException unsupported(final SocketOption<T> option) {
+        return new IllegalArgumentException("SocketOption(" + option.name() + ", " + option.type().getName() +
+                ") is not supported");
     }
 }

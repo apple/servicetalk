@@ -46,11 +46,13 @@ import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static java.lang.String.valueOf;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
+import static org.junit.Assert.assertThrows;
 
 @RunWith(Parameterized.class)
 public class ConnectionContextSocketOptionTest {
@@ -113,23 +115,6 @@ public class ConnectionContextSocketOptionTest {
         testSocketOption(ServiceTalkSocketOptions.IDLE_TIMEOUT, is(nullValue()), equalTo("null"), null);
     }
 
-    @Test
-    public void customSupportedSocketOption() throws Exception {
-        testSocketOption(new CustomSocketOption<>("AUTO_READ", Boolean.class),
-                is(protocol.autoRead), equalTo(valueOf(protocol.autoRead)));
-    }
-
-    @Test
-    public void supportedSocketOptionWithIncorrectTypeIsNull() throws Exception {
-        // Intentionally use Integer.class for AUTO_CLOSE option that requires Boolean.class type
-        testSocketOption(new CustomSocketOption<>("AUTO_CLOSE", Integer.class), is(nullValue()), equalTo("null"));
-    }
-
-    @Test
-    public void unsupportedSocketOptionIsNull() throws Exception {
-        testSocketOption(new CustomSocketOption<>("UNSUPPORTED", Boolean.class), is(nullValue()), equalTo("null"));
-    }
-
     private <T> void testSocketOption(SocketOption<T> socketOption, Matcher<Object> clientMatcher,
                                       Matcher<Object> serverMatcher) throws Exception {
         testSocketOption(socketOption, clientMatcher, serverMatcher, null);
@@ -166,6 +151,28 @@ public class ConnectionContextSocketOptionTest {
             builder.socketOption(ServiceTalkSocketOptions.IDLE_TIMEOUT, idleTimeoutMs);
         }
         return builder.buildBlocking();
+    }
+
+    @Test
+    public void unsupportedSocketOptionThrows() throws Exception {
+        final SocketOption<Boolean> unsupported = new CustomSocketOption<>("UNSUPPORTED", Boolean.class);
+        try (ServerContext serverContext = HttpServers.forAddress(localAddress(0))
+                .protocols(protocol.config)
+                .listenBlockingAndAwait((ctx, request, responseFactory) -> {
+                    IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                            () -> ctx.socketOption(unsupported));
+                    return responseFactory.ok().payloadBody(ex.getMessage(), textSerializer());
+                });
+             BlockingHttpClient client = HttpClients.forSingleAddress(serverHostAndPort(serverContext))
+                     .protocols(protocol.config).buildBlocking();
+             BlockingHttpConnection connection = client.reserveConnection(client.get("/"))) {
+
+            IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                    () -> connection.connectionContext().socketOption(unsupported));
+            assertThat(ex.getMessage(), endsWith("not supported"));
+            assertThat(ex.getMessage(),
+                    equalTo(connection.request(connection.get("/")).payloadBody(textDeserializer())));
+        }
     }
 
     private static final class CustomSocketOption<T> implements SocketOption<T> {
