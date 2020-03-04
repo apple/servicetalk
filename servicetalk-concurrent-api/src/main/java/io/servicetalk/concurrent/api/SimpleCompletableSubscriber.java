@@ -35,7 +35,6 @@ final class SimpleCompletableSubscriber extends SequentialCancellable implements
     }
 
     SimpleCompletableSubscriber(final Runnable onComplete) {
-        super();
         this.onComplete = requireNonNull(onComplete);
     }
 

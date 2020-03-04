@@ -185,6 +185,7 @@ final class ServiceTalkLibraryPlugin extends ServiceTalkCorePlugin {
 
       pmd {
         toolVersion = PMD_VERSION
+        incrementalAnalysis = true
         ruleSets = []
         ruleSetConfig = resources.text.fromString(getClass().getResourceAsStream("pmd/basic.xml").text)
       }
