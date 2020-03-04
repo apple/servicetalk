@@ -15,12 +15,12 @@
  */
 package io.servicetalk.grpc.api;
 
-import io.servicetalk.http.api.HttpConnectionContext;
+import io.servicetalk.transport.api.ConnectionContext;
 
 /**
  * A <a href="https://www.grpc.io">gRPC</a> service context.
  */
-public interface GrpcServiceContext extends HttpConnectionContext, GrpcMetadata {
+public interface GrpcServiceContext extends ConnectionContext, GrpcMetadata {
 
     @Override
     GrpcExecutionContext executionContext();
