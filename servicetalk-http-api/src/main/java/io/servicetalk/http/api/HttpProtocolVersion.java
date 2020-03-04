@@ -16,7 +16,7 @@
 package io.servicetalk.http.api;
 
 import io.servicetalk.buffer.api.Buffer;
-import io.servicetalk.transport.api.Protocol;
+import io.servicetalk.transport.api.ConnectionContext.Protocol;
 
 import static io.servicetalk.buffer.api.ReadOnlyBufferAllocators.PREFER_HEAP_RO_ALLOCATOR;
 import static io.servicetalk.http.api.BufferUtils.writeReadOnlyBuffer;

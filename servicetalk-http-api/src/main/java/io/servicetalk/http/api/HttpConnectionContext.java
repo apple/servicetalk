@@ -18,7 +18,7 @@ package io.servicetalk.http.api;
 import io.servicetalk.transport.api.ConnectionContext;
 
 /**
- * {@link ConnectionContext} specific to HTTP.
+ * {@link ConnectionContext} for HTTP.
  */
 public interface HttpConnectionContext extends ConnectionContext {
 

@@ -176,7 +176,7 @@ final class H2ServerParentConnectionContext extends H2ParentConnectionContext im
                 // callbacks that interact with the subscriber.
                 pipeline.addLast(parentChannelInitializer);
             }
-        }, HTTP_2_0.toString(), channel);
+        }, HTTP_2_0, channel);
     }
 
     private static final class DefaultH2ServerParentConnection extends AbstractH2ParentConnection {

@@ -161,7 +161,7 @@ final class NettyHttpServer {
                         h1Config, closeHandler)),
                 httpExecutionContext.executionStrategy(), HTTP_1_1)
                 .map(conn -> new NettyHttpServerConnection(conn, service, httpExecutionContext.executionStrategy(),
-                        h1Config.headersFactory(), drainRequestPayloadBody)), HTTP_1_1.toString(), channel);
+                        h1Config.headersFactory(), drainRequestPayloadBody)), HTTP_1_1, channel);
     }
 
     private static ChannelInitializer getChannelInitializer(final ByteBufAllocator alloc, final H1ProtocolConfig config,

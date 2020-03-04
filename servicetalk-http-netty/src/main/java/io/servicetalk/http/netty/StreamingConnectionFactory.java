@@ -57,6 +57,6 @@ final class StreamingConnectionFactory {
                 config.tcpConfig().flushStrategy(), config.tcpConfig().idleTimeoutMs(),
                 initializer.andThen(new HttpClientChannelInitializer(
                         getByteBufAllocator(executionContext.bufferAllocator()), config.h1Config(), closeHandler)),
-                executionContext.executionStrategy(), HTTP_1_1), HTTP_1_1.toString(), channel);
+                executionContext.executionStrategy(), HTTP_1_1), HTTP_1_1, channel);
     }
 }

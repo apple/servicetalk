@@ -24,7 +24,7 @@ import javax.annotation.Nullable;
 import javax.net.ssl.SSLSession;
 
 /**
- * A context that represents a network connection.
+ * A context for a connection.
  */
 public interface ConnectionContext extends ListenableAsyncCloseable {
     /**
@@ -74,9 +74,22 @@ public interface ConnectionContext extends ListenableAsyncCloseable {
     <T> T socketOption(SocketOption<T> option);
 
     /**
-     * Get the protocol information for this {@link ConnectionContext}.
+     * Get the {@link Protocol} for this {@link ConnectionContext}.
      *
-     * @return the protocol information for this {@link ConnectionContext}.
+     * @return the {@link Protocol} for this {@link ConnectionContext}.
      */
     Protocol protocol();
+
+    /**
+     * Provides information about the network protocol.
+     */
+    interface Protocol {
+
+        /**
+         * Returns name of the protocol.
+         *
+         * @return name of the protocol
+         */
+        String name();
+    }
 }

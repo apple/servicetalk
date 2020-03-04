@@ -18,7 +18,6 @@ package io.servicetalk.grpc.api;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.transport.api.ConnectionContext;
-import io.servicetalk.transport.api.Protocol;
 
 import java.net.SocketAddress;
 import java.net.SocketOption;

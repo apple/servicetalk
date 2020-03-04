@@ -30,7 +30,6 @@ import io.servicetalk.concurrent.internal.DelayedCancellable;
 import io.servicetalk.transport.api.DefaultExecutionContext;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.ExecutionStrategy;
-import io.servicetalk.transport.api.Protocol;
 import io.servicetalk.transport.api.ServiceTalkSocketOptions;
 import io.servicetalk.transport.netty.internal.CloseHandler.CloseEvent;
 import io.servicetalk.transport.netty.internal.CloseHandler.CloseEventObservedException;
@@ -196,7 +195,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
      * @param flushStrategy Manages flushing of data for the {@link DefaultNettyConnection}.
      * @param idleTimeoutMs Value for {@link ServiceTalkSocketOptions#IDLE_TIMEOUT IDLE_TIMEOUT} socket option.
      * @param executionStrategy Used to derive the {@link #executionContext()}.
-     * @param protocol The {@link Protocol} this {@link DefaultNettyConnection} implements.
+     * @param protocol {@link Protocol} for the returned {@link DefaultNettyConnection}.
      * @param sslSession Provides access to the {@link SSLSession} associated with this connection.
      * @param parentChannelConfig {@link ChannelConfig} of the parent {@link Channel} to query {@link SocketOption}s
      * @param <Read> Type of objects read from the {@link NettyConnection}.
@@ -231,7 +230,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
      * @param idleTimeoutMs Value for {@link ServiceTalkSocketOptions#IDLE_TIMEOUT IDLE_TIMEOUT} socket option.
      * @param initializer Synchronously initializes the pipeline upon subscribe.
      * @param executionStrategy {@link ExecutionStrategy} to use for this connection.
-     * @param protocol The {@link Protocol} this {@link DefaultNettyConnection} implements.
+     * @param protocol {@link Protocol} for the returned {@link DefaultNettyConnection}.
      * @param <Read> Type of objects read from the {@link NettyConnection}.
      * @param <Write> Type of objects written to the {@link NettyConnection}.
      * @return A {@link Single} that completes with a {@link DefaultNettyConnection} after the channel is activated and
