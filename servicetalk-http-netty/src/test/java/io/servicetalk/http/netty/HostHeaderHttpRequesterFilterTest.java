@@ -77,7 +77,7 @@ public class HostHeaderHttpRequesterFilterTest {
         HTTP_2_0 {
             @Override
             HttpProtocolVersion version() {
-                return H2ToStH1Utils.HTTP_2_0;
+                return HttpProtocolVersion.HTTP_2_0;
             }
 
             @Override

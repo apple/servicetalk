@@ -50,13 +50,13 @@ public class ConnectionContextProtocolTest {
     private enum Config {
 
         HTTP_1_1(new HttpProtocolConfig[]{h1Default()}, false, HttpProtocolVersion.HTTP_1_1),
-        HTTP_2_0(new HttpProtocolConfig[]{h2Default()}, false, H2ToStH1Utils.HTTP_2_0),
+        HTTP_2_0(new HttpProtocolConfig[]{h2Default()}, false, HttpProtocolVersion.HTTP_2_0),
         SECURE_HTTP_1_1(new HttpProtocolConfig[]{h1Default()}, true, HttpProtocolVersion.HTTP_1_1),
-        SECURE_HTTP_2_0(new HttpProtocolConfig[]{h2Default()}, true, H2ToStH1Utils.HTTP_2_0),
+        SECURE_HTTP_2_0(new HttpProtocolConfig[]{h2Default()}, true, HttpProtocolVersion.HTTP_2_0),
         ALPN_PREFER_HTTP_1_1(new HttpProtocolConfig[]{h1Default(), h2Default()}, true,
                 HttpProtocolVersion.HTTP_1_1),
         ALPN_PREFER_HTTP_2_0(new HttpProtocolConfig[]{h2Default(), h1Default()}, true,
-                H2ToStH1Utils.HTTP_2_0);
+                HttpProtocolVersion.HTTP_2_0);
 
         final HttpProtocolConfig[] protocols;
         final boolean secure;

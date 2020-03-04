@@ -16,7 +16,6 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.http.api.HttpHeaders;
-import io.servicetalk.http.api.HttpProtocolVersion;
 import io.servicetalk.transport.api.RetryableException;
 
 import io.netty.handler.codec.http.HttpHeaderNames;
@@ -39,10 +38,6 @@ import static io.servicetalk.http.netty.HeaderUtils.indexOf;
 
 final class H2ToStH1Utils {
     static final int DEFAULT_GRACEFUL_SHUTDOWN_TIMEOUT_MILLIS = 30000;
-    /**
-     * HTTP/2 version described in <a href="https://tools.ietf.org/html/rfc7540">RFC 7540</a>.
-     */
-    static final HttpProtocolVersion HTTP_2_0 = HttpProtocolVersion.of(2, 0);
 
     private H2ToStH1Utils() {
         // no instances.
