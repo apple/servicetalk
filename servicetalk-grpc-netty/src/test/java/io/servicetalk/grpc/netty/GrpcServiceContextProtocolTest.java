@@ -29,6 +29,8 @@ import io.servicetalk.grpc.netty.TesterProto.Tester.BlockingTesterService;
 import io.servicetalk.grpc.netty.TesterProto.Tester.ClientFactory;
 import io.servicetalk.grpc.netty.TesterProto.Tester.ServiceFactory;
 import io.servicetalk.grpc.netty.TesterProto.Tester.TesterService;
+import io.servicetalk.http.api.HttpConnectionContext.HttpProtocol;
+import io.servicetalk.http.api.HttpProtocolConfig;
 import io.servicetalk.transport.api.ServerContext;
 
 import org.junit.After;
@@ -43,6 +45,10 @@ import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Publisher.from;
 import static io.servicetalk.concurrent.api.Single.succeeded;
+import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
+import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
+import static io.servicetalk.http.netty.HttpProtocolConfigs.h1Default;
+import static io.servicetalk.http.netty.HttpProtocolConfigs.h2Default;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
 import static java.util.Collections.singleton;
@@ -52,27 +58,42 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 
 @RunWith(Parameterized.class)
-public class GrpcServiceContextTest {
-
-    private static final String EXPECTED_PROTOCOL_NAME = "gRPC";
+public class GrpcServiceContextProtocolTest {
 
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
 
+    private final String expectedValue;
     private final ServerContext serverContext;
     private final BlockingTesterClient client;
 
-    public GrpcServiceContextTest(boolean streamingService) throws Exception {
-        serverContext = GrpcServers.forAddress(localAddress(0)).listenAndAwait(streamingService ?
-                new ServiceFactory(new TesterServiceImpl()) :
-                new ServiceFactory(new BlockingTesterServiceImpl()));
+    public GrpcServiceContextProtocolTest(HttpProtocol httpProtocol, boolean streamingService) throws Exception {
+        expectedValue = "gRPC over " + httpProtocol;
 
-        client = GrpcClients.forAddress(serverHostAndPort(serverContext)).buildBlocking(new ClientFactory());
+        serverContext = GrpcServers.forAddress(localAddress(0))
+                .protocols(protocolConfig(httpProtocol))
+                .listenAndAwait(streamingService ?
+                        new ServiceFactory(new TesterServiceImpl()) :
+                        new ServiceFactory(new BlockingTesterServiceImpl()));
+
+        client = GrpcClients.forAddress(serverHostAndPort(serverContext))
+                .protocols(protocolConfig(httpProtocol))
+                .buildBlocking(new ClientFactory());
     }
 
-    @Parameters(name = "streamingService={0}")
+    @Parameters(name = "httpVersion={0} streamingService={0}")
     public static Object[] params() {
-        return new Object[]{true, false};
+        return new Object[][]{{HTTP_2_0, true}, {HTTP_2_0, false}, {HTTP_1_1, true}, {HTTP_1_1, false}};
+    }
+
+    private static HttpProtocolConfig protocolConfig(HttpProtocol httpProtocol) {
+        if (httpProtocol == HTTP_2_0) {
+            return h2Default();
+        }
+        if (httpProtocol == HTTP_1_1) {
+            return h1Default();
+        }
+        throw new IllegalArgumentException("Unknown httpProtocol: " + httpProtocol);
     }
 
     @After
@@ -110,9 +131,9 @@ public class GrpcServiceContextTest {
         }
     }
 
-    private static void assertResponse(@Nullable TestResponse response) {
+    private void assertResponse(@Nullable TestResponse response) {
         assertThat(response, is(notNullValue()));
-        assertThat(response.getMessage(), equalTo(EXPECTED_PROTOCOL_NAME));
+        assertThat(response.getMessage(), equalTo(expectedValue));
     }
 
     private static TestRequest newRequest() {
@@ -120,7 +141,9 @@ public class GrpcServiceContextTest {
     }
 
     private static TestResponse newResponse(GrpcServiceContext ctx) {
-        return TestResponse.newBuilder().setMessage(ctx.protocol().name()).build();
+        return TestResponse.newBuilder()
+                .setMessage(ctx.protocol().name() + " over " + ctx.protocol().httpProtocol())
+                .build();
     }
 
     private static class TesterServiceImpl implements TesterService {
