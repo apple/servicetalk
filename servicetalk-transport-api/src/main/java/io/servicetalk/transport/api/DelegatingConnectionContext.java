@@ -46,7 +46,7 @@ public class DelegatingConnectionContext implements ConnectionContext {
      *
      * @return the {@link ConnectionContext} that this class delegates to.
      */
-    protected final ConnectionContext delegate() {
+    protected ConnectionContext delegate() {
         return delegate;
     }
 

@@ -18,6 +18,7 @@ package io.servicetalk.http.netty;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.http.api.BlockingHttpClient;
 import io.servicetalk.http.api.BlockingHttpConnection;
+import io.servicetalk.http.api.HttpConnectionContext.HttpProtocol;
 import io.servicetalk.http.api.HttpProtocolConfig;
 import io.servicetalk.http.api.HttpProtocolVersion;
 import io.servicetalk.http.api.HttpServerBuilder;
@@ -45,7 +46,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 
 @RunWith(Parameterized.class)
-public class ConnectionContextProtocolTest {
+public class HttpConnectionContextProtocolTest {
 
     private enum Config {
 
@@ -60,7 +61,7 @@ public class ConnectionContextProtocolTest {
 
         final HttpProtocolConfig[] protocols;
         final boolean secure;
-        final HttpProtocolVersion expectedProtocol;
+        final HttpProtocol expectedProtocol;
 
         Config(HttpProtocolConfig[] protocols, boolean secure, HttpProtocolVersion expectedProtocol) {
             this.protocols = protocols;
@@ -74,7 +75,7 @@ public class ConnectionContextProtocolTest {
 
     private final Config config;
 
-    public ConnectionContextProtocolTest(Config config) {
+    public HttpConnectionContextProtocolTest(Config config) {
         this.config = config;
     }
 
@@ -97,7 +98,7 @@ public class ConnectionContextProtocolTest {
         }
     }
 
-    private static <T> ServerContext startServer(Config config) throws Exception {
+    private static ServerContext startServer(Config config) throws Exception {
         final HttpServerBuilder builder = HttpServers.forAddress(localAddress(0))
                 .protocols(config.protocols);
         if (config.secure) {

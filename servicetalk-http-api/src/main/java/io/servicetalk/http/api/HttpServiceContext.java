@@ -15,12 +15,10 @@
  */
 package io.servicetalk.http.api;
 
-import io.servicetalk.transport.api.ConnectionContext;
-
 import static java.util.Objects.requireNonNull;
 
 /**
- * A {@link ConnectionContext} for use in the {@link HttpService} context.
+ * A {@link HttpConnectionContext} for use in the {@link HttpService} context.
  */
 public abstract class HttpServiceContext implements HttpConnectionContext {
     private final HttpHeadersFactory headersFactory;

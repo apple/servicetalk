@@ -26,7 +26,7 @@ import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpExecutionStrategyInfluencer;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.transport.netty.internal.DeferSslHandler;
-import io.servicetalk.transport.netty.internal.NettyPipelinedConnection;
+import io.servicetalk.transport.netty.internal.NettyConnectionContext;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
@@ -82,7 +82,7 @@ final class ProxyConnectConnectionFactoryFilter<ResolvedAddress, C
                             reqRespFactory.connect(connectAddress).addHeader(CONTENT_LENGTH, ZERO))
                  .flatMap(response -> {
                 if (SUCCESSFUL_2XX.contains(response.status())) {
-                    final Channel channel = ((NettyPipelinedConnection) c.connectionContext()).nettyChannel();
+                    final Channel channel = ((NettyConnectionContext) c.connectionContext()).nettyChannel();
                     final SingleSource.Processor<C, C> processor = newSingleProcessor();
 
                     channel.pipeline().addLast(new ChannelInboundHandlerAdapter() {

@@ -19,7 +19,6 @@ import io.servicetalk.concurrent.CompletableSource;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.transport.api.ConnectionContext;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiFunction;
@@ -58,19 +57,19 @@ public class BlockingStreamingHttpConnectionTest extends AbstractBlockingStreami
         private final AtomicBoolean closed = new AtomicBoolean();
         private final CompletableSource.Processor onClose = newCompletableProcessor();
         private final HttpExecutionContext executionContext;
-        private final ConnectionContext connectionContext;
+        private final HttpConnectionContext connectionContext;
         private final StreamingHttpRequestResponseFactory factory;
 
         TestStreamingHttpConnection(StreamingHttpRequestResponseFactory factory,
                                     HttpExecutionContext executionContext) {
             this.factory = factory;
             this.executionContext = executionContext;
-            this.connectionContext = mock(ConnectionContext.class);
+            this.connectionContext = mock(HttpConnectionContext.class);
             when(connectionContext.executionContext()).thenReturn(executionContext);
         }
 
         @Override
-        public final ConnectionContext connectionContext() {
+        public final HttpConnectionContext connectionContext() {
             return connectionContext;
         }
 

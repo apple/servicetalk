@@ -33,7 +33,6 @@ import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpService;
-import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.netty.internal.ExecutionContextRule;
 import io.servicetalk.transport.netty.internal.IoThreadFactory;
@@ -85,7 +84,6 @@ public class HttpOffloadingTest {
     private StreamingHttpConnection httpConnection;
     private Queue<Throwable> errors;
     private CountDownLatch terminated;
-    private ConnectionContext connectionContext;
     private ServerContext serverContext;
     private OffloadingVerifyingServiceStreaming service;
     private StreamingHttpClient client;
@@ -105,7 +103,6 @@ public class HttpOffloadingTest {
                 .executionStrategy(defaultStrategy(CLIENT_CTX.executor()))
                 .buildStreaming();
         httpConnection = awaitIndefinitelyNonNull(client.reserveConnection(client.get("/")));
-        connectionContext = httpConnection.connectionContext();
     }
 
     @After
@@ -240,22 +237,22 @@ public class HttpOffloadingTest {
 
     @Test
     public void clientCloseAsyncIsOffloaded() throws Exception {
-        subscribeTo(inEventLoop(), errors, connectionContext.closeAsync());
+        subscribeTo(inEventLoop(), errors, httpConnection.closeAsync());
         terminated.await();
         assertThat("Unexpected errors.", errors, is(empty()));
     }
 
     @Test
     public void clientCloseAsyncGracefullyIsOffloaded() throws Exception {
-        subscribeTo(inEventLoop(), errors, connectionContext.closeAsyncGracefully());
+        subscribeTo(inEventLoop(), errors, httpConnection.closeAsyncGracefully());
         terminated.await();
         assertThat("Unexpected errors.", errors, is(empty()));
     }
 
     @Test
     public void clientOnCloseIsOffloaded() throws Exception {
-        connectionContext.closeAsync().toFuture().get();
-        subscribeTo(inEventLoop(), errors, connectionContext.onClose());
+        httpConnection.closeAsync().toFuture().get();
+        subscribeTo(inEventLoop(), errors, httpConnection.onClose());
         terminated.await();
         assertThat("Unexpected errors.", errors, is(empty()));
     }

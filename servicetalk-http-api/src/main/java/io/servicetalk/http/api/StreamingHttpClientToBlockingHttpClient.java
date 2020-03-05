@@ -16,9 +16,6 @@
 package io.servicetalk.http.api;
 
 import io.servicetalk.concurrent.BlockingIterable;
-import io.servicetalk.transport.api.ConnectionContext;
-import io.servicetalk.transport.api.DelegatingConnectionContext;
-import io.servicetalk.transport.api.ExecutionContext;
 
 import static io.servicetalk.http.api.BlockingUtils.blockingInvocation;
 import static io.servicetalk.http.api.RequestResponseFactories.toAggregated;
@@ -101,31 +98,33 @@ final class StreamingHttpClientToBlockingHttpClient implements BlockingHttpClien
                                                                                        ReservedBlockingHttpConnection {
         private final ReservedStreamingHttpConnection connection;
         private final HttpExecutionStrategy strategy;
-        private final ConnectionContext context;
+        private final HttpConnectionContext context;
         private final HttpExecutionContext executionContext;
         private final HttpRequestResponseFactory reqRespFactory;
 
         ReservedStreamingHttpConnectionToReservedBlockingHttpConnection(
-                ReservedStreamingHttpConnection connection, final HttpExecutionStrategyInfluencer influencer) {
+                final ReservedStreamingHttpConnection connection, final HttpExecutionStrategyInfluencer influencer) {
             this(connection, influencer.influenceStrategy(DEFAULT_BLOCKING_CONNECTION_STRATEGY),
                     toAggregated(connection));
         }
 
-        ReservedStreamingHttpConnectionToReservedBlockingHttpConnection(ReservedStreamingHttpConnection connection,
-                                                                        HttpExecutionStrategy strategy,
-                                                                        HttpRequestResponseFactory reqRespFactory) {
+        ReservedStreamingHttpConnectionToReservedBlockingHttpConnection(
+                final ReservedStreamingHttpConnection connection,
+                final HttpExecutionStrategy strategy,
+                final HttpRequestResponseFactory reqRespFactory) {
+
             this.strategy = strategy;
             this.connection = requireNonNull(connection);
-            ConnectionContext originalCtx = connection.connectionContext();
+            final HttpConnectionContext originalCtx = connection.connectionContext();
             executionContext = new DelegatingHttpExecutionContext(connection.executionContext()) {
                 @Override
                 public HttpExecutionStrategy executionStrategy() {
                     return strategy;
                 }
             };
-            context = new DelegatingConnectionContext(originalCtx) {
+            context = new DelegatingHttpConnectionContext(originalCtx) {
                 @Override
-                public ExecutionContext executionContext() {
+                public HttpExecutionContext executionContext() {
                     return executionContext;
                 }
             };
@@ -148,7 +147,7 @@ final class StreamingHttpClientToBlockingHttpClient implements BlockingHttpClien
         }
 
         @Override
-        public ConnectionContext connectionContext() {
+        public HttpConnectionContext connectionContext() {
             return context;
         }
 

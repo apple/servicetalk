@@ -19,7 +19,6 @@ import io.servicetalk.concurrent.GracefulAutoCloseable;
 import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.transport.api.ConnectionContext;
 
 import static io.servicetalk.concurrent.internal.FutureUtils.awaitTermination;
 
@@ -36,11 +35,11 @@ public interface HttpConnection extends HttpRequester, GracefulAutoCloseable {
     Single<HttpResponse> request(HttpRequest request);
 
     /**
-     * Get the {@link ConnectionContext}.
+     * Get the {@link HttpConnectionContext}.
      *
-     * @return the {@link ConnectionContext}.
+     * @return the {@link HttpConnectionContext}.
      */
-    ConnectionContext connectionContext();
+    HttpConnectionContext connectionContext();
 
     /**
      * Returns a {@link Publisher} that gives the current value of a transport event as well as subsequent changes to

@@ -19,7 +19,6 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.transport.api.ConnectionContext;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.emptyAsyncCloseable;
 import static io.servicetalk.concurrent.api.Single.failed;
@@ -123,7 +122,7 @@ public final class TestStreamingHttpClient {
                             }
 
                             @Override
-                            public ConnectionContext connectionContext() {
+                            public HttpConnectionContext connectionContext() {
                                 return rc.connectionContext();
                             }
 

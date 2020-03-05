@@ -17,7 +17,6 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.concurrent.BlockingIterable;
 import io.servicetalk.concurrent.PublisherSource;
-import io.servicetalk.transport.api.ConnectionContext;
 
 /**
  * The equivalent of {@link StreamingHttpConnection} but with synchronous/blocking APIs instead of asynchronous APIs.
@@ -33,11 +32,11 @@ public interface BlockingStreamingHttpConnection extends BlockingStreamingHttpRe
     BlockingStreamingHttpResponse request(BlockingStreamingHttpRequest request) throws Exception;
 
     /**
-     * Get the {@link ConnectionContext}.
+     * Get the {@link HttpConnectionContext}.
      *
-     * @return the {@link ConnectionContext}.
+     * @return the {@link HttpConnectionContext}.
      */
-    ConnectionContext connectionContext();
+    HttpConnectionContext connectionContext();
 
     /**
      * Returns a {@link BlockingIterable} that gives the current value of the setting as well as subsequent changes to

@@ -18,7 +18,6 @@ package io.servicetalk.http.api;
 import io.servicetalk.concurrent.api.AsyncCloseable;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.transport.api.ConnectionContext;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -68,7 +67,7 @@ public class ConditionalHttpConnectionFilterTest extends AbstractConditionalHttp
 
     private StreamingHttpConnection newConnection(AtomicBoolean closed) {
         return TestStreamingHttpConnection.from(REQ_RES_FACTORY, testHttpExecutionContext(),
-                mock(ConnectionContext.class), new TestCondFilterFactory(closed).append(REQ_FILTER));
+                mock(HttpConnectionContext.class), new TestCondFilterFactory(closed).append(REQ_FILTER));
     }
 
     @Override

@@ -16,9 +16,6 @@
 package io.servicetalk.http.api;
 
 import io.servicetalk.concurrent.BlockingIterable;
-import io.servicetalk.transport.api.ConnectionContext;
-import io.servicetalk.transport.api.DelegatingConnectionContext;
-import io.servicetalk.transport.api.ExecutionContext;
 
 import static io.servicetalk.http.api.BlockingUtils.blockingInvocation;
 import static io.servicetalk.http.api.HttpExecutionStrategies.OFFLOAD_SEND_STRATEGY;
@@ -28,7 +25,7 @@ final class StreamingHttpConnectionToBlockingStreamingHttpConnection implements 
     static final HttpExecutionStrategy DEFAULT_BLOCKING_STREAMING_CONNECTION_STRATEGY = OFFLOAD_SEND_STRATEGY;
     private final StreamingHttpConnection connection;
     private final HttpExecutionStrategy strategy;
-    private final ConnectionContext context;
+    private final HttpConnectionContext context;
     private final HttpExecutionContext executionContext;
     private final BlockingStreamingHttpRequestResponseFactory reqRespFactory;
 
@@ -36,16 +33,16 @@ final class StreamingHttpConnectionToBlockingStreamingHttpConnection implements 
                                                              final HttpExecutionStrategyInfluencer influencer) {
         strategy = influencer.influenceStrategy(DEFAULT_BLOCKING_STREAMING_CONNECTION_STRATEGY);
         this.connection = connection;
-        ConnectionContext originalCtx = connection.connectionContext();
+        final HttpConnectionContext originalCtx = connection.connectionContext();
         executionContext = new DelegatingHttpExecutionContext(connection.executionContext()) {
             @Override
             public HttpExecutionStrategy executionStrategy() {
                 return strategy;
             }
         };
-        context = new DelegatingConnectionContext(originalCtx) {
+        context = new DelegatingHttpConnectionContext(originalCtx) {
             @Override
-            public ExecutionContext executionContext() {
+            public HttpExecutionContext executionContext() {
                 return executionContext;
             }
         };
@@ -58,7 +55,7 @@ final class StreamingHttpConnectionToBlockingStreamingHttpConnection implements 
     }
 
     @Override
-    public ConnectionContext connectionContext() {
+    public HttpConnectionContext connectionContext() {
         return context;
     }
 

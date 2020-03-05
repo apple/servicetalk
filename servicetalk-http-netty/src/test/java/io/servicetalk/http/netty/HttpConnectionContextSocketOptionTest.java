@@ -55,7 +55,7 @@ import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertThrows;
 
 @RunWith(Parameterized.class)
-public class ConnectionContextSocketOptionTest {
+public class HttpConnectionContextSocketOptionTest {
 
     private enum Protocol {
 
@@ -76,7 +76,7 @@ public class ConnectionContextSocketOptionTest {
 
     private final Protocol protocol;
 
-    public ConnectionContextSocketOptionTest(Protocol protocol) {
+    public HttpConnectionContextSocketOptionTest(Protocol protocol) {
         this.protocol = protocol;
     }
 
