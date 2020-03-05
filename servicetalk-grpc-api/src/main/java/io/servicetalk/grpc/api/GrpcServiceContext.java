@@ -15,6 +15,7 @@
  */
 package io.servicetalk.grpc.api;
 
+import io.servicetalk.http.api.HttpConnectionContext.HttpProtocol;
 import io.servicetalk.transport.api.ConnectionContext;
 
 /**
@@ -24,4 +25,12 @@ public interface GrpcServiceContext extends ConnectionContext, GrpcMetadata {
 
     @Override
     GrpcExecutionContext executionContext();
+
+    @Override
+    GrpcProtocol protocol();
+
+    interface GrpcProtocol extends Protocol {
+
+        HttpProtocol httpProtocol();
+    }
 }

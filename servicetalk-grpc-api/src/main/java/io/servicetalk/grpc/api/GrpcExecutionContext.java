@@ -15,12 +15,13 @@
  */
 package io.servicetalk.grpc.api;
 
+import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.transport.api.ExecutionContext;
 
 /**
  * An extension of {@link ExecutionContext} for <a href="https://www.grpc.io">gRPC</a>.
  */
-public interface GrpcExecutionContext extends ExecutionContext {
+public interface GrpcExecutionContext extends HttpExecutionContext {
 
     /**
      * Returns the {@link GrpcExecutionStrategy} associated with this context.

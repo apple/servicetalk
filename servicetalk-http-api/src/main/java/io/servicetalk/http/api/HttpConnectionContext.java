@@ -26,5 +26,11 @@ public interface HttpConnectionContext extends ConnectionContext {
     HttpExecutionContext executionContext();
 
     @Override
-    HttpProtocolVersion protocol();
+    HttpProtocol protocol();
+
+    /**
+     * Provides information about the HTTP protocol.
+     */
+    interface HttpProtocol extends Protocol {
+    }
 }

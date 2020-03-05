@@ -68,7 +68,7 @@ public class DelegatingHttpServiceContext extends HttpServiceContext {
     }
 
     @Override
-    public HttpProtocolVersion protocol() {
+    public HttpProtocol protocol() {
         return delegate.protocol();
     }
 

@@ -34,7 +34,6 @@ import io.servicetalk.http.api.HttpEventKey;
 import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpHeadersFactory;
-import io.servicetalk.http.api.HttpProtocolVersion;
 import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
@@ -319,7 +318,7 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
         }
 
         @Override
-        public HttpProtocolVersion protocol() {
+        public HttpProtocol protocol() {
             return parentContext.protocol();
         }
 

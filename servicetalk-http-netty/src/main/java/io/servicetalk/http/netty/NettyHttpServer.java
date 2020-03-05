@@ -426,8 +426,8 @@ final class NettyHttpServer {
         }
 
         @Override
-        public HttpProtocolVersion protocol() {
-            return (HttpProtocolVersion) connection.protocol();
+        public HttpProtocol protocol() {
+            return (HttpProtocol) connection.protocol();
         }
 
         @Override

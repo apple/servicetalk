@@ -89,7 +89,7 @@ public class TestHttpServiceContext extends HttpServiceContext {
     }
 
     @Override
-    public HttpProtocolVersion protocol() {
+    public HttpProtocol protocol() {
         return HTTP_1_0;
     }
 
