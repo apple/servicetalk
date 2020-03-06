@@ -289,7 +289,8 @@ class H2ParentConnectionContext extends NettyChannelListenableAsyncCloseable imp
         @Override
         public final void channelInactive(ChannelHandlerContext ctx) {
             if (hasSubscriber()) {
-                tryFailSubscriber(new StacklessClosedChannelException());
+                tryFailSubscriber(StacklessClosedChannelException.newInstance(
+                        H2ParentConnectionContext.class, "channelInactive(...)"));
             }
             doConnectionCleanup();
         }
@@ -297,7 +298,8 @@ class H2ParentConnectionContext extends NettyChannelListenableAsyncCloseable imp
         @Override
         public final void handlerRemoved(ChannelHandlerContext ctx) {
             if (hasSubscriber()) {
-                tryFailSubscriber(new StacklessClosedChannelException());
+                tryFailSubscriber(StacklessClosedChannelException.newInstance(
+                        H2ParentConnectionContext.class, "handlerRemoved(...)"));
             }
             doConnectionCleanup();
         }

@@ -33,6 +33,7 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.internal.SpScPublisherProcessor;
 import io.servicetalk.concurrent.internal.SequentialCancellable;
 
+import io.servicetalk.concurrent.internal.ThrowableUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -249,7 +250,8 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
         final List<Host<ResolvedAddress, C>> activeHosts = this.activeHosts;
         if (activeHosts.isEmpty()) {
             // This is the case when SD has emitted some items but none of the hosts are active.
-            return failed(new StacklessNoAvailableHostException("No hosts are available to connect."));
+            return failed(StacklessNoAvailableHostException.newInstance(
+                    "No hosts are available to connect.",  RoundRobinLoadBalancer.class, "selectConnection0(...)"));
         }
 
         final int cursor = (indexUpdater.getAndIncrement(this) & Integer.MAX_VALUE) % activeHosts.size();
@@ -428,13 +430,17 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
     }
 
     private static final class StacklessNoAvailableHostException extends NoAvailableHostException {
-        StacklessNoAvailableHostException(final String message) {
+        private StacklessNoAvailableHostException(final String message) {
             super(message);
         }
 
         @Override
         public Throwable fillInStackTrace() {
             return this;
+        }
+
+        public static StacklessNoAvailableHostException newInstance(String message, Class<?> clazz, String method) {
+            return ThrowableUtils.unknownStackTrace(new StacklessNoAvailableHostException(message), clazz, method);
         }
     }
 }

@@ -15,13 +15,21 @@
  */
 package io.servicetalk.transport.netty.internal;
 
+import io.servicetalk.concurrent.internal.ThrowableUtils;
+
 import java.nio.channels.ClosedChannelException;
 
 public final class StacklessClosedChannelException extends ClosedChannelException {
+
+    private StacklessClosedChannelException() { }
 
     @Override
     public Throwable fillInStackTrace() {
         // Don't fill in the stacktrace to reduce performance overhead
         return this;
+    }
+
+    public static StacklessClosedChannelException newInstance(Class<?> clazz, String method) {
+        return ThrowableUtils.unknownStackTrace(new StacklessClosedChannelException(), clazz, method);
     }
 }
