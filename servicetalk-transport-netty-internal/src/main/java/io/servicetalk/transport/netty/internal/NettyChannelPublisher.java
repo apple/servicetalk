@@ -116,7 +116,8 @@ final class NettyChannelPublisher<T> extends SubscribablePublisher<T> {
 
     void channelInboundClosed() {
         assertInEventloop();
-        Throwable error = StacklessClosedChannelException.newInstance(NettyChannelPublisher.class, "channelInboundClosed");
+        Throwable error = StacklessClosedChannelException.newInstance(
+                NettyChannelPublisher.class, "channelInboundClosed");
         fatalError = error;
         exceptionCaught(error);
     }

@@ -442,8 +442,8 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
             // never notify the write writeSubscriber of the inactive event. So if the channel is inactive we notify
             // the writeSubscriber.
             if (!channel().isActive()) {
-                newChannelOutboundListener.channelClosed(
-                        StacklessClosedChannelException.newInstance(DefaultNettyConnection.class, "failIfWriteActive(...)"));
+                newChannelOutboundListener.channelClosed(StacklessClosedChannelException.newInstance(
+                        DefaultNettyConnection.class, "failIfWriteActive(...)"));
                 return false;
             }
             return true;
