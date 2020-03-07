@@ -41,6 +41,7 @@ import java.net.StandardSocketOptions;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static io.servicetalk.tcp.netty.internal.TcpProtocol.TCP;
 import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
 import static java.util.Collections.emptyList;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -87,7 +88,7 @@ public final class TcpClient {
                         new TerminalPredicate<>(buffer -> false), UNSUPPORTED_PROTOCOL_CLOSE_HANDLER,
                         config.flushStrategy(), config.idleTimeoutMs(), new TcpClientChannelInitializer(config)
                                 .andThen(channel2 -> channel2.pipeline().addLast(BufferHandler.INSTANCE)),
-                        executionContext.executionStrategy())).toFuture().get();
+                        executionContext.executionStrategy(), TCP)).toFuture().get();
     }
 
     /**

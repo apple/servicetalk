@@ -19,7 +19,6 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.ListenableAsyncCloseable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.transport.api.ConnectionContext;
 
 import static io.servicetalk.concurrent.api.AsyncCloseables.emptyAsyncCloseable;
 import static io.servicetalk.concurrent.api.Single.failed;
@@ -37,7 +36,7 @@ public final class TestStreamingHttpConnection {
     public static StreamingHttpConnection from(
             final StreamingHttpRequestResponseFactory reqRespFactory,
             final HttpExecutionContext executionContext,
-            final ConnectionContext connectionContext,
+            final HttpConnectionContext connectionContext,
             final StreamingHttpConnectionFilterFactory factory) {
         final StreamingHttpConnectionFilter filterChain = factory
                 .create(new FilterableStreamingHttpConnection() {
@@ -75,7 +74,7 @@ public final class TestStreamingHttpConnection {
                     }
 
                     @Override
-                    public ConnectionContext connectionContext() {
+                    public HttpConnectionContext connectionContext() {
                         return connectionContext;
                     }
 
@@ -131,7 +130,7 @@ public final class TestStreamingHttpConnection {
             }
 
             @Override
-            public ConnectionContext connectionContext() {
+            public HttpConnectionContext connectionContext() {
                 return filterChain.connectionContext();
             }
 

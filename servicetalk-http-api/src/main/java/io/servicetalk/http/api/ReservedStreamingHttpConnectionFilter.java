@@ -18,7 +18,6 @@ package io.servicetalk.http.api;
 import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.transport.api.ConnectionContext;
 
 import static java.util.Objects.requireNonNull;
 
@@ -44,7 +43,7 @@ public class ReservedStreamingHttpConnectionFilter implements FilterableReserved
     }
 
     @Override
-    public ConnectionContext connectionContext() {
+    public HttpConnectionContext connectionContext() {
         return delegate.connectionContext();
     }
 

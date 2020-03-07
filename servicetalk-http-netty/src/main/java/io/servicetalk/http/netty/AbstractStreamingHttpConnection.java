@@ -23,6 +23,7 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.ClientInvoker;
 import io.servicetalk.http.api.EmptyHttpHeaders;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
+import io.servicetalk.http.api.HttpConnectionContext;
 import io.servicetalk.http.api.HttpEventKey;
 import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpExecutionStrategy;
@@ -57,15 +58,18 @@ abstract class AbstractStreamingHttpConnection<CC extends NettyConnectionContext
     private static final IgnoreConsumedEvent<Integer> ZERO_MAX_CONCURRECNY_EVENT = new IgnoreConsumedEvent<>(0);
 
     final CC connection;
-    final HttpExecutionContext executionContext;
+    private final HttpConnectionContext connectionContext;
+    private final HttpExecutionContext executionContext;
     private final Publisher<? extends ConsumableEvent<Integer>> maxConcurrencySetting;
     private final StreamingHttpRequestResponseFactory reqRespFactory;
     private final HttpHeadersFactory headersFactory;
 
-    AbstractStreamingHttpConnection(CC conn, final int maxPipelinedRequests, HttpExecutionContext executionContext,
-                                    StreamingHttpRequestResponseFactory reqRespFactory,
+    AbstractStreamingHttpConnection(final CC conn, final int maxPipelinedRequests,
+                                    final HttpExecutionContext executionContext,
+                                    final StreamingHttpRequestResponseFactory reqRespFactory,
                                     final HttpHeadersFactory headersFactory) {
         this.connection = requireNonNull(conn);
+        this.connectionContext = new DefaultNettyHttpConnectionContext(conn, executionContext);
         this.executionContext = requireNonNull(executionContext);
         this.reqRespFactory = requireNonNull(reqRespFactory);
         maxConcurrencySetting = from(new IgnoreConsumedEvent<>(maxPipelinedRequests))
@@ -74,8 +78,8 @@ abstract class AbstractStreamingHttpConnection<CC extends NettyConnectionContext
     }
 
     @Override
-    public final NettyConnectionContext connectionContext() {
-        return connection;
+    public final HttpConnectionContext connectionContext() {
+        return connectionContext;
     }
 
     @SuppressWarnings("unchecked")
@@ -142,21 +146,21 @@ abstract class AbstractStreamingHttpConnection<CC extends NettyConnectionContext
 
     @Override
     public final Completable onClose() {
-        return connection.onClose();
+        return connectionContext.onClose();
     }
 
     @Override
     public final Completable closeAsync() {
-        return connection.closeAsync();
+        return connectionContext.closeAsync();
     }
 
     @Override
     public final Completable closeAsyncGracefully() {
-        return connection.closeAsyncGracefully();
+        return connectionContext.closeAsyncGracefully();
     }
 
     @Override
     public String toString() {
-        return getClass().getName() + '(' + connection + ')';
+        return getClass().getName() + '(' + connectionContext + ')';
     }
 }

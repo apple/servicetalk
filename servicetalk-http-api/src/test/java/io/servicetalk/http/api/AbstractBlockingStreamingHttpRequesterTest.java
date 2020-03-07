@@ -23,7 +23,6 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.api.TestSubscription;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
-import io.servicetalk.transport.api.ConnectionContext;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -55,7 +54,7 @@ public abstract class AbstractBlockingStreamingHttpRequesterTest {
     @Mock
     private HttpExecutionContext mockExecutionCtx;
     @Mock
-    private ConnectionContext mockCtx;
+    private HttpConnectionContext mockCtx;
     @Mock
     private BlockingIterable<Buffer> mockIterable;
     @Mock

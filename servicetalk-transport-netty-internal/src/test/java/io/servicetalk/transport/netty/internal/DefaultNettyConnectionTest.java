@@ -27,6 +27,7 @@ import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.TestPublisher;
 import io.servicetalk.concurrent.api.TestPublisherSubscriber;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
+import io.servicetalk.transport.api.ConnectionContext.Protocol;
 import io.servicetalk.transport.netty.internal.NettyConnection.TerminalPredicate;
 
 import io.netty.channel.ChannelHandlerContext;
@@ -119,12 +120,12 @@ public class DefaultNettyConnectionTest {
             return true;
         });
         conn = DefaultNettyConnection.<Buffer, Buffer>initChannel(channel, allocator, executor, terminalPredicate,
-                closeHandler, defaultFlushStrategy(), null, trailerProtocolEndEventEmitter(), OFFLOAD_ALL_STRATEGY)
-                .toFuture().get();
+                closeHandler, defaultFlushStrategy(), null, trailerProtocolEndEventEmitter(), OFFLOAD_ALL_STRATEGY,
+                mock(Protocol.class)).toFuture().get();
         publisher = new TestPublisher<>();
     }
 
-    private ChannelInitializer trailerProtocolEndEventEmitter() {
+    private static ChannelInitializer trailerProtocolEndEventEmitter() {
         return ch -> ch.pipeline()
                 .addLast(new ChannelOutboundHandlerAdapter() {
                     @Override

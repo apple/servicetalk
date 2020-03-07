@@ -83,7 +83,7 @@ public abstract class AbstractHttpRequesterFilterTest {
     private HttpExecutionContext mockExecutionContext;
 
     @Mock
-    private ConnectionContext mockConnectionContext;
+    private HttpConnectionContext mockConnectionContext;
 
     public AbstractHttpRequesterFilterTest(final RequesterType type, final SecurityType security) {
         this.type = type;
@@ -328,7 +328,7 @@ public abstract class AbstractHttpRequesterFilterTest {
             }
 
             @Override
-            public ConnectionContext connectionContext() {
+            public HttpConnectionContext connectionContext() {
                 return connection.connectionContext();
             }
 

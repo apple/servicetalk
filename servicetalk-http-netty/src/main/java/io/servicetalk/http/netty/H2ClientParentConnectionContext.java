@@ -30,6 +30,7 @@ import io.servicetalk.concurrent.api.internal.SubscribableSingle;
 import io.servicetalk.concurrent.internal.DelayedCancellable;
 import io.servicetalk.concurrent.internal.SequentialCancellable;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
+import io.servicetalk.http.api.HttpConnectionContext;
 import io.servicetalk.http.api.HttpEventKey;
 import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpExecutionStrategy;
@@ -39,7 +40,6 @@ import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
-import io.servicetalk.transport.api.ConnectionContext;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
 import io.servicetalk.transport.netty.internal.DefaultNettyConnection;
 import io.servicetalk.transport.netty.internal.FlushStrategy;
@@ -71,13 +71,14 @@ import static io.servicetalk.concurrent.api.Publisher.failed;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.deliverTerminalFromSource;
 import static io.servicetalk.http.api.HttpEventKey.MAX_CONCURRENCY;
+import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
 import static io.servicetalk.http.netty.HeaderUtils.LAST_CHUNK_PREDICATE;
 import static io.servicetalk.http.netty.HttpDebugUtils.showPipeline;
 import static io.servicetalk.transport.netty.internal.ChannelSet.CHANNEL_CLOSEABLE_KEY;
 import static io.servicetalk.transport.netty.internal.CloseHandler.PROTOCOL_OUTBOUND_CLOSE_HANDLER;
 import static java.util.Objects.requireNonNull;
 
-final class H2ClientParentConnectionContext extends H2ParentConnectionContext implements NettyConnectionContext {
+final class H2ClientParentConnectionContext extends H2ParentConnectionContext {
     private H2ClientParentConnectionContext(Channel channel, BufferAllocator allocator, Executor executor,
                                             FlushStrategy flushStrategy, @Nullable Long idleTimeoutMs,
                                             HttpExecutionStrategy executionStrategy) {
@@ -127,7 +128,7 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext im
                 // callbacks that interact with the subscriber.
                 pipeline.addLast(parentChannelInitializer);
             }
-        }, "HTTP/2.0", channel);
+        }, HTTP_2_0, channel);
     }
 
     private static final class DefaultH2ClientParentConnection extends AbstractH2ParentConnection implements
@@ -191,7 +192,7 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext im
         }
 
         @Override
-        public ConnectionContext connectionContext() {
+        public HttpConnectionContext connectionContext() {
             return parentContext;
         }
 
@@ -255,6 +256,7 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext im
                                     parentContext.flushStrategyHolder.currentStrategy(),
                                     parentContext.idleTimeoutMs,
                                     parentContext.executionContext().executionStrategy(),
+                                    HTTP_2_0,
                                     parentContext.sslSession(),
                                     parentContext.nettyChannel().config());
 
@@ -313,6 +315,11 @@ final class H2ClientParentConnectionContext extends H2ParentConnectionContext im
         @Override
         public <T> T socketOption(final SocketOption<T> option) {
             return parentContext.socketOption(option);
+        }
+
+        @Override
+        public HttpProtocol protocol() {
+            return parentContext.protocol();
         }
 
         @Override

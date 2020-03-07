@@ -21,6 +21,7 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.FilterableStreamingHttpLoadBalancedConnection;
+import io.servicetalk.http.api.HttpConnectionContext;
 import io.servicetalk.http.api.HttpEventKey;
 import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpExecutionStrategy;
@@ -34,7 +35,6 @@ import io.servicetalk.http.api.StreamingHttpConnection;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
 import io.servicetalk.http.api.StreamingHttpResponseFactory;
-import io.servicetalk.transport.api.ConnectionContext;
 
 import static io.servicetalk.http.api.HttpApiConversions.toReservedBlockingConnection;
 import static io.servicetalk.http.api.HttpApiConversions.toReservedBlockingStreamingConnection;
@@ -92,7 +92,7 @@ final class LoadBalancedStreamingHttpConnection implements FilterableStreamingHt
     }
 
     @Override
-    public ConnectionContext connectionContext() {
+    public HttpConnectionContext connectionContext() {
         return filteredConnection.connectionContext();
     }
 

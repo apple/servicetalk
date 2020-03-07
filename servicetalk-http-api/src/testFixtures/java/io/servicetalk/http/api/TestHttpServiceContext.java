@@ -24,6 +24,7 @@ import javax.annotation.Nullable;
 import javax.net.ssl.SSLSession;
 
 import static io.servicetalk.concurrent.api.Completable.completed;
+import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_0;
 import static io.servicetalk.http.api.RequestResponseFactories.toAggregated;
 import static io.servicetalk.http.api.RequestResponseFactories.toBlockingStreaming;
 
@@ -85,6 +86,11 @@ public class TestHttpServiceContext extends HttpServiceContext {
     @Override
     public <T> T socketOption(final SocketOption<T> option) {
         return null;
+    }
+
+    @Override
+    public HttpProtocol protocol() {
+        return HTTP_1_0;
     }
 
     @Override

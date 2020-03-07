@@ -46,7 +46,7 @@ public class DelegatingConnectionContext implements ConnectionContext {
      *
      * @return the {@link ConnectionContext} that this class delegates to.
      */
-    protected final ConnectionContext delegate() {
+    protected ConnectionContext delegate() {
         return delegate;
     }
 
@@ -74,6 +74,11 @@ public class DelegatingConnectionContext implements ConnectionContext {
     @Override
     public <T> T socketOption(final SocketOption<T> option) {
         return delegate.socketOption(option);
+    }
+
+    @Override
+    public Protocol protocol() {
+        return delegate.protocol();
     }
 
     @Override

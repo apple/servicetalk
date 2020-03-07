@@ -83,8 +83,6 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultNettyConnection.class);
 
-    private static final TerminalPredicate PIPELINE_UNSUPPORTED_PREDICATE = new TerminalPredicate<>();
-
     private static final ChannelOutboundListener PLACE_HOLDER_OUTBOUND_LISTENER = new NoopChannelOutboundListener();
     private static final ChannelOutboundListener SINGLE_ITEM_OUTBOUND_LISTENER = new NoopChannelOutboundListener();
 
@@ -109,6 +107,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
     private final FlushStrategyHolder flushStrategyHolder;
     @Nullable
     private final Long idleTimeoutMs;
+    private final Protocol protocol;
     private volatile ChannelOutboundListener channelOutboundListener = PLACE_HOLDER_OUTBOUND_LISTENER;
     /**
      * Potentially contains more information when a protocol or channel level close event was observed.
@@ -129,21 +128,21 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
     @Nullable
     private SSLSession sslSession;
     @Nullable
-    private ChannelConfig parentChannelConfig;
+    private final ChannelConfig parentChannelConfig;
 
     private DefaultNettyConnection(Channel channel, BufferAllocator allocator, Executor executor,
                                    TerminalPredicate<Read> terminalMsgPredicate, CloseHandler closeHandler,
                                    FlushStrategy flushStrategy, @Nullable Long idleTimeoutMs,
-                                   ExecutionStrategy executionStrategy) {
+                                   ExecutionStrategy executionStrategy, Protocol protocol) {
         this(channel, allocator, executor, terminalMsgPredicate, closeHandler, flushStrategy, idleTimeoutMs,
-                executionStrategy, null, null);
+                executionStrategy, protocol, null, null);
     }
 
     private DefaultNettyConnection(Channel channel, BufferAllocator allocator, Executor executor,
                                    TerminalPredicate<Read> terminalMsgPredicate, CloseHandler closeHandler,
                                    FlushStrategy flushStrategy, @Nullable Long idleTimeoutMs,
-                                   ExecutionStrategy executionStrategy, @Nullable SSLSession sslSession,
-                                   @Nullable ChannelConfig parentChannelConfig) {
+                                   ExecutionStrategy executionStrategy, Protocol protocol,
+                                   @Nullable SSLSession sslSession, @Nullable ChannelConfig parentChannelConfig) {
         super(channel, executor);
         nettyChannelPublisher = new NettyChannelPublisher<>(channel, terminalMsgPredicate, closeHandler);
         this.readPublisher = nettyChannelPublisher.recoverWith(this::enrichErrorPublisher);
@@ -181,14 +180,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
         }
         this.sslSession = sslSession;
         this.parentChannelConfig = parentChannelConfig;
-    }
-
-    @SuppressWarnings("unchecked")
-    static <Read, Write> Single<DefaultNettyConnection<Read, Write>> initChannel(
-            Channel channel, BufferAllocator allocator, Executor executor, FlushStrategy flushStrategy,
-            @Nullable Long idleTimeoutMs, ChannelInitializer initializer, ExecutionStrategy executionStrategy) {
-        return initChannel(channel, allocator, executor, PIPELINE_UNSUPPORTED_PREDICATE,
-                UNSUPPORTED_PROTOCOL_CLOSE_HANDLER, flushStrategy, idleTimeoutMs, initializer, executionStrategy);
+        this.protocol = requireNonNull(protocol);
     }
 
     /**
@@ -203,6 +195,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
      * @param flushStrategy Manages flushing of data for the {@link DefaultNettyConnection}.
      * @param idleTimeoutMs Value for {@link ServiceTalkSocketOptions#IDLE_TIMEOUT IDLE_TIMEOUT} socket option.
      * @param executionStrategy Used to derive the {@link #executionContext()}.
+     * @param protocol {@link Protocol} for the returned {@link DefaultNettyConnection}.
      * @param sslSession Provides access to the {@link SSLSession} associated with this connection.
      * @param parentChannelConfig {@link ChannelConfig} of the parent {@link Channel} to query {@link SocketOption}s
      * @param <Read> Type of objects read from the {@link NettyConnection}.
@@ -213,11 +206,11 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
     public static <Read, Write> DefaultNettyConnection<Read, Write> initChildChannel(
             Channel channel, BufferAllocator allocator, Executor executor, TerminalPredicate<Read> terminalMsgPredicate,
             CloseHandler closeHandler, FlushStrategy flushStrategy, @Nullable Long idleTimeoutMs,
-            ExecutionStrategy executionStrategy, @Nullable SSLSession sslSession,
+            ExecutionStrategy executionStrategy, Protocol protocol, @Nullable SSLSession sslSession,
             @Nullable ChannelConfig parentChannelConfig) {
         DefaultNettyConnection<Read, Write> connection = new DefaultNettyConnection<>(channel, allocator, executor,
-                terminalMsgPredicate, closeHandler, flushStrategy, idleTimeoutMs, executionStrategy, sslSession,
-                parentChannelConfig);
+                terminalMsgPredicate, closeHandler, flushStrategy, idleTimeoutMs, executionStrategy, protocol,
+                sslSession, parentChannelConfig);
         channel.pipeline().addLast(new NettyToStChannelInboundHandler<>(connection, null,
                 null, false));
         return connection;
@@ -237,6 +230,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
      * @param idleTimeoutMs Value for {@link ServiceTalkSocketOptions#IDLE_TIMEOUT IDLE_TIMEOUT} socket option.
      * @param initializer Synchronously initializes the pipeline upon subscribe.
      * @param executionStrategy {@link ExecutionStrategy} to use for this connection.
+     * @param protocol {@link Protocol} for the returned {@link DefaultNettyConnection}.
      * @param <Read> Type of objects read from the {@link NettyConnection}.
      * @param <Write> Type of objects written to the {@link NettyConnection}.
      * @return A {@link Single} that completes with a {@link DefaultNettyConnection} after the channel is activated and
@@ -245,7 +239,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
     public static <Read, Write> Single<DefaultNettyConnection<Read, Write>> initChannel(
             Channel channel, BufferAllocator allocator, Executor executor, TerminalPredicate<Read> terminalMsgPredicate,
             CloseHandler closeHandler, FlushStrategy flushStrategy, @Nullable Long idleTimeoutMs,
-            ChannelInitializer initializer, ExecutionStrategy executionStrategy) {
+            ChannelInitializer initializer, ExecutionStrategy executionStrategy, Protocol protocol) {
         return new SubscribableSingle<DefaultNettyConnection<Read, Write>>() {
             @Override
             protected void handleSubscribe(
@@ -256,7 +250,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
                     delayedCancellable = new DelayedCancellable();
                     DefaultNettyConnection<Read, Write> connection = new DefaultNettyConnection<>(channel, allocator,
                             executor, terminalMsgPredicate, closeHandler, flushStrategy, idleTimeoutMs,
-                            executionStrategy);
+                            executionStrategy, protocol);
                     channel.attr(CHANNEL_CLOSEABLE_KEY).set(connection);
                     // We need the NettyToStChannelInboundHandler to be last in the pipeline. We accomplish that by
                     // calling the ChannelInitializer before we do addLast for the NettyToStChannelInboundHandler.
@@ -419,6 +413,11 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
     @Override
     public <T> T socketOption(final SocketOption<T> option) {
         return getOption(option, parentChannelConfig != null ? parentChannelConfig : channel().config(), idleTimeoutMs);
+    }
+
+    @Override
+    public Protocol protocol() {
+        return protocol;
     }
 
     private void invokeUserCloseHandler() {

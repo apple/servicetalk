@@ -24,7 +24,9 @@ import io.servicetalk.concurrent.api.Completable;
 import io.servicetalk.concurrent.api.CompositeCloseable;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.http.api.BlockingHttpClient;
+import io.servicetalk.http.api.DelegatingHttpConnectionContext;
 import io.servicetalk.http.api.FilterableStreamingHttpConnection;
+import io.servicetalk.http.api.HttpConnectionContext;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.http.api.HttpResponse;
 import io.servicetalk.http.api.HttpResponseMetaData;
@@ -35,8 +37,6 @@ import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.http.api.StreamingHttpConnectionFilter;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpResponse;
-import io.servicetalk.transport.api.ConnectionContext;
-import io.servicetalk.transport.api.DelegatingConnectionContext;
 import io.servicetalk.transport.api.HostAndPort;
 import io.servicetalk.transport.api.ServerContext;
 import io.servicetalk.transport.netty.internal.FlushStrategy;
@@ -132,16 +132,15 @@ public class ConnectionFactoryFilterTest {
         ctx.onClosing().toFuture().get();
     }
 
-    private HttpResponse sendRequest(BlockingHttpClient client) throws Exception {
+    private static HttpResponse sendRequest(BlockingHttpClient client) throws Exception {
         HttpResponse response = client.request(client.get("/"));
         assertThat("Unexpected response.", response.status(), equalTo(HttpResponseStatus.OK));
         return response;
     }
 
     @Nonnull
-    private UnaryOperator<FilterableStreamingHttpConnection> connectionCounter(final AtomicInteger activeConnections,
-                                                                               @Nullable
-                                                                               final CountDownLatch doneLatch) {
+    private static UnaryOperator<FilterableStreamingHttpConnection> connectionCounter(
+            final AtomicInteger activeConnections, @Nullable final CountDownLatch doneLatch) {
         return connection -> {
             activeConnections.incrementAndGet();
             connection.onClose().beforeFinally(() -> {
@@ -187,31 +186,30 @@ public class ConnectionFactoryFilterTest {
     }
 
     private static final class NettyConnectionContextReturningConnection extends StreamingHttpConnectionFilter {
-        private final NettyConnectionContext ctx;
+        private final HttpConnectionContext ctx;
 
         NettyConnectionContextReturningConnection(final FilterableStreamingHttpConnection delegate,
                                                   final CompletableSource.Processor onClosing) {
             super(delegate);
-            ctx = new DelegatingNettyConnectionContext((NettyConnectionContext) delegate.connectionContext(),
-                    onClosing);
+            ctx = new DelegatingNettyConnectionContext(delegate.connectionContext(), onClosing);
         }
 
         @Override
-        public ConnectionContext connectionContext() {
+        public HttpConnectionContext connectionContext() {
             return ctx;
         }
    }
 
-    private static final class DelegatingNettyConnectionContext extends DelegatingConnectionContext
+    private static final class DelegatingNettyConnectionContext extends DelegatingHttpConnectionContext
             implements NettyConnectionContext {
 
         private final NettyConnectionContext delegate;
         private final CompletableSource.Processor onClosing;
 
-        DelegatingNettyConnectionContext(final NettyConnectionContext delegate,
+        DelegatingNettyConnectionContext(final HttpConnectionContext delegate,
                                          final CompletableSource.Processor onClosing) {
             super(delegate);
-            this.delegate = delegate;
+            this.delegate = (NettyConnectionContext) delegate;
             this.onClosing = onClosing;
         }
 

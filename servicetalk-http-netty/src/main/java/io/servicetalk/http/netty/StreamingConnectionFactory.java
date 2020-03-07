@@ -28,6 +28,7 @@ import io.servicetalk.transport.netty.internal.NettyConnection.TerminalPredicate
 import io.netty.channel.Channel;
 
 import static io.servicetalk.buffer.netty.BufferUtils.getByteBufAllocator;
+import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.netty.HeaderUtils.LAST_CHUNK_PREDICATE;
 import static io.servicetalk.http.netty.HttpDebugUtils.showPipeline;
 import static io.servicetalk.transport.netty.internal.CloseHandler.forPipelinedRequestResponse;
@@ -56,6 +57,6 @@ final class StreamingConnectionFactory {
                 config.tcpConfig().flushStrategy(), config.tcpConfig().idleTimeoutMs(),
                 initializer.andThen(new HttpClientChannelInitializer(
                         getByteBufAllocator(executionContext.bufferAllocator()), config.h1Config(), closeHandler)),
-                executionContext.executionStrategy()), "HTTP/1.1", channel);
+                executionContext.executionStrategy(), HTTP_1_1), HTTP_1_1, channel);
     }
 }

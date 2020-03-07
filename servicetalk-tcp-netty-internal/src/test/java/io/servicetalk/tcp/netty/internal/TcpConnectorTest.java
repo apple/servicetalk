@@ -17,6 +17,7 @@ package io.servicetalk.tcp.netty.internal;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.client.api.RetryableConnectException;
+import io.servicetalk.transport.api.ConnectionContext.Protocol;
 import io.servicetalk.transport.netty.internal.DefaultNettyConnection;
 import io.servicetalk.transport.netty.internal.NettyConnection;
 
@@ -39,6 +40,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.core.Is.is;
+import static org.mockito.Mockito.mock;
 
 public final class TcpConnectorTest extends AbstractTcpServerTest {
     @Rule
@@ -107,7 +109,7 @@ public final class TcpConnectorTest extends AbstractTcpServerTest {
                                     ctx.fireChannelActive();
                                 }
                             });
-                        }, CLIENT_CTX.executionStrategy())
+                        }, CLIENT_CTX.executionStrategy(), mock(Protocol.class))
                 ).toFuture().get();
         connection.closeAsync().toFuture().get();
 

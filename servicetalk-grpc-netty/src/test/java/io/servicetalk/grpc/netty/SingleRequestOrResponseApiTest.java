@@ -75,16 +75,16 @@ public class SingleRequestOrResponseApiTest {
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
 
-    private final boolean streamingServer;
+    private final boolean streamingService;
     private final boolean streamingClient;
     private final ServerContext serverContext;
     private final GrpcClientBuilder<HostAndPort, InetSocketAddress> clientBuilder;
 
-    public SingleRequestOrResponseApiTest(boolean streamingServer, boolean streamingClient) throws Exception {
-        this.streamingServer = streamingServer;
+    public SingleRequestOrResponseApiTest(boolean streamingService, boolean streamingClient) throws Exception {
+        this.streamingService = streamingService;
         this.streamingClient = streamingClient;
 
-        serverContext = GrpcServers.forAddress(localAddress(0)).listenAndAwait(streamingServer ?
+        serverContext = GrpcServers.forAddress(localAddress(0)).listenAndAwait(streamingService ?
                 new ServiceFactory(new TesterServiceImpl()) :
                 new ServiceFactory(new BlockingTesterServiceImpl()));
 
@@ -103,7 +103,7 @@ public class SingleRequestOrResponseApiTest {
                 });
     }
 
-    @Parameters(name = "streamingServer={0}, streamingServer={1}")
+    @Parameters(name = "streamingService={0}, streamingClient={1}")
     public static Object[][] params() {
         return new Object[][]{{false, false}, {false, true}, {true, false}};
     }
@@ -148,7 +148,7 @@ public class SingleRequestOrResponseApiTest {
 
     private <T extends Throwable> void clientRequestStreamingCallFailsOnInvalidResponse(
             int numberOfResponses, Class<T> exceptionClass) throws Exception {
-        assumeFalse(streamingServer);  // No need to run the test with different server-side
+        assumeFalse(streamingService);  // No need to run the test with different server-side
         if (streamingClient) {
             try (TesterClient client = newClient()) {
                 ExecutionException e = assertThrows(ExecutionException.class,

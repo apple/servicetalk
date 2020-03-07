@@ -16,6 +16,7 @@
 package io.servicetalk.grpc.api;
 
 import io.servicetalk.concurrent.api.Completable;
+import io.servicetalk.http.api.HttpConnectionContext.HttpProtocol;
 import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.transport.api.ConnectionContext;
 
@@ -30,11 +31,13 @@ final class DefaultGrpcServiceContext extends DefaultGrpcMetadata implements Grp
 
     private final ConnectionContext connectionContext;
     private final GrpcExecutionContext executionContext;
+    private final GrpcProtocol protocol;
 
     DefaultGrpcServiceContext(final String path, final HttpServiceContext httpServiceContext) {
         super(path);
         connectionContext = requireNonNull(httpServiceContext);
         executionContext = new DefaultGrpcExecutionContext(httpServiceContext.executionContext());
+        protocol = new DefaultGrpcProtocol(httpServiceContext.protocol());
     }
 
     @Override
@@ -65,6 +68,11 @@ final class DefaultGrpcServiceContext extends DefaultGrpcMetadata implements Grp
     }
 
     @Override
+    public GrpcProtocol protocol() {
+        return protocol;
+    }
+
+    @Override
     public Completable onClose() {
         return connectionContext.onClose();
     }
@@ -77,5 +85,23 @@ final class DefaultGrpcServiceContext extends DefaultGrpcMetadata implements Grp
     @Override
     public Completable closeAsyncGracefully() {
         return connectionContext.closeAsyncGracefully();
+    }
+
+    private static final class DefaultGrpcProtocol implements GrpcProtocol {
+        private final HttpProtocol httpProtocol;
+
+        private DefaultGrpcProtocol(final HttpProtocol httpProtocol) {
+            this.httpProtocol = requireNonNull(httpProtocol);
+        }
+
+        @Override
+        public String name() {
+            return "gRPC";
+        }
+
+        @Override
+        public HttpProtocol httpProtocol() {
+            return httpProtocol;
+        }
     }
 }

@@ -16,7 +16,6 @@
 package io.servicetalk.http.api;
 
 import io.servicetalk.concurrent.api.Single;
-import io.servicetalk.transport.api.ConnectionContext;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -104,7 +103,7 @@ public class SimpleHttpRequesterFilterTest extends AbstractHttpRequesterFilterTe
         }
 
         private Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
-                                                      @Nullable final ConnectionContext context,
+                                                      @Nullable final HttpConnectionContext context,
                                                       final HttpExecutionStrategy strategy,
                                                       final StreamingHttpRequest request) {
             request.setHeader("X-Unit", "Test");
@@ -240,7 +239,7 @@ public class SimpleHttpRequesterFilterTest extends AbstractHttpRequesterFilterTe
         }
 
         private Single<StreamingHttpResponse> request(final StreamingHttpRequester delegate,
-                                                      final ConnectionContext context,
+                                                      final HttpConnectionContext context,
                                                       final HttpExecutionStrategy strategy,
                                                       final StreamingHttpRequest request) {
             try {

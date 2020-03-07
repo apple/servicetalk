@@ -24,6 +24,7 @@ import io.servicetalk.concurrent.api.Executor;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.internal.DelayedCancellable;
 import io.servicetalk.http.api.DefaultHttpExecutionContext;
+import io.servicetalk.http.api.HttpConnectionContext;
 import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpExecutionStrategy;
 import io.servicetalk.transport.netty.internal.FlushStrategy;
@@ -63,14 +64,15 @@ import static io.servicetalk.concurrent.api.Processors.newCompletableProcessor;
 import static io.servicetalk.concurrent.api.Processors.newSingleProcessor;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.concurrent.internal.ThrowableUtils.unknownStackTrace;
+import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
 import static io.servicetalk.http.netty.H2ToStH1Utils.DEFAULT_GRACEFUL_SHUTDOWN_TIMEOUT_MILLIS;
 import static io.servicetalk.transport.netty.internal.NettyIoExecutors.fromNettyEventLoop;
 import static io.servicetalk.transport.netty.internal.NettyPipelineSslUtils.extractSslSession;
 import static io.servicetalk.transport.netty.internal.SocketOptionUtils.getOption;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
-class H2ParentConnectionContext extends NettyChannelListenableAsyncCloseable implements
-                                                                             NettyConnectionContext {
+class H2ParentConnectionContext extends NettyChannelListenableAsyncCloseable implements NettyConnectionContext,
+                                                                                        HttpConnectionContext {
     private static final ClosedChannelException CLOSED_CHANNEL_INACTIVE = unknownStackTrace(
             new ClosedChannelException(), H2ClientParentConnectionContext.class, "channelInactive(..)");
     private static final ClosedChannelException CLOSED_HANDLER_REMOVED =
@@ -152,6 +154,11 @@ class H2ParentConnectionContext extends NettyChannelListenableAsyncCloseable imp
     @Override
     public <T> T socketOption(final SocketOption<T> option) {
         return getOption(option, channel().config(), idleTimeoutMs);
+    }
+
+    @Override
+    public HttpProtocol protocol() {
+        return HTTP_2_0;
     }
 
     @Override

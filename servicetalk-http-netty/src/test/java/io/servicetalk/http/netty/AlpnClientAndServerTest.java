@@ -88,19 +88,19 @@ public class AlpnClientAndServerTest {
             "serverAlpnProtocols={0}, clientAlpnProtocols={1}, expectedProtocol={2}, expectedExceptionType={3}")
     public static Collection<Object[]> clientExecutors() {
         return asList(new Object[][] {
-                {asList(HTTP_2, HTTP_1_1), asList(HTTP_2, HTTP_1_1), H2ToStH1Utils.HTTP_2_0, null},
-                {asList(HTTP_2, HTTP_1_1), asList(HTTP_1_1, HTTP_2), H2ToStH1Utils.HTTP_2_0, null},
-                {asList(HTTP_2, HTTP_1_1), singletonList(HTTP_2), H2ToStH1Utils.HTTP_2_0, null},
+                {asList(HTTP_2, HTTP_1_1), asList(HTTP_2, HTTP_1_1), HttpProtocolVersion.HTTP_2_0, null},
+                {asList(HTTP_2, HTTP_1_1), asList(HTTP_1_1, HTTP_2), HttpProtocolVersion.HTTP_2_0, null},
+                {asList(HTTP_2, HTTP_1_1), singletonList(HTTP_2), HttpProtocolVersion.HTTP_2_0, null},
                 {asList(HTTP_2, HTTP_1_1), singletonList(HTTP_1_1), HttpProtocolVersion.HTTP_1_1, null},
 
                 {asList(HTTP_1_1, HTTP_2), asList(HTTP_2, HTTP_1_1), HttpProtocolVersion.HTTP_1_1, null},
                 {asList(HTTP_1_1, HTTP_2), asList(HTTP_1_1, HTTP_2), HttpProtocolVersion.HTTP_1_1, null},
-                {asList(HTTP_1_1, HTTP_2), singletonList(HTTP_2), H2ToStH1Utils.HTTP_2_0, null},
+                {asList(HTTP_1_1, HTTP_2), singletonList(HTTP_2), HttpProtocolVersion.HTTP_2_0, null},
                 {asList(HTTP_1_1, HTTP_2), singletonList(HTTP_1_1), HttpProtocolVersion.HTTP_1_1, null},
 
-                {singletonList(HTTP_2), asList(HTTP_2, HTTP_1_1), H2ToStH1Utils.HTTP_2_0, null},
-                {singletonList(HTTP_2), asList(HTTP_1_1, HTTP_2), H2ToStH1Utils.HTTP_2_0, null},
-                {singletonList(HTTP_2), singletonList(HTTP_2), H2ToStH1Utils.HTTP_2_0, null},
+                {singletonList(HTTP_2), asList(HTTP_2, HTTP_1_1), HttpProtocolVersion.HTTP_2_0, null},
+                {singletonList(HTTP_2), asList(HTTP_1_1, HTTP_2), HttpProtocolVersion.HTTP_2_0, null},
+                {singletonList(HTTP_2), singletonList(HTTP_2), HttpProtocolVersion.HTTP_2_0, null},
                 {singletonList(HTTP_2), singletonList(HTTP_1_1), null, DecoderException.class},
 
                 {singletonList(HTTP_1_1), asList(HTTP_2, HTTP_1_1), HttpProtocolVersion.HTTP_1_1, null},

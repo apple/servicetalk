@@ -17,17 +17,17 @@ package io.servicetalk.http.api;
 
 import io.servicetalk.concurrent.PublisherSource;
 import io.servicetalk.concurrent.api.Publisher;
-import io.servicetalk.transport.api.ConnectionContext;
 
 /**
  * A {@link StreamingHttpConnection} that supported filtering.
  */
 public interface FilterableStreamingHttpConnection extends StreamingHttpRequester {
     /**
-     * Get the {@link ConnectionContext}.
-     * @return the {@link ConnectionContext}.
+     * Get the {@link HttpConnectionContext}.
+     *
+     * @return the {@link HttpConnectionContext}.
      */
-    ConnectionContext connectionContext();
+    HttpConnectionContext connectionContext();
 
     /**
      * Returns a {@link Publisher} that gives the current value of a transport event as well as subsequent changes to

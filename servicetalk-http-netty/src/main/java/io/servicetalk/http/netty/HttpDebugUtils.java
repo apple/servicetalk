@@ -16,6 +16,7 @@
 package io.servicetalk.http.netty;
 
 import io.servicetalk.concurrent.api.Single;
+import io.servicetalk.transport.api.ConnectionContext.Protocol;
 import io.servicetalk.transport.netty.internal.NettyConnectionContext;
 
 import io.netty.channel.Channel;
@@ -36,11 +37,11 @@ final class HttpDebugUtils {
     }
 
     static <T extends NettyConnectionContext> Single<T> showPipeline(final Single<T> contextSingle,
-                                                                     final String protocolName,
+                                                                     final Protocol protocol,
                                                                      final Channel channel) {
         if (LOGGER.isDebugEnabled()) {
             return contextSingle.whenOnSuccess(ctx -> LOGGER.debug("{} {} pipeline initialized: {}",
-                    channel, protocolName, join(", ", channel.pipeline().names())));
+                    channel, protocol.name(), join(", ", channel.pipeline().names())));
         }
         return contextSingle;
     }
