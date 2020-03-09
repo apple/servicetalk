@@ -35,8 +35,7 @@ public final class RepeatStrategies {
     public static final class TerminateRepeatException extends Exception {
         private static final long serialVersionUID = -1725458427890873886L;
 
-        // It is fine to reuse this instance and let it escape to the user as we enableSuppression is set to false
-        // while constructing it.
+        // It is fine to reuse this instance and let it escape to the user as enableSuppression is set to false.
         static final TerminateRepeatException INSTANCE = new TerminateRepeatException();
 
         // Package-private as the user should never instance it.
