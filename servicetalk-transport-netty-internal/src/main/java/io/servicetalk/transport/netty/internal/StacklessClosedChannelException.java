@@ -19,6 +19,10 @@ import io.servicetalk.concurrent.internal.ThrowableUtils;
 
 import java.nio.channels.ClosedChannelException;
 
+/**
+ * {@link ClosedChannelException} that will not not fill in the stacktrace but use a cheaper way of producing
+ * limited stacktrace details for the user.
+ */
 public final class StacklessClosedChannelException extends ClosedChannelException {
 
     private StacklessClosedChannelException() { }
@@ -29,6 +33,13 @@ public final class StacklessClosedChannelException extends ClosedChannelExceptio
         return this;
     }
 
+    /**
+     * Creates a new {@link StacklessClosedChannelException} instance.
+     *
+     * @param clazz The class in which this {@link StacklessClosedChannelException} will be used.
+     * @param method The method from which it will be thrown.
+     * @return a new instance.
+     */
     public static StacklessClosedChannelException newInstance(Class<?> clazz, String method) {
         return ThrowableUtils.unknownStackTrace(new StacklessClosedChannelException(), clazz, method);
     }
