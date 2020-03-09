@@ -24,9 +24,12 @@ import io.servicetalk.transport.netty.internal.CloseHandler;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.util.ByteProcessor;
 
 import java.util.Queue;
 
+import static io.netty.handler.codec.http.HttpConstants.HT;
+import static io.netty.util.internal.StringUtil.EMPTY_STRING;
 import static io.servicetalk.http.api.HttpHeaderNames.SEC_WEBSOCKET_ACCEPT;
 import static io.servicetalk.http.api.HttpHeaderNames.UPGRADE;
 import static io.servicetalk.http.api.HttpHeaderValues.WEBSOCKET;
@@ -38,6 +41,7 @@ import static io.servicetalk.http.api.HttpResponseStatus.NO_CONTENT;
 import static io.servicetalk.http.api.HttpResponseStatus.SWITCHING_PROTOCOLS;
 import static io.servicetalk.http.api.HttpResponseStatus.StatusClass.INFORMATIONAL_1XX;
 import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
+import static java.lang.Character.isISOControl;
 import static java.lang.Math.min;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.util.Objects.requireNonNull;
@@ -45,6 +49,15 @@ import static java.util.Objects.requireNonNull;
 final class HttpResponseDecoder extends HttpObjectDecoder<HttpResponseMetaData> {
 
     private static final byte[] FIRST_BYTES = "HTTP".getBytes(US_ASCII);
+    private static final ByteProcessor ENSURE_NO_CONTROL_CHARS = value -> {
+        if (value == HT) {
+            return true;    // allow HTAB
+        }
+        if (isISOControl(value)) {
+            throw newIllegalCharacter(value);
+        }
+        return true;
+    };
 
     private final Queue<HttpRequestMethod> methodQueue;
 
@@ -84,8 +97,17 @@ final class HttpResponseDecoder extends HttpObjectDecoder<HttpResponseMetaData> 
                                                  final int thirdStart, final int thirdLength) {
         return newResponseMetaData(nettyBufferToHttpVersion(buffer, firstStart, firstLength),
                 HttpResponseStatus.of(nettyBufferToStatusCode(buffer, secondStart, secondLength),
-                        thirdLength >= 0 ? buffer.toString(thirdStart, thirdLength, US_ASCII) : ""),
+                        reasonPhrase(buffer, thirdStart, thirdLength)),
                 headersFactory().newHeaders());
+    }
+
+    private static String reasonPhrase(final ByteBuf buffer, final int start, final int length) {
+        if (length <= 0) {
+            return EMPTY_STRING;
+        }
+        // Verify reason-phrase = *( HTAB / SP / VCHAR / obs-text )
+        buffer.forEachByte(start, length, ENSURE_NO_CONTROL_CHARS);
+        return buffer.toString(start, length, US_ASCII);
     }
 
     @Override
@@ -127,12 +149,5 @@ final class HttpResponseDecoder extends HttpObjectDecoder<HttpResponseMetaData> 
         return toDecimal((medium & 0xff0000) >> 16) * 100 +
                 toDecimal((medium & 0xff00) >> 8) * 10 +
                 toDecimal(medium & 0xff);
-    }
-
-    private static int toDecimal(final int c) {
-        if (c < '0' || c > '9') {
-            throw new IllegalArgumentException("invalid status code");
-        }
-        return c - '0';
     }
 }
