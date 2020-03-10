@@ -40,7 +40,7 @@ ServiceTalk's protocol-specific _Clients_ and _LoadBalancer_ are layered as foll
                             ^           |    +--------------+     +----------------------+     +--------+
                             |           \--->| Connection x |<--->| HTTP Decoder/Encoder |<--->| Socket |
                   +-------------------+      +--------------+     +----------------------+     +--------+
-                  | Service Discovery |
+                  | ServiceDiscoverer |
                   +-------------------+
 ----
 
@@ -51,27 +51,31 @@ the basis for all protocol-specific _Connections_ allows the
 link:{source-root}/servicetalk-client-api/src/main/java/io/servicetalk/client/api/LoadBalancer.java[LoadBalancer]
 implementations to be reusable across all the protocols.
 
-The _LoadBalancer_ is able to combine availability information from _Service Discovery_ and protocol metrics from the
-_ConnectionFactory_ (e.g. latency, ...) in order to pick a more optimal _Connection_ for each request
+The _LoadBalancer_ is able to combine availability information from
+link:{source-root}/servicetalk-client-api/src/main/java/io/servicetalk/client/api/ServiceDiscoverer.java[ServiceDiscoverer]
+and protocol metrics from the
+link:{source-root}/servicetalk-client-api/src/main/java/io/servicetalk/client/api/ConnectionFactory.java[ConnectionFactory]
+(e.g. latency, ...) in order to pick a more optimal _Connection_ for each request.
 
 == Implementations
 
-As mentioned earlier the _Client-Side LoadBalancer_ abstraction allows for various protocol-independent _LoadBalancing_
-algorithms to be implemented. This section will discuss the various implementations offered in ServiceTalk by
-highlighting their characteristics.
+As mentioned earlier the _Client-Side_
+link:{source-root}/servicetalk-client-api/src/main/java/io/servicetalk/client/api/LoadBalancer.java[LoadBalancer]
+abstraction allows for various protocol-independent _LoadBalancing_ algorithms to be implemented. This section will
+discuss the various implementations offered in ServiceTalk by highlighting their characteristics.
 
 === Round Robin
 
 link:{source-root}/servicetalk-loadbalancer/src/main/java/io/servicetalk/loadbalancer/RoundRobinLoadBalancer.java[RoundRobinLoadBalancer]
 is a common and simple _LoadBalancer_ implementation that is currently the default when creating _Clients_. Its
-main goal is to spread the load evenly between all known resolved addresses as provided by the _ServiceDiscovery_
-mechanism.
+main goal is to spread the load evenly between all known resolved addresses as provided by the
+xref:{page-version}@servicetalk-dns-discovery-netty::index.adoc[Service Discovery] mechanism.
 
 The implementation in ServiceTalk consists of a set of available addresses (typically the servers to connect to) and for
 each address it has a set of open `Connections`. Whenever a new request is made the _LoadBalancer_ will pick the next
 address from its list of addresses and picks one of its open _Connections_ until it finds an available _Connection_.
 When all _Connections_ are in use, it'll try to open a new _Connection_ to that same address. It works in tandem with
-_ServiceDiscovery_, when new addresses are added or addresses are removed it'll update its active addresses set for
+_ServiceDiscoverer_, when new addresses are added or addresses are removed it'll update its active addresses set for
 future _Connection_ selection. This approach ensures that every address will receive an equal amount of requests on
 average across all _Clients_.
 

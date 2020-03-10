@@ -34,5 +34,6 @@ include::{page-version}@servicetalk-http-router-jersey:ROOT:partial$nav-versione
 *** xref:{page-version}@servicetalk-data-jackson-jersey::index.adoc[JSON (Jackson)]
 * xref:{page-version}@servicetalk-grpc-api::index.adoc[gRPC]
 * xref:{page-version}@servicetalk-loadbalancer::index.adoc[Load Balancing]
+* xref:{page-version}@servicetalk-dns-discovery-netty::index.adoc[Service Discovery]
 * xref:{page-version}@servicetalk::javadoc/index.adoc[Javadoc]
 * xref:{page-version}@servicetalk::contributing.adoc[Contributing]
