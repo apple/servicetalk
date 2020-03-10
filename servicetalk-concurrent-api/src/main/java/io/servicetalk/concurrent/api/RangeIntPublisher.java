@@ -41,7 +41,7 @@ final class RangeIntPublisher extends AbstractSynchronousPublisher<Integer> {
             throw new IllegalArgumentException("begin(" + begin + ") > end(" + end + ")");
         }
         if (stride <= 0) {
-            throw new IllegalArgumentException("stride: " + stride);
+            throw new IllegalArgumentException("stride: " + stride + " (expected >0)");
         }
         this.begin = begin;
         this.end = end;
@@ -85,7 +85,7 @@ final class RangeIntPublisher extends AbstractSynchronousPublisher<Integer> {
                     return;
                 }
             }
-            if (index >= end) {
+            if (index == end) {
                 sendComplete();
             }
         }
