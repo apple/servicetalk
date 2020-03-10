@@ -289,8 +289,7 @@ final class DefaultMultiAddressUrlHttpClientBuilder
             this.executionContext = requireNonNull(executionContext);
         }
 
-        private FilterableStreamingHttpClient selectClient(
-                HttpRequestMetaData metaData) {
+        private FilterableStreamingHttpClient selectClient(final HttpRequestMetaData metaData) {
             return group.get(keyFactory.apply(metaData));
         }
 

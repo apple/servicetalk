@@ -32,8 +32,8 @@ final class HttpClientConfig {
     }
 
     HttpClientConfig(final HttpClientConfig from) {
-        tcpConfig = from.tcpConfig();
-        protocolConfigs = from.protocolConfigs();
+        tcpConfig = new TcpClientConfig(from.tcpConfig());
+        protocolConfigs = new HttpConfig(from.protocolConfigs());
         connectAddress = from.connectAddress;
     }
 

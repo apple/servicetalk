@@ -202,6 +202,30 @@ public class SslAndNonSslConnectionsTest {
         }
     }
 
+    @Test
+    public void multiAddressClientToSecureServerThenToNonSecureServer() throws Exception {
+        try (BlockingHttpClient client = HttpClients.forMultiAddressUrl()
+                .secure((hap, config) -> config.disableHostnameVerification()
+                        .trustManager(DefaultTestCerts::loadMutualAuthCaPem))
+                .buildBlocking()) {
+            testRequestResponse(client, secureRequestTarget, true);
+            resetMocks();
+            testRequestResponse(client, requestTarget, false);
+        }
+    }
+
+    @Test
+    public void multiAddressClientToNonSecureServerThenToSecureServer() throws Exception {
+        try (BlockingHttpClient client = HttpClients.forMultiAddressUrl()
+                .secure((hap, config) -> config.disableHostnameVerification()
+                        .trustManager(DefaultTestCerts::loadMutualAuthCaPem))
+                .buildBlocking()) {
+            testRequestResponse(client, requestTarget, false);
+            resetMocks();
+            testRequestResponse(client, secureRequestTarget, true);
+        }
+    }
+
     private static void testRequestResponse(final BlockingHttpClient client, final String requestTarget,
                                             final boolean secure) throws Exception {
         final HttpResponse response = client.request(client.get(requestTarget));
