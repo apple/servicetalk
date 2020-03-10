@@ -1,5 +1,5 @@
 /*
- * Copyright © 2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2019-2020 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,10 +29,22 @@ import static java.util.Objects.requireNonNull;
 
 final class HttpConfig {
     @Nullable
-    private H1ProtocolConfig h1Config = h1Default();
+    private H1ProtocolConfig h1Config;
     @Nullable
     private H2ProtocolConfig h2Config;
-    private List<String> supportedAlpnProtocols = emptyList();
+    private List<String> supportedAlpnProtocols;
+
+    HttpConfig() {
+        h1Config = h1Default();
+        h2Config = null;
+        supportedAlpnProtocols = emptyList();
+    }
+
+    HttpConfig(final HttpConfig from) {
+        this.h1Config = from.h1Config;
+        this.h2Config = from.h2Config;
+        this.supportedAlpnProtocols = from.supportedAlpnProtocols;
+    }
 
     @Nullable
     H1ProtocolConfig h1Config() {

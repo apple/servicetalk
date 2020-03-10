@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2020 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -198,6 +198,30 @@ public class SslAndNonSslConnectionsTest {
                 .secure((hap, config) -> config.disableHostnameVerification()
                         .trustManager(DefaultTestCerts::loadMutualAuthCaPem))
                 .buildBlocking()) {
+            testRequestResponse(client, secureRequestTarget, true);
+        }
+    }
+
+    @Test
+    public void multiAddressClientToSecureServerThenToNonSecureServer() throws Exception {
+        try (BlockingHttpClient client = HttpClients.forMultiAddressUrl()
+                .secure((hap, config) -> config.disableHostnameVerification()
+                        .trustManager(DefaultTestCerts::loadMutualAuthCaPem))
+                .buildBlocking()) {
+            testRequestResponse(client, secureRequestTarget, true);
+            resetMocks();
+            testRequestResponse(client, requestTarget, false);
+        }
+    }
+
+    @Test
+    public void multiAddressClientToNonSecureServerThenToSecureServer() throws Exception {
+        try (BlockingHttpClient client = HttpClients.forMultiAddressUrl()
+                .secure((hap, config) -> config.disableHostnameVerification()
+                        .trustManager(DefaultTestCerts::loadMutualAuthCaPem))
+                .buildBlocking()) {
+            testRequestResponse(client, requestTarget, false);
+            resetMocks();
             testRequestResponse(client, secureRequestTarget, true);
         }
     }
