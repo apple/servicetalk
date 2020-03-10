@@ -31,6 +31,7 @@ import io.servicetalk.transport.netty.internal.FlushStrategy;
 import io.servicetalk.transport.netty.internal.FlushStrategyHolder;
 import io.servicetalk.transport.netty.internal.NettyChannelListenableAsyncCloseable;
 import io.servicetalk.transport.netty.internal.NettyConnectionContext;
+import io.servicetalk.transport.netty.internal.StacklessClosedChannelException;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
@@ -49,7 +50,6 @@ import org.slf4j.LoggerFactory;
 
 import java.net.SocketAddress;
 import java.net.SocketOption;
-import java.nio.channels.ClosedChannelException;
 import java.util.concurrent.Delayed;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ThreadLocalRandom;
@@ -63,7 +63,6 @@ import static io.netty.util.ReferenceCountUtil.release;
 import static io.servicetalk.concurrent.api.Processors.newCompletableProcessor;
 import static io.servicetalk.concurrent.api.Processors.newSingleProcessor;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
-import static io.servicetalk.concurrent.internal.ThrowableUtils.unknownStackTrace;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_2_0;
 import static io.servicetalk.http.netty.H2ToStH1Utils.DEFAULT_GRACEFUL_SHUTDOWN_TIMEOUT_MILLIS;
 import static io.servicetalk.transport.netty.internal.NettyIoExecutors.fromNettyEventLoop;
@@ -73,11 +72,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 class H2ParentConnectionContext extends NettyChannelListenableAsyncCloseable implements NettyConnectionContext,
                                                                                         HttpConnectionContext {
-    private static final ClosedChannelException CLOSED_CHANNEL_INACTIVE = unknownStackTrace(
-            new ClosedChannelException(), H2ClientParentConnectionContext.class, "channelInactive(..)");
-    private static final ClosedChannelException CLOSED_HANDLER_REMOVED =
-            unknownStackTrace(new ClosedChannelException(), H2ClientParentConnectionContext.class,
-                    "handlerRemoved(..)");
+
     private static final AtomicIntegerFieldUpdater<H2ParentConnectionContext> activeChildChannelsUpdater =
             AtomicIntegerFieldUpdater.newUpdater(H2ParentConnectionContext.class, "activeChildChannels");
     private static final Logger LOGGER = LoggerFactory.getLogger(H2ParentConnectionContext.class);
@@ -264,6 +259,8 @@ class H2ParentConnectionContext extends NettyChannelListenableAsyncCloseable imp
             this.waitForSslHandshake = waitForSslHandshake;
         }
 
+        abstract boolean hasSubscriber();
+
         abstract void tryCompleteSubscriber();
 
         abstract void tryFailSubscriber(Throwable cause);
@@ -291,13 +288,19 @@ class H2ParentConnectionContext extends NettyChannelListenableAsyncCloseable imp
 
         @Override
         public final void channelInactive(ChannelHandlerContext ctx) {
-            tryFailSubscriber(CLOSED_CHANNEL_INACTIVE);
+            if (hasSubscriber()) {
+                tryFailSubscriber(StacklessClosedChannelException.newInstance(
+                        H2ParentConnectionContext.class, "channelInactive(...)"));
+            }
             doConnectionCleanup();
         }
 
         @Override
         public final void handlerRemoved(ChannelHandlerContext ctx) {
-            tryFailSubscriber(CLOSED_HANDLER_REMOVED);
+            if (hasSubscriber()) {
+                tryFailSubscriber(StacklessClosedChannelException.newInstance(
+                        H2ParentConnectionContext.class, "handlerRemoved(...)"));
+            }
             doConnectionCleanup();
         }
 

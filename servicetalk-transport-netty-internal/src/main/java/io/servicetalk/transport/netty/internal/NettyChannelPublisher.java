@@ -24,7 +24,6 @@ import io.netty.channel.EventLoop;
 import io.netty.util.ReferenceCountUtil;
 import io.netty.util.ReferenceCounted;
 
-import java.nio.channels.ClosedChannelException;
 import java.util.ArrayDeque;
 import java.util.Queue;
 import java.util.function.Predicate;
@@ -34,12 +33,9 @@ import static io.servicetalk.concurrent.internal.EmptySubscription.EMPTY_SUBSCRI
 import static io.servicetalk.concurrent.internal.FlowControlUtils.addWithOverflowProtection;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.isRequestNValid;
 import static io.servicetalk.concurrent.internal.SubscriberUtils.newExceptionForInvalidRequestN;
-import static io.servicetalk.concurrent.internal.ThrowableUtils.unknownStackTrace;
 import static java.util.Objects.requireNonNull;
 
 final class NettyChannelPublisher<T> extends SubscribablePublisher<T> {
-    private static final ClosedChannelException CLOSED_CHANNEL_EXCEPTION =
-            unknownStackTrace(new ClosedChannelException(), NettyChannelPublisher.class, "channelInboundClosed");
 
     // All state is only touched from eventloop.
     private long requestCount;
@@ -120,8 +116,10 @@ final class NettyChannelPublisher<T> extends SubscribablePublisher<T> {
 
     void channelInboundClosed() {
         assertInEventloop();
-        fatalError = CLOSED_CHANNEL_EXCEPTION;
-        exceptionCaught(CLOSED_CHANNEL_EXCEPTION);
+        Throwable error = StacklessClosedChannelException.newInstance(
+                NettyChannelPublisher.class, "channelInboundClosed");
+        fatalError = error;
+        exceptionCaught(error);
     }
 
     // All private methods MUST be invoked from the eventloop.
