@@ -30,7 +30,7 @@ import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-public class FromIntRangePublisherTest {
+public class RangeIntPublisherTest {
     final TestPublisherSubscriber<Integer> subscriber = new TestPublisherSubscriber<>();
 
     @Test
@@ -174,6 +174,29 @@ public class FromIntRangePublisherTest {
         })).subscribe(subscriber);
         subscriber.request(5);
         assertThat(subscriber.takeItems(), contains(0));
+        assertFalse(subscriber.isTerminated());
+    }
+
+    @Test
+    public void requestNAfterCancelIsNoop() {
+        requestNAfterCancelIsNoop(false);
+    }
+
+    @Test
+    public void requestNAfterCancelIsNoopStride() {
+        requestNAfterCancelIsNoop(true);
+    }
+
+    private void requestNAfterCancelIsNoop(boolean stride) {
+        toSource((stride ? range(0, 5, 2) : range(0, 5)).whenOnNext(n -> {
+            if (n != null && n == 0) {
+                subscriber.cancel();
+            }
+        })).subscribe(subscriber);
+        subscriber.request(1);
+        assertThat(subscriber.takeItems(), contains(0));
+        subscriber.request(Long.MAX_VALUE);
+        assertThat(subscriber.takeItems(), is(empty()));
         assertFalse(subscriber.isTerminated());
     }
 }
