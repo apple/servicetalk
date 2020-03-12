@@ -118,6 +118,8 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
 
     private static final int MAX_HEX_CHARS_FOR_LONG = 16; // 0x7FFFFFFFFFFFFFFF == Long.MAX_INT
     private static final int CHUNK_DELIMETER_SIZE = 2; // CRLF
+    private static final int MAX_ALLOWED_CHARS_TO_SKIP = CHUNK_DELIMETER_SIZE * 2; // Max allowed prefacing CRLF to skip
+    private static final int MAX_ALLOWED_CHARS_TO_SKIP_PLUS_ONE = MAX_ALLOWED_CHARS_TO_SKIP + 1;
 
     private final int maxStartLineLength;
     private final int maxHeaderFieldLength;
@@ -219,7 +221,7 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
             }
             case READ_INITIAL: {
                 final int lfIndex = findCRLF(buffer, maxStartLineLength);
-                if (lfIndex < 0 && buffer.isReadable()) {
+                if (lfIndex < 0) {
                     handlePartialInitialLine(ctx, buffer);
                     return;
                 }
@@ -545,11 +547,12 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
             cumulationIndex = buffer.readerIndex();
         }
         final int readableBytes = buffer.writerIndex() - cumulationIndex;
-        final int len = min(5 - skippedControls, readableBytes); // Look for 5 chars to skip no more than two CRLF pairs
+        // Look at one more character than allowed to expect a valid VCHAR:
+        final int len = min(MAX_ALLOWED_CHARS_TO_SKIP_PLUS_ONE - skippedControls, readableBytes);
         final int i = buffer.forEachByte(cumulationIndex, len, SKIP_PREFACING_CRLF);
         if (i < 0) {
             skippedControls += len;
-            if (skippedControls > 4) {
+            if (skippedControls > MAX_ALLOWED_CHARS_TO_SKIP) {
                 throw new DecoderException("Too many prefacing CRLF characters");
             }
             cumulationIndex += len;
