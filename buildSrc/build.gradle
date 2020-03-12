@@ -31,10 +31,6 @@ apply plugin: "java-gradle-plugin"
 apply from: "../servicetalk-grpc-gradle-plugin/plugin-config.gradle"
 apply from: "../servicetalk-gradle-plugin-internal/plugin-config.gradle"
 
-dependencies {
-  compile "com.google.guava:guava:28.1-jre" // needed because of conflicts between Spotbugs and Protobuf
-}
-
 sourceSets {
   main {
     groovy {
