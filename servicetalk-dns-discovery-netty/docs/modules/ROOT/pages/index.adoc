@@ -8,20 +8,21 @@ endif::[]
 
 = Service Discovery
 
-Another core abstraction in ServiceTalk is its
+A core abstraction in ServiceTalk is its
 link:{source-root}/servicetalk-client-api/src/main/java/io/servicetalk/client/api/ServiceDiscoverer.java[ServiceDiscoverer]
-underpinning the various protocol _Clients_ (eg. HTTP/1.1, HTTP/2, gRPC, etc.).
+used by the protocol _Clients_ (eg. HTTP/1.1, HTTP/2, gRPC, etc.).
 
 For scenarios where a client communicates with multiple homogeneous footnote:[belonging to the same service, providing
-same capabilities] server instances, managing addresses of multiple server instances for each _Client_ is complex.
-_ServiceDiscoverer_ makes this easy for users by transparently communicating with mechanisms that know about the actual
-location of remote servers and may provide updates when the network topology is changing.
-
-_ServiceDiscoverer_ emits
+same capabilities] server instances, managing addresses of multiple server instances for each client is complex.
+A ServiceTalk client leverages _ServiceDiscoverer_ to find server instances that it can use for processing requests. A
+_ServiceDiscoverer_ finds server instances associated with a logical name. ServiceTalk assumes that the client operates
+in a dynamic ephemeral environment and the server instances associated with a logical name may change over time. So, a
+_ServiceDiscoverer_ returns a _Publisher_ of
 link:{source-root}/servicetalk-client-api/src/main/java/io/servicetalk/client/api/ServiceDiscovererEvent.java[ServiceDiscovererEvent](s)
-that provide information about the resolved address of a remote host, its availability, and any additional information
-that is supported by _ServiceDiscoverer_ implementation. This information is used to create `Connection`(s) by the
-xref:{page-version}@servicetalk-loadbalancer::index.adoc[LoadBalancer].
+that provide information about server instances, their current relationship to the logical name (i.e. whether it is
+added or removed from the logical name), and any additional information that is supported by a _ServiceDiscoverer_
+implementation. Using this information the xref:{page-version}@servicetalk-loadbalancer::index.adoc[LoadBalancer] of a
+_Client_ can maintain an active collections to server instances that it can use.
 
 [ditaa]
 ----
