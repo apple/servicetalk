@@ -66,7 +66,7 @@ content:
     - url: https://github.com/apple/servicetalk.git
       branches: master
       tags: []
-      start_path: servicetalk-dns-discovery-netty/docs
+      start_path: servicetalk-client-api/docs
 asciidoc:
   attributes:
     experimental: ''

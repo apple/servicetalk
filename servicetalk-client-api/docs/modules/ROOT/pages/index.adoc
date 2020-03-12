@@ -1,0 +1,3 @@
+= ServiceTalk Client API
+
+A module containing client-side API for ServiceTalk.

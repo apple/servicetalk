@@ -52,7 +52,7 @@ content:
       start_path: servicetalk-loadbalancer/docs
     - url: ../../
       branches: HEAD
-      start_path: servicetalk-dns-discovery-netty/docs
+      start_path: servicetalk-client-api/docs
 asciidoc:
   attributes:
     experimental: ''

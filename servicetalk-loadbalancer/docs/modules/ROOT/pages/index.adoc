@@ -69,7 +69,7 @@ discuss the various implementations offered in ServiceTalk by highlighting their
 link:{source-root}/servicetalk-loadbalancer/src/main/java/io/servicetalk/loadbalancer/RoundRobinLoadBalancer.java[RoundRobinLoadBalancer]
 is a common and simple _LoadBalancer_ implementation that is currently the default when creating _Clients_. Its
 main goal is to spread the load evenly between all known resolved addresses as provided by the
-xref:{page-version}@servicetalk-dns-discovery-netty::index.adoc[Service Discovery] mechanism.
+xref:{page-version}@servicetalk-client-api::service-discovery.adoc[Service Discovery] mechanism.
 
 The implementation in ServiceTalk consists of a set of available addresses (typically the servers to connect to) and for
 each address it has a set of open `Connections`. Whenever a new request is made the _LoadBalancer_ will pick the next

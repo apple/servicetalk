@@ -147,5 +147,5 @@ similar to the xref:{page-version}@servicetalk-http-api::index.adoc#client[HTTP 
 
 === Service Discovery
 
-gRPC client uses xref:{page-version}@servicetalk-dns-discovery-netty::index.adoc[Service Discovery] to discover
+gRPC client uses xref:{page-version}@servicetalk-client-api::service-discovery.adoc[Service Discovery] to discover
 instances of the target service similar to the xref:{page-version}@servicetalk-http-api::index.adoc#client[HTTP Client].

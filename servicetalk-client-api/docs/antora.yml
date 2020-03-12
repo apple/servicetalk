@@ -14,8 +14,8 @@
 # limitations under the License.
 #
 
-name: servicetalk-dns-discovery-netty
-title: Service Discovery
+name: servicetalk-client-api
+title: Client API
 version: SNAPSHOT
 nav:
   - modules/ROOT/nav.adoc

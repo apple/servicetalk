@@ -125,7 +125,7 @@ A `Client` is generally responsible for managing multiple `Connections`. There a
 === SingleAddress Client
 This `Client` will connect to a single unresolved address, that is provided while creating the client. The unresolved
 address is resolved via an asynchronous DNS resolver by default (see
-xref:{page-version}@servicetalk-dns-discovery-netty::index.adoc#domain-name-system-dns[Service Discovery]).
+xref:{page-version}@servicetalk-client-api::service-discovery.adoc#domain-name-system-dns[Service Discovery]).
 This `Client` is for use cases where you want to issue requests to a single service (that may have multiple instances).
 
 === MultiAddress Client
