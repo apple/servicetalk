@@ -62,10 +62,13 @@ final class HttpRequestDecoder extends HttpObjectDecoder<HttpRequestMetaData> {
 
     @Override
     protected void handlePartialInitialLine(final ChannelHandlerContext ctx, final ByteBuf buffer) {
-        for (int i = 0; i < buffer.readableBytes(); ++i) {
-            final byte b = buffer.getByte(buffer.readerIndex() + i);
-            if (isWS(b) && i > 0) {
-                // If we find a space after at least one capital letter, accept this as valid.
+        int readerIndex = buffer.readerIndex();
+        byte b = buffer.getByte(readerIndex);
+        ensureUpperCase(b);
+        final int writerIndex = buffer.writerIndex();
+        while (++readerIndex < writerIndex) {
+            b = buffer.getByte(readerIndex);
+            if (isWS(b)) {
                 return;
             }
             ensureUpperCase(b);

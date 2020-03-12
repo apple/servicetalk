@@ -556,10 +556,11 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
                 throw new DecoderException("Too many prefacing CRLF characters");
             }
             cumulationIndex += len;
+            buffer.readerIndex(cumulationIndex);
             return false;
         } else {
-            buffer.readerIndex(i);
             cumulationIndex = i;
+            buffer.readerIndex(i);
             return true;
         }
     }
