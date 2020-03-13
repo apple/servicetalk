@@ -25,7 +25,6 @@ import io.servicetalk.transport.netty.internal.BufferHandler;
 import io.servicetalk.transport.netty.internal.ChannelInitializer;
 import io.servicetalk.transport.netty.internal.DefaultNettyConnection;
 import io.servicetalk.transport.netty.internal.NettyConnection;
-import io.servicetalk.transport.netty.internal.NettyConnection.TerminalPredicate;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -87,9 +86,9 @@ public class TcpServer {
         return TcpServerBinder.bind(localAddress(port), config, false,
                 executionContext, connectionAcceptor,
                 channel -> DefaultNettyConnection.<Buffer, Buffer>initChannel(channel,
-                        executionContext.bufferAllocator(), executionContext.executor(),
-                        new TerminalPredicate<>(buffer -> false), UNSUPPORTED_PROTOCOL_CLOSE_HANDLER,
-                        config.flushStrategy(), config.idleTimeoutMs(), new TcpServerChannelInitializer(config)
+                        executionContext.bufferAllocator(), executionContext.executor(), buffer -> false,
+                        UNSUPPORTED_PROTOCOL_CLOSE_HANDLER, config.flushStrategy(), config.idleTimeoutMs(),
+                        new TcpServerChannelInitializer(config)
                                 .andThen(getChannelInitializer(service, executionContext)), executionStrategy, TCP),
                 serverConnection -> service.apply(serverConnection)
                         .beforeOnError(throwable -> LOGGER.error("Error handling a connection.", throwable))

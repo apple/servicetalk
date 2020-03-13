@@ -15,30 +15,28 @@
  */
 package io.servicetalk.transport.netty.internal;
 
-import io.servicetalk.transport.netty.internal.NettyConnection.RequestNSupplier;
-
 import io.netty.channel.FileRegion;
 
 import static io.servicetalk.concurrent.internal.FlowControlUtils.addWithOverflowProtection;
-import static io.servicetalk.transport.netty.internal.OverlappingCapacityAwareSupplier.SizeEstimator.defaultEstimator;
+import static io.servicetalk.transport.netty.internal.OverlappingCapacityAwareEstimator.SizeEstimator.defaultEstimator;
 import static java.util.Objects.requireNonNull;
 
 /**
- * An implementation of {@link RequestNSupplier} that stores the last seen write buffer capacity as
- * provided by {@link #requestNFor(long)} and only fills any increase in capacity in a subsequent call to
- * {@link #requestNFor(long)}.
+ * An implementation of {@link WriteDemandEstimator} that stores the last seen write buffer capacity as
+ * provided by {@link #estimateRequestN(long)} and only fills any increase in capacity in a subsequent call to
+ * {@link #estimateRequestN(long)}.
  */
-abstract class OverlappingCapacityAwareSupplier implements RequestNSupplier {
+abstract class OverlappingCapacityAwareEstimator implements WriteDemandEstimator {
 
     private final SizeEstimator sizeEstimator;
     private long lastSeenCapacity;
     private long outstandingRequested;
 
-    protected OverlappingCapacityAwareSupplier() {
+    protected OverlappingCapacityAwareEstimator() {
         this(defaultEstimator());
     }
 
-    protected OverlappingCapacityAwareSupplier(SizeEstimator sizeEstimator) {
+    protected OverlappingCapacityAwareEstimator(SizeEstimator sizeEstimator) {
         this.sizeEstimator = requireNonNull(sizeEstimator);
     }
 
@@ -56,7 +54,7 @@ abstract class OverlappingCapacityAwareSupplier implements RequestNSupplier {
     }
 
     @Override
-    public final long requestNFor(long writeBufferCapacityInBytes) {
+    public final long estimateRequestN(long writeBufferCapacityInBytes) {
         assert writeBufferCapacityInBytes >= 0 : "Write buffer capacity must be non-negative.";
         long capacityToFill = outstandingRequested == 0 ? writeBufferCapacityInBytes : writeBufferCapacityInBytes -
                 lastSeenCapacity;

@@ -25,7 +25,6 @@ import io.servicetalk.concurrent.api.TestPublisherSubscriber;
 import io.servicetalk.concurrent.internal.DuplicateSubscribeException;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.transport.api.ConnectionContext.Protocol;
-import io.servicetalk.transport.netty.internal.NettyConnection.TerminalPredicate;
 
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
@@ -94,17 +93,16 @@ public class NettyChannelPublisherTest {
 
     public void setUp(Predicate<Integer> terminalPredicate) throws Exception {
         channel = new EmbeddedChannel();
-        NettyConnection<Integer, Object> connection = DefaultNettyConnection.initChannel(channel, DEFAULT_ALLOCATOR,
-            immediate(), new TerminalPredicate<>(terminalPredicate), UNSUPPORTED_PROTOCOL_CLOSE_HANDLER,
-            defaultFlushStrategy(), null, channel -> {
-                    channel.pipeline().addLast(new ChannelOutboundHandlerAdapter() {
-                        @Override
-                        public void read(ChannelHandlerContext ctx) throws Exception {
-                            readRequested = true;
-                            super.read(ctx);
-                        }
-                    });
-                }, OFFLOAD_ALL_STRATEGY, mock(Protocol.class)).toFuture().get();
+        NettyConnection<Integer, Object> connection =
+                DefaultNettyConnection.<Integer, Object>initChannel(channel, DEFAULT_ALLOCATOR,
+            immediate(), terminalPredicate, UNSUPPORTED_PROTOCOL_CLOSE_HANDLER, defaultFlushStrategy(), null, channel ->
+                                channel.pipeline().addLast(new ChannelOutboundHandlerAdapter() {
+                @Override
+                public void read(ChannelHandlerContext ctx) throws Exception {
+                    readRequested = true;
+                    super.read(ctx);
+                }
+            }), OFFLOAD_ALL_STRATEGY, mock(Protocol.class)).toFuture().get();
         publisher = connection.read();
         channel.config().setAutoRead(false);
     }

@@ -50,13 +50,13 @@ final class NettyChannelPublisher<T> extends SubscribablePublisher<T> {
     private final Channel channel;
     private final CloseHandler closeHandler;
     private final EventLoop eventLoop;
-    private final Predicate<T> isLastElement;
+    private final Predicate<T> terminalSignalPredicate;
 
-    NettyChannelPublisher(Channel channel, Predicate<T> isLastElement, final CloseHandler closeHandler) {
+    NettyChannelPublisher(Channel channel, Predicate<T> terminalSignalPredicate, CloseHandler closeHandler) {
         this.eventLoop = channel.eventLoop();
-        this.isLastElement = requireNonNull(isLastElement);
         this.channel = channel;
         this.closeHandler = closeHandler;
+        this.terminalSignalPredicate = requireNonNull(terminalSignalPredicate);
     }
 
     @Override
@@ -214,7 +214,7 @@ final class NettyChannelPublisher<T> extends SubscribablePublisher<T> {
          * Operators like first that pick a single item does exactly that.
          * If we do not resetSubscription() before onNext such a cancel will be illegal and close the connection.
          */
-        boolean isLast = isLastElement.test(t);
+        final boolean isLast = terminalSignalPredicate.test(t);
         if (isLast) {
             resetSubscription();
         }
@@ -229,8 +229,9 @@ final class NettyChannelPublisher<T> extends SubscribablePublisher<T> {
         }
         if (isLast) {
             target.associatedSub.onComplete();
+            return true;
         }
-        return isLast;
+        return false;
     }
 
     private void sendErrorToTarget(SubscriptionImpl target, Throwable throwable) {

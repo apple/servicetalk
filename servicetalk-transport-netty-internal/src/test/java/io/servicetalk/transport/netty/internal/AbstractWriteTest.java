@@ -40,7 +40,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 public abstract class AbstractWriteTest {
 
     protected EmbeddedChannel channel;
-    protected NettyConnection.RequestNSupplier requestNSupplier;
+    protected WriteDemandEstimator demandEstimator;
     protected CompletableSource.Subscriber completableSubscriber;
     protected FailingWriteHandler failingWriteHandler;
 
@@ -49,7 +49,7 @@ public abstract class AbstractWriteTest {
         completableSubscriber = mock(CompletableSource.Subscriber.class);
         failingWriteHandler = new FailingWriteHandler();
         channel = new EmbeddedChannel(failingWriteHandler);
-        requestNSupplier = mock(NettyConnection.RequestNSupplier.class);
+        demandEstimator = mock(WriteDemandEstimator.class);
     }
 
     @After

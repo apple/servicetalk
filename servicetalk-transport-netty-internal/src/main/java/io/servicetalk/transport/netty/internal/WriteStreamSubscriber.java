@@ -24,7 +24,6 @@ import io.servicetalk.concurrent.internal.ConcurrentSubscription;
 import io.servicetalk.concurrent.internal.EmptySubscription;
 import io.servicetalk.concurrent.internal.FlowControlUtils;
 import io.servicetalk.transport.netty.internal.DefaultNettyConnection.ChannelOutboundListener;
-import io.servicetalk.transport.netty.internal.NettyConnection.RequestNSupplier;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelPromise;
@@ -63,7 +62,7 @@ import static java.util.Objects.requireNonNull;
  * If previous request for more items has not been fulfilled then the capacity is the difference between the last seen
  * value of {@link Channel#bytesBeforeUnwritable()} and now.<p>
  *
- * If the capacity determined above is positive then invoke {@link RequestNSupplier} to determine number of items
+ * If the capacity determined above is positive then invoke {@link WriteDemandEstimator} to determine number of items
  * required to fill that capacity.
  */
 final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>, ChannelOutboundListener, Cancellable {
@@ -84,7 +83,7 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
      * original EventLoop or else we may get re-ordering of events.
      */
     private final EventExecutor eventLoop;
-    private final RequestNSupplier requestNSupplier;
+    private final WriteDemandEstimator demandEstimator;
     private final AllWritesPromise promise;
     @SuppressWarnings("unused")
     @Nullable
@@ -100,12 +99,12 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
     private boolean enqueueWrites;
     private final CloseHandler closeHandler;
 
-    WriteStreamSubscriber(Channel channel, RequestNSupplier requestNSupplier, Subscriber subscriber,
+    WriteStreamSubscriber(Channel channel, WriteDemandEstimator demandEstimator, Subscriber subscriber,
                           CloseHandler closeHandler) {
         this.eventLoop = requireNonNull(channel.eventLoop());
         this.subscriber = subscriber;
         this.channel = channel;
-        this.requestNSupplier = requestNSupplier;
+        this.demandEstimator = demandEstimator;
         promise = new AllWritesPromise(channel);
         this.closeHandler = closeHandler;
     }
@@ -160,7 +159,7 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
             long capacityBefore = channel.bytesBeforeUnwritable();
             promise.writeNext(msg);
             long capacityAfter = channel.bytesBeforeUnwritable();
-            requestNSupplier.onItemWrite(msg, capacityBefore, capacityAfter);
+            demandEstimator.onItemWrite(msg, capacityBefore, capacityAfter);
         }
     }
 
@@ -243,7 +242,7 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
             return;
         }
 
-        long n = requestNSupplier.requestNFor(channel.bytesBeforeUnwritable());
+        long n = demandEstimator.estimateRequestN(channel.bytesBeforeUnwritable());
         if (n > 0) {
             requestedUpdater.accumulateAndGet(this, n, FlowControlUtils::addWithOverflowProtection);
             subscription.request(n);

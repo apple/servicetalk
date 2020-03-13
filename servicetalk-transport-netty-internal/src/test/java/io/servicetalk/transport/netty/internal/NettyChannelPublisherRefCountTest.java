@@ -19,7 +19,6 @@ import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.TestPublisherSubscriber;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.transport.api.ConnectionContext.Protocol;
-import io.servicetalk.transport.netty.internal.NettyConnection.TerminalPredicate;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.embedded.EmbeddedChannel;
@@ -54,9 +53,9 @@ public class NettyChannelPublisherRefCountTest {
     @Before
     public void setUp() throws Exception {
         channel = new EmbeddedChannel();
-        publisher = DefaultNettyConnection.initChannel(channel, DEFAULT_ALLOCATOR, immediate(),
-                new TerminalPredicate<>(), UNSUPPORTED_PROTOCOL_CLOSE_HANDLER, defaultFlushStrategy(),
-                null, channel2 -> { }, OFFLOAD_ALL_STRATEGY, mock(Protocol.class)).toFuture().get().read();
+        publisher = DefaultNettyConnection.initChannel(channel, DEFAULT_ALLOCATOR, immediate(), x -> false,
+                UNSUPPORTED_PROTOCOL_CLOSE_HANDLER, defaultFlushStrategy(), null, channel2 -> { },
+                OFFLOAD_ALL_STRATEGY, mock(Protocol.class)).toFuture().get().read();
     }
 
     @After

@@ -57,7 +57,6 @@ import io.servicetalk.transport.netty.internal.CopyByteBufHandlerChannelInitiali
 import io.servicetalk.transport.netty.internal.DefaultNettyConnection;
 import io.servicetalk.transport.netty.internal.FlushStrategy;
 import io.servicetalk.transport.netty.internal.NettyConnection;
-import io.servicetalk.transport.netty.internal.NettyConnection.TerminalPredicate;
 import io.servicetalk.transport.netty.internal.NettyConnectionContext;
 import io.servicetalk.transport.netty.internal.SplittingFlushStrategy;
 
@@ -154,12 +153,10 @@ final class NettyHttpServer {
         final H1ProtocolConfig h1Config = config.h1Config();
         assert h1Config != null;
         return showPipeline(DefaultNettyConnection.initChannel(channel,
-                httpExecutionContext.bufferAllocator(), httpExecutionContext.executor(),
-                new TerminalPredicate<>(LAST_CHUNK_PREDICATE), closeHandler, config.tcpConfig().flushStrategy(),
-                config.tcpConfig().idleTimeoutMs(),
+                httpExecutionContext.bufferAllocator(), httpExecutionContext.executor(), LAST_CHUNK_PREDICATE,
+                closeHandler, config.tcpConfig().flushStrategy(), config.tcpConfig().idleTimeoutMs(),
                 initializer.andThen(getChannelInitializer(getByteBufAllocator(httpExecutionContext.bufferAllocator()),
-                        h1Config, closeHandler)),
-                httpExecutionContext.executionStrategy(), HTTP_1_1)
+                        h1Config, closeHandler)), httpExecutionContext.executionStrategy(), HTTP_1_1)
                 .map(conn -> new NettyHttpServerConnection(conn, service, httpExecutionContext.executionStrategy(),
                         h1Config.headersFactory(), drainRequestPayloadBody)), HTTP_1_1, channel);
     }

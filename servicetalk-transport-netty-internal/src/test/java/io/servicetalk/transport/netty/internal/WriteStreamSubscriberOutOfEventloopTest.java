@@ -42,8 +42,8 @@ public class WriteStreamSubscriberOutOfEventloopTest extends AbstractOutOfEventl
     @Override
     public void setup0() {
         CompletableSource.Subscriber completableSubscriber = mock(CompletableSource.Subscriber.class);
-        NettyConnection.RequestNSupplier requestNSupplier = mock(NettyConnection.RequestNSupplier.class);
-        subscriber = new WriteStreamSubscriber(channel, requestNSupplier, completableSubscriber,
+        WriteDemandEstimator demandEstimator = mock(WriteDemandEstimator.class);
+        subscriber = new WriteStreamSubscriber(channel, demandEstimator, completableSubscriber,
                 UNSUPPORTED_PROTOCOL_CLOSE_HANDLER);
     }
 
@@ -100,8 +100,8 @@ public class WriteStreamSubscriberOutOfEventloopTest extends AbstractOutOfEventl
                 }
             }
         };
-        NettyConnection.RequestNSupplier requestNSupplier = mock(NettyConnection.RequestNSupplier.class);
-        this.subscriber = new WriteStreamSubscriber(channel, requestNSupplier, subscriber,
+        WriteDemandEstimator demandEstimator = mock(WriteDemandEstimator.class);
+        this.subscriber = new WriteStreamSubscriber(channel, demandEstimator, subscriber,
                 UNSUPPORTED_PROTOCOL_CLOSE_HANDLER);
 
         this.subscriber.onNext(1);
