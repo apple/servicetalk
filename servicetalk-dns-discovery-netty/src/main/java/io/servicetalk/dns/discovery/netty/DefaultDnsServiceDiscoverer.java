@@ -73,7 +73,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.function.Function.identity;
 
 /**
- * Default load balancer which will attempt to resolve A, AAAA, and CNAME type queries.
+ * Default {@link ServiceDiscoverer} which will attempt to resolve A, AAAA, and CNAME type queries.
  */
 final class DefaultDnsServiceDiscoverer
         implements ServiceDiscoverer<String, InetAddress, ServiceDiscovererEvent<InetAddress>> {

@@ -63,6 +63,10 @@ content:
       branches: master
       tags: [0.20.0, 0.21.0, 0.22.0, 0.23.0, 0.24.0]
       start_path: servicetalk-loadbalancer/docs
+    - url: https://github.com/apple/servicetalk.git
+      branches: master
+      tags: []
+      start_path: servicetalk-client-api/docs
 asciidoc:
   attributes:
     experimental: ''

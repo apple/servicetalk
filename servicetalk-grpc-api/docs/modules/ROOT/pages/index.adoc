@@ -143,9 +143,9 @@ for a particular service definition.
 === Connection Filters
 
 gRPC clients support adding xref:{page-version}@servicetalk-http-api::index.adoc#connection-filters[connection filters]
-similar to the xref:{page-version}@servicetalk-http-api::index.adoc[HTTP module].
+similar to the xref:{page-version}@servicetalk-http-api::index.adoc#client[HTTP Client].
 
 === Service Discovery
 
-gRPC clients uses xref:{page-version}@servicetalk-http-api::index.adoc#service-discovery[Service discovery] to discover
-instances of the target service similar to the xref:{page-version}@servicetalk-http-api::index.adoc[HTTP module].
+gRPC client uses xref:{page-version}@servicetalk-client-api::service-discovery.adoc[Service Discovery] to discover
+instances of the target service similar to the xref:{page-version}@servicetalk-http-api::index.adoc#client[HTTP Client].
