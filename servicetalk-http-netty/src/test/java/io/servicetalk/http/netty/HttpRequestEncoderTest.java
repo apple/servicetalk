@@ -51,6 +51,8 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.channel.socket.ChannelInputShutdownReadComplete;
 import io.netty.channel.socket.SocketChannel;
+import io.netty.channel.socket.nio.NioSocketChannel;
+import org.hamcrest.Matchers;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -91,11 +93,14 @@ import static java.lang.String.valueOf;
 import static java.lang.Thread.NORM_PRIORITY;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.util.Collections.emptyList;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -458,6 +463,8 @@ public class HttpRequestEncoderTest {
             serverChannelLatch.await();
             Channel serverChannel = serverChannelRef.get();
             assertNotNull(serverChannel);
+            assumeThat("Windows doesn't emit ChannelInputShutdownReadComplete. Investigation Required.", serverChannel,
+                    is(Matchers.not(instanceOf(NioSocketChannel.class))));
             ((SocketChannel) serverChannel).config().setSoLinger(0);
             serverChannel.close(); // Close and send RST concurrently with client write
 

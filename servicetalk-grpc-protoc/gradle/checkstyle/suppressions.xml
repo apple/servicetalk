@@ -19,6 +19,6 @@
     "https://checkstyle.org/dtds/suppressions_1_2.dtd">
 
 <suppressions>
-  <suppress id="ConsolePrint" files="io/servicetalk/grpc/protoc/Main.java"/>
-  <suppress checks="UncommentedMain" files="io/servicetalk/grpc/protoc/Main.java"/>
+  <suppress id="ConsolePrint" files="io[\\/]servicetalk[\\/]grpc[\\/]protoc[\\/]Main.java"/>
+  <suppress checks="UncommentedMain" files="io[\\/]servicetalk[\\/]grpc[\\/]protoc[\\/]Main.java"/>
 </suppressions>

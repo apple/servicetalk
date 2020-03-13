@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 
-import static java.lang.System.lineSeparator;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.util.stream.Collectors.joining;
 import static org.junit.Assert.assertEquals;
@@ -51,7 +50,7 @@ public class DefaultTestCertsTest {
 
     private String readFully(final InputStream inputStream) throws IOException {
         try (BufferedReader buffer = new BufferedReader(new InputStreamReader(inputStream, US_ASCII))) {
-            return buffer.lines().collect(joining(lineSeparator()));
+            return buffer.lines().collect(joining("\n"));
         }
     }
 }

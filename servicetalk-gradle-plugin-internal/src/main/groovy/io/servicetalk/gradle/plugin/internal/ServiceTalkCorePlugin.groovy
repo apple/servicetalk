@@ -126,6 +126,11 @@ class ServiceTalkCorePlugin implements Plugin<Project> {
         idea.workspace.iws.withXml { XmlProvider provider ->
           appendNodes(provider, getClass().getResourceAsStream("idea/iws-components.xml"))
         }
+        // idea plugin doesn't account for buildSrc directory, so manually add it.
+        idea.module.iml.withXml { XmlProvider provider ->
+          Node contentNode = provider.asNode().component.find { it.@name == "NewModuleRootManager" }.content[0]
+          contentNode.appendNode("sourceFolder", [url: "file://\$MODULE_DIR\$/buildSrc/src/main/java"])
+        }
       }
     }
   }
@@ -179,7 +184,6 @@ class ServiceTalkCorePlugin implements Plugin<Project> {
             }
           }
         }
-
       }
     }
   }
