@@ -90,9 +90,9 @@ public final class TcpConnectorTest extends AbstractTcpServerTest {
         final CountDownLatch registeredLatch = new CountDownLatch(1);
         final CountDownLatch activeLatch = new CountDownLatch(1);
 
-        NettyConnection<Buffer, Buffer> connection = TcpConnector.connect(null,
-                serverContext.listenAddress(), new TcpClientConfig().asReadOnly(emptyList()), false, CLIENT_CTX)
-                .flatMap(channel -> DefaultNettyConnection.<Buffer, Buffer>initChannel(channel,
+        NettyConnection<Buffer, Buffer> connection = TcpConnector.<NettyConnection<Buffer, Buffer>>connect(null,
+                serverContext.listenAddress(), new TcpClientConfig().asReadOnly(emptyList()), false,
+                CLIENT_CTX, channel -> DefaultNettyConnection.initChannel(channel,
                         CLIENT_CTX.bufferAllocator(), CLIENT_CTX.executor(),
                         new NettyConnection.TerminalPredicate<>(o -> true), UNSUPPORTED_PROTOCOL_CLOSE_HANDLER,
                         defaultFlushStrategy(), null, channel2 -> {
@@ -109,8 +109,7 @@ public final class TcpConnectorTest extends AbstractTcpServerTest {
                                     ctx.fireChannelActive();
                                 }
                             });
-                        }, CLIENT_CTX.executionStrategy(), mock(Protocol.class))
-                ).toFuture().get();
+                        }, CLIENT_CTX.executionStrategy(), mock(Protocol.class))).toFuture().get();
         connection.closeAsync().toFuture().get();
 
         registeredLatch.await();

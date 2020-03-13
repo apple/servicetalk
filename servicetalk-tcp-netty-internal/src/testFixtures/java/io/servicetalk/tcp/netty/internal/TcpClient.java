@@ -16,6 +16,7 @@
 package io.servicetalk.tcp.netty.internal;
 
 import io.servicetalk.buffer.api.Buffer;
+import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.transport.api.ExecutionContext;
 import io.servicetalk.transport.api.FileDescriptorSocketAddress;
 import io.servicetalk.transport.netty.internal.BufferHandler;
@@ -82,13 +83,24 @@ public final class TcpClient {
      */
     public NettyConnection<Buffer, Buffer> connectBlocking(ExecutionContext executionContext, SocketAddress address)
             throws ExecutionException, InterruptedException {
-        return TcpConnector.connect(null, address, config, false, executionContext)
-                .flatMap(channel -> DefaultNettyConnection.<Buffer, Buffer>initChannel(channel,
+        return connect(executionContext, address).toFuture().get();
+    }
+
+    /**
+     * Connect and await for the connection.
+     *
+     * @param executionContext {@link ExecutionContext} to use for the connections.
+     * @param address to connect.
+     * @return New {@link NettyConnection}.
+     */
+    public Single<NettyConnection<Buffer, Buffer>> connect(ExecutionContext executionContext, SocketAddress address) {
+        return TcpConnector.connect(null, address, config, false, executionContext,
+                channel -> DefaultNettyConnection.initChannel(channel,
                         executionContext.bufferAllocator(), executionContext.executor(),
                         new TerminalPredicate<>(buffer -> false), UNSUPPORTED_PROTOCOL_CLOSE_HANDLER,
                         config.flushStrategy(), config.idleTimeoutMs(), new TcpClientChannelInitializer(config)
                                 .andThen(channel2 -> channel2.pipeline().addLast(BufferHandler.INSTANCE)),
-                        executionContext.executionStrategy(), TCP)).toFuture().get();
+                        executionContext.executionStrategy(), TCP));
     }
 
     /**
