@@ -19,38 +19,35 @@ import io.servicetalk.concurrent.Cancellable;
 import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
-import io.servicetalk.transport.netty.internal.DefaultNettyPipelinedConnection;
 import io.servicetalk.transport.netty.internal.FlushStrategy;
 import io.servicetalk.transport.netty.internal.NettyConnection;
+import io.servicetalk.transport.netty.internal.WriteDemandEstimators;
 
 import javax.annotation.Nullable;
 
 final class PipelinedStreamingHttpConnection
-        extends AbstractStreamingHttpConnection<DefaultNettyPipelinedConnection<Object, Object>> {
-
-    private final NettyConnection<Object, Object> nettyConnection;
-
+        extends AbstractStreamingHttpConnection<NettyPipelinedConnection<Object, Object>> {
     PipelinedStreamingHttpConnection(final NettyConnection<Object, Object> connection,
                                      final H1ProtocolConfig config,
                                      final HttpExecutionContext executionContext,
                                      final StreamingHttpRequestResponseFactory reqRespFactory) {
-        super(new DefaultNettyPipelinedConnection<>(connection, config.maxPipelinedRequests()),
+        super(new NettyPipelinedConnection<>(connection),
                 config.maxPipelinedRequests(), executionContext, reqRespFactory, config.headersFactory());
-        this.nettyConnection = connection;
     }
 
     @Override
     protected Publisher<Object> writeAndRead(Publisher<Object> requestStream,
                                              @Nullable final FlushStrategy flushStrategy) {
         if (flushStrategy == null) {
-            return connection.request(requestStream);
+            return connection.write(requestStream, connection::defaultFlushStrategy,
+                    WriteDemandEstimators::newDefaultEstimator);
         } else {
-            // Using the Writer abstraction here defers updating the flush strategy until just before this request is
-            // written.
-            return connection.request(() -> {
+            // TODO(scott): if we can remove the flush state on the connection we can simplify the control flow here.
+            return Publisher.defer(() -> {
                 final Cancellable resetFlushStrategy = connection.updateFlushStrategy(
                         (prev, isOriginal) -> isOriginal ? flushStrategy : prev);
-                return nettyConnection.write(requestStream).afterFinally(resetFlushStrategy::cancel);
+                return connection.write(requestStream, connection::defaultFlushStrategy,
+                        WriteDemandEstimators::newDefaultEstimator).afterFinally(resetFlushStrategy::cancel);
             });
         }
     }

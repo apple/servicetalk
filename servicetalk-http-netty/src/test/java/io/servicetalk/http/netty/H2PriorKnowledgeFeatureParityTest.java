@@ -125,6 +125,7 @@ import static io.servicetalk.http.netty.HttpProtocolConfigs.h1Default;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h2Default;
 import static io.servicetalk.http.netty.HttpTestExecutionStrategy.CACHED;
 import static io.servicetalk.http.netty.HttpTestExecutionStrategy.NO_OFFLOAD;
+import static io.servicetalk.transport.api.ServiceTalkSocketOptions.CONNECT_TIMEOUT;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.BuilderUtils.serverChannel;
 import static io.servicetalk.transport.netty.internal.NettyIoExecutors.createEventLoopGroup;
@@ -623,8 +624,6 @@ public class H2PriorKnowledgeFeatureParityTest {
 
     @Test
     public void serverGracefulClose() throws Exception {
-        assumeFullDuplex();
-
         CountDownLatch serverReceivedRequestLatch = new CountDownLatch(1);
         InetSocketAddress serverAddress = bindHttpEchoServer(service -> new StreamingHttpServiceFilter(service) {
             @Override
@@ -655,6 +654,7 @@ public class H2PriorKnowledgeFeatureParityTest {
         h1ServerContext.closeAsyncGracefully().subscribe();
 
         try (BlockingHttpClient client2 = forSingleAddress(HostAndPort.of(serverAddress))
+                .socketOption(CONNECT_TIMEOUT, 1) // windows default connect timeout is seconds, we want to fail fast.
                 .protocols(h2PriorKnowledge ? h2Default() : h1Default())
                 .executionStrategy(clientExecutionStrategy).buildBlocking()) {
             try {
@@ -677,8 +677,6 @@ public class H2PriorKnowledgeFeatureParityTest {
 
     @Test
     public void clientGracefulClose() throws Exception {
-        assumeFullDuplex();
-
         InetSocketAddress serverAddress = bindHttpEchoServer();
         StreamingHttpClient client = forSingleAddress(HostAndPort.of(serverAddress))
                 .protocols(h2PriorKnowledge ? h2Default() : h1Default())
@@ -692,7 +690,7 @@ public class H2PriorKnowledgeFeatureParityTest {
         // closeAsyncGracefully and verify that we wait until the request has completed before the underlying
         // transport is closed.
         StreamingHttpRequest request = client.post("/").payloadBody(requestBody);
-        client.request(request).toFuture().get();
+        StreamingHttpResponse response = client.request(request).toFuture().get();
 
         client.closeAsyncGracefully().subscribe();
 
@@ -700,13 +698,12 @@ public class H2PriorKnowledgeFeatureParityTest {
         assertFalse(onCloseLatch.await(300, MILLISECONDS));
 
         requestBody.sendOnComplete();
+        response.payloadBody().ignoreElements().toFuture();
         onCloseLatch.await();
     }
 
     @Test
     public void fullDuplexMode() throws Exception {
-        assumeFullDuplex();
-
         InetSocketAddress serverAddress = bindHttpEchoServer();
         try (StreamingHttpClient client = forSingleAddress(HostAndPort.of(serverAddress))
                 .protocols(h2PriorKnowledge ? h2Default() : h1Default())
@@ -729,12 +726,6 @@ public class H2PriorKnowledgeFeatureParityTest {
             assertFalse(response1Payload.hasNext());
             assertFalse(response2Payload.hasNext());
         }
-    }
-
-    private void assumeFullDuplex() {
-        // HTTP/1.x client builder currently forces pipelined connections are built to avoid incorrect behavior when
-        // reserving connections, but DefaultNettyPipelinedConnection does not yet support full duplex.
-        assumeTrue(h2PriorKnowledge);
     }
 
     private static void fullDuplexModeWrite(StreamingHttpClient client,

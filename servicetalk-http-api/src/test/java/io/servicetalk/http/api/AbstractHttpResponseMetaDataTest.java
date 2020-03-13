@@ -23,6 +23,7 @@ import org.mockito.junit.MockitoRule;
 
 import static io.servicetalk.http.api.HttpHeaderNames.AUTHORIZATION;
 import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_TYPE;
+import static java.lang.System.lineSeparator;
 import static org.junit.Assert.assertEquals;
 
 public abstract class AbstractHttpResponseMetaDataTest<T extends HttpResponseMetaData> {
@@ -52,8 +53,8 @@ public abstract class AbstractHttpResponseMetaDataTest<T extends HttpResponseMet
         fixture.headers().set(CONTENT_TYPE, "text/json");
         fixture.headers().set(AUTHORIZATION, "some auth info");
 
-        assertEquals("HTTP/1.1 200 OK\n" +
-                "DefaultHttpHeaders[authorization: some auth info\n" +
+        assertEquals("HTTP/1.1 200 OK" + lineSeparator() +
+                "DefaultHttpHeaders[authorization: some auth info" + lineSeparator() +
                 "content-type: text/json]", fixture.toString((k, v) -> v));
     }
 
@@ -63,8 +64,8 @@ public abstract class AbstractHttpResponseMetaDataTest<T extends HttpResponseMet
         fixture.headers().set(CONTENT_TYPE, "text/json");
         fixture.headers().set(AUTHORIZATION, "some auth info");
 
-        assertEquals("HTTP/1.1 200 OK\n" +
-                "DefaultHttpHeaders[authorization: redacted\n" +
+        assertEquals("HTTP/1.1 200 OK" + lineSeparator() +
+                "DefaultHttpHeaders[authorization: redacted" + lineSeparator() +
                 "content-type: redacted]", fixture.toString((k, v) -> "redacted"));
     }
 }

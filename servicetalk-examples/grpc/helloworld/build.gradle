@@ -33,6 +33,7 @@ serviceTalkGrpc {
 
   // The following setting must be omitted in users projects and is necessary here
   // only because we want to use the locally built version of the plugin
-  serviceTalkProtocPluginPath =
-    "${project.rootProject.rootDir}/servicetalk-grpc-protoc/build/buildExecutable/protoc-gen-servicetalk_grpc.exe"
+  serviceTalkProtocPluginPath = "${project.rootProject.rootDir}/servicetalk-grpc-protoc/build/buildExecutable/" +
+      io.servicetalk.internal.build.ExecutableBuilder.addExecutablePostFix("protoc-gen-servicetalk_grpc",
+          org.gradle.internal.os.OperatingSystem.current().isWindows())
 }

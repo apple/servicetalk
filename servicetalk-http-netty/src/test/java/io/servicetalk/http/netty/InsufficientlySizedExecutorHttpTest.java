@@ -116,6 +116,7 @@ public class InsufficientlySizedExecutorHttpTest {
         insufficientServerCapacityStreaming0();
     }
 
+    // TODO Windows seeing CHANNEL_CLOSED_INBOUND. Is 1 thread enough with control events (e.g. close)?
     @Test
     public void insufficientServerCapacityStreamingWithConnectionAcceptor() throws Exception {
         initWhenServerUnderProvisioned(true);

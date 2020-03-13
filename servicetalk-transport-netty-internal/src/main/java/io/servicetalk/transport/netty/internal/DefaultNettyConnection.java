@@ -50,6 +50,7 @@ import org.slf4j.LoggerFactory;
 import java.net.SocketAddress;
 import java.net.SocketOption;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
 import javax.net.ssl.SSLSession;
@@ -78,17 +79,15 @@ import static java.util.concurrent.atomic.AtomicReferenceFieldUpdater.newUpdater
  */
 public final class DefaultNettyConnection<Read, Write> extends NettyChannelListenableAsyncCloseable
         implements NettyConnection<Read, Write> {
-
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultNettyConnection.class);
 
     private static final ChannelOutboundListener PLACE_HOLDER_OUTBOUND_LISTENER = new NoopChannelOutboundListener();
-    private static final ChannelOutboundListener SINGLE_ITEM_OUTBOUND_LISTENER = new NoopChannelOutboundListener();
 
+    @SuppressWarnings("rawtypes")
     private static final AtomicReferenceFieldUpdater<DefaultNettyConnection, ChannelOutboundListener>
             writableListenerUpdater = newUpdater(DefaultNettyConnection.class, ChannelOutboundListener.class,
                                                  "channelOutboundListener");
 
-    private final TerminalPredicate<Read> terminalMsgPredicate;
     private final CloseHandler closeHandler;
     private final NettyChannelPublisher<Read> nettyChannelPublisher;
     private final Publisher<Read> readPublisher;
@@ -123,22 +122,21 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
     private final ChannelConfig parentChannelConfig;
 
     private DefaultNettyConnection(Channel channel, BufferAllocator allocator, Executor executor,
-                                   TerminalPredicate<Read> terminalMsgPredicate, CloseHandler closeHandler,
+                                   Predicate<Read> terminalPredicate, CloseHandler closeHandler,
                                    FlushStrategy flushStrategy, @Nullable Long idleTimeoutMs,
                                    ExecutionStrategy executionStrategy, Protocol protocol) {
-        this(channel, allocator, executor, terminalMsgPredicate, closeHandler, flushStrategy, idleTimeoutMs,
+        this(channel, allocator, executor, terminalPredicate, closeHandler, flushStrategy, idleTimeoutMs,
                 executionStrategy, protocol, null, null);
     }
 
     private DefaultNettyConnection(Channel channel, BufferAllocator allocator, Executor executor,
-                                   TerminalPredicate<Read> terminalMsgPredicate, CloseHandler closeHandler,
+                                   Predicate<Read> terminalPredicate, CloseHandler closeHandler,
                                    FlushStrategy flushStrategy, @Nullable Long idleTimeoutMs,
                                    ExecutionStrategy executionStrategy, Protocol protocol,
                                    @Nullable SSLSession sslSession, @Nullable ChannelConfig parentChannelConfig) {
         super(channel, executor);
-        nettyChannelPublisher = new NettyChannelPublisher<>(channel, terminalMsgPredicate, closeHandler);
+        nettyChannelPublisher = new NettyChannelPublisher<>(channel, terminalPredicate, closeHandler);
         this.readPublisher = nettyChannelPublisher.recoverWith(this::enrichErrorPublisher);
-        this.terminalMsgPredicate = requireNonNull(terminalMsgPredicate);
         this.executionContext = new DefaultExecutionContext(allocator, fromNettyEventLoop(channel.eventLoop()),
                 executor, executionStrategy);
         this.closeHandler = requireNonNull(closeHandler);
@@ -181,7 +179,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
      * @param channel A newly created {@link Channel}.
      * @param allocator The {@link BufferAllocator} to use for the {@link DefaultNettyConnection}.
      * @param executor The {@link Executor} to use for the {@link DefaultNettyConnection}.
-     * @param terminalMsgPredicate Used to determine which inbound signal on the {@link #read()} stream terminates the
+     * @param terminalPredicate Used to determine which inbound signal on the {@link #read()} stream terminates the
      * current message framing and will allow a resubscribe to consume the next framing.
      * @param closeHandler Manages the half closure of the {@link DefaultNettyConnection}.
      * @param flushStrategy Manages flushing of data for the {@link DefaultNettyConnection}.
@@ -196,12 +194,12 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
      * ready to use.
      */
     public static <Read, Write> DefaultNettyConnection<Read, Write> initChildChannel(
-            Channel channel, BufferAllocator allocator, Executor executor, TerminalPredicate<Read> terminalMsgPredicate,
+            Channel channel, BufferAllocator allocator, Executor executor, Predicate<Read> terminalPredicate,
             CloseHandler closeHandler, FlushStrategy flushStrategy, @Nullable Long idleTimeoutMs,
             ExecutionStrategy executionStrategy, Protocol protocol, @Nullable SSLSession sslSession,
             @Nullable ChannelConfig parentChannelConfig) {
         DefaultNettyConnection<Read, Write> connection = new DefaultNettyConnection<>(channel, allocator, executor,
-                terminalMsgPredicate, closeHandler, flushStrategy, idleTimeoutMs, executionStrategy, protocol,
+                terminalPredicate, closeHandler, flushStrategy, idleTimeoutMs, executionStrategy, protocol,
                 sslSession, parentChannelConfig);
         channel.pipeline().addLast(new NettyToStChannelInboundHandler<>(connection, null,
                 null, false));
@@ -215,7 +213,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
      * @param channel A newly created {@link Channel}.
      * @param allocator The {@link BufferAllocator} to use for the {@link DefaultNettyConnection}.
      * @param executor The {@link Executor} to use for the {@link DefaultNettyConnection}.
-     * @param terminalMsgPredicate Used to determine which inbound signal on the {@link #read()} stream terminates the
+     * @param terminalPredicate Used to determine which inbound signal on the {@link #read()} stream terminates the
      * current message framing and will allow a resubscribe to consume the next framing.
      * @param closeHandler Manages the half closure of the {@link DefaultNettyConnection}.
      * @param flushStrategy Manages flushing of data for the {@link DefaultNettyConnection}.
@@ -229,7 +227,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
      * ready to use.
      */
     public static <Read, Write> Single<DefaultNettyConnection<Read, Write>> initChannel(
-            Channel channel, BufferAllocator allocator, Executor executor, TerminalPredicate<Read> terminalMsgPredicate,
+            Channel channel, BufferAllocator allocator, Executor executor, Predicate<Read> terminalPredicate,
             CloseHandler closeHandler, FlushStrategy flushStrategy, @Nullable Long idleTimeoutMs,
             ChannelInitializer initializer, ExecutionStrategy executionStrategy, Protocol protocol) {
         return new SubscribableSingle<DefaultNettyConnection<Read, Write>>() {
@@ -241,7 +239,7 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
                 try {
                     delayedCancellable = new DelayedCancellable();
                     DefaultNettyConnection<Read, Write> connection = new DefaultNettyConnection<>(channel, allocator,
-                            executor, terminalMsgPredicate, closeHandler, flushStrategy, idleTimeoutMs,
+                            executor, terminalPredicate, closeHandler, flushStrategy, idleTimeoutMs,
                             executionStrategy, protocol);
                     channel.attr(CHANNEL_CLOSEABLE_KEY).set(connection);
                     // We need the NettyToStChannelInboundHandler to be last in the pipeline. We accomplish that by
@@ -310,56 +308,24 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
     }
 
     @Override
-    public TerminalPredicate<Read> terminalMsgPredicate() {
-        return terminalMsgPredicate;
-    }
-
-    @Override
     public Completable write(Publisher<Write> write) {
-        return write(write, RequestNSupplier::newDefaultSupplier);
+        return write(write, flushStrategyHolder::currentStrategy, WriteDemandEstimators::newDefaultEstimator);
     }
 
     @Override
-    public Completable write(Publisher<Write> write, Supplier<RequestNSupplier> requestNSupplierFactory) {
+    public Completable write(final Publisher<Write> write,
+                             final Supplier<FlushStrategy> flushStrategySupplier,
+                             final Supplier<WriteDemandEstimator> demandEstimatorSupplier) {
         return cleanupStateWhenDone(new SubscribableCompletable() {
             @Override
             protected void handleSubscribe(Subscriber completableSubscriber) {
-                WriteStreamSubscriber subscriber = new WriteStreamSubscriber(channel(), requestNSupplierFactory.get(),
+                WriteStreamSubscriber subscriber = new WriteStreamSubscriber(channel(), demandEstimatorSupplier.get(),
                         completableSubscriber, closeHandler);
                 if (failIfWriteActive(subscriber, completableSubscriber)) {
-                    toSource(composeFlushes(channel(), write, flushStrategyHolder.currentStrategy()))
-                            .subscribe(subscriber);
+                    toSource(composeFlushes(channel(), write, flushStrategySupplier.get())).subscribe(subscriber);
                 }
             }
         }).onErrorResume(this::enrichErrorCompletable);
-    }
-
-    @Override
-    public Completable writeAndFlush(Single<Write> write) {
-        requireNonNull(write);
-        return cleanupStateWhenDone(new SubscribableCompletable() {
-            @Override
-            protected void handleSubscribe(Subscriber completableSubscriber) {
-                WriteSingleSubscriber subscriber = new WriteSingleSubscriber(
-                        channel(), requireNonNull(completableSubscriber), closeHandler);
-                if (failIfWriteActive(subscriber, completableSubscriber)) {
-                    toSource(write).subscribe(subscriber);
-                }
-            }
-        }).onErrorResume(this::enrichErrorCompletable);
-    }
-
-    @Override
-    public Completable writeAndFlush(Write write) {
-        requireNonNull(write);
-        return cleanupStateWhenDone(new NettyFutureCompletable(() -> {
-            if (writableListenerUpdater.compareAndSet(DefaultNettyConnection.this, PLACE_HOLDER_OUTBOUND_LISTENER,
-                    SINGLE_ITEM_OUTBOUND_LISTENER)) {
-                return channel().writeAndFlush(write);
-            }
-            return channel().newFailedFuture(
-                    new IllegalStateException("A write is already active on this connection."));
-        })).onErrorResume(this::enrichErrorCompletable);
     }
 
     /**
@@ -537,6 +503,8 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
             if (ctx.channel().isWritable()) {
                 connection.channelOutboundListener.channelWritable();
             } else if (connection.flushStrategyHolder.currentStrategy().shouldFlushOnUnwritable()) {
+                // TODO(scott): if we have a flush per write operation, shouldFlushOnUnwritable is more challenging.
+                //  do we need to care about this any more?
                 ctx.flush();
             }
         }

@@ -21,7 +21,6 @@ import io.servicetalk.http.api.HttpClient;
 import io.servicetalk.http.api.SingleAddressHttpClientBuilder;
 import io.servicetalk.http.utils.RetryingHttpRequesterFilter;
 import io.servicetalk.transport.api.HostAndPort;
-import io.servicetalk.transport.api.RetryableException;
 
 import org.junit.After;
 import org.junit.AfterClass;
@@ -40,28 +39,27 @@ import java.io.PrintWriter;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.nio.channels.ClosedChannelException;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import javax.annotation.Nullable;
 
 import static io.servicetalk.concurrent.api.Single.collectUnordered;
 import static io.servicetalk.http.api.HttpSerializationProviders.textSerializer;
 import static io.servicetalk.http.netty.HttpProtocolConfigs.h1;
 import static java.nio.charset.StandardCharsets.US_ASCII;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class ClientClosureRaceTest {
 
     @Rule
-    public final ServiceTalkTestTimeout timeout = new ServiceTalkTestTimeout();
+    public final ServiceTalkTestTimeout timeout = new ServiceTalkTestTimeout(90, SECONDS);
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ClientClosureRaceTest.class);
     public static final int ITERATIONS = 600;
+    @Nullable
     private static ExecutorService executor;
     private ServerSocket serverSocket;
-    private int port;
-    private volatile boolean receivedExpectedError;
 
     @BeforeClass
     public static void beforeClass() {
@@ -70,13 +68,15 @@ public class ClientClosureRaceTest {
 
     @AfterClass
     public static void afterClass() {
-        executor.shutdownNow();
+        if (executor != null) {
+            executor.shutdownNow();
+        }
     }
 
     @Before
     public void startServer() throws Exception {
+        assert executor != null;
         serverSocket = new ServerSocket(0);
-        port = serverSocket.getLocalPort();
 
         executor.submit(() -> {
             while (!executor.isShutdown()) {
@@ -122,76 +122,68 @@ public class ClientClosureRaceTest {
 
     @Test
     public void testSequential() throws Exception {
-        final HttpClient client = newClientBuilder().build();
-        runIterations(() -> client.request(client.get("/foo")).flatMap(
-                response -> client.request(client.get("/bar"))));
+        try (HttpClient client = newClientBuilder().build()) {
+            runIterations(() -> client.request(client.get("/foo")).flatMap(
+                    response -> client.request(client.get("/bar"))));
+        }
     }
 
     @Test
     public void testSequentialPosts() throws Exception {
-        final HttpClient client = newClientBuilder().build();
-        runIterations(() -> client.request(client.post("/foo").payloadBody("Some payload", textSerializer())).flatMap(
-                response -> client.request(client.post("/bar").payloadBody("Another payload", textSerializer()))));
+        try (HttpClient client = newClientBuilder().build()) {
+            runIterations(() ->
+                    client.request(client.post("/foo").payloadBody("Some payload", textSerializer())).flatMap(
+                    response -> client.request(client.post("/bar").payloadBody("Another payload", textSerializer()))));
+        }
     }
 
     @Test
     public void testPipelined() throws Exception {
-        final HttpClient client = newClientBuilder()
+        try (HttpClient client = newClientBuilder()
                 .protocols(h1().maxPipelinedRequests(2).build())
-                .build();
-        runIterations(() -> collectUnordered(client.request(client.get("/foo")),
-                client.request(client.get("/bar"))));
+                .build()) {
+            runIterations(() -> collectUnordered(client.request(client.get("/foo")),
+                    client.request(client.get("/bar"))));
+        }
     }
 
     @Test
     public void testPipelinedPosts() throws Exception {
-        final HttpClient client = newClientBuilder()
+        try (HttpClient client = newClientBuilder()
                 .protocols(h1().maxPipelinedRequests(2).build())
-                .build();
-        runIterations(() -> collectUnordered(
-                client.request(client.get("/foo").payloadBody("Some payload", textSerializer())),
-                client.request(client.get("/bar").payloadBody("Another payload", textSerializer()))));
+                .build()) {
+            runIterations(() -> collectUnordered(
+                    client.request(client.get("/foo").payloadBody("Some payload", textSerializer())),
+                    client.request(client.get("/bar").payloadBody("Another payload", textSerializer()))));
+        }
     }
 
     private void runIterations(Callable<Single<?>> test) throws Exception {
         int count = 0;
         try {
-            while (!receivedExpectedError && count < ITERATIONS) {
-                try {
-                    count++;
-                    Object response = test.call().toFuture().get();
-                    LOGGER.debug("Response {} = {}", count, response);
-                } catch (Exception e) {
-                    if (isAllowableError(e)) {
-                        // occasionally expected due to the race
-                        continue;
-                    }
-                    throw e;
-                }
+            while (count < ITERATIONS) {
+                count++;
+                Object response = test.call().toFuture().get();
+                LOGGER.debug("Response {} = {}", count, response);
             }
         } finally {
-            LOGGER.info("Completed {} requests", count);
+            if (count != ITERATIONS) {
+                LOGGER.info("Completed {} requests", count);
+            }
         }
     }
 
     private SingleAddressHttpClientBuilder<HostAndPort, InetSocketAddress> newClientBuilder() {
         final RetryingHttpRequesterFilter.Builder retryBuilder = new RetryingHttpRequesterFilter.Builder();
-        return HttpClients.forSingleAddress("localhost", port)
-                .appendClientFilter(retryBuilder.maxRetries(10)
-                        .retryFor((md, t) -> {
-                            if (isDesiredError(t)) {
-                                receivedExpectedError = true;
-                            }
-                            return retryBuilder.defaultRetryForPredicate().test(md, t);
-                        })
+        return HttpClients.forSingleAddress(HostAndPort.of((InetSocketAddress) serverSocket.getLocalSocketAddress()))
+                .appendClientFilter(retryBuilder.maxRetries(Integer.MAX_VALUE)
+                        .retryFor((md, t) ->
+                            // This test has the server intentionally hard-close the connection after responding
+                            // to the first request, however some tests use pipelining and may write multiple requests
+                            // on the same connection which would result in a non-retryable exception. Since this test
+                            // doesn't care about idempotency it should always retry.
+                            true
+                        )
                         .buildWithImmediateRetries());
-    }
-
-    private static boolean isDesiredError(final Throwable e) {
-        return e instanceof ClosedChannelException && e instanceof RetryableException;
-    }
-
-    private static boolean isAllowableError(final Exception e) {
-        return e instanceof ExecutionException && e.getCause() instanceof IOException;
     }
 }

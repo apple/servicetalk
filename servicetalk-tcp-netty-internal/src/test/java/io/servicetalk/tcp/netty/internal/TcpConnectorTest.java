@@ -17,6 +17,7 @@ package io.servicetalk.tcp.netty.internal;
 
 import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.client.api.RetryableConnectException;
+import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.transport.api.ConnectionContext.Protocol;
 import io.servicetalk.transport.netty.internal.DefaultNettyConnection;
 import io.servicetalk.transport.netty.internal.NettyConnection;
@@ -58,7 +59,8 @@ public final class TcpConnectorTest extends AbstractTcpServerTest {
 
     private static void testWriteAndRead(NettyConnection<Buffer, Buffer> connection)
             throws ExecutionException, InterruptedException {
-        connection.writeAndFlush(connection.executionContext().bufferAllocator().fromAscii("Hello")).toFuture().get();
+        connection.write(
+                Publisher.from(connection.executionContext().bufferAllocator().fromAscii("Hello"))).toFuture().get();
         String response = connection.read().firstOrElse(() -> null).map(buffer -> buffer.toString(defaultCharset()))
                 .toFuture().get();
         assertThat("Unexpected response.", response, is("Hello"));
@@ -93,9 +95,8 @@ public final class TcpConnectorTest extends AbstractTcpServerTest {
         NettyConnection<Buffer, Buffer> connection = TcpConnector.<NettyConnection<Buffer, Buffer>>connect(null,
                 serverContext.listenAddress(), new TcpClientConfig().asReadOnly(emptyList()), false,
                 CLIENT_CTX, channel -> DefaultNettyConnection.initChannel(channel,
-                        CLIENT_CTX.bufferAllocator(), CLIENT_CTX.executor(),
-                        new NettyConnection.TerminalPredicate<>(o -> true), UNSUPPORTED_PROTOCOL_CLOSE_HANDLER,
-                        defaultFlushStrategy(), null, channel2 -> {
+                        CLIENT_CTX.bufferAllocator(), CLIENT_CTX.executor(), o -> true,
+                        UNSUPPORTED_PROTOCOL_CLOSE_HANDLER, defaultFlushStrategy(), null, channel2 -> {
                             channel2.pipeline().addLast(new ChannelInboundHandlerAdapter() {
                                 @Override
                                 public void channelRegistered(ChannelHandlerContext ctx) {

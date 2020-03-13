@@ -20,11 +20,11 @@ import io.servicetalk.concurrent.PublisherSource.Subscriber;
 import io.servicetalk.concurrent.PublisherSource.Subscription;
 import io.servicetalk.concurrent.SingleSource;
 import io.servicetalk.concurrent.api.Publisher;
+import io.servicetalk.concurrent.api.TestCollectingPublisherSubscriber;
 import io.servicetalk.concurrent.api.TestPublisherSubscriber;
 import io.servicetalk.concurrent.internal.DuplicateSubscribeException;
 import io.servicetalk.concurrent.internal.ServiceTalkTestTimeout;
 import io.servicetalk.transport.api.ConnectionContext.Protocol;
-import io.servicetalk.transport.netty.internal.NettyConnection.TerminalPredicate;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelOutboundHandlerAdapter;
@@ -56,6 +56,7 @@ import static io.servicetalk.transport.netty.internal.OffloadAllExecutionStrateg
 import static java.util.Objects.requireNonNull;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
@@ -89,17 +90,16 @@ public class NettyChannelPublisherTest {
 
     public void setUp(Predicate<Integer> terminalPredicate) throws Exception {
         channel = new EmbeddedChannel();
-        NettyConnection<Integer, Object> connection = DefaultNettyConnection.initChannel(channel, DEFAULT_ALLOCATOR,
-            immediate(), new TerminalPredicate<>(terminalPredicate), UNSUPPORTED_PROTOCOL_CLOSE_HANDLER,
-            defaultFlushStrategy(), null, channel -> {
-                    channel.pipeline().addLast(new ChannelOutboundHandlerAdapter() {
-                        @Override
-                        public void read(ChannelHandlerContext ctx) throws Exception {
-                            readRequested = true;
-                            super.read(ctx);
-                        }
-                    });
-                }, OFFLOAD_ALL_STRATEGY, mock(Protocol.class)).toFuture().get();
+        NettyConnection<Integer, Object> connection =
+                DefaultNettyConnection.<Integer, Object>initChannel(channel, DEFAULT_ALLOCATOR,
+            immediate(), terminalPredicate, UNSUPPORTED_PROTOCOL_CLOSE_HANDLER, defaultFlushStrategy(), null, channel ->
+                                channel.pipeline().addLast(new ChannelOutboundHandlerAdapter() {
+                @Override
+                public void read(ChannelHandlerContext ctx) throws Exception {
+                    readRequested = true;
+                    super.read(ctx);
+                }
+            }), OFFLOAD_ALL_STRATEGY, mock(Protocol.class)).toFuture().get();
         publisher = connection.read();
         channel.config().setAutoRead(false);
     }
@@ -109,6 +109,27 @@ public class NettyChannelPublisherTest {
         if (!channel.close().await(DEFAULT_TIMEOUT_SECONDS, TimeUnit.SECONDS)) {
             throw new IllegalStateException("Channel close not finished in 1 second.");
         }
+    }
+
+    @Test
+    public void testCancelThenResubscribeDeliversErrorAndNotQueuedData() throws InterruptedException {
+        TestCollectingPublisherSubscriber<Integer> subscriber1 = new TestCollectingPublisherSubscriber<>();
+        TestCollectingPublisherSubscriber<Integer> subscriber2 = new TestCollectingPublisherSubscriber<>();
+        toSource(publisher).subscribe(subscriber1);
+        Subscription subscription1 = subscriber1.awaitSubscription();
+        subscription1.request(1);
+
+        assertFalse(channel.writeInbound(1));
+        Integer next = subscriber1.takeOnNext();
+        assertThat(next, is(1));
+        assertFalse(channel.writeInbound(2)); // this write should be queued, because there isn't any requestN demand.
+
+        subscription1.cancel(); // cancel of active subscription should clear the queue and fail future Subscribers.
+
+        toSource(publisher).subscribe(subscriber2);
+        subscriber2.awaitSubscription().request(Long.MAX_VALUE);
+        assertThat(subscriber2.pollAllOnNext(), is(empty()));
+        assertThat(subscriber2.awaitOnError(), is(instanceOf(ClosedChannelException.class)));
     }
 
     @Test

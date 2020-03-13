@@ -30,14 +30,18 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.EventLoop;
 import io.netty.channel.embedded.EmbeddedChannel;
+import io.netty.channel.epoll.Epoll;
 import io.netty.channel.epoll.EpollSocketChannel;
+import io.netty.channel.kqueue.KQueue;
 import io.netty.channel.socket.ChannelInputShutdownEvent;
 import io.netty.channel.socket.ChannelInputShutdownReadComplete;
 import io.netty.channel.socket.ChannelOutputShutdownEvent;
 import io.netty.channel.socket.ServerSocketChannel;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.SocketChannelConfig;
+import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.util.concurrent.EventExecutor;
+import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -107,6 +111,7 @@ import static java.util.stream.Collectors.toSet;
 import static junit.framework.TestCase.assertEquals;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.startsWith;
@@ -689,6 +694,8 @@ public class RequestResponseCloseHandlerTest {
 
         @Test
         public void serverShutdownInputEmitsServerInputShutdownReadCompleteOnly() throws Exception {
+            assumeThat("Windows doesn't emit ChannelInputShutdownReadComplete. Investigation Required.", sChannel,
+                    is(Matchers.not(instanceOf(NioSocketChannel.class))));
             sChannel.shutdownInput().syncUninterruptibly();
             serverInputShutdownReadCompleteLatch.await();
             assertThat(serverInputShutdownLatch.getCount(), is(1L));
@@ -745,7 +752,8 @@ public class RequestResponseCloseHandlerTest {
         // In the case of Linux we'll assume it's more lenient and ignore the missing error.
         // http://pubs.opengroup.org/onlinepubs/9699919799/functions/setsockopt.html
         private void expectToFailIfNotOnLinux(Runnable call) {
-            if (cChannel instanceof EpollSocketChannel) {
+            // TODO(scott) Windows doesn't propagate the exception. Some times an unhandled exception in pipeline.
+            if (cChannel instanceof EpollSocketChannel || (!KQueue.isAvailable() && !Epoll.isAvailable())) {
                 call.run();
             } else {
                 try {

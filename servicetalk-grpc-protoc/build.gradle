@@ -13,6 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+import static io.servicetalk.internal.build.ExecutableBuilder.*
+
 buildscript {
   dependencies {
     classpath "com.github.jengelman.gradle.plugins:shadow:$shadowPluginVersion"
@@ -47,41 +50,77 @@ shadowJar {
   classifier = ''
 }
 
+def grpcPluginUberJarName = project.name + "-" + project.version + "-all.jar"
+
+task copyUberJarForDevelopment(type: Copy) {
+  dependsOn tasks.shadowJar
+  from shadowJar.outputs.files.singleFile
+  into file("$buildDir/buildExecutable")
+
+  rename { fileName ->
+    return grpcPluginUberJarName
+  }
+}
+
 task buildExecutable {
-  def outputFile = file("$buildDir/buildExecutable/protoc-gen-servicetalk_grpc.exe")
+  def isWindows = org.gradle.internal.os.OperatingSystem.current().isWindows()
+  def outputFile = new File("$buildDir/buildExecutable/" +
+      addExecutablePostFix("protoc-gen-servicetalk_grpc", isWindows))
+  dependsOn tasks.copyUberJarForDevelopment
   inputs.files shadowJar.outputs.files
   outputs.file outputFile
 
   doLast {
-    if (org.gradle.internal.os.OperatingSystem.current().isWindows()) {
-      throw new GradleException("Windows is currently not supported")
+    if (isWindows) {
+      buildWindowsExecutable(grpcPluginUberJarName, outputFile)
+    } else {
+      buildUnixExecutable(grpcPluginUberJarName, outputFile)
     }
-
-    outputFile.parentFile.mkdirs()
-    outputFile.delete()
-    outputFile <<
-        '''#!/bin/sh
-exec java -jar "$0" "$@"
-exit1
-'''
-    shadowJar.outputs.files.singleFile.withInputStream { outputFile.append(it) }
-    outputFile.executable = true
   }
 }
 tasks.compileJava.finalizedBy(buildExecutable)
+
+task buildExecutableWindowsPublishing {
+  def outputFile = new File("$buildDir/buildExecutable/" +
+      addExecutablePostFix("protoc-gen-servicetalk-windows_grpc", true))
+  dependsOn tasks.copyUberJarForDevelopment
+  inputs.files shadowJar.outputs.files
+  outputs.file outputFile
+
+  doLast {
+    buildWindowsExecutable(grpcPluginUberJarName, outputFile)
+  }
+}
+
+// we attempt to generate both grpc executables when on windows, and don't publish from windows anyways.
+tasks.withType(PublishToMavenRepository) {
+  onlyIf {
+    !org.gradle.internal.os.OperatingSystem.current().isWindows()
+  }
+}
 
 publishing {
   publications {
     mavenJava {
       artifact(buildExecutable.outputs.files.singleFile) {
         classifier = "linux-x86_64"
-        extension = "exe"
+        extension = "sh"
         builtBy buildExecutable
       }
       artifact(buildExecutable.outputs.files.singleFile) {
         classifier = "osx-x86_64"
-        extension = "exe"
+        extension = "sh"
         builtBy buildExecutable
+      }
+      artifact(buildExecutableWindowsPublishing.outputs.files.singleFile) {
+        classifier = "windows-x86_64"
+        extension = "bat"
+        builtBy buildExecutableWindowsPublishing
+      }
+      artifact(shadowJar.outputs.files.singleFile) {
+        classifier = "all"
+        extension = "jar"
+        builtBy buildExecutableWindowsPublishing
       }
     }
   }
@@ -94,7 +133,9 @@ protobuf {
 
   plugins {
     servicetalk_grpc {
-      path = "$buildDir/buildExecutable/protoc-gen-servicetalk_grpc.exe"
+      path = "$buildDir/buildExecutable/" +
+          addExecutablePostFix("protoc-gen-servicetalk_grpc",
+              org.gradle.internal.os.OperatingSystem.current().isWindows())
     }
   }
 

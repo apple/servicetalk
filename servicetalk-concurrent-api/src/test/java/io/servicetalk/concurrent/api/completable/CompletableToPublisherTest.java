@@ -165,8 +165,8 @@ public class CompletableToPublisherTest {
                                 "(from Publisher). Thread: " + currentThread()));
                     }
                 })
-                .beforeOnComplete(analyzed::countDown)
-                .beforeOnError(__ -> analyzed.countDown())
+                .afterOnComplete(analyzed::countDown)
+                .afterOnError(__ -> analyzed.countDown())
                 .afterOnSubscribe(__ -> receivedOnSubscribe.countDown())
         )
                 .subscribe(subscriber);

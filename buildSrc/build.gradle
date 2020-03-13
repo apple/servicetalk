@@ -27,6 +27,7 @@ if (!repositories) {
   groovyClass.getDeclaredMethod("inheritRepositoriesFromBuildscript", Project).invoke(null, project)
 }
 
+apply plugin: "java"
 apply plugin: "java-gradle-plugin"
 apply from: "../servicetalk-grpc-gradle-plugin/plugin-config.gradle"
 apply from: "../servicetalk-gradle-plugin-internal/plugin-config.gradle"

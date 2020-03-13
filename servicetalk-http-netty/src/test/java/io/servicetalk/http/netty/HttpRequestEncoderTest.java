@@ -42,7 +42,6 @@ import io.servicetalk.transport.netty.internal.CloseHandler;
 import io.servicetalk.transport.netty.internal.DefaultNettyConnection;
 import io.servicetalk.transport.netty.internal.ExecutionContextRule;
 import io.servicetalk.transport.netty.internal.NettyConnection;
-import io.servicetalk.transport.netty.internal.NettyConnection.TerminalPredicate;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
@@ -51,6 +50,8 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.channel.socket.ChannelInputShutdownReadComplete;
 import io.netty.channel.socket.SocketChannel;
+import io.netty.channel.socket.nio.NioSocketChannel;
+import org.hamcrest.Matchers;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -80,6 +81,7 @@ import static io.servicetalk.http.api.HttpHeaderValues.KEEP_ALIVE;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpRequestMetaDataFactory.newRequestMetaData;
 import static io.servicetalk.http.api.HttpRequestMethod.GET;
+import static io.servicetalk.http.netty.HeaderUtils.LAST_CHUNK_PREDICATE;
 import static io.servicetalk.transport.netty.NettyIoExecutors.createIoExecutor;
 import static io.servicetalk.transport.netty.internal.AddressUtils.localAddress;
 import static io.servicetalk.transport.netty.internal.AddressUtils.serverHostAndPort;
@@ -91,11 +93,14 @@ import static java.lang.String.valueOf;
 import static java.lang.Thread.NORM_PRIORITY;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.util.Collections.emptyList;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -414,9 +419,8 @@ public class HttpRequestEncoderTest {
                     TcpServerBinder.bind(localAddress(0), sConfig, false,
                             SEC, null,
                             channel -> DefaultNettyConnection.initChannel(channel, SEC.bufferAllocator(),
-                                    SEC.executor(), new TerminalPredicate<>(o -> o instanceof HttpHeaders),
-                                    UNSUPPORTED_PROTOCOL_CLOSE_HANDLER, defaultFlushStrategy(), null,
-                                    new TcpServerChannelInitializer(sConfig).andThen(
+                                    SEC.executor(), LAST_CHUNK_PREDICATE, UNSUPPORTED_PROTOCOL_CLOSE_HANDLER,
+                                    defaultFlushStrategy(), null, new TcpServerChannelInitializer(sConfig).andThen(
                                             channel2 -> {
                                                 serverChannelRef.compareAndSet(null, channel2);
                                                 serverChannelLatch.countDown();
@@ -431,10 +435,8 @@ public class HttpRequestEncoderTest {
                                 CloseHandler closeHandler = spy(forPipelinedRequestResponse(true, channel.config()));
                                 closeHandlerRef.compareAndSet(null, closeHandler);
                                 return DefaultNettyConnection.initChannel(channel, CEC.bufferAllocator(),
-                                        CEC.executor(),
-                                        new TerminalPredicate<>(o -> o instanceof HttpHeaders), closeHandler,
-                                        defaultFlushStrategy(), null,
-                                        new TcpClientChannelInitializer(cConfig.tcpConfig())
+                                        CEC.executor(), LAST_CHUNK_PREDICATE, closeHandler, defaultFlushStrategy(),
+                                        null, new TcpClientChannelInitializer(cConfig.tcpConfig())
                                                 .andThen(new HttpClientChannelInitializer(
                                                         getByteBufAllocator(CEC.bufferAllocator()),
                                                         cConfig.h1Config(), closeHandler))
@@ -458,6 +460,8 @@ public class HttpRequestEncoderTest {
             serverChannelLatch.await();
             Channel serverChannel = serverChannelRef.get();
             assertNotNull(serverChannel);
+            assumeThat("Windows doesn't emit ChannelInputShutdownReadComplete. Investigation Required.", serverChannel,
+                    is(Matchers.not(instanceOf(NioSocketChannel.class))));
             ((SocketChannel) serverChannel).config().setSoLinger(0);
             serverChannel.close(); // Close and send RST concurrently with client write
 

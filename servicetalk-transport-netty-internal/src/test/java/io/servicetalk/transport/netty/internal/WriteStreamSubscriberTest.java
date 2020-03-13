@@ -48,9 +48,9 @@ public class WriteStreamSubscriberTest extends AbstractWriteTest {
     public void setUp() throws Exception {
         super.setUp();
         closeHandler = mock(CloseHandler.class);
-        subscriber = new WriteStreamSubscriber(channel, requestNSupplier, completableSubscriber, closeHandler);
+        subscriber = new WriteStreamSubscriber(channel, demandEstimator, completableSubscriber, closeHandler);
         subscription = mock(Subscription.class);
-        when(requestNSupplier.requestNFor(anyLong())).thenReturn(1L);
+        when(demandEstimator.estimateRequestN(anyLong())).thenReturn(1L);
         subscriber.onSubscribe(subscription);
     }
 
@@ -102,7 +102,7 @@ public class WriteStreamSubscriberTest extends AbstractWriteTest {
 
     @Test
     public void testCancelBeforeOnSubscribe() {
-        subscriber = new WriteStreamSubscriber(channel, requestNSupplier, completableSubscriber,
+        subscriber = new WriteStreamSubscriber(channel, demandEstimator, completableSubscriber,
                 UNSUPPORTED_PROTOCOL_CLOSE_HANDLER);
         subscription = mock(Subscription.class);
         subscriber.cancel();
@@ -121,7 +121,7 @@ public class WriteStreamSubscriberTest extends AbstractWriteTest {
     @Test
     public void testRequestMoreBeforeOnSubscribe() {
         reset(completableSubscriber);
-        subscriber = new WriteStreamSubscriber(channel, requestNSupplier, completableSubscriber,
+        subscriber = new WriteStreamSubscriber(channel, demandEstimator, completableSubscriber,
                 UNSUPPORTED_PROTOCOL_CLOSE_HANDLER);
         subscriber.channelWritable();
         subscription = mock(Subscription.class);
@@ -168,7 +168,7 @@ public class WriteStreamSubscriberTest extends AbstractWriteTest {
 
     private void verifyWrite(WriteInfo... infos) {
         for (WriteInfo info : infos) {
-            verify(requestNSupplier).onItemWrite(info.messsage(), info.writeCapacityBefore(),
+            verify(demandEstimator).onItemWrite(info.messsage(), info.writeCapacityBefore(),
                     info.writeCapacityAfter());
         }
         verify(subscription, times(infos.length + 1)).request(1);

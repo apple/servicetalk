@@ -24,7 +24,6 @@ import io.servicetalk.concurrent.internal.ConcurrentSubscription;
 import io.servicetalk.concurrent.internal.EmptySubscription;
 import io.servicetalk.concurrent.internal.FlowControlUtils;
 import io.servicetalk.transport.netty.internal.DefaultNettyConnection.ChannelOutboundListener;
-import io.servicetalk.transport.netty.internal.NettyConnection.RequestNSupplier;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelPromise;
@@ -63,7 +62,7 @@ import static java.util.Objects.requireNonNull;
  * If previous request for more items has not been fulfilled then the capacity is the difference between the last seen
  * value of {@link Channel#bytesBeforeUnwritable()} and now.<p>
  *
- * If the capacity determined above is positive then invoke {@link RequestNSupplier} to determine number of items
+ * If the capacity determined above is positive then invoke {@link WriteDemandEstimator} to determine number of items
  * required to fill that capacity.
  */
 final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>, ChannelOutboundListener, Cancellable {
@@ -84,7 +83,7 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
      * original EventLoop or else we may get re-ordering of events.
      */
     private final EventExecutor eventLoop;
-    private final RequestNSupplier requestNSupplier;
+    private final WriteDemandEstimator demandEstimator;
     private final AllWritesPromise promise;
     @SuppressWarnings("unused")
     @Nullable
@@ -100,12 +99,12 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
     private boolean enqueueWrites;
     private final CloseHandler closeHandler;
 
-    WriteStreamSubscriber(Channel channel, RequestNSupplier requestNSupplier, Subscriber subscriber,
+    WriteStreamSubscriber(Channel channel, WriteDemandEstimator demandEstimator, Subscriber subscriber,
                           CloseHandler closeHandler) {
         this.eventLoop = requireNonNull(channel.eventLoop());
         this.subscriber = subscriber;
         this.channel = channel;
-        this.requestNSupplier = requestNSupplier;
+        this.demandEstimator = demandEstimator;
         promise = new AllWritesPromise(channel);
         this.closeHandler = closeHandler;
     }
@@ -160,7 +159,7 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
             long capacityBefore = channel.bytesBeforeUnwritable();
             promise.writeNext(msg);
             long capacityAfter = channel.bytesBeforeUnwritable();
-            requestNSupplier.onItemWrite(msg, capacityBefore, capacityAfter);
+            demandEstimator.onItemWrite(msg, capacityBefore, capacityAfter);
         }
     }
 
@@ -243,7 +242,7 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
             return;
         }
 
-        long n = requestNSupplier.requestNFor(channel.bytesBeforeUnwritable());
+        long n = demandEstimator.estimateRequestN(channel.bytesBeforeUnwritable());
         if (n > 0) {
             requestedUpdater.accumulateAndGet(this, n, FlowControlUtils::addWithOverflowProtection);
             subscription.request(n);
@@ -351,7 +350,7 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
         private boolean setSuccess0() {
             assert eventLoop.inEventLoop();
             if (hasFlag(SUBSCRIBER_TERMINATED)) {
-                return false;
+                return nettySharedPromiseTryStatus();
             }
             if (--activeWrites == 0 && hasFlag(SOURCE_TERMINATED)) {
                 setFlag(SUBSCRIBER_TERMINATED);
@@ -364,7 +363,7 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
                 }
                 return super.trySuccess(null);
             }
-            return true;
+            return nettySharedPromiseTryStatus();
         }
 
         private boolean setFailure0(Throwable cause) {
@@ -374,7 +373,7 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
             // ignore any further results. For non-reliable protocols, when we support them, we will modify this
             // behavior as appropriate.
             if (hasFlag(SUBSCRIBER_TERMINATED)) {
-                return false;
+                return nettySharedPromiseTryStatus();
             }
             setFlag(SUBSCRIBER_TERMINATED);
             Subscription oldVal = subscriptionUpdater.getAndSet(WriteStreamSubscriber.this, CANCELLED);
@@ -384,6 +383,17 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
             terminateSubscriber(cause);
             tryFailureOrLog(cause);
             // Always return true since we have set the state to SUBSCRIBER_TERMINATED
+            return true;
+        }
+
+        private boolean nettySharedPromiseTryStatus() {
+            // We take liberties with Netty's promise API because this promise is shared across multiple operations.
+            // We always return true which may violate the API as follows:
+            // if (promise.tryFailure())
+            //   if (promise.tryFailure())
+            //      unexpected!
+            // However in practice this pattern isn't used and it is more common to do expensive recovery
+            // (e.g. stack trace logging) if any of the try* operations return false.
             return true;
         }
 

@@ -32,6 +32,7 @@ import java.util.stream.StreamSupport;
 
 import static io.servicetalk.http.api.HttpHeaderNames.AUTHORIZATION;
 import static io.servicetalk.http.api.HttpHeaderNames.HOST;
+import static java.lang.System.lineSeparator;
 import static java.util.Arrays.asList;
 import static java.util.Collections.addAll;
 import static java.util.Collections.singleton;
@@ -520,8 +521,8 @@ public abstract class AbstractHttpRequestMetaDataTest<T extends HttpRequestMetaD
         fixture.headers().set(HOST, "some.site.com");
         fixture.headers().set(AUTHORIZATION, "some auth info");
 
-        assertEquals("GET /some/path?a=query HTTP/1.1\n" +
-                "DefaultHttpHeaders[authorization: some auth info\n" +
+        assertEquals("GET /some/path?a=query HTTP/1.1" + lineSeparator() +
+                "DefaultHttpHeaders[authorization: some auth info" + lineSeparator() +
                 "host: some.site.com]", fixture.toString((k, v) -> v));
     }
 
@@ -531,8 +532,8 @@ public abstract class AbstractHttpRequestMetaDataTest<T extends HttpRequestMetaD
         fixture.headers().set(HOST, "some.site.com");
         fixture.headers().set(AUTHORIZATION, "some auth info");
 
-        assertEquals("GET /some/path?a=query HTTP/1.1\n" +
-                "DefaultHttpHeaders[authorization: redacted\n" +
+        assertEquals("GET /some/path?a=query HTTP/1.1" + lineSeparator() +
+                "DefaultHttpHeaders[authorization: redacted" + lineSeparator() +
                 "host: redacted]", fixture.toString((k, v) -> "redacted"));
     }
 
