@@ -5,6 +5,7 @@ io.servicetalk.client.api
 io.servicetalk.client.api.internal
 io.servicetalk.client.api.internal.partition
 io.servicetalk.client.api.partition
+io.servicetalk.client.servicediscoverer
 io.servicetalk.concurrent
 io.servicetalk.concurrent.api
 io.servicetalk.concurrent.api.internal
@@ -24,6 +25,7 @@ io.servicetalk.http.netty
 io.servicetalk.http.router.jersey
 io.servicetalk.http.router.jersey.config
 io.servicetalk.http.router.jersey.internal
+io.servicetalk.http.router.jersey.resources
 io.servicetalk.http.router.predicate
 io.servicetalk.http.router.predicate.dsl
 io.servicetalk.http.security.auth.basic.jersey

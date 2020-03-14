@@ -156,6 +156,9 @@
     <a class="nav-link" href="../../servicetalk-loadbalancer/SNAPSHOT/index.html">Load Balancing</a>
   </li>
   <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../../servicetalk-client-api/SNAPSHOT/service-discovery.html">Service Discovery</a>
+  </li>
+  <li class="nav-item" data-depth="1">
     <a class="nav-link" href="../../servicetalk/SNAPSHOT/javadoc/index.html">Javadoc</a>
   </li>
   <li class="nav-item" data-depth="1">
@@ -172,6 +175,14 @@
     <span class="version">SNAPSHOT</span>
   </div>
   <ul class="components">
+    <li class="component">
+      <span class="title">Client API</span>
+      <ul class="versions">
+        <li class="version is-latest">
+          <a href="../../servicetalk-client-api/SNAPSHOT/index.html">SNAPSHOT</a>
+        </li>
+      </ul>
+    </li>
     <li class="component">
       <span class="title">Concurrent API</span>
       <ul class="versions">
@@ -592,8 +603,9 @@ is as follows:</p>
 <h3 id="singleaddress-client"><a class="anchor" href="#singleaddress-client"></a><a class="link" href="#singleaddress-client">SingleAddress Client</a></h3>
 <div class="paragraph">
 <p>This <code>Client</code> will connect to a single unresolved address, that is provided while creating the client. The unresolved
-address is resolved via an asynchronous DNS resolver by default (see <a href="#service-discovery">Service Discovery</a>). This <code>Client</code> is for use
-cases where you want to issue requests to a single service (that may have multiple instances).</p>
+address is resolved via an asynchronous DNS resolver by default (see
+<a href="../../servicetalk-client-api/SNAPSHOT/service-discovery.html#domain-name-system-dns" class="page">Service Discovery</a>).
+This <code>Client</code> is for use cases where you want to issue requests to a single service (that may have multiple instances).</p>
 </div>
 </div>
 <div class="sect2">
@@ -606,6 +618,9 @@ address for each request. This <code>Client</code> simulates a browser type of u
 <p>Each of the above <code>Client</code>s can be created via the
 <a href="https://github.com/apple/servicetalk/blob/master/servicetalk-http-netty/src/main/java/io/servicetalk/http/netty/HttpClients.java">HttpClients</a> static factory.</p>
 </div>
+</div>
+<div class="sect2">
+<h3 id="connections"><a class="anchor" href="#connections"></a><a class="link" href="#connections">Connections</a></h3>
 <div class="paragraph">
 <p>The <code>Client</code> manages multiple <code>Connections</code> via a
 <a href="../../servicetalk-loadbalancer/SNAPSHOT/index.html" class="page">LoadBalancer</a>. The control flow of a request/response can be
@@ -700,39 +715,6 @@ control flow.</p>
                                         |    +---------------------+     +---------------------+     +--------------+     +----------------------+     +--------+
                                         \---&gt;| Connection Filter 1 |&lt;---&gt;| Connection Filter n |&lt;---&gt;| Connection x |&lt;---&gt;| HTTP Decoder/Encoder |&lt;---&gt;| Socket |
                                              +---------------------+     +---------------------+     +--------------+     +----------------------+     +--------+</pre>
-</div>
-</div>
-</div>
-<div class="sect2">
-<h3 id="service-discovery"><a class="anchor" href="#service-discovery"></a><a class="link" href="#service-discovery">Service Discovery</a></h3>
-<div class="paragraph">
-<p>Another core component of the <code>Client</code> is the
-<a href="https://github.com/apple/servicetalk/blob/master/servicetalk-client-api/src/main/java/io/servicetalk/client/api/ServiceDiscoverer.java">ServiceDiscoverer</a>. The
-<code>ServiceDiscoverer</code> is responsible for resolving a service address into a set of resolved addresses used to create
-<code>Connection</code>(s) by the <code>LoadBalancer</code>. The default implementation for HTTP is DNS and will resolve the IP addresses of
-each service address every <a href="https://tools.ietf.org/html/rfc1035#section-3.2.1">TTL</a> seconds. <code>ServiceDiscoverer</code>s
-are typically not invoked in the request/response path and addresses are resolved "out of band", a.k.a in the
-background.</p>
-</div>
-<div class="listingblock">
-<div class="content">
-<pre>                     +------------+
-                     |   Service  |
-                     | Discoverer |
-                     +------------+
-                           ^
-                           |
-                           |                 +--------------+
-                           |            /---&gt;| Connection 1 |
-                           V            |    +--------------+
-+--------+ request  +--------------+    |
-|        |---------&gt;|              |    |    +--------------+
-| Client |          | LoadBalancer |&lt;---+---&gt;| Connection 2 |
-|        |&lt;---------|              |    |    +--------------+
-+--------+ response +--------------+    |
-                                        |    +--------------+
-                                        \---&gt;| Connection x |
-                                             +--------------+</pre>
 </div>
 </div>
 </div>

@@ -156,6 +156,9 @@
     <a class="nav-link" href="index.html">Load Balancing</a>
   </li>
   <li class="nav-item" data-depth="1">
+    <a class="nav-link" href="../../servicetalk-client-api/SNAPSHOT/service-discovery.html">Service Discovery</a>
+  </li>
+  <li class="nav-item" data-depth="1">
     <a class="nav-link" href="../../servicetalk/SNAPSHOT/javadoc/index.html">Javadoc</a>
   </li>
   <li class="nav-item" data-depth="1">
@@ -172,6 +175,14 @@
     <span class="version">SNAPSHOT</span>
   </div>
   <ul class="components">
+    <li class="component">
+      <span class="title">Client API</span>
+      <ul class="versions">
+        <li class="version is-latest">
+          <a href="../../servicetalk-client-api/SNAPSHOT/index.html">SNAPSHOT</a>
+        </li>
+      </ul>
+    </li>
     <li class="component">
       <span class="title">Concurrent API</span>
       <ul class="versions">
@@ -482,7 +493,7 @@ resilient and performant system.</p>
                             ^           |    +--------------+     +----------------------+     +--------+
                             |           \---&gt;| Connection x |&lt;---&gt;| HTTP Decoder/Encoder |&lt;---&gt;| Socket |
                   +-------------------+      +--------------+     +----------------------+     +--------+
-                  | Service Discovery |
+                  | ServiceDiscoverer |
                   +-------------------+</pre>
 </div>
 </div>
@@ -495,8 +506,11 @@ the basis for all protocol-specific <em>Connections</em> allows the
 implementations to be reusable across all the protocols.</p>
 </div>
 <div class="paragraph">
-<p>The <em>LoadBalancer</em> is able to combine availability information from <em>Service Discovery</em> and protocol metrics from the
-<em>ConnectionFactory</em> (e.g. latency, &#8230;&#8203;) in order to pick a more optimal <em>Connection</em> for each request</p>
+<p>The <em>LoadBalancer</em> is able to combine availability information from
+<a href="https://github.com/apple/servicetalk/blob/master/servicetalk-client-api/src/main/java/io/servicetalk/client/api/ServiceDiscoverer.java">ServiceDiscoverer</a>
+and protocol metrics from the
+<a href="https://github.com/apple/servicetalk/blob/master/servicetalk-client-api/src/main/java/io/servicetalk/client/api/ConnectionFactory.java">ConnectionFactory</a>
+(e.g. latency, &#8230;&#8203;) in order to pick a more optimal <em>Connection</em> for each request.</p>
 </div>
 </div>
 </div>
@@ -504,24 +518,25 @@ implementations to be reusable across all the protocols.</p>
 <h2 id="implementations"><a class="anchor" href="#implementations"></a><a class="link" href="#implementations">Implementations</a></h2>
 <div class="sectionbody">
 <div class="paragraph">
-<p>As mentioned earlier the <em>Client-Side LoadBalancer</em> abstraction allows for various protocol-independent <em>LoadBalancing</em>
-algorithms to be implemented. This section will discuss the various implementations offered in ServiceTalk by
-highlighting their characteristics.</p>
+<p>As mentioned earlier the <em>Client-Side</em>
+<a href="https://github.com/apple/servicetalk/blob/master/servicetalk-client-api/src/main/java/io/servicetalk/client/api/LoadBalancer.java">LoadBalancer</a>
+abstraction allows for various protocol-independent <em>LoadBalancing</em> algorithms to be implemented. This section will
+discuss the various implementations offered in ServiceTalk by highlighting their characteristics.</p>
 </div>
 <div class="sect2">
 <h3 id="round-robin"><a class="anchor" href="#round-robin"></a><a class="link" href="#round-robin">Round Robin</a></h3>
 <div class="paragraph">
 <p><a href="https://github.com/apple/servicetalk/blob/master/servicetalk-loadbalancer/src/main/java/io/servicetalk/loadbalancer/RoundRobinLoadBalancer.java">RoundRobinLoadBalancer</a>
 is a common and simple <em>LoadBalancer</em> implementation that is currently the default when creating <em>Clients</em>. Its
-main goal is to spread the load evenly between all known resolved addresses as provided by the <em>ServiceDiscovery</em>
-mechanism.</p>
+main goal is to spread the load evenly between all known resolved addresses as provided by the
+<a href="../../servicetalk-client-api/SNAPSHOT/service-discovery.html" class="page">Service Discovery</a> mechanism.</p>
 </div>
 <div class="paragraph">
 <p>The implementation in ServiceTalk consists of a set of available addresses (typically the servers to connect to) and for
 each address it has a set of open <code>Connections</code>. Whenever a new request is made the <em>LoadBalancer</em> will pick the next
 address from its list of addresses and picks one of its open <em>Connections</em> until it finds an available <em>Connection</em>.
 When all <em>Connections</em> are in use, it&#8217;ll try to open a new <em>Connection</em> to that same address. It works in tandem with
-<em>ServiceDiscovery</em>, when new addresses are added or addresses are removed it&#8217;ll update its active addresses set for
+<em>ServiceDiscoverer</em>, when new addresses are added or addresses are removed it&#8217;ll update its active addresses set for
 future <em>Connection</em> selection. This approach ensures that every address will receive an equal amount of requests on
 average across all <em>Clients</em>.</p>
 </div>
