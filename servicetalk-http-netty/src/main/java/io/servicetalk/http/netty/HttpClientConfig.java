@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2020 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,8 +32,8 @@ final class HttpClientConfig {
     }
 
     HttpClientConfig(final HttpClientConfig from) {
-        tcpConfig = from.tcpConfig();
-        protocolConfigs = from.protocolConfigs();
+        tcpConfig = new TcpClientConfig(from.tcpConfig());
+        protocolConfigs = new HttpConfig(from.protocolConfigs());
         connectAddress = from.connectAddress;
     }
 

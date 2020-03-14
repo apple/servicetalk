@@ -49,7 +49,6 @@ import org.slf4j.LoggerFactory;
 
 import java.net.SocketAddress;
 import java.net.SocketOption;
-import java.nio.channels.ClosedChannelException;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
@@ -62,7 +61,6 @@ import static io.servicetalk.concurrent.api.Processors.newSingleProcessor;
 import static io.servicetalk.concurrent.api.Publisher.failed;
 import static io.servicetalk.concurrent.api.SourceAdapters.fromSource;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
-import static io.servicetalk.concurrent.internal.ThrowableUtils.unknownStackTrace;
 import static io.servicetalk.transport.netty.internal.ChannelSet.CHANNEL_CLOSEABLE_KEY;
 import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
 import static io.servicetalk.transport.netty.internal.Flush.composeFlushes;
@@ -86,12 +84,6 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
     private static final ChannelOutboundListener PLACE_HOLDER_OUTBOUND_LISTENER = new NoopChannelOutboundListener();
     private static final ChannelOutboundListener SINGLE_ITEM_OUTBOUND_LISTENER = new NoopChannelOutboundListener();
 
-    private static final ClosedChannelException CLOSED_CHANNEL_INACTIVE = unknownStackTrace(
-            new ClosedChannelException(), NettyToStChannelInboundHandler.class, "channelInactive(..)");
-    private static final ClosedChannelException CLOSED_FAIL_ACTIVE =
-            unknownStackTrace(new ClosedChannelException(), DefaultNettyConnection.class, "failIfWriteActive(..)");
-    private static final ClosedChannelException CLOSED_HANDLER_REMOVED =
-            unknownStackTrace(new ClosedChannelException(), NettyToStChannelInboundHandler.class, "handlerRemoved(..)");
     private static final AtomicReferenceFieldUpdater<DefaultNettyConnection, ChannelOutboundListener>
             writableListenerUpdater = newUpdater(DefaultNettyConnection.class, ChannelOutboundListener.class,
                                                  "channelOutboundListener");
@@ -450,7 +442,8 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
             // never notify the write writeSubscriber of the inactive event. So if the channel is inactive we notify
             // the writeSubscriber.
             if (!channel().isActive()) {
-                newChannelOutboundListener.channelClosed(CLOSED_FAIL_ACTIVE);
+                newChannelOutboundListener.channelClosed(StacklessClosedChannelException.newInstance(
+                        DefaultNettyConnection.class, "failIfWriteActive(...)"));
                 return false;
             }
             return true;
@@ -561,7 +554,10 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
 
         @Override
         public void handlerRemoved(ChannelHandlerContext ctx) {
-            tryFailSubscriber(CLOSED_HANDLER_REMOVED);
+            if (subscriber != null) {
+                tryFailSubscriber(StacklessClosedChannelException.newInstance(
+                        DefaultNettyConnection.class, "handlerRemoved(...)"));
+            }
         }
 
         @Override
@@ -587,7 +583,8 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
                 connection.channelOutboundListener.channelOutboundClosed();
             } else if (evt == ChannelOutputShutdownEvent.INSTANCE) {
                 connection.closeHandler.channelClosedOutbound(ctx);
-                connection.channelOutboundListener.channelClosed(CLOSED_CHANNEL_INACTIVE);
+                connection.channelOutboundListener.channelClosed(StacklessClosedChannelException.newInstance(
+                        DefaultNettyConnection.class, "userEventTriggered(...)"));
             } else if (evt == ChannelInputShutdownReadComplete.INSTANCE) {
                 // Notify close handler first to enhance error reporting
                 connection.closeHandler.channelClosedInbound(ctx);
@@ -621,8 +618,10 @@ public final class DefaultNettyConnection<Read, Write> extends NettyChannelListe
 
         @Override
         public void channelInactive(ChannelHandlerContext ctx) {
-            tryFailSubscriber(CLOSED_CHANNEL_INACTIVE);
-            connection.channelOutboundListener.channelClosed(CLOSED_CHANNEL_INACTIVE);
+            Throwable closedChannelException = StacklessClosedChannelException.newInstance(
+                    DefaultNettyConnection.class, "channelInactive(...)");
+            tryFailSubscriber(closedChannelException);
+            connection.channelOutboundListener.channelClosed(closedChannelException);
             connection.nettyChannelPublisher.channelInboundClosed();
         }
 

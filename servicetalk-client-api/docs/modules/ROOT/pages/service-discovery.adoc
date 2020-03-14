@@ -1,0 +1,72 @@
+// Configure {source-root} values based on how this document is rendered: on GitHub or not
+ifdef::env-github[]
+:source-root:
+endif::[]
+ifndef::env-github[]
+ifndef::source-root[:source-root: https://github.com/apple/servicetalk/blob/{page-origin-refname}]
+endif::[]
+
+= Service Discovery
+
+A core abstraction in ServiceTalk is its
+link:{source-root}/servicetalk-client-api/src/main/java/io/servicetalk/client/api/ServiceDiscoverer.java[ServiceDiscoverer]
+used by the protocol _Clients_ (eg. HTTP/1.1, HTTP/2, gRPC, etc.).
+
+For scenarios where a client communicates with multiple homogeneous footnote:[belonging to the same service, providing
+same capabilities] server instances, managing addresses of multiple server instances for each client is complex.
+A ServiceTalk client leverages _ServiceDiscoverer_ to find server instances that it can use for processing requests. A
+_ServiceDiscoverer_ finds server instances associated with a logical name. ServiceTalk assumes that the client operates
+in a dynamic ephemeral environment and the server instances associated with a logical name may change over time. So, a
+_ServiceDiscoverer_ returns a _Publisher_ of
+link:{source-root}/servicetalk-client-api/src/main/java/io/servicetalk/client/api/ServiceDiscovererEvent.java[ServiceDiscovererEvent](s)
+that provide information about server instances, their current relationship to the logical name (i.e. whether it is
+added or removed from the logical name), and any additional information that is supported by a _ServiceDiscoverer_
+implementation. Using this information the xref:{page-version}@servicetalk-loadbalancer::index.adoc[LoadBalancer] of a
+_Client_ can maintain an active collections to server instances that it can use.
+
+[ditaa]
+----
+                     +------------+
+                     |   Service  |
+                     | Discoverer |
+                     +------------+
+                           ^
+                           |
+                           |                 +--------------+
+                           |            /--->| Connection 1 |
+                           V            |    +--------------+
++--------+ request  +--------------+    |
+|        |--------->|              |    |    +--------------+
+| Client |          | LoadBalancer |<---+--->| Connection 2 |
+|        |<---------|              |    |    +--------------+
++--------+ response +--------------+    |
+                                        |    +--------------+
+                                        \--->| Connection x |
+                                             +--------------+
+----
+
+_ServiceDiscoverer_ is typically not invoked in the request/response path and addresses are resolved "out of band",
+a.k.a in the background.
+
+== Implementations
+
+link:{source-root}/servicetalk-client-api/src/main/java/io/servicetalk/client/api/ServiceDiscoverer.java[ServiceDiscoverer]
+abstraction allows for various protocol-independent _Service Discovery_ mechanisms to be implemented. This section will
+discuss the various implementations offered in ServiceTalk.
+
+=== Domain Name System (DNS)
+
+link:{source-root}/servicetalk-dns-discovery-netty/src/main/java/io/servicetalk/dns/discovery/netty/DefaultDnsServiceDiscovererBuilder.java[DefaultDnsServiceDiscovererBuilder]
+is used to configure and build instances of _ServiceDiscoverer_ that use
+link:https://tools.ietf.org/html/rfc1035[Domain Name System (DNS)] to resolve hosts represented by domain name into a
+set of IP-addresses needed for _Clients_ to connect to the remote servers. Resolution happens every
+link:https://tools.ietf.org/html/rfc1035#section-3.2.1[TTL] seconds.
+
+TIP: This is the default implementation that will be used automatically if no alternative _ServiceDiscoverer_ is
+configured when users create a _Client_ instance.
+
+This implementation is backed by `io.netty:netty-resolver-dns` and provides non-blocking DNS resolutions.
+
+IMPORTANT: _macOS_ users may experience problems with resolving host addresses in certain environments. In this case,
+users need to add the additional dependency on the classpath which will ensure the right nameservers are selected when
+running on macOS: `io.netty:netty-resolver-dns-native-macos`.

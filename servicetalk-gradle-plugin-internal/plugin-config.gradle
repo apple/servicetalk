@@ -22,7 +22,7 @@ dependencies {
   compile gradleApi()
   compile localGroovy()
   compile "com.jfrog.bintray.gradle:gradle-bintray-plugin:$props.bintrayPluginVersion"
-  compile "gradle.plugin.com.github.spotbugs:spotbugs-gradle-plugin:$props.spotbugsPluginVersion"
+  compile "gradle.plugin.com.github.spotbugs.snom:spotbugs-gradle-plugin:$props.spotbugsPluginVersion"
 }
 
 gradlePlugin {

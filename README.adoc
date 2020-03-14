@@ -13,7 +13,7 @@ See the link:https://docs.servicetalk.io/[ServiceTalk docs] for more information
 
 == Getting Started
 
-ServiceTalk releases are available on link:http://repo1.maven.org/maven2/io/servicetalk/[Maven Central].
+ServiceTalk releases are available on link:https://repo1.maven.org/maven2/io/servicetalk/[Maven Central].
 
 For Gradle as well as other build tools that don't use Maven Central as a default repository, additional configuration
 is required.
@@ -89,7 +89,7 @@ NOTE: This inheritance mechanism can be disabled by setting a Gradle property: +
 
 ==== Build Commands
 
-You should be able to run the following command to build ServiceTalk and verify that all 
+You should be able to run the following command to build ServiceTalk and verify that all
 tests and code quality checks pass:
 
 [source,shell]

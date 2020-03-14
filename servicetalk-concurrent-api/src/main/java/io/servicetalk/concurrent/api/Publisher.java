@@ -2382,6 +2382,33 @@ public abstract class Publisher<T> {
     }
 
     /**
+     * Create a new {@link Publisher} that when subscribed will emit all {@link Integer}s within the range of
+     * [{@code begin}, {@code end}).
+     * @param begin The beginning of the range (inclusive).
+     * @param end The end of the range (exclusive).
+     * @return a new {@link Publisher} that when subscribed will emit all {@link Integer}s within the range of
+     * [{@code begin}, {@code end}).
+     * @see <a href="http://reactivex.io/documentation/operators/range.html">Range.</a>
+     */
+    public static Publisher<Integer> range(int begin, int end) {
+        return new RangeIntPublisher(begin, end);
+    }
+
+    /**
+     * Create a new {@link Publisher} that when subscribed will emit all {@link Integer}s within the range of
+     * [{@code begin}, {@code end}) with an increment of {@code stride} between each signal.
+     * @param begin The beginning of the range (inclusive).
+     * @param end The end of the range (exclusive).
+     * @param stride The amount to increment in between each signal.
+     * @return a new {@link Publisher} that when subscribed will emit all {@link Integer}s within the range of
+     * [{@code begin}, {@code end}) with an increment of {@code stride} between each signal.
+     * @see <a href="http://reactivex.io/documentation/operators/range.html">Range.</a>
+     */
+    public static Publisher<Integer> range(int begin, int end, int stride) {
+        return new RangeIntPublisher(begin, end, stride);
+    }
+
+    /**
      * Creates a new {@link Publisher} that completes when subscribed without emitting any item to its
      * {@link Subscriber}.
      *

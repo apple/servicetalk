@@ -32,6 +32,7 @@ import io.servicetalk.concurrent.api.Publisher;
 import io.servicetalk.concurrent.api.Single;
 import io.servicetalk.concurrent.api.internal.SpScPublisherProcessor;
 import io.servicetalk.concurrent.internal.SequentialCancellable;
+import io.servicetalk.concurrent.internal.ThrowableUtils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,7 +58,6 @@ import static io.servicetalk.concurrent.api.Single.defer;
 import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 import static io.servicetalk.concurrent.api.SourceAdapters.toSource;
-import static io.servicetalk.concurrent.internal.ThrowableUtils.unknownStackTrace;
 import static java.util.Collections.binarySearch;
 import static java.util.Collections.emptyList;
 import static java.util.Comparator.comparing;
@@ -87,12 +87,6 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
         implements LoadBalancer<C> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RoundRobinLoadBalancer.class);
-    private static final IllegalStateException LB_CLOSED_SELECT_CNX_EXCEPTION =
-            unknownStackTrace(new IllegalStateException("LoadBalancer has closed"), RoundRobinLoadBalancer.class,
-                    "selectConnection0(...)");
-    private static final NoAvailableHostException NO_ACTIVE_HOSTS_SELECT_CNX_EXCEPTION =
-            unknownStackTrace(new NoAvailableHostException("No hosts are available to connect."),
-                    RoundRobinLoadBalancer.class, "selectConnection0(...)");
 
     private static final AtomicReferenceFieldUpdater<RoundRobinLoadBalancer, List> activeHostsUpdater =
             newUpdater(RoundRobinLoadBalancer.class, List.class, "activeHosts");
@@ -250,13 +244,14 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
 
     private Single<C> selectConnection0(Predicate<C> selector) {
         if (closed) {
-            return failed(LB_CLOSED_SELECT_CNX_EXCEPTION);
+            return failed(new IllegalStateException("LoadBalancer has closed"));
         }
 
         final List<Host<ResolvedAddress, C>> activeHosts = this.activeHosts;
         if (activeHosts.isEmpty()) {
             // This is the case when SD has emitted some items but none of the hosts are active.
-            return failed(NO_ACTIVE_HOSTS_SELECT_CNX_EXCEPTION);
+            return failed(StacklessNoAvailableHostException.newInstance(
+                    "No hosts are available to connect.", RoundRobinLoadBalancer.class, "selectConnection0(...)"));
         }
 
         final int cursor = (indexUpdater.getAndIncrement(this) & Integer.MAX_VALUE) % activeHosts.size();
@@ -312,7 +307,7 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
                                 existing = connections;
                             }
 
-                            return failed(LB_CLOSED_SELECT_CNX_EXCEPTION);
+                            return failed(new IllegalStateException("LoadBalancer has closed"));
                         }
                         return succeeded(newCnx);
                     }
@@ -432,5 +427,20 @@ public final class RoundRobinLoadBalancer<ResolvedAddress, C extends LoadBalance
     private static final class MutableAddressHost<Addr, C extends ListenableAsyncCloseable> extends Host<Addr, C> {
         @Nullable
         Addr mutableAddress;
+    }
+
+    private static final class StacklessNoAvailableHostException extends NoAvailableHostException {
+        private StacklessNoAvailableHostException(final String message) {
+            super(message);
+        }
+
+        @Override
+        public Throwable fillInStackTrace() {
+            return this;
+        }
+
+        public static StacklessNoAvailableHostException newInstance(String message, Class<?> clazz, String method) {
+            return ThrowableUtils.unknownStackTrace(new StacklessNoAvailableHostException(message), clazz, method);
+        }
     }
 }
