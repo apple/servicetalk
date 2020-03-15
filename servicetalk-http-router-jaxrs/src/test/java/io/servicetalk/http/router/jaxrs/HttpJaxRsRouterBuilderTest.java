@@ -148,14 +148,17 @@ public class HttpJaxRsRouterBuilderTest {
         final StreamingHttpService service = new HttpJaxRsRouterBuilder()
                 .from(application);
 
-        when(request.path("/all/a")).then(answerIteratorOf("a"));
+        when(request.path()).thenReturn("/all/a");
         assertSame(responseA, service.handle(ctx, request, reqRespFactory));
 
-        when(request.path("/all/b")).then(answerIteratorOf("b"));
+        when(request.path()).thenReturn("/all/b");
         assertSame(responseB, service.handle(ctx, request, reqRespFactory));
 
-        // when(request.queryParametersIterator("page")).thenReturn(emptyIterator());
-        // assertSame(fallbackResponse, service.handle(ctx, request, reqRespFactory));
+        when(request.path()).thenReturn("/all/b/1");
+        assertSame(responseC, service.handle(ctx, request, reqRespFactory));
+
+        when(request.path()).thenReturn("/all/c/1/abc");
+        assertSame(responseD, service.handle(ctx, request, reqRespFactory));
     }
 
     @Path("/all")
@@ -171,6 +174,18 @@ public class HttpJaxRsRouterBuilderTest {
         Single<StreamingHttpResponse> b(HttpServiceContext ctx, StreamingHttpRequest request,
                                              StreamingHttpResponseFactory responseFactory) {
             return responseB;
+        }
+
+        @Path("/b/{c}")
+        Single<StreamingHttpResponse> param(HttpServiceContext ctx, StreamingHttpRequest request,
+                                             StreamingHttpResponseFactory responseFactory) {
+            return responseC;
+        }
+
+        @Path("/c/{a}/{b}")
+        Single<StreamingHttpResponse> paramAb(HttpServiceContext ctx, StreamingHttpRequest request,
+                                             StreamingHttpResponseFactory responseFactory) {
+            return responseD;
         }
     }
 }

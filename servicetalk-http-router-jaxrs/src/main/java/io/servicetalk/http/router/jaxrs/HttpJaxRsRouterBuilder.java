@@ -22,8 +22,10 @@ import io.servicetalk.http.api.HttpService;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.router.predicate.HttpPredicateRouterBuilder;
 
+import org.glassfish.jersey.uri.PathTemplate;
+
 import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
+import java.util.regex.Pattern;
 import javax.ws.rs.Path;
 import javax.ws.rs.core.Application;
 
@@ -133,30 +135,32 @@ public final class HttpJaxRsRouterBuilder {
         return from(application);
     }
 
-    StreamingHttpService from(final Application application) {
+    public StreamingHttpService from(final Application application) {
 
         HttpPredicateRouterBuilder routerBuilder = new HttpPredicateRouterBuilder();
 
-        for (Object resources : application.getSingletons()) {
+        for (Object resource : application.getSingletons()) {
 
-            final Path rootPath = resources.getClass().getAnnotation(Path.class);
+            final Path rootPath = resource.getClass().getAnnotation(Path.class);
 
             if (rootPath == null) {
                 continue;
             }
 
-            for (Method method : resources.getClass().getDeclaredMethods()) {
-                if (Modifier.isPublic(method.getModifiers())) {
-                    final Path methodPath = method.getAnnotation(Path.class);
+            for (Method method : resource.getClass().getDeclaredMethods()) {
+                final Path methodPath = method.getAnnotation(Path.class);
 
-                    if (methodPath == null) {
-                        continue;
-                    }
-
-                    final StreamingHttpService streamingService = new ReflectionStreamingService(method);
-                    routerBuilder.whenPathMatches(rootPath.value() + methodPath.value())
-                            .thenRouteTo(streamingService);
+                if (methodPath == null) {
+                    continue;
                 }
+
+                final StreamingHttpService streamingService = new ReflectionStreamingService(resource, method);
+
+                final PathTemplate pathTemplate = new PathTemplate(rootPath.value() + methodPath.value());
+                final Pattern pathPattern = Pattern.compile(pathTemplate.getPattern().getRegex());
+
+                routerBuilder.whenPathMatches(pathPattern)
+                        .thenRouteTo(streamingService);
             }
         }
 

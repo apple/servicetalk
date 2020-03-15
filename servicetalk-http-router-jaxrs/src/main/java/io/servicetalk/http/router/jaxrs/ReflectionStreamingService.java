@@ -26,9 +26,11 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
 public class ReflectionStreamingService implements StreamingHttpService {
+    private final Object resource;
     private final Method method;
 
-    public ReflectionStreamingService(final Method method) {
+    public ReflectionStreamingService(final Object resource, final Method method) {
+        this.resource = resource;
         this.method = method;
     }
 
@@ -36,7 +38,7 @@ public class ReflectionStreamingService implements StreamingHttpService {
     public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx, final StreamingHttpRequest request,
                                                 final StreamingHttpResponseFactory responseFactory) {
         try {
-            return (Single<StreamingHttpResponse>) method.invoke(ctx, request, responseFactory);
+            return (Single<StreamingHttpResponse>) method.invoke(resource, ctx, request, responseFactory);
         } catch (IllegalAccessException | InvocationTargetException e) {
            return Single.failed(e);
         }
