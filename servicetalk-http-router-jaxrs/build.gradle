@@ -24,6 +24,9 @@ dependencies {
   implementation project(":servicetalk-http-router-predicate")
   implementation project(":servicetalk-data-jackson")
 
+  // for PathTemplate
+  implementation "org.glassfish.jersey.core:jersey-common:$jerseyVersion"
+
   implementation "com.google.code.findbugs:jsr305:$jsr305Version"
 
   testImplementation testFixtures(project(":servicetalk-concurrent-api"))
