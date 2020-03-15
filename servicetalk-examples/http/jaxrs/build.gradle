@@ -27,6 +27,8 @@ dependencies {
   implementation project(":servicetalk-http-netty")
   implementation project(":servicetalk-http-router-jersey")
   implementation project(":servicetalk-http-router-jaxrs")
+  // for PathTemplate
+  implementation "org.glassfish.jersey.core:jersey-common:$jerseyVersion"
 
   implementation "com.google.code.findbugs:jsr305:$jsr305Version"
   implementation "org.slf4j:slf4j-api:$slf4jVersion"

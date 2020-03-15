@@ -28,15 +28,17 @@ import io.servicetalk.http.netty.HttpServers;
 import io.servicetalk.http.router.jaxrs.HttpJaxRsRouterBuilder;
 import io.servicetalk.transport.api.ServerContext;
 
+import org.glassfish.jersey.uri.PathTemplate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 import javax.ws.rs.Path;
 import javax.ws.rs.core.Application;
 
-import static io.servicetalk.concurrent.api.Single.failed;
 import static io.servicetalk.concurrent.api.Single.succeeded;
 
 @Path("/all")
@@ -55,24 +57,29 @@ public class JaxRsExampleApplication {
     @Path("/b/{a}/{b}")
     public Single<StreamingHttpResponse> b(HttpServiceContext ctx, StreamingHttpRequest request,
                                     StreamingHttpResponseFactory responseFactory) {
-        // final String a = request.queryParameter("a");
-        final String a = pathParameter(request, "a");
+        final Map<String, String> pathParameters = pathParameters("/all/b/{a}/{b}", request);
+        final String a = pathParameters.get("a");
         if (a == null) {
             return succeeded(responseFactory.badRequest());
         }
 
-        final String b = pathParameter(request, "b");
+        final String b = pathParameters.get("b");
         if (b == null) {
             return succeeded(responseFactory.badRequest());
         }
 
-        return succeeded(responseFactory.ok().payloadBody(succeeded("b" + a).toPublisher(),
+        return succeeded(responseFactory.ok().payloadBody(succeeded("b" + a + b).toPublisher(),
                 serializer.serializerFor(String.class)));
     }
 
-    private String pathParameter(final StreamingHttpRequest request, final String parameter) {
-        final String path = request.path();
-        return "";
+    private Map<String, String> pathParameters(final String templatePath, final StreamingHttpRequest request) {
+
+        final PathTemplate pathTemplate = new PathTemplate(templatePath);
+        final Map<String, String> parameters = new HashMap<>(pathTemplate.getNumberOfTemplateVariables());
+        if (!pathTemplate.match(request.path(), parameters)) {
+            return Collections.emptyMap();
+        }
+        return parameters;
     }
 
     public static void main(String[] args) throws Exception {
