@@ -23,8 +23,12 @@ dependencies {
   // input stream adaptation that kicks in with out-of-the-box body readers and also allows accepting/returning
   // Single<Pojo> and Publisher<Pojo> from resource methods.
   implementation project(":servicetalk-data-jackson-jersey")
+  implementation project(":servicetalk-data-jackson")
   implementation project(":servicetalk-http-netty")
   implementation project(":servicetalk-http-router-jersey")
+  implementation project(":servicetalk-http-router-jaxrs")
+
+  implementation "com.google.code.findbugs:jsr305:$jsr305Version"
   implementation "org.slf4j:slf4j-api:$slf4jVersion"
 
   runtime "org.apache.logging.log4j:log4j-slf4j-impl:$log4jVersion"
