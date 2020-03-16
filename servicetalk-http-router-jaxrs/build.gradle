@@ -24,6 +24,7 @@ dependencies {
   implementation project(":servicetalk-http-router-predicate")
   implementation project(":servicetalk-data-jackson")
 
+  implementation "org.slf4j:slf4j-api:$slf4jVersion"
   // for PathTemplate
   implementation "org.glassfish.jersey.core:jersey-common:$jerseyVersion"
 
