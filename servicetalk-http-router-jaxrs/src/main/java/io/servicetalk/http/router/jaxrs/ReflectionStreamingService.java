@@ -24,21 +24,31 @@ import io.servicetalk.http.api.StreamingHttpService;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.List;
 
 public class ReflectionStreamingService implements StreamingHttpService {
     private final Object resource;
     private final Method method;
+    private final List<Parameter> parameters;
 
-    public ReflectionStreamingService(final Object resource, final Method method) {
+    public ReflectionStreamingService(final Object resource, final Method method, final List<Parameter> parameters) {
         this.resource = resource;
         this.method = method;
+        this.parameters = parameters;
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public Single<StreamingHttpResponse> handle(final HttpServiceContext ctx, final StreamingHttpRequest request,
                                                 final StreamingHttpResponseFactory responseFactory) {
+
+        final Object[] params = new Object[parameters.size()];
+        for (int i = 0; i < parameters.size(); i++) {
+            params[i] = parameters.get(i).get(ctx, request, responseFactory);
+        }
+
         try {
-            return (Single<StreamingHttpResponse>) method.invoke(resource, ctx, request, responseFactory);
+            return (Single<StreamingHttpResponse>) method.invoke(resource, params);
         } catch (IllegalAccessException | InvocationTargetException e) {
            return Single.failed(e);
         }

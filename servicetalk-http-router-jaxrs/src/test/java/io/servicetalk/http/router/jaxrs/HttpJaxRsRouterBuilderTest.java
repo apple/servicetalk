@@ -24,12 +24,11 @@ import io.servicetalk.http.api.DefaultHttpHeadersFactory;
 import io.servicetalk.http.api.DefaultStreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.HttpExecutionContext;
 import io.servicetalk.http.api.HttpHeaders;
+import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.HttpResponseFactory;
-import io.servicetalk.http.api.HttpServiceContext;
 import io.servicetalk.http.api.StreamingHttpRequest;
 import io.servicetalk.http.api.StreamingHttpRequestResponseFactory;
 import io.servicetalk.http.api.StreamingHttpResponse;
-import io.servicetalk.http.api.StreamingHttpResponseFactory;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.api.TestHttpServiceContext;
 
@@ -48,6 +47,7 @@ import java.util.Iterator;
 import java.util.Set;
 import java.util.Spliterator;
 import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
 import javax.ws.rs.core.Application;
 
 import static io.servicetalk.concurrent.api.Completable.completed;
@@ -73,7 +73,6 @@ public class HttpJaxRsRouterBuilderTest {
     public final ExpectedException expected = ExpectedException.none();
     @Rule
     public final Timeout timeout = new ServiceTalkTestTimeout();
-
     @Mock
     StreamingHttpService serviceA, serviceB, serviceC, serviceD, serviceE, fallbackService;
     @Mock
@@ -149,15 +148,19 @@ public class HttpJaxRsRouterBuilderTest {
                 .from(application);
 
         when(request.path()).thenReturn("/all/a");
+        when(request.method()).thenReturn(HttpRequestMethod.GET);
         assertSame(responseA, service.handle(ctx, request, reqRespFactory));
 
         when(request.path()).thenReturn("/all/b");
+        when(request.method()).thenReturn(HttpRequestMethod.GET);
         assertSame(responseB, service.handle(ctx, request, reqRespFactory));
 
         when(request.path()).thenReturn("/all/b/1");
+        when(request.method()).thenReturn(HttpRequestMethod.GET);
         assertSame(responseC, service.handle(ctx, request, reqRespFactory));
 
         when(request.path()).thenReturn("/all/c/1/abc");
+        when(request.method()).thenReturn(HttpRequestMethod.GET);
         assertSame(responseD, service.handle(ctx, request, reqRespFactory));
     }
 
@@ -165,26 +168,22 @@ public class HttpJaxRsRouterBuilderTest {
     public final class TestResource {
 
         @Path("/a")
-        Single<StreamingHttpResponse> a(HttpServiceContext ctx, StreamingHttpRequest request,
-                                             StreamingHttpResponseFactory responseFactory) {
+        Single<StreamingHttpResponse> a() {
             return responseA;
         }
 
         @Path("/b")
-        Single<StreamingHttpResponse> b(HttpServiceContext ctx, StreamingHttpRequest request,
-                                             StreamingHttpResponseFactory responseFactory) {
+        Single<StreamingHttpResponse> b() {
             return responseB;
         }
 
         @Path("/b/{c}")
-        Single<StreamingHttpResponse> param(HttpServiceContext ctx, StreamingHttpRequest request,
-                                             StreamingHttpResponseFactory responseFactory) {
+        Single<StreamingHttpResponse> param(@PathParam("c") String c) {
             return responseC;
         }
 
         @Path("/c/{a}/{b}")
-        Single<StreamingHttpResponse> paramAb(HttpServiceContext ctx, StreamingHttpRequest request,
-                                             StreamingHttpResponseFactory responseFactory) {
+        Single<StreamingHttpResponse> paramAb(@PathParam("a") String a, @PathParam("b") String b) {
             return responseD;
         }
     }

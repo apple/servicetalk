@@ -18,16 +18,29 @@ package io.servicetalk.http.router.jaxrs;
 import io.servicetalk.http.api.BlockingHttpService;
 import io.servicetalk.http.api.BlockingStreamingHttpService;
 import io.servicetalk.http.api.HttpApiConversions;
+import io.servicetalk.http.api.HttpRequestMethod;
 import io.servicetalk.http.api.HttpService;
 import io.servicetalk.http.api.StreamingHttpService;
 import io.servicetalk.http.router.predicate.HttpPredicateRouterBuilder;
 
-import org.glassfish.jersey.uri.PathTemplate;
-
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
-import java.util.regex.Pattern;
+import java.util.ArrayList;
+import java.util.List;
+import javax.ws.rs.Consumes;
+import javax.ws.rs.CookieParam;
+import javax.ws.rs.DELETE;
+import javax.ws.rs.DefaultValue;
+import javax.ws.rs.FormParam;
+import javax.ws.rs.HeaderParam;
+import javax.ws.rs.POST;
+import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Application;
+import javax.ws.rs.core.Context;
+import javax.ws.rs.core.MediaType;
 
 /**
  * Builds an {@link StreamingHttpService} which routes requests to JAX-RS annotated classes,
@@ -50,16 +63,6 @@ public final class HttpJaxRsRouterBuilder {
     }
 
     /**
-     * Build the {@link HttpService} for the specified JAX-RS {@link Application} class.
-     *
-     * @param applicationClass the {@link Application} class to instantiate and route requests to.
-     * @return the {@link HttpService}.
-     */
-    public HttpService build(final Class<? extends Application> applicationClass) {
-        return toAggregated(from(applicationClass));
-    }
-
-    /**
      * Build the {@link StreamingHttpService} for the specified JAX-RS {@link Application}.
      *
      * @param application the {@link Application} to route requests to.
@@ -67,16 +70,6 @@ public final class HttpJaxRsRouterBuilder {
      */
     public StreamingHttpService buildStreaming(final Application application) {
         return from(application);
-    }
-
-    /**
-     * Build the {@link StreamingHttpService} for the specified JAX-RS {@link Application} class.
-     *
-     * @param applicationClass the {@link Application} class to instantiate and route requests to.
-     * @return the {@link StreamingHttpService}.
-     */
-    public StreamingHttpService buildStreaming(final Class<? extends Application> applicationClass) {
-        return from(applicationClass);
     }
 
     /**
@@ -90,16 +83,6 @@ public final class HttpJaxRsRouterBuilder {
     }
 
     /**
-     * Build the {@link BlockingHttpService} for the specified JAX-RS {@link Application} class.
-     *
-     * @param applicationClass the {@link Application} class to instantiate and route requests to.
-     * @return the {@link BlockingHttpService}.
-     */
-    public BlockingHttpService buildBlocking(final Class<? extends Application> applicationClass) {
-        return toBlocking(from(applicationClass));
-    }
-
-    /**
      * Build the {@link BlockingStreamingHttpService} for the specified JAX-RS {@link Application}.
      *
      * @param application the {@link Application} to route requests to.
@@ -109,35 +92,14 @@ public final class HttpJaxRsRouterBuilder {
         return toBlockingStreaming(from(application));
     }
 
-    /**
-     * Build the {@link BlockingStreamingHttpService} for the specified JAX-RS {@link Application} class.
-     *
-     * @param applicationClass the {@link Application} class to instantiate and route requests to.
-     * @return the {@link BlockingStreamingHttpService}.
-     */
-    public BlockingStreamingHttpService buildBlockingStreaming(final Class<? extends Application> applicationClass) {
-        return toBlockingStreaming(from(applicationClass));
-    }
-
-    // Some tests need access to router.configuration() which is no longer exposed after conversion/wrapping so we let
-    // tests do the API conversions using these methods. This ensures that once this implementation changes (or
-    // potentially API conversions may no longer be needed in the future) that we don't forget to update the tests
-    // accordingly.
-
-    StreamingHttpService from(final Class<? extends Application> applicationClass) {
-
-        final Application application;
-        try {
-            application = applicationClass.newInstance();
-        } catch (InstantiationException | IllegalAccessException e) {
-            throw new RuntimeException(e);
-        }
-        return from(application);
-    }
-
     public StreamingHttpService from(final Application application) {
 
         HttpPredicateRouterBuilder routerBuilder = new HttpPredicateRouterBuilder();
+
+        if (!application.getClasses().isEmpty()) {
+            throw new UnsupportedOperationException("Method application.getClasses() is not supported. " +
+                    "Use application.getSingletons() instead");
+        }
 
         for (Object resource : application.getSingletons()) {
 
@@ -154,12 +116,82 @@ public final class HttpJaxRsRouterBuilder {
                     continue;
                 }
 
-                final StreamingHttpService streamingService = new ReflectionStreamingService(resource, method);
+                Consumes consumes = method.getAnnotation(Consumes.class);
+                String contentType = MediaType.APPLICATION_JSON;
+                if (consumes != null) {
+                    contentType = consumes.value()[0];
+                }
 
-                final PathTemplate pathTemplate = new PathTemplate(rootPath.value() + methodPath.value());
-                final Pattern pathPattern = Pattern.compile(pathTemplate.getPattern().getRegex());
+                final HttpRequestMethod httpMethod;
 
-                routerBuilder.whenPathMatches(pathPattern)
+                if (method.isAnnotationPresent(POST.class)) {
+                    httpMethod = HttpRequestMethod.POST;
+                } else if (method.isAnnotationPresent(PUT.class)) {
+                    httpMethod = HttpRequestMethod.PUT;
+                } else if (method.isAnnotationPresent(DELETE.class)) {
+                    httpMethod = HttpRequestMethod.DELETE;
+                } else {
+                    httpMethod = HttpRequestMethod.GET;
+                }
+
+                final String path = rootPath.value() + methodPath.value();
+                final PathTemplateDelegate pathTemplate = new PathTemplateDelegate(path);
+
+                final List<Parameter> parameters = new ArrayList<>(method.getParameterCount());
+
+                for (int i = 0; i < method.getParameterCount(); i++) {
+                    java.lang.reflect.Parameter parameter = method.getParameters()[i];
+
+                    final QueryParam queryParamAnnotation = parameter.getAnnotation(QueryParam.class);
+                    if (queryParamAnnotation != null) {
+                        final DefaultValue defaultValueAnnotation = parameter.getAnnotation(DefaultValue.class);
+                        String defaultValue = defaultValueAnnotation == null ? null : defaultValueAnnotation.value();
+                        parameters.add(i, new QueryParameter(queryParamAnnotation.value(),
+                                parameter.getType(), defaultValue));
+                    }
+
+                    final PathParam pathParamAnnotation = parameter.getAnnotation(PathParam.class);
+                    if (pathParamAnnotation != null) {
+                        parameters.add(i, new PathParameter(pathParamAnnotation.value(),
+                                parameter.getType(), pathTemplate));
+                    }
+
+                    final FormParam formParamAnnotation = parameter.getAnnotation(FormParam.class);
+                    if (formParamAnnotation != null) {
+                        parameters.add(i, new FormParameter(formParamAnnotation.value(), parameter.getType()));
+                    }
+
+                    final HeaderParam headerParamAnnotation = parameter.getAnnotation(HeaderParam.class);
+                    if (headerParamAnnotation != null) {
+                        parameters.add(i, new HeaderParameter(headerParamAnnotation.value(), parameter.getType()));
+                    }
+
+                    final CookieParam cookieParamAnnotation = parameter.getAnnotation(CookieParam.class);
+                    if (cookieParamAnnotation != null) {
+                        parameters.add(i, new CookieParameter(cookieParamAnnotation.value(), parameter.getType()));
+                    }
+
+                    final Annotation contextAnnotation = parameter.getAnnotation(Context.class);
+                    if (contextAnnotation != null) {
+                        parameters.add(i, new ContextParameter(parameter.getType()));
+                    }
+
+                    if (pathParamAnnotation == null &&
+                            queryParamAnnotation == null &&
+                            formParamAnnotation == null &&
+                            contextAnnotation == null &&
+                            headerParamAnnotation == null &&
+                            cookieParamAnnotation == null
+                    ) {
+                        parameters.add(i, new BodyParameter(parameter.getName(), parameter.getType(), contentType));
+                    }
+                }
+
+                final StreamingHttpService streamingService =
+                        new ReflectionStreamingService(resource, method, parameters);
+
+                routerBuilder.whenPathMatches(pathTemplate.getRegex())
+                        .andMethod(httpMethod)
                         .thenRouteTo(streamingService);
             }
         }
