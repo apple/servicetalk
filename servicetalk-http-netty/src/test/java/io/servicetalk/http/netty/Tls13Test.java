@@ -126,6 +126,9 @@ public class Tls13Test {
                 SSLSession sslSession = connection.connectionContext().sslSession();
                 assertThat(sslSession, is(notNullValue()));
                 assertThat(sslSession.getProtocol(), equalTo(TLS1_3));
+                if (cipher != null) {
+                    assertThat(sslSession.getCipherSuite(), equalTo(cipher));
+                }
                 HttpResponse response = client.request(client.post("/")
                         .payloadBody("request-payload-body", textSerializer()));
 
