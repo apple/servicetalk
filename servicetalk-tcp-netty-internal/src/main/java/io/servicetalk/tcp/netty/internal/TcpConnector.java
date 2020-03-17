@@ -244,15 +244,16 @@ public final class TcpConnector {
                         }
 
                         @Override
-                        public void onSuccess(final C connection) {
-                            requireNonNull(connection);
+                        public void onSuccess(@Nullable final C connection) {
                             if (terminatedUpdater.compareAndSet(ConnectHandler.this, 0, 1)) {
                                 target.onSuccess(connection);
                             } else {
                                 LOGGER.info("Connection {} created for a channel: {} but connect failed previously. " +
                                                 "Closing connection",
                                         connection, channel);
-                                connection.closeAsync().subscribe();
+                                if (connection != null) {
+                                    connection.closeAsync().subscribe();
+                                }
                             }
                         }
 

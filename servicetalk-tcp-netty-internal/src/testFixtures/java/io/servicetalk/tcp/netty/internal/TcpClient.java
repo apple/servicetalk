@@ -87,7 +87,7 @@ public final class TcpClient {
     }
 
     /**
-     * Connect and await for the connection.
+     * Connect to the passed {@code address}.
      *
      * @param executionContext {@link ExecutionContext} to use for the connections.
      * @param address to connect.
