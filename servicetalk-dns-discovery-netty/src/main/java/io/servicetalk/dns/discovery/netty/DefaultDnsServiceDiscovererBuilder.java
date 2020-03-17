@@ -39,7 +39,8 @@ import static io.servicetalk.concurrent.api.RetryStrategies.retryWithConstantBac
 import static io.servicetalk.transport.netty.internal.GlobalExecutionContext.globalExecutionContext;
 
 /**
- * Builder use to create objects of type {@link DefaultDnsServiceDiscoverer}.
+ * Builder for DNS {@link ServiceDiscoverer} which will attempt to resolve {@code A}, {@code AAAA}, and {@code CNAME}
+ * type queries.
  */
 public final class DefaultDnsServiceDiscovererBuilder {
     @Nullable

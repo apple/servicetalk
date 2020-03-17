@@ -16,8 +16,9 @@ primary concern.
 ** Error propagation follows multiple paths depending on the event and state of Channel
 ** Back-pressure requires manual association between source and sink of data
 * **Lacking Feature Set**
-** Smart Client (e.g. client-side load balancing, service discovery, retry, circuit breaking, etc...) features are
-missing.
+** Smart Client (e.g. client-side xref:{page-version}@servicetalk-loadbalancer::index.adoc[load balancing],
+xref:{page-version}@servicetalk-client-api::service-discovery.adoc[service discovery], retry, circuit breaking, etc...)
+features are missing.
 
 ServiceTalk addresses these challenges and includes support for multiple
 xref:{page-version}@servicetalk::programming-paradigms.adoc[Programming Paradigms]. It accomplishes this by building

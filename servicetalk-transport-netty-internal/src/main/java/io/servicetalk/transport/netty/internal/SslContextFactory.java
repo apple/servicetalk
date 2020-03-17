@@ -1,5 +1,5 @@
 /*
- * Copyright © 2018-2019 Apple Inc. and the ServiceTalk project authors
+ * Copyright © 2018-2020 Apple Inc. and the ServiceTalk project authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -70,10 +70,11 @@ public final class SslContextFactory {
         }
         builder.sslProvider(toNettySslProvider(config.provider(), !supportedAlpnProtocols.isEmpty()));
 
+        builder.protocols(config.protocols());
         builder.ciphers(config.ciphers());
         builder.applicationProtocolConfig(nettyApplicationProtocol(supportedAlpnProtocols));
         try {
-            return new WrappingSslContext(builder.build(), config.protocols());
+            return builder.build();
         } catch (SSLException e) {
             throw new IllegalArgumentException(e);
         }
@@ -126,11 +127,12 @@ public final class SslContextFactory {
                 throw new IllegalArgumentException("Unsupported ClientAuth value: " + config.clientAuth());
         }
         configureTrustManager(config, builder);
+        builder.protocols(config.protocols());
         builder.ciphers(config.ciphers());
 
         builder.sslProvider(toNettySslProvider(config.provider(), !supportedAlpnProtocols.isEmpty()));
         try {
-            return new WrappingSslContext(builder.build(), config.protocols());
+            return builder.build();
         } catch (SSLException e) {
             throw new IllegalArgumentException(e);
         }

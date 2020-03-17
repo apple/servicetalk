@@ -124,8 +124,9 @@ A `Client` is generally responsible for managing multiple `Connections`. There a
 
 === SingleAddress Client
 This `Client` will connect to a single unresolved address, that is provided while creating the client. The unresolved
-address is resolved via an asynchronous DNS resolver by default (see <<Service Discovery>>). This `Client` is for use
-cases where you want to issue requests to a single service (that may have multiple instances).
+address is resolved via an asynchronous DNS resolver by default (see
+xref:{page-version}@servicetalk-client-api::service-discovery.adoc#domain-name-system-dns[Service Discovery]).
+This `Client` is for use cases where you want to issue requests to a single service (that may have multiple instances).
 
 === MultiAddress Client
 This `Client` parses the link:https://tools.ietf.org/html/rfc7230#section-5.3[request-target] to determine the remote
@@ -134,6 +135,7 @@ address for each request. This `Client` simulates a browser type of use case.
 Each of the above ``Client``s can be created via the
 link:{source-root}/servicetalk-http-netty/src/main/java/io/servicetalk/http/netty/HttpClients.java[HttpClients] static factory.
 
+=== Connections
 The `Client` manages multiple `Connections` via a
 xref:{page-version}@servicetalk-loadbalancer::index.adoc[LoadBalancer]. The control flow of a request/response can be
 visualized in the below diagram:
@@ -209,36 +211,6 @@ control flow.
                                         |    +---------------------+     +---------------------+     +--------------+     +----------------------+     +--------+
                                         \--->| Connection Filter 1 |<--->| Connection Filter n |<--->| Connection x |<--->| HTTP Decoder/Encoder |<--->| Socket |
                                              +---------------------+     +---------------------+     +--------------+     +----------------------+     +--------+
-----
-
-=== Service Discovery
-Another core component of the `Client` is the
-link:{source-root}/servicetalk-client-api/src/main/java/io/servicetalk/client/api/ServiceDiscoverer.java[ServiceDiscoverer]. The
-`ServiceDiscoverer` is responsible for resolving a service address into a set of resolved addresses used to create
-`Connection`(s) by the `LoadBalancer`. The default implementation for HTTP is DNS and will resolve the IP addresses of
-each service address every link:https://tools.ietf.org/html/rfc1035#section-3.2.1[TTL] seconds. ``ServiceDiscoverer``s
-are typically not invoked in the request/response path and addresses are resolved "out of band", a.k.a in the
-background.
-
-[ditaa]
-----
-                     +------------+
-                     |   Service  |
-                     | Discoverer |
-                     +------------+
-                           ^
-                           |
-                           |                 +--------------+
-                           |            /--->| Connection 1 |
-                           V            |    +--------------+
-+--------+ request  +--------------+    |
-|        |--------->|              |    |    +--------------+
-| Client |          | LoadBalancer |<---+--->| Connection 2 |
-|        |<---------|              |    |    +--------------+
-+--------+ response +--------------+    |
-                                        |    +--------------+
-                                        \--->| Connection x |
-                                             +--------------+
 ----
 
 == Using HTTP/2 transport
