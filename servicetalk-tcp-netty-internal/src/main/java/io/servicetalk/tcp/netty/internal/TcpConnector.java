@@ -248,8 +248,8 @@ public final class TcpConnector {
                             if (terminatedUpdater.compareAndSet(ConnectHandler.this, 0, 1)) {
                                 target.onSuccess(connection);
                             } else {
-                                LOGGER.info("Connection {} created for a channel: {} but connect failed previously. " +
-                                                "Closing connection",
+                                LOGGER.debug("Connection {} created for a channel: {} but connect failed previously. " +
+                                                "Closing connection.",
                                         connection, channel);
                                 if (connection != null) {
                                     connection.closeAsync().subscribe();
