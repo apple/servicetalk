@@ -426,28 +426,33 @@ public class HttpRequestEncoderTest {
             assert cConfig.h1Config() != null;
 
             NettyConnection<Object, Object> conn = resources.prepend(
-            TcpConnector.connect(null, serverHostAndPort(serverContext), cConfig.tcpConfig(), false, CEC)
-            .flatMap(channel -> {
-                CloseHandler closeHandler = spy(forPipelinedRequestResponse(true, channel.config()));
-                closeHandlerRef.compareAndSet(null, closeHandler);
-                return DefaultNettyConnection.initChannel(channel, CEC.bufferAllocator(), CEC.executor(),
-                        new TerminalPredicate<>(o -> o instanceof HttpHeaders), closeHandler, defaultFlushStrategy(),
-                        null, new TcpClientChannelInitializer(cConfig.tcpConfig())
-                            .andThen(new HttpClientChannelInitializer(getByteBufAllocator(CEC.bufferAllocator()),
-                                    cConfig.h1Config(), closeHandler))
-                            .andThen(channel2 -> channel2.pipeline().addLast(new ChannelInboundHandlerAdapter() {
-                                @Override
-                                public void userEventTriggered(ChannelHandlerContext ctx, Object evt) {
-                                    // Propagate the user event in the pipeline before triggering the test
-                                    // condition.
-                                    ctx.fireUserEventTriggered(evt);
-                                    if (evt instanceof ChannelInputShutdownReadComplete) {
-                                        serverCloseTrigger.onComplete();
-                                    }
-                                }
-                            })), defaultStrategy(), HTTP_1_1);
-                    }
-            ).toFuture().get());
+                    TcpConnector.connect(null, serverHostAndPort(serverContext), cConfig.tcpConfig(), false,
+                            CEC, channel -> {
+                                CloseHandler closeHandler = spy(forPipelinedRequestResponse(true, channel.config()));
+                                closeHandlerRef.compareAndSet(null, closeHandler);
+                                return DefaultNettyConnection.initChannel(channel, CEC.bufferAllocator(),
+                                        CEC.executor(),
+                                        new TerminalPredicate<>(o -> o instanceof HttpHeaders), closeHandler,
+                                        defaultFlushStrategy(), null,
+                                        new TcpClientChannelInitializer(cConfig.tcpConfig())
+                                                .andThen(new HttpClientChannelInitializer(
+                                                        getByteBufAllocator(CEC.bufferAllocator()),
+                                                        cConfig.h1Config(), closeHandler))
+                                                .andThen(channel2 -> channel2.pipeline()
+                                                        .addLast(new ChannelInboundHandlerAdapter() {
+                                                            @Override
+                                                            public void userEventTriggered(ChannelHandlerContext ctx,
+                                                                                           Object evt) {
+                                                                // Propagate the user event in the pipeline before
+                                                                // triggering the test condition.
+                                                                ctx.fireUserEventTriggered(evt);
+                                                                if (evt instanceof ChannelInputShutdownReadComplete) {
+                                                                    serverCloseTrigger.onComplete();
+                                                                }
+                                                            }
+                                                        })), defaultStrategy(), HTTP_1_1);
+                            }
+                    ).toFuture().get());
 
             // The server needs to wait to close the conneciton until after the client has established the connection.
             serverChannelLatch.await();

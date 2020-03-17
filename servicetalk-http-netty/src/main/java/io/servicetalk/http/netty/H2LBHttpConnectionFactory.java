@@ -55,8 +55,8 @@ final class H2LBHttpConnectionFactory<ResolvedAddress> extends AbstractLBHttpCon
         // This state is read only, so safe to keep a copy across Subscribers
         final ReadOnlyTcpClientConfig roTcpClientConfig = config.tcpConfig();
         // Auto read is required for h2
-        return TcpConnector.connect(null, resolvedAddress, roTcpClientConfig, true, executionContext)
-                .flatMap(channel -> H2ClientParentConnectionContext.initChannel(channel,
+        return TcpConnector.connect(null, resolvedAddress, roTcpClientConfig, true,
+                executionContext, channel -> H2ClientParentConnectionContext.initChannel(channel,
                         executionContext.bufferAllocator(), executionContext.executor(),
                         config.h2Config(), reqRespFactory, roTcpClientConfig.flushStrategy(),
                         roTcpClientConfig.idleTimeoutMs(), executionContext.executionStrategy(),

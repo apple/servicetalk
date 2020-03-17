@@ -62,8 +62,8 @@ final class AlpnLBHttpConnectionFactory<ResolvedAddress> extends AbstractLBHttpC
         final ReadOnlyTcpClientConfig roTcpClientConfig = config.tcpConfig();
         // We disable auto read by default so we can handle stuff in the ConnectionFilter before we accept any content.
         // In case ALPN negotiates h2, h2 connection MUST enable auto read for its Channel.
-        return TcpConnector.connect(null, resolvedAddress, roTcpClientConfig, false, executionContext)
-                .flatMap(this::createConnection);
+        return TcpConnector.connect(null, resolvedAddress, roTcpClientConfig, false,
+                executionContext, this::createConnection);
     }
 
     private Single<FilterableStreamingHttpConnection> createConnection(final Channel channel) {
