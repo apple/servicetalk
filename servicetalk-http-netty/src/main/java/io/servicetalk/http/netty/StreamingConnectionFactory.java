@@ -42,8 +42,8 @@ final class StreamingConnectionFactory {
             final HttpExecutionContext executionContext, final ResolvedAddress resolvedAddress,
             final ReadOnlyHttpClientConfig roConfig) {
         // We disable auto read so we can handle stuff in the ConnectionFilter before we accept any content.
-        return TcpConnector.connect(null, resolvedAddress, roConfig.tcpConfig(), false, executionContext)
-                .flatMap(channel -> createConnection(channel, executionContext, roConfig,
+        return TcpConnector.connect(null, resolvedAddress, roConfig.tcpConfig(), false,
+                executionContext, channel -> createConnection(channel, executionContext, roConfig,
                         new TcpClientChannelInitializer(roConfig.tcpConfig(), roConfig.hasProxy())));
     }
 
