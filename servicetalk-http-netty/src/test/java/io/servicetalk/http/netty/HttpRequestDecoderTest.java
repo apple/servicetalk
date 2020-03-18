@@ -15,481 +15,272 @@
  */
 package io.servicetalk.http.netty;
 
-import io.servicetalk.buffer.api.Buffer;
 import io.servicetalk.http.api.DefaultHttpHeadersFactory;
-import io.servicetalk.http.api.HttpHeaders;
+import io.servicetalk.http.api.HttpMetaData;
+import io.servicetalk.http.api.HttpProtocolVersion;
 import io.servicetalk.http.api.HttpRequestMetaData;
+import io.servicetalk.http.api.HttpRequestMethod;
 
-import io.netty.buffer.Unpooled;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.handler.codec.DecoderException;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
-import java.util.concurrent.ThreadLocalRandom;
 
-import static io.netty.buffer.Unpooled.wrappedBuffer;
-import static io.netty.util.AsciiString.contentEquals;
 import static io.servicetalk.buffer.netty.BufferAllocators.DEFAULT_ALLOCATOR;
 import static io.servicetalk.buffer.netty.BufferUtils.getByteBufAllocator;
-import static io.servicetalk.http.api.HttpHeaderNames.CONTENT_LENGTH;
-import static io.servicetalk.http.api.HttpHeaderNames.USER_AGENT;
-import static io.servicetalk.http.api.HttpHeaderValues.KEEP_ALIVE;
 import static io.servicetalk.http.api.HttpProtocolVersion.HTTP_1_1;
 import static io.servicetalk.http.api.HttpRequestMethod.GET;
+import static io.servicetalk.http.api.HttpRequestMethod.POST;
+import static io.servicetalk.http.api.HttpRequestMethod.Properties.NONE;
 import static java.lang.Integer.toHexString;
-import static java.nio.charset.StandardCharsets.US_ASCII;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertThrows;
 
-public class HttpRequestDecoderTest {
-    @Rule
-    public final ExpectedException expectedException = ExpectedException.none();
+public class HttpRequestDecoderTest extends HttpObjectDecoderTest {
+
+    private final EmbeddedChannel channel = new EmbeddedChannel(new HttpRequestDecoder(new ArrayDeque<>(),
+            getByteBufAllocator(DEFAULT_ALLOCATOR), DefaultHttpHeadersFactory.INSTANCE, 8192, 8192));
+
+    @Override
+    protected EmbeddedChannel channel() {
+        return channel;
+    }
+
+    @Override
+    String startLine() {
+        return "GET / HTTP/1.1";
+    }
+
+    @Override
+    HttpMetaData assertStartLine() {
+        return assertRequestLine(GET, "/", HTTP_1_1);
+    }
+
+    @Override
+    String startLineForContent() {
+        return "POST /some/path HTTP/1.1";
+    }
+
+    @Override
+    HttpMetaData assertStartLineForContent() {
+        return assertRequestLine(POST, "/some/path", HTTP_1_1);
+    }
+
+    @Test
+    public void illegalPrefaceCharacter() {
+        assertDecoderException(' ' + startLine() + "\r\n", "Illegal character");
+    }
+
+    @Test
+    public void noMethod() {
+        assertDecoderException("/ HTTP/1.1" + "\r\n", "Invalid initial line");
+    }
+
+    @Test
+    public void noRequestTarget() {
+        assertDecoderException("GET HTTP/1.1" + "\r\n", "Invalid initial line");
+    }
 
     @Test
     public void noVersion() {
-        EmbeddedChannel channel = newEmbeddedChannel();
-        byte[] content = new byte[128];
-        ThreadLocalRandom.current().nextBytes(content);
-        byte[] beforeContentBytes = ("GET /some/path?foo=bar&baz=yyy " + "\r\n" +
-                "Connection: keep-alive" + "\r\n" +
-                "User-Agent: unit-test" + "\r\n" +
-                "Content-Length: " + content.length + "\r\n" + "\r\n").getBytes(US_ASCII);
-        expectedException.expect(DecoderException.class);
-        expectedException.expectCause(instanceOf(IllegalArgumentException.class));
-        assertTrue(channel.writeInbound(wrappedBuffer(beforeContentBytes)));
+        assertDecoderException("GET / " + "\r\n", "Invalid http version");
     }
 
     @Test
-    public void noContentNoTrailers() {
-        EmbeddedChannel channel = newEmbeddedChannel();
-        byte[] beforeContentBytes = ("GET /some/path?foo=bar&baz=yyy HTTP/1.1" + "\r\n" +
-                "Connection: keep-alive" + "\r\n" +
-                "User-Agent: unit-test" + "\r\n" +
-                "Content-Length: 0" + "\r\n" + "\r\n").getBytes(US_ASCII);
-        assertTrue(channel.writeInbound(wrappedBuffer(beforeContentBytes)));
+    public void invalidStartLineOrder() {
+        assertDecoderException("GET HTTP/1.1 /" + "\r\n", "Invalid http version");
+    }
 
-        validateHttpRequest(channel, 0);
+    @Test
+    public void illegalEndSpCharacter() {
+        assertDecoderException("GET / HTTP/1.1 " + "\r\n", "Invalid http version");
+    }
+
+    @Test
+    public void invalidMethodName() {
+        assertDecoderException("GeT / HTTP/1.1" + "\r\n", "HTTP request method MUST contain only upper case letters");
+    }
+
+    @Test
+    public void invalidMethodNameNothingElse() {
+        assertDecoderException("GeT ", "HTTP request method MUST contain only upper case letters");
+    }
+
+    @Test
+    public void onlyMethodName() {
+        assertDecoderException("GET" + "\r\n", "Invalid initial line");
+    }
+
+    @Test
+    public void invalidRequestTargetWithControlCharacter() {
+        assertDecoderException("GET /\f/ HTTP/1.1" + "\r\n", "Illegal character");
+    }
+
+    @Test
+    public void invalidVersionPrefix() {
+        assertDecoderException("GET / HttP/1.1" + "\r\n", "Invalid http version");
+    }
+
+    @Test
+    public void invalidVersionSlash() {
+        assertDecoderException("GET / HTTP|1.1" + "\r\n", "Invalid http version");
+    }
+
+    @Test
+    public void invalidVersionMajor() {
+        assertDecoderException("GET / HTTP/5.1" + "\r\n", "Invalid http version");
+    }
+
+    @Test
+    public void invalidVersionDelimiter() {
+        assertDecoderException("GET / HTTP/1,1" + "\r\n", "Invalid http version");
+    }
+
+    @Test
+    public void invalidVersionMinorNotNumber() {
+        assertDecoderException("GET / HTTP/1.z" + "\r\n", "Illegal character");
+    }
+
+    @Test
+    public void twoWsBetweenMethodAndRequestTarget() {
+        assertDecoderException("GET  / HTTP/1.1" + "\r\n", "Invalid initial line");
+    }
+
+    @Test
+    public void twoWsBetweenRequestTargetAndVersion() {
+        assertDecoderException("GET /  HTTP/1.1" + "\r\n", "Invalid http version");
+    }
+
+    @Test
+    public void validStartLineWithCustomMethod() {
+        writeMsg("CUSTOM / HTTP/1.1" + "\r\n" + "\r\n");
+        assertRequestLine(HttpRequestMethod.of("CUSTOM", NONE), "/", HTTP_1_1);
+        assertEmptyTrailers(channel);
         assertFalse(channel.finishAndReleaseAll());
     }
 
     @Test
-    public void contentLengthNoTrailers() {
-        EmbeddedChannel channel = newEmbeddedChannel();
-        byte[] content = new byte[128];
-        ThreadLocalRandom.current().nextBytes(content);
-        byte[] beforeContentBytes = ("GET /some/path?foo=bar&baz=yyy HTTP/1.1" + "\r\n" +
-                "Connection: keep-alive" + "\r\n" +
-                "User-Agent: unit-test" + "\r\n" +
-                "Content-Length: " + content.length + "\r\n" + "\r\n").getBytes(US_ASCII);
-        assertTrue(channel.writeInbound(wrappedBuffer(beforeContentBytes)));
-        assertTrue(channel.writeInbound(wrappedBuffer(content)));
-
-        validateHttpRequest(channel, content.length);
+    public void validStartLineWithShortMethod() {
+        writeMsg("A / HTTP/1.1" + "\r\n" + "\r\n");
+        assertRequestLine(HttpRequestMethod.of("A", NONE), "/", HTTP_1_1);
+        assertEmptyTrailers(channel);
         assertFalse(channel.finishAndReleaseAll());
     }
 
     @Test
-    public void contentLengthNoTrailersHeaderWhiteSpace() {
-        EmbeddedChannel channel = newEmbeddedChannel();
-        byte[] content = new byte[128];
-        ThreadLocalRandom.current().nextBytes(content);
-        byte[] beforeContentBytes = ("GET /some/path?foo=bar&baz=yyy HTTP/1.1" + "\r\n" +
-                " Connection:  keep-alive " + "\r\n" +
-                "  User-Agent:        unit-test        " + "\r\n" +
-                "   Content-Length: " + content.length + "\r\n" + "\r\n").getBytes(US_ASCII);
-        assertTrue(channel.writeInbound(wrappedBuffer(beforeContentBytes)));
-        assertTrue(channel.writeInbound(wrappedBuffer(content)));
-
-        validateHttpRequest(channel, content.length);
+    public void validStartLineWithLongerPath() {
+        writeMsg("GET /some/path?foo=bar&baz=yyy HTTP/1.1" + "\r\n" + "\r\n");
+        assertRequestLine(GET, "/some/path?foo=bar&baz=yyy", HTTP_1_1);
+        assertEmptyTrailers(channel);
         assertFalse(channel.finishAndReleaseAll());
     }
 
     @Test
-    public void contentLengthNoTrailersHeaderNoWhiteSpace() {
-        EmbeddedChannel channel = newEmbeddedChannel();
-        byte[] content = new byte[128];
-        ThreadLocalRandom.current().nextBytes(content);
-        byte[] beforeContentBytes = ("GET /some/path?foo=bar&baz=yyy HTTP/1.1" + "\r\n" +
-                "Connection:keep-alive" + "\r\n" +
-                "User-Agent:unit-test" + "\r\n" +
-                "SingleCharacterNoWhiteSpace:a" + "\r\n" +
-                "Content-Length:" + content.length + "\r\n" + "\r\n").getBytes(US_ASCII);
-        assertTrue(channel.writeInbound(wrappedBuffer(beforeContentBytes)));
-        assertTrue(channel.writeInbound(wrappedBuffer(content)));
-
-        validateHttpRequest(channel, content.length);
+    public void validStartLineWithCustomHttpVersion() {
+        writeMsg("GET / HTTP/1.9" + "\r\n" + "\r\n");
+        assertRequestLine(GET, "/", HttpProtocolVersion.of(1, 9));
+        assertEmptyTrailers(channel);
         assertFalse(channel.finishAndReleaseAll());
-    }
-
-    @Test
-    public void contentLengthNoTrailersHeaderMixedWhiteSpace() {
-        EmbeddedChannel channel = newEmbeddedChannel();
-        byte[] content = new byte[128];
-        ThreadLocalRandom.current().nextBytes(content);
-        byte[] beforeContentBytes = ("GET /some/path?foo=bar&baz=yyy HTTP/1.1" + "\r\n" +
-                "Connection:keep-alive" + "\r\n" +
-                "   User-Agent:unit-test" + "\r\n" +
-                "Empty:" + "\r\n" +
-                "EmptyWhitespace:   " + "\r\n" +
-                "SingleCharacterNoWhiteSpace: a" + "\r\n" +
-                "Content-Length:   " + content.length + "   " + "\r\n" + "\r\n").getBytes(US_ASCII);
-        assertTrue(channel.writeInbound(wrappedBuffer(beforeContentBytes)));
-        assertTrue(channel.writeInbound(wrappedBuffer(content)));
-
-        validateHttpRequest(channel, content.length);
-        assertFalse(channel.finishAndReleaseAll());
-    }
-
-    @Test
-    public void chunkedNoTrailers() {
-        EmbeddedChannel channel = newEmbeddedChannel();
-        byte[] content = new byte[128];
-        ThreadLocalRandom.current().nextBytes(content);
-        byte[] beforeContentBytes = ("GET /some/path?foo=bar&baz=yyy HTTP/1.1" + "\r\n" +
-                "Connection: keep-alive" + "\r\n" +
-                "User-Agent: unit-test" + "\r\n" +
-                "Transfer-Encoding: chunked" + "\r\n" + "\r\n" +
-                toHexString(content.length) + ";\r\n").getBytes(US_ASCII);
-        byte[] afterContentBytes = "\r\n0\r\n\r\n".getBytes(US_ASCII);
-        assertTrue(channel.writeInbound(wrappedBuffer(beforeContentBytes)));
-        assertTrue(channel.writeInbound(wrappedBuffer(content)));
-        assertTrue(channel.writeInbound(wrappedBuffer(afterContentBytes)));
-        validateHttpRequest(channel, -content.length);
-        channel.finishAndReleaseAll();
-    }
-
-    @Test
-    public void chunkedNoTrailersMultipleLargeContent() {
-        EmbeddedChannel channel = newEmbeddedChannel();
-        byte[] content = new byte[4096];
-        final int numChunks = 5;
-        ThreadLocalRandom.current().nextBytes(content);
-        byte[] beforeContentBytes = ("GET /some/path?foo=bar&baz=yyy HTTP/1.1" + "\r\n" +
-                "Connection: keep-alive" + "\r\n" +
-                "User-Agent: unit-test" + "\r\n" +
-                "Transfer-Encoding: chunked" + "\r\n" + "\r\n").getBytes(US_ASCII);
-        byte[] chunkHeaderBytes = (toHexString(content.length) + "\r\n").getBytes(US_ASCII);
-        byte[] afterContentBytes = "0\r\n\r\n".getBytes(US_ASCII);
-        assertTrue(channel.writeInbound(wrappedBuffer(beforeContentBytes)));
-        for (int i = 0; i < numChunks; ++i) {
-            assertTrue(channel.writeInbound(wrappedBuffer(chunkHeaderBytes)));
-            assertTrue(channel.writeInbound(wrappedBuffer(content)));
-            assertTrue(channel.writeInbound(wrappedBuffer("\r\n".getBytes(US_ASCII))));
-        }
-        assertTrue(channel.writeInbound(wrappedBuffer(afterContentBytes)));
-        validateHttpRequest(channel, -(content.length * numChunks));
-        channel.finishAndReleaseAll();
-    }
-
-    @Test
-    public void chunkedNoTrailersMultipleLargeContentNoChunkCRLF() {
-        EmbeddedChannel channel = newEmbeddedChannel();
-        byte[] content = new byte[128];
-        ThreadLocalRandom.current().nextBytes(content);
-        byte[] beforeContentBytes = ("GET /some/path?foo=bar&baz=yyy HTTP/1.1" + "\r\n" +
-                "Connection: keep-alive" + "\r\n" +
-                "User-Agent: unit-test" + "\r\n" +
-                "Transfer-Encoding: chunked" + "\r\n" + "\r\n").getBytes(US_ASCII);
-        byte[] chunkHeaderBytes = (toHexString(content.length) + "\r\n").getBytes(US_ASCII);
-        byte[] afterContentBytes = "0\r\n\r\n".getBytes(US_ASCII);
-        assertTrue(channel.writeInbound(wrappedBuffer(beforeContentBytes)));
-        assertTrue(channel.writeInbound(wrappedBuffer(chunkHeaderBytes)));
-        assertTrue(channel.writeInbound(wrappedBuffer(content)));
-        // we omit writing the CRLF here intentionally
-        expectedException.expect(DecoderException.class);
-        expectedException.expectCause(instanceOf(IllegalStateException.class));
-        try {
-            assertTrue(channel.writeInbound(wrappedBuffer(afterContentBytes)));
-        } finally {
-            channel.finishAndReleaseAll();
-        }
-    }
-
-    @Test
-    public void chunkedWithTrailers() {
-        EmbeddedChannel channel = newEmbeddedChannel();
-        byte[] content = new byte[128];
-        ThreadLocalRandom.current().nextBytes(content);
-        byte[] beforeContentBytes = ("GET /some/path?foo=bar&baz=yyy HTTP/1.1" + "\r\n" +
-                "Connection: keep-alive" + "\r\n" +
-                "User-Agent: unit-test" + "\r\n" +
-                "Transfer-Encoding: chunked" + "\r\n" + "\r\n" +
-                toHexString(content.length) + ";\r\n").getBytes(US_ASCII);
-        byte[] afterContentBytes = ("\r\n0\r\n" +
-                "TrailerStatus: good" + "\r\n" + "\r\n").getBytes(US_ASCII);
-        assertTrue(channel.writeInbound(wrappedBuffer(beforeContentBytes)));
-        assertTrue(channel.writeInbound(wrappedBuffer(content)));
-        assertTrue(channel.writeInbound(wrappedBuffer(afterContentBytes)));
-        validateHttpRequest(channel, -content.length, true);
-        channel.finishAndReleaseAll();
     }
 
     @Test
     public void chunkedWithTrailersSplitOnNetwork() {
-        EmbeddedChannel channel = newEmbeddedChannel();
-        byte[] content = new byte[128];
-        ThreadLocalRandom.current().nextBytes(content);
-        List<byte[]> beforeContentBytes = new ArrayList<>();
-        beforeContentBytes.add("GET /some/pa".getBytes(US_ASCII));
-        beforeContentBytes.add("th?foo=bar&baz=yy".getBytes(US_ASCII));
-        beforeContentBytes.add(("y HTTP/1.1" + "\r").getBytes(US_ASCII));
-        beforeContentBytes.add(("\n" + "C").getBytes(US_ASCII));
-        beforeContentBytes.add("onnection".getBytes(US_ASCII));
-        beforeContentBytes.add(":".getBytes(US_ASCII));
-        beforeContentBytes.add((" keep-alive" + "\r").getBytes(US_ASCII));
-        beforeContentBytes.add("\n".getBytes(US_ASCII));
-        beforeContentBytes.add("\n".getBytes(US_ASCII));
-        beforeContentBytes.add("User-Agent: ".getBytes(US_ASCII));
-        beforeContentBytes.add(" unit-test".getBytes(US_ASCII));
-        beforeContentBytes.add("\r\n".getBytes(US_ASCII));
-        beforeContentBytes.add("Transfer-Encoding: chunked\r\n".getBytes(US_ASCII));
-        beforeContentBytes.add("\r".getBytes(US_ASCII));
-        beforeContentBytes.add("\n".getBytes(US_ASCII));
-        beforeContentBytes.add(toHexString(content.length).getBytes(US_ASCII));
-        beforeContentBytes.add(";".getBytes(US_ASCII));
-        beforeContentBytes.add("\r".getBytes(US_ASCII));
-        beforeContentBytes.add("\n".getBytes(US_ASCII));
-        List<byte[]> afterContentBytes = new ArrayList<>();
-        afterContentBytes.add("\r".getBytes(US_ASCII));
-        afterContentBytes.add("\n".getBytes(US_ASCII));
-        afterContentBytes.add("0".getBytes(US_ASCII));
-        afterContentBytes.add("\r".getBytes(US_ASCII));
-        afterContentBytes.add("\n".getBytes(US_ASCII));
-        afterContentBytes.add("TrailerStatus".getBytes(US_ASCII));
-        afterContentBytes.add(": good".getBytes(US_ASCII));
-        afterContentBytes.add("\r".getBytes(US_ASCII));
-        afterContentBytes.add("\n".getBytes(US_ASCII));
-        afterContentBytes.add("\r".getBytes(US_ASCII));
-        afterContentBytes.add("\n".getBytes(US_ASCII));
-        for (int i = 0; i < beforeContentBytes.size(); ++i) {
-            channel.writeInbound(wrappedBuffer(beforeContentBytes.get(i)));
+        int chunkLength = 128;
+        List<String> beforeContent = new ArrayList<>();
+        beforeContent.add("POST /so");
+        beforeContent.add("me/path");
+        beforeContent.add(" HTTP/1.1\r");
+        beforeContent.add("\nC");
+        beforeContent.add("onnection");
+        beforeContent.add(":");
+        beforeContent.add(" keep-alive\r");
+        beforeContent.add("\n");
+        beforeContent.add("\n");
+        beforeContent.add("Host: ");
+        beforeContent.add("service");
+        beforeContent.add("talk.io");
+        beforeContent.add("\r\n");
+        beforeContent.add("Transfer-Encoding: chunked\r\n");
+        beforeContent.add("\r");
+        beforeContent.add("\n");
+        beforeContent.add(toHexString(chunkLength));
+        beforeContent.add(";");
+        beforeContent.add("\r");
+        beforeContent.add("\n");
+        List<String> afterContent = new ArrayList<>();
+        afterContent.add("\r");
+        afterContent.add("\n");
+        afterContent.add("0");
+        afterContent.add("\r");
+        afterContent.add("\n");
+        afterContent.add("TrailerStatus");
+        afterContent.add(": good");
+        afterContent.add("\r");
+        afterContent.add("\n");
+        afterContent.add("\r");
+        afterContent.add("\n");
+        for (String msg : beforeContent) {
+            channel.writeInbound(fromAscii(msg));
         }
-        for (int i = 0; i < content.length; ++i) {
-            channel.writeInbound(Unpooled.wrappedBuffer(new byte[] {content[i]}));
+        // Write single chunk on two writes
+        writeContent(chunkLength / 2);
+        writeContent(chunkLength / 2);
+        for (String msg : afterContent) {
+            channel.writeInbound(fromAscii(msg));
         }
-        for (int i = 0; i < afterContentBytes.size(); ++i) {
-            channel.writeInbound(wrappedBuffer(afterContentBytes.get(i)));
-        }
-        validateHttpRequest(channel, -content.length, true);
-        channel.finishAndReleaseAll();
+        validateWithContent(-chunkLength, true);
     }
 
     @Test
-    public void chunkedNoTrailersNoContent() {
-        EmbeddedChannel channel = newEmbeddedChannel();
-        byte[] content = new byte[128];
-        ThreadLocalRandom.current().nextBytes(content);
-        byte[] beforeContentBytes = ("GET /some/path?foo=bar&baz=yyy HTTP/1.1" + "\r\n" +
-                "Connection: keep-alive" + "\r\n" +
-                "User-Agent: unit-test" + "\r\n" +
-                "Transfer-Encoding: chunked" + "\r\n" + "\r\n").getBytes(US_ASCII);
-        byte[] afterContentBytes = "0\r\n\r\n".getBytes(US_ASCII);
-        assertTrue(channel.writeInbound(wrappedBuffer(beforeContentBytes)));
-        assertTrue(channel.writeInbound(wrappedBuffer(afterContentBytes)));
+    public void noContentHeadersNoContent() {
+        writeMsg("POST /some/path HTTP/1.1" + "\r\n" +
+                "Host: servicetalk.io" + "\r\n" +
+                "Connection: keep-alive" + "\r\n" + "\r\n");
 
-        HttpRequestMetaData request = channel.readInbound();
-        assertStandardHeaders(request.headers());
-        HttpHeaders lastChunk = channel.readInbound();
-        assertTrue(lastChunk.isEmpty());
+        HttpMetaData metaData = assertStartLineForContent();
+        assertStandardHeaders(metaData.headers());
+        assertEmptyTrailers(channel);
         assertFalse(channel.finishAndReleaseAll());
     }
 
     @Test
-    public void variableNoTrailersNoContent() {
-        EmbeddedChannel channel = newEmbeddedChannel();
-        byte[] beforeContentBytes = ("GET /some/path?foo=bar&baz=yyy HTTP/1.1" + "\r\n" +
-                "Connection: keep-alive" + "\r\n" +
-                "User-Agent: unit-test" + "\r\n" + "\r\n").getBytes(US_ASCII);
-        assertTrue(channel.writeInbound(wrappedBuffer(beforeContentBytes)));
-
-        HttpRequestMetaData request = channel.readInbound();
-        assertStandardHeaders(request.headers());
-        HttpHeaders lastChunk = channel.readInbound();
-        assertTrue(lastChunk.isEmpty());
-        assertFalse(channel.finishAndReleaseAll());
+    public void unexpectedContentAfterNoContentHeaders() {
+        writeMsg("POST /some/path HTTP/1.1" + "\r\n" +
+                "Host: servicetalk.io" + "\r\n" +
+                "Connection: keep-alive" + "\r\n" + "\r\n");
+        // Content is not expected for requests if no "content-length" nor "transfer-encoding: chunked" is present
+        DecoderException e = assertThrows(DecoderException.class, () -> writeContent(128));
+        assertThat(e.getCause(), is(instanceOf(IllegalArgumentException.class)));
+        assertThat(channel.inboundMessages(), is(not(empty())));
     }
 
     @Test
-    public void variableNoTrailersWithInvalidContent() {
-        EmbeddedChannel channel = newEmbeddedChannel();
-        byte[] content = new byte[] {'h', 'e', 'l', 'l', 'o', '\r', '\n'};
-        byte[] beforeContentBytes = ("GET /some/path?foo=bar&baz=yyy HTTP/1.1" + "\r\n" +
-                "Connection: keep-alive" + "\r\n" +
-                "User-Agent: unit-test" + "\r\n" + "\r\n").getBytes(US_ASCII);
-        assertTrue(channel.writeInbound(wrappedBuffer(beforeContentBytes)));
-        expectedException.expect(instanceOf(DecoderException.class));
-        expectedException.expectCause(instanceOf(IllegalArgumentException.class));
-        channel.writeInbound(wrappedBuffer(content));
+    public void unexpectedTrailersAfterNoContentHeaders() {
+        writeMsg("POST /some/path HTTP/1.1" + "\r\n" +
+                "Host: servicetalk.io" + "\r\n" +
+                "Connection: keep-alive" + "\r\n" + "\r\n");
+        // Note that trailers are not allowed for requests without "transfer-encoding: chunked"
+        // https://tools.ietf.org/html/rfc7230#section-3.3
+        DecoderException e = assertThrows(DecoderException.class, () -> writeMsg("TrailerStatus: good\r\n\r\n"));
+        assertThat(e.getCause(), is(instanceOf(IllegalArgumentException.class)));
+        assertThat(channel.inboundMessages(), is(not(empty())));
     }
 
-    @Test(expected = DecoderException.class)
-    public void testWhitespaceNotAllowedBetweenHeaderFieldNameAndColon() {
-        EmbeddedChannel channel = newEmbeddedChannel();
-        try {
-            byte[] beforeContentBytes = ("GET /some/path HTTP/1.1\r\n" +
-                    "Transfer-Encoding : chunked\r\n" +
-                    "Host: servicetalk.io\r\n\r\n").getBytes(US_ASCII);
-
-            assertTrue(channel.writeInbound(wrappedBuffer(beforeContentBytes)));
-            channel.readInbound();
-        } finally {
-            channel.finishAndReleaseAll();
-        }
-    }
-
-    @Test(expected = DecoderException.class)
-    public void variableWithTrailers() {
-        EmbeddedChannel channel = newEmbeddedChannel();
-        byte[] content = new byte[128];
-        ThreadLocalRandom.current().nextBytes(content);
-        byte[] beforeContentBytes = ("GET /some/path?foo=bar&baz=yyy HTTP/1.1" + "\r\n" +
-                "Connection: keep-alive" + "\r\n" +
-                "User-Agent: unit-test" + "\r\n" + "\r\n").getBytes(US_ASCII);
-        // Note that trailers are not allowed when content is specified
-        // https://tools.ietf.org/html/rfc7230.html#section-4.1
-        byte[] afterContentBytes = "TrailerStatus: good\r\n".getBytes(US_ASCII);
-        try {
-            assertTrue(channel.writeInbound(wrappedBuffer(beforeContentBytes)));
-            assertTrue(channel.writeInbound(wrappedBuffer(content)));
-            assertTrue(channel.writeInbound(wrappedBuffer(afterContentBytes)));
-        } finally {
-            channel.finishAndReleaseAll();
-        }
-    }
-
-    @Test(expected = DecoderException.class)
-    public void contentLengthWithTrailers() {
-        EmbeddedChannel channel = newEmbeddedChannel();
-        byte[] content = new byte[128];
-        ThreadLocalRandom.current().nextBytes(content);
-        byte[] beforeContentBytes = ("GET /some/path?foo=bar&baz=yyy HTTP/1.1" + "\r\n" +
-                " Connection :  keep-alive " + "\r\n" +
-                "  User-Agent  :        unit-test        " + "\r\n" +
-                "   Content-Length  : " + content.length + "\r\n" + "\r\n").getBytes(US_ASCII);
-        // Note that trailers are not allowed when content is specified
-        // https://tools.ietf.org/html/rfc7230.html#section-4.1
-        byte[] afterContentBytes = "TrailerStatus: good\r\n".getBytes(US_ASCII);
-        try {
-            assertTrue(channel.writeInbound(wrappedBuffer(beforeContentBytes)));
-            assertTrue(channel.writeInbound(wrappedBuffer(content)));
-            assertTrue(channel.writeInbound(wrappedBuffer(afterContentBytes)));
-        } finally {
-            channel.finishAndReleaseAll();
-        }
-    }
-
-    @Test(expected = DecoderException.class)
-    public void invalidHttpVersion() {
-        EmbeddedChannel channel = newEmbeddedChannel();
-        byte[] content = new byte[128];
-        ThreadLocalRandom.current().nextBytes(content);
-        byte[] beforeContentBytes = ("GET /some/path?foo=bar&baz=yyy HTTP/1.z" + "\r\n").getBytes(US_ASCII);
-        try {
-            assertTrue(channel.writeInbound(wrappedBuffer(beforeContentBytes)));
-        } finally {
-            channel.finishAndReleaseAll();
-        }
-    }
-
-    @Test(expected = DecoderException.class)
-    public void invalidInitialLine() {
-        EmbeddedChannel channel = newEmbeddedChannel();
-        byte[] content = new byte[128];
-        ThreadLocalRandom.current().nextBytes(content);
-        byte[] beforeContentBytes = ("get").getBytes(US_ASCII);
-        try {
-            channel.writeInbound(wrappedBuffer(beforeContentBytes));
-        } finally {
-            channel.finishAndReleaseAll();
-        }
-    }
-
-    @Test
-    public void acceptShortRequestMethod() {
-        EmbeddedChannel channel = newEmbeddedChannel();
-        byte[] content = new byte[128];
-        ThreadLocalRandom.current().nextBytes(content);
-        byte[] beforeContentBytes = ("A / HTTP/1.1").getBytes(US_ASCII);
-        try {
-            assertFalse(channel.writeInbound(wrappedBuffer(beforeContentBytes)));
-        } finally {
-            channel.finishAndReleaseAll();
-        }
-    }
-
-    private static EmbeddedChannel newEmbeddedChannel() {
-        return new EmbeddedChannel(new HttpRequestDecoder(new ArrayDeque<>(), getByteBufAllocator(DEFAULT_ALLOCATOR),
-                DefaultHttpHeadersFactory.INSTANCE, 8192, 8192));
-    }
-
-    private static void validateHttpRequest(EmbeddedChannel channel, int expectedContentLength) {
-        validateHttpRequest(channel, expectedContentLength, false);
-    }
-
-    private static void validateHttpRequest(EmbeddedChannel channel, int expectedContentLength,
-                                            boolean containsTrailers) {
+    private HttpRequestMetaData assertRequestLine(HttpRequestMethod expectedMethod, String expectedRequestTarget,
+                                                  HttpProtocolVersion expectedVersion) {
         HttpRequestMetaData request = channel.readInbound();
-        assertEquals("/some/path?foo=bar&baz=yyy", request.requestTarget());
-        assertEquals(GET, request.method());
-        assertEquals(HTTP_1_1, request.version());
-        assertStandardHeaders(request.headers());
-        if (expectedContentLength > 0) {
-            assertSingleHeaderValue(request.headers(), CONTENT_LENGTH, String.valueOf(expectedContentLength));
-            Buffer chunk = channel.readInbound();
-            assertEquals(expectedContentLength, chunk.readableBytes());
-            HttpHeaders trailers = channel.readInbound();
-            assertTrue(trailers.isEmpty());
-        } else if (expectedContentLength == 0) {
-            assertSingleHeaderValue(request.headers(), CONTENT_LENGTH, String.valueOf(expectedContentLength));
-            HttpHeaders trailers = channel.readInbound();
-            assertTrue(trailers.isEmpty());
-        } else {
-            Buffer actual = DEFAULT_ALLOCATOR.newBuffer(-expectedContentLength);
-            Object chunk;
-            for (;;) {
-                chunk = channel.readInbound();
-                if (chunk instanceof Buffer) {
-                    actual.writeBytes(((Buffer) chunk));
-                } else {
-                    break;
-                }
-            }
-            assertEquals(-expectedContentLength, actual.readableBytes());
-            HttpHeaders lastChunk = (HttpHeaders) chunk;
-            if (containsTrailers) {
-                assertSingleHeaderValue(lastChunk, "TrailerStatus", "good");
-            } else {
-                assertTrue(lastChunk.isEmpty());
-            }
-        }
-    }
-
-    private static void assertStandardHeaders(HttpHeaders headers) {
-        assertSingleHeaderValue(headers, "connecTion", KEEP_ALIVE);
-        assertSingleHeaderValue(headers, USER_AGENT, "unit-test");
-        if (headers.contains("Empty")) {
-            assertSingleHeaderValue(headers, "Empty", "");
-            assertSingleHeaderValue(headers, "EmptyWhitespace", "");
-        }
-        if (headers.contains("SingleCharacterNoWhiteSpace")) {
-            assertSingleHeaderValue(headers, "SingleCharacterNoWhiteSpace", "a");
-        }
-    }
-
-    static void assertSingleHeaderValue(HttpHeaders headers, CharSequence name, CharSequence expectedValue) {
-        Iterator<? extends CharSequence> itr = headers.valuesIterator(name);
-        assertTrue("unabled to find header name '" + name + "'", itr.hasNext());
-        CharSequence value = itr.next();
-        assertTrue(name + " expected value of '" + expectedValue + "' but got: '" + value + "'",
-                contentEquals(expectedValue, value));
-        assertFalse(itr.hasNext());
+        assertThat(request.method(), equalTo(expectedMethod));
+        assertThat(request.requestTarget(), equalTo(expectedRequestTarget));
+        assertThat(request.version(), equalTo(expectedVersion));
+        return request;
     }
 }

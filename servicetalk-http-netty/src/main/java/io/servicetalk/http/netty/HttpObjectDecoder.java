@@ -53,10 +53,12 @@ import io.netty.util.ByteProcessor;
 
 import javax.annotation.Nullable;
 
+import static io.netty.handler.codec.http.HttpConstants.COLON;
 import static io.netty.handler.codec.http.HttpConstants.CR;
+import static io.netty.handler.codec.http.HttpConstants.HT;
+import static io.netty.handler.codec.http.HttpConstants.LF;
+import static io.netty.handler.codec.http.HttpConstants.SP;
 import static io.netty.util.ByteProcessor.FIND_LF;
-import static io.netty.util.ByteProcessor.FIND_LINEAR_WHITESPACE;
-import static io.netty.util.ByteProcessor.FIND_NON_LINEAR_WHITESPACE;
 import static io.servicetalk.buffer.netty.BufferUtils.newBufferFrom;
 import static io.servicetalk.http.api.CharSequences.emptyAsciiString;
 import static io.servicetalk.http.api.CharSequences.newAsciiString;
@@ -75,20 +77,49 @@ import static io.servicetalk.http.netty.HeaderUtils.removeTransferEncodingChunke
 import static io.servicetalk.http.netty.HttpKeepAlive.shouldClose;
 import static java.lang.Character.isISOControl;
 import static java.lang.Character.isWhitespace;
+import static java.lang.Long.parseUnsignedLong;
 import static java.lang.Math.min;
+import static java.lang.String.format;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.util.Objects.requireNonNull;
 
 abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDecoder {
-    private static final byte COLON_BYTE = (byte) ':';
-    private static final byte SPACE_BYTE = (byte) ' ';
-    private static final byte HTAB_BYTE = (byte) '\t';
-    private static final ByteProcessor FIND_COLON_OR_WHITE_SPACE =
-            value -> value != COLON_BYTE && value != SPACE_BYTE && value != HTAB_BYTE;
-    private static final ByteProcessor SKIP_CONTROL_CHARS_PROCESSOR = value ->
-        value == SPACE_BYTE || value == HTAB_BYTE || isISOControl((char) (value & 0xff));
+    private static final long HTTP_VERSION_FORMAT = 0x485454502f312e00L;    // HEX representation of "HTTP/1.x"
+    private static final long HTTP_VERSION_MASK = 0xffffffffffffff00L;
+    private static final ByteProcessor SKIP_PREFACING_CRLF = value -> {
+        if (isVCHAR(value)) {
+            return false;
+        }
+        if (value == CR || value == LF) {
+            return true;
+        }
+        throw newIllegalCharacter(value);
+    };
+    private static final ByteProcessor FIND_WS = value -> !isWS(value);
+    private static final ByteProcessor FIND_VCHAR_END = value -> {
+        if (isVCHAR(value)) {
+            return true;
+        }
+        if (isWS(value)) {
+            return false;
+        }
+        throw newIllegalCharacter(value);
+    };
+    private static final ByteProcessor FIND_COLON = value -> value != COLON;
+    private static final ByteProcessor FIND_FIELD_VALUE = value -> {
+        if (isWS(value)) {
+            return true;
+        }
+        if (isVCHAR(value) || isObsText(value)) {
+            return false;
+        }
+        throw newIllegalCharacter(value);
+    };
+
     private static final int MAX_HEX_CHARS_FOR_LONG = 16; // 0x7FFFFFFFFFFFFFFF == Long.MAX_INT
     private static final int CHUNK_DELIMETER_SIZE = 2; // CRLF
+    private static final int MAX_ALLOWED_CHARS_TO_SKIP = CHUNK_DELIMETER_SIZE * 2; // Max allowed prefacing CRLF to skip
+    private static final int MAX_ALLOWED_CHARS_TO_SKIP_PLUS_ONE = MAX_ALLOWED_CHARS_TO_SKIP + 1;
 
     private final int maxStartLineLength;
     private final int maxHeaderFieldLength;
@@ -120,6 +151,7 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
     }
 
     private State currentState = State.SKIP_CONTROL_CHARS;
+    private int skippedControls;
 
     /**
      * Creates a new instance with the specified parameters.
@@ -179,7 +211,7 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
                                        int thirdStart, int thirdLength);
 
     @Override
-    protected final void decode(ChannelHandlerContext ctx, ByteBuf buffer) {
+    protected final void decode(final ChannelHandlerContext ctx, final ByteBuf buffer) {
         switch (currentState) {
             case SKIP_CONTROL_CHARS: {
                 if (!skipControlCharacters(buffer)) {
@@ -200,39 +232,27 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
                 // https://tools.ietf.org/html/rfc7230#section-3.1.2
                 // status-line = HTTP-version SP status-code SP reason-phrase CRLF
                 final int nonControlIndex = lfIndex - 2;
-                int aStart = buffer.forEachByte(FIND_NON_LINEAR_WHITESPACE);
-                if (aStart < 0) {
-                    splitInitialLineError();
-                }
-                int aEnd = buffer.forEachByte(aStart + 1, nonControlIndex - aStart, FIND_LINEAR_WHITESPACE);
+                final int aStart = buffer.readerIndex();    // We already skipped all preface control chars
+                // Look only for a WS, other checks will be done later by request/response decoder
+                final int aEnd = buffer.forEachByte(aStart + 1, nonControlIndex - aStart, FIND_WS);
                 if (aEnd < 0) {
                     splitInitialLineError();
                 }
 
-                int bStart = buffer.forEachByte(aEnd + 1, nonControlIndex - aEnd, FIND_NON_LINEAR_WHITESPACE);
-                if (bStart < 0) {
-                    splitInitialLineError();
-                }
-                int bEnd = buffer.forEachByte(bStart + 1, nonControlIndex - bStart, FIND_LINEAR_WHITESPACE);
-                if (bEnd < 0) {
+                final int bStart = aEnd + 1;    // Expect a single WS
+                final int bEnd = buffer.forEachByte(bStart, nonControlIndex - bStart + 1, FIND_VCHAR_END);
+                if (bEnd < 0 || bEnd == bStart) {
                     splitInitialLineError();
                 }
 
-                int cStart = buffer.forEachByte(bEnd + 1, nonControlIndex - bEnd, FIND_NON_LINEAR_WHITESPACE);
-                int cEnd = -1;
-                if (cStart >= 0) {
-                    // Find End Of String
-                    cEnd = buffer.forEachByteDesc(cStart, lfIndex - cStart, FIND_NON_LINEAR_WHITESPACE);
-                    if (cEnd < 0) {
-                        splitInitialLineError();
-                    }
-                }
+                final int cStart = bEnd + 1;    // Expect a single WS
+                // Other checks will be done later by request/response decoder
+                final int cLength = cStart > nonControlIndex ? 0 : nonControlIndex - cStart + 1;
 
                 // Consume the initial line bytes from the buffer.
                 consumeCRLF(buffer, lfIndex);
 
-                message = createMessage(buffer, aStart, aEnd - aStart, bStart, bEnd - bStart, cStart,
-                        cEnd < 0 ? -1 : cEnd - cStart);
+                message = createMessage(buffer, aStart, aEnd - aStart, bStart, bEnd - bStart, cStart, cLength);
                 currentState = State.READ_HEADER;
                 closeHandler.protocolPayloadBeginInbound(ctx);
                 // fall-through
@@ -409,8 +429,7 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
     }
 
     @Override
-    protected final ByteBuf swapAndCopyCumulation(final ByteBuf cumulation,
-                                                  final ByteBuf in) {
+    protected final ByteBuf swapAndCopyCumulation(final ByteBuf cumulation, final ByteBuf in) {
         final int readerIndex = cumulation.readerIndex();
         final ByteBuf newCumulation = super.swapAndCopyCumulation(cumulation, in);
         cumulationIndex -= readerIndex - newCumulation.readerIndex();
@@ -423,7 +442,7 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
     }
 
     @Override
-    protected final void decodeLast(ChannelHandlerContext ctx, ByteBuf in) throws Exception {
+    protected final void decodeLast(final ChannelHandlerContext ctx, final ByteBuf in) throws Exception {
         super.decodeLast(ctx, in);
 
         // Handle the last unfinished message.
@@ -467,7 +486,7 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
     }
 
     @Override
-    public final void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
+    public final void userEventTriggered(final ChannelHandlerContext ctx, final Object evt) throws Exception {
         if (evt instanceof HttpExpectationFailedEvent) {
             switch (currentState) {
                 case READ_FIXED_LENGTH_CONTENT:
@@ -489,7 +508,7 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
      * Returns true if the server switched to a different protocol than HTTP/1.0 or HTTP/1.1, e.g. HTTP/2 or Websocket.
      * Returns false if the upgrade happened in a different layer, e.g. upgrade from HTTP/1.1 to HTTP/1.1 over TLS.
      */
-    private static boolean isSwitchingToNonHttp1Protocol(HttpResponseMetaData msg) {
+    private static boolean isSwitchingToNonHttp1Protocol(final HttpResponseMetaData msg) {
         if (msg.status().code() != SWITCHING_PROTOCOLS.code()) {
             return false;
         }
@@ -514,25 +533,39 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
         }
 
         currentState = State.SKIP_CONTROL_CHARS;
+        skippedControls = 0;
     }
 
-    private boolean skipControlCharacters(ByteBuf buffer) {
+    /**
+     * In the interest of robustness, a peer that is expecting to receive and parse a start-line SHOULD ignore at
+     * least one empty line (CRLF) received prior to the request-line.
+     *
+     * @see <a href="https://tools.ietf.org/html/rfc7230#section-3.5">RFC7230, Message Parsing Robustness</a>
+     */
+    private boolean skipControlCharacters(final ByteBuf buffer) {
         if (cumulationIndex < 0) {
             cumulationIndex = buffer.readerIndex();
         }
-        int i = buffer.forEachByte(cumulationIndex, buffer.writerIndex() - cumulationIndex,
-                SKIP_CONTROL_CHARS_PROCESSOR);
+        final int readableBytes = buffer.writerIndex() - cumulationIndex;
+        // Look at one more character than allowed to expect a valid VCHAR:
+        final int len = min(MAX_ALLOWED_CHARS_TO_SKIP_PLUS_ONE - skippedControls, readableBytes);
+        final int i = buffer.forEachByte(cumulationIndex, len, SKIP_PREFACING_CRLF);
         if (i < 0) {
-            cumulationIndex = buffer.writerIndex();
+            skippedControls += len;
+            if (skippedControls > MAX_ALLOWED_CHARS_TO_SKIP) {
+                throw new DecoderException("Too many prefacing CRLF characters");
+            }
+            cumulationIndex += len;
+            buffer.readerIndex(cumulationIndex);
             return false;
         } else {
-            buffer.readerIndex(i);
             cumulationIndex = i;
+            buffer.readerIndex(i);
             return true;
         }
     }
 
-    private void parseHeaderLine(HttpHeaders headers, ByteBuf buffer, final int lfIndex) {
+    private void parseHeaderLine(final HttpHeaders headers, final ByteBuf buffer, final int lfIndex) {
         // https://tools.ietf.org/html/rfc7230#section-3.2
         // header-field   = field-name ":" OWS field-value OWS
         //
@@ -551,46 +584,34 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
         //    the past, differences in the handling of such whitespace have led to
         //    security vulnerabilities in request routing and response handling.
         final int nonControlIndex = lfIndex - 2;
-        int headerStart = buffer.forEachByte(buffer.readerIndex(), nonControlIndex - buffer.readerIndex(),
-                FIND_NON_LINEAR_WHITESPACE);
-        if (headerStart < 0) {
-            throw new IllegalArgumentException("unable to find start of header name");
+        final int nameStart = buffer.readerIndex();
+        // Other checks will be done by header validator if enabled by users
+        final int nameEnd = buffer.forEachByte(nameStart, nonControlIndex - nameStart + 1, FIND_COLON);
+        if (nameEnd < 0) {
+            throw new IllegalArgumentException("Unable to find end of header name");
+        }
+        if (nameEnd == nameStart) {
+            throw new IllegalArgumentException("Empty header name");
         }
 
-        int headerEnd = buffer.forEachByte(headerStart + 1, nonControlIndex - headerStart,
-                FIND_COLON_OR_WHITE_SPACE);
-        if (headerEnd < 0) {
-            throw new IllegalArgumentException("unable to find end of header name");
-        }
-
-        if (buffer.getByte(headerEnd) != COLON_BYTE) {
-            throw new IllegalArgumentException("No whitespace is allowed between the header field-name and colon.");
-        }
-
-        int valueStart = headerEnd + 1;
         // We assume the allocator will not leak memory, and so we retain + slice to avoid copying data.
-        CharSequence name = newAsciiString(newBufferFrom(buffer.retainedSlice(headerStart, headerEnd - headerStart)));
-        if (nonControlIndex < valueStart) {
+        final CharSequence name = newAsciiString(newBufferFrom(buffer.retainedSlice(nameStart, nameEnd - nameStart)));
+        final int valueStart;
+        if (nameEnd >= nonControlIndex || (valueStart =
+                buffer.forEachByte(nameEnd + 1, nonControlIndex - nameEnd, FIND_FIELD_VALUE)) < 0) {
             headers.add(name, emptyAsciiString());
         } else {
-            valueStart = buffer.forEachByte(valueStart, nonControlIndex - valueStart + 1, FIND_NON_LINEAR_WHITESPACE);
-            // Find End Of String
-            int valueEnd;
-            if (valueStart < 0 || (valueEnd = buffer.forEachByteDesc(valueStart, lfIndex - valueStart - 1,
-                    FIND_NON_LINEAR_WHITESPACE)) < 0) {
-                headers.add(name, emptyAsciiString());
-            } else {
-                // We assume the allocator will not leak memory, and so we retain + slice to avoid copying data.
-                headers.add(name, newAsciiString(newBufferFrom(
-                        buffer.retainedSlice(valueStart, valueEnd - valueStart + 1))));
-            }
+            final int valueEnd = buffer.forEachByteDesc(valueStart, nonControlIndex - valueStart + 1, FIND_FIELD_VALUE);
+            // We assume the allocator will not leak memory, and so we retain + slice to avoid copying data.
+            headers.add(name, newAsciiString(newBufferFrom(buffer.retainedSlice(valueStart,
+                    valueEnd - valueStart + 1))));
         }
         // Consume the header line bytes from the buffer.
         consumeCRLF(buffer, lfIndex);
     }
 
     @Nullable
-    private State readHeaders(ByteBuf buffer) {
+    private State readHeaders(final ByteBuf buffer) {
         int lfIndex = findCRLF(buffer, maxHeaderFieldLength);
         if (lfIndex < 0) {
             return null;
@@ -622,7 +643,7 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
     }
 
     @Nullable
-    private HttpHeaders readTrailingHeaders(ByteBuf buffer) {
+    private HttpHeaders readTrailingHeaders(final ByteBuf buffer) {
         final int lfIndex = findCRLF(buffer, maxHeaderFieldLength);
         if (lfIndex < 0) {
             return null;
@@ -642,7 +663,8 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
         return trailer != null ? trailer : headersFactory.newEmptyTrailers();
     }
 
-    private boolean parseAllHeaders(ByteBuf buffer, HttpHeaders headers, int lfIndex, int maxHeaderFieldLength) {
+    private boolean parseAllHeaders(final ByteBuf buffer, final HttpHeaders headers, int lfIndex,
+                                    final int maxHeaderFieldLength) {
         for (;;) {
             if (lfIndex - 1 == buffer.readerIndex()) {
                 consumeCRLF(buffer, lfIndex);
@@ -652,7 +674,8 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
             parseHeaderLine(headers, buffer, lfIndex);
             if (nextLFIndex < 0) {
                 return false;
-            } else if (nextLFIndex - 2 == lfIndex) {
+            }
+            if (nextLFIndex - 2 == lfIndex) {
                 consumeCRLF(buffer, nextLFIndex);
                 return true;
             }
@@ -660,9 +683,9 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
         }
     }
 
-    private static long getChunkSize(ByteBuf buffer, int lfIndex) {
+    private static long getChunkSize(final ByteBuf buffer, final int lfIndex) {
         if (lfIndex - 2 < buffer.readerIndex()) {
-            throw new DecoderException("chunked encoding specified but chunk-size not found");
+            throw new DecoderException("Chunked encoding specified but chunk-size not found");
         }
         return getChunkSize(buffer.toString(buffer.readerIndex(),
                 lfIndex - 1 - buffer.readerIndex(), US_ASCII));
@@ -678,10 +701,10 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
             }
         }
 
-        return Long.parseLong(hex, 16);
+        return parseUnsignedLong(hex, 16);
     }
 
-    private void consumeCRLF(ByteBuf buffer, int lfIndex) {
+    private void consumeCRLF(final ByteBuf buffer, final int lfIndex) {
         // Consume the initial line bytes from the buffer.
         if (buffer.writerIndex() - 1 >= lfIndex) {
             buffer.readerIndex(lfIndex + 1);
@@ -692,7 +715,7 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
         }
     }
 
-    private int findCRLF(ByteBuf buffer, int maxLineSize) {
+    private int findCRLF(final ByteBuf buffer, final int maxLineSize) {
         if (cumulationIndex < 0) {
             cumulationIndex = buffer.readerIndex();
         }
@@ -701,14 +724,14 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
         return lfIndex;
     }
 
-    private static int findCRLF(ByteBuf buffer, int startIndex, final int maxLineSize) {
+    private static int findCRLF(final ByteBuf buffer, int startIndex, final int maxLineSize) {
         final int maxToIndex = startIndex + maxLineSize;
         for (;;) {
             final int toIndex = min(buffer.writerIndex(), maxToIndex);
             final int lfIndex = findLF(buffer, startIndex, toIndex);
             if (lfIndex == -1) {
                 if (toIndex - startIndex == maxLineSize) {
-                    throw new IllegalStateException("Could not find CRLF within " + maxLineSize + " bytes.");
+                    throw new IllegalStateException("Could not find CRLF within " + maxLineSize + " bytes");
                 }
                 return -2;
             } else if (lfIndex == buffer.readerIndex()) {
@@ -717,13 +740,9 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
             } else if (buffer.getByte(lfIndex - 1) == CR) {
                 return lfIndex;
             } else if (lfIndex != maxToIndex) {
-                // Found LF but no CR before
-                if (lfIndex == buffer.writerIndex()) {
-                    return -2;
-                }
-                startIndex = lfIndex + 1;
+                throw new IllegalArgumentException("Found LF but no CR before");
             } else {
-                throw new TooLongFrameException("An HTTP line is larger than " + maxLineSize + " bytes.");
+                throw new TooLongFrameException("An HTTP line is larger than " + maxLineSize + " bytes");
             }
         }
     }
@@ -736,10 +755,10 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
     }
 
     static void splitInitialLineError() {
-        throw new IllegalArgumentException("invalid initial line");
+        throw new IllegalArgumentException("Invalid initial line");
     }
 
-    private static int getWebSocketContentLength(HttpMetaData message) {
+    private static int getWebSocketContentLength(final HttpMetaData message) {
         // WebSocket messages have constant content-lengths.
         HttpHeaders h = message.headers();
         if (message instanceof HttpRequestMetaData) {
@@ -764,7 +783,7 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
         return -1;
     }
 
-    private static long getContentLength(HttpMetaData message) {
+    private static long getContentLength(final HttpMetaData message) {
         CharSequence value = message.headers().get(CONTENT_LENGTH);
         if (value != null) {
             return Long.parseLong(value.toString());
@@ -781,29 +800,44 @@ abstract class HttpObjectDecoder<T extends HttpMetaData> extends ByteToMessageDe
         return -1;
     }
 
-    static HttpProtocolVersion nettyBufferToHttpVersion(ByteBuf buffer, int start, int length) {
-        if (length < 8) {
+    static HttpProtocolVersion nettyBufferToHttpVersion(final ByteBuf buffer, final int start, final int length) {
+        if (length != 8) {
             httpVersionError(buffer, start, length);
         }
 
-        if (buffer.getByte(start + 6) != (byte) '.') {
+        final long httpVersion = buffer.getLong(start);
+        if ((httpVersion & HTTP_VERSION_MASK) != HTTP_VERSION_FORMAT) {
             httpVersionError(buffer, start, length);
         }
 
-        final int major = buffer.getByte(start + 5) - '0';
-        if (major < 0 || major > 9) {
-            httpVersionError(buffer, start, length);
-        }
-
-        final int minor = buffer.getByte(start + 7) - '0';
-        if (minor < 0 || minor > 9) {
-            httpVersionError(buffer, start, length);
-        }
-
-        return HttpProtocolVersion.of(major, minor);
+        return HttpProtocolVersion.of(1, toDecimal((int) httpVersion & 0xff));
     }
 
-    private static void httpVersionError(ByteBuf buffer, int start, int length) {
-        throw new IllegalArgumentException("Incorrect http version: " + buffer.toString(start, length, US_ASCII));
+    private static void httpVersionError(final ByteBuf buffer, final int start, final int length) {
+        throw new IllegalArgumentException("Invalid http version: '" + buffer.toString(start, length, US_ASCII) +
+                "', expected: HTTP/1.x");
+    }
+
+    static int toDecimal(final int c) {
+        if (c < '0' || c > '9') {
+            throw new IllegalArgumentException("Illegal character: 0x" + format("%02X", c) + ", expected 0x30-0x39");
+        }
+        return c - '0';
+    }
+
+    static boolean isWS(final byte value) {
+        return value == SP || value == HT;
+    }
+
+    static IllegalArgumentException newIllegalCharacter(final byte value) {
+        return new IllegalArgumentException("Illegal character: 0x" + format("%02X", value));
+    }
+
+    private static boolean isVCHAR(final byte value) {
+        return value >= '!' && value <= '~';
+    }
+
+    private static boolean isObsText(final byte value) {
+        return value >= (byte) 0xA0 && value <= (byte) 0xFF; // xA0-xFF
     }
 }

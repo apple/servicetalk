@@ -23,17 +23,28 @@ import io.servicetalk.transport.netty.internal.CloseHandler;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.util.ByteProcessor;
 
 import java.util.Queue;
 
 import static io.servicetalk.http.api.HttpRequestMetaDataFactory.newRequestMetaData;
 import static io.servicetalk.http.api.HttpRequestMethod.Properties.NONE;
 import static io.servicetalk.transport.netty.internal.CloseHandler.UNSUPPORTED_PROTOCOL_CLOSE_HANDLER;
-import static java.lang.Math.min;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.util.Objects.requireNonNull;
 
 final class HttpRequestDecoder extends HttpObjectDecoder<HttpRequestMetaData> {
+    private static final ByteProcessor FIND_WS_AFTER_METHOD_NAME = value -> {
+        if (isWS(value)) {
+            return false;
+        }
+        ensureUpperCase(value);
+        return true;
+    };
+    private static final ByteProcessor ENSURE_UPPER_CASE = value -> {
+        ensureUpperCase(value);
+        return true;
+    };
 
     private final Queue<HttpRequestMethod> methodQueue;
 
@@ -58,19 +69,14 @@ final class HttpRequestDecoder extends HttpObjectDecoder<HttpRequestMetaData> {
 
     @Override
     protected void handlePartialInitialLine(final ChannelHandlerContext ctx, final ByteBuf buffer) {
-        final int len = min(3, buffer.readableBytes());
-        for (int i = 0; i < len; ++i) {
-            byte b = buffer.getByte(buffer.readerIndex() + i);
-            if (b == ' ' && i > 0) {
-                // If we find a space after at least one capital letter, accept this as valid.
-                return;
-            }
-            // As per the RFC, request method is case-sensitive, and all valid methods are uppercase.
-            // https://tools.ietf.org/html/rfc7231#section-4.1
-            if (b < 'A' || b > 'Z') {
-                // Illegal request if it doesn't start with 3 capital letters, or fewer followed by a space.
-                splitInitialLineError();
-            }
+        buffer.forEachByte(FIND_WS_AFTER_METHOD_NAME);
+    }
+
+    private static void ensureUpperCase(final byte value) {
+        // As per the RFC, request method is case-sensitive, and all valid methods are uppercase.
+        // https://tools.ietf.org/html/rfc7231#section-4.1
+        if (value < 'A' || value > 'Z') {
+            throw new IllegalArgumentException("HTTP request method MUST contain only upper case letters");
         }
     }
 
@@ -79,19 +85,20 @@ final class HttpRequestDecoder extends HttpObjectDecoder<HttpRequestMetaData> {
                                                 final int firstStart, final int firstLength,
                                                 final int secondStart, final int secondLength,
                                                 final int thirdStart, final int thirdLength) {
-        if (thirdLength < 0) {
-            splitInitialLineError();
-        }
-
         return newRequestMetaData(nettyBufferToHttpVersion(buffer, thirdStart, thirdLength),
-                decodeHttpMethod(buffer.toString(firstStart, firstLength, US_ASCII)),
+                decodeHttpMethod(buffer, firstStart, firstLength),
                 buffer.toString(secondStart, secondLength, US_ASCII),
                 headersFactory().newHeaders());
     }
 
-    private static HttpRequestMethod decodeHttpMethod(final String methodName) {
+    private static HttpRequestMethod decodeHttpMethod(final ByteBuf buffer, final int start, final int length) {
+        final String methodName = buffer.toString(start, length, US_ASCII);
         final HttpRequestMethod method = HttpRequestMethod.of(methodName);
-        return method != null ? method : HttpRequestMethod.of(methodName, NONE);
+        if (method != null) {
+            return method;
+        }
+        buffer.forEachByte(start, length, ENSURE_UPPER_CASE);
+        return HttpRequestMethod.of(methodName, NONE);
     }
 
     @Override
