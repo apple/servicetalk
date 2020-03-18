@@ -34,6 +34,13 @@ import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.util.Objects.requireNonNull;
 
 final class HttpRequestDecoder extends HttpObjectDecoder<HttpRequestMetaData> {
+    private static final ByteProcessor FIND_WS_AFTER_METHOD_NAME = value -> {
+        if (isWS(value)) {
+            return false;
+        }
+        ensureUpperCase(value);
+        return true;
+    };
     private static final ByteProcessor ENSURE_UPPER_CASE = value -> {
         ensureUpperCase(value);
         return true;
@@ -62,20 +69,7 @@ final class HttpRequestDecoder extends HttpObjectDecoder<HttpRequestMetaData> {
 
     @Override
     protected void handlePartialInitialLine(final ChannelHandlerContext ctx, final ByteBuf buffer) {
-        final int writerIndex = buffer.writerIndex();
-        int readerIndex = buffer.readerIndex();
-        if (readerIndex == writerIndex) {   // ByteBuf is not readable
-            return;
-        }
-        byte b = buffer.getByte(readerIndex);
-        ensureUpperCase(b);
-        while (++readerIndex < writerIndex) {
-            b = buffer.getByte(readerIndex);
-            if (isWS(b)) {
-                return;
-            }
-            ensureUpperCase(b);
-        }
+        buffer.forEachByte(FIND_WS_AFTER_METHOD_NAME);
     }
 
     private static void ensureUpperCase(final byte value) {
@@ -98,10 +92,13 @@ final class HttpRequestDecoder extends HttpObjectDecoder<HttpRequestMetaData> {
     }
 
     private static HttpRequestMethod decodeHttpMethod(final ByteBuf buffer, final int start, final int length) {
-        buffer.forEachByte(start, length, ENSURE_UPPER_CASE);
         final String methodName = buffer.toString(start, length, US_ASCII);
         final HttpRequestMethod method = HttpRequestMethod.of(methodName);
-        return method != null ? method : HttpRequestMethod.of(methodName, NONE);
+        if (method != null) {
+            return method;
+        }
+        buffer.forEachByte(start, length, ENSURE_UPPER_CASE);
+        return HttpRequestMethod.of(methodName, NONE);
     }
 
     @Override

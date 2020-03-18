@@ -50,10 +50,7 @@ final class HttpResponseDecoder extends HttpObjectDecoder<HttpResponseMetaData> 
 
     private static final byte[] FIRST_BYTES = "HTTP".getBytes(US_ASCII);
     private static final ByteProcessor ENSURE_NO_CONTROL_CHARS = value -> {
-        if (value == HT) {
-            return true;    // allow HTAB
-        }
-        if (isISOControl(value)) {
+        if (value != HT && isISOControl(value)) {   // allow HTAB
             throw newIllegalCharacter(value);
         }
         return true;
