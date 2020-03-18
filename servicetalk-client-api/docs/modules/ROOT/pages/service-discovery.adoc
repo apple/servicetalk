@@ -69,4 +69,4 @@ This implementation is backed by `io.netty:netty-resolver-dns` and provides non-
 
 IMPORTANT: _macOS_ users may experience problems with resolving host addresses in certain environments. In this case,
 users need to add the additional dependency on the classpath which will ensure the right nameservers are selected when
-running on macOS: `io.netty:netty-resolver-dns-native-macos`.
+running on macOS: `io.netty:netty-resolver-dns-native-macos:$nettyVersion:osx-x86_64`.
