@@ -48,6 +48,13 @@ function clean_up_gh_pages() {
   rm -rf gh-pages
 }
 
+# Enforce JDK8 to keep javadoc format consistent for all versions:
+java_version=$(java -version 2>&1 | grep 'version' 2>&1 | awk -F\" '{ split($2,a,"."); print a[1]"."a[2]}')
+if [ "$java_version" != "1.8" ]; then
+  echo "Docs can be published only using Java 1.8, current version: $java_version"
+  exit 1
+fi
+
 if [ "$#" -eq "0" ]; then
     echo "Publishing docs website for the SNAPSHOT version only"
 elif [ "$#" -eq "1" ]; then
