@@ -181,6 +181,9 @@
         <li class="version is-current is-latest">
           <a href="index.html">SNAPSHOT</a>
         </li>
+        <li class="version">
+          <a href="../0.25/index.html">0.25</a>
+        </li>
       </ul>
     </li>
     <li class="component">
@@ -188,6 +191,9 @@
       <ul class="versions">
         <li class="version is-latest">
           <a href="../../servicetalk-concurrent-api/SNAPSHOT/index.html">SNAPSHOT</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-concurrent-api/0.25/index.html">0.25</a>
         </li>
         <li class="version">
           <a href="../../servicetalk-concurrent-api/0.24/index.html">0.24</a>
@@ -216,6 +222,9 @@
           <a href="../../servicetalk-examples/SNAPSHOT/index.html">SNAPSHOT</a>
         </li>
         <li class="version">
+          <a href="../../servicetalk-examples/0.25/index.html">0.25</a>
+        </li>
+        <li class="version">
           <a href="../../servicetalk-examples/0.24/index.html">0.24</a>
         </li>
         <li class="version">
@@ -240,6 +249,9 @@
       <ul class="versions">
         <li class="version is-latest">
           <a href="../../servicetalk-grpc-api/SNAPSHOT/index.html">SNAPSHOT</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-grpc-api/0.25/index.html">0.25</a>
         </li>
         <li class="version">
           <a href="../../servicetalk-grpc-api/0.24/index.html">0.24</a>
@@ -268,6 +280,9 @@
           <a href="../../servicetalk-http-api/SNAPSHOT/index.html">SNAPSHOT</a>
         </li>
         <li class="version">
+          <a href="../../servicetalk-http-api/0.25/index.html">0.25</a>
+        </li>
+        <li class="version">
           <a href="../../servicetalk-http-api/0.24/index.html">0.24</a>
         </li>
         <li class="version">
@@ -292,6 +307,9 @@
       <ul class="versions">
         <li class="version is-latest">
           <a href="../../servicetalk-http-router-jersey/SNAPSHOT/index.html">SNAPSHOT</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-router-jersey/0.25/index.html">0.25</a>
         </li>
         <li class="version">
           <a href="../../servicetalk-http-router-jersey/0.24/index.html">0.24</a>
@@ -320,6 +338,9 @@
           <a href="../../servicetalk-data-jackson-jersey/SNAPSHOT/index.html">SNAPSHOT</a>
         </li>
         <li class="version">
+          <a href="../../servicetalk-data-jackson-jersey/0.25/index.html">0.25</a>
+        </li>
+        <li class="version">
           <a href="../../servicetalk-data-jackson-jersey/0.24/index.html">0.24</a>
         </li>
         <li class="version">
@@ -346,6 +367,9 @@
           <a href="../../servicetalk-loadbalancer/SNAPSHOT/index.html">SNAPSHOT</a>
         </li>
         <li class="version">
+          <a href="../../servicetalk-loadbalancer/0.25/index.html">0.25</a>
+        </li>
+        <li class="version">
           <a href="../../servicetalk-loadbalancer/0.24/index.html">0.24</a>
         </li>
         <li class="version">
@@ -367,6 +391,9 @@
       <ul class="versions">
         <li class="version is-latest">
           <a href="../../servicetalk-http-security-jersey/SNAPSHOT/index.html">SNAPSHOT</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk-http-security-jersey/0.25/index.html">0.25</a>
         </li>
         <li class="version">
           <a href="../../servicetalk-http-security-jersey/0.24/index.html">0.24</a>
@@ -393,6 +420,9 @@
       <ul class="versions">
         <li class="version is-latest">
           <a href="../../servicetalk/SNAPSHOT/index.html">SNAPSHOT</a>
+        </li>
+        <li class="version">
+          <a href="../../servicetalk/0.25/index.html">0.25</a>
         </li>
         <li class="version">
           <a href="../../servicetalk/0.24/index.html">0.24</a>
@@ -429,6 +459,13 @@
                 <li class="crumb"><a href="service-discovery.html">Service Discovery</a></li>
         </ul>
 </nav>
+<div class="page-versions">
+  <button class="versions-menu-toggle" title="Show other versions of page">SNAPSHOT</button>
+  <div class="versions-menu">
+    <a class="version is-current" href="service-discovery.html">SNAPSHOT</a>
+    <a class="version" href="../0.25/service-discovery.html">0.25</a>
+  </div>
+</div>
   <div class="edit-this-page"><a href="https://github.com/apple/servicetalk/edit/master/servicetalk-client-api/docs/modules/ROOT/pages/service-discovery.adoc">Edit this Page</a></div>
 </div>
         <article class="doc">
@@ -521,7 +558,7 @@ configured when users create a <em>Client</em> instance.
 <td class="content">
 <em>macOS</em> users may experience problems with resolving host addresses in certain environments. In this case,
 users need to add the additional dependency on the classpath which will ensure the right nameservers are selected when
-running on macOS: <code>io.netty:netty-resolver-dns-native-macos</code>.
+running on macOS: <code>io.netty:netty-resolver-dns-native-macos:$nettyVersion:osx-x86_64</code>.
 </td>
 </tr>
 </table>
