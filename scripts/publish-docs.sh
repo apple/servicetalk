@@ -49,7 +49,7 @@ function clean_up_gh_pages() {
 }
 
 # Enforce JDK8 to keep javadoc format consistent for all versions:
-java_version=$(java -version 2>&1 | grep 'version' 2>&1 | awk -F\" '{ split($2,a,"."); print a[1]"."a[2]}')
+java_version=$(./gradlew --no-daemon -version | grep ^JVM: | awk -F\. '{gsub(/^JVM:[ \t]*/,"",$1); print $1"."$2}')
 if [ "$java_version" != "1.8" ]; then
   echo "Docs can be published only using Java 1.8, current version: $java_version"
   exit 1
