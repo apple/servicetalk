@@ -98,7 +98,11 @@ fi
 
 pushd gh-pages
 # Do not override older javadoc with Antora's placeholder:
-git diff --name-only | grep 'javadoc/index.html' | grep -v $version | grep -v SNAPSHOT | xargs git checkout --
+files_to_revert=$(git diff --name-only | grep 'javadoc/index.html' | grep -v SNAPSHOT)
+if [ ! -z "$version" ]; then
+    files_to_revert=$(echo $files_to_revert | grep -v $version)
+fi
+echo $files_to_revert | xargs git checkout --
 
 git add * .nojekyll
 if [ -z "$version" ]; then
