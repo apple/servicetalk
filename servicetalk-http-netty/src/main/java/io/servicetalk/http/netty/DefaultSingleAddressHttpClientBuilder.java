@@ -220,7 +220,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
         }
 
         StreamingHttpClient build() {
-            return builder.buildStreaming(this);
+            return buildStreaming(this);
         }
     }
 
@@ -229,8 +229,8 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
         return buildStreaming(copyBuildCtx());
     }
 
-    private StreamingHttpClient buildStreaming(HttpClientBuildContext<U, R> ctx) {
-        final ReadOnlyHttpClientConfig roConfig = config.asReadOnly();
+    private static <U, R> StreamingHttpClient buildStreaming(final HttpClientBuildContext<U, R> ctx) {
+        final ReadOnlyHttpClientConfig roConfig = ctx.builder.config.asReadOnly();
 
         if (roConfig.h2Config() != null && roConfig.hasProxy()) {
             throw new IllegalStateException("Proxying is not yet supported with HTTP/2");
@@ -244,7 +244,7 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
             final StreamingHttpRequestResponseFactory reqRespFactory = ctx.reqRespFactory;
 
             ConnectionFactoryFilter<R, FilterableStreamingHttpConnection> connectionFactoryFilter =
-                    this.connectionFactoryFilter;
+                    ctx.builder.connectionFactoryFilter;
 
             final SslContext sslContext = roConfig.tcpConfig().sslContext();
             if (roConfig.hasProxy() && sslContext != null) {
@@ -253,53 +253,51 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
                         roConfig.connectAddress(), reqRespFactory).append(connectionFactoryFilter);
             }
 
+            final HttpExecutionStrategy executionStrategy = ctx.executionContext.executionStrategy();
             // closed by the LoadBalancer
             final ConnectionFactory<R, LoadBalancedStreamingHttpConnection> connectionFactory;
             if (roConfig.isH2PriorKnowledge()) {
                 connectionFactory = new H2LBHttpConnectionFactory<>(roConfig, ctx.executionContext,
-                        connectionFilterFactory, reqRespFactory,
-                        influencerChainBuilder.buildForConnectionFactory(ctx.executionContext.executionStrategy()),
-                        connectionFactoryFilter, protocolBinder);
+                        ctx.builder.connectionFilterFactory, reqRespFactory,
+                        ctx.builder.influencerChainBuilder.buildForConnectionFactory(executionStrategy),
+                        connectionFactoryFilter, ctx.builder.protocolBinder);
             } else if (roConfig.tcpConfig().isAlpnConfigured()) {
                 connectionFactory = new AlpnLBHttpConnectionFactory<>(roConfig, ctx.executionContext,
-                        connectionFilterFactory, reqRespFactory,
-                        influencerChainBuilder.buildForConnectionFactory(ctx.executionContext.executionStrategy()),
-                        connectionFactoryFilter, protocolBinder);
+                        ctx.builder.connectionFilterFactory, reqRespFactory,
+                        ctx.builder.influencerChainBuilder.buildForConnectionFactory(executionStrategy),
+                        connectionFactoryFilter, ctx.builder.protocolBinder);
             } else {
                 connectionFactory = new PipelinedLBHttpConnectionFactory<>(roConfig, ctx.executionContext,
-                        connectionFilterFactory, reqRespFactory,
-                        influencerChainBuilder.buildForConnectionFactory(ctx.executionContext.executionStrategy()),
-                        connectionFactoryFilter, protocolBinder);
+                        ctx.builder.connectionFilterFactory, reqRespFactory,
+                        ctx.builder.influencerChainBuilder.buildForConnectionFactory(executionStrategy),
+                        connectionFactoryFilter, ctx.builder.protocolBinder);
             }
 
             @SuppressWarnings("unchecked")
             final LoadBalancer<LoadBalancedStreamingHttpConnection> lb =
                     (LoadBalancer<LoadBalancedStreamingHttpConnection>) closeOnException.prepend(
-                    this.loadBalancerFactory.newLoadBalancer(sdEvents, connectionFactory));
+                    ctx.builder.loadBalancerFactory.newLoadBalancer(sdEvents, connectionFactory));
 
-            StreamingHttpClientFilterFactory currClientFilterFactory = clientFilterFactory;
-
+            StreamingHttpClientFilterFactory currClientFilterFactory = ctx.builder.clientFilterFactory;
             if (roConfig.hasProxy() && sslContext == null) {
                 // If we're talking to a proxy over http (not https), rewrite the request-target to absolute-form, as
                 // specified by the RFC: https://tools.ietf.org/html/rfc7230#section-5.3.2
                 currClientFilterFactory = appendFilter(currClientFilterFactory,
-                        proxyAbsoluteAddressFilterFactory());
+                        ctx.builder.proxyAbsoluteAddressFilterFactory());
             }
-
-            if (hostHeaderFilterFactoryFunction != null) {
+            if (ctx.builder.hostHeaderFilterFactoryFunction != null) {
                 currClientFilterFactory = appendFilter(currClientFilterFactory,
-                        hostHeaderFilterFactoryFunction.apply(address));
+                        ctx.builder.hostHeaderFilterFactoryFunction.apply(ctx.builder.address));
             }
 
             FilterableStreamingHttpClient lbClient = closeOnException.prepend(
                     new LoadBalancedStreamingHttpClient(ctx.executionContext, lb, reqRespFactory));
-            if (autoRetry != null) {
-                lbClient = new AutoRetryFilter(lbClient, autoRetry.forLoadbalancer(lb));
+            if (ctx.builder.autoRetry != null) {
+                lbClient = new AutoRetryFilter(lbClient, ctx.builder.autoRetry.forLoadbalancer(lb));
             }
             return new FilterableClientToClient(currClientFilterFactory != null ?
-                    currClientFilterFactory.create(lbClient) : lbClient,
-                    ctx.executionContext.executionStrategy(),
-                    influencerChainBuilder.buildForClient(ctx.executionContext.executionStrategy()));
+                    currClientFilterFactory.create(lbClient) : lbClient, executionStrategy,
+                    ctx.builder.influencerChainBuilder.buildForClient(executionStrategy));
         } catch (final Throwable t) {
             closeOnException.closeAsync().subscribe();
             throw t;
@@ -332,7 +330,6 @@ final class DefaultSingleAddressHttpClientBuilder<U, R> extends SingleAddressHtt
     }
 
     private HttpClientBuildContext<U, R> buildContext0(@Nullable U address) {
-
         final DefaultSingleAddressHttpClientBuilder<U, R> clonedBuilder = address == null ? copy() : copy(address);
         final HttpExecutionContext exec = clonedBuilder.executionContextBuilder.build();
         final StreamingHttpRequestResponseFactory reqRespFactory = clonedBuilder.config.isH2PriorKnowledge() ?
