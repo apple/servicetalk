@@ -234,6 +234,12 @@ final class NettyChannelPublisher<T> extends SubscribablePublisher<T> {
             return;
         }
         resetSubscription();
+
+        // If a cancel occurs with a valid subscription we need to clear any pending data and set a fatalError so that
+        // any future Subscribers don't get partial data delivered from the queue.
+        pending = null;
+        fatalError = StacklessClosedChannelException.newInstance(NettyChannelPublisher.class, "cancel");
+
         // If an incomplete subscriber is cancelled then close channel. A subscriber can cancel after getting complete,
         // which should not close the channel.
         closeChannelInbound();
@@ -270,7 +276,7 @@ final class NettyChannelPublisher<T> extends SubscribablePublisher<T> {
             subscriber.onSubscribe(EMPTY_SUBSCRIPTION);
             subscriber.onError(new DuplicateSubscribeException(subscription.associatedSub, subscriber));
         } else {
-            requestCount = 0; // Don't pollute requested count between subscribers
+            assert requestCount == 0;
             subscription = new SubscriptionImpl(subscriber);
             this.subscription = subscription;
             subscriber.onSubscribe(subscription);
