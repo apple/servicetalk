@@ -351,7 +351,7 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
         private boolean setSuccess0() {
             assert eventLoop.inEventLoop();
             if (hasFlag(SUBSCRIBER_TERMINATED)) {
-                return false;
+                return nettySharedPromiseTryStatus();
             }
             if (--activeWrites == 0 && hasFlag(SOURCE_TERMINATED)) {
                 setFlag(SUBSCRIBER_TERMINATED);
@@ -364,7 +364,7 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
                 }
                 return super.trySuccess(null);
             }
-            return true;
+            return nettySharedPromiseTryStatus();
         }
 
         private boolean setFailure0(Throwable cause) {
@@ -374,7 +374,7 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
             // ignore any further results. For non-reliable protocols, when we support them, we will modify this
             // behavior as appropriate.
             if (hasFlag(SUBSCRIBER_TERMINATED)) {
-                return false;
+                return nettySharedPromiseTryStatus();
             }
             setFlag(SUBSCRIBER_TERMINATED);
             Subscription oldVal = subscriptionUpdater.getAndSet(WriteStreamSubscriber.this, CANCELLED);
@@ -384,6 +384,17 @@ final class WriteStreamSubscriber implements PublisherSource.Subscriber<Object>,
             terminateSubscriber(cause);
             tryFailureOrLog(cause);
             // Always return true since we have set the state to SUBSCRIBER_TERMINATED
+            return true;
+        }
+
+        private boolean nettySharedPromiseTryStatus() {
+            // We take liberties with Netty's promise API because this promise is shared across multiple operations.
+            // We always return true which may violate the API as follows:
+            // if (promise.tryFailure())
+            //   if (promise.tryFailure())
+            //      unexpected!
+            // However in practice this pattern isn't used and it is more common to do expensive recovery
+            // (e.g. stack trace logging) if any of the try* operations return false.
             return true;
         }
 
