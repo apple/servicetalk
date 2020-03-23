@@ -21,7 +21,6 @@ import io.servicetalk.concurrent.internal.TerminalNotification;
 
 import io.netty.channel.Channel;
 import io.netty.channel.EventLoop;
-import io.netty.util.ReferenceCountUtil;
 import io.netty.util.ReferenceCounted;
 
 import java.util.ArrayDeque;
@@ -71,16 +70,8 @@ final class NettyChannelPublisher<T> extends SubscribablePublisher<T> {
 
     void channelRead(T data) {
         assertInEventloop();
-
         if (data instanceof ReferenceCounted) {
-            /*
-             * We do not expect ref-counted objects here as ST does not support them and do not take care to clean them
-             * in error conditions. Hence we fail-fast when we see such objects.
-             */
-            ReferenceCountUtil.release(data);
-            exceptionCaught(new IllegalArgumentException("Reference counted leaked netty's pipeline. Object: " +
-                    data.getClass().getSimpleName()));
-            channel.close();
+            channelReadReferenceCounted((ReferenceCounted) data);
             return;
         }
 
@@ -91,6 +82,20 @@ final class NettyChannelPublisher<T> extends SubscribablePublisher<T> {
             }
         } else {
             emit(subscription, data);
+        }
+    }
+
+    private void channelReadReferenceCounted(ReferenceCounted data) {
+        try {
+            data.release();
+        } finally {
+            // We do not expect ref-counted objects here as ST does not support them and do not take care to clean them
+            // in error conditions. Hence we fail-fast when we see such objects.
+            pending = null;
+            fatalError = new IllegalArgumentException("Reference counted leaked netty's pipeline. Object: " +
+                    data.getClass().getSimpleName());
+            exceptionCaught(fatalError);
+            channel.close();
         }
     }
 
@@ -116,10 +121,9 @@ final class NettyChannelPublisher<T> extends SubscribablePublisher<T> {
 
     void channelInboundClosed() {
         assertInEventloop();
-        Throwable error = StacklessClosedChannelException.newInstance(
+        fatalError = StacklessClosedChannelException.newInstance(
                 NettyChannelPublisher.class, "channelInboundClosed");
-        fatalError = error;
-        exceptionCaught(error);
+        exceptionCaught(fatalError);
     }
 
     // All private methods MUST be invoked from the eventloop.

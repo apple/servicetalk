@@ -114,7 +114,17 @@ public class NettyChannelPublisherTest {
     }
 
     @Test
+    public void testCancelThenReadThenResubscribeDeliversErrorAndNotQueuedData() throws InterruptedException {
+        testCancelThenResubscribeDeliversErrorAndNotQueuedData(true);
+    }
+
+    @Test
     public void testCancelThenResubscribeDeliversErrorAndNotQueuedData() throws InterruptedException {
+        testCancelThenResubscribeDeliversErrorAndNotQueuedData(false);
+    }
+
+    private void testCancelThenResubscribeDeliversErrorAndNotQueuedData(boolean doChannelRead)
+            throws InterruptedException {
         TestCollectingPublisherSubscriber<Integer> subscriber1 = new TestCollectingPublisherSubscriber<>();
         TestCollectingPublisherSubscriber<Integer> subscriber2 = new TestCollectingPublisherSubscriber<>();
         toSource(publisher).subscribe(subscriber1);
@@ -127,6 +137,15 @@ public class NettyChannelPublisherTest {
         assertFalse(channel.writeInbound(2)); // this write should be queued, because there isn't any requestN demand.
 
         subscription1.cancel(); // cancel of active subscription should clear the queue and fail future Subscribers.
+
+        if (doChannelRead) {
+            try {
+                assertFalse(channel.writeInbound(3));
+            } catch (Exception e) {
+                assertThat(e, instanceOf(ClosedChannelException.class));
+                return;
+            }
+        }
 
         toSource(publisher).subscribe(subscriber2);
         subscriber2.awaitSubscription().request(Long.MAX_VALUE);
